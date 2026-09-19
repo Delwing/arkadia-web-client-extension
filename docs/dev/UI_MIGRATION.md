@@ -74,7 +74,7 @@ riskier than it needs to be.
 0. Cut the tests loose from Bootstrap classes   ← DONE (#1333)
 1. Token bridge + theme attribute               ← DONE (themes/bridge.css)
 2. One log viewer, hosted twice                  ← fold master's UX in, then share
-3. Popups (39)                                  ← mostly token work
+3. Popups (39)                                  ← IN PROGRESS: PR 1 (combat/status) done
 4. Settings (46 files)                          ← the long pole, sub-phased
 5. Shell: index.html, layout, footer
 6. Delete Bootstrap
@@ -175,15 +175,119 @@ this phase: it describes the behaviour the shared component has to keep.
 
 ### Phase 3 — Popups *(4–6 PRs, grouped by family)*
 
-39 components. Per popup: swap ad-hoc chrome for `@design` primitives, replace
-that popup's `--popup-*` reads with semantic tokens, delete its slice of
-`popups.css`, remove its hex literals (56 across the whole layer).
+39 components. Group by family so each PR is one coherent review: combat/status,
+world/travel, knowledge/reports, inventory/economy, debug.
 
-Group by family so each PR is one coherent review: combat/status, world/travel,
-knowledge/reports, inventory/economy, debug.
+**PR 1 (combat/status) is done** — nine popups: Postawa, Walka, Statystyki,
+Postepy, Postepy 2, Cechy, Zabici, Zabici 2, Odpornosci przeciwnikow. It also
+landed the shared pieces every later popup PR depends on, described below.
 
-*Exit:* `popups.css` is gone or vestigial, and `themes/bridge.css` can be
+*Exit:* `popups-base.css` is gone or vestigial, and `themes/bridge.css` can be
 deleted — which is the signal that the legacy token layer is dead.
+
+#### Three things PR 1 found that this plan had wrong
+
+**(1) `popups.css` has two hosts, and only one of them owns the design system.**
+`forge-ui/main.tsx` imports `@web/popups/popups.css` and renders the *same*
+`POPUP_CATALOG`, with its own bronze `--popup-*` palette, no `.ark-root`, no
+`data-ark-theme` and no `@design/css/index.css`. Constraint (a) above noticed
+only that forge consumes *settings* components. So "replace this popup's
+`--popup-*` reads with `--ark-*`" is not a local edit: done naively it leaves
+every migrated popup in forge with no tokens at all — no background, no border,
+no text contrast.
+
+The fix that does not touch forge is `src/web/popups/popup-host-tokens.css`: a
+bridge in the opposite direction, mapping forge's `--popup-*` onto the `--ark-*`
+roles, scoped `body:not(.ark-root)` so it can never meet `themes/bridge.css` and
+form a variable cycle. It also repeats the non-colour ramps, because those live
+behind `[data-ark-theme]` too; a test compares them against `tokens.css` so they
+cannot drift.
+
+**This is a workaround, and the real fix is three lines in `forge-ui`** — import
+`@design/css/index.css`, put `ark-root` + `data-ark-theme="forge"` on its root,
+add a `forge` theme to `themes.config.mjs`. That is out of scope today, and the
+bridge carries it as its deletion criterion. Whoever is allowed to touch
+`forge-ui` should do it and delete the file.
+
+**(2) Popups are not cleanly separable by family.** They share Layer-2 chrome
+(`.popup-btn`, `.popup-tab`, `.popup-empty`, `.popup-split-*`, the header strip)
+and, worse, they borrow each other's classes across families: the resistances
+popup was built out of `.zlom-*` (inventory) and `.carriage-remove-btn`
+(travel). Leaving Layer 2 on `--popup-*` would half-migrate every popup in every
+family, so **PR 1 migrated Layer 2 for everyone**. Through `bridge.css` that is
+a computed no-op — `--popup-control-bg` *was* `--ark-bg-element` — and the
+screenshots confirmed it pixel for pixel. Later PRs inherit a migrated Layer 2
+and should not need to touch it.
+
+**(3) A per-popup stylesheet may not be imported by its component.** Layer 2 and
+a per-popup delta are both specificity 0,1,0, so only source order decides which
+wins. That was automatic while everything sat in one file. Split into
+`CechyPopup.css` and pulled in by `import './CechyPopup.css'`, the order becomes
+Rollup's to choose — and it put the deltas in a chunk the built `index.html`
+links *before* the one holding Layer 2. The cascade inverted and the Cechy
+"Wlacz modyfikatory" button silently lost its amber. This is constraint (c)
+biting exactly as advertised, and it was found by looking at screenshots, not by
+any test.
+
+So `src/web/popups/popups.css` is now a **manifest**: nothing but an ordered
+`@import` list (tokens, then `popups-base.css`, then each migrated popup sheet).
+`@import` inlines in source order into one chunk, so Rollup has nothing to
+reorder, and the path forge-ui imports is unchanged. Three unit tests hold the
+rule.
+
+#### The per-popup recipe
+
+Follow this literally; it is what PR 1 converged on.
+
+1. **Take the whole family at once, including anything it borrows.** Grep the
+   popup's TSX for class names and check which belong to another family. Either
+   migrate the borrowed component onto a primitive (the resistances popup went
+   to `Table` and stopped borrowing `.zlom-*`) or leave that class alone in
+   `popups-base.css` — never migrate half of it.
+2. **Cut the slice out of `popups-base.css`** into `src/web/<Name>Popup.css`.
+   Section markers (`/* ── name ── */`) are the slice boundaries.
+3. **Add it to the manifest** `src/web/popups/popups.css`, after
+   `./popups-base.css`. **Do not** add an import to the component.
+4. **Swap the variables** using `themes/bridge.css` read backwards — it is the
+   authoritative `--popup-*` → `--ark-*` table, and following it exactly is what
+   makes the change a computed no-op. `--popup-data-*` is the one family that is
+   not a straight swap: see below.
+5. **Kill the hex literals**, in the stylesheet *and* in the component (inline
+   styles, SVG `fill`, colour maps in TS — `StatPopup.tsx` had three).
+6. **Swap chrome for `@design` primitives** where one genuinely replaces
+   bespoke markup: `Table`, `Button`, `Segmented`, `EmptyState`, `Input`,
+   `Icon`. Do not force it; a tokenised bespoke gauge beats a primitive that
+   does not fit.
+7. **Add the stylesheet to `MIGRATED_SHEETS`** in
+   `test/ui/design/stylesheets.test.ts`. That is what enforces no-hex and
+   no-`--popup-*` from then on; a migrated sheet left off the list keeps the
+   tokens but loses the rule.
+8. **Screenshot before and after, in at least three themes**, one dark, one
+   light, one with a strong accent. Diff them. A pure token swap should come out
+   near-identical; anything that moved and should not have is a cascade or
+   specificity bug. This is the step that found (3).
+
+#### `--popup-data-*`: decided
+
+`bridge.css` left the sixteen `--popup-data-*` variables out and wrote "Phase 3
+decides their fate". **Decision: the design system gets a real categorical
+palette, and the sixteen are retired.** See `DESIGN_SYSTEM.md` §3.
+
+The audit of all 71 uses is what settled it: they were never one family. A
+`spring-green` / `yellow` / `tomato` triple ranked things (resistance quality,
+kill rates, progress) — that is *status* wearing a data costume, and it went to
+`--ark-success/warning/danger`, which is precisely the rule that keeps it
+reading right in all eight themes. What was left genuinely only needed to be
+*distinguishable*, so it became `--ark-data-1..6`, generated from Radix like the
+status hues.
+
+The two alternatives were considered and rejected. *Keeping them as a hand-tuned
+legacy layer* fails the phase's own exit condition — 16 variables × 7 themes is
+112 hand-maintained values, and they are spelled `var(--popup-`, so `bridge.css`
+could never be deleted while they live. *Mapping all sixteen onto existing
+roles* is what `bridge.css` refused to do for good reason: it would have forced
+six non-ranking hues onto `success`/`warning`/`danger` and broken the rule that
+status colours mean one thing.
 
 ### Phase 4 — Settings *(6–8 PRs, by tab)*
 
@@ -288,6 +392,14 @@ Two things are deliberately parked until then:
   ramps (mauve, olive, slate) are near-neutral by design and leave colour to the
   accent. That is the palette working as intended, not a bridge bug — but if
   those themes should still shout, it is a `themes.config.mjs` decision.
+- **The active tab reads weakly in the two light themes.** `.popup-tab--active`
+  is accent text on an accent tint; on `parchment` and `silver` both steps are
+  pale and the active tab barely separates from its neighbours, where on the
+  dark themes it is obvious. Computed values are identical before and after
+  Phase 3 (it is a Phase-1 bridge characteristic, not a migration regression),
+  so it is parked here rather than fixed. The fix is probably a stronger step
+  for the active tab's fill, not a per-theme special case.
+
 - **Anything else that is "the new palette is different", rather than "this
   screen is broken".** File it here; do not fix it mid-migration.
 

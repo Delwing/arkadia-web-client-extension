@@ -1,4 +1,5 @@
 import {
+    ChartColumn,
     ChevronDown,
     ChevronLeft,
     ChevronRight,
@@ -6,10 +7,16 @@ import {
     Check,
     Copy,
     Download,
+    Flag,
     FolderOpen,
+    HandHelping,
     Search,
+    Shield,
+    Skull,
+    Sword,
     SlidersHorizontal,
     Sparkles,
+    TrendingUp,
     SkipBack,
     SkipForward,
     TriangleAlert,
@@ -45,6 +52,14 @@ const ICONS = {
     search: Search,
     sparkle: Sparkles,
     warning: TriangleAlert,
+    // Combat and report popups.
+    banner: Flag,
+    chart: ChartColumn,
+    kills: Skull,
+    progress: TrendingUp,
+    release: HandHelping,
+    shield: Shield,
+    weapon: Sword,
 } satisfies Record<string, ComponentType<{ size?: number; strokeWidth?: number; className?: string }>>;
 
 export type IconName = keyof typeof ICONS;

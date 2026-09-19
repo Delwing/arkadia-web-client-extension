@@ -1,0 +1,182 @@
+/* Enemy resistances popup.
+   A resistance matrix: attack types down, enemies across.
+
+   Migrated onto the design system (docs/dev/UI_MIGRATION.md, faza 3): reads
+   `--ark-*` only, no hex. Moved out of src/web/popups/popups-base.css and
+   pulled back in by the manifest at src/web/popups/popups.css, which both UIs
+   load — through an @import, NOT a component import, because the cascade here
+   is decided by source order and Rollup reorders chunks (see that manifest).
+   In forge-ui the tokens come from popup-host-tokens.css, not from a theme. */
+
+.enemy-res-popup .postepy2-header {
+  gap: 0.75rem;
+}
+
+.enemy-res-filter {
+  max-width: 20rem;
+}
+
+.enemy-res-legend {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  color: var(--ark-text-tertiary);
+  white-space: nowrap;
+}
+
+.enemy-res-content {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 0.25rem 0.5rem;
+}
+
+/* The content pane is already the scroller, and a sticky header sticks to its
+   NEAREST scrolling ancestor — so the table's own scroll box has to step aside,
+   otherwise the header sticks to a box that never scrolls. */
+.enemy-res-content .ark-table-scroll {
+  overflow: visible;
+}
+
+.enemy-res-table thead th.enemy-res-group {
+  text-align: center;
+  border-left: 1px solid var(--ark-border);
+}
+
+.enemy-res-table thead tr:nth-child(2) th {
+  top: 1.6rem;
+}
+
+.enemy-res-table thead th.enemy-res-name-head {
+  vertical-align: bottom;
+}
+
+.enemy-res-table thead th.enemy-res-type {
+  cursor: pointer;
+  vertical-align: bottom;
+  padding: 0.25rem 0.1rem;
+  text-align: center;
+}
+
+.enemy-res-type span {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+
+.enemy-res-table thead th.enemy-res-type:hover,
+.enemy-res-table thead th.enemy-res-type--sorted {
+  color: var(--ark-data-4-text);
+}
+
+.enemy-res-cell {
+  text-align: center;
+  font-weight: 600;
+  min-width: 1.6rem;
+  padding: 0.2rem 0.15rem;
+}
+
+.enemy-res-cell--odporny,
+.enemy-res-mark--odporny {
+  color: var(--ark-danger-text);
+  background-color: var(--ark-danger-bg);
+}
+
+.enemy-res-cell--wrazliwy,
+.enemy-res-mark--wrazliwy {
+  color: var(--ark-success-text);
+  background-color: var(--ark-success-bg);
+}
+
+.enemy-res-mark {
+  display: inline-block;
+  min-width: 1.1rem;
+  text-align: center;
+  font-weight: 600;
+  border-radius: 0.2rem;
+  margin-left: 0.35rem;
+}
+
+.enemy-res-view {
+  display: flex;
+  gap: 0.25rem;
+  margin-left: auto;
+}
+
+.enemy-res-lines {
+  display: flex;
+  flex-direction: column;
+}
+
+.enemy-res-line {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.2rem 0.4rem;
+}
+
+/* The list view used to borrow zlom's striped rows; it owns them now. */
+.enemy-res-line--alt {
+  background: var(--ark-gray-a2);
+}
+
+.enemy-res-line__name {
+  flex: 0 0 auto;
+  min-width: 7rem;
+  font-weight: 600;
+  color: var(--ark-text-secondary);
+}
+
+.enemy-res-warn {
+  display: inline-flex;
+  vertical-align: text-bottom;
+  margin-left: 0.3rem;
+  color: var(--ark-warning-text);
+}
+
+.enemy-res-area {
+  margin-left: 0.35rem;
+  font-size: 0.7rem;
+  font-weight: 400;
+  font-style: italic;
+  opacity: 0.7;
+}
+
+.enemy-res-line__chips {
+  display: flex;
+  flex-wrap: wrap;
+  flex: 1 1 auto;
+  gap: 0.25rem;
+}
+
+.enemy-res-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0 0.35rem;
+  border-radius: 0.65rem;
+  font-size: 0.72rem;
+  line-height: 1.35rem;
+  white-space: nowrap;
+}
+
+.enemy-res-chip--odporny {
+  color: var(--ark-danger-text);
+  background-color: var(--ark-danger-bg);
+}
+
+.enemy-res-chip--wrazliwy {
+  color: var(--ark-success-text);
+  background-color: var(--ark-success-bg);
+}
+
+/* The per-row delete: a ghost button squeezed into a table cell. */
+.enemy-res-remove {
+  min-width: 0;
+  height: var(--ark-control-xs);
+  padding: 0 var(--ark-space-2);
+  color: var(--ark-text-tertiary);
+}
+.enemy-res-remove:hover {
+  color: var(--ark-danger-text);
+}

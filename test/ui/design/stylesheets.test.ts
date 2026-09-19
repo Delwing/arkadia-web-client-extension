@@ -5,14 +5,43 @@ import { globSync } from "node:fs";
 
 const root = resolve(__dirname, "../../..");
 
+/**
+ * Screens migrated onto the design system. Each one reads `--ark-*` only, so
+ * each one is held to the same no-hex rule as the system itself.
+ *
+ * Grow this list as UI_MIGRATION.md's phases land. A migrated screen left off
+ * it keeps the tokens but loses the rule that keeps them honest.
+ */
+const MIGRATED_SHEETS = [
+    "src/ui/logViewer/logViewer.css",
+    "design/showcase.css",
+    "log-viewer/log-viewer.css",
+    // Faza 3, rodzina 1 — walka i status.
+    "src/web/CombatPopup.css",
+    "src/web/CombatStatusPopup.css",
+    "src/web/CechyPopup.css",
+    "src/web/EnemyResistancesPopup.css",
+    "src/web/PostepyPopup.css",
+    "src/web/Postepy2Popup.css",
+    "src/web/StatPopup.css",
+    "src/web/ZabiciPopup.css",
+    "src/web/Zabici2Popup.css",
+];
+
+/**
+ * Sheets held to the no-hex rule but NOT to the no-`--popup-*` rule: reading
+ * the old layer is the whole job of a bridge. themes/bridge.css maps old onto
+ * new for the stock client, popup-host-tokens.css maps it back for forge-ui.
+ */
+const BRIDGE_SHEETS = ["src/web/popups/popup-host-tokens.css"];
+
 /** Every stylesheet the design system and its reference screen own. */
 const SHEETS = [
     "src/ui/design/css/base.css",
     "src/ui/design/css/tokens.css",
     "src/ui/design/css/scales.generated.css",
-    "src/ui/logViewer/logViewer.css",
-    "design/showcase.css",
-    "log-viewer/log-viewer.css",
+    ...MIGRATED_SHEETS,
+    ...BRIDGE_SHEETS,
     ...globSync("src/ui/design/primitives/*.css", { cwd: root }),
 ];
 
@@ -77,6 +106,34 @@ describe("stylesheet structure", () => {
                 // there means a block boundary was lost.
                 expect(outside, `stray declaration in ${sheet}`).not.toMatch(/[\w-]+\s*:\s*[^;{]+;/);
             });
+        });
+    }
+});
+
+describe("migrated screens", () => {
+    for (const sheet of [...MIGRATED_SHEETS, ...BRIDGE_SHEETS]) {
+        const css = readFileSync(resolve(root, sheet), "utf8");
+
+        it(`${sheet} uses tokens rather than literal colours`, () => {
+            // A hex here is a colour that survives exactly one of the eight
+            // themes. `#fff` on a solid fill is the system-wide exception.
+            const literals = [...css.matchAll(/#[0-9a-f]{3,8}\b/gi)].map((match) => match[0]);
+            expect(literals.filter((value) => value.toLowerCase() !== "#fff")).toEqual([]);
+        });
+    }
+
+    for (const sheet of MIGRATED_SHEETS) {
+        const css = readFileSync(resolve(root, sheet), "utf8");
+
+        it(`${sheet} has no --popup-* reads left`, () => {
+            // Half a migration is worse than none: themes/bridge.css cannot be
+            // deleted while one of these still reads the old layer, and a
+            // screen on both layers goes wrong in ways nobody notices.
+            // `--popup-split-gutter` is a local length, not a palette token.
+            const legacy = [...css.matchAll(/var\(\s*(--popup-[a-z0-9-]+)/g)]
+                .map((match) => match[1])
+                .filter((name) => name !== "--popup-split-gutter");
+            expect(legacy).toEqual([]);
         });
     }
 });

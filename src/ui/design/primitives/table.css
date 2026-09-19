@@ -1,0 +1,117 @@
+/* Table — dense, scannable rows of game data.
+   Built for report popups (resistances, kills, progress), where the content is
+   mostly numbers: monospace figures, tabular alignment, and a header that stays
+   put while the body scrolls. */
+
+.ark-table-scroll {
+  overflow: auto;
+  min-height: 0;
+}
+
+.ark-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: var(--ark-text-4);
+  color: var(--ark-text-secondary);
+}
+
+.ark-table th,
+.ark-table td {
+  padding: var(--ark-space-2) var(--ark-space-4);
+  text-align: left;
+  border-bottom: 1px solid var(--ark-border-subtle);
+  white-space: nowrap;
+}
+
+.ark-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--ark-bg-raised);
+  border-bottom: 1px solid var(--ark-border);
+  color: var(--ark-text-tertiary);
+  font-size: var(--ark-text-1);
+  font-weight: var(--ark-weight-semibold);
+  letter-spacing: var(--ark-tracking-wide);
+  text-transform: uppercase;
+}
+
+/* The last row's rule would otherwise double up with the container's own. */
+.ark-table tbody tr:last-child th,
+.ark-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+/* --- density ------------------------------------------------------------- */
+
+.ark-table--compact th,
+.ark-table--compact td {
+  padding: var(--ark-space-1) var(--ark-space-3);
+  font-size: var(--ark-text-2);
+}
+
+/* --- row treatments ------------------------------------------------------ */
+
+.ark-table--zebra tbody tr:nth-child(even) > * {
+  background: var(--ark-gray-a2);
+}
+
+.ark-table--hoverable tbody tr:hover > * {
+  background: var(--ark-bg-element-ghost-hover);
+}
+
+.ark-table__row--selected > * {
+  background: var(--ark-accent-tint-strong);
+}
+
+/* A row that sums or closes the ones above it. */
+.ark-table__row--total > * {
+  border-top: 1px solid var(--ark-border);
+  color: var(--ark-text);
+  font-weight: var(--ark-weight-semibold);
+}
+
+/* --- cells --------------------------------------------------------------- */
+
+/* Numbers line up only when the glyphs are the same width. */
+.ark-table__cell--num {
+  font-family: var(--ark-font-mono);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.ark-table__cell--center {
+  text-align: center;
+}
+
+/* The one column allowed to wrap and absorb the leftover width. */
+.ark-table__cell--grow {
+  width: 100%;
+  white-space: normal;
+}
+
+.ark-table__cell--strong {
+  color: var(--ark-text);
+  font-weight: var(--ark-weight-medium);
+}
+
+.ark-table__cell--muted {
+  color: var(--ark-data-muted);
+}
+
+/* A row header that names the row rather than heading a column. */
+.ark-table__cell--head {
+  color: var(--ark-text);
+  font-weight: var(--ark-weight-medium);
+}
+
+/* A section caption spanning the full width, between groups of rows. */
+.ark-table__section > * {
+  background: var(--ark-bg-surface);
+  color: var(--ark-accent-text);
+  font-size: var(--ark-text-1);
+  font-weight: var(--ark-weight-semibold);
+  letter-spacing: var(--ark-tracking-wide);
+  text-transform: uppercase;
+}
