@@ -207,6 +207,39 @@ test.describe('Logi browser', () => {
         await expect(page.getByRole('button', {name: 'Eksport zakresu'})).toBeVisible();
     });
 
+    test('the ZIP archive carries readable HTML', async ({page}) => {
+        // The exported file wraps its lines in `#logs-preview` and used to
+        // borrow that element's rules off the live page. Nothing carries that
+        // id any more, so the frame comes from `collectLogStyles()` itself —
+        // and if it ever stops, the archive still builds and still opens, it
+        // just loses its monospace column. Which is exactly the kind of break
+        // no other test would notice.
+        await login(page);
+        await pushText(page, 'Linia ktora ma trafic do archiwum');
+
+        await openLogs(page);
+        await page.getByRole('button', {name: 'Zarzadzanie'}).click();
+        await expect(page.locator('.logs-manage')).toBeVisible();
+
+        const [download] = await Promise.all([
+            page.waitForEvent('download'),
+            page.getByRole('button', {name: 'Pobierz wszystkie'}).click(),
+        ]);
+        const zipPath = await download.path();
+        expect(download.suggestedFilename()).toMatch(/^logi_\d{4}-\d{2}-\d{2}\.zip$/);
+
+        const {default: JSZip} = await import('jszip');
+        const {readFile} = await import('node:fs/promises');
+        const zip = await JSZip.loadAsync(await readFile(zipPath!));
+        const names = Object.keys(zip.files);
+        expect(names).toHaveLength(1);
+        const html = await zip.files[names[0]].async('string');
+
+        expect(html).toContain('Linia ktora ma trafic do archiwum');
+        expect(html).toContain('id="logs-preview"');
+        expect(html, 'the frame must travel with the file').toContain('font-family: monospace');
+    });
+
     test('sessions can be deleted from the management window', async ({page}) => {
         await login(page);
         await pushText(page, 'Sesja do usuniecia');

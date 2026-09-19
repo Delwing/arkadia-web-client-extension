@@ -47,12 +47,45 @@ export function formatSessionFileName(name: string): string {
   return name;
 }
 
+/**
+ * The frame an exported log is rendered in.
+ *
+ * `logsExport.worker.ts` and `logFileSaver.ts` both wrap their lines in
+ * `<div id="logs-preview">`, and they used to borrow this from the live
+ * page — the in-client browser's pane carried the same id. Since the
+ * design-system migration it does not (the pane is `@ui/logViewer`'s, with
+ * its own markup), so the frame is written out here instead of scraped. The
+ * scrape below still runs, and is what brings the game's own ANSI colours
+ * along; only the structure is fixed.
+ *
+ * Literal colours on purpose: a saved file has no token layer to read, and
+ * these are the values the old rules resolved to.
+ */
+const EXPORT_FRAME_CSS = `
+#logs-preview {
+  padding: 0 8px;
+  font-family: monospace;
+  font-size: 0.775rem;
+  overflow-wrap: break-word;
+  background-color: var(--output-bg, #242424);
+  color: #dee2e6;
+}
+#logs-preview .output_msg_text {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  white-space: pre-wrap;
+}
+#logs-preview .log-time {
+  color: darkorange;
+  padding-right: 0.5rem;
+  user-select: none;
+}`;
+
 /** Collect only CSS rules relevant to log HTML output. */
 export function collectLogStyles(): string {
   // Class names used in exported log HTML. Seeded rather than scraped, because
-  // since the design-system migration no `#logs-preview` is ever mounted: the
-  // log pane is `@ui/logViewer`'s and carries its own markup. The scrape below
-  // is kept for anything else that puts one on the page.
+  // no `#logs-preview` is ever mounted any more; the scrape below is kept for
+  // anything else that puts one on the page, and for the theme's ANSI classes.
   const usedClasses = new Set<string>([
     "output_msg",
     "output_msg_text",
@@ -111,7 +144,9 @@ export function collectLogStyles(): string {
     return rule.cssText;
   }
 
-  const parts: string[] = [];
+  // The frame goes first, so anything the page still says about these
+  // selectors wins over it.
+  const parts: string[] = [EXPORT_FRAME_CSS];
   for (const sheet of Array.from(document.styleSheets)) {
     try {
       for (const rule of Array.from(sheet.cssRules)) {

@@ -1,14 +1,12 @@
 /**
  * Renders log lines to a PNG on a canvas.
  *
- * Extracted from the in-client log browser so both screens share one
- * implementation — the wrapping, ANSI-colour extraction and canvas-size
- * guarding here are fiddly enough that a second copy would drift immediately.
- * `src/web/logToImage.ts` is now a thin wrapper that supplies the in-client
- * browser's styling; the design-system viewer supplies its own.
+ * Extracted from the in-client log browser, which is now a host for this same
+ * viewer — the wrapping, ANSI-colour extraction and canvas-size guarding here
+ * are fiddly enough that a second copy would drift immediately.
  *
  * The caller passes styling explicitly rather than having this module read the
- * DOM, because the two screens live under different stylesheets.
+ * DOM, so it does not care which host it is rendering for.
  */
 
 type UnderlineStyle = 'solid' | 'dotted';

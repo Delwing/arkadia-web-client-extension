@@ -14,6 +14,20 @@ describe("collectLogStyles", () => {
     document.getElementById("logs-preview")?.remove();
   });
 
+  it("carries the export frame even with no page styles at all", () => {
+    // The in-client browser's pane used to be `#logs-preview` and the ZIP /
+    // to-disk exports borrowed its rules off the live page. Since the viewer
+    // migrated, nothing on the page carries that id or those rules — so the
+    // frame has to come from here, or a saved log loses its monospace font
+    // and its timestamp column.
+    const styles = collectLogStyles();
+
+    expect(styles).toContain("#logs-preview");
+    expect(styles).toContain("font-family: monospace");
+    expect(styles).toContain("grid-template-columns: max-content 1fr");
+    expect(styles).toContain("darkorange");
+  });
+
   it("collects log output rules even when #logs-preview is not mounted", () => {
     // Regression: exporting from the "Zarzadzanie" tab happens while the
     // #logs-preview element is unmounted. Style collection must not bail.

@@ -193,7 +193,13 @@ popup rather than its own screen" was a change of dialog, not of shape.
 What did not come across for free:
 
 - **the ZIP export, JSON export/import and deletion: ported**, into a
-  `LogManager` window opened from the viewer's header (see §9).
+  `LogManager` window opened from the viewer's header (see §9). One trap
+  there: the exports wrap their lines in `<div id="logs-preview">` and used to
+  borrow that element's rules off the live page, which deleting the old pane's
+  CSS quietly took away. `collectLogStyles()` now writes that frame out
+  itself and only scrapes the page for the game's ANSI colours — with a unit
+  test and an e2e that unzips the archive and reads it, because a saved file
+  that has merely lost its monospace column still builds and still opens.
 - **the highlight-preserving HTML export: dropped, superseded.** The shared
   `export/logHtml.ts` writes a self-contained file whose colours travel with
   the content, rather than scraping whatever stylesheets the page happened to
