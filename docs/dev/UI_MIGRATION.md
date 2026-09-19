@@ -413,6 +413,22 @@ past the rest of `layout.css` in the cascade, which that file's header warns
 about specifically. That change belongs either to Phase 5 or to a small PR of
 its own; it should not be smuggled in under one popup's name.
 
+> **Unblocked.** Phase 5's first PR migrated `.map-header-menu__*` in place,
+> together with `.static-map-popup__*` and `.chat-popup__*`, so the shared-class
+> blocker described below is gone. Both popups still need their own recipe pass
+> (slice onto the manifest, `MIGRATED_SHEETS`, primitives, and the popup body's
+> inherited `color`, which still comes off the legacy layer through the panel
+> chrome that Phase 5's shell PR owns). See §7 for what that PR found.
+
+> **Unblocked by Phase 5.** Its first PR migrated `.map-header-menu__*` in
+> place, together with `.static-map-popup__*` and `.chat-popup__*`, so the
+> shared-class blocker described here is gone. Both popups still need their own
+> recipe pass: slice onto the manifest, `MIGRATED_SHEETS`, primitives, and the
+> popup body's inherited `color`, which still comes off the legacy layer
+> through the panel chrome that Phase 5's shell PR owns. See §7 for the rest of
+> what that PR found — including that nine of the eleven `.static-map-popup__*`
+> rules turned out to be dead.
+
 **Phase 3 PR 5 re-checked this and it holds, with the counts higher than
 recorded above.** `.map-header-menu*` appears 32 times in `StaticMapPopup.tsx`,
 49 in `MapHeaderMenu.tsx`, 20 in `ObjectListHeaderMenu.tsx` and 12 in
@@ -1022,18 +1038,104 @@ than it adds.
   `Settings.tsx`. Found while picking Phase 4's first tabs — the plan had it
   queued for migration.
 
-- **Migrate `.map-header-menu__*` onto `--ark-*`, in place in
-  `layout/layout.css`.** Shared by `MapHeaderMenu`, `ObjectListHeaderMenu`,
-  `ChatPopup` and `StaticMapPopup`, so no one of them can migrate without it;
-  it is what blocks Okno mapy (Phase 3 §4). In place rather than moved into the
-  popups manifest — `layout.css`'s own header says why.
+- ~~**Migrate `.map-header-menu__*` onto `--ark-*`, in place in
+  `layout/layout.css`.**~~ — **done in Phase 5's first PR**, carrying
+  `.static-map-popup__*` (`style.css`) and `.chat-popup__*`
+  (`popups-base.css`) with it, exactly as this entry required. The three
+  families read no `var(--popup-*)` at all any more, so **Okno mapy and Czat
+  are unblocked**: what is left for each is its own recipe work (its slice into
+  its own sheet on the manifest, `MIGRATED_SHEETS`, primitives, the popup
+  body's inherited text colour), not a shared-class blocker.
 
-  **It blocks Czat too**, which PR 6 found the hard way: the class family is
-  that popup's entire header. The change is therefore worth more than it looks
-  — it is the last thing standing between Phase 3 and two of its 39 popups —
-  but it has to carry `.static-map-popup__*` (in `style.css`) and
-  `.chat-popup__*` (in `popups-base.css`) with it, or each window
-  half-migrates in the opposite direction.
+  What that PR found is below.
+
+#### What the `.map-header-menu__*` PR found
+
+**Migrating the dropdown's background breaks forge, and neither the plan nor
+`popup-host-tokens.css`'s header saw it.** `forge-ui/layout-theme.css` sets
+`--popup-bg: transparent` on `.managed-panel` and patches the opacity back on
+one descendant — `.managed-panel .map-header-menu__dropdown { --popup-bg:
+#211d16 }` — with a comment saying the inline-rendered menu "needs an OPAQUE
+surface". That patch works only while the menu reads `var(--popup-bg)`
+directly. `popup-host-tokens.css` declares `--ark-bg-surface: var(--popup-bg)`
+**on `.managed-panel`**, and a custom property resolves where it is declared
+and then inherits as a finished *value*, not as a reference — so the moment the
+menu read `--ark-bg-surface` it got the panel's `transparent` and the dropdown
+showed straight through whatever was behind the popup. Fix: re-derive the one
+role on the one element forge patches, in `popup-host-tokens.css`
+(`body:not(.ark-root) .map-header-menu__dropdown`), with `forge-ui/` untouched.
+
+**Generalised, and worth carrying into Phase 6 and any later forge work: a
+host-side `--popup-*` override on a DESCENDANT of the mapping element is
+invisible to the mapping.** `popup-host-tokens.css` maps 60-odd roles at one
+level; every forge rule that re-points a `--popup-*` deeper than
+`.managed-panel` needs its own re-derivation or it silently stops working when
+the class that read it migrates. Grep `forge-ui/` for `--popup-` inside a rule
+whose selector is more specific than `.managed-panel, [data-popup-overlay]`
+before migrating anything it touches.
+
+**Nine of the eleven `.static-map-popup__*` rules were dead.** `__content`,
+`__controls`, `__dropdown-container`, `__btn` (+ `:hover`, `:disabled`,
+`--small`), `__zoom-controls`, `__dropdown` and `__dropdown-item` (+ `:hover`,
+`--active`) are rendered by nothing in the repo: Okno mapy moved onto the
+shared `.map-header-menu__*` menu at some point and its old toolbar stayed
+behind in CSS. They were migrated first and deleted afterwards, once a
+browser probe showed the elements simply are not in the DOM. **This entry told
+the next session that the family "has to be carried" — most of it had to be
+deleted.** A measurable amount of what looks like migration work in the
+remaining phases may be the same shape, so: before migrating a class family,
+grep `*.tsx`/`*.ts`/`*.html` for each member, not just for the family prefix.
+Only `-body`, `__notes` (+ `hr`), `__map` and `__image-btn` survive.
+
+**Two rules deliberately keep fixed values, and Okno mapy's own PR owns the
+call.** `.static-map-popup__map` (the plate under the map) and
+`.static-map-popup__notes` (a label drawn *on* the map) do not sit on a themed
+surface — they sit on a canvas the map renderer paints from its own palette
+(`ctx.fillStyle` in `StaticMapPopup.tsx`, and the highlight colour handed to
+`renderHighlight`). That is the same class of exception the popup recipe
+already grants a colour printed into the game window. Forcing them onto theme
+roles would be a visual decision about a screen this PR is not migrating.
+
+**A third instance of "the guard's exclusion list is a list of prefixes".**
+Phase 4 PR 3 recorded this shape for `settings-`; it recurs here, and the
+measurement is unambiguous. `style.css`'s bare `button` skin excluded only
+`ark-`, `lv-` and `settings-`, so `.map-header-menu__toggle`,
+`.map-header-menu__item` and `.chat-popup__team-toggle` were computing
+`opacity: 0.75` and `font-weight: 500` from it, and their `:hover` border was
+heading for `#646cff` — the colour left over from the Vite template — because
+none of those classes declares `opacity`, `font-weight`, or `border-color` in
+`:hover`. Measured before (0.75 / 500) and after (1 / 400) in all three
+themes. A side effect worth noting: `font-weight: 500` on
+`.map-header-menu__item--back` had been dead, because every menu item was
+already bold.
+
+**The exclusion list is copy-pasted across rules that exist for different
+reasons, so the decision is per rule, not per list.** The same list appears 35
+times in `style.css`. The three new namespaces went onto the four bare-`button`
+*skin* rules and deliberately **not** onto the mobile touch-target rule
+(`button… { min-height: 8vmin }`): that exemption exists for screens that carry
+their own sizing from the `--ark-control-*` ladder, and these families have
+theirs hard-coded, so excluding them would have shrunk the hamburger to 20x20
+px on a phone. Reading the list as one thing would have been a mobile
+regression that no desktop screenshot could show.
+
+- **`.popup-btn` has the same bare-`button` problem, across ~39 popups.**
+  Found while measuring the above and **deliberately not fixed there**, because
+  it is Phase 3's Layer 2, not Phase 5's shell. Measured on a live
+  `.popup-btn`: `opacity: 0.75` and `font-weight: 500` come from `style.css`'s
+  bare `button` skin, and `:hover` drives `border-color` toward `#646cff`,
+  because `.popup-btn` declares neither `opacity` nor `font-weight` and
+  `.popup-btn:hover` declares only `background-color` and `color`. So every
+  migrated popup's shared button is painted at 75% opacity with a Vite-template
+  hover border — and `.popup-btn:disabled { opacity: 0.5 }` is a far subtler
+  step than it was written to be.
+
+  The fix is one more namespace in that guard, but **`popup-` is not safe as a
+  blanket prefix**: it would also catch `.popup-*` classes that are not
+  migrated and may be standing on that rule deliberately. Whoever takes it
+  should enumerate the migrated `.popup-*` chrome rather than add the prefix,
+  and should re-measure, not re-read — this is invisible to the type checker,
+  the build, the unit tests and to screenshots taken in one theme.
 
 - **`ClockDisplay.tsx` still carries a fourth copy of the season table**, in raw
   hex (`#00ff7f` …), and it is the footer chip rather than a popup, so Phase 3

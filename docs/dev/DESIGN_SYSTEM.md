@@ -296,6 +296,23 @@ the properties that class declares — `padding`, `opacity`, `border-radius` and
 pill. `style.css` now excludes `ark-`-prefixed classes from those rules, with
 the exclusion inside `:where()` so nothing else changes.
 
+**That exclusion is a list of prefixes, and it has been too short three times
+now** — for `settings-` (Phase 4 PR 3) and for `map-header-menu` /
+`static-map-popup` / `chat-popup` (Phase 5). Migrated markup does not all start
+with `ark-`, and a class that paints itself from tokens still inherits
+`opacity`, `font-weight` and an unstated `:hover` `border-color` from the bare
+rule. **Before believing a migrated control renders correctly, measure it** —
+`getComputedStyle` on the live element, not a screenshot: `themes/bridge.css`
+maps the old layer onto the same numbers, so this whole class of bug is
+pixel-identical until the bridge is deleted.
+
+**And the list is copy-pasted across rules with different rationales, so the
+decision is per rule.** `style.css` repeats it 35 times. The bare-`button`
+*skin* and the mobile touch-target rule (`min-height: 8vmin`) both carry it,
+but the second exists only for screens sized from the `--ark-control-*` ladder;
+adding a hard-sized family there shrinks its controls on a phone. Check which
+rule you are opting out of, and why it has that exemption.
+
 ---
 
 ## 7. What is migrated
@@ -314,6 +331,7 @@ the exclusion inside `:where()` so nothing else changes.
 | `src/web/popups/popups-base.css` Layer 2 (shared popup chrome) | **on the design system**, `--ark-*` only |
 | `src/web/settings/` (the settings dialog shell) | **on the design system** (Phase 4, PR 1) |
 | `src/web/` settings pages | **all 15 on the design system.** Komendy, Inne, Gildie, Magiki (Faza 4, PR 1); Okna, Wyglad, Mapa, Dzwiek i powiadomienia (PR 2); Ogolne, Przedmioty, Walka, Przyciski, Przyciski mobilne, Menu kolowe, Stopka (PR 3) |
+| `.map-header-menu__*` (shared header menu) + `.static-map-popup__*` + `.chat-popup__*` | **on the design system**, `--ark-*` only (Phase 5). The three families share one header, so they migrated as one change; it unblocks Okno mapy and Czat, which still need their own recipe pass |
 | `src/web/` remaining popups, settings, layout | Bootstrap markup; `--popup-*` bridged onto `--ark-*` (`themes/bridge.css`), so it themes from here |
 | `forge-ui/` | out of scope by decision; its own theme layer |
 | `editor/`, `viewer/`, `popup/` | Bootstrap |
