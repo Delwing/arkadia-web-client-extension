@@ -1474,6 +1474,77 @@ h1 {
   display: contents;
 }
 
+/* Stock skin for the shared footer chips (src/ui/web/footer/chips.tsx).
+   The chip markup is host-agnostic and carries only semantic classes, so each
+   UI dresses it itself: the forge HUD makes a forged-stone pill out of it,
+   while here it has to read as one more run of footer text among the plain
+   spans beside it. Hence everything is stripped back to inherited type and the
+   tones reuse the footer palette the older bespoke chips already used - a chip
+   should not announce itself as a different kind of element just because it is
+   now shared. Sizing is in `em` so it follows the footer font, and the phone
+   layout wraps the outer span in its own pill (footerMobile.css) without
+   needing to know any of this. */
+#char-state .chip {
+  /* Block-level, not inline: an inline box sits on the slot text baseline and
+     the descender room under it made the lamp pill 2px taller than the plain
+     text chips beside it. Each chip owns its own footer slot, so nothing needs
+     to sit next to it on that line. */
+  display: flex;
+  align-items: center;
+  gap: 0.35em;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  line-height: inherit;
+  white-space: nowrap;
+  /* An interactive chip is a <button>, so it arrives dressed as one: the global
+     button rule fades it to 0.75 opacity and the phone breakpoint gives every
+     button an 8vmin touch-target floor. Both are right for a real button and
+     wrong for a readout sitting in a line of footer text - the floor alone made
+     the lamp pill half again as tall as its neighbours. The chip keeps its own
+     hit area from the footer padding around it. */
+  opacity: 1;
+  appearance: none;
+  min-width: 0;
+  min-height: 0;
+}
+
+#char-state .chip--act {
+  cursor: pointer;
+}
+
+#char-state .chip__text {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+}
+
+#char-state .chip__ico {
+  display: inline-flex;
+  align-items: center;
+}
+
+#char-state .chip__ico svg {
+  width: 1em;
+  height: 1em;
+}
+
+#char-state .chip--ok .chip__val {
+  color: var(--popup-data-spring-green);
+}
+
+#char-state .chip--warn .chip__val {
+  color: var(--popup-data-yellow);
+}
+
+#char-state .chip--danger .chip__val {
+  color: var(--popup-data-tomato);
+}
+
 #char-state [data-footer-hidden="1"] {
   display: none !important;
 }

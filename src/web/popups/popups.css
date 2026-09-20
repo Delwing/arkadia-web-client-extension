@@ -511,10 +511,6 @@
   justify-content: center;
 }
 
-#lamp-timer {
-  display: none;
-}
-
 #transport-timer {
   display: none;
 }
@@ -530,21 +526,6 @@
 }
 
 #transport-timer.red {
-  display: block;
-  color: var(--popup-data-tomato);
-}
-
-#lamp-timer.green {
-  display: block;
-  color: var(--popup-data-spring-green);
-}
-
-#lamp-timer.yellow {
-  display: block;
-  color: var(--popup-data-yellow);
-}
-
-#lamp-timer.red {
   display: block;
   color: var(--popup-data-tomato);
 }
