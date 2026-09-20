@@ -11,8 +11,8 @@ import { ChipIcon } from "./icons";
  * Each chip is a self-contained component subscribing to the same client event
  * the stock footer components use (src/ui/web/components/**), but rendering pure
  * JSX through the shared <Chip>. A chip returns null when its data is absent, so
- * a strip only ever shows what is currently relevant; Fajka is the one always-on
- * chip (it mirrors the ever-present pipe indicator).
+ * a strip only ever shows what is currently relevant; Fajka and Lampa are the
+ * always-on chips (both double as an on/off switch).
  *
  * These are the building blocks — hosts compose them: the forge HUD renders them
  * all through <FooterStrip>, and other UIs can pick a subset.
@@ -40,20 +40,20 @@ export function FajkaChip() {
   );
 }
 
-/** Oil-lamp fuel remaining. Click tops it up. */
+/** Oil-lamp fuel remaining, or "zgaszona" when it is out. Click lights / snuffs it. */
 export function LampChip() {
   const [seconds, setSeconds] = useState<number | null>(null);
   useClientEvent<number | null>("lampTimer", (v) => setSeconds(v));
-  if (seconds == null || seconds <= 0) return null;
-  const tone: ChipTone = seconds < 30 ? "danger" : seconds < 60 ? "warn" : "ok";
+  const lit = seconds != null && seconds > 0;
+  const tone: ChipTone | undefined = !lit ? undefined : seconds! < 30 ? "danger" : seconds! < 60 ? "warn" : "ok";
   return (
     <Chip
       icon={<ChipIcon name="lamp" />}
       label="Lampa"
-      value={mmss(seconds)}
+      value={lit ? mmss(seconds!) : "zgaszona"}
       tone={tone}
-      title="Napelnij lampe olejem"
-      onClick={() => eventBus.emit("sendCommand", { command: "napelnij lampe olejem" })}
+      title={lit ? "Zgas lampe" : "Zapal lampe"}
+      onClick={() => eventBus.emit("sendCommand", { command: lit ? "zgas lampe" : "zapal lampe" })}
     />
   );
 }
