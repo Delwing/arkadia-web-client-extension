@@ -27,6 +27,7 @@ export default defineConfig({
             "@shared": resolve("./src/shared"),
             "@web-ui": resolve("./src/ui/web"),
             "@modules": resolve("./src/modules"),
+            "@ui": resolve("./src/ui"),
         },
     },
     base: "./",
