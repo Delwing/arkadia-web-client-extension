@@ -188,7 +188,7 @@
 
 .lv .lv-button--danger {
     background: var(--lv-danger-solid);
-    color: #fff;
+    color: var(--lv-danger-contrast);
     font-weight: var(--lv-weight-semibold);
 }
 
