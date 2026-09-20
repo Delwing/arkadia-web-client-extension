@@ -40,6 +40,10 @@ export class CommandInputController {
     // Mobile Enter interception
     private shiftDown = false;
 
+    // Set while a history button restores focus, so the focus handler does not
+    // select the whole line out from under the engine.
+    private suppressFocusSelectAll = false;
+
     constructor(deps: CommandInputDeps) {
         this.deps = deps;
         this.input = deps.messageInput;
@@ -132,24 +136,54 @@ export class CommandInputController {
             }
         }, o);
 
-        // History buttons — select input first so browse mode is used
-        if (this.deps.historyUpButton) {
-            this.deps.historyUpButton.addEventListener('click', () => {
-                this.selectEntireInput();
-                this.engine.historyMove('up');
-            }, o);
-        }
-        if (this.deps.historyDownButton) {
-            this.deps.historyDownButton.addEventListener('click', () => {
-                this.selectEntireInput();
-                this.engine.historyMove('down');
-            }, o);
-        }
+        // History buttons — drive the engine exactly like the keyboard arrows do.
+        if (this.deps.historyUpButton) this.bindHistoryButton(this.deps.historyUpButton, 'up', o);
+        if (this.deps.historyDownButton) this.bindHistoryButton(this.deps.historyDownButton, 'down', o);
 
         // Focus handler: scroll to bottom and select text
         this.input.addEventListener('focus', () => {
             this.deps.outputWrapper.scrollTop = this.deps.outputWrapper.scrollHeight;
+            if (this.suppressFocusSelectAll) return;
             setTimeout(() => this.input.select());
+        }, o);
+    }
+
+    /**
+     * Wire one of the on-screen history arrows to the engine.
+     *
+     * The engine picks browse vs. prefix auto-completion from the field's focus
+     * and selection, so a tap has to leave both exactly as the keyboard would
+     * find them. Cancelling `pointerdown` keeps the caret in the textarea (the
+     * click still fires — only the compatibility mouse events, and with them the
+     * focus shift, are suppressed). Without it the field is already blurred when
+     * the click lands, the engine reads "nothing selected", and a half-typed
+     * command browses from the newest entry instead of completing its prefix.
+     *
+     * The selection is snapshotted anyway, for the case where focus did move (a
+     * browser that ignores the cancel, or the button reached by keyboard);
+     * putting it back must not trip the focus handler's select-all, which would
+     * turn the very next press back into a full browse.
+     */
+    private bindHistoryButton(button: HTMLButtonElement, direction: 'up' | 'down', o: AddEventListenerOptions): void {
+        let selection: [number, number] | null = null;
+
+        button.addEventListener('pointerdown', (e) => {
+            if (document.activeElement !== this.input) {
+                selection = null;
+                return;
+            }
+            selection = [this.input.selectionStart, this.input.selectionEnd];
+            e.preventDefault();
+        }, o);
+
+        button.addEventListener('click', () => {
+            if (document.activeElement !== this.input) {
+                this.suppressFocusSelectAll = true;
+                this.input.focus();
+                this.suppressFocusSelectAll = false;
+                if (selection) this.input.setSelectionRange(selection[0], selection[1]);
+            }
+            this.engine.historyMove(direction);
         }, o);
     }
 
@@ -246,15 +280,6 @@ export class CommandInputController {
             // Normal key: reset tab completion on next typing
             this.engine.resetTabCompletionState();
         }
-    }
-
-    // ── Input Helpers ─────────────────────────────────────────────────
-
-    private selectEntireInput(): void {
-        if (document.activeElement !== this.input) {
-            this.input.focus();
-        }
-        this.input.setSelectionRange(0, this.input.value.length);
     }
 
     // ── Blacklist / Debug (delegated to the engine) ────────────────────

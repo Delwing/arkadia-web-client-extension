@@ -212,6 +212,29 @@ test.describe('Command history — Mudlet-style', () => {
         expect(await getInputValue(page)).toBe('cmd2');
     });
 
+    test('history buttons prefix-complete a half-typed command, like the arrow keys', async ({page}) => {
+        await submitCommand(page, 'look north');
+        await submitCommand(page, 'attack goblin');
+        await submitCommand(page, 'look south');
+        await submitCommand(page, 'look east');
+
+        await setInputValue(page, 'look');
+
+        // The tap must not blur the input: the engine reads focus+selection to
+        // tell prefix completion from a full browse.
+        await page.click(HISTORY_UP_BUTTON);
+        expect(await getInputValue(page)).toBe('look east');
+
+        await page.click(HISTORY_UP_BUTTON);
+        expect(await getInputValue(page)).toBe('look south');
+
+        await page.click(HISTORY_UP_BUTTON);
+        expect(await getInputValue(page)).toBe('look north');
+
+        await page.click(HISTORY_DOWN_BUTTON);
+        expect(await getInputValue(page)).toBe('look south');
+    });
+
     // ── Empty history ────────────────────────────────────────────────
 
     test('should handle empty history gracefully', async ({page}) => {
