@@ -24,6 +24,18 @@ function declarations(css: string): Map<string, string> {
 }
 
 /**
+ * CSS with every comment removed.
+ *
+ * The selector scan below walks from a `}` to the next `{`, so a comment
+ * sitting between two rules is read as part of a selector and the scan trips
+ * over its own file. That was invisible while the bridge was one single rule
+ * with nothing between the blocks.
+ */
+function stripComments(css: string): string {
+    return css.replace(/\/\*[\s\S]*?\*\//g, "");
+}
+
+/**
  * The non-colour ramps popup-host-tokens.css has to repeat, because forge-ui
  * never loads tokens.css. Values, not roles — so they have to match exactly.
  */
@@ -55,8 +67,8 @@ describe("popup host token bridge", () => {
         // themes/bridge.css maps --popup-* onto --ark-*; this file maps back.
         // Both live at once would invalidate every variable in the cycle, so
         // every selector here must be guarded by :not(.ark-root).
-        const selectors = [...hostTokens.matchAll(/^([^@/\s][^{]*)\{/gm)].map((match) =>
-            match[1].trim(),
+        const selectors = [...stripComments(hostTokens).matchAll(/^([^@/\s][^{]*)\{/gm)].map(
+            (match) => match[1].replace(/^\}/, "").trim(),
         );
         expect(selectors.length).toBeGreaterThan(0);
         for (const selector of selectors) {

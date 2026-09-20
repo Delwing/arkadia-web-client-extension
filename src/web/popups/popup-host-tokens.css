@@ -272,3 +272,27 @@ body:not(.ark-root) [data-popup-overlay] {
   --ark-shadow-3: 0 12px 32px rgba(0, 0, 0, 0.5);
   --ark-shadow-4: 0 24px 80px rgba(0, 0, 0, 0.7);
 }
+
+/* ---------------------------------------------------------------------------
+   Wyjatek: .map-header-menu__dropdown
+
+   Blok powyzej deklaruje --ark-bg-surface: var(--popup-bg) NA elemencie
+   .managed-panel. Wlasciwosc niestandardowa wylicza sie tam, gdzie zostala
+   zadeklarowana, a potem dziedziczy jako gotowa WARTOSC - nie jako odwolanie.
+   forge ma --popup-bg: transparent na panelu i doklada krycie dopiero na samym
+   rozwijanym menu (.managed-panel .map-header-menu__dropdown w
+   forge-ui/layout-theme.css, z komentarzem "needs an OPAQUE surface").
+
+   Dopoki menu czytalo var(--popup-bg) wprost, ta lata forge dzialala. Po
+   przejsciu rodziny .map-header-menu__* na --ark-bg-surface (faza 5) menu
+   dostawalo by wartosc odziedziczona z panelu, czyli znowu transparent, i
+   przeswitywalo by na wylot - dokladnie ta awaria, ktorej lata forge ma
+   zapobiegac. forge-ui jest poza zakresem redesignu, wiec poprawka musi byc
+   tutaj: wyliczamy role jeszcze raz, na tym samym elemencie, na ktorym forge
+   ustawia swoje --popup-bg.
+
+   W kliencie stockowym `body:not(.ark-root)` nie lapie, wiec blok nie startuje.
+   --------------------------------------------------------------------------- */
+body:not(.ark-root) .map-header-menu__dropdown {
+  --ark-bg-surface: var(--popup-bg);
+}
