@@ -83,6 +83,14 @@ export function LogViewer({
     const [viewport, setViewport] = useState<{ from: number; to: number } | null>(null);
     const [scrollRequest, setScrollRequest] = useState<ScrollRequest | null>(null);
     const [lineMenu, setLineMenu] = useState<LineMenuState | null>(null);
+    /**
+     * Whether the session list is showing while it is a drawer.
+     *
+     * Ignored on a wide screen, where the sidebar is simply docked — see
+     * `logViewer.css`. It starts closed: on a phone the log is what the player
+     * opened the viewer for, and the list is one tap away.
+     */
+    const [sidebarOpen, setSidebarOpen] = useState(false);
     const [busy, setBusy] = useState(false);
     const [exportError, setExportError] = useState("");
     const searchRef = useRef<HTMLInputElement>(null);
@@ -225,6 +233,9 @@ export function LogViewer({
     useEffect(() => {
         setLineMenu(null);
         setExportError("");
+        // A session change from anywhere else — a match that crossed into
+        // another log, the `[` / `]` keys — also puts the drawer away.
+        setSidebarOpen(false);
         setState((previous) => (previous.range ? { ...previous, range: null } : previous));
     }, [sessionId]);
 
@@ -487,6 +498,14 @@ export function LogViewer({
             }
             if (inInput) return;
 
+            if (event.key === "Escape" && sidebarOpen) {
+                // Only while the drawer is a drawer; docked, it is never "open".
+                event.preventDefault();
+                event.stopPropagation();
+                setSidebarOpen(false);
+                return;
+            }
+
             if (event.key === "]") stepSession(1);
             else if (event.key === "[") stepSession(-1);
             else if (event.key === "Home") {
@@ -504,7 +523,7 @@ export function LogViewer({
                 requestScroll({ kind: "page", delta: event.key === "PageDown" ? 1 : -1 });
             }
         },
-        [step, stepSession, patch, requestScroll],
+        [step, stepSession, patch, requestScroll, sidebarOpen],
     );
 
     const onSearchKeyDown = useCallback(
@@ -589,6 +608,8 @@ export function LogViewer({
         >
             <ViewerHeader
                 session={session}
+                sessionCount={sessions.length}
+                onToggleSessions={() => setSidebarOpen((open) => !open)}
                 onPrevSession={() => stepSession(-1)}
                 onNextSession={() => stepSession(1)}
                 hasPrev={positionInOrder > 0}
@@ -604,13 +625,27 @@ export function LogViewer({
             />
 
             <div className="lv__split">
+                {/* Only ever visible while the sidebar is a drawer; the docked
+                    sidebar cannot be "open", so the scrim never renders. */}
+                {sidebarOpen ? (
+                    <div className="lv__scrim" onClick={() => setSidebarOpen(false)} />
+                ) : null}
                 <SessionSidebar
+                    open={sidebarOpen}
                     sessions={sessions}
                     visibleSessions={view.visibleSessions}
                     selectedId={state.sessionId}
                     filter={state.sessionFilter}
                     onFilterChange={(value) => patch({ sessionFilter: value })}
-                    onSelect={(id) => patch({ sessionId: id, matchIndex: 0, follow: false, notice: "" })}
+                    onSelect={(id) => {
+                        // Closed here rather than only in the effect below: the
+                        // effect watches `sessionId`, and tapping the session
+                        // that is already open does not change it — which left
+                        // the drawer sitting there over the log it had just
+                        // been asked to show.
+                        setSidebarOpen(false);
+                        patch({ sessionId: id, matchIndex: 0, follow: false, notice: "" });
+                    }}
                     hitsBySession={view.hitsBySession}
                     searching={view.searching}
                     allScope={state.scope === "all"}

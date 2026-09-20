@@ -74,6 +74,7 @@
 /* --- body split --------------------------------------------------------- */
 
 .lv__split {
+    position: relative;
     display: flex;
     flex-grow: 1;
     min-height: 0;
@@ -661,11 +662,46 @@
 
 /* --- responsive --------------------------------------------------------- */
 
-/* Below the spec's 960px floor the sidebar is the first thing to go: the log
-   itself is what the player came for. */
+/* Two markers the components use to offer a control in one layout and not the
+   other. Both default to the wide screen; the phone query below flips them. */
+.lv .lv-only-narrow {
+    display: none;
+}
+
+/* The viewer is hosted at every width there is: a maximised desktop window, a
+   Bootstrap dialog inside the client, and a phone held in one hand. Three
+   things give way as the screen narrows, in this order — the legend, then the
+   docked sidebar, then everything that is not the log itself. */
+
+@media (max-width: 1150px) {
+    .lv .lv__header {
+        height: auto;
+        min-height: 64px;
+        flex-wrap: wrap;
+        row-gap: var(--lv-space-3);
+        padding-top: var(--lv-space-3);
+        padding-bottom: var(--lv-space-3);
+    }
+
+    .lv-search {
+        flex-wrap: wrap;
+    }
+
+    .lv-status {
+        height: auto;
+        min-height: 36px;
+        flex-wrap: wrap;
+        row-gap: var(--lv-space-2);
+        padding-top: var(--lv-space-2);
+        padding-bottom: var(--lv-space-2);
+    }
+}
+
+/* Below the spec's 960px floor the legend is the first thing to go: it names
+   marks that are still perfectly legible without it. */
 @media (max-width: 1040px) {
     .lv {
-        --lv-sidebar-width: 220px;
+        --lv-sidebar-width: 240px;
     }
 
     .lv-search__field {
@@ -677,8 +713,204 @@
     }
 }
 
-@media (max-width: 820px) {
+/* --- the sidebar becomes a drawer ---------------------------------------- */
+
+/* Docked, the session list costs a quarter of the width. Below this it slides
+   in over the log instead — which is also what finally gives phones a session
+   list at all: it used to be `display: none` under 820px, so on a phone there
+   was no way to see which logs existed, let alone filter them. */
+@media (max-width: 900px) {
     .lv-sidebar {
+        position: absolute;
+        z-index: 2;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        width: min(320px, 86vw);
+        box-shadow: var(--lv-shadow-3);
+        transform: translateX(-100%);
+        transition: transform var(--lv-duration-2) var(--lv-ease);
+    }
+
+    .lv-sidebar[data-open='true'] {
+        transform: none;
+    }
+
+    .lv__scrim {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        background: var(--lv-black-a6);
+    }
+
+    /* The drawer button replaces the prev/next arrows, which are a poor way to
+       walk a list you cannot see. */
+    .lv .lv-only-drawer {
+        display: inline-flex;
+    }
+}
+
+/* Docked: no drawer button, no scrim, no transform to undo. */
+@media (min-width: 901px) {
+    .lv .lv-only-drawer {
+        display: none;
+    }
+}
+
+/* --- phone --------------------------------------------------------------- */
+
+/* Everything here buys height for the log. On a 390px phone the chrome used to
+   take about five sixths of the screen — in the client's dialog the pane was
+   three lines tall — because eight channel chips wrap onto four rows, the
+   status bar onto three, and the timeline is 100px of histogram that no finger
+   can aim at anyway. */
+@media (max-width: 680px) {
+    .lv .lv-hide-narrow {
+        display: none;
+    }
+
+    .lv .lv-only-narrow {
+        display: block;
+    }
+
+    .lv .lv__header {
+        gap: var(--lv-space-3);
+        min-height: 52px;
+        flex-wrap: nowrap;
+        padding: var(--lv-space-3) var(--lv-space-4);
+    }
+
+    /* The title is the only part of the header allowed to shrink. */
+    .lv__header > *:not(.lv__title-block) {
+        flex-shrink: 0;
+    }
+
+    .lv__title {
+        font-size: var(--lv-text-6);
+    }
+
+    .lv__meta {
+        font-size: var(--lv-text-2);
+    }
+
+    .lv-search {
+        gap: var(--lv-space-3);
+        padding: var(--lv-space-4);
+    }
+
+    /* The field takes the row; the counter, the step arrows and the scope sit
+       under it. */
+    .lv-search__field {
+        width: 100%;
+        flex-shrink: 1;
+    }
+
+    /* Fixed at 168px the counter reserved half a phone's width for text that is
+       empty until you type, and pushed "Tylko trafienia" onto a row of its own. */
+    .lv-search__counter {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .lv-segmented {
+        flex-grow: 1;
+    }
+
+    .lv-segmented__item {
+        flex: 1 1 0;
+        padding: 0 var(--lv-space-3);
+    }
+
+    /* One row that scrolls sideways, rather than four stacked ones. */
+    .lv-channels {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        gap: var(--lv-space-2);
+        padding: var(--lv-space-3) var(--lv-space-4);
+        scrollbar-width: none;
+    }
+
+    .lv-channels::-webkit-scrollbar {
+        display: none;
+    }
+
+    .lv-channels__label,
+    .lv-chip,
+    .lv-channels .lv-button {
+        flex-shrink: 0;
+    }
+
+    /* A histogram with 9px drag handles is a mouse instrument. The log scrolls
+       under a finger, which is the same journey. */
+    .lv-timeline {
+        display: none;
+    }
+
+    /* Same treatment as the channels: one scrolling row keeps every switch
+       reachable without stacking three rows of them on top of the log. */
+    .lv-status {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        gap: var(--lv-space-3);
+        padding: var(--lv-space-2) var(--lv-space-4);
+        scrollbar-width: none;
+    }
+
+    .lv-status::-webkit-scrollbar {
+        display: none;
+    }
+
+    .lv-status > * {
+        flex-shrink: 0;
+    }
+
+    /* 150px of gutters out of 390px left the text column narrower than the text
+       in it. The columns still line up; they just stop being generous. */
+    .lv-log__row,
+    .lv-log__probe {
+        grid-template-columns: 52px 30px 38px minmax(0, 1fr);
+        column-gap: var(--lv-space-4);
+        padding: 0 var(--lv-space-4);
+    }
+
+    .lv-log[data-timestamps='false'][data-meta='true'] .lv-log__row,
+    .lv-log[data-timestamps='false'][data-meta='true'] .lv-log__probe {
+        grid-template-columns: 30px 38px minmax(0, 1fr);
+    }
+
+    .lv-log[data-timestamps='true'][data-meta='false'] .lv-log__row,
+    .lv-log[data-timestamps='true'][data-meta='false'] .lv-log__probe {
+        grid-template-columns: 52px minmax(0, 1fr);
+    }
+
+    .lv-sidebar__head {
+        padding: var(--lv-space-4);
+    }
+}
+
+/* --- touch --------------------------------------------------------------- */
+
+/* A finger is about 9mm across; the control ladder is drawn for a cursor. Raise
+   the small end of it wherever the pointer cannot be precise — which is the
+   same screens the rules above already made room on. */
+@media (pointer: coarse) {
+    .lv {
+        --lv-control-xs: 32px;
+        --lv-control-sm: 36px;
+        --lv-control-md: 38px;
+        --lv-control-lg: 40px;
+    }
+
+    .lv-session {
+        padding: var(--lv-space-5);
+    }
+
+    .lv-line-menu__item {
+        height: 40px;
+    }
+
+    /* Shortcut hints for keys this device does not have. */
+    .lv .lv-keys-only {
         display: none;
     }
 }
@@ -824,38 +1056,4 @@
     height: 1px;
     margin: var(--lv-space-2) 0;
     background: var(--lv-border-subtle);
-}
-
-/* --- narrow window ------------------------------------------------------ */
-
-/* Below this the viewer's rows stop fitting on one line, and what falls off
-   the right edge is not decoration: the dialog clips its overflow, so the
-   close control and the search scope simply become unreachable. Wrapping is
-   gated on a width rather than left on, because flexbox wraps on the
-   *hypothetical* size — always-on, these rows take a second line at 1240px
-   too, where they fit perfectly well once the controls shrink.
-   Viewport width is the right proxy for both hosts: the standalone page fills
-   it, and the in-client dialog is `min(1240px, 100vw - 48px)` wide. */
-@media (max-width: 1150px) {
-    .lv .lv__header {
-        height: auto;
-        min-height: 64px;
-        flex-wrap: wrap;
-        row-gap: var(--lv-space-3);
-        padding-top: var(--lv-space-3);
-        padding-bottom: var(--lv-space-3);
-    }
-
-    .lv-search {
-        flex-wrap: wrap;
-    }
-
-    .lv-status {
-        height: auto;
-        min-height: 36px;
-        flex-wrap: wrap;
-        row-gap: var(--lv-space-2);
-        padding-top: var(--lv-space-2);
-        padding-bottom: var(--lv-space-2);
-    }
 }

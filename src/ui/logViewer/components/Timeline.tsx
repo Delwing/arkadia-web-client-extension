@@ -96,6 +96,16 @@ export function Timeline({
     onRangeChange,
 }: TimelineProps) {
     const trackRef = useRef<HTMLDivElement>(null);
+    /** Track width in pixels; drives how many axis labels fit. */
+    const [trackWidth, setTrackWidth] = useState(0);
+
+    useEffect(() => {
+        const track = trackRef.current;
+        if (!track) return;
+        const observer = new ResizeObserver(([entry]) => setTrackWidth(entry.contentRect.width));
+        observer.observe(track);
+        return () => observer.disconnect();
+    }, []);
     const [hover, setHover] = useState<number | null>(null);
     const [selecting, setSelecting] = useState(false);
 
@@ -117,7 +127,16 @@ export function Timeline({
     const buckets = buildHistogram(activityLines, span);
     const gaps = findIdleGaps(allLines, span);
     const ticks = buildMatchTicks(matchTimestamps, span);
-    const axis = buildAxisTicks(span);
+    /**
+     * Axis labels are sized to the track, not fixed at six.
+     *
+     * A label is eight monospace characters wide, and at six of them a track
+     * under ~560px ran them into each other — on a phone the axis read
+     * `20:302003:2:55`. One per 96px keeps a gap at every width, and the ends
+     * always survive because `buildAxisTicks` puts a tick at 0% and at 100%.
+     */
+    const axisCount = Math.max(2, Math.min(6, Math.floor(trackWidth / 96) + 1));
+    const axis = buildAxisTicks(span, axisCount);
     const events = allLines.filter((line) => line.event);
     const named = namedLogins(events);
     const box = viewport ? viewportBox(viewport.from, viewport.to, span) : null;

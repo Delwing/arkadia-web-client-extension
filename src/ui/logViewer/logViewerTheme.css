@@ -176,6 +176,10 @@
 
     /* --- motion ---------------------------------------------------------- */
     --lv-duration-1: 80ms;
+    /* The drawer's slide — long enough to read as a movement, short enough
+       that a second tap is never waiting on it. */
+    --lv-duration-2: 140ms;
+    --lv-ease: cubic-bezier(0.16, 1, 0.3, 1);
 
     /* --- layering --------------------------------------------------------
        The line menu and the export menu are `position: fixed` and have to
@@ -191,5 +195,6 @@
 @media (prefers-reduced-motion: reduce) {
     .lv-theme {
         --lv-duration-1: 0ms;
+        --lv-duration-2: 0ms;
     }
 }

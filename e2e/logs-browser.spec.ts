@@ -243,3 +243,58 @@ test.describe('Logi browser', () => {
         await expect(page.getByText('Zarzadzanie logami')).toBeVisible();
     });
 });
+
+test.describe('Logi browser on a phone', () => {
+    test.use({viewport: {width: 390, height: 844}, isMobile: true, hasTouch: true});
+
+    test('the log gets the screen, and the session list is a drawer', async ({page}) => {
+        await login(page);
+        await pushFiller(page, 'linia', 60);
+        await openLogs(page);
+
+        // Nothing may run off the side: the pane scrolls vertically, and a
+        // viewer wider than the phone drags the whole log sideways with it.
+        const overflow = await page.evaluate(
+            () => document.documentElement.scrollWidth - window.innerWidth,
+        );
+        expect(overflow).toBeLessThanOrEqual(0);
+
+        // The window itself is full-bleed here, and the chrome stands down far
+        // enough that the log is most of it. Before this the pane was three
+        // lines tall inside a dialog capped at 85% of the screen.
+        const share = await page.evaluate(() => {
+            const pane = document.querySelector('.lv-log')!.getBoundingClientRect().height;
+            return pane / window.innerHeight;
+        });
+        expect(share).toBeGreaterThan(0.5);
+
+        // A histogram with 9px handles is a mouse instrument.
+        await expect(page.locator('.lv-timeline')).toBeHidden();
+
+        // The sessions are behind a button rather than gone, which is what they
+        // were below 820px before.
+        await expect(page.locator('.lv-sidebar')).toHaveAttribute('data-open', 'false');
+        await page.getByTitle(/Lista sesji/).click();
+        await expect(page.locator('.lv-sidebar')).toHaveAttribute('data-open', 'true');
+        await expect(page.locator('.lv-session').first()).toBeVisible();
+
+        // Picking one is what the drawer is for, so it stands down again.
+        await page.locator('.lv-session').first().click();
+        await expect(page.locator('.lv-sidebar')).toHaveAttribute('data-open', 'false');
+    });
+
+    test('copying and exporting share one overflow menu', async ({page}) => {
+        await login(page);
+        await pushFiller(page, 'linia', 20);
+        await openLogs(page);
+
+        await page.getByTitle('Kopiowanie i eksport').click();
+        const menu = page.locator('.lv-menu');
+        await expect(menu).toBeVisible();
+        await expect(menu.locator('.lv-menu__item', {hasText: 'Kopiuj widok'})).toBeVisible();
+
+        const waitDownload = page.waitForEvent('download');
+        await menu.locator('.lv-menu__item', {hasText: 'Pobierz tekst (.txt)'}).click();
+        expect((await waitDownload).suggestedFilename()).toContain('.txt');
+    });
+});

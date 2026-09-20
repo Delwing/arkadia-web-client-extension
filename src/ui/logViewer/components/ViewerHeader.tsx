@@ -6,6 +6,10 @@ import type { LogSession } from "../model/types";
 export interface ViewerHeaderProps {
     /** Undefined when the store is empty — the header still renders. */
     session: LogSession | undefined;
+    /** Shown on the drawer button, so the count is visible before opening it. */
+    sessionCount: number;
+    /** Opens the session list while it is a drawer; hidden once it is docked. */
+    onToggleSessions: () => void;
     onPrevSession: () => void;
     onNextSession: () => void;
     hasPrev: boolean;
@@ -25,6 +29,8 @@ export interface ViewerHeaderProps {
 
 export function ViewerHeader({
     session,
+    sessionCount,
+    onToggleSessions,
     onPrevSession,
     onNextSession,
     hasPrev,
@@ -48,9 +54,29 @@ export function ViewerHeader({
           ].join("  ·  ")
         : "Nie ma jeszcze zadnego logu";
 
+    const exportItems = (
+        <>
+            <MenuLabel>{ranged ? "Zaznaczony zakres" : "Caly log"}</MenuLabel>
+            <MenuItem onSelect={onExportHtml}>Pobierz HTML</MenuItem>
+            <MenuItem onSelect={onExportText}>Pobierz tekst (.txt)</MenuItem>
+            <MenuSeparator />
+            <MenuItem onSelect={onDownloadImage}>Pobierz jako obraz</MenuItem>
+            <MenuItem onSelect={onCopyImage}>Kopiuj jako obraz</MenuItem>
+        </>
+    );
+
     return (
         <div className="lv__header">
-            <div className="lv-row lv-row--tight">
+            {/* Only while the sidebar is a drawer — see `logViewer.css`. */}
+            <IconButton
+                className="lv-only-drawer"
+                title={`Lista sesji (${sessionCount})`}
+                onClick={onToggleSessions}
+            >
+                <Icon name="sessions" />
+            </IconButton>
+
+            <div className="lv-row lv-row--tight lv-hide-narrow">
                 <IconButton title="Poprzednia sesja  [" onClick={onPrevSession} disabled={!hasPrev}>
                     <Icon name="chevron-left" />
                 </IconButton>
@@ -73,7 +99,8 @@ export function ViewerHeader({
                 <div className="lv__meta">{meta}</div>
             </div>
 
-            <div className="lv-row lv-row--tight">
+            {/* Wide enough for both controls: copying is one click away. */}
+            <div className="lv-row lv-row--tight lv-hide-narrow">
                 <Button
                     size="sm"
                     icon={<Icon name="copy" size={14} />}
@@ -97,20 +124,38 @@ export function ViewerHeader({
                         </Button>
                     }
                 >
-                    <MenuLabel>{ranged ? "Zaznaczony zakres" : "Caly log"}</MenuLabel>
-                    <MenuItem onSelect={onExportHtml}>Pobierz HTML</MenuItem>
-                    <MenuItem onSelect={onExportText}>Pobierz tekst (.txt)</MenuItem>
-                    <MenuSeparator />
-                    <MenuItem onSelect={onDownloadImage}>Pobierz jako obraz</MenuItem>
-                    <MenuItem onSelect={onCopyImage}>Kopiuj jako obraz</MenuItem>
+                    {exportItems}
                 </Menu>
-                {trailing ? (
-                    <>
-                        <div className="lv-divider--vertical" />
-                        {trailing}
-                    </>
-                ) : null}
             </div>
+
+            {/* On a phone the same actions share one overflow menu. Shrinking
+                the two buttons to their icons was not enough: a host adds its
+                own controls here (the client adds three), and with those the
+                row ran off the right edge of the screen. */}
+            <div className="lv-only-narrow">
+                <Menu
+                    disabled={busy || !session}
+                    trigger={
+                        <IconButton
+                            title={busy ? "Zapisywanie..." : "Kopiowanie i eksport"}
+                            disabled={busy || !session}
+                        >
+                            <Icon name="more" />
+                        </IconButton>
+                    }
+                >
+                    <MenuItem onSelect={onCopyView}>Kopiuj widok</MenuItem>
+                    <MenuSeparator />
+                    {exportItems}
+                </Menu>
+            </div>
+
+            {trailing ? (
+                <div className="lv-row lv-row--tight">
+                    <div className="lv-divider--vertical lv-hide-narrow" />
+                    {trailing}
+                </div>
+            ) : null}
         </div>
     );
 }

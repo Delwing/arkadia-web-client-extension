@@ -33,6 +33,11 @@ export interface SessionSidebarProps {
     searching: boolean;
     /** In All-logs scope every session shows its hit count, not just the open one. */
     allScope: boolean;
+    /**
+     * Whether the drawer is showing. Meaningless on a wide screen, where the
+     * sidebar is docked and this attribute is not styled at all.
+     */
+    open: boolean;
 }
 
 export function SessionSidebar({
@@ -45,13 +50,14 @@ export function SessionSidebar({
     hitsBySession,
     searching,
     allScope,
+    open,
 }: SessionSidebarProps) {
     const groups = groupByDay(visibleSessions);
     const total = sessions.length;
     const shown = visibleSessions.length;
 
     return (
-        <div className="lv-sidebar">
+        <div className="lv-sidebar" data-open={open}>
             <div className="lv-sidebar__head">
                 <Field label="Sesje" eyebrow htmlFor="lv-session-filter">
                     <Input
@@ -124,7 +130,9 @@ export function SessionSidebar({
                 <span>
                     {shown === total ? `${total} ${pluralSessions(total)}` : `${shown} z ${total} ${pluralSessions(total)}`}
                 </span>
-                <span className="lv-row lv-row--tight">
+                {/* A keyboard hint is noise on a touch screen, where the
+                    drawer is how you change session. */}
+                <span className="lv-row lv-row--tight lv-keys-only">
                     <Kbd>[</Kbd>
                     <Kbd>]</Kbd>
                     <span>zmiana</span>

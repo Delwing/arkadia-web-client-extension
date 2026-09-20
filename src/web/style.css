@@ -840,6 +840,18 @@ h1 {
   height: calc(100% - var(--bs-modal-margin) * 2);
 }
 
+/* On a phone `modal-fullscreen-md-down` already takes the whole viewport, and
+   the height above would fight it — Bootstrap's own margin is 0 there. Below
+   this width every pixel spent on a margin is a line of log, and the global
+   `.modal-dialog { max-height: 85% }` further down this file is 127px of
+   nothing at the bottom of the screen. */
+@media (max-width: 767.98px) {
+  #logs-modal .logs-modal-dialog {
+    height: 100%;
+    max-height: 100%;
+  }
+}
+
 @media (min-width: 1200px) {
   #logs-modal .logs-modal-dialog {
     --bs-modal-width: min(1800px, calc(100vw - 4rem));
