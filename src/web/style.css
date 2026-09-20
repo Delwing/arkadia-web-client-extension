@@ -1777,8 +1777,34 @@ h1 {
 
    `:where()` around the `:not()` keeps the selector at a bare element's
    specificity, so nothing else in the stock cascade moves. Add a namespace
-   here when a screen migrates; the whole block goes when Bootstrap does. */
-button:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])) {
+   here when a screen migrates; the whole block goes when Bootstrap does.
+
+   Faza 5 dolozyla trzy namespace'y: map-header-menu, static-map-popup,
+   chat-popup. Ta lista to lista PREFIKSOW, a nie wszystko, co zmigrowane,
+   zaczyna sie od `ark-` - to znalezisko fazy 4 PR 3, a te trzy rodziny sa
+   jego kolejnym przypadkiem. Zmierzone, nie wyczytane: przed ta zmiana
+   .map-header-menu__toggle, .map-header-menu__item i .chat-popup__team-toggle
+   wyliczaly sie z `opacity: 0.75` i `font-weight: 500` z reguly ponizej, a ich
+   ramka na :hover szla do #646cff - bo zadna z tych klas nie deklaruje ani
+   opacity, ani font-weight, ani border-color w stanie :hover. Skutek uboczny:
+   `font-weight: 500` na .map-header-menu__item--back znowu cos znaczy, bo
+   dotad pogrubiony byl i tak kazdy element menu.
+
+   WAZNE: lista jest skopiowana do kilku regul o ROZNYCH powodach i decyzje
+   trzeba podejmowac per regula, nie per lista. Te trzy rodziny sa wylaczone
+   ze SKORY (ten blok), ale NIE z mobilnej reguly celu dotyku
+   (`min-height: 8vmin` nizej): tamten wyjatek istnieje dla ekranow, ktore
+   nios sobie rozmiar z drabinki --ark-control-*, a te rodziny maja rozmiary
+   wpisane na sztywno, wiec bez 8vmin hamburger na telefonie zostal by
+   kwadratem 20x20 px.
+
+   WIEKSZA SPRAWA, poza zakresem tego PR-a: dokladnie to samo dotyczy
+   .popup-btn, czyli zmigrowanej w fazie 3 warstwy 2 wspolnej dla ~39 popupow
+   (zmierzone: opacity 0.75, font-weight 500, ramka :hover w kierunku #646cff).
+   Prefiksu `popup-` tu nie dokladamy, bo objal by tez klasy NIEzmigrowane,
+   ktore moga na tej regule stac - to zmiana dla wlasciciela fazy 3. Pomiary i
+   uzasadnienie: docs/dev/UI_MIGRATION.md sekcja 7. */
+button:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'], [class^='map-header-menu'], [class*=' map-header-menu'], [class^='static-map-popup'], [class*=' static-map-popup'], [class^='chat-popup'], [class*=' chat-popup'])) {
   border-radius: 1vmin;
   border: 0.1vh solid transparent;
   padding: 0.75vh 2vw;
@@ -1792,11 +1818,11 @@ button:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' l
   transition: border-color 0.25s;
   opacity: 0.75;
 }
-button:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])):hover {
+button:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'], [class^='map-header-menu'], [class*=' map-header-menu'], [class^='static-map-popup'], [class*=' static-map-popup'], [class^='chat-popup'], [class*=' chat-popup'])):hover {
   border-color: #646cff;
 }
-button:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])):focus,
-button:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])):focus-visible {
+button:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'], [class^='map-header-menu'], [class*=' map-header-menu'], [class^='static-map-popup'], [class*=' static-map-popup'], [class^='chat-popup'], [class*=' chat-popup'])):focus,
+button:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'], [class^='map-header-menu'], [class*=' map-header-menu'], [class^='static-map-popup'], [class*=' static-map-popup'], [class^='chat-popup'], [class*=' chat-popup'])):focus-visible {
   outline: 0.5vmin auto -webkit-focus-ring-color;
 }
 
@@ -1808,7 +1834,7 @@ button:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' l
   a:hover {
   color: #747bff;
   }
-  button:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])) {
+  button:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'], [class^='map-header-menu'], [class*=' map-header-menu'], [class^='static-map-popup'], [class*=' static-map-popup'], [class^='chat-popup'], [class*=' chat-popup'])) {
   background-color: #f9f9f9;
   }
 }
@@ -3301,104 +3327,37 @@ body.layout-manager-enabled #notification-center {
 
 /* ============================================
    Static Map Popup
-   ============================================ */
+   ============================================
+
+   Rodzina .static-map-popup__* czyta --ark-* (faza 5, docs/dev/UI_MIGRATION.md
+   §7) razem z .map-header-menu__* w src/web/layout/layout.css i
+   .chat-popup__* w src/web/popups/popups-base.css - te trzy rodziny dziela
+   chromie naglowka, wiec migruja jedna zmiana.
+
+   DWIE reguly zostaja na wartosciach stalych, swiadomie: .static-map-popup__map
+   (plyta pod mapa) i .static-map-popup__notes (etykieta NA mapie) nie leza na
+   powierzchni motywu, tylko na kanwie, ktora renderer mapy maluje wlasna
+   paleta (patrz ctx.fillStyle w StaticMapPopup.tsx i kolor podswietlenia
+   przekazywany do renderHighlight). To ta sama klasa wyjatku, co barwy linii
+   drukowanych do okna gry. Co z nimi zrobic, decyduje PR Okna mapy w fazie 3:
+   to on przeglada ten ekran na zrzutach i to jego decyzja o wygladzie. */
 
 .static-map-popup-body {
   display: flex;
   flex-direction: column;
   height: 100%;
   overflow: hidden;
-  background-color: var(--popup-bg);
+  background-color: var(--ark-bg-surface);
 }
 
-.static-map-popup__content {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  overflow: hidden;
-}
-
-.static-map-popup__controls {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem;
-  padding: 0.25rem;
-  border-bottom: 1px solid var(--popup-border);
-  background-color: rgba(0, 0, 0, 0.2);
-}
-
-.static-map-popup__dropdown-container {
-  position: relative;
-}
-
-.static-map-popup__btn {
-  padding: 0.2rem 0.5rem;
-  background-color: var(--popup-control-bg);
-  border: 1px solid var(--popup-border);
-  border-radius: 0.25rem;
-  color: var(--popup-text-subtle);
-  font-size: 0.75rem;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  white-space: nowrap;
-}
-
-.static-map-popup__btn:hover:not(:disabled) {
-  background-color: var(--popup-control-hover-bg);
-  color: var(--popup-text-strong);
-}
-
-.static-map-popup__btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.static-map-popup__btn--small {
-  padding: 0.2rem 0.4rem;
-  min-width: 1.5rem;
-}
-
-.static-map-popup__zoom-controls {
-  display: flex;
-  gap: 0.15rem;
-}
-
-.static-map-popup__dropdown {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  z-index: 1000;
-  min-width: 150px;
-  max-height: 250px;
-  overflow-y: auto;
-  background-color: var(--popup-bg);
-  border: 1px solid var(--popup-border-strong);
-  border-radius: 0.25rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-  margin-top: 2px;
-}
-
-.static-map-popup__dropdown-item {
-  display: block;
-  width: 100%;
-  padding: 0.35rem 0.5rem;
-  background: none;
-  border: none;
-  color: var(--popup-text-bright);
-  font-size: 0.75rem;
-  text-align: left;
-  cursor: pointer;
-  transition: background-color 0.1s ease;
-}
-
-.static-map-popup__dropdown-item:hover {
-  background-color: var(--popup-control-hover-bg);
-}
-
-.static-map-popup__dropdown-item--active {
-  background-color: var(--popup-accent-bg);
-  color: var(--popup-accent);
-}
+/* USUNIETE w fazie 5, bo martwe: .static-map-popup__content, __controls,
+   __dropdown-container, __btn (+ :hover, :disabled, --small), __zoom-controls,
+   __dropdown i __dropdown-item (+ :hover, --active). Zadnego z tych dziewieciu
+   nie renderuje juz nic w repo - okno mapy przeszlo kiedys na wspolne menu
+   .map-header-menu__*, a stary pasek narzedzi zostal tylko w CSS. Sprawdzone
+   gruntem przez grep po *.tsx / *.ts / *.html oraz pomiarem w przegladarce
+   (elementy nie istnieja w DOM). Zywe zostaja cztery: -body, __notes (+ hr),
+   __map i __image-btn. */
 
 .static-map-popup__notes {
   position: absolute;
@@ -3438,9 +3397,9 @@ body.layout-manager-enabled #notification-center {
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: var(--popup-control-bg);
-  border: 1px solid var(--popup-border);
-  color: var(--popup-text-dim);
+  background-color: var(--ark-bg-element);
+  border: 1px solid var(--ark-border);
+  color: var(--ark-text-tertiary);
   border-radius: 0.25rem;
   padding: 0.2rem;
   cursor: pointer;
@@ -3449,12 +3408,12 @@ body.layout-manager-enabled #notification-center {
 }
 
 .static-map-popup__image-btn:hover {
-  background-color: var(--popup-control-hover-bg);
-  color: var(--popup-text-bright);
+  background-color: var(--ark-bg-element-hover);
+  color: var(--ark-text-secondary);
 }
 
 .static-map-popup__image-btn:active {
-  background-color: rgba(255, 255, 255, 0.15);
+  background-color: var(--ark-bg-selected-hover);
 }
 
 /* ===== Object List Documentation ===== */
