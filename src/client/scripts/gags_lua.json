@@ -2255,7 +2255,7 @@
                             "name": "gorejacy_dlugi_talwar_innych",
                             "patterns": [
                               {
-                                "pattern": "^Dostrzegajac slabosc (?<target>\\w+(?: \\w+){0,4}), (?<attacker>\\w+(?: \\w+ \\w+|)) do nie(go|j), by wbic swoj gorejacy dlugi talwar w (?<where>.+)\\. Klinga je(?:go|j) miecza wybucha (?<damage>olbrzymim) plomieniem, ktory w mgnieniu oka ogarnia przeciwni(?:czke|ka) w calosci\\.$",
+                                "pattern": "^Dostrzegajac [^.]+?, (?<attacker>\\w+(?: \\w+ \\w+|)) do (?:niego|niej|ciebie), by wbic swoj gorejacy dlugi talwar w (?<where>.+)\\. Klinga je(?:go|j) miecza wybucha (?<damage>olbrzymim) plomieniem, ktor\\w+ w mgnieniu oka ogarnia [^.]*\\.$",
                                 "type": 1
                               },
                               {
@@ -2279,7 +2279,31 @@
                                 "type": 1
                               },
                               {
-                                "pattern": "^(?<attacker>\\w+(?: \\w+){0,4}) szybkim ruchem kluje (?<target>\\w+(?: \\w+){0,4}) gorejacym dlugim talwarem w (?<where>.+?)\\. W momencie dotyku z ostrza miecza bucha fala ognia, ktora znacznie parzy przeciwnika\\.$",
+                                "pattern": "^(?<attacker>\\w+(?: \\w+){0,4}) szybkim ruchem kluje (?<target>\\w+(?: \\w+){0,4}) gorejacym dlugim talwarem w (?<where>.+?)\\. W momencie dotyku z ostrza miecza bucha fala ognia, ktora (?<damage>znacznie) parzy (?:cie|przeciwni(?:czke|ka))\\.$",
+                                "type": 1
+                              },
+                              {
+                                "pattern": "^Gdy z silnego zamachu tniesz (?<target>\\w+(?: \\w+){0,4}) w (?<where>.+?), brzeszczot gorejacego dlugiego talwara (?<damage>wybucha) krwistoczerwonym jezorem ognia, mocno parzac tw\\w+ przeciwni(?:ka|czke)\\.$",
+                                "type": 1
+                              },
+                              {
+                                "pattern": "^Gdy uderzasz (?<target>\\w+(?: \\w+){0,4}) gorejacym dlugim talwarem w (?<where>.+?), klinga twego miecza rozpala sie do czerwonosci, (?<damage>parzac) nieznacznie przeciwni(?:ka|czke)\\.$",
+                                "type": 1
+                              },
+                              {
+                                "pattern": "^Dostrzegajac slabosc (?<target>\\w+(?: \\w+){0,4}), blyskawicznie (?:don|do niej) doskakujesz, by wbic swoj gorejacy dlugi talwar w (?<where>.+)\\. Klinga miecza wybucha (?<damage>olbrzymim) plomieniem, ktore w mgnieniu oka ogarnia tw\\w+ przeciwni(?:ka|czke), zakanczajac je(?:go|j) zywot\\.$",
+                                "type": 1
+                              },
+                              {
+                                "pattern": "^Widzac, ze na ostrzu twego gorejacego dlugiego talwara zaczynaja pelzac ogniste plomyki, wykonujesz szybki zamach, trafiajac (?<target>\\w+(?: \\w+){0,4}) w (?<where>.+?), pozostawiajac tam (?<damage>spore) oparzenie\\.$",
+                                "type": 1
+                              },
+                              {
+                                "pattern": "^Brzeszczot twego gorejacego dlugiego talwara rozgrzewa sie nagle do czerwonosci, zas po jego powierzchni zaczynaja tanczyc krwistoczerwone plomienie\\. Wykorzystujac nadarzajaca sie okazje, z calych sil uderzasz nim (?<target>\\w+(?: \\w+){0,4}) w (?<where>.+?), pozostawiajac (?<damage>potworne) obrazenia\\.$",
+                                "type": 1
+                              },
+                              {
+                                "pattern": "^Czujac, ze twoj gorejacy dlugi talwar zaczyna sie nagrzewac, szybkim ruchem klujesz (?<target>\\w+(?: \\w+){0,4}) w (?<where>.+?)\\. W momencie dotyku z ostrza miecza bucha fala ognia, ktora (?<damage>znacznie) parzy tw\\w+ przeciwni(?:ka|czke)\\.$",
                                 "type": 1
                               }
                             ],
@@ -6726,7 +6750,7 @@
                         "type": 1
                       },
                       {
-                        "pattern": "^(\\S+(?:\\s+\\S+){0,3})\\s+nie\\s+udaje\\s+sie\\s+trafic\\s+(\\S+(?:\\s+\\S+){0,3})\\s+((?:lewym|lewa|prawym|prawa)\\s+\\S+|\\S+(?:\\s+\\S+){2,3})\\.$",
+                        "pattern": "^(\\S+(?:\\s+\\S+){0,3})\\s+nie\\s+udaje\\s+sie\\s+trafic\\s+(\\S+(?:\\s+\\S+){0,3})\\s+((?:lewym|lewa|prawym|prawa)\\s+\\S+|\\S+(?:\\s+\\S+){0,3})\\.$",
                         "type": 1
                       }
                     ],
