@@ -67,7 +67,7 @@ export function SessionSidebar({
             <div className="lv-sidebar__list">
                 {groups.length === 0 ? (
                     <div className="lv-sidebar__group">
-                        {total === 0 ? "Brak zapisanych sesji." : "Brak sesji pasujacych do filtra."}
+                        {total === 0 ? "Nie ma jeszcze zadnego logu." : "Brak sesji pasujacych do filtra."}
                     </div>
                 ) : null}
                 {groups.map((group) => (

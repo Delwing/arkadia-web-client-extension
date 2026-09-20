@@ -480,7 +480,7 @@ export function LogManager({
 
                 {ordered.length === 0 ? (
                     <p className="text-body-secondary text-center my-4">
-                        Brak zapisanych sesji. Uzyj „Importuj”, zeby wczytac logi z pliku eksportu.
+                        Nie ma jeszcze zadnego logu. Uzyj „Importuj”, zeby wczytac je z pliku eksportu.
                     </p>
                 ) : (
                     <div className="logs-manage__table-box">

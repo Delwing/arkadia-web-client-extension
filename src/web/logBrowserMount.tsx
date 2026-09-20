@@ -17,7 +17,7 @@ import { LogBrowser } from "./LogBrowser";
 let initialized = false;
 let warned = false;
 
-function LogBrowserWindow({ modalEl }: { modalEl: HTMLElement }) {
+export function LogBrowserWindow({ modalEl }: { modalEl: HTMLElement }) {
     const [open, setOpen] = useState(false);
 
     useEffect(() => {

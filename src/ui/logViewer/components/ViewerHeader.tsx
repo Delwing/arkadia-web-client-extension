@@ -46,7 +46,7 @@ export function ViewerHeader({
               `${session.lines.length} ${pluralLines(session.lines.length)}`,
               session.file,
           ].join("  ·  ")
-        : "Brak zapisanych sesji";
+        : "Nie ma jeszcze zadnego logu";
 
     return (
         <div className="lv__header">

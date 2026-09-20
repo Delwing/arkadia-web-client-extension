@@ -619,6 +619,8 @@
     gap: var(--lv-space-6);
     padding: var(--lv-space-12) var(--lv-space-10);
     color: var(--lv-text-secondary);
+    /* Stated: the pane this usually appears in is monospace. */
+    font-family: var(--lv-font-sans);
     font-size: var(--lv-text-6);
     text-align: center;
 }

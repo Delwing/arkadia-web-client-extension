@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { allChannelsOff, allChannelsOn, anyChannelOff, type Channel } from "./model/channels";
 import { charactersLabel } from "./model/characters";
 import { formatClock, pluralLogs } from "./model/format";
+import { normalizeMatchIndex } from "./model/search";
 import { indexAtOrAfter } from "./model/timeline";
 import type { Density, LogSession, SearchScope, TimeRange } from "./model/types";
 import {
@@ -248,6 +249,17 @@ export function LogViewer({
             const result = stepMatch(direction, { ...state, query: activeQuery }, view, view.visibleSessions);
             if (!result) return;
             if (result.sessionId) matchJump.current = result.sessionId;
+            // A lone match wraps onto itself: the normalised index does not
+            // move, so the effect that centres the current row never fires and
+            // "next match" does nothing once the player has scrolled away from
+            // it. Ask for the scroll here instead — stepping always shows you
+            // the match, even when it is the only one.
+            const stayedPut =
+                !result.sessionId &&
+                normalizeMatchIndex(result.matchIndex, view.totalMatches) === view.currentMatch;
+            if (stayedPut && view.currentRow !== null) {
+                requestScroll({ kind: "row", row: view.currentRow, align: "center" });
+            }
             patch({
                 matchIndex: result.matchIndex,
                 notice: result.notice,
@@ -255,7 +267,7 @@ export function LogViewer({
                 ...(result.sessionId ? { sessionId: result.sessionId } : {}),
             });
         },
-        [state, activeQuery, view, patch],
+        [state, activeQuery, view, patch, requestScroll],
     );
 
     const jumpToTime = useCallback(
