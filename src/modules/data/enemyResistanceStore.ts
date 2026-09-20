@@ -348,6 +348,21 @@ ensureEnemyResistancesLoaded().catch(() => {});
 
 /** Test-only: reset cache, loading state and the persisted record. */
 export async function __resetEnemyResistanceStoreForTests(): Promise<void> {
+    // A load may be in flight: this module starts one on import, and a test may
+    // have started another. Dropping the promise does not cancel it - it lands
+    // afterwards, sets `loaded` and overwrites `cache`, so the next
+    // ensureEnemyResistancesLoaded() short-circuits and never reads what the test
+    // has just written. Wait for it (including its migration write-back, which
+    // would otherwise re-create the record after the clear below) instead.
+    while (loadingPromise) {
+        const pending = loadingPromise;
+        try {
+            await pending;
+        } catch {
+            // the loader swallows its own errors; nothing to do here
+        }
+        if (loadingPromise === pending) break;
+    }
     cache = emptySnapshot();
     loaded = false;
     loadingPromise = null;
