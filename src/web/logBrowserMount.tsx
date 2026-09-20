@@ -1,12 +1,38 @@
+/**
+ * Stock-UI bootstrap for the Logi window.
+ *
+ * Kept out of `LogBrowser.tsx` so that module stays side-effect free: forge-ui
+ * hosts the same component inside its own modal shell, where stock's
+ * `#logs-button` / `#logs-modal` do not exist.
+ *
+ * The browser is mounted only while the window is open. It loads every session
+ * into memory when it mounts, and the client must not read the whole log
+ * database at startup; unmounting on close also lets go of those sessions and
+ * of the database connection underneath them, which is what lets another tab
+ * create its own session (see `e2e/logs-multi-tab.spec.ts`).
+ */
+import { useEffect, useState } from "react";
 import { LogBrowser } from "./LogBrowser";
-
-// Stock-UI bootstrap for the Logi browser. Kept out of `LogBrowser.tsx` so that
-// module stays side-effect free: forge-ui and the log viewer import the React
-// components directly and host them in their own shells, where stock's
-// `#logs-button` / `#logs-modal` do not exist.
 
 let initialized = false;
 let warned = false;
+
+function LogBrowserWindow({ modalEl }: { modalEl: HTMLElement }) {
+    const [open, setOpen] = useState(false);
+
+    useEffect(() => {
+        const show = () => setOpen(true);
+        const hide = () => setOpen(false);
+        modalEl.addEventListener("show.bs.modal", show);
+        modalEl.addEventListener("hidden.bs.modal", hide);
+        return () => {
+            modalEl.removeEventListener("show.bs.modal", show);
+            modalEl.removeEventListener("hidden.bs.modal", hide);
+        };
+    }, [modalEl]);
+
+    return open ? <LogBrowser /> : null;
+}
 
 function initLogBrowser(): boolean {
   if (initialized) return true;
@@ -16,7 +42,6 @@ function initLogBrowser(): boolean {
 
   if (!button || !modalEl) return false;
 
-  // Find or create container for React component
   const modalBody = modalEl.querySelector(".modal-body");
   if (!modalBody) {
     console.error("[Logs] Failed to find modal body");
@@ -28,19 +53,16 @@ function initLogBrowser(): boolean {
   reactContainer.id = "logs-react-root";
   reactContainer.style.display = "contents";
 
-  // Clear existing content and add React container
   modalBody.innerHTML = "";
   modalBody.appendChild(reactContainer);
 
-  // Mount React component and setup modal
   Promise.all([
     import("react-dom/client"),
     import("bootstrap/js/dist/modal")
   ]).then(([{ createRoot }, { default: Modal }]) => {
     const root = createRoot(reactContainer);
-    root.render(<LogBrowser />);
+    root.render(<LogBrowserWindow modalEl={modalEl} />);
 
-    // Setup button click handler
     const modal = new Modal(modalEl);
     button.addEventListener("click", () => {
       modal.show();

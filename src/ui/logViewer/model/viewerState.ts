@@ -194,7 +194,11 @@ export interface MatchRef {
 }
 
 export interface DerivedView {
-    session: LogSession;
+    /**
+     * Undefined when there is no session to show at all. The viewer renders its
+     * chrome anyway — see `LogViewer` — so an empty store is not a dead end.
+     */
+    session: LogSession | undefined;
     /** Sessions surviving the sidebar filter, in display order. */
     visibleSessions: LogSession[];
     rows: RenderedRow[];

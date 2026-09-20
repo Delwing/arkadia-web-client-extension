@@ -1,0 +1,651 @@
+/* ============================================================================
+   Log viewer — controls.
+   ============================================================================
+
+   The buttons, inputs, toggles, chips, badges and menus the viewer is built
+   from. They were a shared design system once; what survives here is only what
+   this screen uses, styled against the viewer's own palette
+   (`../logViewerTheme.css`).
+
+   Everything is scoped under `.lv`. That is not tidiness: the same markup
+   renders on the standalone page, which loads no Bootstrap, and inside the
+   client, which loads all of it — and a bare `.lv-button` would lose to
+   Bootstrap's element rules in one host and win in the other.
+   ========================================================================== */
+
+/* --- element reset ------------------------------------------------------- */
+
+/* Wrapped in `:where()` so it carries ZERO specificity: a component class must
+   always outrank the reset, or every button renders as bare text. */
+.lv :where(*, *::before, *::after) {
+    box-sizing: border-box;
+}
+
+.lv :where(button, input, select, textarea) {
+    font: inherit;
+    color: inherit;
+    margin: 0;
+}
+
+.lv :where(button) {
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 0;
+}
+
+.lv :where(button):disabled {
+    cursor: not-allowed;
+}
+
+.lv :where(h1, h2, h3, h4, p) {
+    margin: 0;
+}
+
+.lv ::placeholder {
+    color: var(--lv-text-faint);
+    opacity: 1;
+}
+
+.lv ::selection {
+    background: var(--lv-accent-wash);
+    color: var(--lv-accent-contrast);
+}
+
+/* One focus treatment for the whole screen. */
+.lv :focus-visible {
+    outline: var(--lv-focus-ring-width) solid var(--lv-focus-ring);
+    outline-offset: var(--lv-focus-ring-offset);
+}
+
+/* Scrollbars, where the platform allows styling them. */
+.lv ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+.lv ::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.lv ::-webkit-scrollbar-thumb {
+    background: var(--lv-gray-6);
+    border: 2px solid transparent;
+    background-clip: content-box;
+    border-radius: var(--lv-radius-full);
+}
+
+.lv ::-webkit-scrollbar-thumb:hover {
+    background: var(--lv-gray-8);
+    background-clip: content-box;
+}
+
+/* --- layout helpers ------------------------------------------------------ */
+
+.lv .lv-row {
+    display: flex;
+    align-items: center;
+    gap: var(--lv-space-4);
+    min-width: 0;
+}
+
+.lv .lv-row--tight {
+    gap: var(--lv-space-2);
+}
+
+/* Pushes everything after it to the far edge of a row. */
+.lv .lv-spacer {
+    flex-grow: 1;
+    min-width: 0;
+}
+
+.lv .lv-divider--vertical {
+    flex-shrink: 0;
+    width: 1px;
+    height: var(--lv-space-10);
+    margin: 0 var(--lv-space-3);
+    background: var(--lv-border);
+}
+
+.lv .lv-truncate {
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* --- button -------------------------------------------------------------- */
+
+.lv .lv-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--lv-space-3);
+    height: var(--lv-control-lg);
+    padding: 0 var(--lv-space-6);
+    border: 1px solid transparent;
+    border-radius: var(--lv-radius-3);
+    font-size: var(--lv-text-5);
+    font-weight: var(--lv-weight-medium);
+    line-height: 1;
+    white-space: nowrap;
+    user-select: none;
+    transition:
+        background-color var(--lv-duration-1) linear,
+        border-color var(--lv-duration-1) linear,
+        color var(--lv-duration-1) linear;
+}
+
+.lv .lv-button:disabled {
+    opacity: 0.5;
+}
+
+.lv .lv-button--sm {
+    height: var(--lv-control-md);
+    padding: 0 var(--lv-space-5);
+    font-size: var(--lv-text-4);
+}
+
+.lv .lv-button--lg {
+    height: var(--lv-control-xl);
+    padding: 0 var(--lv-space-8);
+}
+
+.lv .lv-button--solid {
+    background: var(--lv-accent-solid);
+    color: var(--lv-accent-contrast);
+    font-weight: var(--lv-weight-semibold);
+}
+
+.lv .lv-button--solid:hover:not(:disabled) {
+    background: var(--lv-accent-solid-hover);
+}
+
+.lv .lv-button--soft {
+    background: var(--lv-bg-element);
+    border-color: var(--lv-border);
+    color: var(--lv-text);
+}
+
+.lv .lv-button--soft:hover:not(:disabled) {
+    background: var(--lv-bg-element-hover);
+    border-color: var(--lv-border-element);
+}
+
+.lv .lv-button--soft:active:not(:disabled) {
+    background: var(--lv-bg-element-active);
+}
+
+.lv .lv-button--ghost {
+    background: transparent;
+    color: var(--lv-text-secondary);
+}
+
+.lv .lv-button--ghost:hover:not(:disabled) {
+    background: var(--lv-bg-element-ghost-hover);
+    color: var(--lv-text);
+}
+
+.lv .lv-button--danger {
+    background: var(--lv-danger-solid);
+    color: #fff;
+    font-weight: var(--lv-weight-semibold);
+}
+
+.lv .lv-button--danger:hover:not(:disabled) {
+    background: var(--lv-danger-solid-hover);
+}
+
+/* A link that behaves like a button — "Pokaz wszystkie", "Zresetuj filtry". */
+.lv .lv-button--link {
+    height: auto;
+    padding: 0;
+    background: none;
+    color: var(--lv-text-secondary);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.lv .lv-button--link:hover:not(:disabled) {
+    color: var(--lv-text);
+}
+
+.lv .lv-button__icon {
+    display: inline-flex;
+    flex-shrink: 0;
+}
+
+.lv .lv-icon-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: var(--lv-control-lg);
+    height: var(--lv-control-lg);
+    padding: 0;
+    border: 1px solid var(--lv-border);
+    border-radius: var(--lv-radius-3);
+    background: transparent;
+    color: var(--lv-text-secondary);
+    transition:
+        background-color var(--lv-duration-1) linear,
+        border-color var(--lv-duration-1) linear,
+        color var(--lv-duration-1) linear;
+}
+
+.lv .lv-icon-button:hover:not(:disabled) {
+    background: var(--lv-bg-element-ghost-hover);
+    border-color: var(--lv-border-element);
+    color: var(--lv-text);
+}
+
+.lv .lv-icon-button:disabled {
+    opacity: 0.4;
+}
+
+.lv .lv-icon-button--sm {
+    width: var(--lv-control-md);
+    height: var(--lv-control-md);
+}
+
+/* --- input --------------------------------------------------------------- */
+
+.lv .lv-input {
+    display: block;
+    width: 100%;
+    height: var(--lv-control-lg);
+    padding: 0 var(--lv-space-5);
+    background: var(--lv-bg-sunken);
+    border: 1px solid var(--lv-border-element);
+    border-radius: var(--lv-radius-3);
+    color: var(--lv-text);
+    font-size: var(--lv-text-5);
+    transition: border-color var(--lv-duration-1) linear;
+}
+
+.lv .lv-input:hover:not(:disabled) {
+    border-color: var(--lv-border-strong);
+}
+
+.lv .lv-input--mono {
+    font-family: var(--lv-font-mono);
+}
+
+.lv .lv-input--lg {
+    height: var(--lv-control-xl);
+}
+
+.lv .lv-input--invalid,
+.lv .lv-input--invalid:hover {
+    border-color: var(--lv-danger-solid);
+}
+
+/* Wrapper that lets icons and toggle buttons sit inside the field. */
+.lv .lv-input-shell {
+    position: relative;
+    display: flex;
+    align-items: center;
+    min-width: 0;
+}
+
+.lv .lv-input-shell--with-icon .lv-input {
+    padding-left: var(--lv-space-11);
+}
+
+.lv .lv-input-shell__icon {
+    position: absolute;
+    left: var(--lv-space-5);
+    display: inline-flex;
+    color: var(--lv-text-secondary);
+    pointer-events: none;
+}
+
+.lv .lv-input-shell__adornments {
+    position: absolute;
+    right: var(--lv-space-2);
+    display: flex;
+    gap: var(--lv-space-1);
+}
+
+/* --- badge --------------------------------------------------------------- */
+
+.lv .lv-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--lv-space-3);
+    min-width: 20px;
+    height: 18px;
+    padding: 0 var(--lv-space-3);
+    border: 1px solid transparent;
+    border-radius: var(--lv-radius-full);
+    font-family: var(--lv-font-mono);
+    font-size: var(--lv-text-1);
+    font-weight: var(--lv-weight-semibold);
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+}
+
+.lv .lv-badge--neutral {
+    background: var(--lv-bg-element);
+    color: var(--lv-text-secondary);
+}
+
+.lv .lv-badge--accent {
+    background: var(--lv-accent-solid);
+    color: var(--lv-accent-contrast);
+}
+
+.lv .lv-badge--accent-soft {
+    background: var(--lv-accent-tint-strong);
+    color: var(--lv-accent-text-strong);
+}
+
+.lv .lv-badge--success {
+    background: var(--lv-success-bg);
+    border-color: var(--lv-success-border);
+    color: var(--lv-success-text);
+}
+
+/* The "NAGRYWANIE" pill: wider, letter-spaced, with a live dot. */
+.lv .lv-badge--status {
+    height: 20px;
+    padding: 0 var(--lv-space-4);
+    font-family: var(--lv-font-sans);
+    font-size: var(--lv-text-1);
+    letter-spacing: var(--lv-tracking-wide);
+    text-transform: uppercase;
+}
+
+.lv .lv-badge__dot {
+    width: 6px;
+    height: 6px;
+    border-radius: var(--lv-radius-full);
+    background: currentColor;
+    flex-shrink: 0;
+}
+
+.lv .lv-badge__dot--live {
+    background: var(--lv-success-solid);
+}
+
+/* --- toggle -------------------------------------------------------------- */
+
+.lv .lv-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--lv-space-3);
+    height: var(--lv-control-sm);
+    padding: 0 var(--lv-space-5);
+    border: 1px solid var(--lv-border);
+    border-radius: var(--lv-radius-2);
+    background: transparent;
+    color: var(--lv-text-secondary);
+    font-size: var(--lv-text-3);
+    line-height: 1;
+    white-space: nowrap;
+    transition:
+        background-color var(--lv-duration-1) linear,
+        border-color var(--lv-duration-1) linear,
+        color var(--lv-duration-1) linear;
+}
+
+.lv .lv-toggle:hover:not(:disabled) {
+    border-color: var(--lv-border-element);
+    color: var(--lv-text);
+}
+
+.lv .lv-toggle[data-state='on'] {
+    background: var(--lv-bg-selected);
+    border-color: var(--lv-border-strong);
+    color: var(--lv-text);
+}
+
+.lv .lv-toggle--md {
+    height: var(--lv-control-md);
+    font-size: var(--lv-text-4);
+}
+
+.lv .lv-toggle--square {
+    width: var(--lv-control-xs);
+    height: var(--lv-control-xs);
+    padding: 0;
+    font-size: var(--lv-text-3);
+}
+
+.lv .lv-toggle--mono {
+    font-family: var(--lv-font-mono);
+}
+
+/* --- segmented ----------------------------------------------------------- */
+
+.lv .lv-segmented {
+    display: inline-flex;
+    gap: var(--lv-space-1);
+    padding: var(--lv-space-1);
+    border: 1px solid var(--lv-border);
+    border-radius: var(--lv-radius-4);
+    background: var(--lv-bg-sunken);
+}
+
+.lv .lv-segmented__item {
+    height: var(--lv-control-md);
+    padding: 0 var(--lv-space-6);
+    border: none;
+    border-radius: var(--lv-radius-3);
+    background: transparent;
+    color: var(--lv-text-secondary);
+    font-size: var(--lv-text-4);
+    line-height: 1;
+    white-space: nowrap;
+    transition:
+        background-color var(--lv-duration-1) linear,
+        color var(--lv-duration-1) linear;
+}
+
+.lv .lv-segmented__item:hover:not(:disabled) {
+    color: var(--lv-text);
+}
+
+.lv .lv-segmented__item[data-state='on'] {
+    background: var(--lv-bg-element-active);
+    color: var(--lv-text);
+}
+
+/* An option that is not available yet stays in place rather than disappearing:
+   the control keeps its width, and the reason is in the button's title. */
+.lv .lv-segmented__item:disabled {
+    color: var(--lv-text-faint);
+}
+
+/* --- chip ---------------------------------------------------------------- */
+
+.lv .lv-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--lv-space-3);
+    height: var(--lv-control-md);
+    padding: 0 var(--lv-space-5);
+    border: 1px solid var(--lv-border);
+    border-radius: var(--lv-radius-full);
+    background: transparent;
+    color: var(--lv-text-tertiary);
+    font-size: var(--lv-text-4);
+    line-height: 1;
+    white-space: nowrap;
+    transition:
+        background-color var(--lv-duration-1) linear,
+        border-color var(--lv-duration-1) linear,
+        color var(--lv-duration-1) linear;
+}
+
+.lv .lv-chip:hover:not(:disabled) {
+    border-color: var(--lv-border-element);
+}
+
+.lv .lv-chip[data-state='on'] {
+    background: var(--lv-bg-selected);
+    border-color: var(--lv-border-strong);
+    color: var(--lv-text);
+}
+
+.lv .lv-chip__count {
+    font-family: var(--lv-font-mono);
+    font-size: var(--lv-text-1);
+    font-variant-numeric: tabular-nums;
+    color: var(--lv-text-faint);
+}
+
+.lv .lv-chip[data-state='on'] .lv-chip__count {
+    color: var(--lv-text-secondary);
+}
+
+/* A dot that marks the chip's channel, so colour is never the only cue but is
+   still available at a glance. */
+.lv .lv-chip__dot {
+    width: 6px;
+    height: 6px;
+    border-radius: var(--lv-radius-full);
+    background: currentColor;
+    opacity: 0.85;
+}
+
+/* --- field and keycap ---------------------------------------------------- */
+
+.lv .lv-field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--lv-space-3);
+    min-width: 0;
+}
+
+.lv .lv-field__label {
+    font-size: var(--lv-text-4);
+    font-weight: var(--lv-weight-medium);
+    color: var(--lv-text-secondary);
+}
+
+/* The uppercase section label above a sidebar group. */
+.lv .lv-field__eyebrow {
+    font-size: var(--lv-text-1);
+    font-weight: var(--lv-weight-semibold);
+    letter-spacing: var(--lv-tracking-eyebrow);
+    text-transform: uppercase;
+    color: var(--lv-text-secondary);
+}
+
+.lv .lv-kbd {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 var(--lv-space-2);
+    border: 1px solid var(--lv-border-element);
+    border-radius: var(--lv-radius-1);
+    font-family: var(--lv-font-mono);
+    font-size: var(--lv-text-1);
+    line-height: 1;
+    color: var(--lv-text-secondary);
+}
+
+/* --- menu ---------------------------------------------------------------- */
+
+.lv .lv-menu-anchor {
+    display: inline-flex;
+}
+
+/* `fixed`, positioned from JS: `.lv` clips its overflow, so a menu opened from
+   the header would otherwise be cut off at the first row of the log. */
+.lv .lv-menu {
+    position: fixed;
+    z-index: var(--lv-z-popover);
+    display: flex;
+    flex-direction: column;
+    min-width: 180px;
+    padding: var(--lv-space-2);
+    border: 1px solid var(--lv-border-element);
+    border-radius: var(--lv-radius-3);
+    background: var(--lv-bg-raised);
+    box-shadow: var(--lv-shadow-3);
+    font-family: var(--lv-font-sans);
+}
+
+.lv .lv-menu__item {
+    display: flex;
+    align-items: center;
+    gap: var(--lv-space-4);
+    height: var(--lv-control-md);
+    padding: 0 var(--lv-space-5);
+    border-radius: var(--lv-radius-2);
+    color: var(--lv-text-secondary);
+    font-size: var(--lv-text-5);
+    text-align: left;
+    white-space: nowrap;
+    user-select: none;
+}
+
+.lv .lv-menu__item:hover:not(:disabled) {
+    background: var(--lv-bg-element-hover);
+    color: var(--lv-text);
+}
+
+.lv .lv-menu__item:disabled {
+    color: var(--lv-text-disabled);
+}
+
+.lv .lv-menu__label {
+    padding: var(--lv-space-3) var(--lv-space-5) var(--lv-space-2);
+    font-size: var(--lv-text-1);
+    font-weight: var(--lv-weight-semibold);
+    letter-spacing: var(--lv-tracking-eyebrow);
+    text-transform: uppercase;
+    color: var(--lv-text-tertiary);
+}
+
+.lv .lv-menu__separator {
+    height: 1px;
+    margin: var(--lv-space-2) 0;
+    background: var(--lv-border-subtle);
+}
+
+/* --- empty state and spinner --------------------------------------------- */
+
+.lv .lv-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--lv-space-6);
+    padding: var(--lv-space-12) var(--lv-space-10);
+    color: var(--lv-text-secondary);
+    font-size: var(--lv-text-6);
+    text-align: center;
+}
+
+.lv-spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--lv-border-strong);
+    border-top-color: var(--lv-accent-solid);
+    border-radius: var(--lv-radius-full);
+    animation: lv-spin 700ms linear infinite;
+}
+
+.lv-spinner--lg {
+    width: 24px;
+    height: 24px;
+}
+
+@keyframes lv-spin {
+    to {
+        transform: rotate(1turn);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .lv-spinner {
+        animation-duration: 2s;
+    }
+}

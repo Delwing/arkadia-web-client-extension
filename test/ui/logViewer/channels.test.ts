@@ -93,7 +93,7 @@ describe("channel filters", () => {
         for (const channel of CHANNELS) {
             expect(CHANNEL_META[channel].label).toBeTruthy();
             expect(CHANNEL_META[channel].tag).toBeTruthy();
-            expect(CHANNEL_META[channel].colorToken).toMatch(/^var\(--ark-/);
+            expect(CHANNEL_META[channel].colorToken).toMatch(/^var\(--lv-/);
         }
     });
 });

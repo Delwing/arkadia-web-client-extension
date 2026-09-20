@@ -31,8 +31,8 @@ export interface LogEventMeta {
 }
 
 export const LOG_EVENT_META: Record<LogEventKind, LogEventMeta> = {
-    login: { label: "Wejscie do gry", tag: "WEJSC", glyph: "|", colorToken: "var(--ark-log-event-login)" },
-    death: { label: "Smierc", tag: "SMIERC", glyph: "✕", colorToken: "var(--ark-log-event-death)" },
+    login: { label: "Wejscie do gry", tag: "WEJSC", glyph: "|", colorToken: "var(--lv-log-event-login)" },
+    death: { label: "Smierc", tag: "SMIERC", glyph: "✕", colorToken: "var(--lv-log-event-death)" },
 };
 
 /** `Twoje cechy sa oslabione po ostatniej smierci.` — the game's own death marker. */

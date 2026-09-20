@@ -33,14 +33,14 @@ export interface ChannelMeta {
 }
 
 export const CHANNEL_META: Record<Channel, ChannelMeta> = {
-    comm: { label: "Rozmowy", tag: "ROZM", colorToken: "var(--ark-log-comm)" },
-    combat: { label: "Walka", tag: "WALKA", colorToken: "var(--ark-log-combat)" },
-    room: { label: "Lokacja", tag: "LOK", colorToken: "var(--ark-log-room)" },
-    system: { label: "System", tag: "SYS", colorToken: "var(--ark-log-system)" },
-    notify: { label: "Powiadomienia", tag: "POW", colorToken: "var(--ark-log-notify)" },
-    command: { label: "Komendy", tag: "KOM", colorToken: "var(--ark-log-command)" },
-    other: { label: "Inne", tag: "INNE", colorToken: "var(--ark-log-other)" },
-    script: { label: "Skrypty", tag: "SKR", colorToken: "var(--ark-log-script)" },
+    comm: { label: "Rozmowy", tag: "ROZM", colorToken: "var(--lv-log-comm)" },
+    combat: { label: "Walka", tag: "WALKA", colorToken: "var(--lv-log-combat)" },
+    room: { label: "Lokacja", tag: "LOK", colorToken: "var(--lv-log-room)" },
+    system: { label: "System", tag: "SYS", colorToken: "var(--lv-log-system)" },
+    notify: { label: "Powiadomienia", tag: "POW", colorToken: "var(--lv-log-notify)" },
+    command: { label: "Komendy", tag: "KOM", colorToken: "var(--lv-log-command)" },
+    other: { label: "Inne", tag: "INNE", colorToken: "var(--lv-log-other)" },
+    script: { label: "Skrypty", tag: "SKR", colorToken: "var(--lv-log-script)" },
 };
 
 /**
