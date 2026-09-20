@@ -119,6 +119,44 @@ export function MenuItem({
     );
 }
 
+/**
+ * A menu row that is a switch rather than a command.
+ *
+ * The check sits in a fixed column so the labels line up whether or not they
+ * are on, and the menu does not close on a click — turning three channels off
+ * should take three taps, not three trips back to the button.
+ */
+export function MenuCheckItem({
+    checked,
+    label,
+    count,
+    dotColor,
+    onToggle,
+}: {
+    checked: boolean;
+    label: string;
+    count?: number;
+    dotColor?: string;
+    onToggle: () => void;
+}) {
+    return (
+        <button
+            type="button"
+            className="lv-menu__item lv-menu__item--check"
+            data-state={checked ? "on" : "off"}
+            onClick={(event) => {
+                event.stopPropagation();
+                onToggle();
+            }}
+        >
+            <span className="lv-menu__check">{checked ? "\u2713" : ""}</span>
+            {dotColor ? <span className="lv-menu__dot" style={{ color: dotColor }} /> : null}
+            <span className="lv-menu__text">{label}</span>
+            {count === undefined ? null : <span className="lv-menu__count">{count}</span>}
+        </button>
+    );
+}
+
 export function MenuLabel({ children }: { children: ReactNode }) {
     return <div className="lv-menu__label">{children}</div>;
 }

@@ -57,7 +57,7 @@ export function StatusBar({
                     : `${shownLines} z ${totalLines} ${pluralLines(totalLines)}`}
             </span>
             {viewport ? (
-                <span className="lv-status__view">
+                <span className="lv-status__view lv-hide-narrow">
                     W widoku {formatClock(viewport.from)} {"–"} {formatClock(viewport.to)}
                 </span>
             ) : null}
@@ -82,14 +82,16 @@ export function StatusBar({
             <div className="lv-spacer" />
 
             <Toggle pressed={showTimestamps} onPressedChange={onShowTimestampsChange} title="Pokaz godziny">
-                Godziny
+                <span className="lv-hide-narrow">Godziny</span>
+                <span className="lv-only-narrow">Czas</span>
             </Toggle>
             <Toggle
                 pressed={showMeta}
                 onPressedChange={onShowMetaChange}
                 title="Pokaz numer linii i typ wiadomosci"
             >
-                Typ i numer
+                <span className="lv-hide-narrow">Typ i numer</span>
+                <span className="lv-only-narrow">Typ</span>
             </Toggle>
             {colorsAvailable ? (
                 <Toggle
@@ -97,11 +99,13 @@ export function StatusBar({
                     onPressedChange={onShowColorsChange}
                     title="Oryginalne kolory gry (wylacza podswietlanie trafien w linii)"
                 >
-                    Kolory gry
+                    <span className="lv-hide-narrow">Kolory gry</span>
+                    <span className="lv-only-narrow">Kolory</span>
                 </Toggle>
             ) : null}
             <Toggle pressed={wrap} onPressedChange={onWrapChange} title="Zawijaj dlugie linie">
-                Zawijanie
+                <span className="lv-hide-narrow">Zawijanie</span>
+                <span className="lv-only-narrow">Zawijaj</span>
             </Toggle>
             {live ? (
                 <Toggle
@@ -109,7 +113,10 @@ export function StatusBar({
                     onPressedChange={onFollowChange}
                     title="Przewijaj do nowych linii"
                 >
-                    {follow ? "Sledzi na zywo" : "Sledz na zywo"}
+                    <span className="lv-hide-narrow">
+                        {follow ? "Sledzi na zywo" : "Sledz na zywo"}
+                    </span>
+                    <span className="lv-only-narrow">Na zywo</span>
                 </Toggle>
             ) : null}
         </div>

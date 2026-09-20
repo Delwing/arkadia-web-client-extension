@@ -44,6 +44,11 @@ export interface SearchBarProps {
     /** Sub-line is a one-off announcement rather than the standing hint. */
     subIsNotice: boolean;
     invalid: boolean;
+    /**
+     * An extra filter control, rendered with the scope buttons. The channel
+     * menu goes here on a phone, where the chip bar does not fit.
+     */
+    filters?: React.ReactNode;
 }
 
 export const SearchBar = forwardRef<HTMLInputElement, SearchBarProps>(function SearchBar(props, ref) {
@@ -66,6 +71,7 @@ export const SearchBar = forwardRef<HTMLInputElement, SearchBarProps>(function S
         subLine,
         subIsNotice,
         invalid,
+        filters,
     } = props;
 
     return (
@@ -120,6 +126,12 @@ export const SearchBar = forwardRef<HTMLInputElement, SearchBarProps>(function S
                 </IconButton>
             </div>
 
+            {/* Forces the wrap between the search row and the filter row on a
+                phone; `display: none` everywhere else. Flexbox fills a line
+                greedily, so without it the filters crowd onto the first row and
+                squeeze the field down to its icon. */}
+            <span className="lv-search__break" />
+
             <div className="lv-search__counter">
                 <span className="lv-search__count" data-tone={counterTone}>
                     {counter}
@@ -138,15 +150,23 @@ export const SearchBar = forwardRef<HTMLInputElement, SearchBarProps>(function S
                 size="md"
                 title="Ukryj linie bez trafienia"
             >
-                Tylko trafienia
+                <span className="lv-hide-narrow">Tylko trafienia</span>
+                <span className="lv-only-narrow">Trafienia</span>
             </Toggle>
+
+            {filters}
 
             <Segmented
                 value={scope}
                 onValueChange={onScopeChange}
                 options={[
-                    { value: "log", label: "Ten log", title: SCOPE_TITLE.log },
-                    { value: "all", label: "Wszystkie logi", title: SCOPE_TITLE.all },
+                    { value: "log", label: "Ten log", shortLabel: "Log", title: SCOPE_TITLE.log },
+                    {
+                        value: "all",
+                        label: "Wszystkie logi",
+                        shortLabel: "Wszystkie",
+                        title: SCOPE_TITLE.all,
+                    },
                     {
                         value: "range",
                         label: "Zakres",

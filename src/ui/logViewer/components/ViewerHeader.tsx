@@ -91,9 +91,17 @@ export function ViewerHeader({
                         {session ? charactersLabel(session.characters, session.dateLabel) : "Logi"}
                     </h2>
                     {session?.live ? (
-                        <Badge tone="success" status dot="live">
-                            Nagrywanie
-                        </Badge>
+                        <>
+                            <Badge tone="success" status dot="live" className="lv-hide-narrow">
+                                Nagrywanie
+                            </Badge>
+                            {/* 110px of pill is more than a phone header can
+                                spare; the dot says the same thing. */}
+                            <span
+                                className="lv-session__live lv-only-narrow"
+                                title="Nagrywanie"
+                            />
+                        </>
                     ) : null}
                 </div>
                 <div className="lv__meta">{meta}</div>

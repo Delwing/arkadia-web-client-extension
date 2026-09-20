@@ -283,6 +283,61 @@ test.describe('Logi browser on a phone', () => {
         await expect(page.locator('.lv-sidebar')).toHaveAttribute('data-open', 'false');
     });
 
+    test('the timestamp column fits its timestamp', async ({page}) => {
+        await login(page);
+        await pushFiller(page, 'linia', 20);
+        await openLogs(page);
+
+        // With the tag and line-number columns off, the text starts right after
+        // the clock — so a time column too narrow for `HH:MM:SS` does not just
+        // clip, it runs into the log. It did: the phone rules once pinned this
+        // column at 52px for a stamp that needs 57.
+        await page.locator('.lv-toggle', {hasText: 'Typ'}).first().click();
+        await expect(page.locator('.lv-log')).toHaveAttribute('data-meta', 'false');
+
+        const fits = await page.evaluate(() => {
+            const cells = [...document.querySelectorAll('.lv-log__time')] as HTMLElement[];
+            return cells.every((cell) => cell.scrollWidth <= cell.clientWidth);
+        });
+        expect(fits).toBe(true);
+    });
+
+    test('the channel filters are one menu, and the chip bar stands down', async ({page}) => {
+        await login(page);
+        await pushFiller(page, 'linia', 20);
+        await openLogs(page);
+
+        // Eight chips do not fit a phone in either shape — wrapped they took
+        // four rows, scrolling they were cut off.
+        await expect(page.locator('.lv-channels')).toBeHidden();
+
+        const button = page.getByTitle('Ktore kanaly sa widoczne');
+        await expect(button).toHaveText('Kanaly');
+        await button.click();
+        const menu = page.locator('.lv-menu');
+        await expect(menu.locator('.lv-menu__item--check')).toHaveCount(8);
+
+        // Turning one off keeps the menu open — three channels should cost
+        // three taps, not three trips back to the button.
+        await menu.locator('.lv-menu__item--check', {hasText: 'System'}).click();
+        await expect(menu).toBeVisible();
+        await menu.locator('.lv-menu__item--check', {hasText: 'Komendy'}).click();
+        await expect(menu).toBeVisible();
+        await expect(button).toHaveText('Kanaly 6/8');
+    });
+
+    test('the footer wraps rather than hiding switches behind a scroll', async ({page}) => {
+        await login(page);
+        await pushFiller(page, 'linia', 20);
+        await openLogs(page);
+
+        const scrolls = await page.evaluate(() => {
+            const bar = document.querySelector('.lv-status')!;
+            return bar.scrollWidth > bar.clientWidth;
+        });
+        expect(scrolls).toBe(false);
+    });
+
     test('copying and exporting share one overflow menu', async ({page}) => {
         await login(page);
         await pushFiller(page, 'linia', 20);

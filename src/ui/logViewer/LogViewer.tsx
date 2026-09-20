@@ -17,7 +17,7 @@ import {
 } from "./model/viewerState";
 import { buildLogHtml, escapeHtml } from "./export/logHtml";
 import { copyBlobToClipboard, downloadBlob, renderLogImage, type ImageStyle } from "./export/logImage";
-import { ChannelBar } from "./components/ChannelBar";
+import { ChannelBar, ChannelMenu } from "./components/ChannelBar";
 import { LineMenu, type LineMenuState } from "./components/LineMenu";
 import { LogPane, type ScrollRequest } from "./components/LogPane";
 import { SearchBar } from "./components/SearchBar";
@@ -285,6 +285,21 @@ export function LogViewer({
             });
         },
         [state, activeQuery, view, patch, requestScroll],
+    );
+
+    const toggleChannel = useCallback(
+        (channel: Channel, on: boolean) =>
+            setState((previous) => ({
+                ...previous,
+                channels: { ...previous.channels, [channel]: on },
+                matchIndex: 0,
+            })),
+        [],
+    );
+
+    const showAllChannels = useCallback(
+        () => patch({ channels: allChannelsOn(), matchIndex: 0 }),
+        [patch],
     );
 
     const jumpToTime = useCallback(
@@ -679,15 +694,26 @@ export function LogViewer({
                             subLine={subLine}
                             subIsNotice={subIsNotice}
                             invalid={view.invalidPattern}
+                            // The same eight filters as the chip bar below,
+                            // drawn as one button. Only one of the two is ever
+                            // visible — see `logViewer.css`.
+                            filters={
+                                <div className="lv-only-narrow">
+                                    <ChannelMenu
+                                        channels={state.channels}
+                                        counts={view.channelCounts}
+                                        onToggle={toggleChannel}
+                                        onShowAll={showAllChannels}
+                                    />
+                                </div>
+                            }
                         />
 
                         <ChannelBar
                             channels={state.channels}
                             counts={view.channelCounts}
-                            onToggle={(channel: Channel, on: boolean) =>
-                                patch({ channels: { ...state.channels, [channel]: on }, matchIndex: 0 })
-                            }
-                            onShowAll={() => patch({ channels: allChannelsOn(), matchIndex: 0 })}
+                            onToggle={toggleChannel}
+                            onShowAll={showAllChannels}
                         />
 
                         <Timeline

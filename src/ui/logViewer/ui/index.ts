@@ -17,7 +17,7 @@ export { Icon } from "./Icon";
 export type { IconName } from "./Icon";
 export { Input, InputShell } from "./Input";
 export { Kbd } from "./Kbd";
-export { Menu, MenuItem, MenuLabel, MenuSeparator } from "./Menu";
+export { Menu, MenuCheckItem, MenuItem, MenuLabel, MenuSeparator } from "./Menu";
 export { Segmented } from "./Segmented";
 export { Spinner } from "./Spinner";
 export { Toggle } from "./Toggle";

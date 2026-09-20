@@ -46,9 +46,20 @@
 }
 
 .lv__title {
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
     font-size: var(--lv-text-7);
     font-weight: var(--lv-weight-semibold);
     letter-spacing: 0.01em;
+}
+
+/* The live marker never gives up room to the title — it is the one thing in
+   the header that says this log is still being written to. */
+.lv__title-block .lv-badge,
+.lv__title-block .lv-session__live {
+    flex-shrink: 0;
 }
 
 .lv__title-block {
@@ -527,10 +538,16 @@
     justify-content: center;
 }
 
+/* The time column is `8.5ch`, not a pixel count: `ch` is one character of the
+   pane's own monospace font, `HH:MM:SS` is eight of them, and half a character
+   is the breathing room. Hard-coded pixels went wrong the moment the phone
+   rules narrowed this column to 52px for a stamp that needs 57 — the timestamp
+   then ran into the text, which is what you see with the tag and line-number
+   columns switched off. */
 .lv-log__row,
 .lv-log__probe {
     display: grid;
-    grid-template-columns: 64px 40px 46px minmax(0, 1fr);
+    grid-template-columns: 8.5ch 40px 46px minmax(0, 1fr);
     column-gap: var(--lv-space-6);
     padding: 0 var(--lv-space-8);
     line-height: var(--lv-line-height);
@@ -546,7 +563,7 @@
 
 .lv-log[data-timestamps='true'][data-meta='false'] .lv-log__row,
 .lv-log[data-timestamps='true'][data-meta='false'] .lv-log__probe {
-    grid-template-columns: 64px minmax(0, 1fr);
+    grid-template-columns: 8.5ch minmax(0, 1fr);
 }
 
 .lv-log[data-timestamps='false'][data-meta='false'] .lv-log__row,
@@ -586,6 +603,7 @@
 }
 
 .lv-log__time {
+    overflow: hidden;
     color: var(--lv-text-tertiary);
     font-variant-numeric: tabular-nums;
 }
@@ -660,8 +678,44 @@
 
 /* Two markers the components use to offer a control in one layout and not the
    other. Both default to the wide screen; the phone query below flips them. */
-.lv .lv-only-narrow {
+.lv .lv-only-narrow,
+.lv .lv-search__break {
     display: none;
+}
+
+/* Menu rows that are switches rather than commands — the channel filters. */
+.lv .lv-menu__item--check {
+    justify-content: flex-start;
+}
+
+.lv .lv-menu__check {
+    flex-shrink: 0;
+    width: 14px;
+    color: var(--lv-accent-text);
+}
+
+.lv .lv-menu__dot {
+    flex-shrink: 0;
+    width: 6px;
+    height: 6px;
+    border-radius: var(--lv-radius-full);
+    background: currentColor;
+    opacity: 0.85;
+}
+
+.lv .lv-menu__text {
+    flex-grow: 1;
+}
+
+.lv .lv-menu__count {
+    font-family: var(--lv-font-mono);
+    font-size: var(--lv-text-1);
+    font-variant-numeric: tabular-nums;
+    color: var(--lv-text-faint);
+}
+
+.lv .lv-menu__item--check[data-state='on'] {
+    color: var(--lv-text);
 }
 
 /* The viewer is hosted at every width there is: a maximised desktop window, a
@@ -765,8 +819,9 @@
         display: none;
     }
 
+    /* `revert`, not `block`: a span has to stay inline inside a button. */
     .lv .lv-only-narrow {
-        display: block;
+        display: revert;
     }
 
     .lv .lv__header {
@@ -789,51 +844,79 @@
         font-size: var(--lv-text-2);
     }
 
+    /* Two rows, not three. `order` puts the counter beside the field rather
+       than under it, so the row that was just a search box now carries the
+       whole "where am I in the results" story:
+
+           [ Szukaj ...  Aa .* ] [ 3 z 128 ] [^] [v]
+           [ Kanaly 6/8 ] [ Trafienia ] [ Log | Wszystkie ]              */
     .lv-search {
         gap: var(--lv-space-3);
         padding: var(--lv-space-4);
     }
 
-    /* The field takes the row; the counter, the step arrows and the scope sit
-       under it. */
     .lv-search__field {
-        width: 100%;
-        flex-shrink: 1;
+        order: 1;
+        flex: 1 1 0;
+        min-width: 120px;
+        width: auto;
     }
 
-    /* Fixed at 168px the counter reserved half a phone's width for text that is
-       empty until you type, and pushed "Tylko trafienia" onto a row of its own. */
+    /* Fixed at 168px the counter reserved nearly half a phone's width for text
+       that is empty until you type. Here it takes what it needs, up to a cap,
+       and clips the rest — the whole notice is on the element's title. */
     .lv-search__counter {
-        flex: 1 1 auto;
+        order: 2;
+        flex: 0 1 auto;
         min-width: 0;
+        max-width: 96px;
     }
 
-    .lv-segmented {
+    .lv-search > .lv-row {
+        order: 3;
+    }
+
+    /* `.lv` prefixed deliberately: the rule that hides this by default is
+       `.lv .lv-search__break`, and a bare class selector loses to it. */
+    .lv .lv-search__break {
+        order: 4;
+        display: block;
+        width: 100%;
+        height: 0;
+    }
+
+    .lv-search > .lv-toggle {
+        order: 5;
+    }
+
+    .lv-search > .lv-only-narrow {
+        order: 6;
+    }
+
+    /* Takes the width left on its row, and the whole row on a phone too narrow
+       to share one — which is where it ends up under about 360px. */
+    .lv-search > .lv-segmented {
+        order: 7;
         flex-grow: 1;
     }
 
     .lv-segmented__item {
         flex: 1 1 0;
-        padding: 0 var(--lv-space-3);
+        padding: 0 var(--lv-space-2);
     }
 
-    /* One row that scrolls sideways, rather than four stacked ones. */
-    .lv-channels {
-        flex-wrap: nowrap;
-        overflow-x: auto;
-        gap: var(--lv-space-2);
-        padding: var(--lv-space-3) var(--lv-space-4);
-        scrollbar-width: none;
-    }
-
-    .lv-channels::-webkit-scrollbar {
+    /* "Zakres" is only reachable from a line's long-press here — the timeline
+       it is normally dragged out on is hidden. Until there is a range to
+       search, the button is a third of a row saying nothing. */
+    .lv-segmented__item:disabled {
         display: none;
     }
 
-    .lv-channels__label,
-    .lv-chip,
-    .lv-channels .lv-button {
-        flex-shrink: 0;
+    /* Eight chips never fitted: wrapped they took four rows, and in one
+       scrolling row the last of them were cut off with nothing to say so.
+       `ChannelMenu` puts the same filters in the row above. */
+    .lv-channels {
+        display: none;
     }
 
     /* A histogram with 9px drag handles is a mouse instrument. The log scrolls
@@ -842,29 +925,31 @@
         display: none;
     }
 
-    /* Same treatment as the channels: one scrolling row keeps every switch
-       reachable without stacking three rows of them on top of the log. */
+    /* Short labels and no viewport clock, so the footer fits on one row at
+       phone widths. Where it still does not — a very narrow screen, or a live
+       session with its extra switch — it WRAPS rather than scrolls: a row that
+       scrolls sideways hides controls behind a gesture nothing on screen asks
+       for, and on a near-black surface the usual shadow-at-the-edge cue is
+       invisible anyway. A second row costs 30px and hides nothing. */
     .lv-status {
-        flex-wrap: nowrap;
-        overflow-x: auto;
+        flex-wrap: wrap;
+        row-gap: var(--lv-space-2);
         gap: var(--lv-space-3);
         padding: var(--lv-space-2) var(--lv-space-4);
-        scrollbar-width: none;
     }
 
-    .lv-status::-webkit-scrollbar {
-        display: none;
-    }
-
-    .lv-status > * {
-        flex-shrink: 0;
+    /* Pushes the switches away from the line count on a single row, and lets
+       them start the second row when there is one. */
+    .lv-status .lv-spacer {
+        flex-basis: 0;
     }
 
     /* 150px of gutters out of 390px left the text column narrower than the text
-       in it. The columns still line up; they just stop being generous. */
+       in it. The number and tag columns give some back; the time column cannot,
+       because a timestamp is a timestamp. */
     .lv-log__row,
     .lv-log__probe {
-        grid-template-columns: 52px 30px 38px minmax(0, 1fr);
+        grid-template-columns: 8.5ch 30px 38px minmax(0, 1fr);
         column-gap: var(--lv-space-4);
         padding: 0 var(--lv-space-4);
     }
@@ -872,11 +957,6 @@
     .lv-log[data-timestamps='false'][data-meta='true'] .lv-log__row,
     .lv-log[data-timestamps='false'][data-meta='true'] .lv-log__probe {
         grid-template-columns: 30px 38px minmax(0, 1fr);
-    }
-
-    .lv-log[data-timestamps='true'][data-meta='false'] .lv-log__row,
-    .lv-log[data-timestamps='true'][data-meta='false'] .lv-log__probe {
-        grid-template-columns: 52px minmax(0, 1fr);
     }
 
     .lv-sidebar__head {
