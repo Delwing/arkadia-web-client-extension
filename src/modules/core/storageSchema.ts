@@ -55,6 +55,8 @@ export interface CharacterStorageSchema {
     gender: CharGender;
     pipe_filled: boolean;
     carriages: Record<string, CarriageRecord>;
+    /** Ostatnie znane haslo do drzwi Lisicy, np. "1-9-5-2". */
+    lisica_code: string;
 }
 
 /**
@@ -167,6 +169,7 @@ export const characterStorageKeys = [
     'gender',
     'pipe_filled',
     'carriages',
+    'lisica_code',
 ] as const satisfies readonly (keyof CharacterStorageSchema)[];
 
 /** All global storage keys as a const array for runtime use. */

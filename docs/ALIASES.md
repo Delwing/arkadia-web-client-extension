@@ -231,6 +231,16 @@ Zakresy dzialaja rosnaco (`1-7`) i malejaco (`7-1`). Maksymalnie 50 iteracji.
 | `/raon_mapa` | Przelacz mapper Labiryntu Raon |
 | `/taragorn` | Rozpoznaj ponownie lokacje w labiryncie pod swiatynia Taragorna |
 
+## Skarbce
+
+| Komenda | Opis |
+|---------|------|
+| `/lisica` | Wystukaj na drzwiach zapamietane haslo (pierwsza cyfra = liczba pukniec) |
+| `/lisica 1-9-5-2` | Wystukaj podane haslo i zapamietaj je (dziala tez `1952`, `1 9 5 2`) |
+| `/lisica stop` | Przerwij wystukiwanie hasla |
+
+> **Wskazowka:** Haslo z wiadomosci ("aktualnie to: 1-9-5-2") zapamietuje sie samo. Po odpowiedzi drzwi kolejna grupa pukniec trafia na funkcjonalny bind (domyslnie `]`).
+
 ## Odswiezanie danych
 
 | Komenda | Opis |
