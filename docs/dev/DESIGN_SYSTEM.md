@@ -313,6 +313,15 @@ but the second exists only for screens sized from the `--ark-control-*` ladder;
 adding a hard-sized family there shrinks its controls on a phone. Check which
 rule you are opting out of, and why it has that exemption.
 
+**And an exclusion is not a cleanup on its own.** Opting a screen out of the
+bare rule only removes reach-in if the screen already paints itself. The
+footer's buttons did not: `#input-area button` set `border-color` and took the
+border's *width* and *style*, the radius, the font size and the focus ring from
+the bare skin, so excluding them before writing those in would have erased their
+borders. Check what the bare rule is still supplying before opting out — and
+note that the same check is what Phase 6 owes every screen, because deleting
+that block removes the supply for all of them at once.
+
 ---
 
 ## 7. What is migrated
@@ -332,6 +341,7 @@ rule you are opting out of, and why it has that exemption.
 | `src/web/settings/` (the settings dialog shell) | **on the design system** (Phase 4, PR 1) |
 | `src/web/` settings pages | **all 15 on the design system.** Komendy, Inne, Gildie, Magiki (Faza 4, PR 1); Okna, Wyglad, Mapa, Dzwiek i powiadomienia (PR 2); Ogolne, Przedmioty, Walka, Przyciski, Przyciski mobilne, Menu kolowe, Stopka (PR 3) |
 | `.map-header-menu__*` (shared header menu) + `.static-map-popup__*` + `.chat-popup__*` | **on the design system**, `--ark-*` only (Phase 5). The three families share one header, so they migrated as one change; it unblocks Okno mapy and Czat, which still need their own recipe pass |
+| `src/web/` footer + input bar (`footerMobile.css`, the `#input-area` / `#char-state` rules, the footer chips) | **on the design system**, `--ark-*` only (Phase 5). The `--footer-*` layer is deleted, not bridged |
 | `src/web/` remaining popups, settings, layout | Bootstrap markup; `--popup-*` bridged onto `--ark-*` (`themes/bridge.css`), so it themes from here |
 | `forge-ui/` | out of scope by decision; its own theme layer |
 | `editor/`, `viewer/`, `popup/` | Bootstrap |

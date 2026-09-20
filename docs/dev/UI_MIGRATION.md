@@ -925,6 +925,125 @@ problem it documents is why it exists.
 > are this phase's, so the markup layer and its CSS go when the last of them
 > moves — not when the last page did.
 
+#### What the footer PR found
+
+**Done in this phase's first shell PR: the footer, in full.** `footerMobile.css`,
+the footer/input-bar rules in `style.css` (`#input-area`, `#char-state`,
+`#footer-chips`, `#multi-binds`, `#history-buttons` and the buttons) and the two
+chips in `src/ui/web/components/panels/`. Measured against the base: computed
+values **byte-identical** on desktop and at phone width in three themes, while
+perturbing the legacy layer went from moving 9 of 9 probed elements to 0.
+
+**`--footer-*` is gone, not bridged.** The family had 40 reads in four files and
+every one of them was stock-only — forge loads neither `style.css` nor
+`footerMobile.css` and draws its own `CommandRail`. So instead of carrying it to
+Phase 6, the reads moved to `--ark-*` and the 11 variables were deleted: 11 × 9
+files (eight themes plus `:root` in `style.css`) is **99 hand-maintained values**,
+plus the block `randomTheme.ts` generated for the player's own colour.
+`bridge.css` loses a third of its surface. Worth generalising: **before bridging
+a legacy family onward, count its readers.** A family with 40 reads in one host
+is cheaper to delete than to carry, and the bridge's own header had it listed as
+something the phase would have to keep supporting.
+
+**The footer's buttons were not painting themselves, and Phase 6 would have
+found out the hard way.** `#input-area button` set `border-color` and nothing
+else — the border's *width* and *style*, the radius, the font size and the focus
+ring all came from the leftover Vite `button` skin further down `style.css`.
+That block is exactly what Phase 6 deletes ("the whole block goes when Bootstrap
+does"), and on that day every button in the footer would have silently lost its
+border and its corners, with no test failing. `#input-area button` now carries
+the full paint, values copied 1:1 so the migration stays a no-op.
+
+**So a guard exclusion is not automatically a cleanup.** Phase 4 and this
+phase's first PR both treated "add the namespace to `style.css`'s `:not()` list"
+as tidying. Here it could not be: adding `#input-area *` without first writing
+the paint into `#input-area button` would have erased the footer's borders
+outright. **Check what the bare rule is still supplying before opting a screen
+out of it** — the exclusion only removes reach-in when the screen is already
+self-painting. Same per-rule discipline as before: `#input-area *` went on the
+four skin rules and deliberately *not* on the mobile touch-target rule, so the
+footer keeps its 8vmin tap targets on a phone.
+
+**Two vestigial values left in place, deliberately.** The footer's buttons
+compute `opacity: 0.75` and `font-weight: 500`, both inherited from the Vite
+template — the same `0.75` Phase 4 PR 1 called a bug in the Logi window. They
+are almost certainly nobody's intent, but changing them is a visual decision and
+this PR is a token swap, so they were copied across verbatim and written down
+here instead. **Someone should decide about them on purpose.**
+
+**The last readers of the retired `--popup-data-*` triple outside
+`popups-base.css` were footer chips.** `ConnectionStatus` and
+`ReleaseGuardTimer` still read `spring-green` / `yellow` / `tomato`. Audited by
+call site, as §4 requires: ping bands, proxy drift bands and the release-guard
+countdown all *rank*, so all of them are status and went to
+`--ark-success/warning/danger-text`. 26 reads remain, all in `popups-base.css`
+slices Phase 3 has not taken yet — which is now the entire remaining reason the
+old theme files still carry the data palette.
+
+**A hex inside a mask is not a colour.** `footerMobile.css`'s fade-out gradients
+use `#000` in `mask-image`, where the browser reads alpha and discards the hue.
+Adding the sheet to `MIGRATED_SHEETS` would have failed the no-hex test over
+four values that carry no theme decision at all, so the check now strips
+`mask-image` / `-webkit-mask-image` declarations before scanning — by
+declaration, not by value, so a real `#000` background in the same file is still
+caught.
+
+#### The modal order, which this plan has backwards
+
+**Read this before starting on `SubDialog.tsx` or the 15 declarative modals.**
+
+The section above hands the modals and `SubDialog` to one phase and implies they
+can go in any order. They cannot, and the plan's own numbers are stale:
+
+- **There are 14 declarative modals, not 15** (`class="modal fade"` in
+  `index.html`).
+- **`bootstrap/js/dist/modal` has one import, not three** (`src/web/docs.ts`).
+  What drives the shell's 12 modals is `import {Dropdown, Modal} from 'bootstrap'`
+  in `src/web/main.ts` — the whole barrel, which is a worse import than the one
+  the plan describes and matters for Phase 6's bundle.
+
+**`SubDialog` cannot simply become `@design`'s `Dialog`.** It was tried on a
+scratch branch and measured rather than argued:
+
+- `@design`'s `Dialog` portals to `document.body`. `SubDialog` renders *inline*
+  on purpose. So the swap moves every sub-dialog out of its host in the DOM —
+  and `e2e/support/dialogs.ts`'s `subDialog(scope, title)` helper, which the
+  specs go through, scopes its lookup to the host. Three specs failed on that
+  alone (`scripts.spec.ts` twice, `forge-menu.spec.ts` once), and
+  `ui-settings.spec.ts`'s sound-manager test fails the same way. **The swap is
+  not a local change: it invalidates the containment contract the suite is
+  built on, under both hosts.**
+- The focus war `SubDialog`'s header documents is **not** reproduced by Radix at
+  rest. Idle focus churn inside a Bootstrap-driven host was 0 events, and 21 per
+  800ms when focus was pushed outside both layers, against the existing test's
+  threshold of 50 and with the page responsive throughout (2-3ms round trip).
+  The pathological case was specific to react-overlays' `enforceFocus`.
+- **But it is not clean either.** With focus provoked outside both layers, a
+  Playwright click on a control inside the portaled dialog never completed —
+  the element was visible, enabled and stable, the click dispatched and hung.
+  Reproducible, and *not* something the current suite would catch.
+
+So: **the hosts have to become Radix dialogs before `SubDialog` does**, and the
+`subDialog()` helper and the specs that use it have to move in the same change.
+Whoever takes it should budget for the helper and the specs, not just the
+component.
+
+**And forge is less of an obstacle here than the plan assumes.**
+`forge-ui/components/menu/MenuModal.tsx` is a hand-rolled React portal with its
+own Esc handler — **no Bootstrap JS, no focus trap**. It fakes `show.bs.modal` /
+`hidden.bs.modal` on its own element (`MenuModalHost.tsx`) purely as an event
+contract. So converting the stock hosts does not require touching `forge-ui/`;
+it requires *keeping that event contract*, which `SettingsDialog.tsx` also
+listens to. That is a much smaller constraint than "it breaks forge unless forge
+changes with it", and it is worth re-scoping the phase around.
+
+**Phase 5 is not 1–2 PRs.** On the counts above, plus the ten standalone modals
+and their tabs, plus `layout.css` (48 legacy reads, and it is *shared with
+forge* through `forge-ui/layout-theme.css`, so every token it spends has to
+exist in `popup-host-tokens.css`), plus the ~300 legacy reads left in
+`style.css`. The footer was the separable piece and it is done; the rest wants
+its own sequencing.
+
 ### Phase 6 — Delete Bootstrap *(1 PR)*
 
 Drop the `bootswatch` import from `main-theme.css`, remove `bootstrap`,
