@@ -123,6 +123,9 @@ export async function installMockWebSocket(context: BrowserContext): Promise<voi
                 if (Array.isArray(socket?.commands)) {
                     socket.commands.length = 0;
                 }
+                if (Array.isArray(socket?.sent)) {
+                    socket.sent.length = 0;
+                }
             });
         };
 
@@ -925,6 +928,32 @@ export async function getCommandLog(page: Page): Promise<string[]> {
         const log: unknown = (window as any).__mockCommandLog;
         return Array.isArray(log) ? log.slice() : [];
     });
+}
+
+/**
+ * How many times `command` actually went over the wire, counted from the raw
+ * frames rather than from `getCommandLog`. The command log deliberately
+ * collapses a repeat of the command before it, so it cannot tell one send from
+ * two identical ones — which is exactly what a test for double-firing needs.
+ */
+export async function countSentCommand(page: Page, command: string): Promise<number> {
+    return await page.evaluate((expected) => {
+        const sockets: any[] = (window as any).__mockSockets ?? [];
+        let count = 0;
+        for (const socket of sockets) {
+            for (const frame of (socket?.sent ?? [])) {
+                let decoded = '';
+                try {
+                    decoded = atob(frame);
+                } catch {
+                    continue;
+                }
+                if (!decoded || decoded.charCodeAt(0) === 255) continue;
+                if (decoded.replace(/\r?\n/g, '').trim() === expected) count += 1;
+            }
+        }
+        return count;
+    }, command);
 }
 
 export async function resetCommandLog(page: Page): Promise<void> {
