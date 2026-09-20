@@ -121,6 +121,12 @@ uses a hex value.**
 A unit test enforces the last two for `tokens.css` and every primitive
 stylesheet, with `#fff` on a solid danger/accent fill as the one exception.
 
+**A named colour is a hex with a friendlier spelling.** `color: "white"` breaks
+a theme exactly as `#ffffff` does, and until Phase 5 the check matched hex only
+— so three named colours sat on the footer's clock chip, one of them painting
+white text on the light themes' light footer. The check now also rejects a
+named colour used as the whole value of a colour-bearing property.
+
 The semantic names are grouped as surfaces (`--ark-bg-*`), borders
 (`--ark-border*`), text (`--ark-text*`), accent (`--ark-accent-*`), status
 (`--ark-success-*`, `--ark-warning-*`, `--ark-danger-*`, `--ark-info-*`), and

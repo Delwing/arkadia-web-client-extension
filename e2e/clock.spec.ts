@@ -320,10 +320,27 @@ test.describe('Clock System', () => {
         // Wait for display to update
         await page.clock.runFor(1000);
 
-        // Check that clock has yellow color for daytime (calculated from hour vs sunrise/sunset)
-        // Daytime color is #fbbf24 (yellow) → rgb(251, 191, 36)
+        // Day and night read as the sun and the moon slots of the categorical
+        // palette (@web/popups/worldPalette.ts), the same ones the Zegar /
+        // Slonce popups use. Resolved from the token rather than asserted as a
+        // literal rgb: the value differs per theme by design, and hard-coding
+        // one is how this chip ended up with its own four-hue season table.
+        // Resolved through the browser's own colour parser, so the comparison
+        // does not depend on whether the theme spells the token as hex or rgb.
+        const token = (name: string) =>
+            page.evaluate((n) => {
+                const probe = document.createElement('span');
+                probe.style.color = `var(${n})`;
+                document.body.appendChild(probe);
+                const value = getComputedStyle(probe).color;
+                probe.remove();
+                return value;
+            }, name);
+        const sunColor = await token('--ark-data-4-text');
+        const moonColor = await token('--ark-data-1-text');
+
         const timeSpan = clockDisplay.locator('span').nth(1);
-        await expect(timeSpan).toHaveCSS('color', 'rgb(251, 191, 36)');
+        await expect(timeSpan).toHaveCSS('color', sunColor);
 
         // Set time at sunset
         await pushText(page, 'Jest w przyblizeniu osma wieczorem, 10 dzien miesiaca Pflugzeit wedlug Kalendarza Imperialnego.');
@@ -333,7 +350,6 @@ test.describe('Clock System', () => {
         await pushGmcp(page, 'room.time', { daylight: false });
         await page.clock.runFor(2000);
 
-        // Nighttime color is #60a5fa (blue) → rgb(96, 165, 250)
-        await expect(timeSpan).toHaveCSS('color', 'rgb(96, 165, 250)');
+        await expect(timeSpan).toHaveCSS('color', moonColor);
     });
 });

@@ -1035,12 +1035,59 @@ than it adds.
   `.chat-popup__*` (in `popups-base.css`) with it, or each window
   half-migrates in the opposite direction.
 
-- **`ClockDisplay.tsx` still carries a fourth copy of the season table**, in raw
-  hex (`#00ff7f` …), and it is the footer chip rather than a popup, so Phase 3
-  PR 2 left it alone. When Phase 5 reaches the footer it should read
-  `src/web/popups/worldPalette.ts` like the three popups now do. Until then the
-  chip and the popups disagree about what Wiosna looks like — as they already
-  did before, in the other direction.
+- ~~**`ClockDisplay.tsx` still carries a fourth copy of the season table**~~ —
+  **done in Phase 5.** The chip reads `src/web/popups/worldPalette.ts` like the
+  three popups, and it is on `MIGRATED_POPUP_COMPONENTS` so the copy cannot
+  come back.
+
+  **The season table was not the only thing in that file, and the rest mattered
+  more.** Two further literals had to go with it or the chip stayed
+  half-migrated: the daylight axis was `#fbbf24` / `#60a5fa`, which is exactly
+  the sun/moon pair the palette already names (`SUN_COLOR` / `MOON_COLOR`), and
+  three values were **CSS named colours** rather than hex — `"white"`,
+  `"gray"`, `"lightgray"`.
+
+  **Named colours were invisible to the no-hex test.** `literalColours()`
+  matched `/#[0-9a-f]{3,8}/` only, so `color: "white"` passed every check while
+  doing precisely what a hex does. On the chip it was the "daylight unknown"
+  state, i.e. white text on the footer — fine in the six dark themes,
+  unreadable on `parchment` and `silver`. The check now also catches a named
+  colour **where it is the whole value of a colour-bearing property**, which
+  keeps `white-space` and identifiers out of it; verified by putting a named
+  colour back and watching the test fail.
+
+  Both checks now **strip comments first**. That removes the wart recorded in
+  Phase 3's recipe step 7 — "a hex quoted in a header comment to record what
+  the old value was fails the test, describe it in words instead" — for block
+  comments and for line comments that own their whole line. A trailing `//`
+  still cannot hide a literal, and a `//` inside a string is untouched.
+
+  **Measured, and the before/after is the argument for the whole queue item.**
+  On the base commit the chip's colours were *byte-identical in all three
+  themes sampled* — `#00ff7f` spring, `#ffff00` summer, `#ff8c00` autumn,
+  `#00bfff` winter, `#fbbf24` day — because a hex cannot know what theme it is
+  in. Pure yellow and bright spring green on a parchment footer are the same
+  legibility failure Phase 3 PR 6 found on the knowledge chips. After, each
+  slot resolves per theme and the light themes get the dark end of the ramp.
+
+  **Note the hues move, and that is the point of the entry.** The old table put
+  summer on yellow and autumn on orange; `worldPalette` puts summer on bronze
+  (slot 4, shared with the sun on purpose) and autumn on plum (slot 5). So the
+  chip changes colour — it now agrees with Zegar, Kalendarz, Czas and Slonce,
+  which is what the entry asked for, rather than being a fifth opinion.
+
+  One e2e assertion had to change with it: `clock.spec.ts`'s day/night test
+  asserted `rgb(251, 191, 36)` and `rgb(96, 165, 250)` literally. It now
+  resolves `--ark-data-4-text` / `--ark-data-1-text` through the browser's own
+  colour parser and compares against that, so it states the *meaning* ("day
+  reads as the sun slot") and stays true in all eight themes. **A test that
+  hard-codes a palette value is how a fourth copy of a table gets written in
+  the first place.**
+
+  `MIGRATED_POPUP_COMPONENTS` is now a misnomer: `worldPalette.ts` was already
+  not a popup and `ClockDisplay.tsx` is a footer chip. It holds *component
+  sources held to the two rules*. Not renamed here — it would touch a list
+  several in-flight phases are appending to.
 
 - ~~**Character attribution for logs**~~ — done, see
   `LOG_CHARACTER_ATTRIBUTION.md` and `LOG_VIEWER.md` §1. The log carries a
