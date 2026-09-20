@@ -176,44 +176,42 @@ yarn test:e2e -- --grep "feature description"    # Filter by test name
 - Per-test timeout: 30 seconds; per-assertion: 10 seconds; global: 20 minutes
 - Tests that pass only on a retry are listed under "Flaky e2e tests" in the run summary
 
-## Specs that need the public internet
+## Third-party downloads are all mocked
 
-A handful of specs exercise data the client fetches from a third-party repository
-at runtime, above all `HERBS_URL` in `src/modules/data/dataStores/herbsStore.ts`:
+Every dataset the client fetches at runtime is stubbed in `e2e/support/mocks.ts`
+and installed by both fixtures, so no spec depends on the public internet:
+map data and colours, the map release version, NPCs, the people database,
+knowledge, wiedza, magics, magic keys and **herbs**.
 
-```
-https://raw.githubusercontent.com/tjurczyk/arkadia-data/.../herbs_data.json
-```
+The herb data (`HERBS_URL` in `src/modules/data/dataStores/herbsStore.ts`) was
+the last one missing, and its absence was mistaken for an environment problem
+for a while. The symptom is worth recognising, because it is the signature of a
+*missing mock* rather than a broken test: in a sandboxed container the shell can
+usually reach the host (curl goes through the agent proxy) while **Chromium
+cannot** - it does not inherit `HTTPS_PROXY`, so the in-page `fetch` fails
+outright. The store then never populates and the spec sits on a
+`waitForFunction` until the 30s per-test timeout, while every other test in the
+same file passes in about 2s.
 
-In a sandboxed agent container the shell can usually reach that host (curl goes
-through the agent proxy) while **Chromium cannot** - it does not inherit
-`HTTPS_PROXY`, so the in-page `fetch` fails outright. The herb store then never
-populates and the specs below sit on a `waitForFunction` until the 30s per-test
-timeout, while every other test in the same file passes in about 2s:
+**If you see that shape, look for an unmocked download before changing the
+test.** A shell that gets 200 while the browser reports `Failed to fetch` is
+this and nothing else.
 
-- `character-switch-data.spec.ts` - "herbs are cleared when switching..." and
-  "herbs restore when switching back..."
-- `herbs.spec.ts` - "give panel hands herbs from the basket to a team member"
+Adding one follows the existing pattern: a `*_ROUTE` glob, a snapshot under
+`e2e/support/mock-data/`, a `mockXDownload(context, data = DEFAULT_X)` helper,
+and a call in both `fixtures.ts` and `firebase-fixtures.ts`.
 
-**These are not flaky tests and there is nothing to fix in them.** They are green
-in CI, where the runner has direct network access. Three separate sessions have
-now each spent time re-discovering this, which is why it is written down.
-
-If you see exactly-30s timeouts in herb-related specs locally, confirm the cause
-rather than changing the test:
+The herb snapshot is `e2e/support/mock-data/herbs-data.json` (version 4, 155
+herbs). Refresh it with:
 
 ```bash
-node -e "..." # or simply: curl -sS -o /dev/null -w '%{http_code}\n' "$HERBS_URL"
+curl -sS "https://raw.githubusercontent.com/tjurczyk/arkadia-data/refs/heads/master/herbs_data.json" \
+  | python3 -m json.tool --sort-keys > e2e/support/mock-data/herbs-data.json
 ```
 
-A shell that gets 200 while the browser reports `Failed to fetch` is this, and
-nothing else. Run those specs on CI.
-
-Worth knowing separately: because the suite fetches that URL for real, a CI run
-also depends on that third-party repository being reachable. Stubbing the route
-in `support/fixtures.ts` would remove the dependency, at the cost of no longer
-exercising the real fetch-and-parse path. Not done here - it is a deliberate
-trade-off, not an oversight.
+The trade-off of any snapshot: the specs keep passing against a stale copy if
+the upstream shape changes. Parsing of that shape belongs in unit tests, which
+is where a real format change should be caught.
 
 ## Timing Budget
 
