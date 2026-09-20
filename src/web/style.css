@@ -99,18 +99,6 @@
   --popup-input-bg: var(--input-background);
   --popup-input-text: #f1f5f9;
   --popup-input-focus-border: var(--input-focus-ring);
-  /* Footer / bottom chrome */
-  --footer-bg: var(--surface-content, #242424);
-  --footer-border: rgba(255, 255, 255, 0.1);
-  --footer-control-bg: rgba(255, 255, 255, 0.08);
-  --footer-control-border: rgba(255, 255, 255, 0.2);
-  --footer-control-hover-bg: rgba(255, 255, 255, 0.16);
-  --footer-control-hover-border: rgba(255, 255, 255, 0.35);
-  --footer-button-bg: #3e3f3a;
-  --footer-input-focus-border: #646cff;
-  --footer-text-strong: rgba(255, 255, 255, 0.95);
-  --footer-text: rgba(255, 255, 255, 0.8);
-  --footer-text-dim: rgba(255, 255, 255, 0.5);
   --output-font-family: monospace;
   --output-font-size: 0.875rem;
   --panel-btn-size: 20px;
@@ -876,7 +864,7 @@ h1 {
 
 #split-handle {
   height: 2px;
-  background-color: var(--footer-control-hover-border);
+  background-color: var(--ark-border-strong);
   cursor: ns-resize;
   user-select: none;
   touch-action: none;
@@ -906,9 +894,9 @@ h1 {
   padding: 0.5vh 1vh;
   font-family: monospace;
   font-size: 0.8rem;
-  background-color: var(--footer-bg);
-  border-top: 0.1vh solid var(--footer-border);
-  color: var(--footer-text);
+  background-color: var(--ark-bg-surface);
+  border-top: 0.1vh solid var(--ark-border);
+  color: var(--ark-text-secondary);
   align-items: center;
   flex-wrap: wrap;
 }
@@ -924,8 +912,8 @@ h1 {
   white-space: nowrap;
   padding: 0.2rem 0.5rem;
   border-radius: 999px;
-  border: 1px solid var(--footer-control-border);
-  background-color: var(--footer-control-bg);
+  border: 1px solid var(--ark-border-element);
+  background-color: var(--ark-bg-element);
   color: inherit;
   font: inherit;
   font-size: 0.75rem;
@@ -939,8 +927,8 @@ h1 {
 }
 
 #multi-binds .multi-bind:hover {
-  background-color: var(--footer-control-hover-bg);
-  border-color: var(--footer-control-hover-border);
+  background-color: var(--ark-bg-element-hover);
+  border-color: var(--ark-border-strong);
 }
 
 #multi-binds .multi-bind:active {
@@ -965,23 +953,23 @@ h1 {
 
 /* A plugin asked to draw attention to this slot. */
 #multi-binds .multi-bind.multi-bind--highlight {
-  border-color: var(--footer-input-focus-border);
-  box-shadow: inset 0 0 0 1px var(--footer-input-focus-border);
+  border-color: var(--ark-focus-ring);
+  box-shadow: inset 0 0 0 1px var(--ark-focus-ring);
 }
 
 #multi-binds .multi-bind-key {
   font-weight: 700;
-  color: var(--footer-text-strong);
+  color: var(--ark-text);
 }
 
 #multi-binds .multi-bind-action {
-  color: var(--footer-text);
+  color: var(--ark-text-secondary);
 }
 
 #multi-binds .multi-bind-empty {
   display: inline-flex;
   align-items: center;
-  color: var(--footer-text-dim);
+  color: var(--ark-text-tertiary);
   font-style: italic;
   font-size: 0.75rem;
   line-height: 1;
@@ -999,9 +987,9 @@ h1 {
   padding: 0.5vh 1vh;
   font-family: monospace;
   font-size: 0.8rem;
-  background-color: var(--footer-bg);
-  border-top: 0.1vh solid var(--footer-border);
-  color: var(--footer-text);
+  background-color: var(--ark-bg-surface);
+  border-top: 0.1vh solid var(--ark-border);
+  color: var(--ark-text-secondary);
   position: relative;
   -webkit-user-select: none;
   user-select: none;
@@ -1530,9 +1518,9 @@ h1 {
 #input-area {
   display: flex;
   padding: 7px 10px;
-  background-color: var(--footer-bg);
-  border-top: 0.1vh solid var(--footer-border);
-  color: var(--footer-text);
+  background-color: var(--ark-bg-surface);
+  border-top: 0.1vh solid var(--ark-border);
+  color: var(--ark-text-secondary);
   gap: 10px;
   position: relative;
   z-index: 1001;
@@ -1553,9 +1541,9 @@ h1 {
   flex: 1 1 0;
   min-width: 0;
   padding: 0.75vh 1.25vh;
-  border: 0.1vh solid var(--footer-control-border);
+  border: 0.1vh solid var(--ark-border-element);
   border-radius: 1vmin;
-  background-color: var(--footer-control-bg);
+  background-color: var(--ark-bg-element);
   color: inherit;
   font-family: inherit;
   font-size: 1rem;
@@ -1575,14 +1563,45 @@ h1 {
 #message-input:focus,
 #message-input-password:focus {
   outline: none;
-  border-color: var(--footer-input-focus-border);
+  border-color: var(--ark-focus-ring);
 }
 
+/* The footer's buttons paint themselves.
+   ----------------------------------------------------------------------------
+   Until faza 5 this rule set only `border-color` and leaned on the leftover
+   Vite `button` skin further down for the border's WIDTH and STYLE, its radius,
+   its font size and its focus ring. That is a landmine for faza 6, which
+   deletes that block together with Bootstrap: every button in the footer would
+   have quietly lost its border and its corners on that day, and nothing would
+   have failed.
+
+   The values below are copied from that skin deliberately, so this migration
+   stays a computed no-op. Two of them are worth a decision that does NOT belong
+   in a token swap: `opacity: 0.75` and `font-weight: 500` came from the Vite
+   template and dim every footer control, which is almost certainly nobody's
+   intent (faza 4 PR 1 called the same 0.75 a bug in the Logi window). Left as
+   they were, and written down in docs/dev/UI_MIGRATION.md instead. */
 #input-area button {
   flex-shrink: 0;
   padding: 0 2vh;
-  background: var(--footer-button-bg);
-  border-color: var(--footer-control-border);
+  background: var(--ark-bg-raised);
+  border-width: 0.1vh;
+  border-style: solid;
+  border-color: var(--ark-border-element);
+  border-radius: 1vmin;
+  font-size: 1rem;
+  font-weight: 500;
+  font-family: inherit;
+  color: inherit;
+  -webkit-appearance: none;
+  cursor: pointer;
+  opacity: 0.75;
+  transition: border-color 0.25s;
+}
+
+#input-area button:focus,
+#input-area button:focus-visible {
+  outline: 0.5vmin auto -webkit-focus-ring-color;
 }
 
 #menu-button {
@@ -1636,42 +1655,42 @@ h1 {
 }
 
 #input-area .dropdown-menu li button {
-  background-color: var(--popup-control-bg);
-  border: 1px solid var(--popup-border-strong);
+  background-color: var(--ark-bg-element);
+  border: 1px solid var(--ark-border-strong);
   border-radius: 0.375rem;
-  color: var(--popup-text);
+  color: var(--ark-text);
   cursor: pointer;
   font-size: inherit;
 }
 
 #input-area .dropdown-menu li button:hover {
-  background-color: var(--popup-control-hover-bg);
-  border-color: var(--popup-border-stronger);
-  color: var(--popup-text-strong);
+  background-color: var(--ark-bg-element-hover);
+  border-color: var(--ark-gray-a9);
+  color: var(--ark-text);
 }
 
 #input-area .dropdown-menu .menu-disconnect-button {
-  background-color: var(--popup-danger);
-  border: 1px solid var(--popup-danger);
+  background-color: var(--ark-danger-text);
+  border: 1px solid var(--ark-danger-text);
   color: #fff;
 }
 
 #input-area .dropdown-menu .menu-disconnect-button:hover,
 #input-area .dropdown-menu .menu-disconnect-button:focus {
-  background-color: var(--popup-danger-light);
-  border-color: var(--popup-danger-light);
+  background-color: var(--ark-danger-text);
+  border-color: var(--ark-danger-text);
   color: #fff;
 }
 
 #input-area .dropdown-menu .menu-disconnect-button:disabled {
-  background-color: var(--popup-text-dim);
-  border-color: var(--popup-text-dim);
+  background-color: var(--ark-text-tertiary);
+  border-color: var(--ark-text-tertiary);
   color: #fff;
   opacity: 0.75;
 }
 
 #input-area button:hover {
-  border-color: var(--footer-control-hover-border);
+  border-color: var(--ark-border-strong);
 }
 
 #send-button {
@@ -1684,23 +1703,23 @@ h1 {
 }
 
 #voice-button.voice-error {
-  color: var(--popup-danger);
+  color: var(--ark-danger-text);
   opacity: 0.7;
 }
 
 /* Listening is a state the player has to notice from across the screen, so
    the button carries a pulsing ring in its own colour, not a tinted glyph. */
 #voice-button.listening {
-  border-color: var(--popup-danger);
-  color: var(--popup-danger);
+  border-color: var(--ark-danger-text);
+  color: var(--ark-danger-text);
   animation: voice-button-pulse 1.4s ease-in-out infinite;
 }
 
 /* Hands-free keeps the microphone open, so it pulses in the accent colour
    and stays lit between utterances. */
 #voice-button.listening-continuous {
-  border-color: var(--popup-accent);
-  color: var(--popup-accent);
+  border-color: var(--ark-accent-text);
+  color: var(--ark-accent-text);
 }
 
 @keyframes voice-button-pulse {
@@ -1778,7 +1797,7 @@ h1 {
    `:where()` around the `:not()` keeps the selector at a bare element's
    specificity, so nothing else in the stock cascade moves. Add a namespace
    here when a screen migrates; the whole block goes when Bootstrap does. */
-button:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])) {
+button:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'], #input-area *)) {
   border-radius: 1vmin;
   border: 0.1vh solid transparent;
   padding: 0.75vh 2vw;
@@ -1792,11 +1811,11 @@ button:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' l
   transition: border-color 0.25s;
   opacity: 0.75;
 }
-button:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])):hover {
+button:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'], #input-area *)):hover {
   border-color: #646cff;
 }
-button:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])):focus,
-button:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])):focus-visible {
+button:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'], #input-area *)):focus,
+button:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'], #input-area *)):focus-visible {
   outline: 0.5vmin auto -webkit-focus-ring-color;
 }
 
@@ -1808,7 +1827,7 @@ button:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' l
   a:hover {
   color: #747bff;
   }
-  button:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'])) {
+  button:where(:not([class^='ark-'], [class*=' ark-'], [class^='lv-'], [class*=' lv-'], [class^='settings-'], [class*=' settings-'], #input-area *)) {
   background-color: #f9f9f9;
   }
 }

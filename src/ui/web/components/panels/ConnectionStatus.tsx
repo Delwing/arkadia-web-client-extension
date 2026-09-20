@@ -36,9 +36,14 @@ export const ConnectionStatus: React.FC = () => {
 
     const parts: string[] = [];
     if (ping != null) {
+      // Ping and proxy drift both RANK -- good / middling / bad -- so they are
+      // status, not categorical data. That is the call the Phase 3 audit of the
+      // sixteen --popup-data-* variables made for this exact triple
+      // (spring-green / yellow / tomato); these two footer chips were the last
+      // readers of it outside popups-base.css.
       const color = ping < 150
-        ? "var(--popup-data-spring-green)"
-        : ping < 400 ? "var(--popup-data-yellow)" : "var(--popup-data-tomato)";
+        ? "var(--ark-success-text)"
+        : ping < 400 ? "var(--ark-warning-text)" : "var(--ark-danger-text)";
       parts.push(`<span>Ping: </span><span style="color: ${color};">${Math.round(ping)}ms</span>`);
     }
     if (offset != null) {
@@ -46,8 +51,8 @@ export const ConnectionStatus: React.FC = () => {
       // Under half a second is the network delay this is measured through, not a
       // clock anyone needs to fix, so it stays dim rather than shouting.
       const color = Math.abs(offset) >= 2000
-        ? "var(--popup-data-tomato)"
-        : Math.abs(offset) >= 500 ? "var(--popup-data-yellow)" : "var(--footer-text-dim)";
+        ? "var(--ark-danger-text)"
+        : Math.abs(offset) >= 500 ? "var(--ark-warning-text)" : "var(--ark-text-tertiary)";
       const sign = drift >= 0 ? "+" : "";
       parts.push(`<span>Proxy: </span><span style="color: ${color};" title="Zegar proxy wzgledem tego komputera">${sign}${drift.toFixed(1)}s</span>`);
     }

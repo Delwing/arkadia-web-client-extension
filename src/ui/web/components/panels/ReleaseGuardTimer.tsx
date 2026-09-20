@@ -49,13 +49,13 @@ export const ReleaseGuardTimer: React.FC = () => {
     if (!containerRef.current) return;
 
     const isTimerActive = timerSeconds != null && timerSeconds > 0;
-    const guardColor = guardState ? "var(--footer-text-strong)" : "var(--footer-text-dim)";
+    const guardColor = guardState ? "var(--ark-text)" : "var(--ark-text-tertiary)";
 
     let timerHtml: string;
     if (isTimerActive) {
-      timerHtml = `<span style="color: var(--popup-data-yellow);">${timerSeconds.toFixed(2)}</span>`;
+      timerHtml = `<span style="color: var(--ark-warning-text);">${timerSeconds.toFixed(2)}</span>`;
     } else {
-      timerHtml = `<span style="color: var(--popup-data-spring-green);">OK</span>`;
+      timerHtml = `<span style="color: var(--ark-success-text);">OK</span>`;
     }
 
     containerRef.current.innerHTML =

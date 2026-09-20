@@ -67,6 +67,10 @@ const MIGRATED_SHEETS = [
     "src/web/options/magikiSettings.css",
     // Faza 4 — pozostale strony ustawien (PR 3).
     "src/web/options/mobileButtons.css",
+    // Faza 5 — stopka. src/web/style.css NIE moze tu trafic: jej czesc stopkowa
+    // jest zmigrowana, ale reszta powloki (304 odczyty --popup-*) czeka na
+    // kolejne PR-y tej fazy.
+    "src/web/footerMobile.css",
 ];
 
 /**
@@ -109,6 +113,13 @@ const MIGRATED_POPUP_COMPONENTS = [
     // Faza 3, rodzina 6 — Zawod przyszedl tu z 27 obiektami `style={{ ... }}`
     // i zostal przepisany na arkusz; wpis pilnuje, zeby nie wrocily.
     "src/web/ProfessionPopup.tsx",
+    // Faza 5 — chipy stopki, nie popupy. Nazwa tej listy jest juz mylaca
+    // (worldPalette.ts tez nie jest popupem): trzyma ona ZRODLA komponentow
+    // trzymanych na dwoch regulach. Te dwa byly ostatnimi czytelnikami
+    // wycofanej trojki --popup-data-spring-green / -yellow / -tomato poza
+    // popups-base.css; kazde uzycie RANKOWALO, wiec poszly na role statusow.
+    "src/ui/web/components/panels/ConnectionStatus.tsx",
+    "src/ui/web/components/panels/ReleaseGuardTimer.tsx",
 ];
 
 /**
@@ -206,10 +217,23 @@ describe("stylesheet structure", () => {
  * rather than a theme decision, which is why only literals written INTO the
  * source count.
  */
+/**
+ * `mask-image` / `-webkit-mask-image` declarations.
+ *
+ * A colour inside a mask is not a colour: the browser reads its alpha (or
+ * luminance) and throws the hue away, so `#000` there means "keep this part"
+ * and carries no theme decision at all. The footer's fade-out gradients are
+ * the case in hand. Stripped before the scan rather than exempted by value, so
+ * a real `#000` background elsewhere in the same file is still caught.
+ */
+function stripMasks(css: string): string {
+    return css.replace(/-?(?:webkit-)?mask-image\s*:[^;]*;/gi, "");
+}
+
 function literalColours(source: string): string[] {
     // A hex here is a colour that survives exactly one of the eight themes.
     // `#fff` on a solid fill is the system-wide exception.
-    return [...source.matchAll(/#[0-9a-f]{3,8}\b/gi)]
+    return [...stripMasks(source).matchAll(/#[0-9a-f]{3,8}\b/gi)]
         .map((match) => match[0])
         .filter((value) => value.toLowerCase() !== "#fff");
 }

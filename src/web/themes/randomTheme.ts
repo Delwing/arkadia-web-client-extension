@@ -71,7 +71,6 @@ export function generateThemeCSS(color: string): string {
     const textHex = hslToHex(baseHue, textSat, 87);
     const accentHex = hslToHex(h, s, accentL);
     const inputBgHex = hslToHex(baseHue, bgSat, 5);
-    const footerBtnHex = hslToHex(baseHue, Math.round(s * 0.15), 13);
 
     const succHex = hslToHex(135, 48, 55);
     const succLightHex = hslToHex(135, 48, 65);
@@ -155,17 +154,6 @@ export function generateThemeCSS(color: string): string {
   --popup-input-bg: ${inputBgHex};
   --popup-input-text: ${textHex};
   --popup-input-focus-border: rgba(${sr}, ${sg}, ${sb}, 0.45);
-  --footer-bg: ${bgHex};
-  --footer-border: rgba(${sr}, ${sg}, ${sb}, 0.15);
-  --footer-control-bg: rgba(${ar}, ${ag}, ${ab}, 0.12);
-  --footer-control-border: rgba(${sr}, ${sg}, ${sb}, 0.22);
-  --footer-control-hover-bg: rgba(${sr}, ${sg}, ${sb}, 0.16);
-  --footer-control-hover-border: rgba(${sr}, ${sg}, ${sb}, 0.4);
-  --footer-button-bg: ${footerBtnHex};
-  --footer-input-focus-border: ${accentHex};
-  --footer-text-strong: rgba(${tr}, ${tg}, ${tb}, 0.95);
-  --footer-text: rgba(${tr}, ${tg}, ${tb}, 0.8);
-  --footer-text-dim: rgba(${tr}, ${tg}, ${tb}, 0.5);
 }`;
 }
 

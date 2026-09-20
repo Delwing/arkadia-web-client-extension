@@ -33,10 +33,14 @@
    ---------------------------------------------------------------------------
    Zakres
 
-   Most obejmuje 66 zmiennych: 55 rolowych --popup-* oraz 11 --footer-*
-   (ta sama warstwa per-motyw, ten sam plik zrodlowy; bez nich stopka byla by
-   jedyna wyspa w starych kolorach). Do tego --bs-primary, ktory kazdy stary
-   plik motywu i tak spinal z --popup-accent.
+   Most obejmuje 55 zmiennych rolowych --popup-* oraz --bs-primary, ktory kazdy
+   stary plik motywu i tak spinal z --popup-accent.
+
+   Bylo tu takze 11 zmiennych --footer-*. Zniknely w fazie 5 (stopka): rodzina
+   miala tylko 40 odczytow w czterech plikach, wszystkie w kliencie stockowym,
+   wiec zamiast mostkowac ja dalej - przepisano odczyty na --ark-* i skasowano
+   same zmienne. To 99 wartosci strojonych recznie (11 zmiennych x 9 plikow:
+   osiem motywow plus :root w style.css), ktorych juz nie ma.
 
    Nie obejmuje rodzin, ktore juz w starym kliencie byly niezalezne od motywu,
    bo zaden plik motywu ich nie nadpisywal: --surface-*, --text-*, --input-*,
@@ -153,17 +157,6 @@
   --popup-danger-border: var(--ark-danger-border);
 
   /* --- stopka i dolna chromia --------------------------------------------- */
-  --footer-bg: var(--ark-bg-surface);
-  --footer-border: var(--ark-border);
-  --footer-button-bg: var(--ark-bg-raised);
-  --footer-control-bg: var(--ark-bg-element);
-  --footer-control-hover-bg: var(--ark-bg-element-hover);
-  --footer-control-border: var(--ark-border-element);
-  --footer-control-hover-border: var(--ark-border-strong);
-  --footer-input-focus-border: var(--ark-focus-ring);
-  --footer-text-strong: var(--ark-text);
-  --footer-text: var(--ark-text-secondary);
-  --footer-text-dim: var(--ark-text-tertiary);
 }
 
 /* ---------------------------------------------------------------------------
