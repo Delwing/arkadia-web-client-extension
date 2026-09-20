@@ -1,5 +1,6 @@
 import {expect, test} from './support/fixtures';
 import {ensureGameSocket, pushText, waitForCommandInput} from './support/mocks';
+import {resolveColor} from './support/theme';
 
 test.describe('Cover timer', () => {
     // Cover timer is now integrated into the release-guard-timer element
@@ -17,9 +18,10 @@ test.describe('Cover timer', () => {
         await expect(releaseGuardTimer, 'should display ready state initially').toContainText('Zas:');
         await expect(releaseGuardTimer, 'should display OK initially').toContainText('OK');
 
-        // Check that the value "OK" is green (springgreen) - it's the 3rd span (index 2)
+        // "OK" takes the success role; it is the 3rd span (index 2). Resolved from
+        // the token, not pinned to a shade -- the chip themes from --ark-* now.
         const okSpan = releaseGuardTimer.locator('span').nth(2);
-        await expect(okSpan, 'should have green color initially').toHaveCSS('color', 'rgb(0, 255, 127)'); // springgreen
+        await expect(okSpan, 'should have green color initially').toHaveCSS('color', await resolveColor(page, 'var(--ark-success-text)'));
 
         // Trigger cover timer with a successful cover message
         await pushText(page, 'Zrecznie zaslaniasz Aldousa przed ciosami orka.');
@@ -29,7 +31,7 @@ test.describe('Cover timer', () => {
 
         // Check that the countdown value is yellow - it's the 3rd span (index 2)
         const valueSpan = releaseGuardTimer.locator('span').nth(2);
-        await expect(valueSpan, 'should have yellow color during countdown').toHaveCSS('color', 'rgb(255, 255, 0)'); // yellow
+        await expect(valueSpan, 'should have yellow color during countdown').toHaveCSS('color', await resolveColor(page, 'var(--ark-warning-text)'));
 
         // Verify countdown is showing a number
         const timerText = await releaseGuardTimer.textContent();
@@ -51,7 +53,7 @@ test.describe('Cover timer', () => {
 
         // Check that the countdown value is yellow - it's the 3rd span (index 2)
         const valueSpan = releaseGuardTimer.locator('span').nth(2);
-        await expect(valueSpan, 'should have yellow color during countdown').toHaveCSS('color', 'rgb(255, 255, 0)'); // yellow
+        await expect(valueSpan, 'should have yellow color during countdown').toHaveCSS('color', await resolveColor(page, 'var(--ark-warning-text)'));
     });
 
     test('returns to ready state after timer expires', async ({page}) => {
@@ -70,7 +72,7 @@ test.describe('Cover timer', () => {
 
         // Check that the countdown value is yellow - it's the 3rd span (index 2)
         const valueSpanCountdown = releaseGuardTimer.locator('span').nth(2);
-        await expect(valueSpanCountdown, 'should have yellow color during countdown').toHaveCSS('color', 'rgb(255, 255, 0)'); // yellow
+        await expect(valueSpanCountdown, 'should have yellow color during countdown').toHaveCSS('color', await resolveColor(page, 'var(--ark-warning-text)'));
 
         // Wait for timer to expire (5 seconds + buffer)
         await page.clock.runFor(5500);
@@ -80,7 +82,7 @@ test.describe('Cover timer', () => {
 
         // Check that the value "OK" is green after timer expires - it's the 3rd span (index 2)
         const okSpan = releaseGuardTimer.locator('span').nth(2);
-        await expect(okSpan, 'should have green color after timer expires').toHaveCSS('color', 'rgb(0, 255, 127)'); // springgreen
+        await expect(okSpan, 'should have green color after timer expires').toHaveCSS('color', await resolveColor(page, 'var(--ark-success-text)'));
     });
 
     test('starts countdown for guard position with weapon', async ({page}) => {
@@ -98,6 +100,6 @@ test.describe('Cover timer', () => {
 
         // Check that the countdown value is yellow - it's the 3rd span (index 2)
         const valueSpan = releaseGuardTimer.locator('span').nth(2);
-        await expect(valueSpan, 'should have yellow color during countdown').toHaveCSS('color', 'rgb(255, 255, 0)'); // yellow
+        await expect(valueSpan, 'should have yellow color during countdown').toHaveCSS('color', await resolveColor(page, 'var(--ark-warning-text)'));
     });
 });

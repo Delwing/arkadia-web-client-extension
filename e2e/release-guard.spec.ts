@@ -20,7 +20,7 @@ test.describe('Release guard timer', () => {
         // token rather than hard-coded: the footer themes from --ark-* now, so a
         // literal would pin this test to one theme's shade.
         const puscSpan = releaseGuardTimer.locator('span').first();
-        const strong = await resolveColor(page, 'var(--footer-text-strong)');
+        const strong = await resolveColor(page, 'var(--ark-text)');
         await expect(puscSpan, 'Pusc should take the strong footer colour when active').toHaveCSS('color', strong);
     });
 
@@ -31,8 +31,8 @@ test.describe('Release guard timer', () => {
 
         const releaseGuardTimer = page.locator('#release-guard-timer');
         const puscSpan = releaseGuardTimer.locator('span').first();
-        const strong = await resolveColor(page, 'var(--footer-text-strong)');
-        const dim = await resolveColor(page, 'var(--footer-text-dim)');
+        const strong = await resolveColor(page, 'var(--ark-text)');
+        const dim = await resolveColor(page, 'var(--ark-text-tertiary)');
         expect(strong, 'the two footer text roles must differ, or this test proves nothing').not.toBe(dim);
 
         // Initial state should be ON (strong)
@@ -86,7 +86,8 @@ test.describe('Release guard timer', () => {
 
         // The countdown value should be yellow
         const valueSpan = releaseGuardTimer.locator('span').nth(2);
-        await expect(valueSpan, 'countdown should be yellow').toHaveCSS('color', 'rgb(255, 255, 0)');
+        await expect(valueSpan, 'countdown should take the warning role')
+            .toHaveCSS('color', await resolveColor(page, 'var(--ark-warning-text)'));
     });
 
     test('shows OK when timer completes', async ({page}) => {
@@ -111,6 +112,7 @@ test.describe('Release guard timer', () => {
 
         // OK should be green
         const okSpan = releaseGuardTimer.locator('span').nth(2);
-        await expect(okSpan, 'OK should be green').toHaveCSS('color', 'rgb(0, 255, 127)');
+        await expect(okSpan, 'OK should take the success role')
+            .toHaveCSS('color', await resolveColor(page, 'var(--ark-success-text)'));
     });
 });
