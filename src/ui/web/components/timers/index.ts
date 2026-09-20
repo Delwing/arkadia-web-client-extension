@@ -1,4 +1,3 @@
-export { LampTimer } from "./LampTimer";
 export { ZaskTimer } from "./ZaskTimer";
 export { OrderTimer } from "./OrderTimer";
 export { CombatTimer } from "./CombatTimer";

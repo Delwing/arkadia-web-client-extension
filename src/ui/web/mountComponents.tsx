@@ -1,6 +1,5 @@
 import { createRoot, type Root } from "react-dom/client";
 import {
-  LampTimer,
   ZaskTimer,
   OrderTimer,
   CombatTimer,
@@ -21,6 +20,7 @@ import {
 } from "./components";
 import { ContextMenuHost } from "@web/contextMenu";
 import MultiBindStrip from "./footer/MultiBindStrip";
+import { LampChip } from "./footer/chips";
 import PluginFooterItems from "./footer/PluginFooterItems";
 
 type MountResult = {
@@ -38,7 +38,7 @@ export const mountMigratedComponents = (): MountResult => {
     { id: "package-status", Component: PackageStatus },
     { id: "attack-mode", Component: AttackMode },
     { id: "clock-display", Component: ClockDisplay },
-    { id: "lamp-timer", Component: LampTimer },
+    { id: "lamp-timer", Component: LampChip },
     { id: "release-guard-timer", Component: ReleaseGuardTimer },
     { id: "zask-timer", Component: ZaskTimer },
     { id: "order-timer", Component: OrderTimer },
