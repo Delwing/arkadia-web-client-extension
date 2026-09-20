@@ -4,7 +4,7 @@ import {ensureGameSocket, getLastOutgoingCommand, pushText, waitForCommandInput}
 /**
  * The footer lamp readout is the shared <LampChip> (src/ui/web/footer/chips.tsx),
  * the same component the forge HUD renders — so it is always on screen and says
- * "zgaszona" when the lamp is out, rather than disappearing. Clicking it lights
+ * "off" when the lamp is out, rather than disappearing. Clicking it lights
  * or snuffs the lamp.
  */
 test.describe('Lamp timer', () => {
@@ -25,7 +25,7 @@ test.describe('Lamp timer', () => {
 
         await expect(chip, 'chip should be present from the start').toBeVisible();
         await expect(label).toHaveText('Lampa');
-        await expect(value, 'an unlit lamp reads "zgaszona"').toHaveText('zgaszona');
+        await expect(value, 'an unlit lamp reads "off"').toHaveText('off');
     });
 
     test('shows the countdown when the lamp is lit', async ({page}) => {
@@ -61,7 +61,7 @@ test.describe('Lamp timer', () => {
         await expect(value, 'should be red below 30 seconds').toHaveCSS('color', 'rgb(255, 99, 71)'); // tomato
     });
 
-    test('goes back to "zgaszona" when the lamp is extinguished', async ({page}) => {
+    test('goes back to "off" when the lamp is extinguished', async ({page}) => {
         const {chip, value} = await open(page);
 
         await pushText(page, 'Zapalasz swoja lampe.');
@@ -69,11 +69,11 @@ test.describe('Lamp timer', () => {
 
         await pushText(page, 'Gasisz swoja lampe.');
 
-        await expect(value).toHaveText('zgaszona');
+        await expect(value).toHaveText('off');
         await expect(chip, 'the chip itself stays on screen').toBeVisible();
     });
 
-    test('goes back to "zgaszona" when the lamp runs out of oil', async ({page}) => {
+    test('goes back to "off" when the lamp runs out of oil', async ({page}) => {
         const {value} = await open(page);
 
         await pushText(page, 'Zapalasz swoja lampe.');
@@ -81,7 +81,7 @@ test.describe('Lamp timer', () => {
 
         await pushText(page, 'lampa wypala sie i gasnie.');
 
-        await expect(value).toHaveText('zgaszona');
+        await expect(value).toHaveText('off');
     });
 
     test('resets when lamp is refilled', async ({page}) => {
