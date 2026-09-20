@@ -40,7 +40,7 @@ export function FajkaChip() {
   );
 }
 
-/** Oil-lamp fuel remaining, or "zgaszona" when it is out. Click lights / snuffs it. */
+/** Oil-lamp fuel remaining, or "off" when it is out. Click lights / snuffs it. */
 export function LampChip() {
   const [seconds, setSeconds] = useState<number | null>(null);
   useClientEvent<number | null>("lampTimer", (v) => setSeconds(v));
@@ -50,7 +50,7 @@ export function LampChip() {
     <Chip
       icon={<ChipIcon name="lamp" />}
       label="Lampa"
-      value={lit ? mmss(seconds!) : "zgaszona"}
+      value={lit ? mmss(seconds!) : "off"}
       tone={tone}
       title={lit ? "Zgas lampe" : "Zapal lampe"}
       onClick={() => eventBus.emit("sendCommand", { command: lit ? "zgas lampe" : "zapal lampe" })}
