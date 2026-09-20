@@ -144,6 +144,7 @@ import initAttackModeAlias from './scripts/attackModeAlias'
 import initDeliveryStats from './scripts/deliveryStats'
 import initAfterDeathProgress from './scripts/afterDeathProgress'
 import initBrokilon from './scripts/brokilon'
+import initLisica from './scripts/skarbce/lisica'
 import initTideSystem from './scripts/tideSystem'
 import initSoundAliases from './scripts/soundAliases'
 import initLootParser from './scripts/lootParser'
@@ -377,6 +378,7 @@ export function registerScripts(client: Client) {
     initDeliveryStats(client, aliases)
     initAfterDeathProgress(client)
     initBrokilon(client)
+    initLisica(client, aliases)
     initTideSystem(client, aliases)
     initLabyrinth(client, aliases)
     initLabyrinthMapper(client, aliases)

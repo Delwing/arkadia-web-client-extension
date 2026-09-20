@@ -402,6 +402,16 @@ export default function DesktopButtons({ client }: { client: Client }) {
 
     const handleMouseDown = useCallback((e: React.MouseEvent<HTMLButtonElement>, btnSettings: DesktopButtonSetting) => {
         if (e.button !== 0) return;
+        // A finger tap ends as `pointerdown → touchstart → touchend` and *then*
+        // a compatibility `mousedown → mouseup → click` burst. The touch path has
+        // already armed and resolved the press by that point, so re-arming here
+        // would make the document-level `mouseup` resolve a second press of ~0ms
+        // and fire the tap macro again — the regular command sent twice on a
+        // hold-enabled button (a plain button is immune only because
+        // `armHoldDetection` no-ops for it). The touchstart handler cannot call
+        // `preventDefault()` to suppress the burst: React registers `touchstart`
+        // as a passive listener, so that call is silently ignored.
+        if (isTouchPointerType(pointerTypeRef.current)) return;
         keepFocusOnMouseDown(e);
         const btn = e.currentTarget;
         armHoldDetection(btnSettings, btn, e.clientX, e.clientY);
@@ -413,10 +423,6 @@ export default function DesktopButtons({ client }: { client: Client }) {
         if (e.touches.length !== 1) return;
         const touch = e.touches[0];
         const btn = e.currentTarget;
-        if (btnSettings.holdEnabled && btnSettings.hold?.macroType) {
-            // Prevent synthetic mouse events from double-firing the macro.
-            e.preventDefault();
-        }
         armHoldDetection(btnSettings, btn, touch.clientX, touch.clientY);
         if (settingsRef.current.locked) return;
         startLongPress(touch.clientX, touch.clientY, btn, btnSettings.id);
