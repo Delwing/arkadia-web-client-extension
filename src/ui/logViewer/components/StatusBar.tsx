@@ -1,6 +1,6 @@
-import { Button, Icon, Segmented, Toggle } from "../ui";
+import { Button, Icon, Toggle } from "../ui";
 import { formatClock, pluralLines } from "../model/format";
-import type { Density, TimeRange } from "../model/types";
+import type { TimeRange } from "../model/types";
 
 export interface StatusBarProps {
     shownLines: number;
@@ -23,8 +23,6 @@ export interface StatusBarProps {
     colorsAvailable: boolean;
     wrap: boolean;
     onWrapChange: (value: boolean) => void;
-    density: Density;
-    onDensityChange: (value: Density) => void;
     live: boolean;
     follow: boolean;
     onFollowChange: (value: boolean) => void;
@@ -47,8 +45,6 @@ export function StatusBar({
     colorsAvailable,
     wrap,
     onWrapChange,
-    density,
-    onDensityChange,
     live,
     follow,
     onFollowChange,
@@ -85,14 +81,6 @@ export function StatusBar({
 
             <div className="lv-spacer" />
 
-            <Segmented
-                value={density}
-                onValueChange={onDensityChange}
-                options={[
-                    { value: "compact", label: "Gesto", title: "Wysokosc linii 21px" },
-                    { value: "comfortable", label: "Luzno", title: "Wysokosc linii 26px" },
-                ]}
-            />
             <Toggle pressed={showTimestamps} onPressedChange={onShowTimestampsChange} title="Pokaz godziny">
                 Godziny
             </Toggle>

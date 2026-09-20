@@ -2,7 +2,7 @@
  * Where the viewer's view preferences live.
  *
  * One key, shared by both hosts: the standalone page and the in-client window
- * are the same screen, so channel filters, density, wrapping and the search
+ * are the same screen, so channel filters, wrapping and the search
  * scope should not have to be set twice. Opening a log in a new tab therefore
  * lands on the view you already had.
  *

@@ -4,7 +4,7 @@ import { charactersLabel } from "./model/characters";
 import { formatClock, pluralLogs } from "./model/format";
 import { normalizeMatchIndex } from "./model/search";
 import { indexAtOrAfter } from "./model/timeline";
-import type { Density, LogSession, SearchScope, TimeRange } from "./model/types";
+import type { LogSession, SearchScope, TimeRange } from "./model/types";
 import {
     applyPreferences,
     deriveView,
@@ -50,7 +50,14 @@ export interface LogViewerProps {
     noSessionsAction?: React.ReactNode;
 }
 
-const LINE_HEIGHT: Record<Density, number> = { compact: 21, comfortable: 26 };
+/**
+ * Row height, in pixels.
+ *
+ * Must agree with `--lv-line-height` in `logViewer.css`: the virtualizer
+ * measures rows, but it needs an estimate before anything is laid out, and a
+ * wrong one makes the scrollbar jump on first paint.
+ */
+const LINE_HEIGHT = 21;
 
 /** Search is cheap up to here; past it the query is debounced. */
 const DEBOUNCE_THRESHOLD_LINES = 4000;
@@ -146,7 +153,6 @@ export function LogViewer({
         state.showColors,
         state.wrap,
         state.scope,
-        state.density,
         state.sessionId,
     ]);
 
@@ -600,7 +606,6 @@ export function LogViewer({
         <div
             className="lv lv-theme"
             ref={rootRef}
-            data-density={state.density}
             onKeyDown={onRootKeyDown}
             // The viewer owns its shortcuts only while focus is inside it: a
             // modal that listens on `window` steals keys from the game input.
@@ -712,7 +717,7 @@ export function LogViewer({
                         showMeta={state.showMeta}
                         showColors={state.showColors}
                         wrap={state.wrap}
-                        lineHeight={LINE_HEIGHT[state.density]}
+                        lineHeight={LINE_HEIGHT}
                         currentRow={view.currentRow}
                         currentOccurrence={
                             view.totalMatches ? view.matches[view.currentMatch].occurrence : -1
@@ -754,8 +759,6 @@ export function LogViewer({
                         colorsAvailable={(session?.lines ?? []).some((line) => Boolean(line.html))}
                         wrap={state.wrap}
                         onWrapChange={(value) => patch({ wrap: value })}
-                        density={state.density}
-                        onDensityChange={(value) => patch({ density: value })}
                         live={Boolean(session?.live)}
                         follow={state.follow}
                         onFollowChange={(value) => patch({ follow: value })}

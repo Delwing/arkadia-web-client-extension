@@ -116,7 +116,7 @@ export function LogPane({
      * goes through the same grid as the real ones.
      *
      * The estimate below needs real numbers rather than a constant: which
-     * columns are on, how wide the pane is and what the density is all move the
+     * columns are on and how wide the pane is both move the
      * point at which a line wraps.
      */
     useLayoutEffect(() => {
@@ -174,11 +174,11 @@ export function LogPane({
      * narrowing to a range does not throw away every measurement the pane has
      * taken. Folding the height-deciding settings into the key instead (which
      * is how the overlapping-rows bug was first fixed) would invalidate the
-     * whole cache on every density change AND still leave variable heights
+     * whole cache on every layout change AND still leave variable heights
      * re-measuring from scratch on a filter change.
      *
      * The price is that the cache now has to be invalidated explicitly — see
-     * the effect below. It is not optional: without it, changing density leaves
+     * the effect below. It is not optional: without it, a layout change leaves
      * every offset stepping by the old height while the rows are drawn at the
      * new one, and they overlap.
      */
@@ -276,7 +276,7 @@ export function LogPane({
     }, [onViewportChange]);
 
     // Covers everything that is not a scroll: a new range, a channel filter,
-    // a density change, lines arriving.
+    // a layout change, lines arriving.
     useEffect(() => {
         reportViewport();
     }, [virtualRows, rows, reportViewport]);

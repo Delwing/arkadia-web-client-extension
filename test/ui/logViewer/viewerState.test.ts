@@ -347,12 +347,12 @@ describe("stepMatch, all-logs scope", () => {
 
 describe("preferences", () => {
     it("round-trips the persisted slice", () => {
-        const source = state({ wrap: false, density: "comfortable", scope: "all", showTimestamps: false });
+        const source = state({ wrap: false, scope: "all", showTimestamps: false, showColors: false });
         const restored = applyPreferences(initialViewerState("a"), pickPreferences(source));
         expect(restored.wrap).toBe(false);
-        expect(restored.density).toBe("comfortable");
         expect(restored.scope).toBe("all");
         expect(restored.showTimestamps).toBe(false);
+        expect(restored.showColors).toBe(false);
     });
 
     it("does not persist the query or the match position", () => {
@@ -381,7 +381,10 @@ describe("preferences", () => {
         const base = initialViewerState("a");
         expect(applyPreferences(base, null)).toEqual(base);
         expect(applyPreferences(base, "nonsense")).toEqual(base);
-        expect(applyPreferences(base, { density: "enormous", scope: 7, channels: { combat: "yes" } })).toEqual(base);
+        expect(applyPreferences(base, { wrap: "yes", scope: 7, channels: { combat: "yes" } })).toEqual(base);
+        // A key from a version that had it — the log viewer used to store a
+        // density. Preferences outlive the features they were written for.
+        expect(applyPreferences(base, { density: "comfortable" })).toEqual(base);
     });
 
     it("restores a partial channel filter", () => {

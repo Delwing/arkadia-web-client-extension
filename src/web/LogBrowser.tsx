@@ -55,7 +55,7 @@ export function LogBrowser({ headerTrailing }: LogBrowserProps) {
     /**
      * The stored view preferences, minus the last-viewed session.
      *
-     * Channels, density and the rest are worth carrying over between the two
+     * Channels, wrapping and the rest are worth carrying over between the two
      * hosts; *which log* is not. In the client the answer is always the one
      * being recorded right now — and it has to be, or a second tab would open
      * the browser on the first tab's session rather than its own.

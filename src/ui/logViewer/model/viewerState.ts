@@ -9,7 +9,7 @@
 import { allChannelsOn, CHANNELS, type Channel, type ChannelFilter } from "./channels";
 import type { LogEventKind } from "./events";
 import { countMatches, makeMatcher, normalizeMatchIndex, splitMatches, type MatchSegment } from "./search";
-import type { Density, LogSession, SearchScope, TimeRange } from "./types";
+import type { LogSession, SearchScope, TimeRange } from "./types";
 
 export interface ViewerState {
     sessionId: string;
@@ -34,7 +34,6 @@ export interface ViewerState {
     showColors: boolean;
     wrap: boolean;
     follow: boolean;
-    density: Density;
     /** One-off message under the counter; cleared on the next query edit. */
     notice: string;
 }
@@ -77,7 +76,6 @@ export function initialViewerState(sessionId: string): ViewerState {
         showColors: true,
         wrap: true,
         follow: true,
-        density: "compact",
         notice: "",
     };
 }
@@ -117,7 +115,6 @@ export interface PersistedPreferences {
     showColors: boolean;
     wrap: boolean;
     scope: SearchScope;
-    density: Density;
     sessionId?: string;
 }
 
@@ -131,7 +128,6 @@ export function pickPreferences(state: ViewerState): PersistedPreferences {
         // "Zakres" is not storable: the range it depends on is deliberately not
         // persisted either, so the scope to come back to is the wider one.
         scope: state.scope === "range" ? "log" : state.scope,
-        density: state.density,
         sessionId: state.sessionId,
     };
 }
@@ -156,10 +152,6 @@ export function applyPreferences(state: ViewerState, stored: unknown): ViewerSta
         showColors: typeof preferences.showColors === "boolean" ? preferences.showColors : state.showColors,
         wrap: typeof preferences.wrap === "boolean" ? preferences.wrap : state.wrap,
         scope: preferences.scope === "all" || preferences.scope === "log" ? preferences.scope : state.scope,
-        density:
-            preferences.density === "compact" || preferences.density === "comfortable"
-                ? preferences.density
-                : state.density,
     };
 }
 

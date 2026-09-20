@@ -42,5 +42,5 @@ export type { LogEventKind } from "./model/events";
 
 export { formatClock, formatDateLong, formatDayLabel, formatDuration } from "./model/format";
 
-export type { Density, LogLine, LogSession, SearchScope } from "./model/types";
+export type { LogLine, LogSession, SearchScope } from "./model/types";
 export type { PersistedPreferences } from "./model/viewerState";

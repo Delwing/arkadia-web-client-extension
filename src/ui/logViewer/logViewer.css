@@ -12,7 +12,7 @@
 
 .lv {
     --lv-sidebar-width: 288px;
-    --lv-line-height: var(--lv-leading-log-compact);
+    --lv-line-height: var(--lv-leading-log);
 
     display: flex;
     flex-direction: column;
@@ -29,10 +29,6 @@
     -webkit-font-smoothing: antialiased;
     scrollbar-color: var(--lv-gray-6) transparent;
     scrollbar-width: thin;
-}
-
-.lv[data-density='comfortable'] {
-    --lv-line-height: var(--lv-leading-log-comfortable);
 }
 
 /* --- header ------------------------------------------------------------- */

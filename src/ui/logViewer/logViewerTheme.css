@@ -136,9 +136,9 @@
     --lv-weight-semibold: 600;
 
     --lv-leading-normal: 1.5;
-    /* Log density: the two line heights the density switch picks between. */
-    --lv-leading-log-compact: 21px;
-    --lv-leading-log-comfortable: 26px;
+    /* Row height in the log pane. `LogViewer.tsx` carries the same number as
+       the virtualizer's estimate; the two have to agree. */
+    --lv-leading-log: 21px;
 
     --lv-tracking-wide: 0.06em;
     --lv-tracking-eyebrow: 0.08em;
