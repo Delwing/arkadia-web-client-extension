@@ -26,8 +26,36 @@
   gap: 8px;
 }
 .places-list__search .popup-input-group {
+  position: relative;
   flex: 1;
   min-width: 0;
+}
+/* Room for the clear button inside the field. */
+.places-list__search .places-search {
+  padding-right: 30px;
+}
+.places-search-clear {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--ui-radius-sm, 4px);
+  background: transparent;
+  color: var(--popup-text-subtle);
+  transform: translateY(-50%);
+  cursor: pointer;
+}
+.places-search-clear:hover {
+  background-color: var(--popup-control-hover-bg);
+  color: var(--popup-text);
 }
 .places-list__filters {
   display: flex;

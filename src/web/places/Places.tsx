@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, ArrowUpDown, Footprints, LocateFixed, Map as MapIcon, MapPin, Navigation, NotebookPen, Plus, Puzzle, Search } from "lucide-react";
+import { ArrowLeft, ArrowUpDown, Footprints, LocateFixed, Map as MapIcon, MapPin, Navigation, NotebookPen, Plus, Puzzle, Search, X } from "lucide-react";
 import { Button, DeleteButton, Input, InputGroup, TextArea } from "@web-ui/primitives/index.ts";
 import eventBus from "@modules/core/eventBus";
 import { globalStorage } from "@modules/core/storage";
@@ -438,7 +438,18 @@ export default function Places() {
                 <div className="places-list__tools">
                     <div className="places-list__search">
                         <InputGroup before={<Search size={14} strokeWidth={1.9} />}>
-                            <Input value={query} placeholder="Szukaj: nazwa, kraina lub numer lokacji" onChange={e => setQuery(e.target.value)} />
+                            <Input
+                                className="places-search"
+                                value={query}
+                                placeholder="Szukaj: nazwa, kraina lub numer lokacji"
+                                onChange={e => setQuery(e.target.value)}
+                                onKeyDown={e => { if (e.key === "Escape" && query) { e.stopPropagation(); setQuery(""); } }}
+                            />
+                            {query && (
+                                <button type="button" className="places-search-clear" title="Wyczyść wyszukiwanie" onClick={() => setQuery("")}>
+                                    <X size={14} strokeWidth={2} />
+                                </button>
+                            )}
                         </InputGroup>
                         <Button
                             variant="solid"

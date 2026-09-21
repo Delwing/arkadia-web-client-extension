@@ -183,6 +183,10 @@ test.describe('Miejsca (skróty i notatki lokacji)', () => {
         await expect(modal(page).locator('.places-row--map', { hasText: 'Kamienny Most' })).toHaveCount(0);
         await search.fill('1');
         await expect(modal(page).locator('.places-row--map')).toHaveCount(1);
+
+        await modal(page).getByTitle('Wyczyść wyszukiwanie').click();
+        await expect(search).toHaveValue('');
+        await expect(modal(page).locator('.places-row--map')).toHaveCount(0);
     });
 
     test('filters, search and "Usuń miejsce"', async ({ page }) => {
