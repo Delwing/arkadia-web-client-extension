@@ -1,9 +1,11 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import eventBus from '@modules/core/eventBus';
 import { useBuiltInPanelSetting } from '../../hooks/useBuiltInPanelSetting';
 import { copyCanvasToClipboard } from '@shared/dom/copyCanvasToClipboard.ts';
 import { getPopupSetting, setPopupSetting } from '../../layout/utils/layoutStorage';
 import { getEmbeddedMap } from '@web/embedRegistry';
+import { usePopover } from '../hooks/usePopover';
+import { HeaderMenu, MenuBack, MenuCheckItem, MenuItem, MenuRow, MenuScroll } from './HeaderMenu';
 
 interface MapHeaderMenuProps {
   className?: string;
@@ -15,13 +17,11 @@ type SubmenuType = 'none' | 'areas' | 'levels';
 const levelsCache = new Map<number, number[]>();
 
 export function MapHeaderMenu({ className = '' }: MapHeaderMenuProps) {
-  const [isOpen, setIsOpen] = useState(false);
   const [submenu, setSubmenu] = useState<SubmenuType>('none');
   const [areas, setAreas] = useState<{ id: number | string; name: string }[]>([]);
   const [levels, setLevels] = useState<number[]>([]);
   const [currentLevel, setCurrentLevel] = useState<number | null>(null);
   const [viewedAreaId, setViewedAreaId] = useState<number | null>(null);
-  const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties | null>(null);
   // Toggled from the map's settings cog (MAP_SETTINGS_FIELDS); read here to
   // push each change to the map renderer.
   const [labelVisible] = useBuiltInPanelSetting('map', 'labelVisible', true);
@@ -36,8 +36,9 @@ export function MapHeaderMenu({ className = '' }: MapHeaderMenuProps) {
   const [showCompleted, setShowCompleted] = useState(() =>
     !getPopupSetting('popup:knowledgeDetails', 'hideCompleted', false)
   );
-  const menuRef = useRef<HTMLDivElement>(null);
-  const toggleRef = useRef<HTMLButtonElement>(null);
+  // Every close (action, click-away, Escape) returns to the top level.
+  const menu = usePopover({ onClose: () => setSubmenu('none') });
+  const closeMenu = menu.close;
 
   const getEmbedded = useCallback(() => {
     return getEmbeddedMap();
@@ -88,67 +89,6 @@ export function MapHeaderMenu({ className = '' }: MapHeaderMenuProps) {
     eventBus.on('knowledgeHints', handler);
     return () => { eventBus.off('knowledgeHints', handler); };
   }, []);
-
-  const calculateDropdownPosition = useCallback(() => {
-    if (toggleRef.current) {
-      // Use the button's own window so the dropdown positions correctly even
-      // when the panel has been popped out into a separate browser window.
-      const win = toggleRef.current.ownerDocument.defaultView ?? window;
-      const rect = toggleRef.current.getBoundingClientRect();
-      const viewportHeight = win.innerHeight;
-      // Calculate available space below the button with some padding
-      const availableSpace = viewportHeight - rect.bottom - 16;
-      // Ensure at least some minimum height (100px) and cap at 360px
-      const maxHeight = Math.max(100, Math.min(360, availableSpace));
-      setDropdownStyle({
-        position: 'fixed',
-        top: rect.bottom + 4,
-        right: win.innerWidth - rect.right,
-        maxHeight,
-      });
-    }
-  }, []);
-
-  const toggleMenu = useCallback(() => {
-    setIsOpen((prev) => {
-      if (!prev) {
-        // Calculate position when opening
-        calculateDropdownPosition();
-      }
-      return !prev;
-    });
-    setSubmenu('none');
-  }, [calculateDropdownPosition]);
-
-  const closeMenu = useCallback(() => {
-    setIsOpen(false);
-    setSubmenu('none');
-  }, []);
-
-  // Close menu when clicking outside
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handleClickOutside = (event: PointerEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        closeMenu();
-      }
-    };
-
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        closeMenu();
-      }
-    };
-
-    window.addEventListener('pointerdown', handleClickOutside);
-    window.addEventListener('keydown', handleEscape);
-
-    return () => {
-      window.removeEventListener('pointerdown', handleClickOutside);
-      window.removeEventListener('keydown', handleEscape);
-    };
-  }, [isOpen, closeMenu]);
 
   const handleZoomIn = useCallback(() => {
     const embedded = getEmbedded();
@@ -334,10 +274,10 @@ export function MapHeaderMenu({ className = '' }: MapHeaderMenuProps) {
   }, [closeMenu]);
 
   return (
-    <div ref={menuRef} className={`map-header-menu ${className}`}>
+    <div className={`map-header-actions ${className}`.trim()}>
       <button
         type="button"
-        className="map-header-menu__image-btn"
+        className="popup-btn popup-btn--icon map-header-actions__image"
         onClick={handleCopyAsImage}
         title="Kopiuj jako obraz"
       >
@@ -347,131 +287,45 @@ export function MapHeaderMenu({ className = '' }: MapHeaderMenuProps) {
           <polyline points="21 15 16 10 5 21"/>
         </svg>
       </button>
-      <button
-        ref={toggleRef}
-        type="button"
-        className="map-header-menu__toggle"
-        onClick={toggleMenu}
-        title="Menu mapy"
-      >
-        <span className="map-header-menu__hamburger" />
-      </button>
-
-      {isOpen && (
-        <div
-          className="map-header-menu__dropdown"
-          style={dropdownStyle ?? undefined}
-        >
-          {submenu === 'areas' ? (
-            <>
-              <button
-                type="button"
-                className="map-header-menu__item map-header-menu__item--back"
-                onClick={handleBackToMenu}
-              >
-                &larr; Powrot
-              </button>
-              <div
-                className="map-header-menu__area-list"
-                style={dropdownStyle?.maxHeight ? { maxHeight: (dropdownStyle.maxHeight as number) - 40 } : undefined}
-              >
-                {areas.map((area) => (
-                  <button
-                    key={area.id}
-                    type="button"
-                    className="map-header-menu__item"
-                    onClick={() => handleSelectArea(area.id)}
-                  >
-                    {area.name}
-                  </button>
-                ))}
-              </div>
-            </>
-          ) : submenu === 'levels' ? (
-            <>
-              <button
-                type="button"
-                className="map-header-menu__item map-header-menu__item--back"
-                onClick={handleBackToMenu}
-              >
-                &larr; Powrot
-              </button>
-              <div
-                className="map-header-menu__area-list"
-                style={dropdownStyle?.maxHeight ? { maxHeight: (dropdownStyle.maxHeight as number) - 40 } : undefined}
-              >
-                {levels.map((level) => (
-                  <button
-                    key={level}
-                    type="button"
-                    className={`map-header-menu__item${level === currentLevel ? ' map-header-menu__item--active' : ''}`}
-                    onClick={() => handleSelectLevel(level)}
-                  >
-                    Poziom {level}
-                  </button>
-                ))}
-              </div>
-            </>
-          ) : (
-            <>
-              <button
-                type="button"
-                className="map-header-menu__item"
-                onClick={handleShowAreas}
-              >
-                Zmien obszar
-              </button>
-              <button
-                type="button"
-                className="map-header-menu__item"
-                onClick={handleShowLevels}
-              >
-                Zmien poziom
-              </button>
-              <div className="map-header-menu__zoom-row">
-                <button
-                  type="button"
-                  className="map-header-menu__item"
-                  onClick={handleZoomIn}
-                >
-                  Zbliz
-                </button>
-                <button
-                  type="button"
-                  className="map-header-menu__item"
-                  onClick={handleZoomOut}
-                >
-                  Oddal
-                </button>
-              </div>
-              <button
-                type="button"
-                className="map-header-menu__item"
-                onClick={handleOpenSkroty}
-              >
-                Skroty
-              </button>
-              <button
-                type="button"
-                className="map-header-menu__item"
-                onClick={handleOpenTripPlanner}
-              >
-                Planer trasy
-              </button>
-              {hintsEnabled && (
-                <button
-                  type="button"
-                  className="map-header-menu__item map-header-menu__item--checkbox"
-                  onClick={handleToggleShowCompleted}
-                >
-                  <span className={`map-header-menu__checkbox${showCompleted ? ' map-header-menu__checkbox--checked' : ''}`} />
-                  Wiedza: pokaz ukonczone
-                </button>
-              )}
-            </>
-          )}
-        </div>
-      )}
+      <HeaderMenu menu={menu} title="Menu mapy">
+        {submenu === 'areas' ? (
+          <>
+            <MenuBack onClick={handleBackToMenu} />
+            <MenuScroll>
+              {areas.map((area) => (
+                <MenuItem key={area.id} onClick={() => handleSelectArea(area.id)}>{area.name}</MenuItem>
+              ))}
+            </MenuScroll>
+          </>
+        ) : submenu === 'levels' ? (
+          <>
+            <MenuBack onClick={handleBackToMenu} />
+            <MenuScroll>
+              {levels.map((level) => (
+                <MenuItem key={level} active={level === currentLevel} onClick={() => handleSelectLevel(level)}>
+                  Poziom {level}
+                </MenuItem>
+              ))}
+            </MenuScroll>
+          </>
+        ) : (
+          <>
+            <MenuItem onClick={handleShowAreas}>Zmien obszar</MenuItem>
+            <MenuItem onClick={handleShowLevels}>Zmien poziom</MenuItem>
+            <MenuRow>
+              <MenuItem onClick={handleZoomIn}>Zbliz</MenuItem>
+              <MenuItem onClick={handleZoomOut}>Oddal</MenuItem>
+            </MenuRow>
+            <MenuItem onClick={handleOpenSkroty}>Skroty</MenuItem>
+            <MenuItem onClick={handleOpenTripPlanner}>Planer trasy</MenuItem>
+            {hintsEnabled && (
+              <MenuCheckItem checked={showCompleted} onClick={handleToggleShowCompleted}>
+                Wiedza: pokaz ukonczone
+              </MenuCheckItem>
+            )}
+          </>
+        )}
+      </HeaderMenu>
     </div>
   );
 }

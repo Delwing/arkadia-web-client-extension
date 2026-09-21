@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect } from 'react';
 import { useWindowSetting } from '../../hooks/useWindowSetting';
 import { ensureFontLoaded, resolveOutputFontFamily } from '../../fontLoader';
+import { usePopover } from '../hooks/usePopover';
 import {
   WINDOW_FONT_FAMILY_KEY,
   WINDOW_FONT_FAMILY_OPTIONS,
@@ -207,53 +208,22 @@ interface WindowSettingsMenuProps {
  * (everything is resolved against the button's own document).
  */
 export function WindowSettingsMenu({ windowId, title, fields, appearance = true, small }: WindowSettingsMenuProps) {
-  const [open, setOpen] = useState(false);
-  const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
-  const rootRef = useRef<HTMLDivElement>(null);
-  const buttonRef = useRef<HTMLButtonElement>(null);
-
-  const close = useCallback(() => setOpen(false), []);
-
-  useLayoutEffect(() => {
-    if (!open || !buttonRef.current) return;
-    const button = buttonRef.current;
-    const view = button.ownerDocument.defaultView ?? window;
-    const rect = button.getBoundingClientRect();
-    const left = Math.max(8, Math.min(rect.right - PANEL_WIDTH, view.innerWidth - PANEL_WIDTH - 8));
-    setPosition({ top: rect.bottom + 4, left });
-  }, [open]);
-
-  useEffect(() => {
-    if (!open || !rootRef.current) return;
-    const doc = rootRef.current.ownerDocument;
-    const onPointerDown = (e: PointerEvent) => {
-      if (rootRef.current && !rootRef.current.contains(e.target as Node)) close();
-    };
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') close();
-    };
-    doc.addEventListener('pointerdown', onPointerDown);
-    doc.addEventListener('keydown', onKeyDown);
-    return () => {
-      doc.removeEventListener('pointerdown', onPointerDown);
-      doc.removeEventListener('keydown', onKeyDown);
-    };
-  }, [open, close]);
+  const popover = usePopover({ width: PANEL_WIDTH, maxHeight: 480 });
 
   return (
-    <div className="window-settings-anchor" ref={rootRef} onPointerDown={e => e.stopPropagation()}>
+    <div className="window-settings-anchor" ref={popover.rootRef} onPointerDown={e => e.stopPropagation()}>
       <button
-        ref={buttonRef}
+        ref={popover.anchorRef}
         type="button"
-        className={`panel-button panel-button--settings${small ? ' panel-button--sm' : ''}${open ? ' is-active' : ''}`}
-        onClick={() => setOpen(o => !o)}
+        className={`panel-button panel-button--settings${small ? ' panel-button--sm' : ''}${popover.open ? ' is-active' : ''}`}
+        onClick={popover.toggle}
         title="Ustawienia okna"
       />
-      {open && position && (
+      {popover.style && (
         <div
           className="popup-popover window-settings"
           data-window-settings={windowId}
-          style={{ top: position.top, left: position.left, width: PANEL_WIDTH }}
+          style={popover.style}
         >
           <div className="window-settings__header">Ustawienia okna</div>
           {appearance && (

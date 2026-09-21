@@ -143,7 +143,7 @@ body.layout-manager-enabled #content-area > .world {
 /* Pin the header to a fixed height so every window's chrome is identical
    regardless of which controls it carries. With `height:auto` the row grew to
    its tallest child, so a panel whose actions include a taller control (e.g. the
-   map's 22px `.map-header-menu__image-btn`) rendered a 40px header while a panel
+   map's 22px copy-as-image button) rendered a 40px header while a panel
    with only the 20px icon buttons (e.g. "W poblizu") rendered 38px. 38px matches
    the tab-bar parity height below, unifying single, tabbed and floating headers.
    align-items:center keeps every control vertically centred within it. */
@@ -217,7 +217,7 @@ body.layout-manager-enabled #content-area > .world {
    text action button reuses (the objectList "Lista" mode toggle, chat team
    toggle, popup headerActions…), rather than each carrying its own stock CSS.
    Scoped to DIRECT-child buttons so it spares the nested icon toggles
-   (.map-header-menu__toggle + its dropdown items) and the icon control buttons
+   (.popup-menu__toggle + its dropdown items) and the icon control buttons
    (.panel-button: pin / lock / close / reset / popout). */
 .managed-panel__header-actions > button:not(.panel-button) {
   display: inline-flex;
@@ -404,13 +404,14 @@ body.layout-manager-enabled.layout-rails-vertical #input-area .rail {
   --popup-section-bg: #211d16;
 }
 
-/* Action-toolbar dropdowns (the shared `.map-header-menu__dropdown` used by the
-   map, object-list/"kondycje", static-map and chat header menus) render INLINE
-   inside the panel — not through a body portal — so they inherit the panel's
+/* Header popovers (the shared `.popup-popover`: the ☰ menus of the map,
+   object-list/"kondycje" and static-map windows, and every window's settings
+   cog) render INLINE inside the panel — not through a body portal — so they
+   inherit the panel's
    transparent `--popup-bg`. They float (position: fixed) over arbitrary content,
    so like a portaled overlay they need an OPAQUE surface; without it the menu
    shows straight through to whatever sits behind the popup. */
-.managed-panel .map-header-menu__dropdown {
+.popup-popover {
   --popup-bg: #211d16;
 }
 

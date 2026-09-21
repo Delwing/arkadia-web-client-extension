@@ -193,7 +193,7 @@ test.describe('Popout windows', () => {
         }, {timeout: 10000});
 
         // Trigger "copy as image" from inside the popped-out window.
-        const copyBtn = popout.locator('.map-header-menu__image-btn');
+        const copyBtn = popout.getByTitle('Kopiuj jako obraz');
         await expect(copyBtn, 'map screenshot button should be visible in the popout').toBeVisible();
         await copyBtn.click();
 

@@ -86,8 +86,8 @@ test.describe('Window settings cog', () => {
         await page.waitForFunction(() => document.body.classList.contains('layout-manager-enabled'));
 
         const mapPanel = page.locator('.docked-panel--map');
-        await mapPanel.locator('.map-header-menu__toggle').click();
-        const menu = page.locator('.map-header-menu__dropdown');
+        await mapPanel.getByTitle('Menu mapy').click();
+        const menu = page.locator('.popup-menu');
         await expect(menu.getByText('Planer trasy')).toBeVisible();
         await expect(menu.getByText('Siatka')).toHaveCount(0);
         await page.keyboard.press('Escape');
