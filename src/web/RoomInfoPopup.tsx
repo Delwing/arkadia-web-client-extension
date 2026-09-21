@@ -175,7 +175,7 @@ const RoomInfoPopup: React.FC = () => {
                 initialWidth={380}
                 initialHeight={400}
                 className="room-info-popup"
-                bodyClassName="room-info-popup-body"
+                bodyClassName="popup-body"
             >
                 <div className="room-info-popup__empty">Brak danych.</div>
             </DockablePopupWrapper>
@@ -230,7 +230,7 @@ const RoomInfoPopup: React.FC = () => {
             initialWidth={380}
             initialHeight={400}
             className="room-info-popup"
-            bodyClassName="room-info-popup-body"
+            bodyClassName="popup-body"
         >
             <div className="room-info-popup__content">
                 {/* Header */}

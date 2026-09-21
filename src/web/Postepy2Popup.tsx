@@ -478,7 +478,7 @@ const Postepy2Popup: React.FC = () => {
             initialWidth={600}
             initialHeight={675}
             className="postepy2-popup"
-            bodyClassName="postepy2-popup-body"
+            bodyClassName="popup-body"
         >
             <div className="postepy2-header">
                 {characterName && (

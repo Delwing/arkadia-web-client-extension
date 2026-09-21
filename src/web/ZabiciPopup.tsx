@@ -63,12 +63,12 @@ const ZabiciPopup: React.FC = () => {
             initialWidth={325}
             initialHeight={375}
             className="zabici-popup"
-            bodyClassName="zabici-popup-body"
+            bodyClassName="popup-body"
             headerActions={headerActions}
         >
             <div className="zabici-popup__content" ref={containerRef}>
                 {myKillEntries.length === 0 && (!showTeam || teamMemberEntries.length === 0) ? (
-                    <div className="zabici-popup__empty">
+                    <div className="popup-empty">
                         Brak zabitych.
                     </div>
                 ) : (

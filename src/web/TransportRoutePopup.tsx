@@ -237,7 +237,7 @@ const TransportRoutePopup: React.FC = () => {
             minHeight={200}
             initialWidth={300}
             className="transport-route-popup"
-            bodyClassName="transport-route-popup-body"
+            bodyClassName="popup-body"
         >
             {!route ? (
                 <div className="transport-route-popup__empty">

@@ -115,12 +115,12 @@ const PostepyPopup: React.FC = () => {
             initialWidth={325}
             initialHeight={375}
             className="postepy-popup"
-            bodyClassName="postepy-popup-body"
+            bodyClassName="popup-body"
             headerActions={headerActions}
         >
             <div className="postepy-popup__content" ref={containerRef}>
                 {entries.length === 0 ? (
-                    <div className="postepy-popup__empty">
+                    <div className="popup-empty">
                         Brak postepow.
                     </div>
                 ) : (

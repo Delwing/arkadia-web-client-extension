@@ -134,6 +134,16 @@
   line-height: 0;
 }
 
+/* Popup body that fills its window: a column, clipped, on the popup surface.
+   Pass as bodyClassName; the scrolling area inside sets its own overflow. */
+.popup-body {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--popup-bg);
+}
+
 /* Vertical list of items. */
 .popup-list {
   display: flex;
@@ -689,7 +699,6 @@
   background-color: rgba(251, 146, 60, 0.3);
 }
 
-
 /* ── herb — manager toggle + text window (pipe/char-state) ───────────── */
 /* Herb window toggle button */
 .herb-window__toggle {
@@ -1076,49 +1085,6 @@
   gap: 0.25rem;
 }
 
-#objects-list.objects-list-pip-supported .objects-list-controls {
-  display: flex;
-  position: absolute;
-  top: 0;
-  right: 0;
-  padding: 0.25rem;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.2s ease-in-out;
-}
-
-#objects-list.objects-list-pip-supported:hover .objects-list-controls,
-#objects-list.objects-list-pip-supported .objects-list-controls:focus-within {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-#objects-list .objects-list-button {
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  color: #ffffff;
-  padding: 0.1rem 0.35rem;
-  border-radius: 0.35rem;
-  font-size: 0.6rem;
-  line-height: 1;
-  cursor: pointer;
-}
-
-#objects-list .objects-list-button span {
-  display: inline-block;
-  transform: scale(1.1, 1);
-}
-
-#objects-list .objects-list-button:hover,
-#objects-list .objects-list-button:focus {
-  background: var(--popup-control-pressed-bg);
-}
-
-#objects-list .objects-list-button-active {
-  background: var(--popup-accent-bg);
-  border-color: var(--popup-border-stronger);
-}
-
 #objects-list .objects-list-content {
   white-space: pre;
 }
@@ -1174,13 +1140,6 @@
 .clock-content {
   flex: 1;
   overflow-y: auto;
-}
-
-.clock-empty {
-  padding: 2rem 1rem;
-  text-align: center;
-  color: var(--popup-text-medium);
-  font-size: 0.925rem;
 }
 
 .clock-details {
@@ -1348,10 +1307,6 @@
   background-color: rgba(245, 158, 11, 0.1);
 }
 
-.contract-item--other-domain {
-  opacity: 0.6;
-}
-
 .contract-header {
   display: flex;
   justify-content: space-between;
@@ -1419,15 +1374,6 @@
 .contract-deadline--urgent {
   color: var(--popup-warning);
   font-weight: 600;
-}
-
-.contract-domain-badge {
-  display: inline-block;
-  padding: 0.125rem 0.375rem;
-  background-color: var(--popup-control-hover-bg);
-  border-radius: 0.25rem;
-  font-size: 0.7rem;
-  text-transform: uppercase;
 }
 
 /* ── fishing ─────────────────────────────────────────────────────────── */
@@ -1592,13 +1538,6 @@
 
 /* ── chat ────────────────────────────────────────────────────────────── */
 /* Chat Popup Styles */
-.chat-popup-body {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  overflow: hidden;
-  background-color: var(--popup-bg);
-}
 
 .chat-popup__messages {
   flex: 1;
@@ -1684,13 +1623,6 @@
 
 /* ── stat ────────────────────────────────────────────────────────────── */
 /* Stat Popup */
-.stat-popup-body {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  overflow: hidden;
-  background-color: var(--popup-bg);
-}
 
 .stat-popup__content {
   flex: 1;
@@ -1764,13 +1696,6 @@
 
 /* ── postepy ─────────────────────────────────────────────────────────── */
 /* Postepy Popup */
-.postepy-popup-body {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  overflow: hidden;
-  background-color: var(--popup-bg);
-}
 
 .postepy-popup__content {
   flex: 1;
@@ -1781,13 +1706,6 @@
   line-height: 1.4;
   display: flex;
   flex-direction: column;
-}
-
-.postepy-popup__empty {
-  padding: 1rem;
-  text-align: center;
-  color: var(--popup-text-dim);
-  font-style: italic;
 }
 
 .postepy-popup__entries {
@@ -1872,13 +1790,6 @@
 
 /* ── postepy2 (incl. graphs) ─────────────────────────────────────────── */
 /* Postepy2 Popup */
-.postepy2-popup-body {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  overflow: hidden;
-  background-color: var(--popup-bg);
-}
 
 .postepy2-header {
   padding: 0.5rem 0.75rem;
@@ -2619,13 +2530,6 @@
 
 /* ── zabici ──────────────────────────────────────────────────────────── */
 /* Zabici Popup */
-.zabici-popup-body {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  overflow: hidden;
-  background-color: var(--popup-bg);
-}
 
 .zabici-popup__content {
   flex: 1;
@@ -2634,13 +2538,6 @@
   font-family: var(--output-font-family), monospace;
   font-size: var(--output-font-size, 0.875rem);
   line-height: 1.4;
-}
-
-.zabici-popup__empty {
-  padding: 1rem;
-  text-align: center;
-  color: var(--popup-text-dim);
-  font-style: italic;
 }
 
 .zabici-popup__section {
@@ -2733,13 +2630,6 @@
 
 /* ── zabici2 (lifetime) ──────────────────────────────────────────────── */
 /* Zabici2 (Lifetime) Popup */
-.zabici2-popup-body {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  overflow: hidden;
-  background-color: var(--popup-bg);
-}
 
 .zabici2-popup__content {
   flex: 1;
@@ -2752,13 +2642,6 @@
   font-family: var(--output-font-family), monospace;
   font-size: var(--output-font-size, 0.875rem);
   line-height: 1.4;
-}
-
-.zabici2-popup__empty {
-  padding: 1rem;
-  text-align: center;
-  color: var(--popup-text-dim);
-  font-style: italic;
 }
 
 .zabici2-popup__mob-name {
@@ -2795,13 +2678,6 @@
 
 /* ── loot ────────────────────────────────────────────────────────────── */
 /* Loot Popup */
-.loot-popup-body {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  overflow: hidden;
-  background-color: var(--popup-bg);
-}
 
 .loot-popup__content {
   flex: 1;
@@ -2810,13 +2686,6 @@
   font-family: var(--output-font-family), monospace;
   font-size: var(--output-font-size, 0.875rem);
   line-height: 1.4;
-}
-
-.loot-popup__empty {
-  padding: 1rem;
-  text-align: center;
-  color: var(--popup-text-dim);
-  font-style: italic;
 }
 
 .loot-popup__section {
@@ -3594,13 +3463,6 @@
 
 /* ── walker ──────────────────────────────────────────────────────────── */
 /* Walker Popup */
-.walker-popup-body {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  overflow: hidden;
-  background-color: var(--popup-bg);
-}
 
 .walker-popup__content {
   flex: 1;
@@ -3620,12 +3482,7 @@
   border-radius: 0.25rem;
 }
 
-.walker-popup__section--input {
-  flex: 0 0 auto;
-}
-
 .walker-popup__status-row,
-.walker-popup__speed-row,
 .walker-popup__delay-row {
   display: flex;
   justify-content: space-between;
@@ -3663,19 +3520,6 @@
   background-color: var(--popup-hover-bg);
 }
 
-.walker-popup__speed-controls {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.walker-popup__speed-value {
-  color: var(--popup-accent);
-  font-weight: bold;
-  min-width: 2.5rem;
-  text-align: center;
-}
-
 .walker-popup__delay-controls {
   display: flex;
   align-items: center;
@@ -3701,69 +3545,6 @@
 
 .walker-popup__delay-unit {
   color: var(--popup-text-dim);
-}
-
-.walker-popup__destinations {
-  max-height: 8rem;
-  overflow-y: auto;
-  margin-top: 0.25rem;
-  padding-right: 0.25rem;
-}
-
-.walker-popup__destination {
-  display: flex;
-  gap: 0.5rem;
-  padding: 0.125rem 0.25rem;
-  border-radius: 0.25rem;
-}
-
-.walker-popup__destination:hover {
-  background-color: var(--popup-hover-bg);
-}
-
-.walker-popup__destination--done {
-  opacity: 0.5;
-  text-decoration: line-through;
-}
-
-.walker-popup__destination--current {
-  background-color: var(--popup-accent-subtle-bg);
-  color: var(--popup-accent);
-}
-
-.walker-popup__destination-num {
-  color: var(--popup-text-dim);
-  min-width: 1.5rem;
-  text-align: right;
-}
-
-.walker-popup__destination-text {
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.walker-popup__input {
-  width: 100%;
-  padding: 0.4rem;
-  background-color: var(--popup-control-bg);
-  border: 1px solid var(--popup-border);
-  border-radius: 0.25rem;
-  color: var(--popup-text-strong);
-  font-family: inherit;
-  font-size: inherit;
-  resize: vertical;
-  margin-top: 0.25rem;
-}
-
-.walker-popup__input:focus {
-  outline: none;
-  border-color: var(--popup-input-focus-border);
-}
-
-.walker-popup__input::placeholder {
-  color: var(--popup-text-faint);
 }
 
 .walker-popup__controls {
@@ -3802,16 +3583,6 @@
   min-width: 1.5rem;
 }
 
-.walker-popup__btn--primary {
-  background-color: var(--popup-accent-bg);
-  border-color: var(--popup-accent-border);
-  color: var(--popup-accent);
-}
-
-.walker-popup__btn--primary:hover:not(:disabled) {
-  background-color: var(--popup-accent-hover-bg);
-}
-
 .walker-popup__btn--success {
   background-color: var(--popup-success-bg);
   border-color: var(--popup-success-hover-bg);
@@ -3820,16 +3591,6 @@
 
 .walker-popup__btn--success:hover:not(:disabled) {
   background-color: var(--popup-success-hover-bg);
-}
-
-.walker-popup__btn--warning {
-  background-color: var(--popup-warning-bg);
-  border-color: var(--popup-warning-hover-bg);
-  color: var(--popup-warning);
-}
-
-.walker-popup__btn--warning:hover:not(:disabled) {
-  background-color: var(--popup-warning-hover-bg);
 }
 
 .walker-popup__btn--danger {
@@ -3847,35 +3608,11 @@
   font-weight: bold;
 }
 
-.walker-popup__section--help {
-  font-size: 0.7rem;
-  opacity: 0.7;
-}
-
-.walker-popup__help-title {
-  font-weight: bold;
-  margin-bottom: 0.25rem;
-  color: var(--popup-text-subtle);
-}
-
-.walker-popup__help-item {
-  color: var(--popup-text-dim);
-  padding-left: 0.5rem;
-}
-
 /* ── poczta ──────────────────────────────────────────────────────────── */
 /* Poczta Popup */
 .poczta-window {
   --fw-width: 500px;
   --fw-min-width: 350px;
-}
-
-.poczta-window-body {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  overflow: hidden;
-  background-color: var(--popup-bg);
 }
 
 .poczta-tabs {
@@ -3951,13 +3688,6 @@
 
 /* ── room info (incl. compass) ───────────────────────────────────────── */
 /* Room Info Popup */
-.room-info-popup-body {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  overflow: hidden;
-  background-color: var(--popup-bg);
-}
 
 .room-info-popup__content {
   flex: 1;
@@ -4209,13 +3939,6 @@
 
 /* ── deposits ────────────────────────────────────────────────────────── */
 /* Deposits Popup */
-.deposits-popup-body {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  overflow: hidden;
-  background-color: var(--popup-bg);
-}
 
 .deposits-popup__filter {
   background-color: var(--popup-control-bg);
@@ -4244,13 +3967,6 @@
   font-family: var(--output-font-family), monospace;
   font-size: var(--output-font-size, 0.875rem);
   line-height: 1.4;
-}
-
-.deposits-popup__empty {
-  padding: 1rem;
-  text-align: center;
-  color: var(--popup-text-dim);
-  font-style: italic;
 }
 
 .deposits-popup__grid {
@@ -4480,14 +4196,6 @@
 /* ── transport route ─────────────────────────────────────────────────── */
 /* Transport Route Popup */
 
-.transport-route-popup-body {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  overflow: hidden;
-  background-color: var(--popup-bg);
-}
-
 .transport-route-popup__empty {
   padding: 1rem 0.75rem;
   color: var(--popup-text-dim);
@@ -4632,7 +4340,6 @@
   flex-wrap: wrap;
   gap: 0.375rem;
 }
-
 
 .zlom-header-actions {
   display: flex;
@@ -5251,14 +4958,6 @@
   --fw-min-width: 300px;
 }
 
-.letter-view-body {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  overflow: hidden;
-  background-color: var(--popup-bg);
-}
-
 .letter-view-content {
   display: flex;
   flex-direction: column;
@@ -5658,14 +5357,6 @@
   --fw-height: min(75vh, calc(100vh - 2rem));
   --fw-min-width: 500px;
   --fw-min-height: 350px;
-}
-
-.knowledge-window-progress {
-  margin-left: 0.75rem;
-  font-size: 0.85em;
-  font-weight: 500;
-  color: var(--popup-text-subtle);
-  white-space: nowrap;
 }
 
 /* Knowledge window body uses overflow: hidden instead of auto */
@@ -7081,16 +6772,6 @@
   gap: 0.75rem;
 }
 
-.knowledge-details-area-category {
-  border: 1px solid var(--popup-border-subtle);
-  border-radius: 0.5rem;
-  padding: 0.75rem 0.85rem;
-  background-color: var(--popup-subtle-bg);
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-}
-
 /* ==========================================================================
    PANEL ACTION BUTTONS (.panel-button — pin / lock / reset / close / popout)
    Moved here from stock src/web/style.css so BOTH UIs get them: these render in
@@ -8060,10 +7741,6 @@
 .atk--enemy { color: #d0897f; background: rgba(92, 34, 27, .34); box-shadow: inset 0 0 0 1px rgba(150, 60, 50, .55); }
 .atk--ally  { color: #97b478; background: rgba(60, 70, 38, .32); box-shadow: inset 0 0 0 1px rgba(80, 110, 60, .5); }
 .atk--you   { color: var(--popup-accent); background: var(--popup-accent-subtle-bg); box-shadow: inset 0 0 0 1px var(--popup-accent-border); }
-.obj--empty {
-  padding: 4px 2px; font-style: italic;
-  font-size: 12.5px; color: var(--popup-text-dim); opacity: .6;
-}
 
 /* ============================================================
    Object List Demo Popup (/demo_kondycje). Shared by both UIs:
@@ -8082,13 +7759,6 @@
   padding: 12px;
 }
 
-.demo-popup-actions {
-  display: flex;
-  gap: 8px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--popup-border);
-}
-
 .demo-btn {
   padding: 6px 12px;
   border: 1px solid var(--popup-border-stronger);
@@ -8102,16 +7772,6 @@
 
 .demo-btn:hover {
   background: var(--popup-accent-bg);
-}
-
-.demo-btn--primary {
-  background: var(--popup-accent-hover-bg);
-  border-color: var(--popup-accent-border);
-  color: var(--popup-accent);
-}
-
-.demo-btn--primary:hover {
-  background: var(--popup-accent-hover-bg);
 }
 
 .demo-btn--small {

@@ -115,7 +115,7 @@ const StatPopup: React.FC = () => {
             initialWidth={420}
             initialHeight={520}
             className="stat-popup"
-            bodyClassName="stat-popup-body"
+            bodyClassName="popup-body"
         >
             <div className="stat-popup__content">
                 <div className="stat-popup__row stat-popup__row--total">

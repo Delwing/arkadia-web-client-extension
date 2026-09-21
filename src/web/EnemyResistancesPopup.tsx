@@ -301,7 +301,7 @@ const EnemyResistancesPopup: React.FC = () => {
             initialWidth={900}
             initialHeight={480}
             className="enemy-res-popup"
-            bodyClassName="enemy-res-popup-body postepy2-popup-body"
+            bodyClassName="enemy-res-popup-body popup-body"
             headerActions={headerActions}
         >
             <div className="postepy2-header">

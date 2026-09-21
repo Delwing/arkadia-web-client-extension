@@ -136,11 +136,11 @@ const LootPopup: React.FC = () => {
             initialWidth={350}
             initialHeight={300}
             className="loot-popup"
-            bodyClassName="loot-popup-body"
+            bodyClassName="popup-body"
         >
             <div className="loot-popup__content">
                 {bodies.length === 0 && groundItems.length === 0 ? (
-                    <div className="loot-popup__empty">Brak przedmiotow.</div>
+                    <div className="popup-empty">Brak przedmiotow.</div>
                 ) : (
                     <>
                         {specialItems.length > 0 && (

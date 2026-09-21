@@ -213,7 +213,7 @@ test.describe('Loot popup', () => {
 
         // After removing the last item the body is spliced out, leaving bodies=[] and
         // groundItems=[], so the popup should display the empty-state message.
-        const emptyMsg = popup.locator('.loot-popup__empty');
+        const emptyMsg = popup.locator('.popup-empty');
         await expect(emptyMsg, 'popup should show empty message after all items collected').toBeVisible({timeout: 3000});
         await expect(emptyMsg, 'empty message text should be correct').toHaveText('Brak przedmiotow.');
     });

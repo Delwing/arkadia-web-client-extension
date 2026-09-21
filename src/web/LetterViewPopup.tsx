@@ -68,7 +68,7 @@ const LetterViewPopup: React.FC = () => {
             initialWidth={500}
             initialHeight={350}
             className="letter-view-window"
-            bodyClassName="letter-view-body"
+            bodyClassName="popup-body"
             headerActions={headerActions}
         >
             {letter ? (

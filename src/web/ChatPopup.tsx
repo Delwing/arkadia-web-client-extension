@@ -100,7 +100,7 @@ const ChatPopup: React.FC = () => {
             initialWidth={600}
             initialHeight={350}
             className="chat-popup"
-            bodyClassName="chat-popup-body"
+            bodyClassName="popup-body"
             headerActions={headerActions}
             settingsFields={CHAT_SETTINGS_FIELDS}
         >

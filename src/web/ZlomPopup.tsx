@@ -503,7 +503,7 @@ const ZlomPopup: React.FC = () => {
             initialWidth={792}
             initialHeight={520}
             className="zlom-popup postepy2-popup"
-            bodyClassName="zlom-popup-body postepy2-popup-body"
+            bodyClassName="zlom-popup-body popup-body"
             headerActions={headerActions}
         >
             <div className="postepy2-header">
