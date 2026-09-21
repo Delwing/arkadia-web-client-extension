@@ -66,6 +66,15 @@
 .places-list__filters .dialog-tab {
   padding: 0 9px;
 }
+/* The tabs take what is left and scroll if a narrow column cannot fit them. */
+.places-list__filters .dialog-tabs {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+.places-sort {
+  flex-shrink: 0;
+  margin-left: auto;
+}
 .places-list__rows {
   display: flex;
   flex: 1;

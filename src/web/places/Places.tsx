@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, ArrowUpDown, FileText, Footprints, LocateFixed, Map as MapIcon, MapPin, Navigation, NotebookPen, Plus, Puzzle, Search, X } from "lucide-react";
+import { ArrowDownAZ, ArrowLeft, FileText, Footprints, LocateFixed, Map as MapIcon, MapPin, Navigation, NotebookPen, Plus, Puzzle, Search, X } from "lucide-react";
 import { Button, DeleteButton, Input, InputGroup, TextArea } from "@web-ui/primitives/index.ts";
 import eventBus from "@modules/core/eventBus";
 import { globalStorage } from "@modules/core/storage";
@@ -26,10 +26,10 @@ import {
 import "./places.css";
 
 type Filter = "all" | "shortcuts" | "notes" | "described";
+type Sort = "near" | "az";
 
 /** Most described rooms listed at once; searching narrows the rest down. */
 const DESCRIBED_LIMIT = 200;
-type Sort = "near" | "az";
 
 const NOTE_SAVE_DELAY = 600;
 
@@ -528,10 +528,18 @@ export default function Places() {
                                 </button>
                             ))}
                         </div>
-                        <span className="places-sec__spacer" />
-                        <Button variant="ghost" size="sm" onClick={() => setSort(sort === "near" ? "az" : "near")} title="Zmień kolejność">
-                            {sort === "near" ? "Najbliższe" : "A–Z"}<ArrowUpDown size={13} strokeWidth={1.9} />
-                        </Button>
+                        {/* Icon-only: four tabs already fill the column. Descriptions keep their own order. */}
+                        {filter !== "described" && (
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="popup-btn--icon places-sort"
+                                onClick={() => setSort(sort === "near" ? "az" : "near")}
+                                title={sort === "near" ? "Kolejność: najbliższe (kliknij: A–Z)" : "Kolejność: A–Z (kliknij: najbliższe)"}
+                            >
+                                {sort === "near" ? <Navigation size={15} strokeWidth={1.9} /> : <ArrowDownAZ size={16} strokeWidth={1.9} />}
+                            </Button>
+                        )}
                     </div>
                 </div>
                 <div className="places-list__rows">
