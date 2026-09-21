@@ -2957,6 +2957,50 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
   padding-left: 12px;
   border-left: 2px solid var(--popup-border-subtle);
 }
+/* Triggery (options/UserTriggers.tsx) reuses the alias list. */
+.alias-flags {
+  color: var(--popup-text-dim);
+}
+.trigger-event-icon {
+  flex-shrink: 0;
+  align-self: center;
+  color: var(--popup-warning, #d9a441);
+}
+.trigger-event-name {
+  color: var(--popup-text-bright);
+  font-weight: 600;
+}
+.trigger-conditions {
+  color: var(--popup-text-subtle);
+  font-size: var(--ui-fs-sm, 13px);
+}
+.trigger-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.trigger-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 100%;
+  overflow: hidden;
+  padding: 1px 7px;
+  border: 1px solid var(--popup-accent-border);
+  border-radius: 999px;
+  background-color: var(--popup-accent-subtle-bg);
+  color: var(--popup-accent);
+  font-size: var(--ui-fs-xs, 12px);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.trigger-chip__swatch {
+  flex-shrink: 0;
+  width: 10px;
+  height: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+}
 .alias-override-char {
   padding: 0 6px;
   border-radius: var(--ui-radius-sm, 4px);

@@ -37,7 +37,7 @@ test('User trigger creation executes command and persists after reload', async (
         'should list newly created trigger pattern',
     ).toBeVisible();
     await expect(
-        triggersModal.locator('code.alias-command', {hasText: 'command say triggered'}),
+        triggersModal.locator('.trigger-chip', {hasText: 'Komenda: say triggered'}),
         'should display command macro summary',
     ).toBeVisible();
 
@@ -75,7 +75,7 @@ test('User trigger creation executes command and persists after reload', async (
         'should preserve trigger pattern after reload',
     ).toBeVisible();
     await expect(
-        triggersModal.locator('code.alias-command', {hasText: 'command say triggered'}),
+        triggersModal.locator('.trigger-chip', {hasText: 'Komenda: say triggered'}),
         'should preserve macro summary after reload',
     ).toBeVisible();
 
@@ -138,7 +138,7 @@ test('GMCP event trigger lets the user pick a known GMCP package', async ({page}
     await triggersModal.getByRole('button', {name: 'Dodaj', exact: true}).click();
 
     await expect(
-        triggersModal.locator('code.alias-pattern', {hasText: 'Char.State'}),
+        triggersModal.locator('.trigger-event-name', {hasText: 'Char.State'}),
         'should list the GMCP event trigger by its label',
     ).toBeVisible();
     await expect(triggersModal.locator('.trigger-conditions'), 'should summarise the condition').toHaveText('gdy hp <= 2');
