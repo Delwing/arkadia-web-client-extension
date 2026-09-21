@@ -114,10 +114,12 @@
   --output-font-family: monospace;
   --output-font-size: 0.875rem;
   --panel-btn-size: 20px;
-  --panel-btn-opacity: 0.5;
+  /* 0.5 made the header icons read as disabled next to the ☰ menu and the
+     header's text buttons; the menu toggle reads these same two values. */
+  --panel-btn-opacity: 0.8;
   --panel-btn-radius: 999px;
   --panel-btn-icon-size: 12px;
-  --panel-btn-hover-opacity: 0.8;
+  --panel-btn-hover-opacity: 1;
   --hold-glow-color: rgba(255, 255, 255, 0.6);
   --dock-left-size: 0px;
   --dock-right-size: 0px;
