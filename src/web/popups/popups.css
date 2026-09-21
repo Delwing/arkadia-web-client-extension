@@ -275,6 +275,8 @@
 .popup-menu-anchor {
   display: inline-flex;
 }
+/* Same tone as the .panel-button icons next to it (#888 at --panel-btn-opacity),
+   so neither the menu nor the header buttons look disabled beside the other. */
 .popup-menu__toggle {
   display: flex;
   align-items: center;
@@ -285,12 +287,13 @@
   border: none;
   border-radius: 3px;
   background: transparent;
-  opacity: 1;
+  opacity: var(--panel-btn-opacity, 0.5);
   cursor: pointer;
-  transition: background-color 0.15s ease;
+  transition: background-color 0.15s ease, opacity 0.15s ease;
 }
 .popup-menu__toggle:hover,
 .popup-menu__toggle.is-active {
+  opacity: var(--panel-btn-hover-opacity, 0.8);
   background-color: var(--popup-control-hover-bg);
 }
 .popup-menu__hamburger,
@@ -299,7 +302,7 @@
   display: block;
   width: 12px;
   height: 2px;
-  background-color: var(--popup-text-subtle);
+  background-color: #888;
 }
 .popup-menu__hamburger {
   position: relative;
@@ -315,11 +318,6 @@
 }
 .popup-menu__hamburger::after {
   top: 4px;
-}
-.popup-menu__toggle:hover .popup-menu__hamburger,
-.popup-menu__toggle:hover .popup-menu__hamburger::before,
-.popup-menu__toggle:hover .popup-menu__hamburger::after {
-  background-color: var(--popup-text-strong);
 }
 /* The list itself; stacks on .popup-popover for surface and placement. */
 .popup-menu {
