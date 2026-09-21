@@ -3063,19 +3063,18 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
 .character-settings-section {
   background-color: var(--popup-section-bg);
   border: 1px solid var(--popup-border);
-  border-radius: 0.5rem;
-  padding: 1rem;
+  border-radius: var(--ui-radius-lg, 10px);
+  padding: 12px 14px;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  box-shadow: 0 1rem 2rem rgba(0, 0, 0, 0.25);
+  gap: 10px;
   break-inside: avoid;
   margin-bottom: 1rem;
 }
 
 .ui-settings-section-title,
 .character-settings-section-title {
-  font-size: 1rem;
+  font-size: var(--ui-fs, 13px);
   font-weight: 600;
   margin: 0;
 }
