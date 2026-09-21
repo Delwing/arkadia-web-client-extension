@@ -3352,14 +3352,15 @@ p.popup-field__hint {
   gap: 16px 24px;
 }
 .desktop-button-editor__form {
-  flex: 1 1 22rem;
+  flex: 0 1 24rem;
   display: flex;
   flex-direction: column;
   gap: 12px;
   min-width: 0;
 }
 .desktop-button-editor__preview {
-  flex: 0 1 12rem;
+  flex: 1 1 16rem;
+  min-width: 0;
   position: sticky;
   top: 0;
 }
@@ -3367,7 +3368,8 @@ p.popup-field__hint {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 6rem;
+  min-height: 8rem;
+  overflow: auto;
   padding: 12px;
   border: 1px dashed var(--popup-border);
   border-radius: var(--ui-radius, 6px);
