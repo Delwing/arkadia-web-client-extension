@@ -104,4 +104,25 @@ test.describe('Window settings cog', () => {
         await panel.locator('.window-settings__toggle', {hasText: 'Etykieta w naglowku'}).click();
         await expect(locationBar).toBeVisible();
     });
+
+    test('locking the interface keeps the settings cog usable', async ({page}) => {
+        await prepareClient(page);
+        await waitForMapReady(page);
+        await openSettings(page, 'ui-windows');
+        const layoutToggle = page.locator('#ui-layout-manager-enabled');
+        if (!(await layoutToggle.isChecked())) await layoutToggle.click();
+        await saveSettings(page);
+        await page.waitForFunction(() => document.body.classList.contains('layout-manager-enabled'));
+
+        await submitCommand(page, '/blokada');
+        await page.waitForFunction(() => document.body.classList.contains('layout-locked'));
+
+        const mapPanel = page.locator('.docked-panel--map');
+        await expect(mapPanel.locator('.panel-button--popout'), 'placement controls hide').toBeHidden();
+        const cog = mapPanel.locator('.panel-button--settings');
+        await expect(cog, 'the cog stays').toBeVisible();
+        await cog.click();
+        await page.locator('.window-settings .window-settings__toggle', {hasText: 'Siatka'}).click();
+        await expect(page.locator('.window-settings .window-settings__toggle', {hasText: 'Siatka'})).toHaveClass(/\bis-on\b/);
+    });
 });

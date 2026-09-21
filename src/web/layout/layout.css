@@ -108,8 +108,10 @@ body.layout-objectlist-enabled #objects-list {
    default classes), so they still spawn, move, resize and close. Drag-to-dock,
    undock and the split context menu are disabled in JS (dockDetect /
    startUndockableDrag / handleTitlebarContextMenu). */
-body.layout-locked .docked-panel .panel-button,
-body.layout-locked .tab-group-panel .panel-button {
+/* The lock freezes the layout, not a window's own options: the settings cog
+   stays while the placement controls (pin, lock, reset, popout, close) go. */
+body.layout-locked .docked-panel .panel-button:not(.panel-button--settings),
+body.layout-locked .tab-group-panel .panel-button:not(.panel-button--settings) {
   display: none;
 }
 body.layout-locked .dock-edge-splitter,
