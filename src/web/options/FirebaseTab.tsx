@@ -665,32 +665,16 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                                             authMode === 'login' ? 'Zaloguj sie' : 'Zarejestruj sie'
                                         )}
                                     </Button>
-                                    <button
-                                        type="button"
-                                        onClick={handleGoogleSignIn}
-                                        disabled={isAuthBusy}
-                                        className="d-inline-flex align-items-center gap-2"
-                                        style={{
-                                            backgroundColor: '#fff',
-                                            color: '#3c4043',
-                                            border: '1px solid #dadce0',
-                                            borderRadius: '4px',
-                                            padding: '8px 16px',
-                                            fontSize: '14px',
-                                            fontWeight: 500,
-                                            cursor: isAuthBusy ? 'not-allowed' : 'pointer',
-                                            opacity: isAuthBusy ? 0.7 : 1,
-                                        }}
-                                    >
+                                    <Button onClick={handleGoogleSignIn} disabled={isAuthBusy}>
                                         {isAuthBusy ? (
                                             <span className="popup-spinner" />
                                         ) : (
                                             <>
-                                                <GoogleLogo size={18} />
+                                                <GoogleLogo size={16} />
                                                 <span>Zaloguj przez Google</span>
                                             </>
                                         )}
-                                    </button>
+                                    </Button>
                                 </div>
                             </form>
                         )}
