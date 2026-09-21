@@ -257,6 +257,518 @@
   font-weight: 600;
 }
 
+/* ── Dialog (src/ui/web/primitives/Dialog.tsx) ─────────────────────────────
+   Rendered inline over its host (see Dialog.tsx), so the backdrop is fixed and
+   sits above Bootstrap's .modal (1055). */
+.popup-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1060;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background-color: rgba(0, 0, 0, 0.5);
+  font-family: var(--font-ui, sans-serif);
+  font-size: var(--ui-fs, 13px);
+  line-height: 1.45;
+  text-align: left;
+}
+.popup-dialog {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 560px;
+  max-height: 85vh;
+  background-color: var(--popup-bg);
+  color: var(--popup-text);
+  border: 1px solid var(--popup-border);
+  border-radius: var(--ui-radius-lg, 10px);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.5), 0 2px 6px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}
+.popup-dialog--sm { max-width: 400px; }
+.popup-dialog--lg { max-width: 800px; }
+.popup-dialog--xl { max-width: 1140px; }
+.popup-dialog__header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  box-sizing: border-box;
+  padding: 0 6px 0 16px;
+  border-bottom: 1px solid var(--popup-border);
+}
+/* Spaced capitals, like window titles. */
+.popup-dialog__title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--ui-fs-sm, 12px);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--popup-text-bright);
+}
+.popup-dialog__close {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--ui-radius-sm, 4px);
+  background: transparent;
+  color: var(--popup-text-subtle);
+  font: inherit;
+  font-size: 18px;
+  line-height: 1;
+  opacity: 1;
+  cursor: pointer;
+}
+.popup-dialog__close:hover {
+  border-color: transparent;
+  background-color: var(--popup-control-hover-bg);
+  color: var(--popup-text);
+}
+.popup-dialog__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 16px;
+  overflow: auto;
+}
+.popup-dialog__body--fit {
+  overflow: visible;
+}
+.popup-dialog__footer {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--popup-border);
+  background-color: var(--popup-control-bg);
+}
+
+/* ── Form controls at control size (28px) — dialogs and settings ───────────
+   Compounded with the base class: the stock input rules
+   (input[type="text"], .modal input …) are (0,1,1) and would outrank a single
+   class; the bare `button` rule would leak opacity/padding/background. */
+.popup-btn.popup-btn--control {
+  height: var(--ui-ctrl, 28px);
+  padding: 0 12px;
+  border-radius: var(--ui-radius, 6px);
+  font-family: inherit;
+  font-size: var(--ui-fs, 13px);
+  font-weight: 500;
+  white-space: nowrap;
+}
+.popup-btn.popup-btn--control.popup-btn--sm {
+  height: var(--ui-ctrl-sm, 24px);
+  padding: 0 8px;
+  font-size: var(--ui-fs-sm, 12px);
+}
+/* Solid accent — the one main action of a dialog. */
+.popup-btn.popup-btn--solid,
+.popup-btn.popup-btn--solid:hover {
+  background-color: var(--popup-accent);
+  border-color: var(--popup-accent);
+  color: var(--popup-bg);
+  font-weight: 600;
+}
+.popup-btn.popup-btn--solid:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+/* Quiet — secondary actions that shouldn't compete (Import, Usun…). */
+.popup-btn.popup-btn--ghost {
+  background-color: transparent;
+  border-color: transparent;
+}
+.popup-btn.popup-btn--ghost:hover:not(:disabled) {
+  background-color: var(--popup-control-hover-bg);
+  border-color: transparent;
+}
+.popup-btn.popup-btn--danger.popup-btn--ghost {
+  color: var(--popup-danger);
+}
+.popup-input.popup-input--control {
+  box-sizing: border-box;
+  height: var(--ui-ctrl, 28px);
+  width: 100%;
+  min-width: 0;
+  padding: 0 8px;
+  border: 1px solid var(--popup-border-control);
+  border-radius: var(--ui-radius, 6px);
+  background-color: var(--popup-input-bg);
+  color: var(--popup-input-text);
+  font-family: inherit;
+  font-size: var(--ui-fs, 13px);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+textarea.popup-input.popup-input--control {
+  height: auto;
+  min-height: var(--ui-ctrl, 28px);
+  padding: 5px 8px;
+  line-height: 1.4;
+  resize: vertical;
+}
+select.popup-input.popup-input--control {
+  appearance: none;
+  padding-right: 26px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23888' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 10px;
+}
+.popup-input.popup-input--control:focus {
+  outline: none;
+  border-color: var(--popup-accent);
+  box-shadow: 0 0 0 2px var(--popup-accent-subtle-bg);
+}
+.popup-input.popup-input--control:disabled {
+  opacity: 0.6;
+}
+.popup-input.popup-input--mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12.5px;
+}
+/* Input with fixed text on its sides (^ … $). */
+.popup-input-group {
+  display: flex;
+  align-items: stretch;
+}
+.popup-input-group > .popup-input.popup-input--control {
+  flex: 1;
+  border-radius: 0;
+}
+.popup-input-group__addon {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 8px;
+  border: 1px solid var(--popup-border-control);
+  background-color: var(--popup-control-bg);
+  color: var(--popup-text-dim);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12.5px;
+}
+.popup-input-group__addon:first-child {
+  border-right: none;
+  border-radius: var(--ui-radius, 6px) 0 0 var(--ui-radius, 6px);
+}
+.popup-input-group__addon:last-child {
+  border-left: none;
+  border-radius: 0 var(--ui-radius, 6px) var(--ui-radius, 6px) 0;
+}
+/* Label + control + hint/error, stacked. */
+.popup-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.popup-field__label {
+  font-size: var(--ui-fs-sm, 12px);
+  font-weight: 600;
+  color: var(--popup-text-subtle);
+}
+.popup-field__hint {
+  font-size: var(--ui-fs-xs, 11px);
+  color: var(--popup-text-dim);
+}
+.popup-field__error {
+  font-size: var(--ui-fs-xs, 11px);
+  color: var(--popup-danger);
+}
+/* Vertical rhythm for fields in a dialog or settings page. */
+.popup-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.popup-inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.popup-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--popup-text);
+  font-size: var(--ui-fs, 13px);
+  cursor: pointer;
+}
+.popup-check > input {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  accent-color: var(--popup-accent);
+  cursor: pointer;
+}
+/* Segmented choice: two to four mutually exclusive options. */
+.popup-segmented {
+  display: inline-flex;
+  align-self: flex-start;
+  gap: 2px;
+  height: var(--ui-ctrl, 28px);
+  box-sizing: border-box;
+  padding: 2px;
+  border: 1px solid var(--popup-border-control);
+  border-radius: var(--ui-radius, 6px);
+  background-color: var(--popup-input-bg);
+}
+.popup-segmented__item {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 10px;
+  border-radius: var(--ui-radius-sm, 4px);
+  color: var(--popup-text-subtle);
+  font-size: var(--ui-fs-sm, 12px);
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+}
+.popup-segmented__item:hover {
+  color: var(--popup-text);
+}
+/* The radio covers its option, invisible but clickable and focusable. */
+.popup-segmented__input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.popup-segmented__item:has(.popup-segmented__input:focus-visible) {
+  box-shadow: 0 0 0 2px var(--popup-accent-subtle-bg);
+}
+.popup-segmented__item.is-active {
+  background-color: var(--popup-control-active-bg);
+  color: var(--popup-text-strong);
+  font-weight: 600;
+}
+
+/* Small shared bits used by the dialogs. */
+.popup-field__warning {
+  font-size: var(--ui-fs-xs, 11px);
+  color: var(--popup-warning);
+}
+.popup-input.popup-input--control.is-warning {
+  border-color: var(--popup-warning);
+}
+/* Grow the text control in a row; selects and buttons keep their size. */
+.popup-inline > input.popup-input.popup-input--control,
+.popup-inline > textarea.popup-input.popup-input--control {
+  flex: 1;
+}
+/* A button that reads as an inline link, inside hint or warning text. */
+.popup-link {
+  display: inline;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--popup-accent);
+  font: inherit;
+  text-decoration: underline;
+  opacity: 1;
+  cursor: pointer;
+}
+.popup-link:hover {
+  border-color: transparent;
+}
+
+/* Trigger editor (TriggerEditModal.tsx) */
+.trigger-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.trigger-section__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.trigger-section__title {
+  margin: 0;
+  font-size: var(--ui-fs, 13px);
+  font-weight: 600;
+  color: var(--popup-text);
+}
+.trigger-section__head > .popup-btn:last-child {
+  margin-left: auto;
+}
+.trigger-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.trigger-action {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid var(--popup-border-subtle);
+  border-radius: var(--ui-radius, 6px);
+  background-color: var(--popup-subtle-bg);
+}
+.trigger-action__main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.trigger-action__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.trigger-action__color {
+  flex-shrink: 0;
+  width: 36px;
+  height: var(--ui-ctrl, 28px);
+  box-sizing: border-box;
+  padding: 2px;
+  border: 1px solid var(--popup-border-control);
+  border-radius: var(--ui-radius, 6px);
+  background-color: var(--popup-input-bg);
+  cursor: pointer;
+}
+.trigger-action__replace.popup-input.popup-input--control {
+  flex: 0 0 9rem;
+  width: 9rem;
+}
+.trigger-condition > select.popup-input.popup-input--control {
+  flex: 0 1 12rem;
+  width: auto;
+}
+.trigger-flags {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+.trigger-flags__toggle.popup-btn.popup-btn--control {
+  min-width: 4.5rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12.5px;
+}
+.trigger-flags__toggle.is-set {
+  border-color: var(--popup-accent-border);
+  color: var(--popup-accent);
+}
+.trigger-flags__menu {
+  gap: 6px;
+}
+.trigger-arg-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+.trigger-arg-chips__chip {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+/* Data table: compact rows, quiet header, row hover. */
+.popup-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--ui-fs, 13px);
+}
+.popup-table th {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--popup-border);
+  color: var(--popup-text-dim);
+  font-size: var(--ui-fs-xs, 11px);
+  font-weight: 600;
+  text-align: left;
+  white-space: nowrap;
+}
+.popup-table td {
+  padding: 5px 8px;
+  border-bottom: 1px solid var(--popup-border-subtle);
+  vertical-align: middle;
+}
+.popup-table tbody tr:hover {
+  background-color: var(--popup-hover-bg);
+}
+
+/* Enemy loot overrides (CollectOverridesModal.tsx) */
+.collect-overrides__enemy { width: 168px; }
+.collect-overrides__flag {
+  width: 60px;
+  text-align: center;
+}
+.popup-table th.collect-overrides__flag { text-align: center; }
+.collect-overrides__remove { width: 60px; }
+.collect-overrides__check {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  accent-color: var(--popup-accent);
+  cursor: pointer;
+}
+.collect-overrides__extras {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+.collect-overrides__extra-remove {
+  padding: 0 0 0 2px;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  line-height: 1;
+  opacity: 0.7;
+  cursor: pointer;
+}
+.collect-overrides__extra-remove:hover {
+  border-color: transparent;
+  opacity: 1;
+}
+.collect-overrides__extra-input.popup-input.popup-input--control {
+  flex: 0 0 110px;
+  width: 110px;
+}
+.collect-overrides__new-enemy.popup-input.popup-input--control {
+  flex: 0 1 220px;
+}
+/* "Przywroc domyslne" sits apart, on the left of the footer. */
+.popup-dialog__footer > .collect-overrides__reset {
+  margin-right: auto;
+  color: var(--popup-warning);
+}
+
+/* Alias editor (AliasEditModal.tsx) */
+.alias-edit__char {
+  flex: 0 0 8rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--ui-fs-sm, 12px);
+}
+.alias-edit__char-select.popup-input.popup-input--control {
+  width: auto;
+  min-width: 8rem;
+  max-width: 14rem;
+}
+.alias-edit__help {
+  line-height: 1.6;
+}
+
 /* Floating panel anchored to a button (window settings cog; header menus
    next). position: fixed so a small docked window can't clip it; the opener
    sets top/left. */

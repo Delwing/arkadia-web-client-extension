@@ -128,7 +128,7 @@ test.describe('Keymap deletion', () => {
         await page.locator('#binds-modal button:has-text("Usuń")').first().click();
 
         // Confirmation modal should appear; click the danger "Usuń" button inside it
-        const confirmModal = page.locator('.modal.show').last();
+        const confirmModal = page.locator('.popup-dialog').last();
         await confirmModal.locator('button.btn-danger:has-text("Usuń")').click();
 
         // Wait for the select to refresh
@@ -167,7 +167,7 @@ test.describe('Keymap deletion', () => {
 
         // Delete it
         await page.locator('#binds-modal button:has-text("Usuń")').first().click();
-        const confirmModal = page.locator('.modal.show').last();
+        const confirmModal = page.locator('.popup-dialog').last();
         await confirmModal.locator('button.btn-danger:has-text("Usuń")').click();
         await page.waitForTimeout(300);
 
@@ -201,7 +201,7 @@ test.describe('Keymap deletion', () => {
 
         // Delete it
         await page.locator('#binds-modal button:has-text("Usuń")').first().click();
-        const confirmModal = page.locator('.modal.show').last();
+        const confirmModal = page.locator('.popup-dialog').last();
         await confirmModal.locator('button.btn-danger:has-text("Usuń")').click();
         await page.waitForTimeout(300);
 
@@ -241,9 +241,9 @@ test.describe('Keymap deletion', () => {
         await page.locator('#binds-modal button:has-text("Usuń")').first().click();
 
         // Confirmation modal should be visible with the expected title text
-        const confirmModal = page.locator('.modal.show').last();
+        const confirmModal = page.locator('.popup-dialog').last();
         await expect(confirmModal).toBeVisible();
-        await expect(confirmModal.locator('.modal-title')).toContainText('map');
+        await expect(confirmModal.locator('.popup-dialog__title')).toContainText('map');
 
         // Dismiss the confirmation (cancel)
         await confirmModal.locator('button:has-text("Anuluj")').click();

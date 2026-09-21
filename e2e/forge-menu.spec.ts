@@ -113,24 +113,23 @@ test.describe('forge menu', () => {
     });
 
     test('nested edit sub-modal opens as a centred overlay', async ({ page }) => {
-        // The editors (Aliasy, Triggery, …) open their "add / edit" form as an
-        // inline Bootstrap `.modal.show.d-block`. forge loads no global
-        // Bootstrap, so without the scoped `.modal*` chrome in menu.css that
-        // form used to dump into the list's flow with no header/footer framing.
-        // It must instead render as a fixed, full-viewport overlay with a
-        // bounded content card.
+        // The editors (Aliasy, Triggery, …) open their "add / edit" form as the
+        // shared inline Dialog (.popup-dialog). It must render as a fixed,
+        // full-viewport overlay with a bounded content card, not dump into the
+        // list's flow with no header/footer framing.
         await page.locator('.forge-menu__button').click();
         await page.locator('.forge-menu__list').getByRole('button', { name: 'Aliasy' }).click();
         const modal = page.locator('.forge-menu-modal');
         await expect(modal).toBeVisible();
 
         await modal.getByRole('button', { name: 'Dodaj alias' }).click();
-        const dialog = modal.locator('.modal.show');
+        // The overlay is the fixed backdrop; the card (.popup-dialog) sits inside it.
+        const dialog = modal.locator('.popup-dialog-backdrop');
         await expect(dialog).toBeVisible();
         await expect(dialog).toHaveCSS('position', 'fixed');
         // The header lays out its title and close button on one row.
-        await expect(dialog.locator('.modal-title')).toHaveText('Dodaj alias');
-        await expect(dialog.locator('.modal-content')).toBeVisible();
+        await expect(dialog.locator('.popup-dialog__title')).toHaveText('Dodaj alias');
+        await expect(dialog.locator('.popup-dialog__body')).toBeVisible();
 
         // Backdrop click on the sub-modal dismisses just it, not the list.
         await dialog.click({ position: { x: 5, y: 5 } });
@@ -149,11 +148,11 @@ test.describe('forge menu', () => {
         const modal = page.locator('.forge-menu-modal');
         await expect(modal).toBeVisible();
 
-        const dialog = modal.locator('.modal.show');
+        const dialog = modal.locator('.popup-dialog');
         await modal.getByRole('button', { name: 'Dodaj plugin' }).click();
-        await expect(dialog.locator('.modal-title')).toHaveText('Dodaj plugin');
+        await expect(dialog.locator('.popup-dialog__title')).toHaveText('Dodaj plugin');
         await dialog.locator('.plugin-route', { hasText: 'Wklej kod' }).click();
-        await expect(dialog.locator('.modal-title')).toHaveText('Dodaj plugin z kodu');
+        await expect(dialog.locator('.popup-dialog__title')).toHaveText('Dodaj plugin z kodu');
         // Typing must land in the dialog's fields, not be swallowed by a trap.
         const code = dialog.getByPlaceholder('export async function init(api) { ... }');
         await code.click();
@@ -164,10 +163,10 @@ test.describe('forge menu', () => {
 
         await modal.getByRole('button', { name: 'Dodaj plugin' }).click();
         await dialog.locator('.plugin-route', { hasText: 'Wygeneruj z AI' }).click();
-        await expect(dialog.locator('.modal-title')).toHaveText('Wygeneruj plugin z AI');
+        await expect(dialog.locator('.popup-dialog__title')).toHaveText('Wygeneruj plugin z AI');
         // "Mam kod, wklej go" hands over to the paste dialog.
         await dialog.getByRole('button', { name: 'Mam kod, wklej go' }).click();
-        await expect(dialog.locator('.modal-title')).toHaveText('Dodaj plugin z kodu');
+        await expect(dialog.locator('.popup-dialog__title')).toHaveText('Dodaj plugin z kodu');
         await dialog.getByRole('button', { name: 'Anuluj' }).click();
 
         // The editor is a sibling entry at the app root; resolving its link

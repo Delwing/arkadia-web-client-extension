@@ -345,7 +345,7 @@ test.describe('UI settings', () => {
         const modal = await openUiSettings(page, 'ui-sound');
         await modal.locator('#ui-manage-sounds-button').click();
 
-        const soundManager = modal.locator('.modal.show', {hasText: 'Zarządzaj dźwiękami'});
+        const soundManager = modal.locator('.popup-dialog', {hasText: 'Zarządzaj dźwiękami'});
         await expect(soundManager, 'sound manager should open').toBeVisible();
 
         await soundManager.getByRole('button', {name: '▶'}).first().click();
@@ -356,7 +356,7 @@ test.describe('UI settings', () => {
         expect(focusChurn, 'focus must not bounce between the two dialogs').toBeLessThan(50);
 
         // The settings window underneath stays usable
-        await soundManager.locator('.btn-close').click();
+        await soundManager.locator('.popup-dialog__close').click();
         await expect(soundManager, 'sound manager should close').toBeHidden();
         await selectPage(modal, 'ui-map');
         await expect(modal.locator('#ui-map-render-scale-container, [id^="ui-map"]').first()).toBeVisible();

@@ -99,14 +99,14 @@ test.describe('User aliases', () => {
         // The select defaults to the first available character; CharAlpha should be present
         await aliasesModal.locator('select').selectOption('CharAlpha');
 
-        // Click the override "Dodaj" button (btn-outline-secondary, inside the modal body)
-        await aliasesModal.locator('button.btn-outline-secondary', {hasText: 'Dodaj'}).click();
+        // Click the override "Dodaj" button (inside the dialog body)
+        await aliasesModal.locator('.popup-dialog__body').getByRole('button', {name: 'Dodaj', exact: true}).click();
 
         // Fill the override command input that appeared
         await aliasesModal.getByPlaceholder('Komenda dla tej postaci').fill('alpha cmd');
 
-        // Save the alias using the primary "Dodaj" button in the modal footer
-        await aliasesModal.locator('.modal-footer .btn-primary').click();
+        // Save the alias using the "Dodaj" button in the dialog footer
+        await aliasesModal.locator('.popup-dialog__footer').getByRole('button', {name: 'Dodaj', exact: true}).click();
 
         // Verify the alias card shows the override entry for CharAlpha
         const aliasCard = aliasesModal.locator('.alias-card').filter({hasText: 'testalias'});

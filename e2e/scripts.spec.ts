@@ -26,7 +26,7 @@ async function chooseAddRoute(page: Page, title: string) {
 
 async function addScriptUrl(page: Page, url: string) {
     await chooseAddRoute(page, 'Z adresu URL');
-    const dialog = page.locator('.modal', {hasText: 'Dodaj skrypt z URL'}).last();
+    const dialog = page.locator('.popup-dialog', {hasText: 'Dodaj skrypt z URL'}).last();
     await dialog.getByPlaceholder('URL skryptu').fill(url);
     await dialog.getByRole('button', {name: 'Dodaj', exact: true}).click();
 }
@@ -43,7 +43,7 @@ test('Pasted plugin code can be opened and edited in the plugin editor', async (
     const scriptsModal = await openScriptsModal(page);
     await chooseAddRoute(page, 'Wklej kod');
 
-    const codeDialog = page.locator('.modal', {hasText: 'Dodaj plugin z kodu'}).last();
+    const codeDialog = page.locator('.popup-dialog', {hasText: 'Dodaj plugin z kodu'}).last();
     await codeDialog.getByPlaceholder('Moja wtyczka').fill('Wklejony Test');
     await codeDialog.getByPlaceholder('export async function init(api) { ... }').fill(pluginCode);
     await codeDialog.getByRole('button', {name: 'Dodaj plugin'}).click();

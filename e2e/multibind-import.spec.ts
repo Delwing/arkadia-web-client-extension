@@ -69,8 +69,8 @@ test.describe('Multibind import', () => {
         // The import dialog renders inline inside #binds-modal (see @web/SubDialog),
         // so both the host modal and the dialog match — take the innermost, the
         // same way scripts.spec.ts locates its sub-dialogs.
-        const importModal = page.locator('.modal.show').filter({
-            has: page.locator('.modal-title:has-text("Importuj bazę multibindów")'),
+        const importModal = page.locator('.popup-dialog').filter({
+            has: page.locator('.popup-dialog__title:has-text("Importuj bazę multibindów")'),
         }).last();
         await expect(importModal, 'should show import summary modal').toBeVisible();
         await expect(importModal, 'should summarize total rows to process').toContainText('Łącznie wierszy: 5');
@@ -214,8 +214,8 @@ test.describe('Multibind import', () => {
             buffer: Buffer.alloc(0),
         });
 
-        const importModal = page.locator('.modal.show').filter({
-            has: page.locator('.modal-title:has-text("Importuj bazę multibindów")'),
+        const importModal = page.locator('.popup-dialog').filter({
+            has: page.locator('.popup-dialog__title:has-text("Importuj bazę multibindów")'),
         }).last();
         await expect(importModal, 'should queue every row for import').toContainText(`Wiersze do importu: ${rows.length}`);
 
