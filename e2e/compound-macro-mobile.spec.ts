@@ -66,7 +66,7 @@ test.describe('Mobile buttons compound macro', () => {
         await expect(page.getByText('Krok 2')).toBeVisible();
 
         // Configure step 1 as command
-        const steps = configPanel.locator('.border.rounded.mb-2.p-2');
+        const steps = configPanel.locator('.macro-step');
         const step1 = steps.nth(0);
         const step1Select = step1.locator('select').first();
         await step1Select.selectOption('command');
@@ -194,7 +194,7 @@ test.describe('Mobile buttons compound macro', () => {
         await macroSelect.selectOption('compound');
 
         await page.getByText('+ Dodaj krok').click();
-        const steps = configPanel.locator('.border.rounded.mb-2.p-2');
+        const steps = configPanel.locator('.macro-step');
         const step1 = steps.first();
         const step1Select = step1.locator('select').first();
         await step1Select.selectOption('command');
@@ -254,7 +254,7 @@ test.describe('Mobile buttons compound macro', () => {
         await page.getByText('+ Dodaj krok').click();
         await page.getByText('+ Dodaj krok').click();
 
-        const steps = configPanel.locator('.border.rounded.mb-2.p-2');
+        const steps = configPanel.locator('.macro-step');
 
         // Configure step 1 as command "first"
         const step1Select = steps.nth(0).locator('select').first();
@@ -299,8 +299,8 @@ test.describe('Mobile buttons compound macro', () => {
         await expect(page.getByText('Krok 2')).toBeVisible();
 
         // Delete step 1
-        const steps = configPanel.locator('.border.rounded.mb-2.p-2');
-        const deleteButton = steps.nth(0).getByRole('button', { name: 'X' });
+        const steps = configPanel.locator('.macro-step');
+        const deleteButton = steps.nth(0).getByRole('button', { name: 'Usuń krok' });
         await deleteButton.click();
 
         // Only one step should remain
@@ -326,7 +326,7 @@ test.describe('Mobile buttons compound macro', () => {
 
         await page.getByText('+ Dodaj krok').click();
 
-        const steps = configPanel.locator('.border.rounded.mb-2.p-2');
+        const steps = configPanel.locator('.macro-step');
         const stepSelect = steps.first().locator('select').first();
 
         // Check that 'compound' and 'empty' options are not available

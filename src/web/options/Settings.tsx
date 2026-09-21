@@ -6,7 +6,7 @@
 // forge's whole base UI. forge instead provides the modal chrome via its scoped
 // bootstrap-compat.css. Re-adding this import would reintroduce that leak.
 import {useState} from "react";
-import {Button as UiButton, Check, Field, Input, Select} from "@web-ui/primitives/index.ts";
+import {Button as UiButton, Check, DeleteButton, Field, Input, Select} from "@web-ui/primitives/index.ts";
 import {CircleHelp} from "lucide-react";
 import {defaultSettings} from "./defaultSettings";
 import {CollectOverridesModal} from "./CollectOverridesModal";
@@ -645,13 +645,7 @@ export function LanguageSection({settings, onChangeSetting}: GeneralSettingsSect
                         <td>{item.adjective}</td>
                         <td>{item.language}</td>
                         <td>
-                            <UiButton
-                                size="sm"
-                                variant="danger"
-                                onClick={() => onChangeSetting(s => s.languageAliases = s.languageAliases.filter(a => a !== item))}
-                            >
-                                Usuń
-                            </UiButton>
+                            <DeleteButton onClick={() => onChangeSetting(s => s.languageAliases = s.languageAliases.filter(a => a !== item))}/>
                         </td>
                     </tr>
                 ))}

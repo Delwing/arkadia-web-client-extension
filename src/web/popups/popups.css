@@ -398,6 +398,21 @@
 .popup-btn.popup-btn--danger.popup-btn--ghost {
   color: var(--popup-danger);
 }
+.popup-btn.popup-btn--danger.popup-btn--ghost:hover:not(:disabled) {
+  background-color: var(--popup-danger-bg);
+}
+/* Square icon-only button (the bin). */
+.popup-btn.popup-btn--control.popup-btn--icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: var(--ui-ctrl, 32px);
+  padding: 0;
+}
+.popup-btn.popup-btn--control.popup-btn--sm.popup-btn--icon {
+  width: var(--ui-ctrl-sm, 28px);
+}
 .popup-input.popup-input--control {
   box-sizing: border-box;
   height: var(--ui-ctrl, 28px);

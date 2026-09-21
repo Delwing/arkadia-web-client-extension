@@ -1,5 +1,5 @@
 import {useEffect, useState} from 'react';
-import {Button, Dialog, Input} from '@web-ui/primitives/index.ts';
+import {Button, DeleteButton, Dialog, Input} from '@web-ui/primitives/index.ts';
 import {type CollectOverride, defaultSettings} from '@modules/core/defaultSettings';
 
 interface CollectOverridesModalProps {
@@ -188,9 +188,7 @@ export function CollectOverridesModal({ show, overrides, onClose, onSave }: Coll
                                 </div>
                             </td>
                             <td>
-                                <Button size="sm" variant="danger" onClick={() => removeOverride(idx)}>
-                                    Usuń
-                                </Button>
+                                <DeleteButton onClick={() => removeOverride(idx)}/>
                             </td>
                         </tr>
                     ))}

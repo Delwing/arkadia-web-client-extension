@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Button, Form } from "react-bootstrap";
+import { Button, Check, DeleteButton, Input } from "@web-ui/primitives/index.ts";
 import {
     DndContext,
     closestCenter,
@@ -36,7 +36,6 @@ function createRadialId() {
 
 const PREVIEW_SIZE = 140;
 const PREVIEW_RADIUS = 45;
-const PREVIEW_BUTTON_SIZE = 28;
 
 function RadialPreview({ commands }: { commands: RadialCommandSetting[] }) {
     if (commands.length === 0) {
@@ -47,61 +46,22 @@ function RadialPreview({ commands }: { commands: RadialCommandSetting[] }) {
     const startAngle = -Math.PI / 2;
 
     return (
-        <div
-            className="radial-preview mx-auto"
-            style={{
-                width: PREVIEW_SIZE,
-                height: PREVIEW_SIZE,
-                position: "relative",
-                borderRadius: "50%",
-                background: "rgba(15, 23, 42, 0.3)",
-                border: "1px solid rgba(148, 163, 184, 0.3)",
-            }}
-        >
-            {/* Threshold circle */}
-            <div
-                style={{
-                    position: "absolute",
-                    left: center,
-                    top: center,
-                    width: 24,
-                    height: 24,
-                    transform: "translate(-50%, -50%)",
-                    borderRadius: "50%",
-                    border: "1px solid rgba(148, 163, 184, 0.4)",
-                    background: "rgba(15, 23, 42, 0.2)",
-                }}
-            />
-            {/* Command buttons */}
+        <div className="radial-preview" style={{ width: PREVIEW_SIZE, height: PREVIEW_SIZE }}>
+            <div className="radial-preview__threshold" />
             {commands.map((cmd, index) => {
                 const angle = startAngle + step * index;
-                const x = center + Math.cos(angle) * PREVIEW_RADIUS;
-                const y = center + Math.sin(angle) * PREVIEW_RADIUS;
                 const label = cmd.label || cmd.command || `${index + 1}`;
                 const displayLabel = label.length > 4 ? label.slice(0, 3) + ".." : label;
                 return (
                     <div
                         key={cmd.id}
+                        className="radial-preview__button"
                         title={label}
                         style={{
-                            position: "absolute",
-                            left: x,
-                            top: y,
-                            width: PREVIEW_BUTTON_SIZE,
-                            height: PREVIEW_BUTTON_SIZE,
-                            transform: "translate(-50%, -50%)",
-                            borderRadius: "50%",
-                            background: cmd.color || "rgba(110, 180, 220, 0.85)",
-                            color: cmd.fontColor || "#f1f5f9",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            fontSize: "0.5rem",
-                            fontWeight: 600,
-                            boxShadow: "0 2px 6px rgba(15, 23, 42, 0.4)",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
+                            left: center + Math.cos(angle) * PREVIEW_RADIUS,
+                            top: center + Math.sin(angle) * PREVIEW_RADIUS,
+                            background: cmd.color || undefined,
+                            color: cmd.fontColor || undefined,
                         }}
                     >
                         {displayLabel}
@@ -137,53 +97,30 @@ function SortableRadialItem({ cmd, disabled, onUpdate, onRemove }: SortableRadia
     };
 
     return (
-        <div
-            ref={setNodeRef}
-            className="border rounded p-2 d-flex flex-column flex-lg-row gap-2"
-            style={{ ...style, background: 'var(--popup-control-bg)' }}
-        >
-            <div className="d-flex align-items-center">
-                <span
-                    {...attributes}
-                    {...listeners}
-                    className={disabled ? "text-muted opacity-50" : "text-muted"}
-                    style={{ cursor: disabled ? 'not-allowed' : 'grab', userSelect: 'none', touchAction: 'none', fontSize: '1.2rem', padding: '0 0.25rem' }}
-                >
-                    &#x2630;
-                </span>
-            </div>
-            <Form.Group className="flex-grow-1">
-                <Form.Label className="small mb-1">Etykieta</Form.Label>
-                <Form.Control
-                    size="sm"
-                    type="text"
-                    value={cmd.label}
-                    placeholder="Nazwa przycisku"
-                    disabled={disabled}
-                    onChange={e => onUpdate(cmd.id, "label", e.target.value)}
-                />
-            </Form.Group>
-            <Form.Group className="flex-grow-1">
-                <Form.Label className="small mb-1">Komenda</Form.Label>
-                <Form.Control
-                    size="sm"
-                    type="text"
-                    value={cmd.command}
-                    placeholder="Tekst komendy"
-                    disabled={disabled}
-                    onChange={e => onUpdate(cmd.id, "command", e.target.value)}
-                />
-            </Form.Group>
-            <div className="d-flex align-items-end">
-                <Button
-                    variant="danger"
-                    size="sm"
-                    disabled={disabled}
-                    onClick={() => onRemove(cmd.id)}
-                >
-                    Usuń
-                </Button>
-            </div>
+        <div ref={setNodeRef} className="settings-sort-item settings-sort-item--edit" style={style}>
+            <span
+                {...attributes}
+                {...listeners}
+                className={`settings-sort-item__handle${disabled ? " is-disabled" : ""}`}
+            >
+                &#x2630;
+            </span>
+            <Input
+                value={cmd.label}
+                placeholder="Nazwa przycisku"
+                title="Etykieta"
+                disabled={disabled}
+                onChange={e => onUpdate(cmd.id, "label", e.target.value)}
+            />
+            <Input
+                mono
+                value={cmd.command}
+                placeholder="Tekst komendy"
+                title="Komenda"
+                disabled={disabled}
+                onChange={e => onUpdate(cmd.id, "command", e.target.value)}
+            />
+            <DeleteButton disabled={disabled} onClick={() => onRemove(cmd.id)} />
         </div>
     );
 }
@@ -261,52 +198,47 @@ function MobileRadialCommands({ registerSave }: { registerSave: (save: () => voi
     }
 
     return (
-        <div className="w-100 d-flex flex-column gap-3">
-            <div className="d-flex flex-column gap-2">
-                <Form.Check
-                    type="switch"
-                    id="mobile-radial-enabled"
-                    label="Włącz menu kołowe"
-                    checked={radialEnabled}
-                    onChange={event => setRadial(prev => ({ ...prev, enabled: event.target.checked }))}
-                />
-                {!radialEnabled && (
-                    <p className="text-muted small mb-0">
-                        Menu kołowe jest wyłączone. Włącz je, aby edytować komendy.
-                    </p>
-                )}
-            </div>
-            {radialEnabled && commands.length > 0 && (
-                <div className="mb-2">
-                    <Form.Label className="mb-2 d-block text-center">Podglad</Form.Label>
-                    <RadialPreview commands={commands} />
-                </div>
+        <div className="ui-settings-stack">
+            <Check
+                id="mobile-radial-enabled"
+                label="Włącz menu kołowe"
+                checked={radialEnabled}
+                onChange={event => setRadial(prev => ({ ...prev, enabled: event.target.checked }))}
+            />
+            {!radialEnabled && (
+                <p className="popup-field__hint">Menu kołowe jest wyłączone. Włącz je, aby edytować komendy.</p>
             )}
-            <div>
-                <Form.Label className="mb-2">Komendy menu kołowego</Form.Label>
-                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                    <SortableContext items={commands.map(c => c.id)} strategy={verticalListSortingStrategy}>
-                        <div className="d-flex flex-column gap-2">
-                            {commands.length === 0 && (
-                                <p className="text-muted small mb-0">Brak komend. Dodaj nową, aby pojawiła się w menu.</p>
-                            )}
-                            {commands.map(cmd => (
-                                <SortableRadialItem
-                                    key={cmd.id}
-                                    cmd={cmd}
-                                    disabled={!radialEnabled}
-                                    onUpdate={updateRadialCommand}
-                                    onRemove={removeRadialCommand}
-                                />
-                            ))}
-                        </div>
-                    </SortableContext>
-                </DndContext>
-            </div>
-            <div>
-                <Button id="mobile-radial-add" size="sm" variant="secondary" disabled={!radialEnabled} onClick={addRadialCommand}>
-                    Dodaj komendę
-                </Button>
+            <div className="radial-editor">
+                <div className="popup-field radial-editor__list">
+                    <span className="popup-field__label">Komendy menu kołowego</span>
+                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                        <SortableContext items={commands.map(c => c.id)} strategy={verticalListSortingStrategy}>
+                            <div className="settings-sort-list settings-sort-list--wide">
+                                {commands.length === 0 && (
+                                    <p className="popup-field__hint">Brak komend. Dodaj nową, aby pojawiła się w menu.</p>
+                                )}
+                                {commands.map(cmd => (
+                                    <SortableRadialItem
+                                        key={cmd.id}
+                                        cmd={cmd}
+                                        disabled={!radialEnabled}
+                                        onUpdate={updateRadialCommand}
+                                        onRemove={removeRadialCommand}
+                                    />
+                                ))}
+                            </div>
+                        </SortableContext>
+                    </DndContext>
+                    <Button id="mobile-radial-add" size="sm" className="ui-settings-self-start" disabled={!radialEnabled} onClick={addRadialCommand}>
+                        Dodaj komendę
+                    </Button>
+                </div>
+                {radialEnabled && commands.length > 0 && (
+                    <div className="popup-field radial-editor__preview">
+                        <span className="popup-field__label">Podgląd</span>
+                        <RadialPreview commands={commands} />
+                    </div>
+                )}
             </div>
         </div>
     );

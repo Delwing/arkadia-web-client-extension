@@ -3348,6 +3348,195 @@ p.popup-field__hint {
   font-size: var(--ui-fs-sm, 13px);
   color: var(--popup-text-subtle);
 }
+.settings-sort-list--wide {
+  max-width: none;
+}
+/* A row that edits its item in place (inputs + delete). */
+.settings-sort-item--edit {
+  padding: 4px 6px 4px 8px;
+}
+.settings-sort-item--edit > .popup-input {
+  flex: 1 1 0;
+}
+.settings-sort-item__handle.is-disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+@media (max-width: 600px) {
+  /* Handle | inputs stacked | delete. */
+  .settings-sort-item--edit {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    grid-auto-flow: column;
+    grid-template-rows: auto auto;
+    padding: 6px;
+    row-gap: 6px;
+  }
+  .settings-sort-item--edit > .settings-sort-item__handle,
+  .settings-sort-item--edit > .popup-btn {
+    grid-row: 1 / span 2;
+  }
+}
+/* Przyciski: pick a button, edit it beside its preview. */
+.desktop-buttons-toolbar {
+  justify-content: space-between;
+  align-self: stretch;
+}
+.desktop-buttons-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.desktop-buttons-picker__item {
+  min-height: var(--ui-ctrl-sm, 28px);
+  padding: 0 10px;
+  border: 1px solid transparent;
+  border-radius: var(--ui-radius, 6px);
+  font: inherit;
+  font-size: var(--ui-fs-sm, 13px);
+  opacity: 0.85;
+  cursor: pointer;
+}
+.desktop-buttons-picker__item:hover {
+  opacity: 1;
+}
+.desktop-buttons-picker__item.is-active {
+  opacity: 1;
+  outline: 2px solid var(--popup-accent);
+  outline-offset: 2px;
+}
+.desktop-button-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--popup-border);
+  border-radius: var(--ui-radius-lg, 10px);
+  background-color: var(--popup-control-bg);
+}
+.desktop-button-editor__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.desktop-button-editor__title {
+  font-size: var(--ui-fs-title, 15px);
+  font-weight: 600;
+  color: var(--popup-text-bright);
+}
+.desktop-button-editor__body {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 16px 24px;
+}
+.desktop-button-editor__form {
+  flex: 1 1 22rem;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+.desktop-button-editor__preview {
+  flex: 0 1 12rem;
+  position: sticky;
+  top: 0;
+}
+.desktop-button-editor__preview-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 6rem;
+  padding: 12px;
+  border: 1px dashed var(--popup-border);
+  border-radius: var(--ui-radius, 6px);
+}
+/* Macro editors shared by Przyciski and Przyciski mobilne. */
+select.popup-input.popup-input--control.is-warning {
+  border-color: var(--popup-warning, #d9a441);
+}
+.macro-hold {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--popup-border-subtle);
+}
+.macro-hold > .popup-field__warning {
+  margin: 0;
+}
+.macro-steps {
+  gap: 8px;
+}
+.macro-step {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid var(--popup-border-subtle);
+  border-radius: var(--ui-radius, 6px);
+}
+.macro-step__header {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.macro-step__title {
+  flex: 1;
+  font-size: var(--ui-fs-sm, 13px);
+  font-weight: 600;
+  color: var(--popup-text-subtle);
+}
+/* Menu kolowe: list and a preview of the wheel beside it. */
+.radial-editor {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 16px 24px;
+}
+.radial-editor__list {
+  flex: 1 1 22rem;
+  gap: 8px;
+}
+.radial-editor__preview {
+  flex: 0 0 auto;
+  align-items: center;
+}
+.radial-preview {
+  position: relative;
+  border: 1px solid var(--popup-border);
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.3);
+}
+.radial-preview__threshold,
+.radial-preview__button {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+}
+.radial-preview__threshold {
+  left: 50%;
+  top: 50%;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--popup-border);
+  background: rgba(15, 23, 42, 0.2);
+}
+.radial-preview__button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  overflow: hidden;
+  background: var(--popup-accent);
+  color: #f1f5f9;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.4);
+  font-size: 8px;
+  font-weight: 600;
+  white-space: nowrap;
+}
 .settings-sort-item__badge {
   padding: 1px 6px;
   border-radius: var(--ui-radius-sm, 4px);

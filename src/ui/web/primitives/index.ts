@@ -5,5 +5,5 @@
  */
 export { Dialog } from './Dialog';
 export type { DialogProps } from './Dialog';
-export { Button, Check, Field, Input, InputGroup, Segmented, Select, TextArea } from './controls';
+export { Button, Check, DeleteButton, Field, Input, InputGroup, Segmented, Select, TextArea } from './controls';
 export type { ButtonProps, CheckProps, FieldProps, SegmentedProps } from './controls';

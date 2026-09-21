@@ -46,7 +46,7 @@ test.describe('Desktop buttons compound macro', () => {
         await macroSelect.selectOption('compound');
 
         // Set label via the Etykieta field in the edit panel
-        const editPanel = page.locator('.border.rounded.p-3.mb-3');
+        const editPanel = page.locator('.desktop-button-editor');
         const labelInput = editPanel.locator('input[type="text"]').first();
         await labelInput.fill('DeskCombo');
 
@@ -57,7 +57,7 @@ test.describe('Desktop buttons compound macro', () => {
         await expect(page.getByText('Krok 2')).toBeVisible();
 
         // Configure step 1 as command
-        const stepContainers = page.locator('.border.rounded.mb-2.p-2');
+        const stepContainers = page.locator('.macro-step');
         const step1Select = stepContainers.nth(0).locator('select').first();
         await step1Select.selectOption('command');
         await stepContainers.nth(0).locator('textarea').fill('wstaw miecz');
@@ -233,7 +233,7 @@ test.describe('Desktop buttons compound macro', () => {
 
         await page.getByText('+ Dodaj krok').click();
 
-        const stepContainers = page.locator('.border.rounded.mb-2.p-2');
+        const stepContainers = page.locator('.macro-step');
         const stepSelect = stepContainers.first().locator('select').first();
 
         const options = await stepSelect.locator('option').allTextContents();

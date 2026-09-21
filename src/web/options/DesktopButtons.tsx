@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Button, Form } from "react-bootstrap";
+import { Button, Check, DeleteButton, Field, Input, Select } from "@web-ui/primitives/index.ts";
 import {
     applySettings,
     createDefaultButton,
@@ -50,6 +50,8 @@ function DesktopButtons({ registerSave }: { registerSave: (save: () => void) => 
     const [settings, setSettings] = useState<DesktopButtonsSettings>(() => JSON.parse(stored));
     const [selected, setSelected] = useState<string | null>(null);
     const [pluginMacros, setPluginMacros] = useState<PluginButtonMacro[]>([]);
+    // Bumped by a ↺ so the uncontrolled number fields pick up the reset value.
+    const [resetTick, setResetTick] = useState(0);
 
     useEffect(() => {
         registerSave(() => {
@@ -241,18 +243,71 @@ function DesktopButtons({ registerSave }: { registerSave: (save: () => void) => 
         }
     }
 
+    /** Number input that commits valid values as you type and clamps on blur. */
+    function numberField(
+        label: string,
+        key: 'width' | 'height' | 'fontSize' | 'x' | 'y',
+        min: number,
+        max: number | undefined,
+        fallback: number,
+        onReset?: () => void,
+    ) {
+        const btn = selectedBtn!;
+        const value = key === 'x' || key === 'y' ? Math.round(btn[key]) : btn[key];
+        const clamp = (n: number) => Math.max(min, max === undefined ? n : Math.min(max, n));
+        return (
+            <Field label={label}>
+                <div className="popup-inline">
+                    <Input
+                        type="number"
+                        className="settings-num"
+                        min={min}
+                        max={max}
+                        defaultValue={value}
+                        key={`${key}-${btn.id}-${resetTick}`}
+                        onChange={e => {
+                            const v = Number(e.target.value);
+                            if (e.target.value !== '' && !isNaN(v) && v >= Math.min(min, 1)) {
+                                updateButton(btn.id, { [key]: v });
+                            }
+                        }}
+                        onBlur={e => updateButton(btn.id, { [key]: clamp(Number(e.target.value) || fallback) })}
+                    />
+                    {onReset && (
+                        <Button size="sm" variant="ghost" title="Przywróć domyślne" onClick={() => { onReset(); setResetTick(t => t + 1); }}>↺</Button>
+                    )}
+                </div>
+            </Field>
+        );
+    }
+
+    function colorField(label: string, key: 'color' | 'fontColor', fallback: string) {
+        const btn = selectedBtn!;
+        return (
+            <Field label={label}>
+                <div className="popup-inline">
+                    <input
+                        type="color"
+                        className="popup-color"
+                        value={btn[key]}
+                        onChange={e => updateButton(btn.id, { [key]: e.target.value })}
+                    />
+                    <Button size="sm" variant="ghost" title="Przywróć domyślny kolor" onClick={() => updateButton(btn.id, { [key]: fallback })}>↺</Button>
+                </div>
+            </Field>
+        );
+    }
+
     return (
         <>
             <SettingsValue value={settings} />
-            <div className="w-100 position-relative" data-settings-ignore>
-                <div className="d-flex flex-column flex-sm-row flex-sm-wrap align-items-stretch align-items-sm-center gap-2 mb-3">
-                    <Button size="sm" variant="primary" onClick={addButton}>
+            <div className="ui-settings-stack" data-settings-ignore>
+                <div className="popup-inline settings-wrap desktop-buttons-toolbar">
+                    <Button size="sm" variant="solid" onClick={addButton}>
                         + Dodaj przycisk
                     </Button>
-                    <Form.Check
+                    <Check
                         id="desktop-buttons-lock"
-                        type="checkbox"
-                        className="user-select-none ms-sm-auto text-nowrap"
                         label="Zablokuj przyciski"
                         checked={settings.locked}
                         onChange={e => setSettings(prev => ({ ...prev, locked: e.target.checked }))}
@@ -260,354 +315,153 @@ function DesktopButtons({ registerSave }: { registerSave: (save: () => void) => 
                 </div>
 
                 {settings.buttons.length === 0 && (
-                    <p className="text-muted text-center mb-3">
+                    <p className="popup-field__hint">
                         Brak przycisków. Kliknij "Dodaj przycisk", aby utworzyć nowy.
                     </p>
                 )}
 
                 {settings.buttons.length > 0 && (
-                    <div className="mb-3">
-                        <Form.Label>Wybierz przycisk do edycji</Form.Label>
-                        <div className="d-flex flex-wrap gap-2">
+                    <Field label="Wybierz przycisk do edycji">
+                        <div className="desktop-buttons-picker">
                             {settings.buttons.map(btn => (
-                                <Button
+                                <button
                                     key={btn.id}
-                                    size="sm"
-                                    variant={selected === btn.id ? 'primary' : 'outline-secondary'}
+                                    type="button"
+                                    className={`desktop-buttons-picker__item${selected === btn.id ? ' is-active' : ''}`}
                                     onClick={() => setSelected(btn.id)}
-                                    style={{
-                                        backgroundColor: selected === btn.id ? undefined : btn.color,
-                                        color: selected === btn.id ? undefined : btn.fontColor,
-                                        borderColor: selected === btn.id ? undefined : btn.color,
-                                    }}
+                                    style={{ backgroundColor: btn.color, color: btn.fontColor }}
                                 >
                                     {btn.label || '(pusty)'}
-                                </Button>
+                                </button>
                             ))}
                         </div>
-                    </div>
+                    </Field>
                 )}
 
                 {selectedBtn && (
-                    <div className="border rounded p-3 mb-3">
-                        <div className="d-flex justify-content-between align-items-center mb-3">
-                            <h6 className="mb-0">Edycja: {selectedBtn.label || selectedBtn.id}</h6>
-                            <Button
-                                size="sm"
-                                variant="outline-danger"
-                                onClick={() => removeButton(selectedBtn.id)}
-                            >
-                                Usuń
-                            </Button>
+                    <div className="desktop-button-editor">
+                        <div className="desktop-button-editor__header">
+                            <span className="desktop-button-editor__title">Edycja: {selectedBtn.label || selectedBtn.id}</span>
+                            <DeleteButton title="Usuń przycisk" onClick={() => removeButton(selectedBtn.id)} />
                         </div>
 
-                        <Form.Group className="mb-2">
-                            <Form.Label>Etykieta</Form.Label>
-                            <Form.Control
-                                size="sm"
-                                type="text"
-                                value={selectedBtn.label}
-                                onChange={e => updateButton(selectedBtn.id, { label: e.target.value })}
-                            />
-                        </Form.Group>
+                        <div className="desktop-button-editor__body">
+                            <div className="desktop-button-editor__form">
+                                <Field label="Etykieta">
+                                    <Input
+                                        value={selectedBtn.label}
+                                        onChange={e => updateButton(selectedBtn.id, { label: e.target.value })}
+                                    />
+                                </Field>
 
-                        <Form.Group className="mb-2">
-                            <Form.Label>Makro</Form.Label>
-                            <MacroSelect
-                                value={selectedBtn.macroType}
-                                onChange={val => {
-                                    const updates: Partial<DesktopButtonSetting> = { macroType: val };
-                                    if (val !== 'compound') {
-                                        updates.steps = undefined;
-                                    }
-                                    updateButton(selectedBtn.id, updates);
-                                }}
-                                pluginMacros={pluginMacros}
-                                showUnavailableWarning
-                                filter={desktopMacroFilter}
-                            />
-                            {!isButtonMacroAvailable(selectedBtn.macroType) && (
-                                <Form.Text className="text-warning">
-                                    Ta wtyczka nie jest zaladowana. Makro nie bedzie dzialac.
-                                </Form.Text>
-                            )}
-                        </Form.Group>
+                                <Field
+                                    label="Makro"
+                                    error={isButtonMacroAvailable(selectedBtn.macroType) ? undefined : "Ta wtyczka nie jest zaladowana. Makro nie bedzie dzialac."}
+                                >
+                                    <MacroSelect
+                                        value={selectedBtn.macroType}
+                                        onChange={val => {
+                                            const updates: Partial<DesktopButtonSetting> = { macroType: val };
+                                            if (val !== 'compound') {
+                                                updates.steps = undefined;
+                                            }
+                                            updateButton(selectedBtn.id, updates);
+                                        }}
+                                        pluginMacros={pluginMacros}
+                                        showUnavailableWarning
+                                        filter={desktopMacroFilter}
+                                    />
+                                </Field>
 
-                        <MacroConfigEditor
-                            config={selectedBtn}
-                            onChange={updates => updateButton(selectedBtn.id, updates)}
-                            pluginMacros={pluginMacros}
-                            buttonColor={selectedBtn.color}
-                        />
+                                <MacroConfigEditor
+                                    config={selectedBtn}
+                                    onChange={updates => updateButton(selectedBtn.id, updates)}
+                                    pluginMacros={pluginMacros}
+                                    buttonColor={selectedBtn.color}
+                                />
 
-                        {isListMacro(selectedBtn.macroType) && (
-                            <>
-                                <div className="row g-2 mb-2">
-                                    <div className="col-6">
-                                        <Form.Group>
-                                            <Form.Label>Pozycja listy</Form.Label>
-                                            <Form.Select
-                                                size="sm"
-                                                value={selectedBtn.listPosition ?? 'bottom'}
-                                                onChange={e => updateButton(selectedBtn.id, { listPosition: e.target.value as ListPosition })}
-                                            >
-                                                <option value="bottom">Na dole</option>
-                                                <option value="top">Na górze</option>
-                                                <option value="left">Po lewej</option>
-                                                <option value="right">Po prawej</option>
-                                            </Form.Select>
-                                        </Form.Group>
+                                {isListMacro(selectedBtn.macroType) && (
+                                    <>
+                                        <div className="settings-fields-row">
+                                            <Field label="Pozycja listy">
+                                                <Select
+                                                    value={selectedBtn.listPosition ?? 'bottom'}
+                                                    onChange={e => updateButton(selectedBtn.id, { listPosition: e.target.value as ListPosition })}
+                                                >
+                                                    <option value="bottom">Na dole</option>
+                                                    <option value="top">Na górze</option>
+                                                    <option value="left">Po lewej</option>
+                                                    <option value="right">Po prawej</option>
+                                                </Select>
+                                            </Field>
+                                            <Field label="Kierunek rozrostu">
+                                                <Select
+                                                    value={selectedBtn.listGrowDirection ?? 'horizontal'}
+                                                    onChange={e => updateButton(selectedBtn.id, { listGrowDirection: e.target.value as ListGrowDirection })}
+                                                >
+                                                    <option value="horizontal">Poziomo</option>
+                                                    <option value="vertical">Pionowo</option>
+                                                </Select>
+                                            </Field>
+                                        </div>
+                                        <Check
+                                            id={`list-close-only-by-button-${selectedBtn.id}`}
+                                            label="Zamykaj tylko przyciskiem"
+                                            checked={selectedBtn.listCloseOnlyByButton ?? false}
+                                            onChange={e => updateButton(selectedBtn.id, { listCloseOnlyByButton: e.target.checked })}
+                                        />
+                                    </>
+                                )}
+
+                                {selectedBtn.macroType !== 'empty' && (
+                                    <HoldConfig
+                                        holdEnabled={selectedBtn.holdEnabled || false}
+                                        hold={selectedBtn.hold}
+                                        onToggle={enabled => updateButton(selectedBtn.id, { holdEnabled: enabled })}
+                                        onChangeHold={hold => updateButton(selectedBtn.id, { hold })}
+                                        pluginMacros={pluginMacros}
+                                        locked={settings.locked}
+                                        idSuffix={selectedBtn.id}
+                                    />
+                                )}
+
+                                <div className="settings-subsection ui-settings-stack">
+                                    <div className="settings-fields-row">
+                                        {colorField("Kolor tla", "color", defaultButtonColor)}
+                                        {colorField("Kolor czcionki", "fontColor", defaultFontColor)}
                                     </div>
-                                    <div className="col-6">
-                                        <Form.Group>
-                                            <Form.Label>Kierunek rozrostu</Form.Label>
-                                            <Form.Select
-                                                size="sm"
-                                                value={selectedBtn.listGrowDirection ?? 'horizontal'}
-                                                onChange={e => updateButton(selectedBtn.id, { listGrowDirection: e.target.value as ListGrowDirection })}
-                                            >
-                                                <option value="horizontal">Poziomo</option>
-                                                <option value="vertical">Pionowo</option>
-                                            </Form.Select>
-                                        </Form.Group>
+                                    <Field label={`Przezroczystość tła: ${Math.round(selectedBtn.backgroundOpacity * 100)}%`}>
+                                        <div className="popup-inline">
+                                            <input
+                                                type="range"
+                                                className="popup-range"
+                                                min={0}
+                                                max={100}
+                                                value={Math.round(selectedBtn.backgroundOpacity * 100)}
+                                                onChange={e => updateButton(selectedBtn.id, {
+                                                    backgroundOpacity: Number(e.target.value) / 100
+                                                })}
+                                            />
+                                            <Button size="sm" variant="ghost" title="Przywróć domyślne" onClick={() => updateButton(selectedBtn.id, { backgroundOpacity: defaultBackgroundOpacity })}>↺</Button>
+                                        </div>
+                                    </Field>
+                                    <div className="settings-fields-row">
+                                        {numberField("Szerokość", "width", 20, 300, defaultWidth, () => updateButton(selectedBtn.id, { width: defaultWidth }))}
+                                        {numberField("Wysokość", "height", 20, 200, defaultHeight, () => updateButton(selectedBtn.id, { height: defaultHeight }))}
+                                        {numberField("Czcionka", "fontSize", 6, 100, defaultFontSize, () => updateButton(selectedBtn.id, { fontSize: defaultFontSize }))}
+                                    </div>
+                                    <div className="settings-fields-row">
+                                        {numberField("Pozycja X", "x", 0, undefined, 0)}
+                                        {numberField("Pozycja Y", "y", 0, undefined, 0)}
                                     </div>
                                 </div>
-                                <Form.Check
-                                    id={`list-close-only-by-button-${selectedBtn.id}`}
-                                    type="checkbox"
-                                    className="mb-2"
-                                    label="Zamykaj tylko przyciskiem"
-                                    checked={selectedBtn.listCloseOnlyByButton ?? false}
-                                    onChange={e => updateButton(selectedBtn.id, { listCloseOnlyByButton: e.target.checked })}
-                                />
-                            </>
-                        )}
+                            </div>
 
-
-                        {selectedBtn.macroType !== 'empty' && (
-                            <HoldConfig
-                                holdEnabled={selectedBtn.holdEnabled || false}
-                                hold={selectedBtn.hold}
-                                onToggle={enabled => updateButton(selectedBtn.id, { holdEnabled: enabled })}
-                                onChangeHold={hold => updateButton(selectedBtn.id, { hold })}
-                                pluginMacros={pluginMacros}
-                                locked={settings.locked}
-                                idSuffix={selectedBtn.id}
-                            />
-                        )}
-
-                        <div className="row g-2 mb-2">
-                            <div className="col-6">
-                                <Form.Group>
-                                    <Form.Label>Kolor tla</Form.Label>
-                                    <div className="d-flex gap-2 align-items-center">
-                                        <Form.Control
-                                            size="sm"
-                                            type="color"
-                                            value={selectedBtn.color}
-                                            onChange={e => updateButton(selectedBtn.id, { color: e.target.value })}
-                                        />
-                                        <Button
-                                            size="sm"
-                                            variant="secondary"
-                                            onClick={() => updateButton(selectedBtn.id, { color: defaultButtonColor })}
-                                        >
-                                            ↺
-                                        </Button>
-                                    </div>
-                                </Form.Group>
-                            </div>
-                            <div className="col-6">
-                                <Form.Group>
-                                    <Form.Label>Kolor czcionki</Form.Label>
-                                    <div className="d-flex gap-2 align-items-center">
-                                        <Form.Control
-                                            size="sm"
-                                            type="color"
-                                            value={selectedBtn.fontColor}
-                                            onChange={e => updateButton(selectedBtn.id, { fontColor: e.target.value })}
-                                        />
-                                        <Button
-                                            size="sm"
-                                            variant="secondary"
-                                            onClick={() => updateButton(selectedBtn.id, { fontColor: defaultFontColor })}
-                                        >
-                                            ↺
-                                        </Button>
-                                    </div>
-                                </Form.Group>
-                            </div>
-                        </div>
-
-                        <Form.Group className="mb-2">
-                            <Form.Label>
-                                Przezroczystość tła: {Math.round(selectedBtn.backgroundOpacity * 100)}%
-                            </Form.Label>
-                            <div className="d-flex gap-2 align-items-center">
-                                <Form.Range
-                                    className="flex-grow-1"
-                                    min={0}
-                                    max={100}
-                                    value={Math.round(selectedBtn.backgroundOpacity * 100)}
-                                    onChange={e => updateButton(selectedBtn.id, {
-                                        backgroundOpacity: Number(e.target.value) / 100
-                                    })}
-                                />
-                                <Button
-                                    size="sm"
-                                    variant="secondary"
-                                    onClick={() => updateButton(selectedBtn.id, { backgroundOpacity: defaultBackgroundOpacity })}
-                                >
-                                    ↺
-                                </Button>
-                            </div>
-                        </Form.Group>
-
-                        <div className="row g-2 mb-2">
-                            <div className="col-4">
-                                <Form.Group>
-                                    <Form.Label>Szerokość</Form.Label>
-                                    <div className="d-flex gap-2 align-items-center">
-                                        <Form.Control
-                                            size="sm"
-                                            type="number"
-                                            min={20}
-                                            max={300}
-                                            defaultValue={selectedBtn.width}
-                                            key={`width-${selectedBtn.id}`}
-                                            onChange={e => {
-                                                const v = Number(e.target.value);
-                                                if (e.target.value !== '' && !isNaN(v) && v > 0) {
-                                                    updateButton(selectedBtn.id, { width: v });
-                                                }
-                                            }}
-                                            onBlur={e => updateButton(selectedBtn.id, {
-                                                width: Math.max(20, Math.min(300, Number(e.target.value) || defaultWidth))
-                                            })}
-                                        />
-                                        <Button
-                                            size="sm"
-                                            variant="secondary"
-                                            onClick={() => updateButton(selectedBtn.id, { width: defaultWidth })}
-                                        >
-                                            ↺
-                                        </Button>
-                                    </div>
-                                </Form.Group>
-                            </div>
-                            <div className="col-4">
-                                <Form.Group>
-                                    <Form.Label>Wysokość</Form.Label>
-                                    <div className="d-flex gap-2 align-items-center">
-                                        <Form.Control
-                                            size="sm"
-                                            type="number"
-                                            min={20}
-                                            max={200}
-                                            defaultValue={selectedBtn.height}
-                                            key={`height-${selectedBtn.id}`}
-                                            onChange={e => {
-                                                const v = Number(e.target.value);
-                                                if (e.target.value !== '' && !isNaN(v) && v > 0) {
-                                                    updateButton(selectedBtn.id, { height: v });
-                                                }
-                                            }}
-                                            onBlur={e => updateButton(selectedBtn.id, {
-                                                height: Math.max(20, Math.min(200, Number(e.target.value) || defaultHeight))
-                                            })}
-                                        />
-                                        <Button
-                                            size="sm"
-                                            variant="secondary"
-                                            onClick={() => updateButton(selectedBtn.id, { height: defaultHeight })}
-                                        >
-                                            ↺
-                                        </Button>
-                                    </div>
-                                </Form.Group>
-                            </div>
-                            <div className="col-4">
-                                <Form.Group>
-                                    <Form.Label>Czcionka</Form.Label>
-                                    <div className="d-flex gap-2 align-items-center">
-                                        <Form.Control
-                                            size="sm"
-                                            type="number"
-                                            min={6}
-                                            max={100}
-                                            defaultValue={selectedBtn.fontSize}
-                                            key={`fontSize-${selectedBtn.id}`}
-                                            onChange={e => {
-                                                const v = Number(e.target.value);
-                                                if (e.target.value !== '' && !isNaN(v) && v > 0) {
-                                                    updateButton(selectedBtn.id, { fontSize: v });
-                                                }
-                                            }}
-                                            onBlur={e => updateButton(selectedBtn.id, {
-                                                fontSize: Math.max(6, Math.min(100, Number(e.target.value) || defaultFontSize))
-                                            })}
-                                        />
-                                        <Button
-                                            size="sm"
-                                            variant="secondary"
-                                            onClick={() => updateButton(selectedBtn.id, { fontSize: defaultFontSize })}
-                                        >
-                                            ↺
-                                        </Button>
-                                    </div>
-                                </Form.Group>
-                            </div>
-                        </div>
-
-                        <div className="row g-2 mb-2">
-                            <div className="col-6">
-                                <Form.Group>
-                                    <Form.Label>Pozycja X</Form.Label>
-                                    <Form.Control
-                                        size="sm"
-                                        type="number"
-                                        min={0}
-                                        defaultValue={Math.round(selectedBtn.x)}
-                                        key={`x-${selectedBtn.id}`}
-                                        onChange={e => {
-                                            const v = Number(e.target.value);
-                                            if (e.target.value !== '' && !isNaN(v) && v >= 0) {
-                                                updateButton(selectedBtn.id, { x: v });
-                                            }
-                                        }}
-                                        onBlur={e => updateButton(selectedBtn.id, {
-                                            x: Math.max(0, Number(e.target.value) || 0)
-                                        })}
-                                    />
-                                </Form.Group>
-                            </div>
-                            <div className="col-6">
-                                <Form.Group>
-                                    <Form.Label>Pozycja Y</Form.Label>
-                                    <Form.Control
-                                        size="sm"
-                                        type="number"
-                                        min={0}
-                                        defaultValue={Math.round(selectedBtn.y)}
-                                        key={`y-${selectedBtn.id}`}
-                                        onChange={e => {
-                                            const v = Number(e.target.value);
-                                            if (e.target.value !== '' && !isNaN(v) && v >= 0) {
-                                                updateButton(selectedBtn.id, { y: v });
-                                            }
-                                        }}
-                                        onBlur={e => updateButton(selectedBtn.id, {
-                                            y: Math.max(0, Number(e.target.value) || 0)
-                                        })}
-                                    />
-                                </Form.Group>
-                            </div>
-                        </div>
-
-                        <div className="mt-3 pt-3 border-top">
-                            <Form.Label className="mb-2">Podgląd</Form.Label>
-                            <div className="d-flex justify-content-center">
-                                {renderPreview(selectedBtn)}
+                            <div className="popup-field desktop-button-editor__preview">
+                                <span className="popup-field__label">Podgląd</span>
+                                <div className="desktop-button-editor__preview-stage">
+                                    {renderPreview(selectedBtn)}
+                                </div>
                             </div>
                         </div>
                     </div>
