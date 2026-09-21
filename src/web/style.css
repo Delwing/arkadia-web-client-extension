@@ -3234,6 +3234,9 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
   min-height: var(--ui-ctrl, 28px);
   padding: 3px 0;
 }
+.settings-row > :last-child {
+  margin-left: auto;
+}
 .settings-row > .popup-field__label {
   font-size: var(--ui-fs, 13px);
   font-weight: 400;
@@ -3302,6 +3305,80 @@ p.popup-field__hint {
   border-radius: var(--ui-radius, 6px);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
 }
+/* Drag-to-reorder lists (Stopka: paski, elementy stopki). */
+.settings-sort-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.settings-sort-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 26rem;
+}
+.settings-sort-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--ui-ctrl, 32px);
+  padding: 0 8px;
+  box-sizing: border-box;
+  border: 1px solid var(--popup-border-subtle);
+  border-radius: var(--ui-radius, 6px);
+  background-color: var(--popup-control-bg);
+  font-size: var(--ui-fs, 14px);
+}
+.settings-sort-item__handle {
+  padding: 4px 2px;
+  color: var(--popup-text-dim);
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+.settings-sort-item__label {
+  flex: 1;
+  min-width: 0;
+  color: var(--popup-text);
+}
+.settings-sort-item.is-off .settings-sort-item__label {
+  color: var(--popup-text-dim);
+}
+.settings-sort-item .popup-check {
+  font-size: var(--ui-fs-sm, 13px);
+  color: var(--popup-text-subtle);
+}
+.settings-sort-item__badge {
+  padding: 1px 6px;
+  border-radius: var(--ui-radius-sm, 4px);
+  background-color: var(--popup-control-active-bg);
+  color: var(--popup-text-subtle);
+  font-size: var(--ui-fs-xs, 12px);
+}
+/* A short dim note after a label (counts, folder names). */
+.settings-inline-note {
+  margin-left: 4px;
+  color: var(--popup-text-dim);
+  font-size: var(--ui-fs-sm, 13px);
+}
+/* A row of buttons that wraps on a narrow card. */
+.popup-inline.settings-wrap {
+  flex-wrap: wrap;
+  align-self: flex-start;
+}
+/* Push pairing: the QR code needs a white quiet zone to scan. */
+.settings-push-pairing {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+.settings-push-qr {
+  width: 200px;
+  padding: 10px;
+  border-radius: var(--ui-radius-sm, 4px);
+  background: #fff;
+}
 /* Removable items under the field that adds them. */
 .settings-chip-list {
   display: flex;
@@ -3354,17 +3431,6 @@ p.popup-field__hint {
 }
 
 /* Sound category tiles (Dźwięk tab) */
-.ui-sound-tiles {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 0.5rem;
-}
-
-.ui-sound-tile {
-  background-color: var(--popup-control-bg);
-  border-color: var(--popup-border) !important;
-}
-
 .modal-dialog {
   max-height: 85%;
   pointer-events: auto;

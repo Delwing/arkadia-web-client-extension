@@ -20,9 +20,9 @@ function FooterSections({ draft, update }: FooterSectionsProps) {
                     <option value="3">Pasek graficzny</option>
                 </SelectField>
                 <CheckboxRow id="ui-emoji-labels" label="Etykiety emoji" checked={draft.emojiLabels} onChange={(v) => update({ emojiLabels: v })} />
-                <div>
-                    <label className="form-label mb-1">Kolejnosc i widocznosc paskow<DeviceOnlyBadge settingKey="barOrder" /></label>
-                    <div id="ui-bar-order-settings">
+                <div className="popup-field">
+                    <span className="popup-field__label">Kolejnosc i widocznosc paskow<DeviceOnlyBadge settingKey="barOrder" /></span>
+                    <div id="ui-bar-order-settings" className="settings-sort-block">
                         <BarOrderSettings
                             barOrder={draft.barOrder || defaultUiSettings.barOrder}
                             alwaysVisibleBars={draft.alwaysVisibleBars || []}
@@ -33,7 +33,7 @@ function FooterSections({ draft, update }: FooterSectionsProps) {
             </SettingsSection>
 
             <SettingsSection title="Stopka na telefonie">
-                <p className="text-muted small mb-1">
+                <p className="popup-field__hint">
                     Na waskim ekranie stopka jest podzielona na dwa przewijane paski o stalej
                     wysokosci (stan postaci i plakietki), a stan postaci pokazywany jest w postaci
                     kompaktowych miernikow zamiast trybu stopki. Przycisk po prawej stronie stopki

@@ -51,11 +51,11 @@ export default function LogsSection() {
                 <>
                     <CheckboxRow id="logs-file-save" label="Zapisuj na dysk" checked={fileSaveEnabled} onChange={(v) => void onFileSaveChange(v)} />
                     {fileSaveEnabled && fileSaveDirName && (
-                        <span className="text-muted small">{"📂"} {fileSaveDirName}</span>
+                        <span className="popup-field__hint">{"📂"} {fileSaveDirName}</span>
                     )}
                 </>
             )}
-            <span className="text-muted small">Zmiany działają od razu.</span>
+            <span className="popup-field__hint">Zmiany działają od razu.</span>
         </SettingsSection>
     );
 }

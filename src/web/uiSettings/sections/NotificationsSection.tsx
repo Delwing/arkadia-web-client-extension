@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { UiSettings } from "../../uiSettingsCore";
+import { Button } from "@web-ui/primitives/index.ts";
 import { SettingsSection } from "../fields";
 import PushNotificationsSection from "../PushNotificationsSection";
 
@@ -19,14 +20,14 @@ function NotificationsSection({ draft, update, onEnableNotifications }: Notifica
     return (
         <SettingsSection title="Powiadomienia">
             {!notifGranted && (
-                <button
-                    type="button"
-                    className="btn btn-warning align-self-start"
+                <Button
+                    variant="solid"
+                    className="ui-settings-self-start"
                     id="ui-enable-notifications"
                     onClick={() => { onEnableNotifications(); setNotifGranted(notificationsGranted()); }}
                 >
                     Włącz powiadomienia
-                </button>
+                </Button>
             )}
             <PushNotificationsSection draft={draft} update={update} />
         </SettingsSection>

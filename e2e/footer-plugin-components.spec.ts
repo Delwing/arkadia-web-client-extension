@@ -95,12 +95,12 @@ test.describe('plugin footer components in the footer settings', () => {
 
         // Listed under the plugin's name rather than its `plugin:<id>:chip` id,
         // which is the whole reason the registry carries a label.
-        const row = list.locator('.d-flex.align-items-center', {hasText: PLUGIN_NAME});
+        const row = list.locator('.settings-sort-item', {hasText: PLUGIN_NAME});
         await expect(row, 'plugin should have a row in the footer settings').toHaveCount(1);
-        await expect(row.locator('.badge'), 'plugin rows are marked as such').toHaveText('plugin');
+        await expect(row.locator('.settings-sort-item__badge'), 'plugin rows are marked as such').toHaveText('plugin');
 
         // Switching it off has to reach the footer, not just the config.
-        const toggle = row.locator('.form-check-input');
+        const toggle = row.locator('input[type=checkbox]');
         await expect(toggle, 'plugin chip starts visible').toBeChecked();
         await toggle.uncheck();
         await modal.locator(SETTINGS_SAVE).click();
@@ -111,9 +111,9 @@ test.describe('plugin footer components in the footer settings', () => {
         const modalAgain = await openFooterSettings(page);
         const rowAgain = modalAgain
             .locator('#ui-footer-components-settings')
-            .locator('.d-flex.align-items-center', {hasText: PLUGIN_NAME});
+            .locator('.settings-sort-item', {hasText: PLUGIN_NAME});
         await expect(rowAgain, 'a hidden plugin is still offered in the list').toHaveCount(1);
-        await rowAgain.locator('.form-check-input').check();
+        await rowAgain.locator('input[type=checkbox]').check();
         await modalAgain.locator(SETTINGS_SAVE).click();
         await expect(modalAgain).not.toBeVisible();
         await expect(chip(page), 'switching it back on should restore the chip').toBeVisible();
@@ -132,7 +132,7 @@ test.describe('plugin footer components in the footer settings', () => {
             .toBeGreaterThan(await footerOrder(page, LAST_CHIP));
 
         const modal = await openFooterSettings(page);
-        const rows = modal.locator('#ui-footer-components-settings').locator('.d-flex.align-items-center');
+        const rows = modal.locator('#ui-footer-components-settings').locator('.settings-sort-item');
         const row = rows.filter({hasText: PLUGIN_NAME});
         const lastBuiltIn = await rows.count() - 2;
 

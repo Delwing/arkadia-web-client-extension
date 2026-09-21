@@ -486,6 +486,10 @@ select.popup-input.popup-input--control {
   font-size: var(--ui-fs-xs, 11px);
   color: var(--popup-danger);
 }
+.popup-field__success {
+  font-size: var(--ui-fs-xs, 11px);
+  color: var(--popup-success);
+}
 /* Vertical rhythm for fields in a dialog or settings page. */
 .popup-stack {
   display: flex;

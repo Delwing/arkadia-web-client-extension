@@ -64,7 +64,7 @@ export function SelectField({ id, label, value, onChange, disabled, settingKey, 
 }) {
     return (
         <Field label={label ? <FieldLabel label={label} settingKey={settingKey} /> : undefined} htmlFor={id}>
-            <Select id={id} value={value} disabled={disabled} onChange={(e) => onChange(e.target.value)}>
+            <Select id={id} className="settings-narrow" value={value} disabled={disabled} onChange={(e) => onChange(e.target.value)}>
                 {children}
             </Select>
         </Field>
@@ -84,6 +84,7 @@ export function NumberField({ id, label, value, step, min, settingKey, onChange 
         <Field label={<FieldLabel label={label} settingKey={settingKey} />} htmlFor={id}>
             <Input
                 id={id}
+                className="settings-num"
                 type="number"
                 step={step}
                 min={min}

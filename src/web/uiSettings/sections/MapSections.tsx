@@ -38,19 +38,16 @@ function MapSections({ draft, update, mapVersion, refreshing, onRefreshMap, expl
                     <option value="right">Prawa</option>
                     <option value="left">Lewa</option>
                 </SelectField>
-                <div>
-                    <label className="form-label" htmlFor="ui-label-render-mode">Tryb renderowania etykiet</label>
-                    <select id="ui-label-render-mode" className="form-select" value={draft.labelRenderMode} disabled={draft.transparentLabels} onChange={(e) => update({ labelRenderMode: e.target.value as UiSettings['labelRenderMode'] })}>
-                        <option value="image">Obraz</option>
-                        <option value="data">Dane</option>
-                        <option value="none">Brak</option>
-                    </select>
-                </div>
+                <SelectField id="ui-label-render-mode" label="Tryb renderowania etykiet" value={draft.labelRenderMode} disabled={draft.transparentLabels} onChange={(v) => update({ labelRenderMode: v as UiSettings['labelRenderMode'] })}>
+                    <option value="image">Obraz</option>
+                    <option value="data">Dane</option>
+                    <option value="none">Brak</option>
+                </SelectField>
                 <CheckboxRow id="ui-instant-move" label="Natychmiastowe przechodzenie po mapie" checked={draft.instantMove} onChange={(v) => update({ instantMove: v })} />
                 <CheckboxRow id="ui-highlight-current-room" label="Podświetl bieżące pomieszczenie" checked={draft.highlightCurrentRoom} onChange={(v) => update({ highlightCurrentRoom: v })} />
                 <CheckboxRow
                     id="ui-exploration-mode"
-                    label={<>Tryb eksploracji mapy <span id="ui-exploration-stats" className="ms-1 text-muted">{explorationStats}</span></>}
+                    label={<>Tryb eksploracji mapy <span id="ui-exploration-stats" className="settings-inline-note">{explorationStats}</span></>}
                     checked={draft.explorationMode}
                     onChange={(v) => update({ explorationMode: v })}
                 />
@@ -79,14 +76,8 @@ function MapSections({ draft, update, mapVersion, refreshing, onRefreshMap, expl
             </SettingsSection>
 
             <SettingsSection title="Marker gracza">
-                <div>
-                    <label className="form-label" htmlFor="ui-map-player-marker-stroke-color">Kolor obramowania markera gracza</label>
-                    <input id="ui-map-player-marker-stroke-color" type="color" className="form-control form-control-color" value={draft.mapPlayerMarkerStrokeColor} onChange={(e) => update({ mapPlayerMarkerStrokeColor: e.target.value })} />
-                </div>
-                <div>
-                    <label className="form-label" htmlFor="ui-map-player-marker-fill-color">Kolor wypełnienia markera gracza</label>
-                    <input id="ui-map-player-marker-fill-color" type="color" className="form-control form-control-color" value={draft.mapPlayerMarkerFillColor} onChange={(e) => update({ mapPlayerMarkerFillColor: e.target.value })} />
-                </div>
+                <ColorField id="ui-map-player-marker-stroke-color" label="Kolor obramowania markera gracza" value={draft.mapPlayerMarkerStrokeColor} onChange={(v) => update({ mapPlayerMarkerStrokeColor: v })} />
+                <ColorField id="ui-map-player-marker-fill-color" label="Kolor wypełnienia markera gracza" value={draft.mapPlayerMarkerFillColor} onChange={(v) => update({ mapPlayerMarkerFillColor: v })} />
                 <RangeField id="ui-map-player-marker-stroke-alpha" label="Przezroczystość obramowania" value={draft.mapPlayerMarkerStrokeAlpha} min={0} max={1} step={0.01} onChange={(n) => update({ mapPlayerMarkerStrokeAlpha: n })} />
                 <RangeField id="ui-map-player-marker-fill-alpha" label="Przezroczystość wypełnienia" value={draft.mapPlayerMarkerFillAlpha} min={0} max={1} step={0.01} onChange={(n) => update({ mapPlayerMarkerFillAlpha: n })} />
                 <RangeField id="ui-map-player-marker-stroke-width" label="Grubość obramowania markera" value={draft.mapPlayerMarkerStrokeWidth} min={0.01} max={0.3} step={0.01} onChange={(n) => update({ mapPlayerMarkerStrokeWidth: n })} />
@@ -108,7 +99,7 @@ function MapSections({ draft, update, mapVersion, refreshing, onRefreshMap, expl
             </SettingsSection>
 
             <SettingsSection title="Podświetlenie pomieszczeń">
-                <p className="text-muted small mb-1">Styl pierścieni rysowanych wokół wyróżnionych pomieszczeń (np. cel podróży, notatki). Kolor jest dobierany automatycznie dla każdego wyróżnienia.</p>
+                <p className="popup-field__hint">Styl pierścieni rysowanych wokół wyróżnionych pomieszczeń (np. cel podróży, notatki). Kolor jest dobierany automatycznie dla każdego wyróżnienia.</p>
                 <SelectField id="ui-map-highlight-shape" label="Kształt podświetlenia" value={draft.mapHighlightShape} onChange={(v) => update({ mapHighlightShape: v as UiSettings['mapHighlightShape'] })}>
                     <option value="match">Jak kształt pomieszczenia</option>
                     <option value="rectangle">Prostokąt</option>

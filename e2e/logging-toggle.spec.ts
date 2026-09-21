@@ -22,7 +22,7 @@ async function closeSettings(page: Page): Promise<void> {
 async function setLogging(page: Page, enabled: boolean): Promise<void> {
     const modal = await openSettings(page, 'ui-other');
     const toggle = modal.locator('#logs-enabled');
-    await expect(modal.locator('label[for="logs-enabled"]')).toHaveText('Zapisuj logi');
+    await expect(modal.locator('label:has(#logs-enabled)')).toHaveText('Zapisuj logi');
     await toggle.setChecked(enabled);
     await expect(toggle).toBeChecked({checked: enabled});
     await closeSettings(page);

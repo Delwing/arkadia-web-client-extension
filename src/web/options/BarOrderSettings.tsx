@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Form } from "react-bootstrap";
+import { Check } from "@web-ui/primitives/index.ts";
 import {
     DndContext,
     closestCenter,
@@ -61,31 +61,22 @@ function SortableBarItem({ item, hasDefault, onToggle }: SortableBarItemProps) {
     };
 
     return (
-        <div
-            ref={setNodeRef}
-            className="d-flex align-items-center gap-2 p-1 border rounded"
-            style={{ ...style, background: 'var(--popup-control-bg)' }}
-        >
-            <span
-                {...attributes}
-                {...listeners}
-                className="text-muted"
-                style={{ cursor: 'grab', userSelect: 'none', touchAction: 'none' }}
-            >
+        <div ref={setNodeRef} className="settings-sort-item" style={style}>
+            <span {...attributes} {...listeners} className="settings-sort-item__handle">
                 &#x2630;
             </span>
-            {hasDefault && (
-                <Form.Check
-                    type="switch"
-                    id={`avb-${item.id}`}
-                    checked={item.alwaysVisible}
-                    onChange={() => onToggle(item.id)}
-                    title="Zawsze widoczny"
-                />
-            )}
-            <span style={{ fontSize: '0.85rem' }}>
+            <span className="settings-sort-item__label">
                 {DISPLAY_NAMES[item.id] || item.id}
             </span>
+            {hasDefault && (
+                <Check
+                    id={`avb-${item.id}`}
+                    label="zawsze"
+                    title="Zawsze widoczny"
+                    checked={item.alwaysVisible}
+                    onChange={() => onToggle(item.id)}
+                />
+            )}
         </div>
     );
 }
@@ -145,19 +136,15 @@ function BarOrderSettings({ barOrder, alwaysVisibleBars, onChange }: BarOrderSet
 
     return (
         <>
-            <div className="d-flex align-items-center gap-2 mb-1">
-                <Form.Check
-                    type="switch"
-                    id="avb-all"
-                    checked={allChecked}
-                    onChange={toggleAll}
-                    label="Wszystkie zawsze widoczne"
-                    style={{ fontSize: '0.85rem' }}
-                />
-            </div>
+            <Check
+                id="avb-all"
+                label="Wszystkie zawsze widoczne"
+                checked={allChecked}
+                onChange={toggleAll}
+            />
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                 <SortableContext items={items.map(i => i.id)} strategy={verticalListSortingStrategy}>
-                    <div className="d-flex flex-column gap-1">
+                    <div className="settings-sort-list">
                         {items.map(item => (
                             <SortableBarItem
                                 key={item.id}

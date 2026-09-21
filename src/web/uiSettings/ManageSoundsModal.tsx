@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { CustomSound } from "@modules/core/customSounds";
+import { Button } from "@web-ui/primitives/index.ts";
 import SubDialog from "../SubDialog";
 import { calculateBase64Size, formatBytes } from "../uiSettingsCore";
 
@@ -34,26 +35,23 @@ function ManageSoundsModal({ show, onHide, customSounds, onDelete, previewKey }:
 
     return (
         <SubDialog title="Zarządzaj dźwiękami" onClose={onHide}>
-            <div className="d-flex flex-column gap-2">
-                <div className="d-flex align-items-center justify-content-between p-2 border rounded">
-                    <div className="d-flex flex-column">
-                        <span className="fw-semibold">Domyślny beep</span>
-                        <span className="text-muted small">{formatBytes(defaultBeepSize)}</span>
-                    </div>
-                    <div className="d-flex gap-2">
-                        <button className="btn btn-primary btn-sm" onClick={() => previewKey('beep')}>{'▶'}</button>
-                    </div>
+            <div className="settings-rows">
+                <div className="settings-row">
+                    <span className="popup-field__label">
+                        Domyślny beep<span className="settings-inline-note">{formatBytes(defaultBeepSize)}</span>
+                    </span>
+                    <Button size="sm" variant="ghost" title="Odtwórz" onClick={() => previewKey('beep')}>{'▶'}</Button>
                 </div>
                 {customSounds.map(sound => (
-                    <div key={sound.key} className="d-flex align-items-center justify-content-between p-2 border rounded">
-                        <div className="d-flex flex-column">
-                            <span className="fw-semibold">{sound.name}</span>
-                            <span className="text-muted small">{formatBytes(calculateBase64Size(sound.data))}</span>
-                        </div>
-                        <div className="d-flex gap-2">
-                            <button className="btn btn-primary btn-sm" onClick={() => previewKey(sound.key)}>{'▶'}</button>
-                            <button
-                                className="btn btn-danger btn-sm"
+                    <div key={sound.key} className="settings-row">
+                        <span className="popup-field__label">
+                            {sound.name}<span className="settings-inline-note">{formatBytes(calculateBase64Size(sound.data))}</span>
+                        </span>
+                        <div className="popup-inline">
+                            <Button size="sm" variant="ghost" title="Odtwórz" onClick={() => previewKey(sound.key)}>{'▶'}</Button>
+                            <Button
+                                size="sm"
+                                variant="danger"
                                 onClick={() => {
                                     if (confirm(`Czy na pewno chcesz usunąć dźwięk "${sound.name}"?`)) {
                                         onDelete(sound);
@@ -61,7 +59,7 @@ function ManageSoundsModal({ show, onHide, customSounds, onDelete, previewKey }:
                                 }}
                             >
                                 Usuń
-                            </button>
+                            </Button>
                         </div>
                     </div>
                 ))}
