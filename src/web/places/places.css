@@ -1,0 +1,361 @@
+/* Miejsca: list of places on the left, the selected place on the right. */
+#places-modal .modal-body {
+  padding: 0;
+}
+.places {
+  display: grid;
+  grid-template-columns: minmax(18rem, 26rem) minmax(0, 1fr);
+  height: min(44rem, calc(100vh - 9rem));
+  min-height: 0;
+}
+.places-list {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-right: 1px solid var(--popup-border-subtle);
+}
+.places-list__tools {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border-bottom: 1px solid var(--popup-border-subtle);
+}
+.places-list__search {
+  display: flex;
+  gap: 8px;
+}
+.places-list__search .popup-input-group {
+  flex: 1;
+  min-width: 0;
+}
+.places-list__filters {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.places-list__filters .dialog-tab {
+  padding: 0 9px;
+}
+.places-list__rows {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 6px;
+}
+.places-list__group {
+  padding: 10px 10px 4px;
+  color: var(--popup-text-subtle);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.places-row {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: var(--ui-radius, 6px);
+  background: transparent;
+  color: var(--popup-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.places-row:hover {
+  background-color: var(--popup-hover-bg);
+}
+.places-row.is-selected {
+  background-color: var(--popup-accent-subtle-bg);
+  box-shadow: inset 0 0 0 1px var(--popup-accent-border);
+}
+.places-row__top,
+.places-row__sub {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.places-row__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--popup-text-bright);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.places-row__meta {
+  flex-shrink: 0;
+  color: var(--popup-text-subtle);
+  font-size: var(--ui-fs-xs, 12px);
+  font-variant-numeric: tabular-nums;
+}
+.places-row__sub {
+  font-size: var(--ui-fs-sm, 13px);
+}
+.places-key {
+  flex-shrink: 0;
+  padding: 0 6px;
+  border-radius: var(--ui-radius-sm, 4px);
+  background-color: color-mix(in srgb, var(--popup-warning) 12%, transparent);
+  color: var(--popup-warning);
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: var(--ui-fs-xs, 12px);
+}
+.places-row__note-ic {
+  flex-shrink: 0;
+  color: var(--popup-text-subtle);
+}
+.places-row__note {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--popup-text-subtle);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.places-empty {
+  margin: 0;
+  padding: 16px 12px;
+  color: var(--popup-text-subtle);
+  text-align: center;
+}
+
+/* The selected place. */
+.places-detail {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+.places-detail--empty {
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--popup-text-subtle);
+}
+.places-detail--empty p {
+  margin: 0;
+}
+.places-hero {
+  position: relative;
+  flex-shrink: 0;
+  min-height: 72px;
+  border-bottom: 1px solid var(--popup-border-subtle);
+  background-color: var(--popup-input-bg);
+}
+.places-map {
+  position: relative;
+  height: 210px;
+  overflow: hidden;
+  touch-action: none;
+}
+.places-hero:has(.places-map) .places-hero__bar {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  left: 12px;
+}
+.places-hero__bar {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 12px;
+}
+.places-hero:has(.places-map) .places-hero__bar {
+  padding: 0;
+}
+.places-hero__title {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background-color: color-mix(in srgb, var(--popup-bg) 92%, transparent);
+}
+.places-hero__title strong {
+  overflow: hidden;
+  color: var(--popup-text-bright);
+  font-size: 1.15em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.places-hero__title span {
+  color: var(--popup-text-subtle);
+  font-size: var(--ui-fs-xs, 12px);
+}
+.places-hero__bar > .popup-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+/* Over the map the secondary fill is see-through; lay it on the dialog colour. */
+.places-hero__bar > .popup-btn:not(.popup-btn--solid) {
+  background: linear-gradient(var(--popup-control-bg), var(--popup-control-bg)), var(--popup-bg);
+}
+.places-hero__bar > .popup-btn:not(.popup-btn--solid):hover {
+  background: linear-gradient(var(--popup-control-hover-bg), var(--popup-control-hover-bg)), var(--popup-bg);
+}
+.places-back {
+  display: none !important;
+}
+.places-detail__body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 18px;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px 18px;
+}
+.places-sec {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.places-sec__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.places-sec__title {
+  color: var(--popup-text-bright);
+  font-weight: 600;
+}
+.places-sec__title--dim {
+  color: var(--popup-text-subtle);
+}
+.places-sec__hint {
+  color: var(--popup-text-subtle);
+  font-size: var(--ui-fs-xs, 12px);
+}
+.places-sec__spacer {
+  flex: 1;
+}
+.places-ic--shortcut {
+  color: var(--popup-warning);
+}
+.places-ic--note {
+  color: var(--popup-accent);
+}
+.places-shortcut {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.places-shortcut__row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.places-shortcut__row .popup-input-group {
+  width: 16rem;
+  max-width: 100%;
+}
+.places-shortcut .popup-input-group__addon {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: var(--ui-fs-sm, 13px);
+}
+.places-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  color: var(--popup-text-subtle);
+  font-size: var(--ui-fs-sm, 13px);
+}
+/* Same height as the shortcut field it turns into, so nothing jumps. */
+.popup-btn.popup-btn--control.places-add {
+  display: inline-flex;
+  height: var(--ui-ctrl, 32px);
+  align-self: flex-start;
+  align-items: center;
+  gap: 4px;
+  color: var(--popup-accent);
+}
+.places-note {
+  min-height: 7rem;
+  line-height: 1.5;
+  resize: vertical;
+}
+.places-other {
+  display: flex;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: var(--ui-radius, 6px);
+  background-color: var(--popup-section-bg);
+  color: var(--popup-text-subtle);
+  font-size: var(--ui-fs-sm, 13px);
+}
+.places-other > svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.places-other p {
+  margin: 0;
+  color: var(--popup-text);
+  white-space: pre-line;
+}
+.places-other__src {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.places-detail__foot {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--popup-border-subtle);
+}
+
+/* Narrow: one pane at a time — the list, or the place with a back button. */
+@media (max-width: 767.98px) {
+  /* modal-fullscreen-md-down: lift the global 85% cap, as Ustawienia does. */
+  #places-modal .modal-dialog {
+    max-height: none;
+  }
+  .places {
+    grid-template-columns: minmax(0, 1fr);
+    /* Full screen below the 40px window header. */
+    height: calc(100dvh - 41px);
+  }
+  .places-list {
+    border-right: 0;
+  }
+  .places.has-selection .places-list,
+  .places:not(.has-selection) .places-detail {
+    display: none;
+  }
+  .places-back {
+    display: inline-flex !important;
+  }
+  .places-map {
+    height: 230px;
+  }
+  /* Back + title on one row, Idź / Prowadź sharing the next. */
+  .places-hero__bar {
+    flex-wrap: wrap;
+  }
+  .places-hero__title {
+    flex-basis: calc(100% - 48px);
+  }
+  .places-hero__bar > .popup-btn:not(.places-back) {
+    flex: 1;
+    justify-content: center;
+  }
+}

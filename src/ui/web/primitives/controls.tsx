@@ -1,6 +1,7 @@
 import { useId } from 'react';
 import { Trash2 } from 'lucide-react';
 import type {
+    Ref,
     AnchorHTMLAttributes,
     ButtonHTMLAttributes,
     InputHTMLAttributes,
@@ -10,6 +11,18 @@ import type {
 } from 'react';
 
 const cx = (...parts: (string | false | undefined | null)[]) => parts.filter(Boolean).join(' ');
+
+/**
+ * Password managers ignore autocomplete=off and offer logins on any lone text
+ * field. Every dialog field opts out; the login form doesn't use these
+ * primitives, so it keeps its password-manager support.
+ */
+const NO_PASSWORD_MANAGER = {
+    'data-1p-ignore': 'true',
+    'data-lpignore': 'true',
+    'data-bwignore': 'true',
+    'data-form-type': 'other',
+} as const;
 
 /** Typing aids off: patterns and commands are code, not prose. */
 const CODE_INPUT = {
@@ -83,10 +96,11 @@ interface MonoProp {
     mono?: boolean;
 }
 
-export function Input({ mono, className, ...rest }: InputHTMLAttributes<HTMLInputElement> & MonoProp) {
+export function Input({ mono, className, ...rest }: InputHTMLAttributes<HTMLInputElement> & MonoProp & { ref?: Ref<HTMLInputElement> }) {
     return (
         <input
             type="text"
+            {...NO_PASSWORD_MANAGER}
             {...(mono ? CODE_INPUT : {})}
             className={cx('popup-input popup-input--control', mono && 'popup-input--mono', className)}
             {...rest}
@@ -94,9 +108,10 @@ export function Input({ mono, className, ...rest }: InputHTMLAttributes<HTMLInpu
     );
 }
 
-export function TextArea({ mono, className, ...rest }: TextareaHTMLAttributes<HTMLTextAreaElement> & MonoProp) {
+export function TextArea({ mono, className, ...rest }: TextareaHTMLAttributes<HTMLTextAreaElement> & MonoProp & { ref?: Ref<HTMLTextAreaElement> }) {
     return (
         <textarea
+            {...NO_PASSWORD_MANAGER}
             {...(mono ? CODE_INPUT : {})}
             className={cx('popup-input popup-input--control', mono && 'popup-input--mono', className)}
             {...rest}

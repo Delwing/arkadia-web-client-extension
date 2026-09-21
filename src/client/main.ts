@@ -94,7 +94,7 @@ import initGps from './scripts/gps'
 import initLocalizers from './scripts/localizers'
 import initMapAliases from './scripts/mapAliases'
 import initRouteInstructions from './scripts/transportLead'
-import { registerRoomInfoProvider } from '@modules/core/roomInfoProvider'
+import { registerRoomDistanceProvider, registerRoomInfoProvider } from '@modules/core/roomInfoProvider'
 import { registerCurrentRoomProvider } from '@modules/core/currentRoomProvider'
 import { registerMapDestinationsProvider } from '@modules/core/mapDestinationsProvider'
 import { registerTeamStateProvider } from '@modules/core/teamStateProvider'
@@ -220,6 +220,14 @@ export function registerScripts(client: Client) {
             areaName,
             mapNote: room.userData?.note ?? null,
         };
+    })
+
+    registerRoomDistanceProvider((roomId: number) => {
+        const from = client.Map.currentRoom?.id;
+        if (typeof from !== 'number') return null;
+        if (from === roomId) return 0;
+        const path = client.Map.findPath(from, roomId);
+        return path && path.length > 1 ? path.length - 1 : null;
     })
 
     registerCurrentRoomProvider(() => client.Map.currentRoom?.id ?? null)

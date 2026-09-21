@@ -57,9 +57,8 @@ import {CLOSE_SETTINGS_EVENT, OPEN_SETTINGS_PAGE_EVENT, SAVE_SETTINGS_EVENT, ope
 import {buttonsSettingsCategory} from "./settings/buttonsCategory.ts";
 import CharacterManagement from "./options/CharacterManagementModal.tsx"
 import UserTriggers from "./options/UserTriggers.tsx"
-import Shortcuts from "./options/Shortcuts.tsx"
-import LocationNotes from "./options/LocationNotes.tsx"
-import LocationNoteEditor from "./LocationNoteEditor.tsx"
+import Places from "./places/Places.tsx"
+import { OPEN_PLACE_EVENT, openPlace } from "./places/placesData.ts"
 import HelperSettings from "./options/HelperSettings.tsx"
 import {invalidateLayoutCache, LayoutManagerWrapper, loadLayoutState, saveLayoutState} from "@web/layout"
 import {globalStorage} from "@modules/core/storage"
@@ -798,8 +797,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const aliasesButton = document.getElementById('aliases-button') as HTMLButtonElement | null;
     const triggersButton = document.getElementById('triggers-button') as HTMLButtonElement | null;
     const recordingsButton = document.getElementById('recordings-button') as HTMLButtonElement | null;
-    const shortcutsButton = document.getElementById('shortcuts-button') as HTMLButtonElement | null;
-    const locationNotesButton = document.getElementById('location-notes-button') as HTMLButtonElement | null;
+    const placesButton = document.getElementById('places-button') as HTMLButtonElement | null;
     const peopleBrowserButton = document.getElementById('people-browser-button') as HTMLButtonElement | null;
     const dataSourcesButton = document.getElementById('data-sources-button') as HTMLButtonElement | null;
     const mobileButtonsButton = document.getElementById('mobile-buttons-button') as HTMLButtonElement | null;
@@ -824,10 +822,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const triggersModal = triggersModalElement ? new Modal(triggersModalElement) : null;
     const recordingsModalElement = document.getElementById('recordings-modal');
     const recordingsModal = recordingsModalElement ? new Modal(recordingsModalElement) : null;
-    const shortcutsModalElement = document.getElementById('shortcuts-modal');
-    const shortcutsModal = shortcutsModalElement ? new Modal(shortcutsModalElement) : null;
-    const locationNotesModalElement = document.getElementById('location-notes-modal');
-    const locationNotesModal = locationNotesModalElement ? new Modal(locationNotesModalElement) : null;
+    const placesModalElement = document.getElementById('places-modal');
+    const placesModal = placesModalElement ? new Modal(placesModalElement) : null;
     const helperModalElement = document.getElementById('helper-modal');
     const helperModal = helperModalElement ? new Modal(helperModalElement) : null;
     const loginCharacter = document.getElementById('login-character') as HTMLInputElement | null;
@@ -1005,11 +1001,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (recordingsModal) {
             recordingsModal.hide();
         }
-        if (shortcutsModal) {
-            shortcutsModal.hide();
-        }
-        if (locationNotesModal) {
-            locationNotesModal.hide();
+        if (placesModal) {
+            placesModal.hide();
         }
     });
 
@@ -1157,15 +1150,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    if (shortcutsButton && shortcutsModal) {
-        shortcutsButton.addEventListener('click', () => {
-            shortcutsModal.show();
-        });
-    }
-
-    if (locationNotesButton && locationNotesModal) {
-        locationNotesButton.addEventListener('click', () => {
-            locationNotesModal.show();
+    if (placesButton && placesModal) {
+        placesButton.addEventListener('click', () => {
+            placesModal.show();
         });
     }
 
@@ -1181,10 +1168,12 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    if (shortcutsModal) {
-        eventBus.on('shortcuts.addWithRoom', () => {
-            shortcutsModal.show();
-        });
+    // The map's "Dodaj skrót" and "Notatka" (and /notatka) open Miejsca on that room.
+    if (placesModal) {
+        window.addEventListener(OPEN_PLACE_EVENT, () => placesModal.show());
+        eventBus.on('shortcuts.addWithRoom', ({ roomId }) => openPlace(roomId, 'shortcut'));
+        eventBus.on('locationNote.edit', ({ roomId }) => openPlace(roomId, 'note'));
+        eventBus.on('locationNote.open', ({ roomId }) => openPlace(roomId, 'note'));
     }
 
     if (mobileButtonsButton && settingsModal) {
@@ -1549,19 +1538,9 @@ document.addEventListener('DOMContentLoaded', () => {
         createRoot(recordingsRoot).render(createElement(Recordings));
     }
 
-    const shortcutsRoot = document.getElementById('shortcuts-options');
-    if (shortcutsRoot) {
-        createRoot(shortcutsRoot).render(createElement(Shortcuts));
-    }
-
-    const locationNotesRoot = document.getElementById('location-notes-options');
-    if (locationNotesRoot) {
-        createRoot(locationNotesRoot).render(createElement(LocationNotes));
-    }
-
-    const locationNoteEditorRoot = document.getElementById('location-note-editor-root');
-    if (locationNoteEditorRoot) {
-        createRoot(locationNoteEditorRoot).render(createElement(LocationNoteEditor));
+    const placesRoot = document.getElementById('places-options');
+    if (placesRoot) {
+        createRoot(placesRoot).render(createElement(Places));
     }
 
     const helperRoot = document.getElementById('helper-options');
