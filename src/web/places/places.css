@@ -84,6 +84,7 @@
 }
 .places-row {
   display: flex;
+  flex-shrink: 0; /* a long list scrolls; rows must not squeeze into each other */
   flex-direction: column;
   gap: 3px;
   width: 100%;

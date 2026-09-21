@@ -333,9 +333,12 @@ function PlaceDetail({ roomId, place, focus, onBack }: {
     );
 }
 
-/** A room from the map rather than a saved place: name, #id, description or area. */
+/**
+ * A room from the map rather than a saved place: name, #id and area. Its
+ * description is only shown in the place pane (and searched): it is free-form
+ * text, often ruled lines, and does not fit a row.
+ */
 function MapRoomRow({ room, selected, onSelect }: { room: MapRoomMatch; selected: boolean; onSelect: () => void }) {
-    const firstLine = room.description?.split("\n").find(l => l.trim()) ?? "";
     return (
         <button type="button" className={`places-row places-row--map${selected ? " is-selected" : ""}`} onClick={onSelect}>
             <span className="places-row__top">
@@ -343,8 +346,8 @@ function MapRoomRow({ room, selected, onSelect }: { room: MapRoomMatch; selected
                 <span className="places-row__meta">#{room.roomId}</span>
             </span>
             <span className="places-row__sub">
-                {firstLine && <FileText size={13} strokeWidth={1.9} className="places-row__note-ic" />}
-                <span className="places-row__note">{firstLine || room.area}</span>
+                {room.description && <FileText size={13} strokeWidth={1.9} className="places-row__note-ic" />}
+                <span className="places-row__note">{room.area}</span>
             </span>
         </button>
     );

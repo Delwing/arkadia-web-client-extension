@@ -240,7 +240,13 @@ test.describe('Miejsca: opisy z mapy', () => {
         await expect(tab).toContainText('1');
         await tab.click();
         const row = modal(page).locator('.places-row--map', { hasText: 'Kamienny Most' });
-        await expect(row).toContainText('Stary kamienny most.');
+        // The row only names the room; the description belongs to the place pane.
+        await expect(row).toContainText(POSLAN_MAP_NAME);
+        await expect(row).not.toContainText('Stary kamienny most.');
+
+        // ...but it is searchable.
+        await modal(page).locator('.places-list__search input').fill('troll');
+        await expect(row).toBeVisible();
         await row.click();
 
         const pre = modal(page).locator('pre.places-other__pre');
