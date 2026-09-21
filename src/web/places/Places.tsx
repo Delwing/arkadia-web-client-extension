@@ -25,7 +25,9 @@ import {
 } from "./placesData";
 import "./places.css";
 
-type Filter = "all" | "shortcuts" | "notes" | "described";
+/** Your places (shortcuts, notes) or the rooms the mapper described. */
+type Source = "mine" | "described";
+type Filter = "all" | "shortcuts" | "notes";
 type Sort = "near" | "az";
 
 /** Most described rooms listed at once; searching narrows the rest down. */
@@ -357,6 +359,7 @@ function MapRoomRow({ room, selected, onSelect }: { room: MapRoomMatch; selected
 export default function Places() {
     const [places, setPlaces] = useState<Place[]>([]);
     const [query, setQuery] = useState("");
+    const [source, setSource] = useState<Source>("mine");
     const [filter, setFilter] = useState<Filter>("all");
     const [sort, setSort] = useState<Sort>("near");
     const [selected, setSelected] = useState<number | null>(null);
@@ -408,7 +411,6 @@ export default function Places() {
         all: rows.length,
         shortcuts: rows.filter(r => r.place.shortcuts.length > 0).length,
         notes: rows.filter(r => r.place.note).length,
-        described: described.length,
     };
 
     const visible = useMemo(() => {
@@ -462,27 +464,31 @@ export default function Places() {
         );
     };
 
-    const draft = selected !== null && !selectedPlace;
-
     // Rooms you have nothing saved for yet, found on the map by name, area or #id,
     // so a shortcut or note can be added without walking there first.
     const mapMatches = useMemo(() => {
-        if (filter === "described") return [];
-        const saved = new Set(places.map(p => p.roomId));
-        if (selected !== null) saved.add(selected);
-        return searchMapRooms(query, saved);
+        if (source === "described") return [];
+        return searchMapRooms(query, new Set(places.map(p => p.roomId)));
         // mapVersion: the map arriving makes rooms searchable.
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [query, places, selected, filter, mapVersion]);
+    }, [query, places, source, mapVersion]);
 
     const describedVisible = useMemo(() => {
-        if (filter !== "described") return [];
+        if (source !== "described") return [];
         const q = query.trim().toLowerCase();
         return described
             .filter(r => !q || r.name.toLowerCase().includes(q) || r.area.toLowerCase().includes(q)
                 || String(r.roomId) === q.replace("#", "") || !!r.description?.toLowerCase().includes(q))
             .sort((a, b) => a.area.localeCompare(b.area, "pl") || a.name.localeCompare(b.name, "pl"));
-    }, [described, filter, query]);
+    }, [described, source, query]);
+
+    // A room picked from outside the list (Tutaj, the map's menu) that is not
+    // saved yet: shown on top so the selection is visible. A room picked from
+    // the list itself is just highlighted there.
+    const listed = source === "described"
+        ? describedVisible.some(r => r.roomId === selected)
+        : mapMatches.some(r => r.roomId === selected);
+    const draft = selected !== null && !selectedPlace && !listed;
 
     return (
         <div className={`places${selected !== null ? " has-selection" : ""}`}>
@@ -512,24 +518,36 @@ export default function Places() {
                             <LocateFixed size={15} strokeWidth={1.9} />Tutaj
                         </Button>
                     </div>
+                    {described.length > 0 && (
+                        <div className="dialog-tabs places-source">
+                            <button type="button" className={`dialog-tab${source === "mine" ? " is-active" : ""}`} onClick={() => setSource("mine")}>
+                                Moje miejsca <span className="dialog-tab__count">{counts.all}</span>
+                            </button>
+                            <button
+                                type="button"
+                                className={`dialog-tab${source === "described" ? " is-active" : ""}`}
+                                title="Lokacje, którym autorzy mapy dali opis (tylko do odczytu)"
+                                onClick={() => setSource("described")}
+                            >
+                                Opisy z mapy <span className="dialog-tab__count">{described.length}</span>
+                            </button>
+                        </div>
+                    )}
+                    {source === "mine" && (
                     <div className="places-list__filters">
-                        <div className="dialog-tabs">
-                            {([["all", "Wszystkie"], ["shortcuts", "Skróty"], ["notes", "Notatki"], ["described", "Opisy"]] as const)
-                                .filter(([key]) => key !== "described" || described.length > 0)
-                                .map(([key, label]) => (
+                        <div className="dialog-tabs places-filter">
+                            {([["all", "Wszystkie"], ["shortcuts", "Skróty"], ["notes", "Notatki"]] as const).map(([key, label]) => (
                                 <button
                                     key={key}
                                     type="button"
                                     className={`dialog-tab${filter === key ? " is-active" : ""}`}
-                                    title={key === "described" ? "Lokacje z opisem na mapie (tylko do odczytu)" : undefined}
                                     onClick={() => setFilter(key)}
                                 >
                                     {label} <span className="dialog-tab__count">{counts[key]}</span>
                                 </button>
                             ))}
                         </div>
-                        {/* Icon-only: four tabs already fill the column. Descriptions keep their own order. */}
-                        {filter !== "described" && (
+                        {(
                             <Button
                                 variant="ghost"
                                 size="sm"
@@ -541,17 +559,21 @@ export default function Places() {
                             </Button>
                         )}
                     </div>
+                    )}
                 </div>
                 <div className="places-list__rows">
                     {draft && (
                         <button type="button" className="places-row is-selected">
                             <span className="places-row__top">
                                 <span className="places-row__name">{describeRoom(selected!).name}</span>
-                                <span className="places-row__meta">nowe</span>
+                                <span className="places-row__meta">niezapisane</span>
+                            </span>
+                            <span className="places-row__sub">
+                                <span className="places-row__note">zapisze się, gdy dostanie skrót lub notatkę</span>
                             </span>
                         </button>
                     )}
-                    {filter === "described" ? (
+                    {source === "described" ? (
                         <>
                             {describedVisible.slice(0, DESCRIBED_LIMIT).map(m => (
                                 <MapRoomRow key={m.roomId} room={m} selected={selected === m.roomId} onSelect={() => select(m.roomId)} />
@@ -568,16 +590,16 @@ export default function Places() {
                             {visible.other.map(renderRow)}
                             {mapMatches.length > 0 && <span className="places-list__group">Lokacje na mapie</span>}
                             {mapMatches.map(m => (
-                                <MapRoomRow key={m.roomId} room={m} selected={false} onSelect={() => select(m.roomId)} />
+                                <MapRoomRow key={m.roomId} room={m} selected={selected === m.roomId} onSelect={() => select(m.roomId)} />
                             ))}
                         </>
                     )}
-                    {filter !== "described" && rows.length === 0 && !draft && !query.trim() && (
+                    {source === "mine" && rows.length === 0 && !draft && !query.trim() && (
                         <p className="places-empty">
                             Nie masz jeszcze zapisanych miejsc. Kliknij „Tutaj”, żeby dodać skrót lub notatkę dla miejsca, w którym jesteś, wpisz w wyszukiwarce nazwę lokacji albo jej numer (np. 321), żeby znaleźć ją na mapie, lub wybierz lokację prawym przyciskiem na mapie.
                         </p>
                     )}
-                    {filter !== "described" && query.trim() && visible.near.length + visible.other.length + mapMatches.length === 0 && (
+                    {source === "mine" && query.trim() && visible.near.length + visible.other.length + mapMatches.length === 0 && (
                         <p className="places-empty">Nic nie pasuje do wyszukiwania.</p>
                     )}
                 </div>

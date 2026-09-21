@@ -171,6 +171,9 @@ test.describe('Miejsca (skróty i notatki lokacji)', () => {
         const match = modal(page).locator('.places-row--map', { hasText: 'Kamienny Most' });
         await expect(match).toBeVisible();
         await match.click();
+        // Picked from the list: highlighted there, not repeated as a separate unsaved entry.
+        await expect(match).toHaveClass(/is-selected/);
+        await expect(modal(page).locator('.places-row', { hasText: 'niezapisane' })).toHaveCount(0);
         await expect(modal(page).locator('.places-hero__title')).toContainText(`#${ROOM_ID}`);
 
         await noteBox(page).fill('Dodane zdalnie');
@@ -199,11 +202,11 @@ test.describe('Miejsca (skróty i notatki lokacji)', () => {
 
         const rows = modal(page).locator('.places-row');
         await expect(rows).toHaveCount(2);
-        await modal(page).locator('.dialog-tab', { hasText: 'Skróty' }).click();
+        await modal(page).locator('.places-filter .dialog-tab', { hasText: 'Skróty' }).click();
         await expect(rows).toHaveCount(1);
-        await modal(page).locator('.dialog-tab', { hasText: 'Notatki' }).click();
+        await modal(page).locator('.places-filter .dialog-tab', { hasText: 'Notatki' }).click();
         await expect(rows).toHaveCount(1);
-        await modal(page).locator('.dialog-tab', { hasText: 'Wszystkie' }).click();
+        await modal(page).locator('.places-filter .dialog-tab', { hasText: 'Wszystkie' }).click();
         await modal(page).locator('.places-list__search input').fill('poczta');
         await expect(rows).toHaveCount(1);
 

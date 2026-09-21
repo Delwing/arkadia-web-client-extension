@@ -63,13 +63,20 @@
   align-items: center;
   gap: 8px;
 }
-.places-list__filters .dialog-tab {
-  padding: 0 9px;
+/* Moje miejsca | Opisy z mapy: two halves across the column. */
+.places-source {
+  display: flex;
+  align-self: stretch;
 }
-/* The tabs take what is left and scroll if a narrow column cannot fit them. */
-.places-list__filters .dialog-tabs {
-  flex: 0 1 auto;
-  min-width: 0;
+.places-source .dialog-tab {
+  flex: 1;
+  justify-content: center;
+}
+/* Filters inside "Moje miejsca": the same segmented control, smaller than the source switch above. */
+.places-filter .dialog-tab {
+  height: 22px;
+  padding: 0 8px;
+  font-size: var(--ui-fs-xs, 12px);
 }
 .places-sort {
   flex-shrink: 0;
