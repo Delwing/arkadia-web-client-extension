@@ -379,6 +379,145 @@ body {
   background-color: var(--popup-bg);
 }
 
+/* ── Bootstrap modal shells in the shared Dialog style ─────────────────────
+   The windows in index.html (settings, aliases, triggers, binds…) still open
+   through Bootstrap's Modal JS; this gives their chrome and the controls
+   inside them the look of src/ui/web/primitives/Dialog + the popup-* controls
+   (40px header, spaced-capitals title, 28px controls). Scoped to .modal, so
+   nothing outside a modal changes. Swapped for the Dialog component itself
+   when Bootstrap goes. */
+.modal {
+  --bs-modal-bg: var(--popup-bg);
+  --bs-modal-border-color: var(--popup-border);
+  --bs-modal-border-radius: var(--ui-radius-lg, 10px);
+  --bs-modal-inner-border-radius: calc(var(--ui-radius-lg, 10px) - 1px);
+  --bs-modal-padding: 16px;
+  --bs-modal-header-padding: 0 6px 0 16px;
+  --bs-modal-header-border-color: var(--popup-border);
+  --bs-modal-footer-border-color: var(--popup-border);
+  --bs-modal-footer-gap: 8px;
+  --bs-modal-title-line-height: 1.2;
+  font-family: var(--font-ui);
+  font-size: var(--ui-fs, 13px);
+}
+.modal .modal-content {
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.5), 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+.modal .modal-header {
+  min-height: 40px;
+  box-sizing: border-box;
+  background-color: transparent;
+}
+.modal .modal-header .modal-title {
+  font-size: var(--ui-fs-sm, 12px);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--popup-text-bright);
+}
+.modal .modal-header .btn-close {
+  width: 28px;
+  height: 28px;
+  margin: 0 0 0 auto;
+  border-radius: var(--ui-radius-sm, 4px);
+  background-color: transparent;
+  background-size: 10px;
+  opacity: 0.7;
+  box-shadow: none;
+}
+.modal .modal-header .btn-close:hover,
+.modal .modal-header .btn-close:focus-visible {
+  background-color: var(--popup-control-hover-bg);
+  opacity: 1;
+  box-shadow: none;
+}
+.modal .modal-footer {
+  padding: 10px 16px;
+  background-color: var(--popup-control-bg);
+}
+.modal .modal-footer > * {
+  margin: 0;
+}
+/* Buttons: 28px (24px small), UI font, the dialog radius. */
+.modal .btn {
+  --bs-btn-padding-y: 0;
+  --bs-btn-padding-x: 12px;
+  --bs-btn-font-family: var(--font-ui);
+  --bs-btn-font-size: var(--ui-fs, 13px);
+  --bs-btn-font-weight: 500;
+  --bs-btn-line-height: calc(var(--ui-ctrl, 28px) - 2px);
+  --bs-btn-border-radius: var(--ui-radius, 6px);
+}
+.modal .btn-sm,
+.modal .btn-group-sm > .btn {
+  --bs-btn-padding-x: 8px;
+  --bs-btn-font-size: var(--ui-fs-sm, 12px);
+  --bs-btn-line-height: calc(var(--ui-ctrl-sm, 24px) - 2px);
+  --bs-btn-border-radius: var(--ui-radius-sm, 4px);
+}
+/* Inputs and selects: 28px, beating the global input[type=…] rules (0,1,1)
+   and their 0.2rem focus ring. */
+.modal .form-control,
+.modal .form-select {
+  min-height: 0;
+  height: var(--ui-ctrl, 28px);
+  padding: 0 8px;
+  border-radius: var(--ui-radius, 6px);
+  font-size: var(--ui-fs, 13px);
+  line-height: calc(var(--ui-ctrl, 28px) - 2px);
+}
+.modal .form-select {
+  padding-right: 26px;
+  background-position: right 8px center;
+  background-size: 12px;
+}
+.modal textarea.form-control {
+  height: auto;
+  min-height: var(--ui-ctrl, 28px);
+  padding: 5px 8px;
+  line-height: 1.4;
+}
+.modal .form-control-sm,
+.modal .form-select-sm {
+  height: var(--ui-ctrl-sm, 24px);
+  padding-left: 6px;
+  border-radius: var(--ui-radius-sm, 4px);
+  font-size: var(--ui-fs-sm, 12px);
+  line-height: calc(var(--ui-ctrl-sm, 24px) - 2px);
+}
+.modal .form-select-sm {
+  padding-right: 22px;
+}
+.modal textarea.form-control-sm {
+  height: auto;
+  line-height: 1.4;
+}
+.modal .form-control[type="color"] {
+  padding: 2px;
+}
+.modal .form-control:focus,
+.modal .form-select:focus {
+  border-color: var(--popup-accent);
+  box-shadow: 0 0 0 2px var(--popup-accent-subtle-bg);
+}
+.modal .form-label {
+  margin-bottom: 4px;
+  font-size: var(--ui-fs-sm, 12px);
+  font-weight: 600;
+}
+.modal .form-text {
+  font-size: var(--ui-fs-xs, 11px);
+}
+.modal .form-check-input {
+  width: 14px;
+  height: 14px;
+  margin-top: 0.2em;
+}
+.modal .input-group-text {
+  padding: 0 8px;
+  font-size: var(--ui-fs, 13px);
+}
+
 .modal .btn-close,
 .letter-composer .btn-close,
 .plugin-window .btn-close,
