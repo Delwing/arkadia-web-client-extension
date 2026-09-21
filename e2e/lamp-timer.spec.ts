@@ -116,4 +116,34 @@ test.describe('Lamp timer', () => {
         await chip.click();
         expect(await getLastOutgoingCommand(page), 'a lit lamp is snuffed').toBe('zgas lampe');
     });
+
+    for (const lit of [false, true]) {
+        test(`long press refills the lamp when it is ${lit ? 'lit' : 'off'}`, async ({page}) => {
+            const {chip, value} = await open(page);
+            if (lit) {
+                await pushText(page, 'Zapalasz swoja lampe.');
+                await expect(value).toHaveText(/^[0-9]:[0-9]{2}$/);
+            }
+
+            await chip.hover();
+            await page.mouse.down();
+            await expect(chip, 'the hold shows its progress').toHaveClass(/chip--holding/);
+            await expect(chip, 'the hold lands').toHaveClass(/chip--held/);
+            await page.mouse.up();
+
+            expect(await getLastOutgoingCommand(page), 'a hold always refills').toBe('napelnij lampe olejem');
+        });
+    }
+
+    test('releasing early does not refill', async ({page}) => {
+        const {chip} = await open(page);
+
+        await chip.hover();
+        await page.mouse.down();
+        await expect(chip).toHaveClass(/chip--holding/);
+        await page.mouse.up();
+
+        expect(await getLastOutgoingCommand(page), 'a short press is a plain click').toBe('zapal lampe');
+        await expect(chip).not.toHaveClass(/chip--holding|chip--held/);
+    });
 });

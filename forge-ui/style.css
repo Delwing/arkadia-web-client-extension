@@ -655,6 +655,23 @@ body::after {
 .chip--act { cursor: pointer; transition: border-color .15s ease, transform .1s ease; }
 .chip--act:hover { border-color: var(--bronze-dim); }
 .chip--act:active { transform: translateY(1px); }
+/* long-press feedback (Chip onLongPress): molten bronze pours in from the left
+   while held, then glows and fades once the hold lands */
+.chip--act { position: relative; isolation: isolate; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+.chip--holding::before, .chip--held::before {
+  content: "";
+  position: absolute; inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, rgba(184,150,90,.18), rgba(230,173,78,.38));
+  transform-origin: left center;
+  pointer-events: none;
+  z-index: -1;
+}
+.chip--holding::before { animation: chipHoldFill var(--chip-hold-ms, 300ms) linear forwards; }
+.chip--held { border-color: var(--bronze); }
+.chip--held::before { animation: chipHoldDone 400ms ease-out forwards; }
+@keyframes chipHoldFill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes chipHoldDone { from { opacity: 1; box-shadow: 0 0 8px rgba(230,173,78,.6); } to { opacity: 0; } }
 .chip__ico { flex: 0 0 auto; width: 14px; height: 14px; display: grid; place-items: center; color: var(--bronze); }
 .chip__ico svg { width: 14px; height: 14px; }
 /* Filled state (e.g. cover shield when the guard is held): a soft translucent

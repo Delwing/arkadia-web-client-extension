@@ -1515,6 +1515,44 @@ h1 {
 
 #char-state .chip--act {
   cursor: pointer;
+  position: relative;
+  isolation: isolate; /* keeps the z-index:-1 hold tint above the footer bg */
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Long-press feedback (Chip onLongPress): a tint sweeps left to right while the
+   chip is held, then fades once the hold lands. Drawn behind the text with a
+   pseudo-element so the chip keeps its footer-text footprint. */
+#char-state .chip--holding::before,
+#char-state .chip--held::before {
+  content: "";
+  position: absolute;
+  inset: -1px -3px;
+  border-radius: 3px;
+  background: color-mix(in srgb, currentColor 28%, transparent);
+  transform-origin: left center;
+  pointer-events: none;
+  z-index: -1;
+}
+
+#char-state .chip--holding::before {
+  animation: chipHoldFill var(--chip-hold-ms, 300ms) linear forwards;
+}
+
+#char-state .chip--held::before {
+  animation: chipHoldDone 400ms ease-out forwards;
+}
+
+@keyframes chipHoldFill {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+@keyframes chipHoldDone {
+  from { opacity: 1; }
+  to { opacity: 0; }
 }
 
 #char-state .chip__text {

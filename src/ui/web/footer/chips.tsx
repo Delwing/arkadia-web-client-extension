@@ -40,7 +40,10 @@ export function FajkaChip() {
   );
 }
 
-/** Oil-lamp fuel remaining, or "off" when it is out. Click lights / snuffs it. */
+/**
+ * Oil-lamp fuel remaining, or "off" when it is out. Click lights / snuffs it;
+ * a long press tops it up with oil whatever state it is in.
+ */
 export function LampChip() {
   const [seconds, setSeconds] = useState<number | null>(null);
   useClientEvent<number | null>("lampTimer", (v) => setSeconds(v));
@@ -52,8 +55,9 @@ export function LampChip() {
       label="Lampa"
       value={lit ? mmss(seconds!) : "off"}
       tone={tone}
-      title={lit ? "Zgas lampe" : "Zapal lampe"}
+      title={`${lit ? "Zgas lampe" : "Zapal lampe"} (przytrzymaj: napelnij olejem)`}
       onClick={() => eventBus.emit("sendCommand", { command: lit ? "zgas lampe" : "zapal lampe" })}
+      onLongPress={() => eventBus.emit("sendCommand", { command: "napelnij lampe olejem" })}
     />
   );
 }
