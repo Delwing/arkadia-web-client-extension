@@ -1010,6 +1010,68 @@ select.popup-input.popup-input--control {
   padding: 0.25rem 0;
   gap: 0;
 }
+/* Tabs: a small bordered track, the active tab filled with the accent
+   (Skrypty, Przyciski mobilne modes). */
+.popup-tabs {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-self: flex-start;
+  gap: 2px;
+  max-width: 100%;
+  overflow-x: auto;
+  padding: 2px;
+  border: 1px solid var(--popup-border-control);
+  border-radius: var(--ui-radius, 6px);
+  background-color: var(--popup-input-bg);
+  scrollbar-width: none;
+}
+.popup-tab {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 6px;
+  height: calc(var(--ui-ctrl, 32px) - 6px);
+  margin: 0;
+  padding: 0 14px;
+  border: 0;
+  border-radius: var(--ui-radius-sm, 4px);
+  background: transparent;
+  color: var(--popup-text-subtle);
+  font: inherit;
+  font-size: var(--ui-fs-sm, 13px);
+  font-weight: 600;
+  opacity: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.popup-tab:hover:not(.is-active) {
+  background-color: var(--popup-control-hover-bg);
+  color: var(--popup-text);
+}
+.popup-tab.is-active {
+  background-color: var(--popup-accent);
+  color: var(--popup-bg);
+}
+.popup-tab__count {
+  padding: 0 6px;
+  border-radius: 999px;
+  background-color: var(--popup-control-active-bg);
+  font-size: var(--ui-fs-xs, 12px);
+}
+.popup-tab.is-active .popup-tab__count {
+  background-color: rgba(0, 0, 0, 0.2);
+  color: inherit;
+}
+.popup-tab__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: var(--popup-accent);
+}
+.popup-tab.is-active .popup-tab__dot {
+  background-color: var(--popup-bg);
+}
 /* MenuButton: label + chevron. */
 .popup-btn.popup-btn--control.popup-menu-button {
   display: inline-flex;

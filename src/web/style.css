@@ -2494,36 +2494,6 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
   justify-content: space-between;
   gap: 8px;
 }
-.mobile-buttons-mode-toggle {
-  display: inline-flex;
-  gap: 2px;
-  padding: 2px;
-  border: 1px solid var(--popup-border-control);
-  border-radius: var(--ui-radius, 6px);
-  background-color: var(--popup-input-bg);
-}
-.mobile-buttons-mode-toggle__item {
-  min-height: calc(var(--ui-ctrl, 32px) - 6px);
-  padding: 0 12px;
-  border: none;
-  border-radius: var(--ui-radius-sm, 4px);
-  background: transparent;
-  color: var(--popup-text-subtle);
-  font: inherit;
-  font-size: var(--ui-fs-sm, 13px);
-  font-weight: 500;
-  opacity: 1;
-  cursor: pointer;
-}
-.mobile-buttons-mode-toggle__item:hover {
-  color: var(--popup-text);
-  background-color: var(--popup-control-hover-bg);
-}
-.mobile-buttons-mode-toggle__item.is-active {
-  background-color: var(--popup-accent);
-  color: var(--popup-bg);
-}
-
 /* Size, gap and background sliders. */
 .mobile-buttons-background-section {
   display: flex;
@@ -4928,61 +4898,6 @@ body.layout-manager-enabled #notification-center {
   height: 100%;
   min-height: 0;
   padding: 0.75rem;
-}
-
-/* Underlined tabs, not a full-width segmented bar. */
-.plugin-manager__tabs {
-  display: flex;
-  gap: 4px;
-  flex: 0 0 auto;
-  margin: -0.25rem 0 0;
-  border-bottom: 1px solid var(--popup-border-subtle);
-}
-
-.plugin-tab {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 36px;
-  margin-bottom: -1px;
-  padding: 0 12px;
-  border: 0;
-  border-bottom: 2px solid transparent;
-  background: transparent;
-  color: var(--popup-text-subtle);
-  font-size: var(--ui-fs, 14px);
-  font-weight: 600;
-  opacity: 1;
-  cursor: pointer;
-  transition: color 0.15s ease, border-color 0.15s ease;
-}
-
-.plugin-tab:hover {
-  color: var(--popup-text);
-}
-
-.plugin-tab--active {
-  border-bottom-color: var(--popup-accent);
-  color: var(--popup-text-bright);
-}
-
-.plugin-tab__count {
-  font-size: 0.72rem;
-  padding: 0.05rem 0.4rem;
-  border-radius: 1rem;
-  background: var(--popup-control-active-bg);
-}
-
-.plugin-tab--active .plugin-tab__count {
-  background: var(--popup-accent-bg);
-  color: var(--popup-accent);
-}
-
-.plugin-tab__dot {
-  width: 0.45rem;
-  height: 0.45rem;
-  border-radius: 50%;
-  background: var(--popup-accent);
 }
 
 .plugin-manager__toolbar {
