@@ -7,6 +7,7 @@
 // bootstrap-compat.css. Re-adding this import would reintroduce that leak.
 import {useState} from "react";
 import {Form, Button} from "react-bootstrap";
+import {Button as UiButton, Check, Field, Input, Select} from "@web-ui/primitives/index.ts";
 import {CircleHelp} from "lucide-react";
 import {defaultSettings} from "./defaultSettings";
 import {CollectOverridesModal} from "./CollectOverridesModal";
@@ -63,17 +64,22 @@ const lowHpAlertOptions = [
 const LETTER_LINE_WIDTH_MIN = 40;
 const LETTER_LINE_WIDTH_MAX = 120;
 
+/** A (?) that explains an option on hover. */
+function HelpHint({text}: {text: string}) {
+    return <span className="settings-help" title={text}><CircleHelp size={14}/></span>;
+}
+
 export function ExitsSection({settings, onChangeSetting}: GeneralSettingsSectionProps) {
+    const prefix = settings.shortExitsPrefix ?? '-----:';
+    const customPrefix = prefix !== '-----:' && prefix !== '→';
     return (
         <section className="character-settings-section">
             <h5 className="character-settings-section-title">Wyjścia</h5>
-            <div className="d-flex flex-wrap gap-3 align-items-center">
-                <Form.Group className="d-flex align-items-center me-2">
-                    <Form.Label className="me-1 mb-0" htmlFor="inlineCompassRose">Roza wiatrow:</Form.Label>
-                    <Form.Select
+            <div className="character-settings-stack">
+                <Field label="Roza wiatrow" htmlFor="inlineCompassRose">
+                    <Select
                         id="inlineCompassRose"
-                        size="sm"
-                        style={{width: 'auto'}}
+                        className="settings-narrow"
                         value={settings.inlineCompassRose}
                         onChange={e => onChangeSetting(s => s.inlineCompassRose = Number(e.target.value))}
                     >
@@ -86,167 +92,126 @@ export function ExitsSection({settings, onChangeSetting}: GeneralSettingsSection
                             <option value={2}>Domyslna</option>
                             <option value={4}>ASCII</option>
                         </optgroup>
-                    </Form.Select>
-                </Form.Group>
-                <Form.Check
-                    type="checkbox"
-                    id="compassBackExits"
-                    label="Powrót na czerwono"
-                    checked={settings.compassBackExits}
-                    onChange={e => onChangeSetting(s => s.compassBackExits = e.target.checked)}
-                    className="me-2"
-                />
-                <Form.Check
-                    type="checkbox"
-                    id="shortenExits"
-                    label="Skrócone wyjścia"
-                    checked={settings.shortenExits}
-                    onChange={e => onChangeSetting(s => s.shortenExits = e.target.checked)}
-                    className="me-2"
-                />
+                    </Select>
+                </Field>
+                <div className="settings-checks">
+                    <Check
+                        id="compassBackExits"
+                        label="Powrót na czerwono"
+                        checked={settings.compassBackExits}
+                        onChange={e => onChangeSetting(s => s.compassBackExits = e.target.checked)}
+                    />
+                    <Check
+                        id="shortenExits"
+                        label="Skrócone wyjścia"
+                        checked={settings.shortenExits}
+                        onChange={e => onChangeSetting(s => s.shortenExits = e.target.checked)}
+                    />
+                </div>
             </div>
             {settings.shortenExits && (
-                <div className="mt-3 pt-3 border-top">
-                    <div className="d-flex flex-column gap-3">
-                        <div className="d-flex gap-3">
-                            <button
-                                type="button"
-                                className="btn btn-outline-secondary"
-                                onClick={() => onChangeSetting(s => {
-                                    s.shortExitsPrefix = '-----:';
-                                    s.shortExitsSeparator = ' ';
-                                    s.shortExitsColor = '#ffa500';
-                                    s.shortExitsBackgroundColor = 'transparent';
-                                })}
-                                title="Przywróć wszystkie domyślne ustawienia"
-                                style={{ padding: "0.25rem 0.5rem", height: "36px" }}
-                            >
-                                Przywróć domyślne
-                            </button>
-                        </div>
-                        <div className="d-flex gap-3 align-items-flex-start flex-wrap">
-                            <Form.Group className="d-flex flex-column gap-2">
-                                <Form.Label className="mb-0">Przedrostek</Form.Label>
-                                <div className="d-flex flex-column gap-2">
-                                    <Form.Check
-                                        type="radio"
-                                        id="format-compact"
-                                        label='Kompaktowy (-----:)'
-                                        name="shortExitsFormat"
-                                        value="compact"
-                                        checked={(settings.shortExitsPrefix ?? '-----:') === '-----:'}
-                                        onChange={() => onChangeSetting(s => s.shortExitsPrefix = '-----:')}
-                                    />
-                                    <Form.Check
-                                        type="radio"
-                                        id="format-arrow"
-                                        label='Strzałka (→)'
-                                        name="shortExitsFormat"
-                                        value="arrow"
-                                        checked={(settings.shortExitsPrefix ?? '-----:') === '→'}
-                                        onChange={() => onChangeSetting(s => s.shortExitsPrefix = '→')}
-                                    />
-                                    <Form.Check
-                                        type="radio"
-                                        id="format-custom"
-                                        label="Niestandardowy"
-                                        name="shortExitsFormat"
-                                        value="custom"
-                                        checked={(settings.shortExitsPrefix ?? '-----:') !== '-----:' && (settings.shortExitsPrefix ?? '-----:') !== '→'}
-                                        onChange={() => onChangeSetting(s => s.shortExitsPrefix = '>>>')}
-                                    />
-                                </div>
-                                {(settings.shortExitsPrefix ?? '-----:') !== '-----:' && (settings.shortExitsPrefix ?? '-----:') !== '→' && (
-                                    <Form.Control
-                                        type="text"
-                                        size="sm"
-                                        value={settings.shortExitsPrefix ?? ''}
-                                        onChange={e => onChangeSetting(s => s.shortExitsPrefix = e.target.value)}
-                                        placeholder="np. >>>"
-                                        style={{maxWidth: '8rem'}}
-                                    />
-                                )}
-                            </Form.Group>
-                            <Form.Group className="d-flex flex-column gap-2">
-                                <Form.Label htmlFor="exits-color" className="mb-0">Kolor tekstu</Form.Label>
-                                <div className="d-flex gap-2 align-items-center">
-                                    <Form.Control
-                                        type="color"
-                                        id="exits-color"
-                                        value={settings.shortExitsColor ?? '#ffa500'}
-                                        onChange={e => onChangeSetting(s => s.shortExitsColor = e.target.value)}
-                                        className="form-control-color"
-                                        style={{ width: '3rem', height: '2rem' }}
-                                    />
-                                    <button
-                                        type="button"
-                                        className="btn btn-outline-secondary btn-sm"
-                                        onClick={() => onChangeSetting(s => s.shortExitsColor = '#ffa500')}
-                                        title="Przywróć domyślny kolor"
-                                        style={{ padding: "0.25rem 0.5rem" }}
-                                    >
-                                        ↺
-                                    </button>
-                                </div>
-                            </Form.Group>
-                            <Form.Group className="d-flex flex-column gap-2">
-                                <Form.Label htmlFor="exits-bg-color" className="mb-0">Kolor tła</Form.Label>
-                                <div className="d-flex gap-2 align-items-center">
-                                    <Form.Control
-                                        type="color"
-                                        id="exits-bg-color"
-                                        value={settings.shortExitsBackgroundColor ?? 'transparent'}
-                                        onChange={e => onChangeSetting(s => s.shortExitsBackgroundColor = e.target.value)}
-                                        className="form-control-color"
-                                        style={{ width: '3rem', height: '2rem' }}
-                                    />
-                                    <button
-                                        type="button"
-                                        className="btn btn-outline-secondary btn-sm"
-                                        onClick={() => onChangeSetting(s => s.shortExitsBackgroundColor = 'transparent')}
-                                        title="Przywróć domyślny kolor tła"
-                                        style={{ padding: "0.25rem 0.5rem" }}
-                                    >
-                                        ↺
-                                    </button>
-                                </div>
-                            </Form.Group>
-                        </div>
-                        <div className="d-flex gap-3 align-items-flex-end flex-wrap">
-                            <Form.Group className="d-flex flex-column gap-2">
-                                <Form.Label htmlFor="separator" className="mb-0">Separator</Form.Label>
-                                <Form.Control
-                                    type="text"
-                                    id="separator"
-                                    size="sm"
-                                    value={settings.shortExitsSeparator ?? ' '}
-                                    onChange={e => onChangeSetting(s => s.shortExitsSeparator = e.target.value)}
-                                    placeholder=" "
-                                    maxLength={5}
-                                    style={{maxWidth: '6rem'}}
+                <div className="settings-subsection character-settings-stack">
+                    <div className="settings-exits-grid">
+                        <Field label="Przedrostek">
+                            <div className="settings-checks">
+                                <Check
+                                    type="radio"
+                                    id="format-compact"
+                                    label='Kompaktowy (-----:)'
+                                    name="shortExitsFormat"
+                                    value="compact"
+                                    checked={prefix === '-----:'}
+                                    onChange={() => onChangeSetting(s => s.shortExitsPrefix = '-----:')}
                                 />
-                                <small className="text-muted d-block" style={{fontSize: '0.75rem'}}>Między kierunkami</small>
-                            </Form.Group>
-                        </div>
-                        <Form.Group className="d-flex flex-column gap-2">
-                            <Form.Label className="mb-0">Podgląd</Form.Label>
-                            <div
-                                style={{
-                                    padding: '0.5rem',
-                                    backgroundColor: settings.shortExitsBackgroundColor ?? 'transparent',
-                                    color: settings.shortExitsColor ?? '#ffa500',
-                                    fontFamily: 'monospace',
-                                    borderRadius: '0.25rem',
-                                    border: '1px solid #333',
-                                    whiteSpace: 'nowrap',
-                                    fontSize: '0.9rem',
-                                    maxWidth: '20rem'
-                                }}
-                            >
-                                {(settings.shortExitsPrefix ?? '-----:') + (settings.shortExitsSeparator ?? ' ') + 'N' + (settings.shortExitsSeparator ?? ' ') + 'E' + (settings.shortExitsSeparator ?? ' ') + 'NE'}
+                                <Check
+                                    type="radio"
+                                    id="format-arrow"
+                                    label='Strzałka (→)'
+                                    name="shortExitsFormat"
+                                    value="arrow"
+                                    checked={prefix === '→'}
+                                    onChange={() => onChangeSetting(s => s.shortExitsPrefix = '→')}
+                                />
+                                <Check
+                                    type="radio"
+                                    id="format-custom"
+                                    label="Niestandardowy"
+                                    name="shortExitsFormat"
+                                    value="custom"
+                                    checked={customPrefix}
+                                    onChange={() => onChangeSetting(s => s.shortExitsPrefix = '>>>')}
+                                />
                             </div>
-                        </Form.Group>
+                            {customPrefix && (
+                                <Input
+                                    mono
+                                    className="settings-narrow"
+                                    value={settings.shortExitsPrefix ?? ''}
+                                    onChange={e => onChangeSetting(s => s.shortExitsPrefix = e.target.value)}
+                                    placeholder="np. >>>"
+                                />
+                            )}
+                        </Field>
+                        <Field label="Kolor tekstu" htmlFor="exits-color">
+                            <div className="popup-inline">
+                                <input
+                                    type="color"
+                                    id="exits-color"
+                                    className="popup-color"
+                                    value={settings.shortExitsColor ?? '#ffa500'}
+                                    onChange={e => onChangeSetting(s => s.shortExitsColor = e.target.value)}
+                                />
+                                <UiButton size="sm" variant="ghost" onClick={() => onChangeSetting(s => s.shortExitsColor = '#ffa500')} title="Przywróć domyślny kolor">↺</UiButton>
+                            </div>
+                        </Field>
+                        <Field label="Kolor tła" htmlFor="exits-bg-color">
+                            <div className="popup-inline">
+                                <input
+                                    type="color"
+                                    id="exits-bg-color"
+                                    className="popup-color"
+                                    value={settings.shortExitsBackgroundColor ?? 'transparent'}
+                                    onChange={e => onChangeSetting(s => s.shortExitsBackgroundColor = e.target.value)}
+                                />
+                                <UiButton size="sm" variant="ghost" onClick={() => onChangeSetting(s => s.shortExitsBackgroundColor = 'transparent')} title="Przywróć domyślny kolor tła">↺</UiButton>
+                            </div>
+                        </Field>
+                        <Field label="Separator" htmlFor="separator" hint="Między kierunkami">
+                            <Input
+                                mono
+                                id="separator"
+                                className="settings-narrow"
+                                value={settings.shortExitsSeparator ?? ' '}
+                                onChange={e => onChangeSetting(s => s.shortExitsSeparator = e.target.value)}
+                                placeholder=" "
+                                maxLength={5}
+                            />
+                        </Field>
                     </div>
+                    <Field label="Podgląd">
+                        <div
+                            className="settings-exits-preview"
+                            style={{
+                                backgroundColor: settings.shortExitsBackgroundColor ?? 'transparent',
+                                color: settings.shortExitsColor ?? '#ffa500',
+                            }}
+                        >
+                            {prefix + (settings.shortExitsSeparator ?? ' ') + 'N' + (settings.shortExitsSeparator ?? ' ') + 'E' + (settings.shortExitsSeparator ?? ' ') + 'NE'}
+                        </div>
+                    </Field>
+                    <UiButton
+                        size="sm"
+                        className="ui-settings-self-start"
+                        onClick={() => onChangeSetting(s => {
+                            s.shortExitsPrefix = '-----:';
+                            s.shortExitsSeparator = ' ';
+                            s.shortExitsColor = '#ffa500';
+                            s.shortExitsBackgroundColor = 'transparent';
+                        })}
+                        title="Przywróć wszystkie domyślne ustawienia"
+                    >
+                        Przywróć domyślne
+                    </UiButton>
                 </div>
             )}
         </section>
@@ -257,55 +222,46 @@ export function OtherOptionsSection({settings, onChangeSetting}: GeneralSettings
     return (
         <section className="character-settings-section">
             <h5 className="character-settings-section-title">Pozostałe opcje</h5>
-            <div className="d-flex flex-wrap gap-3 align-items-center">
-                <Form.Check
-                    type="checkbox"
-                    id="packageHelper"
-                    label="Asystent paczek"
-                    checked={settings.packageHelper}
-                    onChange={e => onChangeSetting(s => s.packageHelper = e.target.checked)}
-                    className="me-2"
-                />
-                <Form.Check
-                    type="checkbox"
-                    id="packageInContainer"
-                    label="Paczka do pojemnika"
-                    checked={settings.packageInContainer}
-                    onChange={e => onChangeSetting(s => s.packageInContainer = e.target.checked)}
-                    className="me-2"
-                />
-                <Form.Check
-                    type="checkbox"
-                    id="fullHpMessage"
-                    label={<>Informacja o pelnym zdrowiu <span title="Gdy wlaczone, wyswietla komunikat gdy zdrowie postaci zostanie w pelni odnowione." style={{cursor: 'help', opacity: 0.7, verticalAlign: 'middle'}}><CircleHelp size={14} /></span></>}
-                    checked={settings.fullHpMessage}
-                    onChange={e => onChangeSetting(s => s.fullHpMessage = e.target.checked)}
-                    className="me-2"
-                />
-                <Form.Check
-                    type="checkbox"
-                    id="sunTracker"
-                    label={<>Ramki wschodu/zachodu <span title="Wyswietla kolorowe ramki przy wschodach/zachodach slonca. Obserwacje sa rejestrowane zawsze. Uzyj /slonce aby otworzyc kalendarz." style={{cursor: 'help', opacity: 0.7, verticalAlign: 'middle'}}><CircleHelp size={14} /></span></>}
-                    checked={settings.sunTracker}
-                    onChange={e => onChangeSetting(s => s.sunTracker = e.target.checked)}
-                    className="me-2"
-                />
-                <Form.Check
-                    type="checkbox"
-                    id="carriageTeamTickets"
-                    label={<>Bilety dla druzyny przy wjezdzie wozem <span title="Gdy wjezdzasz wozem na statek, bind wejscia kupuje bilety takze dla czlonkow druzyny na lokacji i wrecza im je (jak /bilety). Wylaczone: kupuje tylko twoj bilet." style={{cursor: 'help', opacity: 0.7, verticalAlign: 'middle'}}><CircleHelp size={14} /></span></>}
-                    checked={settings.carriageTeamTickets}
-                    onChange={e => onChangeSetting(s => s.carriageTeamTickets = e.target.checked)}
-                    className="me-2"
-                />
-                <Form.Group className="d-flex align-items-center me-2">
-                    <Form.Label className="me-1 mb-0" htmlFor="letterLineWidth">Szerokosc linii
-                        listu:</Form.Label>
-                    <Form.Control
+            <div className="character-settings-stack">
+                <div className="settings-checks">
+                    <Check
+                        id="packageHelper"
+                        label="Asystent paczek"
+                        checked={settings.packageHelper}
+                        onChange={e => onChangeSetting(s => s.packageHelper = e.target.checked)}
+                    />
+                    <Check
+                        id="packageInContainer"
+                        label="Paczka do pojemnika"
+                        checked={settings.packageInContainer}
+                        onChange={e => onChangeSetting(s => s.packageInContainer = e.target.checked)}
+                    />
+                    <Check
+                        id="fullHpMessage"
+                        label={<>Informacja o pelnym zdrowiu <HelpHint text="Gdy wlaczone, wyswietla komunikat gdy zdrowie postaci zostanie w pelni odnowione."/></>}
+                        checked={settings.fullHpMessage}
+                        onChange={e => onChangeSetting(s => s.fullHpMessage = e.target.checked)}
+                    />
+                    <Check
+                        id="sunTracker"
+                        label={<>Ramki wschodu/zachodu <HelpHint text="Wyswietla kolorowe ramki przy wschodach/zachodach slonca. Obserwacje sa rejestrowane zawsze. Uzyj /slonce aby otworzyc kalendarz."/></>}
+                        checked={settings.sunTracker}
+                        onChange={e => onChangeSetting(s => s.sunTracker = e.target.checked)}
+                    />
+                    <Check
+                        id="carriageTeamTickets"
+                        label={<>Bilety dla druzyny przy wjezdzie wozem <HelpHint text="Gdy wjezdzasz wozem na statek, bind wejscia kupuje bilety takze dla czlonkow druzyny na lokacji i wrecza im je (jak /bilety). Wylaczone: kupuje tylko twoj bilet."/></>}
+                        checked={settings.carriageTeamTickets}
+                        onChange={e => onChangeSetting(s => s.carriageTeamTickets = e.target.checked)}
+                    />
+                </div>
+                <Field label="Szerokosc linii listu" htmlFor="letterLineWidth">
+                    <Input
                         type="number"
                         min={LETTER_LINE_WIDTH_MIN}
                         max={LETTER_LINE_WIDTH_MAX}
                         id="letterLineWidth"
+                        className="settings-narrow"
                         value={settings.letterLineWidth}
                         onChange={ev => {
                             const parsed = parseInt(ev.target.value, 10);
@@ -316,24 +272,20 @@ export function OtherOptionsSection({settings, onChangeSetting}: GeneralSettings
                             );
                             onChangeSetting(s => s.letterLineWidth = clamped);
                         }}
-                        style={{width: '100%', maxWidth: '5rem'}}
                     />
-                </Form.Group>
-                <Form.Group className="d-flex align-items-center me-2">
-                    <Form.Label className="me-1 mb-0" htmlFor="lowHpAlert">Alarm niskiego
-                        zdrowia:</Form.Label>
-                    <Form.Select
-                        size="sm"
+                </Field>
+                <Field label="Alarm niskiego zdrowia" htmlFor="lowHpAlert">
+                    <Select
                         id="lowHpAlert"
+                        className="settings-narrow"
                         value={settings.lowHpAlert}
                         onChange={e => onChangeSetting(s => s.lowHpAlert = parseInt(e.target.value) || 0)}
-                        className="w-auto"
                     >
                         {lowHpAlertOptions.map(option => (
                             <option value={option.value} key={option.value}>{option.label}</option>
                         ))}
-                    </Form.Select>
-                </Form.Group>
+                    </Select>
+                </Field>
             </div>
         </section>
     );
@@ -745,32 +697,27 @@ export function LanguageSection({settings, onChangeSetting}: GeneralSettingsSect
     return (
         <section className="character-settings-section character-settings-section--full">
             <h5 className="character-settings-section-title">Język</h5>
-            <div className="d-flex flex-wrap gap-3 align-items-center">
-                <Form.Group className="d-flex align-items-center">
-                    <Form.Label className="me-1 mb-0">Przyslowek:</Form.Label>
-                    <Form.Control
-                        type="text"
-                        size="sm"
+            <div className="settings-fields-row">
+                <Field label="Przyslowek">
+                    <Input
+                        className="settings-narrow"
                         value={settings.languageAdjective}
                         onChange={e => onChangeSetting(s => s.languageAdjective = e.target.value)}
-                        style={{width: '100%', maxWidth: '10rem'}}
                     />
-                </Form.Group>
-                <Form.Group className="d-flex align-items-center">
-                    <Form.Label className="me-1 mb-0">Domyślny język:</Form.Label>
-                    <Form.Select
-                        size="sm"
+                </Field>
+                <Field label="Domyślny język">
+                    <Select
+                        className="settings-narrow"
                         value={settings.language}
                         onChange={e => onChangeSetting(s => s.language = e.target.value)}
-                        className="w-auto"
                     >
                         {languageOptions.map(lang => (
                             <option key={lang} value={lang}>{lang}</option>
                         ))}
-                    </Form.Select>
-                </Form.Group>
+                    </Select>
+                </Field>
             </div>
-            <table className="table table-modern table-sm table-hover table-zebra mt-3 mb-0">
+            <table className="popup-table">
                 <thead>
                 <tr>
                     <th>Alias</th>
@@ -786,51 +733,44 @@ export function LanguageSection({settings, onChangeSetting}: GeneralSettingsSect
                         <td>{item.adjective}</td>
                         <td>{item.language}</td>
                         <td>
-                            <Button
+                            <UiButton
                                 size="sm"
-                                variant="secondary"
+                                variant="danger"
                                 onClick={() => onChangeSetting(s => s.languageAliases = s.languageAliases.filter(a => a !== item))}
                             >
                                 Usuń
-                            </Button>
+                            </UiButton>
                         </td>
                     </tr>
                 ))}
                 <tr data-settings-ignore>
                     <td>
-                        <Form.Control
-                            type="text"
-                            size="sm"
+                        <Input
+                            mono
                             value={aliasInput}
                             onChange={e => setAliasInput(e.target.value)}
                             placeholder="np. /po"
-                            style={{width: '100%', maxWidth: '10rem'}}
                         />
                     </td>
                     <td>
-                        <Form.Control
-                            type="text"
-                            size="sm"
+                        <Input
                             value={aliasAdjInput}
                             onChange={e => setAliasAdjInput(e.target.value)}
                             placeholder="np. potocznie"
-                            style={{width: '100%', maxWidth: '10rem'}}
                         />
                     </td>
                     <td>
-                        <Form.Select
-                            size="sm"
+                        <Select
                             value={aliasLangInput}
                             onChange={e => setAliasLangInput(e.target.value)}
-                            className="w-auto"
                         >
                             {languageOptions.map(lang => (
                                 <option key={lang} value={lang}>{lang}</option>
                             ))}
-                        </Form.Select>
+                        </Select>
                     </td>
                     <td>
-                        <Button
+                        <UiButton
                             size="sm"
                             onClick={() => {
                                 if (aliasInput.trim()) {
@@ -845,7 +785,7 @@ export function LanguageSection({settings, onChangeSetting}: GeneralSettingsSect
                             }}
                         >
                             Dodaj
-                        </Button>
+                        </UiButton>
                     </td>
                 </tr>
                 </tbody>

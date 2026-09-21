@@ -3138,6 +3138,55 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
   gap: 0.75rem;
 }
 
+/* ── Character settings pages (options/Settings.tsx) ─────────────────── */
+/* A control that doesn't need the card's full width. */
+.popup-input.popup-input--control.settings-narrow {
+  width: auto;
+  min-width: 6rem;
+  max-width: 16rem;
+}
+/* A list of checkboxes / radios. */
+.settings-checks {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+/* Options shown only while their parent option is on. */
+.settings-subsection {
+  margin-top: 4px;
+  padding-top: 12px;
+  border-top: 1px solid var(--popup-border-subtle);
+}
+/* Fields side by side that wrap on a narrow card. */
+.settings-fields-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 12px 16px;
+}
+.settings-exits-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px 16px;
+}
+.settings-exits-preview {
+  max-width: 20rem;
+  padding: 6px 8px;
+  border: 1px solid var(--popup-border);
+  border-radius: var(--ui-radius, 6px);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12.5px;
+  white-space: nowrap;
+}
+/* The (?) that explains an option on hover. */
+.settings-help {
+  display: inline-flex;
+  vertical-align: middle;
+  margin-left: 2px;
+  opacity: 0.6;
+  cursor: help;
+}
+
 /* A sub-option under the option it depends on. */
 .ui-settings-indent {
   margin-left: 20px;
