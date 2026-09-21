@@ -383,12 +383,12 @@ function MobileButtons({ registerSave }: { registerSave: (save: () => void) => v
             <SettingsValue value={settings} />
             <div onClick={close} className="mobile-buttons-editor" data-settings-ignore>
                 <div className="mobile-buttons-top-row">
-                    <div className="popup-tabs">
+                    <div className="dialog-tabs">
                         {([['solo', 'Bez druzyny'], ['team', 'W druzynie'], ['leader', 'Prowadzacy']] as const).map(([mode, label]) => (
                             <button
                                 key={mode}
                                 type="button"
-                                className={`popup-tab${view === mode ? ' is-active' : ''}`}
+                                className={`dialog-tab${view === mode ? ' is-active' : ''}`}
                                 onClick={() => changeView(mode)}
                             >
                                 {label}

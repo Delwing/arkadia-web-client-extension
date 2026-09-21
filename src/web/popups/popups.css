@@ -362,6 +362,10 @@
    (input[type="text"], .modal input …) are (0,1,1) and would outrank a single
    class; the bare `button` rule would leak opacity/padding/background. */
 .popup-btn.popup-btn--control {
+  /* Sized by the --ui-ctrl tokens (the touch tier included), so the old
+     narrow-screen 8vmin floor on every button must not apply. */
+  min-width: 0;
+  min-height: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1010,9 +1014,9 @@ select.popup-input.popup-input--control {
   padding: 0.25rem 0;
   gap: 0;
 }
-/* Tabs: a small bordered track, the active tab filled with the accent
+/* Dialog tabs (not the in-game windows' .popup-tab): a small bordered track, the active tab filled with the accent
    (Skrypty, Przyciski mobilne modes). */
-.popup-tabs {
+.dialog-tabs {
   display: inline-flex;
   flex: 0 0 auto;
   align-self: flex-start;
@@ -1025,7 +1029,7 @@ select.popup-input.popup-input--control {
   background-color: var(--popup-input-bg);
   scrollbar-width: none;
 }
-.popup-tab {
+.dialog-tab {
   display: inline-flex;
   flex-shrink: 0;
   align-items: center;
@@ -1041,35 +1045,37 @@ select.popup-input.popup-input--control {
   font-size: var(--ui-fs-sm, 13px);
   font-weight: 600;
   opacity: 1;
+  min-width: 0; /* opt out of the narrow-screen 8vmin button floor */
+  min-height: 0;
   white-space: nowrap;
   cursor: pointer;
   transition: background-color 0.15s ease, color 0.15s ease;
 }
-.popup-tab:hover:not(.is-active) {
+.dialog-tab:hover:not(.is-active) {
   background-color: var(--popup-control-hover-bg);
   color: var(--popup-text);
 }
-.popup-tab.is-active {
+.dialog-tab.is-active {
   background-color: var(--popup-accent);
   color: var(--popup-bg);
 }
-.popup-tab__count {
+.dialog-tab__count {
   padding: 0 6px;
   border-radius: 999px;
   background-color: var(--popup-control-active-bg);
   font-size: var(--ui-fs-xs, 12px);
 }
-.popup-tab.is-active .popup-tab__count {
+.dialog-tab.is-active .dialog-tab__count {
   background-color: rgba(0, 0, 0, 0.2);
   color: inherit;
 }
-.popup-tab__dot {
+.dialog-tab__dot {
   width: 7px;
   height: 7px;
   border-radius: 50%;
   background-color: var(--popup-accent);
 }
-.popup-tab.is-active .popup-tab__dot {
+.dialog-tab.is-active .dialog-tab__dot {
   background-color: var(--popup-bg);
 }
 /* MenuButton: label + chevron. */

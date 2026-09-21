@@ -120,19 +120,19 @@ function Scripts() {
                 hidden
             />
 
-            <div className="popup-tabs plugin-manager__tabs">
+            <div className="dialog-tabs plugin-manager__tabs">
                 <button
                     type="button"
-                    className={`popup-tab plugin-tab${tab === "installed" ? " is-active" : ""}`}
+                    className={`dialog-tab plugin-tab${tab === "installed" ? " is-active" : ""}`}
                     onClick={() => setTab("installed")}
                 >
                     Zainstalowane
-                    {installed > 0 && <span className="popup-tab__count">{installed}</span>}
-                    {updates > 0 && <span className="popup-tab__dot" title={`${updates} aktualizacji`} />}
+                    {installed > 0 && <span className="dialog-tab__count">{installed}</span>}
+                    {updates > 0 && <span className="dialog-tab__dot" title={`${updates} aktualizacji`} />}
                 </button>
                 <button
                     type="button"
-                    className={`popup-tab plugin-tab${tab === "catalog" ? " is-active" : ""}`}
+                    className={`dialog-tab plugin-tab${tab === "catalog" ? " is-active" : ""}`}
                     onClick={() => setTab("catalog")}
                 >
                     <Store size={14} />
