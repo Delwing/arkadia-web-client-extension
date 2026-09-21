@@ -409,7 +409,7 @@
   background-color: var(--popup-input-bg);
   color: var(--popup-input-text);
   font-family: inherit;
-  font-size: var(--ui-fs, 13px);
+  font-size: var(--ui-input-fs, 14px);
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 textarea.popup-input.popup-input--control {
@@ -437,7 +437,7 @@ select.popup-input.popup-input--control {
 }
 .popup-input.popup-input--mono {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 12.5px;
+  font-size: var(--ui-input-mono-fs, 13.5px);
 }
 /* Input with fixed text on its sides (^ … $). */
 .popup-input-group {
@@ -501,14 +501,15 @@ select.popup-input.popup-input--control {
 .popup-check {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   color: var(--popup-text);
   font-size: var(--ui-fs, 13px);
   cursor: pointer;
 }
 .popup-check > input {
-  width: 14px;
-  height: 14px;
+  flex-shrink: 0;
+  width: var(--ui-check, 16px);
+  height: var(--ui-check, 16px);
   margin: 0;
   accent-color: var(--popup-accent);
   cursor: pointer;
@@ -794,8 +795,8 @@ select.popup-input.popup-input--control {
 .popup-table th.collect-overrides__flag { text-align: center; }
 .collect-overrides__remove { width: 60px; }
 .collect-overrides__check {
-  width: 14px;
-  height: 14px;
+  width: var(--ui-check, 16px);
+  height: var(--ui-check, 16px);
   margin: 0;
   accent-color: var(--popup-accent);
   cursor: pointer;

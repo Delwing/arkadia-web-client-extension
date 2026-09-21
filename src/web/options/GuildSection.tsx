@@ -15,12 +15,10 @@ interface Props {
     onAllyChange: (guild: string, checked: boolean) => void;
     onColorChange: (guild: string, color?: string) => void;
     onChangeAll: (checked: boolean) => void;
-    onChangeAllEnemy: (checked: boolean) => void;
 }
 
-export default function GuildSection({selected, enemySelected, allySelected, colors = {}, defaultColors, onChange, onEnemyChange, onAllyChange, onColorChange, onChangeAll, onChangeAllEnemy}: Props) {
+export default function GuildSection({selected, enemySelected, allySelected, colors = {}, defaultColors, onChange, onEnemyChange, onAllyChange, onColorChange, onChangeAll}: Props) {
     const allSelected = selected.length === guilds.length;
-    const allEnemySelected = enemySelected.length === guilds.length;
     return (
         <section className="character-settings-section character-settings-section--full">
             <h5 className="character-settings-section-title">Gildie</h5>
@@ -37,15 +35,7 @@ export default function GuildSection({selected, enemySelected, allySelected, col
                             onChange={ev => onChangeAll(ev.target.checked)}
                         />
                     </th>
-                    <th>
-                        <Check
-                            id="enemy-guild-all"
-                            label="Wróg"
-                            title="Wszystkie gildie jako wrogowie"
-                            checked={allEnemySelected}
-                            onChange={ev => onChangeAllEnemy(ev.target.checked)}
-                        />
-                    </th>
+                    <th>Wróg</th>
                     <th>Sojusz</th>
                     <th>Kolor</th>
                 </tr>

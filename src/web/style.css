@@ -118,12 +118,17 @@
      which follows --output-font-*. */
   --font-ui: "Barlow", system-ui, -apple-system, "Segoe UI", sans-serif;
   --bs-body-font-family: var(--font-ui);
-  --ui-fs-xs: 11px;
-  --ui-fs-sm: 12px;
-  --ui-fs: 13px;
-  --ui-fs-title: 14px;
-  --ui-ctrl-sm: 24px;
-  --ui-ctrl: 28px;
+  --ui-fs-xs: 12px;
+  --ui-fs-sm: 13px;
+  --ui-fs: 14px;
+  --ui-fs-title: 15px;
+  /* Text typed into inputs; the touch tier raises it to 16px, below which
+     iOS Safari zooms the page on focus. */
+  --ui-input-fs: 14px;
+  --ui-input-mono-fs: 13.5px;
+  --ui-ctrl-sm: 28px;
+  --ui-ctrl: 32px;
+  --ui-check: 16px;
   --ui-header-h: 28px;
   --ui-radius-sm: 4px;
   --ui-radius: 6px;
@@ -195,6 +200,20 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Touch screens: finger-sized controls and 16px input text (no iOS focus
+   zoom). Keyed on the pointer, not the width, so a landscape tablet gets it
+   too and a narrow desktop window keeps the compact scale. */
+@media (pointer: coarse) {
+  :root {
+    --ui-fs: 15px;
+    --ui-input-fs: 16px;
+    --ui-input-mono-fs: 16px;
+    --ui-ctrl-sm: 34px;
+    --ui-ctrl: 40px;
+    --ui-check: 20px;
+  }
 }
 
 /* ===== COLOR THEMES (loaded from separate files via main.ts) ===== */
@@ -463,7 +482,7 @@ body {
   height: var(--ui-ctrl, 28px);
   padding: 0 8px;
   border-radius: var(--ui-radius, 6px);
-  font-size: var(--ui-fs, 13px);
+  font-size: var(--ui-input-fs, 14px);
   line-height: calc(var(--ui-ctrl, 28px) - 2px);
 }
 .modal .form-select {
@@ -482,7 +501,7 @@ body {
   height: var(--ui-ctrl-sm, 24px);
   padding-left: 6px;
   border-radius: var(--ui-radius-sm, 4px);
-  font-size: var(--ui-fs-sm, 12px);
+  font-size: var(--ui-input-fs, 14px);
   line-height: calc(var(--ui-ctrl-sm, 24px) - 2px);
 }
 .modal .form-select-sm {
@@ -509,8 +528,8 @@ body {
   font-size: var(--ui-fs-xs, 11px);
 }
 .modal .form-check-input {
-  width: 14px;
-  height: 14px;
+  width: var(--ui-check, 16px);
+  height: var(--ui-check, 16px);
   margin-top: 0.2em;
 }
 .modal .input-group-text {
@@ -3149,7 +3168,7 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
 .settings-checks {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 /* Options shown only while their parent option is on. */
 .settings-subsection {
@@ -3234,11 +3253,18 @@ p.popup-field__hint {
 }
 .popup-table.guilds-table td,
 .popup-table.guilds-table th {
-  padding: 3px 20px 3px 8px;
+  padding: 6px 24px 6px 8px;
 }
 .guilds-table .popup-color {
-  width: 32px;
-  height: 20px;
+  width: 36px;
+  height: 24px;
+}
+@media (max-width: 600px) {
+  .popup-table.guilds-table td,
+  .popup-table.guilds-table th {
+    padding-right: 6px;
+    padding-left: 4px;
+  }
 }
 .guilds-table th.guilds-table__name {
   border-bottom-color: var(--popup-border-subtle);
