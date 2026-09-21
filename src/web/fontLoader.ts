@@ -60,3 +60,27 @@ export function ensureFontLoaded(selection: UiFontSelection, customHref?: string
     });
     document.head.appendChild(link);
 }
+
+/** CSS font-family stack for a font selection, or undefined for the system default. */
+export function resolveOutputFontFamily(selection: UiFontSelection, customFontFamily: string): string | undefined {
+    switch (selection) {
+    case 'fira-code':
+        return '"Fira Code", monospace';
+    case 'jetbrains-mono':
+        return '"JetBrains Mono", monospace';
+    case 'cascadia-mono':
+        return '"Cascadia Mono", monospace';
+    case 'custom': {
+        const trimmed = customFontFamily.trim();
+        if (!trimmed) {
+            return undefined;
+        }
+        const normalized = /['",]/.test(trimmed)
+            ? trimmed
+            : `"${trimmed}"`;
+        return `${normalized}, monospace`;
+    }
+    default:
+        return undefined;
+    }
+}

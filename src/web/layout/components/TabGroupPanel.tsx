@@ -2,7 +2,7 @@ import { useLayoutEffect, useRef } from 'react';
 import type { DockSide, DragState, WindowRecord } from '../types';
 import type { WindowManager } from '../WindowManager';
 import { startUndockableDrag } from '../utils/dragHandlers';
-import { usePanelChrome } from './PanelHeader';
+import { PanelSettingsButton, usePanelChrome } from './PanelHeader';
 
 interface TabGroupPanelProps {
   side: DockSide;
@@ -122,6 +122,7 @@ function ActiveTabActions({ panel }: { panel: WindowRecord }) {
   const chrome = usePanelChrome(panel);
   if (
     !chrome.headerActions &&
+    !chrome.settingsWindowId &&
     !chrome.onReset &&
     !chrome.onLock &&
     !chrome.onPin &&
@@ -134,6 +135,7 @@ function ActiveTabActions({ panel }: { panel: WindowRecord }) {
       className="tab-group-active-actions managed-panel__header-actions"
       onPointerDown={e => e.stopPropagation()}
     >
+      <PanelSettingsButton chrome={chrome} small />
       {chrome.onPin && (
         <button
           type="button"

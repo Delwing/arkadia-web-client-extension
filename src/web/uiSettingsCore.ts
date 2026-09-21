@@ -1,4 +1,4 @@
-import {ensureFontLoaded, isUiFontSelection, UiFontSelection} from "./fontLoader";
+import {ensureFontLoaded, isUiFontSelection, resolveOutputFontFamily} from "./fontLoader";
 import type { SoundCategory } from '@shared/events/clientEvents.ts';
 import type { SoundCategories } from './defaultUiSettings';
 import {
@@ -203,29 +203,6 @@ export async function guessFontFamilyFromStylesheet(href: string): Promise<strin
     }
 }
 
-export function resolveOutputFontFamily(selection: UiFontSelection, customFontFamily: string): string | undefined {
-    switch (selection) {
-    case 'fira-code':
-        return '"Fira Code", monospace';
-    case 'jetbrains-mono':
-        return '"JetBrains Mono", monospace';
-    case 'cascadia-mono':
-        return '"Cascadia Mono", monospace';
-    case 'custom': {
-        const trimmed = customFontFamily.trim();
-        if (!trimmed) {
-            return undefined;
-        }
-        const normalized = /['",]/.test(trimmed)
-            ? trimmed
-            : `"${trimmed}"`;
-        return `${normalized}, monospace`;
-    }
-    default:
-        return undefined;
-    }
-}
-
 /** Ids that are also real DOM ids of stock chips, and safe inside a selector. */
 const STOCK_CHIP_ID = /^[A-Za-z0-9_-]+$/;
 
@@ -284,6 +261,9 @@ export function apply(settings: UiSettings) {
     if (document.body) {
         document.body.style.setProperty('--output-font-family', resolvedFontFamily || 'monospace');
         document.body.style.setProperty('--output-font-size', settings.contentFontSize + 'rem');
+        // Kondycje's own default size — its window settings cog shows it as
+        // the value the window follows until overridden.
+        document.body.style.setProperty('--objects-font-size', settings.objectsFontSize + 'rem');
     }
     const content = document.getElementById('main_text_output_msg_wrapper');
     if (content) {
@@ -318,12 +298,14 @@ export function apply(settings: UiSettings) {
     applyFooterComponents(settings.footerComponents);
     const objects = document.getElementById('objects-list');
     if (objects) {
-        if (resolvedFontFamily) {
-            objects.style.fontFamily = resolvedFontFamily;
-        } else {
-            objects.style.removeProperty('font-family');
-        }
-        objects.style.fontSize = settings.objectsFontSize + 'rem';
+        // --window-font-* is set by the Kondycje window's settings cog when the
+        // user overrides the font for that window alone (windowSettings.ts).
+        // With no fallback, an unset --window-font-family makes the declaration
+        // invalid and the font inherits, as a removed property would.
+        objects.style.fontFamily = resolvedFontFamily
+            ? `var(--window-font-family, ${resolvedFontFamily})`
+            : 'var(--window-font-family)';
+        objects.style.fontSize = `var(--window-font-size, ${settings.objectsFontSize}rem)`;
         objects.style.backgroundColor = hexAlphaToRgba(settings.objectListBackgroundColor, settings.objectListBackgroundAlpha);
     }
     const iframeContainer = document.getElementById('iframe-container') as HTMLElement | null;

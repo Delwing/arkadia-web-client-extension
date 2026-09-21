@@ -576,6 +576,52 @@ export function getPopupPinnedState(popupId: string): boolean {
   }
 }
 
+// ─── Setting change listeners ─────────────────────────────────────────────
+
+/**
+ * Same-page change notification for popup and built-in panel settings. Two
+ * readers of one setting (a window's own content and its settings cog) must
+ * see each other's writes at once; `layoutManagerStateChanged` only covers a
+ * wholesale layout replacement, not a single key.
+ */
+type SettingScope = 'popup' | 'builtIn';
+type SettingListener = (value: unknown) => void;
+
+const settingListeners = new Map<string, Set<SettingListener>>();
+
+function settingListenerKey(scope: SettingScope, id: string, key: string): string {
+  return `${scope}\u0000${id}\u0000${key}`;
+}
+
+export function subscribeToPanelSetting(
+  scope: SettingScope,
+  id: string,
+  key: string,
+  listener: SettingListener,
+): () => void {
+  const k = settingListenerKey(scope, id, key);
+  let set = settingListeners.get(k);
+  if (!set) {
+    set = new Set();
+    settingListeners.set(k, set);
+  }
+  set.add(listener);
+  return () => {
+    set.delete(listener);
+    if (set.size === 0) settingListeners.delete(k);
+  };
+}
+
+function notifyPanelSetting(scope: SettingScope, id: string, key: string, value: unknown): void {
+  settingListeners.get(settingListenerKey(scope, id, key))?.forEach(listener => {
+    try {
+      listener(value);
+    } catch (e) {
+      console.error('Panel setting listener error:', e);
+    }
+  });
+}
+
 export function getPopupSetting<T>(popupId: string, key: string, defaultValue: T): T {
   try {
     const settings = getCachedLayoutState().popupPanels[popupId]?.settings;
@@ -604,6 +650,7 @@ export function setPopupSetting<T>(popupId: string, key: string, value: T): void
   } catch (e) {
     console.error('Failed to save popup setting:', e);
   }
+  notifyPanelSetting('popup', popupId, key, value);
 }
 
 export function savePopupFloatingState(
@@ -720,6 +767,7 @@ export function setBuiltInPanelSetting<T>(
   } catch (e) {
     console.error('Failed to save built-in panel setting:', e);
   }
+  notifyPanelSetting('builtIn', panelId, key, value);
 }
 
 // Re-exports for compat

@@ -9,6 +9,7 @@ import {
 } from '../popupRegistry';
 import { windowManager } from '../WindowManager';
 import { clearClosedPopupState } from '../utils/layoutStorage';
+import type { WindowSettingField } from '../windowSettings';
 
 interface UseDockablePopupOptions {
   popupId: string;
@@ -27,6 +28,8 @@ interface UseDockablePopupOptions {
   initialHeight?: number;
   renderContent: () => ReactNode;
   headerActions?: ReactNode;
+  /** The window's own fields in its settings cog. Pass a stable (module-level) array. */
+  settingsFields?: WindowSettingField[];
   /** Class applied to the outer shell — used for popup-specific styling
    *  hooks like ".contracts-window". Distinct from bodyClassName which
    *  styles only the inner body. */
@@ -66,6 +69,7 @@ export function useDockablePopup({
   initialHeight,
   renderContent,
   headerActions,
+  settingsFields,
   panelClassName,
   bodyClassName,
   resetCounter = 0,
@@ -84,6 +88,7 @@ export function useDockablePopup({
   // Refs to keep registry callbacks current without re-registering.
   const renderContentRef = useRef(renderContent);
   const headerActionsRef = useRef(headerActions);
+  const settingsFieldsRef = useRef(settingsFields);
   const onCloseRef = useRef(onClose);
   const onPinnedChangeRef = useRef(onPinnedChange);
   const onLockedChangeRef = useRef(onLockedChange);
@@ -100,6 +105,7 @@ export function useDockablePopup({
 
   renderContentRef.current = renderContent;
   headerActionsRef.current = headerActions;
+  settingsFieldsRef.current = settingsFields;
   onCloseRef.current = onClose;
   onPinnedChangeRef.current = onPinnedChange;
   onLockedChangeRef.current = onLockedChange;
@@ -140,6 +146,7 @@ export function useDockablePopup({
       setIsLocked: (locked: boolean) => onLockedChangeRef.current?.(locked),
       onReset: () => onResetRef.current?.(),
       headerActions: headerActionsRef.current,
+      settingsFields: settingsFieldsRef.current,
       panelClassName,
     });
 
@@ -196,6 +203,11 @@ export function useDockablePopup({
     if (!isOpen) return;
     updatePopup(popupId, { headerActions });
   }, [isOpen, popupId, headerActions]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    updatePopup(popupId, { settingsFields });
+  }, [isOpen, popupId, settingsFields]);
 
   useEffect(() => {
     if (!isOpen) return;

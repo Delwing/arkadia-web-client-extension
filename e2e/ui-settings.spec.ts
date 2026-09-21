@@ -128,7 +128,9 @@ test.describe('UI settings', () => {
             return {
                 contentFontSize: getComputedStyle(content).fontSize,
                 objectsFontSize: getComputedStyle(objects).fontSize,
-                objectsFontFamily: objects.style.fontFamily,
+                // Computed, not inline: the inline value routes through
+                // var(--window-font-family, …) so a per-window override can win.
+                objectsFontFamily: getComputedStyle(objects).fontFamily,
                 contentBackground: getComputedStyle(content).backgroundColor,
                 splitBackground: getComputedStyle(splitBottom).backgroundColor,
                 charStateFontSize: getComputedStyle(charState).fontSize,

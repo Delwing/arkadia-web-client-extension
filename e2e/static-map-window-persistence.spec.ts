@@ -69,7 +69,9 @@ async function dockStaticMap(page: Page): Promise<void> {
 
 /** Drag the docked static map titlebar back out into the log area. */
 async function undockStaticMap(page: Page): Promise<void> {
-    const title = page.locator(`${DOCKED_MAP} .docked-panel__header`);
+    // Grab the title, not the header's centre: in the narrow right dock the
+    // header buttons reach past the midpoint, and they swallow pointerdown.
+    const title = page.locator(`${DOCKED_MAP} .docked-panel__title`);
     await title.hover();
     const from = (await title.boundingBox())!;
     await page.mouse.down();

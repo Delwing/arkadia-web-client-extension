@@ -247,6 +247,133 @@
   font-weight: 600;
 }
 
+/* Floating panel anchored to a button (window settings cog; header menus
+   next). position: fixed so a small docked window can't clip it; the opener
+   sets top/left. */
+.popup-popover {
+  position: fixed;
+  z-index: 10500;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.6rem 0.75rem 0.75rem;
+  max-height: min(70vh, 30rem);
+  overflow-y: auto;
+  background-color: var(--popup-bg);
+  color: var(--popup-text);
+  border: 1px solid var(--popup-border);
+  border-radius: 0.5rem;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  font-size: 0.75rem;
+  line-height: 1.4;
+  text-align: left;
+  cursor: default;
+}
+
+/* On/off switch. Put .is-on on it (or on an ancestor toggle row). */
+.popup-switch {
+  position: relative;
+  flex: 0 0 1.75rem;
+  height: 1rem;
+  box-sizing: border-box;
+  border-radius: 999px;
+  border: 1px solid var(--popup-border-strong);
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+.popup-switch::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: 999px;
+  background-color: var(--popup-text-dim);
+  transition: left 0.15s ease, background-color 0.15s ease;
+}
+.is-on > .popup-switch,
+.popup-switch.is-on {
+  background-color: var(--popup-accent);
+  border-color: var(--popup-accent);
+}
+.is-on > .popup-switch::after,
+.popup-switch.is-on::after {
+  left: calc(100% - 0.625rem - 2px);
+  background-color: var(--popup-bg);
+}
+
+/* ── window settings (the cog in a dockable window's header) ──────────────── */
+.window-settings-anchor {
+  display: inline-flex;
+}
+.window-settings__header {
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.window-settings__section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--popup-border-subtle);
+}
+.window-settings__section-title {
+  margin: 0;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--popup-text-dim);
+}
+.window-settings__row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.window-settings__label {
+  color: var(--popup-text-subtle);
+}
+.window-settings__field {
+  width: 100%;
+  font-size: 0.75rem;
+}
+.window-settings__size {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+.window-settings__step {
+  flex: 0 0 1.75rem;
+  height: 1.625rem;
+  font-size: 0.875rem;
+}
+.window-settings__size-value {
+  flex: 1;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.window-settings__size-value--inherit {
+  color: var(--popup-text-dim);
+}
+.window-settings__reset:not(:disabled) {
+  color: var(--popup-accent);
+}
+.window-settings__toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+  min-height: 1.625rem;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--popup-text);
+  font: inherit;
+  text-align: left;
+  opacity: 1;
+  cursor: pointer;
+}
+
 /* ── skroty (keybinding shortcuts) ─────────────────────────────────────────
    Layer-2 pilot: list/item/row/toolbar/button/empty now come from the shared
    primitives above (popup-list, popup-item, popup-row, popup-toolbar,
@@ -6929,6 +7056,16 @@
 }
 
 .panel-button--popout:hover {
+  opacity: 0.9;
+  background-color: var(--popup-control-hover-bg);
+}
+
+.panel-button--settings {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%23888' d='M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492zM5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0z'/%3E%3Cpath fill='%23888' d='M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52l-.094-.319zm-2.633.283c.246-.835 1.428-.835 1.674 0l.094.319a1.873 1.873 0 0 0 2.693 1.115l.291-.16c.764-.415 1.6.42 1.184 1.185l-.159.292a1.873 1.873 0 0 0 1.116 2.692l.318.094c.835.246.835 1.428 0 1.674l-.319.094a1.873 1.873 0 0 0-1.115 2.693l.16.291c.415.764-.42 1.6-1.185 1.184l-.291-.159a1.873 1.873 0 0 0-2.693 1.116l-.094.318c-.246.835-1.428.835-1.674 0l-.094-.319a1.873 1.873 0 0 0-2.692-1.115l-.292.16c-.764.415-1.6-.42-1.184-1.185l.159-.291A1.873 1.873 0 0 0 1.945 8.93l-.319-.094c-.835-.246-.835-1.428 0-1.674l.319-.094A1.873 1.873 0 0 0 3.06 4.377l-.16-.292c-.415-.764.42-1.6 1.185-1.184l.292.159a1.873 1.873 0 0 0 2.692-1.115l.094-.319z'/%3E%3C/svg%3E");
+}
+
+.panel-button--settings:hover,
+.panel-button--settings.is-active {
   opacity: 0.9;
   background-color: var(--popup-control-hover-bg);
 }

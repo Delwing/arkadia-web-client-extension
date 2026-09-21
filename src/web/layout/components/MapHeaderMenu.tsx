@@ -22,12 +22,14 @@ export function MapHeaderMenu({ className = '' }: MapHeaderMenuProps) {
   const [currentLevel, setCurrentLevel] = useState<number | null>(null);
   const [viewedAreaId, setViewedAreaId] = useState<number | null>(null);
   const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties | null>(null);
-  const [labelVisible, setLabelVisible] = useBuiltInPanelSetting('map', 'labelVisible', true);
-  const [alwaysShowNote, setAlwaysShowNote] = useBuiltInPanelSetting('map', 'alwaysShowNote', false);
-  const [showGrid, setShowGrid] = useBuiltInPanelSetting('map', 'showGrid', false);
-  const [showAreaExitLabels, setShowAreaExitLabels] = useBuiltInPanelSetting('map', 'showAreaExitLabels', true);
-  const [showTransportStops, setShowTransportStops] = useBuiltInPanelSetting('map', 'showTransportStops', false);
-  const [showCarriageBlocks, setShowCarriageBlocks] = useBuiltInPanelSetting('map', 'showCarriageBlocks', false);
+  // Toggled from the map's settings cog (MAP_SETTINGS_FIELDS); read here to
+  // push each change to the map renderer.
+  const [labelVisible] = useBuiltInPanelSetting('map', 'labelVisible', true);
+  const [alwaysShowNote] = useBuiltInPanelSetting('map', 'alwaysShowNote', false);
+  const [showGrid] = useBuiltInPanelSetting('map', 'showGrid', false);
+  const [showAreaExitLabels] = useBuiltInPanelSetting('map', 'showAreaExitLabels', true);
+  const [showTransportStops] = useBuiltInPanelSetting('map', 'showTransportStops', false);
+  const [showCarriageBlocks] = useBuiltInPanelSetting('map', 'showCarriageBlocks', false);
   const [hintsEnabled, setHintsEnabled] = useState(() =>
     getPopupSetting('popup:knowledgeDetails', 'showHints', false)
   );
@@ -280,36 +282,6 @@ export function MapHeaderMenu({ className = '' }: MapHeaderMenuProps) {
     closeMenu();
   }, [closeMenu]);
 
-  const handleToggleLabel = useCallback(() => {
-    setLabelVisible((prev) => !prev);
-    closeMenu();
-  }, [setLabelVisible, closeMenu]);
-
-  const handleToggleAlwaysShowNote = useCallback(() => {
-    setAlwaysShowNote((prev) => !prev);
-    closeMenu();
-  }, [setAlwaysShowNote, closeMenu]);
-
-  const handleToggleGrid = useCallback(() => {
-    setShowGrid((prev) => !prev);
-    closeMenu();
-  }, [setShowGrid, closeMenu]);
-
-  const handleToggleAreaExitLabels = useCallback(() => {
-    setShowAreaExitLabels((prev) => !prev);
-    closeMenu();
-  }, [setShowAreaExitLabels, closeMenu]);
-
-  const handleToggleTransportStops = useCallback(() => {
-    setShowTransportStops((prev) => !prev);
-    closeMenu();
-  }, [setShowTransportStops, closeMenu]);
-
-  const handleToggleCarriageBlocks = useCallback(() => {
-    setShowCarriageBlocks((prev) => !prev);
-    closeMenu();
-  }, [setShowCarriageBlocks, closeMenu]);
-
   const handleToggleShowCompleted = useCallback(() => {
     const newShowCompleted = !showCompleted;
     setShowCompleted(newShowCompleted);
@@ -485,54 +457,6 @@ export function MapHeaderMenu({ className = '' }: MapHeaderMenuProps) {
                 onClick={handleOpenTripPlanner}
               >
                 Planer trasy
-              </button>
-              <button
-                type="button"
-                className="map-header-menu__item map-header-menu__item--checkbox"
-                onClick={handleToggleLabel}
-              >
-                <span className={`map-header-menu__checkbox${!labelVisible ? ' map-header-menu__checkbox--checked' : ''}`} />
-                Etykieta w naglowku
-              </button>
-              <button
-                type="button"
-                className="map-header-menu__item map-header-menu__item--checkbox"
-                onClick={handleToggleAlwaysShowNote}
-              >
-                <span className={`map-header-menu__checkbox${alwaysShowNote ? ' map-header-menu__checkbox--checked' : ''}`} />
-                Notatka zawsze widoczna
-              </button>
-              <button
-                type="button"
-                className="map-header-menu__item map-header-menu__item--checkbox"
-                onClick={handleToggleGrid}
-              >
-                <span className={`map-header-menu__checkbox${showGrid ? ' map-header-menu__checkbox--checked' : ''}`} />
-                Siatka
-              </button>
-              <button
-                type="button"
-                className="map-header-menu__item map-header-menu__item--checkbox"
-                onClick={handleToggleAreaExitLabels}
-              >
-                <span className={`map-header-menu__checkbox${showAreaExitLabels ? ' map-header-menu__checkbox--checked' : ''}`} />
-                Etykiety wyjsc obszaru
-              </button>
-              <button
-                type="button"
-                className="map-header-menu__item map-header-menu__item--checkbox"
-                onClick={handleToggleTransportStops}
-              >
-                <span className={`map-header-menu__checkbox${showTransportStops ? ' map-header-menu__checkbox--checked' : ''}`} />
-                Przystanki transportu
-              </button>
-              <button
-                type="button"
-                className="map-header-menu__item map-header-menu__item--checkbox"
-                onClick={handleToggleCarriageBlocks}
-              >
-                <span className={`map-header-menu__checkbox${showCarriageBlocks ? ' map-header-menu__checkbox--checked' : ''}`} />
-                Nieprzejezdne dla wozu
               </button>
               {hintsEnabled && (
                 <button

@@ -3,8 +3,12 @@ import { PANEL_CONFIGS, WindowRecord } from '../types';
 import { getObjectListChrome } from '../builtInChrome';
 import { getPopup, RegisteredPopup, subscribeToRegistry } from '../popupRegistry';
 import { useLayoutManager } from '../hooks/useLayoutManager';
+import { useWindowAppearance } from '../hooks/useWindowAppearance';
+import type { WindowSettingField } from '../windowSettings';
+import { MAP_SETTINGS_FIELDS } from '../mapSettingsFields';
 import { MapHeaderMenu } from './MapHeaderMenu';
 import { ObjectListHeaderActions } from './ObjectListHeaderActions';
+import { WindowSettingsMenu } from './WindowSettingsMenu';
 
 /** Combined chrome state for a window — built from the popupRegistry, the
  *  built-in panel state, and the window record itself. */
@@ -23,6 +27,36 @@ export interface PanelChrome {
   onReset?: () => void;
   /** Detach the panel into a separate browser window. Popups only. */
   onPopout?: () => void;
+  /** Id the settings cog reads and writes; undefined when the window has no cog. */
+  settingsWindowId?: string;
+  /** The window's own fields in its settings cog. */
+  settingsFields?: WindowSettingField[];
+  /** Whether the cog offers the shared font fields (not for the map). */
+  settingsAppearance?: boolean;
+}
+
+/** Windows with a settings cog: every popup plus the built-in Kondycje and map. */
+function hasSettingsCog(windowId: string, isPopup: boolean): boolean {
+  return isPopup || windowId === 'objectList' || windowId === 'map';
+}
+
+/** The map is a canvas, not text — its cog has only its own fields. */
+function hasAppearanceSettings(windowId: string): boolean {
+  return windowId !== 'map';
+}
+
+/** The settings cog for a window, or null when it has none. */
+export function PanelSettingsButton({ chrome, small }: { chrome: PanelChrome; small?: boolean }) {
+  if (!chrome.settingsWindowId) return null;
+  return (
+    <WindowSettingsMenu
+      windowId={chrome.settingsWindowId}
+      title={chrome.title}
+      fields={chrome.settingsFields}
+      appearance={chrome.settingsAppearance}
+      small={small}
+    />
+  );
 }
 
 /** Subscribe to the popupRegistry for a single popup id. */
@@ -65,6 +99,10 @@ export function usePanelChrome(window: WindowRecord): PanelChrome {
 
   const closable = isPopup || config?.closable !== false;
 
+  const withSettings = hasSettingsCog(window.id, isPopup);
+  const withAppearance = withSettings && hasAppearanceSettings(window.id);
+  useWindowAppearance(window.id, withAppearance);
+
   const headerActions: ReactNode = isPopup
     ? popup.headerActions
     : window.id === 'map'
@@ -96,6 +134,9 @@ export function usePanelChrome(window: WindowRecord): PanelChrome {
       isPopup || isBuiltIn
         ? () => manager.setPoppedOut(window.id, true)
         : undefined,
+    settingsWindowId: withSettings ? window.id : undefined,
+    settingsFields: window.id === 'map' ? MAP_SETTINGS_FIELDS : popup?.settingsFields,
+    settingsAppearance: withAppearance,
   };
 }
 
@@ -134,6 +175,7 @@ export function PanelHeader({ chrome, variant, onPointerDown, onContextMenu }: P
     >
       <span className={titleClass}>{chrome.title}</span>
       {(chrome.headerActions ||
+        chrome.settingsWindowId ||
         chrome.onReset ||
         chrome.onLock ||
         chrome.onPin ||
@@ -141,6 +183,7 @@ export function PanelHeader({ chrome, variant, onPointerDown, onContextMenu }: P
         (chrome.closable && chrome.onClose)) && (
         <div className={actionsClass} onPointerDown={e => e.stopPropagation()}>
           {chrome.headerActions}
+          <PanelSettingsButton chrome={chrome} />
           {chrome.onReset && (
             <button
               type="button"
