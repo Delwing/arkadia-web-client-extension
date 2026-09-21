@@ -9,6 +9,7 @@
  */
 
 import { expect, test } from './support/fixtures';
+import { goToSettingsPage } from './support/settings';
 import type { Page } from '@playwright/test';
 import {
     ensureGameSocket,
@@ -18,7 +19,8 @@ import {
 
 const MENU_BUTTON = '#menu-button';
 const EXPORT_IMPORT_BUTTON = '#export-import-button';
-const EXPORT_IMPORT_MODAL = '#export-import-modal';
+// Sync / backup are the settings dialog's "Dane" pages now.
+const EXPORT_IMPORT_MODAL = '#settings-modal';
 
 /**
  * Helper to open the Firebase/sync modal tab
@@ -627,7 +629,7 @@ test.describe('Firebase Sync', () => {
             const modal = await openFirebaseTab(page);
 
             // Switch to Plik tab to see local export options (which mirror sync categories)
-            await modal.getByRole('button', { name: 'Plik' }).click();
+            await goToSettingsPage(page, 'data-backup');
 
             // Check some export options exist
             const triggerOption = modal.locator('[id*="export-option-triggers"]');

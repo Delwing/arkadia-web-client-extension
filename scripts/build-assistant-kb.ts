@@ -770,6 +770,9 @@ const SETTINGS_PANELS: PanelSpec[] = [
     { category: 'ui-mobile-buttons', files: ['src/web/uiSettings/sections/OtherSections.tsx'], sections: ['Wyświetlanie'] },
     { category: 'ui-radial', files: ['src/web/options/MobileRadialCommands.tsx'] },
     { category: 'ui-other', files: ['src/web/uiSettings/sections/OtherSections.tsx'], sections: ['Inne'] },
+    { category: 'data-sync', files: ['src/web/options/FirebaseTab.tsx'] },
+    { category: 'data-backup', files: ['src/web/options/LocalExportTab.tsx', 'src/web/options/GoogleDriveTab.tsx'] },
+    { category: 'data-devices', files: ['src/web/options/DeviceManagementTab.tsx'] },
 ];
 
 /** Read `type SettingsCategoryKey = "a" | "b"` so a new page breaks the build. */

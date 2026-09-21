@@ -55,7 +55,6 @@ import Aliases from "./options/Aliases.tsx"
 import Recordings from "./options/Recordings.tsx"
 import {CLOSE_SETTINGS_EVENT, SAVE_SETTINGS_EVENT, requestSettingsCategory} from "./settings/categories.ts";
 import {buttonsSettingsCategory} from "./settings/buttonsCategory.ts";
-import ExportImport from "./options/ExportImport.tsx"
 import CharacterManagement from "./options/CharacterManagementModal.tsx"
 import UserTriggers from "./options/UserTriggers.tsx"
 import Shortcuts from "./options/Shortcuts.tsx"
@@ -813,8 +812,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize Bootstrap modal
     const settingsModalElement = document.getElementById('settings-modal');
     const settingsModal = settingsModalElement ? new Modal(settingsModalElement) : null;
-    const exportImportModalElement = document.getElementById('export-import-modal');
-    const exportImportModal = exportImportModalElement ? new Modal(exportImportModalElement) : null;
     const characterManagementModalElement = document.getElementById('character-management-modal');
     const characterManagementModal = characterManagementModalElement ? new Modal(characterManagementModalElement) : null;
     const bindsModalElement = document.getElementById('binds-modal');
@@ -993,9 +990,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (settingsModal) {
             settingsModal.hide();
         }
-        if (exportImportModal) {
-            exportImportModal.hide();
-        }
         if (bindsModal) {
             bindsModal.hide();
         }
@@ -1019,10 +1013,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // Sync, backup and devices are the "Dane" pages of the settings dialog;
+    // the old "show-export-import" request opens it on Synchronizacja.
     window.addEventListener('show-export-import', () => {
-        if (exportImportModal) {
-            exportImportModal.show();
-        }
+        requestSettingsCategory('data-sync');
+        settingsModal?.show();
     });
 
     window.addEventListener('show-character-management', () => {
@@ -1032,16 +1027,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Header buttons in the settings modal
-    const settingsExportImportBtn = document.getElementById('settings-export-import-btn');
     const settingsCharactersBtn = document.getElementById('settings-characters-btn');
-
-    if (settingsExportImportBtn) {
-        settingsExportImportBtn.addEventListener('click', () => {
-            (document.activeElement as HTMLElement)?.blur?.();
-            settingsModal?.hide();
-            setTimeout(() => window.dispatchEvent(new Event('show-export-import')), 150);
-        });
-    }
 
     if (settingsCharactersBtn) {
         settingsCharactersBtn.addEventListener('click', () => {
@@ -1057,7 +1043,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    if (exportImportButton && exportImportModal) {
+    if (exportImportButton) {
         exportImportButton.addEventListener('click', () => {
             window.dispatchEvent(new Event('show-export-import'));
         });
@@ -1519,11 +1505,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.exitFullscreen().catch(err => console.error('Failed to exit fullscreen:', err));
             }
         });
-    }
-
-    const exportImportRoot = document.getElementById('export-import-root');
-    if (exportImportRoot) {
-        createRoot(exportImportRoot).render(createElement(ExportImport));
     }
 
     const characterManagementRoot = document.getElementById('character-management-root');

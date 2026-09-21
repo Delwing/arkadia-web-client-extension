@@ -189,6 +189,12 @@
   grid-column: 1 / -1;
 }
 
+/* "Dane" pages (sync, backup, devices) lay out their own content. */
+.settings-page__layout > .settings-data-page {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+
 @container settings-pages (min-width: 44rem) {
   .settings-page__layout {
     grid-template-columns: repeat(2, minmax(0, 1fr));

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { SHOW_SETTINGS_EVENT } from "@web/settings/categories.ts";
 import { Button } from "@web-ui/primitives/index.ts";
 import {
     buildExport,
@@ -371,8 +372,10 @@ function GoogleDriveTab({ selectedCharacters, exportOptions, onImportComplete }:
             }
         };
         window.addEventListener("show-export-import", handleShow);
+        window.addEventListener(SHOW_SETTINGS_EVENT, handleShow);
         return () => {
             window.removeEventListener("show-export-import", handleShow);
+            window.removeEventListener(SHOW_SETTINGS_EVENT, handleShow);
         };
     }, [refreshDriveFiles]);
 

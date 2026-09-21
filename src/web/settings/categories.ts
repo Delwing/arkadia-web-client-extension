@@ -4,14 +4,15 @@
  * Character settings and UI settings are stored separately (per-character
  * `settings` vs the global UI slices), so the sidebar keeps them in two groups
  * rather than mixing them by topic — the group a page sits in is where its
- * values are saved.
+ * values are saved. The third group, "Dane", holds sync, backup and import:
+ * they act at once and are not part of Save.
  *
  * `scripts/build-assistant-kb.ts` reads `SettingsCategoryKey` to check its own
  * panel map, and the assistant's "open that panel" action finds a page by its
  * label — so labels are unique across both groups.
  */
 
-export type SettingsGroup = "character" | "ui";
+export type SettingsGroup = "character" | "ui" | "data";
 
 export type SettingsCategoryKey =
     | "character-general"
@@ -28,7 +29,10 @@ export type SettingsCategoryKey =
     | "ui-footer"
     | "ui-map"
     | "ui-sound"
-    | "ui-other";
+    | "ui-other"
+    | "data-sync"
+    | "data-backup"
+    | "data-devices";
 
 export interface SettingsCategory {
     key: SettingsCategoryKey;
@@ -41,6 +45,7 @@ export interface SettingsCategory {
 export const SETTINGS_GROUP_LABELS: Record<SettingsGroup, string> = {
     character: "Postać",
     ui: "Interfejs",
+    data: "Dane",
 };
 
 export const SETTINGS_CATEGORIES: readonly SettingsCategory[] = [
@@ -59,11 +64,15 @@ export const SETTINGS_CATEGORIES: readonly SettingsCategory[] = [
     { key: "ui-map", group: "ui", label: "Mapa" },
     { key: "ui-sound", group: "ui", label: "Dźwięk i powiadomienia", keywords: "dzwieki beep powiadomienia push" },
     { key: "ui-other", group: "ui", label: "Inne", keywords: "telefon logi dysk zapis" },
+    { key: "data-sync", group: "data", label: "Synchronizacja", keywords: "firebase konto logowanie chmura eksport import" },
+    { key: "data-backup", group: "data", label: "Kopia zapasowa", keywords: "eksport import plik google drive backup" },
+    { key: "data-devices", group: "data", label: "Urządzenia", keywords: "urzadzenie grupa synchronizacji" },
 ];
 
 export const DEFAULT_SETTINGS_CATEGORY: Record<SettingsGroup, SettingsCategoryKey> = {
     character: "character-general",
     ui: "ui-appearance",
+    data: "data-sync",
 };
 
 export function settingsCategory(key: SettingsCategoryKey): SettingsCategory {

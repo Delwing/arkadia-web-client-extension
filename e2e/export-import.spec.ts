@@ -5,22 +5,26 @@ import {
     primeCharInfo,
     waitForCommandInput,
 } from './support/mocks';
+import {goToSettingsPage} from './support/settings';
 import * as fs from 'fs';
 
 const MENU_BUTTON = '#menu-button';
 const EXPORT_IMPORT_BUTTON = '#export-import-button';
-const EXPORT_IMPORT_MODAL = '#export-import-modal';
+// Export/import lives in the settings dialog ("Dane" pages) now.
+const EXPORT_IMPORT_MODAL = '#settings-modal';
+const LOCAL_FILE_INPUT = '#settings-modal .settings-page[data-settings-category="data-backup"] input[type="file"][accept="application/json"]';
 
 async function openExportImportModal(page: Page) {
     await page.click(MENU_BUTTON);
     await page.click(EXPORT_IMPORT_BUTTON);
     const modal = page.locator(EXPORT_IMPORT_MODAL);
     await expect(modal, 'should display export/import modal').toBeVisible();
-    // Switch to "Plik" tab (Firebase tab is now default)
-    await modal.getByRole('button', {name: 'Plik'}).click();
+    // The menu item opens on Synchronizacja; the file export is on Kopia zapasowa.
+    await goToSettingsPage(page, 'data-backup');
     // Wait for Local tab content to load
     await expect(modal.getByRole('button', {name: 'Eksportuj dane'})).toBeVisible();
-    return modal;
+    // Scope to the page: the dialog holds other pages' file inputs and notices.
+    return page.locator('#settings-modal .settings-page[data-settings-category="data-backup"]');
 }
 
 async function closeExportImportModal(page: Page) {
@@ -54,7 +58,7 @@ test.describe('Export/Import', () => {
             await ensureGameSocket(page);
 
             const modal = await openExportImportModal(page);
-            await expect(modal.locator('.modal-title')).toContainText('Eksport i import');
+            await expect(page.locator(EXPORT_IMPORT_MODAL).locator('.modal-title')).toContainText('Ustawienia');
             await closeExportImportModal(page);
         });
     });
@@ -340,7 +344,7 @@ test.describe('Export/Import', () => {
             };
 
             // Set file input
-            await page.setInputFiles(`${EXPORT_IMPORT_MODAL} input[type="file"]`, {
+            await page.setInputFiles(LOCAL_FILE_INPUT, {
                 name: 'test-backup.json',
                 mimeType: 'application/json',
                 buffer: Buffer.from(JSON.stringify(validPayload)),
@@ -395,7 +399,7 @@ test.describe('Export/Import', () => {
             const modal = await openExportImportModal(page);
 
             // Try to import invalid JSON
-            await page.setInputFiles(`${EXPORT_IMPORT_MODAL} input[type="file"]`, {
+            await page.setInputFiles(LOCAL_FILE_INPUT, {
                 name: 'invalid.json',
                 mimeType: 'application/json',
                 buffer: Buffer.from('not valid json'),
@@ -422,7 +426,7 @@ test.describe('Export/Import', () => {
                 indexedDB: {},
             };
 
-            await page.setInputFiles(`${EXPORT_IMPORT_MODAL} input[type="file"]`, {
+            await page.setInputFiles(LOCAL_FILE_INPUT, {
                 name: 'wrong-version.json',
                 mimeType: 'application/json',
                 buffer: Buffer.from(JSON.stringify(invalidPayload)),
@@ -446,7 +450,7 @@ test.describe('Export/Import', () => {
                 // Missing createdAt, localStorage, indexedDB
             };
 
-            await page.setInputFiles(`${EXPORT_IMPORT_MODAL} input[type="file"]`, {
+            await page.setInputFiles(LOCAL_FILE_INPUT, {
                 name: 'incomplete.json',
                 mimeType: 'application/json',
                 buffer: Buffer.from(JSON.stringify(incompletePayload)),
@@ -499,7 +503,7 @@ test.describe('Export/Import', () => {
             expect(triggersAfterClear, 'triggers should be cleared').toBeNull();
 
             // Re-import the exported file
-            await page.setInputFiles(`${EXPORT_IMPORT_MODAL} input[type="file"]`, {
+            await page.setInputFiles(LOCAL_FILE_INPUT, {
                 name: 'round-trip.json',
                 mimeType: 'application/json',
                 buffer: Buffer.from(exportedContent),

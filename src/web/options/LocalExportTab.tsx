@@ -1,4 +1,5 @@
 import { ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { SHOW_SETTINGS_EVENT } from "@web/settings/categories.ts";
 import { Button, Check } from "@web-ui/primitives/index.ts";
 import { characterStorage, globalStorage } from "@modules/core/storage";
 import {
@@ -95,8 +96,10 @@ function LocalExportTab({ onSelectionChange }: LocalExportTabProps) {
             refreshCharacters();
         };
         window.addEventListener("show-export-import", handleShow);
+        window.addEventListener(SHOW_SETTINGS_EVENT, handleShow);
         return () => {
             window.removeEventListener("show-export-import", handleShow);
+            window.removeEventListener(SHOW_SETTINGS_EVENT, handleShow);
         };
     }, [refreshCharacters]);
 

@@ -24,7 +24,10 @@ export type SettingsCategory =
     | 'ui-footer'
     | 'ui-map'
     | 'ui-sound'
-    | 'ui-other';
+    | 'ui-other'
+    | 'data-sync'
+    | 'data-backup'
+    | 'data-devices';
 
 /** Waits until a previous hide animation of the settings modal has finished. */
 export async function waitForSettingsModalClosed(page: Page) {

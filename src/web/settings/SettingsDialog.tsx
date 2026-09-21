@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import {
     Backpack,
+    CloudUpload,
+    HardDriveDownload,
+    MonitorSmartphone,
     ChartPie,
     Ellipsis,
     Map as MapIcon,
@@ -19,6 +22,7 @@ import {
 } from "lucide-react";
 import { useCharacterSettingsPages } from "@web/options/useCharacterSettingsPages.tsx";
 import { useUiSettingsPages, type UiSettingsPagesProps } from "@web/uiSettings/useUiSettingsPages.tsx";
+import { useDataPages } from "@web/options/useDataPages.tsx";
 import { OPEN_SETTINGS_EVENT, type OpenSettingsDetail } from "@web/assistant/openSettings.ts";
 import {
     CLOSE_SETTINGS_EVENT,
@@ -37,7 +41,7 @@ import { applySearch, clearSearch, highlightTerms, searchTerms, type PageSearchI
 import { pageSignature } from "./settingsDirty";
 import "./settingsDialog.css";
 
-const GROUPS: readonly SettingsGroup[] = ["character", "ui"];
+const GROUPS: readonly SettingsGroup[] = ["character", "ui", "data"];
 
 // Kept here rather than in categories.ts, which the assistant-KB build reads in Node.
 const CATEGORY_ICONS: Record<SettingsCategoryKey, LucideIcon> = {
@@ -56,6 +60,9 @@ const CATEGORY_ICONS: Record<SettingsCategoryKey, LucideIcon> = {
     "ui-map": MapIcon,
     "ui-sound": Volume2,
     "ui-other": Ellipsis,
+    "data-sync": CloudUpload,
+    "data-backup": HardDriveDownload,
+    "data-devices": MonitorSmartphone,
 };
 
 function NavIcon({ category }: { category: SettingsCategoryKey }) {
@@ -86,6 +93,7 @@ export interface SettingsDialogProps extends UiSettingsPagesProps {
 function SettingsDialog({ soundManager, onEnableNotifications, initialCategory }: SettingsDialogProps) {
     const character = useCharacterSettingsPages();
     const ui = useUiSettingsPages({ soundManager, onEnableNotifications });
+    const data = useDataPages();
     const latest = useRef({ character, ui });
     latest.current = { character, ui };
 
@@ -280,7 +288,9 @@ function SettingsDialog({ soundManager, onEnableNotifications, initialCategory }
         group === "character" && characterName ? `${SETTINGS_GROUP_LABELS.character}: ${characterName}` : SETTINGS_GROUP_LABELS[group];
     const scopeChip = (group: SettingsGroup) => group === "character"
         ? { text: characterName ? `tylko ${characterName}` : "brak postaci", title: "Zapisywane osobno dla każdej postaci" }
-        : { text: "wszystkie postacie", title: "Wspólne dla wszystkich postaci. Układ i rozmiary (mapa, stopka, przyciski, okna) zapisywane są osobno na każdym urządzeniu." };
+        : group === "data"
+            ? { text: "działa od razu", title: "Te strony nie czekają na Zapisz: synchronizacja, kopie i import działają od razu." }
+            : { text: "wszystkie postacie", title: "Wspólne dla wszystkich postaci. Układ i rozmiary (mapa, stopka, przyciski, okna) zapisywane są osobno na każdym urządzeniu." };
 
     return (
         <div className="settings-dialog-host" onKeyDown={onHostKeyDown}>
@@ -369,7 +379,10 @@ function SettingsDialog({ soundManager, onEnableNotifications, initialCategory }
                                     <div className="settings-page__layout">
                                         {c.group === "character"
                                             ? character.pages[c.key as keyof typeof character.pages]
-                                            : ui.pages[c.key as keyof typeof ui.pages]}
+                                            : c.group === "data"
+                                                // Acts at once, outside Save: never counts as unsaved.
+                                                ? <div className="settings-data-page" data-settings-ignore>{data.pages[c.key as keyof typeof data.pages]}</div>
+                                                : ui.pages[c.key as keyof typeof ui.pages]}
                                     </div>
                                 </fieldset>
                             </div>
