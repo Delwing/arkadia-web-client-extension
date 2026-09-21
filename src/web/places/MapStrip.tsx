@@ -49,7 +49,7 @@ export function MapStrip({ roomId, coverRef }: { roomId: number; coverRef?: RefO
             renderer.setLens(embedded.explorationLens);
         }
         renderer.centerOnResize = false;
-        renderer.setZoom(0.32);
+        renderer.setZoom(0.24);
         rendererRef.current = renderer;
         return () => {
             rendererRef.current = null;

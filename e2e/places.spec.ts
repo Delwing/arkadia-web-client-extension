@@ -181,7 +181,7 @@ test.describe('Miejsca (skróty i notatki lokacji)', () => {
 
         // Saved now, so it is a place and no longer offered from the map; #id finds rooms too.
         await expect(modal(page).locator('.places-row--map', { hasText: 'Kamienny Most' })).toHaveCount(0);
-        await search.fill('#1');
+        await search.fill('1');
         await expect(modal(page).locator('.places-row--map')).toHaveCount(1);
     });
 

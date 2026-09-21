@@ -438,7 +438,7 @@ export default function Places() {
                 <div className="places-list__tools">
                     <div className="places-list__search">
                         <InputGroup before={<Search size={14} strokeWidth={1.9} />}>
-                            <Input value={query} placeholder="Szukaj miejsca lub lokacji na mapie" onChange={e => setQuery(e.target.value)} />
+                            <Input value={query} placeholder="Szukaj: nazwa, kraina lub numer lokacji" onChange={e => setQuery(e.target.value)} />
                         </InputGroup>
                         <Button
                             variant="solid"
@@ -487,7 +487,7 @@ export default function Places() {
                     ))}
                     {rows.length === 0 && !draft && !query.trim() && (
                         <p className="places-empty">
-                            Nie masz jeszcze zapisanych miejsc. Kliknij „Tutaj”, żeby dodać skrót lub notatkę dla miejsca, w którym jesteś, wpisz nazwę lokacji albo jej numer, żeby znaleźć ją na mapie, lub wybierz lokację prawym przyciskiem na mapie.
+                            Nie masz jeszcze zapisanych miejsc. Kliknij „Tutaj”, żeby dodać skrót lub notatkę dla miejsca, w którym jesteś, wpisz w wyszukiwarce nazwę lokacji albo jej numer (np. 321), żeby znaleźć ją na mapie, lub wybierz lokację prawym przyciskiem na mapie.
                         </p>
                     )}
                     {query.trim() && visible.near.length + visible.other.length + mapMatches.length === 0 && (
