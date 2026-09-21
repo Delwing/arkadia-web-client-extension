@@ -280,7 +280,7 @@ function SettingsDialog({ soundManager, onEnableNotifications, initialCategory }
         group === "character" && characterName ? `${SETTINGS_GROUP_LABELS.character}: ${characterName}` : SETTINGS_GROUP_LABELS[group];
     const scopeChip = (group: SettingsGroup) => group === "character"
         ? { text: characterName ? `tylko ${characterName}` : "brak postaci", title: "Zapisywane osobno dla każdej postaci" }
-        : { text: "wszystkie postacie", title: "Wspólne dla wszystkich postaci" };
+        : { text: "wszystkie postacie", title: "Wspólne dla wszystkich postaci. Układ i rozmiary (mapa, stopka, przyciski, okna) zapisywane są osobno na każdym urządzeniu." };
 
     return (
         <div className="settings-dialog-host" onKeyDown={onHostKeyDown}>

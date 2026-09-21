@@ -48,7 +48,7 @@ export function OutputSection({ draft, update }: OutputSectionProps) {
     return (
         <SettingsSection title="Okno wyjścia i lista obiektów">
             <NumberField id="ui-output-bottom-padding" label="Dolny padding okna (px)" value={draft.outputBottomPadding} step={1} min={0} onChange={(n) => update({ outputBottomPadding: n })} />
-            <NumberField id="ui-output-max-elements" label="Maksymalna liczba linii w buforze" settingKey="outputMaxElements" value={draft.outputMaxElements} step={100} min={100} onChange={(n) => update({ outputMaxElements: n })} />
+            <NumberField id="ui-output-max-elements" label="Maksymalna liczba linii w buforze" value={draft.outputMaxElements} step={100} min={100} onChange={(n) => update({ outputMaxElements: n })} />
             <SelectField id="ui-team-numbering-mode" label="Numerowanie druzyny na liscie obiektow" value={draft.teamNumberingMode} onChange={(v) => update({ teamNumberingMode: v as UiSettings['teamNumberingMode'] })}>
                 <option value="letters">Litery (A, B, C...)</option>
                 <option value="numbers">Numery (1, 2, 3...)</option>

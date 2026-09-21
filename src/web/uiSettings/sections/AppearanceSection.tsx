@@ -4,7 +4,7 @@ import { guessFontFamilyFromStylesheet, guessFontFamilyFromUrl } from "../../uiS
 import { computeAccentHex, generateRandomColor } from "../../themes/randomTheme";
 import { defaultUiSettings } from "../../defaultUiSettings";
 import { Button, Field, Input } from "@web-ui/primitives/index.ts";
-import { CheckboxRow, ColorField, DeviceOnlyBadge, NumberField, SelectField, SettingsSection } from "../fields";
+import { CheckboxRow, ColorField, NumberField, SelectField, SettingsSection } from "../fields";
 
 interface AppearanceSectionProps {
     draft: UiSettings;
@@ -94,9 +94,9 @@ function AppearanceSection({ draft, update, commitCustomDark }: AppearanceSectio
                     </Field>
                 </div>
             )}
-            <NumberField id="ui-content-font" label="Rozmiar czcionki treści (rem)" settingKey="contentFontSize" value={draft.contentFontSize} step={0.1} onChange={(n) => update({ contentFontSize: n })} />
-            <NumberField id="ui-objects-font" label="Rozmiar czcionki listy obiektów (rem)" settingKey="objectsFontSize" value={draft.objectsFontSize} step={0.1} onChange={(n) => update({ objectsFontSize: n })} />
-            <Field label={<>Kolor tła listy obiektów<DeviceOnlyBadge settingKey="objectListBackgroundColor" /></>} htmlFor="ui-objectlist-bg-color">
+            <NumberField id="ui-content-font" label="Rozmiar czcionki treści (rem)" value={draft.contentFontSize} step={0.1} onChange={(n) => update({ contentFontSize: n })} />
+            <NumberField id="ui-objects-font" label="Rozmiar czcionki listy obiektów (rem)" value={draft.objectsFontSize} step={0.1} onChange={(n) => update({ objectsFontSize: n })} />
+            <Field label="Kolor tła listy obiektów" htmlFor="ui-objectlist-bg-color">
                 <div className="popup-inline ui-settings-color-alpha">
                     <input id="ui-objectlist-bg-color" type="color" className="popup-color" value={draft.objectListBackgroundColor} onChange={(e) => update({ objectListBackgroundColor: e.target.value })} />
                     <label htmlFor="ui-objectlist-bg-alpha" className="popup-field__hint">Przezroczystość</label>

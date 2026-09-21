@@ -2,7 +2,7 @@ import type { UiSettings } from "../../uiSettingsCore";
 import { defaultUiSettings } from "../../defaultUiSettings";
 import BarOrderSettings from "../../options/BarOrderSettings";
 import FooterComponentSettings from "../../options/FooterComponentSettings";
-import { CheckboxRow, DeviceOnlyBadge, SelectField, SettingsSection } from "../fields";
+import { CheckboxRow, SelectField, SettingsSection } from "../fields";
 
 interface FooterSectionsProps {
     draft: UiSettings;
@@ -13,7 +13,7 @@ function FooterSections({ draft, update }: FooterSectionsProps) {
     return (
         <>
             <SettingsSection title="Stan postaci">
-                <SelectField id="ui-footer-mode" settingKey="footerMode" label="Tryb stopki" value={String(draft.footerMode)} onChange={(v) => update({ footerMode: parseInt(v) || 0 })}>
+                <SelectField id="ui-footer-mode" label="Tryb stopki" value={String(draft.footerMode)} onChange={(v) => update({ footerMode: parseInt(v) || 0 })}>
                     <option value="0">Liczbowy</option>
                     <option value="1">Pasek</option>
                     <option value="2">Pasek jednolity</option>
@@ -21,7 +21,7 @@ function FooterSections({ draft, update }: FooterSectionsProps) {
                 </SelectField>
                 <CheckboxRow id="ui-emoji-labels" label="Etykiety emoji" checked={draft.emojiLabels} onChange={(v) => update({ emojiLabels: v })} />
                 <div className="popup-field">
-                    <span className="popup-field__label">Kolejnosc i widocznosc paskow<DeviceOnlyBadge settingKey="barOrder" /></span>
+                    <span className="popup-field__label">Kolejnosc i widocznosc paskow</span>
                     <div id="ui-bar-order-settings" className="settings-sort-block">
                         <BarOrderSettings
                             barOrder={draft.barOrder || defaultUiSettings.barOrder}
@@ -42,14 +42,14 @@ function FooterSections({ draft, update }: FooterSectionsProps) {
                 </p>
                 <CheckboxRow
                     id="ui-mobile-footer-compact"
-                    settingKey="mobileFooterCompact"
+                   
                     label="Kompaktowa stopka na telefonie"
                     checked={draft.mobileFooterCompact}
                     onChange={(v) => update({ mobileFooterCompact: v })}
                 />
                 <SelectField
                     id="ui-mobile-footer-expand"
-                    settingKey="mobileFooterExpand"
+                   
                     label="Rozwijanie stopki na telefonie"
                     value={draft.mobileFooterExpand}
                     disabled={!draft.mobileFooterCompact}
@@ -61,7 +61,7 @@ function FooterSections({ draft, update }: FooterSectionsProps) {
                 </SelectField>
             </SettingsSection>
 
-            <SettingsSection title="Elementy stopki" settingKey="footerComponents">
+            <SettingsSection title="Elementy stopki">
                 <div id="ui-footer-components-settings">
                     <FooterComponentSettings
                         components={draft.footerComponents}

@@ -162,20 +162,6 @@
   color: var(--popup-text-bright);
 }
 
-.settings-scope-badge {
-  display: inline-block;
-  margin-left: 0.5rem;
-  padding: 0 0.4rem;
-  border: 1px dashed var(--popup-border);
-  border-radius: 1rem;
-  font-size: 0.65rem;
-  font-weight: 500;
-  line-height: 1.5;
-  color: var(--popup-text-dim);
-  vertical-align: middle;
-  white-space: nowrap;
-}
-
 .settings-page__fieldset {
   min-width: 0;
   margin: 0;
