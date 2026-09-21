@@ -957,6 +957,15 @@ select.popup-input.popup-input--control {
   padding: 0.25rem 0;
   gap: 0;
 }
+/* MenuButton: label + chevron. */
+.popup-btn.popup-btn--control.popup-menu-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.popup-btn.popup-btn--control.popup-menu-button.is-active {
+  background-color: var(--popup-control-active-bg);
+}
 .popup-menu__item {
   display: flex;
   align-items: center;
