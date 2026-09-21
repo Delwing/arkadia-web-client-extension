@@ -1,5 +1,5 @@
 import {ChangeEvent, useEffect, useState} from "react";
-import {Form} from "react-bootstrap";
+import {Check} from "@web-ui/primitives/index.ts";
 
 interface Props {
     guild: string;
@@ -54,54 +54,53 @@ export default function GuildRow({guild, selected, enemySelected, allySelected, 
     }
 
     return (
-        <div className="mb-2">
-            <h6 className="fw-bold mb-1">{guild}</h6>
-            <div className="d-flex align-items-center flex-wrap gap-2 ms-2">
-                <Form.Check
-                    type="checkbox"
+        <tr>
+            <th scope="row" className="guilds-table__name">{guild}</th>
+            <td>
+                <Check
                     id={`guild-${guild}`}
-                    label="Ładowanie triggerów"
+                    title="Ładowanie triggerów"
                     checked={selected}
                     onChange={handleSelect}
-                    className="me-2"
                 />
-                <Form.Check
-                    type="checkbox"
+            </td>
+            <td>
+                <Check
                     id={`enemy-guild-${guild}`}
-                    label="Wróg"
+                    title="Wróg"
                     checked={enemySelected}
                     onChange={handleEnemySelect}
-                    className="me-2"
                     disabled={allySelected}
                 />
-                <Form.Check
-                    type="checkbox"
+            </td>
+            <td>
+                <Check
                     id={`ally-guild-${guild}`}
-                    label="Sojusz"
+                    title="Sojusz"
                     checked={allySelected}
                     onChange={handleAllySelect}
-                    className="me-2"
                     disabled={enemySelected}
                 />
-                <Form.Check
-                    type="checkbox"
-                    id={`guild-color-enabled-${guild}`}
-                    label="Kolor"
-                    checked={color !== undefined}
-                    onChange={handleColorToggle}
-                    className="me-2"
-                    disabled={enemySelected}
-                />
-                <Form.Control
-                    type="color"
-                    id={`guild-color-${guild}`}
-                    value={pickerColor}
-                    onChange={handleColorChange}
-                    disabled={enemySelected}
-                    className="form-control-color"
-                    style={{width: '3rem'}}
-                />
-            </div>
-        </div>
+            </td>
+            <td>
+                <div className="popup-inline">
+                    <Check
+                        id={`guild-color-enabled-${guild}`}
+                        title="Kolor"
+                        checked={color !== undefined}
+                        onChange={handleColorToggle}
+                        disabled={enemySelected}
+                    />
+                    <input
+                        type="color"
+                        id={`guild-color-${guild}`}
+                        className="popup-color"
+                        value={pickerColor}
+                        onChange={handleColorChange}
+                        disabled={enemySelected}
+                    />
+                </div>
+            </td>
+        </tr>
     );
 }

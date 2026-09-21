@@ -3226,6 +3226,56 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
 p.popup-field__hint {
   margin: 0;
 }
+/* Gildie: one row per guild, one column per option. */
+.popup-table.guilds-table {
+  width: auto;
+  min-width: min(100%, 26rem);
+  align-self: flex-start;
+}
+.popup-table.guilds-table td,
+.popup-table.guilds-table th {
+  padding: 3px 20px 3px 8px;
+}
+.guilds-table .popup-color {
+  width: 32px;
+  height: 20px;
+}
+.guilds-table th.guilds-table__name {
+  border-bottom-color: var(--popup-border-subtle);
+  color: var(--popup-text);
+  font-size: var(--ui-fs, 13px);
+}
+.guilds-table .popup-check {
+  vertical-align: middle;
+  font-size: inherit;
+  color: inherit;
+}
+/* Many short checkboxes in columns. */
+.settings-check-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 6px 12px;
+}
+/* Type-ahead suggestions under a field. */
+.settings-suggest-anchor {
+  position: relative;
+  max-width: 20rem;
+}
+.popup-menu.settings-suggest {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  right: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  max-height: 200px;
+  overflow-y: auto;
+  background-color: var(--popup-bg);
+  border: 1px solid var(--popup-border);
+  border-radius: var(--ui-radius, 6px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
 /* Removable items under the field that adds them. */
 .settings-chip-list {
   display: flex;

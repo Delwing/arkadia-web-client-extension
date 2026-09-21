@@ -113,7 +113,8 @@ export function Field({ label, htmlFor, hint, error, children, className }: Fiel
 // ── Checkbox / radio ──────────────────────────────────────────────────────
 
 export interface CheckProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type'> {
-    label: ReactNode;
+    /** Omit in a table cell whose column header names the option. */
+    label?: ReactNode;
     type?: 'checkbox' | 'radio';
 }
 
@@ -121,7 +122,7 @@ export function Check({ label, type = 'checkbox', className, ...rest }: CheckPro
     return (
         <label className={cx('popup-check', className)}>
             <input type={type} {...rest} />
-            <span>{label}</span>
+            {label != null && <span>{label}</span>}
         </label>
     );
 }
