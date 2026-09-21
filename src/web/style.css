@@ -3138,6 +3138,17 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
   gap: 0.75rem;
 }
 
+/* Colour + opacity slider on one line (Wyglad > Kolor tla listy obiektow). */
+.ui-settings-color-alpha {
+  flex-wrap: wrap;
+}
+.ui-settings-color-alpha > .popup-range {
+  flex: 1 1 120px;
+}
+.ui-settings-color-alpha__value {
+  min-width: 2.5rem;
+}
+
 .character-settings-section--full {
   column-span: all;
   margin-top: 1rem;

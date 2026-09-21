@@ -513,6 +513,33 @@ select.popup-input.popup-input--control {
   accent-color: var(--popup-accent);
   cursor: pointer;
 }
+/* Range slider in the accent colour. */
+.popup-range {
+  width: 100%;
+  min-width: 0;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--popup-accent);
+  cursor: pointer;
+}
+/* Colour swatch at control height. */
+.popup-color {
+  flex-shrink: 0;
+  width: 36px;
+  height: var(--ui-ctrl, 28px);
+  box-sizing: border-box;
+  padding: 2px;
+  border: 1px solid var(--popup-border-control);
+  border-radius: var(--ui-radius, 6px);
+  background-color: var(--popup-input-bg);
+  cursor: pointer;
+}
+.popup-color::-webkit-color-swatch-wrapper { padding: 0; }
+.popup-color::-webkit-color-swatch {
+  border: none;
+  border-radius: var(--ui-radius-sm, 4px);
+}
+
 /* Segmented choice: two to four mutually exclusive options. */
 .popup-segmented {
   display: inline-flex;

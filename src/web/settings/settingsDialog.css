@@ -164,6 +164,7 @@
 
 .settings-scope-badge {
   display: inline-block;
+  margin-left: 0.5rem;
   padding: 0 0.4rem;
   border: 1px dashed var(--popup-border);
   border-radius: 1rem;

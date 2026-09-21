@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { chromeSettingsKeys } from "@shared/settingsDefaults.ts";
+import { Button, Check, Field, Input, Select } from "@web-ui/primitives/index.ts";
 import type { UiSettings } from "../uiSettingsCore";
 
 /** Keys persisted in the device-scoped `uiSettings` entry; every other UI slice is shared. */
@@ -13,7 +14,7 @@ const DEVICE_SETTING_KEYS: ReadonlySet<string> = new Set(chromeSettingsKeys);
 export function DeviceOnlyBadge({ settingKey }: { settingKey?: keyof UiSettings }) {
     if (!settingKey || !DEVICE_SETTING_KEYS.has(settingKey)) return null;
     return (
-        <span className="settings-scope-badge ms-2" title="Zapisywane tylko na tym urządzeniu, bez synchronizacji z innymi">
+        <span className="settings-scope-badge" title="Zapisywane tylko na tym urządzeniu, bez synchronizacji z innymi">
             to urządzenie
         </span>
     );
@@ -43,23 +44,30 @@ export function CheckboxRow({ id, label, checked, onChange, disabled, className,
     id: string; label: ReactNode; checked: boolean; onChange: (checked: boolean) => void; disabled?: boolean; className?: string; settingKey?: keyof UiSettings;
 }) {
     return (
-        <div className={`form-check${className ? ' ' + className : ''}`}>
-            <input id={id} type="checkbox" className="form-check-input" checked={checked} disabled={disabled} onChange={(e) => onChange(e.target.checked)} />
-            <label className="form-check-label" htmlFor={id}>{label}<DeviceOnlyBadge settingKey={settingKey} /></label>
-        </div>
+        <Check
+            id={id}
+            className={className}
+            label={<>{label}<DeviceOnlyBadge settingKey={settingKey} /></>}
+            checked={checked}
+            disabled={disabled}
+            onChange={(e) => onChange(e.target.checked)}
+        />
     );
+}
+
+function FieldLabel({ label, settingKey }: { label: ReactNode; settingKey?: keyof UiSettings }) {
+    return <>{label}<DeviceOnlyBadge settingKey={settingKey} /></>;
 }
 
 export function SelectField({ id, label, value, onChange, disabled, settingKey, children }: {
     id: string; label?: ReactNode; value: string; onChange: (value: string) => void; disabled?: boolean; settingKey?: keyof UiSettings; children: ReactNode;
 }) {
     return (
-        <div>
-            {label && <label className="form-label" htmlFor={id}>{label}<DeviceOnlyBadge settingKey={settingKey} /></label>}
-            <select id={id} className="form-select" value={value} disabled={disabled} onChange={(e) => onChange(e.target.value)}>
+        <Field label={label ? <FieldLabel label={label} settingKey={settingKey} /> : undefined} htmlFor={id}>
+            <Select id={id} value={value} disabled={disabled} onChange={(e) => onChange(e.target.value)}>
                 {children}
-            </select>
-        </div>
+            </Select>
+        </Field>
     );
 }
 
@@ -73,12 +81,10 @@ export function NumberField({ id, label, value, step, min, settingKey, onChange 
     const [text, setText] = useState(String(value));
     useEffect(() => { setText(String(value)); }, [value]);
     return (
-        <div>
-            <label className="form-label" htmlFor={id}>{label}<DeviceOnlyBadge settingKey={settingKey} /></label>
-            <input
+        <Field label={<FieldLabel label={label} settingKey={settingKey} />} htmlFor={id}>
+            <Input
                 id={id}
                 type="number"
-                className="form-control"
                 step={step}
                 min={min}
                 value={text}
@@ -88,7 +94,7 @@ export function NumberField({ id, label, value, step, min, settingKey, onChange 
                     if (Number.isFinite(n)) onChange(n);
                 }}
             />
-        </div>
+        </Field>
     );
 }
 
@@ -96,21 +102,18 @@ export function RangeField({ id, label, value, min, max, step, onChange }: {
     id: string; label: string; value: number; min: number | string; max: number | string; step: number | string; onChange: (value: number) => void;
 }) {
     return (
-        <div>
-            <label className="form-label" htmlFor={id}>
-                {label}: <span id={`${id}-value`}>{value}</span>
-            </label>
+        <Field label={<>{label}: <span id={`${id}-value`}>{value}</span></>} htmlFor={id}>
             <input
                 id={id}
                 type="range"
-                className="form-range"
+                className="popup-range"
                 min={min}
                 max={max}
                 step={step}
                 value={value}
                 onChange={(e) => onChange(parseFloat(e.target.value))}
             />
-        </div>
+        </Field>
     );
 }
 
@@ -118,14 +121,13 @@ export function ColorField({ id, label, value, onChange, onReset }: {
     id: string; label: ReactNode; value: string; onChange: (value: string) => void; onReset?: () => void;
 }) {
     return (
-        <div>
-            <label className="form-label" htmlFor={id}>{label}</label>
-            <div className="d-flex align-items-center gap-2 flex-wrap">
-                <input id={id} type="color" className="form-control form-control-color" value={value} onChange={(e) => onChange(e.target.value)} />
+        <Field label={label} htmlFor={id}>
+            <div className="popup-inline">
+                <input id={id} type="color" className="popup-color" value={value} onChange={(e) => onChange(e.target.value)} />
                 {onReset && (
-                    <button type="button" className="btn btn-outline-secondary btn-sm" onClick={onReset}>Przywróć domyślny</button>
+                    <Button size="sm" variant="ghost" onClick={onReset}>Przywróć domyślny</Button>
                 )}
             </div>
-        </div>
+        </Field>
     );
 }
