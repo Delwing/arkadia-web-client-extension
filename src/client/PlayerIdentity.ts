@@ -233,6 +233,12 @@ export default class PlayerIdentity {
 
         if (startsSession) {
             this.pending = undefined;
+            if (name) {
+                // Only here, never on every Char.Info: a change of body carries a
+                // frame of its own, and announcing that would read downstream -
+                // in the session log above all - as a relogin that never happened.
+                this.client.sendEvent('player.character', name);
+            }
             this.startNewLife(num);
         } else if (num !== this.current) {
             this.lastCharInfoNumChange = Date.now();

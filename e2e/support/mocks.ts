@@ -219,6 +219,7 @@ const MAP_RELEASE_ROUTE = 'https://api.github.com/repos/Delwing/arkadia-mapa/rel
 const NPC_DATA_ROUTE = '**/arkadia-mapa/data/npc.json';
 const PEOPLE_DB_ROUTE = '**/arkadia-people.delwing.workers.dev/download';
 const KNOWLEDGE_DATA_ROUTE = '**/knowledge_data.json';
+const HERBS_DATA_ROUTE = '**/herbs_data.json';
 const WIEDZA_API_ROUTE = '**/admin-ajax.php?action=wiedza_data';
 const MAGICS_DATA_ROUTE = '**/magics_data_v3.json';
 const MAGIC_KEYS_DATA_ROUTE = '**/magic_keys.json';
@@ -255,6 +256,14 @@ const DEFAULT_NPC_DATA = JSON.parse(
 // - Cedric (guild 12 → KG), description "Kupiec wedrowny"
 // - Dagna (guild 16 → RA), description "Przewodniczka gorska"
 // - Eryk (guild 21 → NPC), description "Obronca Arkadii"
+/**
+ * Snapshot of `HERBS_URL` (tjurczyk/arkadia-data), version 4, 155 herbs.
+ * Refresh with: curl -sS "$HERBS_URL" | python3 -m json.tool --sort-keys
+ */
+const DEFAULT_HERBS_DATA = JSON.parse(
+    fs.readFileSync(path.join(__dirname, 'mock-data', 'herbs-data.json'), 'utf-8'),
+);
+
 const DEFAULT_PEOPLE_DB_BASE64 = fs.readFileSync(
     path.join(__dirname, 'mock-data', 'people-database.txt'),
     'utf-8'
@@ -324,6 +333,25 @@ export async function mockNpcDownload(
     data: {name: string; loc: number}[] = DEFAULT_NPC_DATA,
 ): Promise<void> {
     await context.route(NPC_DATA_ROUTE, async (route) => {
+        await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify(data),
+        });
+    });
+}
+
+/**
+ * Herb declensions and uses, which the client fetches from a third-party
+ * repository at runtime. Stubbed for the same reason as every other download
+ * here: a spec must not depend on the public internet being reachable, and
+ * Chromium in a sandboxed container cannot reach it even when the shell can.
+ */
+export async function mockHerbsDownload(
+    context: BrowserContext,
+    data: unknown = DEFAULT_HERBS_DATA,
+): Promise<void> {
+    await context.route(HERBS_DATA_ROUTE, async (route) => {
         await route.fulfill({
             status: 200,
             contentType: 'application/json',

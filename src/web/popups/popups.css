@@ -61,10 +61,20 @@
   padding: 0.15rem 0.4rem;
   border-radius: 0.25rem;
   cursor: pointer;
+  /* Both of these exist to STOP the bare `button` rule in style.css from
+     reaching in. That rule is (0,1,1) and this class is (0,1,0), so it wins
+     for every property this class does not declare - and it declares neither
+     of these two. The effect was that every popup button rendered at 75%
+     opacity (making `:disabled` below a far subtler step than it reads) and
+     picked up `#646cff` on hover, the colour from the Vite starter template.
+     Declare them here rather than narrowing the bare rule, so nothing else
+     that leans on it changes. */
+  opacity: 1;
   transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 .popup-btn:hover {
   background-color: var(--popup-control-active-bg);
+  border-color: var(--popup-border-control);
   color: var(--popup-text-strong);
 }
 .popup-btn:disabled {

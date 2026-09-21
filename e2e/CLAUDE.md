@@ -176,6 +176,43 @@ yarn test:e2e -- --grep "feature description"    # Filter by test name
 - Per-test timeout: 30 seconds; per-assertion: 10 seconds; global: 20 minutes
 - Tests that pass only on a retry are listed under "Flaky e2e tests" in the run summary
 
+## Third-party downloads are all mocked
+
+Every dataset the client fetches at runtime is stubbed in `e2e/support/mocks.ts`
+and installed by both fixtures, so no spec depends on the public internet:
+map data and colours, the map release version, NPCs, the people database,
+knowledge, wiedza, magics, magic keys and **herbs**.
+
+The herb data (`HERBS_URL` in `src/modules/data/dataStores/herbsStore.ts`) was
+the last one missing, and its absence was mistaken for an environment problem
+for a while. The symptom is worth recognising, because it is the signature of a
+*missing mock* rather than a broken test: in a sandboxed container the shell can
+usually reach the host (curl goes through the agent proxy) while **Chromium
+cannot** - it does not inherit `HTTPS_PROXY`, so the in-page `fetch` fails
+outright. The store then never populates and the spec sits on a
+`waitForFunction` until the 30s per-test timeout, while every other test in the
+same file passes in about 2s.
+
+**If you see that shape, look for an unmocked download before changing the
+test.** A shell that gets 200 while the browser reports `Failed to fetch` is
+this and nothing else.
+
+Adding one follows the existing pattern: a `*_ROUTE` glob, a snapshot under
+`e2e/support/mock-data/`, a `mockXDownload(context, data = DEFAULT_X)` helper,
+and a call in both `fixtures.ts` and `firebase-fixtures.ts`.
+
+The herb snapshot is `e2e/support/mock-data/herbs-data.json` (version 4, 155
+herbs). Refresh it with:
+
+```bash
+curl -sS "https://raw.githubusercontent.com/tjurczyk/arkadia-data/refs/heads/master/herbs_data.json" \
+  | python3 -m json.tool --sort-keys > e2e/support/mock-data/herbs-data.json
+```
+
+The trade-off of any snapshot: the specs keep passing against a stale copy if
+the upstream shape changes. Parsing of that shape belongs in unit tests, which
+is where a real format change should be caught.
+
 ## Timing Budget
 
 GitHub's runners have 4 vCPUs, so a worker there gets a fraction of the CPU a

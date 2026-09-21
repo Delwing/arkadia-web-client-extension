@@ -20,7 +20,8 @@
       "@web/*": ["./src/web/*"],
       "@shared/*": ["./src/shared/*"],
       "@modules/*": ["./src/modules/*"],
-      "@web-ui/*": ["./src/ui/web/*"]
+      "@web-ui/*": ["./src/ui/web/*"],
+      "@ui/*": ["./src/ui/*"]
     }
   }
 }
