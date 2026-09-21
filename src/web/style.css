@@ -4930,42 +4930,40 @@ body.layout-manager-enabled #notification-center {
   padding: 0.75rem;
 }
 
+/* Underlined tabs, not a full-width segmented bar. */
 .plugin-manager__tabs {
   display: flex;
-  gap: 0.25rem;
-  padding: 0.25rem;
-  background: var(--popup-control-bg);
-  border: 1px solid var(--popup-border);
-  border-radius: 0.6rem;
+  gap: 4px;
   flex: 0 0 auto;
+  margin: -0.25rem 0 0;
+  border-bottom: 1px solid var(--popup-border-subtle);
 }
 
 .plugin-tab {
-  flex: 1 1 0;
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  gap: 0.4rem;
-  padding: 0.45rem 0.75rem;
+  gap: 6px;
+  height: 36px;
+  margin-bottom: -1px;
+  padding: 0 12px;
   border: 0;
-  border-radius: 0.45rem;
+  border-bottom: 2px solid transparent;
   background: transparent;
-  color: var(--popup-text-dim);
-  font-size: 0.9rem;
+  color: var(--popup-text-subtle);
+  font-size: var(--ui-fs, 14px);
   font-weight: 600;
+  opacity: 1;
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition: color 0.15s ease, border-color 0.15s ease;
 }
 
 .plugin-tab:hover {
   color: var(--popup-text);
-  background: var(--popup-hover-bg);
 }
 
 .plugin-tab--active {
-  background: var(--popup-section-bg);
-  color: var(--popup-text);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  border-bottom-color: var(--popup-accent);
+  color: var(--popup-text-bright);
 }
 
 .plugin-tab__count {
@@ -5000,7 +4998,7 @@ body.layout-manager-enabled #notification-center {
   min-width: 0;
 }
 
-.plugin-search .form-control {
+.plugin-search .popup-input {
   padding-left: 2rem;
   padding-right: 2rem;
 }
@@ -5105,7 +5103,7 @@ body.layout-manager-enabled #notification-center {
   flex-wrap: wrap;
 }
 
-.plugin-catalog-sort {
+.popup-input.popup-input--control.plugin-catalog-sort {
   width: auto;
   flex: 0 0 auto;
 }
@@ -5382,6 +5380,14 @@ body.layout-manager-enabled #notification-center {
   align-items: center;
   gap: 0.35rem;
 }
+/* Icon-only card actions are square; a label (always on phones) widens them. */
+.popup-btn.popup-btn--control.plugin-action:not(.plugin-action--labelled) {
+  width: var(--ui-ctrl-sm, 28px);
+  padding: 0;
+}
+.plugin-push-end {
+  margin-left: auto;
+}
 
 .plugin-action__label {
   display: none;
@@ -5513,15 +5519,16 @@ body.layout-manager-enabled #notification-center {
   list-style: none;
 }
 
+/* One line per release: number, date, changelog, then its button. */
 .plugin-version {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto auto 1fr auto;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  padding: 0.4rem 0.55rem;
-  border-radius: 0.4rem;
+  gap: 4px 10px;
+  padding: 4px 6px 4px 10px;
+  border-radius: var(--ui-radius, 6px);
   background: var(--popup-control-bg);
-  font-size: 0.82rem;
+  font-size: var(--ui-fs-sm, 13px);
 }
 
 .plugin-version__number {
@@ -5530,14 +5537,32 @@ body.layout-manager-enabled #notification-center {
 }
 
 .plugin-version__date {
-  font-size: 0.75rem;
+  font-size: var(--ui-fs-xs, 12px);
   color: var(--popup-text-dim);
 }
 
 .plugin-version__changelog {
-  flex: 1 1 100%;
-  font-size: 0.78rem;
+  grid-column: 3;
+  min-width: 0;
   color: var(--popup-text-subtle);
+}
+
+.plugin-version > .popup-btn {
+  grid-column: 4;
+}
+
+@media (max-width: 600px) {
+  .plugin-version {
+    grid-template-columns: auto 1fr auto;
+  }
+  .plugin-version__changelog {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  .plugin-version > .popup-btn {
+    grid-column: 3;
+    grid-row: 1;
+  }
 }
 
 @media (max-width: 767.98px) {
@@ -5562,6 +5587,11 @@ body.layout-manager-enabled #notification-center {
     display: inline;
   }
 
+  .popup-btn.popup-btn--control.plugin-action:not(.plugin-action--labelled) {
+    width: auto;
+    padding: 0 10px;
+  }
+
   .plugin-card__actions .plugin-action {
     flex: 1 1 auto;
     justify-content: center;
@@ -5571,7 +5601,7 @@ body.layout-manager-enabled #notification-center {
     flex-wrap: wrap;
   }
 
-  .plugin-notice .btn {
+  .plugin-notice .popup-btn {
     width: 100%;
     margin-left: 0 !important;
   }

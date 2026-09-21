@@ -1,5 +1,5 @@
 import { useMemo, useState, type ReactNode } from "react";
-import { Button } from "react-bootstrap";
+import { Button, LinkButton } from "@web-ui/primitives/index.ts";
 import { ArrowUpCircle, ExternalLink, PackageOpen, Pencil, Store, Trash2 } from "lucide-react";
 import PluginCard, { SourceChip, type CardStatus } from "./PluginCard";
 import type { InstalledPlugin, PluginSource } from "./useInstalledPlugins";
@@ -34,30 +34,29 @@ const STATUS: Record<InstalledPlugin["status"], { mark: CardStatus; title: strin
 function CardAction({
     icon,
     label,
-    variant = "outline-secondary",
+    variant,
     alwaysLabel,
     onClick,
     href,
 }: {
     icon: ReactNode;
     label: string;
-    variant?: string;
+    variant?: "danger";
     alwaysLabel?: boolean;
     onClick?: () => void;
     href?: string;
 }) {
-    return (
-        <Button
-            size="sm"
-            variant={variant}
-            className={`plugin-action${alwaysLabel ? " plugin-action--labelled" : ""}`}
-            title={label}
-            onClick={onClick}
-            {...(href ? { href, target: "_blank", rel: "noopener" } : {})}
-        >
+    const className = `plugin-action${alwaysLabel ? " plugin-action--labelled" : ""}`;
+    const content = (
+        <>
             {icon}
             <span className="plugin-action__label">{label}</span>
-        </Button>
+        </>
+    );
+    return href ? (
+        <LinkButton size="sm" variant="ghost" className={className} title={label} href={href}>{content}</LinkButton>
+    ) : (
+        <Button size="sm" variant={variant ?? "ghost"} className={className} title={label} onClick={onClick}>{content}</Button>
     );
 }
 
@@ -135,8 +134,8 @@ function ScriptsInstalled({
                     </span>
                     <Button
                         size="sm"
-                        variant="primary"
-                        className="ms-auto"
+                        variant="solid"
+                        className="plugin-push-end"
                         onClick={() => updatable.forEach((plugin) => onUpdate(plugin.slug!, plugin.updateVersion!))}
                     >
                         Aktualizuj wszystkie
@@ -161,8 +160,8 @@ function ScriptsInstalled({
                             <p className="plugin-empty__text">
                                 Zainstaluj gotowy plugin z katalogu albo dodaj wlasny przyciskiem "Dodaj".
                             </p>
-                            <Button variant="primary" size="sm" onClick={onBrowseCatalog}>
-                                <Store size={14} className="me-1" />
+                            <Button variant="solid" size="sm" onClick={onBrowseCatalog}>
+                                <Store size={14} />
                                 Przegladaj katalog
                             </Button>
                         </>
@@ -194,8 +193,8 @@ function ScriptsInstalled({
                                             </span>
                                             <Button
                                                 size="sm"
-                                                variant="primary"
-                                                className="ms-auto"
+                                                variant="solid"
+                                                className="plugin-push-end"
                                                 onClick={() => onUpdate(plugin.slug!, plugin.updateVersion!)}
                                             >
                                                 Aktualizuj
@@ -241,7 +240,6 @@ function ScriptsInstalled({
                                                 </Button>
                                                 <Button
                                                     size="sm"
-                                                    variant="outline-secondary"
                                                     className="plugin-action plugin-action--labelled"
                                                     onClick={() => setConfirming(null)}
                                                 >
@@ -252,7 +250,7 @@ function ScriptsInstalled({
                                             <CardAction
                                                 icon={<Trash2 size={15} />}
                                                 label="Usun"
-                                                variant="outline-danger"
+                                                variant="danger"
                                                 onClick={() =>
                                                     plugin.source === "local"
                                                         ? setConfirming(plugin.id)

@@ -362,6 +362,12 @@
    (input[type="text"], .modal input …) are (0,1,1) and would outrank a single
    class; the bare `button` rule would leak opacity/padding/background. */
 .popup-btn.popup-btn--control {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  box-sizing: border-box;
+  text-decoration: none;
   height: var(--ui-ctrl, 28px);
   padding: 0 12px;
   border-radius: var(--ui-radius, 6px);

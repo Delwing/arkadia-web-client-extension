@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Button, Spinner } from "react-bootstrap";
+import { Button, LinkButton } from "@web-ui/primitives/index.ts";
 import { AlertTriangle, ArrowUpCircle, Download, ExternalLink, Github, Trash2 } from "lucide-react";
 import SubDialog from "../SubDialog";
 import { renderPluginReadme } from "./pluginReadme";
@@ -72,28 +72,28 @@ function PluginDetailDialog({
             onClose={onClose}
             footer={
                 <>
-                    <Button variant="secondary" onClick={onClose}>
+                    <Button onClick={onClose}>
                         Zamknij
                     </Button>
-                    <Button variant="outline-secondary" href={registryPageUrl(slug)} target="_blank" rel="noopener">
-                        <ExternalLink size={14} className="me-1" />
+                    <LinkButton href={registryPageUrl(slug)}>
+                        <ExternalLink size={14} />
                         Katalog
-                    </Button>
+                    </LinkButton>
                     {installedVersion && (
                         <Button
-                            variant="outline-danger"
+                            variant="danger"
                             onClick={() => {
                                 onUninstall(slug);
                                 onClose();
                             }}
                         >
-                            <Trash2 size={14} className="me-1" />
+                            <Trash2 size={14} />
                             Odinstaluj
                         </Button>
                     )}
                     {latest && (!installedVersion || upgradable) && (
                         <Button
-                            variant="primary"
+                            variant="solid"
                             onClick={() => {
                                 onInstall(slug, latest);
                                 onClose();
@@ -101,12 +101,12 @@ function PluginDetailDialog({
                         >
                             {upgradable ? (
                                 <>
-                                    <ArrowUpCircle size={14} className="me-1" />
+                                    <ArrowUpCircle size={14} />
                                     Aktualizuj do v{latest}
                                 </>
                             ) : (
                                 <>
-                                    <Download size={14} className="me-1" />
+                                    <Download size={14} />
                                     Zainstaluj v{latest}
                                 </>
                             )}
@@ -119,7 +119,7 @@ function PluginDetailDialog({
 
             {!detail && !error && (
                 <div className="plugin-loading">
-                    <Spinner animation="border" size="sm" />
+                    <span className="popup-spinner" />
                     <span>Wczytywanie...</span>
                 </div>
             )}
@@ -143,7 +143,7 @@ function PluginDetailDialog({
                         )}
                         {detail.plugin.repositoryUrl && (
                             <a href={detail.plugin.repositoryUrl} target="_blank" rel="noopener noreferrer">
-                                <Github size={12} className="me-1" />
+                                <Github size={12} />
                                 Repozytorium
                             </a>
                         )}
@@ -197,8 +197,8 @@ function PluginDetailDialog({
                                     )}
                                     <Button
                                         size="sm"
-                                        variant={isInstalled ? "outline-success" : "outline-secondary"}
-                                        className="ms-auto"
+                                        variant={isInstalled ? "ghost" : "secondary"}
+                                        className="plugin-push-end"
                                         disabled={isInstalled}
                                         onClick={() => {
                                             onInstall(slug, release.version);
@@ -212,9 +212,9 @@ function PluginDetailDialog({
                         })}
                     </ul>
                     {releases.length > visibleReleases.length && (
-                        <Button size="sm" variant="link" onClick={() => setShowAllVersions(true)}>
+                        <button type="button" className="popup-link ui-settings-self-start" onClick={() => setShowAllVersions(true)}>
                             Pokaz wszystkie ({releases.length})
-                        </Button>
+                        </button>
                     )}
                 </>
             )}

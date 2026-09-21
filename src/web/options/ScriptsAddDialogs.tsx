@@ -1,5 +1,5 @@
 import { useState, type ChangeEvent, type ReactNode } from "react";
-import { Button, Form } from "react-bootstrap";
+import { Button, Field, Input, LinkButton, TextArea } from "@web-ui/primitives/index.ts";
 import { Code2, FileArchive, Link2, PenSquare, Sparkles, Store } from "lucide-react";
 import SubDialog from "../SubDialog";
 import { buildAiPluginPrompt } from "../aiPluginPrompt";
@@ -92,19 +92,21 @@ export function AddUrlDialog({ onAdd, onClose }: { onAdd: (url: string) => void;
             onClose={onClose}
             footer={
                 <>
-                    <Button variant="secondary" onClick={onClose}>
+                    <Button onClick={onClose}>
                         Anuluj
                     </Button>
-                    <Button variant="primary" onClick={submit} disabled={!url.trim()}>
+                    <Button variant="solid" onClick={submit} disabled={!url.trim()}>
                         Dodaj
                     </Button>
                 </>
             }
         >
-            <Form.Group>
-                <Form.Label>Adres skryptu</Form.Label>
-                <Form.Control
-                    type="text"
+            <Field
+                label="Adres skryptu"
+                hint="Skrypt jest wczytywany z tego adresu przy kazdym starcie klienta — dodawaj tylko zrodla, ktorym ufasz."
+            >
+                <Input
+                    mono
                     value={url}
                     autoFocus
                     onChange={(event: ChangeEvent<HTMLInputElement>) => setUrl(event.target.value)}
@@ -115,13 +117,8 @@ export function AddUrlDialog({ onAdd, onClose }: { onAdd: (url: string) => void;
                         }
                     }}
                     placeholder="URL skryptu"
-                    autoComplete="off"
                 />
-                <Form.Text muted>
-                    Skrypt jest wczytywany z tego adresu przy kazdym starcie klienta — dodawaj tylko zrodla,
-                    ktorym ufasz.
-                </Form.Text>
-            </Form.Group>
+            </Field>
         </SubDialog>
     );
 }
@@ -143,37 +140,34 @@ export function PasteCodeDialog({
             onClose={onClose}
             footer={
                 <>
-                    <Button variant="secondary" onClick={onClose}>
+                    <Button onClick={onClose}>
                         Anuluj
                     </Button>
-                    <Button variant="primary" onClick={() => onSubmit(name, code)} disabled={!code.trim()}>
+                    <Button variant="solid" onClick={() => onSubmit(name, code)} disabled={!code.trim()}>
                         Dodaj plugin
                     </Button>
                 </>
             }
         >
-            <Form.Group className="mb-3">
-                <Form.Label>Nazwa pluginu (opcjonalnie)</Form.Label>
-                <Form.Control
-                    type="text"
-                    value={name}
-                    onChange={(event: ChangeEvent<HTMLInputElement>) => setName(event.target.value)}
-                    placeholder="Moja wtyczka"
-                    autoComplete="off"
-                />
-            </Form.Group>
-            <Form.Group>
-                <Form.Label>Kod JavaScript</Form.Label>
-                <Form.Control
-                    as="textarea"
-                    rows={15}
-                    value={code}
-                    onChange={(event: ChangeEvent<HTMLTextAreaElement>) => setCode(event.target.value)}
-                    placeholder="export async function init(api) { ... }"
-                    autoComplete="off"
-                    style={{ fontFamily: "monospace", fontSize: "0.9em" }}
-                />
-            </Form.Group>
+            <div className="popup-stack">
+                <Field label="Nazwa pluginu (opcjonalnie)">
+                    <Input
+                        value={name}
+                        onChange={(event: ChangeEvent<HTMLInputElement>) => setName(event.target.value)}
+                        placeholder="Moja wtyczka"
+                        autoComplete="off"
+                    />
+                </Field>
+                <Field label="Kod JavaScript">
+                    <TextArea
+                        mono
+                        rows={15}
+                        value={code}
+                        onChange={(event: ChangeEvent<HTMLTextAreaElement>) => setCode(event.target.value)}
+                        placeholder="export async function init(api) { ... }"
+                    />
+                </Field>
+            </div>
         </SubDialog>
     );
 }
@@ -200,43 +194,39 @@ export function AiPromptDialog({ onHaveCode, onClose }: { onHaveCode: () => void
             onClose={onClose}
             footer={
                 <>
-                    <Button variant="secondary" onClick={onClose}>
+                    <Button onClick={onClose}>
                         Zamknij
                     </Button>
-                    <Button variant="success" onClick={onHaveCode}>
+                    <Button variant="solid" onClick={onHaveCode}>
                         Mam kod, wklej go
                     </Button>
                 </>
             }
         >
-            <p className="text-muted">
+            <div className="popup-stack">
+            <p className="popup-field__hint plugin-ai__intro">
                 Opisz czego ma dokonywać plugin, skopiuj wygenerowany prompt i wklej go do wybranego czatu AI
                 (np. Claude, ChatGPT). AI zwróci kod w bloku kodu — użyj przycisku kopiowania przy tym bloku,
                 a następnie wklej go w oknie "Wklej kod".
             </p>
-            <Form.Group className="mb-3">
-                <Form.Label>Co ma robić ten plugin?</Form.Label>
-                <Form.Control
-                    as="textarea"
+            <Field label="Co ma robić ten plugin?">
+                <TextArea
                     rows={4}
                     value={description}
                     onChange={(event: ChangeEvent<HTMLTextAreaElement>) => setDescription(event.target.value)}
                     placeholder="Np. podswietl na czerwono linie zawierajace moje imie"
                     autoComplete="off"
                 />
-            </Form.Group>
-            <div className="d-flex flex-wrap gap-2">
-                <Button variant="primary" onClick={copy} disabled={!description.trim()}>
+            </Field>
+            <div className="popup-inline settings-wrap">
+                <Button variant="solid" onClick={copy} disabled={!description.trim()}>
                     Kopiuj prompt
                 </Button>
-                <Button variant="outline-secondary" href="https://claude.ai/new" target="_blank" rel="noopener">
-                    Otwórz Claude
-                </Button>
-                <Button variant="outline-secondary" href="https://chatgpt.com/" target="_blank" rel="noopener">
-                    Otwórz ChatGPT
-                </Button>
+                <LinkButton href="https://claude.ai/new">Otwórz Claude</LinkButton>
+                <LinkButton href="https://chatgpt.com/">Otwórz ChatGPT</LinkButton>
+                {copied && <span className="popup-field__success">Skopiowano do schowka!</span>}
             </div>
-            {copied && <div className="mt-2 text-success">Skopiowano do schowka!</div>}
+            </div>
         </SubDialog>
     );
 }

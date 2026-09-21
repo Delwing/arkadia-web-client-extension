@@ -1,5 +1,5 @@
 import { useCallback, useState, type ChangeEvent } from "react";
-import { Button, Form, Spinner } from "react-bootstrap";
+import { Button, Input } from "@web-ui/primitives/index.ts";
 import { Plus, Search, Store, X } from "lucide-react";
 import { generatePluginId, storePluginScript } from "@client/utils/pluginStorage";
 import { createEditorPluginFromSource, storeEditorPlugin } from "@client/utils/pluginEditorStorage";
@@ -117,7 +117,7 @@ function Scripts() {
                 type="file"
                 accept=".zip"
                 onChange={zip.handleFile}
-                style={{ display: "none" }}
+                hidden
             />
 
             <div className="plugin-manager__tabs">
@@ -143,9 +143,8 @@ function Scripts() {
             <div className="plugin-manager__toolbar">
                 <div className="plugin-search">
                     <Search size={15} className="plugin-search__icon" />
-                    <Form.Control
+                    <Input
                         type="search"
-                        size="sm"
                         value={search}
                         onChange={(event: ChangeEvent<HTMLInputElement>) => setSearch(event.target.value)}
                         placeholder={tab === "installed" ? "Szukaj wsrod zainstalowanych" : "Szukaj w katalogu"}
@@ -161,7 +160,7 @@ function Scripts() {
                         </button>
                     )}
                 </div>
-                <Button size="sm" variant="primary" className="plugin-add" onClick={() => setDialog("chooser")}>
+                <Button size="sm" variant="solid" className="plugin-add" onClick={() => setDialog("chooser")}>
                     <Plus size={15} />
                     Dodaj plugin
                 </Button>
@@ -173,7 +172,7 @@ function Scripts() {
                         zip.status.type === "error" ? "error" : zip.status.type === "loading" ? "muted" : "success"
                     }`}
                 >
-                    {zip.status.type === "loading" && <Spinner animation="border" size="sm" />}
+                    {zip.status.type === "loading" && <span className="popup-spinner" />}
                     <span>{zip.status.message}</span>
                 </div>
             )}

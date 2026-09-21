@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Button, Form, Spinner } from "react-bootstrap";
+import { Button, Select } from "@web-ui/primitives/index.ts";
 import { AlertTriangle, ArrowUpCircle, Check, Download, Github, SearchX, Trash2 } from "lucide-react";
 import PluginCard from "./PluginCard";
 import PluginDetailDialog from "./PluginDetailDialog";
@@ -96,8 +96,7 @@ function ScriptsMarketplace({ search, installedSlugs, onInstall, onUninstall }: 
     return (
         <div className="plugin-panel">
             <div className="plugin-catalog-controls">
-                <Form.Select
-                    size="sm"
+                <Select
                     value={sort}
                     onChange={(event) => setSort(event.target.value as RegistrySort)}
                     className="plugin-catalog-sort"
@@ -107,7 +106,7 @@ function ScriptsMarketplace({ search, installedSlugs, onInstall, onUninstall }: 
                             {label}
                         </option>
                     ))}
-                </Form.Select>
+                </Select>
                 {tags.length > 0 && (
                     <div className="plugin-filter-bar plugin-filter-bar--tags">
                         <button
@@ -135,7 +134,7 @@ function ScriptsMarketplace({ search, installedSlugs, onInstall, onUninstall }: 
                 <div className="plugin-banner plugin-banner--error">
                     <AlertTriangle size={16} />
                     <span>Nie udalo sie pobrac katalogu: {error}</span>
-                    <Button size="sm" variant="outline-light" className="ms-auto" onClick={() => setPage(1)}>
+                    <Button size="sm" className="plugin-push-end" onClick={() => setPage(1)}>
                         Sprobuj ponownie
                     </Button>
                 </div>
@@ -211,7 +210,7 @@ function ScriptsMarketplace({ search, installedSlugs, onInstall, onUninstall }: 
                                         {(!installed || upgradable) && (
                                             <Button
                                                 size="sm"
-                                                variant="primary"
+                                                variant="solid"
                                                 className="plugin-action plugin-action--labelled"
                                                 onClick={() => onInstall(item.slug, item.latestVersion!)}
                                             >
@@ -237,7 +236,7 @@ function ScriptsMarketplace({ search, installedSlugs, onInstall, onUninstall }: 
                                         {installed && (
                                             <Button
                                                 size="sm"
-                                                variant="outline-danger"
+                                                variant="danger"
                                                 className="plugin-action plugin-action--labelled"
                                                 onClick={() => onUninstall(item.slug)}
                                             >
@@ -255,14 +254,14 @@ function ScriptsMarketplace({ search, installedSlugs, onInstall, onUninstall }: 
 
             {loading && (
                 <div className="plugin-loading">
-                    <Spinner animation="border" size="sm" />
+                    <span className="popup-spinner" />
                     <span>Wczytywanie katalogu...</span>
                 </div>
             )}
 
             {hasMore && !loading && (
                 <div className="plugin-more">
-                    <Button size="sm" variant="outline-secondary" onClick={() => setPage((current) => current + 1)}>
+                    <Button size="sm" onClick={() => setPage((current) => current + 1)}>
                         Pokaz wiecej ({items.length} z {total})
                     </Button>
                 </div>

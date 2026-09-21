@@ -1,6 +1,7 @@
 import { useId } from 'react';
 import { Trash2 } from 'lucide-react';
 import type {
+    AnchorHTMLAttributes,
     ButtonHTMLAttributes,
     InputHTMLAttributes,
     ReactNode,
@@ -26,21 +27,22 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
     size?: 'sm' | 'md';
 }
 
+const buttonClass = (variant: ButtonProps['variant'], size: ButtonProps['size'], className?: string) => cx(
+    'popup-btn popup-btn--control',
+    size === 'sm' && 'popup-btn--sm',
+    variant === 'solid' && 'popup-btn--solid',
+    variant === 'ghost' && 'popup-btn--ghost',
+    variant === 'danger' && 'popup-btn--danger popup-btn--ghost',
+    className,
+);
+
 export function Button({ variant = 'secondary', size = 'md', className, type = 'button', ...rest }: ButtonProps) {
-    return (
-        <button
-            type={type}
-            className={cx(
-                'popup-btn popup-btn--control',
-                size === 'sm' && 'popup-btn--sm',
-                variant === 'solid' && 'popup-btn--solid',
-                variant === 'ghost' && 'popup-btn--ghost',
-                variant === 'danger' && 'popup-btn--danger popup-btn--ghost',
-                className,
-            )}
-            {...rest}
-        />
-    );
+    return <button type={type} className={buttonClass(variant, size, className)} {...rest} />;
+}
+
+/** A link that looks like a Button — for actions that open a page (opens in a new tab). */
+export function LinkButton({ variant = 'secondary', size = 'md', className, ...rest }: AnchorHTMLAttributes<HTMLAnchorElement> & Pick<ButtonProps, 'variant' | 'size'>) {
+    return <a target="_blank" rel="noopener noreferrer" className={buttonClass(variant, size, className)} {...rest} />;
 }
 
 /**
