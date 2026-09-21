@@ -64,6 +64,15 @@ export async function loadPlaces(): Promise<Place[]> {
     return [...byRoom.values()];
 }
 
+/**
+ * The mapper's room description (userData.description): read-only, kept with
+ * its line breaks written out as a literal backslash-n, as /info prints it.
+ */
+export function mapDescription(room: MapData.Room | undefined | null): string | null {
+    const text = room?.userData?.description;
+    return text ? text.split("\\n").join("\n").trim() || null : null;
+}
+
 /** Room name and area from the map, falling back to what the note remembered. */
 export function describeRoom(roomId: number, note?: LocationNote | null) {
     const info = getRoomInfo(roomId);
@@ -71,6 +80,7 @@ export function describeRoom(roomId: number, note?: LocationNote | null) {
         name: info?.roomName || note?.roomName || `Lokacja #${roomId}`,
         area: info?.areaName || note?.areaName || "",
         mapNote: info?.mapNote ?? null,
+        description: mapDescription(getEmbeddedMap()?.reader?.getRoom(roomId)),
     };
 }
 
@@ -78,6 +88,28 @@ export interface MapRoomMatch {
     roomId: number;
     name: string;
     area: string;
+    description: string | null;
+}
+
+function areaNameMap(reader: NonNullable<ReturnType<typeof getEmbeddedMap>>["reader"]) {
+    const names = new Map<number, string>();
+    reader.getAreas().forEach(a => names.set(a.getAreaId(), a.getAreaName()));
+    return names;
+}
+
+/** Every room on the map that the mapper gave a description. */
+export function listDescribedRooms(): MapRoomMatch[] {
+    const reader = getEmbeddedMap()?.reader;
+    if (!reader) return [];
+    const areas = areaNameMap(reader);
+    const found: MapRoomMatch[] = [];
+    for (const room of reader.getRooms()) {
+        const description = mapDescription(room);
+        if (description) {
+            found.push({ roomId: room.id, name: room.name || `Lokacja #${room.id}`, area: areas.get(room.area) ?? "", description });
+        }
+    }
+    return found;
 }
 
 /** Lowercase without diacritics, so "zolw" finds "Żółw". */
@@ -87,20 +119,20 @@ function fold(text: string) {
 
 /**
  * Rooms on the map matching a search, for places you are not standing in:
- * "#123" or "123" finds that room, otherwise the room or area name must
- * contain the text (at least 2 letters). Rooms in `exclude` are skipped.
+ * "#123" or "123" finds that room, otherwise the room name, area name or the
+ * mapper's description must contain the text (at least 2 letters). Rooms in `exclude` are skipped.
  */
 export function searchMapRooms(query: string, exclude: Set<number>, limit = 30): MapRoomMatch[] {
     const reader = getEmbeddedMap()?.reader;
     const q = query.trim();
     if (!reader || !q) return [];
     const id = /^#?\d+$/.test(q) ? parseInt(q.replace("#", ""), 10) : null;
-    const areaNames = new Map<number, string>();
-    reader.getAreas().forEach(a => areaNames.set(a.getAreaId(), a.getAreaName()));
+    const areaNames = areaNameMap(reader);
     const toMatch = (room: MapData.Room): MapRoomMatch => ({
         roomId: room.id,
         name: room.name || `Lokacja #${room.id}`,
         area: areaNames.get(room.area) ?? "",
+        description: mapDescription(room),
     });
     if (id !== null) {
         const room = reader.getRoom(id);
@@ -112,7 +144,8 @@ export function searchMapRooms(query: string, exclude: Set<number>, limit = 30):
     for (const room of reader.getRooms()) {
         if (exclude.has(room.id)) continue;
         const area = areaNames.get(room.area) ?? "";
-        if (fold(room.name ?? "").includes(needle) || fold(area).includes(needle)) {
+        const description = room.userData?.description;
+        if (fold(room.name ?? "").includes(needle) || fold(area).includes(needle) || (description && fold(description).includes(needle))) {
             found.push(toMatch(room));
             if (found.length >= limit) break;
         }

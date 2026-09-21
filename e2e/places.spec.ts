@@ -2,11 +2,13 @@ import { expect, test } from './support/fixtures';
 import {
     ensureGameSocket,
     GMCP_PATHS,
+    mockMapDownloads,
     pushGmcp,
     waitForCommandInput,
     waitForMapReady,
 } from './support/mocks';
 import type { Page } from '@playwright/test';
+import mapData from './support/mock-data/map-data.json' with { type: 'json' };
 
 // Rooms from the mock map: 3 = "Kamienny Most", 2 = "Rynek", both in "Miasteczko Poslan".
 const ROOM_ID = 3;
@@ -214,5 +216,43 @@ test.describe('Miejsca (skróty i notatki lokacji)', () => {
         await modal(page).getByRole('button', { name: 'Usuń miejsce' }).click();
         await expect.poll(() => storedShortcuts(page)).toEqual([]);
         await expect.poll(() => readNote(page, 1)).toBeNull();
+    });
+});
+
+test.describe('Miejsca: opisy z mapy', () => {
+    // The mapper's description is stored with line breaks written as a literal backslash-n.
+    test.beforeEach(async ({ context, page }) => {
+        const data = structuredClone(mapData) as typeof mapData;
+        const room = data.flatMap(a => a.rooms).find(r => r.id === ROOM_ID)!;
+        (room.userData as Record<string, string>).description = 'Stary kamienny most.\\n  Pod nim mieszka troll.';
+        await mockMapDownloads(context, { mapData: data as never });
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await waitForMapReady(page);
+    });
+
+    test('described rooms have their own tab and show the description as preformatted text', async ({ page }) => {
+        await page.click('#menu-button');
+        await page.click('#places-button');
+        await expect(modal(page)).toBeVisible();
+
+        const tab = modal(page).locator('.dialog-tab', { hasText: 'Opisy' });
+        await expect(tab).toContainText('1');
+        await tab.click();
+        const row = modal(page).locator('.places-row--map', { hasText: 'Kamienny Most' });
+        await expect(row).toContainText('Stary kamienny most.');
+        await row.click();
+
+        const pre = modal(page).locator('pre.places-other__pre');
+        await expect(pre).toHaveText('Stary kamienny most.\n  Pod nim mieszka troll.');
+        // Read-only: nothing to edit it with.
+        await expect(modal(page).locator('.places-other textarea, .places-other input')).toHaveCount(0);
+    });
+
+    test('map search finds rooms by their description', async ({ page }) => {
+        await page.click('#menu-button');
+        await page.click('#places-button');
+        await modal(page).locator('.places-list__search input').fill('troll');
+        await expect(modal(page).locator('.places-row--map', { hasText: 'Kamienny Most' })).toBeVisible();
     });
 });

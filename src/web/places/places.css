@@ -336,6 +336,19 @@
   color: var(--popup-text);
   white-space: pre-line;
 }
+/* The mapper's description keeps its own line breaks and spacing. */
+.places-other__pre {
+  margin: 0;
+  color: var(--popup-text);
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: var(--ui-fs-xs, 12px);
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.places-other > div {
+  min-width: 0;
+}
 .places-other__src {
   font-size: 11px;
   font-weight: 600;
