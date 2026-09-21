@@ -2,15 +2,11 @@
 #places-modal .modal-body {
   padding: 0;
 }
-/* As tall as the screen allows, so a long map description reads without scrolling. */
-#places-modal .modal-dialog {
-  max-height: none;
-}
 .places {
   display: grid;
   grid-template-columns: minmax(18rem, 26rem) minmax(0, 1fr);
-  /* Viewport minus the dialog's top/bottom margins (1.75rem each) and its header. */
-  height: calc(100dvh - 3.5rem - 41px);
+  /* The same height as Ustawienia: 85% of the screen (the global dialog cap), minus the header. */
+  height: calc(85dvh - 41px);
   min-height: 24rem;
 }
 .places-list {
