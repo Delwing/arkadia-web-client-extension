@@ -158,7 +158,7 @@ test.describe('Settings dialog', () => {
         await settingsPage(page, 'ui-mobile-buttons').locator('#mobile-buttons-preview-solo [data-button-id="button-1"]').click();
         const config = page.locator('.mobile-button-config');
         await config.locator('input[type="color"]').first().fill('#ff0000');
-        await config.locator('.btn-close').click();
+        await config.locator('.mobile-button-config__close').click();
         await expect(config).toHaveCount(0);
         await expect(mobileDot, 'a change made in the closed config popup still counts').toBeVisible();
 
@@ -193,7 +193,7 @@ test.describe('Settings dialog', () => {
         await settingsPage(page, 'ui-mobile-buttons').locator('#mobile-buttons-preview-solo [data-button-id="button-1"]').click();
         const config = page.locator('.mobile-button-config');
         await config.locator('.mobile-button-label').fill('Wspolny');
-        await config.locator('.btn-close').click();
+        await config.locator('.mobile-button-config__close').click();
 
         await saveSettings(page);
         await expect(

@@ -85,7 +85,7 @@ test.describe('Mobile buttons compound macro', () => {
         await labelInput.fill('Combo');
 
         // Close config panel and save
-        const closeButton = configPanel.locator('.btn-close');
+        const closeButton = configPanel.locator('.mobile-button-config__close');
         await closeButton.click();
         await page.locator(SETTINGS_SAVE).click();
         await expect(modal).not.toBeVisible({ timeout: 5000 });
@@ -204,7 +204,7 @@ test.describe('Mobile buttons compound macro', () => {
         const labelInput = configPanel.locator('.mobile-button-label');
         await labelInput.fill('Persist');
 
-        const closeButton = configPanel.locator('.btn-close');
+        const closeButton = configPanel.locator('.mobile-button-config__close');
         await closeButton.click();
         await page.locator(SETTINGS_SAVE).click();
         await expect(modal).not.toBeVisible({ timeout: 5000 });

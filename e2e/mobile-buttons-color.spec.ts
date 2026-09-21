@@ -92,7 +92,7 @@ test.describe('Mobile buttons color and command configuration', () => {
         expect(buttonText, 'button label should be updated in preview').toBe('Test Button');
 
         // Close the config panel first
-        const closeConfigButton = configPanel.locator('.btn-close');
+        const closeConfigButton = configPanel.locator('.mobile-button-config__close');
         await closeConfigButton.click();
         await expect(configPanel, 'config panel should close').not.toBeVisible();
 
@@ -212,7 +212,7 @@ test.describe('Mobile buttons color and command configuration', () => {
         await expect(directionSelect, 'direction select should be visible for kierunek macro').toBeVisible();
 
         // Close config panel
-        const closeButton = configPanel.locator('.btn-close');
+        const closeButton = configPanel.locator('.mobile-button-config__close');
         await closeButton.click();
         await expect(configPanel).not.toBeVisible();
 
@@ -297,7 +297,7 @@ test.describe('Mobile buttons color and command configuration', () => {
         await labelInput.fill('Zerknij');
 
         // Close the config panel first
-        const closeButton = configPanel.locator('.btn-close');
+        const closeButton = configPanel.locator('.mobile-button-config__close');
         await closeButton.click();
         await expect(configPanel, 'config panel should close').not.toBeVisible();
 
