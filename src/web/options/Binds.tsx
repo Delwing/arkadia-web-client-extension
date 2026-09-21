@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import {Alert, Button, Form, ProgressBar, Spinner, Table} from 'react-bootstrap';
+import { Button, Check, DeleteButton, Field, Input, Select } from '@web-ui/primitives/index.ts';
 import {
     type MultibindImportRow,
     type MultibindImportWorkerRequest,
@@ -111,6 +111,50 @@ function sanitizeBinds(binds: BindSettings): BindSettings {
         ...binds,
         custom: binds.custom.filter(b => b.command.trim() !== '' && b.key !== ''),
     };
+}
+
+type SimpleBindName = 'lamp' | 'attack' | 'support' | 'moveMode' | 'roomBind' | 'drinkable' | 'gateBind' | 'doubleK';
+
+/** Read-only field that takes the next keypress (with modifiers) as the bind. */
+function KeyCapture({ value, placeholder, onKeyDown }: {
+    value: string;
+    placeholder?: string;
+    onKeyDown: (ev: React.KeyboardEvent) => void;
+}) {
+    return (
+        <input
+            type="text"
+            readOnly
+            className="popup-input popup-input--control bind-key"
+            value={value}
+            placeholder={placeholder ?? 'Klawisz…'}
+            onKeyDown={onKeyDown}
+        />
+    );
+}
+
+/** A labelled bind. `sub` indents an override of the row above; `stacked`
+ *  puts the label over the key (compass cells). */
+function BindRow({ label: text, value, placeholder, onKeyDown, onClear, sub, stacked }: {
+    label: string;
+    value: string;
+    placeholder?: string;
+    onKeyDown: (ev: React.KeyboardEvent) => void;
+    onClear?: () => void;
+    sub?: boolean;
+    stacked?: boolean;
+}) {
+    return (
+        <div className={`bind-row${sub ? ' bind-row--sub' : ''}${stacked ? ' bind-row--stacked' : ''}`}>
+            <span className="bind-row__label">{sub ? `└ ${text}` : text}</span>
+            <div className="bind-row__keys">
+                <KeyCapture value={value} placeholder={placeholder} onKeyDown={onKeyDown} />
+                {onClear && (
+                    <Button size="sm" variant="ghost" className="popup-btn--icon" title="Przywróć domyślny" onClick={onClear}>✕</Button>
+                )}
+            </div>
+        </div>
+    );
 }
 
 function Binds() {
@@ -583,7 +627,7 @@ function Binds() {
 
     // After "Dodaj skrót" (fired from the footer) appends a row, bring it into
     // view and focus its command input so the user can type straight away.
-    const lastCustomRowRef = useRef<HTMLTableRowElement | null>(null);
+    const lastCustomRowRef = useRef<HTMLDivElement | null>(null);
     const shouldScrollToNewCustom = useRef(false);
     useEffect(() => {
         if (!shouldScrollToNewCustom.current) return;
@@ -594,15 +638,29 @@ function Binds() {
         row.querySelector('input')?.focus();
     }, [binds.custom.length]);
 
+    const optionalRows: { name: 'mainGates' | 'mainTransport' | 'mainLoot'; label: string }[] = [
+        { name: 'mainGates', label: 'Wrota' },
+        { name: 'mainTransport', label: 'Transport' },
+        { name: 'mainLoot', label: 'Zbieranie z cial' },
+    ];
+    const simpleRows: { name: SimpleBindName; label: string }[] = [
+        { name: 'lamp', label: 'Napełnij lampę' },
+        { name: 'attack', label: 'Atakuj' },
+        { name: 'support', label: 'Wesprzyj' },
+        { name: 'moveMode', label: 'Tryb ruchu' },
+        { name: 'roomBind', label: 'Bind w lokacji' },
+        { name: 'drinkable', label: 'Napij się wody' },
+        { name: 'gateBind', label: 'Wrota' },
+        { name: 'doubleK', label: 'Dwukrotne +k' },
+    ];
+    // Compass order, read row by row: NW N NE / W zerknij E / SW S SE.
+    const compass: (keyof DirectionBinds)[] = ['nw', 'n', 'ne', 'w', 'zerknij', 'e', 'sw', 's', 'se'];
+    const dirLabel = (dir: keyof DirectionBinds) =>
+        dir === 'zerknij' ? 'Zerknij' : dir === 'special' ? 'Specjalne' : dir.toUpperCase();
+
     return (
-        <div className="m-2 d-flex flex-column gap-2">
-            <input
-                ref={fileInputRef}
-                type="file"
-                accept=".db,application/x-sqlite3"
-                style={{ display: 'none' }}
-                onChange={handleFileSelected}
-            />
+        <div className="binds-editor">
+            <input ref={fileInputRef} type="file" accept=".db,application/x-sqlite3" hidden onChange={handleFileSelected} />
             {showImportModal && (
                 <SubDialog
                     title="Importuj bazę multibindów"
@@ -611,144 +669,130 @@ function Binds() {
                     // matches the old modal's static backdrop + keyboard={false}.
                     dismissible={!isRunningImport}
                     footer={isRunningImport ? (
-                        <Button variant="secondary" onClick={handleCancelImport}>Anuluj</Button>
+                        <Button onClick={handleCancelImport}>Anuluj</Button>
                     ) : (
                         <>
-                            <Button variant="secondary" onClick={closeImportModal}>Zamknij</Button>
-                            <Button onClick={runImport} disabled={!importPlan || importPlan.rows.length === 0 || !!importResult}>Importuj</Button>
+                            <Button onClick={closeImportModal}>Zamknij</Button>
+                            <Button variant="solid" onClick={runImport} disabled={!importPlan || importPlan.rows.length === 0 || !!importResult}>Importuj</Button>
                         </>
                     )}
                 >
-                    {importError && (
-                        <Alert variant="danger">{importError}</Alert>
-                    )}
-                    {importSummary ? (
-                        <div className="d-flex flex-column gap-1">
-                            <div><strong>Plik:</strong> {importData?.fileName || '—'}</div>
-                            <div>Łącznie wierszy: {importSummary.totalRows}</div>
-                            <div>Wiersze do importu: {importSummary.toImport}</div>
-                            <div>Nowe wpisy: {importSummary.newEntries}</div>
-                            <div>Aktualizacje: {importSummary.updates}</div>
-                            <div>Pominięte: {importSummary.skipped}</div>
-                            {importSummary.invalidRows > 0 && (
-                                <div className="text-muted small">Nieprawidłowe wiersze: {importSummary.invalidRows}</div>
-                            )}
-                            {importSummary.duplicates > 0 && (
-                                <div className="text-muted small">Usunięte konflikty: {importSummary.duplicates}</div>
-                            )}
-                        </div>
-                    ) : (
-                        !importError && <div>Brak danych do importu.</div>
-                    )}
-                    {importPlan && (
-                        <>
-                            <Form.Check
-                                className="mt-3"
-                                type="checkbox"
-                                label="Nadpisz wpisy"
-                                checked={overwriteExisting}
-                                disabled={isRunningImport}
-                                onChange={ev => setOverwriteExisting(ev.target.checked)}
-                            />
-                            <Form.Group className="mt-3">
-                                <Form.Label>Polityka konfliktów</Form.Label>
-                                <Form.Select
-                                    value={conflictPolicy}
-                                    onChange={ev => setConflictPolicy(ev.target.value as ConflictPolicy)}
-                                    disabled={isRunningImport}
-                                >
-                                    {CONFLICT_POLICIES.map(option => (
-                                        <option key={option.value} value={option.value}>{option.label}</option>
-                                    ))}
-                                </Form.Select>
-                            </Form.Group>
-                        </>
-                    )}
-                    {importProgress && (
-                        <div className="mt-4">
-                            <ProgressBar now={importProgress.total ? (importProgress.processed / importProgress.total) * 100 : 0} />
-                            <div className="d-flex justify-content-between mt-2 small">
-                                <span>Przetworzono wierszy: {importProgress.processed}/{importProgress.total}</span>
-                                <span>{importProgress.eta !== null ? `~${importProgress.eta.toFixed(1)} s do końca` : 'Szacowanie…'}</span>
+                    <div className="ui-settings-stack">
+                        {importError && <div className="popup-notice popup-notice--danger">{importError}</div>}
+                        {importSummary ? (
+                            <div className="binds-import__summary">
+                                {([
+                                    ['Plik', importData?.fileName || '—'],
+                                    ['Łącznie wierszy', importSummary.totalRows],
+                                    ['Wiersze do importu', importSummary.toImport],
+                                    ['Nowe wpisy', importSummary.newEntries],
+                                    ['Aktualizacje', importSummary.updates],
+                                    ['Pominięte', importSummary.skipped],
+                                    ...(importSummary.invalidRows > 0 ? [['Nieprawidłowe wiersze', importSummary.invalidRows]] : []),
+                                    ...(importSummary.duplicates > 0 ? [['Usunięte konflikty', importSummary.duplicates]] : []),
+                                ] as [string, string | number][]).map(([name, value]) => (
+                                    <div key={name} className="binds-import__row">
+                                        <span>{name}:</span> <strong>{value}</strong>
+                                    </div>
+                                ))}
                             </div>
-                        </div>
-                    )}
-                    {isRunningImport && (
-                        <div className="mt-3 d-flex align-items-center gap-2">
-                            <Spinner animation="border" size="sm" role="status" />
-                            <span>Importowanie…</span>
-                        </div>
-                    )}
-                    {importCancelled && (
-                        <Alert variant="warning" className="mt-3 mb-0">Import przerwany.</Alert>
-                    )}
-                    {importResult && !isRunningImport && (
-                        <Alert variant="success" className="mt-3 mb-0">
-                            <div className="d-flex flex-column gap-1">
-                                <div><strong>Import zakończony.</strong></div>
+                        ) : (
+                            !importError && <p className="popup-field__hint">Brak danych do importu.</p>
+                        )}
+                        {importPlan && (
+                            <>
+                                <Check
+                                    label="Nadpisz wpisy"
+                                    checked={overwriteExisting}
+                                    disabled={isRunningImport}
+                                    onChange={ev => setOverwriteExisting(ev.target.checked)}
+                                />
+                                <Field label="Polityka konfliktów">
+                                    <Select
+                                        className="settings-narrow"
+                                        value={conflictPolicy}
+                                        onChange={ev => setConflictPolicy(ev.target.value as ConflictPolicy)}
+                                        disabled={isRunningImport}
+                                    >
+                                        {CONFLICT_POLICIES.map(option => (
+                                            <option key={option.value} value={option.value}>{option.label}</option>
+                                        ))}
+                                    </Select>
+                                </Field>
+                            </>
+                        )}
+                        {importProgress && (
+                            <div className="popup-field">
+                                <progress
+                                    className="popup-progress"
+                                    max={importProgress.total || 1}
+                                    value={importProgress.processed}
+                                />
+                                <div className="binds-import__progress-text">
+                                    <span>Przetworzono wierszy: {importProgress.processed}/{importProgress.total}</span>
+                                    <span>{importProgress.eta !== null ? `~${importProgress.eta.toFixed(1)} s do końca` : 'Szacowanie…'}</span>
+                                </div>
+                            </div>
+                        )}
+                        {isRunningImport && (
+                            <div className="popup-inline">
+                                <span className="popup-spinner" />
+                                <span>Importowanie…</span>
+                            </div>
+                        )}
+                        {importCancelled && <div className="popup-notice popup-notice--warning">Import przerwany.</div>}
+                        {importResult && !isRunningImport && (
+                            <div className="popup-notice popup-notice--success">
+                                <strong>Import zakończony.</strong>
                                 <div>Nowe wpisy: {importResult.newCount}</div>
                                 <div>Zaktualizowane: {importResult.updatedCount}</div>
                                 <div>Pominięte: {importResult.skippedCount}</div>
                             </div>
-                        </Alert>
-                    )}
+                        )}
+                    </div>
                 </SubDialog>
             )}
             {importError && !showImportModal && (
-                <Alert variant="danger" className="mb-0">{importError}</Alert>
+                <div className="popup-notice popup-notice--danger">{importError}</div>
             )}
-            <div className="d-flex align-items-center gap-2 flex-wrap">
-                <Form.Label className="mb-0 fw-bold">Mapa klawiszy:</Form.Label>
+
+            <div className="binds-keymap">
+                <label className="popup-field__label" htmlFor="binds-keymap-select">Mapa klawiszy</label>
                 {editingName ? (
-                    <Form.Control
-                        type="text"
-                        size="sm"
-                        style={{ width: '200px' }}
+                    <Input
+                        mono
+                        className="binds-keymap__control"
                         value={keymapNameDraft}
                         onChange={ev => setKeymapNameDraft(ev.target.value)}
                         onBlur={handleFinishRename}
                         onKeyDown={handleRenameKeyDown}
+                        data-dialog-escape="local"
                         autoFocus
-                        autoCorrect="off"
-                        autoComplete="off"
-                        autoCapitalize="off"
-                        spellCheck={false}
                     />
                 ) : (
-                    <Form.Select
-                        size="sm"
-                        style={{ width: '200px' }}
+                    <Select
+                        id="binds-keymap-select"
+                        className="binds-keymap__control"
                         value={selectedKeymapId}
                         onChange={ev => handleKeymapSwitch(ev.target.value)}
                     >
                         {keymapList.map(k => (
                             <option key={k.id} value={k.id}>{k.name}</option>
                         ))}
-                    </Form.Select>
+                    </Select>
                 )}
-                <Button size="sm" variant="outline-secondary" onClick={handleStartRename} disabled={editingName} title="Zmień nazwę">
-                    Zmień nazwę
-                </Button>
-                <Button size="sm" variant="outline-primary" onClick={handleCreateKeymap} title="Nowa mapa (kopia bieżących bindów)">
-                    Nowa mapa
-                </Button>
-                <Button
-                    size="sm"
-                    variant="outline-danger"
-                    onClick={() => setShowDeleteConfirm(true)}
-                    disabled={keymapList.length <= 1}
-                    title="Usuń mapę klawiszy"
-                >
-                    Usuń
-                </Button>
-                <Button
-                    size="sm"
-                    variant="outline-warning"
-                    onClick={() => setShowRestoreConfirm(true)}
-                    title="Przywróć domyślne bindy (zachowaj własne skróty)"
-                >
+                <div className="binds-keymap__actions">
+                <Button size="sm" variant="ghost" onClick={handleStartRename} disabled={editingName}>Zmień nazwę</Button>
+                <Button size="sm" variant="ghost" onClick={handleCreateKeymap} title="Nowa mapa (kopia bieżących bindów)">Nowa mapa</Button>
+                <Button size="sm" variant="ghost" onClick={() => setShowRestoreConfirm(true)} title="Przywróć domyślne bindy (zachowaj własne skróty)">
                     Przywróć domyślne
                 </Button>
+                <DeleteButton
+                    title="Usuń mapę klawiszy"
+                    onClick={() => setShowDeleteConfirm(true)}
+                    disabled={keymapList.length <= 1}
+                />
+                </div>
             </div>
             {showDeleteConfirm && (
                 <SubDialog
@@ -757,8 +801,8 @@ function Binds() {
                     onClose={() => setShowDeleteConfirm(false)}
                     footer={(
                         <>
-                            <Button variant="secondary" size="sm" onClick={() => setShowDeleteConfirm(false)}>Anuluj</Button>
-                            <Button variant="danger" size="sm" onClick={handleDeleteKeymap}>Usuń</Button>
+                            <Button onClick={() => setShowDeleteConfirm(false)}>Anuluj</Button>
+                            <Button variant="danger" onClick={handleDeleteKeymap}>Usuń</Button>
                         </>
                     )}
                 >
@@ -772,450 +816,92 @@ function Binds() {
                     onClose={() => setShowRestoreConfirm(false)}
                     footer={(
                         <>
-                            <Button variant="secondary" size="sm" onClick={() => setShowRestoreConfirm(false)}>Anuluj</Button>
-                            <Button variant="warning" size="sm" onClick={handleRestoreDefaults}>Przywróć</Button>
+                            <Button onClick={() => setShowRestoreConfirm(false)}>Anuluj</Button>
+                            <Button variant="solid" onClick={handleRestoreDefaults}>Przywróć</Button>
                         </>
                     )}
                 >
                     Standardowe bindy zostaną przywrócone do wartości domyślnych. Własne skróty pozostaną bez zmian.
                 </SubDialog>
             )}
-            <fieldset className="p-0 border-0 m-0">
-                <Table bordered size="sm" hover className="table-modern table-zebra mb-2">
-                    <tbody className="align-middle">
-                        <tr>
-                            <td className="w-32">Funkcyjny</td>
-                            <td>
-                                <Form.Control
-                                    type="text"
-                                    readOnly
-                                    size="sm"
-                                    value={label(binds.main)}
-                                    onKeyDown={ev => handleCapture('main', ev)}
-                                />
-                            </td>
-                        </tr>
-                        <tr>
-                            <td className="w-32 ps-4 text-muted">└ Wrota</td>
-                            <td>
-                                <div className="d-flex gap-1 align-items-center">
-                                    <Form.Control
-                                        type="text"
-                                        readOnly
-                                        size="sm"
-                                        placeholder={label(binds.main)}
-                                        value={binds.mainGates ? label(binds.mainGates) : ''}
-                                        onKeyDown={ev => handleCaptureOptional('mainGates', ev)}
-                                    />
-                                    {binds.mainGates && (
-                                        <Button variant="outline-secondary" size="sm" onClick={() => handleClearOptional('mainGates')} title="Przywróć domyślny">✕</Button>
-                                    )}
-                                </div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td className="w-32 ps-4 text-muted">└ Transport</td>
-                            <td>
-                                <div className="d-flex gap-1 align-items-center">
-                                    <Form.Control
-                                        type="text"
-                                        readOnly
-                                        size="sm"
-                                        placeholder={label(binds.main)}
-                                        value={binds.mainTransport ? label(binds.mainTransport) : ''}
-                                        onKeyDown={ev => handleCaptureOptional('mainTransport', ev)}
-                                    />
-                                    {binds.mainTransport && (
-                                        <Button variant="outline-secondary" size="sm" onClick={() => handleClearOptional('mainTransport')} title="Przywróć domyślny">✕</Button>
-                                    )}
-                                </div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td className="w-32 ps-4 text-muted">└ Zbieranie z cial</td>
-                            <td>
-                                <div className="d-flex gap-1 align-items-center">
-                                    <Form.Control
-                                        type="text"
-                                        readOnly
-                                        size="sm"
-                                        placeholder={label(binds.main)}
-                                        value={binds.mainLoot ? label(binds.mainLoot) : ''}
-                                        onKeyDown={ev => handleCaptureOptional('mainLoot', ev)}
-                                    />
-                                    {binds.mainLoot && (
-                                        <Button variant="outline-secondary" size="sm" onClick={() => handleClearOptional('mainLoot')} title="Przywróć domyślny">✕</Button>
-                                    )}
-                                </div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td className="w-32">Napełnij lampę</td>
-                            <td>
-                                <Form.Control
-                                    type="text"
-                                    readOnly
-                                    size="sm"
-                                    value={label(binds.lamp)}
-                                    onKeyDown={ev => handleCapture('lamp', ev)}
-                                />
-                            </td>
-                        </tr>
-                        <tr>
-                            <td className="w-32">Atakuj</td>
-                            <td>
-                                <Form.Control
-                                    type="text"
-                                    readOnly
-                                    size="sm"
-                                    value={label(binds.attack)}
-                                    onKeyDown={ev => handleCapture('attack', ev)}
-                                />
-                            </td>
-                        </tr>
-                        <tr>
-                            <td className="w-32">Wesprzyj</td>
-                            <td>
-                                <Form.Control
-                                    type="text"
-                                    readOnly
-                                    size="sm"
-                                    value={label(binds.support)}
-                                    onKeyDown={ev => handleCapture('support', ev)}
-                                />
-                            </td>
-                        </tr>
-                        <tr>
-                            <td className="w-32">Tryb ruchu</td>
-                            <td>
-                                <Form.Control
-                                    type="text"
-                                    readOnly
-                                    size="sm"
-                                    value={label(binds.moveMode)}
-                                    onKeyDown={ev => handleCapture('moveMode', ev)}
-                                />
-                            </td>
-                        </tr>
-                        <tr>
-                            <td className="w-32">Bind w lokacji</td>
-                            <td>
-                                <Form.Control
-                                    type="text"
-                                    readOnly
-                                    size="sm"
-                                    value={label(binds.roomBind)}
-                                    onKeyDown={ev => handleCapture('roomBind', ev)}
-                                />
-                            </td>
-                        </tr>
-                        <tr>
-                            <td className="w-32">Napij się wody</td>
-                            <td>
-                                <Form.Control
-                                    type="text"
-                                    readOnly
-                                    size="sm"
-                                    value={label(binds.drinkable)}
-                                    onKeyDown={ev => handleCapture('drinkable', ev)}
-                                />
-                            </td>
-                        </tr>
-                        <tr>
-                            <td className="w-32">Wrota</td>
-                            <td>
-                                <Form.Control
-                                    type="text"
-                                    readOnly
-                                    size="sm"
-                                    value={label(binds.gateBind)}
-                                    onKeyDown={ev => handleCapture('gateBind', ev)}
-                                />
-                            </td>
-                        </tr>
-                        <tr>
-                            <td className="w-32">Dwukrotne +k</td>
-                            <td>
-                                <Form.Control
-                                    type="text"
-                                    readOnly
-                                    size="sm"
-                                    value={label(binds.doubleK)}
-                                    onKeyDown={ev => handleCapture('doubleK', ev)}
-                                />
-                            </td>
-                        </tr>
-                        <tr>
-                            <td className="w-32">Tymczasowe 1</td>
-                            <td>
-                                <Form.Control
-                                    type="text"
-                                    readOnly
-                                    size="sm"
-                                    value={label(binds.temp[0])}
-                                    onKeyDown={ev => handleCaptureTemp(0, ev)}
-                                />
-                            </td>
-                        </tr>
-                        <tr>
-                            <td className="w-32">Tymczasowe 2</td>
-                            <td>
-                                <Form.Control
-                                    type="text"
-                                    readOnly
-                                    size="sm"
-                                    value={label(binds.temp[1])}
-                                    onKeyDown={ev => handleCaptureTemp(1, ev)}
-                                />
-                            </td>
-                        </tr>
-                        <tr>
-                            <td className="w-32">Atakuj wroga 1</td>
-                            <td>
-                                <Form.Control
-                                    type="text"
-                                    readOnly
-                                    size="sm"
-                                    value={label(binds.enemy[0])}
-                                    onKeyDown={ev => handleCaptureEnemy(0, ev)}
-                                />
-                            </td>
-                        </tr>
-                        <tr>
-                            <td className="w-32">Atakuj wroga 2</td>
-                            <td>
-                                <Form.Control
-                                    type="text"
-                                    readOnly
-                                    size="sm"
-                                    value={label(binds.enemy[1])}
-                                    onKeyDown={ev => handleCaptureEnemy(1, ev)}
-                                />
-                            </td>
-                        </tr>
-                        <tr>
-                            <td className="w-32">Atakuj wroga 3</td>
-                            <td>
-                                <Form.Control
-                                    type="text"
-                                    readOnly
-                                    size="sm"
-                                    value={label(binds.enemy[2])}
-                                    onKeyDown={ev => handleCaptureEnemy(2, ev)}
-                                />
-                            </td>
-                        </tr>
-                        <tr>
-                            <td className="w-32">Blokuj wroga 1</td>
-                            <td>
-                                <Form.Control
-                                    type="text"
-                                    readOnly
-                                    size="sm"
-                                    value={label(binds.enemyBlock[0])}
-                                    onKeyDown={ev => handleCaptureEnemyBlock(0, ev)}
-                                />
-                            </td>
-                        </tr>
-                        <tr>
-                            <td className="w-32">Blokuj wroga 2</td>
-                            <td>
-                                <Form.Control
-                                    type="text"
-                                    readOnly
-                                    size="sm"
-                                    value={label(binds.enemyBlock[1])}
-                                    onKeyDown={ev => handleCaptureEnemyBlock(1, ev)}
-                                />
-                            </td>
-                        </tr>
-                        <tr>
-                            <td className="w-32">Blokuj wroga 3</td>
-                            <td>
-                                <Form.Control
-                                    type="text"
-                                    readOnly
-                                    size="sm"
-                                    value={label(binds.enemyBlock[2])}
-                                    onKeyDown={ev => handleCaptureEnemyBlock(2, ev)}
-                                />
-                            </td>
-                        </tr>
-                        <tr>
-                            <td className="w-32">N</td>
-                            <td>
-                                <Form.Control
-                                    type="text"
-                                    readOnly
-                                    size="sm"
-                                    value={label(binds.directions.n)}
-                                    onKeyDown={ev => handleCaptureDir('n', ev)}
-                                />
-                            </td>
-                        </tr>
-                        <tr>
-                            <td className="w-32">S</td>
-                            <td>
-                                <Form.Control
-                                    type="text"
-                                    readOnly
-                                    size="sm"
-                                    value={label(binds.directions.s)}
-                                    onKeyDown={ev => handleCaptureDir('s', ev)}
-                                />
-                            </td>
-                        </tr>
-                        <tr>
-                            <td className="w-32">W</td>
-                            <td>
-                                <Form.Control
-                                    type="text"
-                                    readOnly
-                                    size="sm"
-                                    value={label(binds.directions.w)}
-                                    onKeyDown={ev => handleCaptureDir('w', ev)}
-                                />
-                            </td>
-                        </tr>
-                        <tr>
-                            <td className="w-32">E</td>
-                            <td>
-                                <Form.Control
-                                    type="text"
-                                    readOnly
-                                    size="sm"
-                                    value={label(binds.directions.e)}
-                                    onKeyDown={ev => handleCaptureDir('e', ev)}
-                                />
-                            </td>
-                        </tr>
-                        <tr>
-                            <td className="w-32">NW</td>
-                            <td>
-                                <Form.Control
-                                    type="text"
-                                    readOnly
-                                    size="sm"
-                                    value={label(binds.directions.nw)}
-                                    onKeyDown={ev => handleCaptureDir('nw', ev)}
-                                />
-                            </td>
-                        </tr>
-                        <tr>
-                            <td className="w-32">NE</td>
-                            <td>
-                                <Form.Control
-                                    type="text"
-                                    readOnly
-                                    size="sm"
-                                    value={label(binds.directions.ne)}
-                                    onKeyDown={ev => handleCaptureDir('ne', ev)}
-                                />
-                            </td>
-                        </tr>
-                        <tr>
-                            <td className="w-32">SW</td>
-                            <td>
-                                <Form.Control
-                                    type="text"
-                                    readOnly
-                                    size="sm"
-                                    value={label(binds.directions.sw)}
-                                    onKeyDown={ev => handleCaptureDir('sw', ev)}
-                                />
-                            </td>
-                        </tr>
-                        <tr>
-                            <td className="w-32">SE</td>
-                            <td>
-                                <Form.Control
-                                    type="text"
-                                    readOnly
-                                    size="sm"
-                                    value={label(binds.directions.se)}
-                                    onKeyDown={ev => handleCaptureDir('se', ev)}
-                                />
-                            </td>
-                        </tr>
-                        <tr>
-                            <td className="w-32">U</td>
-                            <td>
-                                <Form.Control
-                                    type="text"
-                                    readOnly
-                                    size="sm"
-                                    value={label(binds.directions.u)}
-                                    onKeyDown={ev => handleCaptureDir('u', ev)}
-                                />
-                            </td>
-                        </tr>
-                        <tr>
-                            <td className="w-32">D</td>
-                            <td>
-                                <Form.Control
-                                    type="text"
-                                    readOnly
-                                    size="sm"
-                                    value={label(binds.directions.d)}
-                                    onKeyDown={ev => handleCaptureDir('d', ev)}
-                                />
-                            </td>
-                        </tr>
-                        <tr>
-                            <td className="w-32">Zerknij</td>
-                            <td>
-                                <Form.Control
-                                    type="text"
-                                    readOnly
-                                    size="sm"
-                                    value={label(binds.directions.zerknij)}
-                                    onKeyDown={ev => handleCaptureDir('zerknij', ev)}
-                                />
-                            </td>
-                        </tr>
-                        <tr>
-                            <td className="w-32">Specjalne</td>
-                            <td>
-                                <Form.Control
-                                    type="text"
-                                    readOnly
-                                    size="sm"
-                                    value={label(binds.directions.special)}
-                                    onKeyDown={ev => handleCaptureDir('special', ev)}
-                                />
-                            </td>
-                        </tr>
-                        {binds.custom.map((b, idx) => (
-                            <tr key={idx} ref={idx === binds.custom.length - 1 ? lastCustomRowRef : undefined}>
-                                <td>
-                                    <Form.Control
-                                        type="text"
-                                        size="sm"
-                                        value={b.command}
-                                        onChange={ev => handleCommandChange(idx, ev.target.value)}
-                                        autoCorrect="off"
-                                        autoComplete="off"
-                                        autoCapitalize="off"
-                                        spellCheck={false}
-                                    />
-                                </td>
-                                <td>
-                                    <div className="d-flex gap-2">
-                                        <Form.Control
-                                            type="text"
-                                            readOnly
-                                            size="sm"
-                                            value={label(b)}
-                                            onKeyDown={ev => handleCaptureCustom(idx, ev)}
-                                        />
-                                        <Button variant="danger" size="sm" onClick={() => removeCustomBind(idx)}>Usuń</Button>
-                                    </div>
-                                </td>
-                            </tr>
+
+            <p className="popup-field__hint binds-editor__hint">Kliknij pole i naciśnij klawisz (z CTRL / {ALT_LABEL} / SHIFT), aby przypisać skrót.</p>
+
+            <section className="binds-section">
+                <h6 className="binds-section__title">Podstawowe</h6>
+                <div className="binds-grid binds-grid--columns">
+                    <div className="binds-group">
+                        <BindRow label="Funkcyjny" value={label(binds.main)} onKeyDown={ev => handleCapture('main', ev)} />
+                        {optionalRows.map(row => (
+                            <BindRow
+                                key={row.name}
+                                sub
+                                label={row.label}
+                                value={binds[row.name] ? label(binds[row.name]!) : ''}
+                                placeholder={label(binds.main)}
+                                onKeyDown={ev => handleCaptureOptional(row.name, ev)}
+                                onClear={binds[row.name] ? () => handleClearOptional(row.name) : undefined}
+                            />
                         ))}
-                    </tbody>
-                </Table>
-            </fieldset>
+                    </div>
+                    {simpleRows.map(row => (
+                        <BindRow key={row.name} label={row.label} value={label(binds[row.name] as Bind)} onKeyDown={ev => handleCapture(row.name, ev)} />
+                    ))}
+                    {[0, 1].map(i => (
+                        <BindRow key={`temp${i}`} label={`Tymczasowe ${i + 1}`} value={label(binds.temp[i])} onKeyDown={ev => handleCaptureTemp(i, ev)} />
+                    ))}
+                </div>
+            </section>
+
+            <section className="binds-section">
+                <h6 className="binds-section__title">Wrogowie</h6>
+                <div className="binds-grid binds-grid--columns">
+                    {[0, 1, 2].map(i => (
+                        <BindRow key={`enemy${i}`} label={`Atakuj wroga ${i + 1}`} value={label(binds.enemy[i])} onKeyDown={ev => handleCaptureEnemy(i, ev)} />
+                    ))}
+                    {[0, 1, 2].map(i => (
+                        <BindRow key={`block${i}`} label={`Blokuj wroga ${i + 1}`} value={label(binds.enemyBlock[i])} onKeyDown={ev => handleCaptureEnemyBlock(i, ev)} />
+                    ))}
+                </div>
+            </section>
+
+            <section className="binds-section">
+                <h6 className="binds-section__title">Kierunki</h6>
+                <div className="binds-directions">
+                    <div className="binds-compass">
+                        {compass.map(dir => (
+                            <BindRow key={dir} stacked label={dirLabel(dir)} value={label(binds.directions[dir])} onKeyDown={ev => handleCaptureDir(dir, ev)} />
+                        ))}
+                    </div>
+                    <div className="binds-group">
+                        {(['u', 'd', 'special'] as const).map(dir => (
+                            <BindRow key={dir} label={dirLabel(dir)} value={label(binds.directions[dir])} onKeyDown={ev => handleCaptureDir(dir, ev)} />
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            <section className="binds-section">
+                <h6 className="binds-section__title">Własne skróty</h6>
+                {binds.custom.length === 0 ? (
+                    <p className="popup-field__hint">Brak własnych skrótów. Dodaj je przyciskiem „Dodaj skrót” na dole okna.</p>
+                ) : (
+                    <div className="binds-custom">
+                        {binds.custom.map((b, idx) => (
+                            <div key={idx} className="bind-row bind-row--custom" ref={idx === binds.custom.length - 1 ? lastCustomRowRef : undefined}>
+                                <Input
+                                    mono
+                                    placeholder="Komenda"
+                                    value={b.command}
+                                    onChange={ev => handleCommandChange(idx, ev.target.value)}
+                                />
+                                <KeyCapture value={b.key ? label(b) : ''} onKeyDown={ev => handleCaptureCustom(idx, ev)} />
+                                <DeleteButton onClick={() => removeCustomBind(idx)} />
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </section>
         </div>
     );
 }

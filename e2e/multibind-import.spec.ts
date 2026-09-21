@@ -246,7 +246,7 @@ test.describe('Multibind import', () => {
             buffer: Buffer.alloc(0),
         });
 
-        const errorAlert = page.locator('#binds-modal .alert-danger');
+        const errorAlert = page.locator('#binds-modal .popup-notice--danger');
         await expect(errorAlert, 'should display worker error alert').toBeVisible();
         await expect(errorAlert, 'should show worker error message').toHaveText('Nie udało się sparsować bazy.');
         await expect(triggerButton, 'should re-enable import trigger after failure').toBeEnabled();
