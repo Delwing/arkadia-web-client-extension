@@ -1,9 +1,9 @@
-import { useEffect, useState, ChangeEvent, useRef } from "react";
+import { useEffect, useState, ChangeEvent } from "react";
 import { Pencil } from "lucide-react";
 import { Button, DeleteButton, Input, MenuButton } from "@web-ui/primitives/index.ts";
 import { globalStorage } from "@modules/core/storage";
-import { parseBlowtorch, Alias } from "./importBlowtorch";
-import { parseArkadia } from "./importArkadia";
+import type { Alias } from "./importBlowtorch";
+import { openSettingsPage } from "@web/settings/categories.ts";
 import AliasEditModal from "./AliasEditModal";
 
 function Aliases() {
@@ -11,14 +11,15 @@ function Aliases() {
     const [filter, setFilter] = useState("");
     const [showModal, setShowModal] = useState(false);
     const [modalAlias, setModalAlias] = useState<{ alias: Alias; index: number } | undefined>(undefined);
-    const fileInputRef = useRef<HTMLInputElement>(null);
-    const arkadiaInputRef = useRef<HTMLInputElement>(null);
-
+    // Follows storage, so aliases imported in Ustawienia show up here too.
     useEffect(() => {
         const saved = globalStorage.get("aliases");
         if (Array.isArray(saved)) {
             setAliases(saved);
         }
+        return globalStorage.onChange("aliases", (value) => {
+            setAliases(Array.isArray(value) ? value : []);
+        });
     }, []);
 
     function saveList(list: Alias[]) {
@@ -50,58 +51,6 @@ function Aliases() {
         }
         saveList(updated);
         closeModal();
-    }
-
-    function openArkadiaImport() {
-        arkadiaInputRef.current?.click();
-    }
-
-    function openImport() {
-        fileInputRef.current?.click();
-    }
-
-    async function handleArkadiaImport(e: ChangeEvent<HTMLInputElement>) {
-        const file = e.target.files?.[0];
-        if (!file) return;
-        try {
-            const text = await file.text();
-            const { imported, skipped } = parseArkadia(text);
-            const filtered = imported.filter(a => !aliases.some(b => b.pattern === a.pattern));
-            if (filtered.length) {
-                saveList([...aliases, ...filtered]);
-            }
-            let message = `Zaimportowano ${filtered.length} aliasów`;
-            if (skipped.length) {
-                message += `\nPominięto: ${skipped.join(", ")}`;
-            } else if (!filtered.length) {
-                message = "Brak nowych aliasów";
-            }
-            alert(message);
-        } catch {
-            alert("Nie udało się zaimportować pliku");
-        } finally {
-            e.target.value = "";
-        }
-    }
-
-    async function handleImport(e: ChangeEvent<HTMLInputElement>) {
-        const file = e.target.files?.[0];
-        if (!file) return;
-        try {
-            const text = await file.text();
-            const imported = parseBlowtorch(text);
-            const filtered = imported.filter(a => !aliases.some(b => b.pattern === a.pattern));
-            if (filtered.length) {
-                saveList([...aliases, ...filtered]);
-                alert(`Zaimportowano ${filtered.length} aliasów`);
-            } else {
-                alert("Brak nowych aliasów");
-            }
-        } catch {
-            alert("Nie udało się zaimportować pliku");
-        } finally {
-            e.target.value = "";
-        }
     }
 
     function remove(idx: number) {
@@ -141,12 +90,10 @@ function Aliases() {
                 <MenuButton
                     label="Importuj"
                     items={[
-                        { label: "Z klienta Arkadii (.json)", onSelect: openArkadiaImport },
-                        { label: "Z Blowtorch (.xml)", onSelect: openImport },
+                        { label: "Z klienta Arkadii (.json)", onSelect: () => openSettingsPage("data-import", "import-aliases-arkadia") },
+                        { label: "Z Blowtorch (.xml)", onSelect: () => openSettingsPage("data-import", "import-aliases-blowtorch") },
                     ]}
                 />
-                <input ref={arkadiaInputRef} type="file" accept=".json" hidden onChange={handleArkadiaImport} />
-                <input ref={fileInputRef} type="file" accept=".xml" hidden onChange={handleImport} />
             </div>
 
             {aliases.length === 0 ? (

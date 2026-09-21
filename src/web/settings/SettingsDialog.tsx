@@ -4,6 +4,7 @@ import {
     CloudUpload,
     HardDriveDownload,
     MonitorSmartphone,
+    FileInput,
     ChartPie,
     Ellipsis,
     Map as MapIcon,
@@ -63,6 +64,7 @@ const CATEGORY_ICONS: Record<SettingsCategoryKey, LucideIcon> = {
     "data-sync": CloudUpload,
     "data-backup": HardDriveDownload,
     "data-devices": MonitorSmartphone,
+    "data-import": FileInput,
 };
 
 function NavIcon({ category }: { category: SettingsCategoryKey }) {

@@ -20,11 +20,8 @@ import {
     subscribeZlom,
 } from '@modules/data/zlomStore';
 import { defaultSettings } from '@modules/core/defaultSettings';
-import type {
-    ZlomDbResult,
-    ZlomDbWorkerRequest,
-    ZlomDbWorkerResponse,
-} from '@modules/data/zlomDbImport.shared';
+import { openSettingsPage } from '@web/settings/categories.ts';
+import type { ZlomDbResult } from '@modules/data/zlomDbImport.shared';
 
 const POPUP_ID = 'popup:zlom';
 const PAGE_SIZE = 100;
@@ -52,9 +49,7 @@ const ZlomPopup: React.FC = () => {
         setPage(0);
     }, [activeTab, filter]);
 
-    const fileInputRef = useRef<HTMLInputElement>(null);
     const jsonInputRef = useRef<HTMLInputElement>(null);
-    const workerRef = useRef<Worker | null>(null);
     const [importState, setImportState] = useState<
         | { phase: 'idle' }
         | { phase: 'loading' }
@@ -62,15 +57,6 @@ const ZlomPopup: React.FC = () => {
         | { phase: 'done'; message: string }
         | { phase: 'error'; message: string }
     >({ phase: 'idle' });
-
-    useEffect(() => {
-        return () => {
-            if (workerRef.current) {
-                workerRef.current.terminate();
-                workerRef.current = null;
-            }
-        };
-    }, []);
 
     useEffect(() => {
         let active = true;
@@ -89,69 +75,6 @@ const ZlomPopup: React.FC = () => {
     useEffect(() => {
         if (isOpen) setSnap(getZlomSnapshot());
     }, [isOpen]);
-
-    const parseInWorker = useCallback(async (buffer: ArrayBuffer): Promise<ZlomDbResult> => {
-        if (!workerRef.current) {
-            workerRef.current = new Worker(
-                new URL('@modules/data/zlomDbImport.worker.ts', import.meta.url),
-                { type: 'module' },
-            );
-        }
-        const worker = workerRef.current;
-        return new Promise((resolve, reject) => {
-            const cleanup = () => {
-                worker.removeEventListener('message', handleMessage);
-                worker.removeEventListener('error', handleError);
-            };
-            const handleMessage = (event: MessageEvent) => {
-                const data = event.data as ZlomDbWorkerResponse | undefined;
-                if (!data) return;
-                if (data.type === 'success') {
-                    cleanup();
-                    resolve(data.payload);
-                }
-                if (data.type === 'error') {
-                    cleanup();
-                    reject(new Error(data.message));
-                }
-            };
-            const handleError = (event: ErrorEvent) => {
-                cleanup();
-                if (workerRef.current === worker) {
-                    workerRef.current.terminate();
-                    workerRef.current = null;
-                }
-                reject(event.error ?? new Error(event.message));
-            };
-            worker.addEventListener('message', handleMessage);
-            worker.addEventListener('error', handleError);
-            const request: ZlomDbWorkerRequest = { type: 'parse', buffer };
-            worker.postMessage(request, [buffer]);
-        });
-    }, []);
-
-    const handleImportClick = useCallback(() => {
-        fileInputRef.current?.click();
-    }, []);
-
-    const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (e.target) e.target.value = '';
-        if (!file) return;
-
-        setImportState({ phase: 'loading' });
-        try {
-            const buffer = await file.arrayBuffer();
-            const parsed = await parseInWorker(buffer);
-            if (parsed.bronie.length + parsed.tarcze.length + parsed.zbroje.length === 0) {
-                setImportState({ phase: 'error', message: 'Baza nie zawiera danych zlomu.' });
-                return;
-            }
-            setImportState({ phase: 'preview', parsed, mergeMode: 'replace' });
-        } catch (err) {
-            setImportState({ phase: 'error', message: err instanceof Error ? err.message : 'Nieznany blad.' });
-        }
-    }, [parseInWorker]);
 
     const handleImportConfirm = useCallback(async () => {
         if (importState.phase !== 'preview') return;
@@ -470,19 +393,11 @@ const ZlomPopup: React.FC = () => {
             <button
                 type="button"
                 className="popup-btn"
-                onClick={handleImportClick}
-                title="Importuj baze z pliku Mudleta"
-                disabled={importState.phase === 'loading'}
+                onClick={() => openSettingsPage('data-import', 'import-zlom')}
+                title="Import bazy z Mudleta (Ustawienia → Import z innych klientów)"
             >
                 Import z Mudleta
             </button>
-            <input
-                ref={fileInputRef}
-                type="file"
-                accept=".db,.sqlite"
-                style={{ display: 'none' }}
-                onChange={handleFileChange}
-            />
             <input
                 ref={jsonInputRef}
                 type="file"

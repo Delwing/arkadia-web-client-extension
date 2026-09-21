@@ -3,7 +3,7 @@ import type Client from '@client/Client';
 import MenuModal from './MenuModal';
 import { holdPortaledModalScope } from './portaledModalScope';
 import { getHelperConnection } from '../../client/bootstrap';
-import { CLOSE_SETTINGS_EVENT, SAVE_SETTINGS_EVENT, SETTINGS_MODAL_ID, type SettingsCategoryKey } from '@web/settings/categories.ts';
+import { CLOSE_SETTINGS_EVENT, OPEN_SETTINGS_PAGE_EVENT, SAVE_SETTINGS_EVENT, SETTINGS_MODAL_ID, requestSettingsCategory, type OpenSettingsPageDetail, type SettingsCategoryKey } from '@web/settings/categories.ts';
 import { buttonsSettingsCategory } from '@web/settings/buttonsCategory.ts';
 
 // The stock settings panels are lazy-loaded to keep their weight out of forge's
@@ -185,8 +185,15 @@ function ModalOpenEffects({ modalKey }: { modalKey: ModalKey }) {
 }
 
 const SETTINGS_KEYS: ReadonlySet<ModalKey> = new Set(['options', 'ui', 'buttons', 'radial']);
+/** Set by an openSettingsPage() request: the page the next "options" dialog opens on. */
+let requestedSettingsPage: SettingsCategoryKey | null = null;
+
 const SETTINGS_START: Partial<Record<ModalKey, () => SettingsCategoryKey>> = {
-    options: () => 'character-general',
+    options: () => {
+        const page = requestedSettingsPage ?? 'character-general';
+        requestedSettingsPage = null;
+        return page;
+    },
     ui: () => 'ui-appearance',
     buttons: buttonsSettingsCategory,
     radial: () => 'ui-radial',
@@ -382,6 +389,23 @@ function MenuModalEntry({ modalKey, isTop, client, onClose, pushKey, replaceKey 
 
 export default function MenuModalHost({ stack, client, closeKey, closeTop, pushKey, replaceKey }: MenuModalHostProps) {
     const open = stack.length > 0;
+
+    // A window's shortcut (e.g. "Import z Mudleta") asks for a settings page.
+    // Listened to even with no modal open: the request usually comes from a
+    // docked window. An open settings dialog switches page itself.
+    useEffect(() => {
+        const onOpenPage = (event: Event) => {
+            const { category } = (event as CustomEvent<OpenSettingsPageDetail>).detail;
+            if (stack.includes('options')) {
+                requestSettingsCategory(category);
+                return;
+            }
+            requestedSettingsPage = category;
+            pushKey('options');
+        };
+        window.addEventListener(OPEN_SETTINGS_PAGE_EVENT, onOpenPage);
+        return () => window.removeEventListener(OPEN_SETTINGS_PAGE_EVENT, onOpenPage);
+    }, [stack, pushKey]);
 
     // Several option components dispatch these on save/cancel (the same contract
     // the stock Bootstrap modals honour) — they mean "dismiss the current modal",

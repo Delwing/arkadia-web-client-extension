@@ -3,9 +3,10 @@ import LocalExportTab from "./LocalExportTab";
 import GoogleDriveTab from "./GoogleDriveTab";
 import FirebaseTab from "./FirebaseTab";
 import DeviceManagementTab from "./DeviceManagementTab";
+import ImportPage from "../imports/ImportPage";
 import { collectCharacters, DEFAULT_EXPORT_OPTIONS, type ExportOptions } from "./exportUtils";
 
-type DataPageKey = "data-sync" | "data-backup" | "data-devices";
+type DataPageKey = "data-sync" | "data-backup" | "data-devices" | "data-import";
 
 /**
  * The "Dane" pages of the settings dialog: sync, backup and devices, which used
@@ -42,6 +43,7 @@ export function useDataPages(): { pages: Record<DataPageKey, ReactNode> } {
                 </div>
             ),
             "data-devices": <DeviceManagementTab />,
+            "data-import": <ImportPage />,
         },
     };
 }

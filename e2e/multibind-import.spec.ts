@@ -21,10 +21,13 @@ async function openBindsModal(page: Page) {
     return modal;
 }
 
-async function closeBindsModal(page: Page) {
-    const modal = page.locator('#binds-modal');
-    await modal.locator('.btn-close').click();
-    await expect(modal, 'should close binds modal after finishing checks').not.toBeVisible();
+/** The Bindowanie import button hands over to Ustawienia → Import z innych klientów. */
+const IMPORT_ROW = '#settings-modal #import-multibinds';
+
+async function closeImportPage(page: Page) {
+    const modal = page.locator('#settings-modal');
+    await modal.locator('.btn-close').first().click();
+    await expect(modal, 'should close the settings dialog after finishing checks').not.toBeVisible();
 }
 
 async function openAliasesModal(page: Page) {
@@ -60,13 +63,14 @@ test.describe('Multibind import', () => {
         });
 
         await page.getByRole('button', { name: 'Importuj bazę multibindów…' }).click();
-        await page.setInputFiles('#binds-modal input[type="file"]', {
+        await expect(page.locator(IMPORT_ROW), 'should open the import page').toBeVisible();
+        await page.setInputFiles(`${IMPORT_ROW} input[type="file"]`, {
             name: 'sample.db',
             mimeType: 'application/x-sqlite3',
             buffer: Buffer.alloc(0),
         });
 
-        // The import dialog renders inline inside #binds-modal (see @web/SubDialog),
+        // The import dialog renders inline inside #settings-modal (see @web/SubDialog),
         // so both the host modal and the dialog match — take the innermost, the
         // same way scripts.spec.ts locates its sub-dialogs.
         const importModal = page.locator('.popup-dialog').filter({
@@ -94,7 +98,7 @@ test.describe('Multibind import', () => {
         await importModal.getByRole('button', { name: 'Zamknij' }).click();
         await expect(importModal, 'should close import modal after acknowledgement').not.toBeVisible();
 
-        await closeBindsModal(page);
+        await closeImportPage(page);
 
         const requests = await getMultibindRequests(page);
         expect(
@@ -208,7 +212,8 @@ test.describe('Multibind import', () => {
         });
 
         await page.getByRole('button', { name: 'Importuj bazę multibindów…' }).click();
-        await page.setInputFiles('#binds-modal input[type="file"]', {
+        await expect(page.locator(IMPORT_ROW), 'should open the import page').toBeVisible();
+        await page.setInputFiles(`${IMPORT_ROW} input[type="file"]`, {
             name: 'bulk.db',
             mimeType: 'application/x-sqlite3',
             buffer: Buffer.alloc(0),
@@ -227,7 +232,7 @@ test.describe('Multibind import', () => {
 
         await importModal.getByRole('button', { name: 'Zamknij' }).click();
         await expect(importModal, 'should close import modal after acknowledgement').not.toBeVisible();
-        await closeBindsModal(page);
+        await closeImportPage(page);
     });
 
     test('surfaced worker errors render an inline alert', async ({page}) => {
@@ -238,15 +243,16 @@ test.describe('Multibind import', () => {
             message: 'Nie udało się sparsować bazy.',
         });
 
-        const triggerButton = page.getByRole('button', { name: 'Importuj bazę multibindów…' });
-        await triggerButton.click();
-        await page.setInputFiles('#binds-modal input[type="file"]', {
+        await page.getByRole('button', { name: 'Importuj bazę multibindów…' }).click();
+        await expect(page.locator(IMPORT_ROW), 'should open the import page').toBeVisible();
+        await page.setInputFiles(`${IMPORT_ROW} input[type="file"]`, {
             name: 'broken.db',
             mimeType: 'application/x-sqlite3',
             buffer: Buffer.alloc(0),
         });
 
-        const errorAlert = page.locator('#binds-modal .popup-notice--danger');
+        const errorAlert = page.locator(`${IMPORT_ROW} .popup-notice--danger .import-row__message`);
+        const triggerButton = page.locator(IMPORT_ROW).getByRole('button', { name: 'Wybierz plik…' });
         await expect(errorAlert, 'should display worker error alert').toBeVisible();
         await expect(errorAlert, 'should show worker error message').toHaveText('Nie udało się sparsować bazy.');
         await expect(triggerButton, 'should re-enable import trigger after failure').toBeEnabled();
@@ -254,7 +260,7 @@ test.describe('Multibind import', () => {
         const multiBinds = page.locator('#multi-binds .multi-bind');
         await expect(multiBinds, 'should not list multibinds when import fails').toHaveCount(0);
 
-        await closeBindsModal(page);
+        await closeImportPage(page);
 
         const requests = await getMultibindRequests(page);
         expect(

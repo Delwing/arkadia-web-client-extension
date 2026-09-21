@@ -2,7 +2,6 @@ import React, {
   useCallback,
   useEffect,
   useMemo,
-  useRef,
   useState,
 } from 'react';
 import type {
@@ -14,19 +13,15 @@ import eventBus from '@modules/core/eventBus';
 import type { KnowledgeReportAction } from '@shared/events';
 import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
 import { usePopup } from './hooks/usePopup';
-import { getBaseCategoryFromName, type KnowledgeCategoryBaseName } from '@client/knowledgeCategories';
-import type {
-  WiedzaDbResult,
-  WiedzaDbWorkerRequest,
-  WiedzaDbWorkerResponse,
-} from '@modules/data/wiedzaDbImport.shared';
+import { type KnowledgeCategoryBaseName } from '@client/knowledgeCategories';
 import type { KnowledgeDetailsType } from '@modules/data/dataStores/knowledgeDetailsStore';
 import {
-  mergeKnowledgeEvents,
   getKnowledgeEventsForCharacter,
   type KnowledgeEvent,
 } from '@modules/data/dataStores/knowledgeEventsStore';
 import { characterStorage } from '@modules/core/storage';
+import { openSettingsPage } from '@web/settings/categories.ts';
+import { WIEDZA_IMPORTED_EVENT } from '@web/imports/WiedzaImport.tsx';
 
 function findBookProgValue(
   bookProg: KnowledgeBookCategoryProgress,
@@ -153,14 +148,6 @@ function getLevelColorClass(index: number): string {
   return 'knowledge-level--full';
 }
 
-type ImportState =
-  | { phase: 'idle' }
-  | { phase: 'loading' }
-  | { phase: 'preview'; parsed: WiedzaDbResult; selectedCharacter: string } // '__all__' = all characters
-  | { phase: 'importing' }
-  | { phase: 'done'; message: string }
-  | { phase: 'error'; message: string };
-
 const KnowledgeReport: React.FC = () => {
   const { wrapperProps, isOpen, isPinned, setIsOpen } = usePopup(POPUP_ID);
   const [data, setData] = useState<KnowledgeReportPayload | null>(null);
@@ -169,18 +156,6 @@ const KnowledgeReport: React.FC = () => {
   const [expandedStatuses, setExpandedStatuses] = useState<
     Record<string, Partial<Record<KnowledgeCategoryStatus, boolean>>>
   >({});
-  const [importState, setImportState] = useState<ImportState>({ phase: 'idle' });
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const workerRef = useRef<Worker | null>(null);
-
-  useEffect(() => {
-    return () => {
-      if (workerRef.current) {
-        workerRef.current.terminate();
-        workerRef.current = null;
-      }
-    };
-  }, []);
 
   const handleReport = useCallback((detail: KnowledgeReportPayload | null | undefined) => {
     if (!detail || (!detail.libraries?.length && !detail.categories?.length)) {
@@ -273,173 +248,6 @@ const KnowledgeReport: React.FC = () => {
       bookKey,
       category,
     });
-  }, []);
-
-  // === Import ===
-
-  async function parseInWorker(buffer: ArrayBuffer): Promise<WiedzaDbResult> {
-    if (!workerRef.current) {
-      workerRef.current = new Worker(
-        new URL('@modules/data/wiedzaDbImport.worker.ts', import.meta.url),
-        { type: 'module' },
-      );
-    }
-
-    const worker = workerRef.current;
-
-    return new Promise((resolve, reject) => {
-      const cleanup = () => {
-        worker.removeEventListener('message', handleMessage);
-        worker.removeEventListener('error', handleError);
-      };
-
-      const handleMessage = (event: MessageEvent) => {
-        const resp = event.data as WiedzaDbWorkerResponse | undefined;
-        if (!resp) return;
-        if (resp.type === 'success') {
-          cleanup();
-          resolve(resp.payload);
-        }
-        if (resp.type === 'error') {
-          cleanup();
-          reject(new Error(resp.message));
-        }
-      };
-
-      const handleError = (event: ErrorEvent) => {
-        cleanup();
-        if (workerRef.current === worker) {
-          workerRef.current.terminate();
-          workerRef.current = null;
-        }
-        reject(event.error ?? new Error(event.message));
-      };
-
-      worker.addEventListener('message', handleMessage);
-      worker.addEventListener('error', handleError);
-
-      const request: WiedzaDbWorkerRequest = { type: 'parse', buffer };
-      worker.postMessage(request, [buffer]);
-    });
-  }
-
-  const handleImportClick = useCallback(() => {
-    fileInputRef.current?.click();
-  }, []);
-
-  const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (e.target) e.target.value = '';
-    if (!file) return;
-
-    setImportState({ phase: 'loading' });
-    try {
-      const buffer = await file.arrayBuffer();
-      const parsed = await parseInWorker(buffer);
-      if (parsed.characters.length === 0) {
-        setImportState({ phase: 'error', message: 'Baza nie zawiera zadnych danych.' });
-        return;
-      }
-      setImportState({ phase: 'preview', parsed, selectedCharacter: '__all__' });
-    } catch (err) {
-      setImportState({ phase: 'error', message: err instanceof Error ? err.message : 'Nieznany blad.' });
-    }
-  }, []);
-
-  const handleImportConfirm = useCallback(async () => {
-    if (importState.phase !== 'preview') return;
-
-    const isAll = importState.selectedCharacter === '__all__';
-    const charactersToImport = isAll
-      ? importState.parsed.characters
-      : [importState.selectedCharacter];
-
-    setImportState({ phase: 'importing' });
-
-    try {
-      const results: string[] = [];
-
-      for (const sourceChar of charactersToImport) {
-        const charData = importState.parsed.byCharacter[sourceChar];
-        if (!charData) continue;
-
-        const targetChar = sourceChar.toLowerCase();
-
-        if (charData.events.length > 0) {
-          const events: KnowledgeEvent[] = charData.events.map((e) => ({
-            category: e.category,
-            categoryDative: e.categoryDative,
-            type: e.type,
-            locationId: e.locationId,
-            timestamp: e.timestamp,
-          }));
-          const added = await mergeKnowledgeEvents(targetChar, events);
-          results.push(`${sourceChar}: zdarzenia ${added}/${charData.events.length}`);
-        }
-
-        if (charData.libraries.length > 0) {
-          eventBus.emit('wiedzaImportLibraries', {
-            character: targetChar,
-            libraries: charData.libraries,
-          });
-          results.push(`${sourceChar}: biblioteki ${charData.libraries.length}`);
-        }
-
-        if (charData.books.length > 0) {
-          eventBus.emit('wiedzaImportBooks', {
-            character: targetChar,
-            books: charData.books,
-          });
-          results.push(`${sourceChar}: ksiegi ${charData.books.length}`);
-        }
-
-        if (charData.totalLevels.length > 0) {
-          eventBus.emit('wiedzaImportTotalLevels', {
-            character: targetChar,
-            levels: charData.totalLevels,
-          });
-          // Also store level changes as events for history
-          const levelEvents: KnowledgeEvent[] = [];
-          for (const lv of charData.totalLevels) {
-            const category = getBaseCategoryFromName(lv.categoryName);
-            if (category) {
-              levelEvents.push({
-                category,
-                categoryDative: '',
-                type: 'level_change',
-                locationId: 0,
-                timestamp: lv.timestamp,
-                level: lv.level,
-              });
-            }
-          }
-          if (levelEvents.length > 0) {
-            await mergeKnowledgeEvents(targetChar, levelEvents);
-          }
-          results.push(`${sourceChar}: poziomy ${charData.totalLevels.length}`);
-        }
-      }
-
-      setImportState({
-        phase: 'done',
-        message: `Import zakonczony.\n${results.join('\n')}`,
-      });
-
-      // Refresh all reports after import
-      window.setTimeout(() => {
-        eventBus.emit('requestKnowledgeReport');
-        eventBus.emit('requestKnowledgeBookReport');
-      }, 100);
-    } catch (err) {
-      setImportState({
-        phase: 'error',
-        message: err instanceof Error ? err.message : 'Blad importu.',
-      });
-    }
-  }, [importState]);
-
-  const handleImportCancel = useCallback(() => {
-    setImportState({ phase: 'idle' });
   }, []);
 
   // === Library Content ===
@@ -636,6 +444,13 @@ const KnowledgeReport: React.FC = () => {
   const [wiedzaTickCounts, setWiedzaTickCounts] = useState<Record<string, number>>({});
   const [wiedzaLevelsLoaded, setWiedzaLevelsLoaded] = useState(false);
   const [wiedzaRefreshCounter, setWiedzaRefreshCounter] = useState(0);
+  // Bumped when the Mudlet import (in Ustawienia) finishes, to reload levels and history.
+  const [importedTick, setImportedTick] = useState(0);
+  useEffect(() => {
+    const onImported = () => setImportedTick((t) => t + 1);
+    window.addEventListener(WIEDZA_IMPORTED_EVENT, onImported);
+    return () => window.removeEventListener(WIEDZA_IMPORTED_EVENT, onImported);
+  }, []);
   const [wiedzaDetailsCategories, setWiedzaDetailsCategories] = useState<WiedzaDetailsCategory[]>([]);
 
   useEffect(() => {
@@ -698,7 +513,7 @@ const KnowledgeReport: React.FC = () => {
       setWiedzaTickCounts(ticks);
       setWiedzaLevelsLoaded(true);
     });
-  }, [importState.phase, wiedzaRefreshCounter]);
+  }, [importedTick, wiedzaRefreshCounter]);
 
   const wiedzaTotalContent = useMemo(() => {
     if (!wiedzaLevelsLoaded) {
@@ -873,12 +688,10 @@ const KnowledgeReport: React.FC = () => {
     });
   }, [activeTab, historyLoaded]);
 
-  // Reload history after import
+  // Reload history after an import
   useEffect(() => {
-    if (importState.phase === 'done') {
-      setHistoryLoaded(false);
-    }
-  }, [importState.phase]);
+    if (importedTick > 0) setHistoryLoaded(false);
+  }, [importedTick]);
 
   const historyCategories = useMemo(() => {
     const cats = new Set<string>();
@@ -964,102 +777,6 @@ const KnowledgeReport: React.FC = () => {
     );
   }, [historyEvents, historyLoaded, historyCategoryFilter, historyCategories]);
 
-  // === Import Content ===
-
-  const importContent = useMemo(() => {
-    if (importState.phase === 'idle') {
-      return (
-        <div className="knowledge-import">
-          <p>Wybierz plik Database_wiedza.db z Mudleta aby zaimportowac dane.</p>
-          <button type="button" className="knowledge-import-btn" onClick={handleImportClick}>
-            Wybierz plik...
-          </button>
-          <input ref={fileInputRef} type="file" accept=".db" style={{ display: 'none' }} onChange={handleFileChange} />
-        </div>
-      );
-    }
-
-    if (importState.phase === 'loading') {
-      return <div className="knowledge-import">Wczytywanie bazy danych...</div>;
-    }
-
-    if (importState.phase === 'importing') {
-      return <div className="knowledge-import">Importowanie danych...</div>;
-    }
-
-    if (importState.phase === 'error') {
-      return (
-        <div className="knowledge-import">
-          <div className="knowledge-import-error">{importState.message}</div>
-          <button type="button" className="knowledge-import-btn" onClick={handleImportCancel}>
-            Zamknij
-          </button>
-        </div>
-      );
-    }
-
-    if (importState.phase === 'done') {
-      return (
-        <div className="knowledge-import">
-          <div className="knowledge-import-done">{importState.message}</div>
-          <button type="button" className="knowledge-import-btn" onClick={handleImportCancel}>
-            Zamknij
-          </button>
-        </div>
-      );
-    }
-
-    if (importState.phase === 'preview') {
-      const isAll = importState.selectedCharacter === '__all__';
-      const selectedChars = isAll ? importState.parsed.characters : [importState.selectedCharacter];
-      const totals = { events: 0, libraries: 0, books: 0, levels: 0 };
-      for (const c of selectedChars) {
-        const d = importState.parsed.byCharacter[c];
-        if (!d) continue;
-        totals.events += d.events.length;
-        totals.libraries += d.libraries.length;
-        totals.books += d.books.length;
-        totals.levels += d.totalLevels.length;
-      }
-
-      return (
-        <div className="knowledge-import">
-          <div className="knowledge-import-row">
-            <label className="knowledge-import-label">Postac:</label>
-            <select
-              className="knowledge-import-select"
-              value={importState.selectedCharacter}
-              onChange={(e) => setImportState({ ...importState, selectedCharacter: e.target.value })}
-            >
-              <option value="__all__">Wszystkie postacie ({importState.parsed.characters.length})</option>
-              {importState.parsed.characters.map((c) => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
-          </div>
-          <div className="knowledge-import-summary">
-            <div>Zdarzenia (ticki/wpisy): <strong>{totals.events}</strong></div>
-            <div>Biblioteki: <strong>{totals.libraries}</strong></div>
-            <div>Ksiegi: <strong>{totals.books}</strong></div>
-            <div>Poziomy wiedzy: <strong>{totals.levels}</strong></div>
-          </div>
-          <div className="knowledge-import-actions">
-            <button type="button" className="knowledge-import-btn knowledge-import-btn--confirm"
-              onClick={handleImportConfirm}
-            >
-              Importuj
-            </button>
-            <button type="button" className="knowledge-import-btn" onClick={handleImportCancel}>
-              Anuluj
-            </button>
-          </div>
-        </div>
-      );
-    }
-
-    return null;
-  }, [importState, handleImportClick, handleFileChange, handleImportConfirm, handleImportCancel]);
-
   // === Render ===
 
   const hasLibraries = data?.libraries && data.libraries.length > 0;
@@ -1076,19 +793,16 @@ const KnowledgeReport: React.FC = () => {
     }
   }
 
+  // The import itself lives in Ustawienia → Dane → Import z innych klientów.
   const headerActions = (
-    <>
-      <button
-        type="button"
-        className="knowledge-header-import-btn"
-        onClick={handleImportClick}
-        disabled={importState.phase === 'loading' || importState.phase === 'importing'}
-        title="Import z Mudleta"
-      >
-        Import
-      </button>
-      <input ref={fileInputRef} type="file" accept=".db" style={{ display: 'none' }} onChange={handleFileChange} />
-    </>
+    <button
+      type="button"
+      className="knowledge-header-import-btn"
+      onClick={() => openSettingsPage('data-import', 'import-wiedza')}
+      title="Import z Mudleta (Ustawienia → Import z innych klientów)"
+    >
+      Import
+    </button>
   );
 
   return (
@@ -1104,12 +818,7 @@ const KnowledgeReport: React.FC = () => {
       bodyClassName="knowledge-window-body"
       headerActions={headerActions}
     >
-      {importState.phase !== 'idle' && (
-        <div className="knowledge-import-panel">
-          {importContent}
-        </div>
-      )}
-      {!hasAnyData && importState.phase === 'idle' ? (
+      {!hasAnyData ? (
         <div className="knowledge-empty">Brak danych. Uzyj komendy /wiedza lub /biblioteki.</div>
       ) : (
         <>

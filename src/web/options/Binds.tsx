@@ -1,19 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Button, Check, DeleteButton, Field, Input, Select } from '@web-ui/primitives/index.ts';
-import {
-    type MultibindImportRow,
-    type MultibindImportWorkerRequest,
-    type MultibindImportWorkerResponse,
-    type ParsedMultibindDatabase,
-} from "./multibindImport.shared";
-import {
-    replaceAll as replaceMultibinds,
-    subscribe as subscribeMultibinds,
-    toKey,
-    type StoredMultibindRecord,
-} from "../dataStores/multibindStore";
+import { useEffect, useRef, useState } from "react";
+import { Button, DeleteButton, Input, Select } from '@web-ui/primitives/index.ts';
 import type { Bind, BindSettings, DirectionBinds, Keymap } from "@modules/core/keymapTypes";
 import SubDialog from "../SubDialog";
+import MultibindImport from "../imports/MultibindImport";
 import {
     getKeymapStore,
     getKeymapList,
@@ -29,63 +18,6 @@ import {
 
 const isMac = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform);
 const ALT_LABEL = isMac ? '⌥' : 'ALT';
-
-type ConflictPolicy = 'keep-last' | 'keep-first' | 'skip-conflicts';
-
-interface ImportData {
-    fileName: string;
-    rows: MultibindImportRow[];
-    totalRows: number;
-    invalidRows: number;
-}
-
-interface ImportPlan {
-    rows: MultibindImportRow[];
-    totalRows: number;
-    invalidRows: number;
-    duplicatesDropped: number;
-    newEntries: number;
-    potentialUpdates: number;
-}
-
-const CONFLICT_POLICIES: { value: ConflictPolicy; label: string }[] = [
-    { value: 'keep-last', label: 'Zachowaj ostatni wpis' },
-    { value: 'keep-first', label: 'Zachowaj pierwszy wpis' },
-    { value: 'skip-conflicts', label: 'Pomiń konflikty' },
-];
-
-function applyConflictPolicy(rows: MultibindImportRow[], policy: ConflictPolicy) {
-    const map = new Map<string, MultibindImportRow>();
-    const removedKeys = new Set<string>();
-    let dropped = 0;
-
-    rows.forEach(row => {
-        const key = row.uniqness;
-        if (removedKeys.has(key)) {
-            dropped += 1;
-            return;
-        }
-        const existing = map.get(key);
-        if (!existing) {
-            map.set(key, row);
-            return;
-        }
-        if (policy === 'keep-first') {
-            dropped += 1;
-            return;
-        }
-        if (policy === 'keep-last') {
-            map.set(key, row);
-            dropped += 1;
-            return;
-        }
-        map.delete(key);
-        removedKeys.add(key);
-        dropped += 2;
-    });
-
-    return { rows: Array.from(map.values()), dropped };
-}
 
 function label(bind: Bind) {
     let key = bind.key;
@@ -163,80 +95,6 @@ function Binds() {
     const [keymapNameDraft, setKeymapNameDraft] = useState('');
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [showRestoreConfirm, setShowRestoreConfirm] = useState(false);
-    const [multibinds, setMultibinds] = useState<StoredMultibindRecord[]>([]);
-    const [importData, setImportData] = useState<ImportData | null>(null);
-    const [conflictPolicy, setConflictPolicy] = useState<ConflictPolicy>('keep-last');
-    const [overwriteExisting, setOverwriteExisting] = useState(true);
-    const [showImportModal, setShowImportModal] = useState(false);
-    const [importError, setImportError] = useState<string | null>(null);
-    const [importResult, setImportResult] = useState<{ newCount: number; updatedCount: number; skippedCount: number } | null>(null);
-    const [isParsingDb, setIsParsingDb] = useState(false);
-    const [isRunningImport, setIsRunningImport] = useState(false);
-    const [importProgress, setImportProgress] = useState<{ processed: number; total: number; eta: number | null } | null>(null);
-    const [importCancelled, setImportCancelled] = useState(false);
-    const fileInputRef = useRef<HTMLInputElement | null>(null);
-    const cancelImportRef = useRef(false);
-    const workerRef = useRef<Worker | null>(null);
-
-    useEffect(() => {
-        return () => {
-            if (workerRef.current) {
-                workerRef.current.terminate();
-                workerRef.current = null;
-            }
-        };
-    }, []);
-
-    async function parseInWorker(buffer: ArrayBuffer): Promise<ParsedMultibindDatabase> {
-        if (!workerRef.current) {
-            workerRef.current = new Worker(new URL('./multibindImport.worker.ts', import.meta.url), {
-                type: 'module',
-            });
-        }
-
-        const worker = workerRef.current;
-
-        return new Promise((resolve, reject) => {
-            const cleanup = () => {
-                worker.removeEventListener('message', handleMessage);
-                worker.removeEventListener('error', handleError);
-            };
-
-            const handleMessage = (event: MessageEvent) => {
-                const data = event.data as MultibindImportWorkerResponse | undefined;
-                if (!data) {
-                    return;
-                }
-                if (data.type === 'success') {
-                    cleanup();
-                    resolve(data.payload);
-                }
-                if (data.type === 'error') {
-                    cleanup();
-                    reject(new Error(data.message));
-                }
-            };
-
-            const handleError = (event: ErrorEvent) => {
-                cleanup();
-                if (workerRef.current === worker) {
-                    workerRef.current.terminate();
-                    workerRef.current = null;
-                }
-                reject(event.error ?? new Error(event.message));
-            };
-
-            worker.addEventListener('message', handleMessage);
-            worker.addEventListener('error', handleError);
-
-            const request: MultibindImportWorkerRequest = {
-                type: 'parse',
-                buffer,
-            };
-            worker.postMessage(request, [buffer]);
-        });
-    }
-
     function loadKeymap(keymapId?: string) {
         const list = getKeymapList();
         setKeymapList(list);
@@ -259,184 +117,6 @@ function Binds() {
     useEffect(() => {
         loadKeymap();
     }, []);
-
-    useEffect(() => {
-        const unsubscribe = subscribeMultibinds(setMultibinds);
-        return () => {
-            unsubscribe();
-        };
-    }, []);
-
-    const importPlan = useMemo<ImportPlan | null>(() => {
-        if (!importData) {
-            return null;
-        }
-        const conflictResult = applyConflictPolicy(importData.rows, conflictPolicy);
-        const existingMap = new Map(multibinds.map(item => [toKey(item.roomId, item.index), item]));
-        let newEntries = 0;
-        let potentialUpdates = 0;
-        conflictResult.rows.forEach(row => {
-            const key = toKey(row.roomId, row.index);
-            if (existingMap.has(key)) {
-                potentialUpdates += 1;
-            } else {
-                newEntries += 1;
-            }
-        });
-        return {
-            rows: conflictResult.rows,
-            totalRows: importData.totalRows,
-            invalidRows: importData.invalidRows,
-            duplicatesDropped: conflictResult.dropped,
-            newEntries,
-            potentialUpdates,
-        };
-    }, [importData, conflictPolicy, multibinds]);
-
-    const importSummary = useMemo(() => {
-        if (!importPlan) {
-            return null;
-        }
-        const updates = overwriteExisting ? importPlan.potentialUpdates : 0;
-        const skippedFromUpdates = overwriteExisting ? 0 : importPlan.potentialUpdates;
-        const skipped = importPlan.invalidRows + importPlan.duplicatesDropped + skippedFromUpdates;
-        return {
-            totalRows: importPlan.totalRows,
-            toImport: importPlan.rows.length,
-            newEntries: importPlan.newEntries,
-            updates,
-            skipped,
-            invalidRows: importPlan.invalidRows,
-            duplicates: importPlan.duplicatesDropped,
-            potentialUpdates: importPlan.potentialUpdates,
-        };
-    }, [importPlan, overwriteExisting]);
-
-    function handleImportClick() {
-        setImportError(null);
-        setImportCancelled(false);
-        setImportResult(null);
-        fileInputRef.current?.click();
-    }
-
-    async function handleFileSelected(ev: React.ChangeEvent<HTMLInputElement>) {
-        const file = ev.target.files?.[0];
-        if (!file) {
-            return;
-        }
-        setIsParsingDb(true);
-        setImportError(null);
-        setImportCancelled(false);
-        setImportResult(null);
-        try {
-            const buffer = await file.arrayBuffer();
-            const parsed = await parseInWorker(buffer);
-            setImportData({
-                fileName: file.name,
-                rows: parsed.rows,
-                totalRows: parsed.totalRows,
-                invalidRows: parsed.invalidRows,
-            });
-            setConflictPolicy('keep-last');
-            setOverwriteExisting(true);
-            setShowImportModal(true);
-        } catch (err) {
-            setImportData(null);
-            setShowImportModal(false);
-            setImportError(err instanceof Error ? err.message : 'Nie udało się odczytać bazy danych.');
-        } finally {
-            setIsParsingDb(false);
-            if (fileInputRef.current) {
-                fileInputRef.current.value = '';
-            }
-        }
-    }
-
-    async function runImport() {
-        if (!importPlan || importPlan.rows.length === 0) {
-            return;
-        }
-        setIsRunningImport(true);
-        setImportCancelled(false);
-        setImportError(null);
-        setImportResult(null);
-        cancelImportRef.current = false;
-        const total = importPlan.rows.length;
-        setImportProgress({ processed: 0, total, eta: null });
-        const existingMap = new Map(multibinds.map(item => [toKey(item.roomId, item.index), item]));
-        const finalMap = new Map(existingMap);
-        let processed = 0;
-        let newCount = 0;
-        let updateCount = 0;
-        let skippedCount = importPlan.invalidRows + importPlan.duplicatesDropped;
-        const startTime = performance.now();
-        for (const row of importPlan.rows) {
-            if (cancelImportRef.current) {
-                break;
-            }
-            const key = toKey(row.roomId, row.index);
-            const hasExisting = existingMap.has(key);
-            if (hasExisting) {
-                if (!overwriteExisting) {
-                    skippedCount += 1;
-                } else {
-                    updateCount += 1;
-                    finalMap.set(key, { roomId: row.roomId, index: row.index, action: row.action });
-                }
-            } else {
-                newCount += 1;
-                finalMap.set(key, { roomId: row.roomId, index: row.index, action: row.action });
-            }
-            processed += 1;
-            if (processed % 20 === 0 || processed === total) {
-                const elapsed = (performance.now() - startTime) / 1000;
-                const eta = processed ? ((total - processed) * (elapsed / processed)) : null;
-                setImportProgress({ processed, total, eta: eta && Number.isFinite(eta) ? Math.max(0, eta) : null });
-            }
-            if (processed % 200 === 0) {
-                await new Promise<void>(resolve => setTimeout(resolve, 0));
-            }
-        }
-        if (cancelImportRef.current) {
-            setIsRunningImport(false);
-            setImportProgress(null);
-            setImportCancelled(true);
-            return;
-        }
-        const finalList = Array.from(finalMap.values()).sort((a, b) => (a.roomId - b.roomId) || (a.index - b.index));
-        try {
-            await replaceMultibinds(finalList);
-            setImportResult({
-                newCount,
-                updatedCount: overwriteExisting ? updateCount : 0,
-                skippedCount,
-            });
-        } catch (err) {
-            setImportError(err instanceof Error ? err.message : 'Nie udało się zapisać multibindów.');
-        } finally {
-            setIsRunningImport(false);
-            setImportProgress(null);
-        }
-    }
-
-    function handleCancelImport() {
-        if (!isRunningImport) {
-            setShowImportModal(false);
-            return;
-        }
-        cancelImportRef.current = true;
-    }
-
-    function closeImportModal() {
-        if (isRunningImport) {
-            return;
-        }
-        setShowImportModal(false);
-        setImportData(null);
-        setImportError(null);
-        setImportCancelled(false);
-        setImportResult(null);
-    }
 
     function handleCapture(name: keyof BindSettings, ev: React.KeyboardEvent) {
         ev.preventDefault();
@@ -594,34 +274,25 @@ function Binds() {
         setShowRestoreConfirm(false);
     }
 
-    // The import trigger sits in the modal's title bar and Save in its footer, so
-    // both stay visible while the bind list scrolls. Each shell (stock Bootstrap,
-    // forge MenuModal) hosts its own chrome and reaches these handlers through
-    // window events; refs keep the listeners bound to the latest closures without
-    // re-subscribing on every keystroke. Parsing state is broadcast back so the
-    // title-bar button can reflect its disabled/spinner state.
-    const handleImportClickRef = useRef(handleImportClick);
-    handleImportClickRef.current = handleImportClick;
+    // Save and "Dodaj skrót" sit in the modal's footer, so they stay visible while
+    // the bind list scrolls. Each shell (stock Bootstrap, forge MenuModal) hosts
+    // its own chrome and reaches these handlers through window events; refs keep
+    // the listeners bound to the latest closures without re-subscribing on every
+    // keystroke. (The multibind import is <MultibindImport/> below.)
     const saveRef = useRef(save);
     saveRef.current = save;
     const addCustomBindRef = useRef(addCustomBind);
     addCustomBindRef.current = addCustomBind;
     useEffect(() => {
-        const onImport = () => handleImportClickRef.current();
         const onSave = () => saveRef.current();
         const onAddCustom = () => addCustomBindRef.current();
-        window.addEventListener('binds-open-import', onImport);
         window.addEventListener('binds-save', onSave);
         window.addEventListener('binds-add-custom', onAddCustom);
         return () => {
-            window.removeEventListener('binds-open-import', onImport);
             window.removeEventListener('binds-save', onSave);
             window.removeEventListener('binds-add-custom', onAddCustom);
         };
     }, []);
-    useEffect(() => {
-        window.dispatchEvent(new CustomEvent('binds-parsing', { detail: isParsingDb }));
-    }, [isParsingDb]);
 
     // After "Dodaj skrót" (fired from the footer) appends a row, bring it into
     // view and focus its command input so the user can type straight away.
@@ -658,101 +329,9 @@ function Binds() {
 
     return (
         <div className="binds-editor">
-            <input ref={fileInputRef} type="file" accept=".db,application/x-sqlite3" hidden onChange={handleFileSelected} />
-            {showImportModal && (
-                <SubDialog
-                    title="Importuj bazę multibindów"
-                    onClose={closeImportModal}
-                    // No way out while the worker is chewing through the file —
-                    // matches the old modal's static backdrop + keyboard={false}.
-                    dismissible={!isRunningImport}
-                    footer={isRunningImport ? (
-                        <Button onClick={handleCancelImport}>Anuluj</Button>
-                    ) : (
-                        <>
-                            <Button onClick={closeImportModal}>Zamknij</Button>
-                            <Button variant="solid" onClick={runImport} disabled={!importPlan || importPlan.rows.length === 0 || !!importResult}>Importuj</Button>
-                        </>
-                    )}
-                >
-                    <div className="ui-settings-stack">
-                        {importError && <div className="popup-notice popup-notice--danger">{importError}</div>}
-                        {importSummary ? (
-                            <div className="binds-import__summary">
-                                {([
-                                    ['Plik', importData?.fileName || '—'],
-                                    ['Łącznie wierszy', importSummary.totalRows],
-                                    ['Wiersze do importu', importSummary.toImport],
-                                    ['Nowe wpisy', importSummary.newEntries],
-                                    ['Aktualizacje', importSummary.updates],
-                                    ['Pominięte', importSummary.skipped],
-                                    ...(importSummary.invalidRows > 0 ? [['Nieprawidłowe wiersze', importSummary.invalidRows]] : []),
-                                    ...(importSummary.duplicates > 0 ? [['Usunięte konflikty', importSummary.duplicates]] : []),
-                                ] as [string, string | number][]).map(([name, value]) => (
-                                    <div key={name} className="binds-import__row">
-                                        <span>{name}:</span> <strong>{value}</strong>
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
-                            !importError && <p className="popup-field__hint">Brak danych do importu.</p>
-                        )}
-                        {importPlan && (
-                            <>
-                                <Check
-                                    label="Nadpisz wpisy"
-                                    checked={overwriteExisting}
-                                    disabled={isRunningImport}
-                                    onChange={ev => setOverwriteExisting(ev.target.checked)}
-                                />
-                                <Field label="Polityka konfliktów">
-                                    <Select
-                                        className="settings-narrow"
-                                        value={conflictPolicy}
-                                        onChange={ev => setConflictPolicy(ev.target.value as ConflictPolicy)}
-                                        disabled={isRunningImport}
-                                    >
-                                        {CONFLICT_POLICIES.map(option => (
-                                            <option key={option.value} value={option.value}>{option.label}</option>
-                                        ))}
-                                    </Select>
-                                </Field>
-                            </>
-                        )}
-                        {importProgress && (
-                            <div className="popup-field">
-                                <progress
-                                    className="popup-progress"
-                                    max={importProgress.total || 1}
-                                    value={importProgress.processed}
-                                />
-                                <div className="binds-import__progress-text">
-                                    <span>Przetworzono wierszy: {importProgress.processed}/{importProgress.total}</span>
-                                    <span>{importProgress.eta !== null ? `~${importProgress.eta.toFixed(1)} s do końca` : 'Szacowanie…'}</span>
-                                </div>
-                            </div>
-                        )}
-                        {isRunningImport && (
-                            <div className="popup-inline">
-                                <span className="popup-spinner" />
-                                <span>Importowanie…</span>
-                            </div>
-                        )}
-                        {importCancelled && <div className="popup-notice popup-notice--warning">Import przerwany.</div>}
-                        {importResult && !isRunningImport && (
-                            <div className="popup-notice popup-notice--success">
-                                <strong>Import zakończony.</strong>
-                                <div>Nowe wpisy: {importResult.newCount}</div>
-                                <div>Zaktualizowane: {importResult.updatedCount}</div>
-                                <div>Pominięte: {importResult.skippedCount}</div>
-                            </div>
-                        )}
-                    </div>
-                </SubDialog>
-            )}
-            {importError && !showImportModal && (
-                <div className="popup-notice popup-notice--danger">{importError}</div>
-            )}
+            {/* Forge's "Importuj bazę multibindów" button still reaches it by event;
+                the stock button opens Ustawienia → Import z innych klientów. */}
+            <MultibindImport openEvent="binds-open-import" />
 
             <div className="binds-keymap">
                 <label className="popup-field__label" htmlFor="binds-keymap-select">Mapa klawiszy</label>

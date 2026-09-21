@@ -32,7 +32,8 @@ export type SettingsCategoryKey =
     | "ui-other"
     | "data-sync"
     | "data-backup"
-    | "data-devices";
+    | "data-devices"
+    | "data-import";
 
 export interface SettingsCategory {
     key: SettingsCategoryKey;
@@ -67,6 +68,7 @@ export const SETTINGS_CATEGORIES: readonly SettingsCategory[] = [
     { key: "data-sync", group: "data", label: "Synchronizacja", keywords: "firebase konto logowanie chmura eksport import" },
     { key: "data-backup", group: "data", label: "Kopia zapasowa", keywords: "eksport import plik google drive backup" },
     { key: "data-devices", group: "data", label: "Urządzenia", keywords: "urzadzenie grupa synchronizacji" },
+    { key: "data-import", group: "data", label: "Import z innych klientów", keywords: "mudlet blowtorch klient arkadii wiedza zlom postepy multibindy aliasy baza db" },
 ];
 
 export const DEFAULT_SETTINGS_CATEGORY: Record<SettingsGroup, SettingsCategoryKey> = {
@@ -96,6 +98,23 @@ export interface ShowSettingsDetail {
 
 export function requestSettingsCategory(category: SettingsCategoryKey): void {
     window.dispatchEvent(new CustomEvent<ShowSettingsDetail>(SHOW_SETTINGS_EVENT, { detail: { category } }));
+}
+
+/**
+ * Ask the host UI to show the settings dialog on a page — for a button outside
+ * the dialog (a window's "Import z Mudleta" shortcut). `anchor` is the DOM id
+ * of an element on that page to scroll into view. Hosts close their other
+ * modals first; the dialog itself picks the page from `SHOW_SETTINGS_EVENT`.
+ */
+export const OPEN_SETTINGS_PAGE_EVENT = "open-settings-page";
+
+export interface OpenSettingsPageDetail {
+    category: SettingsCategoryKey;
+    anchor?: string;
+}
+
+export function openSettingsPage(category: SettingsCategoryKey, anchor?: string): void {
+    window.dispatchEvent(new CustomEvent<OpenSettingsPageDetail>(OPEN_SETTINGS_PAGE_EVENT, { detail: { category, anchor } }));
 }
 
 /** Dispatched by the host's Save button. */

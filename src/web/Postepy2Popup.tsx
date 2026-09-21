@@ -1,19 +1,17 @@
-import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import eventBus from '@modules/core/eventBus';
 import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
 import { usePopup } from './hooks/usePopup';
 import { usePopupSetting } from './hooks/usePopupSetting';
 import {
     getLifetimeData,
-    mergeLifetimeData,
     editLifetimeEntry,
     deleteLifetimeEntry,
     LifetimeEntry,
     formatCount,
-    MergeMode,
 } from '../client/scripts/improveCounter';
 import { characterStorage } from '@modules/core/storage';
-import type { ImproveDbResult, ImproveDbWorkerRequest, ImproveDbWorkerResponse } from '@modules/data/improveDbImport.shared';
+import { openSettingsPage } from '@web/settings/categories.ts';
 
 const POPUP_ID = 'popup:postepy2';
 
@@ -153,117 +151,6 @@ const Postepy2Popup: React.FC = () => {
     });
     const [data, setData] = useState<LifetimeEntry[]>([]);
     const [activeTab, setActiveTab] = usePopupSetting<TabType>(POPUP_ID, 'activeTab', 'daily');
-
-    // Import state
-    const fileInputRef = useRef<HTMLInputElement>(null);
-    const workerRef = useRef<Worker | null>(null);
-    const [importState, setImportState] = useState<
-        | { phase: 'idle' }
-        | { phase: 'loading' }
-        | { phase: 'preview'; parsed: ImproveDbResult; selectedCharacter: string; mergeMode: MergeMode }
-        | { phase: 'done'; message: string }
-        | { phase: 'error'; message: string }
-    >({ phase: 'idle' });
-
-    useEffect(() => {
-        return () => {
-            if (workerRef.current) {
-                workerRef.current.terminate();
-                workerRef.current = null;
-            }
-        };
-    }, []);
-
-    async function parseInWorker(buffer: ArrayBuffer): Promise<ImproveDbResult> {
-        if (!workerRef.current) {
-            workerRef.current = new Worker(new URL('@modules/data/improveDbImport.worker.ts', import.meta.url), {
-                type: 'module',
-            });
-        }
-
-        const worker = workerRef.current;
-
-        return new Promise((resolve, reject) => {
-            const cleanup = () => {
-                worker.removeEventListener('message', handleMessage);
-                worker.removeEventListener('error', handleError);
-            };
-
-            const handleMessage = (event: MessageEvent) => {
-                const data = event.data as ImproveDbWorkerResponse | undefined;
-                if (!data) return;
-                if (data.type === 'success') {
-                    cleanup();
-                    resolve(data.payload);
-                }
-                if (data.type === 'error') {
-                    cleanup();
-                    reject(new Error(data.message));
-                }
-            };
-
-            const handleError = (event: ErrorEvent) => {
-                cleanup();
-                if (workerRef.current === worker) {
-                    workerRef.current.terminate();
-                    workerRef.current = null;
-                }
-                reject(event.error ?? new Error(event.message));
-            };
-
-            worker.addEventListener('message', handleMessage);
-            worker.addEventListener('error', handleError);
-
-            const request: ImproveDbWorkerRequest = { type: 'parse', buffer };
-            worker.postMessage(request, [buffer]);
-        });
-    }
-
-    const handleImportClick = useCallback(() => {
-        fileInputRef.current?.click();
-    }, []);
-
-    const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (e.target) e.target.value = '';
-        if (!file) return;
-
-        setImportState({ phase: 'loading' });
-        try {
-            const buffer = await file.arrayBuffer();
-            const parsed = await parseInWorker(buffer);
-            if (parsed.characters.length === 0) {
-                setImportState({ phase: 'error', message: 'Baza nie zawiera zadnych danych.' });
-                return;
-            }
-            const current = characterStorage.getCharacter()?.toLowerCase() ?? '';
-            const preselected = parsed.characters.find(c => c.toLowerCase() === current)
-                ?? parsed.characters[0];
-            setImportState({ phase: 'preview', parsed, selectedCharacter: preselected, mergeMode: 'max' });
-        } catch (err) {
-            setImportState({ phase: 'error', message: err instanceof Error ? err.message : 'Nieznany blad.' });
-        }
-    }, []);
-
-    const handleImportConfirm = useCallback(() => {
-        if (importState.phase !== 'preview') return;
-        const entries = importState.parsed.byCharacter[importState.selectedCharacter];
-        if (!entries?.length) {
-            setImportState({ phase: 'error', message: 'Brak danych dla wybranej postaci.' });
-            return;
-        }
-        const ok = mergeLifetimeData(entries, importState.mergeMode);
-        if (ok) {
-            const total = entries.reduce((s, e) => s + e.count, 0);
-            setImportState({ phase: 'done', message: `Zaimportowano ${entries.length} dni (${total} postepow).` });
-        } else {
-            setImportState({ phase: 'error', message: 'Licznik nie jest jeszcze zainicjalizowany.' });
-        }
-    }, [importState]);
-
-    const handleImportCancel = useCallback(() => {
-        setImportState({ phase: 'idle' });
-    }, []);
 
     // Load initial data when popup opens
     useEffect(() => {
@@ -490,82 +377,12 @@ const Postepy2Popup: React.FC = () => {
                 <button
                     type="button"
                     className="popup-btn popup-btn--md postepy2-import-button"
-                    onClick={handleImportClick}
-                    disabled={importState.phase === 'loading'}
+                    onClick={() => openSettingsPage('data-import', 'import-postepy')}
+                    title="Import z Mudleta (Ustawienia → Import z innych klientów)"
                 >
                     Import z Mudleta
                 </button>
-                <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".db"
-                    style={{ display: 'none' }}
-                    onChange={handleFileChange}
-                />
             </div>
-
-            {importState.phase === 'loading' && (
-                <div className="postepy2-import-panel">
-                    Wczytywanie bazy danych...
-                </div>
-            )}
-
-            {importState.phase === 'preview' && (
-                <div className="postepy2-import-panel">
-                    {importState.parsed.characters.length > 1 && (
-                        <div className="postepy2-import-panel__row">
-                            <label className="postepy2-import-panel__label">Postac:</label>
-                            <select
-                                className="postepy2-import-panel__select"
-                                value={importState.selectedCharacter}
-                                onChange={(e) => setImportState({ ...importState, selectedCharacter: e.target.value })}
-                            >
-                                {importState.parsed.characters.map(c => (
-                                    <option key={c} value={c}>{c}</option>
-                                ))}
-                            </select>
-                        </div>
-                    )}
-                    <div className="postepy2-import-panel__row">
-                        <label className="postepy2-import-panel__label">Tryb:</label>
-                        <select
-                            className="postepy2-import-panel__select"
-                            value={importState.mergeMode}
-                            onChange={(e) => setImportState({ ...importState, mergeMode: e.target.value as MergeMode })}
-                        >
-                            <option value="max">Wez maksimum</option>
-                            <option value="add">Dodaj wszystko</option>
-                        </select>
-                    </div>
-                    <div className="postepy2-import-panel__info">
-                        {(() => {
-                            const entries = importState.parsed.byCharacter[importState.selectedCharacter] ?? [];
-                            const totalCount = entries.reduce((s, e) => s + e.count, 0);
-                            return `${entries.length} dni, ${totalCount} postepow`;
-                        })()}
-                    </div>
-                    <div className="postepy2-import-panel__note">
-                        {importState.mergeMode === 'max'
-                            ? 'Dla kazdego dnia zostanie wziety wyzszy wynik.'
-                            : 'Postepy z Mudleta zostana dodane do istniejacych.'}
-                    </div>
-                    <div className="postepy2-import-panel__actions">
-                        <button type="button" className="postepy2-import-panel__btn postepy2-import-panel__btn--confirm" onClick={handleImportConfirm}>
-                            Importuj
-                        </button>
-                        <button type="button" className="postepy2-import-panel__btn postepy2-import-panel__btn--cancel" onClick={handleImportCancel}>
-                            Anuluj
-                        </button>
-                    </div>
-                </div>
-            )}
-
-            {(importState.phase === 'done' || importState.phase === 'error') && (
-                <div className={`postepy2-import-message ${importState.phase === 'error' ? 'postepy2-import-message--error' : 'postepy2-import-message--success'}`}>
-                    <span>{importState.message}</span>
-                    <button type="button" className="postepy2-import-message__close" onClick={handleImportCancel}>x</button>
-                </div>
-            )}
 
             <div className="popup-tabs postepy2-tabs">
                 <button

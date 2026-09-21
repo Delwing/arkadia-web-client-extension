@@ -53,7 +53,7 @@ import Binds from "./options/Binds.tsx"
 import Scripts from "./options/Scripts.tsx"
 import Aliases from "./options/Aliases.tsx"
 import Recordings from "./options/Recordings.tsx"
-import {CLOSE_SETTINGS_EVENT, SAVE_SETTINGS_EVENT, requestSettingsCategory} from "./settings/categories.ts";
+import {CLOSE_SETTINGS_EVENT, OPEN_SETTINGS_PAGE_EVENT, SAVE_SETTINGS_EVENT, openSettingsPage, requestSettingsCategory, type OpenSettingsPageDetail} from "./settings/categories.ts";
 import {buttonsSettingsCategory} from "./settings/buttonsCategory.ts";
 import CharacterManagement from "./options/CharacterManagementModal.tsx"
 import UserTriggers from "./options/UserTriggers.tsx"
@@ -1015,6 +1015,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Sync, backup and devices are the "Dane" pages of the settings dialog;
     // the old "show-export-import" request opens it on Synchronizacja.
+    window.addEventListener(OPEN_SETTINGS_PAGE_EVENT, (event) => {
+        const { category, anchor } = (event as CustomEvent<OpenSettingsPageDetail>).detail;
+        window.dispatchEvent(new Event('close-options'));
+        // Let a closing Bootstrap modal finish before the next one opens.
+        window.setTimeout(() => {
+            requestSettingsCategory(category);
+            settingsModal?.show();
+            if (anchor) window.setTimeout(() => document.getElementById(anchor)?.scrollIntoView({ block: 'center' }), 350);
+        }, 150);
+    });
+
     window.addEventListener('show-export-import', () => {
         requestSettingsCategory('data-sync');
         settingsModal?.show();
@@ -1093,8 +1104,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const bindsImportButton = document.getElementById('binds-import-btn') as HTMLButtonElement | null;
     const bindsImportSpinner = document.getElementById('binds-import-spinner');
     if (bindsImportButton) {
+        // The import itself is in Ustawienia → Import z innych klientów.
         bindsImportButton.addEventListener('click', () => {
-            window.dispatchEvent(new Event('binds-open-import'));
+            openSettingsPage('data-import', 'import-multibinds');
         });
     }
     window.addEventListener('binds-parsing', (ev) => {
