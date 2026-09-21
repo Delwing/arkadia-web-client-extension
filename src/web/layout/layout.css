@@ -799,6 +799,9 @@ body.layout-manager-enabled .compass-rose-box {
   background: var(--popup-control-bg, var(--surface-raised, #252525));
   border-bottom: 1px solid var(--surface-border, #333);
   height: 28px;
+  /* The tabs bring their own padding; the single-window header inset
+     (managed-panel__header, also on this bar) would double it. */
+  padding: 0;
 }
 
 /* Tabs scroll horizontally if there are too many, but actions stay pinned right. */
