@@ -1229,7 +1229,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     mudClient.on('recording.start', () => {
-        if (recordingButton) recordingButton.style.display = 'block';
+        if (recordingButton) recordingButton.style.display = 'inline-flex';
     });
     mudClient.on('recording.stop', () => {
         if (recordingButton) recordingButton.style.display = 'none';

@@ -6,7 +6,7 @@ async function startRecordingViaUI(page: any, name: string) {
     await page.click('#recordings-button');
     await expect(page.locator('#recordings-modal')).toBeVisible();
     await page.fill('.recording-name-input', name);
-    await page.click('button:has-text("Rozpocznij")');
+    await page.locator('#recordings-modal').getByRole('button', {name: 'Nagrywaj'}).click();
     await expect(page.locator('#recording-button')).toBeVisible();
 }
 
@@ -32,12 +32,23 @@ async function deleteRecordingFromDB(page: any, name: string) {
     }, name);
 }
 
+/** Playback is refused while connected: the recording would send its commands to the game. */
+async function disconnectViaUI(page: any) {
+    await page.click('#menu-button');
+    await page.click('#disconnect-button');
+    // Disconnected, the login overlay comes back; close it to reach the menu.
+    await expect(page.locator('#auth-overlay')).toBeVisible();
+    await page.click('#auth-close');
+    await expect(page.locator('#auth-overlay')).not.toBeVisible();
+}
+
 async function playTimedViaUI(page: any, name: string) {
     await page.click('#menu-button');
     await page.click('#recordings-button');
     await expect(page.locator('#recordings-modal')).toBeVisible();
     const row = page.locator('.recordings-item', {has: page.locator(`.recordings-item-name:has-text("${name}")`)});
-    await row.locator('button:has-text("Odtwórz w czasie")').click();
+    // The split button's main half plays in real time.
+    await row.locator('.popup-menu-button__main').click();
     await expect(page.locator('#playback-controls')).toBeVisible();
 }
 
@@ -85,6 +96,7 @@ test.describe('Recording and Playback', () => {
 
         await stopRecordingViaUI(page);
 
+        await disconnectViaUI(page);
         // Start timed playback via UI
         await playTimedViaUI(page, recordingName);
 
@@ -97,8 +109,9 @@ test.describe('Recording and Playback', () => {
         // Test resume by clicking pause again
         await page.click('#playback-pause');
 
-        // Test speed control (using slider)
-        await page.locator('#playback-speed-slider').fill('0.7');
+        // Speed presets
+        await page.locator('#playback-controls [data-speed="2"]').click();
+        await expect(page.locator('#playback-controls [data-speed="2"]')).toHaveClass(/is-active/);
 
         // Stop playback
         await page.click('#playback-stop');
@@ -126,6 +139,7 @@ test.describe('Recording and Playback', () => {
 
         await stopRecordingViaUI(page);
 
+        await disconnectViaUI(page);
         // Start timed playback via UI
         await playTimedViaUI(page, recordingName);
 
@@ -146,6 +160,26 @@ test.describe('Recording and Playback', () => {
         await expect(page.locator('#playback-controls')).not.toBeVisible();
 
         // Clean up
+        await deleteRecordingFromDB(page, recordingName);
+    });
+
+    test('should not play back while connected', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+
+        const recordingName = `test-connected-${Date.now()}`;
+        await startRecordingViaUI(page, recordingName);
+        await pushText(page, 'Connected message');
+        await waitForOutputContaining(page, 'Connected message');
+        await stopRecordingViaUI(page);
+
+        await page.click('#menu-button');
+        await page.click('#recordings-button');
+        const row = page.locator('.recordings-item', {has: page.locator(`.recordings-item-name:has-text("${recordingName}")`)});
+        await expect(row.locator('.popup-menu-button__main'), 'play should be disabled while connected').toBeDisabled();
+        await expect(page.locator('.recordings-offline-hint')).toBeVisible();
+
         await deleteRecordingFromDB(page, recordingName);
     });
 

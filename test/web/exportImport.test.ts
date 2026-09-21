@@ -12,7 +12,6 @@ vi.mock('@web/dataStores/multibindStore', () => ({
     replaceAll: jest.fn().mockResolvedValue(undefined),
 }));
 
-vi.mock('@web/options/recordingStorage', () => ({}));
 
 vi.mock('@web/options/locationNotesStorage', () => ({
     exportNotes: jest.fn().mockResolvedValue([]),

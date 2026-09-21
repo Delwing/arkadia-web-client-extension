@@ -12,6 +12,7 @@ class RecordingManager {
     private readonly activeRecorders = new Set<Recorder<CommandOptions>>();
     private readonly autoRecordingName = LAST_SESSION_RECORDING_NAME;
     private seenEchoSuppression = false;
+    private connected = false;
 
     constructor() {
         this.recorder = this.createRecorder(false);
@@ -34,10 +35,12 @@ class RecordingManager {
         });
 
         eventBus.on('client.connect', () => {
+            this.connected = true;
             this.seenEchoSuppression = false;
         });
 
         eventBus.on('client.disconnect', () => {
+            this.connected = false;
             void this.stopAutoRecording(true);
         });
     }
@@ -64,7 +67,16 @@ class RecordingManager {
         this.unregisterRecorder(this.recorder);
     }
 
+    /**
+     * Playback feeds recorded output through the live pipeline and replays the
+     * recorded commands, so it is refused while connected to the game.
+     */
+    canPlayback() {
+        return !this.connected;
+    }
+
     async loadRecording(name: string) {
+        if (!this.canPlayback()) return;
         await this.recorder.loadRecording(name);
     }
 
@@ -133,10 +145,12 @@ class RecordingManager {
     }
 
     replayRecordedMessages() {
+        if (!this.canPlayback()) return;
         this.recorder.replayRecordedMessages();
     }
 
     replayRecordedMessagesTimed() {
+        if (!this.canPlayback()) return;
         this.recorder.replayRecordedMessagesTimed();
     }
 
@@ -153,6 +167,24 @@ class RecordingManager {
             return this.recorder.getCurrentRecordingName();
         }
         return null;
+    }
+
+    /** The manual recording in progress: name, start time and event count. */
+    getActiveRecordingInfo() {
+        const progress = this.recorder.getRecordingProgress();
+        const name = this.recorder.getCurrentRecordingName();
+        return progress && name ? { name, ...progress } : null;
+    }
+
+    getAutoRecordingInfo() {
+        const progress = this.autoRecorder?.getRecordingProgress();
+        const name = this.autoRecorder?.getCurrentRecordingName();
+        return progress && name ? { name, ...progress } : null;
+    }
+
+    /** Name of the recording being played back, if any. */
+    getPlaybackName() {
+        return this.recorder.isPlaybackActive() ? this.recorder.getCurrentRecordingName() : null;
     }
 
     getAutoRecordingName() {

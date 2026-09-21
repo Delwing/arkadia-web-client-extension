@@ -1,5 +1,5 @@
 import { getSnapshot as getMultibindsSnapshot, replaceAll as replaceMultibinds, type StoredMultibindRecord } from "../dataStores/multibindStore";
-import type { RecordedEvent } from "./recordingStorage";
+import type { RecordedEvent } from "@web/recordingStorage.ts";
 import { exportNotes, importNotes, type LocationNote } from "./locationNotesStorage";
 import { exportAllKillRecords, importAllKillRecords, type KillRecord } from "@client/scripts/killLifetimeStorage.ts";
 import { mergeProfessionStates } from "@client/scripts/profession";

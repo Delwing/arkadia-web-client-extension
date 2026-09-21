@@ -1188,6 +1188,32 @@ select.popup-input.popup-input--control {
   cursor: pointer;
   transition: background-color 0.15s ease;
 }
+/* Split MenuButton: default action + chevron joined into one control. */
+.popup-menu-anchor--split > .popup-menu-button__main {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.popup-menu-anchor--split > .popup-menu-button__chevron {
+  margin-left: -1px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+.popup-menu__item--hinted {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  padding-top: 0.45rem;
+  padding-bottom: 0.45rem;
+}
+.popup-menu__label {
+  font-weight: 600;
+}
+.popup-menu__hint {
+  color: var(--popup-text-subtle);
+  font-size: var(--ui-fs-xs, 12px);
+}
 .popup-menu__item:hover:not(:disabled) {
   background-color: var(--popup-hover-bg);
   color: var(--popup-text);
