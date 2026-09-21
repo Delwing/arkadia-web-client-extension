@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { Button, Spinner } from "react-bootstrap";
+import { Button } from "@web-ui/primitives/index.ts";
 import type { CategoryConflictInfo } from "@modules/firebase";
 import { decrypt, isEncryptedData } from "@modules/firebase";
 import { syncEngine } from "@modules/firebase";
@@ -79,10 +79,9 @@ function ConflictDiffView({ conflict }: ConflictDiffViewProps) {
 
     return (
         <div className="mt-1">
-            <Button
-                variant="link"
+            <Button variant="ghost"
                 size="sm"
-                className="p-0 text-decoration-none"
+                className="text-decoration-none"
                 onClick={handleToggle}
             >
                 {expanded ? '▾ Ukryj roznice' : '▸ Pokaz roznice'}
@@ -98,7 +97,7 @@ function ConflictDiffView({ conflict }: ConflictDiffViewProps) {
                 <div className="mt-1">
                     {loading && (
                         <div className="d-flex align-items-center gap-2 text-muted small">
-                            <Spinner animation="border" size="sm" />
+                            <span className="popup-spinner" />
                             <span>Przygotowywanie porownania...</span>
                         </div>
                     )}

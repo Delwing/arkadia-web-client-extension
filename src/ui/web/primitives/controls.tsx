@@ -57,6 +57,25 @@ export function DeleteButton({ title = 'Usuń', size = 'sm', className, ...rest 
     );
 }
 
+// ── Notice ───────────────────────────────────────────────────────────────
+
+/** An inline message (result, warning, error); `onClose` adds a × to dismiss it. */
+export function Notice({ variant, onClose, className, children }: {
+    variant?: 'success' | 'warning' | 'danger';
+    onClose?: () => void;
+    className?: string;
+    children: ReactNode;
+}) {
+    return (
+        <div className={cx('popup-notice', variant && `popup-notice--${variant}`, onClose && 'popup-notice--dismissible', className)}>
+            <div className="popup-notice__body">{children}</div>
+            {onClose && (
+                <button type="button" className="popup-notice__close" title="Zamknij" onClick={onClose}>×</button>
+            )}
+        </div>
+    );
+}
+
 // ── Text inputs and select ────────────────────────────────────────────────
 
 interface MonoProp {

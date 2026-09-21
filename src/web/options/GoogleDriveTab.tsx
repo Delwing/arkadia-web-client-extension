@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Alert, Button, Spinner } from "react-bootstrap";
+import { Button } from "@web-ui/primitives/index.ts";
 import {
     buildExport,
     validatePayload,
@@ -542,14 +542,14 @@ function GoogleDriveTab({ selectedCharacters, exportOptions, onImportComplete }:
             <div className="d-flex flex-wrap gap-2 align-items-center">
                 {!isDriveScriptReady ? (
                     <div className="d-inline-flex align-items-center gap-2 text-muted">
-                        <Spinner animation="border" size="sm" role="status" />
+                        <span className="popup-spinner" />
                         <span>Ladowanie integracji z Google...</span>
                     </div>
                 ) : !driveToken ? (
-                    <Button onClick={handleDriveConnect} disabled={isDriveBusy}>
+                    <Button variant="solid" onClick={handleDriveConnect} disabled={isDriveBusy}>
                         {driveAction === "connect" ? (
                             <span className="d-inline-flex align-items-center gap-2">
-                                <Spinner animation="border" size="sm" role="status" />
+                                <span className="popup-spinner" />
                                 <span>Laczenie...</span>
                             </span>
                         ) : (
@@ -558,13 +558,13 @@ function GoogleDriveTab({ selectedCharacters, exportOptions, onImportComplete }:
                     </Button>
                 ) : (
                     <>
-                        <Button
+                        <Button variant="solid"
                             onClick={handleDriveUpload}
                             disabled={isDriveBusy || isDriveLoading}
                         >
                             {driveAction === "upload" ? (
                                 <span className="d-inline-flex align-items-center gap-2">
-                                    <Spinner animation="border" size="sm" role="status" />
+                                    <span className="popup-spinner" />
                                     <span>Wysylanie...</span>
                                 </span>
                             ) : (
@@ -572,13 +572,12 @@ function GoogleDriveTab({ selectedCharacters, exportOptions, onImportComplete }:
                             )}
                         </Button>
                         <Button
-                            variant="secondary"
                             onClick={() => refreshDriveFiles({ action: "list" })}
                             disabled={isDriveLoading || isDriveBusy}
                         >
                             {driveAction === "list" ? (
                                 <span className="d-inline-flex align-items-center gap-2">
-                                    <Spinner animation="border" size="sm" role="status" />
+                                    <span className="popup-spinner" />
                                     <span>Odswiezanie...</span>
                                 </span>
                             ) : (
@@ -586,13 +585,12 @@ function GoogleDriveTab({ selectedCharacters, exportOptions, onImportComplete }:
                             )}
                         </Button>
                         <Button
-                            variant="outline-secondary"
                             onClick={handleDriveDisconnect}
                             disabled={isDriveBusy || isDriveLoading}
                         >
                             {driveAction === "disconnect" ? (
                                 <span className="d-inline-flex align-items-center gap-2">
-                                    <Spinner animation="border" size="sm" role="status" />
+                                    <span className="popup-spinner" />
                                     <span>Odlaczanie...</span>
                                 </span>
                             ) : (
@@ -607,7 +605,7 @@ function GoogleDriveTab({ selectedCharacters, exportOptions, onImportComplete }:
                     <h5 className="character-settings-section-title">Kopie zapasowe</h5>
                     {isDriveLoading ? (
                         <div className="d-inline-flex align-items-center gap-2 text-muted">
-                            <Spinner animation="border" size="sm" role="status" />
+                            <span className="popup-spinner" />
                             <span>Ladowanie listy plikow...</span>
                         </div>
                     ) : driveFiles.length > 0 ? (
@@ -632,28 +630,26 @@ function GoogleDriveTab({ selectedCharacters, exportOptions, onImportComplete }:
                                     <div className="d-flex flex-wrap align-items-center gap-2">
                                         <Button
                                             size="sm"
-                                            variant="secondary"
                                             onClick={() => handleDriveImport(file)}
                                             disabled={isDriveBusy || isDriveLoading}
                                         >
                                             {driveAction === `import:${file.id}` ? (
                                                 <span className="d-inline-flex align-items-center gap-2">
-                                                    <Spinner animation="border" size="sm" role="status" />
+                                                    <span className="popup-spinner" />
                                                     <span>Importowanie...</span>
                                                 </span>
                                             ) : (
                                                 "Importuj"
                                             )}
                                         </Button>
-                                        <Button
+                                        <Button variant="danger"
                                             size="sm"
-                                            variant="outline-danger"
                                             onClick={() => handleDriveDelete(file)}
                                             disabled={isDriveBusy || isDriveLoading}
                                         >
                                             {driveAction === `delete:${file.id}` ? (
                                                 <span className="d-inline-flex align-items-center gap-2">
-                                                    <Spinner animation="border" size="sm" role="status" />
+                                                    <span className="popup-spinner" />
                                                     <span>Usuwanie...</span>
                                                 </span>
                                             ) : (
@@ -671,14 +667,14 @@ function GoogleDriveTab({ selectedCharacters, exportOptions, onImportComplete }:
                 </section>
             )}
             {driveStatus && (
-                <Alert variant="success" className="mb-0">
+                <div className="popup-notice popup-notice--success">
                     {driveStatus}
-                </Alert>
+                </div>
             )}
             {driveError && (
-                <Alert variant="danger" className="mb-0">
+                <div className="popup-notice popup-notice--danger">
                     {driveError}
-                </Alert>
+                </div>
             )}
         </div>
     );

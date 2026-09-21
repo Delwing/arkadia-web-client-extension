@@ -1,5 +1,5 @@
-import { Button, Alert } from "react-bootstrap";
 import type { CategoryConflictInfo, ConflictResolution, SyncCategory } from "@modules/firebase";
+import { Button } from "@web-ui/primitives/index.ts";
 import { SYNC_CATEGORY_NAMES } from "@modules/firebase";
 import SubDialog from "../SubDialog";
 import ConflictDiffView from "./ConflictDiffView";
@@ -33,25 +33,25 @@ function ConflictResolutionModal({ show, conflicts, onResolve }: ConflictResolut
             onClose={() => onResolve('cancel', categories)}
             footer={(
                 <>
-                    <Button variant="secondary" onClick={() => onResolve('cancel', categories)}>
+                    <Button onClick={() => onResolve('cancel', categories)}>
                         Anuluj
                     </Button>
-                    <Button variant="outline-primary" onClick={() => onResolve('keep-local', categories)}>
+                    <Button onClick={() => onResolve('keep-local', categories)}>
                         Zachowaj lokalne
                     </Button>
-                    <Button variant="primary" onClick={() => onResolve('use-cloud', categories)}>
+                    <Button variant="solid" onClick={() => onResolve('use-cloud', categories)}>
                         Uzyj z chmury
                     </Button>
                 </>
             )}
         >
-            <Alert variant="warning" className="mb-3">
+            <div className="popup-notice popup-notice--warning">
                 {conflicts.length === 1
                     ? 'Dane lokalne roznia sie od danych zapisanych w chmurze dla nastepujacej kategorii.'
                     : `Dane lokalne roznia sie od danych zapisanych w chmurze dla ${conflicts.length} kategorii.`
                 }
                 {' '}Wybierz, ktora wersje chcesz zachowac.
-            </Alert>
+            </div>
 
             <div className="mb-3" style={{ maxHeight: '420px', overflowY: 'auto' }}>
                 {conflicts.map((conflict) => (

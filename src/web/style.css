@@ -2927,6 +2927,66 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
   padding-left: 12px;
   border-left: 2px solid var(--popup-border-subtle);
 }
+/* ── Eksport i import (options/ExportImport.tsx + tabs) ────────────────── */
+.export-import {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  height: 100%;
+  min-height: 0;
+}
+.export-import__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+.export-import__scroll {
+  height: 100%;
+  min-height: 0;
+  overflow: auto;
+}
+/* Urzadzenia: one flat block per device / group inside a section. */
+.device-card {
+  padding: 10px 12px;
+  border: 1px solid var(--popup-border-subtle);
+  border-radius: var(--ui-radius, 6px);
+  background-color: var(--popup-control-bg);
+}
+.device-card--active {
+  border-color: var(--popup-success-border);
+}
+.device-card--muted {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--popup-text-subtle);
+}
+.device-card__form > .popup-input {
+  flex: 1 1 auto;
+}
+/* Firebase login / register / reset: a form, not a full-width row. */
+.firebase-auth-form {
+  max-width: 26rem;
+  gap: 12px;
+}
+/* Section title with its bulk actions on the right. */
+.export-section__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.export-option-groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
+  gap: 14px 20px;
+}
+.export-option-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
 /* ── Bindowanie (options/Binds.tsx) ─────────────────────────────────── */
 .binds-editor {
   display: flex;

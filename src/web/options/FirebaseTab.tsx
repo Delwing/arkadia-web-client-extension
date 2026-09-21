@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Alert, Button, Form, Spinner } from "react-bootstrap";
+import { Button, Check, Input, Notice } from "@web-ui/primitives/index.ts";
 import {
     type FirebaseAuthState,
     type SyncOptions,
@@ -529,7 +529,7 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
     if (isInitializing) {
         return (
             <div className="d-flex align-items-center gap-2 text-muted">
-                <Spinner animation="border" size="sm" />
+                <span className="popup-spinner" />
                 <span>Inicjalizacja Firebase...</span>
             </div>
         );
@@ -539,14 +539,14 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
     if (!isConfigured || initError) {
         return (
             <div className="d-flex flex-column gap-3">
-                <Alert variant="danger" className="mb-0">
+                <div className="popup-notice popup-notice--danger">
                     <div className="fw-semibold">Nie udalo sie zainicjalizowac Firebase</div>
                     {initError && <div className="small mt-1">{initError}</div>}
-                </Alert>
-                <Button onClick={initFirebase} disabled={isInitializing}>
+                </div>
+                <Button variant="solid" className="ui-settings-self-start" onClick={initFirebase} disabled={isInitializing}>
                     {isInitializing ? (
                         <span className="d-inline-flex align-items-center gap-2">
-                            <Spinner animation="border" size="sm" />
+                            <span className="popup-spinner" />
                             <span>Ponawiam...</span>
                         </span>
                     ) : (
@@ -567,84 +567,80 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
 
                 {authState.loading ? (
                     <div className="d-flex align-items-center gap-2 text-muted">
-                        <Spinner animation="border" size="sm" />
+                        <span className="popup-spinner" />
                         <span>Sprawdzanie sesji...</span>
                     </div>
                 ) : (
                     <>
-                        <div className="d-flex gap-2 mb-2">
-                            <Button
-                                variant={authMode === 'login' ? 'primary' : 'outline-primary'}
-                                size="sm"
+                        <div className="dialog-tabs">
+                            <button
+                                type="button"
+                                className={`dialog-tab${authMode === 'login' ? ' is-active' : ''}`}
                                 onClick={() => { setAuthMode('login'); setAuthError(null); setResetSuccess(null); }}
                             >
                                 Logowanie
-                            </Button>
-                            <Button
-                                variant={authMode === 'register' ? 'primary' : 'outline-primary'}
-                                size="sm"
+                            </button>
+                            <button
+                                type="button"
+                                className={`dialog-tab${authMode === 'register' ? ' is-active' : ''}`}
                                 onClick={() => { setAuthMode('register'); setAuthError(null); setResetSuccess(null); }}
                             >
                                 Rejestracja
-                            </Button>
+                            </button>
                         </div>
 
                         {authMode === 'reset' ? (
-                            <Form onSubmit={handlePasswordReset}>
-                                <Form.Group className="mb-3">
-                                    <Form.Label className="small">Email</Form.Label>
-                                    <Form.Control
+                            <form className="popup-stack firebase-auth-form" onSubmit={handlePasswordReset}>
+                                <div className="popup-field">
+                                    <label className="popup-field__label">Email</label>
+                                    <Input
                                         type="email"
-                                        size="sm"
                                         value={email}
                                         onChange={e => setEmail(e.target.value)}
                                         disabled={isAuthBusy}
                                         required
                                         autoComplete="username"
                                     />
-                                    <Form.Text className="text-muted">
+                                    <span className="popup-field__hint">
                                         Podaj adres email powiazany z kontem.
-                                    </Form.Text>
-                                </Form.Group>
+                                    </span>
+                                </div>
                                 <div className="d-flex flex-wrap gap-2 align-items-center">
-                                    <Button type="submit" disabled={isAuthBusy}>
+                                    <Button variant="solid" type="submit" disabled={isAuthBusy}>
                                         {isAuthBusy ? (
                                             <span className="d-inline-flex align-items-center gap-2">
-                                                <Spinner animation="border" size="sm" />
+                                                <span className="popup-spinner" />
                                                 <span>Wysylanie...</span>
                                             </span>
                                         ) : (
                                             'Wyslij link resetujacy'
                                         )}
                                     </Button>
-                                    <Button
-                                        variant="link"
+                                    <Button variant="ghost"
                                         size="sm"
                                         onClick={() => { setAuthMode('login'); setAuthError(null); setResetSuccess(null); }}
                                     >
                                         Powrot do logowania
                                     </Button>
                                 </div>
-                            </Form>
+                            </form>
                         ) : (
-                            <Form onSubmit={handleEmailAuth}>
-                                <Form.Group className="mb-2">
-                                    <Form.Label className="small">Email</Form.Label>
-                                    <Form.Control
+                            <form className="popup-stack firebase-auth-form" onSubmit={handleEmailAuth}>
+                                <div className="popup-field">
+                                    <label className="popup-field__label">Email</label>
+                                    <Input
                                         type="email"
-                                        size="sm"
                                         value={email}
                                         onChange={e => setEmail(e.target.value)}
                                         disabled={isAuthBusy}
                                         required
                                         autoComplete="username"
                                     />
-                                </Form.Group>
-                                <Form.Group className="mb-2">
-                                    <Form.Label className="small">Haslo</Form.Label>
-                                    <Form.Control
+                                </div>
+                                <div className="popup-field">
+                                    <label className="popup-field__label">Haslo</label>
+                                    <Input
                                         type="password"
-                                        size="sm"
                                         value={password}
                                         onChange={e => setPassword(e.target.value)}
                                         disabled={isAuthBusy}
@@ -652,24 +648,17 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                                         minLength={6}
                                         autoComplete="current-password"
                                     />
-                                </Form.Group>
+                                </div>
                                 {authMode === 'login' && (
-                                    <div className="mb-3">
-                                        <Button
-                                            variant="link"
-                                            size="sm"
-                                            className="p-0"
-                                            onClick={() => { setAuthMode('reset'); setAuthError(null); }}
-                                        >
-                                            Nie pamietam hasla
-                                        </Button>
-                                    </div>
+                                    <button type="button" className="popup-link ui-settings-self-start" onClick={() => { setAuthMode('reset'); setAuthError(null); }}>
+                                        Nie pamietam hasla
+                                    </button>
                                 )}
                                 <div className="d-flex flex-wrap gap-2">
-                                    <Button type="submit" disabled={isAuthBusy}>
+                                    <Button variant="solid" type="submit" disabled={isAuthBusy}>
                                         {isAuthBusy ? (
                                             <span className="d-inline-flex align-items-center gap-2">
-                                                <Spinner animation="border" size="sm" />
+                                                <span className="popup-spinner" />
                                                 <span>{authMode === 'login' ? 'Logowanie...' : 'Rejestracja...'}</span>
                                             </span>
                                         ) : (
@@ -694,7 +683,7 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                                         }}
                                     >
                                         {isAuthBusy ? (
-                                            <Spinner animation="border" size="sm" />
+                                            <span className="popup-spinner" />
                                         ) : (
                                             <>
                                                 <GoogleLogo size={18} />
@@ -703,21 +692,21 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                                         )}
                                     </button>
                                 </div>
-                            </Form>
+                            </form>
                         )}
                     </>
                 )}
 
                 {resetSuccess && (
-                    <Alert variant="success" className="mb-0">
+                    <div className="popup-notice popup-notice--success">
                         {resetSuccess}
-                    </Alert>
+                    </div>
                 )}
 
                 {authError && (
-                    <Alert variant="danger" className="mb-0">
+                    <div className="popup-notice popup-notice--danger">
                         {authError}
-                    </Alert>
+                    </div>
                 )}
             </div>
         );
@@ -736,24 +725,14 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                     maxWidth: '400px',
                 }}>
                     {syncStatus && (
-                        <Alert
-                            variant="success"
-                            dismissible
-                            onClose={() => setSyncStatus(null)}
-                            className="mb-2 shadow-sm"
-                        >
+                        <Notice variant="success" onClose={() => setSyncStatus(null)}>
                             {syncStatus}
-                        </Alert>
+                        </Notice>
                     )}
                     {syncError && (
-                        <Alert
-                            variant="danger"
-                            dismissible
-                            onClose={() => setSyncError(null)}
-                            className="mb-2 shadow-sm"
-                        >
+                        <Notice variant="danger" onClose={() => setSyncError(null)}>
                             {syncError}
-                        </Alert>
+                        </Notice>
                     )}
                 </div>
             )}
@@ -769,7 +748,6 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                             <span className="fw-semibold">{authState.email ?? authState.displayName ?? 'Nieznany'}</span>
                         </div>
                         <Button
-                            variant="secondary"
                             size="sm"
                             onClick={handleSignOut}
                             disabled={isAuthBusy || isSyncing}
@@ -783,19 +761,17 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                         <div className="d-flex justify-content-between align-items-center mb-2">
                             <h5 className="character-settings-section-title mb-0">Dane do synchronizacji</h5>
                             <div className="d-flex gap-2">
-                                <Button
-                                    variant="link"
+                                <Button variant="ghost"
                                     size="sm"
-                                    className="p-0 text-muted"
+                                    className="text-muted"
                                     onClick={() => setSyncOptions(Object.fromEntries(SYNC_CATEGORIES.map(c => [c, true])) as SyncOptions)}
                                 >
                                     Zaznacz wszystko
                                 </Button>
                                 <span className="text-muted">·</span>
-                                <Button
-                                    variant="link"
+                                <Button variant="ghost"
                                     size="sm"
-                                    className="p-0 text-muted"
+                                    className="text-muted"
                                     onClick={() => setSyncOptions(Object.fromEntries(SYNC_CATEGORIES.map(c => [c, false])) as SyncOptions)}
                                 >
                                     Odznacz wszystko
@@ -808,8 +784,7 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                                     <div className="text-muted small fw-semibold mb-1">{group.name}</div>
                                     {getCategoriesByGroup(group.id).map(cat => (
                                         <div key={cat} className="d-flex align-items-center gap-1">
-                                            <Form.Check
-                                                type="checkbox"
+                                            <Check
                                                 id={`sync-${cat}`}
                                                 label={SYNC_CATEGORY_NAMES[cat]}
                                                 checked={syncOptions[cat]}
@@ -832,8 +807,7 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
 
                     {/* Encryption */}
                     <section className="character-settings-section">
-                        <Form.Check
-                            type="switch"
+                        <Check
                             id="encryption-toggle"
                             label="Szyfruj dane w chmurze"
                             checked={encryptionEnabled}
@@ -842,24 +816,22 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                         {/* Show warning when cloud has encrypted data but user wants to disable */}
                         {!encryptionEnabled && Object.values(cloudMetadata).some(m => m?.encrypted) && (
                             <div className="mt-2">
-                                <Alert variant="warning" className="mb-2 py-2">
+                                <div className="popup-notice popup-notice--warning">
                                     <small>
                                         Niektore dane w chmurze sa zaszyfrowane. Podaj haslo aby pobrac i zapisac bez szyfrowania.
                                     </small>
-                                </Alert>
-                                <Form.Group className="mb-2">
-                                    <Form.Label className="small">Aktualne haslo szyfrowania</Form.Label>
-                                    <Form.Control
+                                </div>
+                                <div className="popup-field">
+                                    <label className="popup-field__label">Aktualne haslo szyfrowania</label>
+                                    <Input
                                         type="password"
-                                        size="sm"
                                         value={passphrase}
                                         onChange={e => setPassphrase(e.target.value)}
                                         placeholder="Wprowadz haslo do odszyfrowania..."
                                     />
-                                </Form.Group>
-                                <Button
+                                </div>
+                                <Button variant="solid"
                                     size="sm"
-                                    variant="warning"
                                     disabled={!passphrase || isSyncing}
                                     onClick={async () => {
                                         setIsSyncing(true);
@@ -909,7 +881,7 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                                 >
                                     {isSyncing ? (
                                         <span className="d-inline-flex align-items-center gap-2">
-                                            <Spinner animation="border" size="sm" />
+                                            <span className="popup-spinner" />
                                             <span>Odszyfrowanie...</span>
                                         </span>
                                     ) : (
@@ -920,16 +892,15 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                         )}
                         {encryptionEnabled && (
                             <div className="mt-2">
-                                <Form.Group className="mb-2">
-                                    <Form.Label className="small">Haslo szyfrowania</Form.Label>
-                                    <Form.Control
+                                <div className="popup-field">
+                                    <label className="popup-field__label">Haslo szyfrowania</label>
+                                    <Input
                                         type="password"
-                                        size="sm"
                                         value={passphrase}
                                         onChange={e => setPassphrase(e.target.value)}
                                         placeholder="Wprowadz haslo..."
                                     />
-                                </Form.Group>
+                                </div>
                                 <p className="text-muted small mb-0">
                                     Haslo jest pamietane tylko do zamkniecia karty przegladarki i nigdy nie trafia
                                     na serwer. Jesli je zapomnisz, dane w chmurze beda niedostepne.
@@ -941,8 +912,7 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                     {/* Auto-sync */}
                     <section className="character-settings-section">
                         <div className="d-flex justify-content-between align-items-center">
-                            <Form.Check
-                                type="switch"
+                            <Check
                                 id="auto-sync-toggle"
                                 label="Automatyczna synchronizacja"
                                 checked={autoSyncEnabled}
@@ -971,8 +941,7 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                         <section className="character-settings-section">
                             <h5 className="character-settings-section-title text-danger">Usuwanie danych z chmury</h5>
                             {!showDeleteConfirm ? (
-                                <Button
-                                    variant="outline-danger"
+                                <Button variant="danger"
                                     size="sm"
                                     onClick={() => setShowDeleteConfirm(true)}
                                     disabled={isSyncing || isDeleting}
@@ -985,15 +954,14 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                                         Czy na pewno chcesz usunac wszystkie dane z chmury? Tej operacji nie mozna cofnac.
                                     </p>
                                     <div className="d-flex gap-2">
-                                        <Button
-                                            variant="danger"
+                                        <Button variant="danger"
                                             size="sm"
                                             onClick={handleDeleteCloudData}
                                             disabled={isDeleting}
                                         >
                                             {isDeleting ? (
                                                 <span className="d-inline-flex align-items-center gap-2">
-                                                    <Spinner animation="border" size="sm" />
+                                                    <span className="popup-spinner" />
                                                     <span>Usuwanie...</span>
                                                 </span>
                                             ) : (
@@ -1001,7 +969,6 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                                             )}
                                         </Button>
                                         <Button
-                                            variant="secondary"
                                             size="sm"
                                             onClick={() => setShowDeleteConfirm(false)}
                                             disabled={isDeleting}
@@ -1022,13 +989,13 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
 
             {/* Bottom action buttons */}
             <div className="d-flex flex-wrap gap-2 pt-2 border-top flex-shrink-0">
-                <Button
+                <Button variant="solid"
                     onClick={() => performSync()}
                     disabled={isSyncing || (encryptionEnabled && !passphrase)}
                 >
                     {isSyncing ? (
                         <span className="d-inline-flex align-items-center gap-2">
-                            <Spinner animation="border" size="sm" />
+                            <span className="popup-spinner" />
                             <span>Synchronizacja...</span>
                         </span>
                     ) : (
@@ -1036,13 +1003,12 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                     )}
                 </Button>
                 <Button
-                    variant="secondary"
                     onClick={() => handleDownload()}
                     disabled={isSyncing || (encryptionEnabled && !passphrase)}
                 >
                     {isSyncing ? (
                         <span className="d-inline-flex align-items-center gap-2">
-                            <Spinner animation="border" size="sm" />
+                            <span className="popup-spinner" />
                             <span>Pobieranie...</span>
                         </span>
                     ) : (

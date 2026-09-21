@@ -1,5 +1,5 @@
 import { ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Alert, Button, Form, Spinner } from "react-bootstrap";
+import { Button, Check } from "@web-ui/primitives/index.ts";
 import { characterStorage, globalStorage } from "@modules/core/storage";
 import {
     collectCharacters,
@@ -10,6 +10,33 @@ import {
     type ExportOptions,
     type ExportPayload,
 } from "./exportUtils";
+
+/** The export checklist, grouped as it is shown. */
+const EXPORT_OPTION_GROUPS: { title: string; options: { key: keyof ExportOptions; label: string }[] }[] = [
+    { title: "Ustawienia", options: [
+        { key: "uiSettings", label: "Interfejsu" },
+        { key: "characterSettings", label: "Postaci" },
+    ] },
+    { title: "Sterowanie", options: [
+        { key: "binds", label: "Bindy klawiszy" },
+        { key: "shortcuts", label: "Skroty" },
+        { key: "buttons", label: "Przyciski" },
+        { key: "radial", label: "Menu radialne" },
+    ] },
+    { title: "Automatyzacja", options: [
+        { key: "triggers", label: "Triggery" },
+        { key: "aliases", label: "Aliasy" },
+        { key: "multibinds", label: "Multibindy" },
+        { key: "scripts", label: "Skrypty" },
+    ] },
+    { title: "Dane", options: [
+        { key: "recordings", label: "Nagrania" },
+        { key: "visitedRooms", label: "Odwiedzone lokacje" },
+        { key: "locationNotes", label: "Notatki lokacji" },
+        { key: "peopleEdits", label: "Edycje bazy postaci" },
+        { key: "knowledge", label: "Wiedza" },
+    ] },
+];
 
 interface LocalExportTabProps {
     // Expose selected characters and options to parent for other tabs
@@ -143,43 +170,26 @@ function LocalExportTab({ onSelectionChange }: LocalExportTabProps) {
     };
 
     return (
-        <div className="d-flex flex-column gap-3">
-            <p className="mb-0">
+        <div className="ui-settings-stack">
+            <p className="popup-field__hint">
                 Wybierz postacie, ktore chcesz uwzglednic w eksporcie. Dane pobierane z internetu (mapy, ziola, magiki
                 itp.) nie sa dolaczane.
             </p>
             <section className="character-settings-section">
-                <div className="d-flex justify-content-between align-items-center">
+                <div className="export-section__header">
                     <h5 className="character-settings-section-title">Postacie</h5>
                     {characters.length > 0 && (
-                        <div className="d-flex gap-2">
-                            <Button
-                                size="sm"
-                                variant="outline-secondary"
-                                className="py-0 px-2"
-                                style={{ fontSize: "0.75rem" }}
-                                onClick={() => handleToggleAll(true)}
-                            >
-                                Wszystkie
-                            </Button>
-                            <Button
-                                size="sm"
-                                variant="outline-secondary"
-                                className="py-0 px-2"
-                                style={{ fontSize: "0.75rem" }}
-                                onClick={() => handleToggleAll(false)}
-                            >
-                                Żadna
-                            </Button>
+                        <div className="popup-inline">
+                            <Button size="sm" variant="ghost" onClick={() => handleToggleAll(true)}>Wszystkie</Button>
+                            <Button size="sm" variant="ghost" onClick={() => handleToggleAll(false)}>Żadna</Button>
                         </div>
                     )}
                 </div>
                 {characters.length > 0 ? (
-                    <div className="d-flex flex-wrap gap-3">
+                    <div className="settings-check-grid">
                         {characters.map(name => (
-                            <Form.Check
+                            <Check
                                 key={name}
-                                type="checkbox"
                                 id={`export-character-${name}`}
                                 label={name.charAt(0).toUpperCase() + name.slice(1).toLowerCase()}
                                 checked={!!selection[name]}
@@ -188,201 +198,62 @@ function LocalExportTab({ onSelectionChange }: LocalExportTabProps) {
                         ))}
                     </div>
                 ) : (
-                    <p className="text-muted mb-0">Brak zapisanych postaci.</p>
+                    <p className="popup-field__hint">Brak zapisanych postaci.</p>
                 )}
             </section>
             <section className="character-settings-section">
-                <div className="d-flex justify-content-between align-items-center">
+                <div className="export-section__header">
                     <h5 className="character-settings-section-title">Dane do eksportu</h5>
-                    <div className="d-flex gap-2">
-                        <Button
-                            size="sm"
-                            variant="outline-secondary"
-                            className="py-0 px-2"
-                            style={{ fontSize: "0.75rem" }}
-                            onClick={() => setExportOptions({ ...DEFAULT_EXPORT_OPTIONS })}
-                        >
+                    <div className="popup-inline">
+                        <Button size="sm" variant="ghost" onClick={() => setExportOptions({ ...DEFAULT_EXPORT_OPTIONS })}>
                             Wszystko
                         </Button>
                         <Button
                             size="sm"
-                            variant="outline-secondary"
-                            className="py-0 px-2"
-                            style={{ fontSize: "0.75rem" }}
-                            onClick={() => setExportOptions({
-                                uiSettings: false,
-                                binds: false,
-                                shortcuts: false,
-                                characterSettings: false,
-                                triggers: false,
-                                aliases: false,
-                                buttons: false,
-                                radial: false,
-                                scripts: false,
-                                multibinds: false,
-                                recordings: false,
-                                visitedRooms: false,
-                                locationNotes: false,
-                                peopleEdits: false,
-                                knowledge: false,
-                            })}
+                            variant="ghost"
+                            onClick={() => setExportOptions(Object.fromEntries(
+                                Object.keys(DEFAULT_EXPORT_OPTIONS).map(key => [key, false]),
+                            ) as unknown as ExportOptions)}
                         >
                             Nic
                         </Button>
                     </div>
                 </div>
-                <div className="row g-3">
-                    <div className="col-6 col-md-4">
-                        <div className="text-muted small mb-1">Ustawienia</div>
-                        <Form.Check
-                            type="checkbox"
-                            id="export-option-uiSettings"
-                            label="Interfejsu"
-                            checked={exportOptions.uiSettings}
-                            onChange={e => setExportOptions(prev => ({ ...prev, uiSettings: e.target.checked }))}
-                        />
-                        <Form.Check
-                            type="checkbox"
-                            id="export-option-characterSettings"
-                            label="Postaci"
-                            checked={exportOptions.characterSettings}
-                            onChange={e => setExportOptions(prev => ({ ...prev, characterSettings: e.target.checked }))}
-                        />
-                    </div>
-                    <div className="col-6 col-md-4">
-                        <div className="text-muted small mb-1">Sterowanie</div>
-                        <Form.Check
-                            type="checkbox"
-                            id="export-option-binds"
-                            label="Bindy klawiszy"
-                            checked={exportOptions.binds}
-                            onChange={e => setExportOptions(prev => ({ ...prev, binds: e.target.checked }))}
-                        />
-                        <Form.Check
-                            type="checkbox"
-                            id="export-option-shortcuts"
-                            label="Skroty"
-                            checked={exportOptions.shortcuts}
-                            onChange={e => setExportOptions(prev => ({ ...prev, shortcuts: e.target.checked }))}
-                        />
-                        <Form.Check
-                            type="checkbox"
-                            id="export-option-buttons"
-                            label="Przyciski"
-                            checked={exportOptions.buttons}
-                            onChange={e => setExportOptions(prev => ({ ...prev, buttons: e.target.checked }))}
-                        />
-                        <Form.Check
-                            type="checkbox"
-                            id="export-option-radial"
-                            label="Menu radialne"
-                            checked={exportOptions.radial}
-                            onChange={e => setExportOptions(prev => ({ ...prev, radial: e.target.checked }))}
-                        />
-                    </div>
-                    <div className="col-6 col-md-4">
-                        <div className="text-muted small mb-1">Automatyzacja</div>
-                        <Form.Check
-                            type="checkbox"
-                            id="export-option-triggers"
-                            label="Triggery"
-                            checked={exportOptions.triggers}
-                            onChange={e => setExportOptions(prev => ({ ...prev, triggers: e.target.checked }))}
-                        />
-                        <Form.Check
-                            type="checkbox"
-                            id="export-option-aliases"
-                            label="Aliasy"
-                            checked={exportOptions.aliases}
-                            onChange={e => setExportOptions(prev => ({ ...prev, aliases: e.target.checked }))}
-                        />
-                        <Form.Check
-                            type="checkbox"
-                            id="export-option-multibinds"
-                            label="Multibindy"
-                            checked={exportOptions.multibinds}
-                            onChange={e => setExportOptions(prev => ({ ...prev, multibinds: e.target.checked }))}
-                        />
-                        <Form.Check
-                            type="checkbox"
-                            id="export-option-scripts"
-                            label="Skrypty"
-                            checked={exportOptions.scripts}
-                            onChange={e => setExportOptions(prev => ({ ...prev, scripts: e.target.checked }))}
-                        />
-                    </div>
-                    <div className="col-6 col-md-4">
-                        <div className="text-muted small mb-1">Dane</div>
-                        <Form.Check
-                            type="checkbox"
-                            id="export-option-recordings"
-                            label="Nagrania"
-                            checked={exportOptions.recordings}
-                            onChange={e => setExportOptions(prev => ({ ...prev, recordings: e.target.checked }))}
-                        />
-                        <Form.Check
-                            type="checkbox"
-                            id="export-option-visitedRooms"
-                            label="Odwiedzone lokacje"
-                            checked={exportOptions.visitedRooms}
-                            onChange={e => setExportOptions(prev => ({ ...prev, visitedRooms: e.target.checked }))}
-                        />
-                        <Form.Check
-                            type="checkbox"
-                            id="export-option-locationNotes"
-                            label="Notatki lokacji"
-                            checked={exportOptions.locationNotes}
-                            onChange={e => setExportOptions(prev => ({ ...prev, locationNotes: e.target.checked }))}
-                        />
-                        <Form.Check
-                            type="checkbox"
-                            id="export-option-peopleEdits"
-                            label="Edycje bazy postaci"
-                            checked={exportOptions.peopleEdits}
-                            onChange={e => setExportOptions(prev => ({ ...prev, peopleEdits: e.target.checked }))}
-                        />
-                        <Form.Check
-                            type="checkbox"
-                            id="export-option-knowledge"
-                            label="Wiedza"
-                            checked={exportOptions.knowledge}
-                            onChange={e => setExportOptions(prev => ({ ...prev, knowledge: e.target.checked }))}
-                        />
-                    </div>
+                <div className="export-option-groups">
+                    {EXPORT_OPTION_GROUPS.map(group => (
+                        <div key={group.title} className="export-option-group">
+                            <span className="popup-field__label">{group.title}</span>
+                            {group.options.map(option => (
+                                <Check
+                                    key={option.key}
+                                    id={`export-option-${option.key}`}
+                                    label={option.label}
+                                    checked={exportOptions[option.key]}
+                                    onChange={e => setExportOptions(prev => ({ ...prev, [option.key]: e.target.checked }))}
+                                />
+                            ))}
+                        </div>
+                    ))}
                 </div>
             </section>
-            <div className="d-flex flex-wrap gap-2 align-items-center">
-                <Button onClick={handleExport} disabled={isProcessing}>
+            <div className="popup-inline settings-wrap">
+                <Button variant="solid" onClick={handleExport} disabled={isProcessing}>
                     {isProcessing ? (
-                        <span className="d-inline-flex align-items-center gap-2">
-                            <Spinner animation="border" size="sm" role="status" />
+                        <>
+                            <span className="popup-spinner" />
                             <span>Przetwarzanie...</span>
-                        </span>
+                        </>
                     ) : (
                         "Eksportuj dane"
                     )}
                 </Button>
-                <Button variant="secondary" onClick={handleImport} disabled={isProcessing}>
+                <Button onClick={handleImport} disabled={isProcessing}>
                     Importuj dane...
                 </Button>
-                <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="application/json"
-                    style={{ display: "none" }}
-                    onChange={onFileChange}
-                />
+                <input ref={fileInputRef} type="file" accept="application/json" hidden onChange={onFileChange} />
             </div>
-            {status && (
-                <Alert variant="success" className="mb-0">
-                    {status}
-                </Alert>
-            )}
-            {error && (
-                <Alert variant="danger" className="mb-0">
-                    {error}
-                </Alert>
-            )}
+            {status && <div className="popup-notice popup-notice--success">{status}</div>}
+            {error && <div className="popup-notice popup-notice--danger">{error}</div>}
         </div>
     );
 }

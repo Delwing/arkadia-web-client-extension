@@ -238,7 +238,7 @@ test.describe('Export/Import', () => {
             expect(filename, 'filename should end with .json').toMatch(/\.json$/);
 
             // Verify success message
-            const successAlert = modal.locator('.alert-success');
+            const successAlert = modal.locator('.popup-notice--success');
             await expect(successAlert, 'should show success message').toContainText('Eksport zakończony sukcesem');
 
             await closeExportImportModal(page);
@@ -347,7 +347,7 @@ test.describe('Export/Import', () => {
             });
 
             // Verify success message
-            const successAlert = modal.locator('.alert-success');
+            const successAlert = modal.locator('.popup-notice--success');
             await expect(successAlert, 'should show success message').toContainText('Import zakończony sukcesem');
 
             // Verify data was imported
@@ -402,7 +402,7 @@ test.describe('Export/Import', () => {
             });
 
             // Verify error message
-            const errorAlert = modal.locator('.alert-danger');
+            const errorAlert = modal.locator('.popup-notice--danger');
             await expect(errorAlert, 'should show error message').toContainText('Nie udało się zaimportować danych');
 
             await closeExportImportModal(page);
@@ -428,7 +428,7 @@ test.describe('Export/Import', () => {
                 buffer: Buffer.from(JSON.stringify(invalidPayload)),
             });
 
-            const errorAlert = modal.locator('.alert-danger');
+            const errorAlert = modal.locator('.popup-notice--danger');
             await expect(errorAlert, 'should show error for wrong version').toContainText('Nie udało się zaimportować danych');
 
             await closeExportImportModal(page);
@@ -452,7 +452,7 @@ test.describe('Export/Import', () => {
                 buffer: Buffer.from(JSON.stringify(incompletePayload)),
             });
 
-            const errorAlert = modal.locator('.alert-danger');
+            const errorAlert = modal.locator('.popup-notice--danger');
             await expect(errorAlert, 'should show error for incomplete payload').toContainText('Nie udało się zaimportować danych');
 
             await closeExportImportModal(page);
@@ -506,7 +506,7 @@ test.describe('Export/Import', () => {
             });
 
             // Verify success
-            const successAlert = modal.locator('.alert-success');
+            const successAlert = modal.locator('.popup-notice--success');
             await expect(successAlert, 'should show import success').toContainText('Import zakończony sukcesem');
 
             // Verify data was restored
