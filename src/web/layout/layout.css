@@ -192,29 +192,40 @@ body.layout-locked .tab-group-tab--closable {
   color: var(--popup-text, #ccc);
 }
 
-/* Panel header base */
+/* Panel header base — one height and inset for docked, floating and
+   popped-out windows (tab bars match via .tab-group-tabbar). */
 .managed-panel__header {
   flex-shrink: 0;
   display: flex;
   align-items: center;
+  gap: 6px;
+  box-sizing: border-box;
+  height: var(--ui-header-h, 28px);
+  padding: 0 4px 0 10px;
   background: var(--popup-control-bg, var(--surface-raised, #252525));
   border-bottom: 1px solid var(--popup-border-subtle, var(--surface-border, #333));
+  font-family: var(--font-ui, sans-serif);
   user-select: none;
 }
 
-/* Panel title base */
+/* Panel title base — spaced capitals (tab titles match). */
 .managed-panel__title {
-  font-size: 0.7rem;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--ui-fs-xs, 11px);
   font-weight: 600;
-  color: var(--popup-text-medium, var(--text-secondary, #888));
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  color: var(--popup-text-bright, var(--text-primary, #ddd));
 }
 
 /* Panel header actions base */
 .managed-panel__header-actions {
   display: flex;
   align-items: center;
+  gap: 2px;
   margin-left: auto;
 }
 
@@ -242,22 +253,12 @@ body.layout-locked .tab-group-tab--closable {
 }
 
 .docked-panel__header {
-  height: 28px;
-  padding: 0 0.5rem;
   cursor: grab;
   touch-action: none;
 }
 
 .docked-panel__header:active {
   cursor: grabbing;
-}
-
-.docked-panel__title {
-  /* Inherits from managed-panel__title */
-}
-
-.docked-panel__content {
-  /* Inherits from managed-panel__content */
 }
 
 /* Panel-specific containers */
@@ -331,14 +332,8 @@ body.layout-dragging * {
 
 .floating-panel__header {
   justify-content: space-between;
-  padding: 0.35rem 0.5rem;
   cursor: move;
-  min-height: 24px;
   touch-action: none;
-}
-
-.floating-panel__title {
-  /* Inherits from managed-panel__title */
 }
 
 .floating-panel__content {
@@ -421,19 +416,8 @@ body.layout-manager-enabled .compass-rose-box {
 }
 
 .docked-panel--popup .docked-panel__header {
-  /* Inherits from managed-panel__header, overrides specific values */
   justify-content: space-between;
-  padding: 0 0.4rem;
   background: var(--popup-control-bg, var(--surface-raised, #252830));
-}
-
-.docked-panel--popup .docked-panel__title {
-  font-size: 0.65rem;
-}
-
-/* Header actions container - extends managed-panel__header-actions */
-.docked-panel__header-actions {
-  gap: 0.2rem;
 }
 
 /* Ensure all children in header actions fit within header */
@@ -482,11 +466,6 @@ body.layout-manager-enabled .compass-rose-box {
 /* ============================================
    Floating Panel Popup Styles
    ============================================ */
-
-/* Header actions for floating panels - extends managed-panel__header-actions */
-.floating-panel__header-actions {
-  gap: 0.25rem;
-}
 
 /* Floating panel button styles are now in style.css base classes */
 
@@ -888,16 +867,17 @@ body.layout-manager-enabled .compass-rose-box {
 .tab-group-tab--closable { padding-right: 6px; }
 
 .tab-group-tab-title {
-  font-family: var(--font-ui), sans-serif;
-  font-size: 0.7rem;
+  font-family: var(--font-ui, sans-serif);
+  font-size: var(--ui-fs-xs, 11px);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   color: var(--popup-text-medium, #888);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   max-width: 120px;
   pointer-events: none;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
 }
 .tab-group-tab--active .tab-group-tab-title {
   color: var(--popup-text-bright, #ccc);

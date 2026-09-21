@@ -113,6 +113,21 @@
   --footer-text-dim: rgba(255, 255, 255, 0.5);
   --output-font-family: monospace;
   --output-font-size: 0.875rem;
+  /* ── UI chrome scale ─────────────────────────────────────────────────────
+     Interface text and sizes (window headers, menus, dialogs) — not game text,
+     which follows --output-font-*. */
+  --font-ui: "Barlow", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --bs-body-font-family: var(--font-ui);
+  --ui-fs-xs: 11px;
+  --ui-fs-sm: 12px;
+  --ui-fs: 13px;
+  --ui-fs-title: 14px;
+  --ui-ctrl-sm: 24px;
+  --ui-ctrl: 28px;
+  --ui-header-h: 28px;
+  --ui-radius-sm: 4px;
+  --ui-radius: 6px;
+  --ui-radius-lg: 10px;
   --panel-btn-size: 20px;
   /* 0.5 made the header icons read as disabled next to the ☰ menu and the
      header's text buttons; the menu toggle reads these same two values. */
@@ -187,7 +202,7 @@
 html, body {
   margin: 0 !important;
   overflow: hidden;
-  font-family: "Open Sans", sans-serif;
+  font-family: var(--font-ui);
 }
 
 a {
