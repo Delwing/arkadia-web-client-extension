@@ -532,6 +532,36 @@ select.popup-input.popup-input--control {
   border-color: var(--popup-success-border);
   background-color: var(--popup-success-bg);
 }
+/* A plain bordered list, rows split by hairlines (Postacie). Not the
+   in-game windows' .popup-list. */
+.dialog-list {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--popup-border-subtle);
+  border-radius: var(--ui-radius, 6px);
+}
+.dialog-list__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: calc(var(--ui-ctrl, 32px) + 8px);
+  padding: 0 6px 0 12px;
+}
+.dialog-list__row + .dialog-list__row {
+  border-top: 1px solid var(--popup-border-subtle);
+}
+.dialog-list__row:hover {
+  background-color: var(--popup-hover-bg);
+}
+.dialog-list__main {
+  display: inline-flex;
+  flex: 1;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  color: var(--popup-text-bright);
+  font-weight: 500;
+}
 /* Determinate progress bar (native <progress>). */
 .popup-progress {
   width: 100%;

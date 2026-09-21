@@ -1,5 +1,6 @@
 import {useState, useEffect} from 'react';
-import {Button, Table} from 'react-bootstrap';
+import {characterStorage} from '@modules/core/storage';
+import {DeleteButton} from '@web-ui/primitives/index.ts';
 
 const IGNORED_CHARACTER_KEY_PREFIXES = new Set([
     "firebase",
@@ -67,6 +68,14 @@ function deleteCharacterData(characterName: string): number {
     return keysToDelete.length;
 }
 
+/** 1 klucz, 2-4 klucze, 5+ kluczy (12-14 kluczy, 22 klucze). */
+function keysLabel(n: number): string {
+    if (n === 1) return "1 klucz";
+    const lastTwo = n % 100;
+    const last = n % 10;
+    return `${n} ${last >= 2 && last <= 4 && (lastTwo < 12 || lastTwo > 14) ? "klucze" : "kluczy"}`;
+}
+
 export default function CharacterManagement() {
     const [characters, setCharacters] = useState<string[]>([]);
     const [keyCounts, setKeyCounts] = useState<Record<string, number>>({});
@@ -100,41 +109,30 @@ export default function CharacterManagement() {
         window.dispatchEvent(new Event("storage"));
     }
 
+    const current = characterStorage.getCharacter()?.toLowerCase();
+    const displayName = (name: string) => name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
+
     return (
-        <>
-            <p className="text-muted small mb-3">
-                Lista postaci, których dane są zapisane w przeglądarce. Możesz usunąć dane wybranej postaci.
+        <div className="ui-settings-stack">
+            <p className="popup-field__hint">
+                Postacie, których dane są zapisane w tej przeglądarce. Usunięcie kasuje wszystkie ich ustawienia i dane — tego nie da się cofnąć.
             </p>
             {characters.length > 0 ? (
-                <Table bordered size="sm" hover className="table-modern table-zebra mb-0">
-                    <thead>
-                    <tr>
-                        <th>Postać</th>
-                        <th style={{width: '100px'}} className="text-center">Kluczy</th>
-                        <th style={{width: '80px'}}></th>
-                    </tr>
-                    </thead>
-                    <tbody>
+                <div className="dialog-list">
                     {characters.map(name => (
-                        <tr key={name}>
-                            <td>{name.charAt(0).toUpperCase() + name.slice(1).toLowerCase()}</td>
-                            <td className="text-center text-muted">{keyCounts[name] || 0}</td>
-                            <td>
-                                <Button
-                                    size="sm"
-                                    variant="danger"
-                                    onClick={() => handleDelete(name)}
-                                >
-                                    Usuń
-                                </Button>
-                            </td>
-                        </tr>
+                        <div key={name} className="dialog-list__row">
+                            <span className="dialog-list__main">
+                                {displayName(name)}
+                                {name.toLowerCase() === current && <span className="popup-chip">bieżąca</span>}
+                            </span>
+                            <span className="settings-inline-note">{keysLabel(keyCounts[name] || 0)}</span>
+                            <DeleteButton title={`Usuń dane postaci ${displayName(name)}`} onClick={() => handleDelete(name)}/>
+                        </div>
                     ))}
-                    </tbody>
-                </Table>
+                </div>
             ) : (
-                <p className="text-muted mb-0">Brak zapisanych postaci.</p>
+                <p className="popup-field__hint">Brak zapisanych postaci.</p>
             )}
-        </>
+        </div>
     );
 }
