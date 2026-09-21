@@ -513,6 +513,60 @@ select.popup-input.popup-input--control {
   accent-color: var(--popup-accent);
   cursor: pointer;
 }
+/* Chip input: a field of removable chips plus a typing slot. */
+.popup-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  min-height: var(--ui-ctrl, 28px);
+  box-sizing: border-box;
+  padding: 3px 6px;
+  border: 1px solid var(--popup-border-control);
+  border-radius: var(--ui-radius, 6px);
+  background-color: var(--popup-input-bg);
+  color: var(--popup-input-text);
+  cursor: text;
+}
+.popup-chips:focus-within {
+  border-color: var(--popup-accent);
+  box-shadow: 0 0 0 2px var(--popup-accent-subtle-bg);
+}
+.popup-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 6px;
+  border-radius: var(--ui-radius-sm, 4px);
+  background-color: var(--popup-control-active-bg);
+  color: var(--popup-text);
+  font-size: var(--ui-fs-sm, 12px);
+  line-height: 1.4;
+  cursor: pointer;
+}
+.popup-chip__remove {
+  opacity: 0.6;
+  cursor: pointer;
+}
+.popup-chip:hover .popup-chip__remove,
+.popup-chip__remove:hover {
+  opacity: 1;
+}
+.popup-chips__input.popup-chips__input {
+  min-width: 1ch;
+  height: auto;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  outline: none;
+  box-shadow: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: var(--ui-fs-sm, 12px);
+}
+
 /* Range slider in the accent colour. */
 .popup-range {
   width: 100%;

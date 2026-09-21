@@ -3138,6 +3138,15 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
   gap: 0.75rem;
 }
 
+/* A sub-option under the option it depends on. */
+.ui-settings-indent {
+  margin-left: 20px;
+}
+/* A button that keeps its size instead of stretching across the card. */
+.ui-settings-self-start {
+  align-self: flex-start;
+}
+
 /* Colour + opacity slider on one line (Wyglad > Kolor tla listy obiektow). */
 .ui-settings-color-alpha {
   flex-wrap: wrap;
