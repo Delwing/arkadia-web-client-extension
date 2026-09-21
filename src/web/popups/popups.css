@@ -501,6 +501,15 @@ select.popup-input.popup-input--control {
   font-size: var(--ui-fs-xs, 11px);
   color: var(--popup-danger);
 }
+/* An inline info note (e.g. why a page is locked). */
+.popup-notice {
+  padding: 8px 12px;
+  border: 1px solid var(--popup-accent-border);
+  border-radius: var(--ui-radius, 6px);
+  background-color: var(--popup-accent-subtle-bg);
+  color: var(--popup-text);
+  font-size: var(--ui-fs-sm, 13px);
+}
 .popup-field__success {
   font-size: var(--ui-fs-xs, 11px);
   color: var(--popup-success);

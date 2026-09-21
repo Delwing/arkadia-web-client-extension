@@ -290,7 +290,7 @@ function SettingsDialog({ soundManager, onEnableNotifications, initialCategory }
                         ref={searchRef}
                         id="settings-search"
                         type="search"
-                        className="form-control form-control-sm"
+                        className="popup-input popup-input--control"
                         placeholder="Szukaj w ustawieniach"
                         autoComplete="off"
                         value={query}
@@ -322,7 +322,7 @@ function SettingsDialog({ soundManager, onEnableNotifications, initialCategory }
                 </nav>
                 <select
                     id="settings-category-select"
-                    className="form-select form-select-sm settings-dialog__select"
+                    className="popup-input popup-input--control settings-dialog__select"
                     value={searching ? "" : category}
                     onChange={(e) => e.target.value && navigate(e.target.value as SettingsCategoryKey)}
                 >
@@ -361,7 +361,7 @@ function SettingsDialog({ soundManager, onEnableNotifications, initialCategory }
                                     <span className={`settings-scope-chip settings-scope-chip--${c.group}`} title={chip.title}>{chip.text}</span>
                                 </div>
                                 {locked && !searching && (
-                                    <div className="alert alert-info py-2">
+                                    <div className="popup-notice">
                                         Opcje zależne od postaci są zablokowane do momentu jej wybrania.
                                     </div>
                                 )}
