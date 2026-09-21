@@ -6,7 +6,6 @@
 // forge's whole base UI. forge instead provides the modal chrome via its scoped
 // bootstrap-compat.css. Re-adding this import would reintroduce that leak.
 import {useState} from "react";
-import {Form, Button} from "react-bootstrap";
 import {Button as UiButton, Check, Field, Input, Select} from "@web-ui/primitives/index.ts";
 import {CircleHelp} from "lucide-react";
 import {defaultSettings} from "./defaultSettings";
@@ -261,7 +260,7 @@ export function OtherOptionsSection({settings, onChangeSetting}: GeneralSettings
                         min={LETTER_LINE_WIDTH_MIN}
                         max={LETTER_LINE_WIDTH_MAX}
                         id="letterLineWidth"
-                        className="settings-narrow"
+                        className="settings-num"
                         value={settings.letterLineWidth}
                         onChange={ev => {
                             const parsed = parseInt(ev.target.value, 10);
@@ -295,43 +294,38 @@ export function ContainersSection({settings, onChangeSetting}: GeneralSettingsSe
     return (
         <section className="character-settings-section">
             <h5 className="character-settings-section-title">Pojemniki</h5>
-            <div className="d-flex flex-wrap gap-3 align-items-center">
-                <Form.Check
-                    type="checkbox"
-                    id="prettyContainers"
-                    label="Formatuj pojemniki"
-                    checked={settings.prettyContainers}
-                    onChange={e => onChangeSetting(s => s.prettyContainers = e.target.checked)}
-                    className="me-2"
-                />
-                <Form.Group className="d-flex align-items-center me-2">
-                    <Form.Label className="me-1 mb-0">Kolumny:</Form.Label>
-                    <Form.Control
+            <div className="character-settings-stack">
+                <div className="settings-checks">
+                    <Check
+                        id="prettyContainers"
+                        label="Formatuj pojemniki"
+                        checked={settings.prettyContainers}
+                        onChange={e => onChangeSetting(s => s.prettyContainers = e.target.checked)}
+                    />
+                    <Check
+                        id="containerOpen"
+                        label="Otwieraj pojemnik"
+                        checked={settings.containerOpen}
+                        onChange={e => onChangeSetting(s => s.containerOpen = e.target.checked)}
+                    />
+                    <Check
+                        id="containerClose"
+                        label="Zamykaj pojemnik"
+                        checked={settings.containerClose}
+                        onChange={e => onChangeSetting(s => s.containerClose = e.target.checked)}
+                    />
+                </div>
+                <Field label="Kolumny" htmlFor="containerColumns">
+                    <Input
                         type="number"
                         min={1}
                         max={4}
                         id="containerColumns"
+                        className="settings-num"
                         value={settings.containerColumns}
                         onChange={ev => onChangeSetting(s => s.containerColumns = parseInt(ev.target.value) || 1)}
-                        style={{width: '100%', maxWidth: '4rem'}}
                     />
-                </Form.Group>
-                <Form.Check
-                    type="checkbox"
-                    id="containerOpen"
-                    label="Otwieraj pojemnik"
-                    checked={settings.containerOpen}
-                    onChange={e => onChangeSetting(s => s.containerOpen = e.target.checked)}
-                    className="me-2"
-                />
-                <Form.Check
-                    type="checkbox"
-                    id="containerClose"
-                    label="Zamykaj pojemnik"
-                    checked={settings.containerClose}
-                    onChange={e => onChangeSetting(s => s.containerClose = e.target.checked)}
-                    className="me-2"
-                />
+                </Field>
             </div>
         </section>
     );
@@ -341,137 +335,117 @@ export function CollectSection({settings, onChangeSetting}: GeneralSettingsSecti
     const [extraInput, setExtraInput] = useState<string>('');
     const [showOverridesModal, setShowOverridesModal] = useState(false);
 
+    const addExtra = () => {
+        if (extraInput.trim()) {
+            onChangeSetting(s => s.collectExtra = [...s.collectExtra, extraInput.trim()]);
+            setExtraInput('');
+        }
+    };
+
     return (
         <section className="character-settings-section">
             <h5 className="character-settings-section-title">Zbieranie przedmiotów</h5>
             <div className="character-settings-stack">
-                <Form.Group className="d-flex align-items-center">
-                    <Form.Label className="me-1 mb-0">Tryb zbierania:</Form.Label>
-                    <Form.Select
+                <Field label="Tryb zbierania" htmlFor="collectMode">
+                    <Select
                         id="collectMode"
-                        size="sm"
+                        className="settings-narrow"
                         value={settings.collectMode}
                         onChange={e => onChangeSetting(s => s.collectMode = parseInt(e.target.value))}
-                        className="w-auto"
                     >
                         {collectModeOptions.map((label, i) => (
                             <option value={i + 1} key={i + 1}>{`${i + 1} - ${label}`}</option>
                         ))}
-                    </Form.Select>
-                </Form.Group>
-                <Form.Group className="d-flex align-items-center">
-                    <Form.Label className="me-1 mb-0">Kiedy zbierac:</Form.Label>
-                    <Form.Select
-                        size="sm"
+                    </Select>
+                </Field>
+                <Field label="Kiedy zbierac" htmlFor="collectTiming">
+                    <Select
+                        id="collectTiming"
                         value={settings.collectTiming}
                         onChange={e => onChangeSetting(s => s.collectTiming = parseInt(e.target.value))}
-                        className="w-auto"
                     >
                         {collectTimingOptions.map((label, i) => (
                             <option value={i + 1} key={i + 1}>{`${i + 1} - ${label}`}</option>
                         ))}
-                    </Form.Select>
-                </Form.Group>
-                <Form.Group>
-                    <Form.Label className="me-1 mb-0">Co zbierac:</Form.Label>
-                    <div className="d-flex flex-wrap gap-3">
-                        <Form.Check
-                            type="checkbox"
+                    </Select>
+                </Field>
+                <Field label="Co zbierac">
+                    <div className="settings-checks">
+                        <Check
                             id="collectCopper"
                             label="Miedziane monety"
                             checked={settings.collectCopper}
                             onChange={e => onChangeSetting(s => s.collectCopper = e.target.checked)}
                         />
-                        <Form.Check
-                            type="checkbox"
+                        <Check
                             id="collectSilver"
                             label="Srebrne monety"
                             checked={settings.collectSilver}
                             onChange={e => onChangeSetting(s => s.collectSilver = e.target.checked)}
                         />
-                        <Form.Check
-                            type="checkbox"
+                        <Check
                             id="collectGold"
                             label="Zlote monety"
                             checked={settings.collectGold}
                             onChange={e => onChangeSetting(s => s.collectGold = e.target.checked)}
                         />
-                        <Form.Check
-                            type="checkbox"
+                        <Check
                             id="collectGems"
                             label="Kamienie"
                             checked={settings.collectGems}
                             onChange={e => onChangeSetting(s => s.collectGems = e.target.checked)}
                         />
                     </div>
-                </Form.Group>
-                <Form.Group>
-                    <Form.Label className="me-1">Dodatkowe przedmioty:</Form.Label>
-                    <Form.Control
-                        id="extraItem"
-                        data-settings-ignore
-                        type="text"
-                        size="sm"
-                        value={extraInput}
-                        onChange={e => setExtraInput(e.target.value)}
-                        onKeyDown={e => {
-                            if (e.key === 'Enter') {
-                                e.preventDefault();
-                                if (extraInput.trim()) {
-                                    onChangeSetting(s => s.collectExtra = [...s.collectExtra, extraInput.trim()]);
-                                    setExtraInput('');
+                </Field>
+                <Field label="Dodatkowe przedmioty" htmlFor="extraItem">
+                    <div className="popup-inline">
+                        <Input
+                            id="extraItem"
+                            data-settings-ignore
+                            className="settings-narrow"
+                            value={extraInput}
+                            onChange={e => setExtraInput(e.target.value)}
+                            onKeyDown={e => {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    addExtra();
                                 }
-                            }
-                        }}
-                        className="d-inline-block me-1 w-auto"
-                        style={{width: '100%', maxWidth: '10rem'}}
-                    />
-                    <Button
-                        size="sm"
-                        onClick={() => {
-                            if (extraInput.trim()) {
-                                onChangeSetting(s => s.collectExtra = [...s.collectExtra, extraInput.trim()]);
-                                setExtraInput('');
-                            }
-                        }}
-                    >
-                        Dodaj
-                    </Button>
-                </Form.Group>
-                <ul className="list-unstyled ms-3">
-                    {settings.collectExtra.map(item => (
-                        <li key={item} className="d-flex align-items-center gap-2">
-                            <span>{item}</span>
-                            <Button
+                            }}
+                        />
+                        <UiButton size="sm" onClick={addExtra}>Dodaj</UiButton>
+                    </div>
+                    {settings.collectExtra.length > 0 && (
+                        <div className="settings-chip-list">
+                            {settings.collectExtra.map(item => (
+                                <span
+                                    key={item}
+                                    className="popup-chip"
+                                    onClick={() => onChangeSetting(s => s.collectExtra = s.collectExtra.filter(i => i !== item))}
+                                    title="Usuń"
+                                >
+                                    {item}
+                                    <span className="popup-chip__remove">×</span>
+                                </span>
+                            ))}
+                            <UiButton
                                 size="sm"
-                                variant="secondary"
-                                onClick={() => onChangeSetting(s => s.collectExtra = s.collectExtra.filter(i => i !== item))}
+                                variant="ghost"
+                                onClick={() => onChangeSetting(s => s.collectExtra = [])}
                             >
-                                Usuń
-                            </Button>
-                        </li>
-                    ))}
-                </ul>
-                {settings.collectExtra.length > 0 && (
-                    <Button
+                                Wyczyść wszystko
+                            </UiButton>
+                        </div>
+                    )}
+                </Field>
+                <Field label="Nadpisania dla wrogów">
+                    <UiButton
                         size="sm"
-                        variant="secondary"
-                        className="mt-1"
-                        onClick={() => onChangeSetting(s => s.collectExtra = [])}
-                    >
-                        Wyczyść wszystko
-                    </Button>
-                )}
-                <Form.Group className="mt-3 d-flex align-items-center">
-                    <Form.Label className="me-1 mb-0">Nadpisania dla wrogów:</Form.Label>
-                    <Button
-                        size="sm"
-                        variant="secondary"
+                        className="ui-settings-self-start"
                         onClick={() => setShowOverridesModal(true)}
                     >
                         Konfiguruj ({settings.collectOverrides.length})
-                    </Button>
-                </Form.Group>
+                    </UiButton>
+                </Field>
                 <CollectOverridesModal
                     show={showOverridesModal}
                     overrides={settings.collectOverrides}
@@ -488,49 +462,36 @@ export function CombatCommandsSection({settings, onChangeSetting}: GeneralSettin
         <section className="character-settings-section">
             <h5 className="character-settings-section-title">Walka</h5>
             <div className="character-settings-stack">
-                <Form.Group>
-                    <Form.Label className="me-1 mb-0">Komenda ataku:</Form.Label>
-                    <Form.Control
-                        type="text"
-                        size="sm"
+                <Field label="Komenda ataku" hint='Uzywana przy ataku na numery obiektow. Domyslnie "zabij".'>
+                    <Input
+                        mono
+                        className="settings-command"
                         value={settings.attackCommand}
                         placeholder="zabij"
                         onChange={e => onChangeSetting(s => s.attackCommand = e.target.value)}
-                        style={{width: '100%', maxWidth: '20rem'}}
                     />
-                    <Form.Text className="text-muted">
-                        Uzywana przy ataku na numery obiektow. Domyslnie "zabij".
-                    </Form.Text>
-                </Form.Group>
-                <Form.Group>
-                    <Form.Label className="me-1 mb-0">Komenda wsparcia:</Form.Label>
-                    <Form.Control
-                        type="text"
-                        size="sm"
+                </Field>
+                <Field label="Komenda wsparcia" hint='Uzywana przy wspieraniu lidera druzyny. Domyslnie "wesprzyj".'>
+                    <Input
+                        mono
+                        className="settings-command"
                         value={settings.supportCommand}
                         placeholder="wesprzyj"
                         onChange={e => onChangeSetting(s => s.supportCommand = e.target.value)}
-                        style={{width: '100%', maxWidth: '20rem'}}
                     />
-                    <Form.Text className="text-muted">
-                        Uzywana przy wspieraniu lidera druzyny. Domyslnie "wesprzyj".
-                    </Form.Text>
-                </Form.Group>
-                <Form.Group>
-                    <Form.Label className="me-1 mb-0">Komenda dobycia broni:</Form.Label>
-                    <Form.Control
-                        type="text"
-                        size="sm"
+                </Field>
+                <Field
+                    label="Komenda dobycia broni"
+                    hint='Wysylana przy automatycznym dobywaniu wszystkich broni. "wszystkich broni" dodawane automatycznie.'
+                >
+                    <Input
+                        mono
+                        className="settings-command"
                         value={settings.drawWeaponCommand}
                         placeholder="dobadz"
                         onChange={e => onChangeSetting(s => s.drawWeaponCommand = e.target.value)}
-                        style={{width: '100%', maxWidth: '20rem'}}
                     />
-                    <Form.Text className="text-muted">
-                        Wysylana przy automatycznym dobywaniu wszystkich broni. "wszystkich broni" dodawane
-                        automatycznie.
-                    </Form.Text>
-                </Form.Group>
+                </Field>
             </div>
         </section>
     );
@@ -541,43 +502,36 @@ export function HerbsSection({settings, onChangeSetting}: GeneralSettingsSection
         <section className="character-settings-section">
             <h5 className="character-settings-section-title">Zioła</h5>
             <div className="character-settings-stack">
-                <Form.Group>
-                    <Form.Label className="me-1 mb-0">Komendy przed użyciem:</Form.Label>
-                    <Form.Control
-                        type="text"
-                        size="sm"
+                <Field label="Komendy przed użyciem" hint="Oddziel komendy średnikiem (;)">
+                    <Input
+                        mono
+                        className="settings-command"
                         value={settings.herbPreUseCommand}
                         onChange={e => onChangeSetting(s => s.herbPreUseCommand = e.target.value)}
-                        style={{width: '100%', maxWidth: '20rem'}}
                     />
-                    <Form.Text className="text-muted">Oddziel komendy średnikiem (;)</Form.Text>
-                </Form.Group>
-                <Form.Group>
-                    <Form.Label className="me-1 mb-0">Komendy po użyciu:</Form.Label>
-                    <Form.Control
-                        type="text"
-                        size="sm"
+                </Field>
+                <Field label="Komendy po użyciu" hint="Oddziel komendy średnikiem (;)">
+                    <Input
+                        mono
+                        className="settings-command"
                         value={settings.herbPostUseCommand}
                         onChange={e => onChangeSetting(s => s.herbPostUseCommand = e.target.value)}
-                        style={{width: '100%', maxWidth: '20rem'}}
                     />
-                    <Form.Text className="text-muted">Oddziel komendy średnikiem (;)</Form.Text>
-                </Form.Group>
-                <Form.Group className="d-flex align-items-center">
-                    <Form.Label className="me-1 mb-0">Ilosc "wiele":</Form.Label>
-                    <Form.Control
+                </Field>
+                <Field label='Ilosc "wiele"' htmlFor="herbWieleCount">
+                    <Input
                         type="number"
                         min={1}
                         id="herbWieleCount"
+                        className="settings-num"
                         value={settings.herbWieleCount}
                         onChange={ev => {
                             const parsed = parseInt(ev.target.value, 10);
                             const value = Number.isFinite(parsed) && parsed > 0 ? parsed : 25;
                             onChangeSetting(s => s.herbWieleCount = value);
                         }}
-                        style={{width: '100%', maxWidth: '5rem'}}
                     />
-                </Form.Group>
+                </Field>
             </div>
         </section>
     );
@@ -588,102 +542,60 @@ export function CuttingSection({settings, onChangeSetting}: GeneralSettingsSecti
         <section className="character-settings-section">
             <h5 className="character-settings-section-title">Wycinanie/Wyrywanie</h5>
             <div className="character-settings-stack">
-                <Form.Group>
-                    <Form.Label className="me-1 mb-0">Komendy przed wycinaniem:</Form.Label>
-                    <Form.Control
-                        type="text"
-                        size="sm"
+                <Field label="Komendy przed wycinaniem" hint="Oddziel komendy średnikiem (;)">
+                    <Input
+                        mono
+                        className="settings-command"
                         value={settings.cuttingPreAction}
                         onChange={e => onChangeSetting(s => s.cuttingPreAction = e.target.value)}
-                        style={{width: '100%', maxWidth: '20rem'}}
                     />
-                    <Form.Text className="text-muted">Oddziel komendy średnikiem (;)</Form.Text>
-                </Form.Group>
-                <Form.Group>
-                    <Form.Label className="me-1 mb-0">Komendy po wycinaniu:</Form.Label>
-                    <Form.Control
-                        type="text"
-                        size="sm"
+                </Field>
+                <Field label="Komendy po wycinaniu" hint="Oddziel komendy średnikiem (;)">
+                    <Input
+                        mono
+                        className="settings-command"
                         value={settings.cuttingPostAction}
                         onChange={e => onChangeSetting(s => s.cuttingPostAction = e.target.value)}
-                        style={{width: '100%', maxWidth: '20rem'}}
                     />
-                    <Form.Text className="text-muted">Oddziel komendy średnikiem (;)</Form.Text>
-                </Form.Group>
+                </Field>
             </div>
         </section>
     );
 }
 
+const DRAW_SHEATHE_SLOTS = [1, 2, 3] as const;
+type DrawSheatheKey = `${'dob' | 'op'}Command${1 | 2 | 3}`;
+
 export function DrawSheatheSection({settings, onChangeSetting}: GeneralSettingsSectionProps) {
+    const column = (command: 'dob' | 'op') => (
+        <div className="character-settings-stack">
+            {DRAW_SHEATHE_SLOTS.map(slot => {
+                const key = `${command}Command${slot}` as DrawSheatheKey;
+                return (
+                    <Field key={key} label={`Komenda /${command} ${slot}`}>
+                        <Input
+                            mono
+                            className="settings-command"
+                            value={settings[key]}
+                            onChange={e => onChangeSetting(s => s[key] = e.target.value)}
+                        />
+                    </Field>
+                );
+            })}
+        </div>
+    );
     return (
         <section className="character-settings-section">
             <h5 className="character-settings-section-title">Dobywanie/Opuszczanie</h5>
             <div className="character-settings-stack">
-                <Form.Text className="text-muted mb-2">
+                <p className="popup-field__hint">
                     /dob bez argumentu wysyla komendy 1 i 2, /dob [1-3] wysyla wybrany slot. Analogicznie /op.
                     Oddziel komendy srednikiem (;).
-                </Form.Text>
-                <Form.Group>
-                    <Form.Label className="me-1 mb-0">Komenda /dob 1:</Form.Label>
-                    <Form.Control
-                        type="text"
-                        size="sm"
-                        value={settings.dobCommand1}
-                        onChange={e => onChangeSetting(s => s.dobCommand1 = e.target.value)}
-                        style={{width: '100%', maxWidth: '20rem'}}
-                    />
-                </Form.Group>
-                <Form.Group>
-                    <Form.Label className="me-1 mb-0">Komenda /dob 2:</Form.Label>
-                    <Form.Control
-                        type="text"
-                        size="sm"
-                        value={settings.dobCommand2}
-                        onChange={e => onChangeSetting(s => s.dobCommand2 = e.target.value)}
-                        style={{width: '100%', maxWidth: '20rem'}}
-                    />
-                </Form.Group>
-                <Form.Group>
-                    <Form.Label className="me-1 mb-0">Komenda /dob 3:</Form.Label>
-                    <Form.Control
-                        type="text"
-                        size="sm"
-                        value={settings.dobCommand3}
-                        onChange={e => onChangeSetting(s => s.dobCommand3 = e.target.value)}
-                        style={{width: '100%', maxWidth: '20rem'}}
-                    />
-                </Form.Group>
-                <Form.Group>
-                    <Form.Label className="me-1 mb-0">Komenda /op 1:</Form.Label>
-                    <Form.Control
-                        type="text"
-                        size="sm"
-                        value={settings.opCommand1}
-                        onChange={e => onChangeSetting(s => s.opCommand1 = e.target.value)}
-                        style={{width: '100%', maxWidth: '20rem'}}
-                    />
-                </Form.Group>
-                <Form.Group>
-                    <Form.Label className="me-1 mb-0">Komenda /op 2:</Form.Label>
-                    <Form.Control
-                        type="text"
-                        size="sm"
-                        value={settings.opCommand2}
-                        onChange={e => onChangeSetting(s => s.opCommand2 = e.target.value)}
-                        style={{width: '100%', maxWidth: '20rem'}}
-                    />
-                </Form.Group>
-                <Form.Group>
-                    <Form.Label className="me-1 mb-0">Komenda /op 3:</Form.Label>
-                    <Form.Control
-                        type="text"
-                        size="sm"
-                        value={settings.opCommand3}
-                        onChange={e => onChangeSetting(s => s.opCommand3 = e.target.value)}
-                        style={{width: '100%', maxWidth: '20rem'}}
-                    />
-                </Form.Group>
+                </p>
+                <div className="settings-columns">
+                    {column('dob')}
+                    {column('op')}
+                </div>
             </div>
         </section>
     );

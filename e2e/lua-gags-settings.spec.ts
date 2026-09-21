@@ -34,8 +34,7 @@ function getGagSelect(modal: Locator, gagType: string) {
 }
 
 function getGagColorInput(modal: Locator, gagType: string) {
-    // Color input shares the same ID, but it's an input[type="color"]
-    return modal.locator(`input[type="color"]#luaGag-${gagType}`);
+    return modal.locator(`input[type="color"]#luaGag-${gagType}-color`);
 }
 
 function getGagResetButton(modal: Locator, gagType: string) {

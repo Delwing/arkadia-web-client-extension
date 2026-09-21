@@ -3186,6 +3186,54 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
   opacity: 0.6;
   cursor: help;
 }
+/* A small number. */
+.popup-input.popup-input--control.settings-num {
+  width: 5.5rem;
+  min-width: 0;
+}
+/* A command-line field: wider than settings-narrow, still not full width. */
+.popup-input.popup-input--control.settings-command {
+  max-width: 20rem;
+}
+/* Two stacks of fields side by side, one above the other on a narrow card. */
+.settings-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px 16px;
+}
+/* Label on the left, control(s) on the right — for long uniform lists. */
+.settings-rows {
+  display: flex;
+  flex-direction: column;
+}
+.settings-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 12px;
+  min-height: var(--ui-ctrl, 28px);
+  padding: 3px 0;
+}
+.settings-row > .popup-field__label {
+  font-size: var(--ui-fs, 13px);
+  font-weight: 400;
+  color: var(--popup-text);
+}
+.settings-rows > .settings-row + .settings-row {
+  border-top: 1px solid var(--popup-border-subtle);
+}
+p.popup-field__hint {
+  margin: 0;
+}
+/* Removable items under the field that adds them. */
+.settings-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+}
 
 /* A sub-option under the option it depends on. */
 .ui-settings-indent {

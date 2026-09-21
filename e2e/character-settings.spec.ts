@@ -331,9 +331,9 @@ test.describe('Character settings', () => {
         });
 
         const modal = await openOptions(page, 'character-combat');
-        await modal.locator('label:has-text("Komenda /dob 1:")').locator('..').locator('input').fill('dobadz miecz');
-        await modal.locator('label:has-text("Komenda /dob 2:")').locator('..').locator('input').fill('dobadz tarcze');
-        await modal.locator('label:has-text("Komenda /dob 3:")').locator('..').locator('input').fill('dobadz sztylet');
+        await modal.locator('label:has-text("Komenda /dob 1")').locator('..').locator('input').fill('dobadz miecz');
+        await modal.locator('label:has-text("Komenda /dob 2")').locator('..').locator('input').fill('dobadz tarcze');
+        await modal.locator('label:has-text("Komenda /dob 3")').locator('..').locator('input').fill('dobadz sztylet');
         await saveOptions(page);
 
         const settings = await getStoredSettings(page, 'DobHero');
@@ -350,15 +350,15 @@ test.describe('Character settings', () => {
 
         const reloadedModal = await openOptions(page, 'character-combat');
         await expect(
-            reloadedModal.locator('label:has-text("Komenda /dob 1:")').locator('..').locator('input'),
+            reloadedModal.locator('label:has-text("Komenda /dob 1")').locator('..').locator('input'),
             'dobCommand1 should persist after reload'
         ).toHaveValue('dobadz miecz');
         await expect(
-            reloadedModal.locator('label:has-text("Komenda /dob 2:")').locator('..').locator('input'),
+            reloadedModal.locator('label:has-text("Komenda /dob 2")').locator('..').locator('input'),
             'dobCommand2 should persist after reload'
         ).toHaveValue('dobadz tarcze');
         await expect(
-            reloadedModal.locator('label:has-text("Komenda /dob 3:")').locator('..').locator('input'),
+            reloadedModal.locator('label:has-text("Komenda /dob 3")').locator('..').locator('input'),
             'dobCommand3 should persist after reload'
         ).toHaveValue('dobadz sztylet');
     });
@@ -374,9 +374,9 @@ test.describe('Character settings', () => {
         });
 
         const modal = await openOptions(page, 'character-combat');
-        await modal.locator('label:has-text("Komenda /op 1:")').locator('..').locator('input').fill('opusc miecz');
-        await modal.locator('label:has-text("Komenda /op 2:")').locator('..').locator('input').fill('opusc tarcze');
-        await modal.locator('label:has-text("Komenda /op 3:")').locator('..').locator('input').fill('opusc sztylet');
+        await modal.locator('label:has-text("Komenda /op 1")').locator('..').locator('input').fill('opusc miecz');
+        await modal.locator('label:has-text("Komenda /op 2")').locator('..').locator('input').fill('opusc tarcze');
+        await modal.locator('label:has-text("Komenda /op 3")').locator('..').locator('input').fill('opusc sztylet');
         await saveOptions(page);
 
         const settings = await getStoredSettings(page, 'OpHero');
@@ -393,15 +393,15 @@ test.describe('Character settings', () => {
 
         const reloadedModal = await openOptions(page, 'character-combat');
         await expect(
-            reloadedModal.locator('label:has-text("Komenda /op 1:")').locator('..').locator('input'),
+            reloadedModal.locator('label:has-text("Komenda /op 1")').locator('..').locator('input'),
             'opCommand1 should persist after reload'
         ).toHaveValue('opusc miecz');
         await expect(
-            reloadedModal.locator('label:has-text("Komenda /op 2:")').locator('..').locator('input'),
+            reloadedModal.locator('label:has-text("Komenda /op 2")').locator('..').locator('input'),
             'opCommand2 should persist after reload'
         ).toHaveValue('opusc tarcze');
         await expect(
-            reloadedModal.locator('label:has-text("Komenda /op 3:")').locator('..').locator('input'),
+            reloadedModal.locator('label:has-text("Komenda /op 3")').locator('..').locator('input'),
             'opCommand3 should persist after reload'
         ).toHaveValue('opusc sztylet');
     });
