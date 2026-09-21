@@ -476,16 +476,10 @@
         </div>
     </div>
     <div id="logs-modal" class="modal fade" tabindex="-1">
-        <div class="modal-dialog modal-xl logs-modal-dialog">
+        <div class="modal-dialog modal-xl modal-fullscreen-md-down logs-modal-dialog">
             <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Logi</h5>
-                    <div class="btn-group btn-group-sm ms-3" id="logs-header-tabs">
-                        <button class="btn btn-primary" data-logs-tab="logs">Logi</button>
-                        <button class="btn btn-outline-secondary" data-logs-tab="manage">Zarzadzanie</button>
-                    </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
+                <!-- No Bootstrap header: the viewer renders its own, with the
+                     session title, the export menu and the close control. -->
                 <div class="modal-body logs-modal-body">
                     <!-- Filled by logBrowserMount.tsx -->
                 </div>

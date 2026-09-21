@@ -32,6 +32,7 @@ async function openLogs(page: Page): Promise<void> {
     await page.click('#menu-button');
     await page.click('#logs-button');
     await page.waitForSelector('#logs-modal.show', {timeout: 5000});
+    await expect(page.locator('.lv')).toBeVisible();
 }
 
 test.describe('Logging toggle', () => {
@@ -42,7 +43,7 @@ test.describe('Logging toggle', () => {
     test('the switch is in UI settings, not in the Logi browser', async ({page}) => {
         await openLogs(page);
         await expect(page.locator('#logs-modal #logs-enabled')).toHaveCount(0);
-        await page.locator('#logs-modal .btn-close').click();
+        await page.locator('#logs-close').click();
         await page.waitForSelector('#logs-modal.show', {state: 'hidden', timeout: 5000});
 
         const modal = await openSettings(page, 'ui-other');
@@ -56,9 +57,9 @@ test.describe('Logging toggle', () => {
         await pushText(page, 'Linia gdy logi wlaczone');
 
         await openLogs(page);
-        const preview = page.locator('#logs-preview');
-        await expect(preview).toContainText('Linia gdy logi wlaczone');
-        await expect(preview).not.toContainText('Linia gdy logi wylaczone');
+        const pane = page.locator('.lv-log');
+        await expect(pane).toContainText('Linia gdy logi wlaczone');
+        await expect(pane).not.toContainText('Linia gdy logi wylaczone');
     });
 
     test('the setting persists after page reload', async ({page}) => {

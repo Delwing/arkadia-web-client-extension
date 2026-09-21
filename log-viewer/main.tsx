@@ -1,11 +1,9 @@
-import 'bootswatch/dist/darkly/bootstrap.min.css';
-import '../src/web/style.css';
-import '../src/web/themes/fantasy.css';
-import '../src/web/themes/forest.css';
-import '../src/web/themes/icy.css';
-import '../src/web/themes/gray.css';
-import ReactDOM from 'react-dom/client';
-import LogViewerApp from './LogViewerApp';
-import './log-viewer.css';
+// No Bootstrap and no bootswatch on this page: the viewer brings its own
+// palette and its own controls, so the only stylesheet the page itself needs
+// is the box the viewer fills.
+import "./log-viewer.css";
 
-ReactDOM.createRoot(document.getElementById('root')!).render(<LogViewerApp />);
+import ReactDOM from "react-dom/client";
+import LogViewerApp from "./LogViewerApp";
+
+ReactDOM.createRoot(document.getElementById("root")!).render(<LogViewerApp />);

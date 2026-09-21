@@ -1,0 +1,200 @@
+/* ============================================================================
+   Log viewer — palette.
+   ============================================================================
+
+   Every colour, size, radius and duration the viewer uses, in one place.
+
+   This screen used to read its values from a shared design system built on
+   Radix Colours, which generated eight themes from twelve-step scales. That
+   system is gone (see `archive/redesign`); the viewer is the one screen worth
+   keeping from it, so it keeps the values and drops the machinery. The numbers
+   below are that system's dark "arkadia" theme, resolved once.
+
+   The names are the semantic roles the stylesheets were written against, not
+   raw colours: `--lv-bg-element`, not `--lv-gray-3`. That is what makes this
+   file a swap point — a future re-skin edits ~60 values here instead of
+   chasing two hundred references through `logViewer.css` and `controls.css`.
+
+   `.lv-theme` rather than `:root` because the client hosts this screen inside
+   a Bootstrap page that has a palette of its own; these values must not leak
+   out of the viewer's subtree. Both hosts put the class on the box they mount
+   the viewer in.
+   ========================================================================== */
+
+.lv-theme {
+    /* --- surfaces -------------------------------------------------------- */
+    --lv-bg-app: #111110;
+    --lv-bg-surface: #191918;
+    --lv-bg-raised: #222221;
+    /* Inputs, timeline tracks, log panes: reads as cut INTO the surface. */
+    --lv-bg-sunken: #111110;
+
+    /* --- interactive elements -------------------------------------------- */
+    --lv-bg-element: #222221;
+    --lv-bg-element-hover: #2a2a28;
+    --lv-bg-element-active: #31312e;
+    --lv-bg-element-ghost-hover: #f6f6f513;
+    --lv-bg-selected: #31312e;
+
+    /* --- borders --------------------------------------------------------- */
+    --lv-border-subtle: #31312e;
+    --lv-border: #3b3a37;
+    --lv-border-element: #494844;
+    --lv-border-strong: #62605b;
+
+    /* --- text ------------------------------------------------------------ */
+    --lv-text: #eeeeec;
+    --lv-text-secondary: #b5b3ad;
+    --lv-text-tertiary: #7c7b74;
+    --lv-text-faint: #6f6d66;
+    --lv-text-disabled: #62605b;
+
+    /* --- accent ---------------------------------------------------------- */
+    --lv-accent-bg: #0d2847;
+    --lv-accent-border: #205d9e;
+    --lv-accent-solid: #0090ff;
+    --lv-accent-solid-hover: #3b9eff;
+    --lv-accent-text: #70b8ff;
+    --lv-accent-text-strong: #c2e6ff;
+    /* Text ON the solid accent. */
+    --lv-accent-contrast: #fff;
+
+    /* Translucent accent films — search highlights, timeline ticks, match
+       rows. Alpha rather than solid, so they layer over any surface. */
+    --lv-accent-tint-strong: #0081fd6b;
+    --lv-accent-wash: #3094feb9;
+    --lv-accent-a3: #0077ff3a;
+    --lv-accent-a5: #0081fd6b;
+    --lv-accent-a7: #2a91fe98;
+
+    /* --- neutral films --------------------------------------------------- */
+    /* Hatching, scrims and the faintest row tints. */
+    --lv-gray-a2: #f4f4f309;
+    --lv-gray-a3: #f6f6f513;
+    --lv-gray-a4: #fefef31b;
+    --lv-gray-a6: #fffaed2d;
+    --lv-gray-a8: #fff9eb57;
+    --lv-gray-6: #3b3a37;
+    --lv-gray-8: #62605b;
+    --lv-black-a6: rgba(0, 0, 0, 0.4);
+
+    /* --- focus ----------------------------------------------------------- */
+    --lv-focus-ring: #2870bd;
+    --lv-focus-ring-width: 2px;
+    --lv-focus-ring-offset: 1px;
+
+    /* --- status ---------------------------------------------------------- */
+    --lv-success-bg: #1b2a1e;
+    --lv-success-border: #2d5736;
+    --lv-success-solid: #46a758;
+    --lv-success-text: #71d083;
+
+    --lv-danger-solid: #e54d2e;
+    --lv-danger-contrast: #fff;
+    --lv-danger-solid-hover: #ec6142;
+    --lv-danger-text: #ff977d;
+
+    /* --- log channels ----------------------------------------------------
+       Channel text colours. Readability first: the loud channels get full
+       contrast, the ambient ones (room description, system chatter) step back
+       so a wall of them does not compete with what was said to you. The eight
+       have to stay apart from one another — colour is the only cue on the
+       channel dots. */
+    --lv-log-comm: var(--lv-text);
+    --lv-log-combat: var(--lv-text);
+    --lv-log-room: #b5b3ad;
+    --lv-log-system: #7c7b74;
+    /* Cyan, not the blue this used to resolve to: in this palette the "info"
+       ramp and the accent ramp are the same blue, so Powiadomienia and Komendy
+       came out as the same colour and the dots told the two apart by nothing
+       at all. */
+    --lv-log-notify: #4ccce6;
+    --lv-log-command: var(--lv-accent-text);
+    /* Game text the server did not tag more specifically. Full contrast: it
+       can be anything, including something said to you. */
+    --lv-log-other: var(--lv-text);
+    /* The client talking, not the game — a script, a plugin, `printLine`. */
+    --lv-log-script: #ffca16;
+
+    --lv-log-event-login: #b5b3ad;
+    --lv-log-event-death: var(--lv-danger-text);
+
+    /* --- typography ------------------------------------------------------ */
+    --lv-font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --lv-font-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', 'Consolas', monospace;
+
+    --lv-text-1: 11px;   /* eyebrow labels, keycaps */
+    --lv-text-2: 11.5px; /* dense meta: counts, ranges */
+    --lv-text-3: 12px;   /* status bar, legends */
+    --lv-text-4: 12.5px; /* chips, toggles, secondary controls */
+    --lv-text-5: 13px;   /* body, inputs, log text */
+    --lv-text-6: 13.5px; /* list item titles */
+    --lv-text-7: 16px;   /* the header title */
+
+    --lv-weight-regular: 400;
+    --lv-weight-medium: 500;
+    --lv-weight-semibold: 600;
+
+    --lv-leading-normal: 1.5;
+    /* Row height in the log pane. `LogViewer.tsx` carries the same number as
+       the virtualizer's estimate; the two have to agree. */
+    --lv-leading-log: 21px;
+
+    --lv-tracking-wide: 0.06em;
+    --lv-tracking-eyebrow: 0.08em;
+
+    /* --- space (a 2px ramp; use these, not magic numbers) ----------------- */
+    --lv-space-1: 2px;
+    --lv-space-2: 4px;
+    --lv-space-3: 6px;
+    --lv-space-4: 8px;
+    --lv-space-5: 10px;
+    --lv-space-6: 12px;
+    --lv-space-7: 14px;
+    --lv-space-8: 16px;
+    --lv-space-9: 20px;
+    --lv-space-10: 24px;
+    --lv-space-11: 32px;
+    --lv-space-12: 48px;
+
+    /* --- radius ---------------------------------------------------------- */
+    --lv-radius-1: 3px;
+    --lv-radius-2: 4px;
+    --lv-radius-3: 6px;
+    --lv-radius-4: 8px;
+    --lv-radius-full: 999px;
+
+    /* --- control sizes (the height ladder every control snaps to) --------- */
+    --lv-control-xs: 24px;
+    --lv-control-sm: 26px;
+    --lv-control-md: 28px;
+    --lv-control-lg: 32px;
+    --lv-control-xl: 34px;
+
+    /* --- elevation ------------------------------------------------------- */
+    --lv-shadow-3: 0 12px 32px rgba(0, 0, 0, 0.6);
+
+    /* --- motion ---------------------------------------------------------- */
+    --lv-duration-1: 80ms;
+    /* The drawer's slide — long enough to read as a movement, short enough
+       that a second tap is never waiting on it. */
+    --lv-duration-2: 140ms;
+    --lv-ease: cubic-bezier(0.16, 1, 0.3, 1);
+
+    /* --- layering --------------------------------------------------------
+       The line menu and the export menu are `position: fixed` and have to
+       clear the stock client's own chrome, not just each other: the mobile
+       keypad sits at 2050, the input area at 10090 and the output context
+       menu at 10100. */
+    --lv-z-sticky: 1;
+    --lv-z-popover: 10300;
+
+    color-scheme: dark;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .lv-theme {
+        --lv-duration-1: 0ms;
+        --lv-duration-2: 0ms;
+    }
+}

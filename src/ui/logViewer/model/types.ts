@@ -70,7 +70,6 @@ export interface LogSession {
  * range goes away underneath it (`effectiveScope`).
  */
 export type SearchScope = "log" | "all" | "range";
-export type Density = "compact" | "comfortable";
 
 /**
  * A slice of a session, as a span of TIME rather than a pair of line indices.

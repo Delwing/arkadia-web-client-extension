@@ -29,7 +29,7 @@ describe("detectEvent", () => {
             expect(LOG_EVENT_META[kind].label).toBeTruthy();
             expect(LOG_EVENT_META[kind].tag).toMatch(/^[A-Z]{3,8}$/);
             expect(LOG_EVENT_META[kind].glyph).toHaveLength(1);
-            expect(LOG_EVENT_META[kind].colorToken).toMatch(/^var\(--ark-/);
+            expect(LOG_EVENT_META[kind].colorToken).toMatch(/^var\(--lv-/);
         }
     });
 });

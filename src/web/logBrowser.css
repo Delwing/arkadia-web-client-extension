@@ -1,0 +1,119 @@
+/* ============================================================================
+   In-client log browser — host chrome only.
+   ============================================================================
+
+   The viewer is `@ui/logViewer` and brings its own palette and stylesheets.
+   What is left here is the box it fills inside whichever shell hosts it, plus
+   the session-management table, which is client-only and has no counterpart on
+   the standalone page.
+   ========================================================================== */
+
+/* A full-height flex box: `.lv` sizes itself with `height: 100%`. */
+.logs-browser {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    min-height: 0;
+    height: 100%;
+    overflow: hidden;
+    background: var(--lv-bg-surface);
+}
+
+.logs-browser__loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--lv-space-6);
+    flex-grow: 1;
+    min-height: 0;
+    color: var(--lv-text-secondary);
+    font-size: var(--lv-text-5);
+}
+
+/* --- session management -------------------------------------------------- */
+
+/* On Bootstrap, unlike the viewer: this window only ever runs in the client. */
+
+.logs-manage__spacer {
+    flex-grow: 1;
+}
+
+.logs-manage__file {
+    display: none;
+}
+
+.logs-manage__actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    width: 100%;
+}
+
+.logs-manage__table-box {
+    overflow: auto;
+    max-height: 56vh;
+}
+
+.logs-manage__table {
+    margin-bottom: 0;
+    font-size: 0.85rem;
+}
+
+.logs-manage__table th,
+.logs-manage__table td {
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+.logs-manage__table th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: var(--bs-body-bg);
+}
+
+.logs-manage__table tbody tr {
+    cursor: pointer;
+}
+
+.logs-manage__table tbody tr[data-selected='true'] > td {
+    background: var(--bs-secondary-bg);
+}
+
+/* Year separator: sticky under the header, so a long list keeps saying which
+   year you are scrolled into. */
+.logs-manage__year td {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: var(--bs-body-bg);
+    color: var(--bs-secondary-color);
+    font-weight: 600;
+}
+
+.logs-manage__table tbody tr.logs-manage__year {
+    cursor: default;
+}
+
+.logs-manage__pick {
+    width: 2rem;
+}
+
+.logs-manage__span {
+    font-family: var(--bs-font-monospace);
+    color: var(--bs-secondary-color);
+}
+
+.logs-manage__num {
+    text-align: right;
+    font-family: var(--bs-font-monospace);
+    font-variant-numeric: tabular-nums;
+}
+
+.logs-manage__flag {
+    text-align: center;
+    width: 3rem;
+    color: var(--bs-secondary-color);
+}

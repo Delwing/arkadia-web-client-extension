@@ -1,0 +1,1135 @@
+/* ============================================================================
+   Log viewer — layout.
+   ============================================================================
+
+   Every colour here is a token from `logViewerTheme.css`, the palette this
+   screen owns; there is not one literal colour in this file. That is what
+   makes a future re-skin one file's worth of work rather than a sweep across
+   nearly two hundred references.
+
+   Controls (buttons, inputs, chips, toggles) live in `ui/controls.css`.
+   ========================================================================== */
+
+.lv {
+    --lv-sidebar-width: 288px;
+    --lv-line-height: var(--lv-leading-log);
+
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+    background: var(--lv-bg-surface);
+    /* Stated rather than inherited: in the client this subtree sits inside a
+       Bootstrap page whose body font and size are not the viewer's. */
+    color: var(--lv-text);
+    font-family: var(--lv-font-sans);
+    font-size: var(--lv-text-5);
+    line-height: var(--lv-leading-normal);
+    -webkit-font-smoothing: antialiased;
+    scrollbar-color: var(--lv-gray-6) transparent;
+    scrollbar-width: thin;
+}
+
+/* --- header ------------------------------------------------------------- */
+
+/* The viewer's own header box. It used to lean on the design system's dialog
+   header class for its height and rule; both hosts now get it from here. */
+.lv__header {
+    display: flex;
+    align-items: center;
+    gap: var(--lv-space-7);
+    flex-shrink: 0;
+    height: 64px;
+    padding: 0 var(--lv-space-7) 0 var(--lv-space-8);
+    border-bottom: 1px solid var(--lv-border-subtle);
+}
+
+.lv__title {
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    font-size: var(--lv-text-7);
+    font-weight: var(--lv-weight-semibold);
+    letter-spacing: 0.01em;
+}
+
+/* The live marker never gives up room to the title — it is the one thing in
+   the header that says this log is still being written to. */
+.lv__title-block .lv-badge,
+.lv__title-block .lv-session__live {
+    flex-shrink: 0;
+}
+
+.lv__title-block {
+    display: flex;
+    flex-direction: column;
+    gap: var(--lv-space-1);
+    min-width: 0;
+    flex-grow: 1;
+}
+
+.lv__meta {
+    font-size: var(--lv-text-4);
+    color: var(--lv-text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* --- body split --------------------------------------------------------- */
+
+.lv__split {
+    position: relative;
+    display: flex;
+    flex-grow: 1;
+    min-height: 0;
+}
+
+.lv__main {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    min-width: 0;
+}
+
+/* --- sidebar ------------------------------------------------------------ */
+
+.lv-sidebar {
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    width: var(--lv-sidebar-width);
+    border-right: 1px solid var(--lv-border-subtle);
+    background: var(--lv-bg-app);
+}
+
+.lv-sidebar__head {
+    display: flex;
+    flex-direction: column;
+    gap: var(--lv-space-4);
+    padding: var(--lv-space-6);
+    border-bottom: 1px solid var(--lv-border-subtle);
+}
+
+.lv-sidebar__list {
+    flex-grow: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 0 var(--lv-space-4) var(--lv-space-6);
+}
+
+.lv-sidebar__group {
+    position: sticky;
+    top: 0;
+    z-index: var(--lv-z-sticky);
+    padding: var(--lv-space-6) var(--lv-space-3) var(--lv-space-3);
+    background: var(--lv-bg-app);
+    font-size: var(--lv-text-2);
+    font-weight: var(--lv-weight-semibold);
+    color: var(--lv-text-secondary);
+}
+
+.lv-sidebar__items {
+    display: flex;
+    flex-direction: column;
+    gap: var(--lv-space-1);
+}
+
+.lv-session {
+    display: flex;
+    flex-direction: column;
+    gap: var(--lv-space-1);
+    width: 100%;
+    padding: var(--lv-space-4) var(--lv-space-5);
+    border: 1px solid transparent;
+    border-radius: var(--lv-radius-3);
+    text-align: left;
+    color: var(--lv-text);
+    transition: background-color var(--lv-duration-1) linear;
+}
+
+.lv-session:hover {
+    background: var(--lv-bg-element-ghost-hover);
+}
+
+.lv-session[data-selected='true'] {
+    background: var(--lv-bg-selected);
+    border-color: var(--lv-border-strong);
+}
+
+/* In All-logs scope a session with no hits stays clickable but recedes, so the
+   ones worth opening stand out without the list jumping around. */
+.lv-session[data-dimmed='true'] {
+    opacity: 0.5;
+}
+
+.lv-session__name {
+    flex-grow: 1;
+    font-size: var(--lv-text-6);
+    font-weight: var(--lv-weight-medium);
+}
+
+.lv-session[data-selected='true'] .lv-session__name {
+    font-weight: var(--lv-weight-semibold);
+}
+
+.lv-session__range {
+    font-family: var(--lv-font-mono);
+    font-size: var(--lv-text-2);
+    font-variant-numeric: tabular-nums;
+    color: var(--lv-text-secondary);
+}
+
+.lv-session__live {
+    flex-shrink: 0;
+    width: 7px;
+    height: 7px;
+    border-radius: var(--lv-radius-full);
+    background: var(--lv-success-solid);
+}
+
+.lv-sidebar__foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    height: 38px;
+    padding: 0 var(--lv-space-7);
+    border-top: 1px solid var(--lv-border-subtle);
+    font-size: var(--lv-text-3);
+    color: var(--lv-text-secondary);
+}
+
+/* --- search bar --------------------------------------------------------- */
+
+.lv-search {
+    display: flex;
+    align-items: center;
+    gap: var(--lv-space-4);
+    padding: var(--lv-space-5) var(--lv-space-8);
+    border-bottom: 1px solid var(--lv-border-subtle);
+}
+
+.lv-search__field {
+    width: 340px;
+    flex-shrink: 0;
+}
+
+/* The counter and its sub-line are both empty until you type, and an empty
+   span makes no line box at all — so the block used to be 1px tall at rest and
+   two lines tall from the first keystroke, taking the whole row up with it.
+   Both lines therefore reserve their height unconditionally, below.
+
+   The width is reserved for the same reason, and exactly rather than as a
+   floor: the counter runs from "" to "Bledny wzorzec" to "3 z 128" while you
+   type, and the sub-line can be a notice naming a character and a day, which
+   no fixed width could ever fit. A floor alone let that notice widen the block
+   and shove the scope buttons sideways; 168px both ways means nothing after it
+   can move, and the overflow is handled by the ellipsis below. */
+.lv-search__counter {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    flex: 0 0 168px;
+    min-width: 168px;
+    font-variant-numeric: tabular-nums;
+}
+
+.lv-search__count {
+    font-size: var(--lv-text-4);
+    line-height: 16px;
+    min-height: 16px;
+    font-weight: var(--lv-weight-medium);
+    color: var(--lv-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.lv-search__count[data-tone='muted'] {
+    color: var(--lv-text-secondary);
+    font-weight: var(--lv-weight-regular);
+}
+
+.lv-search__count[data-tone='error'] {
+    color: var(--lv-danger-text);
+}
+
+/* A notice is as long as the session it names, and at 168px "Dalej w: Kethra,
+   Wczoraj · pt 18 wrz" wraps to two lines and grows the row a second time. It
+   is clipped instead: a notice is meant to catch the eye, not to be a
+   paragraph, and the whole text is on the element's title. */
+.lv-search__sub {
+    font-size: var(--lv-text-2);
+    line-height: 15px;
+    min-height: 15px;
+    color: var(--lv-text-tertiary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* A jump the player did not ask for is announced in the accent colour, so it
+   is the one thing in this row that catches the eye when it appears. */
+.lv-search__sub[data-notice='true'] {
+    color: var(--lv-accent-text);
+}
+
+/* --- channel bar -------------------------------------------------------- */
+
+/* Eight chips plus "Pokaz wszystkie" do not fit a narrow dialog on one line,
+   and a chip squeezed until its count clips is worse than a second row. */
+.lv-channels {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--lv-space-3);
+    padding: var(--lv-space-4) var(--lv-space-8);
+    border-bottom: 1px solid var(--lv-border-subtle);
+}
+
+.lv-channels__label {
+    margin-right: var(--lv-space-2);
+    font-size: var(--lv-text-3);
+    color: var(--lv-text-secondary);
+}
+
+/* --- timeline ----------------------------------------------------------- */
+
+.lv-timeline {
+    display: flex;
+    flex-direction: column;
+    gap: var(--lv-space-3);
+    padding: var(--lv-space-5) var(--lv-space-8) var(--lv-space-4);
+    border-bottom: 1px solid var(--lv-border-subtle);
+}
+
+.lv-timeline__head {
+    display: flex;
+    align-items: center;
+    gap: var(--lv-space-7);
+    font-size: var(--lv-text-3);
+    color: var(--lv-text-secondary);
+}
+
+.lv-timeline__title {
+    font-weight: var(--lv-weight-semibold);
+    color: var(--lv-text);
+}
+
+.lv-timeline__span {
+    font-family: var(--lv-font-mono);
+    font-size: var(--lv-text-2);
+}
+
+.lv-legend {
+    display: flex;
+    align-items: center;
+    gap: var(--lv-space-6);
+    flex-wrap: wrap;
+}
+
+.lv-legend__item {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--lv-space-3);
+    white-space: nowrap;
+}
+
+.lv-legend__swatch {
+    display: inline-block;
+    width: 8px;
+    height: 10px;
+    background: var(--lv-gray-8);
+}
+
+.lv-legend__swatch--match {
+    width: 2px;
+    height: 12px;
+    background: var(--lv-accent-solid);
+}
+
+.lv-legend__swatch--view {
+    width: 14px;
+    height: 10px;
+    border: 1px solid var(--lv-text);
+    border-radius: var(--lv-radius-1);
+    background: none;
+}
+
+.lv-legend__swatch--idle {
+    width: 12px;
+    background: repeating-linear-gradient(
+        135deg,
+        var(--lv-gray-a6) 0 2px,
+        transparent 2px 4px
+    );
+}
+
+.lv-legend__glyph {
+    font-weight: var(--lv-weight-semibold);
+}
+
+.lv-timeline__row {
+    display: flex;
+    align-items: center;
+    gap: var(--lv-space-4);
+}
+
+.lv-track {
+    position: relative;
+    flex-grow: 1;
+    height: 66px;
+    overflow: hidden;
+    border: 1px solid var(--lv-border-subtle);
+    border-radius: var(--lv-radius-3);
+    background: var(--lv-bg-sunken);
+    cursor: crosshair;
+}
+
+.lv-track__gap {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    background: repeating-linear-gradient(
+        135deg,
+        var(--lv-gray-a4) 0 4px,
+        transparent 4px 8px
+    );
+}
+
+.lv-track__bars {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: var(--lv-space-3);
+    bottom: 20px;
+}
+
+.lv-track__bar {
+    position: absolute;
+    bottom: 0;
+    background: var(--lv-gray-8);
+    border-radius: 1px 1px 0 0;
+}
+
+.lv-track__tick {
+    position: absolute;
+    top: 0;
+    bottom: 19px;
+    width: 2px;
+    margin-left: -1px;
+    background: var(--lv-accent-solid);
+    opacity: 0.7;
+}
+
+.lv-track__current {
+    position: absolute;
+    top: 0;
+    bottom: 19px;
+    width: 4px;
+    margin-left: -2px;
+    background: var(--lv-accent-solid);
+    /* A halo in the track colour so the marker reads over a dense histogram. */
+    box-shadow: 0 0 0 2px var(--lv-bg-sunken);
+}
+
+.lv-track__viewport {
+    position: absolute;
+    top: 1px;
+    bottom: 19px;
+    min-width: 4px;
+    border: 1px solid var(--lv-text);
+    border-radius: var(--lv-radius-1);
+    background: var(--lv-gray-a3);
+    pointer-events: none;
+}
+
+.lv-track__events {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 18px;
+    border-top: 1px solid var(--lv-border-subtle);
+}
+
+.lv-track__event {
+    position: absolute;
+    top: 0;
+    width: 16px;
+    height: 17px;
+    padding: 0;
+    transform: translateX(-50%);
+    font-size: var(--lv-text-1);
+    font-weight: var(--lv-weight-semibold);
+    line-height: 17px;
+}
+
+.lv-track__event-name {
+    position: absolute;
+    top: 0;
+    color: var(--lv-text-tertiary);
+    font-size: var(--lv-text-1);
+    line-height: 17px;
+    white-space: nowrap;
+    pointer-events: none;
+}
+
+.lv-track__hairline {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: var(--lv-gray-a8);
+    pointer-events: none;
+}
+
+.lv-track__hover {
+    position: absolute;
+    top: var(--lv-space-3);
+    padding: var(--lv-space-1) var(--lv-space-4);
+    border: 1px solid var(--lv-border-strong);
+    border-radius: var(--lv-radius-2);
+    background: var(--lv-bg-raised);
+    color: var(--lv-text);
+    font-family: var(--lv-font-mono);
+    font-size: var(--lv-text-1);
+    white-space: nowrap;
+    pointer-events: none;
+}
+
+.lv-timeline__axis {
+    position: relative;
+    height: 14px;
+    /* Clears the two jump buttons, so the first and last labels sit under the
+       ends of the track rather than under the buttons. */
+    margin: 0 40px;
+    font-family: var(--lv-font-mono);
+    font-size: var(--lv-text-1);
+    color: var(--lv-text-tertiary);
+}
+
+.lv-timeline__axis span {
+    position: absolute;
+    top: 0;
+}
+
+/* --- log pane ----------------------------------------------------------- */
+
+.lv-log {
+    position: relative;
+    flex-grow: 1;
+    min-height: 0;
+    overflow: auto;
+    padding: var(--lv-space-3) 0;
+    background: var(--lv-bg-app);
+    font-family: var(--lv-font-mono);
+    font-size: var(--lv-text-5);
+}
+
+/* An empty pane centres its explanation rather than leaving it pinned to the
+   top of a very tall, very blank box. */
+.lv-log--empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* The time column is `8.5ch`, not a pixel count: `ch` is one character of the
+   pane's own monospace font, `HH:MM:SS` is eight of them, and half a character
+   is the breathing room. Hard-coded pixels went wrong the moment the phone
+   rules narrowed this column to 52px for a stamp that needs 57 — the timestamp
+   then ran into the text, which is what you see with the tag and line-number
+   columns switched off. */
+.lv-log__row,
+.lv-log__probe {
+    display: grid;
+    grid-template-columns: 8.5ch 40px 46px minmax(0, 1fr);
+    column-gap: var(--lv-space-6);
+    padding: 0 var(--lv-space-8);
+    line-height: var(--lv-line-height);
+}
+
+/* Column layout follows the two visibility toggles. Four explicit rules rather
+   than anything clever: the grid has to match the children the row actually
+   renders, and a mismatch silently collapses the text column. */
+.lv-log[data-timestamps='false'][data-meta='true'] .lv-log__row,
+.lv-log[data-timestamps='false'][data-meta='true'] .lv-log__probe {
+    grid-template-columns: 40px 46px minmax(0, 1fr);
+}
+
+.lv-log[data-timestamps='true'][data-meta='false'] .lv-log__row,
+.lv-log[data-timestamps='true'][data-meta='false'] .lv-log__probe {
+    grid-template-columns: 8.5ch minmax(0, 1fr);
+}
+
+.lv-log[data-timestamps='false'][data-meta='false'] .lv-log__row,
+.lv-log[data-timestamps='false'][data-meta='false'] .lv-log__probe {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+/* The measuring row. Hidden but laid out, because the numbers it exists to
+   produce — how wide the text column is, how wide one character is, how tall
+   one visual line is — only exist once the browser has laid it out. */
+.lv-log__probe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+/* Unwrapped, so its width is the text's own width rather than the column's. */
+.lv-log__probe-text {
+    white-space: pre;
+}
+
+.lv-log__row[data-current='true'] {
+    background: var(--lv-accent-a3);
+}
+
+/* An event line is tinted whether or not it is the current match, so scanning
+   for "where did I die" works without searching. */
+.lv-log__row[data-event='true'] {
+    background: var(--lv-gray-a2);
+}
+
+.lv-log__row[data-event='true'][data-current='true'] {
+    background: var(--lv-accent-a3);
+}
+
+.lv-log__time {
+    overflow: hidden;
+    color: var(--lv-text-tertiary);
+    font-variant-numeric: tabular-nums;
+}
+
+.lv-log__number {
+    color: var(--lv-text-faint);
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.lv-log__tag {
+    font-size: 10.5px;
+    letter-spacing: var(--lv-tracking-wide);
+    color: var(--lv-text-tertiary);
+    font-weight: var(--lv-weight-medium);
+}
+
+.lv-log__tag[data-event='true'] {
+    font-weight: var(--lv-weight-semibold);
+}
+
+.lv-log__text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: pre-wrap;
+}
+
+.lv-log[data-wrap='false'] .lv-log__text {
+    white-space: pre;
+}
+
+.lv-log__text mark {
+    background: var(--lv-accent-a5);
+    color: inherit;
+    border-radius: var(--lv-radius-1);
+}
+
+.lv-log__text mark[data-current='true'] {
+    background: var(--lv-accent-solid);
+    color: var(--lv-accent-contrast);
+}
+
+/* --- status bar --------------------------------------------------------- */
+
+.lv-status {
+    display: flex;
+    align-items: center;
+    gap: var(--lv-space-5);
+    flex-shrink: 0;
+    height: 36px;
+    padding: 0 var(--lv-space-6) 0 var(--lv-space-8);
+    border-top: 1px solid var(--lv-border-subtle);
+    font-size: var(--lv-text-3);
+    color: var(--lv-text-secondary);
+}
+
+.lv-status__lines {
+    font-variant-numeric: tabular-nums;
+}
+
+.lv-status__error {
+    color: var(--lv-danger-text);
+}
+
+.lv-status__view {
+    font-family: var(--lv-font-mono);
+    font-size: var(--lv-text-2);
+}
+
+/* --- responsive --------------------------------------------------------- */
+
+/* Two markers the components use to offer a control in one layout and not the
+   other. Both default to the wide screen; the phone query below flips them. */
+.lv .lv-only-narrow,
+.lv .lv-search__break {
+    display: none;
+}
+
+/* Menu rows that are switches rather than commands — the channel filters. */
+.lv .lv-menu__item--check {
+    justify-content: flex-start;
+}
+
+.lv .lv-menu__check {
+    flex-shrink: 0;
+    width: 14px;
+    color: var(--lv-accent-text);
+}
+
+.lv .lv-menu__dot {
+    flex-shrink: 0;
+    width: 6px;
+    height: 6px;
+    border-radius: var(--lv-radius-full);
+    background: currentColor;
+    opacity: 0.85;
+}
+
+.lv .lv-menu__text {
+    flex-grow: 1;
+}
+
+.lv .lv-menu__count {
+    font-family: var(--lv-font-mono);
+    font-size: var(--lv-text-1);
+    font-variant-numeric: tabular-nums;
+    color: var(--lv-text-faint);
+}
+
+.lv .lv-menu__item--check[data-state='on'] {
+    color: var(--lv-text);
+}
+
+/* The viewer is hosted at every width there is: a maximised desktop window, a
+   Bootstrap dialog inside the client, and a phone held in one hand. Three
+   things give way as the screen narrows, in this order — the legend, then the
+   docked sidebar, then everything that is not the log itself. */
+
+@media (max-width: 1150px) {
+    .lv .lv__header {
+        height: auto;
+        min-height: 64px;
+        flex-wrap: wrap;
+        row-gap: var(--lv-space-3);
+        padding-top: var(--lv-space-3);
+        padding-bottom: var(--lv-space-3);
+    }
+
+    .lv-search {
+        flex-wrap: wrap;
+    }
+
+    .lv-status {
+        height: auto;
+        min-height: 36px;
+        flex-wrap: wrap;
+        row-gap: var(--lv-space-2);
+        padding-top: var(--lv-space-2);
+        padding-bottom: var(--lv-space-2);
+    }
+}
+
+/* Below the spec's 960px floor the legend is the first thing to go: it names
+   marks that are still perfectly legible without it. */
+@media (max-width: 1040px) {
+    .lv {
+        --lv-sidebar-width: 240px;
+    }
+
+    .lv-search__field {
+        width: 240px;
+    }
+
+    .lv-legend {
+        display: none;
+    }
+}
+
+/* --- the sidebar becomes a drawer ---------------------------------------- */
+
+/* Docked, the session list costs a quarter of the width. Below this it slides
+   in over the log instead — which is also what finally gives phones a session
+   list at all: it used to be `display: none` under 820px, so on a phone there
+   was no way to see which logs existed, let alone filter them. */
+@media (max-width: 900px) {
+    .lv-sidebar {
+        position: absolute;
+        z-index: 2;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        width: min(320px, 86vw);
+        box-shadow: var(--lv-shadow-3);
+        transform: translateX(-100%);
+        transition: transform var(--lv-duration-2) var(--lv-ease);
+    }
+
+    .lv-sidebar[data-open='true'] {
+        transform: none;
+    }
+
+    .lv__scrim {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        background: var(--lv-black-a6);
+    }
+
+    /* The drawer button replaces the prev/next arrows, which are a poor way to
+       walk a list you cannot see. */
+    .lv .lv-only-drawer {
+        display: inline-flex;
+    }
+}
+
+/* Docked: no drawer button, no scrim, no transform to undo. */
+@media (min-width: 901px) {
+    .lv .lv-only-drawer {
+        display: none;
+    }
+}
+
+/* --- phone --------------------------------------------------------------- */
+
+/* Everything here buys height for the log. On a 390px phone the chrome used to
+   take about five sixths of the screen — in the client's dialog the pane was
+   three lines tall — because eight channel chips wrap onto four rows, the
+   status bar onto three, and the timeline is 100px of histogram that no finger
+   can aim at anyway. */
+@media (max-width: 680px) {
+    .lv .lv-hide-narrow {
+        display: none;
+    }
+
+    /* `revert`, not `block`: a span has to stay inline inside a button. */
+    .lv .lv-only-narrow {
+        display: revert;
+    }
+
+    .lv .lv__header {
+        gap: var(--lv-space-3);
+        min-height: 52px;
+        flex-wrap: nowrap;
+        padding: var(--lv-space-3) var(--lv-space-4);
+    }
+
+    /* The title is the only part of the header allowed to shrink. */
+    .lv__header > *:not(.lv__title-block) {
+        flex-shrink: 0;
+    }
+
+    .lv__title {
+        font-size: var(--lv-text-6);
+    }
+
+    .lv__meta {
+        font-size: var(--lv-text-2);
+    }
+
+    /* Two rows, not three. `order` puts the counter beside the field rather
+       than under it, so the row that was just a search box now carries the
+       whole "where am I in the results" story:
+
+           [ Szukaj ...  Aa .* ] [ 3 z 128 ] [^] [v]
+           [ Kanaly 6/8 ] [ Trafienia ] [ Log | Wszystkie ]              */
+    .lv-search {
+        gap: var(--lv-space-3);
+        padding: var(--lv-space-4);
+    }
+
+    .lv-search__field {
+        order: 1;
+        flex: 1 1 0;
+        min-width: 120px;
+        width: auto;
+    }
+
+    /* Fixed at 168px the counter reserved nearly half a phone's width for text
+       that is empty until you type. Here it takes what it needs, up to a cap,
+       and clips the rest — the whole notice is on the element's title. */
+    .lv-search__counter {
+        order: 2;
+        flex: 0 1 auto;
+        min-width: 0;
+        max-width: 96px;
+    }
+
+    .lv-search > .lv-row {
+        order: 3;
+    }
+
+    /* `.lv` prefixed deliberately: the rule that hides this by default is
+       `.lv .lv-search__break`, and a bare class selector loses to it. */
+    .lv .lv-search__break {
+        order: 4;
+        display: block;
+        width: 100%;
+        height: 0;
+    }
+
+    .lv-search > .lv-toggle {
+        order: 5;
+    }
+
+    .lv-search > .lv-only-narrow {
+        order: 6;
+    }
+
+    /* Takes the width left on its row, and the whole row on a phone too narrow
+       to share one — which is where it ends up under about 360px. */
+    .lv-search > .lv-segmented {
+        order: 7;
+        flex-grow: 1;
+    }
+
+    .lv-segmented__item {
+        flex: 1 1 0;
+        padding: 0 var(--lv-space-2);
+    }
+
+    /* "Zakres" is only reachable from a line's long-press here — the timeline
+       it is normally dragged out on is hidden. Until there is a range to
+       search, the button is a third of a row saying nothing. */
+    .lv-segmented__item:disabled {
+        display: none;
+    }
+
+    /* Eight chips never fitted: wrapped they took four rows, and in one
+       scrolling row the last of them were cut off with nothing to say so.
+       `ChannelMenu` puts the same filters in the row above. */
+    .lv-channels {
+        display: none;
+    }
+
+    /* A histogram with 9px drag handles is a mouse instrument. The log scrolls
+       under a finger, which is the same journey. */
+    .lv-timeline {
+        display: none;
+    }
+
+    /* Short labels and no viewport clock, so the footer fits on one row at
+       phone widths. Where it still does not — a very narrow screen, or a live
+       session with its extra switch — it WRAPS rather than scrolls: a row that
+       scrolls sideways hides controls behind a gesture nothing on screen asks
+       for, and on a near-black surface the usual shadow-at-the-edge cue is
+       invisible anyway. A second row costs 30px and hides nothing. */
+    .lv-status {
+        flex-wrap: wrap;
+        row-gap: var(--lv-space-2);
+        gap: var(--lv-space-3);
+        padding: var(--lv-space-2) var(--lv-space-4);
+    }
+
+    /* Pushes the switches away from the line count on a single row, and lets
+       them start the second row when there is one. */
+    .lv-status .lv-spacer {
+        flex-basis: 0;
+    }
+
+    /* 150px of gutters out of 390px left the text column narrower than the text
+       in it. The number and tag columns give some back; the time column cannot,
+       because a timestamp is a timestamp. */
+    .lv-log__row,
+    .lv-log__probe {
+        grid-template-columns: 8.5ch 30px 38px minmax(0, 1fr);
+        column-gap: var(--lv-space-4);
+        padding: 0 var(--lv-space-4);
+    }
+
+    .lv-log[data-timestamps='false'][data-meta='true'] .lv-log__row,
+    .lv-log[data-timestamps='false'][data-meta='true'] .lv-log__probe {
+        grid-template-columns: 30px 38px minmax(0, 1fr);
+    }
+
+    .lv-sidebar__head {
+        padding: var(--lv-space-4);
+    }
+}
+
+/* --- touch --------------------------------------------------------------- */
+
+/* A finger is about 9mm across; the control ladder is drawn for a cursor. Raise
+   the small end of it wherever the pointer cannot be precise — which is the
+   same screens the rules above already made room on. */
+@media (pointer: coarse) {
+    .lv {
+        --lv-control-xs: 32px;
+        --lv-control-sm: 36px;
+        --lv-control-md: 38px;
+        --lv-control-lg: 40px;
+    }
+
+    .lv-session {
+        padding: var(--lv-space-5);
+    }
+
+    .lv-line-menu__item {
+        height: 40px;
+    }
+
+    /* Shortcut hints for keys this device does not have. */
+    .lv .lv-keys-only {
+        display: none;
+    }
+}
+
+/* --- range selection ----------------------------------------------------- */
+
+/* Everything outside the selected slice is scrimmed rather than hidden: the
+   timeline keeps its full span so the slice can be seen, and moved, in the
+   context of the whole session. */
+.lv-track__outside {
+    position: absolute;
+    top: 0;
+    bottom: 19px;
+    background: var(--lv-black-a6);
+    pointer-events: none;
+}
+
+.lv-track__handle {
+    position: absolute;
+    top: 0;
+    bottom: 19px;
+    width: 9px;
+    margin-left: -4px;
+    padding: 0;
+    background: none;
+    border: none;
+    cursor: ew-resize;
+    touch-action: none;
+}
+
+/* The grip is drawn as a child line so the hit area can stay finger-sized
+   while the mark itself stays 1px. */
+.lv-track__handle::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 4px;
+    width: 1px;
+    background: var(--lv-accent-solid);
+}
+
+/* A slice that is selected but not applied (any scope other than "Zakres")
+   keeps its handles so it can be adjusted and switched back on, but it is
+   drawn as an outline rather than a filled edge — nothing is being hidden. */
+.lv-track__handle[data-active='false']::before {
+    background: var(--lv-accent-a7);
+}
+
+.lv-track__handle::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 9px;
+    height: 9px;
+    border-radius: 0 0 var(--lv-radius-1) var(--lv-radius-1);
+    background: var(--lv-accent-solid);
+}
+
+.lv-track__handle[data-edge='to']::after {
+    top: auto;
+    bottom: 0;
+    border-radius: var(--lv-radius-1) var(--lv-radius-1) 0 0;
+}
+
+.lv-track__handle:hover::before,
+.lv-track__handle:focus-visible::before {
+    width: 2px;
+}
+
+/* Live feedback while a range is being dragged out on the track. */
+.lv-track[data-selecting='true'] {
+    cursor: ew-resize;
+}
+
+.lv-range-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--lv-space-3);
+    height: var(--lv-control-sm);
+    padding: 0 var(--lv-space-3) 0 var(--lv-space-5);
+    border: 1px solid var(--lv-accent-border);
+    border-radius: var(--lv-radius-full);
+    background: var(--lv-accent-bg);
+    color: var(--lv-accent-text);
+    font-family: var(--lv-font-mono);
+    font-size: var(--lv-text-2);
+    white-space: nowrap;
+}
+
+/* A slice that is selected but not applied is stated, not celebrated: the log
+   in front of the player is the whole log, and the chip must not imply
+   otherwise. */
+.lv-range-chip[data-active='false'] {
+    border-color: var(--lv-border);
+    background: var(--lv-bg-sunken);
+    color: var(--lv-text-tertiary);
+}
+
+/* --- line context menu --------------------------------------------------- */
+
+.lv-line-menu {
+    position: fixed;
+    z-index: var(--lv-z-popover);
+    display: flex;
+    flex-direction: column;
+    min-width: 210px;
+    padding: var(--lv-space-2);
+    border: 1px solid var(--lv-border-element);
+    border-radius: var(--lv-radius-3);
+    background: var(--lv-bg-raised);
+    box-shadow: var(--lv-shadow-3);
+    font-family: var(--lv-font-sans);
+}
+
+.lv-line-menu__item {
+    display: flex;
+    align-items: center;
+    gap: var(--lv-space-4);
+    height: var(--lv-control-md);
+    padding: 0 var(--lv-space-5);
+    border-radius: var(--lv-radius-2);
+    color: var(--lv-text-secondary);
+    font-size: var(--lv-text-5);
+    text-align: left;
+    white-space: nowrap;
+}
+
+.lv-line-menu__item:hover {
+    background: var(--lv-bg-element-hover);
+    color: var(--lv-text);
+}
+
+.lv-line-menu__label {
+    padding: var(--lv-space-3) var(--lv-space-5) var(--lv-space-2);
+    font-family: var(--lv-font-mono);
+    font-size: var(--lv-text-1);
+    color: var(--lv-text-tertiary);
+}
+
+.lv-line-menu__separator {
+    height: 1px;
+    margin: var(--lv-space-2) 0;
+    background: var(--lv-border-subtle);
+}
