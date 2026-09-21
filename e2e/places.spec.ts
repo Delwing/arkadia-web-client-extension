@@ -159,6 +159,32 @@ test.describe('Miejsca (skróty i notatki lokacji)', () => {
         await expect.poll(() => storedShortcuts(page)).toEqual([{ key: 'rynek', id: 2, label: '' }]);
     });
 
+    test('a room found on the map (not the current one) can get a note and a shortcut', async ({ page }) => {
+        await page.click('#menu-button');
+        await page.click('#places-button');
+        await expect(modal(page)).toBeVisible();
+
+        const search = modal(page).locator('.places-list__search input');
+        await search.fill('kamienny');
+        const match = modal(page).locator('.places-row--map', { hasText: 'Kamienny Most' });
+        await expect(match).toBeVisible();
+        await match.click();
+        await expect(modal(page).locator('.places-hero__title')).toContainText(`#${ROOM_ID}`);
+
+        await noteBox(page).fill('Dodane zdalnie');
+        await expect.poll(() => readNote(page, ROOM_ID)).toBe('Dodane zdalnie');
+        await modal(page).getByRole('button', { name: 'Dodaj skrót' }).click();
+        const field = modal(page).locator('.places-shortcut input');
+        await field.fill('most');
+        await field.press('Enter');
+        await expect.poll(() => storedShortcuts(page)).toEqual([{ key: 'most', id: ROOM_ID, label: '' }]);
+
+        // Saved now, so it is a place and no longer offered from the map; #id finds rooms too.
+        await expect(modal(page).locator('.places-row--map', { hasText: 'Kamienny Most' })).toHaveCount(0);
+        await search.fill('#1');
+        await expect(modal(page).locator('.places-row--map')).toHaveCount(1);
+    });
+
     test('filters, search and "Usuń miejsce"', async ({ page }) => {
         await page.evaluate(() => localStorage.setItem('shortcuts', JSON.stringify([{ key: 'poczta', id: 1, label: 'stary opis' }])));
         await openFromMapMenu(page, ROOM_ID, 'Notatka');

@@ -13,6 +13,7 @@ import {
     loadPlaces,
     OPEN_PLACE_EVENT,
     readShortcuts,
+    searchMapRooms,
     SHORTCUT_KEY_RE,
     writeShortcuts,
     type OpenPlaceDetail,
@@ -423,13 +424,21 @@ export default function Places() {
 
     const draft = selected !== null && !selectedPlace;
 
+    // Rooms you have nothing saved for yet, found on the map by name, area or #id,
+    // so a shortcut or note can be added without walking there first.
+    const mapMatches = useMemo(() => {
+        const saved = new Set(places.map(p => p.roomId));
+        if (selected !== null) saved.add(selected);
+        return searchMapRooms(query, saved);
+    }, [query, places, selected]);
+
     return (
         <div className={`places${selected !== null ? " has-selection" : ""}`}>
             <div className="places-list">
                 <div className="places-list__tools">
                     <div className="places-list__search">
                         <InputGroup before={<Search size={14} strokeWidth={1.9} />}>
-                            <Input value={query} placeholder="Nazwa, lokacja, kraina, notatka" onChange={e => setQuery(e.target.value)} />
+                            <Input value={query} placeholder="Szukaj miejsca lub lokacji na mapie" onChange={e => setQuery(e.target.value)} />
                         </InputGroup>
                         <Button
                             variant="solid"
@@ -466,12 +475,22 @@ export default function Places() {
                     {visible.near.map(renderRow)}
                     {visible.other.length > 0 && <span className="places-list__group">Inne obszary</span>}
                     {visible.other.map(renderRow)}
-                    {rows.length === 0 && !draft && (
+                    {mapMatches.length > 0 && <span className="places-list__group">Lokacje na mapie</span>}
+                    {mapMatches.map(m => (
+                        <button key={m.roomId} type="button" className="places-row places-row--map" onClick={() => select(m.roomId)}>
+                            <span className="places-row__top">
+                                <span className="places-row__name">{m.name}</span>
+                                <span className="places-row__meta">#{m.roomId}</span>
+                            </span>
+                            {m.area && <span className="places-row__sub"><span className="places-row__note">{m.area}</span></span>}
+                        </button>
+                    ))}
+                    {rows.length === 0 && !draft && !query.trim() && (
                         <p className="places-empty">
-                            Nie masz jeszcze zapisanych miejsc. Kliknij „Tutaj”, żeby dodać skrót lub notatkę dla miejsca, w którym jesteś, albo wybierz lokację prawym przyciskiem na mapie.
+                            Nie masz jeszcze zapisanych miejsc. Kliknij „Tutaj”, żeby dodać skrót lub notatkę dla miejsca, w którym jesteś, wpisz nazwę lokacji albo jej numer, żeby znaleźć ją na mapie, lub wybierz lokację prawym przyciskiem na mapie.
                         </p>
                     )}
-                    {rows.length > 0 && visible.near.length + visible.other.length === 0 && (
+                    {query.trim() && visible.near.length + visible.other.length + mapMatches.length === 0 && (
                         <p className="places-empty">Nic nie pasuje do wyszukiwania.</p>
                     )}
                 </div>
@@ -482,7 +501,7 @@ export default function Places() {
             ) : (
                 <div className="places-detail places-detail--empty">
                     <MapPin size={22} strokeWidth={1.6} />
-                    <p>Wybierz miejsce z listy albo kliknij „Tutaj”.</p>
+                    <p>Wybierz miejsce z listy, kliknij „Tutaj” albo wyszukaj lokację na mapie.</p>
                 </div>
             )}
         </div>

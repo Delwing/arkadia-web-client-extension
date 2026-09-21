@@ -1,6 +1,7 @@
 import { globalStorage } from "@modules/core/storage";
 import { getRoomInfo } from "@modules/core/roomInfoProvider";
 import { getAllNotes, type LocationNote } from "@modules/data/locationNotesStorage";
+import { getEmbeddedMap } from "@web/embedRegistry.ts";
 
 /**
  * Miejsca: a place is a room plus whatever the player keeps about it — the
@@ -71,4 +72,50 @@ export function describeRoom(roomId: number, note?: LocationNote | null) {
         area: info?.areaName || note?.areaName || "",
         mapNote: info?.mapNote ?? null,
     };
+}
+
+export interface MapRoomMatch {
+    roomId: number;
+    name: string;
+    area: string;
+}
+
+/** Lowercase without diacritics, so "zolw" finds "Żółw". */
+function fold(text: string) {
+    return text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").split("\u0142").join("l");
+}
+
+/**
+ * Rooms on the map matching a search, for places you are not standing in:
+ * "#123" or "123" finds that room, otherwise the room or area name must
+ * contain the text (at least 2 letters). Rooms in `exclude` are skipped.
+ */
+export function searchMapRooms(query: string, exclude: Set<number>, limit = 30): MapRoomMatch[] {
+    const reader = getEmbeddedMap()?.reader;
+    const q = query.trim();
+    if (!reader || !q) return [];
+    const id = /^#?\d+$/.test(q) ? parseInt(q.replace("#", ""), 10) : null;
+    const areaNames = new Map<number, string>();
+    reader.getAreas().forEach(a => areaNames.set(a.getAreaId(), a.getAreaName()));
+    const toMatch = (room: MapData.Room): MapRoomMatch => ({
+        roomId: room.id,
+        name: room.name || `Lokacja #${room.id}`,
+        area: areaNames.get(room.area) ?? "",
+    });
+    if (id !== null) {
+        const room = reader.getRoom(id);
+        return room && !exclude.has(id) ? [toMatch(room)] : [];
+    }
+    const needle = fold(q);
+    if (needle.length < 2) return [];
+    const found: MapRoomMatch[] = [];
+    for (const room of reader.getRooms()) {
+        if (exclude.has(room.id)) continue;
+        const area = areaNames.get(room.area) ?? "";
+        if (fold(room.name ?? "").includes(needle) || fold(area).includes(needle)) {
+            found.push(toMatch(room));
+            if (found.length >= limit) break;
+        }
+    }
+    return found;
 }
