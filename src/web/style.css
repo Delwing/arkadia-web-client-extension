@@ -3015,6 +3015,16 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
   break-inside: avoid;
   margin-bottom: 6px;
 }
+/* Funkcyjny: the bind, and beside it the situations that can have their own key. */
+.binds-functional {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  align-items: start;
+  gap: 8px 24px;
+}
+.binds-functional > .binds-group > .popup-field__label {
+  margin-bottom: -2px;
+}
 .binds-keymap__actions {
   display: flex;
   align-items: center;
@@ -3034,11 +3044,6 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
   font-size: var(--ui-fs, 14px);
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-.bind-row--sub .bind-row__label {
-  padding-left: 8px;
-  color: var(--popup-text-subtle);
-  font-size: var(--ui-fs-sm, 13px);
 }
 .bind-row__keys {
   display: flex;

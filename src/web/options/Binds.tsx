@@ -133,20 +133,18 @@ function KeyCapture({ value, placeholder, onKeyDown }: {
     );
 }
 
-/** A labelled bind. `sub` indents an override of the row above; `stacked`
- *  puts the label over the key (compass cells). */
-function BindRow({ label: text, value, placeholder, onKeyDown, onClear, sub, stacked }: {
+/** A labelled bind. `stacked` puts the label over the key (compass cells). */
+function BindRow({ label: text, value, placeholder, onKeyDown, onClear, stacked }: {
     label: string;
     value: string;
     placeholder?: string;
     onKeyDown: (ev: React.KeyboardEvent) => void;
     onClear?: () => void;
-    sub?: boolean;
     stacked?: boolean;
 }) {
     return (
-        <div className={`bind-row${sub ? ' bind-row--sub' : ''}${stacked ? ' bind-row--stacked' : ''}`}>
-            <span className="bind-row__label">{sub ? `└ ${text}` : text}</span>
+        <div className={`bind-row${stacked ? ' bind-row--stacked' : ''}`}>
+            <span className="bind-row__label">{text}</span>
             <div className="bind-row__keys">
                 <KeyCapture value={value} placeholder={placeholder} onKeyDown={onKeyDown} />
                 {onClear && (
@@ -828,14 +826,18 @@ function Binds() {
             <p className="popup-field__hint binds-editor__hint">Kliknij pole i naciśnij klawisz (z CTRL / {ALT_LABEL} / SHIFT), aby przypisać skrót.</p>
 
             <section className="binds-section">
-                <h6 className="binds-section__title">Podstawowe</h6>
-                <div className="binds-grid binds-grid--columns">
+                <h6 className="binds-section__title">Funkcyjny</h6>
+                <p className="popup-field__hint">
+                    Jeden klawisz do tego, co akurat jest pod ręką: wrota, transport, zbieranie z ciał…
+                    Wybranym sytuacjom możesz dać osobny klawisz — puste pole używa klawisza funkcyjnego.
+                </p>
+                <div className="binds-functional">
+                    <BindRow label="Funkcyjny" value={label(binds.main)} onKeyDown={ev => handleCapture('main', ev)} />
                     <div className="binds-group">
-                        <BindRow label="Funkcyjny" value={label(binds.main)} onKeyDown={ev => handleCapture('main', ev)} />
+                        <span className="popup-field__label">Osobny klawisz dla</span>
                         {optionalRows.map(row => (
                             <BindRow
                                 key={row.name}
-                                sub
                                 label={row.label}
                                 value={binds[row.name] ? label(binds[row.name]!) : ''}
                                 placeholder={label(binds.main)}
@@ -844,6 +846,12 @@ function Binds() {
                             />
                         ))}
                     </div>
+                </div>
+            </section>
+
+            <section className="binds-section">
+                <h6 className="binds-section__title">Podstawowe</h6>
+                <div className="binds-grid binds-grid--columns">
                     {simpleRows.map(row => (
                         <BindRow key={row.name} label={row.label} value={label(binds[row.name] as Bind)} onKeyDown={ev => handleCapture(row.name, ev)} />
                     ))}
