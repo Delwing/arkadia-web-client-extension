@@ -263,7 +263,9 @@
   line-height: 1;
 }
 
-/* Chips: one line; what does not fit wraps out of sight and is counted by "+N". */
+/* Chips: one line; what does not fit wraps onto hidden lines and is counted by "+N"
+   (StatusLine marks those .is-wrapped). The row does not clip, so a chip may draw
+   outside its tile - a plugin's animated companion, smoke - over the bind row even. */
 .status-chips {
   display: flex;
   flex: 1;
@@ -272,11 +274,13 @@
   gap: 6px;
   min-width: 0;
   height: var(--chip-h);
-  overflow: hidden;
 }
 .status-chips.is-open {
   height: auto;
-  overflow: visible;
+}
+.status-slot.is-wrapped {
+  visibility: hidden;
+  pointer-events: none;
 }
 .status-slot {
   display: inline-flex;
@@ -346,7 +350,6 @@
   min-height: 0;
   margin: 0;
   padding: 0 9px 0 7px;
-  overflow: hidden;
   border: 1px solid var(--popup-border-subtle);
   border-radius: 6px;
   background-color: var(--popup-control-bg);
@@ -451,6 +454,7 @@
   content: "";
   position: absolute;
   inset: 0;
+  border-radius: inherit;
   background: color-mix(in srgb, currentColor 28%, transparent);
   transform-origin: left center;
   pointer-events: none;

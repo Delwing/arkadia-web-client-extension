@@ -163,3 +163,28 @@ test.describe('plugin footer components in the footer settings', () => {
         await expect(chip(page), 'and it should still be shown').toBeVisible();
     });
 });
+
+test.describe('plugin footer components in the status line', () => {
+    // Plugin components (an animated companion, a smoking pipe) are drawn to spill
+    // out of their tile, up over the bind row even - nothing around them may clip.
+    test('are not clipped by the status line', async ({page}) => {
+        await page.goto('/');
+        await ensureGameSocket(page);
+        await waitForCommandInput(page);
+
+        await loadPlugin(page);
+        await expect(chip(page), 'plugin chip should be in the footer').toBeVisible();
+
+        const clipping = await chip(page).evaluate((el) => {
+            const found: string[] = [];
+            for (let node = el.parentElement; node && node.id !== 'char-state'; node = node.parentElement) {
+                const style = getComputedStyle(node);
+                if (style.overflowX !== 'visible' || style.overflowY !== 'visible') {
+                    found.push(`${node.tagName}.${node.className}`);
+                }
+            }
+            return found;
+        });
+        expect(clipping, 'no ancestor inside the status line clips it').toEqual([]);
+    });
+});

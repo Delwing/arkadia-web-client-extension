@@ -42,22 +42,30 @@ export default function StatusLine() {
   const chipsRef = useRef<HTMLDivElement>(null);
   const [hidden, setHidden] = useState(0);
   const [open, setOpen] = useState(false);
+  const openRef = useRef(open);
+  openRef.current = open;
 
-  // Count the chips that wrapped past the first line (the line is one chip tall and
-  // clips the rest). Chips come and go with the game, so watch the children too.
+  // Chips that wrapped past the first line are counted for "+N" and marked hidden.
+  // The row itself does not clip: a chip may draw outside its tile (a plugin's
+  // animated companion, smoke), up over the bind row even. Chips come and go with
+  // the game, so watch the children too.
+  const measureRef = useRef<() => void>(() => {});
   useLayoutEffect(() => {
     const row = chipsRef.current;
     if (!row) return;
     const measure = () => {
       const slots = Array.from(row.children) as HTMLElement[];
       const shown = slots.filter((slot) => slot.offsetWidth > 0);
-      if (shown.length === 0) {
-        setHidden(0);
-        return;
+      const firstTop = shown.length > 0 ? Math.min(...shown.map((slot) => slot.offsetTop)) : 0;
+      let wrapped = 0;
+      for (const slot of shown) {
+        const past = slot.offsetTop > firstTop + 2;
+        if (past) wrapped++;
+        slot.classList.toggle("is-wrapped", past && !openRef.current);
       }
-      const firstTop = Math.min(...shown.map((slot) => slot.offsetTop));
-      setHidden(shown.filter((slot) => slot.offsetTop > firstTop + 2).length);
+      setHidden(wrapped);
     };
+    measureRef.current = measure;
     measure();
     const resize = new ResizeObserver(measure);
     resize.observe(row);
@@ -68,6 +76,7 @@ export default function StatusLine() {
       mutation.disconnect();
     };
   }, []);
+  useLayoutEffect(() => measureRef.current(), [open]);
 
   return (
     <>
