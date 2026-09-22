@@ -206,7 +206,7 @@ test.describe('Footer on a wide screen', () => {
 });
 
 /**
- * The bind pills lead with "[ALT+1]", which is worth its width to a player who
+ * The bind pills lead with "ALT+1", which is worth its width to a player who
  * can press it and clutter to one who cannot. The hints follow a guess at
  * whether a keyboard is attached (@shared/dom/hardwareKeyboard), which on a
  * touch-only device starts at "no" and is revised by the first keystroke no
@@ -238,7 +238,7 @@ test.describe('Bind shortcut hints without a keyboard', () => {
 
         // Alt is both how a bind is fired and proof that a keyboard is present.
         await page.keyboard.press('Alt');
-        await expect(bind.locator('.multi-bind-key'), 'the hint is worth its width now').toHaveText('[ALT+1]');
+        await expect(bind.locator('.multi-bind-key'), 'the hint is worth its width now').toHaveText('ALT+1');
     });
 
     test('can be forced on from the settings', async ({page}) => {
@@ -255,6 +255,6 @@ test.describe('Bind shortcut hints without a keyboard', () => {
         await modal.locator(SETTINGS_SAVE).click();
         await expect(modal).not.toBeVisible();
 
-        await expect(hint).toHaveText('[ALT+1]');
+        await expect(hint).toHaveText('ALT+1');
     });
 });

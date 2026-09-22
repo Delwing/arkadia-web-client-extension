@@ -40,7 +40,7 @@ function getKeyHintMode(): string {
  *    `alwaysVisible`, so the row keeps a stable height (showing the placeholder
  *    when a room has no binds) and never shifts the plate.
  *
- * Each pill leads with its shortcut ("[ALT+1]"), which on a phone is a hint the
+ * Each pill leads with its shortcut key ("ALT+1"), which on a phone is a hint the
  * player cannot act on, eating the width the action text needs. So the hints are
  * dropped where no keyboard can be found (see @shared/dom/hardwareKeyboard - a
  * phone with a Bluetooth keyboard keeps them, and gets them back the moment it
@@ -118,7 +118,7 @@ export default function MultiBindStrip({
                 if (action) eventBus.emit("sendCommand", { command: bind.action });
               }}
             >
-              {showKeys && <span className="multi-bind-key">[{bind.label}]</span>}
+              {showKeys && <span className="multi-bind-key">{bind.label}</span>}
               <span className="multi-bind-action">{name || bind.action}</span>
             </button>
           );

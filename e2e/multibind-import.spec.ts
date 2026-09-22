@@ -112,9 +112,9 @@ test.describe('Multibind import', () => {
         await expect(multiBinds, 'should activate multi-bind list for current room').toHaveClass(/active/);
         const entries = multiBinds.locator('.multi-bind');
         await expect(entries, 'should render entries for current room').toHaveCount(2);
-        await expect(entries.nth(0), 'should display hotkey for first multibind').toContainText('[ALT+1]');
+        await expect(entries.nth(0), 'should display hotkey for first multibind').toContainText('ALT+1');
         await expect(entries.nth(0), 'should display action text for first multibind').toContainText('atak toporem');
-        await expect(entries.nth(1), 'should display hotkey for second multibind').toContainText('[ALT+2]');
+        await expect(entries.nth(1), 'should display hotkey for second multibind').toContainText('ALT+2');
         await expect(entries.nth(1), 'should display action text for second multibind').toContainText('osloń mnie');
 
         await submitCommand(page, '/ustaw 4')
@@ -129,9 +129,9 @@ test.describe('Multibind import', () => {
             return items.length >= 2 && items[items.length - 1]?.textContent?.includes('przyczaj sie');
         });
         await expect(entries, 'should append alias-created multibind for current room').toHaveCount(2);
-        await expect(entries.nth(0), 'should keep original multibind after alias creation').toContainText('[ALT+1]');
+        await expect(entries.nth(0), 'should keep original multibind after alias creation').toContainText('ALT+1');
         await expect(entries.nth(0), 'should keep action of original multibind after alias creation').toContainText('skradanie');
-        await expect(entries.nth(1), 'should assign next key to alias-created multibind').toContainText('[ALT+2]');
+        await expect(entries.nth(1), 'should assign next key to alias-created multibind').toContainText('ALT+2');
         await expect(entries.nth(1), 'should display action for alias-created multibind').toContainText('przyczaj sie');
 
         const aliasPattern = 'fooalias';
@@ -154,7 +154,7 @@ test.describe('Multibind import', () => {
         await expect(entries, 'should include alias multi-bind entry for current room').toHaveCount(3);
 
         const aliasBind = entries.nth(2);
-        await expect(aliasBind, 'should assign key to alias multi-bind entry').toContainText('[ALT+3]');
+        await expect(aliasBind, 'should assign key to alias multi-bind entry').toContainText('ALT+3');
         await expect(aliasBind, 'should list alias command for multi-bind entry').toContainText(aliasPattern);
 
         await page.evaluate(() => {

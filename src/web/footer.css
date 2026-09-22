@@ -1,0 +1,146 @@
+/* The footer bands above the command line: location binds, then the status line.
+   Markup: @web-ui/footer (MultiBindStrip, …). The phone layout reshapes them in
+   footerMobile.css. */
+:root {
+  /* Bind kinds, as the forge HUD colours them: the room's own bind, the drinkable
+     spot and the gate. Plain multibinds stay neutral. */
+  --footer-bind-room: #d9bf62;
+  --footer-bind-drink: #62b8be;
+  --footer-bind-gate: #d9855a;
+}
+
+/* -- location binds ------------------------------------------------------- */
+#multi-binds {
+  display: none;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-top: 1px solid var(--footer-border);
+  background-color: var(--footer-bg);
+  color: var(--footer-text);
+  font-family: var(--font-ui);
+  -webkit-user-select: none;
+  user-select: none;
+}
+#multi-binds.active {
+  display: flex;
+}
+
+/* A pill: the key as a keycap segment, then the action. */
+#multi-binds .multi-bind {
+  --bind-tone: var(--popup-border-strong);
+  display: inline-flex;
+  align-items: stretch;
+  min-width: 0;
+  min-height: 0;
+  height: 30px;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--bind-tone);
+  border-radius: 7px;
+  background-color: var(--popup-control-bg);
+  color: var(--popup-text);
+  font: inherit;
+  white-space: nowrap;
+  opacity: 1;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+  appearance: none;
+  -webkit-appearance: none;
+}
+#multi-binds .multi-bind:hover {
+  background-color: var(--popup-control-hover-bg);
+}
+#multi-binds .multi-bind:active {
+  transform: translateY(1px);
+}
+#multi-binds .multi-bind:focus-visible {
+  outline: 2px solid var(--popup-accent);
+  outline-offset: 2px;
+}
+#multi-binds .multi-bind:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+#multi-binds .multi-bind-key {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 8px;
+  border-right: 1px solid var(--bind-tone);
+  background-color: var(--popup-subtle-bg);
+  color: var(--popup-text-subtle);
+  font-family: var(--output-font-family);
+  font-size: 11.5px;
+}
+#multi-binds .multi-bind-action {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  padding: 0 11px;
+  overflow: hidden;
+  font-size: 13.5px;
+  text-overflow: ellipsis;
+}
+
+#multi-binds .multi-bind--room {
+  --bind-tone: color-mix(in srgb, var(--footer-bind-room) 50%, transparent);
+}
+#multi-binds .multi-bind--drink {
+  --bind-tone: color-mix(in srgb, var(--footer-bind-drink) 50%, transparent);
+}
+#multi-binds .multi-bind--gate {
+  --bind-tone: color-mix(in srgb, var(--footer-bind-gate) 50%, transparent);
+}
+#multi-binds .multi-bind--room .multi-bind-key {
+  background-color: color-mix(in srgb, var(--footer-bind-room) 12%, transparent);
+  color: var(--footer-bind-room);
+}
+#multi-binds .multi-bind--drink .multi-bind-key {
+  background-color: color-mix(in srgb, var(--footer-bind-drink) 12%, transparent);
+  color: var(--footer-bind-drink);
+}
+#multi-binds .multi-bind--gate .multi-bind-key {
+  background-color: color-mix(in srgb, var(--footer-bind-gate) 12%, transparent);
+  color: var(--footer-bind-gate);
+}
+/* Without a key segment the kind still shows, as a tinted fill. */
+#multi-binds .multi-bind--room:not(:has(.multi-bind-key)) {
+  background-color: color-mix(in srgb, var(--footer-bind-room) 10%, transparent);
+}
+#multi-binds .multi-bind--drink:not(:has(.multi-bind-key)) {
+  background-color: color-mix(in srgb, var(--footer-bind-drink) 10%, transparent);
+}
+#multi-binds .multi-bind--gate:not(:has(.multi-bind-key)) {
+  background-color: color-mix(in srgb, var(--footer-bind-gate) 10%, transparent);
+}
+
+/* Temporary binds (plugins, api.multibinds.addTemporary) are never saved: dashed. */
+#multi-binds .multi-bind.multi-bind--temporary {
+  border-style: dashed;
+}
+#multi-binds .multi-bind--temporary .multi-bind-key {
+  border-right-style: dashed;
+}
+/* A plugin asked to draw attention to this slot. */
+#multi-binds .multi-bind.multi-bind--highlight {
+  --bind-tone: var(--popup-accent);
+  box-shadow: 0 0 0 2px var(--popup-accent-subtle-bg);
+}
+
+#multi-binds .multi-bind-empty {
+  color: var(--popup-text-faint);
+  font-size: var(--ui-fs-sm, 13px);
+  font-style: italic;
+}
+
+/* Touch: pills are buttons to hit, not hints to read. */
+@media (pointer: coarse) {
+  #multi-binds .multi-bind {
+    height: 38px;
+  }
+  #multi-binds .multi-bind-action {
+    font-size: 14px;
+  }
+}
