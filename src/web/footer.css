@@ -18,8 +18,9 @@
   display: none;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
+  gap: 6px;
+  /* 1px border + 6px + a 26px pill + 6px: whole pixels (see the status line). */
+  padding: 6px 12px;
   border-top: 1px solid var(--footer-border);
   background-color: var(--footer-bg);
   color: var(--footer-text);
@@ -38,7 +39,7 @@
   align-items: stretch;
   min-width: 0;
   min-height: 0;
-  height: 30px;
+  height: 26px;
   margin: 0;
   padding: 0;
   overflow: hidden;
@@ -68,23 +69,28 @@
   opacity: 0.6;
   cursor: default;
 }
+/* Key and action on a whole-pixel line box, centred in the pill. */
 #multi-binds .multi-bind-key {
   display: inline-flex;
   align-items: center;
-  padding: 0 8px;
+  /* 2px on top moves the label down 1px: digits and caps have no descenders, so
+     centred they read high against the action text beside them. */
+  padding: 2px 7px 0;
+  line-height: 14px;
   border-right: 1px solid var(--bind-tone);
   background-color: var(--popup-subtle-bg);
   color: var(--popup-text-subtle);
   font-family: var(--output-font-family);
-  font-size: 11.5px;
+  font-size: 11px;
 }
 #multi-binds .multi-bind-action {
   display: inline-flex;
   align-items: center;
   min-width: 0;
-  padding: 0 11px;
+  padding: 0 10px;
   overflow: hidden;
-  font-size: 13.5px;
+  font-size: 13px;
+  line-height: 14px;
   text-overflow: ellipsis;
 }
 
@@ -142,14 +148,14 @@
 /* -- status line ----------------------------------------------------------
    Vitals | chips (urgent first, the rest behind "+N") | connection. */
 #char-state {
-  --chip-h: 26px;
+  --chip-h: 24px;
   display: flex;
   align-items: center;
   gap: 14px;
-  /* 1px border + 7px + a 26px chip + 7px: whole pixels, so text and icons centre
+  /* 1px border + 6px + a 24px chip + 6px: whole pixels, so text and icons centre
      on the same pixel (42 put every chip on a half pixel). */
-  min-height: 41px;
-  padding: 7px 12px;
+  min-height: 37px;
+  padding: 6px 12px;
   border-top: 1px solid var(--footer-border);
   background-color: var(--footer-bg);
   color: var(--footer-text);
@@ -220,7 +226,7 @@
 .vital__text {
   color: var(--vital-color);
   font-family: var(--output-font-family);
-  font-size: 12.5px;
+  font-size: 11.5px;
   font-variant-numeric: tabular-nums;
 }
 /* Pasek graficzny: a thin meter with the numbers over it. */
@@ -232,7 +238,7 @@
   align-items: center;
   justify-content: center;
   width: 72px;
-  height: calc(var(--chip-h) * 0.9);
+  height: calc(var(--chip-h) - 2px);
   overflow: hidden;
   border: 1px solid var(--popup-border-subtle);
   border-radius: 6px;
@@ -261,7 +267,7 @@
   align-items: center;
   gap: 6px;
   min-width: 0;
-  height: 26px;
+  height: var(--chip-h);
   overflow: hidden;
 }
 .status-chips.is-open {
@@ -288,7 +294,7 @@
   flex-shrink: 0;
   align-items: center;
   gap: 3px;
-  height: 26px;
+  height: var(--chip-h);
   min-width: 0;
   min-height: 0;
   margin: 0;
@@ -299,7 +305,7 @@
   color: var(--popup-text);
   font: inherit;
   font-family: var(--output-font-family);
-  font-size: 12.5px;
+  font-size: 11.5px;
   opacity: 1;
   cursor: pointer;
 }
@@ -331,7 +337,7 @@
   align-items: center;
   gap: 6px;
   max-width: 100%;
-  height: 26px;
+  height: var(--chip-h);
   min-width: 0;
   min-height: 0;
   margin: 0;
@@ -365,8 +371,8 @@
 #char-state .chip__ico svg,
 #char-state .chip > svg {
   display: block;
-  width: 14px;
-  height: 14px;
+  width: 13px;
+  height: 13px;
 }
 /* Label and value share a baseline (caps next to lowercase mono); the pair is
    centred against the icon as a block. */
@@ -380,7 +386,7 @@
 }
 #char-state .chip__lab {
   color: var(--popup-text-faint);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -389,7 +395,7 @@
   overflow: hidden;
   color: var(--popup-text);
   font-family: var(--output-font-family);
-  font-size: 12.5px;
+  font-size: 11.5px;
   text-overflow: ellipsis;
 }
 #char-state .chip--ok {
@@ -425,7 +431,7 @@
 /* Plugin items are the plugin's own markup; a dashed tile says so. */
 #char-state .footer-plugin-item {
   align-items: center;
-  height: 26px;
+  height: var(--chip-h);
   padding: 0 9px;
   border: 1px dashed var(--popup-border-strong);
   border-radius: 6px;
@@ -476,7 +482,7 @@
 /* Touch: pills are buttons to hit, not hints to read. */
 @media (pointer: coarse) {
   #multi-binds .multi-bind {
-    height: 38px;
+    height: 36px;
   }
   #multi-binds .multi-bind-action {
     font-size: 14px;

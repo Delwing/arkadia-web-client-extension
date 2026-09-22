@@ -200,20 +200,27 @@
 .command-field__ghost-rest {
   color: var(--popup-text-faint);
 }
+/* "Tab" and "uzupełnij" on one baseline; the pair is centred in the field. */
 .command-field__tab-hint {
   display: inline-flex;
-  align-items: center;
-  gap: 4px;
+  align-items: baseline;
+  gap: 5px;
+  line-height: 1;
 }
+/* A keycap: the thicker lower edge is a shadow, so the label stays centred in the box. */
 .command-field__tab-hint kbd {
-  padding: 1px 5px;
+  display: inline-flex;
+  align-items: center;
+  height: 16px;
+  padding: 0 5px;
   border: 1px solid var(--popup-border-control);
-  border-bottom-width: 2px;
   border-radius: 4px;
+  box-shadow: 0 1px 0 var(--popup-border-control);
   background: transparent;
   color: var(--popup-text-subtle);
   font-family: var(--output-font-family);
   font-size: 10.5px;
+  line-height: 1;
 }
 
 /* Password mode: a lock instead of the prompt, the field tinted amber. */

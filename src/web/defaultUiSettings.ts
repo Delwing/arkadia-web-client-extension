@@ -49,6 +49,7 @@ export const defaultChromeSettings: ChromeSettings = {
     objectsFontSize: 0.6,
     showButtons: true,
     showVoiceButton: true,
+    tabCompletionHint: true,
     mapHeight: typeof window !== 'undefined' && window.innerWidth < 768 ? 25 : 30,
     mapPosition: 'top-overlay',
     footerMode: 4, // 4 = Kafelki (pips); 0-3 = Liczbowy, Pasek, Pasek jednolity, Pasek graficzny

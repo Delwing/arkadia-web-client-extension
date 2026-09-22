@@ -40,13 +40,13 @@
   }
   body[data-mobile-footer="1"] .status-chips {
     justify-content: flex-end;
-    height: 24px;
+    height: var(--chip-h);
   }
   body[data-mobile-footer="1"] #char-state {
-    --chip-h: 24px;
+    --chip-h: 22px;
   }
   body[data-mobile-footer="1"] #char-state .chip {
-    height: 24px;
+    height: var(--chip-h);
   }
   /* The expander does what "+N" does on a desktop. */
   body[data-mobile-footer="1"] .status-more,

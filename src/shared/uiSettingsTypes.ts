@@ -135,6 +135,8 @@ export interface ChromeSettings extends DeviceViewSettings {
     showButtons: boolean;
     /** Mic button in the command bar. Off leaves the bar without dictation. */
     showVoiceButton: boolean;
+    /** Dimmed hint after the caret of what Tab would complete. */
+    tabCompletionHint: boolean;
     mapHeight: number;
     mapPosition: MapPosition;
     footerMode: number;

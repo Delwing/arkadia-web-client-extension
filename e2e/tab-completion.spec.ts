@@ -1,5 +1,6 @@
 import {expect, test} from './support/fixtures';
 import type {Page} from '@playwright/test';
+import {openSettings, saveSettings} from './support/settings';
 import {
     ensureGameSocket,
     waitForCommandInput,
@@ -244,8 +245,36 @@ test.describe('Tab completion hint', () => {
         await expect(page.locator('.command-field__tab-hint')).toBeVisible();
         await expect(page.locator('#message-input'), 'the hint is not typed into the line').toHaveValue('wejdz na st');
 
+        // Typing along the hinted word keeps the hint on screen, one letter shorter.
+        await page.keyboard.type('a');
+        const rest = await page.locator('.command-field__ghost-rest').textContent({timeout: 50});
+        expect(rest, 'no blink while typing along the hint').toBe('tek');
+
         await page.keyboard.press('Tab');
         await expect(page.locator('#message-input')).toHaveValue('wejdz na statek');
         await expect(page.locator('.command-field__ghost'), 'nothing more to hint mid-cycle').toHaveCount(0);
+    });
+});
+
+test.describe('Tab completion hint setting', () => {
+    test('switched off, no hint is shown but Tab still completes', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+
+        const modal = await openSettings(page, 'ui-commands');
+        await modal.locator('#ui-tab-completion-hint').uncheck();
+        await saveSettings(page);
+
+        await pushText(page, 'Przy najdalszym pomoscie cumuje szeroki statek handlowy.');
+        await page.fill('#message-input', 'wejdz na st');
+        await page.focus('#message-input');
+        // Longer than the hint's own delay.
+        await page.waitForTimeout(400);
+        await expect(page.locator('.command-field__ghost')).toHaveCount(0);
+        await expect(page.locator('.command-field__tab-hint')).toHaveCount(0);
+
+        await page.keyboard.press('Tab');
+        await expect(page.locator('#message-input')).toHaveValue('wejdz na statek');
     });
 });

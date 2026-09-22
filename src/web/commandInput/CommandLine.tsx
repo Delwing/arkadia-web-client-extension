@@ -19,6 +19,10 @@ function showVoiceSetting(): boolean {
   return globalStorage.get("uiSettings")?.showVoiceButton !== false;
 }
 
+function tabHintSetting(): boolean {
+  return globalStorage.get("uiSettings")?.tabCompletionHint !== false;
+}
+
 function formatTime(ms: number): string {
   return new Date(ms).toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit" });
 }
@@ -73,27 +77,53 @@ export default function CommandLine({ deps }: { deps: CommandLineDeps }) {
     };
   }, []);
 
-  // What Tab would complete, shown after the caret. Only with a keyboard to press
-  // Tab on, with the caret at the end of a one-line command and nothing selected;
-  // worked out a beat after typing stops, since it reads the output's words.
+  // What Tab would complete, shown after the caret (Ustawienia → Komendy). Only with
+  // a keyboard to press Tab on, with the caret at the end of a one-line command and
+  // nothing selected; worked out a beat after typing stops, since it reads the
+  // output's words.
   const hardwareKeyboard = useHardwareKeyboard();
+  const [tabHint, setTabHint] = useState(tabHintSetting);
   const [ghost, setGhost] = useState<{ text: string; suffix: string } | null>(null);
   useEffect(() => {
     const input = inputRef.current;
-    if (!input || !hardwareKeyboard) {
+    if (!input || !hardwareKeyboard || !tabHint) {
       setGhost(null);
       return;
     }
     let timer: number | undefined;
+    const eligible = () => {
+      const text = input.value;
+      return document.activeElement === input
+        && input.selectionStart === text.length && input.selectionEnd === text.length
+        && !text.includes("\n");
+    };
     const update = () => {
       window.clearTimeout(timer);
-      setGhost(null);
+      if (!eligible()) {
+        setGhost(null);
+        return;
+      }
+      // Right away, without a flicker: typing along the hinted word just eats into
+      // the hint; anything else drops it until the lookup below says otherwise.
+      const text = input.value;
+      setGhost((prev) => {
+        if (!prev || prev.text === text) return prev;
+        if (text.startsWith(prev.text)) {
+          const typed = text.slice(prev.text.length);
+          if (typed.length < prev.suffix.length && prev.suffix.toLowerCase().startsWith(typed.toLowerCase())) {
+            return { text, suffix: prev.suffix.slice(typed.length) };
+          }
+        }
+        return null;
+      });
       timer = window.setTimeout(() => {
-        const text = input.value;
-        const atEnd = input.selectionStart === text.length && input.selectionEnd === text.length;
-        if (document.activeElement !== input || !atEnd || text.includes("\n")) return;
+        if (!eligible()) return;
+        const current = input.value;
         const suffix = controllerRef.current?.peekTabCompletion();
-        setGhost(suffix ? { text, suffix } : null);
+        setGhost((prev) => {
+          if (!suffix) return null;
+          return prev && prev.text === current && prev.suffix === suffix ? prev : { text: current, suffix };
+        });
       }, 120);
     };
     const clear = () => {
@@ -111,7 +141,7 @@ export default function CommandLine({ deps }: { deps: CommandLineDeps }) {
       input.removeEventListener("focus", update);
       input.removeEventListener("blur", clear);
     };
-  }, [hardwareKeyboard]);
+  }, [hardwareKeyboard, tabHint]);
 
   // The server asks for a password by taking echo away.
   useEffect(() => eventBus.on("telnet.echo", (echoing: boolean) => setPasswordMode(echoing)), []);
@@ -126,6 +156,7 @@ export default function CommandLine({ deps }: { deps: CommandLineDeps }) {
 
   useEffect(() => globalStorage.onChange("uiSettings", (next) => {
     if (next && "showVoiceButton" in next) setShowVoice(next.showVoiceButton !== false);
+    if (next && "tabCompletionHint" in next) setTabHint(next.tabCompletionHint !== false);
   }), []);
 
   // Turning the button off detaches the recogniser entirely rather than just hiding
