@@ -463,6 +463,21 @@ body.layout-manager-enabled .compass-rose-box {
   overflow: auto;
 }
 
+/* The two wrappers a plugin's popup content is mounted in fill the body, so
+   the plugin's own root can take height: 100% and fill the window instead of
+   collapsing to its content. The inner one stays a block: the content may be
+   loose HTML or a fragment, which a flex box would stack item by item. */
+.plugin-popup-content {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+.plugin-popup-content__body {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
 /* ============================================
    Floating Panel Popup Styles
    ============================================ */

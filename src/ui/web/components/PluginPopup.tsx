@@ -99,11 +99,11 @@ export function PluginPopup({
             className="plugin-window"
             bodyClassName="plugin-window-body"
         >
-            <div ref={containerRef}>
+            <div ref={containerRef} className="plugin-popup-content">
                 {typeof body === 'string' ? (
-                    <div dangerouslySetInnerHTML={{ __html: body }} />
+                    <div className="plugin-popup-content__body" dangerouslySetInnerHTML={{ __html: body }} />
                 ) : (
-                    <div ref={(el) => {
+                    <div className="plugin-popup-content__body" ref={(el) => {
                         if (el && body instanceof Node) {
                             el.innerHTML = '';
                             el.appendChild(body);
