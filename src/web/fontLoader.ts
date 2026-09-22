@@ -1,6 +1,7 @@
-export type UiFontSelection = 'default' | 'fira-code' | 'jetbrains-mono' | 'cascadia-mono' | 'custom';
+export type UiFontSelection = 'default' | 'fira-code' | 'jetbrains-mono' | 'cascadia-mono' | 'vera-sans-mono' | 'custom';
 
-const fontStylesheets: Record<'fira-code' | 'jetbrains-mono' | 'cascadia-mono', string> = {
+// Bitstream Vera Sans Mono is self-hosted (fonts/vera-sans-mono.css), so it has no stylesheet here.
+const fontStylesheets: Partial<Record<UiFontSelection, string>> = {
     'fira-code': 'https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&display=swap',
     'jetbrains-mono': 'https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&display=swap',
     'cascadia-mono': 'https://fonts.googleapis.com/css2?family=Cascadia+Mono:wght@400;500;600;700&display=swap',
@@ -13,6 +14,7 @@ export function isUiFontSelection(value: unknown): value is UiFontSelection {
         || value === 'fira-code'
         || value === 'jetbrains-mono'
         || value === 'cascadia-mono'
+        || value === 'vera-sans-mono'
         || value === 'custom';
 }
 
@@ -70,6 +72,8 @@ export function resolveOutputFontFamily(selection: UiFontSelection, customFontFa
         return '"JetBrains Mono", monospace';
     case 'cascadia-mono':
         return '"Cascadia Mono", monospace';
+    case 'vera-sans-mono':
+        return '"Bitstream Vera Sans Mono", monospace';
     case 'custom': {
         const trimmed = customFontFamily.trim();
         if (!trimmed) {

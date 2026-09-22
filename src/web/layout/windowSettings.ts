@@ -83,13 +83,14 @@ export type WindowSettingField = WindowToggleField | WindowSelectField | WindowN
 export const WINDOW_FONT_SIZE_KEY = 'window.fontSize';
 export const WINDOW_FONT_FAMILY_KEY = 'window.fontFamily';
 
-export type WindowFontFamily = 'default' | 'fira-code' | 'jetbrains-mono' | 'cascadia-mono';
+export type WindowFontFamily = 'default' | 'fira-code' | 'jetbrains-mono' | 'cascadia-mono' | 'vera-sans-mono';
 
 export const WINDOW_FONT_FAMILY_OPTIONS: { value: WindowFontFamily; label: string }[] = [
   { value: 'default', label: 'Systemowa monospace' },
   { value: 'fira-code', label: 'Fira Code' },
   { value: 'jetbrains-mono', label: 'JetBrains Mono' },
   { value: 'cascadia-mono', label: 'Cascadia Mono' },
+  { value: 'vera-sans-mono', label: 'Bitstream Vera Sans Mono' },
 ];
 
 export const WINDOW_FONT_SIZE_MIN = 0.3;

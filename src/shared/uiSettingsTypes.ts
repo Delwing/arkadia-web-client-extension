@@ -12,7 +12,7 @@ export type SoundCategories = Partial<Record<SoundCategory, string | null>>;
 
 export type MapPosition = 'top-overlay' | 'bottom-overlay' | 'right-overlay' | 'left-overlay' | 'top' | 'bottom' | 'right' | 'left';
 
-export type UiFontSelection = 'default' | 'fira-code' | 'jetbrains-mono' | 'cascadia-mono' | 'custom';
+export type UiFontSelection = 'default' | 'fira-code' | 'jetbrains-mono' | 'cascadia-mono' | 'vera-sans-mono' | 'custom';
 
 export type MapRoomShape = 'rectangle' | 'circle' | 'roundedRectangle';
 

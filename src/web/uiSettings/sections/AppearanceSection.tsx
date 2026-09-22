@@ -84,6 +84,7 @@ function AppearanceSection({ draft, update, commitCustomDark }: AppearanceSectio
                 <option value="fira-code">Fira Code</option>
                 <option value="jetbrains-mono">JetBrains Mono</option>
                 <option value="cascadia-mono">Cascadia Mono</option>
+                <option value="vera-sans-mono">Bitstream Vera Sans Mono</option>
                 <option value="custom">Własna (link)</option>
             </SelectField>
             {isCustomFont && (
