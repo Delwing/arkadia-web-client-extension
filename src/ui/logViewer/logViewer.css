@@ -524,6 +524,9 @@
     flex-grow: 1;
     min-height: 0;
     overflow: auto;
+    /* The scrollbar coming and going must not change the text column's width:
+       that re-wraps lines, which can take the scrollbar away again. */
+    scrollbar-gutter: stable;
     padding: var(--lv-space-3) 0;
     /* The game window's own background: the one the session was recorded with
        (`--lv-bg-log`, set by the pane), else the client's current one. The

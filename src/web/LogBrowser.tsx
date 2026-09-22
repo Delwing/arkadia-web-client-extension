@@ -78,7 +78,14 @@ export function LogBrowser({ headerTrailing, initialQuery }: LogBrowserProps) {
             // virtualizer for no gain. The session still being written to is
             // marked live all the same — that is what opens it at its end
             // rather than at the top, which is where a player wants to land.
-            const loaded = await loadAllSessions({ liveSessionName: currentSessionName });
+            // The session being recorded opens first; older ones join the
+            // list as they are parsed.
+            const loaded = await loadAllSessions(
+                { liveSessionName: currentSessionName, priority: [currentSessionName] },
+                (partial) => {
+                    if (!cancelled) setSessions(partial);
+                },
+            );
             if (!cancelled) setSessions(loaded);
         })();
         return () => {

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
     MAX_MATCHES_PER_LINE,
     countMatches,
+    findLineHits,
     makeMatcher,
     normalizeMatchIndex,
     splitMatches,
@@ -81,5 +82,45 @@ describe("normalizeMatchIndex", () => {
 
     it("is zero when there is nothing to point at", () => {
         expect(normalizeMatchIndex(3, 0)).toBe(0);
+    });
+});
+
+describe("findLineHits", () => {
+    const lines = (...texts: string[]) =>
+        texts.map((text, index) => ({ number: index + 1, timestamp: 0, channel: "other" as const, text }));
+
+    it("finds a plain query on the lines holding it, counted per line", () => {
+        const log = lines("Krasnolud mowi", "nic", "krasnolud i KRASNOLUD");
+        const matcher = makeMatcher("krasnolud", { regex: false, caseSensitive: false });
+        expect(findLineHits(log, "krasnolud", { regex: false, caseSensitive: false }, matcher.regex!)).toEqual([
+            { line: 0, count: 1 },
+            { line: 2, count: 2 },
+        ]);
+    });
+
+    it("respects case when asked, and never matches across a line break", () => {
+        const log = lines("ab", "cAB");
+        const sensitive = makeMatcher("AB", { regex: false, caseSensitive: true });
+        expect(findLineHits(log, "AB", { regex: false, caseSensitive: true }, sensitive.regex!)).toEqual([{ line: 1, count: 1 }]);
+        const across = makeMatcher("bc", { regex: false, caseSensitive: false });
+        expect(findLineHits(log, "bc", { regex: false, caseSensitive: false }, across.regex!)).toEqual([]);
+    });
+
+    it("runs a regular expression line by line, so ^ is the start of a line", () => {
+        const log = lines("ala ma kota", "ma ala");
+        const matcher = makeMatcher("^ma", { regex: true, caseSensitive: false });
+        expect(findLineHits(log, "^ma", { regex: true, caseSensitive: false }, matcher.regex!)).toEqual([{ line: 1, count: 1 }]);
+    });
+
+    it("agrees with countMatches on the same log", () => {
+        const log = lines("x".repeat(5), "xx yy xx", "");
+        const matcher = makeMatcher("xx", { regex: false, caseSensitive: false });
+        const hits = findLineHits(log, "xx", { regex: false, caseSensitive: false }, matcher.regex!);
+        expect(hits).toEqual(
+            log.flatMap((line, index) => {
+                const count = countMatches(line.text, matcher.regex!);
+                return count ? [{ line: index, count }] : [];
+            }),
+        );
     });
 });

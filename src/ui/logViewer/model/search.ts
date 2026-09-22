@@ -6,6 +6,7 @@
  * scope calls it once per session. Keeping it free of React makes both cheap to
  * test and cheap to move to a worker later.
  */
+import type { LogLine } from "./types";
 
 export interface Matcher {
     regex: RegExp | null;
@@ -84,6 +85,106 @@ export function countMatches(text: string, regex: RegExp): number {
         if (count >= MAX_MATCHES_PER_LINE) break;
     }
     return count;
+}
+
+/** A line with matches on it: its index in the session and how many. */
+export interface LineHit {
+    line: number;
+    count: number;
+}
+
+/** A session's text joined into one string, for native `indexOf` over all of it. */
+interface TextIndex {
+    exact: string;
+    /** Null when lowering changed the length, so offsets would not line up. */
+    lower: string | null;
+    /** Where each line starts in the joined text. */
+    starts: number[];
+}
+
+// Keyed by the lines array: a session's lines never change once loaded, and a
+// reloaded live session comes with a new array.
+const textIndexes = new WeakMap<readonly LogLine[], TextIndex>();
+const hitCache = new WeakMap<readonly LogLine[], { key: string; hits: LineHit[] }>();
+
+function textIndex(lines: readonly LogLine[]): TextIndex {
+    const known = textIndexes.get(lines);
+    if (known) return known;
+    const starts = new Array<number>(lines.length);
+    const texts = new Array<string>(lines.length);
+    let offset = 0;
+    for (let index = 0; index < lines.length; index += 1) {
+        starts[index] = offset;
+        texts[index] = lines[index].text;
+        offset += lines[index].text.length + 1;
+    }
+    const exact = texts.join("\n");
+    const lowered = exact.toLowerCase();
+    const built = { exact, lower: lowered.length === exact.length ? lowered : null, starts };
+    textIndexes.set(lines, built);
+    return built;
+}
+
+/** The line holding `position` in the joined text. */
+function lineAt(starts: number[], position: number): number {
+    let low = 0;
+    let high = starts.length - 1;
+    while (low < high) {
+        const middle = (low + high + 1) >> 1;
+        if (starts[middle] <= position) low = middle;
+        else high = middle - 1;
+    }
+    return low;
+}
+
+/**
+ * Every line of a session that the query matches, in order.
+ *
+ * A plain query is found with `indexOf` over the session's joined text, which
+ * is many times faster than running a regex line by line; a regular expression
+ * still goes line by line, so `^` and `$` keep meaning the line's ends. The
+ * result is kept per session until the query or its flags change, so moving
+ * between matches, scrolling or filtering channels does not search again.
+ */
+export function findLineHits(
+    lines: readonly LogLine[],
+    query: string,
+    options: { regex: boolean; caseSensitive: boolean },
+    regex: RegExp,
+): LineHit[] {
+    const key = `${options.regex ? "r" : "p"}${options.caseSensitive ? "c" : "i"}:${query}`;
+    const cached = hitCache.get(lines);
+    if (cached && cached.key === key) return cached.hits;
+
+    const hits: LineHit[] = [];
+    const index = !options.regex && query && !query.includes("\n") ? textIndex(lines) : null;
+    const haystack = index ? (options.caseSensitive ? index.exact : index.lower) : null;
+    if (index && haystack !== null) {
+        const needle = options.caseSensitive ? query : query.toLowerCase();
+        let from = 0;
+        let current = -1;
+        let count = 0;
+        for (;;) {
+            const at = haystack.indexOf(needle, from);
+            if (at === -1) break;
+            const line = lineAt(index.starts, at);
+            if (line !== current) {
+                if (current !== -1) hits.push({ line: current, count });
+                current = line;
+                count = 0;
+            }
+            if (count < MAX_MATCHES_PER_LINE) count += 1;
+            from = at + needle.length;
+        }
+        if (current !== -1) hits.push({ line: current, count });
+    } else {
+        for (let line = 0; line < lines.length; line += 1) {
+            const count = countMatches(lines[line].text, regex);
+            if (count > 0) hits.push({ line, count });
+        }
+    }
+    hitCache.set(lines, { key, hits });
+    return hits;
 }
 
 /**
