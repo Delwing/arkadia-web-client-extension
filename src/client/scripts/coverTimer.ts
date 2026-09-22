@@ -26,6 +26,8 @@ export default function initCoverTimer(client: Client) {
         const left = end - Date.now();
         if (left <= 0) {
             stopTimer();
+            // One-shot for user triggers; `coverTimer` itself ticks every 100ms.
+            client.sendEvent('cover.ready');
         } else {
             client.sendEvent('coverTimer', left / 1000);
         }
@@ -36,6 +38,7 @@ export default function initCoverTimer(client: Client) {
         if (timer != null) {
             clearInterval(timer);
         }
+        client.sendEvent('cover.start');
         update();
         timer = window.setInterval(update, 100);
     }

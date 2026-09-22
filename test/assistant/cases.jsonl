@@ -53,7 +53,7 @@
 {"id":"trig-002","question":"Zagraj dzwiek gdy zlowie rybe.","expect":{"kind":"trigger","keyOrPattern":"beep","mustMentionDoc":"docs/ALIASES.md#Lowienie ryb"},"notes":"Makro beep, trigger tekstowy."}
 {"id":"trig-003","question":"Chce dzwiek za kazdym razem gdy zabije wroga.","expect":{"kind":"trigger","keyOrPattern":"enemyKilled"},"notes":"To jest przypadek na trigger zdarzeniowy - event enemyKilled, nie regex na tekst."}
 {"id":"trig-004","question":"Powiadom mnie gdy skonczy sie walka.","expect":{"kind":"trigger","keyOrPattern":"combatState:false"},"notes":"Event z wartoscia. Model musi uzyc dokladnie tego identyfikatora."}
-{"id":"trig-005","question":"Daj mi znac gdy timer zaskoczenia sie skonczy.","expect":{"kind":"trigger","keyOrPattern":"zaskTimer"},"notes":"Event zaskTimer. Makro notify na triggerze zdarzeniowym wymaga pola message."}
+{"id":"trig-005","question":"Daj mi znac gdy timer zaskoczenia sie skonczy.","expect":{"kind":"trigger","keyOrPattern":"zask.ready"},"notes":"Event zask.ready. Makro notify na triggerze zdarzeniowym wymaga pola message."}
 {"id":"trig-006","question":"Ukryj spam o tym ze cos spada na ziemie.","expect":{"kind":"trigger","keyOrPattern":"replace"},"notes":"Makro replace z pustym 'to'. Walidator dopuszcza pusty tekst zamiany."}
 {"id":"trig-007","question":"Napisz mi trigger na linie 'Zwaliles zmije z nog.' zeby migala.","expect":{"kind":"trigger","keyOrPattern":"[Zz]wali"},"notes":"Wzorzec musi byc ASCII - gra nie wysyla polskich znakow. Makro slowBlink lub rapidBlink."}
 {"id":"trig-008","question":"Gdy ktos w druzynie ma malo zycia, wyswietl powiadomienie.","expect":{"kind":"trigger","keyOrPattern":"notify"},"notes":"Trigger tekstowy z makrem notify."}

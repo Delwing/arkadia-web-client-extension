@@ -4,6 +4,26 @@ export interface TransportTimerPayload {
     total: number | null;
 }
 
+/**
+ * Seconds left on a leg below which the arrival counts as imminent: the footer
+ * chip turns red and `transport.approaching` fires. One constant so the trigger
+ * fires exactly when the player sees the chip change colour.
+ */
+export const TRANSPORT_SOON_SECONDS = 10;
+
+/** Payload of the transport trigger events (`transport.stop`, `transport.destination`...). */
+export interface TransportStopEventPayload {
+    /** Transport name, e.g. "Statek Nuln - Kraina Zgromadzenia". */
+    transport: string;
+    /** Label of the stop reached (or, for `approaching`, about to be reached). */
+    stop: string;
+}
+
+export interface TransportApproachingPayload extends TransportStopEventPayload {
+    /** Whole seconds left on the leg when the event fired. */
+    remaining: number;
+}
+
 export interface TransportRouteStop {
     label: string;
     durationSeconds: number | null;

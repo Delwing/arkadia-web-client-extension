@@ -51,6 +51,17 @@ describe('cover timer', () => {
     expect(coverEvents().at(-1)?.[1]).toBeNull();
   });
 
+  test('fires cover.start and a single cover.ready for user triggers', () => {
+    const oneShots = () => client.sendEvent.mock.calls
+      .map(call => call[0])
+      .filter(name => name === 'cover.start' || name === 'cover.ready');
+    client.emit('maneuverAttempted');
+    expect(oneShots()).toEqual(['cover.start']);
+
+    jest.advanceTimersByTime(6000);
+    expect(oneShots()).toEqual(['cover.start', 'cover.ready']);
+  });
+
   test('restarts the countdown when the event fires again', () => {
     client.emit('maneuverAttempted');
     jest.advanceTimersByTime(4000);

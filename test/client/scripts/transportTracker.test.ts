@@ -2,6 +2,7 @@ import initTransportTracker from '@client/scripts/transportTracker';
 import Triggers from '@client/Triggers';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 import { characterStorage } from '@modules/core/storage';
+import { setGmcp } from '@client/gmcp';
 import { EventEmitter } from 'events';
 
 class FakeClient {
@@ -11,6 +12,8 @@ class FakeClient {
   carriageMode = false;
   println = jest.fn();
   sendCommand = jest.fn();
+  now = () => Date.now();
+  Map = { setMapRoomById: jest.fn() };
   teammates: { num: number; desc?: string }[] = [];
   TeamManager = {
     getTeamObjectsOnLocation: () => this.teammates,
@@ -137,5 +140,105 @@ describe('transport journey as a wagon passenger', () => {
     client.sendEvent('enterLocation', { id: 1 });
     parse('Wraz z Vesper wjezdzasz elegancka drewniana bryczka na poklad wielkiej galery.');
     expect(onBoard()).toEqual([]);
+  });
+});
+
+describe('transport trigger events', () => {
+  let client: FakeClient;
+  let parse: (line: string, type?: string) => AnsiAwareBuffer | null;
+  const events = (name: string) => client.sendEvent.mock.calls.filter(c => c[0] === name).map(c => c[1]);
+  const shout = (where: string) =>
+    parse(`Ancelmus krzyczy: Doplynelismy do ${where}! Mozna wysiadac!`);
+
+  // Board Ancelmus at Blekitna Wstega (6429) and sail: the first leg (43s) ends in Kraina Zgromadzenia.
+  // The bell can only be rung once aboard - the popup has no route to click before that.
+  const boardAndDepart = (bell?: string) => {
+    client.sendEvent('enterLocation', { id: 6429 });
+    client.sendEvent('command', 'wsiadz na statek');
+    parse('Wchodzisz na wielka galere.');
+    if (bell) client.sendEvent('transport.target', bell);
+    setGmcp('room.info', {});
+    parse('Galera odbija od brzegu.');
+  };
+
+  beforeEach(() => {
+    jest.useFakeTimers();
+    localStorage.clear();
+    characterStorage.setCharacter('TestChar');
+    setGmcp('room.info', {});
+    client = new FakeClient();
+    initTransportTracker((client as unknown) as any);
+    parse = (line: string, type = '') =>
+      Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), type);
+  });
+
+  afterEach(() => {
+    jest.clearAllTimers();
+    jest.useRealTimers();
+  });
+
+  test('a stop on board fires transport.stop, but not transport.destination without a bell', () => {
+    boardAndDepart();
+    shout('przystani w Krainie Zgromadzenia');
+
+    expect(events('transport.stop')).toEqual([
+      { transport: 'Blekitna Wstega - Kreutzhofen', stop: 'Kraina Zgromadzenia' },
+    ]);
+    expect(events('transport.destination')).toEqual([]);
+  });
+
+  test('the bell destination fires transport.destination only at that stop', () => {
+    boardAndDepart('Nuln');
+    shout('przystani w Krainie Zgromadzenia');
+    expect(events('transport.destination')).toEqual([]);
+
+    parse('Galera odbija od brzegu.');
+    shout('wschodniego nabrzeza w Nuln');
+    expect(events('transport.destination')).toEqual([
+      { transport: 'Blekitna Wstega - Kreutzhofen', stop: 'Nuln' },
+    ]);
+  });
+
+  test('approaching fires once per leg when under the red threshold', () => {
+    boardAndDepart('Kraina Zgromadzenia');
+
+    jest.advanceTimersByTime(32_000);
+    expect(events('transport.approaching')).toEqual([]);
+
+    jest.advanceTimersByTime(2_000);
+    expect(events('transport.approaching')).toEqual([
+      { transport: 'Blekitna Wstega - Kreutzhofen', stop: 'Kraina Zgromadzenia', remaining: 10 },
+    ]);
+    expect(events('transport.approachingDestination')).toHaveLength(1);
+
+    jest.advanceTimersByTime(8_000);
+    expect(events('transport.approaching')).toHaveLength(1);
+  });
+
+  test('approachingDestination stays quiet on legs not ending at the bell', () => {
+    boardAndDepart('Nuln');
+    jest.advanceTimersByTime(40_000);
+    expect(events('transport.approaching')).toHaveLength(1);
+    expect(events('transport.approachingDestination')).toEqual([]);
+  });
+
+  test('the bell is forgotten when the journey ends', () => {
+    boardAndDepart('Kraina Zgromadzenia');
+    parse('Schodzisz z galery.');
+
+    boardAndDepart();
+    shout('przystani w Krainie Zgromadzenia');
+    expect(events('transport.destination')).toEqual([]);
+  });
+
+  test('waiting at the dock, the ship pulling in fires transport.arrived', () => {
+    setGmcp('room.info', { map: {} });
+    client.sendEvent('enterLocation', { id: 6429 });
+    shout('przystani na Blekitnej Wstedze');
+
+    expect(events('transport.arrived')).toEqual([
+      { transport: 'Blekitna Wstega - Kreutzhofen', stop: 'Blekitna Wstega' },
+    ]);
+    expect(events('transport.stop')).toEqual([]);
   });
 });
