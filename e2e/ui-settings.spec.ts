@@ -319,6 +319,39 @@ test.describe('UI settings', () => {
         ).not.toBeChecked();
     });
 
+    // "Wlasny dzwiek beep" quietly took the place of "Domyslny beep" everywhere,
+    // with nothing on screen saying so.
+    test('the custom beep says it replaces the default, and can be put back', async ({page}) => {
+        await page.addInitScript(() => {
+            localStorage.setItem('custom_sounds', JSON.stringify([
+                {key: 'user:dzwonek', name: 'Dzwonek', data: 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAABErAAABAAgAZGF0YQAAAAA='},
+            ]));
+        });
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+
+        const modal = await openUiSettings(page, 'ui-sound');
+        const beep = modal.locator('#ui-custom-beep-sound');
+        const attackCategory = modal.locator('#ui-sound-category-attack');
+        const reset = modal.locator('#ui-reset-beep-sound');
+
+        await expect(modal.locator('.popup-field__hint', {hasText: 'Zastępuje domyślny beep'}),
+            'the field says what it does').toBeVisible();
+        await expect(attackCategory.locator('option[value=""]')).toHaveText('Domyślny beep');
+        await expect(reset, 'nothing to put back while the default is in place').toHaveCount(0);
+
+        await beep.selectOption('user:dzwonek');
+        await expect(attackCategory.locator('option[value=""]'),
+            'the categories name what "Domyslny beep" now plays').toHaveText('Domyślny beep (Dzwonek)');
+        await expect(reset).toBeVisible();
+
+        await reset.click();
+        await expect(beep).toHaveValue('');
+        await expect(attackCategory.locator('option[value=""]')).toHaveText('Domyślny beep');
+        await expect(reset).toHaveCount(0);
+    });
+
     // The sound manager is a sub-dialog opened from inside the Bootstrap-driven
     // #settings-modal. Rendering it as a portaled react-bootstrap <Modal> made
     // Bootstrap's FocusTrap and react-overlays' enforceFocus bounce focus between

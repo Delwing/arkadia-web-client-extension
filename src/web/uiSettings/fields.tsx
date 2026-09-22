@@ -36,11 +36,11 @@ export function CheckboxRow({ id, label, checked, onChange, disabled, className 
     );
 }
 
-export function SelectField({ id, label, value, onChange, disabled, children }: {
-    id: string; label?: ReactNode; value: string; onChange: (value: string) => void; disabled?: boolean; children: ReactNode;
+export function SelectField({ id, label, hint, value, onChange, disabled, children }: {
+    id: string; label?: ReactNode; hint?: ReactNode; value: string; onChange: (value: string) => void; disabled?: boolean; children: ReactNode;
 }) {
     return (
-        <Field label={label} htmlFor={id}>
+        <Field label={label} hint={hint} htmlFor={id}>
             <Select id={id} className="settings-narrow" value={value} disabled={disabled} onChange={(e) => onChange(e.target.value)}>
                 {children}
             </Select>
