@@ -33,6 +33,22 @@ test.describe('Mobile buttons sizing and gap', () => {
         await page.setViewportSize({ width: 1280, height: 900 });
     });
 
+    test('the mode tabs show one preview at a time', async ({ page }) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+        const modal = await openMobileButtonsSettings(page);
+        const previews = page.locator('.mobile-direction-buttons.preview');
+
+        await expect(page.locator('#mobile-buttons-preview-solo')).toBeVisible();
+        await expect(previews.filter({ visible: true }), 'only the solo preview shows').toHaveCount(1);
+
+        await modal.locator('.dialog-tab', { hasText: 'W druzynie' }).click();
+        await expect(page.locator('#mobile-buttons-preview-team')).toBeVisible();
+        await expect(page.locator('#mobile-buttons-preview-solo')).toBeHidden();
+        await expect(previews.filter({ visible: true }), 'only the team preview shows').toHaveCount(1);
+    });
+
     test('should configure button size via slider', async ({ page }) => {
         await page.goto('/');
         await waitForCommandInput(page);
@@ -45,7 +61,7 @@ test.describe('Mobile buttons sizing and gap', () => {
         await expect(sizeSlider, 'size slider should be visible').toBeVisible();
 
         // Get initial button size from preview
-        const soloPreview = page.locator('#mobile-buttons-preview-solo:not(.d-none)');
+        const soloPreview = page.locator('#mobile-buttons-preview-solo:visible');
         await soloPreview.locator('[data-button-id="button-1"]').waitFor({ timeout: 5000 });
         const button1 = soloPreview.locator('[data-button-id="button-1"]');
 
@@ -84,7 +100,7 @@ test.describe('Mobile buttons sizing and gap', () => {
         await expect(gapSlider, 'gap slider should be visible').toBeVisible();
 
         // Get the preview grid
-        const soloPreview = page.locator('#mobile-buttons-preview-solo:not(.d-none)');
+        const soloPreview = page.locator('#mobile-buttons-preview-solo:visible');
         await soloPreview.locator('[data-button-id="button-1"]').waitFor({ timeout: 5000 });
 
         // Get initial gap
@@ -226,7 +242,7 @@ test.describe('Mobile buttons sizing and gap', () => {
 
         const modal = await openMobileButtonsSettings(page);
 
-        const soloPreview = page.locator('#mobile-buttons-preview-solo:not(.d-none)');
+        const soloPreview = page.locator('#mobile-buttons-preview-solo:visible');
         await soloPreview.locator('[data-button-id="button-1"]').waitFor({ timeout: 5000 });
 
         // Get a text button (not direction button)

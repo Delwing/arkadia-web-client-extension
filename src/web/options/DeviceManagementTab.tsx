@@ -369,7 +369,7 @@ function DeviceManagementTab() {
     };
 
     return (
-        <div className="d-flex flex-column gap-3">
+        <div className="popup-stack">
             <p className="popup-field__hint">
                 Informacje o tym urzadzeniu. Ustawienia urzadzenia (pozycje okien, konfiguracja przyciskow)
                 sa automatycznie synchronizowane razem z ustawieniami interfejsu.
@@ -380,11 +380,11 @@ function DeviceManagementTab() {
                 <h5 className="character-settings-section-title">To urzadzenie</h5>
                 {deviceInfo && (
                     <div className="device-card">
-                            <div className="d-flex flex-column gap-2">
-                                <div className="d-flex justify-content-between align-items-start">
+                            <div className="popup-stack popup-stack--sm">
+                                <div className="popup-spread popup-spread--top">
                                     <div>
                                         {isEditing ? (
-                                            <div className="d-flex gap-2 align-items-center">
+                                            <div className="popup-inline">
                                                 <Input
                                                     value={customName}
                                                     onChange={e => setCustomName(e.target.value)}
@@ -405,11 +405,11 @@ function DeviceManagementTab() {
                                                 </Button>
                                             </div>
                                         ) : (
-                                            <div className="d-flex gap-2 align-items-center">
+                                            <div className="popup-inline">
                                                 <strong>{deviceInfo.customName || deviceInfo.name}</strong>
                                                 <Button variant="ghost"
                                                     size="sm"
-                                                    className="text-muted"
+                                                    className="popup-muted"
                                                     onClick={() => setIsEditing(true)}
                                                 >
                                                     Zmien
@@ -417,12 +417,12 @@ function DeviceManagementTab() {
                                             </div>
                                         )}
                                         {deviceInfo.customName && (
-                                            <div className="text-muted small">{deviceInfo.name}</div>
+                                            <div className="popup-muted popup-small">{deviceInfo.name}</div>
                                         )}
                                     </div>
                                     <span className="popup-chip popup-chip--accent">Aktywne</span>
                                 </div>
-                                <div className="text-muted small">
+                                <div className="popup-muted popup-small">
                                     <div>ID: {deviceInfo.id.substring(0, 16)}...</div>
                                     <div>Utworzono: {formatDate(deviceInfo.createdAt)}</div>
                                     {deviceInfo.lastSyncedAt && (
@@ -438,24 +438,24 @@ function DeviceManagementTab() {
             <section className="character-settings-section">
                 <h5 className="character-settings-section-title">Synchronizacja urzadzen</h5>
                 {!syncGroup ? (
-                    <div className="d-flex flex-column gap-3">
+                    <div className="popup-stack">
                         {/* Cloud sync groups available to join */}
                         {isLoggedIn && cloudSyncGroups.length > 0 && cloudSyncGroups.map(group => (
                             <div key={group.id} className="device-card device-card--active">
-                                    <div className="d-flex flex-column gap-2">
-                                        <div className="d-flex justify-content-between align-items-start">
+                                    <div className="popup-stack popup-stack--sm">
+                                        <div className="popup-spread popup-spread--top">
                                             <div>
                                                 <strong>{group.name}</strong>
-                                                <div className="text-muted small">
+                                                <div className="popup-muted popup-small">
                                                     Grupa z chmury ({group.devices.length} {group.devices.length === 1 ? "urzadzenie" : "urzadzen"})
                                                 </div>
                                             </div>
                                             <span className="popup-chip popup-chip--success">W chmurze</span>
                                         </div>
-                                        <p className="text-muted small mb-2">
+                                        <div className="popup-muted popup-small">
                                             Dolacz do tej grupy, aby zsynchronizowac ustawienia urzadzenia z innymi urzadzeniami.
-                                        </p>
-                                        <div className="d-flex gap-2">
+                                        </div>
+                                        <div className="popup-inline">
                                             <Button variant="solid"
                                                 size="sm"
                                                 onClick={() => handleJoinCloudSyncGroup(group)}
@@ -501,7 +501,7 @@ function DeviceManagementTab() {
 
                         {/* Create new sync group */}
                         <div className="device-card">
-                                <p className="text-muted small mb-3">
+                                <p className="popup-muted popup-small device-card__lead">
                                     {cloudSyncGroups.length > 0
                                         ? "Mozesz tez utworzyc nowa grupe synchronizacji:"
                                         : "Utworz grupe synchronizacji, aby synchronizowac ustawienia urzadzenia (pozycje okien, przyciski) miedzy wieloma urzadzeniami."
@@ -535,11 +535,11 @@ function DeviceManagementTab() {
                     </div>
                 ) : (
                     <div className="device-card">
-                            <div className="d-flex flex-column gap-3">
-                                <div className="d-flex justify-content-between align-items-start">
+                            <div className="popup-stack">
+                                <div className="popup-spread popup-spread--top">
                                     <div>
                                         <strong>{syncGroup.name}</strong>
-                                        <div className="text-muted small">
+                                        <div className="popup-muted popup-small">
                                             {syncGroup.devices.length} {syncGroup.devices.length === 1 ? "urzadzenie" : "urzadzen"}
                                         </div>
                                     </div>
@@ -556,19 +556,19 @@ function DeviceManagementTab() {
                                 )}
 
                                 {isLoggedIn && (
-                                    <p className="text-muted small mb-0">
+                                    <div className="popup-muted popup-small">
                                         Ustawienia interfejsu synchronizuja sie automatycznie z urzadzeniami w tej grupie
                                         (razem z pozostalymi kategoriami w zakladce Synchronizacja).
-                                    </p>
+                                    </div>
                                 )}
 
-                                <div className="text-muted small">
+                                <div className="popup-muted popup-small">
                                     <div>ID grupy: {syncGroup.id.substring(0, 16)}...</div>
                                     <div>Utworzono: {formatDate(syncGroup.createdAt)}</div>
                                     <div>Ostatnia zmiana: {formatDate(syncGroup.updatedAt)}</div>
                                 </div>
 
-                                <div className="d-flex gap-2">
+                                <div className="popup-inline">
                                     <Button variant="danger"
                                         size="sm"
                                         onClick={handleLeaveSyncGroup}
@@ -593,9 +593,9 @@ function DeviceManagementTab() {
             {isLoggedIn && (cloudDevices.length > 0 || isLoadingCloudDevices) && (
                 <section className="character-settings-section">
                     <h5 className="character-settings-section-title">Urzadzenia w chmurze</h5>
-                    <p className="text-muted small mb-2">
+                    <div className="popup-muted popup-small">
                         Inne urzadzenia zarejestrowane na tym koncie. Mozesz dolaczyc do ich grupy synchronizacji.
-                    </p>
+                    </div>
                     {isLoadingCloudDevices ? (
                         <div className="device-card device-card--muted">
                                 <span className="popup-spinner" />
@@ -609,8 +609,8 @@ function DeviceManagementTab() {
                                 const isInCurrentGroup = syncGroup?.devices.includes(device.id);
                                 return (
                                     <div key={device.id} className="dialog-list__row dialog-list__row--block">
-                                        <div className="d-flex flex-column gap-2">
-                                            <div className="d-flex align-items-center gap-2 flex-wrap">
+                                        <div className="popup-stack popup-stack--sm">
+                                            <div className="popup-row">
                                                 <strong>
                                                     {device.customName || device.name}
                                                 </strong>
@@ -624,7 +624,7 @@ function DeviceManagementTab() {
                                                     </span>
                                                 ))}
                                             </div>
-                                            <div className="text-muted small">
+                                            <div className="popup-muted popup-small">
                                                 <div>ID: {device.id.substring(0, 16)}...</div>
                                                 {device.browserInfo && (
                                                     <div>{device.browserInfo.browser} na {device.browserInfo.os}</div>
@@ -636,7 +636,7 @@ function DeviceManagementTab() {
                                                 const deviceDisplayName = device.customName || device.name;
                                                 const isCurrentDevice = device.id === deviceInfo?.id;
                                                 return (
-                                                    <div className="d-flex gap-2 flex-wrap">
+                                                    <div className="popup-row">
                                                         {/* Join buttons - only show if not in any group */}
                                                         {!syncGroup && deviceGroups.map(group => (
                                                             <Button variant="solid"
@@ -688,14 +688,14 @@ function DeviceManagementTab() {
             {importedDevices.length > 0 && (
                 <section className="character-settings-section">
                     <h5 className="character-settings-section-title">Zaimportowane urzadzenia</h5>
-                    <p className="text-muted small mb-2">
+                    <div className="popup-muted popup-small">
                         Urzadzenia z zaimportowanych plikow. Mozesz skopiowac ich ustawienia na to urzadzenie.
-                    </p>
+                    </div>
                     <div className="dialog-list">
                         {importedDevices.map(entry => (
                             <div key={entry.deviceInfo.id} className="dialog-list__row dialog-list__row--block">
-                                <div className="d-flex flex-column gap-2">
-                                    <div className="d-flex align-items-center gap-2 flex-wrap">
+                                <div className="popup-stack popup-stack--sm">
+                                    <div className="popup-row">
                                         <strong>
                                             {entry.deviceInfo.customName || entry.deviceInfo.name}
                                         </strong>
@@ -708,11 +708,11 @@ function DeviceManagementTab() {
                                             </span>
                                         )}
                                     </div>
-                                    <div className="text-muted small">
+                                    <div className="popup-muted popup-small">
                                         <div>ID: {entry.deviceInfo.id.substring(0, 16)}...</div>
                                         <div>Zaimportowano: {formatDate(entry.importedAt)}</div>
                                     </div>
-                                    <div className="d-flex gap-2 flex-wrap">
+                                    <div className="popup-row">
                                         {entry.syncGroup && !syncGroup && (
                                             <Button variant="solid"
                                                 size="sm"

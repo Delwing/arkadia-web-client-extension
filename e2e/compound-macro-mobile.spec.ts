@@ -23,7 +23,7 @@ test.describe('Mobile buttons compound macro', () => {
         await ensureGameSocket(page);
 
         await openMobileButtonsSettings(page);
-        const soloPreview = page.locator('#mobile-buttons-preview-solo:not(.d-none)');
+        const soloPreview = page.locator('#mobile-buttons-preview-solo:visible');
         await soloPreview.locator('[data-button-id="button-1"]').waitFor({ timeout: 5000 });
 
         // Select button-1 and set macro to compound
@@ -47,7 +47,7 @@ test.describe('Mobile buttons compound macro', () => {
         await ensureGameSocket(page);
 
         const modal = await openMobileButtonsSettings(page);
-        const soloPreview = page.locator('#mobile-buttons-preview-solo:not(.d-none)');
+        const soloPreview = page.locator('#mobile-buttons-preview-solo:visible');
         await soloPreview.locator('[data-button-id="button-1"]').waitFor({ timeout: 5000 });
 
         const button1 = soloPreview.locator('[data-button-id="button-1"]');
@@ -183,7 +183,7 @@ test.describe('Mobile buttons compound macro', () => {
 
         // Configure a compound button through the UI
         const modal = await openMobileButtonsSettings(page);
-        const soloPreview = page.locator('#mobile-buttons-preview-solo:not(.d-none)');
+        const soloPreview = page.locator('#mobile-buttons-preview-solo:visible');
         await soloPreview.locator('[data-button-id="button-1"]').waitFor({ timeout: 5000 });
 
         const button1 = soloPreview.locator('[data-button-id="button-1"]');
@@ -220,7 +220,7 @@ test.describe('Mobile buttons compound macro', () => {
 
         // Reopen settings and verify compound config
         await openMobileButtonsSettings(page);
-        const soloPreviewReload = page.locator('#mobile-buttons-preview-solo:not(.d-none)');
+        const soloPreviewReload = page.locator('#mobile-buttons-preview-solo:visible');
         await soloPreviewReload.locator('[data-button-id="button-1"]').waitFor({ timeout: 5000 });
 
         const button1Reload = soloPreviewReload.locator('[data-button-id="button-1"]');
@@ -240,7 +240,7 @@ test.describe('Mobile buttons compound macro', () => {
         await ensureGameSocket(page);
 
         await openMobileButtonsSettings(page);
-        const soloPreview = page.locator('#mobile-buttons-preview-solo:not(.d-none)');
+        const soloPreview = page.locator('#mobile-buttons-preview-solo:visible');
         await soloPreview.locator('[data-button-id="button-1"]').waitFor({ timeout: 5000 });
 
         const button1 = soloPreview.locator('[data-button-id="button-1"]');
@@ -283,7 +283,7 @@ test.describe('Mobile buttons compound macro', () => {
         await ensureGameSocket(page);
 
         await openMobileButtonsSettings(page);
-        const soloPreview = page.locator('#mobile-buttons-preview-solo:not(.d-none)');
+        const soloPreview = page.locator('#mobile-buttons-preview-solo:visible');
         await soloPreview.locator('[data-button-id="button-1"]').waitFor({ timeout: 5000 });
 
         const button1 = soloPreview.locator('[data-button-id="button-1"]');
@@ -314,7 +314,7 @@ test.describe('Mobile buttons compound macro', () => {
         await ensureGameSocket(page);
 
         await openMobileButtonsSettings(page);
-        const soloPreview = page.locator('#mobile-buttons-preview-solo:not(.d-none)');
+        const soloPreview = page.locator('#mobile-buttons-preview-solo:visible');
         await soloPreview.locator('[data-button-id="button-1"]').waitFor({ timeout: 5000 });
 
         const button1 = soloPreview.locator('[data-button-id="button-1"]');

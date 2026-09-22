@@ -740,7 +740,7 @@ const HerbManager = () => {
                     onPointerDownCapture={closeContextMenu}
                 >
                     {error && (
-                        <div className="alert alert-danger herb-manager-status" role="alert">
+                        <div className="popup-notice popup-notice--danger herb-manager-status">
                             {error}
                         </div>
                     )}
@@ -828,7 +828,7 @@ const HerbManager = () => {
                         </div>
                     )}
                     {emptyState ? (
-                        <div className="alert alert-info herb-manager-status" role="alert">
+                        <div className="popup-notice herb-manager-status">
                             Brak danych o woreczkach. Użyj aliasu <code>/ziola_buduj</code>, aby odświeżyć zawartość.
                         </div>
                     ) : (

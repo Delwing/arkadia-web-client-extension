@@ -638,12 +638,32 @@ select.popup-input.popup-input--control {
   flex-direction: column;
   gap: 14px;
 }
+.popup-stack--sm {
+  gap: 8px;
+}
 .popup-inline {
   display: flex;
   align-items: center;
   gap: 8px;
   min-width: 0;
 }
+/* Two ends of a line (a title and its badge, a label and its action). */
+.popup-spread {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.popup-spread--top {
+  align-items: flex-start;
+}
+/* Text tones and weights, for the odd word in a sentence or a line of help. */
+.popup-muted { color: var(--popup-text-subtle); }
+.popup-small { font-size: var(--ui-fs-sm, 12px); }
+.popup-strong { font-weight: 600; }
+.popup-text-danger { color: var(--popup-danger); }
+.popup-text-warning { color: var(--popup-warning); }
+.popup-text-success { color: var(--popup-success); }
 .popup-check {
   display: inline-flex;
   align-items: center;
@@ -6838,7 +6858,7 @@ select.popup-input.popup-input--control {
 /* HP bar sits between the shortcut and the name (fixed width, not stretched). */
 .obj__hp {
   --hp: 60%;
-  --hue: var(--popup-danger, #ef4444);
+  --hue: var(--popup-danger);
   flex: 0 0 auto;
   width: 42px; height: 6px;
   border-radius: 3px; overflow: hidden;
@@ -7828,4 +7848,177 @@ select.popup-input.popup-input--control {
   background-color: var(--popup-subtle-bg);
   color: var(--popup-text);
   white-space: pre-wrap;
+}
+
+/* ── Cloud sync page (FirebaseTab.tsx) ───────────────────────────────────── */
+.firebase-sync {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+.firebase-sync__scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding-right: 4px;
+  overflow: auto;
+}
+.firebase-sync__content {
+  padding-bottom: 8px;
+}
+.firebase-sync__lead {
+  margin: 0;
+}
+.firebase-sync__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.firebase-sync__groups {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.firebase-sync__group-name {
+  margin-bottom: 4px;
+}
+.firebase-sync__category {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.firebase-sync__actions {
+  flex-shrink: 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--popup-border);
+}
+
+/* ── Devices page (DeviceManagementTab.tsx) ──────────────────────────────── */
+.device-card__lead {
+  margin: 0 0 12px;
+}
+
+/* ── Google Drive backups (GoogleDriveTab.tsx) ───────────────────────────── */
+.drive-backups__lead {
+  margin: 0;
+}
+.drive-backups__file {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid var(--popup-border);
+  border-radius: var(--ui-radius, 6px);
+}
+.drive-backups__name {
+  margin-right: auto;
+  min-width: 0;
+}
+
+/* ── Sync conflicts (ConflictResolutionModal.tsx, ConflictDiffView.tsx) ─── */
+.conflict-list {
+  max-height: 420px;
+  overflow-y: auto;
+}
+.conflict-list__item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+  border: 1px solid var(--popup-border);
+  border-radius: var(--ui-radius, 6px);
+}
+.conflict-list__times {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+}
+.conflict-diff__summary {
+  margin-left: 8px;
+}
+.conflict-diff__body {
+  margin-top: 4px;
+}
+.conflict-diff__legend {
+  margin-bottom: 4px;
+}
+.conflict-diff__lines {
+  margin: 0;
+  padding: 8px;
+  border-radius: var(--ui-radius-sm, 4px);
+  font-size: var(--ui-fs-sm, 12px);
+}
+
+/* ── Documentation in forge (docs.ts) ────────────────────────────────────── */
+.docs-root {
+  height: 100%;
+  min-height: 0;
+}
+.docs-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.docs-toolbar .docs-search {
+  width: auto;
+  max-width: 200px;
+  margin-left: auto;
+}
+.docs-content--fill {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* The danger zone of the cloud sync page: what it does on the left, the red
+   action on the right; confirming swaps in a tinted strip with the final say. */
+.cloud-delete {
+  border-color: var(--popup-danger-border);
+}
+.cloud-delete__row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.cloud-delete__text {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.popup-btn.cloud-delete__action {
+  flex-shrink: 0;
+}
+.cloud-delete__confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding: 8px 10px;
+  border: 1px solid var(--popup-danger-border);
+  border-radius: var(--ui-radius, 6px);
+  background-color: var(--popup-danger-bg);
+  color: var(--popup-danger);
+}
+.popup-btn.popup-btn--control.cloud-delete__confirm-button {
+  border-color: var(--popup-danger);
+  background-color: var(--popup-danger);
+  color: #fff;
+}
+.popup-btn.popup-btn--control.cloud-delete__confirm-button:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+@media (max-width: 575.98px) {
+  .cloud-delete__row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .popup-btn.cloud-delete__action {
+    align-self: flex-start;
+  }
 }

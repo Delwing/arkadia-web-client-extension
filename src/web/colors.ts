@@ -17,12 +17,6 @@ export function getColorLevel(value: number, max: number, reverse = false, isHp 
   return 'success';
 }
 
-export const COLOR_BAR_CLASS: Record<ColorLevel, string> = {
-  success: 'bg-success',
-  warning: 'bg-warning',
-  danger: 'bg-danger',
-};
-
 export const COLOR_TEXT: Record<ColorLevel, string> = {
   success: 'green',
   warning: 'yellow',

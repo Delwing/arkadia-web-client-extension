@@ -33,7 +33,8 @@
 
 /* --- session management -------------------------------------------------- */
 
-/* On Bootstrap, unlike the viewer: this window only ever runs in the client. */
+/* In the client's own controls (popup-*), unlike the viewer: this window only
+   ever runs in the client. */
 
 .logs-manage__spacer {
     flex-grow: 1;
@@ -56,9 +57,17 @@
     max-height: 56vh;
 }
 
+.logs-manage__status {
+    margin-bottom: 12px;
+}
+
+.logs-manage__empty {
+    margin: 24px 0;
+    text-align: center;
+}
+
 .logs-manage__table {
-    margin-bottom: 0;
-    font-size: 0.85rem;
+    font-size: var(--ui-fs-sm, 12px);
 }
 
 .logs-manage__table th,
@@ -71,7 +80,7 @@
     position: sticky;
     top: 0;
     z-index: 2;
-    background: var(--bs-body-bg);
+    background: var(--popup-bg);
 }
 
 .logs-manage__table tbody tr {
@@ -79,7 +88,7 @@
 }
 
 .logs-manage__table tbody tr[data-selected='true'] > td {
-    background: var(--bs-secondary-bg);
+    background: var(--popup-accent-subtle-bg);
 }
 
 /* Year separator: sticky under the header, so a long list keeps saying which
@@ -88,8 +97,8 @@
     position: sticky;
     top: 0;
     z-index: 1;
-    background: var(--bs-body-bg);
-    color: var(--bs-secondary-color);
+    background: var(--popup-bg);
+    color: var(--popup-text-subtle);
     font-weight: 600;
 }
 
@@ -102,18 +111,18 @@
 }
 
 .logs-manage__span {
-    font-family: var(--bs-font-monospace);
-    color: var(--bs-secondary-color);
+    font-family: var(--font-mono, ui-monospace, monospace);
+    color: var(--popup-text-subtle);
 }
 
 .logs-manage__num {
     text-align: right;
-    font-family: var(--bs-font-monospace);
+    font-family: var(--font-mono, ui-monospace, monospace);
     font-variant-numeric: tabular-nums;
 }
 
 .logs-manage__flag {
     text-align: center;
     width: 3rem;
-    color: var(--bs-secondary-color);
+    color: var(--popup-text-subtle);
 }

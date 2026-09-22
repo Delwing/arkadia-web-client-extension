@@ -49,15 +49,15 @@ export function SplitContextMenu({ x, y, onClose, onSplit, locked, onToggleLock 
   return createPortal(
     <div
       ref={ref}
-      className="layout-split-menu dropdown-menu show"
-      style={{ position: 'fixed', left: x, top: y, zIndex: 2000, display: 'block' }}
+      className="popup-popover popup-menu layout-split-menu"
+      style={{ left: x, top: y, zIndex: 2000 }}
     >
       {/* Splitting is a layout mutation, so it's only offered while unlocked. */}
       {!locked && ITEMS.map(item => (
         <button
           key={item.label}
           type="button"
-          className="dropdown-item layout-split-menu__item"
+          className="popup-menu__item layout-split-menu__item"
           onClick={() => onSplit(item.dir, item.before)}
         >
           <span className="layout-split-menu__icon">
@@ -69,7 +69,7 @@ export function SplitContextMenu({ x, y, onClose, onSplit, locked, onToggleLock 
       {!locked && <div className="layout-split-menu__sep" />}
       <button
         type="button"
-        className="dropdown-item layout-split-menu__item"
+        className="popup-menu__item layout-split-menu__item"
         onClick={() => {
           onToggleLock();
           onClose();

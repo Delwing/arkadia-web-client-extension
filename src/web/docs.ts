@@ -54,7 +54,7 @@ function searchDocs(query: string): SearchResult[] {
 
 function formatSearchResults(results: SearchResult[], query: string): string {
   if (results.length === 0) {
-    return `<p class="text-muted">Brak wynikow dla "${query}"</p>`;
+    return `<p class="popup-muted">Brak wynikow dla "${query}"</p>`;
   }
 
   const grouped = new Map<string, string[]>();
@@ -82,23 +82,22 @@ function formatSearchResults(results: SearchResult[], query: string): string {
 }
 
 /**
- * The docs UI with a plain button-row nav (forge-ui loads no Bootstrap dropdown
- * JS). The nav still exposes `.docs-nav [data-key]`, so `wireDocs` handles both.
+ * The docs UI with a plain button-row nav. The nav still exposes `.docs-nav [data-key]`, so `wireDocs` handles both.
  */
 function docsBodyHtmlPlain(): string {
   return `
-<div class="d-flex gap-2 align-items-center flex-wrap docs-toolbar">
-  <div class="docs-nav d-flex gap-1 flex-wrap">
+<div class="popup-row docs-toolbar">
+  <div class="docs-nav">
     ${docs
       .map(
         (d) =>
-          `<button type="button" class="btn btn-secondary btn-sm" data-key="${d.key}">${d.title}</button>`,
+          `<button type="button" class="popup-btn popup-btn--control popup-btn--sm" data-key="${d.key}">${d.title}</button>`,
       )
       .join("")}
   </div>
-  <input type="text" id="docs-search" class="form-control form-control-sm ms-auto" style="max-width: 200px;" placeholder="Szukaj...">
+  <input type="text" id="docs-search" class="popup-input popup-input--control docs-search" placeholder="Szukaj...">
 </div>
-<div id="docs-content" class="docs-content flex-fill overflow-auto"></div>`;
+<div id="docs-content" class="docs-content docs-content--fill"></div>`;
 }
 
 /**
@@ -148,7 +147,7 @@ function wireDocs(root: HTMLElement): { showDoc: (key: string) => void } {
       searchInput.value = "";
     }
     navButtons.forEach((btn) =>
-      btn.classList.toggle("active", btn.dataset.key === key),
+      btn.classList.toggle("popup-btn--solid", btn.dataset.key === key),
     );
   }
 
@@ -183,12 +182,12 @@ function wireDocs(root: HTMLElement): { showDoc: (key: string) => void } {
 }
 
 /**
- * Render the documentation UI into an arbitrary container (no Bootstrap modal).
+ * Render the documentation UI into an arbitrary container.
  * Used by alternative UIs (forge-ui) that host the docs inside their own modal
  * shell. Populates `container` and shows the first document.
  */
 export function mountDocs(container: HTMLElement): void {
-  container.classList.add("d-flex", "flex-column", "gap-3");
+  container.classList.add("popup-stack", "docs-root");
   container.innerHTML = docsBodyHtmlPlain();
   const { showDoc } = wireDocs(container);
   showDoc(docs[0].key);

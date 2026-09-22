@@ -2161,6 +2161,7 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
 
 /* Enhanced grid preview styling */
 .mobile-direction-buttons.preview {
+  margin-bottom: 8px;
   border: 2px dashed var(--popup-border);
   background-color: var(--popup-control-bg);
   padding: 5px;
@@ -2202,8 +2203,45 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
   cursor: pointer;
 }
 
+/* Map download progress, centred over the map (index.html, main.ts). */
 #map-progress-container {
   pointer-events: none;
+}
+.map-progress {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 75%;
+  transform: translate(-50%, -50%);
+}
+.map-progress__track {
+  height: 16px;
+  overflow: hidden;
+  border-radius: var(--ui-radius-sm, 4px);
+  background-color: var(--popup-control-active-bg, rgba(255, 255, 255, 0.1));
+}
+.map-progress__bar {
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--popup-accent);
+  background-image: linear-gradient(45deg, rgba(255, 255, 255, 0.15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0.15) 75%, transparent 75%, transparent);
+  background-size: 16px 16px;
+  color: var(--popup-bg);
+  font-size: var(--ui-fs-xs, 11px);
+  line-height: 16px;
+  text-align: center;
+  white-space: nowrap;
+  transition: width 0.3s ease;
+  animation: map-progress-stripes 1s linear infinite;
+}
+@keyframes map-progress-stripes {
+  from { background-position: 16px 0; }
+  to { background-position: 0 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .map-progress__bar {
+    animation: none;
+  }
 }
 
 /* Letter Composer - size overrides */
@@ -2247,13 +2285,13 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
   min-height: 0;
 }
 
-.letter-composer-field--grow textarea {
+.letter-composer-field--grow textarea.popup-input.popup-input--control {
   flex: 1;
   min-height: 8rem;
   resize: none;
 }
 
-.letter-composer textarea {
+.letter-composer textarea.popup-input.popup-input--control {
   resize: vertical;
   min-height: 8rem;
 }
@@ -2275,6 +2313,10 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
   align-items: center;
   gap: 0.25rem;
   margin-right: auto;
+}
+
+.letter-template-label {
+  margin: 0;
 }
 
 .letter-template-select {

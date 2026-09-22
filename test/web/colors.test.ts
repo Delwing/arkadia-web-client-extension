@@ -1,4 +1,4 @@
-import { getColorLevel, COLOR_BAR_CLASS, COLOR_TEXT, COLOR_OBJECT } from '@web/colors';
+import { getColorLevel, COLOR_TEXT, COLOR_OBJECT } from '@web/colors';
 
 describe('getColorLevel', () => {
   test('computes color level based on ratio', () => {
@@ -22,12 +22,6 @@ describe('getColorLevel', () => {
 });
 
 describe('color constants', () => {
-  test('bar classes', () => {
-    expect(COLOR_BAR_CLASS.success).toBe('bg-success');
-    expect(COLOR_BAR_CLASS.warning).toBe('bg-warning');
-    expect(COLOR_BAR_CLASS.danger).toBe('bg-danger');
-  });
-
   test('text colors', () => {
     expect(COLOR_TEXT.success).toBe('green');
     expect(COLOR_TEXT.warning).toBe('yellow');

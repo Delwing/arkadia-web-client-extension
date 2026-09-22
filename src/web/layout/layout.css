@@ -910,11 +910,8 @@ body.layout-manager-enabled .compass-rose-box {
 }
 
 /* Split context menu (right-click a docked titlebar). */
-.layout-split-menu .dropdown-item {
-  display: flex;
-  align-items: center;
-  gap: 0.5em;
-  font-size: calc(1rem - 1pt);
+.layout-split-menu .popup-menu__item {
+  font-size: var(--ui-fs, 13px);
 }
 .layout-split-menu__icon {
   display: inline-flex;
