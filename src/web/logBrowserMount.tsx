@@ -3,7 +3,7 @@
  *
  * Kept out of `LogBrowser.tsx` so that module stays side-effect free: forge-ui
  * hosts the same component inside its own modal shell, where stock's
- * `#logs-button` / `#logs-modal` do not exist.
+ * `#logs-modal` does not exist.
  *
  * The browser is mounted only while the window is open. It loads every session
  * into memory when it mounts, and the client must not read the whole log
@@ -13,6 +13,7 @@
  */
 import { useEffect, useState } from "react";
 import { LogBrowser } from "./LogBrowser";
+import { registerMainMenuItem } from "@modules/core/mainMenuRegistry";
 
 let initialized = false;
 let warned = false;
@@ -37,10 +38,9 @@ export function LogBrowserWindow({ modalEl }: { modalEl: HTMLElement }) {
 function initLogBrowser(): boolean {
   if (initialized) return true;
 
-  const button = document.getElementById("logs-button") as HTMLButtonElement | null;
   const modalEl = document.getElementById("logs-modal") as HTMLElement | null;
 
-  if (!button || !modalEl) return false;
+  if (!modalEl) return false;
 
   const modalBody = modalEl.querySelector(".modal-body");
   if (!modalBody) {
@@ -64,9 +64,22 @@ function initLogBrowser(): boolean {
     root.render(<LogBrowserWindow modalEl={modalEl} />);
 
     const modal = new Modal(modalEl);
-    button.addEventListener("click", () => {
-      modal.show();
-    });
+    showModal = () => modal.show();
+    if (openRequested) showModal();
+  });
+
+  // In the menu at once; a click before the chunks above arrive opens it when they do.
+  let showModal: (() => void) | null = null;
+  let openRequested = false;
+  registerMainMenuItem({
+    id: "logs-button",
+    label: "Logi",
+    order: 160,
+    source: "builtin",
+    onSelect: () => {
+      if (showModal) showModal();
+      else openRequested = true;
+    },
   });
 
   initialized = true;
@@ -79,7 +92,7 @@ function ensureLogBrowser() {
   // injected later. Warn once instead of on every mutation.
   if (!warned) {
     warned = true;
-    console.warn("[Logs] #logs-button / #logs-modal not present yet, waiting for them");
+    console.warn("[Logs] #logs-modal not present yet, waiting for it");
   }
   const observer = new MutationObserver(() => {
     if (initLogBrowser()) {

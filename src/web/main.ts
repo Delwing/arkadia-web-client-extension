@@ -19,7 +19,7 @@ import recordingManager from "./RecordingManager.ts";
 import eventBus from "@modules/core/eventBus";
 import {setupOutputContextMenu} from "./outputContextMenu";
 import initPipeStatus from "./pipeStatus";
-import {Dropdown, Modal} from 'bootstrap';
+import {Modal} from 'bootstrap';
 import ObjectList from "./ObjectList";
 import {mountMigratedComponents} from "@web-ui/mountComponents.tsx";
 import {setupMobileFooter} from "./mobileFooter.ts";
@@ -46,6 +46,7 @@ import {EmbeddedMap} from "./embed.ts"
 import {getEmbeddedMap, setEmbeddedMap} from "./embedRegistry.ts"
 import {createElement} from 'react'
 import {createRoot} from 'react-dom/client'
+import {flushSync} from 'react-dom'
 import {LocationLabel} from "@web-ui/components/map/LocationLabel"
 import {PauseIcon} from "@web-ui/components/map/PauseIcon"
 import {MapLostBadge} from "@web-ui/components/map/MapLostBadge"
@@ -53,7 +54,7 @@ import Binds from "./options/Binds.tsx"
 import Scripts from "./options/Scripts.tsx"
 import Aliases from "./options/Aliases.tsx"
 import Recordings from "./options/Recordings.tsx"
-import {CLOSE_SETTINGS_EVENT, OPEN_SETTINGS_PAGE_EVENT, SAVE_SETTINGS_EVENT, openSettingsPage, requestSettingsCategory, type OpenSettingsPageDetail} from "./settings/categories.ts";
+import {CLOSE_SETTINGS_EVENT, OPEN_SETTINGS_PAGE_EVENT, SAVE_SETTINGS_EVENT, openSettingsPage, requestSettingsCategory, type OpenSettingsPageDetail, type SettingsCategoryKey} from "./settings/categories.ts";
 import {buttonsSettingsCategory} from "./settings/buttonsCategory.ts";
 import CharacterManagement from "./options/CharacterManagementModal.tsx"
 import UserTriggers from "./options/UserTriggers.tsx"
@@ -64,8 +65,9 @@ import {invalidateLayoutCache, LayoutManagerWrapper, loadLayoutState, saveLayout
 import {globalStorage} from "@modules/core/storage"
 import {setOutputTimestampVisibility, setupOutputMessageHandler} from "@shared/dom/outputMessageHandler";
 import {isLikelyTouchDevice, isMobileLikeViewport, isTouchPointerType} from "@shared/dom/pointerEnvironment.ts";
-import {CommandInputController} from "./commandInput/CommandInputController";
-import {attachVoiceInput, type VoiceInputHandle} from "./voice/voiceInput";
+import CommandLine from "./commandInput/CommandLine";
+import {setConnectionOffline, setReconnectHandler} from "./commandInput/connectionView";
+import {registerMainMenuItem, updateMainMenuItem} from "@modules/core/mainMenuRegistry";
 import {harvestOutputLines} from "./commandInput/outputWords";
 import {installClientPorts} from "./installClientPorts";
 import {installContentWidthMeasurer} from "./contentWidthMeasurer";
@@ -405,11 +407,9 @@ client.on('gmcp_msg.room.long', () => {
 // Function to update the connect button state
 function updateConnectButtons() {
     const connectButton = document.getElementById('connect-button') as HTMLButtonElement | null;
-    const connectButtonInline = document.getElementById('connect-button-inline') as HTMLButtonElement | null;
     const loginForm = document.getElementById('login-form') as HTMLFormElement | null;
     const authOverlay = document.getElementById('auth-overlay') as HTMLElement | null;
     const spinner = document.getElementById('connecting-spinner') as HTMLElement | null;
-    const disconnectButton = document.getElementById('disconnect-button') as HTMLButtonElement | null;
 
     if (connectButton) {
         if (isConnected || isConnecting || authClosed) {
@@ -422,13 +422,9 @@ function updateConnectButtons() {
         }
     }
 
-    if (connectButtonInline) {
-        if (!isConnected && !isConnecting && authClosed) {
-            connectButtonInline.style.display = 'block';
-        } else {
-            connectButtonInline.style.display = 'none';
-        }
-    }
+    // Offline with the login screen dismissed: the command line shows the closed
+    // connection and offers to reconnect in place of the send button.
+    setConnectionOffline(!isConnected && !isConnecting && authClosed);
 
 
     if (loginForm) {
@@ -443,15 +439,9 @@ function updateConnectButtons() {
         authOverlay.style.display = (!isConnected && !playbackMode && !authClosed) ? 'flex' : 'none';
     }
 
-    if (disconnectButton) {
-        if (isConnected) {
-            disconnectButton.textContent = 'Rozłącz';
-            disconnectButton.disabled = isDisconnecting;
-        } else {
-            disconnectButton.textContent = 'Połącz';
-            disconnectButton.disabled = isConnecting;
-        }
-    }
+    updateMainMenuItem('disconnect-button', isConnected
+        ? { label: 'Rozłącz', disabled: isDisconnecting }
+        : { label: 'Połącz', disabled: isConnecting });
 
     const systemLoginMessageEl = document.getElementById('system-login-message');
     if (systemLoginMessageEl) {
@@ -767,13 +757,26 @@ document.addEventListener('DOMContentLoaded', () => {
             });
     }
 
-    const messageInput = document.getElementById('message-input') as HTMLTextAreaElement;
-    const passwordInput = document.getElementById('message-input-password') as HTMLInputElement;
-    const sendButton = document.getElementById('send-button') as HTMLButtonElement;
     let clearInputOnSend = getRenderSettings().clearInputOnSend;
     onRenderSettingsChange((render) => {
         clearInputOnSend = render.clearInputOnSend;
     });
+    // Synchronously, so #message-input exists for everything below that looks it up.
+    const commandLineRoot = document.getElementById('command-line-root');
+    if (commandLineRoot) {
+        flushSync(() => createRoot(commandLineRoot).render(createElement(CommandLine, {
+            deps: {
+                outputWrapper,
+                sendCommand: (cmd, echo, opts, skip, fromUser) => client.sendCommand(cmd, echo, opts, skip, fromUser),
+                isPasswordMode: () => mudClient.isPasswordMode(),
+                getCommandLineSuggestions: () => client.commandLineSuggestions ?? [],
+                getClearInputOnSend: () => clearInputOnSend,
+                // What is on screen is the vocabulary the recogniser lacks.
+                getVoiceVocabulary: () => [...harvestOutputLines(outputWrapper), ...(client.commandLineSuggestions ?? [])],
+            },
+        })));
+    }
+    const messageInput = document.getElementById('message-input') as HTMLTextAreaElement;
     onShellSettingsChange((shell) => {
         if (shell.wakeLock && isConnected) {
             preventTabSleep();
@@ -781,28 +784,8 @@ document.addEventListener('DOMContentLoaded', () => {
             disableTabSleepPrevention();
         }
     });
-    const voiceButton = document.getElementById('voice-button') as HTMLButtonElement | null;
-    const historyUpButton = document.getElementById('history-up-button') as HTMLButtonElement | null;
-    const historyDownButton = document.getElementById('history-down-button') as HTMLButtonElement | null;
     const connectButton = document.getElementById('connect-button') as HTMLButtonElement | null;
-    const connectButtonInline = document.getElementById('connect-button-inline') as HTMLButtonElement | null;
-    const menuButton = document.getElementById('menu-button') as HTMLButtonElement | null;
-    const optionsButton = document.getElementById('options-button') as HTMLButtonElement;
-    const exportImportButton = document.getElementById('export-import-button') as HTMLButtonElement | null;
     const settingsSave = document.getElementById('settings-save') as HTMLButtonElement | null;
-    const disconnectButton = document.getElementById('disconnect-button') as HTMLButtonElement | null;
-    const bindsButton = document.getElementById('binds-button') as HTMLButtonElement | null;
-    const npcButton = document.getElementById('npc-button') as HTMLButtonElement | null;
-    const scriptsButton = document.getElementById('scripts-button') as HTMLButtonElement | null;
-    const aliasesButton = document.getElementById('aliases-button') as HTMLButtonElement | null;
-    const triggersButton = document.getElementById('triggers-button') as HTMLButtonElement | null;
-    const recordingsButton = document.getElementById('recordings-button') as HTMLButtonElement | null;
-    const placesButton = document.getElementById('places-button') as HTMLButtonElement | null;
-    const peopleBrowserButton = document.getElementById('people-browser-button') as HTMLButtonElement | null;
-    const dataSourcesButton = document.getElementById('data-sources-button') as HTMLButtonElement | null;
-    const mobileButtonsButton = document.getElementById('mobile-buttons-button') as HTMLButtonElement | null;
-    const mobileRadialButton = document.getElementById('mobile-radial-button') as HTMLButtonElement | null;
-    const helperButton = document.getElementById('helper-button') as HTMLButtonElement | null;
     const recordingButton = document.getElementById('recording-button') as HTMLButtonElement | null;
     wakeLockButton = document.getElementById('wake-lock-button') as HTMLButtonElement | null;
     updateWakeLockButton();
@@ -895,7 +878,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     const enableNotificationsConnection = document.getElementById('enable-notifications-connection') as HTMLButtonElement | null;
-    const shareLocationButton = document.getElementById('share-location-button') as HTMLButtonElement | null;
     const locationQrImage = document.getElementById('location-qr-image') as HTMLImageElement | null;
     const locationShareModalElement = document.getElementById('location-share-modal');
     const locationShareModal = locationShareModalElement ? new Modal(locationShareModalElement) : null;
@@ -939,47 +921,35 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    if (menuButton) {
-        new Dropdown(menuButton);
-        // The dropdown is trapped inside #input-area's stacking context (z 1001),
-        // so pinned floating windows (z 1040+) cover it. Lift the input area while
-        // the menu is open, then restore it so floats/modals layer normally again.
-        const inputArea = document.getElementById('input-area');
-        menuButton.addEventListener('show.bs.dropdown', () => inputArea?.classList.add('menu-open'));
-        menuButton.addEventListener('hidden.bs.dropdown', () => inputArea?.classList.remove('menu-open'));
-    }
-
-    if (disconnectButton) {
-        disconnectButton.addEventListener('click', () => {
-            if (isConnected) {
-                // Disconnect
-                if (isDisconnecting) {
-                    return;
-                }
-                isDisconnecting = true;
-                updateConnectButtons();
-                mudClient.disconnect();
-                // Fallback: ensure state updates after a delay if disconnect event doesn't fire
-                setTimeout(() => {
-                    if (isDisconnecting && !mudClient.isSocketOpen()) {
-                        isConnected = false;
-                        isDisconnecting = false;
-                        updateConnectButtons();
-                    }
-                }, 1000);
-            } else {
-                // Connect
-                if (isConnecting) {
-                    return;
-                }
-                isConnecting = true;
-                lastSystemLoginMessage = null;
-                updateConnectButtons();
-                void client.prepareSounds();
-                mudClient.connect();
+    const toggleConnection = () => {
+        if (isConnected) {
+            // Disconnect
+            if (isDisconnecting) {
+                return;
             }
-        });
-    }
+            isDisconnecting = true;
+            updateConnectButtons();
+            mudClient.disconnect();
+            // Fallback: ensure state updates after a delay if disconnect event doesn't fire
+            setTimeout(() => {
+                if (isDisconnecting && !mudClient.isSocketOpen()) {
+                    isConnected = false;
+                    isDisconnecting = false;
+                    updateConnectButtons();
+                }
+            }, 1000);
+        } else {
+            // Connect
+            if (isConnecting) {
+                return;
+            }
+            isConnecting = true;
+            lastSystemLoginMessage = null;
+            updateConnectButtons();
+            void client.prepareSounds();
+            mudClient.connect();
+        }
+    };
 
     window.addEventListener('close-options', () => {
         (document.activeElement as HTMLElement)?.blur?.();
@@ -1039,33 +1009,12 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // "Ustawienia" and "Interfejs" open the same settings dialog, each on its own group.
-    if (optionsButton && settingsModal) {
-        optionsButton.addEventListener('click', () => {
-            requestSettingsCategory('character-general');
-            settingsModal.show();
-        });
-    }
-
-    if (exportImportButton) {
-        exportImportButton.addEventListener('click', () => {
-            window.dispatchEvent(new Event('show-export-import'));
-        });
-    }
-
     if (settingsSave) {
         settingsSave.addEventListener('click', () => {
             window.dispatchEvent(new Event(SAVE_SETTINGS_EVENT));
         });
     }
 
-    const uiSettingsButton = document.getElementById('ui-settings-button') as HTMLButtonElement | null;
-    if (uiSettingsButton && settingsModal) {
-        uiSettingsButton.addEventListener('click', () => {
-            requestSettingsCategory('ui-appearance');
-            settingsModal.show();
-        });
-    }
     window.addEventListener(CLOSE_SETTINGS_EVENT, () => {
         (document.activeElement as HTMLElement)?.blur?.();
         settingsModal?.hide();
@@ -1083,12 +1032,6 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener(OPEN_SETTINGS_EVENT, () => {
         settingsModal?.show();
     });
-
-    if (bindsButton && bindsModal) {
-        bindsButton.addEventListener('click', () => {
-            bindsModal.show();
-        });
-    }
 
     // The Bindowanie modal's import trigger lives in its title bar and Save in its
     // footer (both outside the scrollable body). They drive the shared <Binds/>
@@ -1120,54 +1063,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    if (npcButton) {
-        npcButton.addEventListener('click', () => {
-            eventBus.emit('packageReceiver.popup.open');
-        });
-    }
-
-    if (scriptsButton && scriptsModal) {
-        scriptsButton.addEventListener('click', () => {
-            scriptsModal.show();
-        });
-    }
-
-    if (aliasesButton && aliasesModal) {
-        aliasesButton.addEventListener('click', () => {
-            aliasesModal.show();
-        });
-    }
-
-    if (triggersButton && triggersModal) {
-        triggersButton.addEventListener('click', () => {
-            triggersModal.show();
-        });
-    }
-
-    if (recordingsButton && recordingsModal) {
-        recordingsButton.addEventListener('click', () => {
-            recordingsModal.show();
-        });
-    }
-
-    if (placesButton && placesModal) {
-        placesButton.addEventListener('click', () => {
-            placesModal.show();
-        });
-    }
-
-    if (peopleBrowserButton) {
-        peopleBrowserButton.addEventListener('click', () => {
-            eventBus.emit('peopleBrowser.popup.open');
-        });
-    }
-
-    if (dataSourcesButton) {
-        dataSourcesButton.addEventListener('click', () => {
-            eventBus.emit('dataSources.popup.open');
-        });
-    }
-
     // The map's "Dodaj skrót" and "Notatka" (and /notatka) open Miejsca on that room.
     if (placesModal) {
         window.addEventListener(OPEN_PLACE_EVENT, () => placesModal.show());
@@ -1176,38 +1071,50 @@ document.addEventListener('DOMContentLoaded', () => {
         eventBus.on('locationNote.open', ({ roomId }) => openPlace(roomId, 'note'));
     }
 
-    if (mobileButtonsButton && settingsModal) {
-        mobileButtonsButton.addEventListener('click', () => {
-            requestSettingsCategory(buttonsSettingsCategory());
-            settingsModal.show();
-        });
-    }
-
-    if (mobileRadialButton && settingsModal) {
-        mobileRadialButton.addEventListener('click', () => {
-            requestSettingsCategory('ui-radial');
-            settingsModal.show();
-        });
-    }
-
-    if (helperButton && helperModal) {
-        helperButton.addEventListener('click', () => {
-            helperModal.show();
-        });
-    }
-
-    if (shareLocationButton && locationQrImage && locationShareModal) {
-        shareLocationButton.addEventListener('click', () => {
-            const roomId = client.Map.currentRoom?.id;
-            if (!roomId) {
-                return;
-            }
-            const url = new URL(window.location.origin + window.location.pathname);
-            url.searchParams.set('locationId', roomId.toString());
-            locationQrImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url.toString())}`;
-            locationShareModal.show();
-        });
-    }
+    // The ⋯ menu next to the command line (Dokumentacja and Logi register themselves).
+    const openSettingsOn = (category: SettingsCategoryKey) => {
+        requestSettingsCategory(category);
+        settingsModal?.show();
+    };
+    const shareLocation = () => {
+        const roomId = client.Map.currentRoom?.id;
+        if (!roomId || !locationQrImage) {
+            return;
+        }
+        const url = new URL(window.location.origin + window.location.pathname);
+        url.searchParams.set('locationId', roomId.toString());
+        locationQrImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url.toString())}`;
+        locationShareModal?.show();
+    };
+    const toggleFullscreen = () => {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch(err => console.error('Failed to enter fullscreen:', err));
+        } else {
+            document.exitFullscreen().catch(err => console.error('Failed to exit fullscreen:', err));
+        }
+    };
+    ([
+        ['options-button', 'Ustawienia', 10, () => openSettingsOn('character-general')],
+        ['export-import-button', 'Eksport / import', 20, () => window.dispatchEvent(new Event('show-export-import'))],
+        ['ui-settings-button', 'Interfejs', 30, () => openSettingsOn('ui-appearance')],
+        ['mobile-buttons-button', 'Przyciski', 40, () => openSettingsOn(buttonsSettingsCategory())],
+        ['mobile-radial-button', 'Menu kołowe', 50, () => openSettingsOn('ui-radial')],
+        ['binds-button', 'Bindowanie', 60, () => bindsModal?.show()],
+        ['npc-button', 'Odbiorcy paczek', 70, () => eventBus.emit('packageReceiver.popup.open')],
+        ['scripts-button', 'Skrypty', 80, () => scriptsModal?.show()],
+        ['aliases-button', 'Aliasy', 90, () => aliasesModal?.show()],
+        ['triggers-button', 'Triggery', 100, () => triggersModal?.show()],
+        ['recordings-button', 'Nagrania', 110, () => recordingsModal?.show()],
+        ['places-button', 'Miejsca', 120, () => placesModal?.show()],
+        ['people-browser-button', 'Baza postaci', 130, () => eventBus.emit('peopleBrowser.popup.open')],
+        ['data-sources-button', 'Źródła danych', 140, () => eventBus.emit('dataSources.popup.open')],
+        ['share-location-button', 'Kod QR lokacji', 170, shareLocation],
+        ['helper-button', 'Helper', 180, () => helperModal?.show()],
+        ['disconnect-button', isConnected ? 'Rozłącz' : 'Połącz', 190, toggleConnection],
+        ['fullscreen-button', 'Pełny ekran', 200, toggleFullscreen],
+    ] as const).forEach(([id, label, order, onSelect]) => {
+        registerMainMenuItem({id, label, order, onSelect, source: 'builtin', tone: id === 'disconnect-button' ? 'danger' : undefined});
+    });
 
     if (recordingButton) {
         recordingButton.addEventListener('click', () => {
@@ -1310,59 +1217,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    const commandInputController = new CommandInputController({
-        messageInput,
-        passwordInput,
-        outputWrapper,
-        sendButton,
-        historyUpButton,
-        historyDownButton,
-        sendCommand: (cmd, echo, opts, skip, fromUser) => client.sendCommand(cmd, echo, opts, skip, fromUser),
-        isPasswordMode: () => mudClient.isPasswordMode(),
-        getCommandLineSuggestions: () => client.commandLineSuggestions ?? [],
-        getClearInputOnSend: () => clearInputOnSend,
-    });
-    commandInputController.attach();
-
-    let voiceInput: VoiceInputHandle | null = null;
-    // The server asks for a password by taking echo away; dictation goes with it.
-    let serverEchoing = false;
-    // Turning the button off detaches the recogniser entirely rather than just
-    // hiding it, so a player who does not want it never holds a microphone open.
-    const syncVoiceButton = () => {
-        if (!voiceButton) return;
-        if (globalStorage.get('uiSettings')?.showVoiceButton === false) {
-            voiceInput?.detach();
-            voiceInput = null;
-            voiceButton.style.display = 'none';
-            return;
-        }
-        if (!voiceInput) {
-            // `attachVoiceInput` hides the button again where the API is missing.
-            voiceButton.style.display = '';
-            voiceInput = attachVoiceInput({
-                button: voiceButton,
-                input: messageInput,
-                // What is on screen is the vocabulary the recogniser lacks.
-                getVocabulary: () => [...harvestOutputLines(outputWrapper), ...(client.commandLineSuggestions ?? [])],
-            });
-        }
-        voiceInput.setEnabled(!serverEchoing);
-    };
-    syncVoiceButton();
-
-    globalStorage.onChange('uiSettings', (next) => {
-        if (!next || !('showVoiceButton' in next)) return;
-        syncVoiceButton();
-    });
-
-    eventBus.on('telnet.echo', (echoing) => {
-        commandInputController.setPasswordMode(echoing);
-        serverEchoing = echoing;
-        // Never listen while the server is asking for a password.
-        voiceInput?.setEnabled(!echoing);
-    });
-
     // Handle connect/disconnect button click
     const handleConnect = () => {
         if (isConnected) {
@@ -1382,7 +1236,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
     connectButton?.addEventListener('click', handleConnect);
-    connectButtonInline?.addEventListener('click', handleConnect);
+    setReconnectHandler(handleConnect);
 
     const mccpCheckbox = document.getElementById('mccp-enabled') as HTMLInputElement | null;
     if (mccpCheckbox) {
@@ -1497,16 +1351,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }));
     }
 
-    const fullscreenButton = document.getElementById('fullscreen-button') as HTMLButtonElement | null;
-    if (fullscreenButton) {
-        fullscreenButton.addEventListener('click', () => {
-            if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen().catch(err => console.error('Failed to enter fullscreen:', err));
-            } else {
-                document.exitFullscreen().catch(err => console.error('Failed to exit fullscreen:', err));
-            }
-        });
-    }
 
     const characterManagementRoot = document.getElementById('character-management-root');
     if (characterManagementRoot) {

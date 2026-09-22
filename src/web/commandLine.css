@@ -1,0 +1,324 @@
+/* Command line: history ▲▼, the field with its ">" prompt, microphone, send, the ⋯ menu.
+   Markup: commandInput/CommandLine.tsx. The field also shows two states: password mode
+   (the server took echo away) and offline (the socket is closed and the login screen
+   was dismissed). */
+#input-area {
+  --cmd-h: 40px;
+  position: relative;
+  z-index: 1001;
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 8px 12px 10px;
+  border-top: 1px solid var(--footer-border);
+  background-color: var(--footer-bg);
+  color: var(--footer-text);
+  font-family: var(--font-ui);
+}
+@media (pointer: coarse), (max-width: 768px) {
+  #input-area {
+    --cmd-h: 46px;
+    gap: 6px;
+    padding: 6px 8px 8px;
+  }
+}
+
+/* While the ⋯ menu is open, lift the whole input area above the floating-window tier
+   (root 1040, popups up to ~10000): the dropdown is trapped in #input-area's stacking
+   context. Kept below the context menu (10100). */
+#input-area.menu-open {
+  z-index: 10090;
+}
+
+/* Every control in the row is one height; the global `button` rules (padding in vh,
+   opacity, the phone's 8vmin floor) do not apply here. */
+#input-area button {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 0;
+  height: var(--cmd-h);
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--popup-border-control);
+  border-radius: 8px;
+  background-color: var(--popup-control-bg);
+  color: var(--popup-text-subtle);
+  font: inherit;
+  opacity: 1;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+#input-area button:hover {
+  border-color: var(--popup-border-strong);
+  background-color: var(--popup-control-hover-bg);
+  color: var(--popup-text);
+}
+#input-area button:focus:not(:focus-visible) {
+  outline: none;
+}
+#input-area button svg {
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
+/* History: a stacked pair on desktop, side by side (40×46) on phones. */
+#history-buttons {
+  display: inline-flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  height: var(--cmd-h);
+  overflow: hidden;
+  border: 1px solid var(--popup-border-control);
+  border-radius: 8px;
+  background-color: var(--popup-control-bg);
+}
+#input-area #history-buttons button {
+  flex: 1;
+  width: 28px;
+  height: auto;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+#input-area #history-buttons button + button {
+  border-top: 1px solid var(--popup-border-control);
+}
+#input-area #history-buttons button:hover {
+  background-color: var(--popup-control-hover-bg);
+}
+@media (pointer: coarse), (max-width: 768px) {
+  #history-buttons {
+    flex-direction: row;
+  }
+  #input-area #history-buttons button {
+    width: 40px;
+    height: 100%;
+  }
+  #input-area #history-buttons button + button {
+    border-top: 0;
+    border-left: 1px solid var(--popup-border-control);
+  }
+}
+
+/* The field: prompt glyph + the textarea (grows to a few lines) or the password input. */
+#command-field {
+  display: flex;
+  flex: 1 1 0;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  min-height: var(--cmd-h);
+  padding: 0 12px;
+  border: 1px solid var(--popup-border-control);
+  border-radius: 8px;
+  background-color: var(--popup-input-bg);
+  cursor: text;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+#command-field:focus-within {
+  border-color: var(--popup-accent);
+  box-shadow: 0 0 0 3px var(--popup-accent-subtle-bg);
+}
+.command-field__prompt {
+  flex-shrink: 0;
+  align-self: flex-start;
+  line-height: calc(var(--cmd-h) - 2px);
+  color: var(--popup-accent);
+  font-family: var(--output-font-family);
+  font-size: var(--ui-input-fs);
+  user-select: none;
+}
+.command-field__lock,
+.command-field__offline-dot,
+.command-field__hint {
+  flex-shrink: 0;
+}
+#message-input,
+#message-input-password {
+  flex: 1 1 0;
+  min-width: 0;
+  margin: 0;
+  padding: calc((var(--cmd-h) - 2px - 1.3em) / 2) 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--popup-text);
+  font-family: var(--output-font-family);
+  font-size: var(--ui-input-fs);
+  line-height: 1.3;
+  -webkit-user-select: text;
+  user-select: text;
+  touch-action: manipulation;
+}
+#message-input {
+  resize: none;
+  overflow-y: auto;
+  field-sizing: content;
+  max-height: calc(5 * 1.3em + var(--cmd-h) - 2px - 1.3em);
+}
+/* The frame (#command-field) draws the focus ring, not the global input rules. */
+#message-input:focus,
+#message-input-password:focus {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+#message-input::placeholder {
+  overflow: hidden;
+  color: var(--popup-text-faint);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Password mode: a lock instead of the prompt, the field tinted amber. */
+#command-field.is-password {
+  border-color: var(--popup-warning);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--popup-warning) 18%, transparent);
+}
+.command-field__lock {
+  color: var(--popup-warning);
+}
+.command-field__hint {
+  color: var(--popup-text-subtle);
+  font-size: var(--ui-fs-xs, 12px);
+  white-space: nowrap;
+}
+#message-input-password {
+  letter-spacing: 0.15em;
+}
+
+/* Offline: a red dot instead of the prompt, a dashed see-through field, and
+   "Połącz ponownie" in place of the send button. The field still takes client
+   commands (/aliasy, settings), so it stays usable. */
+#input-area[data-offline="1"] #command-field {
+  border-style: dashed;
+  border-color: var(--popup-border-strong);
+  background-color: transparent;
+}
+.command-field__offline-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--popup-danger);
+}
+#input-area[data-offline="1"] #send-button {
+  display: none;
+}
+/* Nothing to browse while offline; on a phone the field needs that width. */
+@media (max-width: 768px) {
+  #input-area[data-offline="1"] #history-buttons {
+    display: none;
+  }
+}
+
+#input-area #voice-button,
+#input-area #menu-button {
+  width: var(--cmd-h);
+}
+#input-area #send-button {
+  width: var(--cmd-h);
+  border-color: var(--popup-accent);
+  background-color: var(--popup-accent);
+  color: var(--popup-bg);
+}
+#input-area #send-button:hover {
+  filter: brightness(1.1);
+}
+#input-area #connect-button-inline {
+  padding: 0 14px;
+  border-color: var(--popup-accent);
+  background-color: var(--popup-accent);
+  color: var(--popup-bg);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+#input-area #voice-button.voice-error {
+  color: var(--popup-danger);
+  opacity: 0.7;
+}
+/* Listening is a state the player has to notice from across the screen, so the button
+   carries a pulsing ring in its own colour, not a tinted glyph. */
+#input-area #voice-button.listening {
+  border-color: var(--popup-danger);
+  color: var(--popup-danger);
+  animation: voice-button-pulse 1.4s ease-in-out infinite;
+}
+/* Hands-free keeps the microphone open, so it is lit in the accent colour between utterances. */
+#input-area #voice-button.listening-continuous {
+  border-color: var(--popup-accent);
+  color: var(--popup-accent);
+}
+@keyframes voice-button-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 currentColor;
+  }
+  50% {
+    box-shadow: 0 0 0 0.25rem currentColor;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  #input-area #voice-button.listening {
+    animation: none;
+    box-shadow: 0 0 0 0.2rem currentColor;
+  }
+}
+
+/* The ⋯ menu: two columns of plain rows, opening upwards. */
+.command-menu {
+  flex-shrink: 0;
+}
+#input-area #menu-button.is-active {
+  border-color: var(--popup-border-strong);
+  background-color: var(--popup-control-active-bg);
+  color: var(--popup-text);
+}
+.popup-popover.command-menu__panel {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2px;
+  padding: 6px;
+  border-color: var(--popup-border-strong);
+  border-radius: var(--ui-radius-lg, 10px);
+  font-size: var(--ui-fs, 14px);
+}
+@media (max-width: 440px) {
+  .popup-popover.command-menu__panel {
+    left: 8px !important;
+    width: auto !important;
+    right: 8px;
+  }
+}
+#input-area .command-menu__item {
+  justify-content: flex-start;
+  width: 100%;
+  min-width: 0;
+  height: var(--ui-ctrl, 32px);
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--ui-radius, 6px);
+  background: transparent;
+  color: var(--popup-text-bright);
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#input-area .command-menu__item:hover:not(:disabled) {
+  background-color: var(--popup-hover-bg);
+  color: var(--popup-text);
+}
+#input-area .command-menu__item--danger,
+#input-area .command-menu__item--danger:hover:not(:disabled) {
+  color: var(--popup-danger);
+}
+#input-area .command-menu__item--danger:hover:not(:disabled) {
+  background-color: color-mix(in srgb, var(--popup-danger) 14%, transparent);
+}
+#input-area .command-menu__item:disabled {
+  opacity: 0.5;
+  cursor: default;
+}

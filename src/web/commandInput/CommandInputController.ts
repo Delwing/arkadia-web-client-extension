@@ -61,16 +61,17 @@ export class CommandInputController {
         (window as any).__historyDebug = () => this.engine.getDebugState();
     }
 
+    /**
+     * Clear the field being left and focus the one taking over. Which field is
+     * visible is the host's business (CommandLine renders one or the other), so
+     * call this once the swap is on screen.
+     */
     setPasswordMode(enabled: boolean): void {
         if (enabled) {
             this.input.value = '';
-            this.input.style.display = 'none';
-            this.deps.passwordInput.style.display = '';
             this.deps.passwordInput.focus();
         } else {
             this.deps.passwordInput.value = '';
-            this.deps.passwordInput.style.display = 'none';
-            this.input.style.display = '';
             this.input.focus();
         }
     }

@@ -28,6 +28,7 @@
    to style.css. Inlining it at the top of this file pins it first, in-chunk. */
 @import 'bootswatch/dist/darkly/bootstrap.min.css';
 @import './style.css';
+@import './commandLine.css';
 @import './themes/fantasy.css';
 @import './themes/forest.css';
 @import './themes/icy.css';

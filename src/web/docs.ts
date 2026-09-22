@@ -1,5 +1,6 @@
 import { marked, type MarkedExtension } from "marked";
 import Modal from "bootstrap/js/dist/modal";
+import { registerMainMenuItem } from "@modules/core/mainMenuRegistry";
 import overviewMd from "../../docs/OVERVIEW.md?raw";
 import combatMd from "../../docs/COMBAT.md?raw";
 import navigationMd from "../../docs/NAVIGATION.md?raw";
@@ -257,18 +258,19 @@ function createModal() {
 }
 
 function initDocs() {
-  const docsButton = document.getElementById(
-    "docs-button",
-  ) as HTMLButtonElement | null;
-  if (!docsButton) return;
-
   const { modalEl, modal } = createModal();
   const body = modalEl.querySelector(".modal-body") as HTMLElement;
   const { showDoc } = wireDocs(body);
 
-  docsButton.addEventListener("click", () => {
-    showDoc(docs[0].key);
-    modal.show();
+  registerMainMenuItem({
+    id: "docs-button",
+    label: "Dokumentacja",
+    order: 150,
+    source: "builtin",
+    onSelect: () => {
+      showDoc(docs[0].key);
+      modal.show();
+    },
   });
 }
 

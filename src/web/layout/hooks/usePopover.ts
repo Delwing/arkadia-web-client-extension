@@ -7,6 +7,8 @@ interface UsePopoverOptions {
   width?: number;
   /** Upper bound for the panel height; it shrinks further to fit below the button. */
   maxHeight?: number;
+  /** Open above the button (a control at the bottom of the screen). Default: below. */
+  placement?: 'below' | 'above';
   /** Called whenever the panel closes (click-away, Escape, or close()). */
   onClose?: () => void;
 }
@@ -20,7 +22,7 @@ interface UsePopoverOptions {
  * click-away and Escape are heard on — is the button's own document, so it keeps
  * working after the window is popped out into another browser window.
  */
-export function usePopover({ width, maxHeight = 360, onClose }: UsePopoverOptions = {}) {
+export function usePopover({ width, maxHeight = 360, placement = 'below', onClose }: UsePopoverOptions = {}) {
   const [open, setOpen] = useState(false);
   const [style, setStyle] = useState<CSSProperties | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -46,18 +48,20 @@ export function usePopover({ width, maxHeight = 360, onClose }: UsePopoverOption
     const view = anchor.ownerDocument.defaultView ?? window;
     const rect = anchor.getBoundingClientRect();
     const top = rect.bottom + 4;
-    const fit = Math.max(100, Math.min(maxHeight, view.innerHeight - top - 12));
+    const above = placement === 'above';
+    const fit = Math.max(100, Math.min(maxHeight, above ? rect.top - 16 : view.innerHeight - top - 12));
+    const vertical = above ? { bottom: view.innerHeight - rect.top + 4 } : { top };
     setStyle(
       width !== undefined
         ? {
-            top,
+            ...vertical,
             left: Math.max(8, Math.min(rect.right - width, view.innerWidth - width - 8)),
             width,
             maxHeight: fit,
           }
-        : { top, right: Math.max(8, view.innerWidth - rect.right), maxHeight: fit },
+        : { ...vertical, right: Math.max(8, view.innerWidth - rect.right), maxHeight: fit },
     );
-  }, [open, width, maxHeight]);
+  }, [open, width, maxHeight, placement]);
 
   useEffect(() => {
     if (!open || !rootRef.current) return;
