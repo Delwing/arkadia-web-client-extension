@@ -27,6 +27,7 @@
    linking it AFTER the entry chunk, so even as main.ts's first import it lost
    to style.css. Inlining it at the top of this file pins it first, in-chunk. */
 @import 'bootswatch/dist/darkly/bootstrap.min.css';
+@import './base.css';
 @import './style.css';
 @import './commandLine.css';
 @import './footer.css';

@@ -1046,7 +1046,7 @@ h1 {
   position: relative;
   min-height: 0;
   min-width: 0;
-  background-color: var(--bs-body-bg);
+  background-color: var(--popup-bg);
 }
 
 /* Stock Logi dialog: as wide as the screen allows and full height (the fill
@@ -2174,7 +2174,7 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
 }
 
 .mobile-direction-buttons.preview .mobile-button.editing {
-  outline: 2px solid var(--bs-primary);
+  outline: 2px solid var(--popup-accent);
   outline-offset: 1px;
 }
 
