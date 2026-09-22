@@ -94,3 +94,53 @@ describe('FunctionalBindManager clearCategory', () => {
     expect(defaultCb).not.toHaveBeenCalled();
   });
 });
+
+describe('FunctionalBindManager re-set priority', () => {
+  function createMockClient() {
+    return {
+      on: jest.fn(),
+      println: jest.fn(),
+      sendCommand: jest.fn(),
+    } as any;
+  }
+
+  function pressBind() {
+    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'BracketRight', key: ']', bubbles: true }));
+  }
+
+  // Regression: after a fight the loot bind is re-asserted on every objects.nums
+  // update, which used to steal the key back from the chimney follow bind.
+  test('re-setting the same command does not take the key from a newer bind', () => {
+    const manager = new FunctionalBindManager(createMockClient());
+
+    const lootCb = jest.fn();
+    const followCb = jest.fn();
+
+    manager.setCategory('loot', 'wez z ciala', lootCb);
+    manager.setCategory('default', 'opusc bronie;wejdz do komina;dobadz wszystkich broni', followCb);
+
+    // Someone leaves the room: the loot bind is rebound unchanged.
+    manager.setCategory('loot', 'wez z ciala', lootCb);
+
+    pressBind();
+
+    expect(followCb).toHaveBeenCalled();
+    expect(lootCb).not.toHaveBeenCalled();
+  });
+
+  test('a changed command still takes over the key', () => {
+    const manager = new FunctionalBindManager(createMockClient());
+
+    const lootCb = jest.fn();
+    const followCb = jest.fn();
+
+    manager.setCategory('default', 'wejdz do komina', followCb);
+    manager.setCategory('loot', 'wez z ziemi', lootCb);
+    manager.setCategory('loot', 'wez z ciala', lootCb);
+
+    pressBind();
+
+    expect(lootCb).toHaveBeenCalled();
+    expect(followCb).not.toHaveBeenCalled();
+  });
+});
