@@ -21,6 +21,7 @@
 .doc button,
 .doc input {
   font: inherit;
+  line-height: normal; /* one-line controls: see .popup-btn--control */
   color: inherit;
 }
 

@@ -69,14 +69,12 @@
   opacity: 0.6;
   cursor: default;
 }
-/* Key and action on a whole-pixel line box, centred in the pill. */
+/* Key and action each centred in the pill on the page's normal line height:
+   a fixed line shorter than the font's box splits the difference unevenly. */
 #multi-binds .multi-bind-key {
   display: inline-flex;
   align-items: center;
-  /* 2px on top moves the label down 1px: digits and caps have no descenders, so
-     centred they read high against the action text beside them. */
-  padding: 2px 7px 0;
-  line-height: 14px;
+  padding: 0 7px;
   border-right: 1px solid var(--bind-tone);
   background-color: var(--popup-subtle-bg);
   color: var(--popup-text-subtle);
@@ -90,7 +88,6 @@
   padding: 0 10px;
   overflow: hidden;
   font-size: 13px;
-  line-height: 14px;
   text-overflow: ellipsis;
 }
 
@@ -388,8 +385,6 @@
   align-items: baseline;
   gap: 6px;
   min-width: 0;
-  /* The icon's height in whole pixels: both centre on the same pixel at 100%. */
-  line-height: 14px;
 }
 #char-state .chip__lab {
   color: var(--popup-text-faint);

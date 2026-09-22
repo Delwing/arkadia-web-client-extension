@@ -26,7 +26,11 @@ body {
   font-family: var(--font-ui);
   font-size: 1rem;
   font-weight: 400;
-  line-height: 1.5;
+  /* normal, not a taller default: one-line controls centre their text in a
+     fixed box, and a taller line splits its leading unevenly (Chrome gives the
+     top only the whole pixels of it, so text sat ~1px high). Running text
+     gets its spacing back below. */
+  line-height: normal;
   color: var(--popup-text);
   background-color: var(--popup-bg);
   -webkit-text-size-adjust: 100%;
@@ -58,6 +62,10 @@ h6 { font-size: 1rem; }
   h2 { font-size: 2.5rem; }
   h3 { font-size: 2rem; }
   h4 { font-size: 1.5rem; }
+}
+
+:where(p, li, dd, blockquote, .popup-field__hint) {
+  line-height: 1.45;
 }
 
 p {

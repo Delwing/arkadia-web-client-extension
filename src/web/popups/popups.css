@@ -58,6 +58,7 @@
   border: 1px solid var(--popup-border-control);
   color: var(--popup-text-medium);
   font-size: 0.7rem;
+  line-height: normal; /* see .popup-btn--control */
   padding: 0.15rem 0.4rem;
   border-radius: 0.25rem;
   cursor: pointer;
@@ -271,7 +272,6 @@
   background-color: rgba(0, 0, 0, 0.5);
   font-family: var(--font-ui, sans-serif);
   font-size: var(--ui-fs, 13px);
-  line-height: 1.45;
   text-align: left;
 }
 .popup-dialog {
@@ -378,6 +378,10 @@
   font-family: inherit;
   font-size: var(--ui-fs, 13px);
   font-weight: 500;
+  /* Fixed-height controls centre one line: with a taller line-height Chrome
+     gives the top only the whole pixels of the half-leading, so the text sat
+     ~1px high. At normal there is no leading to split. */
+  line-height: normal;
   white-space: nowrap;
 }
 .popup-btn.popup-btn--control.popup-btn--sm {
@@ -435,6 +439,7 @@
   color: var(--popup-input-text);
   font-family: inherit;
   font-size: var(--ui-input-fs, 14px);
+  line-height: normal; /* see .popup-btn--control */
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 textarea.popup-input.popup-input--control {
@@ -703,12 +708,14 @@ select.popup-input.popup-input--control {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 1px 6px;
+  /* normal line-height + padding instead of 1.4: a taller line splits its
+     leading unevenly (see .popup-btn--control) and the text sat high. */
+  padding: 3px 6px;
   border-radius: var(--ui-radius-sm, 4px);
   background-color: var(--popup-control-active-bg);
   color: var(--popup-text);
   font-size: var(--ui-fs-sm, 12px);
-  line-height: 1.4;
+  line-height: normal;
   cursor: default;
 }
 /* Removable chips (the × removes them). */
@@ -1144,6 +1151,7 @@ select.popup-input.popup-input--control {
   font: inherit;
   font-size: var(--ui-fs-sm, 13px);
   font-weight: 600;
+  line-height: normal; /* see .popup-btn--control */
   opacity: 1;
   min-width: 0; /* opt out of the narrow-screen 8vmin button floor */
   min-height: 0;
