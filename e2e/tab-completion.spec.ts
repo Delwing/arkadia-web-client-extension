@@ -230,3 +230,22 @@ test.describe('Tab completion — output buffer based', () => {
         expect(value.startsWith('zabij ')).toBe(true);
     });
 });
+
+test.describe('Tab completion hint', () => {
+    test('shows what Tab would complete after the caret, and Tab takes it', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+        await pushText(page, 'Przy najdalszym pomoscie cumuje szeroki statek handlowy.');
+
+        await page.click('#message-input');
+        await page.keyboard.type('wejdz na st');
+        await expect(page.locator('.command-field__ghost-rest'), 'the rest of the word, dimmed').toHaveText('atek');
+        await expect(page.locator('.command-field__tab-hint')).toBeVisible();
+        await expect(page.locator('#message-input'), 'the hint is not typed into the line').toHaveValue('wejdz na st');
+
+        await page.keyboard.press('Tab');
+        await expect(page.locator('#message-input')).toHaveValue('wejdz na statek');
+        await expect(page.locator('.command-field__ghost'), 'nothing more to hint mid-cycle').toHaveCount(0);
+    });
+});

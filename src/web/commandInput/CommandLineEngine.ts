@@ -223,20 +223,17 @@ export class CommandLineEngine {
 
     // ── Tab Completion (from output buffer) ────────────────────────────
 
-    handleTabCompletion(forward: boolean): void {
-        const inputVal = this.field.value;
-
-        // First tab press: snapshot the typed text
-        if (this.tabCompletionCount === -1) {
-            this.tabCompletionTyped = inputVal;
-            this.tabCompletionOld = '';
-        }
-
+    /**
+     * What completing `text` can turn its last word into: plugin suggestions first,
+     * then words from the output (newest first), minus the blacklist, the word
+     * itself and repeats. Null when there is no word to complete or nothing fits.
+     */
+    private tabCandidates(text: string): { prefix: string; lastWord: string; words: string[] } | null {
         // Find the last word being typed
-        const lastWordMatch = this.tabCompletionTyped.match(/\b(\w+)$/);
-        if (!lastWordMatch) return;
+        const lastWordMatch = text.match(/\b(\w+)$/);
+        if (!lastWordMatch) return null;
         const lastWord = lastWordMatch[1];
-        const prefix = this.tabCompletionTyped.substring(0, this.tabCompletionTyped.length - lastWord.length);
+        const prefix = text.substring(0, text.length - lastWord.length);
 
         // Build word list: plugin suggestions first, then output words (newest first)
         const words: string[] = [];
@@ -262,7 +259,33 @@ export class CommandLineEngine {
             filteredWords.push(word);
         }
 
-        if (filteredWords.length === 0) return;
+        return filteredWords.length > 0 ? {prefix, lastWord, words: filteredWords} : null;
+    }
+
+    /**
+     * What the next forward Tab would append to `text`, without doing it — the
+     * command line shows it as a hint after the caret. Null while a completion
+     * cycle is running (Tab already rewrote the word) or when nothing fits.
+     */
+    peekTabCompletion(text: string): string | null {
+        if (this.tabCompletionCount !== -1) return null;
+        const candidates = this.tabCandidates(text);
+        if (!candidates) return null;
+        return candidates.words[0].slice(candidates.lastWord.length);
+    }
+
+    handleTabCompletion(forward: boolean): void {
+        const inputVal = this.field.value;
+
+        // First tab press: snapshot the typed text
+        if (this.tabCompletionCount === -1) {
+            this.tabCompletionTyped = inputVal;
+            this.tabCompletionOld = '';
+        }
+
+        const candidates = this.tabCandidates(this.tabCompletionTyped);
+        if (!candidates) return;
+        const {prefix, words: filteredWords} = candidates;
 
         // Cycle through matches
         if (forward) {

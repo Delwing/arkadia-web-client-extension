@@ -55,7 +55,7 @@ interface Harness {
     store: CommandHistoryStore & { saved: string[] };
 }
 
-function makeEngine(opts: Partial<{ history: string[]; clearInputOnSend: boolean }> = {}): Harness {
+function makeEngine(opts: Partial<{ history: string[]; clearInputOnSend: boolean; outputWords: string[] }> = {}): Harness {
     const field = new FakeField();
     const password = new FakeField();
     const sent: Harness['sent'] = [];
@@ -75,7 +75,7 @@ function makeEngine(opts: Partial<{ history: string[]; clearInputOnSend: boolean
         sendCommand: (command, echo, _opts, _skip, fromUser) => sent.push({ command, echo, fromUser }),
         isPasswordMode: () => h.passwordMode,
         getCommandLineSuggestions: () => [],
-        getOutputWords: () => [],
+        getOutputWords: () => opts.outputWords ?? [],
         getClearInputOnSend: () => h.clearInputOnSend,
         store,
     });
@@ -185,6 +185,30 @@ describe('CommandLineEngine', () => {
             expect(h.field.value).toBe('zabij smoka');
             h.engine.historyMove('up');
             expect(h.field.value).toBe('zbadaj miecz');
+        });
+    });
+
+    describe('peekTabCompletion', () => {
+        it('shows what the next Tab appends, without changing the line', () => {
+            // Output words are oldest first; completion prefers the newest.
+            const h = makeEngine({ outputWords: ['marynarz', 'statek', 'stary'] });
+            h.field.type('wejdz na st');
+            expect(h.engine.peekTabCompletion('wejdz na st')).toBe('ary');
+            expect(h.field.value).toBe('wejdz na st');
+
+            h.engine.handleTabCompletion(true);
+            expect(h.field.value).toBe('wejdz na stary');
+        });
+
+        it('offers nothing mid-cycle, with no word to complete, or when nothing fits', () => {
+            const h = makeEngine({ outputWords: ['statek', 'stary'] });
+            h.field.type('st');
+            h.engine.handleTabCompletion(true);
+            expect(h.engine.peekTabCompletion(h.field.value)).toBeNull();
+
+            const fresh = makeEngine({ outputWords: ['statek'] });
+            expect(fresh.engine.peekTabCompletion('wejdz ')).toBeNull();
+            expect(fresh.engine.peekTabCompletion('xyz')).toBeNull();
         });
     });
 

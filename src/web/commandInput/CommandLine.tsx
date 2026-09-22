@@ -7,6 +7,7 @@ import { usePopover } from "@web/layout/hooks/usePopover.ts";
 import { attachVoiceInput, type VoiceInputHandle } from "@web/voice/voiceInput.ts";
 import { CommandInputController, type CommandInputDeps } from "./CommandInputController";
 import { getConnectionView, requestReconnect, subscribeConnectionView } from "./connectionView";
+import { useHardwareKeyboard } from "@web-ui/hooks";
 
 export type CommandLineDeps = Pick<CommandInputDeps,
   "outputWrapper" | "sendCommand" | "isPasswordMode" | "getCommandLineSuggestions" | "getClearInputOnSend"> & {
@@ -71,6 +72,46 @@ export default function CommandLine({ deps }: { deps: CommandLineDeps }) {
       controllerRef.current = null;
     };
   }, []);
+
+  // What Tab would complete, shown after the caret. Only with a keyboard to press
+  // Tab on, with the caret at the end of a one-line command and nothing selected;
+  // worked out a beat after typing stops, since it reads the output's words.
+  const hardwareKeyboard = useHardwareKeyboard();
+  const [ghost, setGhost] = useState<{ text: string; suffix: string } | null>(null);
+  useEffect(() => {
+    const input = inputRef.current;
+    if (!input || !hardwareKeyboard) {
+      setGhost(null);
+      return;
+    }
+    let timer: number | undefined;
+    const update = () => {
+      window.clearTimeout(timer);
+      setGhost(null);
+      timer = window.setTimeout(() => {
+        const text = input.value;
+        const atEnd = input.selectionStart === text.length && input.selectionEnd === text.length;
+        if (document.activeElement !== input || !atEnd || text.includes("\n")) return;
+        const suffix = controllerRef.current?.peekTabCompletion();
+        setGhost(suffix ? { text, suffix } : null);
+      }, 120);
+    };
+    const clear = () => {
+      window.clearTimeout(timer);
+      setGhost(null);
+    };
+    input.addEventListener("input", update);
+    input.addEventListener("keyup", update);
+    input.addEventListener("focus", update);
+    input.addEventListener("blur", clear);
+    return () => {
+      clear();
+      input.removeEventListener("input", update);
+      input.removeEventListener("keyup", update);
+      input.removeEventListener("focus", update);
+      input.removeEventListener("blur", clear);
+    };
+  }, [hardwareKeyboard]);
 
   // The server asks for a password by taking echo away.
   useEffect(() => eventBus.on("telnet.echo", (echoing: boolean) => setPasswordMode(echoing)), []);
@@ -138,18 +179,27 @@ export default function CommandLine({ deps }: { deps: CommandLineDeps }) {
           : offline
             ? <span className="command-field__offline-dot" />
             : <span className="command-field__prompt">&gt;</span>}
-        <textarea
-          id="message-input"
-          ref={inputRef}
-          data-command-input=""
-          autoComplete="off"
-          autoCapitalize="off"
-          autoCorrect="off"
-          spellCheck={false}
-          rows={1}
-          placeholder={placeholder}
-          style={passwordMode ? { display: "none" } : undefined}
-        />
+        <div className="command-field__edit" style={passwordMode ? { display: "none" } : undefined}>
+          <textarea
+            id="message-input"
+            ref={inputRef}
+            data-command-input=""
+            autoComplete="off"
+            autoCapitalize="off"
+            autoCorrect="off"
+            spellCheck={false}
+            rows={1}
+            placeholder={placeholder}
+          />
+          {ghost && (
+            // The typed text laid out invisibly under the textarea's, so the
+            // completion lands right after the caret.
+            <div className="command-field__ghost">
+              <span className="command-field__ghost-typed">{ghost.text}</span>
+              <span className="command-field__ghost-rest">{ghost.suffix}</span>
+            </div>
+          )}
+        </div>
         <input
           type="password"
           id="message-input-password"
@@ -161,6 +211,9 @@ export default function CommandLine({ deps }: { deps: CommandLineDeps }) {
           style={passwordMode ? undefined : { display: "none" }}
         />
         {passwordMode && <span className="command-field__hint">nie trafi do historii</span>}
+        {!passwordMode && ghost && (
+          <span className="command-field__hint command-field__tab-hint"><kbd>Tab</kbd> uzupełnij</span>
+        )}
       </div>
       {showVoice && (
         <button id="voice-button" ref={voiceRef} type="button" title="Dyktowanie głosowe">

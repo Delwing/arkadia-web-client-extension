@@ -283,6 +283,11 @@ export class CommandInputController {
         }
     }
 
+    /** What the next Tab would append to the current line (see the engine). */
+    peekTabCompletion(): string | null {
+        return this.engine.peekTabCompletion(this.input.value);
+    }
+
     // ── Blacklist / Debug (delegated to the engine) ────────────────────
 
     addToBlacklist(word: string): void {
