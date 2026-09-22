@@ -537,20 +537,6 @@
 .kn-report-sec__name,
 .kn-region__name { font-size: 15px; font-weight: 600; }
 .kn-report-sec__levels { font-size: 12.5px; }
-.kn-more {
-  display: inline-flex;
-  align-self: flex-start;
-  align-items: center;
-  gap: 6px;
-  height: 30px;
-  padding: 0 8px;
-  border: 0;
-  background: transparent;
-  color: var(--popup-accent);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-}
 .kn-report__complete {
   display: flex;
   align-items: center;

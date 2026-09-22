@@ -1,5 +1,5 @@
-import { useRef, useState } from 'react';
-import { Check, ChevronDown } from 'lucide-react';
+import { useRef } from 'react';
+import { Check } from 'lucide-react';
 import { EntryRow } from './knowledgeUi';
 import {
     SOURCES,
@@ -10,9 +10,6 @@ import {
     type EntryFilter,
 } from './knowledgeModel';
 import { areaOfRoom } from './useKnowledgeData';
-
-/** Entries a section shows before "+N więcej", unless searching. */
-const SECTION_PREVIEW = 4;
 
 export interface ReportTabProps {
     rows: CategoryRow[];
@@ -37,7 +34,6 @@ function levelsLine(row: CategoryRow): string {
  * hints where to find it. Searching looks in the entries and the hints.
  */
 export function ReportTab({ rows, query, filter, hints, distance }: ReportTabProps) {
-    const [expanded, setExpanded] = useState<Set<string>>(new Set());
     const listRef = useRef<HTMLDivElement>(null);
     const searching = fold(query.trim()) !== '';
 
@@ -72,9 +68,6 @@ export function ReportTab({ rows, query, filter, hints, distance }: ReportTabPro
                     <div className="kn-empty">{searching ? `Nic nie pasuje do „${query.trim()}”.` : 'Wszystkie wpisy poznane.'}</div>
                 )}
                 {sections.map(({ row, entries }) => {
-                    const open = searching || expanded.has(row.name);
-                    const shown = open ? entries : entries.slice(0, SECTION_PREVIEW);
-                    const more = entries.length - shown.length;
                     const missing = row.total - row.known;
                     return (
                         <section key={row.name} className="kn-report-sec" data-category={row.name}>
@@ -87,7 +80,7 @@ export function ReportTab({ rows, query, filter, hints, distance }: ReportTabPro
                                 <span className="kn-muted kn-report-sec__levels">{levelsLine(row)}</span>
                             </div>
                             <ul className="kn-entries">
-                                {shown.map((entry) => (
+                                {entries.map((entry) => (
                                     <EntryRow
                                         key={entry.name}
                                         entry={entry}
@@ -97,16 +90,6 @@ export function ReportTab({ rows, query, filter, hints, distance }: ReportTabPro
                                     />
                                 ))}
                             </ul>
-                            {more > 0 && (
-                                <button
-                                    type="button"
-                                    className="kn-more"
-                                    onClick={() => setExpanded((prev) => new Set(prev).add(row.name))}
-                                >
-                                    +{more} {filter === 'missing' ? 'więcej brakujących' : 'więcej'}
-                                    <ChevronDown size={14} />
-                                </button>
-                            )}
                         </section>
                     );
                 })}
