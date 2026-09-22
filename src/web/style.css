@@ -791,6 +791,10 @@ input[type="url"]:disabled {
 
 /* Bootstrap button theme overrides */
 .btn-primary {
+  --bs-btn-color: var(--popup-bg);
+  --bs-btn-hover-color: var(--popup-bg);
+  --bs-btn-active-color: var(--popup-bg);
+  --bs-btn-disabled-color: var(--popup-bg);
   --bs-btn-bg: var(--popup-accent);
   --bs-btn-border-color: var(--popup-accent);
   --bs-btn-hover-bg: var(--popup-accent);
@@ -3325,7 +3329,7 @@ select.popup-input.popup-input--control.is-warning {
   height: 28px;
   overflow: hidden;
   background: var(--popup-accent);
-  color: #f1f5f9;
+  color: var(--popup-bg);
   box-shadow: 0 2px 6px rgba(15, 23, 42, 0.4);
   font-size: 8px;
   font-weight: 600;
@@ -3679,7 +3683,7 @@ body.layout-manager-enabled #notification-center {
   outline: none;
   border-color: var(--popup-accent);
   background: var(--popup-accent);
-  color: #06131f;
+  color: var(--popup-bg);
 }
 
 /* Window launchers: icon above label, four to a row; a dot marks one open. */

@@ -144,7 +144,7 @@
 .kn-btn--solid {
   border-color: var(--popup-accent);
   background: var(--popup-accent);
-  color: #06131f;
+  color: var(--popup-bg);
   font-weight: 600;
 }
 .kn-btn--solid:hover { background: var(--popup-accent); filter: brightness(1.08); }
@@ -196,7 +196,7 @@
 }
 .kn-tabs > button.is-on {
   background: var(--popup-accent);
-  color: #06131f;
+  color: var(--popup-bg);
 }
 
 .kn-switch,
@@ -231,7 +231,7 @@
   transition: left 0.12s ease;
 }
 .kn-switch input:checked + .kn-switch__track { border-color: var(--popup-accent); background: var(--popup-accent); }
-.kn-switch input:checked + .kn-switch__track::after { left: 14px; background: #06131f; }
+.kn-switch input:checked + .kn-switch__track::after { left: 14px; background: var(--popup-bg); }
 .kn-switch input:focus-visible + .kn-switch__track { box-shadow: 0 0 0 3px var(--popup-accent-border); }
 .kn-check input { width: 16px; height: 16px; margin: 0; accent-color: var(--popup-accent); }
 

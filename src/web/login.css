@@ -69,7 +69,7 @@
 #auth-overlay .auth-btn--solid {
   border-color: var(--popup-accent);
   background: var(--popup-accent);
-  color: #06131f;
+  color: var(--popup-bg);
   font-weight: 600;
 }
 #auth-overlay .auth-btn--solid:hover { border-color: var(--popup-accent); background: var(--popup-accent); filter: brightness(1.08); }
@@ -369,7 +369,7 @@
   opacity: 1;
 }
 #auth-overlay .proxy-seg button:hover { color: var(--popup-text); background: var(--popup-hover-bg); }
-#auth-overlay .proxy-seg button.is-on { background: var(--popup-accent); color: #06131f; font-weight: 600; }
+#auth-overlay .proxy-seg button.is-on { background: var(--popup-accent); color: var(--popup-bg); font-weight: 600; }
 
 .auth-alert {
   display: flex;
