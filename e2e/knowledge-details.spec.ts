@@ -62,7 +62,7 @@ test.describe('Wiedza window', () => {
         const detail = win.locator('.kn-cat');
         await expect(detail.locator('.kn-cat__name')).toHaveText(CHAOS_CATEGORY_NAME);
         await expect(detail.locator('.kn-source[data-source="books"] .kn-source__value')).toHaveText('znikoma');
-        await expect(detail.locator('.kn-source[data-source="exploration"] .kn-source__value')).toHaveText('2 z 5 miejsc');
+        await expect(detail.locator('.kn-source[data-source="exploration"] .kn-source__value')).toHaveText('znikoma');
 
         // The two seen are under "Poznane"; "Brakujące" lists the other three.
         await expect(detail.locator('.kn-entry--known')).toHaveCount(0);

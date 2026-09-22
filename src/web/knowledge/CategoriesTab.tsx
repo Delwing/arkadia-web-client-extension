@@ -158,11 +158,7 @@ function CategoryDetail({
                     return (
                         <div key={source} className="kn-source" data-source={source}>
                             <span className="kn-dim kn-source__label"><Icon size={14} />{SOURCE_LABELS[source]}</span>
-                            <span className="kn-source__value">
-                                {source === 'exploration' && row.total > 0
-                                    ? `${row.known} z ${row.total} miejsc`
-                                    : summary?.level ?? '—'}
-                            </span>
+                            <span className="kn-source__value">{summary?.level ?? '—'}</span>
                             <LevelBar value={Math.max(0, level)} max={summary?.levelMax || MAX_LEVEL} />
                         </div>
                     );
@@ -242,7 +238,7 @@ function CategoryDetail({
                 <div className="kn-sec__head">
                     <Compass size={15} />
                     <span className="kn-sec__title">Wpisy wiedzy</span>
-                    <span className="kn-muted">z eksploracji · {row.known} z {row.total}</span>
+                    <span className="kn-muted">{row.known} z {row.total}</span>
                     <span className="kn-grow" />
                     <Segmented<EntryFilter>
                         value={entryFilter}
