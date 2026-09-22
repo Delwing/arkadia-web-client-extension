@@ -435,13 +435,11 @@
 #char-state .chip--guard-held .chip__ico {
   color: var(--popup-accent);
 }
-/* Plugin items are the plugin's own markup; a dashed tile says so. */
+/* Plugin items are the plugin's own markup, drawn as it is: no frame of ours.
+   A plugin that wants the chip look uses the chip classes (Chip.tsx). */
 #char-state .footer-plugin-item {
   align-items: center;
   height: var(--chip-h);
-  padding: 0 9px;
-  border: 1px dashed var(--popup-border-strong);
-  border-radius: 6px;
   font-size: var(--ui-fs-sm, 13px);
 }
 #char-state .footer-plugin-item:has(> .footer-node-host:empty) {

@@ -945,6 +945,12 @@ export interface UiApi {
    * - DOM nodes: Pre-created DOM elements
    * - React elements: Full React components with state and hooks
    *
+   * The content is drawn as it is, with no frame around it. To look like the
+   * built-in chips, use their classes:
+   * `<span class="chip"><span class="chip__ico">…</span><span class="chip__text">`
+   * `<span class="chip__lab">Label</span><span class="chip__val">value</span></span></span>`
+   * (add `chip--warn` / `chip--danger` for urgency).
+   *
    * @param id - Unique identifier for this component (will be namespaced by plugin)
    * @param content - HTML string, DOM node, or React element
    * @param position - Where to insert: 'start', 'end' (default), or numeric index
