@@ -1,4 +1,4 @@
-// The darkly base + style.css + colour themes + layout.css, @imported into one
+// The document base + style.css + colour themes + layout.css, @imported into one
 // chunk (main-theme.css) to lock the stock cascade order — see that file for why.
 import './main-theme.css'
 import './popups/popups.css'

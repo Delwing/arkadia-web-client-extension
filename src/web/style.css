@@ -117,7 +117,6 @@
      Interface text and sizes (window headers, menus, dialogs) — not game text,
      which follows --output-font-*. */
   --font-ui: "Barlow", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --bs-body-font-family: var(--font-ui);
   --ui-fs-xs: 12px;
   --ui-fs-sm: 13px;
   --ui-fs: 14px;
@@ -177,21 +176,9 @@
   --pin-button-background: var(--floating-pin-background);
   --pin-button-hover-background: var(--floating-pin-hover-background);
   --pin-button-hover-shadow: var(--floating-pin-hover-shadow);
-  --bs-body-bg: var(--popup-bg);
-  --bs-body-color: var(--popup-text);
-  --bs-border-color: var(--popup-border);
-  --bs-primary: var(--popup-accent);
-  --bs-primary-rgb: 96, 165, 250;
-  --bs-secondary-color: var(--popup-text-subtle);
-  --bs-secondary-bg: var(--popup-control-bg);
-  --bs-tertiary-bg: var(--popup-subtle-bg);
-  --bs-emphasis-color: var(--popup-text-strong);
-  --bs-link-color: var(--popup-accent);
-  --bs-link-hover-color: var(--popup-accent);
-  /* Dock chrome accents (src/web/layout/layout.css). Same values the `--bs-*`
-     aliases above carry — the layout tokens exist so shared layout CSS does not
-     have to assume Bootstrap is loaded. --layout-warning keeps Bootstrap's
-     #ffc107 via the inline fallback. */
+  /* Dock chrome accents (src/web/layout/layout.css): tokens of their own, so the
+     shared layout CSS does not reach into the popup palette. --layout-warning
+     keeps #ffc107 via the inline fallback. */
   --layout-accent: var(--popup-accent);
   --layout-muted: var(--popup-text-subtle);
   color: var(--text-primary);
@@ -555,129 +542,6 @@ body.app-modal-open {
   }
 }
 
-/* Buttons: 28px (24px small), UI font, the dialog radius. */
-.app-modal .btn {
-  --bs-btn-padding-y: 0;
-  --bs-btn-padding-x: 12px;
-  --bs-btn-font-family: var(--font-ui);
-  --bs-btn-font-size: var(--ui-fs, 13px);
-  --bs-btn-font-weight: 500;
-  --bs-btn-line-height: calc(var(--ui-ctrl, 28px) - 2px);
-  --bs-btn-border-radius: var(--ui-radius, 6px);
-}
-.app-modal .btn-sm,
-.app-modal .btn-group-sm > .btn {
-  --bs-btn-padding-x: 8px;
-  --bs-btn-font-size: var(--ui-fs-sm, 12px);
-  --bs-btn-line-height: calc(var(--ui-ctrl-sm, 24px) - 2px);
-  --bs-btn-border-radius: var(--ui-radius-sm, 4px);
-}
-/* Inputs and selects: 28px, beating the global input[type=…] rules (0,1,1)
-   and their 0.2rem focus ring. */
-.app-modal .form-control,
-.app-modal .form-select {
-  min-height: 0;
-  height: var(--ui-ctrl, 28px);
-  padding: 0 8px;
-  border-radius: var(--ui-radius, 6px);
-  font-size: var(--ui-input-fs, 14px);
-  line-height: calc(var(--ui-ctrl, 28px) - 2px);
-}
-.app-modal .form-select {
-  padding-right: 26px;
-  background-position: right 8px center;
-  background-size: 12px;
-}
-.app-modal textarea.form-control {
-  height: auto;
-  min-height: var(--ui-ctrl, 28px);
-  padding: 5px 8px;
-  line-height: 1.4;
-}
-.app-modal .form-control-sm,
-.app-modal .form-select-sm {
-  height: var(--ui-ctrl-sm, 24px);
-  padding-left: 6px;
-  border-radius: var(--ui-radius-sm, 4px);
-  font-size: var(--ui-input-fs, 14px);
-  line-height: calc(var(--ui-ctrl-sm, 24px) - 2px);
-}
-.app-modal .form-select-sm {
-  padding-right: 22px;
-}
-.app-modal textarea.form-control-sm {
-  height: auto;
-  line-height: 1.4;
-}
-.app-modal .form-control[type="color"] {
-  padding: 2px;
-}
-.app-modal .form-control:focus,
-.app-modal .form-select:focus {
-  border-color: var(--popup-accent);
-  box-shadow: 0 0 0 2px var(--popup-accent-subtle-bg);
-}
-.app-modal .form-label {
-  margin-bottom: 4px;
-  font-size: var(--ui-fs-sm, 12px);
-  font-weight: 600;
-}
-.app-modal .form-text {
-  font-size: var(--ui-fs-xs, 11px);
-}
-.app-modal .form-check-input {
-  width: var(--ui-check, 16px);
-  height: var(--ui-check, 16px);
-  margin-top: 0.2em;
-}
-.app-modal .input-group-text {
-  padding: 0 8px;
-  font-size: var(--ui-fs, 13px);
-}
-
-.app-modal .btn-close,
-.letter-composer .btn-close,
-.plugin-window .btn-close,
-.herb-window .btn-close {
-  width: var(--close-button-size, var(--floating-close-size));
-  height: var(--close-button-size, var(--floating-close-size));
-  border-radius: 999px;
-  padding: 0;
-  background-image: var(
-    --close-button-icon,
-    var(--floating-close-icon)
-  );
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: var(--close-button-icon-size, var(--floating-close-icon-size));
-  filter: none;
-  opacity: var(--close-button-opacity, var(--floating-close-opacity));
-  background-color: var(
-    --close-button-background,
-    var(--floating-close-background)
-  );
-  transition: opacity 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.app-modal .btn-close:hover,
-.app-modal .btn-close:focus-visible,
-.letter-composer .btn-close:hover,
-.letter-composer .btn-close:focus-visible,
-.plugin-window .btn-close:hover,
-.plugin-window .btn-close:focus-visible,
-.herb-window .btn-close:hover,
-.herb-window .btn-close:focus-visible {
-  opacity: var(--close-button-hover-opacity, var(--floating-close-hover-opacity));
-  background-color: var(
-    --close-button-hover-background,
-    var(--floating-close-hover-background)
-  );
-  box-shadow: var(
-    --close-button-hover-shadow,
-    var(--floating-close-hover-shadow)
-  );
-}
-
 .window-header-actions {
   margin-left: auto;
   display: flex;
@@ -687,14 +551,6 @@ body.app-modal-open {
 
 /* Locked state styling for plugin windows */
 
-.app-modal .form-text,
-.app-modal .form-label,
-.app-modal .form-check-label {
-  color: var(--popup-text-subtle);
-}
-
-.form-control,
-.form-select,
 textarea,
 input[type="text"],
 input[type="email"],
@@ -713,8 +569,6 @@ input[type="url"],
   transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
 }
 
-.form-control:focus,
-.form-select:focus,
 textarea:focus,
 input[type="text"]:focus,
 input[type="email"]:focus,
@@ -730,15 +584,12 @@ input[type="url"]:focus {
   outline: none;
 }
 
-.form-control::placeholder,
 textarea::placeholder,
 input::placeholder {
   color: var(--popup-text-faint);
   opacity: 1;
 }
 
-.form-control:disabled,
-.form-select:disabled,
 textarea:disabled,
 input[type="text"]:disabled,
 input[type="email"]:disabled,
@@ -754,89 +605,9 @@ input[type="url"]:disabled {
   opacity: 0.7;
 }
 
-.form-select option,
 .app-modal option {
   background-color: var(--popup-bg);
   color: var(--popup-text);
-}
-
-.form-check-input {
-  background-color: var(--popup-input-bg);
-  border: 1px solid var(--popup-border-control);
-  cursor: pointer;
-}
-
-.form-check-input:focus {
-  box-shadow: 0 0 0 0.2rem var(--popup-input-focus-border);
-  border-color: var(--popup-accent);
-}
-
-.form-check-input:checked {
-  background-color: var(--popup-accent);
-  border-color: var(--popup-accent);
-}
-
-.table-modern {
-  --table-border-color: var(--popup-border);
-  --table-header-bg: var(--popup-control-bg);
-  --table-header-border: var(--popup-border-strong);
-  --table-row-border: var(--popup-border-subtle);
-  --table-hover-bg: var(--popup-accent-bg);
-  --bs-table-color: var(--popup-text);
-  --bs-table-bg: transparent;
-  --bs-table-striped-color: var(--popup-text);
-  --bs-table-hover-color: var(--popup-text);
-  --bs-table-border-color: var(--popup-border);
-  background-color: var(--popup-bg);
-  border: 1px solid var(--table-border-color);
-  overflow: hidden;
-  box-shadow: 0 1rem 2rem rgba(0, 0, 0, 0.25);
-}
-
-.table-modern thead {
-  background: var(--table-header-bg);
-}
-
-.table-modern thead th {
-  border-bottom: 1px solid var(--table-header-border);
-  color: var(--text-secondary);
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-}
-
-.table-modern > :not(caption) > * > * {
-  background-color: transparent;
-  border-bottom: 1px solid var(--table-row-border);
-  transition: background-color 0.2s ease, color 0.2s ease;
-}
-
-.table-modern > :not(caption) > *:last-child > * {
-  border-bottom: 0;
-}
-
-.table-modern.table-bordered > :not(caption) > * > * {
-  border-width: 0;
-}
-
-.table-modern.table-zebra tbody tr:nth-of-type(odd) {
-  background-color: rgba(255, 255, 255, 0.03);
-}
-
-.table-modern.table-zebra tbody tr:nth-of-type(even) {
-  background-color: transparent;
-}
-
-.table-modern.table-hover tbody tr:hover {
-  background-color: var(--table-hover-bg);
-}
-
-.table-modern.table-hover tbody tr:hover > * {
-  color: var(--text-primary);
-}
-
-.table-modern caption {
-  color: var(--text-secondary);
 }
 
 .npc-actions {
@@ -844,170 +615,10 @@ input[type="url"]:disabled {
   white-space: nowrap;
 }
 
-.npc-actions .btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  margin-left: auto;
-}
-
-.dropdown-menu {
-  background-color: var(--popup-bg);
-  border: 1px solid var(--popup-border);
-  box-shadow: 0 1rem 2rem rgba(0, 0, 0, 0.35);
-  color: var(--popup-text);
-}
-
-.dropdown-item {
-  color: var(--popup-text-bright);
-}
-
-.dropdown-item:hover,
-.dropdown-item:focus-visible {
-  background-color: var(--popup-hover-bg);
-  color: var(--popup-text);
-}
-
-/* Bootstrap button theme overrides */
-.btn-primary {
-  --bs-btn-color: var(--popup-bg);
-  --bs-btn-hover-color: var(--popup-bg);
-  --bs-btn-active-color: var(--popup-bg);
-  --bs-btn-disabled-color: var(--popup-bg);
-  --bs-btn-bg: var(--popup-accent);
-  --bs-btn-border-color: var(--popup-accent);
-  --bs-btn-hover-bg: var(--popup-accent);
-  --bs-btn-hover-border-color: var(--popup-accent);
-  --bs-btn-active-bg: var(--popup-accent);
-  --bs-btn-active-border-color: var(--popup-accent);
-  --bs-btn-disabled-bg: var(--popup-accent);
-  --bs-btn-disabled-border-color: var(--popup-accent);
-}
-
-.btn-secondary {
-  --bs-btn-bg: var(--popup-control-bg);
-  --bs-btn-border-color: var(--popup-border-control);
-  --bs-btn-color: var(--popup-text-bright);
-  --bs-btn-hover-bg: var(--popup-control-hover-bg);
-  --bs-btn-hover-border-color: var(--popup-border-strong);
-  --bs-btn-hover-color: var(--popup-text);
-  --bs-btn-active-bg: var(--popup-control-active-bg);
-  --bs-btn-active-border-color: var(--popup-border-strong);
-  --bs-btn-active-color: var(--popup-text);
-}
-
-.btn-danger {
-  --bs-btn-bg: var(--popup-danger);
-  --bs-btn-border-color: var(--popup-danger);
-  --bs-btn-hover-bg: var(--popup-danger-light);
-  --bs-btn-hover-border-color: var(--popup-danger-light);
-  --bs-btn-active-bg: var(--popup-danger);
-  --bs-btn-active-border-color: var(--popup-danger);
-}
-
-.btn-outline-secondary {
-  --bs-btn-color: var(--popup-text-subtle);
-  --bs-btn-border-color: var(--popup-border-control);
-  --bs-btn-hover-bg: var(--popup-control-hover-bg);
-  --bs-btn-hover-border-color: var(--popup-border-strong);
-  --bs-btn-hover-color: var(--popup-text);
-  --bs-btn-active-bg: var(--popup-control-active-bg);
-  --bs-btn-active-border-color: var(--popup-border-strong);
-  --bs-btn-active-color: var(--popup-text);
-}
-
-.btn-outline-primary {
-  --bs-btn-color: var(--popup-accent);
-  --bs-btn-border-color: var(--popup-accent);
-  --bs-btn-hover-bg: var(--popup-accent-bg);
-  --bs-btn-hover-border-color: var(--popup-accent);
-  --bs-btn-hover-color: var(--popup-accent);
-  --bs-btn-active-bg: var(--popup-accent-hover-bg);
-  --bs-btn-active-border-color: var(--popup-accent);
-  --bs-btn-active-color: var(--popup-accent);
-}
-
-.btn-warning {
-  --bs-btn-bg: var(--popup-warning);
-  --bs-btn-border-color: var(--popup-warning);
-  --bs-btn-hover-bg: var(--popup-warning-light);
-  --bs-btn-hover-border-color: var(--popup-warning-light);
-}
-
-.btn-success {
-  --bs-btn-bg: var(--popup-success);
-  --bs-btn-border-color: var(--popup-success);
-  --bs-btn-hover-bg: var(--popup-success-light);
-  --bs-btn-hover-border-color: var(--popup-success-light);
-}
-
-.btn-outline-light {
-  --bs-btn-color: var(--popup-text);
-  --bs-btn-border-color: var(--popup-border-strong);
-  --bs-btn-hover-bg: var(--popup-control-hover-bg);
-  --bs-btn-hover-border-color: var(--popup-border-stronger);
-  --bs-btn-hover-color: var(--popup-text-strong);
-  --bs-btn-active-bg: var(--popup-control-active-bg);
-  --bs-btn-active-border-color: var(--popup-border-stronger);
-  --bs-btn-active-color: var(--popup-text-strong);
-}
-
-.btn-light {
-  --bs-btn-bg: var(--popup-control-bg);
-  --bs-btn-border-color: var(--popup-border-control);
-  --bs-btn-color: var(--popup-text);
-  --bs-btn-hover-bg: var(--popup-control-hover-bg);
-  --bs-btn-hover-border-color: var(--popup-border-strong);
-  --bs-btn-hover-color: var(--popup-text-strong);
-  --bs-btn-active-bg: var(--popup-control-active-bg);
-  --bs-btn-active-border-color: var(--popup-border-strong);
-  --bs-btn-active-color: var(--popup-text-strong);
-}
-
-.btn-outline-danger {
-  --bs-btn-color: var(--popup-danger);
-  --bs-btn-border-color: var(--popup-danger);
-  --bs-btn-hover-bg: var(--popup-danger-bg);
-  --bs-btn-hover-border-color: var(--popup-danger);
-  --bs-btn-hover-color: var(--popup-danger);
-  --bs-btn-active-bg: var(--popup-danger-subtle-bg);
-  --bs-btn-active-border-color: var(--popup-danger);
-  --bs-btn-active-color: var(--popup-danger);
-}
-
-/* Bootstrap form-range theme */
-.form-range::-webkit-slider-thumb {
-  background: var(--popup-accent);
-}
-
-.form-range::-moz-range-thumb {
-  background: var(--popup-accent);
-}
-
-.form-range::-webkit-slider-runnable-track {
-  background: var(--popup-control-bg);
-}
-
-.form-range::-moz-range-track {
-  background: var(--popup-control-bg);
-}
-
-/* Bootstrap badge theme */
-.badge.bg-secondary {
-  background-color: var(--popup-control-bg) !important;
-  color: var(--popup-text-bright);
-}
-
-@media (min-width: 576px) {
-}
-
 @media (min-width: 768px) {
   .w-md-auto {
     width: auto !important;
   }
-}
-
-@media (min-width: 992px) {
 }
 
 /* Old mode toggle styles removed - see segmented control pattern below */
@@ -1621,10 +1232,6 @@ h1 {
   text-align: center;
 }
 
-.card {
-  padding: 2em;
-}
-
 button {
   border-radius: 1vmin;
   border: 0.1vh solid transparent;
@@ -2197,11 +1804,6 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
 /* Desktop Buttons — moved to src/ui/web/buttons/desktopButtons.css (shared
    with forge-ui, since DesktopButtons is now a shared React component
    imported from @web-ui/buttons/DesktopButtons). Imported below. */
-
-/* Tab styling for buttons settings */
-.nav-tabs .nav-link {
-  cursor: pointer;
-}
 
 /* Map download progress, centred over the map (index.html, main.ts). */
 #map-progress-container {
@@ -3499,19 +3101,6 @@ select.popup-input.popup-input--control.is-warning {
   margin-top: 0;
 }
 
-.ui-settings-section .form-check,
-.character-settings-section .form-check {
-  margin: 0;
-}
-
-.ui-settings-section .form-check-input {
-  margin-right: 0.5rem;
-}
-
-.ui-settings-section .form-check-label {
-  cursor: pointer;
-}
-
 /* Sound category tiles (Dźwięk tab) */
 .app-modal input,
 .app-modal textarea,
@@ -4049,60 +3638,6 @@ body.layout-manager-enabled #notification-center {
 }
 
 /* clock popup — moved to src/web/popups/popups.css (shared by both UIs). */
-/* Dark mode range slider styling */
-.form-range {
-  background-color: rgba(11, 15, 23, 0.94);
-  border: 1px solid rgba(118, 127, 150, 0.45);
-  border-radius: 0.375rem;
-  padding: 0.25rem;
-}
-
-.form-range::-webkit-slider-runnable-track {
-  background: rgba(118, 127, 150, 0.25);
-  border-radius: 0.25rem;
-  height: 0.5rem;
-}
-
-.form-range::-webkit-slider-thumb {
-  background: var(--popup-accent);
-  border: 2px solid #1e40af;
-  border-radius: 50%;
-  width: 1.25rem;
-  height: 1.25rem;
-  margin-top: -0.375rem;
-  cursor: pointer;
-  transition: background-color 0.15s ease-in-out;
-}
-
-.form-range::-webkit-slider-thumb:hover {
-  background: #93c5fd;
-}
-
-.form-range::-moz-range-track {
-  background: rgba(118, 127, 150, 0.25);
-  border-radius: 0.25rem;
-  height: 0.5rem;
-}
-
-.form-range::-moz-range-thumb {
-  background: var(--popup-accent);
-  border: 2px solid #1e40af;
-  border-radius: 50%;
-  width: 1.25rem;
-  height: 1.25rem;
-  cursor: pointer;
-  transition: background-color 0.15s ease-in-out;
-}
-
-.form-range::-moz-range-thumb:hover {
-  background: #93c5fd;
-}
-
-.form-range:focus {
-  outline: none;
-  box-shadow: 0 0 0 0.25rem rgba(88, 154, 255, 0.25);
-}
-
 /* contracts popup — moved to src/web/popups/popups.css (shared by both UIs). */
 /* fishing popup — moved to src/web/popups/popups.css (shared by both UIs). */
 /* Context menu badge duplicate flash animation */

@@ -1,8 +1,6 @@
 /* Dark Neutral - clean dark theme based on #242424 */
 /* Warm white text on neutral dark gray, subtle blue-gray accent */
 .theme-dark-neutral {
-  --bs-primary: var(--popup-accent);
-  --bs-primary-rgb: 130, 160, 200;
   --popup-bg: #242424;
   --popup-text: #e0e0e0;
   --popup-text-dim: rgba(224, 224, 224, 0.5);

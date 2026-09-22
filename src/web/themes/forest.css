@@ -1,8 +1,6 @@
 /* Forest - earthy greens and warm browns */
 /* Green = accent/resting controls, Amber/brown = borders/hover/active states */
 .theme-forest {
-  --bs-primary: var(--popup-accent);
-  --bs-primary-rgb: 92, 184, 92;
   --popup-bg: #121a14;
   --popup-text: #d8e8d0;
   --popup-text-dim: rgba(216, 232, 208, 0.5);

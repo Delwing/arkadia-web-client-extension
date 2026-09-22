@@ -1,8 +1,6 @@
 /* Gray - neutral monochrome with subtle cool undertones */
 /* Gray = accent/controls/borders, slightly warmer gray for hover/active states */
 .theme-gray {
-  --bs-primary: var(--popup-accent);
-  --bs-primary-rgb: 160, 165, 175;
   --popup-bg: #141416;
   --popup-text: #d8d8dc;
   --popup-text-dim: rgba(216, 216, 220, 0.5);

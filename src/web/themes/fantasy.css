@@ -1,8 +1,6 @@
 /* Fantasy - mystical purples and enchanted golds */
 /* Purple = accent/resting controls, Gold = borders/hover/active states */
 .theme-fantasy {
-  --bs-primary: var(--popup-accent);
-  --bs-primary-rgb: 184, 138, 237;
   --popup-bg: #1a1225;
   --popup-text: #e8dff5;
   --popup-text-dim: rgba(232, 223, 245, 0.5);

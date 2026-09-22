@@ -1,8 +1,6 @@
 /* Light Silver - clean cool-gray backgrounds with blue accents */
 /* Modern, neutral light theme with subtle cool undertones */
 .theme-light-silver {
-  --bs-primary: var(--popup-accent);
-  --bs-primary-rgb: 51, 102, 187;
   color-scheme: light;
   --popup-bg: #f0f2f5;
   --popup-text: #1a1c20;

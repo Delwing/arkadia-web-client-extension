@@ -1,8 +1,6 @@
 /* Light Parchment - warm cream backgrounds with brown/sepia tones */
 /* Evokes aged paper and ink — warm, readable, easy on the eyes */
 .theme-light-parchment {
-  --bs-primary: var(--popup-accent);
-  --bs-primary-rgb: 139, 90, 43;
   color-scheme: light;
   --popup-bg: #f5f0e6;
   --popup-text: #3a3228;

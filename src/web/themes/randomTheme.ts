@@ -82,8 +82,6 @@ export function generateThemeCSS(color: string): string {
     const dangSoftHex = hslToHex(5, 60, 60);
 
     return `.theme-custom-dark {
-  --bs-primary: var(--popup-accent);
-  --bs-primary-rgb: ${ar}, ${ag}, ${ab};
   --popup-bg: ${bgHex};
   --popup-text: ${textHex};
   --popup-text-dim: rgba(${tr}, ${tg}, ${tb}, 0.5);

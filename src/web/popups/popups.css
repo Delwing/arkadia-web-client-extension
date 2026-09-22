@@ -359,7 +359,7 @@
 
 /* ── Form controls at control size (28px) — dialogs and settings ───────────
    Compounded with the base class: the stock input rules
-   (input[type="text"], .modal input …) are (0,1,1) and would outrank a single
+   (input[type="text"], .app-modal input …) are (0,1,1) and would outrank a single
    class; the bare `button` rule would leak opacity/padding/background. */
 .popup-btn.popup-btn--control {
   /* Sized by the --ui-ctrl tokens (the touch tier included), so the old
