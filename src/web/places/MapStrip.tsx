@@ -27,6 +27,10 @@ export function MapStrip({ roomId, coverRef }: { roomId: number; coverRef?: RefO
         const renderer = rendererRef.current;
         const container = containerRef.current;
         if (!renderer || !container || container.clientHeight === 0) return;
+        // The renderer only follows window resizes. Opened from the map, the
+        // window is still hidden when the strip mounts, so it starts at 0x0
+        // and would stay blank: take the strip's size on every re-frame.
+        renderer.camera.setSize(container.clientWidth, container.clientHeight);
         renderer.centerOn(roomId, true);
         const camera = renderer.camera;
         const cover = coverRef?.current;

@@ -18,7 +18,7 @@ const POSLAN_MAP_NAME = 'Miasteczko Poslan';
 const modal = (page: Page) => page.locator('#places-modal');
 const noteBox = (page: Page) => modal(page).locator('textarea.places-note');
 
-async function openFromMapMenu(page: Page, roomId: number, item: 'Notatka' | 'Dodaj skrót') {
+async function openFromMapMenu(page: Page, roomId: number, item: 'Notatka' | 'Skrót') {
     await page.evaluate((id) => {
         document.getElementById('map')!.dispatchEvent(new CustomEvent('roomcontextmenu', {
             bubbles: true,
@@ -127,8 +127,16 @@ test.describe('Miejsca (skróty i notatki lokacji)', () => {
         expect(await readNote(page, ROOM_ID)).toBe('Pierwsza');
     });
 
-    test('"Dodaj skrót" on the map adds a /idz shortcut for that room', async ({ page }) => {
-        await openFromMapMenu(page, ROOM_ID, 'Dodaj skrót');
+    test('opened from the map, the room preview is drawn, not left blank', async ({ page }) => {
+        // The window is still hidden when the preview mounts; it must take its
+        // size once the window shows, not keep the 0x0 it started with.
+        await openFromMapMenu(page, ROOM_ID, 'Notatka');
+        const canvas = modal(page).locator('.places-map canvas').first();
+        await expect.poll(() => canvas.evaluate((el) => (el as HTMLCanvasElement).width)).toBeGreaterThan(100);
+    });
+
+    test('"Skrót" on the map adds a /idz shortcut for that room', async ({ page }) => {
+        await openFromMapMenu(page, ROOM_ID, 'Skrót');
         const field = modal(page).locator('.places-shortcut input');
         await expect(field).toBeFocused();
         await field.fill('most');
@@ -138,7 +146,7 @@ test.describe('Miejsca (skróty i notatki lokacji)', () => {
     });
 
     test('a shortcut name /idz cannot take is refused', async ({ page }) => {
-        await openFromMapMenu(page, ROOM_ID, 'Dodaj skrót');
+        await openFromMapMenu(page, ROOM_ID, 'Skrót');
         const field = modal(page).locator('.places-shortcut input');
         await field.fill('zły most');
         await field.press('Enter');
@@ -236,7 +244,7 @@ test.describe('Miejsca (skróty i notatki lokacji)', () => {
 
     test('right-click on a list row offers Idź, Prowadź and Usuń miejsce', async ({ page }) => {
         await setCurrentRoom(page, OTHER_ROOM_ID, 'Poczta', 0);
-        await openFromMapMenu(page, ROOM_ID, 'Dodaj skrót');
+        await openFromMapMenu(page, ROOM_ID, 'Skrót');
         const field = modal(page).locator('.places-shortcut input');
         await field.fill('most');
         await field.press('Enter');
