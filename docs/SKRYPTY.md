@@ -32,6 +32,7 @@ Reagujesz na to, co pojawia sie na ekranie — automatycznie, bez czekania.
   - Wolne lub szybkie miganie tekstu
   - Pulsowanie (dim z konfigurowalna krzywą animacji)
   - Ustawienie funkcyjnego bindu
+  - Czytanie na glos (synteza mowy) — wlasny tekst z `{1}`/`{nazwa}` z grup wzorca albo `{arg}` ze zdarzenia; glos, tempo, wysokosc i glosnosc w Ustawieniach interfejsu → Dzwiek i powiadomienia
 - **Wlasne dzwieki** — wgrywasz plik audio i uzywasz go w triggerach
 - **Makra z pluginow** — pluginy moga dodawac wlasne typy akcji do triggerow (pojawia sie w ustawieniach automatycznie)
 

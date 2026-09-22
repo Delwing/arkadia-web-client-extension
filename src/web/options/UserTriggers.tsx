@@ -20,7 +20,7 @@ import {
     type ConditionOperator,
 } from "@client/scripts/userTriggers";
 
-export type BuiltInMacroType = 'uppercase' | 'color' | 'replace' | 'beep' | 'mute' | 'unmute' | 'command' | 'slowBlink' | 'rapidBlink' | 'dim' | 'functionalBind' | 'wrap' | 'notify' | 'push';
+export type BuiltInMacroType = 'uppercase' | 'color' | 'replace' | 'beep' | 'mute' | 'unmute' | 'command' | 'slowBlink' | 'rapidBlink' | 'dim' | 'functionalBind' | 'wrap' | 'notify' | 'push' | 'speak';
 
 export type DimEasing = 'linear' | 'ease' | 'ease-in' | 'ease-out' | 'ease-in-out';
 
@@ -31,7 +31,7 @@ export interface UserMacro {
     command?: string;
     soundKey?: string;
     label?: string;
-    message?: string;  // notification text (notify); empty falls back to matched text for pattern triggers
+    message?: string;  // notify/push/speak text; empty falls back to matched text for pattern triggers
     /** push only: send even inside the rate-limit window. Mirrors the field on
      *  `UserMacro` in @client/scripts/userTriggers, which this duplicates. */
     bypassCooldown?: boolean;
@@ -295,6 +295,7 @@ function UserTriggers() {
             case 'dim': text = 'Pulsowanie'; break;
             case 'functionalBind': text = m.label && m.command ? `Bind [${m.label}]: ${m.command}` : 'Funkcyjny bind'; break;
             case 'notify': text = m.message ? `Powiadomienie: ${m.message}` : 'Powiadomienie'; break;
+            case 'speak': text = m.message ? `Czytaj: ${m.message}` : 'Czytaj na glos'; break;
             case 'push': text = (m.message ? `Na telefon: ${m.message}` : 'Na telefon') + (m.bypassCooldown ? ' (zawsze)' : ''); break;
             case 'wrap': {
                 const parts: string[] = [];

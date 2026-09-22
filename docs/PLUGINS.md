@@ -459,6 +459,8 @@ api.events.emit(eventName, payload);
 - `gmcp` - Wiadomość GMCP
 - `gmcp.{path}` - Konkretna ścieżka GMCP (np. `gmcp.char.vitals`)
 - `sound:play` - Odtwórz dźwięk: `{ key: "beep" }`
+- `tts:speak` - Przeczytaj tekst na głos (głos i tempo z ustawień gracza, milknie po „Wycisz dźwięki”): `{ text: "..." }`
+- `tts:stop` - Przerwij czytanie i wyczyść kolejkę
 - `sendCommand` - Wyślij komendę: `{ command: "...", echo?: boolean }`
 - `notify` - Wyświetl powiadomienie: `{ text: "...", time?: number }`
 

@@ -300,6 +300,10 @@ export interface KnownEvents {
     "sound:play": { key: string };
     "sound:muted": boolean;
     "sound:category": SoundCategory;
+    /** Read text aloud (speech synthesis). Handled by the UI; honours the TTS settings and mute. */
+    "tts:speak": { text: string };
+    /** Stop reading aloud and drop anything queued. */
+    "tts:stop": void;
     "playSound": SoundCategory;
     "line-start": void;
     "mobileButtonsSettings": unknown;

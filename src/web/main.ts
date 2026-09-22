@@ -71,6 +71,7 @@ import {harvestOutputLines} from "./commandInput/outputWords";
 import {installClientPorts} from "./installClientPorts";
 import {installContentWidthMeasurer} from "./contentWidthMeasurer";
 import {bootstrapGameClient} from "./clientBootstrap";
+import {initTextToSpeech} from "./voice/textToSpeech.ts";
 
 // The client seeds `binds` from the active keymap itself (KeyBindingManager),
 // so any UI — including this one — picks up keybinds without a UI-side step.
@@ -925,6 +926,8 @@ document.addEventListener('DOMContentLoaded', () => {
             .then((status) => { status.onchange = updateVisibility; })
             .catch(() => undefined);
     }
+
+    initTextToSpeech(client);
 
     if (notificationCenter) {
         client.on('notify', (payload) => {

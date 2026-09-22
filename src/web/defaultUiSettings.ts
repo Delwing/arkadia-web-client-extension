@@ -64,6 +64,12 @@ export const defaultChromeSettings: ChromeSettings = {
     objectListBackgroundAlpha: 0.4,
     alwaysVisibleBars: [],
     barOrder: ['hp', 'fatigue', 'stuffed', 'encumbrance', 'soaked', 'mana', 'improve', 'form', 'intox', 'headache', 'panic'],
+    ttsEnabled: true,
+    ttsVoice: '',
+    ttsRate: 1,
+    ttsPitch: 1,
+    ttsVolume: 1,
+    ttsInterrupt: false,
 };
 
 // The full stock default is composed from the concern slices — one source of

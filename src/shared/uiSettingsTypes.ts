@@ -183,6 +183,19 @@ export interface ChromeSettings extends DeviceViewSettings {
     objectListBackgroundAlpha: number;
     alwaysVisibleBars: string[];
     barOrder: string[];
+    /**
+     * Speech synthesis for `speak` trigger macros (and `tts:speak` from plugins).
+     * Device-scoped on purpose: the installed voices differ per device, so a
+     * voice picked on the desktop means nothing on the phone.
+     */
+    ttsEnabled: boolean;
+    /** `voiceURI` of the chosen voice; empty picks a Polish voice, else the browser default. */
+    ttsVoice: string;
+    ttsRate: number;
+    ttsPitch: number;
+    ttsVolume: number;
+    /** A new message cuts off the one being read instead of queueing after it. */
+    ttsInterrupt: boolean;
 }
 
 export type UiSettings = ShellSettings & RenderSettings & MapSettings & BehaviorSettings & ChromeSettings;

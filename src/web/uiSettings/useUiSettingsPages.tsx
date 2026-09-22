@@ -14,6 +14,7 @@ import FooterSections from "./sections/FooterSections";
 import MapSections from "./sections/MapSections";
 import NotificationsSection from "./sections/NotificationsSection";
 import SoundSection from "./sections/SoundSection";
+import SpeechSection from "./sections/SpeechSection";
 import LogsSection from "./sections/LogsSection";
 import { MobileButtonsSection, OtherSection } from "./sections/OtherSections";
 import ManageSoundsModal from "./ManageSoundsModal";
@@ -284,6 +285,7 @@ export function useUiSettingsPages({ soundManager, onEnableNotifications }: UiSe
                     previewKey={(key) => soundManager.previewKey(key)}
                     onManage={() => setShowManageSounds(true)}
                 />
+                <SpeechSection draft={draft} update={update} />
             </>
         ),
         "ui-other": (

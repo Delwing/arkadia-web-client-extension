@@ -73,6 +73,7 @@ const MACRO_LABELS: Record<string, string> = {
     functionalBind: 'bind funkcjonalny',
     wrap: 'otocz tekstem',
     notify: 'powiadomienie',
+    speak: 'czytaj na glos',
 };
 
 function describeMacro(macro: { type: string; command?: string; color?: string; to?: string; message?: string; soundKey?: string }): string {

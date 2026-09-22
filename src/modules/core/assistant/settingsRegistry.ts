@@ -188,6 +188,13 @@ const CHROME_FIELDS: Record<string, Constraint & { optional?: boolean }> = {
     // classifications from drifting apart again.
     alwaysVisibleBars: { type: 'complex' },
     barOrder: { type: 'complex' },
+    ttsEnabled: { type: 'boolean', label: 'Czytanie na glos (TTS)' },
+    // A voiceURI only means something on the device it was picked on.
+    ttsVoice: { type: 'complex' },
+    ttsRate: { type: 'number', min: 0.5, max: 2, label: 'Tempo mowy' },
+    ttsPitch: { type: 'number', min: 0, max: 2, label: 'Wysokosc glosu' },
+    ttsVolume: { type: 'number', min: 0, max: 1, label: 'Glosnosc mowy' },
+    ttsInterrupt: { type: 'boolean', label: 'Nowy komunikat przerywa czytany' },
 };
 
 /** Fields that exist on the type but are absent from the default object. */

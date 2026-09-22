@@ -15,7 +15,7 @@ const GMCP_EVENT_IDS = new Set(GMCP_EVENTS.map(e => e.id));
 /** Value of the single "GMCP" option standing in for all GMCP packages in the event picker. */
 const GMCP_GROUP_VALUE = '__gmcp__';
 
-const EVENT_COMPATIBLE_MACROS: Set<string> = new Set(['beep', 'mute', 'unmute', 'command', 'functionalBind', 'notify', 'push']);
+const EVENT_COMPATIBLE_MACROS: Set<string> = new Set(['beep', 'mute', 'unmute', 'command', 'functionalBind', 'notify', 'push', 'speak']);
 
 const AVAILABLE_FLAGS = [
     { flag: 'i', label: 'Ignoruj wielkosc liter' },
@@ -263,6 +263,7 @@ function MacroEditor({
                     <option value="command">Komenda</option>
                     <option value="notify">Powiadomienie</option>
                     <option value="push">Powiadomienie na telefon</option>
+                    <option value="speak">Czytaj na glos</option>
                     {!isEventTrigger && <option value="slowBlink">Wolne miganie</option>}
                     {!isEventTrigger && <option value="rapidBlink">Szybkie miganie</option>}
                     {!isEventTrigger && <option value="dim">Pulsowanie</option>}
@@ -351,6 +352,25 @@ function MacroEditor({
                             Domyslnie nie czesciej niz raz na minute — zaznacz powyzej dla alertow, ktorych
                             nie chcesz stracic przez wczesniejsze powiadomienie. Wymaga sparowania
                             w Ustawieniach interfejsu → Powiadomienia.
+                        </div>
+                    </>
+                )}
+                {macro.type === 'speak' && (
+                    <>
+                        <Input
+                            placeholder={isEventTrigger ? 'Tekst do przeczytania' : 'Tekst do przeczytania (puste = dopasowany tekst)'}
+                            value={macro.message || ''}
+                            onChange={e => onChange({ ...macro, message: e.target.value })}
+                        />
+                        <EventArgChips
+                            args={eventArgs}
+                            onInsert={(token) => onChange({ ...macro, message: (macro.message ?? '') + token })}
+                        />
+                        <div className="popup-field__hint">
+                            {isEventTrigger
+                                ? 'Czytane glosem syntezatora mowy.'
+                                : <>Czytane glosem syntezatora mowy. <code>{'{1}'}</code>, <code>{'{2}'}</code>… wstawiaja grupy z wzorca (np. <code>{'Atakuje cie (.+)!'}</code> → <code>{'Atak: {1}'}</code>).</>}
+                            {' '}Glos, tempo i glosnosc ustawisz w Ustawieniach interfejsu → Dzwiek i powiadomienia.
                         </div>
                     </>
                 )}

@@ -63,7 +63,7 @@ export const SETTINGS_CATEGORIES: readonly SettingsCategory[] = [
     { key: "ui-radial", group: "ui", label: "Menu kołowe", keywords: "radialne gest komendy telefon" },
     { key: "ui-footer", group: "ui", label: "Stopka", keywords: "paski kondycja" },
     { key: "ui-map", group: "ui", label: "Mapa" },
-    { key: "ui-sound", group: "ui", label: "Dźwięk i powiadomienia", keywords: "dzwieki beep powiadomienia push" },
+    { key: "ui-sound", group: "ui", label: "Dźwięk i powiadomienia", keywords: "dzwieki beep powiadomienia push mowa tts glos czytanie lektor" },
     { key: "ui-other", group: "ui", label: "Inne", keywords: "telefon logi dysk zapis" },
     { key: "data-sync", group: "data", label: "Synchronizacja", keywords: "firebase konto logowanie chmura eksport import" },
     { key: "data-backup", group: "data", label: "Kopia zapasowa", keywords: "eksport import plik google drive backup" },

@@ -582,6 +582,8 @@ export function load(): UiSettings {
             const splitViewHeight = typeof parsed.splitViewHeight === 'number' && parsed.splitViewHeight >= 60
                 ? parsed.splitViewHeight
                 : undefined;
+            const ttsNumber = (value: unknown, min: number, max: number, fallback: number) =>
+                typeof value === 'number' && Number.isFinite(value) ? Math.min(max, Math.max(min, value)) : fallback;
             return {
                 ...defaultUiSettings,
                 ...parsed,
@@ -644,6 +646,12 @@ export function load(): UiSettings {
                 objectListBackgroundAlpha,
                 colorTheme,
                 customThemeColor,
+                ttsEnabled: typeof parsed.ttsEnabled === 'boolean' ? parsed.ttsEnabled : defaultUiSettings.ttsEnabled,
+                ttsVoice: typeof parsed.ttsVoice === 'string' ? parsed.ttsVoice : defaultUiSettings.ttsVoice,
+                ttsRate: ttsNumber(parsed.ttsRate, 0.5, 2, defaultUiSettings.ttsRate),
+                ttsPitch: ttsNumber(parsed.ttsPitch, 0, 2, defaultUiSettings.ttsPitch),
+                ttsVolume: ttsNumber(parsed.ttsVolume, 0, 1, defaultUiSettings.ttsVolume),
+                ttsInterrupt: typeof parsed.ttsInterrupt === 'boolean' ? parsed.ttsInterrupt : defaultUiSettings.ttsInterrupt,
             };
         }
     } catch {
