@@ -319,6 +319,34 @@ test.describe('UI settings', () => {
         ).not.toBeChecked();
     });
 
+    // Picking between the Arkadia and XTerm palettes used to be blind: two names
+    // in a select, and nothing showing what either one looks like.
+    test('the colour palette can be previewed before it is picked', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+
+        const modal = await openUiSettings(page, 'ui-appearance');
+        await modal.locator('#ui-xterm-palette-preview').click();
+
+        const grid = modal.locator('#ui-palette-preview-grid');
+        await expect(grid).toBeVisible();
+        await expect(grid.locator('.palette-preview__cell'), 'the whole palette').toHaveCount(256);
+        // Arkadia is the default and numbers its colours one higher than xterm does.
+        await expect(grid.locator('.palette-preview__cell').first()).toContainText('1');
+
+        // Both palettes are there to compare: the same code, a different colour.
+        const swatch21 = grid.locator('.palette-preview__cell[data-code="21"] .palette-preview__swatch');
+        const arkadia = await swatch21.evaluate(el => getComputedStyle(el).backgroundColor);
+        await modal.locator('#ui-palette-preview-proper').click();
+        await expect(grid.locator('.palette-preview__cell').first(), 'XTerm starts at 0').toContainText('0');
+        const proper = await swatch21.evaluate(el => getComputedStyle(el).backgroundColor);
+        expect(proper, 'code 21 is a different colour in each palette').not.toBe(arkadia);
+
+        await modal.locator('.popup-dialog__close').click();
+        await expect(grid).toHaveCount(0);
+    });
+
     // "Wlasny dzwiek beep" quietly took the place of "Domyslny beep" everywhere,
     // with nothing on screen saying so.
     test('the custom beep says it replaces the default, and can be put back', async ({page}) => {

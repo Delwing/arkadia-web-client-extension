@@ -1,10 +1,11 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { UiSettings } from "../../uiSettingsCore";
 import { guessFontFamilyFromStylesheet, guessFontFamilyFromUrl } from "../../uiSettingsCore";
 import { computeAccentHex, generateRandomColor } from "../../themes/randomTheme";
 import { defaultUiSettings } from "../../defaultUiSettings";
-import { Button, Field, Input } from "@web-ui/primitives/index.ts";
+import { Button, Field, Input, Select } from "@web-ui/primitives/index.ts";
 import { CheckboxRow, ColorField, NumberField, SelectField, SettingsSection } from "../fields";
+import PalettePreviewDialog from "../PalettePreviewDialog";
 
 interface AppearanceSectionProps {
     draft: UiSettings;
@@ -14,6 +15,7 @@ interface AppearanceSectionProps {
 
 function AppearanceSection({ draft, update, commitCustomDark }: AppearanceSectionProps) {
     const isCustomFont = draft.fontFamily === 'custom';
+    const [palettePreview, setPalettePreview] = useState(false);
     const isCustomDark = draft.colorTheme === 'custom-dark';
 
     // Tracks whether the user has manually edited the custom font family,
@@ -109,10 +111,23 @@ function AppearanceSection({ draft, update, commitCustomDark }: AppearanceSectio
             </Field>
             <ColorField id="ui-output-background" label="Kolor tła okna głównego" value={draft.outputBackground} onChange={(v) => update({ outputBackground: v })} onReset={() => update({ outputBackground: defaultUiSettings.outputBackground })} />
             <CheckboxRow id="ui-highlight-message-blocks" label="Wyróżniaj bloki wiadomości" checked={draft.highlightMessageBlocks} onChange={(v) => update({ highlightMessageBlocks: v })} />
-            <SelectField id="ui-xterm-palette" label="Paleta kolorów" value={draft.xtermPalette} onChange={(v) => update({ xtermPalette: v as UiSettings['xtermPalette'] })}>
-                <option value="arkadia">Arkadia</option>
-                <option value="proper">XTerm</option>
-            </SelectField>
+            <Field label="Paleta kolorów" htmlFor="ui-xterm-palette">
+                <div className="popup-inline">
+                    <Select
+                        id="ui-xterm-palette"
+                        className="settings-narrow"
+                        value={draft.xtermPalette}
+                        onChange={(e) => update({ xtermPalette: e.target.value as UiSettings['xtermPalette'] })}
+                    >
+                        <option value="arkadia">Arkadia</option>
+                        <option value="proper">XTerm</option>
+                    </Select>
+                    <Button id="ui-xterm-palette-preview" size="sm" variant="ghost" onClick={() => setPalettePreview(true)}>Podgląd</Button>
+                </div>
+            </Field>
+            {palettePreview && (
+                <PalettePreviewDialog palette={draft.xtermPalette} onClose={() => setPalettePreview(false)} />
+            )}
             <div className="ui-settings-stack">
                 <SelectField id="ui-color-theme" label="Motyw kolorystyczny" value={draft.colorTheme} onChange={(v) => update({ colorTheme: v as UiSettings['colorTheme'] })}>
                     <option value="default">Domyślny</option>
