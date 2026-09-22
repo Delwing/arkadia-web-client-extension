@@ -1,6 +1,7 @@
 import {MapReader, PathFinder} from "mudlet-map-renderer";
 import {describeCarriageRoute} from "./carriagePathFinder";
 import {planRoute, type RouteSegment} from "./transportPathFinder";
+import {roomDistances} from "./roomDistances";
 import type {TransportDef} from "@client/scripts/transports/definitions";
 import {getLongDir, getShortDir, isPolishDirection, longToShort} from "./directions";
 import {characterStorage} from "@modules/core/storage";
@@ -1285,6 +1286,12 @@ export default class MapHelper {
 
     findPath(fromId: number, targetId: number) {
         return this.pathFinder.findPath(fromId, targetId);
+    }
+
+    /** Steps from `fromId` to each of `targetIds`, in one search (see roomDistances). */
+    getRoomDistances(fromId: number, targetIds: Iterable<number>): Map<number, number | null> {
+        // The pathfinder's own graph, so the weights (locks, exit weights) match findPath.
+        return roomDistances(this.pathFinder["mapGraph"].getAdj(), fromId, targetIds);
     }
 
     /**

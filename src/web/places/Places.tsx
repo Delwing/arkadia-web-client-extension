@@ -4,7 +4,7 @@ import { Button, DeleteButton, Input, InputGroup, TextArea } from "@web-ui/primi
 import eventBus from "@modules/core/eventBus";
 import { globalStorage } from "@modules/core/storage";
 import { getCurrentRoomId } from "@modules/core/currentRoomProvider";
-import { getRoomDistance } from "@modules/core/roomInfoProvider";
+import { getRoomDistance, getRoomDistances } from "@modules/core/roomInfoProvider";
 import { getPluginLocationNotes } from "@modules/core/pluginLocationNotesRegistry";
 import { deleteNote, saveNote } from "@modules/data/locationNotesStorage";
 import { showContextMenu, type ContextMenuEntry } from "@web/contextMenu";
@@ -140,7 +140,10 @@ function PlaceDetail({ roomId, place, focus, onBack, onRemoved }: {
     const timer = useRef<number | null>(null);
     const noteRef = useRef<HTMLTextAreaElement>(null);
     const barRef = useRef<HTMLDivElement>(null);
-    const distance = getRoomDistance(roomId);
+    // A map search: not on every keystroke in the note, only when either end moves.
+    const standingIn = getCurrentRoomId();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const distance = useMemo(() => getRoomDistance(roomId), [roomId, standingIn]);
 
     const flush = useCallback(async () => {
         if (timer.current !== null) {
@@ -418,12 +421,17 @@ export default function Places() {
 
     const hereArea = here !== null ? describeRoom(here).area : "";
 
-    const rows = useMemo<Row[]>(() => places.map(place => {
-        const room = describeRoom(place.roomId, place.note);
-        return { place, name: room.name, area: room.area, distance: getRoomDistance(place.roomId) };
+    const rows = useMemo<Row[]>(() => {
+        // One search for all of them: a place per search froze the page once
+        // Wiedza hints put thousands of rooms on the list.
+        const distances = getRoomDistances(places.map(place => place.roomId));
+        return places.map(place => {
+            const room = describeRoom(place.roomId, place.note);
+            return { place, name: room.name, area: room.area, distance: distances.get(place.roomId) ?? null };
+        });
         // `here` changes the distances.
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }), [places, here]);
+    }, [places, here]);
 
     const counts = {
         all: rows.length,

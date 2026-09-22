@@ -236,12 +236,10 @@ export function registerScripts(client: Client) {
         };
     })
 
-    registerRoomDistanceProvider((roomId: number) => {
+    registerRoomDistanceProvider((roomIds) => {
         const from = client.Map.currentRoom?.id;
-        if (typeof from !== 'number') return null;
-        if (from === roomId) return 0;
-        const path = client.Map.findPath(from, roomId);
-        return path && path.length > 1 ? path.length - 1 : null;
+        if (typeof from !== 'number' || !client.Map.tryGetMapReader()) return new Map(roomIds.map((id) => [id, null]));
+        return client.Map.getRoomDistances(from, roomIds);
     })
 
     registerCurrentRoomProvider(() => client.Map.currentRoom?.id ?? null)
