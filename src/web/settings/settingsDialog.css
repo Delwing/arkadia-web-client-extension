@@ -95,6 +95,65 @@
   box-shadow: inset 3px 0 0 var(--popup-accent);
 }
 
+/* Searching: how many sections matched on a page, and pages with none. */
+.settings-dialog__nav-count {
+  flex-shrink: 0;
+  min-width: 1.25rem;
+  padding: 0 0.3rem;
+  border-radius: 1rem;
+  background: var(--popup-accent);
+  color: var(--popup-bg);
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  text-align: center;
+}
+
+.settings-dialog__nav-item--empty {
+  opacity: 0.4;
+}
+
+/* The find bar: which page of results you are on, and the way to the next. */
+.settings-dialog__matches {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 0.4rem;
+}
+
+.settings-dialog__matches-count {
+  flex: 1;
+  min-width: 0;
+  color: var(--popup-text-dim);
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.settings-dialog__matches-btn {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  border: 1px solid var(--popup-border);
+  border-radius: var(--ui-radius, 6px);
+  background: var(--popup-control-bg);
+  color: inherit;
+}
+
+.settings-dialog__matches-btn:hover:not(:disabled) {
+  background: var(--popup-control-hover-bg);
+}
+
+.settings-dialog__matches-btn:disabled {
+  opacity: 0.4;
+}
+
 .settings-dialog__dirty {
   flex-shrink: 0;
   width: 0.45rem;

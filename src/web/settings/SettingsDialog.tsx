@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import {
     Backpack,
+    ChevronDown,
+    ChevronUp,
     CloudUpload,
     HardDriveDownload,
     MonitorSmartphone,
@@ -80,6 +82,10 @@ function sameKeys(a: ReadonlySet<string> | null, b: ReadonlySet<string>): boolea
     return !!a && a.size === b.size && [...b].every(key => a.has(key));
 }
 
+function sameCounts(a: ReadonlyMap<string, number> | null, b: ReadonlyMap<string, number>): boolean {
+    return !!a && a.size === b.size && [...b].every(([key, count]) => a.get(key) === count);
+}
+
 export interface SettingsDialogProps extends UiSettingsPagesProps {
     /** Page to open on; hosts that keep the dialog mounted use `SHOW_SETTINGS_EVENT` instead. */
     initialCategory?: SettingsCategoryKey;
@@ -101,7 +107,10 @@ function SettingsDialog({ soundManager, onEnableNotifications, initialCategory }
 
     const [category, setCategory] = useState<SettingsCategoryKey>(initialCategory ?? DEFAULT_SETTINGS_CATEGORY.character);
     const [query, setQuery] = useState("");
-    const [searchHits, setSearchHits] = useState<ReadonlySet<SettingsCategoryKey> | null>(null);
+    // How many sections match on each page; the sidebar shows the counts and the
+    // ‹ › buttons walk the pages in this order.
+    const [searchHits, setSearchHits] = useState<ReadonlyMap<SettingsCategoryKey, number> | null>(null);
+    const [currentHit, setCurrentHit] = useState(0);
     const [dirty, setDirty] = useState<ReadonlySet<SettingsCategoryKey>>(() => new Set());
 
     const pagesRef = useRef<HTMLDivElement>(null);
@@ -127,6 +136,31 @@ function SettingsDialog({ soundManager, onEnableNotifications, initialCategory }
         setQuery("");
         setCategory(next);
     }, []);
+
+    // The pages with a match, in sidebar order: what ‹ › walk and what the
+    // counter counts.
+    const hitKeys = useMemo(
+        () => (searchHits ? SETTINGS_CATEGORIES.filter(c => searchHits.has(c.key)).map(c => c.key) : []),
+        [searchHits],
+    );
+    const currentKey = hitKeys[Math.min(currentHit, hitKeys.length - 1)];
+
+    // A new query starts again from the first page with a match.
+    useEffect(() => setCurrentHit(0), [query]);
+
+    /** Scroll the nth page with a match to the top of the results pane. */
+    const gotoHit = useCallback((index: number) => {
+        setCurrentHit(current => {
+            if (hitKeys.length === 0) return 0;
+            const next = ((index % hitKeys.length) + hitKeys.length) % hitKeys.length;
+            const page = pageRefs.current.get(hitKeys[next]);
+            const pane = pagesRef.current;
+            if (page && pane) {
+                pane.scrollTop += page.getBoundingClientRect().top - pane.getBoundingClientRect().top;
+            }
+            return current === next ? current : next;
+        });
+    }, [hitKeys]);
 
     const pageLayout = (key: SettingsCategoryKey) =>
         pageRefs.current.get(key)?.querySelector<HTMLElement>(".settings-page__layout") ?? null;
@@ -247,8 +281,10 @@ function SettingsDialog({ soundManager, onEnableNotifications, initialCategory }
         const run = () => {
             const pages = inputs();
             const hits = applySearch(pages, terms);
-            const keys = new Set([...hits].map(i => pages[i].element.dataset.settingsCategory as SettingsCategoryKey));
-            setSearchHits(prev => sameKeys(prev, keys) ? prev : keys);
+            const counts = new Map<SettingsCategoryKey, number>(
+                [...hits].map(([i, count]) => [pages[i].element.dataset.settingsCategory as SettingsCategoryKey, count]),
+            );
+            setSearchHits(prev => sameCounts(prev, counts) ? prev : counts);
             highlightTerms(pages.filter((_, i) => hits.has(i)), terms);
         };
         run();
@@ -282,6 +318,12 @@ function SettingsDialog({ soundManager, onEnableNotifications, initialCategory }
             event.preventDefault();
             event.stopPropagation();
             setQuery("");
+            return;
+        }
+        // Enter walks the pages with a match, as a find bar does.
+        if (event.key === "Enter" && hitKeys.length > 0) {
+            event.preventDefault();
+            gotoHit(currentHit + (event.shiftKey ? -1 : 1));
         }
     };
 
@@ -309,26 +351,69 @@ function SettingsDialog({ soundManager, onEnableNotifications, initialCategory }
                         onChange={(e) => setQuery(e.target.value)}
                         onKeyDown={onSearchKeyDown}
                     />
+                    {searching && (
+                        <div className="settings-dialog__matches">
+                            <span id="settings-search-count" className="settings-dialog__matches-count">
+                                {hitKeys.length === 0 ? "brak wyników" : `${currentHit + 1} z ${hitKeys.length}`}
+                            </span>
+                            <button
+                                type="button"
+                                id="settings-search-prev"
+                                className="settings-dialog__matches-btn"
+                                title="Poprzednia strona z wynikami (Shift+Enter)"
+                                disabled={hitKeys.length === 0}
+                                onClick={() => gotoHit(currentHit - 1)}
+                            >
+                                <ChevronUp size={14} strokeWidth={2.2} />
+                            </button>
+                            <button
+                                type="button"
+                                id="settings-search-next"
+                                className="settings-dialog__matches-btn"
+                                title="Następna strona z wynikami (Enter)"
+                                disabled={hitKeys.length === 0}
+                                onClick={() => gotoHit(currentHit + 1)}
+                            >
+                                <ChevronDown size={14} strokeWidth={2.2} />
+                            </button>
+                        </div>
+                    )}
                 </div>
                 <nav className="settings-dialog__nav">
                     {GROUPS.map(group => (
                         <div key={group} className="settings-dialog__nav-group">
                             <div className="settings-dialog__nav-group-label" title={groupLabel(group)}>{groupLabel(group)}</div>
-                            {SETTINGS_CATEGORIES.filter(c => c.group === group).map(c => (
-                                <button
-                                    key={c.key}
-                                    type="button"
-                                    className={`settings-dialog__nav-item${!searching && c.key === category ? " settings-dialog__nav-item--active" : ""}`}
-                                    data-settings-category={c.key}
-                                    onClick={() => navigate(c.key)}
-                                >
-                                    <span className="settings-dialog__nav-label">
-                                        <NavIcon category={c.key} />
-                                        <span>{c.label}</span>
-                                    </span>
-                                    {dirty.has(c.key) && <span className="settings-dialog__dirty" title="Niezapisane zmiany" />}
-                                </button>
-                            ))}
+                            {SETTINGS_CATEGORIES.filter(c => c.group === group).map(c => {
+                                const matches = searching ? searchHits?.get(c.key) ?? 0 : 0;
+                                const classes = [
+                                    "settings-dialog__nav-item",
+                                    !searching && c.key === category ? "settings-dialog__nav-item--active" : "",
+                                    // While searching, "active" follows the results, not the page you came from.
+                                    searching && c.key === currentKey ? "settings-dialog__nav-item--active" : "",
+                                    searching && matches === 0 ? "settings-dialog__nav-item--empty" : "",
+                                ].filter(Boolean).join(" ");
+                                return (
+                                    <button
+                                        key={c.key}
+                                        type="button"
+                                        className={classes}
+                                        data-settings-category={c.key}
+                                        data-settings-matches={matches || undefined}
+                                        // A page with results is scrolled to, keeping the query;
+                                        // one without is opened the usual way, which clears it.
+                                        onClick={() => (matches > 0 ? gotoHit(hitKeys.indexOf(c.key)) : navigate(c.key))}
+                                    >
+                                        <span className="settings-dialog__nav-label">
+                                            <NavIcon category={c.key} />
+                                            <span>{c.label}</span>
+                                        </span>
+                                        {matches > 0 && (
+                                            <span className="settings-dialog__nav-count" title={`Pasujące sekcje: ${matches}`}>{matches}</span>
+                                        )}
+                                        {dirty.has(c.key) && <span className="settings-dialog__dirty" title="Niezapisane zmiany" />}
+                                    </button>
+                                );
+                            })}
                         </div>
                     ))}
                 </nav>
@@ -342,7 +427,11 @@ function SettingsDialog({ soundManager, onEnableNotifications, initialCategory }
                     {GROUPS.map(group => (
                         <optgroup key={group} label={groupLabel(group)}>
                             {SETTINGS_CATEGORIES.filter(c => c.group === group).map(c => (
-                                <option key={c.key} value={c.key}>{c.label}{dirty.has(c.key) ? " •" : ""}</option>
+                                <option key={c.key} value={c.key}>
+                                    {c.label}
+                                    {searching && searchHits?.get(c.key) ? ` (${searchHits.get(c.key)})` : ""}
+                                    {dirty.has(c.key) ? " •" : ""}
+                                </option>
                             ))}
                         </optgroup>
                     ))}

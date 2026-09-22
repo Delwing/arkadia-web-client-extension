@@ -92,6 +92,63 @@ test.describe('Settings dialog', () => {
         await expect(modal.locator('#ui-map-scale')).toBeHidden();
     });
 
+    test('search marks the sidebar pages that have results and walks between them', async ({page}) => {
+        await boot(page);
+        const modal = await openSettings(page, 'ui-appearance');
+        const search = modal.locator('#settings-search');
+        const counter = modal.locator('#settings-search-count');
+        const pages = modal.locator('.settings-dialog__pages');
+
+        await search.fill('kolor tla');
+
+        // The sidebar says which pages have results, and how many sections each.
+        await expect(navItem(page, 'ui-appearance').locator('.settings-dialog__nav-count')).toBeVisible();
+        await expect(navItem(page, 'ui-map').locator('.settings-dialog__nav-count')).toBeVisible();
+        await expect(navItem(page, 'ui-commands').locator('.settings-dialog__nav-count'),
+            'a page with no results gets no count').toHaveCount(0);
+        await expect(navItem(page, 'ui-commands'), 'and is dimmed').toHaveClass(/settings-dialog__nav-item--empty/);
+
+        // The counter starts on the first page with results, in sidebar order.
+        await expect(counter).toHaveText(/^1 z [2-9]/);
+        await expect(navItem(page, 'ui-appearance')).toHaveClass(/settings-dialog__nav-item--active/);
+
+        // Next walks to the following page and scrolls its results into view.
+        await modal.locator('#settings-search-next').click();
+        await expect(counter).toHaveText(/^2 z /);
+        await expect(navItem(page, 'ui-appearance')).not.toHaveClass(/settings-dialog__nav-item--active/);
+        await expect.poll(() => pages.evaluate(el => el.scrollTop), {message: 'scrolled down to it'})
+            .toBeGreaterThan(0);
+
+        // Enter in the search field does the same, Shift+Enter goes back.
+        await search.press('Enter');
+        await expect(counter).toHaveText(/^3 z |^1 z /);
+        await search.press('Shift+Enter');
+        await expect(counter).toHaveText(/^2 z /);
+
+        // Clicking a marked page jumps to it and keeps the query.
+        await modal.locator('#settings-search-prev').click();
+        await expect(counter).toHaveText(/^1 z /);
+        await navItem(page, 'ui-map').click();
+        await expect(search, 'the query stays put').toHaveValue('kolor tla');
+        await expect(navItem(page, 'ui-map')).toHaveClass(/settings-dialog__nav-item--active/);
+
+        // A page with no results is opened the usual way, which ends the search.
+        await navItem(page, 'ui-commands').click();
+        await expect(search).toHaveValue('');
+        await expect(settingsPage(page, 'ui-commands')).toBeVisible();
+    });
+
+    test('search with no results says so and offers nothing to walk', async ({page}) => {
+        await boot(page);
+        const modal = await openSettings(page, 'ui-appearance');
+        await modal.locator('#settings-search').fill('zzzznicniepasuje');
+
+        await expect(modal.locator('#settings-search-count')).toHaveText('brak wyników');
+        await expect(modal.locator('#settings-search-next')).toBeDisabled();
+        await expect(modal.locator('#settings-search-prev')).toBeDisabled();
+        await expect(modal.locator('.settings-dialog__nav-count')).toHaveCount(0);
+    });
+
     test('marks a page with a list edit, and clears it when the list is back as it was', async ({page}) => {
         await boot(page);
         const modal = await openSettings(page, 'ui-windows');

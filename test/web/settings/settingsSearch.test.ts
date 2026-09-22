@@ -44,7 +44,7 @@ describe('applySearch', () => {
 
         const hits = applySearch(pages, searchTerms('powiekszenie'));
 
-        expect([...hits]).toEqual([0]);
+        expect([...hits]).toEqual([[0, 1]]);
         const [zoom, marker] = map.querySelectorAll('section');
         expect(zoom.hasAttribute('data-settings-search-miss')).toBe(false);
         expect(marker.hasAttribute('data-settings-search-miss')).toBe(true);
@@ -53,7 +53,7 @@ describe('applySearch', () => {
 
     it('matches option text inside a select', () => {
         const footer = page('<section><h6>Stan postaci</h6><select><option>Pasek graficzny</option></select></section>');
-        expect([...applySearch([{ element: footer, pageText: '' }], searchTerms('graficzny'))]).toEqual([0]);
+        expect([...applySearch([{ element: footer, pageText: '' }], searchTerms('graficzny'))]).toEqual([[0, 1]]);
     });
 
     it('lets the page label satisfy a term, so "mapa kolor" finds colours on the map page', () => {
@@ -63,7 +63,7 @@ describe('applySearch', () => {
             { element: map, pageText: 'Interfejs Mapa' },
             { element: footer, pageText: 'Interfejs Stopka' },
         ], searchTerms('mapa kolor'));
-        expect([...hits]).toEqual([0]);
+        expect([...hits]).toEqual([[0, 1]]);
     });
 
     it('does not match across two neighbouring labels', () => {
@@ -77,6 +77,11 @@ describe('applySearch', () => {
         const el = page('<section><h6>Magiki</h6><section><h6>Kolory</h6></section></section>');
         applySearch([{ element: el, pageText: '' }], searchTerms('kolory'));
         expect(el.querySelectorAll('[data-settings-search-miss]')).toHaveLength(0);
+    });
+
+    it('counts the matching sections on a page, for the sidebar', () => {
+        const map = page('<section><label>Kolor linii</label></section><section><label>Kolor tla</label></section><section><label>Powiekszenie</label></section>');
+        expect(applySearch([{ element: map, pageText: '' }], searchTerms('kolor')).get(0)).toBe(2);
     });
 
     it('clearSearch restores every section', () => {
