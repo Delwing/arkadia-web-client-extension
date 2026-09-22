@@ -107,6 +107,18 @@ export function getPluginLocationNotes(roomId: number): PluginLocationNote[] {
 }
 
 /**
+ * Get every plugin note, across all locations
+ * @returns Array of all plugin notes
+ */
+export function getAllPluginLocationNotes(): PluginLocationNote[] {
+  const result: PluginLocationNote[] = [];
+  for (const roomId of pluginNotes.keys()) {
+    result.push(...getPluginLocationNotes(roomId));
+  }
+  return result;
+}
+
+/**
  * Check if any plugin notes exist for a location
  * @param roomId - Room ID to check
  * @returns true if any plugin notes exist

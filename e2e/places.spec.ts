@@ -274,6 +274,52 @@ test.describe('Miejsca (skróty i notatki lokacji)', () => {
         await expect(modal(page).locator('.places-detail--empty')).toBeVisible();
     });
 
+    test('rooms a plugin notes are searchable and get their own Wtyczki tab', async ({ page }) => {
+        const pluginUrl = 'https://example.com/places-notes-plugin.js';
+        await page.route(`${pluginUrl}**`, (route) => route.fulfill({
+            status: 200,
+            contentType: 'application/javascript',
+            body: `export async function init(api) {
+                api.locationNotes.set(${ROOM_ID}, 'Skarb pod mostem');
+                return { name: 'Notki Test', version: '1.0.0' };
+            }`,
+        }));
+        await page.click('#menu-button');
+        await page.click('#scripts-button');
+        const scripts = page.locator('#scripts-modal');
+        await scripts.getByRole('button', { name: 'Dodaj plugin' }).click();
+        await page.locator('.plugin-route', { hasText: 'Z adresu URL' }).click();
+        const dialog = page.locator('.modal', { hasText: 'Dodaj skrypt z URL' }).last();
+        await dialog.getByPlaceholder('URL skryptu').fill(pluginUrl);
+        await dialog.getByRole('button', { name: 'Dodaj', exact: true }).click();
+        await expect(scripts.getByText('Notki Test')).toBeVisible();
+        await scripts.locator('.btn-close').first().click();
+        await expect(scripts).not.toBeVisible();
+
+        await page.click('#menu-button');
+        await page.click('#places-button');
+        await expect(modal(page)).toBeVisible();
+        const rows = modal(page).locator('.places-row');
+        const pluginTab = modal(page).locator('.places-filter .dialog-tab', { hasText: 'Wtyczki' });
+        await expect(pluginTab).toContainText('1');
+
+        await modal(page).locator('.places-list__search input').fill('skarb');
+        await expect(rows).toHaveCount(1);
+        await expect(rows.first()).toContainText('Kamienny Most');
+        await expect(rows.first()).toContainText('Skarb pod mostem');
+
+        await modal(page).locator('.places-list__search input').fill('');
+        await modal(page).locator('.places-filter .dialog-tab', { hasText: 'Notatki' }).click();
+        await expect(rows).toHaveCount(0);
+        await pluginTab.click();
+        await expect(rows).toHaveCount(1);
+
+        // Nothing of yours is saved there: the plugin note is read-only, nothing to delete.
+        await rows.first().click();
+        await expect(modal(page).locator('.places-other', { hasText: 'Wtyczka: Notki Test' })).toContainText('Skarb pod mostem');
+        await expect(modal(page).getByRole('button', { name: 'Usuń miejsce' })).toBeDisabled();
+    });
+
     test('right-click on a room found on the map offers only Idź and Prowadź', async ({ page }) => {
         await setCurrentRoom(page, OTHER_ROOM_ID, 'Poczta', 0);
         await page.click('#menu-button');

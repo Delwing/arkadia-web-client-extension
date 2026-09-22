@@ -12,6 +12,7 @@ import { subscribeEmbeddedMap } from "@web/embedRegistry.ts";
 import { MapStrip } from "./MapStrip";
 import {
     deletePlace,
+    hasOwnData,
     describeRoom,
     listDescribedRooms,
     loadPlaces,
@@ -29,8 +30,10 @@ import "./places.css";
 
 /** Your places (shortcuts, notes) or the rooms the mapper described. */
 type Source = "mine" | "described";
-type Filter = "all" | "shortcuts" | "notes";
+type Filter = "all" | "shortcuts" | "notes" | "plugins";
 type Sort = "near" | "az";
+
+const FILTERS: ReadonlyArray<readonly [Filter, string]> = [["all", "Wszystkie"], ["shortcuts", "Skróty"], ["notes", "Notatki"], ["plugins", "Wtyczki"]];
 
 /** Most described rooms listed at once; searching narrows the rest down. */
 const DESCRIBED_LIMIT = 200;
@@ -386,6 +389,12 @@ export default function Places() {
         load();
         const offShortcuts = globalStorage.onChange("shortcuts", load);
         const offNotes = eventBus.on("locationNote.changed", load);
+        // A plugin often sets many notes in one go: reload once for the batch.
+        let pluginReload: number | null = null;
+        const offPluginNotes = eventBus.on("pluginLocationNote.changed", () => {
+            if (pluginReload !== null) return;
+            pluginReload = window.setTimeout(() => { pluginReload = null; load(); }, 100);
+        });
         const offMove = eventBus.on("enterLocation", ({ id }) => setHere(id));
         const modal = document.getElementById("places-modal");
         modal?.addEventListener("show.bs.modal", load);
@@ -399,6 +408,8 @@ export default function Places() {
         return () => {
             offShortcuts?.();
             offNotes?.();
+            offPluginNotes?.();
+            if (pluginReload !== null) window.clearTimeout(pluginReload);
             offMove?.();
             modal?.removeEventListener("show.bs.modal", load);
             window.removeEventListener(OPEN_PLACE_EVENT, onOpen);
@@ -418,7 +429,11 @@ export default function Places() {
         all: rows.length,
         shortcuts: rows.filter(r => r.place.shortcuts.length > 0).length,
         notes: rows.filter(r => r.place.note).length,
+        plugins: rows.filter(r => r.place.pluginNotes.length > 0).length,
     };
+    // The Wtyczki tab only while some plugin notes a room; leave it when they go.
+    const filters = FILTERS.filter(([key]) => key !== "plugins" || counts.plugins > 0);
+    const activeFilter: Filter = filter === "plugins" && counts.plugins === 0 ? "all" : filter;
 
     const visible = useMemo(() => {
         const q = query.trim().toLowerCase();
@@ -427,10 +442,15 @@ export default function Places() {
             || r.area.toLowerCase().includes(q)
             || String(r.place.roomId).includes(q)
             || r.place.shortcuts.some(s => s.key.toLowerCase().includes(q) || s.label.toLowerCase().includes(q))
-            || !!r.place.note?.note.toLowerCase().includes(q);
-        const list = rows
-            .filter(r => filter === "all" || (filter === "shortcuts" ? r.place.shortcuts.length > 0 : !!r.place.note))
-            .filter(matches);
+            || !!r.place.note?.note.toLowerCase().includes(q)
+            || r.place.pluginNotes.some(n => n.note.toLowerCase().includes(q) || n.pluginName.toLowerCase().includes(q));
+        const inFilter = (r: Row) => {
+            if (activeFilter === "shortcuts") return r.place.shortcuts.length > 0;
+            if (activeFilter === "notes") return !!r.place.note;
+            if (activeFilter === "plugins") return r.place.pluginNotes.length > 0;
+            return true;
+        };
+        const list = rows.filter(inFilter).filter(matches);
         const byName = (a: Row, b: Row) => a.name.localeCompare(b.name, "pl");
         if (sort === "az") return { near: list.sort(byName), other: [] as Row[] };
         const near = list.filter(r => !hereArea || r.area === hereArea)
@@ -438,7 +458,7 @@ export default function Places() {
         const other = list.filter(r => hereArea && r.area !== hereArea)
             .sort((a, b) => a.area.localeCompare(b.area, "pl") || byName(a, b));
         return { near, other };
-    }, [rows, query, filter, sort, hereArea]);
+    }, [rows, query, activeFilter, sort, hereArea]);
 
     const selectedPlace = selected !== null ? places.find(p => p.roomId === selected) ?? null : null;
 
@@ -463,12 +483,16 @@ export default function Places() {
             { label: "Prowadź", action: () => { closeWindow(); eventBus.emit("leadTo", roomId); } },
         ];
         // Nothing of yours is saved for a room found on the map, so nothing to forget.
-        if (place) items.push({ label: "Usuń miejsce", action: () => { void removePlace(roomId); } });
+        if (hasOwnData(place)) items.push({ label: "Usuń miejsce", action: () => { void removePlace(roomId); } });
         showContextMenu(items, e.clientX, e.clientY, { header: name, smallHeader: true });
     }
 
     const renderRow = (r: Row) => {
-        const note = r.place.note?.note ?? r.place.shortcuts.find(s => s.label)?.label ?? "";
+        const own = r.place.note?.note ?? r.place.shortcuts.find(s => s.label)?.label ?? "";
+        // Nothing of your own to preview: what a plugin notes, marked as such.
+        const plugin = !own ? r.place.pluginNotes[0] : undefined;
+        const note = own || plugin?.note || "";
+        const NoteIcon = plugin ? Puzzle : NotebookPen;
         return (
             <button
                 key={r.place.roomId}
@@ -484,7 +508,7 @@ export default function Places() {
                 {(r.place.shortcuts.length > 0 || note) && (
                     <span className="places-row__sub">
                         {r.place.shortcuts.map(s => <span key={s.key} className="places-key">{s.key}</span>)}
-                        {note && <NotebookPen size={13} strokeWidth={1.9} className="places-row__note-ic" />}
+                        {note && <NoteIcon size={13} strokeWidth={1.9} className="places-row__note-ic" />}
                         {note && <span className="places-row__note">{note.split("\n")[0]}</span>}
                     </span>
                 )}
@@ -564,11 +588,12 @@ export default function Places() {
                     {source === "mine" && (
                     <div className="places-list__filters">
                         <div className="dialog-tabs places-filter">
-                            {([["all", "Wszystkie"], ["shortcuts", "Skróty"], ["notes", "Notatki"]] as const).map(([key, label]) => (
+                            {filters.map(([key, label]) => (
                                 <button
                                     key={key}
                                     type="button"
-                                    className={`dialog-tab${filter === key ? " is-active" : ""}`}
+                                    className={`dialog-tab${activeFilter === key ? " is-active" : ""}`}
+                                    title={key === "plugins" ? "Miejsca z notatkami od wtyczek (tylko do odczytu)" : undefined}
                                     onClick={() => setFilter(key)}
                                 >
                                     {label} <span className="dialog-tab__count">{counts[key]}</span>

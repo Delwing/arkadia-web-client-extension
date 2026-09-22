@@ -1,13 +1,15 @@
 import { globalStorage } from "@modules/core/storage";
 import { getRoomInfo } from "@modules/core/roomInfoProvider";
+import { getAllPluginLocationNotes, type PluginLocationNote } from "@modules/core/pluginLocationNotesRegistry";
 import { deleteNote, getAllNotes, type LocationNote } from "@modules/data/locationNotesStorage";
 import { getEmbeddedMap } from "@web/embedRegistry.ts";
 
 /**
  * Miejsca: a place is a room plus whatever the player keeps about it — the
- * /idz shortcut names pointing at it and their own note. The merge is only in
- * the UI: shortcuts stay in globalStorage 'shortcuts' (read by the client's
- * /idz and /prowadz), notes stay in ArkadiaLocationNotesDB (synced on their own).
+ * /idz shortcut names pointing at it and their own note, plus what plugins note
+ * about it. The merge is only in the UI: shortcuts stay in globalStorage
+ * 'shortcuts' (read by the client's /idz and /prowadz), notes stay in
+ * ArkadiaLocationNotesDB (synced on their own), plugin notes in their registry.
  */
 
 export interface ShortcutEntry {
@@ -20,6 +22,13 @@ export interface Place {
     roomId: number;
     shortcuts: ShortcutEntry[];
     note: LocationNote | null;
+    /** Read-only notes plugins keep about the room (not saved by the player). */
+    pluginNotes: PluginLocationNote[];
+}
+
+/** Something of the player's own is saved for the place (plugin notes are not). */
+export function hasOwnData(place: Place | null | undefined): boolean {
+    return !!place && (place.shortcuts.length > 0 || !!place.note);
 }
 
 /** Shortcut names must survive `/idz <name>`: ASCII letters, digits and _, no spaces. */
@@ -54,13 +63,14 @@ export async function loadPlaces(): Promise<Place[]> {
     const place = (roomId: number) => {
         let p = byRoom.get(roomId);
         if (!p) {
-            p = { roomId, shortcuts: [], note: null };
+            p = { roomId, shortcuts: [], note: null, pluginNotes: [] };
             byRoom.set(roomId, p);
         }
         return p;
     };
     readShortcuts().forEach(s => place(s.id).shortcuts.push(s));
     notes.forEach(n => { place(n.id).note = n; });
+    getAllPluginLocationNotes().forEach(n => place(n.roomId).pluginNotes.push(n));
     return [...byRoom.values()];
 }
 
