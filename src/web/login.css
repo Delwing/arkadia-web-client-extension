@@ -149,22 +149,6 @@
   right: 20px;
 }
 
-.auth-suggest {
-  position: absolute;
-  bottom: 20px;
-  left: 20px;
-  display: flex;
-  gap: 12px;
-  width: 330px;
-  padding: 12px 14px;
-  border: 1px solid var(--popup-border);
-  border-radius: 10px;
-  background: rgba(23, 27, 35, 0.94);
-}
-.auth-suggest__icon { display: inline-flex; padding-top: 2px; color: var(--popup-accent); }
-.auth-suggest__body { display: flex; flex-direction: column; gap: 8px; font-size: 13.5px; }
-.auth-suggest__actions { display: flex; gap: 6px; }
-
 .auth-meta {
   position: absolute;
   right: 20px;
@@ -408,11 +392,6 @@
 .auth-check { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 13.5px; cursor: pointer; }
 .auth-check input { width: 16px; height: 16px; accent-color: var(--popup-accent); }
 
-/* A low window: the suggestion would sit on the card. */
-@media (max-height: 760px) {
-  #auth-overlay .auth-suggest { display: none !important; }
-}
-
 /* ── phone: the whole screen ──────────────────────────────────────────── */
 
 @media (max-width: 560px) {
@@ -476,7 +455,6 @@
   .auth-notify:not([style*="none"]) ~ #auth-panel .auth-conn { margin-top: 0; }
   #auth-overlay .proxy-seg button { height: 38px; font-size: 14px; }
   #auth-overlay .proxy-controls .auth-ib--box { width: 44px; height: 44px; }
-  .auth-suggest { display: none !important; }
   .auth-meta {
     position: static;
     order: 5;

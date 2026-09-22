@@ -60,7 +60,7 @@ import UserTriggers from "./options/UserTriggers.tsx"
 import Places from "./places/Places.tsx"
 import { OPEN_PLACE_EVENT, openPlace } from "./places/placesData.ts"
 import HelperSettings from "./options/HelperSettings.tsx"
-import {invalidateLayoutCache, LayoutManagerWrapper, loadLayoutState, saveLayoutState} from "@web/layout"
+import {applyDefaultLayoutMode, LayoutManagerWrapper} from "@web/layout"
 import {globalStorage} from "@modules/core/storage"
 import {setOutputTimestampVisibility, setupOutputMessageHandler} from "@shared/dom/outputMessageHandler";
 import {isLikelyTouchDevice, isMobileLikeViewport, isTouchPointerType} from "@shared/dom/pointerEnvironment.ts";
@@ -687,6 +687,11 @@ document.addEventListener('visibilitychange', () => {
 // via UiPort.shouldSuppressKeys (see installClientPorts).
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Desktop gets the window manager by default (one-time flip). Must run
+    // before anything reads the layout state — panels and popups decide
+    // whether to auto-open from it.
+    applyDefaultLayoutMode();
+
     // Request persistent storage
     if (navigator.storage?.persist) {
         navigator.storage.persist().then(granted => {
@@ -1294,40 +1299,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initialize button state
     updateConnectButtons();
-
-    // Layout manager suggestion for desktop users
-    {
-        const suggestionEl = document.getElementById('layout-manager-suggestion');
-        const enableBtn = document.getElementById('layout-suggestion-enable');
-        const dismissBtn = document.getElementById('layout-suggestion-dismiss');
-
-        if (suggestionEl && enableBtn && dismissBtn) {
-            const isMobileLike = isMobileLikeViewport();
-            const layoutState = loadLayoutState();
-            const dismissed = localStorage.getItem('layoutManagerSuggestionDismissed') === '1';
-
-            if (!isMobileLike && !layoutState.enabled && !dismissed) {
-                suggestionEl.style.display = '';
-            }
-
-            enableBtn.addEventListener('click', () => {
-                const state = loadLayoutState();
-                state.enabled = true;
-                saveLayoutState(state);
-                invalidateLayoutCache();
-                // showButtons is stock chrome and stays in the uiSettings blob;
-                // merge onto the existing value without reintroducing moved fields.
-                const cur = globalStorage.get('uiSettings') ?? {};
-                globalStorage.set('uiSettings', { ...cur, showButtons: false } as never);
-                suggestionEl.style.display = 'none';
-            });
-
-            dismissBtn.addEventListener('click', () => {
-                localStorage.setItem('layoutManagerSuggestionDismissed', '1');
-                suggestionEl.style.display = 'none';
-            });
-        }
-    }
 
     // Mount React components
     mountMigratedComponents();

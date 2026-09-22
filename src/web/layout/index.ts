@@ -17,6 +17,7 @@ export {
   isLayoutModeForced,
 } from './utils/layoutStorage';
 export type { LayoutOverrides } from './utils/layoutStorage';
+export { applyDefaultLayoutMode } from './utils/layoutDefault';
 export {
   getPopupPortalContainer,
   isPopupPortalReady,
