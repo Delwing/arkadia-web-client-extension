@@ -19,8 +19,8 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
-  /* 1px border + 6px + a 26px pill + 6px: whole pixels (see the status line). */
-  padding: 6px 12px;
+  /* 1px border + 4px + a 22px pill + 4px: whole pixels (see the status line). */
+  padding: 4px 12px;
   border-top: 1px solid var(--footer-border);
   background-color: var(--footer-bg);
   color: var(--footer-text);
@@ -39,7 +39,7 @@
   align-items: stretch;
   min-width: 0;
   min-height: 0;
-  height: 26px;
+  height: 22px;
   margin: 0;
   padding: 0;
   overflow: hidden;
@@ -140,7 +140,7 @@
 #multi-binds .multi-bind-empty {
   display: inline-flex;
   align-items: center;
-  height: 26px;
+  height: 22px;
   color: var(--popup-text-faint);
   font-size: var(--ui-fs-sm, 13px);
   font-style: italic;
@@ -149,14 +149,14 @@
 /* -- status line ----------------------------------------------------------
    Vitals | chips (urgent first, the rest behind "+N") | connection. */
 #char-state {
-  --chip-h: 24px;
+  --chip-h: 22px;
   display: flex;
   align-items: center;
   gap: 14px;
-  /* 1px border + 6px + a 24px chip + 6px: whole pixels, so text and icons centre
+  /* 1px border + 4px + a 22px chip + 4px: whole pixels, so text and icons centre
      on the same pixel (42 put every chip on a half pixel). */
-  min-height: 37px;
-  padding: 6px 12px;
+  min-height: 31px;
+  padding: 4px 12px;
   border-top: 1px solid var(--footer-border);
   background-color: var(--footer-bg);
   color: var(--footer-text);

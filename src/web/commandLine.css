@@ -3,13 +3,13 @@
    (the server took echo away) and offline (the socket is closed and the login screen
    was dismissed). */
 #input-area {
-  --cmd-h: 40px;
+  --cmd-h: 34px;
   position: relative;
   z-index: 1001;
   display: flex;
   align-items: flex-end;
   gap: 8px;
-  padding: 8px 12px 10px;
+  padding: 6px 12px;
   border-top: 1px solid var(--footer-border);
   background-color: var(--footer-bg);
   color: var(--footer-text);
