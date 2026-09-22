@@ -78,6 +78,12 @@ Komendy do walki, zaslaniania i zarzadzania celami ataku.
 | `/nabindach` | Wyswietl aktualnie przypisanych wrogow na bindach |
 | `/nabindach--` | Wyczysc bindy wrogow (tymczasowo do zmiany lokacji) |
 
+W Ustawieniach (Postac -> Walka, sekcja "Bindy wrogow") mozna podac wlasne
+komendy dla bindu ataku (F1-F3) i bindu blokowania (CTRL+F1-F3). W komendzie
+`{obj_id}` zastepuje numer obiektu wroga z GMCP, np. `zabij ob_{obj_id}` albo
+`wesprzyj ob_{obj_id}`; dziala tez zapis `$id`. Puste pole zostawia domyslne
+zachowanie - zwykly atak klienta i `zablokuj ob_{obj_id}`.
+
 ## Reset skrotow druzyny
 
 | Komenda | Opis |

@@ -52,6 +52,10 @@ export interface Settings {
     enemyBindsKeepUnchanged: boolean;
     enemyBindsShowMode: 'always' | 'whenBound' | 'never';
     enemyBindsEnabledSlots: [boolean, boolean, boolean];
+    /** Command F1-F3 send instead of the usual attack; `{obj_id}` is the enemy. */
+    enemyBindsAttackCommand: string;
+    /** Command the block binds send instead of `zablokuj ob_{obj_id}`. */
+    enemyBindsBlockCommand: string;
     favoriteMagicTypes?: string[];
     favoriteMagicKeys?: string[];
     magicsColor?: string;
@@ -132,6 +136,8 @@ export const defaultSettings: Settings = {
     enemyBindsKeepUnchanged: false,
     enemyBindsShowMode: 'always',
     enemyBindsEnabledSlots: [true, true, true],
+    enemyBindsAttackCommand: '',
+    enemyBindsBlockCommand: '',
     favoriteMagicTypes: [],
     favoriteMagicKeys: [],
     magicsColor: '#d75f5f',

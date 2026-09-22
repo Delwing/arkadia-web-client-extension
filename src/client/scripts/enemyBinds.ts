@@ -8,6 +8,7 @@ import { globalStorage, characterStorage } from '@modules/core/storage';
 import { defaultSettings } from '@modules/core/defaultSettings';
 import { type Bind, bindMatches } from '@modules/core/keymapTypes';
 import { enemyBindResolvers } from './enemyBindResolvers';
+import { enemyBindCommand, enemyBindCommandLabel } from '../utils/enemyBindCommand';
 
 const isMac = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform);
 const ALT_LABEL = isMac ? '⌥' : 'ALT';
@@ -43,6 +44,8 @@ export default function initEnemyBinds(
     let keepUnchanged = false;
     let showMode: 'always' | 'whenBound' | 'never' = 'always';
     let enabledSlots: [boolean, boolean, boolean] = [true, true, true];
+    let attackCommandTemplate = '';
+    let blockCommandTemplate = '';
     let enemyBindKeys: Bind[] = [...defaultEnemyBinds];
     let enemyBlockBindKeys: Bind[] = [...defaultEnemyBlockBinds];
 
@@ -88,6 +91,8 @@ export default function initEnemyBinds(
             enemyBindsKeepUnchanged?: boolean;
             enemyBindsShowMode?: 'always' | 'whenBound' | 'never';
             enemyBindsEnabledSlots?: unknown;
+            enemyBindsAttackCommand?: unknown;
+            enemyBindsBlockCommand?: unknown;
         };
         if (Array.isArray(detail.enemyGuilds)) {
             enemyGuilds = detail.enemyGuilds.filter(g => typeof g === 'string') as string[];
@@ -97,9 +102,30 @@ export default function initEnemyBinds(
         if (Array.isArray(detail.enemyBindsEnabledSlots) && detail.enemyBindsEnabledSlots.length === 3) {
             enabledSlots = detail.enemyBindsEnabledSlots as [boolean, boolean, boolean];
         }
+        attackCommandTemplate = typeof detail.enemyBindsAttackCommand === 'string' ? detail.enemyBindsAttackCommand : '';
+        blockCommandTemplate = typeof detail.enemyBindsBlockCommand === 'string' ? detail.enemyBindsBlockCommand : '';
     };
     applySettings(characterStorage.get('settings'));
     characterStorage.onChange('settings', applySettings);
+
+    /**
+     * What a bind does with the enemy in its slot. With a command of the player's
+     * own (Ustawienia -> Walka), that command is sent with `{obj_id}` filled in;
+     * otherwise the built-in behaviour stands - the attack controller for F1-F3,
+     * `zablokuj` for the block binds.
+     */
+    function attackSlotTarget(objectId: number) {
+        const command = enemyBindCommand(attackCommandTemplate, objectId);
+        if (command) {
+            client.sendCommand(command);
+            return;
+        }
+        attackController.attackById(objectId);
+    }
+
+    function blockSlotTarget(objectId: number) {
+        client.sendCommand(enemyBindCommand(blockCommandTemplate, objectId) ?? `zablokuj ob_${objectId}`);
+    }
 
     function isEnemy(desc: string): boolean {
         const lowerDesc = desc.toLowerCase();
@@ -152,7 +178,7 @@ export default function initEnemyBinds(
                 line.appendBuffer(colorString(attackText, RED));
                 const attackEnd = line.length;
                 line.createLink([0, attackEnd], {
-                    onClick: () => attackController.attackById(objectId),
+                    onClick: () => attackSlotTarget(objectId),
                     title: `Kliknij aby zaatakować ${desc}`
                 });
 
@@ -160,12 +186,12 @@ export default function initEnemyBinds(
 
                 // Second part: [block key] zablokuj (clickable to block)
                 const blockKeyLabel = formatBindLabel(blockKeyBind);
-                const blockText = `[${blockKeyLabel}] zablokuj\n`;
+                const blockText = `[${blockKeyLabel}] ${enemyBindCommandLabel(blockCommandTemplate, 'zablokuj')}\n`;
                 const blockStart = line.length;
                 line.appendBuffer(colorString(blockText, ORANGE));
                 const blockEnd = line.length;
                 line.createLink([blockStart, blockEnd], {
-                    onClick: () => client.sendCommand(`zablokuj ob_${objectId}`),
+                    onClick: () => blockSlotTarget(objectId),
                     title: `Kliknij aby zablokować ${desc}`
                 });
 
@@ -272,7 +298,7 @@ export default function initEnemyBinds(
             if (bindMatches(ev, bind)) {
                 const objectId = bindSlots[index];
                 if (objectId !== null && enabled && enabledSlots[index]) {
-                    attackController.attackById(objectId);
+                    attackSlotTarget(objectId);
                     ev.preventDefault();
                     return;
                 }
@@ -288,7 +314,7 @@ export default function initEnemyBinds(
             if (bindMatches(ev, bind)) {
                 const objectId = bindSlots[index];
                 if (objectId !== null && enabled && enabledSlots[index]) {
-                    client.sendCommand(`zablokuj ob_${objectId}`);
+                    blockSlotTarget(objectId);
                     ev.preventDefault();
                     return;
                 }
@@ -303,7 +329,7 @@ export default function initEnemyBinds(
             const index = parseInt(attackMatch[1]) - 1;
             const objectId = bindSlots[index];
             if (objectId !== null && enabled && enabledSlots[index]) {
-                attackController.attackById(objectId);
+                attackSlotTarget(objectId);
             }
         }
         const blockMatch = bindName.match(/^enemyBlock(\d)$/);
@@ -311,7 +337,7 @@ export default function initEnemyBinds(
             const index = parseInt(blockMatch[1]) - 1;
             const objectId = bindSlots[index];
             if (objectId !== null && enabled && enabledSlots[index]) {
-                client.sendCommand(`zablokuj ob_${objectId}`);
+                blockSlotTarget(objectId);
             }
         }
     });
@@ -350,7 +376,7 @@ export default function initEnemyBinds(
         }
         const objectId = bindSlots[slotIndex];
         if (objectId !== null && enabled && enabledSlots[slotIndex]) {
-            attackController.attackById(objectId);
+            attackSlotTarget(objectId);
         }
     };
 
@@ -360,7 +386,7 @@ export default function initEnemyBinds(
         }
         const objectId = bindSlots[slotIndex];
         if (objectId !== null && enabled && enabledSlots[slotIndex]) {
-            client.sendCommand(`zablokuj ob_${objectId}`);
+            blockSlotTarget(objectId);
         }
     };
 }
