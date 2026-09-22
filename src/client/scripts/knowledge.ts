@@ -2707,6 +2707,7 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
                 KNOWLEDGE_HINTS_PLUGIN_NAME,
                 roomId,
                 lines.join('\n\n'),
+                { builtin: true },
             );
         }
         knowledgeHintsHighlighter.add(roomIds);

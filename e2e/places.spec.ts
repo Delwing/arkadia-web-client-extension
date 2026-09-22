@@ -274,7 +274,7 @@ test.describe('Miejsca (skróty i notatki lokacji)', () => {
         await expect(modal(page).locator('.places-detail--empty')).toBeVisible();
     });
 
-    test('rooms a plugin notes are searchable and get their own Wtyczki tab', async ({ page }) => {
+    test('rooms a plugin notes are searchable and get their own Inne tab', async ({ page }) => {
         const pluginUrl = 'https://example.com/places-notes-plugin.js';
         await page.route(`${pluginUrl}**`, (route) => route.fulfill({
             status: 200,
@@ -300,7 +300,7 @@ test.describe('Miejsca (skróty i notatki lokacji)', () => {
         await page.click('#places-button');
         await expect(modal(page)).toBeVisible();
         const rows = modal(page).locator('.places-row');
-        const pluginTab = modal(page).locator('.places-filter .dialog-tab', { hasText: 'Wtyczki' });
+        const pluginTab = modal(page).locator('.places-filter .dialog-tab', { hasText: 'Inne' });
         await expect(pluginTab).toContainText('1');
 
         await modal(page).locator('.places-list__search input').fill('skarb');

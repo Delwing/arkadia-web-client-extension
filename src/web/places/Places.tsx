@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
-import { ArrowDownAZ, ArrowLeft, FileText, Footprints, LocateFixed, Map as MapIcon, MapPin, Navigation, NotebookPen, Plus, Puzzle, Search, X } from "lucide-react";
+import { ArrowDownAZ, ArrowLeft, BookOpen, FileText, Footprints, LocateFixed, Map as MapIcon, MapPin, Navigation, NotebookPen, Plus, Puzzle, Search, X } from "lucide-react";
 import { Button, DeleteButton, Input, InputGroup, TextArea } from "@web-ui/primitives/index.ts";
 import eventBus from "@modules/core/eventBus";
 import { globalStorage } from "@modules/core/storage";
@@ -33,7 +33,7 @@ type Source = "mine" | "described";
 type Filter = "all" | "shortcuts" | "notes" | "plugins";
 type Sort = "near" | "az";
 
-const FILTERS: ReadonlyArray<readonly [Filter, string]> = [["all", "Wszystkie"], ["shortcuts", "Skróty"], ["notes", "Notatki"], ["plugins", "Wtyczki"]];
+const FILTERS: ReadonlyArray<readonly [Filter, string]> = [["all", "Wszystkie"], ["shortcuts", "Skróty"], ["notes", "Notatki"], ["plugins", "Inne"]];
 
 /** Most described rooms listed at once; searching narrows the rest down. */
 const DESCRIBED_LIMIT = 200;
@@ -323,8 +323,8 @@ function PlaceDetail({ roomId, place, focus, onBack, onRemoved }: {
                         )}
                         {pluginNotes.map(pn => (
                             <div key={pn.pluginId} className="places-other">
-                                <Puzzle size={14} strokeWidth={1.9} />
-                                <div><span className="places-other__src">Wtyczka: {pn.pluginName}</span><p>{pn.note}</p></div>
+                                {pn.builtin ? <BookOpen size={14} strokeWidth={1.9} /> : <Puzzle size={14} strokeWidth={1.9} />}
+                                <div><span className="places-other__src">{pn.builtin ? pn.pluginName : `Wtyczka: ${pn.pluginName}`}</span><p>{pn.note}</p></div>
                             </div>
                         ))}
                     </div>
@@ -431,7 +431,7 @@ export default function Places() {
         notes: rows.filter(r => r.place.note).length,
         plugins: rows.filter(r => r.place.pluginNotes.length > 0).length,
     };
-    // The Wtyczki tab only while some plugin notes a room; leave it when they go.
+    // The Inne tab only while a plugin or Wiedza notes some room; leave it when they go.
     const filters = FILTERS.filter(([key]) => key !== "plugins" || counts.plugins > 0);
     const activeFilter: Filter = filter === "plugins" && counts.plugins === 0 ? "all" : filter;
 
@@ -492,7 +492,7 @@ export default function Places() {
         // Nothing of your own to preview: what a plugin notes, marked as such.
         const plugin = !own ? r.place.pluginNotes[0] : undefined;
         const note = own || plugin?.note || "";
-        const NoteIcon = plugin ? Puzzle : NotebookPen;
+        const NoteIcon = !plugin ? NotebookPen : plugin.builtin ? BookOpen : Puzzle;
         return (
             <button
                 key={r.place.roomId}
@@ -593,7 +593,7 @@ export default function Places() {
                                     key={key}
                                     type="button"
                                     className={`dialog-tab${activeFilter === key ? " is-active" : ""}`}
-                                    title={key === "plugins" ? "Miejsca z notatkami od wtyczek (tylko do odczytu)" : undefined}
+                                    title={key === "plugins" ? "Miejsca z notatkami od wtyczek i z Wiedzy (tylko do odczytu)" : undefined}
                                     onClick={() => setFilter(key)}
                                 >
                                     {label} <span className="dialog-tab__count">{counts[key]}</span>
