@@ -33,7 +33,7 @@ function formatTime(ms: number): string {
  * mode, swipe, global Enter) is the headless engine behind {@link CommandInputController};
  * this component only owns the markup and the states the field shows:
  *  - password mode (the server took echo away): the password input with a lock;
- *  - offline (see connectionView): the closed connection and "Połącz ponownie".
+ *  - offline (see connectionView): the closed connection and "Połącz".
  *
  * Ids (#message-input, #send-button, #menu-button, …) are kept: other code and the
  * e2e specs find the command line by them.
@@ -236,7 +236,7 @@ export default function CommandLine({ deps }: { deps: CommandLineDeps }) {
       </button>
       <FooterButtons />
       {offline && (
-        <button id="connect-button-inline" type="button" onClick={requestReconnect}>Połącz ponownie</button>
+        <button id="connect-button-inline" type="button" onClick={requestReconnect}>Połącz</button>
       )}
       <MainMenu onOpenChange={setMenuOpen} />
     </div>

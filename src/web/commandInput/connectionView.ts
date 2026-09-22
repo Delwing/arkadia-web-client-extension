@@ -3,7 +3,7 @@
  * (which owns the connect / login state machine) and read by <CommandLine>.
  *
  * `offline` = no socket, not connecting, and the login screen was dismissed: the
- * command line then shows the closed connection and a "Połącz ponownie" button.
+ * command line then shows the closed connection and a "Połącz" button.
  * `status` and `route` feed the status line at the bottom of the ⋯ menu.
  */
 export type ConnectionStatus = "connected" | "connecting" | "disconnected";

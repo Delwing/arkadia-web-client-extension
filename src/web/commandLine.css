@@ -241,7 +241,7 @@
 }
 
 /* Offline: a red dot instead of the prompt, a dashed see-through field, and
-   "Połącz ponownie" in place of the send button. The field still takes client
+   "Połącz" in place of the send button. The field still takes client
    commands (/aliasy, settings), so it stays usable. */
 #input-area[data-offline="1"] #command-field {
   border-style: dashed;
