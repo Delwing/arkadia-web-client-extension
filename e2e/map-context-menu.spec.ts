@@ -33,20 +33,12 @@ test.describe('Map context menu', () => {
         await waitForMapReady(page);
     });
 
-    test('menu appears with correct header when right-clicking a room', async ({ page }) => {
+    test('the header names the room, its area and number', async ({ page }) => {
         await dispatchRoomContextMenu(page, 2);
 
-        const menu = page.locator(CONTEXT_MENU_SELECTOR);
-        await expect(menu).toHaveClass(/show/);
-        await expect(menu).toContainText('Lokacja: 2');
-    });
-
-    test('menu header uses small header style', async ({ page }) => {
-        await dispatchRoomContextMenu(page, 2);
-
-        const header = page.locator(`${CONTEXT_MENU_SELECTOR} .context-menu-header-small`);
+        const header = page.locator(`${CONTEXT_MENU_SELECTOR} .context-menu-header`);
         await expect(header).toBeVisible();
-        await expect(header).toHaveText('Lokacja: 2');
+        await expect(header.locator('.context-menu-header__meta')).toContainText('#2');
     });
 
     test('menu contains all expected items', async ({ page }) => {
@@ -55,14 +47,13 @@ test.describe('Map context menu', () => {
         const menu = page.locator(CONTEXT_MENU_SELECTOR);
         await expect(menu).toHaveClass(/show/);
 
-        await expect(menu).toContainText('Ustaw lokację');
-        await expect(menu).toContainText('Prowadź do lokacji');
-        await expect(menu).toContainText('Idź do lokacji');
-        await expect(menu).toContainText('Dodaj skrót');
-        await expect(menu).toContainText('Dodaj przystanek');
-        await expect(menu).toContainText('Notatka');
-        await expect(menu).toContainText('Informacje o lokacji');
-        await expect(menu).toContainText('Otworz okno mapy');
+        await expect(menu.locator('.context-menu__quick'), 'three big buttons, Idz the primary one')
+            .toHaveText(['Idź', 'Prowadź', 'Tu jestem']);
+        await expect(menu.locator('.context-menu__quick.is-active')).toHaveText('Idź');
+        await expect(menu.locator('.context-menu__caption')).toHaveText(['Oznacz']);
+        await expect(menu.locator('.context-menu__item')).toHaveText([
+            'Skrót', 'Notatka', 'Przystanek w planie trasy', 'Informacje o lokacji', 'Otwórz w oknie mapy',
+        ]);
     });
 
     test('window-opening items have the opens-window class', async ({ page }) => {
@@ -73,9 +64,10 @@ test.describe('Map context menu', () => {
 
         const opensWindowButtons = menu.locator('button.opens-window');
         await expect(opensWindowButtons).toHaveCount(5);
+        await expect(opensWindowButtons.locator('.context-menu__opens'), 'each ends in the small arrow').toHaveCount(5);
     });
 
-    test('"Ustaw lokację" updates the location label to target room', async ({ page }) => {
+    test('"Tu jestem" updates the location label to target room', async ({ page }) => {
         // Move player to room 2 so room 3 is a distinct target
         await pushGmcp(page, GMCP_PATHS.ROOM_INFO, {
             num: 2,
@@ -93,7 +85,7 @@ test.describe('Map context menu', () => {
         const menu = page.locator(CONTEXT_MENU_SELECTOR);
         await expect(menu).toHaveClass(/show/);
 
-        const setLocationButton = menu.locator('button', { hasText: 'Ustaw lokację' });
+        const setLocationButton = menu.locator('button', { hasText: 'Tu jestem' });
         await setLocationButton.click();
 
         await expect(locationLabel).toContainText('#3');
@@ -106,7 +98,7 @@ test.describe('Map context menu', () => {
         const menu = page.locator(CONTEXT_MENU_SELECTOR);
         await expect(menu).toHaveClass(/show/);
 
-        const leadButton = menu.locator('button', { hasText: 'Prowadź do lokacji' });
+        const leadButton = menu.locator('button', { hasText: 'Prowadź' });
         await leadButton.click();
 
         const locationLabel = page.locator(LOCATION_TEXT_SELECTOR);
@@ -122,7 +114,7 @@ test.describe('Map context menu', () => {
         const menu = page.locator(CONTEXT_MENU_SELECTOR);
         await expect(menu).toHaveClass(/show/);
 
-        const walkButton = menu.locator('button', { hasText: 'Idź do lokacji' });
+        const walkButton = menu.locator('button', { hasText: 'Idź' });
         await walkButton.click();
 
         // /idz calls leadTo internally, which sets the path destination
@@ -136,8 +128,8 @@ test.describe('Map context menu', () => {
         const menu = page.locator(CONTEXT_MENU_SELECTOR);
         await expect(menu).toHaveClass(/show/);
 
-        // Click the first non-window-opening button (Ustaw lokację)
-        const firstButton = menu.locator('button', { hasText: 'Ustaw lokację' });
+        // Click the first non-window-opening button (Tu jestem)
+        const firstButton = menu.locator('button', { hasText: 'Tu jestem' });
         await firstButton.click();
 
         await expect(menu).not.toBeVisible();
@@ -149,7 +141,7 @@ test.describe('Map context menu', () => {
         const menu = page.locator(CONTEXT_MENU_SELECTOR);
         await expect(menu).toHaveClass(/show/);
 
-        const shortcutButton = menu.locator('button', { hasText: 'Dodaj skrót' });
+        const shortcutButton = menu.locator('button', { hasText: 'Skrót' });
         await shortcutButton.click();
 
         await expect(menu).not.toBeVisible();
@@ -172,11 +164,9 @@ test.describe('Map context menu', () => {
     test('dispatching context menu for a different room shows correct room number in header', async ({ page }) => {
         await dispatchRoomContextMenu(page, 4);
 
-        const menu = page.locator(CONTEXT_MENU_SELECTOR);
-        await expect(menu).toHaveClass(/show/);
-        await expect(menu).toContainText('Lokacja: 4');
-        await expect(menu).not.toContainText('Lokacja: 1');
-        await expect(menu).not.toContainText('Lokacja: 2');
+        const meta = page.locator(`${CONTEXT_MENU_SELECTOR} .context-menu-header__meta`);
+        await expect(meta).toContainText('#4');
+        await expect(meta).not.toContainText('#2');
     });
 
     test('"Prowadź do lokacji" for room 4 shows path arrow to room 4', async ({ page }) => {
@@ -186,7 +176,7 @@ test.describe('Map context menu', () => {
         const menu = page.locator(CONTEXT_MENU_SELECTOR);
         await expect(menu).toHaveClass(/show/);
 
-        const leadButton = menu.locator('button', { hasText: 'Prowadź do lokacji' });
+        const leadButton = menu.locator('button', { hasText: 'Prowadź' });
         await leadButton.click();
 
         const locationLabel = page.locator(LOCATION_TEXT_SELECTOR);
@@ -202,7 +192,7 @@ test.describe('Map context menu', () => {
         const menu = page.locator(CONTEXT_MENU_SELECTOR);
         await expect(menu).toHaveClass(/show/);
 
-        const walkButton = menu.locator('button', { hasText: 'Idź do lokacji' });
+        const walkButton = menu.locator('button', { hasText: 'Idź' });
         await walkButton.click();
 
         // Advance fake clock past the walk delay (1s base + up to 0.3s jitter)

@@ -28,6 +28,8 @@ export interface LogBrowserProps {
      * control. The viewer has no chrome of its own to hang one on.
      */
     headerTrailing?: ReactNode;
+    /** Opens with this in the search box ("Szukaj w logach"). */
+    initialQuery?: string;
 }
 
 /** Opens the standalone page on one session, in a tab of its own. */
@@ -39,7 +41,7 @@ function openInNewTab(sessionId: string): void {
     window.open(url.toString(), "_blank");
 }
 
-export function LogBrowser({ headerTrailing }: LogBrowserProps) {
+export function LogBrowser({ headerTrailing, initialQuery }: LogBrowserProps) {
     /**
      * True inside stock's Bootstrap window, false under forge, which hosts the
      * same component in a shell of its own and supplies its own close control.
@@ -110,6 +112,7 @@ export function LogBrowser({ headerTrailing }: LogBrowserProps) {
                 <LogViewer
                     sessions={sessions}
                     preferences={initialPreferences}
+                    initialQuery={initialQuery}
                     onPreferencesChange={onPreferencesChange}
                     // With no logs at all the viewer has nothing to offer, but
                     // this host does: importing is the one thing that gets a

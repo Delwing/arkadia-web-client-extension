@@ -27,7 +27,7 @@ async function addStopViaContextMenu(page: import('@playwright/test').Page, room
     await dispatchRoomContextMenu(page, roomId);
     const menu = page.locator(CONTEXT_MENU_SELECTOR);
     await expect(menu).toHaveClass(/show/);
-    const addStopButton = menu.locator('button', { hasText: 'Dodaj przystanek' });
+    const addStopButton = menu.locator('button', { hasText: 'Przystanek w planie trasy' });
     await addStopButton.click();
 }
 
@@ -39,7 +39,7 @@ test.describe('Trip Planner Popup', () => {
         await waitForMapReady(page);
     });
 
-    test('opens when triggered via context menu "Dodaj przystanek"', async ({ page }) => {
+    test('opens when triggered via context menu "Przystanek w planie trasy"', async ({ page }) => {
         await addStopViaContextMenu(page, 2);
         const popup = page.locator(TRIP_PLANNER_SELECTOR);
         await expect(popup).toBeVisible();

@@ -8,6 +8,7 @@ import {getBuiltInPanelSetting, loadLayoutState} from "./layout/utils/layoutStor
 import {getObjectListChrome} from "./layout/builtInChrome";
 import {buildRenderContext, type ObjectListViewMode} from "./objectList/context.ts";
 import {getStrategy, renderListLines} from "./objectList/strategies.ts";
+import {buildObjectContextMenu} from "./objectList/objectContextMenu.ts";
 
 const DEFAULT_CONTEXT_MENU_COMMANDS = ['ob', 'ocen', 'zapros', 'wskaz'];
 
@@ -538,13 +539,20 @@ export default class ObjectList {
 
         e.preventDefault();
 
-        const items = this.contextMenuCommands.map((command) => ({
-            label: command,
-            action: () => this.client.sendCommand(`${command} ob_${objectId}`),
-        }));
-
-        showContextMenu(items, e.clientX, e.clientY);
+        this.showObjectMenu(objectId, e.clientX, e.clientY);
     };
+
+    private showObjectMenu(objectId: string, x: number, y: number) {
+        const object = this.client.ObjectManager?.getObjectsOnLocation()
+            ?.find((o: { num?: number }) => String(o?.num) === objectId);
+        const desc = typeof object?.desc === 'string' ? object.desc : undefined;
+        const { items, options } = buildObjectContextMenu(
+            { id: objectId, desc, teammate: Boolean(desc && this.client.TeamManager?.isInTeam?.(desc)) },
+            this.contextMenuCommands,
+            (command) => this.client.sendCommand(command),
+        );
+        showContextMenu(items, x, y, options);
+    }
 
     /**
      * Schedules a render using queueMicrotask to ensure all event handlers
@@ -606,12 +614,7 @@ export default class ObjectList {
         e.preventDefault();
         e.stopPropagation();
 
-        const items = this.contextMenuCommands.map((command) => ({
-            label: command,
-            action: () => this.client.sendCommand(`${command} ob_${objectId}`),
-        }));
-
-        showContextMenu(items, e.clientX, e.clientY);
+        this.showObjectMenu(objectId, e.clientX, e.clientY);
     };
 
     private onDocumentContextMenu = (e: MouseEvent) => {
@@ -636,12 +639,7 @@ export default class ObjectList {
         e.preventDefault();
         e.stopPropagation();
 
-        const items = this.contextMenuCommands.map((command) => ({
-            label: command,
-            action: () => this.client.sendCommand(`${command} ob_${objectId}`),
-        }));
-
-        showContextMenu(items, e.clientX, e.clientY);
+        this.showObjectMenu(objectId, e.clientX, e.clientY);
     };
 
     private togglePictureInPicture = async (event?: MouseEvent) => {

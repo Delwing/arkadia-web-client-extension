@@ -48,6 +48,8 @@ export interface LogViewerProps {
      * the database and passes nothing.
      */
     noSessionsAction?: React.ReactNode;
+    /** Opens with this in the search box, across every log ("Szukaj w logach"). */
+    initialQuery?: string;
 }
 
 /**
@@ -71,6 +73,7 @@ export function LogViewer({
     onCopy,
     onExport,
     noSessionsAction,
+    initialQuery,
 }: LogViewerProps) {
     const [state, setState] = useState<ViewerState>(() => {
         const preferredId = preferences?.sessionId;
@@ -78,7 +81,8 @@ export function LogViewer({
             preferredId && sessions.some((session) => session.id === preferredId)
                 ? preferredId
                 : initialSessionId(sessions);
-        return applyPreferences(initialViewerState(initialId), preferences);
+        const restored = applyPreferences(initialViewerState(initialId), preferences);
+        return initialQuery ? { ...restored, query: initialQuery, scope: "all" } : restored;
     });
 
     /**

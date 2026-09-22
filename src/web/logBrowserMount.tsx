@@ -14,15 +14,23 @@
 import { useEffect, useState } from "react";
 import { LogBrowser } from "./LogBrowser";
 import { registerMainMenuItem } from "@modules/core/mainMenuRegistry";
+import { setLogSearchHandler } from "./logSearchRequest";
 
 let initialized = false;
 let warned = false;
+/** The query "Szukaj w logach" asked for, taken by the next opening. */
+let pendingQuery: string | undefined;
 
 export function LogBrowserWindow({ modalEl }: { modalEl: HTMLElement }) {
     const [open, setOpen] = useState(false);
+    const [query, setQuery] = useState<string | undefined>();
 
     useEffect(() => {
-        const show = () => setOpen(true);
+        const show = () => {
+            setQuery(pendingQuery);
+            pendingQuery = undefined;
+            setOpen(true);
+        };
         const hide = () => setOpen(false);
         modalEl.addEventListener("show.bs.modal", show);
         modalEl.addEventListener("hidden.bs.modal", hide);
@@ -32,7 +40,7 @@ export function LogBrowserWindow({ modalEl }: { modalEl: HTMLElement }) {
         };
     }, [modalEl]);
 
-    return open ? <LogBrowser /> : null;
+    return open ? <LogBrowser initialQuery={query} /> : null;
 }
 
 function initLogBrowser(): boolean {
@@ -71,6 +79,10 @@ function initLogBrowser(): boolean {
   // In the menu at once; a click before the chunks above arrive opens it when they do.
   let showModal: (() => void) | null = null;
   let openRequested = false;
+  const open = () => {
+    if (showModal) showModal();
+    else openRequested = true;
+  };
   registerMainMenuItem({
     id: "logs-button",
     label: "Logi",
@@ -78,10 +90,11 @@ function initLogBrowser(): boolean {
     icon: "file-text",
     order: 170,
     source: "builtin",
-    onSelect: () => {
-      if (showModal) showModal();
-      else openRequested = true;
-    },
+    onSelect: open,
+  });
+  setLogSearchHandler((query) => {
+    pendingQuery = query;
+    open();
   });
 
   initialized = true;

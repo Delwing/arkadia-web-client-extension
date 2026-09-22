@@ -42,7 +42,7 @@ async function openStaticMap(page: Page, roomId = 2): Promise<void> {
             })
         );
     }, roomId);
-    await page.locator('#context-menu').getByText('Otworz okno mapy').click();
+    await page.locator('#context-menu').getByText('Otwórz w oknie mapy').click();
     await expect(page.locator(FLOATING_MAP)).toBeVisible({ timeout: 5000 });
 }
 
