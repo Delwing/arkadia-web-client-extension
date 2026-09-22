@@ -329,10 +329,23 @@ export class FunctionalBindManager {
 
     // ===== Category-aware API =====
 
-    /** Set a functional bind for a specific category. */
+    /**
+     * Set a functional bind for a specific category.
+     *
+     * Only a bind that actually changes takes over the key. Several callers re-assert
+     * the very same command on every game event - the loot bind is rebound on each
+     * objects.nums update for as long as a searchable body lies around - and bumping the
+     * order there would take the key away from a bind set in the meantime (the follow
+     * bind for a leader who just left through a special exit).
+     */
     setCategory(category: FunctionalBindCategory, printable: string | null, callback?: () => void, clearAfterUse?: boolean): void {
-        this.categories.get(category)?.set(printable, callback, clearAfterUse ?? false);
-        if (printable !== null) {
+        const bind = this.categories.get(category);
+        if (!bind) {
+            return;
+        }
+        const changed = bind.getPrintable() !== printable;
+        bind.set(printable, callback, clearAfterUse ?? false);
+        if (printable !== null && changed) {
             this.setOrder.set(category, ++this.setCounter);
         }
     }
