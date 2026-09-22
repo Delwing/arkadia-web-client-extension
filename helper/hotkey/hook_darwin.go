@@ -30,7 +30,7 @@ var macKeyToVK = map[C.CGKeyCode]KeyCode{
 	0x10: VKFromChar('y'), 0x11: VKFromChar('t'), 0x12: VKFromChar('1'),
 	0x13: VKFromChar('2'), 0x14: VKFromChar('3'), 0x15: VKFromChar('4'),
 	0x16: VKFromChar('6'), 0x17: VKFromChar('5'), 0x1C: VKFromChar('8'),
-	0x19: VKFromChar('9'), 0x1D: VKFromChar('0'), 0x1E: VKFromChar('7'),
+	0x19: VKFromChar('9'), 0x1D: VKFromChar('0'), 0x1A: VKFromChar('7'),
 	0x1F: VKFromChar('o'), 0x20: VKFromChar('u'), 0x22: VKFromChar('i'),
 	0x23: VKFromChar('p'), 0x25: VKFromChar('l'), 0x26: VKFromChar('j'),
 	0x28: VKFromChar('k'), 0x2D: VKFromChar('n'), 0x2E: VKFromChar('m'),
