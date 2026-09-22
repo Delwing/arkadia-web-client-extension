@@ -581,17 +581,10 @@
   border-radius: 999px;
   background-color: var(--popup-border-strong);
 }
-.command-menu__panel--sheet .command-menu__filter {
-  height: 44px;
-  margin: 4px 0 8px;
-}
-.command-menu__panel--sheet .command-menu__filter input {
-  font-size: 16px;
-}
 .command-menu__panel--sheet .command-menu__sections {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
   padding: 0;
 }
 .command-menu__panel--sheet .command-menu__section,
@@ -612,8 +605,8 @@
 #input-area .command-menu__panel--sheet .command-menu__items .command-menu__item {
   flex-direction: column;
   justify-content: center;
-  gap: 6px;
-  height: 66px;
+  gap: 4px;
+  height: 52px;
   padding: 0 2px;
   border: 1px solid var(--popup-border);
   border-radius: 10px;
@@ -637,14 +630,14 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
-  margin-top: 8px;
-  padding: 10px 0 calc(16px + env(safe-area-inset-bottom, 0px));
+  margin-top: 6px;
+  padding: 8px 0 calc(10px + env(safe-area-inset-bottom, 0px));
   background: transparent;
 }
 #input-area .command-menu__panel--sheet .command-menu__item--bar {
   justify-content: center;
   width: 100%;
-  height: 46px;
+  height: 42px;
   border-color: var(--popup-border-strong);
   background-color: var(--popup-control-bg);
   font-size: 14px;

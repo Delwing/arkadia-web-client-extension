@@ -172,7 +172,8 @@ export default function MainMenu({ onOpenChange }: { onOpenChange?: (open: boole
             onKeyDown={onKeyDown}
           >
             {phone && <span className="command-menu__grip" />}
-            <label className="command-menu__filter">
+            {/* No filter on a phone: typing there is slower than tapping a tile. */}
+            {!phone && <label className="command-menu__filter">
               <Search size={15} strokeWidth={2.1} />
               <input
                 ref={filterRef}
@@ -180,7 +181,7 @@ export default function MainMenu({ onOpenChange }: { onOpenChange?: (open: boole
                 id="command-menu-filter"
                 autoComplete="off"
                 spellCheck={false}
-                placeholder={phone ? "Szukaj" : "Szukaj... (wpisz i Enter)"}
+                placeholder="Szukaj... (wpisz i Enter)"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={(e) => {
@@ -190,7 +191,7 @@ export default function MainMenu({ onOpenChange }: { onOpenChange?: (open: boole
                   }
                 }}
               />
-            </label>
+            </label>}
             <div className="command-menu__sections">
               {sections.map((section) => (
                 <section key={section.key} className="command-menu__section" data-group={section.key}>
@@ -245,7 +246,7 @@ function MainMenuEntry({ item, tile, bar, first, onRun }: {
       disabled={item.disabled}
       onClick={() => onRun(item)}
     >
-      <span className="command-menu__icon"><Icon size={tile ? 18 : 14} strokeWidth={2.1} /></span>
+      <span className="command-menu__icon"><Icon size={tile ? 17 : 14} strokeWidth={2.1} /></span>
       <span className="command-menu__label">
         {typeof label === "string" ? label : <NodeLabel node={label} />}
       </span>

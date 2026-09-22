@@ -109,6 +109,11 @@ test.describe('main menu on a phone', () => {
         await expect(menu.locator('.command-menu__caption')).toHaveText(['Gra', 'Ustawienia', 'Narzędzia i wtyczki']);
         await expect(menu.locator('#share-location-button')).toHaveText('Kod QR');
         await expect(menu.locator('#docs-button')).toHaveText('Pomoc');
+        // No filter, and everything fits without scrolling.
+        await expect(menu.locator('#command-menu-filter')).toHaveCount(0);
+        const sections = menu.locator('.command-menu__sections');
+        expect(await sections.evaluate((el) => el.scrollHeight <= el.clientHeight)).toBe(true);
+        expect(box!.height).toBeLessThan(600);
         await page.screenshot({ path: 'test-results/main-menu-phone.png' });
 
         await page.locator('.command-menu__scrim').click({ position: { x: 20, y: 20 } });
