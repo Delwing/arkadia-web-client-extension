@@ -7,6 +7,7 @@ import { CommandInputController, type CommandInputDeps } from "./CommandInputCon
 import { getConnectionView, requestReconnect, subscribeConnectionView } from "./connectionView";
 import MainMenu from "./MainMenu";
 import { useHardwareKeyboard } from "@web-ui/hooks";
+import FooterButtons from "@web-ui/footer/FooterButtons.tsx";
 
 export type CommandLineDeps = Pick<CommandInputDeps,
   "outputWrapper" | "sendCommand" | "isPasswordMode" | "getCommandLineSuggestions" | "getClearInputOnSend"> & {
@@ -252,6 +253,7 @@ export default function CommandLine({ deps }: { deps: CommandLineDeps }) {
       <button id="send-button" ref={sendRef} type="button" title="Wyślij">
         <ArrowRight size={16} strokeWidth={2.2} />
       </button>
+      <FooterButtons />
       {offline && (
         <button id="connect-button-inline" type="button" onClick={requestReconnect}>Połącz ponownie</button>
       )}

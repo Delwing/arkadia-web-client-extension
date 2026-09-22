@@ -497,3 +497,129 @@
     font-size: 14px;
   }
 }
+
+/* -- the player's own buttons -------------------------------------------
+   A short row in the command bar, between Wyślij and the ⋯ menu (see
+   @web-ui/footer/FooterButtons.tsx). The row wraps so it can be measured;
+   what lands on a second line is hidden and offered behind its own ⋯, because
+   the command line must not lose height to them. */
+.footer-buttons {
+  position: relative;
+  display: flex;
+  /* Never wider than a third of the bar: the command line comes first. What
+     does not fit inside that cap is hidden and offered behind the "...", which
+     sits out of the row's flow at its right end. */
+  flex: 0 1 auto;
+  align-items: center;
+  min-width: 0;
+  max-width: min(33%, 26rem);
+  height: 28px;
+}
+
+.footer-buttons__row {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  height: 28px;
+  overflow: hidden;
+}
+
+.footer-button {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 5px;
+  height: 28px;
+  min-width: 0;
+  min-height: 0;
+  padding: 0 10px;
+  border: 1px solid var(--popup-border-subtle);
+  border-radius: 7px;
+  background-color: var(--popup-control-bg);
+  color: var(--popup-text);
+  font: inherit;
+  font-size: 12.5px;
+  white-space: nowrap;
+  opacity: 1;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.footer-button:hover {
+  background-color: var(--popup-control-hover-bg);
+}
+
+/* Off the first line: measured, then kept out of sight behind the ⋯. */
+.footer-button.is-overflow {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.footer-button--more {
+  padding: 0 7px;
+}
+
+/* Tones: the button's own colour, so a "zabij cel" reads as one. */
+.footer-button--accent {
+  --footer-button-tone: var(--popup-accent);
+  border-color: color-mix(in srgb, var(--popup-accent) 45%, transparent);
+  color: var(--popup-text-bright);
+}
+
+.footer-button--danger {
+  --footer-button-tone: var(--footer-vital-danger);
+  border-color: color-mix(in srgb, var(--footer-vital-danger) 45%, transparent);
+  color: color-mix(in srgb, var(--footer-vital-danger) 80%, #fff);
+}
+
+/* A plugin's button, dashed like its footer chips: not something the player
+   put there, and not something the settings list can rewrite. */
+.footer-button--plugin {
+  border-style: dashed;
+}
+
+/* Switched on (a mode the player is in): filled, with a dot. */
+.footer-button.is-on {
+  border-color: var(--footer-button-tone, var(--popup-accent));
+  background-color: color-mix(in srgb, var(--footer-button-tone, var(--popup-accent)) 22%, transparent);
+  color: var(--popup-text-bright);
+}
+
+.footer-button__dot {
+  flex-shrink: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--footer-button-tone, var(--popup-accent));
+}
+
+.footer-buttons__more {
+  position: absolute;
+  right: 0;
+  display: inline-flex;
+}
+
+.footer-buttons__panel {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 6px);
+  z-index: 1002;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 150px;
+  padding: 6px;
+}
+
+.footer-buttons__panel-item {
+  justify-content: flex-start;
+  width: 100%;
+}
+
+/* The phone sheet's grid; the desktop never shows it (footerMobile.css does). */
+.footer-buttons-sheet {
+  display: none;
+}

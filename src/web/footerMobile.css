@@ -171,3 +171,44 @@
     text-align: left;
   }
 }
+
+/* -- the player's own buttons ------------------------------------------- */
+@media (max-width: 768px), (max-height: 520px) and (pointer: coarse) {
+  /* The folded line is status only: the row in the command bar would cost the
+     output its height, so it goes, and the sheet below carries the buttons. */
+  body[data-mobile-footer="1"] #footer-buttons {
+    display: none;
+  }
+
+  /* Unfolded, they are a grid of targets big enough to hit with a thumb,
+     ending in a dashed tile that opens the editor. */
+  body[data-mobile-footer="1"][data-footer-expanded="1"] .footer-buttons-sheet {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-row: 4;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    padding: 0 14px 14px;
+  }
+
+  body[data-mobile-footer="1"][data-footer-expanded="1"] .footer-buttons-sheet__tile {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 48px;
+    padding: 0 8px;
+    font-size: 13px;
+    text-align: center;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  body[data-mobile-footer="1"][data-footer-expanded="1"] .footer-buttons-sheet__add {
+    border: 1px dashed var(--popup-border-strong);
+    border-radius: 7px;
+    background: transparent;
+    color: var(--popup-text-subtle);
+    cursor: pointer;
+  }
+}

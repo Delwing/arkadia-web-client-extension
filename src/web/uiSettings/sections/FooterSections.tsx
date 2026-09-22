@@ -1,6 +1,7 @@
 import type { UiSettings } from "../../uiSettingsCore";
 import { defaultUiSettings } from "../../defaultUiSettings";
 import BarOrderSettings from "../../options/BarOrderSettings";
+import FooterButtonSettings from "../../options/FooterButtonSettings";
 import FooterComponentSettings from "../../options/FooterComponentSettings";
 import { CheckboxRow, SelectField, SettingsSection } from "../fields";
 
@@ -59,6 +60,20 @@ function FooterSections({ draft, update }: FooterSectionsProps) {
                     <option value="expanded">Zawsze rozwinieta</option>
                     <option value="collapsed">Zawsze zwinieta</option>
                 </SelectField>
+            </SettingsSection>
+
+            <SettingsSection title="Przyciski przy linii komend" full>
+                <p className="popup-field__hint">
+                    Wlasne przyciski obok pola komend - na komputerze miedzy "Wyslij" a menu
+                    (co sie nie miesci, chowa sie pod wlasne "..."), na telefonie w rozwinietej
+                    stopce jako siatka duzych kafelkow.
+                </p>
+                <div id="ui-footer-buttons-settings">
+                    <FooterButtonSettings
+                        buttons={draft.footerButtons}
+                        onChange={(footerButtons) => update({ footerButtons })}
+                    />
+                </div>
             </SettingsSection>
 
             <SettingsSection title="Elementy stopki">

@@ -28,6 +28,20 @@ export interface FooterComponentConfig {
     order: number;
 }
 
+/** A button the player put next to the command line (see footerButtonRegistry). */
+export interface FooterButtonConfig {
+    id: string;
+    label: string;
+    /** Sent on click: a command, an alias, anything the command line accepts. */
+    command: string;
+    tone?: 'neutral' | 'accent' | 'danger';
+    /** Flag this button lights up from, flipped by a trigger, script or plugin. */
+    state?: string;
+    /** Kept in the settings list but left out of the footer. */
+    hidden?: boolean;
+    order?: number;
+}
+
 // UiSettings is decomposed into concern-scoped slices so each can be owned,
 // stored, and synced independently (see the settings accessors in
 // @modules/core/settings and the decomposition plan). `UiSettings` remains the
@@ -141,6 +155,8 @@ export interface ChromeSettings extends DeviceViewSettings {
     mapPosition: MapPosition;
     footerMode: number;
     footerComponents: FooterComponentConfig[];
+    /** The player's own buttons beside the command line; empty out of the box. */
+    footerButtons: FooterButtonConfig[];
     /**
      * The phone footer: two fixed-height scrolling rails plus compact stat
      * meters, instead of the desktop footer's one wrapping row. On by default;

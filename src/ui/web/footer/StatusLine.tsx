@@ -4,6 +4,7 @@ import type { FooterItem } from "@modules/core/footerRegistry";
 import { useFooterItems } from "./useFooterItems";
 import FooterItemView from "./FooterItemView";
 import Vitals from "./Vitals";
+import { FooterButtonSheet } from "./FooterButtons";
 
 /** Pulled out of the chip flow and shown last, quietly: a diagnostic, not a status. */
 const CONNECTION_ID = "connection-status";
@@ -104,6 +105,8 @@ export default function StatusLine() {
       <button id="footer-expand" type="button" className="status-expand">
         <ChevronUp size={14} strokeWidth={2.2} />
       </button>
+      {/* Phone only (footerMobile.css shows it): the sheet's button grid. */}
+      <FooterButtonSheet />
     </>
   );
 }

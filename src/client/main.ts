@@ -1,5 +1,6 @@
 import People from "./People";
 import eventBus from "@modules/core/eventBus";
+import { getFooterButtonState, setFooterButtonState } from "@modules/core/footerButtonRegistry";
 import registerLuaGagTriggers from "./scripts/luaGags";
 import initPackageHelper from './PackageHelper'
 import initInlineCompassRose from './scripts/inlineCompassRose'
@@ -190,6 +191,19 @@ export function registerScripts(client: Client) {
     aliases.push({
         pattern: /^\/blokada$/,
         callback: () => eventBus.emit("layout.toggleLock"),
+    })
+    // Light a footer button up (Ustawienia -> Stopka), from a trigger or a script:
+    // the button naming this state draws itself as on. Without on/off it toggles.
+    aliases.push({
+        pattern: /^\/przycisk\s+(\S+)(?:\s+(on|off|wl|wyl))?$/i,
+        callback: (matches: RegExpMatchArray) => {
+            const name = matches[1];
+            const word = matches[2]?.toLowerCase();
+            const on = word === undefined
+                ? !getFooterButtonState(name)
+                : word === 'on' || word === 'wl';
+            setFooterButtonState(name, on);
+        },
     })
     aliases.push({
         pattern: /^\/reload-plugins$/,

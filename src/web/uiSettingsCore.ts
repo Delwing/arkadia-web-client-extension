@@ -5,6 +5,7 @@ import {
     defaultFooterComponents,
     defaultUiSettings,
     type ColorTheme,
+    type FooterButtonConfig,
     type FooterComponentConfig,
     type MapHighlightShape,
     type MapRoomShape,
@@ -120,6 +121,35 @@ export function validateFooterComponents(parsed: unknown): FooterComponentConfig
     }
     // Normalize order values
     return result.map((c, index) => ({ ...c, order: index }));
+}
+
+/**
+ * The player's footer buttons, as stored. Anything without a label and a command
+ * is dropped: an unlabelled button that sends nothing is not a button, and the
+ * editor never writes one.
+ */
+export function validateFooterButtons(parsed: unknown): FooterButtonConfig[] {
+    if (!Array.isArray(parsed)) return [];
+    const seen = new Set<string>();
+    const result: FooterButtonConfig[] = [];
+    for (const item of parsed) {
+        if (!item || typeof item !== 'object') continue;
+        const { id, label, command, tone, state, hidden } = item as Record<string, unknown>;
+        if (typeof id !== 'string' || !id || seen.has(id)) continue;
+        if (typeof label !== 'string' || !label.trim()) continue;
+        if (typeof command !== 'string' || !command.trim()) continue;
+        seen.add(id);
+        result.push({
+            id,
+            label: label.trim(),
+            command: command.trim(),
+            tone: tone === 'accent' || tone === 'danger' ? tone : 'neutral',
+            state: typeof state === 'string' && state.trim() ? state.trim() : undefined,
+            hidden: hidden === true,
+            order: result.length,
+        });
+    }
+    return result.map((b, index) => ({ ...b, order: index }));
 }
 
 const genericFontFamilyNames = new Set([
@@ -500,6 +530,7 @@ export function load(): UiSettings {
                 ? parsed.objectContextMenuCommands.filter((c: unknown) => typeof c === 'string')
                 : defaultUiSettings.objectContextMenuCommands;
             const footerComponents = validateFooterComponents(parsed.footerComponents);
+            const footerButtons = validateFooterButtons(parsed.footerButtons);
             const keepMultibindsVisible = typeof parsed.keepMultibindsVisible === 'boolean'
                 ? parsed.keepMultibindsVisible
                 : defaultUiSettings.keepMultibindsVisible;
@@ -593,6 +624,7 @@ export function load(): UiSettings {
                 pathFindingAlgorithm,
                 objectContextMenuCommands,
                 footerComponents,
+                footerButtons,
                 keepMultibindsVisible,
                 mobileFooterCompact,
                 mobileFooterExpand,

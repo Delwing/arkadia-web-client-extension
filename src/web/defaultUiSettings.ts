@@ -9,6 +9,7 @@ export type {
     MapHighlightShape,
     PathFindingAlgorithm,
     ColorTheme,
+    FooterButtonConfig,
     FooterComponentConfig,
     UiSettings,
 } from '@shared/uiSettingsTypes';
@@ -54,6 +55,7 @@ export const defaultChromeSettings: ChromeSettings = {
     mapPosition: 'top-overlay',
     footerMode: 4, // 4 = Kafelki (pips); 0-3 = Liczbowy, Pasek, Pasek jednolity, Pasek graficzny
     footerComponents: defaultFooterComponents,
+    footerButtons: [],
     mobileFooterCompact: true,
     mobileFooterExpand: 'toggle',
     keepMultibindsVisible: false,

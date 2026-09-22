@@ -5247,3 +5247,44 @@ body.layout-manager-enabled #notification-center {
     margin-top: 0;
   }
 }
+
+/* Ustawienia -> Stopka: the editor for the buttons beside the command line. */
+.footer-button-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.footer-button-settings__row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+  border: 1px solid var(--popup-border-subtle);
+  border-radius: var(--ui-radius, 6px);
+}
+
+.footer-button-settings__line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.footer-button-settings__line--minor {
+  padding-left: 1.6rem;
+}
+
+.footer-button-settings__label {
+  flex: 1 1 8rem;
+  min-width: 0;
+}
+
+.footer-button-settings__command {
+  flex: 2 1 12rem;
+  min-width: 0;
+}
+
+.footer-button-settings__state {
+  flex: 1 1 12rem;
+  min-width: 0;
+}

@@ -42,6 +42,12 @@ import {
   updatePopupMenuEntryLabel
 } from "@modules/core/pluginUiRegistry";
 import {
+  registerFooterButton,
+  setFooterButtonState,
+  unregisterFooterButton,
+  type FooterButtonTone,
+} from "@modules/core/footerButtonRegistry";
+import {
   registerFooterComponent,
   unregisterFooterComponent,
   updateFooterComponent,
@@ -1021,6 +1027,50 @@ export interface UiApi {
     content: string | Node | ReactElement,
     position?: 'start' | 'end' | number
   ): FooterComponentHandle;
+
+  /**
+   * Add a button beside the command line, alongside the player's own
+   * (Ustawienia -> Stopka). The button sends `command` when clicked; give it a
+   * `state` name and it lights up whenever {@link UiApi.setFooterButtonState}
+   * turns that state on. Plugin buttons are drawn dashed, and only the plugin
+   * adds or removes them.
+   *
+   * @example
+   * ```typescript
+   * api.ui.registerFooterButton('podroz', {
+   *   label: 'Tryb: podroz',
+   *   command: 'tryb podroz',
+   *   tone: 'accent',
+   *   state: 'podroz',
+   * });
+   * api.ui.setFooterButtonState('podroz', true);
+   * ```
+   */
+  registerFooterButton(id: string, button: FooterButtonOptions): FooterButtonHandle;
+
+  /**
+   * Turn a footer button's state on or off. Any button - the plugin's or the
+   * player's own - whose state carries this name draws itself as on.
+   */
+  setFooterButtonState(name: string, on: boolean): void;
+}
+
+/** What a plugin's footer button is. */
+export interface FooterButtonOptions {
+  label: string;
+  /** Sent on click: a command, an alias, anything the command line accepts. */
+  command: string;
+  tone?: FooterButtonTone;
+  /** Name of the state that lights this button up, if it stands for a mode. */
+  state?: string;
+  /** Where it sits among the buttons; higher is further right. Default 1000. */
+  order?: number;
+}
+
+export interface FooterButtonHandle {
+  /** Replace what the button says or does. */
+  update(button: Partial<FooterButtonOptions>): void;
+  remove(): void;
 }
 
 /**
@@ -2686,6 +2736,7 @@ export class PluginApiImpl implements PluginApi {
   private triggerMacroIds: Set<string> = new Set();
   private commandHookIds: Set<string> = new Set();
   private footerComponentIds: Set<string> = new Set();
+  private footerButtonIds: Set<string> = new Set();
   private commandLineSuggestions: Set<string> = new Set();
   private temporaryMultibindHandles: Set<TemporaryMultibindHandle> = new Set();
   private stateChangeUnsubscribers: (() => void)[] = [];
@@ -2954,7 +3005,9 @@ export class PluginApiImpl implements PluginApi {
       registerPersistentPopup: (config) => this.registerPersistentPopup(config),
       addPopupMenuEntry: (label, onSelect) => this.addPopupMenuEntry(label, onSelect),
       addContextMenuEntry: (label, action) => this.addContextMenuEntry(label, action),
-      registerFooterComponent: (id, content, position) => this.registerFooterComponent(id, content, position)
+      registerFooterComponent: (id, content, position) => this.registerFooterComponent(id, content, position),
+      registerFooterButton: (id, button) => this.registerFooterButton(id, button),
+      setFooterButtonState: (name, on) => setFooterButtonState(name, on)
     };
   }
 
@@ -3609,6 +3662,12 @@ export class PluginApiImpl implements PluginApi {
     }
     this.footerComponentIds.clear();
 
+    // Remove all footer buttons registered by this plugin
+    for (const id of Array.from(this.footerButtonIds)) {
+      unregisterFooterButton(id);
+    }
+    this.footerButtonIds.clear();
+
     // Remove all button macros registered by this plugin
     for (const id of Array.from(this.buttonMacroIds)) {
       unregisterButtonMacro(id);
@@ -3909,6 +3968,33 @@ export class PluginApiImpl implements PluginApi {
       remove: () => {
         unregisterFooterComponent(fullId);
         this.footerComponentIds.delete(fullId);
+      }
+    };
+  }
+
+  private registerFooterButton(id: string, button: FooterButtonOptions): FooterButtonHandle {
+    const fullId = `plugin:${this.pluginId}:${id}`;
+    let current: FooterButtonOptions = { ...button };
+    const push = () => registerFooterButton({
+      id: fullId,
+      label: current.label,
+      command: current.command,
+      tone: current.tone ?? 'neutral',
+      state: current.state,
+      order: current.order ?? 1000,
+      pluginName: this._pluginName ?? undefined
+    });
+    push();
+    this.footerButtonIds.add(fullId);
+
+    return {
+      update: (changes: Partial<FooterButtonOptions>) => {
+        current = { ...current, ...changes };
+        push();
+      },
+      remove: () => {
+        unregisterFooterButton(fullId);
+        this.footerButtonIds.delete(fullId);
       }
     };
   }
