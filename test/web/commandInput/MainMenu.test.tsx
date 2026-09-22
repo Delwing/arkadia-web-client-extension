@@ -123,19 +123,19 @@ describe('MainMenu', () => {
         const label = (id: string) => entry(id).querySelector('.command-menu__label')!;
 
         expect(icons('plugin-svg')).toHaveLength(1);
-        expect(entry('plugin-svg').querySelector('.command-menu__icon--own svg')).not.toBeNull();
+        expect(entry('plugin-svg').querySelector('.plugin-own-icon svg')).not.toBeNull();
         expect(label('plugin-svg').querySelector('svg'), 'the icon left the label').toBeNull();
         expect(label('plugin-svg').innerHTML, 'with its spacing wrapper').not.toContain('margin');
         expect(label('plugin-svg').textContent).toBe('Czat');
         expect(withSvg.querySelector('svg'), 'the plugin keeps its own node').not.toBeNull();
 
-        expect(entry('plugin-emoji').querySelector('.command-menu__icon--own')?.textContent).toBe('⛭');
+        expect(entry('plugin-emoji').querySelector('.plugin-own-icon')?.textContent).toBe('⛭');
         expect(label('plugin-emoji').textContent).toBe('Zegar');
 
-        expect(entry('plugin-trailing').querySelector('.command-menu__icon--own'), 'an icon after the text stays').toBeNull();
+        expect(entry('plugin-trailing').querySelector('.plugin-own-icon'), 'an icon after the text stays').toBeNull();
         expect(label('plugin-trailing').querySelector('svg')).not.toBeNull();
         expect(icons('plugin-1'), 'a plain label keeps the puzzle').toHaveLength(1);
-        expect(entry('plugin-1').querySelector('.command-menu__icon--own')).toBeNull();
+        expect(entry('plugin-1').querySelector('.plugin-own-icon')).toBeNull();
     });
 
     test('a click runs the entry and closes the menu', () => {

@@ -462,22 +462,6 @@
   width: 16px;
   color: var(--popup-text-dim);
 }
-/* A plugin's own icon, lifted out of its label: sized like the stock ones. */
-.command-menu__icon--own {
-  align-items: center;
-  font-size: 13px;
-  line-height: 1;
-}
-.command-menu__icon--own > span {
-  display: inline-flex;
-}
-.command-menu__icon--own :is(svg, img, i, [class*='icon'], [class*='bi-'], [class*='fa-']) {
-  width: 14px;
-  height: 14px;
-  margin: 0;
-  font-size: 14px;
-  line-height: 14px;
-}
 .command-menu__label {
   min-width: 0;
   overflow: hidden;
@@ -617,15 +601,6 @@
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 6px;
-}
-.command-menu__panel--sheet .command-menu__icon--own {
-  font-size: 16px;
-}
-.command-menu__panel--sheet .command-menu__icon--own :is(svg, img, i, [class*='icon'], [class*='bi-'], [class*='fa-']) {
-  width: 17px;
-  height: 17px;
-  font-size: 17px;
-  line-height: 17px;
 }
 #input-area .command-menu__panel--sheet .command-menu__items .command-menu__item {
   flex-direction: column;

@@ -43,6 +43,7 @@ import { isMobileLikeViewport } from '@shared/dom/pointerEnvironment.ts';
 import { hasPopup } from './layout/popupRegistry';
 import { canSearchLogs, requestLogSearch } from './logSearchRequest';
 import { showContextMenu, type ContextMenuEntry, type ContextMenuIcon } from './contextMenu';
+import { splitOwnIcon } from './pluginLabelIcon';
 
 export interface OutputContextMenuOptions {
     /**
@@ -194,7 +195,9 @@ export function buildOutputContextMenuItems(
     }
 
     for (const entry of getPluginContextMenuEntries()) {
-        items.push({ icon: Puzzle, ...entry, section: 'Wtyczki' });
+        // A label that opens with its own icon gives it to the icon column instead of the puzzle.
+        const own = typeof entry.label === 'string' || entry.label instanceof Node ? splitOwnIcon(entry.label) : null;
+        items.push({ ...entry, icon: own?.Icon ?? Puzzle, label: own?.rest ?? entry.label, section: 'Wtyczki' });
     }
 
     return items;

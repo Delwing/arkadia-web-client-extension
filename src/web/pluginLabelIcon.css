@@ -1,0 +1,20 @@
+/* A plugin's own icon, lifted out of its menu label: sized like the stock icons. */
+.plugin-own-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--own-icon-size);
+  height: var(--own-icon-size);
+  font-size: calc(var(--own-icon-size) - 1px);
+  line-height: 1;
+}
+.plugin-own-icon > span {
+  display: inline-flex;
+}
+.plugin-own-icon :is(svg, img, i, [class*='icon'], [class*='bi-'], [class*='fa-']) {
+  width: var(--own-icon-size);
+  height: var(--own-icon-size);
+  margin: 0;
+  font-size: var(--own-icon-size);
+  line-height: var(--own-icon-size);
+}
