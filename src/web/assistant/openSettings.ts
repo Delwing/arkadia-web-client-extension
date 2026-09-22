@@ -33,7 +33,7 @@ export interface OpenSettingsDetail {
 /**
  * The page segment of a navigation path.
  *
- * Paths are uniformly `Menu (⋮) → Ustawienia → <group> → <page> → <section>`,
+ * Paths are uniformly `Menu (☰) → Ustawienia → <group> → <page> → <section>`,
  * so the page is always the fourth segment.
  */
 export function tabLabelOf(uiLocation: string | undefined): string | undefined {

@@ -198,7 +198,7 @@ export interface KnowledgeIndex {
     /** How to read the compact lines below. Send this verbatim to the model. */
     format: string[];
     /**
-     * Location legend: `P1 = Menu (⋮) → … → Sekcja`. Settings lines reference
+     * Location legend: `P1 = Menu (☰) → … → Sekcja`. Settings lines reference
      * these by id instead of repeating the whole navigation path.
      */
     panels: string[];
