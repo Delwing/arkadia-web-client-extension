@@ -44,6 +44,11 @@ export class CommandInputController {
     // select the whole line out from under the engine.
     private suppressFocusSelectAll = false;
 
+    // The output's words, kept until the output changes: the Tab ghost looks them
+    // up on every keystroke, and re-reading 500 lines each time is wasted work.
+    private outputWords: string[] | null = null;
+    private outputObserver: MutationObserver | null = null;
+
     constructor(deps: CommandInputDeps) {
         this.deps = deps;
         this.input = deps.messageInput;
@@ -53,7 +58,7 @@ export class CommandInputController {
             sendCommand: deps.sendCommand,
             isPasswordMode: deps.isPasswordMode,
             getCommandLineSuggestions: deps.getCommandLineSuggestions,
-            getOutputWords: () => harvestOutputWords(this.deps.outputWrapper),
+            getOutputWords: () => this.getOutputWords(),
             getClearInputOnSend: deps.getClearInputOnSend,
             store: localStorageHistoryStore(),
         });
@@ -88,6 +93,11 @@ export class CommandInputController {
         // without owning an input (the boss key overlay) borrows this engine
         // rather than standing up a second one over the same history key.
         setActiveCommandLine(this.asActiveCommandLine());
+
+        this.outputObserver = new MutationObserver(() => {
+            this.outputWords = null;
+        });
+        this.outputObserver.observe(this.deps.outputWrapper, {childList: true, subtree: true, characterData: true});
 
         this.deps.sendButton.addEventListener('click', () => this.engine.submit(false), o);
 
@@ -188,9 +198,18 @@ export class CommandInputController {
         }, o);
     }
 
+    private getOutputWords(): string[] {
+        // Only cached while observed; otherwise nothing would tell us it went stale.
+        if (!this.outputObserver) return harvestOutputWords(this.deps.outputWrapper);
+        return this.outputWords ??= harvestOutputWords(this.deps.outputWrapper);
+    }
+
     detach(): void {
         this.abortController?.abort();
         this.abortController = null;
+        this.outputObserver?.disconnect();
+        this.outputObserver = null;
+        this.outputWords = null;
         setActiveCommandLine(null);
     }
 

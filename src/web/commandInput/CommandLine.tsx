@@ -78,8 +78,8 @@ export default function CommandLine({ deps }: { deps: CommandLineDeps }) {
 
   // What Tab would complete, shown after the caret (Ustawienia → Komendy). Only with
   // a keyboard to press Tab on, with the caret at the end of a one-line command and
-  // nothing selected; worked out a beat after typing stops, since it reads the
-  // output's words.
+  // nothing selected. Worked out on every keystroke (the output's words are cached
+  // by the controller until the output changes).
   const hardwareKeyboard = useHardwareKeyboard();
   const [tabHint, setTabHint] = useState(tabHintSetting);
   const [ghost, setGhost] = useState<{ text: string; suffix: string } | null>(null);
@@ -89,7 +89,6 @@ export default function CommandLine({ deps }: { deps: CommandLineDeps }) {
       setGhost(null);
       return;
     }
-    let timer: number | undefined;
     const eligible = () => {
       const text = input.value;
       return document.activeElement === input
@@ -97,36 +96,18 @@ export default function CommandLine({ deps }: { deps: CommandLineDeps }) {
         && !text.includes("\n");
     };
     const update = () => {
-      window.clearTimeout(timer);
       if (!eligible()) {
         setGhost(null);
         return;
       }
-      // Right away, without a flicker: typing along the hinted word just eats into
-      // the hint; anything else drops it until the lookup below says otherwise.
       const text = input.value;
+      const suffix = controllerRef.current?.peekTabCompletion();
       setGhost((prev) => {
-        if (!prev || prev.text === text) return prev;
-        if (text.startsWith(prev.text)) {
-          const typed = text.slice(prev.text.length);
-          if (typed.length < prev.suffix.length && prev.suffix.toLowerCase().startsWith(typed.toLowerCase())) {
-            return { text, suffix: prev.suffix.slice(typed.length) };
-          }
-        }
-        return null;
+        if (!suffix) return null;
+        return prev && prev.text === text && prev.suffix === suffix ? prev : { text, suffix };
       });
-      timer = window.setTimeout(() => {
-        if (!eligible()) return;
-        const current = input.value;
-        const suffix = controllerRef.current?.peekTabCompletion();
-        setGhost((prev) => {
-          if (!suffix) return null;
-          return prev && prev.text === current && prev.suffix === suffix ? prev : { text: current, suffix };
-        });
-      }, 120);
     };
     const clear = () => {
-      window.clearTimeout(timer);
       setGhost(null);
     };
     input.addEventListener("input", update);
