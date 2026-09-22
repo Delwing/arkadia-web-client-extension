@@ -497,6 +497,20 @@
     font-size: 14px;
   }
 }
+/* A phone screen has less room to spare: still a thumb's target, a size down. */
+@media (max-width: 768px), (max-height: 520px) and (pointer: coarse) {
+  #multi-binds .multi-bind,
+  #multi-binds .multi-bind-empty {
+    height: 32px;
+  }
+  #multi-binds .multi-bind-key {
+    padding: 2px 6px 0;
+  }
+  #multi-binds .multi-bind-action {
+    padding: 0 8px;
+    font-size: 13px;
+  }
+}
 
 /* -- the player's own buttons -------------------------------------------
    A short row in the command bar, between Wyślij and the ⋯ menu (see
