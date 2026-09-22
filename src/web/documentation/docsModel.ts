@@ -69,7 +69,8 @@ const COMMAND_HEADERS = /^(komenda|alias|klawisz)$/i;
 
 function commandFromCell(cell: Tokens.TableCell): Pick<DocCommand, "head" | "args" | "insert"> {
   const only = cell.tokens.length === 1 && cell.tokens[0].type === "codespan" ? (cell.tokens[0] as Tokens.Codespan) : null;
-  const raw = plainText(only ? only.text : cell.text);
+  // A code span is taken as written: a bind can be the backtick itself.
+  const raw = only ? only.text.trim() : plainText(cell.text);
   const space = raw.indexOf(" ");
   const head = space === -1 ? raw : raw.slice(0, space);
   const args = space === -1 ? "" : raw.slice(space + 1);

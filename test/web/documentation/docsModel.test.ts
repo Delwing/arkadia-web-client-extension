@@ -46,6 +46,8 @@ Bindy.
 | Klawisz | Nazwa | Akcja |
 |---------|-------|-------|
 | \`Ctrl+Q\` | Wesprzyj | Wysyla \`wesprzyj\` |
+| \`\` \` \`\` | Tryb ruchu | Zmienia tryb ruchu |
+| \`/depozytyw <filtr>\` | Otworz okno |
 `;
 
 const pages = buildDocPages([
@@ -87,6 +89,13 @@ describe('buildDocPages', () => {
         expect(row?.head).toBe('Ctrl+Q');
         expect(row?.insert).toBeNull();
         expect(row?.html).toBe('<strong>Wesprzyj</strong>: Wysyla <code>wesprzyj</code>');
+    });
+
+    it('takes a code span as written: the backtick bind, and <placeholders>', () => {
+        const block = pages[1].sections[0].blocks[0];
+        const rows = block.kind === 'commands' ? block.rows : [];
+        expect(rows[1].head).toBe('`');
+        expect([rows[2].head, rows[2].args]).toEqual(['/depozytyw', '<filtr>']);
     });
 
     it('indexes an HTML page by its h2s', () => {
