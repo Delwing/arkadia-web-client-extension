@@ -8,6 +8,7 @@ import {
     pushGmcp,
     pushText,
     waitForOutputContaining,
+    submitCommand,
     GMCP_PATHS,
 } from './support/mocks';
 
@@ -229,6 +230,35 @@ test.describe('Tab completion — output buffer based', () => {
         const value = await getInputValue(page);
         // Should only replace the last word "pote" with a match, keeping "zabij "
         expect(value.startsWith('zabij ')).toBe(true);
+    });
+});
+
+test.describe('Tab completion — command history', () => {
+    test.beforeEach(async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+    });
+
+    test('Tab finishes a command already sent, before words from the output', async ({page}) => {
+        await pushText(page, 'Widzisz tutaj zabawke i zabytek.\n');
+        await waitForOutputContaining(page, 'zabawke');
+        await submitCommand(page, 'zabij ob_12345');
+
+        await setInputValue(page, 'zab');
+        await pressTab(page);
+        expect(await getInputValue(page), 'the whole command from history first').toBe('zabij ob_12345');
+
+        await pressTab(page);
+        expect(await getInputValue(page), 'then words from the output').not.toBe('zabij ob_12345');
+    });
+
+    test('Tab completes a command past a space, where no word is being typed', async ({page}) => {
+        await submitCommand(page, 'wejdz na statek');
+
+        await setInputValue(page, 'wejdz na ');
+        await pressTab(page);
+        expect(await getInputValue(page)).toBe('wejdz na statek');
     });
 });
 

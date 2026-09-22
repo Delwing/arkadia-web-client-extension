@@ -220,7 +220,7 @@ below.
 ### Command-line input (`@web/commandInput`)
 
 The command line is more than "read a value, call `sendCommand`": it carries
-history (Mudlet-style ring, prefix auto-complete, Tab completion from the output
+history (Mudlet-style ring, prefix auto-complete, Tab completion from history and the output
 buffer), multiline submit-splitting (one `sendCommand` per `\n`), and password
 mode. That logic is UI-crosscutting, so it lives in a **headless engine** that
 every UI drives — the client core never sees it (it's UI concern, hosted in

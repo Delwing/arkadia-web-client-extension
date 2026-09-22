@@ -188,6 +188,52 @@ describe('CommandLineEngine', () => {
         });
     });
 
+    describe('tab completion', () => {
+        it('completes whole commands from history before words from the output', () => {
+            const h = makeEngine({ history: ['zabij smoka', 'zabroniony'], outputWords: ['zabawka'] });
+            h.field.type('zab');
+
+            expect(h.engine.peekTabCompletion('zab')).toBe('ij smoka');
+            h.engine.handleTabCompletion(true);
+            expect(h.field.value).toBe('zabij smoka');
+            h.engine.handleTabCompletion(true);
+            expect(h.field.value).toBe('zabroniony');
+            h.engine.handleTabCompletion(true);
+            expect(h.field.value).toBe('zabawka');
+            h.engine.handleTabCompletion(true); // wraps back to the newest command
+            expect(h.field.value).toBe('zabij smoka');
+        });
+
+        it('completes from history past a space, where there is no word to complete', () => {
+            const h = makeEngine({ history: ['wejdz na statek'], outputWords: [] });
+            expect(h.engine.peekTabCompletion('wejdz na ')).toBe('statek');
+        });
+
+        it('matches history case-insensitively and skips multiline entries', () => {
+            const h = makeEngine({ history: ['polnoc\nwschod', 'Zabij smoka'] });
+            expect(h.engine.peekTabCompletion('zab')).toBe('ij smoka');
+            expect(h.engine.peekTabCompletion('pol')).toBeNull();
+        });
+
+        it('offers no history on an empty or blank line', () => {
+            const h = makeEngine({ history: ['zabij smoka'] });
+            expect(h.engine.peekTabCompletion('')).toBeNull();
+            expect(h.engine.peekTabCompletion('  ')).toBeNull();
+        });
+
+        it('does not offer the command already typed in full', () => {
+            const h = makeEngine({ history: ['zabij smoka'] });
+            expect(h.engine.peekTabCompletion('zabij smoka')).toBeNull();
+        });
+
+        it('completes a command sent in this session', () => {
+            const h = makeEngine();
+            h.field.type('wejdz na statek');
+            h.engine.submit(false);
+            expect(h.engine.peekTabCompletion('wejdz')).toBe(' na statek');
+        });
+    });
+
     describe('peekTabCompletion', () => {
         it('shows what the next Tab appends, without changing the line', () => {
             // Output words are oldest first; completion prefers the newest.
