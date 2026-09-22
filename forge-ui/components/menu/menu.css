@@ -701,7 +701,6 @@
    A few menu-hosted panels open a second dialog *inside* themselves — Opcje →
    "Nadpisania dla wrogów", Aliasy/Triggery → the add/edit form. Those are
    hand-rolled `.modal.show.d-block > .modal-dialog > .modal-content` markup, so
-   unlike the react-bootstrap ones (which portal to <body>, out of this scope)
    they land inside `.forge-menu-modal` and pick up the scoped Bootstrap above.
    That got them the palette but not the chrome: they still read as flat
    Bootstrap cards sitting on top of a forged panel. These rules give them the
@@ -808,51 +807,6 @@
    the blur is forge's — it's what `.forge-menu-backdrop` puts behind the shell,
    and it separates the two plates instead of stacking them flat. */
 .forge-menu-modal .modal.show {
-    backdrop-filter: blur(2px);
-}
-
-/* ── Portaled (react-bootstrap) sub-dialogs ──────────────────
-   The `<Modal>`-based sub-dialogs portal to <body>, so portaledModalScope.ts
-   tags the portal root itself with `.forge-menu-modal` — which is what carries
-   the theme down to everything inside it, chrome above included. What a tag on
-   the node can't inherit are the rules for the node itself, since every one of
-   them is written as a descendant selector; Bootstrap's own `.modal` /
-   `.modal-backdrop` layout is exactly that, so it's restated here.
-
-   z-index sits above `.forge-menu-backdrop` (5000): these open FROM a menu
-   modal, so they must land in front of the shell that spawned them, the way
-   Bootstrap's 1055 lands in front of stock's 1050. */
-.modal.forge-portaled-modal {
-    position: fixed;
-    inset: 0;
-    z-index: 5100;
-    display: none;
-    width: 100%;
-    height: 100%;
-    overflow-x: hidden;
-    overflow-y: auto;
-    outline: 0;
-}
-.modal.forge-portaled-modal.show {
-    display: block;
-}
-/* Held for the single style flush in which portaledModalScope.ts themes a freshly
-   portaled dialog, so the switch from stock Bootstrap to forge lands as the
-   dialog's first painted state instead of animating into it — without this, the
-   buttons visibly fade white → forged over `.btn`'s .15s colour transition.
-   `.modal` (tagged, so not matched here) and `.modal-dialog` keep their
-   transitions: those carry Bootstrap's fade/slide-in, which should still play. */
-.forge-portaled-modal.forge-portal-priming *:not(.modal-dialog) {
-    transition: none !important;
-}
-
-/* The backdrop is forge's own — same dim and blur as `.forge-menu-backdrop`,
-   rather than Bootstrap's flat 50% black. */
-.modal-backdrop.forge-portaled-modal {
-    position: fixed;
-    inset: 0;
-    z-index: 5090;
-    background: rgba(6, 5, 4, .62);
     backdrop-filter: blur(2px);
 }
 

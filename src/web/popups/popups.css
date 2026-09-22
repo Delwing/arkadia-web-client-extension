@@ -7685,3 +7685,147 @@ select.popup-input.popup-input--control {
   color: var(--popup-success);
   background-color: var(--popup-success-bg);
 }
+
+/* ── Location note editor (LocationNoteEditor.tsx) ──────────────────────── */
+.location-note-editor__delete {
+  margin-right: auto;
+}
+.readonly-note-entry {
+  padding: 8px;
+  border: 1px solid var(--popup-border);
+  border-radius: var(--ui-radius, 6px);
+  background-color: var(--popup-subtle-bg);
+}
+.readonly-note-label {
+  margin-bottom: 4px;
+  color: var(--popup-text-subtle);
+  font-size: var(--ui-fs-sm, 13px);
+  font-weight: 500;
+}
+.readonly-note-text {
+  color: var(--popup-text);
+  white-space: pre-wrap;
+}
+
+/* ── Host your own proxy (HostProxyModal.tsx) ───────────────────────────── */
+.host-proxy p,
+.host-proxy ol {
+  margin: 0;
+}
+.host-proxy ol {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-left: 1.5em;
+}
+.host-proxy__muted {
+  color: var(--popup-text-subtle);
+}
+.host-proxy__small {
+  font-size: var(--ui-fs-sm, 13px);
+}
+.host-proxy__code {
+  overflow: hidden;
+  border: 1px solid var(--popup-border);
+  border-radius: var(--ui-radius, 6px);
+}
+.host-proxy__code-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--popup-border);
+  background-color: var(--popup-control-bg);
+  color: var(--popup-text-subtle);
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: var(--ui-fs-sm, 13px);
+}
+.host-proxy__code pre {
+  max-height: 14rem;
+  margin: 0;
+  padding: 8px;
+  overflow: auto;
+  background-color: var(--popup-subtle-bg);
+  color: var(--popup-text);
+}
+.host-proxy__rule {
+  margin: 2px 0;
+  border: 0;
+  border-top: 1px solid var(--popup-border);
+}
+
+/* ── Shortcuts / location notes panels (forge menu) ─────────────────────── */
+.shortcuts-panel__form {
+  padding: 12px;
+  border: 1px solid var(--popup-border);
+  border-radius: var(--ui-radius, 6px);
+}
+.location-notes-panel__empty {
+  padding: 12px 0;
+  text-align: center;
+}
+
+/* ── Helper settings (HelperSettings.tsx) ───────────────────────────────── */
+.helper-settings {
+  padding: 16px;
+}
+.helper-settings__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.helper-settings__title {
+  margin: 0 0 4px;
+  font-size: var(--ui-fs-md, 14px);
+  font-weight: 600;
+}
+.helper-settings__state--connected {
+  border-color: color-mix(in srgb, var(--popup-success) 50%, transparent);
+  color: var(--popup-success);
+}
+.helper-settings__state--connecting {
+  border-color: color-mix(in srgb, var(--popup-warning) 50%, transparent);
+  color: var(--popup-warning);
+}
+.helper-settings__updating {
+  margin-left: 8px;
+}
+.helper-settings__rule {
+  margin: 4px 0;
+  border: 0;
+  border-top: 1px solid var(--popup-border);
+}
+.helper-settings .popup-table tr.is-editing {
+  background-color: var(--popup-hover-bg);
+}
+.helper-settings__form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px;
+}
+.helper-settings__form .popup-field {
+  min-width: 140px;
+}
+.helper-settings__type { min-width: 110px; }
+.helper-settings__command { flex: 1; }
+.helper-settings .is-capturing {
+  border-color: var(--popup-warning);
+}
+.helper-settings__box {
+  padding: 8px;
+  border: 1px solid var(--popup-border);
+  border-radius: var(--ui-radius, 6px);
+}
+.helper-settings__box > * + * {
+  margin-top: 8px;
+}
+.helper-settings__pre {
+  margin: 0;
+  padding: 8px;
+  border-radius: var(--ui-radius, 6px);
+  background-color: var(--popup-subtle-bg);
+  color: var(--popup-text);
+  white-space: pre-wrap;
+}

@@ -1,7 +1,6 @@
 import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react';
 import type Client from '@client/Client';
 import MenuModal from './MenuModal';
-import { holdPortaledModalScope } from './portaledModalScope';
 import { getHelperConnection } from '../../client/bootstrap';
 import { CLOSE_SETTINGS_EVENT, OPEN_SETTINGS_PAGE_EVENT, SAVE_SETTINGS_EVENT, SETTINGS_MODAL_ID, requestSettingsCategory, type OpenSettingsPageDetail, type SettingsCategoryKey } from '@web/settings/categories.ts';
 import { buttonsSettingsCategory } from '@web/settings/buttonsCategory.ts';
@@ -434,14 +433,6 @@ export default function MenuModalHost({ stack, client, closeKey, closeTop, pushK
     useEffect(() => {
         if (!open) return;
         void import('./scopedModalCss').then((m) => m.injectScopedModalCss());
-    }, [open]);
-
-    // Several panels open a react-bootstrap <Modal> as a sub-dialog; those portal
-    // to <body>, outside every `.forge-menu-modal …` selector. Tag them so the
-    // stylesheet above reaches them. See portaledModalScope.ts.
-    useEffect(() => {
-        if (!open) return;
-        return holdPortaledModalScope();
     }, [open]);
 
     if (!open) return null;

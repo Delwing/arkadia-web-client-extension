@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
-import { Button, Form, Table } from 'react-bootstrap';
-import { Trash2, Pencil } from 'lucide-react';
+import { Pencil } from 'lucide-react';
+import { Button, DeleteButton, Input } from "@web-ui/primitives/index.ts";
 import eventBus from "@modules/core/eventBus";
 import { getAllNotes, deleteNote, type LocationNote } from "./locationNotesStorage";
 
@@ -70,25 +70,21 @@ function LocationNotes() {
     };
 
     return (
-        <div className="m-2 d-flex flex-column gap-2">
-            <Form.Group>
-                <Form.Control
-                    type="text"
-                    size="sm"
-                    placeholder="Szukaj (ID, nazwa lokacji, kraina, tekst notatki)..."
-                    value={searchQuery}
-                    onChange={e => setSearchQuery(e.target.value)}
-                />
-            </Form.Group>
+        <div className="popup-stack location-notes-panel">
+            <Input
+                placeholder="Szukaj (ID, nazwa lokacji, kraina, tekst notatki)..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+            />
 
             {filteredNotes.length === 0 ? (
-                <div className="text-muted text-center py-3">
+                <div className="popup-field__hint location-notes-panel__empty">
                     {notes.length === 0
                         ? 'Brak notatek. Dodaj notatke klikajac prawym przyciskiem na lokacje na mapie.'
                         : 'Nie znaleziono notatek pasujacych do wyszukiwania.'}
                 </div>
             ) : (
-                <Table bordered size="sm" hover className="table-modern table-zebra">
+                <table className="popup-table">
                     <thead>
                         <tr>
                             <th style={{ width: '80px' }}>ID</th>
@@ -97,56 +93,37 @@ function LocationNotes() {
                             <th style={{ width: '140px' }}>Akcje</th>
                         </tr>
                     </thead>
-                    <tbody className="align-middle">
+                    <tbody>
                         {filteredNotes.map(note => (
                             <tr key={note.id}>
                                 <td>{note.id}</td>
                                 <td>
-                                    <div className="small">
-                                        {note.roomName || '-'}
-                                        {note.areaName && (
-                                            <div className="text-muted">{note.areaName}</div>
-                                        )}
-                                    </div>
+                                    {note.roomName || '-'}
+                                    {note.areaName && (
+                                        <div className="popup-field__hint">{note.areaName}</div>
+                                    )}
                                 </td>
                                 <td>
                                     <span title={note.note}>{truncateNote(note.note)}</span>
                                 </td>
                                 <td>
-                                    <div className="d-flex gap-1">
-                                        <Button
-                                            size="sm"
-                                            variant="outline-primary"
-                                            onClick={() => handleNavigate(note.id)}
-                                            title="Prowadz do lokacji"
-                                        >
+                                    <div className="popup-inline">
+                                        <Button size="sm" onClick={() => handleNavigate(note.id)} title="Prowadz do lokacji">
                                             Idz
                                         </Button>
-                                        <Button
-                                            size="sm"
-                                            variant="outline-secondary"
-                                            onClick={() => handleEdit(note)}
-                                            title="Edytuj notatke"
-                                        >
-                                            <Pencil size={16} />
+                                        <Button size="sm" variant="ghost" className="popup-btn--icon" onClick={() => handleEdit(note)} title="Edytuj notatke">
+                                            <Pencil size={15} strokeWidth={1.75} />
                                         </Button>
-                                        <Button
-                                            size="sm"
-                                            variant="danger"
-                                            onClick={() => handleDelete(note.id)}
-                                            title="Usun notatke"
-                                        >
-                                            <Trash2 size={16} />
-                                        </Button>
+                                        <DeleteButton onClick={() => handleDelete(note.id)} title="Usun notatke" />
                                     </div>
                                 </td>
                             </tr>
                         ))}
                     </tbody>
-                </Table>
+                </table>
             )}
 
-            <div className="text-muted small">
+            <div className="popup-field__hint">
                 Liczba notatek: {filteredNotes.length}{searchQuery && ` / ${notes.length}`}
             </div>
         </div>

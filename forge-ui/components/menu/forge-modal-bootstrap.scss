@@ -141,28 +141,4 @@ $enable-shadows: false;
         // the installed list and the catalogue grid — scoped alongside.
         @import "stock-plugin-manager";
     }
-
-    // ── The portal-root gap ─────────────────────────────────
-    // react-bootstrap sub-dialogs portal to <body>, so portaledModalScope.ts
-    // puts the scope class on the `.modal` node itself. That styles everything
-    // INSIDE it, but never the node itself: a scoped sheet can only ever emit
-    // `.forge-menu-modal .modal`, which needs the scope on an ancestor.
-    // Bootstrap declares the `--bs-modal-*` tokens exactly there — so without
-    // this the dialog inherits no width, no margin and no padding, and stretches
-    // edge-to-edge across the viewport. Restated here from Bootstrap's own Sass
-    // variables so they track the theme rather than freezing today's numbers.
-    // (Its layout properties are the same gap; those live in menu.css, next to
-    // forge's other modal chrome.) Appearance tokens — bg, border, radii, the
-    // header/footer rules — are forge's anyway, set on `.modal-content` there.
-    .modal.forge-portaled-modal {
-        --bs-modal-width: #{$modal-md};
-        --bs-modal-margin: #{$modal-dialog-margin};
-        --bs-modal-padding: #{$modal-inner-padding};
-        --bs-modal-header-padding-x: #{$modal-header-padding-x};
-        --bs-modal-header-padding-y: #{$modal-header-padding-y};
-        --bs-modal-header-padding: #{$modal-header-padding};
-        --bs-modal-title-line-height: #{$modal-title-line-height};
-        --bs-modal-footer-gap: #{$modal-footer-margin-between};
-        --bs-modal-inner-border-radius: #{$modal-content-inner-border-radius};
-    }
 }

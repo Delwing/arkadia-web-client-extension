@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import { Button, Form, Table } from "react-bootstrap";
+import { Pencil } from "lucide-react";
+import { Button, Check, DeleteButton, Field, Input, LinkButton, Select } from "@web-ui/primitives/index.ts";
 import type { HelperConnection } from "@modules/helper/HelperConnection";
 import type { HelperState } from "@modules/helper/HelperConnection";
 import type { BindAction, BindMode, HelperStatus } from "@modules/helper/helperProtocol";
@@ -153,73 +154,65 @@ function HelperSettings({ helperConnection }: HelperSettingsProps) {
         connected: 'Połączony',
     }[state];
 
-    const stateBadge = {
-        disconnected: 'bg-secondary',
-        connecting: 'bg-warning',
-        connected: 'bg-success',
-    }[state];
-
     return (
-        <div className="p-3">
-            <div className="d-flex align-items-center justify-content-between mb-3">
+        <div className="popup-stack helper-settings">
+            <div className="helper-settings__head">
                 <div>
-                    <h6 className="mb-1">Arkadia Helper</h6>
-                    <small className="text-muted">
+                    <h6 className="helper-settings__title">Arkadia Helper</h6>
+                    <div className="popup-field__hint">
                         Opcjonalna aplikacja umożliwiająca globalne skróty klawiszowe
-                    </small>
+                    </div>
                 </div>
-                <span className={`badge ${stateBadge}`}>{stateLabel}</span>
+                <span className={`popup-badge helper-settings__state helper-settings__state--${state}`}>{stateLabel}</span>
             </div>
 
             {status && state === 'connected' && (
-                <div className="mb-3 small text-muted">
+                <div className="popup-field__hint">
                     Wersja: {status.version} | Platforma: {status.platform}
                     {status.version !== 'dev' && status.version !== __COMMIT_SHA__.substring(0, status.version.length) && (
-                        <span className="ms-2 badge bg-warning text-dark">Aktualizacja w toku...</span>
+                        <span className="popup-badge helper-settings__state--connecting helper-settings__updating">Aktualizacja w toku...</span>
                     )}
                 </div>
             )}
 
-            <div className="d-flex gap-2 mb-3">
+            <div className="popup-row">
                 {state === 'disconnected' && (
                     <>
-                        <Button size="sm" variant="primary" onClick={() => helperConnection.launch()}>
+                        <Button size="sm" variant="solid" onClick={() => helperConnection.launch()}>
                             Uruchom Helper
                         </Button>
                         {status && (
-                            <Button size="sm" variant="outline-primary" onClick={() => helperConnection.connect()}>
+                            <Button size="sm" onClick={() => helperConnection.connect()}>
                                 Połącz
                             </Button>
                         )}
                     </>
                 )}
                 {state === 'connecting' && (
-                    <Button size="sm" variant="secondary" disabled>
+                    <Button size="sm" disabled>
                         Łączenie...
                     </Button>
                 )}
                 {state === 'connected' && (
-                    <Button size="sm" variant="outline-danger" onClick={() => helperConnection.disconnect()}>
+                    <Button size="sm" variant="danger" onClick={() => helperConnection.disconnect()}>
                         Rozłącz
                     </Button>
                 )}
             </div>
 
-            <Form.Check
-                type="switch"
+            <Check
                 id="helper-auto-launch"
                 label="Automatycznie łącz z Helper przy starcie"
                 checked={autoLaunch}
                 onChange={(e) => handleAutoLaunchChange(e.target.checked)}
-                className="mb-4"
             />
 
-            <hr />
+            <hr className="helper-settings__rule" />
 
-            <h6 className="mb-3">Globalne skróty klawiszowe</h6>
+            <h6 className="helper-settings__title">Globalne skróty klawiszowe</h6>
 
             {binds.length > 0 && (
-                <Table size="sm" className="mb-3">
+                <table className="popup-table">
                     <thead>
                         <tr>
                             <th>Skrót</th>
@@ -230,104 +223,79 @@ function HelperSettings({ helperConnection }: HelperSettingsProps) {
                     </thead>
                     <tbody>
                         {binds.map(b => (
-                            <tr key={b.id} className={editingId === b.id ? 'table-active' : ''}>
+                            <tr key={b.id} className={editingId === b.id ? 'is-editing' : undefined}>
                                 <td><code>{b.key}</code></td>
                                 <td><code>{actionLabel(b)}</code></td>
                                 <td><small>{modeLabels[b.mode] ?? b.mode}</small></td>
-                                <td className="d-flex gap-1">
-                                    <Button
-                                        size="sm"
-                                        variant="outline-secondary"
-                                        onClick={() => handleEditBind(b)}
-                                    >
-                                        ✎
-                                    </Button>
-                                    <Button
-                                        size="sm"
-                                        variant="outline-danger"
-                                        onClick={() => handleRemoveBind(b.id)}
-                                    >
-                                        ✕
-                                    </Button>
+                                <td>
+                                    <div className="popup-inline">
+                                        <Button size="sm" variant="ghost" className="popup-btn--icon" title="Edytuj" onClick={() => handleEditBind(b)}>
+                                            <Pencil size={15} strokeWidth={1.75} />
+                                        </Button>
+                                        <DeleteButton onClick={() => handleRemoveBind(b.id)} />
+                                    </div>
                                 </td>
                             </tr>
                         ))}
                     </tbody>
-                </Table>
+                </table>
             )}
 
-            <div className="d-flex gap-2 align-items-end flex-wrap">
-                <Form.Group style={{ minWidth: 150 }}>
-                    <Form.Label className="small mb-1">Skrót {state === 'connected' ? '(kliknij aby przechwycić)' : ''}</Form.Label>
-                    <Form.Control
-                        size="sm"
+            <div className="helper-settings__form">
+                <Field label={`Skrót ${state === 'connected' ? '(kliknij aby przechwycić)' : ''}`} className="helper-settings__key">
+                    <Input
+                        mono
                         placeholder={state === 'connected' ? 'Kliknij...' : 'np. ctrl+w'}
                         value={capturing ? 'Naciśnij klawisz... (Esc anuluje)' : newKey}
                         onClick={handleStartCapture}
                         onChange={(e) => setNewKey(e.target.value)}
                         readOnly={capturing || state === 'connected'}
-                        style={capturing ? { borderColor: '#ffc107' } : undefined}
+                        className={capturing ? 'is-capturing' : undefined}
                     />
-                </Form.Group>
-                <Form.Group style={{ minWidth: 110 }}>
-                    <Form.Label className="small mb-1">Typ</Form.Label>
-                    <Form.Select
-                        size="sm"
-                        value={newAction}
-                        onChange={(e) => setNewAction(e.target.value as BindAction)}
-                    >
+                </Field>
+                <Field label="Typ" className="helper-settings__type">
+                    <Select value={newAction} onChange={(e) => setNewAction(e.target.value as BindAction)}>
                         <option value="command">Komenda</option>
                         <option value="bind">Bind</option>
-                    </Form.Select>
-                </Form.Group>
+                    </Select>
+                </Field>
                 {newAction === 'command' ? (
-                    <Form.Group style={{ minWidth: 150, flex: 1 }}>
-                        <Form.Label className="small mb-1">Komenda</Form.Label>
-                        <Form.Control
-                            size="sm"
+                    <Field label="Komenda" className="helper-settings__command">
+                        <Input
+                            mono
                             placeholder="np. zabij ob_123"
                             value={newCommand}
                             onChange={(e) => setNewCommand(e.target.value)}
                         />
-                    </Form.Group>
+                    </Field>
                 ) : (
-                    <Form.Group style={{ minWidth: 140 }}>
-                        <Form.Label className="small mb-1">Bind</Form.Label>
-                        <Form.Select
-                            size="sm"
-                            value={newTargetBind}
-                            onChange={(e) => setNewTargetBind(e.target.value)}
-                        >
+                    <Field label="Bind" className="helper-settings__bind">
+                        <Select value={newTargetBind} onChange={(e) => setNewTargetBind(e.target.value)}>
                             {getHelperBinds().map(b => (
                                 <option key={b.id} value={b.id}>
                                     {b.category ? `${b.category}: ` : ''}{b.label}
                                 </option>
                             ))}
-                        </Form.Select>
-                    </Form.Group>
+                        </Select>
+                    </Field>
                 )}
-                <Form.Group style={{ minWidth: 140 }}>
-                    <Form.Label className="small mb-1">Tryb</Form.Label>
-                    <Form.Select
-                        size="sm"
-                        value={newMode}
-                        onChange={(e) => setNewMode(e.target.value as BindMode)}
-                    >
+                <Field label="Tryb" className="helper-settings__mode">
+                    <Select value={newMode} onChange={(e) => setNewMode(e.target.value as BindMode)}>
                         <option value="global">Globalny</option>
                         <option value="browser_only">Tylko przeglądarka</option>
-                    </Form.Select>
-                </Form.Group>
-                <Button size="sm" variant="primary" onClick={handleSaveBind} disabled={!canAdd}>
+                    </Select>
+                </Field>
+                <Button variant="solid" onClick={handleSaveBind} disabled={!canAdd}>
                     {editingId ? 'Zapisz' : 'Dodaj'}
                 </Button>
                 {editingId && (
-                    <Button size="sm" variant="outline-secondary" onClick={resetForm}>
+                    <Button onClick={resetForm}>
                         Anuluj
                     </Button>
                 )}
             </div>
 
-            <div className="mt-2 small text-muted">
+            <div className="popup-field__hint">
                 <strong>Komenda</strong> — wyślij komendę do gry.{' '}
                 <strong>Bind</strong> — wyzwól istniejący bind (atak, wesprzyj itp.).{' '}
                 <strong>Globalny</strong> — działa niezależnie od aktywnego okna.{' '}
@@ -338,24 +306,23 @@ function HelperSettings({ helperConnection }: HelperSettingsProps) {
                 const dl = getDownloadUrl();
                 const fileName = dl ? dl.url.substring(dl.url.lastIndexOf('/') + 1) : '';
                 return (
-                    <div className="mt-3 small text-muted">
-                        Helper nie jest uruchomiony. Skróty zostaną zarejestrowane po połączeniu.
+                    <div className="popup-stack popup-field__hint">
+                        <div>Helper nie jest uruchomiony. Skróty zostaną zarejestrowane po połączeniu.</div>
                         {dl && (
-                            <div className="mt-2">
-                                <a href={dl.url} download className="btn btn-outline-secondary btn-sm">
-                                    Pobierz Helper — {dl.label}
-                                </a>
+                            <>
+                                <div>
+                                    <LinkButton size="sm" href={dl.url} download target={undefined}>
+                                        Pobierz Helper — {dl.label}
+                                    </LinkButton>
+                                </div>
                                 {dl.os === 'mac' ? (
-                                    <div className="mt-2 p-2 border rounded">
+                                    <div className="helper-settings__box">
                                         <div>
                                             Pobrany plik to zwykły program (nie <code>.app</code>), więc macOS go
                                             zablokuje (komunikat: „Apple nie może sprawdzić, czy plik nie zawiera
                                             złośliwego oprogramowania"). Otwórz Terminal i wykonaj:
                                         </div>
-                                        <pre
-                                            className="mt-2 mb-2 p-2 bg-dark text-light rounded small"
-                                            style={{ whiteSpace: 'pre-wrap' }}
-                                        >
+                                        <pre className="helper-settings__pre">
 {`cd ~/Downloads
 chmod +x ${fileName}
 xattr -d com.apple.quarantine ${fileName}
@@ -366,7 +333,7 @@ xattr -d com.apple.quarantine ${fileName}
                                             działanie — to normalne. Następnie kliknij <strong>„Uruchom Helper"</strong>{' '}
                                             powyżej, aby go wystartować.
                                         </div>
-                                        <div className="mt-2">
+                                        <div>
                                             Aby działały <strong>globalne skróty</strong>, przyznaj aplikacji{' '}
                                             <code>ArkadiaHelper</code> uprawnienia w: <em>Ustawienia systemowe →
                                             Prywatność i bezpieczeństwo → Dostępność</em>, a następnie uruchom Helper
@@ -374,13 +341,13 @@ xattr -d com.apple.quarantine ${fileName}
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className="mt-2 p-2 border rounded">
+                                    <div className="helper-settings__box">
                                         Po pobraniu uruchom plik raz — zarejestruje on obsługę linków{' '}
                                         <code>arkadia://</code>, dzięki czemu klient będzie mógł automatycznie
                                         uruchamiać Helper.
                                     </div>
                                 )}
-                            </div>
+                            </>
                         )}
                     </div>
                 );
