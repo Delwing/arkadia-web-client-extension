@@ -16,7 +16,7 @@ function CommandsSection({ draft, update }: CommandsSectionProps) {
             <CheckboxRow id="ui-tab-completion-hint" label="Podpowiedź uzupełniania (Tab) za kursorem" checked={draft.tabCompletionHint} onChange={(v) => update({ tabCompletionHint: v })} />
             <CheckboxRow id="ui-keep-multibinds-visible" label="Zawsze pokazuj pasek multibindów" checked={draft.keepMultibindsVisible} onChange={(v) => update({ keepMultibindsVisible: v })} />
             <SelectField id="ui-multibind-key-hints" label="Skroty klawiszowe na pasku bindow" value={draft.multibindKeyHints} onChange={(v) => update({ multibindKeyHints: v as UiSettings['multibindKeyHints'] })}>
-                <option value="auto">Automatycznie (gdy wykryta klawiatura)</option>
+                <option value="auto">Automatycznie (na telefonie po Alt, Ctrl lub Tab)</option>
                 <option value="always">Zawsze</option>
                 <option value="never">Nigdy</option>
             </SelectField>

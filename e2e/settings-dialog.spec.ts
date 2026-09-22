@@ -353,7 +353,7 @@ test.describe('Settings dialog on a phone', () => {
 
         await modal.locator('#settings-search').fill('skroty klawiszowe');
         const result = modal.locator('.settings-phone__result--open', {hasText: 'Skroty klawiszowe na pasku bindow'});
-        await expect(result.locator('.settings-phone__preview')).toHaveText('Automatycznie (gdy wykryta klawiatura)');
+        await expect(result.locator('.settings-phone__preview')).toHaveText('Automatycznie (na telefonie po Alt, Ctrl lub Tab)');
         await expect(modal.locator('.settings-phone__caption--pages'), 'a setting is not a page').toHaveCount(0);
 
         await result.click();

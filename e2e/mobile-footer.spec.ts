@@ -211,8 +211,7 @@ test.describe('Footer on a wide screen', () => {
  * The bind pills lead with "ALT+1", which is worth its width to a player who
  * can press it and clutter to one who cannot. The hints follow a guess at
  * whether a keyboard is attached (@shared/dom/hardwareKeyboard), which on a
- * touch-only device starts at "no" and is revised by the first keystroke no
- * on-screen keyboard could have sent.
+ * mobile device starts at "no" and turns on with the first Alt, Ctrl or Tab.
  */
 test.describe('Bind shortcut hints without a keyboard', () => {
     test.use({viewport: PHONE, hasTouch: true, isMobile: true});
@@ -230,7 +229,7 @@ test.describe('Bind shortcut hints without a keyboard', () => {
         await ensureGameSocket(page);
     }
 
-    test('are dropped on a touch-only device and return once a key proves one', async ({page}) => {
+    test('are dropped on a mobile device and return once a key proves one', async ({page}) => {
         await openByTouch(page);
 
         await submitCommand(page, '/mbind 1 zerknij');
