@@ -9,6 +9,11 @@ body {
     height: 100%;
 }
 
+/* No client theme here: the viewer falls back to its own dark palette. */
+html {
+    color-scheme: dark;
+}
+
 body {
     margin: 0;
 }

@@ -4,16 +4,20 @@
 
    Every colour, size, radius and duration the viewer uses, in one place.
 
-   This screen used to read its values from a shared design system built on
-   Radix Colours, which generated eight themes from twelve-step scales. That
-   system is gone (see `archive/redesign`); the viewer is the one screen worth
-   keeping from it, so it keeps the values and drops the machinery. The numbers
-   below are that system's dark "arkadia" theme, resolved once.
+   The colours follow the client's theme: each role below points at the
+   `--popup-*` token the other windows are painted with, so Logi changes with
+   the theme like the rest. Where the client has no matching token (opaque
+   raised surfaces, accent films) the value is mixed from the theme's own
+   background, text and accent.
+
+   The fallback after each token is the viewer's old dark palette. The
+   standalone page (`log-viewer/`) has no client theme around it, so that is
+   what it shows.
 
    The names are the semantic roles the stylesheets were written against, not
    raw colours: `--lv-bg-element`, not `--lv-gray-3`. That is what makes this
-   file a swap point — a future re-skin edits ~60 values here instead of
-   chasing two hundred references through `logViewer.css` and `controls.css`.
+   file a swap point — a re-skin edits the values here instead of chasing two
+   hundred references through `logViewer.css` and `controls.css`.
 
    `.lv-theme` rather than `:root` because the client hosts this screen inside
    a Bootstrap page that has a palette of its own; these values must not leak
@@ -23,91 +27,93 @@
 
 .lv-theme {
     /* --- surfaces -------------------------------------------------------- */
-    --lv-bg-app: #111110;
-    --lv-bg-surface: #191918;
-    --lv-bg-raised: #222221;
-    /* Inputs, timeline tracks, log panes: reads as cut INTO the surface. */
-    --lv-bg-sunken: #111110;
+    /* The log pane sits on this, so it reads like the game window. */
+    --lv-bg-app: var(--popup-bg, #111110);
+    --lv-bg-surface: var(--popup-bg, #191918);
+    /* Opaque: menus and hover cards float over the log. */
+    --lv-bg-raised: color-mix(in srgb, var(--popup-text, #eeeeec) 6%, var(--popup-bg, #191918));
+    /* Inputs, timeline tracks: reads as cut INTO the surface. */
+    --lv-bg-sunken: var(--popup-input-bg, #111110);
 
     /* --- interactive elements -------------------------------------------- */
-    --lv-bg-element: #222221;
-    --lv-bg-element-hover: #2a2a28;
-    --lv-bg-element-active: #31312e;
-    --lv-bg-element-ghost-hover: #f6f6f513;
-    --lv-bg-selected: #31312e;
+    --lv-bg-element: var(--popup-control-bg, #222221);
+    --lv-bg-element-hover: var(--popup-control-hover-bg, #2a2a28);
+    --lv-bg-element-active: var(--popup-control-active-bg, #31312e);
+    --lv-bg-element-ghost-hover: var(--popup-hover-bg, #f6f6f513);
+    --lv-bg-selected: var(--popup-control-active-bg, #31312e);
 
     /* --- borders --------------------------------------------------------- */
-    --lv-border-subtle: #31312e;
-    --lv-border: #3b3a37;
-    --lv-border-element: #494844;
-    --lv-border-strong: #62605b;
+    --lv-border-subtle: var(--popup-border-subtle, #31312e);
+    --lv-border: var(--popup-border, #3b3a37);
+    --lv-border-element: var(--popup-border-control, #494844);
+    --lv-border-strong: var(--popup-border-strong, #62605b);
 
     /* --- text ------------------------------------------------------------ */
-    --lv-text: #eeeeec;
-    --lv-text-secondary: #b5b3ad;
-    --lv-text-tertiary: #7c7b74;
-    --lv-text-faint: #6f6d66;
-    --lv-text-disabled: #62605b;
+    --lv-text: var(--popup-text, #eeeeec);
+    --lv-text-secondary: var(--popup-text-subtle, #b5b3ad);
+    --lv-text-tertiary: var(--popup-text-dim, #7c7b74);
+    --lv-text-faint: var(--popup-text-dimmer, #6f6d66);
+    --lv-text-disabled: var(--popup-text-faint, #62605b);
 
     /* --- accent ---------------------------------------------------------- */
-    --lv-accent-bg: #0d2847;
-    --lv-accent-border: #205d9e;
-    --lv-accent-solid: #0090ff;
-    --lv-accent-solid-hover: #3b9eff;
-    --lv-accent-text: #70b8ff;
-    --lv-accent-text-strong: #c2e6ff;
-    /* Text ON the solid accent. */
-    --lv-accent-contrast: #fff;
+    --lv-accent-bg: var(--popup-accent-bg, #0d2847);
+    --lv-accent-border: var(--popup-accent-border, #205d9e);
+    --lv-accent-solid: var(--popup-accent, #0090ff);
+    --lv-accent-solid-hover: color-mix(in srgb, var(--popup-accent, #0090ff) 85%, var(--popup-text, #eeeeec));
+    --lv-accent-text: var(--popup-accent, #70b8ff);
+    --lv-accent-text-strong: color-mix(in srgb, var(--popup-accent, #70b8ff) 55%, var(--popup-text, #eeeeec));
+    /* Text ON the solid accent: the theme's background, as on every accent button. */
+    --lv-accent-contrast: var(--popup-bg, #fff);
 
     /* Translucent accent films — search highlights, timeline ticks, match
        rows. Alpha rather than solid, so they layer over any surface. */
-    --lv-accent-tint-strong: #0081fd6b;
-    --lv-accent-wash: #3094feb9;
-    --lv-accent-a3: #0077ff3a;
-    --lv-accent-a5: #0081fd6b;
-    --lv-accent-a7: #2a91fe98;
+    --lv-accent-tint-strong: color-mix(in srgb, var(--popup-accent, #0081fd) 42%, transparent);
+    --lv-accent-wash: color-mix(in srgb, var(--popup-accent, #3094fe) 72%, transparent);
+    --lv-accent-a3: color-mix(in srgb, var(--popup-accent, #0077ff) 23%, transparent);
+    --lv-accent-a5: color-mix(in srgb, var(--popup-accent, #0081fd) 42%, transparent);
+    --lv-accent-a7: color-mix(in srgb, var(--popup-accent, #2a91fe) 60%, transparent);
 
     /* --- neutral films --------------------------------------------------- */
-    /* Hatching, scrims and the faintest row tints. */
-    --lv-gray-a2: #f4f4f309;
-    --lv-gray-a3: #f6f6f513;
-    --lv-gray-a4: #fefef31b;
-    --lv-gray-a6: #fffaed2d;
-    --lv-gray-a8: #fff9eb57;
-    --lv-gray-6: #3b3a37;
-    --lv-gray-8: #62605b;
+    /* Hatching, scrims and the faintest row tints: the theme's text colour,
+       thinned, so they darken a light theme and lighten a dark one. */
+    --lv-gray-a2: color-mix(in srgb, var(--popup-text, #f4f4f3) 4%, transparent);
+    --lv-gray-a3: color-mix(in srgb, var(--popup-text, #f6f6f5) 7%, transparent);
+    --lv-gray-a4: color-mix(in srgb, var(--popup-text, #fefef3) 11%, transparent);
+    --lv-gray-a6: color-mix(in srgb, var(--popup-text, #fffaed) 18%, transparent);
+    --lv-gray-a8: color-mix(in srgb, var(--popup-text, #fff9eb) 34%, transparent);
+    --lv-gray-6: color-mix(in srgb, var(--popup-text, #eeeeec) 18%, var(--popup-bg, #111110));
+    --lv-gray-8: color-mix(in srgb, var(--popup-text, #eeeeec) 36%, var(--popup-bg, #111110));
     --lv-black-a6: rgba(0, 0, 0, 0.4);
 
     /* --- focus ----------------------------------------------------------- */
-    --lv-focus-ring: #2870bd;
+    --lv-focus-ring: var(--popup-accent, #2870bd);
     --lv-focus-ring-width: 2px;
     --lv-focus-ring-offset: 1px;
 
     /* --- status ---------------------------------------------------------- */
-    --lv-success-bg: #1b2a1e;
-    --lv-success-border: #2d5736;
-    --lv-success-solid: #46a758;
-    --lv-success-text: #71d083;
+    --lv-success-bg: var(--popup-success-bg, #1b2a1e);
+    --lv-success-border: var(--popup-success-border, #2d5736);
+    --lv-success-solid: var(--popup-success, #46a758);
+    --lv-success-text: var(--popup-success-light, #71d083);
 
-    --lv-danger-solid: #e54d2e;
+    --lv-danger-solid: var(--popup-danger, #e54d2e);
     --lv-danger-contrast: #fff;
-    --lv-danger-solid-hover: #ec6142;
-    --lv-danger-text: #ff977d;
+    --lv-danger-solid-hover: var(--popup-danger-light, #ec6142);
+    --lv-danger-text: var(--popup-danger-light, #ff977d);
 
     /* --- log channels ----------------------------------------------------
        Channel text colours. Readability first: the loud channels get full
        contrast, the ambient ones (room description, system chatter) step back
        so a wall of them does not compete with what was said to you. The eight
        have to stay apart from one another — colour is the only cue on the
-       channel dots. */
+       channel dots. They carry meaning, so they stay the same on every dark
+       theme; the light themes darken the two bright ones (below). */
     --lv-log-comm: var(--lv-text);
     --lv-log-combat: var(--lv-text);
-    --lv-log-room: #b5b3ad;
-    --lv-log-system: #7c7b74;
-    /* Cyan, not the blue this used to resolve to: in this palette the "info"
-       ramp and the accent ramp are the same blue, so Powiadomienia and Komendy
-       came out as the same colour and the dots told the two apart by nothing
-       at all. */
+    --lv-log-room: var(--lv-text-secondary);
+    --lv-log-system: var(--lv-text-tertiary);
+    /* Cyan, not blue: Komendy take the accent, and the dots have to tell the
+       two apart. */
     --lv-log-notify: #4ccce6;
     --lv-log-command: var(--lv-accent-text);
     /* Game text the server did not tag more specifically. Full contrast: it
@@ -116,7 +122,7 @@
     /* The client talking, not the game — a script, a plugin, `printLine`. */
     --lv-log-script: #ffca16;
 
-    --lv-log-event-login: #b5b3ad;
+    --lv-log-event-login: var(--lv-text-secondary);
     --lv-log-event-death: var(--lv-danger-text);
 
     /* --- typography ------------------------------------------------------ */
@@ -188,8 +194,6 @@
        menu at 10100. */
     --lv-z-sticky: 1;
     --lv-z-popover: 10300;
-
-    color-scheme: dark;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -197,4 +201,11 @@
         --lv-duration-1: 0ms;
         --lv-duration-2: 0ms;
     }
+}
+
+/* The light themes: the two bright channels would vanish on a pale ground. */
+.theme-light-parchment .lv-theme,
+.theme-light-silver .lv-theme {
+    --lv-log-notify: #0e7490;
+    --lv-log-script: #8a6100;
 }
