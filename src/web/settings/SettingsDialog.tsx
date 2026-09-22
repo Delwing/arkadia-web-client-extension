@@ -143,23 +143,24 @@ function SettingsDialog({ soundManager, onEnableNotifications, initialCategory }
         () => (searchHits ? SETTINGS_CATEGORIES.filter(c => searchHits.has(c.key)).map(c => c.key) : []),
         [searchHits],
     );
-    const currentKey = hitKeys[Math.min(currentHit, hitKeys.length - 1)];
+    // Typing narrows the results while `currentHit` stays put, so what is shown
+    // is the clamped one - never "4 z 2".
+    const shownHit = hitKeys.length === 0 ? 0 : Math.min(currentHit, hitKeys.length - 1);
+    const currentKey = hitKeys[shownHit];
 
     // A new query starts again from the first page with a match.
     useEffect(() => setCurrentHit(0), [query]);
 
     /** Scroll the nth page with a match to the top of the results pane. */
     const gotoHit = useCallback((index: number) => {
-        setCurrentHit(current => {
-            if (hitKeys.length === 0) return 0;
-            const next = ((index % hitKeys.length) + hitKeys.length) % hitKeys.length;
-            const page = pageRefs.current.get(hitKeys[next]);
-            const pane = pagesRef.current;
-            if (page && pane) {
-                pane.scrollTop += page.getBoundingClientRect().top - pane.getBoundingClientRect().top;
-            }
-            return current === next ? current : next;
-        });
+        if (hitKeys.length === 0) return;
+        const next = ((index % hitKeys.length) + hitKeys.length) % hitKeys.length;
+        setCurrentHit(next);
+        const page = pageRefs.current.get(hitKeys[next]);
+        const pane = pagesRef.current;
+        if (page && pane) {
+            pane.scrollTop += page.getBoundingClientRect().top - pane.getBoundingClientRect().top;
+        }
     }, [hitKeys]);
 
     const pageLayout = (key: SettingsCategoryKey) =>
@@ -323,7 +324,7 @@ function SettingsDialog({ soundManager, onEnableNotifications, initialCategory }
         // Enter walks the pages with a match, as a find bar does.
         if (event.key === "Enter" && hitKeys.length > 0) {
             event.preventDefault();
-            gotoHit(currentHit + (event.shiftKey ? -1 : 1));
+            gotoHit(shownHit + (event.shiftKey ? -1 : 1));
         }
     };
 
@@ -354,7 +355,7 @@ function SettingsDialog({ soundManager, onEnableNotifications, initialCategory }
                     {searching && (
                         <div className="settings-dialog__matches">
                             <span id="settings-search-count" className="settings-dialog__matches-count">
-                                {hitKeys.length === 0 ? "brak wyników" : `${currentHit + 1} z ${hitKeys.length}`}
+                                {hitKeys.length === 0 ? "brak wyników" : `${shownHit + 1} z ${hitKeys.length}`}
                             </span>
                             <button
                                 type="button"
@@ -362,7 +363,7 @@ function SettingsDialog({ soundManager, onEnableNotifications, initialCategory }
                                 className="settings-dialog__matches-btn"
                                 title="Poprzednia strona z wynikami (Shift+Enter)"
                                 disabled={hitKeys.length === 0}
-                                onClick={() => gotoHit(currentHit - 1)}
+                                onClick={() => gotoHit(shownHit - 1)}
                             >
                                 <ChevronUp size={14} strokeWidth={2.2} />
                             </button>
@@ -372,7 +373,7 @@ function SettingsDialog({ soundManager, onEnableNotifications, initialCategory }
                                 className="settings-dialog__matches-btn"
                                 title="Następna strona z wynikami (Enter)"
                                 disabled={hitKeys.length === 0}
-                                onClick={() => gotoHit(currentHit + 1)}
+                                onClick={() => gotoHit(shownHit + 1)}
                             >
                                 <ChevronDown size={14} strokeWidth={2.2} />
                             </button>
