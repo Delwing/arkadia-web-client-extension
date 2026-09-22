@@ -177,14 +177,51 @@ test.describe('plugin footer components in the status line', () => {
 
         const clipping = await chip(page).evaluate((el) => {
             const found: string[] = [];
-            for (let node = el.parentElement; node && node.id !== 'char-state'; node = node.parentElement) {
+            for (let node = el.parentElement; node; node = node.parentElement) {
                 const style = getComputedStyle(node);
                 if (style.overflowX !== 'visible' || style.overflowY !== 'visible') {
                     found.push(`${node.tagName}.${node.className}`);
                 }
+                if (node.id === 'char-state') break;
             }
             return found;
         });
-        expect(clipping, 'no ancestor inside the status line clips it').toEqual([]);
+        expect(clipping, 'no ancestor up to and including the status line clips it').toEqual([]);
+    });
+
+    test('spill out of the tile and draw over the bind row', async ({page}) => {
+        await page.goto('/');
+        await ensureGameSocket(page);
+        await waitForCommandInput(page);
+
+        await loadPlugin(page);
+        await expect(chip(page), 'plugin chip should be in the footer').toBeVisible();
+
+        // Stand in for the animated companion: something the plugin draws well above
+        // its own tile. The bind row is faked active - what matters here is the CSS.
+        const report = await page.evaluate(() => {
+            const bar = document.getElementById('multi-binds')!;
+            bar.classList.add('active');
+            const pill = document.createElement('button');
+            pill.className = 'multi-bind';
+            pill.textContent = 'bind';
+            bar.appendChild(pill);
+
+            const host = document.querySelector('.plugin-footer-component') as HTMLElement;
+            host.style.position = 'relative';
+            const spill = document.createElement('i');
+            spill.id = 'spill-probe';
+            spill.style.cssText = 'position:absolute;left:0;bottom:100%;display:block;width:24px;height:64px';
+            host.appendChild(spill);
+
+            const probe = spill.getBoundingClientRect();
+            const row = bar.getBoundingClientRect();
+            const hit = document.elementFromPoint(probe.left + probe.width / 2, probe.top + 4);
+            return {spillTop: probe.top, spillHeight: probe.height, barBottom: row.bottom, hitId: hit?.id ?? null};
+        });
+
+        expect(report.spillHeight, 'the spill keeps its full height, uncropped').toBe(64);
+        expect(report.spillTop, 'and reaches up past the bind row').toBeLessThan(report.barBottom);
+        expect(report.hitId, 'drawn over the bind row, not behind it').toBe('spill-probe');
     });
 });
