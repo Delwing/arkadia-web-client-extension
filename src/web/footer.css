@@ -139,7 +139,11 @@
   box-shadow: 0 0 0 2px var(--popup-accent-subtle-bg);
 }
 
+/* Pill height, so a room without binds keeps the row where it was. */
 #multi-binds .multi-bind-empty {
+  display: inline-flex;
+  align-items: center;
+  height: 26px;
   color: var(--popup-text-faint);
   font-size: var(--ui-fs-sm, 13px);
   font-style: italic;
@@ -481,7 +485,8 @@
 
 /* Touch: pills are buttons to hit, not hints to read. */
 @media (pointer: coarse) {
-  #multi-binds .multi-bind {
+  #multi-binds .multi-bind,
+  #multi-binds .multi-bind-empty {
     height: 36px;
   }
   #multi-binds .multi-bind-action {
