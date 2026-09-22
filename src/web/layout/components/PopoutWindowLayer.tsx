@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { WindowRecord } from '../types';
 import type { WindowManager } from '../WindowManager';
-import { usePanelChrome } from './PanelHeader';
+import { PanelSettingsButton, usePanelChrome } from './PanelHeader';
 import {
   getPopoutEntry,
   registerPopoutWindow,
@@ -182,6 +182,7 @@ function PopoutFrame({
         </span>
         <div className="managed-panel__header-actions docked-panel__header-actions">
           {chrome.headerActions}
+          <PanelSettingsButton chrome={chrome} />
           <button
             type="button"
             className="panel-button panel-button--popout-restore"

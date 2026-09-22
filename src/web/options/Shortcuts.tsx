@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
-import { Button, Form, Table } from 'react-bootstrap';
-import { Trash2 } from 'lucide-react';
+import { Button, DeleteButton, Field, Input } from "@web-ui/primitives/index.ts";
 import { globalStorage } from "@modules/core/storage";
 import eventBus from "@modules/core/eventBus";
 import { getCurrentRoomId } from "@modules/core/currentRoomProvider";
@@ -67,45 +66,55 @@ function Shortcuts() {
         }
     }
 
+    function cancel() {
+        setShowForm(false);
+        setKey('');
+        setLoc('');
+        setLabel('');
+    }
+
     return (
-        <div className="m-2 d-flex flex-column gap-2">
-            <Button size="sm" onClick={() => setShowForm(true)}>Dodaj</Button>
+        <div className="popup-stack shortcuts-panel">
+            <div className="popup-row">
+                <Button size="sm" onClick={() => setShowForm(true)}>Dodaj</Button>
+            </div>
             {showForm && (
-                <div className="border rounded p-3">
-                    <Form.Group className="d-flex align-items-center gap-2 mb-2">
-                        <Form.Label className="w-32 mb-0">Nazwa</Form.Label>
-                        <Form.Control type="text" size="sm" value={key} onChange={e => setKey(e.target.value)} autoCorrect="off" autoComplete="off" autoCapitalize="off" spellCheck={false} />
-                    </Form.Group>
-                    <Form.Group className="d-flex align-items-center gap-2 mb-2">
-                        <Form.Label className="w-32 mb-0">Lokalizacja</Form.Label>
-                        <Form.Control type="number" size="sm" value={loc} onChange={e => setLoc(e.target.value)} />
-                        <Button size="sm" variant="secondary" onClick={useCurrent}>Aktualna</Button>
-                    </Form.Group>
-                    <Form.Group className="d-flex align-items-center gap-2 mb-2">
-                        <Form.Label className="w-32 mb-0">Opis</Form.Label>
-                        <Form.Control type="text" size="sm" value={label} onChange={e => setLabel(e.target.value)} autoCorrect="off" autoComplete="off" autoCapitalize="off" spellCheck={false} />
-                    </Form.Group>
-                    <div className="d-flex gap-2">
-                        <Button size="sm" variant="secondary" onClick={() => { setShowForm(false); setKey(''); setLoc(''); setLabel(''); }}>Anuluj</Button>
-                        <Button size="sm" onClick={add}>Zapisz</Button>
+                <div className="popup-stack shortcuts-panel__form">
+                    <Field label="Nazwa">
+                        <Input mono value={key} onChange={e => setKey(e.target.value)} />
+                    </Field>
+                    <Field label="Lokalizacja">
+                        <div className="popup-inline">
+                            <Input type="number" value={loc} onChange={e => setLoc(e.target.value)} />
+                            <Button size="sm" onClick={useCurrent}>Aktualna</Button>
+                        </div>
+                    </Field>
+                    <Field label="Opis">
+                        <Input mono value={label} onChange={e => setLabel(e.target.value)} />
+                    </Field>
+                    <div className="popup-row">
+                        <Button size="sm" onClick={cancel}>Anuluj</Button>
+                        <Button size="sm" variant="solid" onClick={add}>Zapisz</Button>
                     </div>
                 </div>
             )}
-            <Table bordered size="sm" hover className="table-modern table-zebra">
-                <tbody className="align-middle">
+            <table className="popup-table">
+                <tbody>
                 {list.map(item => (
                     <tr key={item.key}>
                         <td>{item.key}</td>
                         <td>{item.id}</td>
                         <td>{item.label}</td>
-                        <td className="d-flex gap-2">
-                            <Button size="sm" onClick={() => eventBus.emit('leadTo', item.id)}>Prowadź</Button>
-                            <Button size="sm" variant="danger" onClick={() => remove(item.key)}><Trash2 size={16} /></Button>
+                        <td>
+                            <div className="popup-inline">
+                                <Button size="sm" onClick={() => eventBus.emit('leadTo', item.id)}>Prowadź</Button>
+                                <DeleteButton onClick={() => remove(item.key)} />
+                            </div>
                         </td>
                     </tr>
                 ))}
                 </tbody>
-            </Table>
+            </table>
         </div>
     );
 }

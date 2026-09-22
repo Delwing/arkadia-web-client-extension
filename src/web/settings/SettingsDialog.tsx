@@ -1,24 +1,8 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
-import {
-    Backpack,
-    ChartPie,
-    Ellipsis,
-    Map as MapIcon,
-    MousePointerClick,
-    Palette,
-    PanelBottom,
-    PanelsTopLeft,
-    Shield,
-    SlidersHorizontal,
-    Smartphone,
-    SquareTerminal,
-    Swords,
-    Volume2,
-    WandSparkles,
-    type LucideIcon,
-} from "lucide-react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type RefObject } from "react";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import { useCharacterSettingsPages } from "@web/options/useCharacterSettingsPages.tsx";
 import { useUiSettingsPages, type UiSettingsPagesProps } from "@web/uiSettings/useUiSettingsPages.tsx";
+import { useDataPages } from "@web/options/useDataPages.tsx";
 import { OPEN_SETTINGS_EVENT, type OpenSettingsDetail } from "@web/assistant/openSettings.ts";
 import {
     CLOSE_SETTINGS_EVENT,
@@ -34,34 +18,14 @@ import {
     type ShowSettingsDetail,
 } from "./categories";
 import { applySearch, clearSearch, highlightTerms, searchTerms, type PageSearchInput } from "./settingsSearch";
+import { indexPage, matchSettings, pageMatches, pageSections } from "./settingsIndex";
+import { PhonePageHeader, PhoneSaveBar, PhoneSectionChips, PhoneStart, type PhoneResults, type ScopeChip } from "./PhoneSettings";
 import { pageSignature } from "./settingsDirty";
+import { NavIcon } from "./categoryIcons";
+import { MODAL_EVENT } from "@web/modals/appModal.ts";
 import "./settingsDialog.css";
 
-const GROUPS: readonly SettingsGroup[] = ["character", "ui"];
-
-// Kept here rather than in categories.ts, which the assistant-KB build reads in Node.
-const CATEGORY_ICONS: Record<SettingsCategoryKey, LucideIcon> = {
-    "character-general": SlidersHorizontal,
-    "character-items": Backpack,
-    "character-combat": Swords,
-    "character-guilds": Shield,
-    "character-magics": WandSparkles,
-    "ui-appearance": Palette,
-    "ui-windows": PanelsTopLeft,
-    "ui-commands": SquareTerminal,
-    "ui-buttons": MousePointerClick,
-    "ui-mobile-buttons": Smartphone,
-    "ui-radial": ChartPie,
-    "ui-footer": PanelBottom,
-    "ui-map": MapIcon,
-    "ui-sound": Volume2,
-    "ui-other": Ellipsis,
-};
-
-function NavIcon({ category }: { category: SettingsCategoryKey }) {
-    const Icon = CATEGORY_ICONS[category];
-    return <Icon className="settings-dialog__nav-icon" size={16} strokeWidth={1.75} />;
-}
+const GROUPS: readonly SettingsGroup[] = ["character", "ui", "data"];
 
 function capitalize(name: string): string {
     return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
@@ -69,6 +33,47 @@ function capitalize(name: string): string {
 
 function sameKeys(a: ReadonlySet<string> | null, b: ReadonlySet<string>): boolean {
     return !!a && a.size === b.size && [...b].every(key => a.has(key));
+}
+
+/** What a control is set to, for counting unsaved changes. */
+function controlValue(el: Element): string {
+    if (el instanceof HTMLInputElement) return el.type === "checkbox" || el.type === "radio" ? String(el.checked) : el.value;
+    return (el as HTMLSelectElement | HTMLTextAreaElement).value;
+}
+
+function settingControls(root: HTMLElement): Element[] {
+    return Array.from(root.querySelectorAll("input, select, textarea")).filter(el => !el.closest("[data-settings-ignore]"));
+}
+
+/**
+ * Whether the dialog is phone-narrow - the same 40rem as the stylesheet's
+ * container query, measured on the dialog itself so a narrow forge shell or
+ * popout gets the phone views too. A hidden dialog (width 0) keeps its answer.
+ */
+function useNarrow(ref: RefObject<HTMLElement | null>): boolean {
+    const [narrow, setNarrow] = useState(false);
+    useLayoutEffect(() => {
+        const el = ref.current;
+        if (!el || typeof ResizeObserver === "undefined") return;
+        const check = () => {
+            const width = el.clientWidth;
+            if (width === 0) return;
+            const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+            setNarrow(width <= 40 * rem);
+        };
+        check();
+        const observer = new ResizeObserver(check);
+        observer.observe(el);
+        return () => observer.disconnect();
+    }, [ref]);
+    return narrow;
+}
+
+/** Never equal to a page's signature: a page changed before anything was recorded. */
+const UNKNOWN_BASELINE = "(changed before its baseline was taken)";
+
+function sameCounts(a: ReadonlyMap<string, number> | null, b: ReadonlyMap<string, number>): boolean {
+    return !!a && a.size === b.size && [...b].every(([key, count]) => a.get(key) === count);
 }
 
 export interface SettingsDialogProps extends UiSettingsPagesProps {
@@ -86,13 +91,30 @@ export interface SettingsDialogProps extends UiSettingsPagesProps {
 function SettingsDialog({ soundManager, onEnableNotifications, initialCategory }: SettingsDialogProps) {
     const character = useCharacterSettingsPages();
     const ui = useUiSettingsPages({ soundManager, onEnableNotifications });
+    const data = useDataPages();
     const latest = useRef({ character, ui });
     latest.current = { character, ui };
 
     const [category, setCategory] = useState<SettingsCategoryKey>(initialCategory ?? DEFAULT_SETTINGS_CATEGORY.character);
     const [query, setQuery] = useState("");
-    const [searchHits, setSearchHits] = useState<ReadonlySet<SettingsCategoryKey> | null>(null);
+    // How many sections match on each page; the sidebar shows the counts and the
+    // ‹ › buttons walk the pages in this order.
+    const [searchHits, setSearchHits] = useState<ReadonlyMap<SettingsCategoryKey, number> | null>(null);
+    const [currentHit, setCurrentHit] = useState(0);
     const [dirty, setDirty] = useState<ReadonlySet<SettingsCategoryKey>>(() => new Set());
+    // How many controls differ from before they were touched (a page changed some
+    // other way, a list edited, counts as one): the phone's save bar shows it.
+    const [dirtyCount, setDirtyCount] = useState(0);
+    const hostRef = useRef<HTMLDivElement>(null);
+    const narrow = useNarrow(hostRef);
+    // On a phone the dialog is a list of pages to drill into.
+    const [phoneView, setPhoneView] = useState<"list" | "page">("page");
+    // Bumped when the pages' DOM changes while on a phone: the list summaries,
+    // the search index and the section chips are read from it.
+    const [domVersion, setDomVersion] = useState(0);
+    const controlBaselines = useRef(new Map<SettingsCategoryKey, Map<Element, string>>());
+    // The setting a search result opened, scrolled to once its page shows.
+    const pendingAnchor = useRef<HTMLElement | null>(null);
 
     const pagesRef = useRef<HTMLDivElement>(null);
     const pageRefs = useRef(new Map<SettingsCategoryKey, HTMLDivElement>());
@@ -104,7 +126,8 @@ function SettingsDialog({ soundManager, onEnableNotifications, initialCategory }
     const categoryRef = useRef(category);
 
     const terms = useMemo(() => searchTerms(query), [query]);
-    const searching = terms.length > 0;
+    // The wide layout's search filters the pages in place; the phone lists results instead.
+    const searching = !narrow && terms.length > 0;
     const searchingRef = useRef(searching);
     searchingRef.current = searching;
 
@@ -116,7 +139,35 @@ function SettingsDialog({ soundManager, onEnableNotifications, initialCategory }
         }
         setQuery("");
         setCategory(next);
+        pendingAnchor.current = null;
+        setPhoneView("page");
     }, []);
+
+    // The pages with a match, in sidebar order: what ‹ › walk and what the
+    // counter counts.
+    const hitKeys = useMemo(
+        () => (searchHits ? SETTINGS_CATEGORIES.filter(c => searchHits.has(c.key)).map(c => c.key) : []),
+        [searchHits],
+    );
+    // Typing narrows the results while `currentHit` stays put, so what is shown
+    // is the clamped one - never "4 z 2".
+    const shownHit = hitKeys.length === 0 ? 0 : Math.min(currentHit, hitKeys.length - 1);
+    const currentKey = hitKeys[shownHit];
+
+    // A new query starts again from the first page with a match.
+    useEffect(() => setCurrentHit(0), [query]);
+
+    /** Scroll the nth page with a match to the top of the results pane. */
+    const gotoHit = useCallback((index: number) => {
+        if (hitKeys.length === 0) return;
+        const next = ((index % hitKeys.length) + hitKeys.length) % hitKeys.length;
+        setCurrentHit(next);
+        const page = pageRefs.current.get(hitKeys[next]);
+        const pane = pagesRef.current;
+        if (page && pane) {
+            pane.scrollTop += page.getBoundingClientRect().top - pane.getBoundingClientRect().top;
+        }
+    }, [hitKeys]);
 
     const pageLayout = (key: SettingsCategoryKey) =>
         pageRefs.current.get(key)?.querySelector<HTMLElement>(".settings-page__layout") ?? null;
@@ -124,7 +175,9 @@ function SettingsDialog({ soundManager, onEnableNotifications, initialCategory }
     const resetDirty = useCallback(() => {
         cancelAnimationFrame(dirtyFrame.current);
         baselines.current.clear();
+        controlBaselines.current.clear();
         setDirty(new Set());
+        setDirtyCount(0);
     }, []);
 
     const checkDirty = useCallback(() => {
@@ -132,11 +185,19 @@ function SettingsDialog({ soundManager, onEnableNotifications, initialCategory }
         // Next frame, once React has rendered the change into the page.
         dirtyFrame.current = requestAnimationFrame(() => {
             const next = new Set<SettingsCategoryKey>();
+            let count = 0;
             for (const [key, baseline] of baselines.current) {
                 const layout = pageLayout(key);
-                if (layout && pageSignature(layout) !== baseline) next.add(key);
+                if (!layout || pageSignature(layout) === baseline) continue;
+                next.add(key);
+                let changed = 0;
+                for (const [el, value] of controlBaselines.current.get(key) ?? []) {
+                    if (el.isConnected && controlValue(el) !== value) changed++;
+                }
+                count += Math.max(1, changed);
             }
             setDirty(prev => sameKeys(prev, next) ? prev : next);
+            setDirtyCount(count);
         });
     }, []);
 
@@ -145,10 +206,25 @@ function SettingsDialog({ soundManager, onEnableNotifications, initialCategory }
      * baseline is what the page showed before this edit — including anything
      * that loaded asynchronously after the dialog opened.
      */
+    /**
+     * A change that arrived with no touch, key or focus before it (a script,
+     * an assistive tool) left no baseline to compare with: the page stays
+     * unsaved until Save or Cofnij, so the phone's save bar still offers it.
+     */
+    const onPageChange = (key: SettingsCategoryKey) => {
+        if (!baselines.current.has(key)) {
+            baselines.current.set(key, UNKNOWN_BASELINE);
+            controlBaselines.current.set(key, new Map());
+        }
+        checkDirty();
+    };
+
     const captureBaseline = (key: SettingsCategoryKey) => {
         if (baselines.current.has(key)) return;
         const layout = pageLayout(key);
-        if (layout) baselines.current.set(key, pageSignature(layout));
+        if (!layout) return;
+        baselines.current.set(key, pageSignature(layout));
+        controlBaselines.current.set(key, new Map(settingControls(layout).map(el => [el, controlValue(el)])));
     };
 
     // List editors and drag-and-drop change the page without input events.
@@ -168,13 +244,50 @@ function SettingsDialog({ soundManager, onEnableNotifications, initialCategory }
     useLayoutEffect(() => {
         categoryRef.current = category;
         const pane = pagesRef.current;
-        if (pane) pane.scrollTop = searching ? 0 : scrollPos.current.get(category) ?? 0;
-    }, [category, searching]);
+        if (!pane) return;
+        if (!narrow) {
+            pane.scrollTop = searching ? 0 : scrollPos.current.get(category) ?? 0;
+            return;
+        }
+        if (phoneView !== "page") return;
+        // A page opened from a search result starts at that setting, briefly lit.
+        const anchor = pendingAnchor.current;
+        pendingAnchor.current = null;
+        pane.scrollTop = 0;
+        if (anchor?.isConnected) {
+            pane.scrollTop = anchor.getBoundingClientRect().top - pane.getBoundingClientRect().top - pane.clientHeight / 3;
+            anchor.classList.remove("settings-phone__flash");
+            void anchor.offsetWidth;
+            anchor.classList.add("settings-phone__flash");
+        }
+    }, [category, searching, narrow, phoneView]);
+
+    // The phone views read the pages' DOM (summaries, the search index, the
+    // chips), so they follow it while the dialog is narrow.
+    useEffect(() => {
+        const pane = pagesRef.current;
+        if (!narrow || !pane) return;
+        let frame = 0;
+        const bump = () => {
+            cancelAnimationFrame(frame);
+            frame = requestAnimationFrame(() => setDomVersion(v => v + 1));
+        };
+        bump();
+        const observer = new MutationObserver(bump);
+        observer.observe(pane, { childList: true, subtree: true, characterData: true });
+        return () => {
+            observer.disconnect();
+            cancelAnimationFrame(frame);
+        };
+    }, [narrow]);
 
     useEffect(() => {
         const onShowCategory = (event: Event) => {
-            const next = (event as CustomEvent<ShowSettingsDetail>).detail?.category;
-            if (next) navigate(next);
+            const detail = (event as CustomEvent<ShowSettingsDetail>).detail;
+            if (!detail?.category) return;
+            navigate(detail.category);
+            // "Open settings" in general: a phone starts on the list of pages.
+            if (detail.overview) setPhoneView("list");
         };
 
         /**
@@ -211,14 +324,14 @@ function SettingsDialog({ soundManager, onEnableNotifications, initialCategory }
         window.addEventListener(SHOW_SETTINGS_EVENT, onShowCategory);
         window.addEventListener(OPEN_SETTINGS_EVENT, onAssistantOpen);
         window.addEventListener(SAVE_SETTINGS_EVENT, onSave);
-        modalEl?.addEventListener("show.bs.modal", onModalShow);
-        modalEl?.addEventListener("hidden.bs.modal", onModalHidden);
+        modalEl?.addEventListener(MODAL_EVENT.show, onModalShow);
+        modalEl?.addEventListener(MODAL_EVENT.hidden, onModalHidden);
         return () => {
             window.removeEventListener(SHOW_SETTINGS_EVENT, onShowCategory);
             window.removeEventListener(OPEN_SETTINGS_EVENT, onAssistantOpen);
             window.removeEventListener(SAVE_SETTINGS_EVENT, onSave);
-            modalEl?.removeEventListener("show.bs.modal", onModalShow);
-            modalEl?.removeEventListener("hidden.bs.modal", onModalHidden);
+            modalEl?.removeEventListener(MODAL_EVENT.show, onModalShow);
+            modalEl?.removeEventListener(MODAL_EVENT.hidden, onModalHidden);
         };
     }, [navigate, resetDirty]);
 
@@ -237,8 +350,10 @@ function SettingsDialog({ soundManager, onEnableNotifications, initialCategory }
         const run = () => {
             const pages = inputs();
             const hits = applySearch(pages, terms);
-            const keys = new Set([...hits].map(i => pages[i].element.dataset.settingsCategory as SettingsCategoryKey));
-            setSearchHits(prev => sameKeys(prev, keys) ? prev : keys);
+            const counts = new Map<SettingsCategoryKey, number>(
+                [...hits].map(([i, count]) => [pages[i].element.dataset.settingsCategory as SettingsCategoryKey, count]),
+            );
+            setSearchHits(prev => sameCounts(prev, counts) ? prev : counts);
             highlightTerms(pages.filter((_, i) => hits.has(i)), terms);
         };
         run();
@@ -272,72 +387,205 @@ function SettingsDialog({ soundManager, onEnableNotifications, initialCategory }
             event.preventDefault();
             event.stopPropagation();
             setQuery("");
+            return;
+        }
+        // Enter walks the pages with a match, as a find bar does.
+        if (event.key === "Enter" && hitKeys.length > 0) {
+            event.preventDefault();
+            gotoHit(shownHit + (event.shiftKey ? -1 : 1));
         }
     };
 
     const characterName = character.character ? capitalize(character.character) : null;
+    const currentCategory = SETTINGS_CATEGORIES.find(c => c.key === category)!;
     const groupLabel = (group: SettingsGroup) =>
         group === "character" && characterName ? `${SETTINGS_GROUP_LABELS.character}: ${characterName}` : SETTINGS_GROUP_LABELS[group];
-    const scopeChip = (group: SettingsGroup) => group === "character"
+    // "Dane" pages act at once, outside Save; they carry no chip.
+    const scopeChip = (group: SettingsGroup): ScopeChip | null => group === "character"
         ? { text: characterName ? `tylko ${characterName}` : "brak postaci", title: "Zapisywane osobno dla każdej postaci" }
-        : { text: "wszystkie postacie", title: "Wspólne dla wszystkich postaci" };
+        : group === "ui"
+            ? { text: "wszystkie postacie", title: "Wspólne dla wszystkich postaci. Układ i rozmiary (mapa, stopka, przyciski, okna) zapisywane są osobno na każdym urządzeniu." }
+            : null;
+
+    const pageInput = (key: SettingsCategoryKey): PageSearchInput | null => {
+        const element = pageRefs.current.get(key);
+        const c = SETTINGS_CATEGORIES.find(cat => cat.key === key)!;
+        return element ? { element, pageText: `${SETTINGS_GROUP_LABELS[c.group]} ${c.label} ${c.keywords ?? ""}` } : null;
+    };
+
+    // The list's one-line summary of each page: the titles of its cards.
+    const summaries = useMemo(() => {
+        const map = new Map<SettingsCategoryKey, string>();
+        if (!narrow) return map;
+        for (const c of SETTINGS_CATEGORIES) {
+            const element = pageRefs.current.get(c.key);
+            // A card named like its page says nothing new; the keywords do.
+            const titles = element ? pageSections(element).map(section => section.title).filter(title => title !== c.label) : [];
+            const summary = titles.length > 0 ? titles.join(", ") : c.keywords?.split(" ").slice(0, 4).join(", ");
+            if (summary) map.set(c.key, summary);
+        }
+        return map;
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [narrow, domVersion]);
+
+    const phoneResults = useMemo((): PhoneResults | null => {
+        if (!narrow || terms.length === 0) return null;
+        const results: PhoneResults = { settings: [], pages: [] };
+        for (const c of SETTINGS_CATEGORIES) {
+            const input = pageInput(c.key);
+            if (!input) continue;
+            for (const match of matchSettings(indexPage(input.element), terms)) results.settings.push({ ...match, category: c });
+            if (pageMatches(input.element, input.pageText, terms)) results.pages.push(c);
+        }
+        return results;
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [narrow, terms, domVersion]);
+
+    const phoneSections = useMemo(() => {
+        const element = narrow && phoneView === "page" ? pageRefs.current.get(category) : undefined;
+        return element ? pageSections(element) : [];
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [narrow, phoneView, category, domVersion]);
+
+    /** From the phone's list or results: keeps the query, so Back returns to the results. */
+    const openPhonePage = (key: SettingsCategoryKey, anchor: HTMLElement | null = null) => {
+        pendingAnchor.current = anchor;
+        setCategory(key);
+        setPhoneView("page");
+    };
+
+    const toggleFromResults = (match: PhoneResults["settings"][number]) => {
+        const input = match.entry.control as HTMLInputElement;
+        if (input.matches(":disabled")) return;
+        captureBaseline(match.category.key);
+        input.click();
+        // The checkbox changes a property, not the DOM: re-read after React renders.
+        requestAnimationFrame(() => setDomVersion(v => v + 1));
+    };
+
+    const revertEdits = () => {
+        latest.current.character.reload();
+        latest.current.ui.reload();
+        resetDirty();
+    };
 
     return (
-        <div className="settings-dialog-host" onKeyDown={onHostKeyDown}>
-            <div className={`settings-dialog${searching ? " settings-dialog--searching" : ""}`}>
-                <div className="settings-dialog__search">
+        <div ref={hostRef} className="settings-dialog-host" onKeyDown={onHostKeyDown}>
+            <div className={[
+                "settings-dialog",
+                searching ? "settings-dialog--searching" : "",
+                narrow ? `settings-dialog--phone settings-dialog--phone-${phoneView}` : "",
+            ].filter(Boolean).join(" ")}>
+                {narrow && phoneView === "list" && (
+                    <PhoneStart
+                        key="phone-start"
+                        searchRef={searchRef}
+                        query={query}
+                        onQuery={setQuery}
+                        terms={terms}
+                        results={phoneResults}
+                        summaries={summaries}
+                        dirty={dirty}
+                        groupLabel={groupLabel}
+                        groupName={(group) => SETTINGS_GROUP_LABELS[group]}
+                        scopeChip={scopeChip}
+                        onOpenPage={(key) => openPhonePage(key)}
+                        onOpenSetting={(match) => openPhonePage(match.category.key, match.entry.element)}
+                        onToggle={toggleFromResults}
+                    />
+                )}
+                {narrow && phoneView === "page" && (
+                    <div key="phone-page" className="settings-phone__page-head">
+                        <PhonePageHeader
+                            category={currentCategory}
+                            chip={scopeChip(currentCategory.group)}
+                            onBack={() => setPhoneView("list")}
+                            onClose={() => window.dispatchEvent(new Event(CLOSE_SETTINGS_EVENT))}
+                        />
+                        <PhoneSectionChips key={category} sections={phoneSections} pane={pagesRef.current} />
+                    </div>
+                )}
+                {!narrow && <div className="settings-dialog__search">
                     <input
                         ref={searchRef}
                         id="settings-search"
                         type="search"
-                        className="form-control form-control-sm"
+                        className="popup-input popup-input--control"
                         placeholder="Szukaj w ustawieniach"
                         autoComplete="off"
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
                         onKeyDown={onSearchKeyDown}
                     />
-                </div>
-                <nav className="settings-dialog__nav">
+                    {searching && (
+                        <div className="settings-dialog__matches">
+                            <span id="settings-search-count" className="settings-dialog__matches-count">
+                                {hitKeys.length === 0 ? "brak wyników" : `${shownHit + 1} z ${hitKeys.length}`}
+                            </span>
+                            <button
+                                type="button"
+                                id="settings-search-prev"
+                                className="settings-dialog__matches-btn"
+                                title="Poprzednia strona z wynikami (Shift+Enter)"
+                                disabled={hitKeys.length === 0}
+                                onClick={() => gotoHit(shownHit - 1)}
+                            >
+                                <ChevronUp size={14} strokeWidth={2.2} />
+                            </button>
+                            <button
+                                type="button"
+                                id="settings-search-next"
+                                className="settings-dialog__matches-btn"
+                                title="Następna strona z wynikami (Enter)"
+                                disabled={hitKeys.length === 0}
+                                onClick={() => gotoHit(shownHit + 1)}
+                            >
+                                <ChevronDown size={14} strokeWidth={2.2} />
+                            </button>
+                        </div>
+                    )}
+                </div>}
+                {!narrow && <nav className="settings-dialog__nav">
                     {GROUPS.map(group => (
                         <div key={group} className="settings-dialog__nav-group">
                             <div className="settings-dialog__nav-group-label" title={groupLabel(group)}>{groupLabel(group)}</div>
-                            {SETTINGS_CATEGORIES.filter(c => c.group === group).map(c => (
-                                <button
-                                    key={c.key}
-                                    type="button"
-                                    className={`settings-dialog__nav-item${!searching && c.key === category ? " settings-dialog__nav-item--active" : ""}`}
-                                    data-settings-category={c.key}
-                                    onClick={() => navigate(c.key)}
-                                >
-                                    <span className="settings-dialog__nav-label">
-                                        <NavIcon category={c.key} />
-                                        <span>{c.label}</span>
-                                    </span>
-                                    {dirty.has(c.key) && <span className="settings-dialog__dirty" title="Niezapisane zmiany" />}
-                                </button>
-                            ))}
+                            {SETTINGS_CATEGORIES.filter(c => c.group === group).map(c => {
+                                const matches = searching ? searchHits?.get(c.key) ?? 0 : 0;
+                                const classes = [
+                                    "settings-dialog__nav-item",
+                                    !searching && c.key === category ? "settings-dialog__nav-item--active" : "",
+                                    // While searching, "active" follows the results, not the page you came from.
+                                    searching && c.key === currentKey ? "settings-dialog__nav-item--active" : "",
+                                    searching && matches === 0 ? "settings-dialog__nav-item--empty" : "",
+                                ].filter(Boolean).join(" ");
+                                return (
+                                    <button
+                                        key={c.key}
+                                        type="button"
+                                        className={classes}
+                                        data-settings-category={c.key}
+                                        data-settings-matches={matches || undefined}
+                                        // A page with results is scrolled to, keeping the query;
+                                        // one without is opened the usual way, which clears it.
+                                        onClick={() => (matches > 0 ? gotoHit(hitKeys.indexOf(c.key)) : navigate(c.key))}
+                                    >
+                                        <span className="settings-dialog__nav-label">
+                                            <NavIcon category={c.key} />
+                                            <span>{c.label}</span>
+                                        </span>
+                                        {matches > 0 && (
+                                            <span className="settings-dialog__nav-count" title={`Pasujące sekcje: ${matches}`}>{matches}</span>
+                                        )}
+                                        {dirty.has(c.key) && <span className="settings-dialog__dirty" title="Niezapisane zmiany" />}
+                                    </button>
+                                );
+                            })}
                         </div>
                     ))}
-                </nav>
-                <select
-                    id="settings-category-select"
-                    className="form-select form-select-sm settings-dialog__select"
-                    value={searching ? "" : category}
-                    onChange={(e) => e.target.value && navigate(e.target.value as SettingsCategoryKey)}
-                >
-                    {searching && <option value="">Wyniki wyszukiwania</option>}
-                    {GROUPS.map(group => (
-                        <optgroup key={group} label={groupLabel(group)}>
-                            {SETTINGS_CATEGORIES.filter(c => c.group === group).map(c => (
-                                <option key={c.key} value={c.key}>{c.label}{dirty.has(c.key) ? " •" : ""}</option>
-                            ))}
-                        </optgroup>
-                    ))}
-                </select>
+                </nav>}
                 <div ref={pagesRef} className="settings-dialog__pages">
                     {SETTINGS_CATEGORIES.map(c => {
-                        const visible = searching ? !!searchHits?.has(c.key) : c.key === category;
+                        const visible = searching ? !!searchHits?.has(c.key) : c.key === category && !(narrow && phoneView === "list");
                         const locked = c.group === "character" && !character.character;
                         const chip = scopeChip(c.group);
                         return (
@@ -350,18 +598,18 @@ function SettingsDialog({ soundManager, onEnableNotifications, initialCategory }
                                 onPointerDownCapture={() => captureBaseline(c.key)}
                                 onKeyDownCapture={() => captureBaseline(c.key)}
                                 onFocusCapture={() => captureBaseline(c.key)}
-                                onChange={checkDirty}
-                                onInput={checkDirty}
+                                onChange={() => onPageChange(c.key)}
+                                onInput={() => onPageChange(c.key)}
                             >
                                 <div className="settings-page__header">
                                     <h5 className="settings-page__title">
                                         {searching && <span className="settings-page__group">{SETTINGS_GROUP_LABELS[c.group]} › </span>}
                                         {c.label}
                                     </h5>
-                                    <span className={`settings-scope-chip settings-scope-chip--${c.group}`} title={chip.title}>{chip.text}</span>
+                                    {chip && <span className={`settings-scope-chip settings-scope-chip--${c.group}`} title={chip.title}>{chip.text}</span>}
                                 </div>
                                 {locked && !searching && (
-                                    <div className="alert alert-info py-2">
+                                    <div className="popup-notice">
                                         Opcje zależne od postaci są zablokowane do momentu jej wybrania.
                                     </div>
                                 )}
@@ -369,7 +617,10 @@ function SettingsDialog({ soundManager, onEnableNotifications, initialCategory }
                                     <div className="settings-page__layout">
                                         {c.group === "character"
                                             ? character.pages[c.key as keyof typeof character.pages]
-                                            : ui.pages[c.key as keyof typeof ui.pages]}
+                                            : c.group === "data"
+                                                // Acts at once, outside Save: never counts as unsaved.
+                                                ? <div className="settings-data-page" data-settings-ignore>{data.pages[c.key as keyof typeof data.pages]}</div>
+                                                : ui.pages[c.key as keyof typeof ui.pages]}
                                     </div>
                                 </fieldset>
                             </div>
@@ -381,6 +632,13 @@ function SettingsDialog({ soundManager, onEnableNotifications, initialCategory }
                         </div>
                     )}
                 </div>
+                {narrow && (
+                    <PhoneSaveBar
+                        count={dirtyCount}
+                        onRevert={revertEdits}
+                        onSave={() => window.dispatchEvent(new Event(SAVE_SETTINGS_EVENT))}
+                    />
+                )}
             </div>
             {ui.extras}
         </div>

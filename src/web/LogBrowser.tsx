@@ -28,6 +28,8 @@ export interface LogBrowserProps {
      * control. The viewer has no chrome of its own to hang one on.
      */
     headerTrailing?: ReactNode;
+    /** Opens with this in the search box ("Szukaj w logach"). */
+    initialQuery?: string;
 }
 
 /** Opens the standalone page on one session, in a tab of its own. */
@@ -39,7 +41,7 @@ function openInNewTab(sessionId: string): void {
     window.open(url.toString(), "_blank");
 }
 
-export function LogBrowser({ headerTrailing }: LogBrowserProps) {
+export function LogBrowser({ headerTrailing, initialQuery }: LogBrowserProps) {
     /**
      * True inside stock's Bootstrap window, false under forge, which hosts the
      * same component in a shell of its own and supplies its own close control.
@@ -76,7 +78,14 @@ export function LogBrowser({ headerTrailing }: LogBrowserProps) {
             // virtualizer for no gain. The session still being written to is
             // marked live all the same — that is what opens it at its end
             // rather than at the top, which is where a player wants to land.
-            const loaded = await loadAllSessions({ liveSessionName: currentSessionName });
+            // The session being recorded opens first; older ones join the
+            // list as they are parsed.
+            const loaded = await loadAllSessions(
+                { liveSessionName: currentSessionName, priority: [currentSessionName] },
+                (partial) => {
+                    if (!cancelled) setSessions(partial);
+                },
+            );
             if (!cancelled) setSessions(loaded);
         })();
         return () => {
@@ -110,6 +119,7 @@ export function LogBrowser({ headerTrailing }: LogBrowserProps) {
                 <LogViewer
                     sessions={sessions}
                     preferences={initialPreferences}
+                    initialQuery={initialQuery}
                     onPreferencesChange={onPreferencesChange}
                     // With no logs at all the viewer has nothing to offer, but
                     // this host does: importing is the one thing that gets a
@@ -139,15 +149,15 @@ export function LogBrowser({ headerTrailing }: LogBrowserProps) {
                                 <Icon name="archive" />
                             </IconButton>
                             {headerTrailing}
-                            {/* Stock's window has no Bootstrap header any more,
-                                so the close control lives here. Bootstrap's own
-                                delegated handler does the closing; under forge,
-                                where there is no `#logs-modal`, the host passes
-                                its own control as `headerTrailing` instead. */}
+                            {/* Stock's window has no header of the shell, so the
+                                close control lives here; the shell closes on any
+                                [data-modal-dismiss] inside it. Under forge, where
+                                there is no `#logs-modal`, the host passes its own
+                                control as `headerTrailing` instead. */}
                             {inStockModal ? (
                                 <IconButton
                                     id="logs-close"
-                                    data-bs-dismiss="modal"
+                                    data-modal-dismiss
                                     title="Zamknij  Esc"
                                 >
                                     <Icon name="close" />

@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { Button, Spinner } from "react-bootstrap";
+import { Button } from "@web-ui/primitives/index.ts";
 import type { CategoryConflictInfo } from "@modules/firebase";
 import { decrypt, isEncryptedData } from "@modules/firebase";
 import { syncEngine } from "@modules/firebase";
@@ -78,42 +78,40 @@ function ConflictDiffView({ conflict }: ConflictDiffViewProps) {
     const truncated = lines ? lines.length - shown.length : 0;
 
     return (
-        <div className="mt-1">
-            <Button
-                variant="link"
+        <div className="conflict-diff">
+            <Button variant="ghost"
                 size="sm"
-                className="p-0 text-decoration-none"
                 onClick={handleToggle}
             >
                 {expanded ? '▾ Ukryj roznice' : '▸ Pokaz roznice'}
                 {summary && (
-                    <span className="text-muted ms-2">
-                        (<span className="text-success">+{summary.added}</span>{' '}
-                        <span className="text-danger">-{summary.removed}</span>)
+                    <span className="popup-muted conflict-diff__summary">
+                        (<span className="popup-text-success">+{summary.added}</span>{' '}
+                        <span className="popup-text-danger">-{summary.removed}</span>)
                     </span>
                 )}
             </Button>
 
             {expanded && (
-                <div className="mt-1">
+                <div className="conflict-diff__body">
                     {loading && (
-                        <div className="d-flex align-items-center gap-2 text-muted small">
-                            <Spinner animation="border" size="sm" />
+                        <div className="popup-inline popup-muted popup-small">
+                            <span className="popup-spinner" />
                             <span>Przygotowywanie porownania...</span>
                         </div>
                     )}
-                    {error && <div className="text-warning small">{error}</div>}
+                    {error && <div className="popup-text-warning popup-small">{error}</div>}
                     {!loading && !error && lines && lines.length === 0 && (
-                        <div className="text-muted small">Brak roznic do wyswietlenia.</div>
+                        <div className="popup-muted popup-small">Brak roznic do wyswietlenia.</div>
                     )}
                     {!loading && !error && lines && lines.length > 0 && (
                         <>
-                            <div className="text-muted small mb-1">
-                                <span className="text-danger">−</span> lokalne,{' '}
-                                <span className="text-success">+</span> z chmury
+                            <div className="popup-muted popup-small conflict-diff__legend">
+                                <span className="popup-text-danger">−</span> lokalne,{' '}
+                                <span className="popup-text-success">+</span> z chmury
                             </div>
                             <pre
-                                className="small mb-0 p-2 rounded"
+                                className="conflict-diff__lines"
                                 style={{
                                     maxHeight: '260px',
                                     overflow: 'auto',
@@ -139,7 +137,7 @@ function ConflictDiffView({ conflict }: ConflictDiffViewProps) {
                                     </div>
                                 ))}
                                 {truncated > 0 && (
-                                    <div className="text-muted">
+                                    <div className="popup-muted">
                                         ... ({truncated} wierszy wiecej — skrocono)
                                     </div>
                                 )}

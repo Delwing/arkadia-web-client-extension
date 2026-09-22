@@ -530,7 +530,10 @@ export default function MobileDirectionButtons({ client, messageInputId = 'messa
         const messageInput = document.getElementById(messageInputId) as HTMLInputElement | HTMLTextAreaElement | null;
         const handleFocusIn = () => {
             scrollToBottom();
-            setTimeout(() => messageInput?.select());
+            // select() focuses too: leave focus alone if it has moved on meanwhile.
+            setTimeout(() => {
+                if (messageInput && document.activeElement === messageInput) messageInput.select();
+            });
             setTimeout(() => scrollToBottom(), 300);
         };
         const handleInput = () => scrollToBottom();

@@ -28,6 +28,20 @@ export interface FooterComponentConfig {
     order: number;
 }
 
+/** A button the player put next to the command line (see footerButtonRegistry). */
+export interface FooterButtonConfig {
+    id: string;
+    label: string;
+    /** Sent on click: a command, an alias, anything the command line accepts. */
+    command: string;
+    tone?: 'neutral' | 'accent' | 'danger';
+    /** Flag this button lights up from, flipped by a trigger, script or plugin. */
+    state?: string;
+    /** Kept in the settings list but left out of the footer. */
+    hidden?: boolean;
+    order?: number;
+}
+
 // UiSettings is decomposed into concern-scoped slices so each can be owned,
 // stored, and synced independently (see the settings accessors in
 // @modules/core/settings and the decomposition plan). `UiSettings` remains the
@@ -135,10 +149,14 @@ export interface ChromeSettings extends DeviceViewSettings {
     showButtons: boolean;
     /** Mic button in the command bar. Off leaves the bar without dictation. */
     showVoiceButton: boolean;
+    /** Dimmed hint after the caret of what Tab would complete. */
+    tabCompletionHint: boolean;
     mapHeight: number;
     mapPosition: MapPosition;
     footerMode: number;
     footerComponents: FooterComponentConfig[];
+    /** The player's own buttons beside the command line; empty out of the box. */
+    footerButtons: FooterButtonConfig[];
     /**
      * The phone footer: two fixed-height scrolling rails plus compact stat
      * meters, instead of the desktop footer's one wrapping row. On by default;
@@ -165,6 +183,19 @@ export interface ChromeSettings extends DeviceViewSettings {
     objectListBackgroundAlpha: number;
     alwaysVisibleBars: string[];
     barOrder: string[];
+    /**
+     * Speech synthesis for `speak` trigger macros (and `tts:speak` from plugins).
+     * Device-scoped on purpose: the installed voices differ per device, so a
+     * voice picked on the desktop means nothing on the phone.
+     */
+    ttsEnabled: boolean;
+    /** `voiceURI` of the chosen voice; empty picks a Polish voice, else the browser default. */
+    ttsVoice: string;
+    ttsRate: number;
+    ttsPitch: number;
+    ttsVolume: number;
+    /** A new message cuts off the one being read instead of queueing after it. */
+    ttsInterrupt: boolean;
 }
 
 export type UiSettings = ShellSettings & RenderSettings & MapSettings & BehaviorSettings & ChromeSettings;

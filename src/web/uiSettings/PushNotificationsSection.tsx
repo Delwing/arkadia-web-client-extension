@@ -9,6 +9,7 @@ import {
     type PairingOffer,
 } from "@modules/push/pushClient";
 import { clearPushCredentials, loadPushCredentials } from "@modules/push/pushCredentials";
+import { Button } from "@web-ui/primitives/index.ts";
 import type { UiSettings } from "../uiSettingsCore";
 import { CheckboxRow } from "./fields";
 
@@ -133,23 +134,23 @@ function PushNotificationsSection({ draft, update }: PushNotificationsSectionPro
 
     if (!supported) {
         return (
-            <div className="small text-secondary">
+            <p className="popup-field__hint">
                 Ta przeglądarka nie obsługuje powiadomień push. Na iPhone dodaj najpierw stronę
                 do ekranu głównego (Udostępnij → Do ekranu początkowego) i otwórz ją z tej ikony
                 — Safari udostępnia powiadomienia tylko zainstalowanej aplikacji.
-            </div>
+            </p>
         );
     }
 
     return (
-        <div className="d-flex flex-column gap-2">
-            <div className="small text-secondary">
+        <div className="ui-settings-stack">
+            <p className="popup-field__hint">
                 Nic nie jest wysyłane samo z siebie. Żeby dostać alert na telefon, dodaj makro
                 „Powiadomienie na telefon" do triggera lub zdarzenia (Triggery → zdarzenia takie
                 jak Niskie zycie, Pelne zycie czy Atak wroga). Wysyłka działa niezależnie od
                 tego, czy karta klienta jest aktywna, i jest ograniczona do jednego alertu na
                 minutę — chyba że w makrze zaznaczysz „Wysylaj zawsze".
-            </div>
+            </p>
 
             <CheckboxRow
                 id="push-only-when-hidden"
@@ -159,78 +160,46 @@ function PushNotificationsSection({ draft, update }: PushNotificationsSectionPro
             />
 
             {status && (
-                <div className={`small ${status.kind === "ok" ? "text-success" : "text-danger"}`}>
+                <div className={status.kind === "ok" ? "popup-field__success" : "popup-field__error"}>
                     {status.text}
                 </div>
             )}
 
-            <div className="d-flex gap-2 flex-wrap align-self-start">
+            <div className="popup-inline settings-wrap">
                 {enabled ? (
-                    <button
-                        type="button"
-                        className="btn btn-secondary btn-sm"
-                        id="push-disable"
-                        disabled={busy}
-                        onClick={handleDisable}
-                    >
+                    <Button size="sm" id="push-disable" disabled={busy} onClick={handleDisable}>
                         Wyłącz na tym urządzeniu
-                    </button>
+                    </Button>
                 ) : (
-                    <button
-                        type="button"
-                        className="btn btn-primary btn-sm"
-                        id="push-enable"
-                        disabled={busy}
-                        onClick={handleEnable}
-                    >
+                    <Button size="sm" variant="solid" id="push-enable" disabled={busy} onClick={handleEnable}>
                         Odbieraj na tym urządzeniu
-                    </button>
+                    </Button>
                 )}
-                <button
-                    type="button"
-                    className="btn btn-secondary btn-sm"
-                    id="push-pair"
-                    disabled={busy}
-                    onClick={handlePair}
-                >
+                <Button size="sm" id="push-pair" disabled={busy} onClick={handlePair}>
                     Sparuj telefon (kod QR)
-                </button>
+                </Button>
                 {hasAccount && (
-                    <button
-                        type="button"
-                        className="btn btn-secondary btn-sm"
-                        id="push-test"
-                        disabled={busy}
-                        onClick={handleTest}
-                    >
+                    <Button size="sm" id="push-test" disabled={busy} onClick={handleTest}>
                         Wyślij test
-                    </button>
+                    </Button>
                 )}
             </div>
 
             {pairing && (
-                <div className="d-flex flex-column align-items-start gap-1 mt-1">
+                <div className="settings-push-pairing">
                     {qrSvg && (
-                        <div
-                            style={{ width: 200, background: "#fff", padding: 10, borderRadius: 4 }}
-                            dangerouslySetInnerHTML={{ __html: qrSvg }}
-                        />
+                        <div className="settings-push-qr" dangerouslySetInnerHTML={{ __html: qrSvg }} />
                     )}
-                    <div className="small text-secondary">
+                    <p className="popup-field__hint">
                         Zeskanuj telefonem. Kod <code>{pairing.code}</code> jest jednorazowy i
                         wygasa po {Math.round(pairing.expiresInSeconds / 60)} min — zdjęcie kodu
                         nie daje trwałego dostępu.
-                    </div>
+                    </p>
                 </div>
             )}
 
             {hasAccount && (
-                <button
-                    type="button"
-                    className="btn btn-link btn-sm align-self-start p-0"
-                    id="push-forget"
-                    onClick={handleForget}
-                >
+                <button type="button" className="popup-link ui-settings-self-start" id="push-forget" onClick={handleForget}>
                     Odłącz to urządzenie od konta powiadomień
                 </button>
             )}

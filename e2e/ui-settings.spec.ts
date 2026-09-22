@@ -121,20 +121,20 @@ test.describe('UI settings', () => {
             const content = document.getElementById('main_text_output_msg_wrapper')!;
             const objects = document.getElementById('objects-list')!;
             const charState = document.getElementById('char-state')!;
-            const combatTimer = document.getElementById('combat-timer')!;
-            const transportTimer = document.getElementById('transport-timer')!;
             const splitBottom = document.getElementById('split-bottom')!;
             const contentArea = document.getElementById('content-area')!;
             return {
                 contentFontSize: getComputedStyle(content).fontSize,
                 objectsFontSize: getComputedStyle(objects).fontSize,
-                objectsFontFamily: objects.style.fontFamily,
+                // Computed, not inline: the inline value routes through
+                // var(--window-font-family, …) so a per-window override can win.
+                objectsFontFamily: getComputedStyle(objects).fontFamily,
                 contentBackground: getComputedStyle(content).backgroundColor,
                 splitBackground: getComputedStyle(splitBottom).backgroundColor,
-                charStateFontSize: getComputedStyle(charState).fontSize,
                 footerMode: charState.getAttribute('data-footer-mode'),
-                combatTimerFooterHidden: combatTimer.dataset.footerHidden,
-                transportTimerFooterHidden: transportTimer.dataset.footerHidden,
+                // A footer item switched off is left out of the status line entirely.
+                combatTimerShown: document.getElementById('combat-timer') !== null,
+                transportTimerShown: document.getElementById('transport-timer') !== null,
                 bodyMapPosition: document.body.dataset.mapPosition,
                 contentMapPosition: contentArea.getAttribute('data-map-position'),
                 mapSize: contentArea.style.getPropertyValue('--map-size'),
@@ -142,14 +142,13 @@ test.describe('UI settings', () => {
         });
 
         expect(styles.contentFontSize, 'should apply content font size multiplier').toBe('24px');
-        expect(styles.charStateFontSize, 'should apply footer font size multiplier').toBe('24px');
         expect(styles.objectsFontSize, 'should apply objects font size multiplier').toBe('20px');
         expect(styles.objectsFontFamily, 'should apply configured font family').toBe('"Cascadia Mono", monospace');
         expect(styles.contentBackground, 'should apply configured output background color').toBe('rgb(18, 52, 86)');
         expect(styles.splitBackground, 'should sync split background with output background').toBe('rgb(18, 52, 86)');
         expect(styles.footerMode, 'should persist selected footer mode').toBe('2');
-        expect(styles.combatTimerFooterHidden, 'should mark combat timer as hidden via footer component').toBe('1');
-        expect(styles.transportTimerFooterHidden, 'should mark transport timer as hidden via footer component').toBe('1');
+        expect(styles.combatTimerShown, 'should leave the hidden combat timer out of the footer').toBe(false);
+        expect(styles.transportTimerShown, 'should leave the hidden transport timer out of the footer').toBe(false);
         expect(styles.bodyMapPosition, 'should update body map position data attribute').toBe('bottom');
         expect(styles.contentMapPosition, 'should update content map position attribute').toBe('bottom');
         expect(styles.mapSize, 'should apply configured map height').toBe('40vh');
@@ -320,8 +319,69 @@ test.describe('UI settings', () => {
         ).not.toBeChecked();
     });
 
-    // The sound manager is a sub-dialog opened from inside the Bootstrap-driven
-    // #settings-modal. Rendering it as a portaled react-bootstrap <Modal> made
+    // Picking between the Arkadia and XTerm palettes used to be blind: two names
+    // in a select, and nothing showing what either one looks like.
+    test('the colour palette can be previewed before it is picked', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+
+        const modal = await openUiSettings(page, 'ui-appearance');
+        await modal.locator('#ui-xterm-palette-preview').click();
+
+        const grid = modal.locator('#ui-palette-preview-grid');
+        await expect(grid).toBeVisible();
+        await expect(grid.locator('.palette-preview__cell'), 'the whole palette').toHaveCount(256);
+        // Arkadia is the default and numbers its colours one higher than xterm does.
+        await expect(grid.locator('.palette-preview__cell').first()).toContainText('1');
+
+        // Both palettes are there to compare: the same code, a different colour.
+        const swatch21 = grid.locator('.palette-preview__cell[data-code="21"] .palette-preview__swatch');
+        const arkadia = await swatch21.evaluate(el => getComputedStyle(el).backgroundColor);
+        await modal.locator('#ui-palette-preview-proper').click();
+        await expect(grid.locator('.palette-preview__cell').first(), 'XTerm starts at 0').toContainText('0');
+        const proper = await swatch21.evaluate(el => getComputedStyle(el).backgroundColor);
+        expect(proper, 'code 21 is a different colour in each palette').not.toBe(arkadia);
+
+        await modal.locator('.popup-dialog__close').click();
+        await expect(grid).toHaveCount(0);
+    });
+
+    // "Wlasny dzwiek beep" quietly took the place of "Domyslny beep" everywhere,
+    // with nothing on screen saying so.
+    test('the custom beep says it replaces the default, and can be put back', async ({page}) => {
+        await page.addInitScript(() => {
+            localStorage.setItem('custom_sounds', JSON.stringify([
+                {key: 'user:dzwonek', name: 'Dzwonek', data: 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAABErAAABAAgAZGF0YQAAAAA='},
+            ]));
+        });
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+
+        const modal = await openUiSettings(page, 'ui-sound');
+        const beep = modal.locator('#ui-custom-beep-sound');
+        const attackCategory = modal.locator('#ui-sound-category-attack');
+        const reset = modal.locator('#ui-reset-beep-sound');
+
+        await expect(modal.locator('.popup-field__hint', {hasText: 'Zastępuje domyślny beep'}),
+            'the field says what it does').toBeVisible();
+        await expect(attackCategory.locator('option[value=""]')).toHaveText('Domyślny beep');
+        await expect(reset, 'nothing to put back while the default is in place').toHaveCount(0);
+
+        await beep.selectOption('user:dzwonek');
+        await expect(attackCategory.locator('option[value=""]'),
+            'the categories name what "Domyslny beep" now plays').toHaveText('Domyślny beep (Dzwonek)');
+        await expect(reset).toBeVisible();
+
+        await reset.click();
+        await expect(beep).toHaveValue('');
+        await expect(attackCategory.locator('option[value=""]')).toHaveText('Domyślny beep');
+        await expect(reset).toHaveCount(0);
+    });
+
+    // The sound manager is a sub-dialog opened from inside the
+    // #settings-modal window. Rendering it as a portaled react-bootstrap <Modal> made
     // Bootstrap's FocusTrap and react-overlays' enforceFocus bounce focus between
     // the two dialogs thousands of times a second, which pegged the CPU until the
     // page stopped responding. It also swallowed Escape into the host window and
@@ -343,7 +403,7 @@ test.describe('UI settings', () => {
         const modal = await openUiSettings(page, 'ui-sound');
         await modal.locator('#ui-manage-sounds-button').click();
 
-        const soundManager = modal.locator('.modal.show', {hasText: 'Zarządzaj dźwiękami'});
+        const soundManager = modal.locator('.popup-dialog', {hasText: 'Zarządzaj dźwiękami'});
         await expect(soundManager, 'sound manager should open').toBeVisible();
 
         await soundManager.getByRole('button', {name: '▶'}).first().click();
@@ -354,7 +414,7 @@ test.describe('UI settings', () => {
         expect(focusChurn, 'focus must not bounce between the two dialogs').toBeLessThan(50);
 
         // The settings window underneath stays usable
-        await soundManager.locator('.btn-close').click();
+        await soundManager.locator('.popup-dialog__close').click();
         await expect(soundManager, 'sound manager should close').toBeHidden();
         await selectPage(modal, 'ui-map');
         await expect(modal.locator('#ui-map-render-scale-container, [id^="ui-map"]').first()).toBeVisible();
@@ -371,7 +431,7 @@ test.describe('UI settings', () => {
         // swallows every click.
         await modal.locator(SETTINGS_SAVE).click();
         await expect(modal, 'settings window should close').not.toBeVisible();
-        await expect(page.locator('.modal-backdrop'), 'no stray backdrop').toHaveCount(0);
+        await expect(page.locator('.app-modal:not([hidden])'), 'no stray window left open').toHaveCount(0);
         await page.click(MENU_BUTTON);
         await expect(
             page.locator(UI_SETTINGS_BUTTON),

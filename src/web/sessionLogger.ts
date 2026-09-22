@@ -47,16 +47,33 @@ async function openOrCreateStore(storeName: string): Promise<IDBDatabase> {
 }
 
 /** False when the connection was closed under us (released for an upgrade), so the caller reopens and retries. */
-async function save(db: IDBDatabase, text: string, type?: string, timestamp?: number, character?: string): Promise<boolean> {
+/** Stamps a record carries only where they change; see `write`. */
+interface RecordMarks {
+  character?: string;
+  background?: string;
+}
+
+/**
+ * The main output window's background, as the player has it set. Recorded
+ * with the log so Logi can show it on the ground it was read on.
+ */
+function currentOutputBackground(): string | undefined {
+  if (typeof document === 'undefined' || !document.body) return undefined;
+  return document.body.style.getPropertyValue('--output-bg').trim() || undefined;
+}
+
+async function save(db: IDBDatabase, text: string, type?: string, timestamp?: number, marks: RecordMarks = {}): Promise<boolean> {
   try {
     const tx = db.transaction(storeName, 'readwrite');
     await new Promise<void>((resolve, reject) => {
       // Event time, not arrival: a stored log is a record of the game.
-      const record: { text: string; type?: string; timestamp: number; character?: string } =
+      const record: { text: string; type?: string; timestamp: number } & RecordMarks =
         { text, type, timestamp: timestamp ?? eventNow() };
-      // Present only on the record that starts a character's stretch of the
-      // log, so the shape every other reader of the store knows is unchanged.
-      if (character) record.character = character;
+      // Present only on the record that starts a character's (or a
+      // background's) stretch of the log, so the shape every other reader of
+      // the store knows is unchanged.
+      if (marks.character) record.character = marks.character;
+      if (marks.background) record.background = marks.background;
       const req = tx.objectStore(storeName).add(record);
       req.onsuccess = () => resolve();
       req.onerror = () => reject(req.error);
@@ -89,6 +106,8 @@ export default async function initSessionLogger(client: SessionClient) {
    * always saw.
    */
   let pendingCharacter: string | undefined;
+  /** The output background the log last recorded; a change stamps the next record. */
+  let recordedBackground: string | undefined;
   let opening: Promise<IDBDatabase | null> | null = null;
   let closeTimeout: number | null = null;
 
@@ -134,11 +153,14 @@ export default async function initSessionLogger(client: SessionClient) {
     // whichever of them happened to resume first.
     const character = pendingCharacter;
     pendingCharacter = undefined;
+    const current = currentOutputBackground();
+    const background = current !== recordedBackground ? current : undefined;
+    if (background) recordedBackground = background;
     // A second attempt covers the connection being released for another
     // tab's upgrade between opening it and writing.
     for (let attempt = 0; attempt < 2; attempt++) {
       const currentDb = await ensureDb();
-      if (currentDb && (await save(currentDb, text, type, timestamp, character))) {
+      if (currentDb && (await save(currentDb, text, type, timestamp, { character, background }))) {
         scheduleClose();
         return;
       }
@@ -147,6 +169,7 @@ export default async function initSessionLogger(client: SessionClient) {
     // Nothing was stored, so the switch has not been recorded yet; hand the
     // name back, unless a newer one has taken its place in the meantime.
     if (character && !pendingCharacter) pendingCharacter = character;
+    if (background && recordedBackground === background) recordedBackground = undefined;
   }
 
   function scheduleClose() {

@@ -1,5 +1,6 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useRef } from 'react';
 import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
+import type { WindowSettingField } from './layout/windowSettings';
 import { usePopup } from './hooks/usePopup';
 import { usePopupSetting } from './hooks/usePopupSetting';
 import { usePopupData } from './hooks/usePopupData';
@@ -16,122 +17,19 @@ const SPLIT_VIEW_LIMIT = 500;
 const SPLIT_VIEW_LINES = 40;
 const DEFAULT_SPLIT_HEIGHT = 120;
 
-interface ChatHeaderMenuProps {
-    noWrap: boolean;
-    setNoWrap: (value: boolean) => void;
-    showTimestamp: boolean;
-    setShowTimestamp: (value: boolean) => void;
-}
-
-const ChatHeaderMenu: React.FC<ChatHeaderMenuProps> = ({
-    noWrap,
-    setNoWrap,
-    showTimestamp,
-    setShowTimestamp,
-}) => {
-    const [isOpen, setIsOpen] = useState(false);
-    const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties | null>(null);
-    const menuRef = useRef<HTMLDivElement>(null);
-    const toggleRef = useRef<HTMLButtonElement>(null);
-
-    const calculateDropdownPosition = useCallback(() => {
-        if (toggleRef.current) {
-            const win = toggleRef.current.ownerDocument.defaultView ?? window;
-            const rect = toggleRef.current.getBoundingClientRect();
-            const availableSpace = win.innerHeight - rect.bottom - 16;
-            const maxHeight = Math.max(100, Math.min(360, availableSpace));
-            setDropdownStyle({
-                position: 'fixed',
-                top: rect.bottom + 4,
-                right: win.innerWidth - rect.right,
-                maxHeight,
-            });
-        }
-    }, []);
-
-    const toggleMenu = useCallback(() => {
-        setIsOpen(prev => {
-            if (!prev) calculateDropdownPosition();
-            return !prev;
-        });
-    }, [calculateDropdownPosition]);
-
-    const closeMenu = useCallback(() => { setIsOpen(false); }, []);
-
-    useEffect(() => {
-        if (!isOpen) return;
-
-        const handleClickOutside = (event: PointerEvent) => {
-            if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-                closeMenu();
-            }
-        };
-
-        const handleEscape = (event: KeyboardEvent) => {
-            if (event.key === 'Escape') closeMenu();
-        };
-
-        window.addEventListener('pointerdown', handleClickOutside);
-        window.addEventListener('keydown', handleEscape);
-
-        return () => {
-            window.removeEventListener('pointerdown', handleClickOutside);
-            window.removeEventListener('keydown', handleEscape);
-        };
-    }, [isOpen, closeMenu]);
-
-    const handleToggleWrap = useCallback(() => {
-        setNoWrap(!noWrap);
-        closeMenu();
-    }, [noWrap, setNoWrap, closeMenu]);
-
-    const handleToggleTimestamp = useCallback(() => {
-        setShowTimestamp(!showTimestamp);
-        closeMenu();
-    }, [showTimestamp, setShowTimestamp, closeMenu]);
-
-    return (
-        <div ref={menuRef} className="map-header-menu">
-            <button
-                ref={toggleRef}
-                type="button"
-                className="map-header-menu__toggle"
-                onClick={toggleMenu}
-                title="Ustawienia czatu"
-            >
-                <span className="map-header-menu__hamburger" />
-            </button>
-            {isOpen && (
-                <div className="map-header-menu__dropdown" style={dropdownStyle ?? undefined}>
-                    <button
-                        type="button"
-                        className="map-header-menu__item map-header-menu__item--checkbox"
-                        onClick={handleToggleWrap}
-                    >
-                        <span className={`map-header-menu__checkbox${!noWrap ? ' map-header-menu__checkbox--checked' : ''}`} />
-                        Zawijaj
-                    </button>
-                    <button
-                        type="button"
-                        className="map-header-menu__item map-header-menu__item--checkbox"
-                        onClick={handleToggleTimestamp}
-                    >
-                        <span className={`map-header-menu__checkbox${showTimestamp ? ' map-header-menu__checkbox--checked' : ''}`} />
-                        Znacznik czasu
-                    </button>
-                </div>
-            )}
-        </div>
-    );
-};
+/** Chat options in the window settings cog (the team filter stays in the header). */
+const CHAT_SETTINGS_FIELDS: WindowSettingField[] = [
+    { type: 'toggle', key: 'noWrap', label: 'Zawijaj wiersze', default: false, inverted: true },
+    { type: 'toggle', key: 'showTimestamp', label: 'Znacznik czasu', default: true },
+];
 
 const ChatPopup: React.FC = () => {
     const { wrapperProps, isOpen } = usePopup(POPUP_ID, {
         openEvent: 'chat.popup.open',
     });
     const [showTeamOnly, setShowTeamOnly] = usePopupSetting(POPUP_ID, 'showTeamOnly', false);
-    const [noWrap, setNoWrap] = usePopupSetting(POPUP_ID, 'noWrap', false);
-    const [showTimestamp, setShowTimestamp] = usePopupSetting(POPUP_ID, 'showTimestamp', true);
+    const [noWrap] = usePopupSetting(POPUP_ID, 'noWrap', false);
+    const [showTimestamp] = usePopupSetting(POPUP_ID, 'showTimestamp', true);
 
     // Read by the (memoized) update transform, which must not re-subscribe
     // whenever the split view opens or closes.
@@ -180,24 +78,16 @@ const ChatPopup: React.FC = () => {
         </div>
     );
 
-    // Toggle buttons in header
+    // Team filter in header; wrapping and timestamps live in the settings cog.
     const headerActions = (
-        <>
-            <button
-                type="button"
-                className={`chat-popup__team-toggle${showTeamOnly ? ' chat-popup__team-toggle--active' : ''}`}
-                onClick={() => setShowTeamOnly(!showTeamOnly)}
-                title={showTeamOnly ? 'Pokaz wszystkie wiadomosci' : 'Pokaz tylko wiadomosci druzyny'}
-            >
-                Druzyna
-            </button>
-            <ChatHeaderMenu
-                noWrap={noWrap}
-                setNoWrap={setNoWrap}
-                showTimestamp={showTimestamp}
-                setShowTimestamp={setShowTimestamp}
-            />
-        </>
+        <button
+            type="button"
+            className={`chat-popup__team-toggle${showTeamOnly ? ' chat-popup__team-toggle--active' : ''}`}
+            onClick={() => setShowTeamOnly(!showTeamOnly)}
+            title={showTeamOnly ? 'Pokaz wszystkie wiadomosci' : 'Pokaz tylko wiadomosci druzyny'}
+        >
+            Druzyna
+        </button>
     );
 
     return (
@@ -210,8 +100,9 @@ const ChatPopup: React.FC = () => {
             initialWidth={600}
             initialHeight={350}
             className="chat-popup"
-            bodyClassName="chat-popup-body"
+            bodyClassName="popup-body"
             headerActions={headerActions}
+            settingsFields={CHAT_SETTINGS_FIELDS}
         >
             <div
                 className={`chat-popup__messages${noWrap ? ' chat-popup__messages--no-wrap' : ''}`}

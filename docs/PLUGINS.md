@@ -11,6 +11,7 @@ Klient Arkadia Web wspiera zewnętrzne pluginy jako moduły ES. Pluginy mogą ro
 - [Dokumentacja API](#dokumentacja-api)
   - [Własne Makra Przycisków](#apibuttonmacros---własne-makra-przycisków)
   - [Własne Makra Triggerów](#apitriggermacros---własne-makra-triggerów)
+- [Wygląd Interfejsu (UI)](#wygląd-interfejsu-ui)
 - [Ładowanie Pluginów](#ładowanie-pluginów)
 - [Typy TypeScript](#typy-typescript)
 - [Kompatybilność Wsteczna](#kompatybilność-wsteczna)
@@ -458,6 +459,8 @@ api.events.emit(eventName, payload);
 - `gmcp` - Wiadomość GMCP
 - `gmcp.{path}` - Konkretna ścieżka GMCP (np. `gmcp.char.vitals`)
 - `sound:play` - Odtwórz dźwięk: `{ key: "beep" }`
+- `tts:speak` - Przeczytaj tekst na głos (głos i tempo z ustawień gracza, milknie po „Wycisz dźwięki”): `{ text: "..." }`
+- `tts:stop` - Przerwij czytanie i wyczyść kolejkę
 - `sendCommand` - Wyślij komendę: `{ command: "...", echo?: boolean }`
 - `notify` - Wyświetl powiadomienie: `{ text: "...", time?: number }`
 
@@ -1077,6 +1080,165 @@ const BLUE_COLOR = api.colors.fromHex('#0000ff');
 const YELLOW_COLOR = api.colors.fromHex('#ffff00');
 const ORANGE_COLOR = api.colors.fromHex('#ffa500');
 ```
+
+## Wygląd Interfejsu (UI)
+
+Okna, stopka i menu pluginu powinny wyglądać jak reszta klienta: te same kolory, czcionka, kontrolki i odstępy. Klient ma kilka motywów (w tym jasny), więc wygląd opieraj na zmiennych CSS i gotowych klasach, a nie na własnych kolorach.
+
+### Zasady w skrócie
+
+1. **Kolory tylko ze zmiennych** `var(--popup-…)`. Żadnego `#fff`, `white` ani `rgba(0,0,0,…)` na tłach i tekście — na jasnym motywie znikną.
+2. **Kontrolki z gotowych klas** (`popup-btn`, `popup-input`, `popup-check`, `dialog-tabs`…). Nie stylizuj przycisków od zera.
+3. **Nie używaj Bootstrapa.** Klasy `btn`, `form-control`, `d-flex`, `text-muted` itp. nie są już ostylowane (Bootstrap został usunięty z klienta).
+4. **Nie ustawiaj czcionki interfejsu.** Dziedzicz ją (`font: inherit` na własnych przyciskach). Tekst z gry i liczby w stylu gry: `var(--output-font-family)`.
+5. **Nie ustawiaj `line-height` na jednolinijkowych elementach** o stałej wysokości (przyciski, chipy, zakładki). Domyślne `normal` centruje tekst co do piksela; np. `line-height: 14px` przesuwa go w górę lub w dół.
+6. **Własne odstępy w oknie.** Treść okna nie dostaje paddingu od klienta — dodaj np. `padding: 10px 12px` na swoim korzeniu.
+7. **Etykiety po polsku, z ogonkami.** (Komendy wysyłane do gry — bez ogonków.)
+8. **Sprzątaj w `destroy()`**: `close()` okien, `remove()` wpisów menu, komponentów i przycisków stopki.
+
+### Kolory
+
+| Zmienna | Do czego |
+|---|---|
+| `--popup-bg` | tło okna |
+| `--popup-section-bg` | tło sekcji/karty w oknie |
+| `--popup-control-bg`, `--popup-control-hover-bg` | tło kontrolek, hover |
+| `--popup-input-bg`, `--popup-input-text` | pola tekstowe |
+| `--popup-text` | zwykły tekst |
+| `--popup-text-subtle`, `--popup-text-medium` | tekst drugorzędny, etykiety |
+| `--popup-text-dim`, `--popup-text-faint` | podpowiedzi, puste stany |
+| `--popup-border-subtle`, `--popup-border`, `--popup-border-strong` | obramowania, od najsłabszego |
+| `--popup-accent`, `--popup-accent-subtle-bg` | akcent (aktywne, główna akcja) i jego delikatne tło |
+| `--popup-success`, `--popup-warning`, `--popup-danger` | stany; każdy ma też wersje `-bg` i `-border` |
+| `--popup-data-gold`, `-green`, `-orange`, `-purple`, `-blue`, `-tomato`… | kolory danych (łupy, magia, nazwy) dopasowane do motywu |
+
+Kolory tekstu gry (`api.colors.fromHex` w triggerach) to osobna sprawa — tam hex jest w porządku.
+
+### Typografia i rozmiary
+
+| Zmienna | Wartość (desktop) | Do czego |
+|---|---|---|
+| `--ui-fs` | 14px | tekst okna, przyciski |
+| `--ui-fs-sm` | 13px | etykiety, małe przyciski, zakładki |
+| `--ui-fs-xs` | 12px | podpowiedzi, znaczniki |
+| `--ui-ctrl`, `--ui-ctrl-sm` | 32px, 28px | wysokość kontrolek |
+| `--ui-radius-sm`, `--ui-radius`, `--ui-radius-lg` | 4, 6, 10px | zaokrąglenia |
+| `--output-font-family` | czcionka gry | tekst z gry, wartości liczbowe |
+
+Na telefonach klient podnosi te wartości (większe kontrolki pod palec) — używając zmiennych, dostajesz to za darmo.
+
+### Gotowe klasy
+
+**Przyciski** — zawsze `popup-btn popup-btn--control`, plus wariant:
+
+```html
+<button class="popup-btn popup-btn--control popup-btn--solid">Zapisz</button>   <!-- główna akcja, jedna na widok -->
+<button class="popup-btn popup-btn--control">Odśwież</button>                    <!-- zwykła -->
+<button class="popup-btn popup-btn--control popup-btn--ghost">Wyczyść</button>   <!-- cicha -->
+<button class="popup-btn popup-btn--control popup-btn--danger popup-btn--ghost">Usuń</button>
+<button class="popup-btn popup-btn--control popup-btn--sm">Mały</button>
+<button class="popup-btn popup-btn--control popup-btn--sm popup-btn--icon" title="Usuń">×</button> <!-- kwadratowy, sama ikona -->
+```
+
+**Pola formularza:**
+
+```html
+<div class="popup-field">
+  <label class="popup-field__label" for="cel">Cel</label>
+  <input id="cel" class="popup-input popup-input--control" placeholder="np. ork">
+  <div class="popup-field__hint">Pierwszy cel ataku.</div>
+</div>
+
+<select class="popup-input popup-input--control">…</select>
+<textarea class="popup-input popup-input--control"></textarea>
+
+<label class="popup-check"><input type="checkbox"> Pokaż w stopce</label>
+```
+
+**Zakładki** — aktywna ma `is-active`:
+
+```html
+<div class="dialog-tabs">
+  <button class="dialog-tab is-active">Wszystko</button>
+  <button class="dialog-tab">Walka</button>
+</div>
+```
+
+**Układ i treść:**
+
+| Klasa | Co robi |
+|---|---|
+| `popup-stack` | kolumna z odstępem 14px (sekcje okna) |
+| `popup-inline` | wiersz wyśrodkowany w pionie, odstęp 8px |
+| `popup-row` | jak wyżej, ale się zawija |
+| `popup-spread` | wiersz z lewą i prawą stroną na krańcach |
+| `popup-section` | karta z tłem i obramowaniem |
+| `popup-notice` (+ `--success`, `--warning`, `--danger`) | ramka z komunikatem |
+| `popup-chip` (+ `--accent`, `--success`, `--warning`) | mały znacznik |
+| `popup-table` | tabela |
+| `popup-empty` | pusty stan („Brak wpisów”) |
+| `popup-muted`, `popup-small` | przygaszony / mniejszy tekst |
+
+### Okna (`registerPersistentPopup`)
+
+- Stały `id` — dzięki niemu okno wraca po przeładowaniu, jeśli było przypięte.
+- Nie otwieraj okna w `init()`. Gracz otwiera je sam (wpis w menu ⋮), a przypięte wraca po przeładowaniu bez Twojej pomocy.
+- Treść buduj przez DOM (`document.createElement`) albo HTML-em; dodaj własny padding.
+- Korzeń treści może wypełnić okno: `height: 100%` (np. z `display: flex; flex-direction: column`, a przewijana lista w środku `flex: 1; min-height: 0; overflow-y: auto`).
+- Przyciski w nagłówku (`headerActions`): małe i ciche — `popup-btn popup-btn--control popup-btn--sm popup-btn--ghost`.
+- Otwieranie z menu ⋮: `api.ui.addPopupMenuEntry('Nazwa okna', () => popup.isOpen ? popup.close() : popup.open())`.
+
+```typescript
+function view(): HTMLElement {
+  const root = document.createElement('div');
+  root.className = 'popup-stack';
+  root.style.height = '100%';        // okno wypełnione, lista przewija się w środku
+  root.style.boxSizing = 'border-box';
+  root.style.padding = '10px 12px';
+
+  const bar = document.createElement('div');
+  bar.className = 'popup-spread';
+  const title = document.createElement('span');
+  title.className = 'popup-muted';
+  title.textContent = 'Ostatnie łupy';
+  const clear = document.createElement('button');
+  clear.className = 'popup-btn popup-btn--control popup-btn--sm popup-btn--ghost';
+  clear.textContent = 'Wyczyść';
+  bar.append(title, clear);
+
+  const list = document.createElement('div');
+  list.style.flex = '1';
+  list.style.minHeight = '0';
+  list.style.overflowY = 'auto';
+  list.innerHTML = '<div class="popup-empty">Brak łupów.</div>';
+
+  root.append(bar, list);
+  return root;
+}
+
+const popup = await api.ui.registerPersistentPopup({ id: 'lupy', title: 'Łupy', createContent: view });
+api.ui.addPopupMenuEntry('Łupy', () => (popup.isOpen ? popup.close() : popup.open()));
+```
+
+### Stopka
+
+- **Komponent** (`registerFooterComponent`) jest wstawiany bez ramki. Żeby wyglądał jak wbudowane chipy, użyj ich znaczników:
+
+  ```html
+  <span class="chip">
+    <span class="chip__ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/></svg></span>
+    <span class="chip__text"><span class="chip__lab">Cel</span><span class="chip__val">ork</span></span>
+  </span>
+  ```
+
+  Ikona to SVG (dopasuje się do 13px i koloru chipa). `chip--warn` / `chip--danger` na elemencie `chip` — gdy coś wymaga uwagi. Etykieta krótka (kilka liter, wyświetlana wersalikami), wartość zwięzła. Jedna linia, bez własnego `line-height` i wysokości.
+- **Przycisk** (`registerFooterButton`) — gdy chodzi o wysłanie komendy. `tone: 'accent'` tylko dla trybu lub ważnej akcji, `'danger'` dla ryzykownych; `state` zapala go, gdy tryb jest włączony.
+- Stopka jest wąska — jeden, najwyżej dwa elementy na plugin.
+
+### Menu
+
+- `addPopupMenuEntry` (⋮) — do otwierania okien i akcji pluginu; `addContextMenuEntry` — do akcji na tekście gry.
+- Etykieta krótka, rzeczownik lub czasownik („Łupy”, „Kopiuj jako notatkę”), bez nazwy pluginu i bez emoji.
 
 ## Ładowanie Pluginów
 

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useSyncExternalStore } from "react";
-import { Form } from "react-bootstrap";
+import { Check } from "@web-ui/primitives/index.ts";
 import {
     DndContext,
     closestCenter,
@@ -45,33 +45,20 @@ function SortableItem({ item, onToggle }: SortableItemProps) {
     };
 
     return (
-        <div
-            ref={setNodeRef}
-            className="d-flex align-items-center gap-2 p-1 border rounded"
-            style={{ ...style, background: 'var(--popup-control-bg)' }}
-        >
-            <span
-                {...attributes}
-                {...listeners}
-                className="text-muted"
-                style={{ cursor: 'grab', userSelect: 'none', touchAction: 'none' }}
-            >
+        <div ref={setNodeRef} className={`settings-sort-item${item.visible ? '' : ' is-off'}`} style={style}>
+            <span {...attributes} {...listeners} className="settings-sort-item__handle">
                 &#x2630;
             </span>
-            <Form.Check
-                type="switch"
+            <Check
                 id={`fc-${domId(item.id)}`}
+                title="Widoczny"
                 checked={item.visible}
                 onChange={() => onToggle(item.id)}
             />
-            <span className={item.visible ? '' : 'text-muted'} style={{ fontSize: '0.85rem' }}>
+            <label className="settings-sort-item__label" htmlFor={`fc-${domId(item.id)}`}>
                 {item.label}
-            </span>
-            {item.fromPlugin && (
-                <span className="badge bg-secondary ms-auto" style={{ fontSize: '0.65rem' }}>
-                    plugin
-                </span>
-            )}
+            </label>
+            {item.fromPlugin && <span className="settings-sort-item__badge">plugin</span>}
         </div>
     );
 }
@@ -123,7 +110,7 @@ function FooterComponentSettings({ components, onChange }: FooterComponentSettin
     return (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             <SortableContext items={items.map(c => domId(c.id))} strategy={verticalListSortingStrategy}>
-                <div className="d-flex flex-column gap-1">
+                <div className="settings-sort-list">
                     {items.map(item => (
                         <SortableItem key={item.id} item={item} onToggle={toggleVisibility} />
                     ))}

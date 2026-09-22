@@ -57,8 +57,8 @@ export default function AssistantSettingsDialog({ onClose }: AssistantSettingsDi
             size="lg"
             footer={(
                 <>
-                    <button type="button" className="btn btn-secondary" onClick={onClose}>Anuluj</button>
-                    <button type="button" className="btn btn-primary" onClick={handleSave}>
+                    <button type="button" className="popup-btn popup-btn--control" onClick={onClose}>Anuluj</button>
+                    <button type="button" className="popup-btn popup-btn--control popup-btn--solid" onClick={handleSave}>
                         {saved ? 'Zapisano' : 'Zapisz'}
                     </button>
                 </>
@@ -69,7 +69,7 @@ export default function AssistantSettingsDialog({ onClose }: AssistantSettingsDi
                     <span>Adres serwera asystenta</span>
                     <input
                         type="text"
-                        className="form-control"
+                        className="popup-input popup-input--control"
                         value={workerUrl}
                         placeholder={DEFAULT_WORKER_URL || 'https://…workers.dev'}
                         onChange={event => setWorkerUrlState(event.target.value)}
@@ -94,7 +94,7 @@ export default function AssistantSettingsDialog({ onClose }: AssistantSettingsDi
                     <span>Klucz API</span>
                     <input
                         type="password"
-                        className="form-control"
+                        className="popup-input popup-input--control"
                         value={apiKey}
                         autoComplete="off"
                         placeholder="np. klucz z Google AI Studio"
@@ -106,7 +106,7 @@ export default function AssistantSettingsDialog({ onClose }: AssistantSettingsDi
                     <span>Adres API (zgodne z OpenAI)</span>
                     <input
                         type="text"
-                        className="form-control"
+                        className="popup-input popup-input--control"
                         value={baseUrl}
                         placeholder={DEFAULT_BYOK_BASE_URL}
                         onChange={event => setBaseUrlState(event.target.value)}
@@ -117,7 +117,7 @@ export default function AssistantSettingsDialog({ onClose }: AssistantSettingsDi
                     <span>Model</span>
                     <input
                         type="text"
-                        className="form-control"
+                        className="popup-input popup-input--control"
                         value={model}
                         placeholder={DEFAULT_BYOK_MODEL}
                         onChange={event => setModelState(event.target.value)}

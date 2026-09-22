@@ -16,8 +16,8 @@ import EnemyResistancesPopup from '../EnemyResistancesPopup';
 import FishingPopup from '../FishingPopup';
 import HerbManager from '../herbs/HerbManager';
 import HerbTextWindow from '../herbs/HerbTextWindow';
-import KnowledgeDetailsReport from '../KnowledgeDetailsReport';
-import KnowledgeReport from '../KnowledgeReport';
+import KnowledgeWindow from '../knowledge/KnowledgeWindow';
+import DocsWindow from '../documentation/DocsWindow';
 import LetterViewPopup from '../LetterViewPopup';
 import LootPopup from '../LootPopup';
 import ObjectListDemoPopup from '../ObjectListDemoPopup';
@@ -79,8 +79,9 @@ export const POPUP_CATALOG: PopupCatalogEntry[] = [
     { id: 'popup:herb', Component: HerbManager },
     { id: 'popup:herb-text', Component: HerbTextWindow },
     { id: 'popup:peopleBrowser', Component: PeopleBrowser },
-    { id: 'popup:knowledgeReport', Component: KnowledgeReport },
-    { id: 'popup:knowledgeDetails', Component: KnowledgeDetailsReport },
+    // Wiedza and Biblioteki: one window, tabs for each.
+    { id: 'popup:knowledgeDetails', Component: KnowledgeWindow },
+    { id: 'popup:docs', Component: DocsWindow },
     { id: 'popup:chat', Component: ChatPopup },
     { id: 'popup:combat', Component: CombatPopup },
     { id: 'popup:combatStatus', Component: CombatStatusPopup },

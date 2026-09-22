@@ -1,0 +1,632 @@
+/* The footer bands above the command line: location binds, then the status line.
+   Markup: @web-ui/footer (MultiBindStrip, …). The phone layout reshapes them in
+   footerMobile.css. */
+:root {
+  /* Bind kinds, as the forge HUD colours them: the room's own bind, the drinkable
+     spot and the gate. Plain multibinds stay neutral. */
+  --footer-bind-room: #d9bf62;
+  --footer-bind-drink: #62b8be;
+  --footer-bind-gate: #d9855a;
+  /* Vital pips and chip tones (getColorLevel: success / warning / danger). */
+  --footer-vital-ok: #74b58b;
+  --footer-vital-warn: #d9bf62;
+  --footer-vital-danger: #d8736b;
+}
+
+/* -- location binds ------------------------------------------------------- */
+#multi-binds {
+  display: none;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  /* 1px border + 6px + a 26px pill + 6px: whole pixels (see the status line). */
+  padding: 6px 12px;
+  border-top: 1px solid var(--footer-border);
+  background-color: var(--footer-bg);
+  color: var(--footer-text);
+  font-family: var(--font-ui);
+  -webkit-user-select: none;
+  user-select: none;
+}
+#multi-binds.active {
+  display: flex;
+}
+
+/* A pill: the key as a keycap segment, then the action. */
+#multi-binds .multi-bind {
+  --bind-tone: var(--popup-border-strong);
+  display: inline-flex;
+  align-items: stretch;
+  min-width: 0;
+  min-height: 0;
+  height: 26px;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--bind-tone);
+  border-radius: 7px;
+  background-color: var(--popup-control-bg);
+  color: var(--popup-text);
+  font: inherit;
+  white-space: nowrap;
+  opacity: 1;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+  appearance: none;
+  -webkit-appearance: none;
+}
+#multi-binds .multi-bind:hover {
+  background-color: var(--popup-control-hover-bg);
+}
+#multi-binds .multi-bind:active {
+  transform: translateY(1px);
+}
+#multi-binds .multi-bind:focus-visible {
+  outline: 2px solid var(--popup-accent);
+  outline-offset: 2px;
+}
+#multi-binds .multi-bind:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+/* Key and action each centred in the pill on the page's normal line height:
+   a fixed line shorter than the font's box splits the difference unevenly. */
+#multi-binds .multi-bind-key {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 7px;
+  border-right: 1px solid var(--bind-tone);
+  background-color: var(--popup-subtle-bg);
+  color: var(--popup-text-subtle);
+  font-family: var(--output-font-family);
+  font-size: 11px;
+}
+#multi-binds .multi-bind-action {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  padding: 0 10px;
+  overflow: hidden;
+  font-size: 13px;
+  text-overflow: ellipsis;
+}
+
+#multi-binds .multi-bind--room {
+  --bind-tone: color-mix(in srgb, var(--footer-bind-room) 50%, transparent);
+}
+#multi-binds .multi-bind--drink {
+  --bind-tone: color-mix(in srgb, var(--footer-bind-drink) 50%, transparent);
+}
+#multi-binds .multi-bind--gate {
+  --bind-tone: color-mix(in srgb, var(--footer-bind-gate) 50%, transparent);
+}
+#multi-binds .multi-bind--room .multi-bind-key {
+  background-color: color-mix(in srgb, var(--footer-bind-room) 12%, transparent);
+  color: var(--footer-bind-room);
+}
+#multi-binds .multi-bind--drink .multi-bind-key {
+  background-color: color-mix(in srgb, var(--footer-bind-drink) 12%, transparent);
+  color: var(--footer-bind-drink);
+}
+#multi-binds .multi-bind--gate .multi-bind-key {
+  background-color: color-mix(in srgb, var(--footer-bind-gate) 12%, transparent);
+  color: var(--footer-bind-gate);
+}
+/* Without a key segment the kind still shows, as a tinted fill. */
+#multi-binds .multi-bind--room:not(:has(.multi-bind-key)) {
+  background-color: color-mix(in srgb, var(--footer-bind-room) 10%, transparent);
+}
+#multi-binds .multi-bind--drink:not(:has(.multi-bind-key)) {
+  background-color: color-mix(in srgb, var(--footer-bind-drink) 10%, transparent);
+}
+#multi-binds .multi-bind--gate:not(:has(.multi-bind-key)) {
+  background-color: color-mix(in srgb, var(--footer-bind-gate) 10%, transparent);
+}
+
+/* Temporary binds (plugins, api.multibinds.addTemporary) are never saved: dashed. */
+#multi-binds .multi-bind.multi-bind--temporary {
+  border-style: dashed;
+}
+#multi-binds .multi-bind--temporary .multi-bind-key {
+  border-right-style: dashed;
+}
+/* A plugin asked to draw attention to this slot. */
+#multi-binds .multi-bind.multi-bind--highlight {
+  --bind-tone: var(--popup-accent);
+  box-shadow: 0 0 0 2px var(--popup-accent-subtle-bg);
+}
+
+/* Pill height, so a room without binds keeps the row where it was. */
+#multi-binds .multi-bind-empty {
+  display: inline-flex;
+  align-items: center;
+  height: 26px;
+  color: var(--popup-text-faint);
+  font-size: var(--ui-fs-sm, 13px);
+  font-style: italic;
+}
+
+/* -- status line ----------------------------------------------------------
+   Vitals | chips (urgent first, the rest behind "+N") | connection. */
+#char-state {
+  --chip-h: 24px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  /* 1px border + 6px + a 24px chip + 6px: whole pixels, so text and icons centre
+     on the same pixel (42 put every chip on a half pixel). */
+  min-height: 37px;
+  padding: 6px 12px;
+  border-top: 1px solid var(--footer-border);
+  background-color: var(--footer-bg);
+  color: var(--footer-text);
+  font-family: var(--font-ui);
+  font-size: var(--ui-fs, 14px);
+  -webkit-user-select: none;
+  user-select: none;
+}
+#multi-binds.active + #char-state {
+  border-top-color: var(--popup-border-subtle);
+}
+
+/* Vitals: a caps label and one pip per point of the scale. */
+.status-vitals {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 14px;
+}
+.status-vitals:not(:empty) {
+  padding-right: 14px;
+  border-right: 1px solid var(--popup-border-subtle);
+}
+.status-vitals:empty {
+  display: none;
+}
+.vital {
+  --vital-color: var(--footer-vital-ok);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.vital--warning {
+  --vital-color: var(--footer-vital-warn);
+}
+.vital--danger {
+  --vital-color: var(--footer-vital-danger);
+}
+.vital__label {
+  color: var(--popup-text-subtle);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.vital--unknown {
+  opacity: 0.55;
+}
+.vital--alert .vital__label {
+  color: var(--footer-vital-danger);
+}
+/* The meter keeps one width whatever the scale; pips share it. */
+.vital__pips {
+  display: grid;
+  grid-template-columns: repeat(var(--pips), minmax(0, 1fr));
+  gap: 2px;
+  width: clamp(36px, calc(var(--pips) * 9px), 72px);
+}
+.vital__pip {
+  height: 8px;
+  border-radius: 2px;
+  background-color: var(--popup-control-active-bg);
+}
+.vital__pip.is-on {
+  background-color: var(--vital-color);
+}
+/* Liczbowy and the two text bars: the old footer readouts, in the vital's colour. */
+.vital__text {
+  color: var(--vital-color);
+  font-family: var(--output-font-family);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+}
+/* Pasek graficzny: a thin meter with the numbers over it. */
+/* A little under chip height, centred on the line with the chips beside it. */
+.vital__bar {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: calc(var(--chip-h) - 2px);
+  overflow: hidden;
+  border: 1px solid var(--popup-border-subtle);
+  border-radius: 6px;
+  background-color: var(--popup-control-bg);
+}
+.vital__bar-fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  background-color: color-mix(in srgb, var(--vital-color) 55%, transparent);
+}
+.vital__bar-value {
+  position: relative;
+  color: var(--popup-text);
+  font-family: var(--output-font-family);
+  font-size: 12px;
+  line-height: 1;
+}
+
+/* Chips: one line; what does not fit wraps onto hidden lines and is counted by "+N"
+   (StatusLine marks those .is-wrapped). The row does not clip, so a chip may draw
+   outside its tile - a plugin's animated companion, smoke - over the bind row even. */
+.status-chips {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  height: var(--chip-h);
+}
+.status-chips.is-open {
+  height: auto;
+}
+.status-slot.is-wrapped {
+  visibility: hidden;
+  pointer-events: none;
+}
+.status-slot {
+  display: inline-flex;
+  order: var(--order, 0);
+  max-width: 100%;
+}
+.status-slot:empty {
+  display: none;
+}
+/* Urgent first: danger, then warnings, each group in the configured order. */
+.status-slot:has(> .chip--warn) {
+  order: calc(var(--order, 0) - 5000);
+}
+.status-slot:has(> .chip--danger) {
+  order: calc(var(--order, 0) - 10000);
+}
+.status-more {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 3px;
+  height: var(--chip-h);
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  padding: 0 8px;
+  border: 1px solid var(--popup-border-strong);
+  border-radius: 6px;
+  background-color: var(--popup-control-bg);
+  color: var(--popup-text);
+  font: inherit;
+  font-family: var(--output-font-family);
+  font-size: 11.5px;
+  opacity: 1;
+  cursor: pointer;
+}
+.status-more:hover {
+  background-color: var(--popup-control-hover-bg);
+}
+.status-connection {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+.status-connection .chip {
+  border-color: transparent;
+  background: transparent;
+}
+.status-connection .chip__val {
+  color: var(--popup-text-subtle);
+}
+/* The phone expander (footerMobile.css shows it). */
+#char-state #footer-expand {
+  display: none;
+}
+
+/* A chip: glyph, caps label, mono value, in a small tile. Shared markup
+   (@web-ui/footer/Chip.tsx); the forge HUD skins the same classes its own way. */
+#char-state .chip {
+  --chip-tone: var(--popup-text-subtle);
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  height: var(--chip-h);
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  padding: 0 9px 0 7px;
+  border: 1px solid var(--popup-border-subtle);
+  border-radius: 6px;
+  background-color: var(--popup-control-bg);
+  color: var(--chip-tone);
+  font: inherit;
+  white-space: nowrap;
+  opacity: 1;
+  isolation: isolate;
+  appearance: none;
+}
+#char-state .chip--act {
+  cursor: pointer;
+  -webkit-touch-callout: none;
+}
+#char-state .chip--act:hover {
+  border-color: var(--popup-border-strong);
+}
+#char-state .chip__ico {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+}
+#char-state .chip__ico svg,
+#char-state .chip > svg {
+  display: block;
+  width: 13px;
+  height: 13px;
+}
+/* Label and value share a baseline (caps next to lowercase mono); the pair is
+   centred against the icon as a block. */
+#char-state .chip__text {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
+#char-state .chip__lab {
+  color: var(--popup-text-faint);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+#char-state .chip__val {
+  overflow: hidden;
+  color: var(--popup-text);
+  font-family: var(--output-font-family);
+  font-size: 11.5px;
+  text-overflow: ellipsis;
+}
+#char-state .chip--ok {
+  --chip-tone: var(--footer-vital-ok);
+}
+#char-state .chip--ok .chip__val {
+  color: var(--footer-vital-ok);
+}
+#char-state .chip--warn {
+  --chip-tone: var(--footer-vital-warn);
+  border-color: color-mix(in srgb, var(--footer-vital-warn) 40%, transparent);
+  background-color: color-mix(in srgb, var(--footer-vital-warn) 10%, transparent);
+}
+#char-state .chip--warn .chip__val {
+  color: color-mix(in srgb, var(--footer-vital-warn) 75%, #fff);
+}
+#char-state .chip--danger {
+  --chip-tone: var(--footer-vital-danger);
+  border-color: color-mix(in srgb, var(--footer-vital-danger) 50%, transparent);
+  background-color: color-mix(in srgb, var(--footer-vital-danger) 12%, transparent);
+}
+#char-state .chip--danger .chip__val {
+  color: color-mix(in srgb, var(--footer-vital-danger) 70%, #fff);
+}
+/* Zaslona: while the guard is held (covers not released automatically) the shield
+   fills in the accent colour. */
+#char-state .chip__ico--fill svg {
+  fill: currentColor;
+}
+#char-state .chip--guard-held .chip__ico {
+  color: var(--popup-accent);
+}
+/* Plugin items are the plugin's own markup, drawn as it is: no frame of ours.
+   A plugin that wants the chip look uses the chip classes (Chip.tsx). */
+#char-state .footer-plugin-item {
+  align-items: center;
+  height: var(--chip-h);
+  font-size: var(--ui-fs-sm, 13px);
+}
+#char-state .footer-plugin-item:has(> .footer-node-host:empty) {
+  display: none;
+}
+
+/* Long press (Chip onLongPress): a tint sweeps across while held, then fades. */
+#char-state .chip--holding::before,
+#char-state .chip--held::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: color-mix(in srgb, currentColor 28%, transparent);
+  transform-origin: left center;
+  pointer-events: none;
+  z-index: -1;
+}
+#char-state .chip--holding::before {
+  animation: chipHoldFill var(--chip-hold-ms, 300ms) linear forwards;
+}
+#char-state .chip--held::before {
+  animation: chipHoldDone 400ms ease-out forwards;
+}
+@keyframes chipHoldFill {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+@keyframes chipHoldDone {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+/* The pipe's ember (FajkaChip). */
+#char-state .chip__ember {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--popup-text-faint);
+}
+#char-state .chip__ember--lit {
+  background-color: #ff9a3c;
+  box-shadow: 0 0 6px #ff7a18;
+}
+
+/* Touch: pills are buttons to hit, not hints to read. */
+@media (pointer: coarse) {
+  #multi-binds .multi-bind,
+  #multi-binds .multi-bind-empty {
+    height: 36px;
+  }
+  #multi-binds .multi-bind-action {
+    font-size: 14px;
+  }
+}
+/* A phone screen has less room to spare: still a thumb's target, a size down. */
+@media (max-width: 768px), (max-height: 520px) and (pointer: coarse) {
+  #multi-binds .multi-bind,
+  #multi-binds .multi-bind-empty {
+    height: 32px;
+  }
+  #multi-binds .multi-bind-key {
+    padding: 2px 6px 0;
+  }
+  #multi-binds .multi-bind-action {
+    padding: 0 8px;
+    font-size: 13px;
+  }
+}
+
+/* -- the player's own buttons -------------------------------------------
+   A short row in the command bar, between Wyślij and the ⋯ menu (see
+   @web-ui/footer/FooterButtons.tsx). The row wraps so it can be measured;
+   what lands on a second line is hidden and offered behind its own ⋯, because
+   the command line must not lose height to them. */
+.footer-buttons {
+  position: relative;
+  display: flex;
+  /* Never wider than a third of the bar: the command line comes first. What
+     does not fit inside that cap is hidden and offered behind the "...", which
+     sits out of the row's flow at its right end. */
+  flex: 0 1 auto;
+  align-items: center;
+  min-width: 0;
+  max-width: min(33%, 26rem);
+  height: 28px;
+}
+
+.footer-buttons__row {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  height: 28px;
+  overflow: hidden;
+}
+
+.footer-button {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 5px;
+  height: 28px;
+  min-width: 0;
+  min-height: 0;
+  padding: 0 10px;
+  border: 1px solid var(--popup-border-subtle);
+  border-radius: 7px;
+  background-color: var(--popup-control-bg);
+  color: var(--popup-text);
+  font: inherit;
+  font-size: 12.5px;
+  white-space: nowrap;
+  opacity: 1;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.footer-button:hover {
+  background-color: var(--popup-control-hover-bg);
+}
+
+/* Off the first line: measured, then kept out of sight behind the ⋯. */
+.footer-button.is-overflow {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.footer-button--more {
+  padding: 0 7px;
+}
+
+/* Tones: the button's own colour, so a "zabij cel" reads as one. */
+.footer-button--accent {
+  --footer-button-tone: var(--popup-accent);
+  border-color: color-mix(in srgb, var(--popup-accent) 45%, transparent);
+  color: var(--popup-text-bright);
+}
+
+.footer-button--danger {
+  --footer-button-tone: var(--footer-vital-danger);
+  border-color: color-mix(in srgb, var(--footer-vital-danger) 45%, transparent);
+  color: color-mix(in srgb, var(--footer-vital-danger) 80%, #fff);
+}
+
+/* A plugin's button, dashed like its footer chips: not something the player
+   put there, and not something the settings list can rewrite. */
+.footer-button--plugin {
+  border-style: dashed;
+}
+
+/* Switched on (a mode the player is in): filled, with a dot. */
+.footer-button.is-on {
+  border-color: var(--footer-button-tone, var(--popup-accent));
+  background-color: color-mix(in srgb, var(--footer-button-tone, var(--popup-accent)) 22%, transparent);
+  color: var(--popup-text-bright);
+}
+
+.footer-button__dot {
+  flex-shrink: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--footer-button-tone, var(--popup-accent));
+}
+
+.footer-buttons__more {
+  position: absolute;
+  right: 0;
+  display: inline-flex;
+}
+
+.footer-buttons__panel {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 6px);
+  z-index: 1002;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 150px;
+  padding: 6px;
+}
+
+.footer-buttons__panel-item {
+  justify-content: flex-start;
+  width: 100%;
+}
+
+/* The phone sheet's grid; the desktop never shows it (footerMobile.css does). */
+.footer-buttons-sheet {
+  display: none;
+}

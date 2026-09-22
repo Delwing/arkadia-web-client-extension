@@ -1,5 +1,5 @@
 import {useCallback, useEffect, useMemo, useState} from "react";
-import {Button, Form} from "react-bootstrap";
+import {Button, Input, Select} from "@web-ui/primitives/index.ts";
 import {characterStorage} from "@modules/core/storage";
 import {
     DEFAULT_LUA_GAGS_DELETE_LINES,
@@ -120,53 +120,40 @@ function LuaGagsSettings({registerSave}: { registerSave: RegisterSave }) {
         <>
             <section className="character-settings-section character-settings-section--full">
                 <h5 className="character-settings-section-title">Prefiksy</h5>
-                <div className="character-settings-stack">
-                    <Form.Group
-                        className="d-flex flex-wrap align-items-center justify-content-between gap-2"
-                        controlId="walka-ownSpecPrefix"
-                    >
-                        <Form.Label className="mb-0 me-2">Prefiks moje spece</Form.Label>
-                        <Form.Control
-                            size="sm"
-                            type="text"
-                            className="w-auto"
-                            style={{maxWidth: "120px"}}
+                <div className="settings-rows">
+                    <div className="settings-row">
+                        <label className="popup-field__label" htmlFor="walka-ownSpecPrefix">Prefiks moje spece</label>
+                        <Input
+                            mono
+                            id="walka-ownSpecPrefix"
+                            className="settings-num"
                             value={walkaConfig.ownSpecPrefix}
-                            placeholder=""
                             onChange={e => setWalkaConfig(prev => ({...prev, ownSpecPrefix: e.target.value}))}
                         />
-                    </Form.Group>
-                    <Form.Group
-                        className="d-flex flex-wrap align-items-center justify-content-between gap-2"
-                        controlId="walka-finPrefix"
-                    >
-                        <Form.Label className="mb-0 me-2">Prefiks finishera</Form.Label>
-                        <Form.Control
-                            size="sm"
-                            type="text"
-                            className="w-auto"
-                            style={{maxWidth: "120px"}}
+                    </div>
+                    <div className="settings-row">
+                        <label className="popup-field__label" htmlFor="walka-finPrefix">Prefiks finishera</label>
+                        <Input
+                            mono
+                            id="walka-finPrefix"
+                            className="settings-num"
                             value={walkaConfig.finPrefix}
                             placeholder="FIN"
                             onChange={e => setWalkaConfig(prev => ({...prev, finPrefix: e.target.value}))}
                         />
-                    </Form.Group>
+                    </div>
                 </div>
             </section>
             <section className="character-settings-section character-settings-section--full">
                 <h5 className="character-settings-section-title">Ustawienia walki</h5>
-                <div className="character-settings-stack">
+                <div className="settings-rows">
                     {LUA_GAG_LINE_TYPES.map(key => (
-                        <Form.Group
-                            key={key}
-                            className="d-flex flex-wrap align-items-center justify-content-between gap-2"
-                            controlId={`luaGag-${key}`}
-                        >
-                            <Form.Label className="mb-0 me-2">{labels[key]}</Form.Label>
-                            <div className="d-flex gap-2 align-items-center">
-                                <Form.Select
-                                    size="sm"
-                                    className="w-auto"
+                        <div key={key} className="settings-row">
+                            <label className="popup-field__label" htmlFor={`luaGag-${key}`}>{labels[key]}</label>
+                            <div className="popup-inline">
+                                <Select
+                                    id={`luaGag-${key}`}
+                                    className="settings-narrow"
                                     value={deleteLines[key]}
                                     onChange={event =>
                                         handleChange(key, Number(event.target.value) as LuaGagDeleteMode)
@@ -177,26 +164,25 @@ function LuaGagsSettings({registerSave}: { registerSave: RegisterSave }) {
                                             {option.label}
                                         </option>
                                     ))}
-                                </Form.Select>
-                                <Form.Control
+                                </Select>
+                                <input
                                     type="color"
-                                    size="sm"
+                                    id={`luaGag-${key}-color`}
+                                    className="popup-color"
                                     value={colors[key]}
                                     onChange={event => handleColorChange(key, event.target.value)}
-                                    style={{width: "50px"}}
                                     title="Kolor prefixu"
                                 />
                                 <Button
                                     size="sm"
-                                    variant="outline-secondary"
+                                    variant="ghost"
                                     onClick={() => resetColorToDefault(key)}
                                     title="Przywróć domyślny kolor"
-                                    style={{padding: "0.25rem 0.5rem"}}
                                 >
                                     ↺
                                 </Button>
                             </div>
-                        </Form.Group>
+                        </div>
                     ))}
                 </div>
             </section>

@@ -1,5 +1,5 @@
 import { useCallback, useState, type ChangeEvent } from "react";
-import { Button, Form, Spinner } from "react-bootstrap";
+import { Button, Input } from "@web-ui/primitives/index.ts";
 import { Plus, Search, Store, X } from "lucide-react";
 import { generatePluginId, storePluginScript } from "@client/utils/pluginStorage";
 import { createEditorPluginFromSource, storeEditorPlugin } from "@client/utils/pluginEditorStorage";
@@ -117,22 +117,22 @@ function Scripts() {
                 type="file"
                 accept=".zip"
                 onChange={zip.handleFile}
-                style={{ display: "none" }}
+                hidden
             />
 
-            <div className="plugin-manager__tabs">
+            <div className="dialog-tabs plugin-manager__tabs">
                 <button
                     type="button"
-                    className={`plugin-tab${tab === "installed" ? " plugin-tab--active" : ""}`}
+                    className={`dialog-tab plugin-tab${tab === "installed" ? " is-active" : ""}`}
                     onClick={() => setTab("installed")}
                 >
                     Zainstalowane
-                    {installed > 0 && <span className="plugin-tab__count">{installed}</span>}
-                    {updates > 0 && <span className="plugin-tab__dot" title={`${updates} aktualizacji`} />}
+                    {installed > 0 && <span className="dialog-tab__count">{installed}</span>}
+                    {updates > 0 && <span className="dialog-tab__dot" title={`${updates} aktualizacji`} />}
                 </button>
                 <button
                     type="button"
-                    className={`plugin-tab${tab === "catalog" ? " plugin-tab--active" : ""}`}
+                    className={`dialog-tab plugin-tab${tab === "catalog" ? " is-active" : ""}`}
                     onClick={() => setTab("catalog")}
                 >
                     <Store size={14} />
@@ -143,9 +143,8 @@ function Scripts() {
             <div className="plugin-manager__toolbar">
                 <div className="plugin-search">
                     <Search size={15} className="plugin-search__icon" />
-                    <Form.Control
+                    <Input
                         type="search"
-                        size="sm"
                         value={search}
                         onChange={(event: ChangeEvent<HTMLInputElement>) => setSearch(event.target.value)}
                         placeholder={tab === "installed" ? "Szukaj wsrod zainstalowanych" : "Szukaj w katalogu"}
@@ -161,7 +160,7 @@ function Scripts() {
                         </button>
                     )}
                 </div>
-                <Button size="sm" variant="primary" className="plugin-add" onClick={() => setDialog("chooser")}>
+                <Button size="sm" variant="solid" className="plugin-add" onClick={() => setDialog("chooser")}>
                     <Plus size={15} />
                     Dodaj plugin
                 </Button>
@@ -173,7 +172,7 @@ function Scripts() {
                         zip.status.type === "error" ? "error" : zip.status.type === "loading" ? "muted" : "success"
                     }`}
                 >
-                    {zip.status.type === "loading" && <Spinner animation="border" size="sm" />}
+                    {zip.status.type === "loading" && <span className="popup-spinner" />}
                     <span>{zip.status.message}</span>
                 </div>
             )}

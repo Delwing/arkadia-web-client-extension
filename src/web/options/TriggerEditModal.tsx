@@ -1,11 +1,12 @@
-import React, { useState, useEffect, useId, useRef, ChangeEvent } from 'react';
-import { Button, Form } from 'react-bootstrap';
+import React, { useState, useEffect } from 'react';
 import { Trash2 } from 'lucide-react';
 import { CustomSound } from '@modules/core/customSounds';
 import {
     isTriggerMacroAvailable,
     type PluginTriggerMacro,
 } from '@modules/core/pluginTriggerMacroRegistry';
+import { Button, Check, Dialog, Field, Input, Segmented, Select } from '@web-ui/primitives/index.ts';
+import { usePopover } from '@web/layout/hooks/usePopover.ts';
 import type { UserTrigger, UserMacro, TriggerType, DimEasing, SupportedEvent, EventArg, TriggerCondition } from './UserTriggers';
 import { SUPPORTED_EVENTS, GMCP_MSG_TYPES, GMCP_EVENT_CATEGORY, CONDITION_OPERATORS } from './UserTriggers';
 
@@ -14,7 +15,7 @@ const GMCP_EVENT_IDS = new Set(GMCP_EVENTS.map(e => e.id));
 /** Value of the single "GMCP" option standing in for all GMCP packages in the event picker. */
 const GMCP_GROUP_VALUE = '__gmcp__';
 
-const EVENT_COMPATIBLE_MACROS: Set<string> = new Set(['beep', 'mute', 'unmute', 'command', 'functionalBind', 'notify', 'push']);
+const EVENT_COMPATIBLE_MACROS: Set<string> = new Set(['beep', 'mute', 'unmute', 'command', 'functionalBind', 'notify', 'push', 'speak']);
 
 const AVAILABLE_FLAGS = [
     { flag: 'i', label: 'Ignoruj wielkosc liter' },
@@ -22,18 +23,13 @@ const AVAILABLE_FLAGS = [
     { flag: 'm', label: 'Wieloliniowy' },
 ];
 
-function FlagsPicker({ value, onChange }: { value: string; onChange: (flags: string) => void }) {
-    const [open, setOpen] = useState(false);
-    const ref = useRef<HTMLDivElement>(null);
+const TRIGGER_TYPE_OPTIONS: { value: TriggerType; label: string }[] = [
+    { value: 'pattern', label: 'Wzorzec tekstu' },
+    { value: 'event', label: 'Zdarzenie' },
+];
 
-    useEffect(() => {
-        if (!open) return;
-        const handler = (e: MouseEvent) => {
-            if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-        };
-        document.addEventListener('mousedown', handler);
-        return () => document.removeEventListener('mousedown', handler);
-    }, [open]);
+function FlagsPicker({ value, onChange }: { value: string; onChange: (flags: string) => void }) {
+    const popover = usePopover({ width: 240 });
 
     const toggle = (flag: string) => {
         const next = value.includes(flag)
@@ -42,39 +38,25 @@ function FlagsPicker({ value, onChange }: { value: string; onChange: (flags: str
         onChange(next);
     };
 
-    const display = value ? `/${value}` : 'Flagi';
-
     return (
-        <div ref={ref} style={{ position: 'relative' }}>
+        <div className="trigger-flags" ref={popover.rootRef}>
             <button
+                ref={popover.anchorRef}
                 type="button"
-                className={`btn btn-sm ${value ? 'btn-outline-light' : 'btn-outline-secondary'} font-monospace`}
-                style={{ minWidth: '4.5rem' }}
-                onClick={() => setOpen(!open)}
+                className={`popup-btn popup-btn--control trigger-flags__toggle${value ? ' is-set' : ''}`}
+                onClick={popover.toggle}
+                title="Flagi wyrazenia regularnego"
             >
-                {display}
+                {value ? `/${value}` : 'Flagi'}
             </button>
-            {open && (
-                <div
-                    className="border rounded shadow-sm p-2"
-                    style={{
-                        position: 'absolute',
-                        top: '100%',
-                        right: 0,
-                        zIndex: 10,
-                        backgroundColor: 'var(--popup-control-bg)',
-                        minWidth: '14rem',
-                    }}
-                >
+            {popover.style && (
+                <div className="popup-popover trigger-flags__menu" style={popover.style}>
                     {AVAILABLE_FLAGS.map(({ flag, label }) => (
-                        <Form.Check
+                        <Check
                             key={flag}
-                            type="checkbox"
-                            id={`flag-${flag}`}
-                            label={<><code className="me-1">{flag}</code> {label}</>}
+                            label={<><code>{flag}</code> {label}</>}
                             checked={value.includes(flag)}
                             onChange={() => toggle(flag)}
-                            className="mb-1"
                         />
                     ))}
                 </div>
@@ -106,20 +88,18 @@ function EventArgChips({
 }) {
     if (args.length === 0) return null;
     return (
-        <div className="d-flex flex-wrap gap-1 mt-1 align-items-center">
-            <span className="text-muted" style={{ fontSize: '0.75rem' }}>Wstaw:</span>
+        <div className="trigger-arg-chips">
+            <span className="popup-field__hint">Wstaw:</span>
             {args.map(arg => (
-                <Button
+                <button
                     key={arg.name}
-                    variant="outline-secondary"
-                    size="sm"
-                    className="py-0 px-1"
-                    style={{ fontSize: '0.72rem' }}
+                    type="button"
+                    className="popup-btn popup-btn--sm trigger-arg-chips__chip"
                     title={arg.label}
                     onClick={() => onInsert(`{${arg.name}}`)}
                 >
                     {`{${arg.name}}`}
-                </Button>
+                </button>
             ))}
         </div>
     );
@@ -160,63 +140,52 @@ function ConditionsEditor({
     };
 
     return (
-        <div className="mb-3 trigger-conditions-editor">
-            <div className="d-flex align-items-center gap-2 mb-1">
-                <label className="form-label mb-0">Warunki</label>
-                <button type="button" className="btn btn-outline-secondary py-0 px-2" style={{ fontSize: '0.75rem' }} onClick={add}>
-                    Dodaj warunek
-                </button>
+        <div className="trigger-section trigger-conditions-editor">
+            <div className="trigger-section__head">
+                <h3 className="trigger-section__title">Warunki</h3>
+                <Button variant="ghost" size="sm" onClick={add}>Dodaj warunek</Button>
             </div>
             {conditions.map((c, idx) => {
                 const arg = args.find(a => a.name === c.arg);
                 return (
-                    <div key={idx} className="d-flex gap-1 mb-1 align-items-center trigger-condition">
-                        <Form.Select
-                            size="sm"
-                            style={{ maxWidth: '12rem' }}
+                    <div key={idx} className="popup-inline trigger-condition">
+                        <Select
+                            className="trigger-condition__arg"
                             value={c.arg}
                             onChange={(e) => update(idx, { arg: e.target.value })}
                         >
                             {args.map(a => <option key={a.name} value={a.name}>{a.label}</option>)}
-                        </Form.Select>
-                        <Form.Select
-                            size="sm"
-                            style={{ maxWidth: '11rem' }}
+                        </Select>
+                        <Select
+                            className="trigger-condition__op"
                             value={c.op}
                             onChange={(e) => update(idx, { op: e.target.value as TriggerCondition['op'] })}
                         >
                             {operatorsFor(arg).map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
-                        </Form.Select>
+                        </Select>
                         {arg?.type === 'boolean' ? (
-                            <Form.Select
-                                size="sm"
-                                className="flex-grow-1"
+                            <Select
                                 value={c.value}
                                 onChange={(e) => update(idx, { value: e.target.value })}
                             >
                                 <option value="">—</option>
                                 <option value="true">tak</option>
                                 <option value="false">nie</option>
-                            </Form.Select>
+                            </Select>
                         ) : (
-                            <Form.Control
-                                size="sm"
-                                className="flex-grow-1 font-monospace"
+                            <Input
+                                mono
                                 type={arg?.type === 'number' ? 'number' : 'text'}
                                 placeholder="Wartosc"
                                 value={c.value}
-                                onChange={(e: ChangeEvent<HTMLInputElement>) => update(idx, { value: e.target.value })}
-                                autoCorrect="off"
-                                autoComplete="off"
-                                autoCapitalize="off"
-                                spellCheck={false}
+                                onChange={(e) => update(idx, { value: e.target.value })}
                             />
                         )}
                         <Button
+                            variant="danger"
                             size="sm"
-                            variant="outline-danger"
-                            className="py-0 px-1"
                             onClick={() => onChange(conditions.filter((_, i) => i !== idx))}
+                            title="Usun warunek"
                         >
                             <Trash2 size={14} />
                         </Button>
@@ -224,10 +193,10 @@ function ConditionsEditor({
                 );
             })}
             {conditions.length > 0 && (
-                <Form.Text className="text-muted d-block">
+                <div className="popup-field__hint">
                     Wszystkie warunki musza byc spelnione. Jesli zdarzenie nie przyniesie danego pola
                     (np. Char.State wysyla tylko to, co sie zmienilo), warunek nie jest spelniony.
-                </Form.Text>
+                </div>
             )}
         </div>
     );
@@ -258,10 +227,6 @@ function MacroEditor({
         notificationsSupported ? Notification.permission : 'unsupported'
     );
 
-    // Several macro editors render at once, so the checkbox needs an id unique
-    // to this row or clicking one would toggle another's label target.
-    const bypassCooldownId = useId();
-
     const requestNotificationPermission = async () => {
         if (!notificationsSupported) return;
         try {
@@ -271,13 +236,14 @@ function MacroEditor({
         }
     };
 
+    const available = isTriggerMacroAvailable(macro.type);
+
     return (
-        <div className="d-flex align-items-start gap-2 p-2 mb-2 border rounded" style={{ backgroundColor: 'rgba(255,255,255,0.03)' }}>
-            <div className="flex-grow-1">
-                <Form.Select
-                    size="sm"
+        <div className="trigger-action">
+            <div className="trigger-action__main">
+                <Select
                     value={macro.type}
-                    className={!isTriggerMacroAvailable(macro.type) ? 'border-warning' : ''}
+                    className={available ? undefined : 'is-warning'}
                     onChange={e => {
                         const nextType = e.target.value;
                         onChange({
@@ -297,6 +263,7 @@ function MacroEditor({
                     <option value="command">Komenda</option>
                     <option value="notify">Powiadomienie</option>
                     <option value="push">Powiadomienie na telefon</option>
+                    <option value="speak">Czytaj na glos</option>
                     {!isEventTrigger && <option value="slowBlink">Wolne miganie</option>}
                     {!isEventTrigger && <option value="rapidBlink">Szybkie miganie</option>}
                     {!isEventTrigger && <option value="dim">Pulsowanie</option>}
@@ -316,21 +283,19 @@ function MacroEditor({
                             </optgroup>
                         ));
                     })()}
-                    {macro.type.startsWith('plugin:') && !isTriggerMacroAvailable(macro.type) && (
+                    {macro.type.startsWith('plugin:') && !available && (
                         <option value={macro.type} disabled>
                             {macro.type} (wtyczka niedostepna)
                         </option>
                     )}
-                </Form.Select>
-                {!isTriggerMacroAvailable(macro.type) && (
-                    <Form.Text className="text-warning d-block">
+                </Select>
+                {!available && (
+                    <div className="popup-field__warning">
                         Ta wtyczka nie jest zaladowana. Makro nie bedzie dzialac.
-                    </Form.Text>
+                    </div>
                 )}
                 {macro.type === 'beep' && (
-                    <Form.Select
-                        className="mt-1"
-                        size="sm"
+                    <Select
                         value={macro.soundKey || 'beep'}
                         onChange={async e => {
                             const value = e.target.value;
@@ -349,82 +314,80 @@ function MacroEditor({
                             <option key={sound.key} value={sound.key}>{sound.name}</option>
                         ))}
                         <option value="__upload__">Dodaj dzwiek...</option>
-                    </Form.Select>
+                    </Select>
                 )}
                 {macro.type === 'command' && (
-                    <Form.Control
-                        className="mt-1 font-monospace"
-                        type="text"
-                        size="sm"
-                        placeholder="Command"
-                        value={macro.command || ''}
-                        onChange={(e: ChangeEvent<HTMLInputElement>) => onChange({ ...macro, command: e.target.value })}
-                        autoCorrect="off"
-                        autoComplete="off"
-                        autoCapitalize="off"
-                        spellCheck={false}
-                    />
-                )}
-                {macro.type === 'command' && (
-                    <EventArgChips
-                        args={eventArgs}
-                        onInsert={(token) => onChange({ ...macro, command: (macro.command ?? '') + token })}
-                    />
+                    <>
+                        <Input
+                            mono
+                            placeholder="Command"
+                            value={macro.command || ''}
+                            onChange={e => onChange({ ...macro, command: e.target.value })}
+                        />
+                        <EventArgChips
+                            args={eventArgs}
+                            onInsert={(token) => onChange({ ...macro, command: (macro.command ?? '') + token })}
+                        />
+                    </>
                 )}
                 {macro.type === 'push' && (
                     <>
-                        <Form.Control
-                            className="mt-1"
-                            type="text"
-                            size="sm"
+                        <Input
+                            mono
                             placeholder={isEventTrigger ? 'Tresc powiadomienia' : 'Tresc powiadomienia (puste = dopasowany tekst)'}
                             value={macro.message || ''}
-                            onChange={(e: ChangeEvent<HTMLInputElement>) => onChange({ ...macro, message: e.target.value })}
-                            autoCorrect="off"
-                            autoComplete="off"
-                            autoCapitalize="off"
-                            spellCheck={false}
+                            onChange={e => onChange({ ...macro, message: e.target.value })}
                         />
                         <EventArgChips
                             args={eventArgs}
                             onInsert={(token) => onChange({ ...macro, message: (macro.message ?? '') + token })}
                         />
-                        <Form.Check
-                            className="mt-1"
-                            type="checkbox"
-                            id={bypassCooldownId}
+                        <Check
                             label="Wysylaj zawsze (pomin limit raz na minute)"
                             checked={!!macro.bypassCooldown}
-                            onChange={(e: ChangeEvent<HTMLInputElement>) => onChange({ ...macro, bypassCooldown: e.target.checked })}
+                            onChange={e => onChange({ ...macro, bypassCooldown: e.target.checked })}
                         />
-                        <Form.Text className="text-muted d-block">
+                        <div className="popup-field__hint">
                             Wysylane na sparowane urzadzenia niezaleznie od tego, czy patrzysz na klienta.
                             Domyslnie nie czesciej niz raz na minute — zaznacz powyzej dla alertow, ktorych
                             nie chcesz stracic przez wczesniejsze powiadomienie. Wymaga sparowania
                             w Ustawieniach interfejsu → Powiadomienia.
-                        </Form.Text>
+                        </div>
+                    </>
+                )}
+                {macro.type === 'speak' && (
+                    <>
+                        <Input
+                            placeholder={isEventTrigger ? 'Tekst do przeczytania' : 'Tekst do przeczytania (puste = dopasowany tekst)'}
+                            value={macro.message || ''}
+                            onChange={e => onChange({ ...macro, message: e.target.value })}
+                        />
+                        <EventArgChips
+                            args={eventArgs}
+                            onInsert={(token) => onChange({ ...macro, message: (macro.message ?? '') + token })}
+                        />
+                        <div className="popup-field__hint">
+                            {isEventTrigger
+                                ? 'Czytane glosem syntezatora mowy.'
+                                : <>Czytane glosem syntezatora mowy. <code>{'{1}'}</code>, <code>{'{2}'}</code>… wstawiaja grupy z wzorca (np. <code>{'Atakuje cie (.+)!'}</code> → <code>{'Atak: {1}'}</code>).</>}
+                            {' '}Glos, tempo i glosnosc ustawisz w Ustawieniach interfejsu → Dzwiek i powiadomienia.
+                        </div>
                     </>
                 )}
                 {macro.type === 'notify' && (
                     <>
-                        <Form.Control
-                            className="mt-1"
-                            type="text"
-                            size="sm"
+                        <Input
+                            mono
                             placeholder={isEventTrigger ? 'Tresc powiadomienia' : 'Tresc powiadomienia (puste = dopasowany tekst)'}
                             value={macro.message || ''}
-                            onChange={(e: ChangeEvent<HTMLInputElement>) => onChange({ ...macro, message: e.target.value })}
-                            autoCorrect="off"
-                            autoComplete="off"
-                            autoCapitalize="off"
-                            spellCheck={false}
+                            onChange={e => onChange({ ...macro, message: e.target.value })}
                         />
                         <EventArgChips
                             args={eventArgs}
                             onInsert={(token) => onChange({ ...macro, message: (macro.message ?? '') + token })}
                         />
                         {notifPermission !== 'granted' && (
-                            <Form.Text className="text-warning d-block">
+                            <div className="popup-field__warning">
                                 {notifPermission === 'unsupported'
                                     ? 'Powiadomienia systemowe nie sa obslugiwane w tej przegladarce. Powiadomienie pojawi sie tylko w kliencie.'
                                     : notifPermission === 'denied'
@@ -432,44 +395,32 @@ function MacroEditor({
                                         : (
                                             <>
                                                 Powiadomienia systemowe sa wylaczone - powiadomienie pojawi sie tylko w kliencie.{' '}
-                                                <Button variant="link" size="sm" className="p-0 align-baseline" onClick={requestNotificationPermission}>
+                                                <button type="button" className="popup-link" onClick={requestNotificationPermission}>
                                                     Wlacz powiadomienia systemowe
-                                                </Button>
+                                                </button>
                                             </>
                                         )}
-                            </Form.Text>
+                            </div>
                         )}
                     </>
                 )}
                 {macro.type === 'functionalBind' && (
                     <>
-                        <Form.Control
-                            className="mt-1 font-monospace"
-                            type="text"
-                            size="sm"
+                        <Input
+                            mono
                             placeholder="Label (np. 'zabij cel')"
                             value={macro.label || ''}
-                            onChange={(e: ChangeEvent<HTMLInputElement>) => onChange({ ...macro, label: e.target.value })}
-                            autoCorrect="off"
-                            autoComplete="off"
-                            autoCapitalize="off"
-                            spellCheck={false}
+                            onChange={e => onChange({ ...macro, label: e.target.value })}
                         />
                         <EventArgChips
                             args={eventArgs}
                             onInsert={(token) => onChange({ ...macro, label: (macro.label ?? '') + token })}
                         />
-                        <Form.Control
-                            className="mt-1 font-monospace"
-                            type="text"
-                            size="sm"
+                        <Input
+                            mono
                             placeholder="Command (np. 'zabij cel')"
                             value={macro.command || ''}
-                            onChange={(e: ChangeEvent<HTMLInputElement>) => onChange({ ...macro, command: e.target.value })}
-                            autoCorrect="off"
-                            autoComplete="off"
-                            autoCapitalize="off"
-                            spellCheck={false}
+                            onChange={e => onChange({ ...macro, command: e.target.value })}
                         />
                         <EventArgChips
                             args={eventArgs}
@@ -478,46 +429,38 @@ function MacroEditor({
                     </>
                 )}
                 {macro.type === 'dim' && (
-                    <div className="d-flex flex-wrap gap-2 mt-1">
-                        <Form.Group style={{ flex: '1 1 45%', minWidth: '100px' }}>
-                            <Form.Label className="mb-0 small">Jasnosc poczatkowa</Form.Label>
-                            <Form.Control
+                    <div className="trigger-action__grid">
+                        <Field label="Jasnosc poczatkowa">
+                            <Input
                                 type="number"
-                                size="sm"
                                 min={0}
                                 max={1}
                                 step={0.1}
                                 value={macro.dimStartOpacity ?? 1}
-                                onChange={(e: ChangeEvent<HTMLInputElement>) => onChange({ ...macro, dimStartOpacity: parseFloat(e.target.value) })}
+                                onChange={e => onChange({ ...macro, dimStartOpacity: parseFloat(e.target.value) })}
                             />
-                        </Form.Group>
-                        <Form.Group style={{ flex: '1 1 45%', minWidth: '100px' }}>
-                            <Form.Label className="mb-0 small">Jasnosc koncowa</Form.Label>
-                            <Form.Control
+                        </Field>
+                        <Field label="Jasnosc koncowa">
+                            <Input
                                 type="number"
-                                size="sm"
                                 min={0}
                                 max={1}
                                 step={0.1}
                                 value={macro.dimEndOpacity ?? 0.3}
-                                onChange={(e: ChangeEvent<HTMLInputElement>) => onChange({ ...macro, dimEndOpacity: parseFloat(e.target.value) })}
+                                onChange={e => onChange({ ...macro, dimEndOpacity: parseFloat(e.target.value) })}
                             />
-                        </Form.Group>
-                        <Form.Group style={{ flex: '1 1 45%', minWidth: '100px' }}>
-                            <Form.Label className="mb-0 small">Czas (ms)</Form.Label>
-                            <Form.Control
+                        </Field>
+                        <Field label="Czas (ms)">
+                            <Input
                                 type="number"
-                                size="sm"
                                 min={100}
                                 step={100}
                                 value={macro.dimDuration ?? 1000}
-                                onChange={(e: ChangeEvent<HTMLInputElement>) => onChange({ ...macro, dimDuration: parseInt(e.target.value, 10) })}
+                                onChange={e => onChange({ ...macro, dimDuration: parseInt(e.target.value, 10) })}
                             />
-                        </Form.Group>
-                        <Form.Group style={{ flex: '1 1 45%', minWidth: '100px' }}>
-                            <Form.Label className="mb-0 small">Przejscie</Form.Label>
-                            <Form.Select
-                                size="sm"
+                        </Field>
+                        <Field label="Przejscie">
+                            <Select
                                 value={macro.dimEasing ?? 'ease-in-out'}
                                 onChange={e => onChange({ ...macro, dimEasing: e.target.value as DimEasing })}
                             >
@@ -526,120 +469,98 @@ function MacroEditor({
                                 <option value="ease-in">Ease In</option>
                                 <option value="ease-out">Ease Out</option>
                                 <option value="ease-in-out">Ease In-Out</option>
-                            </Form.Select>
-                        </Form.Group>
+                            </Select>
+                        </Field>
                     </div>
                 )}
                 {macro.type === 'wrap' && (
-                    <div className="d-flex flex-column gap-1 mt-1">
-                        <Form.Control
-                            size="sm"
-                            type="text"
+                    <>
+                        <Input
+                            mono
                             placeholder="Prefix"
                             value={macro.wrapPrefix || ''}
-                            onChange={(e: ChangeEvent<HTMLInputElement>) => onChange({ ...macro, wrapPrefix: e.target.value })}
-                            autoCorrect="off"
-                            autoComplete="off"
-                            autoCapitalize="off"
-                            spellCheck={false}
+                            onChange={e => onChange({ ...macro, wrapPrefix: e.target.value })}
                         />
-                        <Form.Control
-                            size="sm"
-                            type="text"
+                        <Input
+                            mono
                             placeholder="Suffix"
                             value={macro.wrapSuffix || ''}
-                            onChange={(e: ChangeEvent<HTMLInputElement>) => onChange({ ...macro, wrapSuffix: e.target.value })}
-                            autoCorrect="off"
-                            autoComplete="off"
-                            autoCapitalize="off"
-                            spellCheck={false}
+                            onChange={e => onChange({ ...macro, wrapSuffix: e.target.value })}
                         />
-                        <Form.Select
-                            size="sm"
+                        <Select
                             value={macro.wrapScope || 'match'}
                             onChange={e => onChange({ ...macro, wrapScope: e.target.value as 'match' | 'line' })}
                         >
                             <option value="match">Dopasowanie</option>
                             <option value="line">Cala linia</option>
-                        </Form.Select>
-                    </div>
+                        </Select>
+                    </>
                 )}
+                {macro.type.startsWith('plugin:') && (() => {
+                    const pluginMacro = pluginMacros.find(pm => pm.id === macro.type);
+                    if (!pluginMacro?.configFields?.length) return null;
+                    const config = macro.pluginConfig || {};
+                    return pluginMacro.configFields.map(field => (
+                        <React.Fragment key={field.name}>
+                            {field.type === 'text' && (
+                                <Input
+                                    placeholder={field.label}
+                                    value={config[field.name] ?? field.defaultValue ?? ''}
+                                    onChange={e => onChange({
+                                        ...macro,
+                                        pluginConfig: { ...config, [field.name]: e.target.value }
+                                    })}
+                                />
+                            )}
+                            {field.type === 'number' && (
+                                <Input
+                                    type="number"
+                                    placeholder={field.label}
+                                    value={config[field.name] ?? field.defaultValue ?? 0}
+                                    onChange={e => onChange({
+                                        ...macro,
+                                        pluginConfig: { ...config, [field.name]: Number(e.target.value) }
+                                    })}
+                                />
+                            )}
+                            {field.type === 'select' && field.options && (
+                                <Select
+                                    value={config[field.name] ?? field.defaultValue ?? ''}
+                                    onChange={e => onChange({
+                                        ...macro,
+                                        pluginConfig: { ...config, [field.name]: e.target.value }
+                                    })}
+                                >
+                                    {field.options.map(opt => (
+                                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                    ))}
+                                </Select>
+                            )}
+                        </React.Fragment>
+                    ));
+                })()}
             </div>
             {macro.type === 'color' && (
-                <Form.Control
+                <input
                     type="color"
-                    size="sm"
-                    style={{ width: '2.2rem' }}
+                    className="trigger-action__color"
                     value={macro.color || '#ffffff'}
                     onChange={e => onChange({ ...macro, color: e.target.value })}
+                    title="Kolor"
                 />
             )}
             {macro.type === 'replace' && (
-                <Form.Control
-                    type="text"
-                    size="sm"
+                <Input
+                    mono
+                    className="trigger-action__replace"
                     placeholder="Replacement"
                     value={macro.to || ''}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) => onChange({ ...macro, to: e.target.value })}
-                    style={{ width: '100%', maxWidth: '8rem' }}
-                    autoCorrect="off"
-                    autoComplete="off"
-                    autoCapitalize="off"
-                    spellCheck={false}
+                    onChange={e => onChange({ ...macro, to: e.target.value })}
                 />
             )}
-            {macro.type.startsWith('plugin:') && (() => {
-                const pluginMacro = pluginMacros.find(pm => pm.id === macro.type);
-                if (!pluginMacro?.configFields?.length) return null;
-                const config = macro.pluginConfig || {};
-                return (
-                    <div className="d-flex flex-column gap-1">
-                        {pluginMacro.configFields.map(field => (
-                            <div key={field.name}>
-                                {field.type === 'text' && (
-                                    <Form.Control
-                                        size="sm"
-                                        type="text"
-                                        placeholder={field.label}
-                                        value={config[field.name] ?? field.defaultValue ?? ''}
-                                        onChange={e => onChange({
-                                            ...macro,
-                                            pluginConfig: { ...config, [field.name]: e.target.value }
-                                        })}
-                                    />
-                                )}
-                                {field.type === 'number' && (
-                                    <Form.Control
-                                        size="sm"
-                                        type="number"
-                                        placeholder={field.label}
-                                        value={config[field.name] ?? field.defaultValue ?? 0}
-                                        onChange={e => onChange({
-                                            ...macro,
-                                            pluginConfig: { ...config, [field.name]: Number(e.target.value) }
-                                        })}
-                                    />
-                                )}
-                                {field.type === 'select' && field.options && (
-                                    <Form.Select
-                                        size="sm"
-                                        value={config[field.name] ?? field.defaultValue ?? ''}
-                                        onChange={e => onChange({
-                                            ...macro,
-                                            pluginConfig: { ...config, [field.name]: e.target.value }
-                                        })}
-                                    >
-                                        {field.options.map(opt => (
-                                            <option key={opt.value} value={opt.value}>{opt.label}</option>
-                                        ))}
-                                    </Form.Select>
-                                )}
-                            </div>
-                        ))}
-                    </div>
-                );
-            })()}
-            <Button size="sm" variant="secondary" onClick={onRemove}><Trash2 size={16} /></Button>
+            <Button variant="danger" size="sm" onClick={onRemove} title="Usun akcje">
+                <Trash2 size={14} />
+            </Button>
         </div>
     );
 }
@@ -735,6 +656,16 @@ const TriggerEditModal: React.FC<TriggerEditModalProps> = ({
         onSave(entry);
     }
 
+    function changeTriggerType(next: TriggerType) {
+        setTriggerType(next);
+        // Pattern-only actions make no sense on an event; plugin macros are kept.
+        if (next === 'event') {
+            setMacros(prev => prev.filter(m =>
+                EVENT_COMPATIBLE_MACROS.has(m.type) || m.type.startsWith('plugin:')
+            ));
+        }
+    }
+
     const isValid = triggerType === 'event' ? !!event : !!pattern.trim();
 
     const selectedEvent =
@@ -749,181 +680,132 @@ const TriggerEditModal: React.FC<TriggerEditModalProps> = ({
     const applicableConditions = conditions.filter(c => selectedEventArgs.some(a => a.name === c.arg));
 
     return (
-        <div
-            className="modal show d-block"
-            style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1060 }}
-            onClick={onClose}
+        <Dialog
+            title={isEdit ? 'Edytuj trigger' : 'Dodaj trigger'}
+            onClose={onClose}
+            size="lg"
+            className="trigger-edit"
+            footer={(
+                <>
+                    <Button onClick={onClose}>Anuluj</Button>
+                    <Button variant="solid" onClick={handleSave} disabled={!isValid}>
+                        {isEdit ? 'Zapisz' : 'Dodaj'}
+                    </Button>
+                </>
+            )}
         >
-            <div
-                className="modal-dialog modal-dialog-centered modal-lg"
-                style={{ maxHeight: '90vh' }}
-                onClick={e => e.stopPropagation()}
-            >
-                <div className="modal-content" style={{ maxHeight: '85vh', display: 'flex', flexDirection: 'column' }}>
-                    <div className="modal-header">
-                        <h5 className="modal-title">
-                            {isEdit ? 'Edytuj trigger' : 'Dodaj trigger'}
-                        </h5>
-                        <button type="button" className="btn-close" onClick={onClose} />
-                    </div>
-                    <div className="modal-body" style={{ overflowY: 'auto', minHeight: '40vh' }}>
-                        <div className="d-flex gap-2 mb-3">
-                            <Form.Check
-                                type="radio"
-                                id="modal-triggerType-pattern"
-                                label="Wzorzec tekstu"
-                                checked={triggerType === 'pattern'}
-                                onChange={() => {
-                                    setTriggerType('pattern');
-                                    setMacros(prev => prev.filter(m =>
-                                        !EVENT_COMPATIBLE_MACROS.has(m.type) || m.type.startsWith('plugin:') || EVENT_COMPATIBLE_MACROS.has(m.type)
-                                    ));
-                                }}
-                            />
-                            <Form.Check
-                                type="radio"
-                                id="modal-triggerType-event"
-                                label="Zdarzenie"
-                                checked={triggerType === 'event'}
-                                onChange={() => {
-                                    setTriggerType('event');
-                                    setMacros(prev => prev.filter(m =>
-                                        EVENT_COMPATIBLE_MACROS.has(m.type) || m.type.startsWith('plugin:')
-                                    ));
-                                }}
-                            />
-                        </div>
+            <div className="popup-stack">
+                <Field label="Wyzwalany przez">
+                    <Segmented value={triggerType} options={TRIGGER_TYPE_OPTIONS} onChange={changeTriggerType} />
+                </Field>
 
-                        {triggerType === 'pattern' ? (
-                            <>
-                                <div className="d-flex gap-2 mb-2 align-items-start">
-                                    <Form.Control
-                                        type="text"
-                                        size="sm"
-                                        placeholder="Pattern"
-                                        value={pattern}
-                                        onChange={(e: ChangeEvent<HTMLInputElement>) => setPattern(e.target.value)}
-                                        className="font-monospace flex-grow-1"
-                                        autoCorrect="off"
-                                        autoComplete="off"
-                                        autoCapitalize="off"
-                                        spellCheck={false}
-                                    />
-                                    <FlagsPicker value={flags} onChange={setFlags} />
-                                </div>
-                                <div className="mb-3">
-                                    <Form.Control
-                                        type="text"
-                                        size="sm"
-                                        list="gmcp-msg-types"
-                                        placeholder="Typ wiadomosci (opcjonalnie)"
-                                        value={gmcpMsgType}
-                                        onChange={(e: ChangeEvent<HTMLInputElement>) => setGmcpMsgType(e.target.value)}
-                                        autoCorrect="off"
-                                        autoComplete="off"
-                                        autoCapitalize="off"
-                                        spellCheck={false}
-                                    />
-                                    <datalist id="gmcp-msg-types">
-                                        {GMCP_MSG_TYPES.map(t => (
-                                            <option key={t.id} value={t.id}>{t.label}</option>
-                                        ))}
-                                    </datalist>
-                                </div>
-                            </>
-                        ) : (
-                            <div className="mb-3">
-                                <Form.Select
-                                    size="sm"
-                                    value={gmcpPicker ? GMCP_GROUP_VALUE : event}
-                                    onChange={(e) => {
-                                        const value = e.target.value;
-                                        setGmcpPicker(value === GMCP_GROUP_VALUE);
-                                        setEvent(value === GMCP_GROUP_VALUE ? '' : value);
-                                    }}
-                                >
-                                    <option value="">Wybierz zdarzenie...</option>
-                                    {(() => {
-                                        const byCategory = new Map<string, SupportedEvent[]>();
-                                        for (const ev of SUPPORTED_EVENTS) {
-                                            if (ev.category === GMCP_EVENT_CATEGORY) continue;
-                                            if (!byCategory.has(ev.category)) byCategory.set(ev.category, []);
-                                            byCategory.get(ev.category)!.push(ev);
-                                        }
-                                        return Array.from(byCategory.entries()).map(([category, events]) => (
-                                            <optgroup key={category} label={category}>
-                                                {events.map(ev => (
-                                                    <option key={ev.id} value={ev.id}>{ev.label}</option>
-                                                ))}
-                                            </optgroup>
-                                        ));
-                                    })()}
-                                    <option value={GMCP_GROUP_VALUE}>GMCP</option>
-                                </Form.Select>
-                                {gmcpPicker && (
-                                    <Form.Select
-                                        size="sm"
-                                        className="mt-2"
-                                        data-testid="trigger-gmcp-type"
-                                        value={event}
-                                        onChange={(e) => setEvent(e.target.value)}
-                                    >
-                                        <option value="">Wybierz typ GMCP...</option>
-                                        {GMCP_EVENTS.map(ev => (
+                {triggerType === 'pattern' ? (
+                    <>
+                        <Field label="Wzorzec">
+                            <div className="popup-inline">
+                                <Input
+                                    mono
+                                    placeholder="Pattern"
+                                    value={pattern}
+                                    onChange={e => setPattern(e.target.value)}
+                                />
+                                <FlagsPicker value={flags} onChange={setFlags} />
+                            </div>
+                        </Field>
+                        <Field label="Typ wiadomosci" hint="Opcjonalnie — dopasuj tylko wiadomosci danego typu.">
+                            <Input
+                                mono
+                                list="gmcp-msg-types"
+                                placeholder="Typ wiadomosci (opcjonalnie)"
+                                value={gmcpMsgType}
+                                onChange={e => setGmcpMsgType(e.target.value)}
+                            />
+                            <datalist id="gmcp-msg-types">
+                                {GMCP_MSG_TYPES.map(t => (
+                                    <option key={t.id} value={t.id}>{t.label}</option>
+                                ))}
+                            </datalist>
+                        </Field>
+                    </>
+                ) : (
+                    <Field label="Zdarzenie" hint={selectedEvent?.description}>
+                        <Select
+                            value={gmcpPicker ? GMCP_GROUP_VALUE : event}
+                            onChange={(e) => {
+                                const value = e.target.value;
+                                setGmcpPicker(value === GMCP_GROUP_VALUE);
+                                setEvent(value === GMCP_GROUP_VALUE ? '' : value);
+                            }}
+                        >
+                            <option value="">Wybierz zdarzenie...</option>
+                            {(() => {
+                                const byCategory = new Map<string, SupportedEvent[]>();
+                                for (const ev of SUPPORTED_EVENTS) {
+                                    if (ev.category === GMCP_EVENT_CATEGORY) continue;
+                                    if (!byCategory.has(ev.category)) byCategory.set(ev.category, []);
+                                    byCategory.get(ev.category)!.push(ev);
+                                }
+                                return Array.from(byCategory.entries()).map(([category, events]) => (
+                                    <optgroup key={category} label={category}>
+                                        {events.map(ev => (
                                             <option key={ev.id} value={ev.id}>{ev.label}</option>
                                         ))}
-                                    </Form.Select>
-                                )}
-                                {selectedEvent?.description && (
-                                    <Form.Text className="text-muted d-block mt-1">
-                                        {selectedEvent.description}
-                                    </Form.Text>
-                                )}
-                            </div>
+                                    </optgroup>
+                                ));
+                            })()}
+                            <option value={GMCP_GROUP_VALUE}>GMCP</option>
+                        </Select>
+                        {gmcpPicker && (
+                            <Select
+                                data-testid="trigger-gmcp-type"
+                                value={event}
+                                onChange={(e) => setEvent(e.target.value)}
+                            >
+                                <option value="">Wybierz typ GMCP...</option>
+                                {GMCP_EVENTS.map(ev => (
+                                    <option key={ev.id} value={ev.id}>{ev.label}</option>
+                                ))}
+                            </Select>
                         )}
+                    </Field>
+                )}
 
-                        {triggerType === 'event' && selectedEventArgs.length > 0 && (
-                            <ConditionsEditor
-                                conditions={applicableConditions}
-                                onChange={setConditions}
-                                args={selectedEventArgs}
-                            />
-                        )}
+                {triggerType === 'event' && selectedEventArgs.length > 0 && (
+                    <ConditionsEditor
+                        conditions={applicableConditions}
+                        onChange={setConditions}
+                        args={selectedEventArgs}
+                    />
+                )}
 
-                        <div className="d-flex align-items-center gap-2 mb-2">
-                            <label className="form-label mb-0">Akcje</label>
-                            <button type="button" className="btn btn-primary py-0 px-2" style={{ fontSize: '0.75rem' }} onClick={addMacro}>Dodaj akcję</button>
+                <div className="trigger-section">
+                    <div className="trigger-section__head">
+                        <h3 className="trigger-section__title">Akcje</h3>
+                        {macros.length > 0 && <span className="popup-badge">{macros.length}</span>}
+                        <Button variant="ghost" size="sm" className="trigger-section__add" onClick={addMacro}>
+                            Dodaj akcję
+                        </Button>
+                    </div>
+                    {macros.length > 0 && (
+                        <div className="trigger-actions">
+                            {macros.map((m, i) => (
+                                <MacroEditor
+                                    key={i}
+                                    macro={m}
+                                    onChange={macro => updateMacro(i, macro)}
+                                    onRemove={() => removeMacro(i)}
+                                    sounds={customSounds}
+                                    onRequestSoundUpload={onRequestSoundUpload}
+                                    pluginMacros={pluginMacros}
+                                    isEventTrigger={triggerType === 'event'}
+                                    eventArgs={selectedEventArgs}
+                                />
+                            ))}
                         </div>
-                        {macros.map((m, i) => (
-                            <MacroEditor
-                                key={i}
-                                macro={m}
-                                onChange={macro => updateMacro(i, macro)}
-                                onRemove={() => removeMacro(i)}
-                                sounds={customSounds}
-                                onRequestSoundUpload={onRequestSoundUpload}
-                                pluginMacros={pluginMacros}
-                                isEventTrigger={triggerType === 'event'}
-                                eventArgs={selectedEventArgs}
-                            />
-                        ))}
-                    </div>
-                    <div className="modal-footer">
-                        <button type="button" className="btn btn-secondary" onClick={onClose}>
-                            Anuluj
-                        </button>
-                        <button
-                            type="button"
-                            className="btn btn-primary"
-                            onClick={handleSave}
-                            disabled={!isValid}
-                        >
-                            {isEdit ? 'Zapisz' : 'Dodaj'}
-                        </button>
-                    </div>
+                    )}
                 </div>
             </div>
-        </div>
+        </Dialog>
     );
 };
 

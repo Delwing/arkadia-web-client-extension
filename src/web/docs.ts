@@ -1,17 +1,9 @@
+/**
+ * Dokumentacja for forge-ui, which hosts it in its own modal. The stock UI has
+ * its own window (src/web/documentation/DocsWindow.tsx) over the same pages.
+ */
 import { marked, type MarkedExtension } from "marked";
-import Modal from "bootstrap/js/dist/modal";
-import overviewMd from "../../docs/OVERVIEW.md?raw";
-import combatMd from "../../docs/COMBAT.md?raw";
-import navigationMd from "../../docs/NAVIGATION.md?raw";
-import inventoryMd from "../../docs/INVENTORY.md?raw";
-import trackingMd from "../../docs/TRACKING.md?raw";
-import herbsMd from "../../docs/HERBS.md?raw";
-import bindsMd from "../../docs/BINDS.md?raw";
-import shortcutsMd from "../../docs/SHORTCUTS.md?raw";
-import aliasesMd from "../../docs/ALIASES.md?raw";
-import synchronizacjaMd from "../../docs/SYNCHRONIZACJA.md?raw";
-import skryptyMd from "../../docs/SKRYPTY.md?raw";
-import { objectListDocHtml, objectListDocInit } from "./objectListDoc";
+import { DOC_PAGES } from "./documentation/docPages";
 
 function slugify(text: string): string {
   return text
@@ -33,27 +25,8 @@ const renderer: MarkedExtension = {
 
 marked.use(renderer);
 
-interface DocDef {
-  key: string;
-  title: string;
-  md?: string;
-  html?: string;
-  init?: (container: HTMLElement) => void;
-}
-const docs: DocDef[] = [
-  { key: "overview", title: "Przeglad", md: overviewMd },
-  { key: "combat", title: "Walka", md: combatMd },
-  { key: "objectlist", title: "Lista obiektow", html: objectListDocHtml, init: objectListDocInit },
-  { key: "navigation", title: "Mapa i nawigacja", md: navigationMd },
-  { key: "inventory", title: "Ekwipunek", md: inventoryMd },
-  { key: "tracking", title: "Postepy", md: trackingMd },
-  { key: "herbs", title: "Ziola", md: herbsMd },
-  { key: "binds", title: "Bindowanie", md: bindsMd },
-  { key: "shortcuts", title: "Skroty lokacji", md: shortcutsMd },
-  { key: "aliases", title: "Inne", md: aliasesMd },
-  { key: "sync", title: "Synchronizacja", md: synchronizacjaMd },
-  { key: "skrypty", title: "Skrypty i automatyzacja", md: skryptyMd }
-];
+type DocDef = (typeof DOC_PAGES)[number];
+const docs = DOC_PAGES;
 
 interface SearchResult {
   doc: DocDef;
@@ -81,7 +54,7 @@ function searchDocs(query: string): SearchResult[] {
 
 function formatSearchResults(results: SearchResult[], query: string): string {
   if (results.length === 0) {
-    return `<p class="text-muted">Brak wynikow dla "${query}"</p>`;
+    return `<p class="popup-muted">Brak wynikow dla "${query}"</p>`;
   }
 
   const grouped = new Map<string, string[]>();
@@ -109,50 +82,22 @@ function formatSearchResults(results: SearchResult[], query: string): string {
 }
 
 /**
- * The inner docs UI (nav + search + content), rendered as a Bootstrap dropdown
- * nav — used by the stock modal, which loads full Bootstrap so the dropdown
- * toggles.
- */
-function docsBodyHtml(): string {
-  return `
-<div class="d-flex gap-2 align-items-center flex-wrap">
-  <div class="dropdown docs-nav">
-    <button class="btn btn-secondary dropdown-toggle" type="button" id="docs-menu" data-bs-toggle="dropdown">
-      Wybierz dokument
-    </button>
-    <ul class="dropdown-menu">
-      ${docs
-        .map(
-          (d) =>
-            `<li><a class="dropdown-item" href="#" data-key="${d.key}">${d.title}</a></li>`,
-        )
-        .join("")}
-    </ul>
-  </div>
-  <input type="text" id="docs-search" class="form-control form-control-sm" style="max-width: 200px;" placeholder="Szukaj...">
-</div>
-<div id="docs-content" class="docs-content flex-fill overflow-auto"></div>`;
-}
-
-/**
- * The inner docs UI rendered with a plain button-row nav instead of a Bootstrap
- * dropdown — used by hosts (e.g. forge-ui) that do not load Bootstrap's dropdown
- * JS. The nav still exposes `.docs-nav [data-key]`, so `wireDocs` handles both.
+ * The docs UI with a plain button-row nav. The nav still exposes `.docs-nav [data-key]`, so `wireDocs` handles both.
  */
 function docsBodyHtmlPlain(): string {
   return `
-<div class="d-flex gap-2 align-items-center flex-wrap docs-toolbar">
-  <div class="docs-nav d-flex gap-1 flex-wrap">
+<div class="popup-row docs-toolbar">
+  <div class="docs-nav">
     ${docs
       .map(
         (d) =>
-          `<button type="button" class="btn btn-secondary btn-sm" data-key="${d.key}">${d.title}</button>`,
+          `<button type="button" class="popup-btn popup-btn--control popup-btn--sm" data-key="${d.key}">${d.title}</button>`,
       )
       .join("")}
   </div>
-  <input type="text" id="docs-search" class="form-control form-control-sm ms-auto" style="max-width: 200px;" placeholder="Szukaj...">
+  <input type="text" id="docs-search" class="popup-input popup-input--control docs-search" placeholder="Szukaj...">
 </div>
-<div id="docs-content" class="docs-content flex-fill overflow-auto"></div>`;
+<div id="docs-content" class="docs-content docs-content--fill"></div>`;
 }
 
 /**
@@ -202,7 +147,7 @@ function wireDocs(root: HTMLElement): { showDoc: (key: string) => void } {
       searchInput.value = "";
     }
     navButtons.forEach((btn) =>
-      btn.classList.toggle("active", btn.dataset.key === key),
+      btn.classList.toggle("popup-btn--solid", btn.dataset.key === key),
     );
   }
 
@@ -236,51 +181,13 @@ function wireDocs(root: HTMLElement): { showDoc: (key: string) => void } {
   return { showDoc: (key: string) => void showDoc(key) };
 }
 
-function createModal() {
-  const modalEl = document.createElement("div");
-  modalEl.id = "docs-modal";
-  modalEl.className = "modal fade";
-  modalEl.tabIndex = -1;
-  modalEl.innerHTML = `
-<div class="modal-dialog modal-xl modal-dialog-scrollable">
-  <div class="modal-content">
-    <div class="modal-header">
-      <h5 class="modal-title">Dokumentacja</h5>
-      <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-    </div>
-    <div class="modal-body d-flex flex-column gap-3">${docsBodyHtml()}</div>
-  </div>
-</div>`;
-  document.body.appendChild(modalEl);
-  const modal = new Modal(modalEl);
-  return { modalEl, modal };
-}
-
-function initDocs() {
-  const docsButton = document.getElementById(
-    "docs-button",
-  ) as HTMLButtonElement | null;
-  if (!docsButton) return;
-
-  const { modalEl, modal } = createModal();
-  const body = modalEl.querySelector(".modal-body") as HTMLElement;
-  const { showDoc } = wireDocs(body);
-
-  docsButton.addEventListener("click", () => {
-    showDoc(docs[0].key);
-    modal.show();
-  });
-}
-
-document.addEventListener("DOMContentLoaded", initDocs);
-
 /**
- * Render the documentation UI into an arbitrary container (no Bootstrap modal).
+ * Render the documentation UI into an arbitrary container.
  * Used by alternative UIs (forge-ui) that host the docs inside their own modal
  * shell. Populates `container` and shows the first document.
  */
 export function mountDocs(container: HTMLElement): void {
-  container.classList.add("d-flex", "flex-column", "gap-3");
+  container.classList.add("popup-stack", "docs-root");
   container.innerHTML = docsBodyHtmlPlain();
   const { showDoc } = wireDocs(container);
   showDoc(docs[0].key);

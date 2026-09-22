@@ -1,0 +1,106 @@
+// ============================================================
+//  Stock panel layout, scoped to the forge menu modal.
+//
+//  The stock settings/editors (Opcje, Interfejs, Triggery, Aliasy, Skrypty, …)
+//  are built from the shared popup-* primitives, which forge already loads
+//  (src/web/popups/popups.css). What forge does NOT load is stock's global
+//  style.css: it would repaint forge's whole base UI. The handful of stock
+//  layout classes those panels still need live in the partials below, nested
+//  under `.forge-menu-modal` so they reach only the modal.
+//
+//  The document base (box sizing, heading/paragraph spacing, controls taking the
+//  font) that stock gets from src/web/base.css is restated here for the modal's
+//  subtree only, for the same reason.
+//
+//  Loaded lazily (first modal open, via menuStockCss.ts) so it stays out of
+//  forge's initial chunk.
+// ============================================================
+
+// Referenced by the map version badge in _stock-settings; keyframes can't be
+// nested inside a style rule, so it lives at the top level.
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.forge-menu-modal {
+    // ── Document base, modal subtree only ────────────────────
+    &,
+    *,
+    *::before,
+    *::after {
+        box-sizing: border-box;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+        margin-top: 0;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+        line-height: 1.2;
+    }
+    h5 { font-size: 1.25rem; }
+    h6 { font-size: 1rem; }
+
+    p {
+        margin-top: 0;
+        margin-bottom: 1rem;
+    }
+    ol,
+    ul {
+        margin-top: 0;
+        margin-bottom: 1rem;
+        padding-left: 2rem;
+    }
+    hr {
+        margin: 1rem 0;
+        color: inherit;
+        border: 0;
+        border-top: 1px solid;
+        opacity: 0.25;
+    }
+    small {
+        font-size: 0.875em;
+    }
+    img,
+    svg {
+        vertical-align: middle;
+    }
+    table {
+        border-collapse: collapse;
+    }
+    th {
+        text-align: inherit;
+    }
+    label {
+        display: inline-block;
+    }
+    input,
+    button,
+    select,
+    textarea {
+        margin: 0;
+        font-family: inherit;
+        font-size: inherit;
+        line-height: inherit;
+    }
+    textarea {
+        resize: vertical;
+    }
+    [hidden] {
+        display: none !important;
+    }
+
+    // Stock settings-layout classes.
+    @import "stock-settings";
+
+    // Stock alias/trigger list-card classes, shared by the Aliasy and Triggery lists.
+    @import "stock-alias-list";
+
+    // Stock "Lista obiektow" documentation + object-card component classes
+    // (Dokumentacja → Lista obiektow).
+    @import "stock-object-list-doc";
+
+    // Stock plugin-manager classes for the Skrypty panel - the installed list and
+    // the catalogue grid.
+    @import "stock-plugin-manager";
+}

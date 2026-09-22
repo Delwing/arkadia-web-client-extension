@@ -11,14 +11,14 @@
 //  buttons wrapped underneath instead of sitting at the right edge.
 //
 //  @imported INSIDE the `.forge-menu-modal { … }` block of
-//  forge-modal-bootstrap.scss, so every selector compiles prefixed with
+//  forge-menu-stock.scss, so every selector compiles prefixed with
 //  `.forge-menu-modal`. Colours come from the `--popup-*` vars floatingPopup.css
 //  defines on `.forge-menu-modal`, so the copy recolours to the forge palette
 //  for free.
 //
 //  Deliberate changes vs stock:
 //    * the monospace stack is forge's `"JetBrains Mono", …` (same choice as
-//      _stock-logs) instead of stock's `'Space Mono'`, which forge doesn't load;
+//      the log viewer) instead of stock's `'Space Mono'`, which forge doesn't load;
 //    * `.alias-command`'s hard-coded slate text on a BLUE tint becomes
 //      `--popup-text-dim` on the bronze `--popup-accent-dim-bg` — stock's
 //      literals are the only colours in this block that aren't var-driven;
@@ -143,11 +143,3 @@ $alias-mono: "JetBrains Mono", ui-monospace, monospace;
     font-weight: 500;
 }
 
-// The GMCP-scope pill on a pattern trigger is `.badge.bg-secondary` — Bootstrap's
-// slate utility, which menu.css leaves alone because `.bg-*` is used all over the
-// modals. Inside the entry line that slate reads as the one cold colour in an
-// otherwise bronze list, so it's re-tinted here only (scope stays these two lists).
-.alias-entry .badge.bg-secondary {
-    background-color: rgba(110, 86, 32, 0.42) !important;
-    color: var(--parchment);
-}

@@ -65,6 +65,27 @@ async function setEnemyGuilds(page: Page, charName: string, guilds: string[]): P
     await page.waitForTimeout(100);
 }
 
+/** Merge character-scoped settings in, the same way setEnemyGuilds does. */
+async function setCharacterSettings(page: Page, charName: string, patch: Record<string, unknown>): Promise<void> {
+    await page.evaluate(
+        ([name, p]) => {
+            const key = `${name}:settings`;
+            const existing = JSON.parse(localStorage.getItem(key) ?? '{}');
+            Object.assign(existing, p);
+            localStorage.setItem(key, JSON.stringify(existing));
+            window.dispatchEvent(
+                new StorageEvent('storage', {
+                    key,
+                    newValue: JSON.stringify(existing),
+                    storageArea: localStorage,
+                }),
+            );
+        },
+        [charName, patch] as [string, Record<string, unknown>],
+    );
+    await page.waitForTimeout(100);
+}
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -240,6 +261,71 @@ test.describe('Enemy bind keys (F1/F2/F3 and Ctrl+F1/F2/F3)', () => {
                     timeout: 3000,
                 })
                 .toBe(`zablokuj ob_${ENEMY3_NUM}`);
+        });
+    });
+
+    // -----------------------------------------------------------------------
+    // Commands of the player's own on the binds
+    // -----------------------------------------------------------------------
+
+    test.describe('custom bind commands', () => {
+        async function bindOneEnemy(page: Page): Promise<void> {
+            await setEnemyGuilds(page, 'Warrior', ['CKN']);
+            await pushGmcp(page, GMCP_PATHS.OBJECTS_DATA, {
+                [String(PLAYER_NUM)]: {desc: 'Warrior', team: false, attack_num: false},
+                [String(ENEMY1_NUM)]: {desc: 'Wysoki wojownik', attack_num: false},
+            });
+            await pushGmcp(page, GMCP_PATHS.OBJECTS_NUMS, [PLAYER_NUM, ENEMY1_NUM]);
+        }
+
+        test('F1 sends the configured command with {wrog} filled in', async ({page}) => {
+            await setCharacterSettings(page, 'Warrior', {enemyBindsAttackCommand: 'wesprzyj {wrog}'});
+            await bindOneEnemy(page);
+
+            await resetCommandLog(page);
+            await pressKey(page, 'F1');
+            await expect
+                .poll(async () => await getLastOutgoingCommand(page), {timeout: 3000})
+                .toBe(`wesprzyj ob_${ENEMY1_NUM}`);
+        });
+
+        test('F1 runs a ;-separated sequence with the built-in attack as a step', async ({page}) => {
+            await setCharacterSettings(page, 'Warrior', {enemyBindsAttackCommand: 'dobadz broni; {atak}; krzyknij {wrog}'});
+            await bindOneEnemy(page);
+
+            await resetCommandLog(page);
+            await pressKey(page, 'F1');
+            await expect
+                .poll(async () => await getCommandLog(page), {timeout: 3000})
+                .toEqual(['dobadz broni', `zabij ob_${ENEMY1_NUM}`, `krzyknij ob_${ENEMY1_NUM}`]);
+        });
+
+        test('Ctrl+F1 sends the configured block command', async ({page}) => {
+            await setCharacterSettings(page, 'Warrior', {enemyBindsBlockCommand: 'rozbroj {wrog}'});
+            await bindOneEnemy(page);
+
+            await resetCommandLog(page);
+            await pressKey(page, 'F1', {ctrl: true});
+            await expect
+                .poll(async () => await getLastOutgoingCommand(page), {timeout: 3000})
+                .toBe(`rozbroj ob_${ENEMY1_NUM}`);
+        });
+
+        test('an empty command leaves the built-in behaviour alone', async ({page}) => {
+            await setCharacterSettings(page, 'Warrior', {enemyBindsAttackCommand: '', enemyBindsBlockCommand: ''});
+            await bindOneEnemy(page);
+
+            await resetCommandLog(page);
+            await pressKey(page, 'F1');
+            await expect
+                .poll(async () => await getLastOutgoingCommand(page), {timeout: 3000})
+                .toBe(`zabij ob_${ENEMY1_NUM}`);
+
+            await resetCommandLog(page);
+            await pressKey(page, 'F1', {ctrl: true});
+            await expect
+                .poll(async () => await getLastOutgoingCommand(page), {timeout: 3000})
+                .toBe(`zablokuj ob_${ENEMY1_NUM}`);
         });
     });
 

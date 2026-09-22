@@ -27,8 +27,6 @@
     "@shikijs/monaco": "^3.15.0",
     "@tanstack/react-virtual": "^3.13.13",
     "ansi-to-html": "^0.7.2",
-    "bootstrap": "^5.3.7",
-    "bootswatch": "^5.3.7",
     "esbuild-wasm": "^0.27.0",
     "file-icons-js": "^1.1.0",
     "firebase": "^10.14.1",
@@ -42,7 +40,6 @@
     "pako": "^2.1.0",
     "qrcode-generator": "^2.0.4",
     "react": "^19.1.0",
-    "react-bootstrap": "^2.10.10",
     "react-dom": "^19.1.0",
     "shiki": "^3.15.0",
     "sql.js": "^1.13.0"
@@ -50,7 +47,6 @@
   "devDependencies": {
     "@eslint/js": "^9.25.0",
     "@playwright/test": "1.56.1",
-    "@types/bootstrap": "^5.2.10",
     "@types/jest": "^29.5.5",
     "@types/pako": "^2.0.4",
     "@types/react": "^19.1.2",

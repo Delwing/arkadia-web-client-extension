@@ -59,16 +59,9 @@ body.layout-manager-enabled #content-area > .world {
 :root {
   --surface-ground: transparent;   /* dock zones show the stone backdrop */
   --surface-border: transparent;   /* no hard grid lines; splitters bronze on hover */
-  /* Splitters / resize handles / drop previews / active tab underline. Was
-     `--bs-primary`, which forge only got away with because this unlayered
-     `:root` outranks the `:root` block that the scoped modal stylesheet leaks
-     from `@layer forge-modal-bootstrap`. layout.css reads the shell-neutral
-     token now, so nothing here depends on Bootstrap being present. */
+  /* Splitters / resize handles / drop previews / active tab underline. */
   --layout-accent: var(--bronze);
-  /* Empty-leaf placeholder text. This one had NO forge mapping, so it sat on
-     layout.css's #888 fallback until the modal stylesheet leaked Bootstrap's
-     light `--bs-secondary-color` (near-black) at `:root` and turned it into
-     dark-on-dark for the rest of the session. */
+  /* Empty-leaf placeholder text. */
   --layout-muted: var(--parchment-dim);
   /* --layout-warning (drag hint) keeps layout.css's #ffc107 fallback. */
 }
@@ -143,7 +136,7 @@ body.layout-manager-enabled #content-area > .world {
 /* Pin the header to a fixed height so every window's chrome is identical
    regardless of which controls it carries. With `height:auto` the row grew to
    its tallest child, so a panel whose actions include a taller control (e.g. the
-   map's 22px `.map-header-menu__image-btn`) rendered a 40px header while a panel
+   map's 22px copy-as-image button) rendered a 40px header while a panel
    with only the 20px icon buttons (e.g. "W poblizu") rendered 38px. 38px matches
    the tab-bar parity height below, unifying single, tabbed and floating headers.
    align-items:center keeps every control vertically centred within it. */
@@ -217,7 +210,7 @@ body.layout-manager-enabled #content-area > .world {
    text action button reuses (the objectList "Lista" mode toggle, chat team
    toggle, popup headerActions…), rather than each carrying its own stock CSS.
    Scoped to DIRECT-child buttons so it spares the nested icon toggles
-   (.map-header-menu__toggle + its dropdown items) and the icon control buttons
+   (.popup-menu__toggle + its dropdown items) and the icon control buttons
    (.panel-button: pin / lock / close / reset / popout). */
 .managed-panel__header-actions > button:not(.panel-button) {
   display: inline-flex;
@@ -307,11 +300,14 @@ body.layout-manager-enabled.layout-rails-vertical #input-area .rail {
 /* ============================================================================
    POPUP CONTENT THEMING — the full `--popup-*` remap forge has always used
    (ported verbatim from the old components/floatingPopup.css). Scoped to every
-   managed window + any body-portaled overlay, so popup buttons / inputs /
-   dropdowns / tags / charts read as forged instead of the stock dark defaults.
+   managed window, any body-portaled overlay and the menu modal (the stock
+   panels, forged further in components/menu/menu.css), so popup buttons /
+   inputs / dropdowns / tags / charts read as forged instead of the stock dark
+   defaults.
    ============================================================================ */
 .managed-panel,
-[data-popup-overlay] {
+[data-popup-overlay],
+.forge-menu-modal {
   --popup-bg: transparent;
   --popup-section-bg: rgba(10, 9, 8, 0.55);
   --popup-subtle-bg: rgba(255, 255, 255, 0.03);
@@ -398,19 +394,27 @@ body.layout-manager-enabled.layout-rails-vertical #input-area .rail {
   --popup-data-spring-green: #92ab7c;
 }
 
+/* The log viewer writes on its accent buttons in `--popup-bg`, which is
+   transparent here (panels sit on the forged plate) - give it the plate's ink. */
+.managed-panel .lv,
+.forge-menu-modal .lv {
+  --lv-accent-contrast: #15120d;
+}
+
 /* A portaled overlay floats over arbitrary content → needs an OPAQUE surface. */
 [data-popup-overlay] {
   --popup-bg: #211d16;
   --popup-section-bg: #211d16;
 }
 
-/* Action-toolbar dropdowns (the shared `.map-header-menu__dropdown` used by the
-   map, object-list/"kondycje", static-map and chat header menus) render INLINE
-   inside the panel — not through a body portal — so they inherit the panel's
+/* Header popovers (the shared `.popup-popover`: the ☰ menus of the map,
+   object-list/"kondycje" and static-map windows, and every window's settings
+   cog) render INLINE inside the panel — not through a body portal — so they
+   inherit the panel's
    transparent `--popup-bg`. They float (position: fixed) over arbitrary content,
    so like a portaled overlay they need an OPAQUE surface; without it the menu
    shows straight through to whatever sits behind the popup. */
-.managed-panel .map-header-menu__dropdown {
+.popup-popover {
   --popup-bg: #211d16;
 }
 

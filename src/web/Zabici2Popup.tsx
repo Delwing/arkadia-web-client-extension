@@ -123,7 +123,7 @@ const Zabici2Popup: React.FC = () => {
     const renderAllTab = () => (
         <div className="zabici2-popup__tab-content">
             {sortedTotals.length === 0 ? (
-                <div className="zabici2-popup__empty">Brak danych o zabitych.</div>
+                <div className="popup-empty">Brak danych o zabitych.</div>
             ) : (
                 <>
                     {sortedTotals.map(({mob, total}) => (
@@ -158,7 +158,7 @@ const Zabici2Popup: React.FC = () => {
                 </select>
             </div>
             {selectedDate && dailyKills.length === 0 && (
-                <div className="zabici2-popup__empty">Brak zabitych w dniu {selectedDate}.</div>
+                <div className="popup-empty">Brak zabitych w dniu {selectedDate}.</div>
             )}
             {dailyKills.length > 0 && (
                 <>
@@ -194,7 +194,7 @@ const Zabici2Popup: React.FC = () => {
                 </select>
             </div>
             {selectedYear && yearlyKills.length === 0 && (
-                <div className="zabici2-popup__empty">Brak zabitych w roku {selectedYear}.</div>
+                <div className="popup-empty">Brak zabitych w roku {selectedYear}.</div>
             )}
             {yearlyKills.length > 0 && (
                 <>
@@ -223,7 +223,7 @@ const Zabici2Popup: React.FC = () => {
             initialWidth={400}
             initialHeight={500}
             className="zabici2-popup"
-            bodyClassName="zabici2-popup-body"
+            bodyClassName="popup-body"
         >
             {characterName && (
                 <div className="postepy2-header">

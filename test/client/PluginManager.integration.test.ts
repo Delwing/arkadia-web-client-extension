@@ -79,6 +79,7 @@ vi.mock('@modules/core/storage', () => ({
   globalStorage: {
     get: jest.fn(),
     set: jest.fn(),
+    onChange: jest.fn(),
   },
 }));
 

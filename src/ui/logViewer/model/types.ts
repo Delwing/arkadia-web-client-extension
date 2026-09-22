@@ -54,6 +54,13 @@ export interface LogSession {
     live: boolean;
     /** File name the session exports as. */
     file: string;
+    /**
+     * The main output window's background while this session was recorded
+     * (the last one, if the player changed it), so the log reads on the ground
+     * it was played on. Undefined for logs recorded before the client stamped
+     * it; the viewer then uses the current one.
+     */
+    background?: string;
     lines: LogLine[];
 }
 

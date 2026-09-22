@@ -8,7 +8,7 @@
  */
 import { allChannelsOn, CHANNELS, type Channel, type ChannelFilter } from "./channels";
 import type { LogEventKind } from "./events";
-import { countMatches, makeMatcher, normalizeMatchIndex, splitMatches, type MatchSegment } from "./search";
+import { findLineHits, makeMatcher, normalizeMatchIndex, splitMatches, type LineHit, type MatchSegment } from "./search";
 import type { LogSession, SearchScope, TimeRange } from "./types";
 
 export interface ViewerState {
@@ -216,38 +216,53 @@ function matchesSessionFilter(session: LogSession, filter: string): boolean {
     return haystack.includes(filter);
 }
 
-export function deriveView(sessions: LogSession[], state: ViewerState): DerivedView {
-    const matcher = makeMatcher(state.query, { regex: state.regex, caseSensitive: state.caseSensitive });
-    const range = appliedRange(state);
-    const filter = state.sessionFilter.trim().toLowerCase();
-    const ordered = orderSessions(sessions);
-    const visibleSessions = ordered.filter((session) => matchesSessionFilter(session, filter));
-    const session = ordered.find((candidate) => candidate.id === state.sessionId) ?? ordered[0];
+interface RowsResult {
+    rows: RenderedRow[];
+    matches: MatchRef[];
+    channelCounts: Record<Channel, number>;
+}
 
-    // Deliberately NOT range-filtered: the range belongs to the session being
-    // viewed, so applying it to another session's badge would be meaningless.
-    const hitsBySession: Record<string, number> = {};
-    const matchEdges: Record<string, MatchEdges> = {};
-    for (const candidate of ordered) {
-        let total = 0;
-        const edges: MatchEdges = {};
-        if (matcher.regex) {
-            for (const line of candidate.lines) {
-                if (!state.channels[line.channel]) continue;
-                const count = countMatches(line.text, matcher.regex);
-                if (count === 0) continue;
-                if (total === 0) edges.first = line.character;
-                edges.last = line.character;
-                total += count;
-            }
-        }
-        hitsBySession[candidate.id] = total;
-        matchEdges[candidate.id] = edges;
+/**
+ * The last rows built, and what they were built from. The view is derived again
+ * on every state change (the match index, a notice, follow), most of which do
+ * not change a single row; this keeps those from rebuilding the whole log.
+ */
+let lastRows: {
+    lines: LogSession["lines"] | null;
+    key: string;
+    channels: ChannelFilter;
+    rangeFrom: number | null;
+    rangeTo: number | null;
+    onlyMatches: boolean;
+    result: RowsResult;
+} | null = null;
+
+function buildRows(
+    session: LogSession | undefined,
+    regex: RegExp | null,
+    hits: LineHit[] | null,
+    key: string,
+    state: ViewerState,
+    range: TimeRange | null,
+): RowsResult {
+    const lines = session?.lines ?? null;
+    if (
+        lastRows &&
+        lastRows.lines === lines &&
+        lastRows.key === key &&
+        lastRows.channels === state.channels &&
+        lastRows.rangeFrom === (range?.from ?? null) &&
+        lastRows.rangeTo === (range?.to ?? null) &&
+        lastRows.onlyMatches === state.onlyMatches
+    ) {
+        return lastRows.result;
     }
 
     const channelCounts = Object.fromEntries(CHANNELS.map((channel) => [channel, 0])) as Record<Channel, number>;
     const rows: RenderedRow[] = [];
     const matches: MatchRef[] = [];
+    // Only the lines the search found are split for highlighting.
+    const hitLines = hits ? new Set(hits.map((hit) => hit.line)) : null;
 
     if (session) {
         session.lines.forEach((line, lineIndex) => {
@@ -262,12 +277,12 @@ export function deriveView(sessions: LogSession[], state: ViewerState): DerivedV
 
             let segments: MatchSegment[] = [{ text: line.text, match: false }];
             let matchCount = 0;
-            if (matcher.regex) {
-                const split = splitMatches(line.text, matcher.regex);
+            if (regex && hitLines?.has(lineIndex)) {
+                const split = splitMatches(line.text, regex);
                 segments = split.segments;
                 matchCount = split.count;
             }
-            if (state.onlyMatches && matcher.regex && matchCount === 0) return;
+            if (state.onlyMatches && regex && matchCount === 0) return;
 
             const rowIndex = rows.length;
             for (let occurrence = 0; occurrence < matchCount; occurrence += 1) {
@@ -286,6 +301,57 @@ export function deriveView(sessions: LogSession[], state: ViewerState): DerivedV
             });
         });
     }
+
+    const result = { rows, matches, channelCounts };
+    lastRows = {
+        lines,
+        key,
+        channels: state.channels,
+        rangeFrom: range?.from ?? null,
+        rangeTo: range?.to ?? null,
+        onlyMatches: state.onlyMatches,
+        result,
+    };
+    return result;
+}
+
+export function deriveView(sessions: LogSession[], state: ViewerState): DerivedView {
+    const matcher = makeMatcher(state.query, { regex: state.regex, caseSensitive: state.caseSensitive });
+    const range = appliedRange(state);
+    const filter = state.sessionFilter.trim().toLowerCase();
+    const ordered = orderSessions(sessions);
+    const visibleSessions = ordered.filter((session) => matchesSessionFilter(session, filter));
+    const session = ordered.find((candidate) => candidate.id === state.sessionId) ?? ordered[0];
+
+    // Deliberately NOT range-filtered: the range belongs to the session being
+    // viewed, so applying it to another session's badge would be meaningless.
+    const hitsBySession: Record<string, number> = {};
+    const matchEdges: Record<string, MatchEdges> = {};
+    for (const candidate of ordered) {
+        let total = 0;
+        const edges: MatchEdges = {};
+        if (matcher.regex) {
+            for (const hit of findLineHits(candidate.lines, state.query, state, matcher.regex)) {
+                const line = candidate.lines[hit.line];
+                if (!state.channels[line.channel]) continue;
+                if (total === 0) edges.first = line.character;
+                edges.last = line.character;
+                total += hit.count;
+            }
+        }
+        hitsBySession[candidate.id] = total;
+        matchEdges[candidate.id] = edges;
+    }
+
+    const searchKey = matcher.regex ? `${state.regex ? "r" : "p"}${state.caseSensitive ? "c" : "i"}:${state.query}` : "";
+    const { rows, matches, channelCounts } = buildRows(
+        session,
+        matcher.regex,
+        session && matcher.regex ? findLineHits(session.lines, state.query, state, matcher.regex) : null,
+        searchKey,
+        state,
+        range,
+    );
 
     const totalMatches = matches.length;
     const currentMatch = normalizeMatchIndex(state.matchIndex, totalMatches);

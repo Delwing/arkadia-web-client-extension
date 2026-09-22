@@ -6,7 +6,7 @@ import { resetHardwareKeyboardDetection } from "@shared/dom";
 import MultiBindStrip from "@web-ui/footer/MultiBindStrip";
 
 /**
- * The bind pills' shortcut hints. "[ALT+1]" is worth its width to someone who
+ * The bind pills' shortcut hints. "ALT+1" is worth its width to someone who
  * can press it and nothing but clutter to someone who cannot, so it follows the
  * hardware-keyboard guess unless the player has settled it by hand.
  */
@@ -54,7 +54,7 @@ describe("MultiBindStrip key hints", () => {
   test("are kept where a keyboard is there to use them", () => {
     pointers = {coarse: false, fine: true};
     mount();
-    expect(keys()[0].textContent).toBe("[ALT+1]");
+    expect(keys()[0].textContent).toBe("ALT+1");
   });
 
   // Pressing Alt is both the way to use a bind and the proof that the hints are
@@ -67,13 +67,13 @@ describe("MultiBindStrip key hints", () => {
       document.dispatchEvent(new KeyboardEvent("keydown", {key: "1", altKey: true, bubbles: true}));
     });
 
-    expect(keys()[0].textContent).toBe("[ALT+1]");
+    expect(keys()[0].textContent).toBe("ALT+1");
   });
 
   test("'always' overrides the guess on a touch-only device", () => {
     globalStorage.set("uiSettings", {multibindKeyHints: "always"} as never);
     mount();
-    expect(keys()[0].textContent).toBe("[ALT+1]");
+    expect(keys()[0].textContent).toBe("ALT+1");
   });
 
   test("'never' overrides the guess on a keyboard device", () => {
@@ -91,7 +91,7 @@ describe("MultiBindStrip key hints", () => {
       globalStorage.set("uiSettings", {multibindKeyHints: "always"} as never);
     });
 
-    expect(keys()[0].textContent).toBe("[ALT+1]");
+    expect(keys()[0].textContent).toBe("ALT+1");
   });
 });
 

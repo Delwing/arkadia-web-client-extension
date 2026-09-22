@@ -3,6 +3,7 @@ import initUserTriggers, {
   GMCP_EVENT_CATEGORY,
   SUPPORTED_EVENTS,
   evaluateCondition,
+  interpolateMatchGroups,
   type TriggerCondition,
   type UserTrigger,
 } from '@client/scripts/userTriggers';
@@ -161,6 +162,46 @@ describe('userTriggers', () => {
       { title: 'Arkadia', body: 'urgent' },
       { bypassCooldown: true },
     );
+  });
+
+  test('speak reads the matched text when no message is given', () => {
+    const client = new FakeClient();
+    initUserTriggers((client as unknown) as any);
+    globalStorage.set('triggers', [{ pattern: 'foo', macros: [{ type: 'speak' }] }]);
+    const result = client.Triggers.parseLine(new AnsiAwareBuffer('bar foo baz'), '');
+
+    expect(client.sendEvent).toHaveBeenCalledWith('tts:speak', { text: 'foo' });
+    expect(result?.text).toBe('bar foo baz');
+  });
+
+  test('speak fills capture groups into its message', () => {
+    const client = new FakeClient();
+    initUserTriggers((client as unknown) as any);
+    globalStorage.set('triggers', [{
+      pattern: 'Atakuje cie (?<who>\\w+) (\\w+)',
+      macros: [{ type: 'speak', message: 'Atak: {who}, {2}, {9}' }],
+    }]);
+    client.Triggers.parseLine(new AnsiAwareBuffer('Atakuje cie wielki troll'), '');
+
+    expect(client.sendEvent).toHaveBeenCalledWith('tts:speak', { text: 'Atak: wielki, troll, {9}' });
+  });
+
+  test('speak on an event trigger interpolates args and needs a message', () => {
+    const client = new FakeClient();
+    initUserTriggers((client as unknown) as any);
+    globalStorage.set('triggers', [
+      { type: 'event', event: 'enemy.attack', macros: [{ type: 'speak', message: 'Atakuje {attacker}' }] },
+      { type: 'event', event: 'enemy.attack', macros: [{ type: 'speak' }] },
+    ]);
+    client.sendEvent('enemy.attack', { attacker: 'Zbojca' });
+
+    const speaks = client.sendEvent.mock.calls.filter(([type]) => type === 'tts:speak');
+    expect(speaks).toEqual([['tts:speak', { text: 'Atakuje Zbojca' }]]);
+  });
+
+  test('interpolateMatchGroups leaves unmatched groups standing', () => {
+    const match = 'ab'.match(/(a)(x)?(?<rest>b)/)!;
+    expect(interpolateMatchGroups('{0}|{1}|{2}|{rest}|{nope}', match)).toBe('ab|a|{2}|b|{nope}');
   });
 
   test('event macros fill {name} placeholders from the payload', () => {

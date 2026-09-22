@@ -1,5 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
-import { getBuiltInPanelSetting, setBuiltInPanelSetting } from '../layout/utils/layoutStorage';
+import { useWindowSetting } from './useWindowSetting';
 
 type SetStateAction<T> = T | ((prevState: T) => T);
 
@@ -7,6 +6,9 @@ type SetStateAction<T> = T | ((prevState: T) => T);
  * Hook for persisting built-in panel settings in the layout storage.
  * Works like useState but automatically persists to localStorage.
  * Supports both direct values and function updaters.
+ *
+ * The value stays in step with every other reader of the same key — the map
+ * header menu reacts to a toggle flipped in the map's settings cog.
  *
  * @param panelId The panel identifier ('map' or 'objectList')
  * @param key The setting key (e.g., 'cardViewMode')
@@ -25,17 +27,5 @@ export function useBuiltInPanelSetting<T>(
     key: string,
     defaultValue: T,
 ): [T, (value: SetStateAction<T>) => void] {
-    const [value, setValueInternal] = useState<T>(() => getBuiltInPanelSetting(panelId, key, defaultValue));
-    const valueRef = useRef(value);
-    valueRef.current = value;
-
-    const setValue = useCallback((action: SetStateAction<T>) => {
-        const newValue = typeof action === 'function'
-            ? (action as (prevState: T) => T)(valueRef.current)
-            : action;
-        setValueInternal(newValue);
-        setBuiltInPanelSetting(panelId, key, newValue);
-    }, [panelId, key]);
-
-    return [value, setValue];
+    return useWindowSetting(panelId, key, defaultValue);
 }

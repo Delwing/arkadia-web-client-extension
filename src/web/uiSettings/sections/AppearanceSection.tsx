@@ -1,9 +1,11 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { UiSettings } from "../../uiSettingsCore";
 import { guessFontFamilyFromStylesheet, guessFontFamilyFromUrl } from "../../uiSettingsCore";
 import { computeAccentHex, generateRandomColor } from "../../themes/randomTheme";
 import { defaultUiSettings } from "../../defaultUiSettings";
-import { CheckboxRow, ColorField, DeviceOnlyBadge, NumberField, SelectField, SettingsSection } from "../fields";
+import { Button, Field, Input, Select } from "@web-ui/primitives/index.ts";
+import { CheckboxRow, ColorField, NumberField, SelectField, SettingsSection } from "../fields";
+import PalettePreviewDialog from "../PalettePreviewDialog";
 
 interface AppearanceSectionProps {
     draft: UiSettings;
@@ -13,6 +15,7 @@ interface AppearanceSectionProps {
 
 function AppearanceSection({ draft, update, commitCustomDark }: AppearanceSectionProps) {
     const isCustomFont = draft.fontFamily === 'custom';
+    const [palettePreview, setPalettePreview] = useState(false);
     const isCustomDark = draft.colorTheme === 'custom-dark';
 
     // Tracks whether the user has manually edited the custom font family,
@@ -84,40 +87,48 @@ function AppearanceSection({ draft, update, commitCustomDark }: AppearanceSectio
                 <option value="custom">Własna (link)</option>
             </SelectField>
             {isCustomFont && (
-                <div id="ui-custom-font-settings" className="d-flex flex-column gap-2">
-                    <div>
-                        <label className="form-label" htmlFor="ui-custom-font-url">Adres arkusza czcionki</label>
-                        <input id="ui-custom-font-url" type="url" className="form-control" placeholder="https://..." value={draft.customFontUrl} onChange={(e) => update({ customFontUrl: e.target.value })} />
-                        <div className="form-text">Podaj adres arkusza stylów z definicją czcionki (np. Google Fonts).</div>
-                    </div>
-                    <div>
-                        <label className="form-label" htmlFor="ui-custom-font-family">Nazwa rodziny czcionki</label>
-                        <input id="ui-custom-font-family" type="text" className="form-control" placeholder="np. Roboto" value={draft.customFontFamily} onChange={(e) => onCustomFontFamilyInput(e.target.value)} />
-                        <div className="form-text">Wpisz nazwę rodziny tak, jak w arkuszu (możesz dodać alternatywy po przecinku).</div>
-                    </div>
+                <div id="ui-custom-font-settings" className="ui-settings-stack">
+                    <Field label="Adres arkusza czcionki" htmlFor="ui-custom-font-url" hint="Podaj adres arkusza stylów z definicją czcionki (np. Google Fonts).">
+                        <Input id="ui-custom-font-url" type="url" placeholder="https://..." value={draft.customFontUrl} onChange={(e) => update({ customFontUrl: e.target.value })} />
+                    </Field>
+                    <Field label="Nazwa rodziny czcionki" htmlFor="ui-custom-font-family" hint="Wpisz nazwę rodziny tak, jak w arkuszu (możesz dodać alternatywy po przecinku).">
+                        <Input id="ui-custom-font-family" placeholder="np. Roboto" value={draft.customFontFamily} onChange={(e) => onCustomFontFamilyInput(e.target.value)} />
+                    </Field>
                 </div>
             )}
-            <NumberField id="ui-content-font" label="Rozmiar czcionki treści (rem)" settingKey="contentFontSize" value={draft.contentFontSize} step={0.1} onChange={(n) => update({ contentFontSize: n })} />
-            <NumberField id="ui-objects-font" label="Rozmiar czcionki listy obiektów (rem)" settingKey="objectsFontSize" value={draft.objectsFontSize} step={0.1} onChange={(n) => update({ objectsFontSize: n })} />
-            <div>
-                <label className="form-label" htmlFor="ui-objectlist-bg-color">Kolor tła listy obiektów<DeviceOnlyBadge settingKey="objectListBackgroundColor" /></label>
-                <div className="d-flex align-items-center gap-2 flex-wrap">
-                    <input id="ui-objectlist-bg-color" type="color" className="form-control form-control-color" value={draft.objectListBackgroundColor} onChange={(e) => update({ objectListBackgroundColor: e.target.value })} />
-                    <label htmlFor="ui-objectlist-bg-alpha" className="form-label mb-0">Przezroczystość:</label>
-                    <input id="ui-objectlist-bg-alpha" type="range" min={0} max={1} step={0.01} className="form-range" style={{ flex: '1 1 120px' }} value={draft.objectListBackgroundAlpha} onChange={(e) => update({ objectListBackgroundAlpha: parseFloat(e.target.value) })} />
-                    <span id="ui-objectlist-bg-alpha-value" className="text-muted small" style={{ minWidth: '2.5rem' }}>{draft.objectListBackgroundAlpha}</span>
-                    <button id="ui-objectlist-bg-reset" type="button" className="btn btn-outline-secondary btn-sm" onClick={() => update({ objectListBackgroundColor: defaultUiSettings.objectListBackgroundColor, objectListBackgroundAlpha: defaultUiSettings.objectListBackgroundAlpha })}>
+            <NumberField id="ui-content-font" label="Rozmiar czcionki treści (rem)" value={draft.contentFontSize} step={0.1} onChange={(n) => update({ contentFontSize: n })} />
+            <NumberField id="ui-objects-font" label="Rozmiar czcionki listy obiektów (rem)" value={draft.objectsFontSize} step={0.1} onChange={(n) => update({ objectsFontSize: n })} />
+            <Field label="Kolor tła listy obiektów" htmlFor="ui-objectlist-bg-color">
+                <div className="popup-inline ui-settings-color-alpha">
+                    <input id="ui-objectlist-bg-color" type="color" className="popup-color" value={draft.objectListBackgroundColor} onChange={(e) => update({ objectListBackgroundColor: e.target.value })} />
+                    <label htmlFor="ui-objectlist-bg-alpha" className="popup-field__hint">Przezroczystość</label>
+                    <input id="ui-objectlist-bg-alpha" type="range" min={0} max={1} step={0.01} className="popup-range" value={draft.objectListBackgroundAlpha} onChange={(e) => update({ objectListBackgroundAlpha: parseFloat(e.target.value) })} />
+                    <span id="ui-objectlist-bg-alpha-value" className="popup-field__hint ui-settings-color-alpha__value">{draft.objectListBackgroundAlpha}</span>
+                    <Button id="ui-objectlist-bg-reset" size="sm" variant="ghost" onClick={() => update({ objectListBackgroundColor: defaultUiSettings.objectListBackgroundColor, objectListBackgroundAlpha: defaultUiSettings.objectListBackgroundAlpha })}>
                         Przywróć domyślny
-                    </button>
+                    </Button>
                 </div>
-            </div>
+            </Field>
             <ColorField id="ui-output-background" label="Kolor tła okna głównego" value={draft.outputBackground} onChange={(v) => update({ outputBackground: v })} onReset={() => update({ outputBackground: defaultUiSettings.outputBackground })} />
             <CheckboxRow id="ui-highlight-message-blocks" label="Wyróżniaj bloki wiadomości" checked={draft.highlightMessageBlocks} onChange={(v) => update({ highlightMessageBlocks: v })} />
-            <SelectField id="ui-xterm-palette" label="Paleta kolorów" value={draft.xtermPalette} onChange={(v) => update({ xtermPalette: v as UiSettings['xtermPalette'] })}>
-                <option value="arkadia">Arkadia</option>
-                <option value="proper">XTerm</option>
-            </SelectField>
-            <div>
+            <Field label="Paleta kolorów" htmlFor="ui-xterm-palette">
+                <div className="popup-inline">
+                    <Select
+                        id="ui-xterm-palette"
+                        className="settings-narrow"
+                        value={draft.xtermPalette}
+                        onChange={(e) => update({ xtermPalette: e.target.value as UiSettings['xtermPalette'] })}
+                    >
+                        <option value="arkadia">Arkadia</option>
+                        <option value="proper">XTerm</option>
+                    </Select>
+                    <Button id="ui-xterm-palette-preview" size="sm" variant="ghost" onClick={() => setPalettePreview(true)}>Podgląd</Button>
+                </div>
+            </Field>
+            {palettePreview && (
+                <PalettePreviewDialog palette={draft.xtermPalette} onClose={() => setPalettePreview(false)} />
+            )}
+            <div className="ui-settings-stack">
                 <SelectField id="ui-color-theme" label="Motyw kolorystyczny" value={draft.colorTheme} onChange={(v) => update({ colorTheme: v as UiSettings['colorTheme'] })}>
                     <option value="default">Domyślny</option>
                     <option value="fantasy">Fantasy</option>
@@ -130,9 +141,9 @@ function AppearanceSection({ draft, update, commitCustomDark }: AppearanceSectio
                     <option value="custom-dark">Własny (ciemny)</option>
                 </SelectField>
                 {isCustomDark && (
-                    <div id="ui-random-theme-controls" className="d-flex align-items-center gap-2 mt-2" data-settings-ignore>
-                        <input id="ui-random-theme-color" type="color" className="form-control form-control-color" value={draft.customThemeColor ? computeAccentHex(draft.customThemeColor) : '#000000'} onChange={(e) => commitCustomDark(e.target.value)} />
-                        <button id="ui-randomize-theme" type="button" className="btn btn-sm btn-outline-secondary" onClick={() => commitCustomDark(generateRandomColor())}>Losuj</button>
+                    <div id="ui-random-theme-controls" className="popup-inline" data-settings-ignore>
+                        <input id="ui-random-theme-color" type="color" className="popup-color" value={draft.customThemeColor ? computeAccentHex(draft.customThemeColor) : '#000000'} onChange={(e) => commitCustomDark(e.target.value)} />
+                        <Button id="ui-randomize-theme" size="sm" onClick={() => commitCustomDark(generateRandomColor())}>Losuj</Button>
                     </div>
                 )}
             </div>

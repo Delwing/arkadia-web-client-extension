@@ -9,6 +9,7 @@
  */
 
 import { expect, test } from './support/fixtures';
+import { goToSettingsPage } from './support/settings';
 import type { Page } from '@playwright/test';
 import {
     ensureGameSocket,
@@ -18,7 +19,8 @@ import {
 
 const MENU_BUTTON = '#menu-button';
 const EXPORT_IMPORT_BUTTON = '#export-import-button';
-const EXPORT_IMPORT_MODAL = '#export-import-modal';
+// Sync / backup are the settings dialog's "Dane" pages now.
+const EXPORT_IMPORT_MODAL = '#settings-modal';
 
 /**
  * Helper to open the Firebase/sync modal tab
@@ -37,7 +39,7 @@ async function openFirebaseTab(page: Page) {
  */
 async function closeModal(page: Page) {
     const modal = page.locator(EXPORT_IMPORT_MODAL);
-    await modal.locator('.btn-close').click();
+    await modal.locator('.app-modal__close').click();
     await expect(modal).not.toBeVisible();
 }
 
@@ -627,7 +629,7 @@ test.describe('Firebase Sync', () => {
             const modal = await openFirebaseTab(page);
 
             // Switch to Plik tab to see local export options (which mirror sync categories)
-            await modal.getByRole('button', { name: 'Plik' }).click();
+            await goToSettingsPage(page, 'data-backup');
 
             // Check some export options exist
             const triggerOption = modal.locator('[id*="export-option-triggers"]');
@@ -819,16 +821,14 @@ test.describe('Firebase Sync', () => {
             await waitForCommandInput(page);
             await ensureGameSocket(page);
 
-            const combatTimerState = await page.evaluate(() => {
-                const timer = document.getElementById('combat-timer');
-                if (!timer) return null;
-                return {
-                    footerHidden: timer.dataset.footerHidden,
-                };
-            });
+            // A hidden footer item is left out of the footer; the visible ones keep their slot.
+            const slots = await page.evaluate(() => ({
+                combat: document.getElementById('combat-timer') !== null,
+                zask: document.getElementById('zask-timer') !== null,
+            }));
 
-            expect(combatTimerState).toBeTruthy();
-            expect(combatTimerState!.footerHidden).toBe('1');
+            expect(slots.combat).toBe(false);
+            expect(slots.zask).toBe(true);
         });
 
         test('footer mode is applied from uiSettings', async ({ page }) => {
@@ -953,14 +953,12 @@ test.describe('Firebase Sync', () => {
             const appliedStyles = await page.evaluate(() => {
                 const content = document.getElementById('main_text_output_msg_wrapper');
                 const charState = document.getElementById('char-state');
-                const combatTimer = document.getElementById('combat-timer');
 
                 return {
                     backgroundColor: content ? getComputedStyle(content).backgroundColor : null,
                     fontSize: content ? getComputedStyle(content).fontSize : null,
                     mapPosition: document.body.dataset.mapPosition,
                     footerMode: charState?.getAttribute('data-footer-mode'),
-                    combatTimerEnabled: combatTimer?.dataset.enabled,
                 };
             });
 
@@ -968,7 +966,6 @@ test.describe('Firebase Sync', () => {
             expect(appliedStyles.fontSize).toBe('24px'); // 1.5 * 16px
             expect(appliedStyles.mapPosition).toBe('right');
             expect(appliedStyles.footerMode).toBe('1');
-            expect(appliedStyles.combatTimerEnabled).toBe('1');
         });
 
         test('character-scoped settings from sync are applied correctly', async ({ page }) => {

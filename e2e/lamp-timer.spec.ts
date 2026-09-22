@@ -29,16 +29,16 @@ test.describe('Lamp timer', () => {
     });
 
     test('shows the countdown when the lamp is lit', async ({page}) => {
-        const {value} = await open(page);
+        const {chip, value} = await open(page);
 
         await pushText(page, 'Zapalasz swoja lampe.');
 
         await expect(value, 'should count down from 5:00').toHaveText(/^[0-9]:[0-9]{2}$/);
-        await expect(value, 'should be green at 300 seconds').toHaveCSS('color', 'rgb(0, 255, 127)'); // springgreen
+        await expect(chip, 'should be green at 300 seconds').toHaveClass(/chip--ok/); // springgreen
     });
 
     test('changes to yellow when below 60 seconds', async ({page}) => {
-        const {value} = await open(page, true);
+        const {chip, value} = await open(page, true);
 
         await pushText(page, 'Zapalasz swoja lampe.');
         await expect(value).toHaveText(/^[0-9]:[0-9]{2}$/);
@@ -46,11 +46,11 @@ test.describe('Lamp timer', () => {
         // 300 - 241 = 59 seconds remaining
         await page.clock.runFor(241000);
 
-        await expect(value, 'should be yellow below 60 seconds').toHaveCSS('color', 'rgb(255, 255, 0)'); // yellow
+        await expect(chip, 'should be yellow below 60 seconds').toHaveClass(/chip--warn/); // yellow
     });
 
     test('changes to red when below 30 seconds', async ({page}) => {
-        const {value} = await open(page, true);
+        const {chip, value} = await open(page, true);
 
         await pushText(page, 'Zapalasz swoja lampe.');
         await expect(value).toHaveText(/^[0-9]:[0-9]{2}$/);
@@ -58,7 +58,7 @@ test.describe('Lamp timer', () => {
         // 300 - 271 = 29 seconds remaining
         await page.clock.runFor(271000);
 
-        await expect(value, 'should be red below 30 seconds').toHaveCSS('color', 'rgb(255, 99, 71)'); // tomato
+        await expect(chip, 'should be red below 30 seconds').toHaveClass(/chip--danger/); // tomato
     });
 
     test('goes back to "off" when the lamp is extinguished', async ({page}) => {
@@ -74,7 +74,7 @@ test.describe('Lamp timer', () => {
     });
 
     test('goes back to "off" when the lamp runs out of oil', async ({page}) => {
-        const {value} = await open(page);
+        const {chip, value} = await open(page);
 
         await pushText(page, 'Zapalasz swoja lampe.');
         await expect(value).toHaveText(/^[0-9]:[0-9]{2}$/);
@@ -85,7 +85,7 @@ test.describe('Lamp timer', () => {
     });
 
     test('resets when lamp is refilled', async ({page}) => {
-        const {value} = await open(page, true);
+        const {chip, value} = await open(page, true);
 
         await pushText(page, 'Zapalasz swoja lampe.');
         await expect(value).toHaveText(/^[0-9]:[0-9]{2}$/);

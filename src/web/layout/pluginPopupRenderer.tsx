@@ -120,13 +120,13 @@ function PluginPopupItem({ config }: { config: PluginPopupConfig }) {
       bodyClassName="plugin-window-body"
       headerActions={headerActions instanceof Node ? <NodeRenderer node={headerActions} /> : headerActions}
     >
-      <div ref={setContainerRef}>
+      <div ref={setContainerRef} className="plugin-popup-content">
         {typeof body === 'string' ? (
-          <div dangerouslySetInnerHTML={{ __html: body }} />
+          <div className="plugin-popup-content__body" dangerouslySetInnerHTML={{ __html: body }} />
         ) : body instanceof Node ? (
           <NodeRenderer node={body} />
         ) : (
-          body
+          <div className="plugin-popup-content__body">{body}</div>
         )}
       </div>
     </DockablePopupWrapper>
@@ -146,7 +146,7 @@ function NodeRenderer({ node }: { node: Node }) {
     }
   }, [node]);
 
-  return <div ref={containerRef} />;
+  return <div ref={containerRef} className="plugin-popup-content__body" />;
 }
 
 /**

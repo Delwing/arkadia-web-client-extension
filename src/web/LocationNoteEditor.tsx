@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from "react";
-import { Button, Form, Modal } from 'react-bootstrap';
+import { Button, Dialog, TextArea } from "@web-ui/primitives/index.ts";
 import eventBus from "@modules/core/eventBus";
 import type { ClientEvents } from "@modules/core/eventBus";
 import { getNote, saveNote, deleteNote, type LocationNote } from "./options/locationNotesStorage";
@@ -114,66 +114,54 @@ function LocationNoteEditor() {
 
     const hasChanges = noteText !== originalNote;
 
+    if (!show) return null;
+
     return (
-        <Modal show={show} onHide={handleClose} centered>
-            <Modal.Header closeButton>
-                <Modal.Title>
-                    Notatka lokacji
-                </Modal.Title>
-            </Modal.Header>
-            <Modal.Body>
-                <div className="mb-3">
-                    <div className="text-muted small">
-                        <strong>ID:</strong> {roomId}
-                        {roomName && <span> | <strong>Nazwa:</strong> {roomName}</span>}
-                        {areaName && <span> | <strong>Kraina:</strong> {areaName}</span>}
-                    </div>
-                </div>
-                <Form.Group>
-                    <Form.Control
-                        as="textarea"
-                        ref={textareaRef}
-                        rows={6}
-                        value={noteText}
-                        onChange={e => setNoteText(e.target.value)}
-                        placeholder="Wpisz notatke..."
-                    />
-                </Form.Group>
-                {(mapNote || pluginNotes.length > 0) && (
-                    <div className="mt-3">
-                        {mapNote && (
-                            <div className="readonly-note-entry mb-2 p-2 rounded">
-                                <div className="readonly-note-label small mb-1">Mapa</div>
-                                <div className="readonly-note-text">{mapNote}</div>
-                            </div>
-                        )}
-                        {pluginNotes.map((pn, idx) => (
-                            <div key={`${pn.pluginId}-${idx}`} className="readonly-note-entry mb-2 p-2 rounded">
-                                <div className="readonly-note-label small mb-1">{pn.pluginName}</div>
-                                <div className="readonly-note-text">{pn.note}</div>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </Modal.Body>
-            <Modal.Footer className="d-flex justify-content-between">
-                <div>
+        <Dialog
+            title="Notatka lokacji"
+            onClose={handleClose}
+            className="location-note-editor"
+            footer={(
+                <>
                     {originalNote && (
-                        <Button variant="danger" size="sm" onClick={handleDelete}>
-                            Usun
+                        <Button variant="danger" size="sm" className="location-note-editor__delete" onClick={handleDelete}>
+                            Usuń
                         </Button>
                     )}
-                </div>
-                <div className="d-flex gap-2">
-                    <Button variant="secondary" onClick={handleClose}>
-                        Anuluj
-                    </Button>
-                    <Button variant="primary" onClick={handleSave} disabled={!hasChanges && !noteText.trim()}>
+                    <Button onClick={handleClose}>Anuluj</Button>
+                    <Button variant="solid" onClick={handleSave} disabled={!hasChanges && !noteText.trim()}>
                         Zapisz
                     </Button>
+                </>
+            )}
+        >
+            <div className="popup-stack">
+                <div className="popup-field__hint location-note-editor__room">
+                    <strong>ID:</strong> {roomId}
+                    {roomName && <span> | <strong>Nazwa:</strong> {roomName}</span>}
+                    {areaName && <span> | <strong>Kraina:</strong> {areaName}</span>}
                 </div>
-            </Modal.Footer>
-        </Modal>
+                <TextArea
+                    ref={textareaRef}
+                    rows={6}
+                    value={noteText}
+                    onChange={e => setNoteText(e.target.value)}
+                    placeholder="Wpisz notatke..."
+                />
+                {mapNote && (
+                    <div className="readonly-note-entry">
+                        <div className="readonly-note-label">Mapa</div>
+                        <div className="readonly-note-text">{mapNote}</div>
+                    </div>
+                )}
+                {pluginNotes.map((pn, idx) => (
+                    <div key={`${pn.pluginId}-${idx}`} className="readonly-note-entry">
+                        <div className="readonly-note-label">{pn.pluginName}</div>
+                        <div className="readonly-note-text">{pn.note}</div>
+                    </div>
+                ))}
+            </div>
+        </Dialog>
     );
 }
 

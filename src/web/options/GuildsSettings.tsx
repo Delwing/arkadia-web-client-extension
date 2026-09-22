@@ -75,10 +75,6 @@ function GuildsSettings({ registerSave }: { registerSave: (cb: (sharedSettings: 
         setSelected(checked ? [...guilds] : []);
     }
 
-    function onChangeAllEnemy(checked: boolean) {
-        setEnemySelected(checked ? [...guilds] : []);
-    }
-
     useEffect(() => {
         registerSave((sharedSettings: Settings) => {
             // Update the shared settings object with our values
@@ -102,7 +98,6 @@ function GuildsSettings({ registerSave }: { registerSave: (cb: (sharedSettings: 
                 onAllyChange={onAllyChange}
                 onColorChange={onColorChange}
                 onChangeAll={onChangeAll}
-                onChangeAllEnemy={onChangeAllEnemy}
             />
         </>
     );

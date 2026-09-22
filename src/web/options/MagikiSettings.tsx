@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Form, Badge, Button } from "react-bootstrap";
+import { Button, Check, Field, Input } from "@web-ui/primitives/index.ts";
 import { characterStorage } from "@modules/core/storage";
 import { defaultSettings } from "./defaultSettings";
 import type { Settings as BaseSettings } from "./defaultSettings";
@@ -19,7 +19,6 @@ function MagikiSettings({ registerSave }: MagikiSettingsProps) {
     const [searchInput, setSearchInput] = useState<string>("");
     const [showSuggestions, setShowSuggestions] = useState<boolean>(false);
     const [loaded, setLoaded] = useState<boolean>(false);
-    const inputRef = useRef<HTMLInputElement>(null);
 
     // Updated directly during render (not in useEffect) so the ref is always
     // current by the time any event handler reads it — avoids save-race condition.
@@ -102,66 +101,39 @@ function MagikiSettings({ registerSave }: MagikiSettingsProps) {
         });
     }, [registerSave]);
 
+    const colorRow = (id: string, label: string, value: string, set: (v: string) => void, fallback: string) => (
+        <div className="settings-row">
+            <label className="popup-field__label" htmlFor={id}>{label}</label>
+            <div className="popup-inline">
+                <input type="color" id={id} className="popup-color" value={value} onChange={(e) => set(e.target.value)}/>
+                <Button size="sm" variant="ghost" onClick={() => set(fallback)} title="Przywróć domyślny kolor">↺</Button>
+            </div>
+        </div>
+    );
+
     return (
         <>
             <section className="character-settings-section">
                 <h5 className="character-settings-section-title">Kolory</h5>
-                <div className="d-flex align-items-center gap-2">
-                    <Form.Label className="mb-0" htmlFor="magics-color">Magiki</Form.Label>
-                    <Form.Control
-                        type="color"
-                        id="magics-color"
-                        value={magicsColor}
-                        onChange={(e) => setMagicsColor(e.target.value)}
-                        className="form-control-color"
-                        style={{ width: '3rem' }}
-                    />
-                    <Button
-                        size="sm"
-                        variant="outline-secondary"
-                        onClick={() => setMagicsColor(defaultSettings.magicsColor!)}
-                        title="Przywróć domyślny kolor"
-                        style={{ padding: "0.25rem 0.5rem" }}
-                    >
-                        ↺
-                    </Button>
-                </div>
-                <div className="d-flex align-items-center gap-2">
-                    <Form.Label className="mb-0" htmlFor="magic-keys-color">Klucze</Form.Label>
-                    <Form.Control
-                        type="color"
-                        id="magic-keys-color"
-                        value={magicKeysColor}
-                        onChange={(e) => setMagicKeysColor(e.target.value)}
-                        className="form-control-color"
-                        style={{ width: '3rem' }}
-                    />
-                    <Button
-                        size="sm"
-                        variant="outline-secondary"
-                        onClick={() => setMagicKeysColor(defaultSettings.magicKeysColor!)}
-                        title="Przywróć domyślny kolor"
-                        style={{ padding: "0.25rem 0.5rem" }}
-                    >
-                        ↺
-                    </Button>
+                <div className="settings-rows">
+                    {colorRow("magics-color", "Magiki", magicsColor, setMagicsColor, defaultSettings.magicsColor!)}
+                    {colorRow("magic-keys-color", "Klucze", magicKeysColor, setMagicKeysColor, defaultSettings.magicKeysColor!)}
                 </div>
             </section>
 
             <section className="character-settings-section character-settings-section--full">
                 <h5 className="character-settings-section-title">Ulubione magiki</h5>
-                <p className="text-muted small mb-0">
+                <p className="popup-field__hint">
                     Wybierz ulubione typy magików lub dodaj konkretne magiki. Będą one oznaczone zieloną gwiazdką w pojemnikach.
                 </p>
 
-                {/* Specific Magics Section */}
-                <div className="mb-4">
-                    <h6 className="mb-2">Konkretne magiki</h6>
-                    <div className="mb-2" style={{ position: "relative" }} data-settings-ignore>
-                        <Form.Control
-                            ref={inputRef}
-                            type="text"
+                <Field label="Konkretne magiki" htmlFor="favorite-magic-search">
+                    <div className="settings-suggest-anchor" data-settings-ignore>
+                        <Input
+                            id="favorite-magic-search"
+                            className="settings-command"
                             placeholder="Wpisz nazwę magika..."
+                            autoComplete="off"
                             value={searchInput}
                             onChange={(e) => {
                                 setSearchInput(e.target.value);
@@ -177,104 +149,57 @@ function MagikiSettings({ registerSave }: MagikiSettingsProps) {
                             }}
                         />
                         {showSuggestions && searchInput && filteredSuggestions.length > 0 && (
-                            <div
-                                className="bg-body border"
-                                style={{
-                                    position: "absolute",
-                                    top: "100%",
-                                    left: 0,
-                                    right: 0,
-                                    borderTop: "none",
-                                    borderRadius: "0 0 0.25rem 0.25rem",
-                                    maxHeight: "200px",
-                                    overflowY: "auto",
-                                    zIndex: 1000,
-                                    boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
-                                }}
-                            >
+                            <div className="popup-menu settings-suggest">
                                 {filteredSuggestions.map((suggestion) => (
-                                    <div
+                                    <button
                                         key={suggestion}
-                                        className="border-bottom"
-                                        style={{
-                                            padding: "0.5rem",
-                                            cursor: "pointer"
-                                        }}
+                                        type="button"
+                                        className="popup-menu__item"
                                         onMouseDown={(e) => {
                                             e.preventDefault();
                                             handleAddMagic(suggestion);
                                         }}
-                                        onMouseEnter={(e) => {
-                                            e.currentTarget.classList.add("bg-primary");
-                                        }}
-                                        onMouseLeave={(e) => {
-                                            e.currentTarget.classList.remove("bg-primary");
-                                        }}
                                     >
                                         {suggestion}
-                                    </div>
+                                    </button>
                                 ))}
                             </div>
                         )}
                     </div>
                     {favoriteMagics.length > 0 && (
-                        <div className="d-flex flex-wrap gap-2 mb-3">
+                        <div className="settings-chip-list">
                             {favoriteMagics.map((magic) => (
-                                <Badge
+                                <span
                                     key={magic}
-                                    bg="primary"
-                                    className="d-flex align-items-center"
-                                    style={{ fontSize: "0.9rem", padding: "0.4rem 0.6rem" }}
+                                    className="popup-chip"
+                                    title="Usuń"
+                                    onClick={() => handleRemoveMagic(magic)}
                                 >
                                     {magic}
-                                    <button
-                                        type="button"
-                                        onClick={() => handleRemoveMagic(magic)}
-                                        style={{
-                                            marginLeft: "0.5rem",
-                                            background: "none",
-                                            border: "none",
-                                            color: "inherit",
-                                            cursor: "pointer",
-                                            fontSize: "1.2rem",
-                                            lineHeight: "1",
-                                            padding: "0",
-                                            fontWeight: "bold"
-                                        }}
-                                    >
-                                        ×
-                                    </button>
-                                </Badge>
+                                    <span className="popup-chip__remove">×</span>
+                                </span>
                             ))}
                         </div>
                     )}
-                </div>
+                </Field>
 
-                {/* Magic Types Section */}
-                <div>
-                    <h6 className="mb-2">Typy magików</h6>
+                <Field label="Typy magików">
                     {magicTypes.length === 0 ? (
-                        <p className="text-muted">Ładowanie typów magików...</p>
+                        <p className="popup-field__hint">Ładowanie typów magików...</p>
                     ) : (
-                        <div style={{
-                            display: "grid",
-                            gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
-                            gap: "0.5rem"
-                        }}>
+                        <div className="settings-check-grid">
                             {magicTypes.map((type) => (
-                                <div key={type}>
-                                    <Form.Check
-                                        type="checkbox"
-                                        id={`magic-type-${type}`}
-                                        label={type}
-                                        checked={favoriteMagicTypes.includes(type)}
-                                        onChange={() => handleToggleMagicType(type)}
-                                    />
-                                </div>
+                                <Check
+                                    key={type}
+                                    id={`magic-type-${type}`}
+                                    label={type}
+                                    checked={favoriteMagicTypes.includes(type)}
+                                    onChange={() => handleToggleMagicType(type)}
+                                />
                             ))}
                         </div>
                     )}
-                </div>
+                </Field>
             </section>
         </>
     );

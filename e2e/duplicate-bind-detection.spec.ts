@@ -16,18 +16,18 @@ import type {Page} from '@playwright/test';
 async function openBindsModal(page: Page): Promise<void> {
     await page.click('#menu-button');
     await page.click('#binds-button');
-    await page.waitForSelector('#binds-modal.show', {timeout: 5000});
-    await page.waitForSelector('#binds-modal .form-select', {timeout: 5000});
+    await page.waitForSelector('#binds-modal:not([hidden])', {timeout: 5000});
+    await page.waitForSelector('#binds-keymap-select', {timeout: 5000});
 }
 
 async function closeBindsModal(page: Page): Promise<void> {
-    await page.locator('#binds-modal .btn-close').first().click();
-    await page.waitForSelector('#binds-modal.show', {state: 'hidden', timeout: 5000});
+    await page.locator('#binds-modal .app-modal__close').first().click();
+    await page.waitForSelector('#binds-modal:not([hidden])', {state: 'hidden', timeout: 5000});
 }
 
 async function saveAndCloseBindsModal(page: Page): Promise<void> {
     await page.locator('#binds-modal button:has-text("Zapisz")').click();
-    await page.waitForSelector('#binds-modal.show', {state: 'hidden', timeout: 5000});
+    await page.waitForSelector('#binds-modal:not([hidden])', {state: 'hidden', timeout: 5000});
 }
 
 // ---------------------------------------------------------------------------
@@ -170,10 +170,10 @@ test.describe('Duplicate key assignment in Binds modal', () => {
         // preceding label text.  Both are readOnly Form.Controls that capture
         // keys on keydown.
         const temp1Input = page
-            .locator('#binds-modal tr', {hasText: 'Tymczasowe 1'})
+            .locator('#binds-modal .bind-row', {hasText: 'Tymczasowe 1'})
             .locator('input[type="text"]');
         const temp2Input = page
-            .locator('#binds-modal tr', {hasText: 'Tymczasowe 2'})
+            .locator('#binds-modal .bind-row', {hasText: 'Tymczasowe 2'})
             .locator('input[type="text"]');
 
         await expect(temp1Input).toBeVisible();
@@ -203,10 +203,10 @@ test.describe('Duplicate key assignment in Binds modal', () => {
         await openBindsModal(page);
 
         const temp1After = page
-            .locator('#binds-modal tr', {hasText: 'Tymczasowe 1'})
+            .locator('#binds-modal .bind-row', {hasText: 'Tymczasowe 1'})
             .locator('input[type="text"]');
         const temp2After = page
-            .locator('#binds-modal tr', {hasText: 'Tymczasowe 2'})
+            .locator('#binds-modal .bind-row', {hasText: 'Tymczasowe 2'})
             .locator('input[type="text"]');
 
         await expect(temp1After).toHaveValue('F8');

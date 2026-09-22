@@ -6,7 +6,7 @@
 //  `src/web/style.css`. forge can't load that sheet globally (it would repaint
 //  the whole client), so this partial carries just the settings-layout rules and
 //  is @imported INSIDE the `.forge-menu-modal { … }` block of
-//  forge-modal-bootstrap.scss, so every selector compiles prefixed with
+//  forge-menu-stock.scss, so every selector compiles prefixed with
 //  `.forge-menu-modal`. They read the forge palette through the `--popup-*` vars
 //  that floatingPopup.css already defines on `.forge-menu-modal`, so no colours
 //  are hard-coded here — the copy stays faithful to stock and recolours for free.
@@ -17,7 +17,7 @@
 //  as settingsDialog.css with the component and is namespaced, so both hosts
 //  load it as-is.
 //  (`@keyframes spin`, referenced by the map version badge, lives at the top
-//  level of forge-modal-bootstrap.scss — keyframes can't be nested in a rule.)
+//  level of forge-menu-stock.scss — keyframes can't be nested in a rule.)
 // ============================================================
 
 .ui-settings-section,

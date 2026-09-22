@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import type { PopupPanelConfig } from './types';
+import type { WindowSettingField } from './windowSettings';
 
 export interface RegisteredPopup {
   id: string;
@@ -14,6 +15,8 @@ export interface RegisteredPopup {
   headerActions?: ReactNode;
   /** Popup-specific class applied to the outer shell (e.g. "contracts-window"). */
   panelClassName?: string;
+  /** The window's own fields in its settings cog (after the shared appearance ones). */
+  settingsFields?: WindowSettingField[];
 }
 
 // Registry singleton
@@ -68,7 +71,7 @@ export function subscribeToRegistry(listener: () => void): () => void {
 
 export function updatePopup(
   id: string,
-  updates: Partial<Pick<RegisteredPopup, 'isPinned' | 'isLocked' | 'headerActions'>> & {
+  updates: Partial<Pick<RegisteredPopup, 'isPinned' | 'isLocked' | 'headerActions' | 'settingsFields'>> & {
     /** Patches config.title — popups with live titles (counts, progress)
      *  mutate this without re-registering. */
     title?: string;
@@ -85,6 +88,9 @@ export function updatePopup(
       hasChanges = true;
     }
     if ('headerActions' in updates && popup.headerActions !== updates.headerActions) {
+      hasChanges = true;
+    }
+    if ('settingsFields' in updates && popup.settingsFields !== updates.settingsFields) {
       hasChanges = true;
     }
     const titleChanged =

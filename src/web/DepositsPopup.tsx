@@ -104,12 +104,12 @@ const DepositsPopup: React.FC = () => {
             initialWidth={500}
             initialHeight={450}
             className="deposits-popup"
-            bodyClassName="deposits-popup-body"
+            bodyClassName="popup-body"
             headerActions={headerActions}
         >
             <div className="deposits-popup__content">
                 {filteredCards.length === 0 ? (
-                    <div className="deposits-popup__empty">
+                    <div className="popup-empty">
                         {cards.length === 0 ? 'Brak zapisanych depozytow.' : 'Brak wynikow.'}
                     </div>
                 ) : (

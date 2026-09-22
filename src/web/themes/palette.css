@@ -1,0 +1,144 @@
+/* ============================================================
+   Colour themes: a few inputs, everything else derived.
+
+   A theme sets only the `--theme-*` inputs below (the default theme on
+   :root, the others on `body.theme-<name>` in their own files). Every
+   `--popup-*` / `--footer-*` token the UI reads is derived from them here with
+   color-mix, so the themes stay consistent with each other and a new one is
+   a handful of colours.
+
+   The derived tokens are declared on `:root, body`: a custom property that
+   refers to other ones is resolved on the element that declares it, so they
+   must be declared on body too, where the theme class puts its inputs.
+
+   Inputs:
+     --theme-ground   window background
+     --theme-text     text; also what "dim"/"strong" text and overlays mix with
+     --theme-accent   the accent: active tabs, primary buttons, focus
+     --theme-line     hue of borders and hover washes
+     --theme-tint     hue of the quiet surface washes (sections, controls)
+     --theme-success / --theme-warning / --theme-danger
+     --theme-data-shift  how far the data hues (names, loot, magic colours)
+                         lean towards the text colour: a little on dark
+                         themes to tone them, a lot on light ones for contrast
+   Optional (derived when absent):
+     --theme-input    input background (default: ground nudged towards text)
+     --theme-footer   footer background (default: the ground)
+   ============================================================ */
+
+:root {
+  --theme-ground: #161a24;
+  --theme-text: #f1f5f9;
+  --theme-accent: #6da7da;
+  /* Neutral washes and borders: the ground is blue-black, the chrome over it
+     stays grey rather than turning the whole UI blue. */
+  --theme-line: #c8c8c8;
+  --theme-tint: #a8a8a8;
+  --theme-success: #32b562;
+  --theme-warning: #de9822;
+  --theme-danger: #de5555;
+  --theme-input: #0b0f17;
+  --theme-footer: #242424;
+  --theme-data-shift: 10%;
+}
+
+/* The optional inputs above belong to the default theme only; a named theme
+   that doesn't set them gets the derived value, not the default's (custom
+   properties inherit). Zero specificity, so a theme's own value still wins. */
+:where(body[class*="theme-"]) {
+  --theme-input: initial;
+  --theme-footer: initial;
+}
+
+:root,
+body {
+  --popup-bg: var(--theme-ground);
+  --popup-text: var(--theme-text);
+  --popup-text-strong: color-mix(in srgb, var(--theme-text) 90%, transparent);
+  --popup-text-bright: color-mix(in srgb, var(--theme-text) 80%, transparent);
+  --popup-text-subtle: color-mix(in srgb, var(--theme-text) 70%, transparent);
+  --popup-text-medium: color-mix(in srgb, var(--theme-text) 60%, transparent);
+  --popup-text-dim: color-mix(in srgb, var(--theme-text) 50%, transparent);
+  --popup-text-dimmer: color-mix(in srgb, var(--theme-text) 40%, transparent);
+  --popup-text-faint: color-mix(in srgb, var(--theme-text) 32%, transparent);
+
+  /* Surfaces: quiet washes of the tint, hover/press washes of the line hue. */
+  --popup-subtle-bg: color-mix(in srgb, var(--theme-tint) 4%, transparent);
+  --popup-section-bg: color-mix(in srgb, var(--theme-tint) 6%, var(--theme-ground));
+  --popup-control-bg: color-mix(in srgb, var(--theme-tint) 9%, transparent);
+  --popup-hover-bg: color-mix(in srgb, var(--theme-line) 8%, transparent);
+  --popup-control-hover-bg: color-mix(in srgb, var(--theme-line) 12%, transparent);
+  --popup-control-active-bg: color-mix(in srgb, var(--theme-line) 16%, transparent);
+  --popup-control-pressed-bg: color-mix(in srgb, var(--theme-line) 20%, transparent);
+
+  --popup-border-subtle: color-mix(in srgb, var(--theme-line) 8%, transparent);
+  --popup-border: color-mix(in srgb, var(--theme-line) 14%, transparent);
+  --popup-border-control: color-mix(in srgb, var(--theme-line) 20%, transparent);
+  --popup-border-strong: color-mix(in srgb, var(--theme-line) 26%, transparent);
+  --popup-border-stronger: color-mix(in srgb, var(--theme-line) 36%, transparent);
+
+  --popup-accent: var(--theme-accent);
+  --popup-accent-dim-bg: color-mix(in srgb, var(--theme-accent) 12%, transparent);
+  --popup-accent-subtle-bg: color-mix(in srgb, var(--theme-accent) 15%, transparent);
+  --popup-accent-bg: color-mix(in srgb, var(--theme-accent) 20%, transparent);
+  --popup-accent-hover-bg: color-mix(in srgb, var(--theme-accent) 30%, transparent);
+  --popup-accent-border: color-mix(in srgb, var(--theme-accent) 40%, transparent);
+  --popup-accent-team-bg: color-mix(in srgb, var(--theme-accent) 8%, transparent);
+  --popup-accent-team-hover-bg: color-mix(in srgb, var(--theme-accent) 15%, transparent);
+  --popup-accent-strong-bg: color-mix(in srgb, var(--theme-accent) 15%, transparent);
+  --popup-accent-strong-hover-bg: color-mix(in srgb, var(--theme-accent) 25%, transparent);
+  --popup-accent-strong-active-bg: color-mix(in srgb, var(--theme-accent) 40%, transparent);
+
+  /* States: the colour, a lighter (dark themes) / deeper (light themes) kin
+     leaning towards the text, and translucent washes. */
+  --popup-success: var(--theme-success);
+  --popup-success-light: color-mix(in oklab, var(--theme-success) 72%, var(--theme-text));
+  --popup-success-subtle-bg: color-mix(in srgb, var(--theme-success) 10%, transparent);
+  --popup-success-bg: color-mix(in srgb, var(--theme-success) 20%, transparent);
+  --popup-success-border: color-mix(in srgb, var(--theme-success) 24%, transparent);
+  --popup-success-hover-bg: color-mix(in srgb, var(--theme-success) 30%, transparent);
+  --popup-success-active-bg: color-mix(in srgb, var(--theme-success) 35%, transparent);
+
+  --popup-warning: var(--theme-warning);
+  --popup-warning-light: color-mix(in oklab, var(--theme-warning) 72%, var(--theme-text));
+  --popup-warning-bg: color-mix(in srgb, var(--theme-warning) 20%, transparent);
+  --popup-warning-border: color-mix(in srgb, var(--theme-warning) 26%, transparent);
+  --popup-warning-hover-bg: color-mix(in srgb, var(--theme-warning) 30%, transparent);
+
+  --popup-danger: var(--theme-danger);
+  --popup-danger-light: color-mix(in oklab, var(--theme-danger) 72%, var(--theme-text));
+  --popup-danger-soft: color-mix(in oklab, var(--theme-danger) 85%, var(--theme-text));
+  --popup-danger-subtle-bg: color-mix(in srgb, var(--theme-danger) 10%, transparent);
+  --popup-danger-bg: color-mix(in srgb, var(--theme-danger) 20%, transparent);
+  --popup-danger-border: color-mix(in srgb, var(--theme-danger) 24%, transparent);
+  --popup-danger-hover-bg: color-mix(in srgb, var(--theme-danger) 30%, transparent);
+  --popup-danger-active-bg: color-mix(in srgb, var(--theme-danger) 35%, transparent);
+
+  --popup-input-bg: var(--theme-input, color-mix(in srgb, var(--theme-ground) 95%, var(--theme-text)));
+  --popup-input-text: var(--theme-text);
+  --popup-input-focus-border: color-mix(in srgb, var(--theme-accent) 45%, transparent);
+
+  /* Data hues: game colours (loot, names, magic) kept recognisable, leaning
+     towards the text by the theme's data shift. */
+  --popup-data-yellow: color-mix(in oklab, #ffff00 calc(100% - var(--theme-data-shift)), var(--theme-text));
+  --popup-data-gold: color-mix(in oklab, #ffd700 calc(100% - var(--theme-data-shift)), var(--theme-text));
+  --popup-data-green: color-mix(in oklab, #7cfc00 calc(100% - var(--theme-data-shift)), var(--theme-text));
+  --popup-data-green-light: color-mix(in oklab, #90ee90 calc(100% - var(--theme-data-shift)), var(--theme-text));
+  --popup-data-blue: color-mix(in oklab, #87ceeb calc(100% - var(--theme-data-shift)), var(--theme-text));
+  --popup-data-orange: color-mix(in oklab, #ffa500 calc(100% - var(--theme-data-shift)), var(--theme-text));
+  --popup-data-orange-warm: color-mix(in oklab, #e8a04e calc(100% - var(--theme-data-shift)), var(--theme-text));
+  --popup-data-orange-light: color-mix(in oklab, #fb923c calc(100% - var(--theme-data-shift)), var(--theme-text));
+  --popup-data-pink: color-mix(in oklab, #ffb6c1 calc(100% - var(--theme-data-shift)), var(--theme-text));
+  --popup-data-purple: color-mix(in oklab, #6a5acd calc(100% - var(--theme-data-shift)), var(--theme-text));
+  --popup-data-purple-light: color-mix(in oklab, #8a7aed calc(100% - var(--theme-data-shift)), var(--theme-text));
+  --popup-data-gray: color-mix(in oklab, #808080 calc(100% - var(--theme-data-shift)), var(--theme-text));
+  --popup-data-gray-light: color-mix(in oklab, #999999 calc(100% - var(--theme-data-shift)), var(--theme-text));
+  --popup-data-tomato: color-mix(in oklab, #ff6347 calc(100% - var(--theme-data-shift)), var(--theme-text));
+  --popup-data-magic-green: color-mix(in oklab, #00ff87 calc(100% - var(--theme-data-shift)), var(--theme-text));
+  --popup-data-spring-green: color-mix(in oklab, #00ff7f calc(100% - var(--theme-data-shift)), var(--theme-text));
+
+  --footer-bg: var(--theme-footer, var(--theme-ground));
+  --footer-border: color-mix(in srgb, var(--theme-line) 14%, transparent);
+  --footer-text: color-mix(in srgb, var(--theme-text) 80%, transparent);
+  --footer-control-hover-border: color-mix(in srgb, var(--theme-line) 35%, transparent);
+}

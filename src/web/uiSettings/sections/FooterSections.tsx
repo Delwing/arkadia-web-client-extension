@@ -1,8 +1,9 @@
 import type { UiSettings } from "../../uiSettingsCore";
 import { defaultUiSettings } from "../../defaultUiSettings";
 import BarOrderSettings from "../../options/BarOrderSettings";
+import FooterButtonSettings from "../../options/FooterButtonSettings";
 import FooterComponentSettings from "../../options/FooterComponentSettings";
-import { CheckboxRow, DeviceOnlyBadge, SelectField, SettingsSection } from "../fields";
+import { CheckboxRow, SelectField, SettingsSection } from "../fields";
 
 interface FooterSectionsProps {
     draft: UiSettings;
@@ -13,16 +14,17 @@ function FooterSections({ draft, update }: FooterSectionsProps) {
     return (
         <>
             <SettingsSection title="Stan postaci">
-                <SelectField id="ui-footer-mode" settingKey="footerMode" label="Tryb stopki" value={String(draft.footerMode)} onChange={(v) => update({ footerMode: parseInt(v) || 0 })}>
+                <SelectField id="ui-footer-mode" label="Tryb stopki" value={String(draft.footerMode)} onChange={(v) => update({ footerMode: parseInt(v, 10) })}>
+                    <option value="4">Kafelki</option>
                     <option value="0">Liczbowy</option>
                     <option value="1">Pasek</option>
                     <option value="2">Pasek jednolity</option>
                     <option value="3">Pasek graficzny</option>
                 </SelectField>
                 <CheckboxRow id="ui-emoji-labels" label="Etykiety emoji" checked={draft.emojiLabels} onChange={(v) => update({ emojiLabels: v })} />
-                <div>
-                    <label className="form-label mb-1">Kolejnosc i widocznosc paskow<DeviceOnlyBadge settingKey="barOrder" /></label>
-                    <div id="ui-bar-order-settings">
+                <div className="popup-field">
+                    <span className="popup-field__label">Kolejnosc i widocznosc paskow</span>
+                    <div id="ui-bar-order-settings" className="settings-sort-block">
                         <BarOrderSettings
                             barOrder={draft.barOrder || defaultUiSettings.barOrder}
                             alwaysVisibleBars={draft.alwaysVisibleBars || []}
@@ -33,23 +35,22 @@ function FooterSections({ draft, update }: FooterSectionsProps) {
             </SettingsSection>
 
             <SettingsSection title="Stopka na telefonie">
-                <p className="text-muted small mb-1">
-                    Na waskim ekranie stopka jest podzielona na dwa przewijane paski o stalej
-                    wysokosci (stan postaci i plakietki), a stan postaci pokazywany jest w postaci
-                    kompaktowych miernikow zamiast trybu stopki. Przycisk po prawej stronie stopki
-                    rozwija oba paski - a jesli stopka ma byc zawsze rozwinieta albo zawsze
-                    zwinieta, przycisku nie ma wcale.
+                <p className="popup-field__hint">
+                    Na waskim ekranie stopka zajmuje jedna linie o stalej wysokosci: dwa
+                    pierwsze paski stanu i najpilniejsze plakietki. Przycisk po prawej rozwija
+                    ja w panel ze wszystkimi paskami i plakietkami - a jesli stopka ma byc
+                    zawsze rozwinieta albo zawsze zwinieta, przycisku nie ma wcale.
                 </p>
                 <CheckboxRow
                     id="ui-mobile-footer-compact"
-                    settingKey="mobileFooterCompact"
+                   
                     label="Kompaktowa stopka na telefonie"
                     checked={draft.mobileFooterCompact}
                     onChange={(v) => update({ mobileFooterCompact: v })}
                 />
                 <SelectField
                     id="ui-mobile-footer-expand"
-                    settingKey="mobileFooterExpand"
+                   
                     label="Rozwijanie stopki na telefonie"
                     value={draft.mobileFooterExpand}
                     disabled={!draft.mobileFooterCompact}
@@ -61,7 +62,21 @@ function FooterSections({ draft, update }: FooterSectionsProps) {
                 </SelectField>
             </SettingsSection>
 
-            <SettingsSection title="Elementy stopki" settingKey="footerComponents">
+            <SettingsSection title="Przyciski przy linii komend" full>
+                <p className="popup-field__hint">
+                    Wlasne przyciski obok pola komend - na komputerze miedzy "Wyslij" a menu
+                    (co sie nie miesci, chowa sie pod wlasne "..."), na telefonie w rozwinietej
+                    stopce jako siatka duzych kafelkow.
+                </p>
+                <div id="ui-footer-buttons-settings">
+                    <FooterButtonSettings
+                        buttons={draft.footerButtons}
+                        onChange={(footerButtons) => update({ footerButtons })}
+                    />
+                </div>
+            </SettingsSection>
+
+            <SettingsSection title="Elementy stopki">
                 <div id="ui-footer-components-settings">
                     <FooterComponentSettings
                         components={draft.footerComponents}

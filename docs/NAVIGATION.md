@@ -87,7 +87,9 @@ Komendy do poruszania sie, mapy i automatycznego chodzenia.
 
 | Komenda | Opis |
 |---------|------|
-| `/note` | Otworz edytor notatki dla biezacej lokacji |
+| `/note` | Otworz okno Miejsca na biezacej lokacji, z kursorem w notatce |
+
+> **Wskazowka:** Skroty (`/idz`, `/prowadz`) i notatki lokacji sa w jednym oknie **Miejsca** (menu). Kazde miejsce to lokacja z opcjonalnym skrotem i notatka; przycisk "Tutaj" dodaje biezaca lokacje, a notatka zapisuje sie sama.
 
 ## Okno mapy
 

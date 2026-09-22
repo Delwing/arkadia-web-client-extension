@@ -1,10 +1,11 @@
-import {ensureFontLoaded, isUiFontSelection, UiFontSelection} from "./fontLoader";
+import {ensureFontLoaded, isUiFontSelection, resolveOutputFontFamily} from "./fontLoader";
 import type { SoundCategory } from '@shared/events/clientEvents.ts';
 import type { SoundCategories } from './defaultUiSettings';
 import {
     defaultFooterComponents,
     defaultUiSettings,
     type ColorTheme,
+    type FooterButtonConfig,
     type FooterComponentConfig,
     type MapHighlightShape,
     type MapRoomShape,
@@ -12,7 +13,6 @@ import {
     type UiSettings
 } from "./defaultUiSettings";
 import {globalStorage} from "@modules/core/storage";
-import {CONFIG_ORDER_BASE} from "@modules/core/footerRegistry";
 import {getEmbeddedMap} from "./embedRegistry";
 import {
     setShellSettings,
@@ -123,6 +123,35 @@ export function validateFooterComponents(parsed: unknown): FooterComponentConfig
     return result.map((c, index) => ({ ...c, order: index }));
 }
 
+/**
+ * The player's footer buttons, as stored. Anything without a label and a command
+ * is dropped: an unlabelled button that sends nothing is not a button, and the
+ * editor never writes one.
+ */
+export function validateFooterButtons(parsed: unknown): FooterButtonConfig[] {
+    if (!Array.isArray(parsed)) return [];
+    const seen = new Set<string>();
+    const result: FooterButtonConfig[] = [];
+    for (const item of parsed) {
+        if (!item || typeof item !== 'object') continue;
+        const { id, label, command, tone, state, hidden } = item as Record<string, unknown>;
+        if (typeof id !== 'string' || !id || seen.has(id)) continue;
+        if (typeof label !== 'string' || !label.trim()) continue;
+        if (typeof command !== 'string' || !command.trim()) continue;
+        seen.add(id);
+        result.push({
+            id,
+            label: label.trim(),
+            command: command.trim(),
+            tone: tone === 'accent' || tone === 'danger' ? tone : 'neutral',
+            state: typeof state === 'string' && state.trim() ? state.trim() : undefined,
+            hidden: hidden === true,
+            order: result.length,
+        });
+    }
+    return result.map((b, index) => ({ ...b, order: index }));
+}
+
 const genericFontFamilyNames = new Set([
     'serif',
     'sans-serif',
@@ -203,54 +232,6 @@ export async function guessFontFamilyFromStylesheet(href: string): Promise<strin
     }
 }
 
-export function resolveOutputFontFamily(selection: UiFontSelection, customFontFamily: string): string | undefined {
-    switch (selection) {
-    case 'fira-code':
-        return '"Fira Code", monospace';
-    case 'jetbrains-mono':
-        return '"JetBrains Mono", monospace';
-    case 'cascadia-mono':
-        return '"Cascadia Mono", monospace';
-    case 'custom': {
-        const trimmed = customFontFamily.trim();
-        if (!trimmed) {
-            return undefined;
-        }
-        const normalized = /['",]/.test(trimmed)
-            ? trimmed
-            : `"${trimmed}"`;
-        return `${normalized}, monospace`;
-    }
-    default:
-        return undefined;
-    }
-}
-
-/** Ids that are also real DOM ids of stock chips, and safe inside a selector. */
-const STOCK_CHIP_ID = /^[A-Za-z0-9_-]+$/;
-
-function applyFooterComponents(footerComponents: FooterComponentConfig[]) {
-    const charState = document.getElementById('char-state');
-    if (!charState) return;
-    for (const config of footerComponents) {
-        // Only the stock chips are elements under #char-state. A plugin's
-        // component is rendered by PluginFooterItems from the common registry,
-        // which applies this same config itself - and its id (`plugin:<url>:x`)
-        // is not a valid selector, so asking for it here throws.
-        if (!STOCK_CHIP_ID.test(config.id)) continue;
-        const element = charState.querySelector(`#${config.id}`) as HTMLElement | null;
-        if (element) {
-            // Same band the registry places configured items in, so a chip and a
-            // plugin component next to each other in the settings list end up
-            // next to each other in the footer. Everything #char-state holds
-            // that the config says nothing about - the char state text, the bars
-            // - keeps flex order 0 and stays in front.
-            element.style.order = String(CONFIG_ORDER_BASE + config.order);
-            element.dataset.footerHidden = config.visible ? '0' : '1';
-        }
-    }
-}
-
 export function apply(settings: UiSettings) {
     const customHref = settings.customFontUrl?.trim();
     const normalizedHref = customHref && /^https?:\/\//i.test(customHref) ? customHref : undefined;
@@ -284,6 +265,9 @@ export function apply(settings: UiSettings) {
     if (document.body) {
         document.body.style.setProperty('--output-font-family', resolvedFontFamily || 'monospace');
         document.body.style.setProperty('--output-font-size', settings.contentFontSize + 'rem');
+        // Kondycje's own default size — its window settings cog shows it as
+        // the value the window follows until overridden.
+        document.body.style.setProperty('--objects-font-size', settings.objectsFontSize + 'rem');
     }
     const content = document.getElementById('main_text_output_msg_wrapper');
     if (content) {
@@ -299,7 +283,6 @@ export function apply(settings: UiSettings) {
     }
     const charState = document.getElementById('char-state');
     if (charState) {
-        charState.style.fontSize = settings.contentFontSize + 'rem';
         charState.setAttribute('data-footer-mode', String(settings.footerMode));
     }
     if (document.body) {
@@ -315,15 +298,16 @@ export function apply(settings: UiSettings) {
     if (objectsList) {
         objectsList.style.fontSize = settings.contentFontSize + 'rem';
     }
-    applyFooterComponents(settings.footerComponents);
     const objects = document.getElementById('objects-list');
     if (objects) {
-        if (resolvedFontFamily) {
-            objects.style.fontFamily = resolvedFontFamily;
-        } else {
-            objects.style.removeProperty('font-family');
-        }
-        objects.style.fontSize = settings.objectsFontSize + 'rem';
+        // --window-font-* is set by the Kondycje window's settings cog when the
+        // user overrides the font for that window alone (windowSettings.ts).
+        // With no fallback, an unset --window-font-family makes the declaration
+        // invalid and the font inherits, as a removed property would.
+        objects.style.fontFamily = resolvedFontFamily
+            ? `var(--window-font-family, ${resolvedFontFamily})`
+            : 'var(--window-font-family)';
+        objects.style.fontSize = `var(--window-font-size, ${settings.objectsFontSize}rem)`;
         objects.style.backgroundColor = hexAlphaToRgba(settings.objectListBackgroundColor, settings.objectListBackgroundAlpha);
     }
     const iframeContainer = document.getElementById('iframe-container') as HTMLElement | null;
@@ -546,6 +530,7 @@ export function load(): UiSettings {
                 ? parsed.objectContextMenuCommands.filter((c: unknown) => typeof c === 'string')
                 : defaultUiSettings.objectContextMenuCommands;
             const footerComponents = validateFooterComponents(parsed.footerComponents);
+            const footerButtons = validateFooterButtons(parsed.footerButtons);
             const keepMultibindsVisible = typeof parsed.keepMultibindsVisible === 'boolean'
                 ? parsed.keepMultibindsVisible
                 : defaultUiSettings.keepMultibindsVisible;
@@ -597,6 +582,8 @@ export function load(): UiSettings {
             const splitViewHeight = typeof parsed.splitViewHeight === 'number' && parsed.splitViewHeight >= 60
                 ? parsed.splitViewHeight
                 : undefined;
+            const ttsNumber = (value: unknown, min: number, max: number, fallback: number) =>
+                typeof value === 'number' && Number.isFinite(value) ? Math.min(max, Math.max(min, value)) : fallback;
             return {
                 ...defaultUiSettings,
                 ...parsed,
@@ -639,6 +626,7 @@ export function load(): UiSettings {
                 pathFindingAlgorithm,
                 objectContextMenuCommands,
                 footerComponents,
+                footerButtons,
                 keepMultibindsVisible,
                 mobileFooterCompact,
                 mobileFooterExpand,
@@ -658,6 +646,12 @@ export function load(): UiSettings {
                 objectListBackgroundAlpha,
                 colorTheme,
                 customThemeColor,
+                ttsEnabled: typeof parsed.ttsEnabled === 'boolean' ? parsed.ttsEnabled : defaultUiSettings.ttsEnabled,
+                ttsVoice: typeof parsed.ttsVoice === 'string' ? parsed.ttsVoice : defaultUiSettings.ttsVoice,
+                ttsRate: ttsNumber(parsed.ttsRate, 0.5, 2, defaultUiSettings.ttsRate),
+                ttsPitch: ttsNumber(parsed.ttsPitch, 0, 2, defaultUiSettings.ttsPitch),
+                ttsVolume: ttsNumber(parsed.ttsVolume, 0, 1, defaultUiSettings.ttsVolume),
+                ttsInterrupt: typeof parsed.ttsInterrupt === 'boolean' ? parsed.ttsInterrupt : defaultUiSettings.ttsInterrupt,
             };
         }
     } catch {

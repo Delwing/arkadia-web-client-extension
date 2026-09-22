@@ -58,50 +58,42 @@ function ObjectContextMenuEditor({ commands, onChange }: ObjectContextMenuEditor
     return (
         <div
             id="ui-object-context-menu-container"
-            className="form-control form-control-sm d-inline-flex flex-wrap align-items-center"
-            style={{ height: 'auto', cursor: 'text', padding: '0.2rem 0.4rem', gap: '0.2rem' }}
+            className="popup-chips"
             onClick={() => inputRef.current?.focus()}
         >
             {commands.map(cmd => (
                 <span
                     key={cmd}
-                    className={`badge bg-secondary d-inline-flex align-items-center context-menu-badge${flashing === cmd ? ' duplicate-flash' : ''}`}
-                    style={{ fontSize: '0.7rem', padding: '0.15rem 0.35rem', fontWeight: 'normal', lineHeight: 1, boxSizing: 'border-box', cursor: 'pointer' }}
+                    className={`popup-chip context-menu-badge${flashing === cmd ? ' duplicate-flash' : ''}`}
                     onClick={(e) => { e.stopPropagation(); remove(cmd); }}
+                    title="Usuń"
                 >
-                    <span style={{ lineHeight: 1 }}>{cmd}</span>
-                    <span style={{ marginLeft: '0.25rem', lineHeight: 1, opacity: 0.7 }}>{'×'}</span>
+                    {cmd}
+                    <span className="popup-chip__remove">×</span>
                 </span>
             ))}
             <span
                 data-settings-ignore
-                className={isTyping
-                    ? 'badge bg-secondary d-inline-flex align-items-center context-menu-input-wrapper'
-                    : 'context-menu-input-wrapper d-inline-flex align-items-center'}
-                style={isTyping
-                    ? { fontSize: '0.7rem', padding: '0.15rem 0.35rem', fontWeight: 'normal', lineHeight: 1, boxSizing: 'border-box' }
-                    : { fontSize: '0.7rem', lineHeight: 1, padding: '0.15rem 0', boxSizing: 'border-box' }}
+                className={`context-menu-input-wrapper${isTyping ? ' popup-chip' : ''}`}
             >
                 <input
                     type="text"
                     id="ui-object-context-menu-input"
                     ref={inputRef}
-                    className="border-0"
+                    className="popup-chips__input"
                     value={inputValue}
                     placeholder={isTyping ? '' : '+'}
                     onChange={(e) => setInputValue(e.target.value)}
                     onKeyDown={handleKeyDown}
                     onBlur={commit}
-                    style={isTyping
-                        ? { outline: 'none', width: `${len}ch`, maxWidth: `${len}ch`, background: 'transparent', color: 'white', border: 'none', padding: 0, margin: 0, fontSize: 'inherit', fontWeight: 'inherit', lineHeight: 'inherit', boxSizing: 'border-box' }
-                        : { outline: 'none', width: '1ch', minWidth: '1ch', background: 'transparent', fontSize: 'inherit', padding: 0, margin: 0, border: 'none', lineHeight: 'inherit' }}
+                    style={{ width: isTyping ? `${len}ch` : '1ch' }}
                 />
                 {isTyping && (
                     <span
-                        style={{ cursor: 'pointer', marginLeft: '0.25rem', lineHeight: 1, opacity: 0.7 }}
+                        className="popup-chip__remove"
                         onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); setInputValue(''); inputRef.current?.focus(); }}
                     >
-                        {'×'}
+                        ×
                     </span>
                 )}
             </span>

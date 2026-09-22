@@ -38,14 +38,14 @@ test.describe('Transport timer', () => {
         await pushText(page, 'Galera odbija od brzegu.');
 
         // Timer should still show the destination with countdown
-        await expect(transportTimer, 'should display timer with countdown after departure').toContainText('Tr:');
+        await expect(transportTimer, 'should display timer with countdown after departure').toContainText('Tr');
         await expect(transportTimer, 'should still show Kraina Zgromadzenia as destination').toContainText(
             'Kraina Zgromadzenia'
         );
 
         // Verify countdown is showing
         const timerText = await transportTimer.textContent();
-        expect(timerText, 'should show countdown format').toMatch(/Tr:.*\d+:\d{2}/);
+        expect(timerText, 'should show countdown format').toMatch(/Tr.*\d+:\d{2}/);
     });
 
     test('displays correct destination label from different starting dock', async ({page}) => {
@@ -80,7 +80,7 @@ test.describe('Transport timer', () => {
         await pushText(page, 'Galera odbija od brzegu.');
 
         // Should show timer with Nuln as destination
-        await expect(transportTimer, 'should display timer with destination').toContainText('Tr:');
+        await expect(transportTimer, 'should display timer with destination').toContainText('Tr');
         await expect(transportTimer, 'should show Nuln as destination').toContainText('Nuln');
     });
 
@@ -113,7 +113,7 @@ test.describe('Transport timer', () => {
         await expect(transportTimer, 'should show destination after driving aboard').toContainText('Kraina Zgromadzenia');
 
         await pushText(page, 'Galera odbija od brzegu.');
-        await expect(transportTimer, 'should count down while sailing').toContainText('Tr:');
+        await expect(transportTimer, 'should count down while sailing').toContainText('Tr');
 
         // Driving off the ship clears the timer
         await pushText(page, 'Wraz z Vesper zjezdzasz wygodnym szybkim dylizansem na brzeg.');
@@ -175,7 +175,7 @@ test.describe('Transport timer', () => {
         await pushText(page, 'Galera odbija od brzegu.');
 
         // Verify timer is active
-        await expect(transportTimer, 'should have timer running').toContainText('Tr:');
+        await expect(transportTimer, 'should have timer running').toContainText('Tr');
 
         // Exit the ship
         await pushText(page, 'Schodzisz z galery.');
@@ -216,20 +216,16 @@ test.describe('Transport timer', () => {
 
         // Initially should have green or yellow class (more than 10 seconds remaining)
         await page.clock.runFor(100);
-        const initialClass = await transportTimer.getAttribute('class');
-        expect(
-            initialClass === 'green' || initialClass === 'yellow',
-            'should have green or yellow class initially'
-        ).toBeTruthy();
+        await expect(transportTimer.locator('.chip'), 'should be ok or warn initially').toHaveClass(/chip--(ok|warn)/);
 
         // Wait for timer to count down (the journey to Kraina Zgromadzenia is 43 seconds)
         // After 20 seconds, should be yellow (about 23 seconds remaining, in 10-30 range)
         await page.clock.runFor(20000);
-        await expect(transportTimer, 'should be yellow when close to arrival').toHaveClass('yellow');
+        await expect(transportTimer.locator('.chip'), 'should be yellow when close to arrival').toHaveClass(/chip--warn/);
 
         // Wait until less than 10 seconds remain (wait another 15 seconds)
         await page.clock.runFor(15000);
-        await expect(transportTimer, 'should be red when very close to arrival').toHaveClass('red');
+        await expect(transportTimer.locator('.chip'), 'should be red when very close to arrival').toHaveClass(/chip--danger/);
     });
 
     test('handles transport with disambiguation via set pattern', async ({page}) => {
@@ -333,7 +329,7 @@ test.describe('Transport timer', () => {
         await pushText(page, 'Galera odbija od brzegu.');
 
         // Verify timer is active
-        await expect(transportTimer, 'should have timer running').toContainText('Tr:');
+        await expect(transportTimer, 'should have timer running').toContainText('Tr');
 
         // Jump overboard - abort the journey
         await pushText(page, 'Jednym susem przesadzasz burte statku i wskakujesz do wody. Po chwili udaje ci sie doplynac z powrotem do brzegu.');
@@ -437,7 +433,7 @@ test.describe('Transport timer', () => {
         await expect(transportTimer, 'should still know it is heading for Baccala').toContainText('Baccala');
 
         await pushText(page, 'Statek odbija od brzegu.');
-        await expect(transportTimer, 'should count down the Baccala leg').toContainText('Tr:');
+        await expect(transportTimer, 'should count down the Baccala leg').toContainText('Tr');
         await expect(transportTimer, 'should keep Baccala as destination after departure').toContainText('Baccala');
     });
 

@@ -35,13 +35,13 @@ async function pressKey(
 async function openBindsModal(page: Page): Promise<void> {
     await page.click('#menu-button');
     await page.click('#binds-button');
-    await page.waitForSelector('#binds-modal.show', {timeout: 5000});
-    await page.waitForSelector('#binds-modal .form-select', {timeout: 5000});
+    await page.waitForSelector('#binds-modal:not([hidden])', {timeout: 5000});
+    await page.waitForSelector('#binds-keymap-select', {timeout: 5000});
 }
 
 async function saveBindsModal(page: Page): Promise<void> {
     await page.locator('#binds-modal button:has-text("Zapisz")').click();
-    await page.waitForSelector('#binds-modal.show', {state: 'hidden', timeout: 5000});
+    await page.waitForSelector('#binds-modal:not([hidden])', {state: 'hidden', timeout: 5000});
 }
 
 // ---------------------------------------------------------------------------
@@ -65,7 +65,7 @@ test.describe('Bind capture via UI: lamp bind', () => {
         await openBindsModal(page);
 
         const lampInput = page
-            .locator('#binds-modal tr', {hasText: 'lamp'})
+            .locator('#binds-modal .bind-row', {hasText: 'lamp'})
             .locator('input[type="text"]');
         await expect(lampInput).toBeVisible();
 
@@ -131,7 +131,7 @@ test.describe('Bind capture via UI: attack bind', () => {
 
         // Use "Atakuj" exactly (not "Atakuj wroga") — first row matching "Atakuj"
         const attackInput = page
-            .locator('#binds-modal tr', {hasText: 'Atakuj'})
+            .locator('#binds-modal .bind-row', {hasText: 'Atakuj'})
             .first()
             .locator('input[type="text"]');
         await expect(attackInput).toBeVisible();
@@ -183,8 +183,8 @@ test.describe('Bind capture via UI: direction bind (N)', () => {
 
         // Find the "N" row by matching the first <td> with exactly "N"
         const nInput = page
-            .locator('#binds-modal tr')
-            .filter({has: page.locator('td.w-32', {hasText: /^N$/})})
+            .locator('#binds-modal .bind-row')
+            .filter({has: page.locator('.bind-row__label', {hasText: /^N$/})})
             .locator('input[type="text"]');
         await expect(nInput).toBeVisible();
 
@@ -234,7 +234,7 @@ test.describe('Bind capture via UI: functional bind', () => {
         await openBindsModal(page);
 
         const funcInput = page
-            .locator('#binds-modal tr', {hasText: 'Funkcyjny'})
+            .locator('#binds-modal .bind-row', {hasText: 'Funkcyjny'})
             .locator('input[type="text"]');
         await expect(funcInput).toBeVisible();
 
@@ -301,7 +301,7 @@ test.describe('Bind capture via UI: drinkable bind', () => {
 
         // Find the drinkable row by searching for "wody" text
         const drinkableInput = page
-            .locator('#binds-modal tr', {hasText: 'wody'})
+            .locator('#binds-modal .bind-row', {hasText: 'wody'})
             .locator('input[type="text"]');
         await expect(drinkableInput).toBeVisible();
 
@@ -363,7 +363,7 @@ test.describe('Bind capture via UI: mid-session change', () => {
         await openBindsModal(page);
 
         const lampInput = page
-            .locator('#binds-modal tr', {hasText: 'lamp'})
+            .locator('#binds-modal .bind-row', {hasText: 'lamp'})
             .locator('input[type="text"]');
         await expect(lampInput).toBeVisible();
 

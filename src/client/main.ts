@@ -1,5 +1,6 @@
 import People from "./People";
 import eventBus from "@modules/core/eventBus";
+import { getFooterButtonState, setFooterButtonState } from "@modules/core/footerButtonRegistry";
 import registerLuaGagTriggers from "./scripts/luaGags";
 import initPackageHelper from './PackageHelper'
 import initInlineCompassRose from './scripts/inlineCompassRose'
@@ -94,7 +95,7 @@ import initGps from './scripts/gps'
 import initLocalizers from './scripts/localizers'
 import initMapAliases from './scripts/mapAliases'
 import initRouteInstructions from './scripts/transportLead'
-import { registerRoomInfoProvider } from '@modules/core/roomInfoProvider'
+import { registerRoomDistanceProvider, registerRoomInfoProvider } from '@modules/core/roomInfoProvider'
 import { registerCurrentRoomProvider } from '@modules/core/currentRoomProvider'
 import { registerMapDestinationsProvider } from '@modules/core/mapDestinationsProvider'
 import { registerTeamStateProvider } from '@modules/core/teamStateProvider'
@@ -191,6 +192,19 @@ export function registerScripts(client: Client) {
         pattern: /^\/blokada$/,
         callback: () => eventBus.emit("layout.toggleLock"),
     })
+    // Light a footer button up (Ustawienia -> Stopka), from a trigger or a script:
+    // the button naming this state draws itself as on. Without on/off it toggles.
+    aliases.push({
+        pattern: /^\/przycisk\s+(\S+)(?:\s+(on|off|wl|wyl))?$/i,
+        callback: (matches: RegExpMatchArray) => {
+            const name = matches[1];
+            const word = matches[2]?.toLowerCase();
+            const on = word === undefined
+                ? !getFooterButtonState(name)
+                : word === 'on' || word === 'wl';
+            setFooterButtonState(name, on);
+        },
+    })
     aliases.push({
         pattern: /^\/reload-plugins$/,
         callback: async () => {
@@ -220,6 +234,12 @@ export function registerScripts(client: Client) {
             areaName,
             mapNote: room.userData?.note ?? null,
         };
+    })
+
+    registerRoomDistanceProvider((roomIds) => {
+        const from = client.Map.currentRoom?.id;
+        if (typeof from !== 'number' || !client.Map.tryGetMapReader()) return new Map(roomIds.map((id) => [id, null]));
+        return client.Map.getRoomDistances(from, roomIds);
     })
 
     registerCurrentRoomProvider(() => client.Map.currentRoom?.id ?? null)

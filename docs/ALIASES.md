@@ -87,6 +87,7 @@ Zakresy dzialaja rosnaco (`1-7`) i malejaco (`7-1`). Maksymalnie 50 iteracji.
 | Komenda | Opis |
 |---------|------|
 | `/binds` | Wyswietl liste skonfigurowanych bindow |
+| `/przycisk nazwa [on\|off]` | Zapal lub zgas wlasne przyciski stopki o tym stanie (bez `on`/`off` przelacza) |
 
 ## Dzwiek
 

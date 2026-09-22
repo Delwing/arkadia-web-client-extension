@@ -4,6 +4,8 @@ import eventBus from '@modules/core/eventBus';
 import { globalStorage } from '@modules/core/storage';
 import { onMapSettingsChange } from '@modules/core/settings';
 import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
+import { HeaderMenu, MenuBack, MenuCheckItem, MenuItem, MenuRow, MenuScroll } from './layout/components/HeaderMenu';
+import { usePopover } from './layout/hooks/usePopover';
 import { getNote, type LocationNote } from '@web/options/locationNotesStorage';
 import { openMapContextMenu } from '@modules/core/contextMenus';
 import { getPluginLocationNotes, type PluginLocationNote } from '@modules/core/pluginLocationNotesRegistry';
@@ -51,61 +53,14 @@ function StaticMapMenu({
     loadLevels: (areaId: number) => void;
     renderPathsAndHighlights: () => void;
 }) {
-    const [isOpen, setIsOpen] = useState(false);
     const [submenu, setSubmenu] = useState<SubmenuType>('none');
     const [areas, setAreas] = useState<{ id: number; name: string }[]>([]);
     const [levels, setLevels] = useState<number[]>([]);
-    const menuRef = useRef<HTMLDivElement>(null);
-    const toggleRef = useRef<HTMLButtonElement>(null);
-    const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties | null>(null);
+    // Every close (action, click-away, Escape) returns to the top level.
+    const menu = usePopover({ onClose: () => setSubmenu('none'), maxHeight: 300 });
+    const closeMenu = menu.close;
 
     const getEmbedded = useCallback(() => getEmbeddedMap(), []);
-
-    const calculateDropdownPosition = useCallback(() => {
-        if (toggleRef.current) {
-            const rect = toggleRef.current.getBoundingClientRect();
-            const viewportHeight = window.innerHeight;
-            const availableSpace = viewportHeight - rect.bottom - 16;
-            const maxHeight = Math.max(100, Math.min(300, availableSpace));
-            setDropdownStyle({
-                position: 'fixed',
-                top: rect.bottom + 4,
-                right: window.innerWidth - rect.right,
-                maxHeight,
-            });
-        }
-    }, []);
-
-    const toggleMenu = useCallback(() => {
-        setIsOpen((prev) => {
-            if (!prev) calculateDropdownPosition();
-            return !prev;
-        });
-        setSubmenu('none');
-    }, [calculateDropdownPosition]);
-
-    const closeMenu = useCallback(() => {
-        setIsOpen(false);
-        setSubmenu('none');
-    }, []);
-
-    useEffect(() => {
-        if (!isOpen) return;
-        const handleClickOutside = (event: PointerEvent) => {
-            if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-                closeMenu();
-            }
-        };
-        const handleEscape = (event: KeyboardEvent) => {
-            if (event.key === 'Escape') closeMenu();
-        };
-        window.addEventListener('pointerdown', handleClickOutside);
-        window.addEventListener('keydown', handleEscape);
-        return () => {
-            window.removeEventListener('pointerdown', handleClickOutside);
-            window.removeEventListener('keydown', handleEscape);
-        };
-    }, [isOpen, closeMenu]);
 
     const handleShowAreas = useCallback(() => {
         const embedded = getEmbedded();
@@ -342,92 +297,44 @@ function StaticMapMenu({
     }, [state.showAreaExitLabels, getEmbedded, rendererRef, setState, closeMenu]);
 
     return (
-        <div ref={menuRef} className="map-header-menu">
-            <button
-                ref={toggleRef}
-                type="button"
-                className="map-header-menu__toggle"
-                onClick={toggleMenu}
-                title="Menu mapy"
-            >
-                <span className="map-header-menu__hamburger" />
-            </button>
-            {isOpen && (
-                <div className="map-header-menu__dropdown" style={dropdownStyle ?? undefined}>
-                    {submenu === 'areas' ? (
-                        <>
-                            <button type="button" className="map-header-menu__item map-header-menu__item--back" onClick={handleBackToMenu}>
-                                &larr; Powrot
-                            </button>
-                            <div className="map-header-menu__area-list" style={dropdownStyle?.maxHeight ? { maxHeight: (dropdownStyle.maxHeight as number) - 40 } : undefined}>
-                                {areas.map((area) => (
-                                    <button
-                                        key={area.id}
-                                        type="button"
-                                        className={`map-header-menu__item${area.id === state.viewedAreaId ? ' map-header-menu__item--active' : ''}`}
-                                        onClick={() => handleSelectArea(area.id)}
-                                    >
-                                        {area.name}
-                                    </button>
-                                ))}
-                            </div>
-                        </>
-                    ) : submenu === 'levels' ? (
-                        <>
-                            <button type="button" className="map-header-menu__item map-header-menu__item--back" onClick={handleBackToMenu}>
-                                &larr; Powrot
-                            </button>
-                            <div className="map-header-menu__area-list" style={dropdownStyle?.maxHeight ? { maxHeight: (dropdownStyle.maxHeight as number) - 40 } : undefined}>
-                                {levels.map((level) => (
-                                    <button
-                                        key={level}
-                                        type="button"
-                                        className={`map-header-menu__item${level === state.viewedLevel ? ' map-header-menu__item--active' : ''}`}
-                                        onClick={() => handleSelectLevel(level)}
-                                    >
-                                        Poziom {level}
-                                    </button>
-                                ))}
-                            </div>
-                        </>
-                    ) : (
-                        <>
-                            <button type="button" className="map-header-menu__item" onClick={handleShowAreas}>Zmien obszar</button>
-                            <button type="button" className="map-header-menu__item" onClick={handleShowLevels} disabled={state.viewedAreaId === null}>Zmien poziom</button>
-                            <div className="map-header-menu__zoom-row">
-                                <button type="button" className="map-header-menu__item" onClick={handleZoomIn}>Zbliz</button>
-                                <button type="button" className="map-header-menu__item" onClick={handleZoomOut}>Oddal</button>
-                            </div>
-                            <button type="button" className="map-header-menu__item" onClick={handleCenterOnPlayer}>Idz do gracza</button>
-                            <button
-                                type="button"
-                                className="map-header-menu__item map-header-menu__item--checkbox"
-                                onClick={handleToggleFollow}
-                            >
-                                <span className={`map-header-menu__checkbox${state.followPlayer ? ' map-header-menu__checkbox--checked' : ''}`} />
-                                Sledz gracza
-                            </button>
-                            <button
-                                type="button"
-                                className="map-header-menu__item map-header-menu__item--checkbox"
-                                onClick={handleToggleGrid}
-                            >
-                                <span className={`map-header-menu__checkbox${state.showGrid ? ' map-header-menu__checkbox--checked' : ''}`} />
-                                Siatka
-                            </button>
-                            <button
-                                type="button"
-                                className="map-header-menu__item map-header-menu__item--checkbox"
-                                onClick={handleToggleAreaExitLabels}
-                            >
-                                <span className={`map-header-menu__checkbox${state.showAreaExitLabels ? ' map-header-menu__checkbox--checked' : ''}`} />
-                                Etykiety wyjsc obszaru
-                            </button>
-                        </>
-                    )}
-                </div>
+        <HeaderMenu menu={menu} title="Menu mapy">
+            {submenu === 'areas' ? (
+                <>
+                    <MenuBack onClick={handleBackToMenu} />
+                    <MenuScroll>
+                        {areas.map((area) => (
+                            <MenuItem key={area.id} active={area.id === state.viewedAreaId} onClick={() => handleSelectArea(area.id)}>
+                                {area.name}
+                            </MenuItem>
+                        ))}
+                    </MenuScroll>
+                </>
+            ) : submenu === 'levels' ? (
+                <>
+                    <MenuBack onClick={handleBackToMenu} />
+                    <MenuScroll>
+                        {levels.map((level) => (
+                            <MenuItem key={level} active={level === state.viewedLevel} onClick={() => handleSelectLevel(level)}>
+                                Poziom {level}
+                            </MenuItem>
+                        ))}
+                    </MenuScroll>
+                </>
+            ) : (
+                <>
+                    <MenuItem onClick={handleShowAreas}>Zmien obszar</MenuItem>
+                    <MenuItem onClick={handleShowLevels} disabled={state.viewedAreaId === null}>Zmien poziom</MenuItem>
+                    <MenuRow>
+                        <MenuItem onClick={handleZoomIn}>Zbliz</MenuItem>
+                        <MenuItem onClick={handleZoomOut}>Oddal</MenuItem>
+                    </MenuRow>
+                    <MenuItem onClick={handleCenterOnPlayer}>Idz do gracza</MenuItem>
+                    <MenuCheckItem checked={state.followPlayer} onClick={handleToggleFollow}>Sledz gracza</MenuCheckItem>
+                    <MenuCheckItem checked={state.showGrid} onClick={handleToggleGrid}>Siatka</MenuCheckItem>
+                    <MenuCheckItem checked={state.showAreaExitLabels} onClick={handleToggleAreaExitLabels}>Etykiety wyjsc obszaru</MenuCheckItem>
+                </>
             )}
-        </div>
+        </HeaderMenu>
     );
 }
 

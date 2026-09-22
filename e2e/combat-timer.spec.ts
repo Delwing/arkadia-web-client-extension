@@ -30,11 +30,11 @@ test.describe('Combat timer', () => {
 
         // Timer should be visible showing countdown after combat
         await expect(combatTimer, 'should be visible after combat ends').toBeVisible();
-        await expect(combatTimer, 'should show countdown').toContainText('Walka: ');
+        await expect(combatTimer, 'should show countdown').toContainText('Walka');
 
         // Get initial time
         const initialText = await combatTimer.textContent();
-        const initialMatch = initialText?.match(/Walka: (\d+)/);
+        const initialMatch = initialText?.match(/Walka(\d+)/);
         expect(initialMatch, 'should have countdown value').toBeTruthy();
 
         const initialSeconds = initialMatch ? parseInt(initialMatch[1]) : 0;
@@ -44,7 +44,7 @@ test.describe('Combat timer', () => {
 
         // Get updated time
         const updatedText = await combatTimer.textContent();
-        const updatedMatch = updatedText?.match(/Walka: (\d+)/);
+        const updatedMatch = updatedText?.match(/Walka(\d+)/);
 
         if (updatedMatch) {
             const updatedSeconds = parseInt(updatedMatch[1]);
@@ -123,7 +123,7 @@ test.describe('Combat timer', () => {
 
         // Get the countdown value
         const timerText = await combatTimer.textContent();
-        const match = timerText?.match(/Walka: (\d+)/);
+        const match = timerText?.match(/Walka(\d+)/);
         expect(match, 'should have countdown value').toBeTruthy();
         const countdownValue = match ? parseInt(match[1]) : 0;
         expect(countdownValue, 'should have started countdown').toBeGreaterThan(0);

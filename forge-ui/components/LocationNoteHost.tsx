@@ -1,32 +1,20 @@
 import { useEffect, useRef, useState, type ComponentType } from 'react';
 import eventBus from '@modules/core/eventBus';
 import type { ClientEvents } from '@modules/core/eventBus';
-import { holdPortaledModalScope } from './menu/portaledModalScope';
 
 /**
  * Hosts the stock location-note editor in forge.
  *
- * `@web/LocationNoteEditor` is a self-driving react-bootstrap `<Modal>`: it is
- * not a catalog popup, so `LayoutManagerWrapper` never mounts it, and the stock
- * UI is the only place that does (main.ts, into `#location-note-editor-root`).
- * Without a mount here the `locationNote.edit` / `locationNote.open` emits fall
- * on the floor in forge — the map's right-click "Notatka", the edit buttons in
- * the "Notatki lokacji" panel, and the map aliases all do nothing.
+ * `@web/LocationNoteEditor` is a self-driving dialog: it is not a catalog popup,
+ * so `LayoutManagerWrapper` never mounts it, and the stock UI is the only place
+ * that does (main.ts, into `#location-note-editor-root`). Without a mount here
+ * the `locationNote.edit` / `locationNote.open` emits fall on the floor in forge
+ * — the map's right-click "Notatka", the edit buttons in the "Notatki lokacji"
+ * panel, and the map aliases all do nothing.
  *
- * Two things make this more than a plain `<LocationNoteEditor />`:
- *
- * 1. **It loads on demand.** The editor drags react-bootstrap in with it, which
- *    forge otherwise keeps out of its initial chunk (the menu panels that need
- *    it are lazy too). So the component — and the scoped Bootstrap stylesheet it
- *    is styled by — are imported on the first note event, not at boot.
- * 2. **It portals to `document.body`.** Like the menu panels' sub-dialogs, the
- *    dialog lands outside every `.forge-menu-modal …` selector and would arrive
- *    with no Bootstrap at all. {@link holdPortaledModalScope} tags it; the hold
- *    is kept for as long as this host lives, since the editor stays mounted and
- *    can reopen at any time.
- *
- * The event that triggered the load is replayed once the editor is mounted —
- * it subscribes in its own effect, so it cannot have seen the original emit.
+ * It loads on demand, on the first note event rather than at boot. The event
+ * that triggered the load is replayed once the editor is mounted — it subscribes
+ * in its own effect, so it cannot have seen the original emit.
  */
 type PendingEvent =
     | { name: 'locationNote.edit'; payload: ClientEvents['locationNote.edit'] }
@@ -40,7 +28,6 @@ export default function LocationNoteHost() {
 
     useEffect(() => {
         let cancelled = false;
-        let release: (() => void) | undefined;
 
         const arm = (event: PendingEvent) => {
             // Mounted already: the editor is listening for itself.
@@ -48,13 +35,7 @@ export default function LocationNoteHost() {
             pending.current = event;
             if (loading.current) return;
             loading.current = true;
-            // Tag the dialog before React can portal it — the observer only sees
-            // nodes added after it starts.
-            release = holdPortaledModalScope();
-            void Promise.all([
-                import('./menu/scopedModalCss').then((m) => m.injectScopedModalCss()),
-                import('@web/LocationNoteEditor'),
-            ]).then(([, mod]) => {
+            void import('@web/LocationNoteEditor').then((mod) => {
                 if (!cancelled) setEditor(() => mod.default);
             });
         };
@@ -68,7 +49,6 @@ export default function LocationNoteHost() {
             cancelled = true;
             unsubEdit();
             unsubOpen();
-            release?.();
         };
     }, []);
 

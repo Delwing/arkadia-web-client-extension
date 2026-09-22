@@ -389,7 +389,7 @@ export function LogManager({
         <div className="logs-manage__actions">
             <button
                 type="button"
-                className="btn btn-sm btn-secondary"
+                className="popup-btn popup-btn--control popup-btn--sm"
                 disabled={working || selected.size === 0}
                 onClick={() => exportZip(selectedNames)}
                 title="Archiwum ZIP z zaznaczonych sesji"
@@ -400,7 +400,7 @@ export function LogManager({
             </button>
             <button
                 type="button"
-                className="btn btn-sm btn-secondary"
+                className="popup-btn popup-btn--control popup-btn--sm"
                 disabled={working || ordered.length === 0}
                 onClick={() => exportZip()}
                 title="Archiwum ZIP ze wszystkich sesji"
@@ -409,7 +409,7 @@ export function LogManager({
             </button>
             <button
                 type="button"
-                className="btn btn-sm btn-secondary"
+                className="popup-btn popup-btn--control popup-btn--sm"
                 disabled={working || ordered.length === 0}
                 onClick={() =>
                     setSelected(
@@ -426,7 +426,7 @@ export function LogManager({
             <div className="logs-manage__spacer" />
             <button
                 type="button"
-                className="btn btn-sm btn-secondary"
+                className="popup-btn popup-btn--control popup-btn--sm"
                 disabled={working || selected.size === 0}
                 onClick={() => void exportJson()}
                 title="Eksport do pliku, ktory mozna zaimportowac z powrotem"
@@ -435,7 +435,7 @@ export function LogManager({
             </button>
             <button
                 type="button"
-                className="btn btn-sm btn-primary"
+                className="popup-btn popup-btn--control popup-btn--sm popup-btn--solid"
                 disabled={working}
                 onClick={() => importRef.current?.click()}
             >
@@ -453,7 +453,7 @@ export function LogManager({
             />
             <button
                 type="button"
-                className="btn btn-sm btn-outline-danger"
+                className="popup-btn popup-btn--control popup-btn--sm popup-btn--danger popup-btn--ghost"
                 disabled={working || selected.size === 0}
                 onClick={() => setConfirmDelete(true)}
             >
@@ -472,25 +472,24 @@ export function LogManager({
             >
                 {status ? (
                     <div
-                        className={`alert alert-${status.tone === "danger" ? "danger" : "secondary"} py-2`}
+                        className={`popup-notice logs-manage__status${status.tone === "danger" ? " popup-notice--danger" : ""}`}
                     >
                         {status.text}
                     </div>
                 ) : null}
 
                 {ordered.length === 0 ? (
-                    <p className="text-body-secondary text-center my-4">
+                    <p className="popup-muted logs-manage__empty">
                         Nie ma jeszcze zadnego logu. Uzyj „Importuj”, zeby wczytac je z pliku eksportu.
                     </p>
                 ) : (
                     <div className="logs-manage__table-box">
-                        <table className="table table-sm logs-manage__table">
+                        <table className="popup-table logs-manage__table">
                             <thead>
                                 <tr>
                                     <th className="logs-manage__pick">
                                         <input
                                             type="checkbox"
-                                            className="form-check-input"
                                             checked={allSelected}
                                             onChange={toggleAll}
                                         />
@@ -527,7 +526,6 @@ export function LogManager({
                                                 >
                                                     <input
                                                         type="checkbox"
-                                                        className="form-check-input"
                                                         checked={selected.has(session.id)}
                                                         onChange={() => toggleOne(session.id)}
                                                     />
@@ -564,14 +562,14 @@ export function LogManager({
                         <>
                             <button
                                 type="button"
-                                className="btn btn-sm btn-secondary"
+                                className="popup-btn popup-btn--control popup-btn--sm"
                                 onClick={() => setConfirmDelete(false)}
                             >
                                 Anuluj
                             </button>
                             <button
                                 type="button"
-                                className="btn btn-sm btn-danger"
+                                className="popup-btn popup-btn--control popup-btn--sm popup-btn--danger popup-btn--ghost"
                                 onClick={() => void deleteSelected()}
                             >
                                 Usun

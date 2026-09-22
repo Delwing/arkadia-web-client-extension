@@ -12,10 +12,11 @@ function CommandsSection({ draft, update }: CommandsSectionProps) {
             <CheckboxRow id="ui-clear-input" label="Czyść pole komend po wysłaniu" checked={draft.clearInputOnSend} onChange={(v) => update({ clearInputOnSend: v })} />
             <CheckboxRow id="ui-auto-lowercase-commands" label="Automatycznie małe litery w komendach" checked={draft.autoLowercaseCommands} onChange={(v) => update({ autoLowercaseCommands: v })} />
             <CheckboxRow id="ui-command-echo" label="Echo komend" checked={draft.commandEcho} onChange={(v) => update({ commandEcho: v })} />
-            <CheckboxRow id="ui-show-voice-button" settingKey="showVoiceButton" label="Przycisk mikrofonu (dyktowanie głosowe)" checked={draft.showVoiceButton} onChange={(v) => update({ showVoiceButton: v })} />
-            <CheckboxRow id="ui-keep-multibinds-visible" settingKey="keepMultibindsVisible" label="Zawsze pokazuj pasek multibindów" checked={draft.keepMultibindsVisible} onChange={(v) => update({ keepMultibindsVisible: v })} />
-            <SelectField id="ui-multibind-key-hints" settingKey="multibindKeyHints" label="Skroty klawiszowe na pasku bindow" value={draft.multibindKeyHints} onChange={(v) => update({ multibindKeyHints: v as UiSettings['multibindKeyHints'] })}>
-                <option value="auto">Automatycznie (gdy wykryta klawiatura)</option>
+            <CheckboxRow id="ui-show-voice-button" label="Przycisk mikrofonu (dyktowanie głosowe)" checked={draft.showVoiceButton} onChange={(v) => update({ showVoiceButton: v })} />
+            <CheckboxRow id="ui-tab-completion-hint" label="Podpowiedź uzupełniania (Tab) za kursorem" checked={draft.tabCompletionHint} onChange={(v) => update({ tabCompletionHint: v })} />
+            <CheckboxRow id="ui-keep-multibinds-visible" label="Zawsze pokazuj pasek multibindów" checked={draft.keepMultibindsVisible} onChange={(v) => update({ keepMultibindsVisible: v })} />
+            <SelectField id="ui-multibind-key-hints" label="Skroty klawiszowe na pasku bindow" value={draft.multibindKeyHints} onChange={(v) => update({ multibindKeyHints: v as UiSettings['multibindKeyHints'] })}>
+                <option value="auto">Automatycznie (na telefonie po Alt, Ctrl lub Tab)</option>
                 <option value="always">Zawsze</option>
                 <option value="never">Nigdy</option>
             </SelectField>

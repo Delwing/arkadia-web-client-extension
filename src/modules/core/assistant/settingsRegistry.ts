@@ -152,6 +152,7 @@ const CHROME_FIELDS: Record<string, Constraint & { optional?: boolean }> = {
     buttonSize: { type: 'number', min: 0.1, max: 10, optional: true },
     showButtons: { type: 'boolean' },
     showVoiceButton: { type: 'boolean', label: 'Przycisk mikrofonu' },
+    tabCompletionHint: { type: 'boolean', label: 'Podpowiedz uzupelniania Tab' },
     mapHeight: { type: 'number', min: 0, max: 100, integer: true, label: 'Wysokosc mapy (%)' },
     mapPosition: {
         type: 'enum',
@@ -160,7 +161,7 @@ const CHROME_FIELDS: Record<string, Constraint & { optional?: boolean }> = {
             'top', 'bottom', 'right', 'left',
         ],
     },
-    footerMode: { type: 'number', min: 0, max: 3, integer: true },
+    footerMode: { type: 'number', min: 0, max: 4, integer: true },
     footerComponents: { type: 'complex' },
     mobileFooterCompact: { type: 'boolean', label: 'Kompaktowa stopka na telefonie' },
     mobileFooterExpand: {
@@ -187,6 +188,13 @@ const CHROME_FIELDS: Record<string, Constraint & { optional?: boolean }> = {
     // classifications from drifting apart again.
     alwaysVisibleBars: { type: 'complex' },
     barOrder: { type: 'complex' },
+    ttsEnabled: { type: 'boolean', label: 'Czytanie na glos (TTS)' },
+    // A voiceURI only means something on the device it was picked on.
+    ttsVoice: { type: 'complex' },
+    ttsRate: { type: 'number', min: 0.5, max: 2, label: 'Tempo mowy' },
+    ttsPitch: { type: 'number', min: 0, max: 2, label: 'Wysokosc glosu' },
+    ttsVolume: { type: 'number', min: 0, max: 1, label: 'Glosnosc mowy' },
+    ttsInterrupt: { type: 'boolean', label: 'Nowy komunikat przerywa czytany' },
 };
 
 /** Fields that exist on the type but are absent from the default object. */

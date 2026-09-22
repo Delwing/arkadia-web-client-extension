@@ -4,6 +4,7 @@ import {domEditableField} from "./editableField";
 import {localStorageHistoryStore} from "./commandHistoryStore";
 import {harvestOutputWords} from "./outputWords";
 import {type ActiveCommandLine, setActiveCommandLine} from "./activeCommandLine";
+import {isAnyModalOpen} from "@web/modals/appModal.ts";
 
 export interface CommandInputDeps {
     messageInput: HTMLTextAreaElement;
@@ -44,6 +45,11 @@ export class CommandInputController {
     // select the whole line out from under the engine.
     private suppressFocusSelectAll = false;
 
+    // The output's words, kept until the output changes: the Tab ghost looks them
+    // up on every keystroke, and re-reading 500 lines each time is wasted work.
+    private outputWords: string[] | null = null;
+    private outputObserver: MutationObserver | null = null;
+
     constructor(deps: CommandInputDeps) {
         this.deps = deps;
         this.input = deps.messageInput;
@@ -53,7 +59,7 @@ export class CommandInputController {
             sendCommand: deps.sendCommand,
             isPasswordMode: deps.isPasswordMode,
             getCommandLineSuggestions: deps.getCommandLineSuggestions,
-            getOutputWords: () => harvestOutputWords(this.deps.outputWrapper),
+            getOutputWords: () => this.getOutputWords(),
             getClearInputOnSend: deps.getClearInputOnSend,
             store: localStorageHistoryStore(),
         });
@@ -61,16 +67,17 @@ export class CommandInputController {
         (window as any).__historyDebug = () => this.engine.getDebugState();
     }
 
+    /**
+     * Clear the field being left and focus the one taking over. Which field is
+     * visible is the host's business (CommandLine renders one or the other), so
+     * call this once the swap is on screen.
+     */
     setPasswordMode(enabled: boolean): void {
         if (enabled) {
             this.input.value = '';
-            this.input.style.display = 'none';
-            this.deps.passwordInput.style.display = '';
             this.deps.passwordInput.focus();
         } else {
             this.deps.passwordInput.value = '';
-            this.deps.passwordInput.style.display = 'none';
-            this.input.style.display = '';
             this.input.focus();
         }
     }
@@ -87,6 +94,11 @@ export class CommandInputController {
         // without owning an input (the boss key overlay) borrows this engine
         // rather than standing up a second one over the same history key.
         setActiveCommandLine(this.asActiveCommandLine());
+
+        this.outputObserver = new MutationObserver(() => {
+            this.outputWords = null;
+        });
+        this.outputObserver.observe(this.deps.outputWrapper, {childList: true, subtree: true, characterData: true});
 
         this.deps.sendButton.addEventListener('click', () => this.engine.submit(false), o);
 
@@ -144,7 +156,11 @@ export class CommandInputController {
         this.input.addEventListener('focus', () => {
             this.deps.outputWrapper.scrollTop = this.deps.outputWrapper.scrollHeight;
             if (this.suppressFocusSelectAll) return;
-            setTimeout(() => this.input.select());
+            // select() focuses too: if focus has moved on meanwhile (a window
+            // opening focuses its own field), leave it there.
+            setTimeout(() => {
+                if (document.activeElement === this.input) this.input.select();
+            });
         }, o);
     }
 
@@ -187,9 +203,18 @@ export class CommandInputController {
         }, o);
     }
 
+    private getOutputWords(): string[] {
+        // Only cached while observed; otherwise nothing would tell us it went stale.
+        if (!this.outputObserver) return harvestOutputWords(this.deps.outputWrapper);
+        return this.outputWords ??= harvestOutputWords(this.deps.outputWrapper);
+    }
+
     detach(): void {
         this.abortController?.abort();
         this.abortController = null;
+        this.outputObserver?.disconnect();
+        this.outputObserver = null;
+        this.outputWords = null;
         setActiveCommandLine(null);
     }
 
@@ -239,7 +264,7 @@ export class CommandInputController {
         if (e.key === 'Enter') {
             if (e.shiftKey) return;
             const active = document.activeElement as HTMLElement | null;
-            const modalOpen = document.querySelector('.modal.show');
+            const modalOpen = isAnyModalOpen();
             if (modalOpen && (!active || active.id !== 'message-input')) return;
             if (active && active.id !== 'message-input' &&
                 (active.matches('input, textarea') || active.isContentEditable)) {
@@ -280,6 +305,11 @@ export class CommandInputController {
             // Normal key: reset tab completion on next typing
             this.engine.resetTabCompletionState();
         }
+    }
+
+    /** What the next Tab would append to the current line (see the engine). */
+    peekTabCompletion(): string | null {
+        return this.engine.peekTabCompletion(this.input.value);
     }
 
     // ── Blacklist / Debug (delegated to the engine) ────────────────────

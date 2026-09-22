@@ -38,11 +38,11 @@ test.describe('Zask timer', () => {
 
         // Timer should start at 0 seconds with red color
         await expect(zaskTimer, 'should be visible after entering sneak mode').toBeVisible();
-        await expect(zaskTimer, 'should display 0 seconds initially').toHaveText('Zask: 0');
+        await expect(zaskTimer.locator('.chip__val'), 'should display 0 seconds initially').toHaveText('0');
 
         // Check that the value "0" is red (tomato)
         const valueSpan = zaskTimer.locator('span').nth(1);
-        await expect(valueSpan, 'should have red color at 0 seconds').toHaveCSS('color', 'rgb(255, 99, 71)'); // tomato
+        await expect(zaskTimer.locator('.chip'), 'should have red color at 0 seconds').toHaveClass(/chip--danger/); // tomato
     });
 
     test('shows red color for first 20 seconds', async ({page}) => {
@@ -61,14 +61,14 @@ test.describe('Zask timer', () => {
         await page.clock.runFor(3000);
 
         // Should still be red
-        await expect(zaskTimer, 'should display countdown in red').toContainText('Zask: ');
+        await expect(zaskTimer.locator('.chip__val'), 'should display countdown in red').toHaveText(/\d/);
 
         // Check that the value is red (tomato)
         const valueSpan = zaskTimer.locator('span').nth(1);
-        await expect(valueSpan, 'should have red color before 20 seconds').toHaveCSS('color', 'rgb(255, 99, 71)'); // tomato
+        await expect(zaskTimer.locator('.chip'), 'should have red color before 20 seconds').toHaveClass(/chip--danger/); // tomato
 
         const timerText = await zaskTimer.textContent();
-        const seconds = parseInt(timerText?.replace('Zask: ', '') || '0');
+        const seconds = parseInt(timerText?.replace('Zask', '') || '0');
         expect(seconds, 'should show seconds between 0 and 20').toBeGreaterThanOrEqual(0);
         expect(seconds, 'should show seconds less than 20').toBeLessThan(20);
     });
@@ -88,14 +88,14 @@ test.describe('Zask timer', () => {
         // Wait for timer to reach 21 seconds
         await page.clock.runFor(21000);
 
-        await expect(zaskTimer, 'should display countdown at 20+ seconds').toContainText('Zask: ');
+        await expect(zaskTimer.locator('.chip__val'), 'should display countdown at 20+ seconds').toHaveText(/\d/);
 
         // Check that the value is yellow
         const valueSpan = zaskTimer.locator('span').nth(1);
-        await expect(valueSpan, 'should have yellow color at 20+ seconds').toHaveCSS('color', 'rgb(255, 255, 0)'); // yellow
+        await expect(zaskTimer.locator('.chip'), 'should have yellow color at 20+ seconds').toHaveClass(/chip--warn/); // yellow
 
         const timerText = await zaskTimer.textContent();
-        const seconds = parseInt(timerText?.replace('Zask: ', '') || '0');
+        const seconds = parseInt(timerText?.replace('Zask', '') || '0');
         expect(seconds, 'should show at least 20 seconds').toBeGreaterThanOrEqual(20);
     });
 
@@ -114,11 +114,11 @@ test.describe('Zask timer', () => {
         // Wait for timer to reach 30 seconds (OK state)
         await page.clock.runFor(30000);
 
-        await expect(zaskTimer, 'should display OK after 30 seconds').toHaveText('Zask: OK');
+        await expect(zaskTimer.locator('.chip__val'), 'should display OK after 30 seconds').toHaveText('OK');
 
         // Check that the value "OK" is green (springgreen)
         const okSpan = zaskTimer.locator('span').nth(1);
-        await expect(okSpan, 'should have green color after 30 seconds').toHaveCSS('color', 'rgb(0, 255, 127)'); // springgreen
+        await expect(zaskTimer.locator('.chip'), 'should have green color after 30 seconds').toHaveClass(/chip--ok/); // springgreen
     });
 
     test('stops and hides when exiting sneak mode', async ({page}) => {
@@ -161,7 +161,7 @@ test.describe('Zask timer', () => {
         // Get initial time
         await page.clock.runFor(2000);
         const firstText = await zaskTimer.textContent();
-        const firstSeconds = parseInt(firstText?.replace('Zask: ', '') || '0');
+        const firstSeconds = parseInt(firstText?.replace('Zask', '') || '0');
 
         // Change room again
         await triggerRoomChange(page);
@@ -169,7 +169,7 @@ test.describe('Zask timer', () => {
         // Timer should reset and start from 0
         await page.clock.runFor(100);
         const secondText = await zaskTimer.textContent();
-        const secondSeconds = parseInt(secondText?.replace('Zask: ', '') || '0');
+        const secondSeconds = parseInt(secondText?.replace('Zask', '') || '0');
 
         expect(secondSeconds, 'should restart timer on room change').toBeLessThanOrEqual(firstSeconds);
     });

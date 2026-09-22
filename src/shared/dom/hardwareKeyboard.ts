@@ -9,38 +9,30 @@
  * or a phone with a Bluetooth keyboard, is exactly where those shortcuts matter
  * most - so the hints cannot simply be dropped on every touch device.
  *
- * The starting guess is by pointer, not by screen width: a device whose ONLY
- * pointer is coarse (a phone, a tablet) is assumed to have no keyboard; anything
- * with a fine pointer as well - a desktop, a laptop with a touch screen, a
- * tablet with a trackpad case - is assumed to have one.
+ * A desktop is assumed to have a keyboard, full stop. A mobile device - a
+ * phone-sized screen, or one whose only pointer is touch - is assumed to have
+ * none until Alt, Ctrl or Tab arrives: keys the on-screen keyboards players use
+ * do not send. Pointer media queries alone do not settle "mobile": phones with a
+ * stylus (and some that have none) report a fine pointer too.
  *
- * From there the guess is only ever revised upwards, and only by a keystroke an
- * on-screen keyboard does not produce: a modifier, Tab, Esc, a function key - or
- * any key at all while no text field has focus, since an on-screen keyboard has
- * nothing to type into then. That is one-way on purpose: concluding the opposite
- * would gain nothing (it is already the assumption) and would let a hardware
- * keyboard be forgotten the moment somebody tapped a field.
+ * Nothing weaker counts. "A key arrived while no field had focus" looked like
+ * proof, but an Android on-screen keyboard can stay up after the command line
+ * loses focus, and its next Enter then arrives with nothing focused.
  *
- * Alt is both how a location bind is fired and proof that its hint is worth
- * showing, so a phone with a Bluetooth keyboard gets its hints back on the first
- * shortcut its owner presses - and `uiSettings.multibindKeyHints` settles it by
- * hand for anyone who would rather not wait.
- *
- * Deliberately NOT inferred from the viewport: "focusing a field raised no
- * on-screen keyboard, so the keyboard must be physical" cannot tell a real
- * hardware keyboard from any environment that has no soft keyboard at all - a
- * headless browser, a desktop in device-emulation mode - and reports one for
- * every phone in either.
+ * The guess only ever turns on: concluding the opposite would gain nothing (it
+ * is already the assumption) and would let a hardware keyboard be forgotten the
+ * moment somebody tapped a field. Alt is both how a location bind is fired and
+ * proof that its hint is worth showing, so a phone with a Bluetooth keyboard
+ * gets its hints back on the first shortcut its owner presses - and
+ * `uiSettings.multibindKeyHints` settles it by hand for anyone who would rather
+ * not wait.
  */
 
-/** Keys no on-screen keyboard sends. */
-const HARDWARE_KEYS = new Set([
-    'Alt', 'Control', 'Meta', 'Tab', 'Escape',
-    'Insert', 'Home', 'End', 'PageUp', 'PageDown',
-    'ScrollLock', 'Pause', 'ContextMenu',
-]);
+/** The only keys taken as proof on a mobile device. */
+const HARDWARE_KEYS = new Set(['Alt', 'Control', 'Tab']);
 
-const FUNCTION_KEY = /^F\d{1,2}$/;
+/** Same breakpoint as the phone footer (footerMobile.css). */
+const PHONE_QUERY = '(max-width: 768px), (max-height: 520px) and (pointer: coarse)';
 
 type Listener = (present: boolean) => void;
 
@@ -48,22 +40,11 @@ const listeners = new Set<Listener>();
 let present = false;
 let started = false;
 
-/**
- * A device with no fine pointer at all: a phone or a tablet. A touch-screen
- * laptop answers `false` here (it has a trackpad), which is the point - it comes
- * with a keyboard and should keep its hints from the first frame.
- */
-function isTouchOnlyDevice(): boolean {
+/** A phone-sized screen, or a device with no fine pointer at all (a tablet). */
+function isMobileDevice(): boolean {
     if (typeof window.matchMedia !== 'function') return false;
-    return window.matchMedia('(any-pointer: coarse)').matches
-        && !window.matchMedia('(any-pointer: fine)').matches;
-}
-
-function isEditable(node: Element | null): boolean {
-    if (!node) return false;
-    const tag = node.tagName;
-    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true;
-    return (node as HTMLElement).isContentEditable === true;
+    const matches = (query: string) => window.matchMedia(query).matches;
+    return matches(PHONE_QUERY) || (matches('(any-pointer: coarse)') && !matches('(any-pointer: fine)'));
 }
 
 function markPresent(): void {
@@ -74,17 +55,13 @@ function markPresent(): void {
 
 function onKeyDown(event: KeyboardEvent): void {
     if (present) return;
-    if (event.altKey || event.ctrlKey || event.metaKey
-        || HARDWARE_KEYS.has(event.key) || FUNCTION_KEY.test(event.key)
-        || !isEditable(document.activeElement)) {
-        markPresent();
-    }
+    if (event.altKey || event.ctrlKey || HARDWARE_KEYS.has(event.key)) markPresent();
 }
 
 function start(): void {
     if (started || typeof window === 'undefined') return;
     started = true;
-    present = !isTouchOnlyDevice();
+    present = !isMobileDevice();
     if (present) return; // Nothing left to detect.
 
     document.addEventListener('keydown', onKeyDown, true);

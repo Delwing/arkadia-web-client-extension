@@ -1,5 +1,6 @@
 import {expect, test} from './support/fixtures';
 import {ensureGameSocket, submitCommand, waitForCommandInput} from './support/mocks';
+import {openSettings, saveSettings} from './support/settings';
 
 test.describe('Multi-binds display', () => {
     test('shows multi-binds list when binds are set', async ({page}) => {
@@ -41,5 +42,25 @@ test.describe('Multi-binds display', () => {
 
         // Container should not be active anymore
         await expect(multiBinds, 'should not be active after removing all binds').not.toHaveClass(/active/);
+    });
+});
+
+test.describe('Multi-binds kept visible', () => {
+    test('the row keeps its height between "Brak akcji" and binds', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+
+        const modal = await openSettings(page, 'ui-commands');
+        await modal.locator('#ui-keep-multibinds-visible').check();
+        await saveSettings(page);
+
+        const multiBinds = page.locator('#multi-binds');
+        await expect(multiBinds.locator('.multi-bind-empty'), 'an empty room says so').toBeVisible();
+        const empty = (await multiBinds.boundingBox())!.height;
+
+        await submitCommand(page, '/mbind 1 atak orka');
+        await expect(multiBinds.locator('.multi-bind')).toHaveCount(1);
+        expect((await multiBinds.boundingBox())!.height, 'no jump when a bind appears').toBe(empty);
     });
 });

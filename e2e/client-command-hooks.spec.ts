@@ -37,14 +37,14 @@ async function loadPlugin(page, body: string): Promise<void> {
     await modal.getByRole('button', {name: 'Dodaj plugin'}).click();
     await page.locator('.plugin-route', {hasText: 'Z adresu URL'}).click();
 
-    const dialog = page.locator('.modal', {hasText: 'Dodaj skrypt z URL'}).last();
+    const dialog = page.locator('.popup-dialog', {hasText: 'Dodaj skrypt z URL'}).last();
     await dialog.getByPlaceholder(SCRIPT_INPUT_PLACEHOLDER).fill(PLUGIN_URL);
     await dialog.getByRole('button', {name: 'Dodaj', exact: true}).click();
     await expect(modal.getByText('Hook Test'), 'plugin should load and show its name').toBeVisible();
 
     // Close modal by pressing Escape — in the context of a modal this works
     // (Escape is only intercepted by command input when it has focus)
-    await modal.locator('.btn-close').first().click();
+    await modal.locator('.app-modal__close').first().click();
     await expect(modal).not.toBeVisible();
 }
 
@@ -54,7 +54,7 @@ async function removePlugin(page): Promise<void> {
     await pluginItem.getByTitle('Usun').click();
     await expect(pluginItem, 'plugin entry should be removed').toHaveCount(0);
 
-    await modal.locator('.btn-close').first().click();
+    await modal.locator('.app-modal__close').first().click();
     await expect(modal).not.toBeVisible();
 }
 

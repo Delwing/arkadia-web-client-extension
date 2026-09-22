@@ -28,7 +28,7 @@ export interface CommandLineEngineDeps {
 
 /**
  * Headless command-line logic shared by every UI: the Mudlet-style history ring,
- * prefix auto-completion, Tab completion from the output buffer, multiline
+ * prefix auto-completion, Tab completion from history and the output buffer, multiline
  * submit-splitting, and password-mode branching.
  *
  * It owns no DOM and no listeners. A UI drives it by translating its own
@@ -48,7 +48,7 @@ export class CommandLineEngine {
     // Prefix auto-completion (Up/Down with partial text)
     private autoCompletionCount = -1;
 
-    // Tab completion from output buffer
+    // Tab completion from history and output buffer
     private tabCompletionTyped = '';
     private tabCompletionCount = -1;
     private tabCompletionOld = '';
@@ -221,7 +221,76 @@ export class CommandLineEngine {
         }
     }
 
-    // ── Tab Completion (from output buffer) ────────────────────────────
+    // ── Tab Completion (history, then output buffer) ───────────────────
+
+    /**
+     * Every full line `text` can be completed to, best first. Commands the player
+     * already sent come first (the whole line finished off, Mudlet's Up/Down
+     * completion reachable from Tab), then plugin suggestions and words from the
+     * output, which only rewrite the last word. Empty when nothing fits.
+     */
+    private tabCandidates(text: string): string[] {
+        const completions: string[] = [];
+        const seen = new Set<string>();
+        const add = (value: string) => {
+            const lower = value.toLowerCase();
+            if (value === text || seen.has(lower)) return;
+            seen.add(lower);
+            completions.push(value);
+        };
+
+        // Commands from the history, newest first. Multiline entries are left to
+        // Up/Down browsing: Tab works on one line, and so does its ghost hint.
+        if (text.trim().length > 0) {
+            const lowerText = text.toLowerCase();
+            for (const entry of this.historyList) {
+                if (!entry || entry.includes('\n')) continue;
+                if (this.tabCompleteBlacklist.has(entry.toLowerCase())) continue;
+                if (!entry.toLowerCase().startsWith(lowerText)) continue;
+                add(entry);
+            }
+        }
+
+        // Then the last word being typed, completed from plugin suggestions and
+        // from what the output has shown (newest first).
+        const lastWordMatch = text.match(/\b(\w+)$/);
+        if (lastWordMatch) {
+            const lastWord = lastWordMatch[1];
+            const lowerWord = lastWord.toLowerCase();
+            const prefix = text.substring(0, text.length - lastWord.length);
+
+            const words: string[] = [];
+            for (const s of this.deps.getCommandLineSuggestions()) {
+                if (s) words.push(s);
+            }
+            const outputWords = this.deps.getOutputWords();
+            for (let i = outputWords.length - 1; i >= 0; i--) {
+                words.push(outputWords[i]);
+            }
+
+            for (const word of words) {
+                const lower = word.toLowerCase();
+                if (this.tabCompleteBlacklist.has(lower)) continue;
+                if (!lower.startsWith(lowerWord)) continue;
+                if (lower === lowerWord) continue; // exclude exact match
+                add(prefix + word);
+            }
+        }
+
+        return completions;
+    }
+
+    /**
+     * What the next forward Tab would append to `text`, without doing it — the
+     * command line shows it as a hint after the caret. Null while a completion
+     * cycle is running (Tab already rewrote the line) or when nothing fits.
+     */
+    peekTabCompletion(text: string): string | null {
+        if (this.tabCompletionCount !== -1) return null;
+        const best = this.tabCandidates(text)[0];
+        if (!best) return null;
+        return best.slice(text.length);
+    }
 
     handleTabCompletion(forward: boolean): void {
         const inputVal = this.field.value;
@@ -232,53 +301,23 @@ export class CommandLineEngine {
             this.tabCompletionOld = '';
         }
 
-        // Find the last word being typed
-        const lastWordMatch = this.tabCompletionTyped.match(/\b(\w+)$/);
-        if (!lastWordMatch) return;
-        const lastWord = lastWordMatch[1];
-        const prefix = this.tabCompletionTyped.substring(0, this.tabCompletionTyped.length - lastWord.length);
-
-        // Build word list: plugin suggestions first, then output words (newest first)
-        const words: string[] = [];
-        const suggestions = this.deps.getCommandLineSuggestions();
-        for (const s of suggestions) {
-            if (s) words.push(s);
-        }
-        const outputWords = this.deps.getOutputWords();
-        for (let i = outputWords.length - 1; i >= 0; i--) {
-            words.push(outputWords[i]);
-        }
-
-        // Remove blacklisted words (case-insensitive)
-        const filteredWords: string[] = [];
-        const seen = new Set<string>();
-        for (const word of words) {
-            const lower = word.toLowerCase();
-            if (this.tabCompleteBlacklist.has(lower)) continue;
-            if (!lower.startsWith(lastWord.toLowerCase())) continue;
-            if (lower === lastWord.toLowerCase()) continue; // exclude exact match
-            if (seen.has(lower)) continue;
-            seen.add(lower);
-            filteredWords.push(word);
-        }
-
-        if (filteredWords.length === 0) return;
+        const completions = this.tabCandidates(this.tabCompletionTyped);
+        if (completions.length === 0) return;
 
         // Cycle through matches
         if (forward) {
             this.tabCompletionCount++;
-            if (this.tabCompletionCount >= filteredWords.length) {
+            if (this.tabCompletionCount >= completions.length) {
                 this.tabCompletionCount = 0;
             }
         } else {
             this.tabCompletionCount--;
             if (this.tabCompletionCount < 0) {
-                this.tabCompletionCount = filteredWords.length - 1;
+                this.tabCompletionCount = completions.length - 1;
             }
         }
 
-        const match = filteredWords[this.tabCompletionCount];
-        const newValue = prefix + match;
+        const newValue = completions[this.tabCompletionCount];
         this.tabCompletionOld = newValue;
         this.field.value = newValue;
         this.moveCursorToEnd();

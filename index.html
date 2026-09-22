@@ -31,7 +31,7 @@
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
     <title>Arkadia</title>
 </head>
 <!-- data-mobile-footer / data-footer-expand default to the compact phone footer
@@ -50,9 +50,9 @@
                 <span id="pause-icon"></span>
             </div>
             <div id="map-lost-wrapper"></div>
-            <div id="map-progress-container" class="position-absolute top-50 start-50 translate-middle w-75">
-                <div class="progress">
-                    <div id="map-progress-bar" class="progress-bar progress-bar-striped progress-bar-animated"
+            <div id="map-progress-container" class="map-progress">
+                <div class="map-progress__track">
+                    <div id="map-progress-bar" class="map-progress__bar"
                          style="width: 0"></div>
                 </div>
             </div>
@@ -83,420 +83,204 @@
         </div>
     </div>
     <div id="multi-binds"></div>
-    <div id="char-state" data-emoji-labels="0" data-footer-mode="0">
-        <div id="char-state-vitals">
-            <span id="char-state-text"></span>
-            <span id="state-info"></span>
-            <div id="char-state-bars"></div>
-        </div>
-        <div id="footer-chips">
-            <span id="clock-display"></span>
-            <span id="transport-timer"></span>
-            <span id="lamp-timer"></span>
-            <span id="pipe-status" class="pipe-icon" title="Fajka">
-                <svg viewBox="6 8 56 27" xmlns="http://www.w3.org/2000/svg">
-                    <defs>
-                        <linearGradient id="pipe-wood" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0" stop-color="#7a4a28"/>
-                            <stop offset="0.55" stop-color="#5a3318"/>
-                            <stop offset="1" stop-color="#36200f"/>
-                        </linearGradient>
-                        <linearGradient id="pipe-stem" x1="0" y1="0" x2="1" y2="0">
-                            <stop offset="0" stop-color="#5a3318"/>
-                            <stop offset="0.7" stop-color="#3d2412"/>
-                            <stop offset="0.85" stop-color="#241a18"/>
-                            <stop offset="1" stop-color="#0e0c0c"/>
-                        </linearGradient>
-                        <radialGradient id="pipe-ember" cx="0.5" cy="0.45" r="0.6">
-                            <stop offset="0" stop-color="#fff6cc"/>
-                            <stop offset="0.35" stop-color="#ffd24a"/>
-                            <stop offset="0.7" stop-color="#ff7a18"/>
-                            <stop offset="1" stop-color="#a52600"/>
-                        </radialGradient>
-                    </defs>
-                    <path d="M22 22 Q40 18 57 13 L59 17 Q42 22 24 26 Z" fill="url(#pipe-stem)"/>
-                    <ellipse cx="58" cy="15" rx="2.2" ry="2.6" fill="#0e0c0c"/>
-                    <path d="M8 13 L8 25 Q8 33 16 33 Q24 33 24 25 L24 13 Z" fill="url(#pipe-wood)"/>
-                    <rect x="22.5" y="18.5" width="2.6" height="7" rx="1" fill="#2c1b0d"/>
-                    <ellipse cx="16" cy="13" rx="8" ry="3" fill="#2a1a0c"/>
-                    <ellipse cx="16" cy="12.6" rx="7" ry="2.4" fill="#1c1006"/>
-                    <ellipse class="pipe-ember" cx="16" cy="12.4" rx="5.6" ry="1.9" fill="url(#pipe-ember)"/>
-                </svg>
-                <span class="pipe-smoke"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
-            </span>
-            <span id="break-item-warning"></span>
-            <span id="mail-status"></span>
-            <span id="package-status"></span>
-            <span id="weapon-state"></span>
-            <span id="attack-mode"></span>
-            <span id="release-guard-timer"></span>
-            <span id="zask-timer"></span>
-            <span id="order-timer"></span>
-            <span id="combat-timer" data-enabled="1"></span>
-            <span id="world-destruction-timer"></span>
-            <span id="team-panel"></span>
-            <span id="connection-status"></span>
-            <span id="plugin-footer-components"></span>
-        </div>
-        <button id="footer-expand" type="button" title="Rozwin stopke">&#x25BE;</button>
-    </div>
+    <!-- Status line (vitals, chips): @web-ui/footer/StatusLine.tsx -->
+    <div id="char-state"></div>
     <div id="objects-list" data-mobile-command-radial-ignore></div>
-    <button id="recording-button" class="btn btn-danger btn-sm" style="position:absolute;top:0.5rem;right:0.5rem;z-index:1012;display:none;">Zatrzymaj i zapisz</button>
+    <button id="recording-button" type="button" class="popup-btn popup-btn--control popup-btn--sm recordings-rec" style="display:none;">Zatrzymaj i zapisz</button>
 
     <span id="content-width-measure" style="visibility:hidden;position:absolute;white-space:pre">M</span>
-    <div id="settings-modal" class="modal fade" tabindex="-1">
-        <div class="modal-dialog modal-dialog-scrollable modal-fullscreen-md-down h-100">
-            <div class="modal-content h-100">
-                <div class="modal-header">
-                    <h5 class="modal-title">Ustawienia</h5>
-                    <div class="d-flex align-items-center gap-2 ms-auto">
-                        <button type="button" class="btn btn-secondary btn-sm rounded-pill px-2 py-0" style="font-size: 0.75rem;" id="settings-export-import-btn">Eksport/Import</button>
-                        <button type="button" class="btn btn-secondary btn-sm rounded-pill px-2 py-0" style="font-size: 0.75rem;" id="settings-characters-btn">Postacie</button>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                </div>
-                <div class="modal-body p-0 d-flex flex-column overflow-hidden" style="min-height:0;">
-                    <div id="settings-root" class="h-100 flex-grow-1 overflow-hidden" style="min-height:0;"></div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" id="settings-save">Zapisz</button>
-                </div>
+    <!-- Page-level windows, opened by id through src/web/modals/appModal.ts;
+         styled in style.css ("app-modal"). -->
+    <div id="settings-modal" class="app-modal app-modal--settings" hidden>
+        <div class="app-modal__dialog app-modal__dialog--xl app-modal__dialog--fill app-modal__dialog--phone-full" tabindex="-1">
+            <div class="app-modal__header">
+                <h2 class="app-modal__title">Ustawienia</h2>
+                <button type="button" class="popup-btn popup-btn--control popup-btn--sm" id="settings-characters-btn">Postacie</button>
+                <button type="button" class="app-modal__close" data-modal-dismiss title="Zamknij">&times;</button>
+            </div>
+            <div class="app-modal__body app-modal__body--panel">
+                <div id="settings-root" class="app-modal__panel"></div>
+            </div>
+            <div class="app-modal__footer">
+                <button type="button" class="popup-btn popup-btn--control popup-btn--solid" id="settings-save">Zapisz</button>
             </div>
         </div>
     </div>
-    <div id="export-import-modal" class="modal fade" tabindex="-1">
-        <div class="modal-dialog modal-lg modal-dialog-scrollable h-100">
-            <div class="modal-content h-100">
-                <div class="modal-header">
-                    <h5 class="modal-title">Eksport i import ustawień</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body p-0 d-flex flex-column overflow-hidden" style="min-height:0;">
-                    <div id="export-import-root" class="h-100 flex-grow-1 overflow-hidden p-3" style="min-height:0;"></div>
-                </div>
+    <div id="character-management-modal" class="app-modal" hidden>
+        <div class="app-modal__dialog" tabindex="-1">
+            <div class="app-modal__header">
+                <h2 class="app-modal__title">Zarządzanie postaciami</h2>
+                <button type="button" class="app-modal__close" data-modal-dismiss title="Zamknij">&times;</button>
+            </div>
+            <div class="app-modal__body">
+                <div id="character-management-root"></div>
             </div>
         </div>
     </div>
-    <div id="character-management-modal" class="modal fade" tabindex="-1" style="z-index: 1060;">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Zarządzanie postaciami</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div id="character-management-root"></div>
-                </div>
+    <div id="binds-modal" class="app-modal" hidden>
+        <div class="app-modal__dialog app-modal__dialog--lg" tabindex="-1">
+            <div class="app-modal__header">
+                <h2 class="app-modal__title">Bindowanie</h2>
+                <button type="button" class="popup-btn popup-btn--control popup-btn--sm" id="binds-import-btn">Importuj bazę multibindów…</button>
+                <span id="binds-import-spinner" class="app-modal__spinner" role="status" hidden></span>
+                <button type="button" class="app-modal__close" data-modal-dismiss title="Zamknij">&times;</button>
+            </div>
+            <div class="app-modal__body">
+                <div id="binds-options"></div>
+            </div>
+            <div class="app-modal__footer">
+                <button type="button" class="popup-btn popup-btn--control app-modal__footer-start" id="binds-add-custom">Dodaj skrót</button>
+                <button type="button" class="popup-btn popup-btn--control popup-btn--solid" id="binds-save">Zapisz</button>
             </div>
         </div>
     </div>
-    <div id="binds-modal" class="modal fade" tabindex="-1">
-        <div class="modal-dialog modal-lg modal-dialog-scrollable">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Bindowanie</h5>
-                    <div class="d-flex align-items-center gap-2 ms-auto">
-                        <button type="button" class="btn btn-secondary btn-sm rounded-pill px-2 py-0" style="font-size: 0.75rem;" id="binds-import-btn">Importuj bazę multibindów…</button>
-                        <span id="binds-import-spinner" class="spinner-border spinner-border-sm d-none" role="status"></span>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                </div>
-                <div class="modal-body">
-                    <div id="binds-options"></div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary me-auto" id="binds-add-custom">Dodaj skrót</button>
-                    <button type="button" class="btn btn-primary" id="binds-save">Zapisz</button>
-                </div>
+    <div id="scripts-modal" class="app-modal" hidden>
+        <div class="app-modal__dialog app-modal__dialog--xl app-modal__dialog--fill" tabindex="-1">
+            <div class="app-modal__header">
+                <h2 class="app-modal__title">Skrypty</h2>
+                <button type="button" class="app-modal__close" data-modal-dismiss title="Zamknij">&times;</button>
+            </div>
+            <!-- The panel scrolls its own list under a fixed tab bar and toolbar,
+                 so the body itself must not scroll. -->
+            <div class="app-modal__body app-modal__body--panel">
+                <div id="scripts-options" class="app-modal__panel"></div>
             </div>
         </div>
     </div>
-    <div id="scripts-modal" class="modal fade" tabindex="-1">
-        <div class="modal-dialog modal-xl modal-dialog-scrollable h-100">
-            <div class="modal-content h-100">
-                <div class="modal-header">
-                    <h5 class="modal-title">Skrypty</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <!-- The panel scrolls its own list under a fixed tab bar and toolbar
-                     (like #options-modal), so the body itself must not scroll. -->
-                <div class="modal-body p-0 d-flex flex-column overflow-hidden" style="min-height:0;">
-                    <div id="scripts-options" class="h-100 flex-grow-1 overflow-hidden" style="min-height:0;"></div>
-                </div>
+    <div id="aliases-modal" class="app-modal" hidden>
+        <div class="app-modal__dialog app-modal__dialog--lg" tabindex="-1">
+            <div class="app-modal__header">
+                <h2 class="app-modal__title">Aliasy</h2>
+                <button type="button" class="app-modal__close" data-modal-dismiss title="Zamknij">&times;</button>
+            </div>
+            <div class="app-modal__body">
+                <div id="aliases-options"></div>
             </div>
         </div>
     </div>
-    <div id="aliases-modal" class="modal fade" tabindex="-1">
-        <div class="modal-dialog modal-lg modal-dialog-scrollable">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Aliasy</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div id="aliases-options"></div>
-                </div>
+    <div id="triggers-modal" class="app-modal" hidden>
+        <div class="app-modal__dialog app-modal__dialog--lg" tabindex="-1">
+            <div class="app-modal__header">
+                <h2 class="app-modal__title">Triggery</h2>
+                <button type="button" class="app-modal__close" data-modal-dismiss title="Zamknij">&times;</button>
+            </div>
+            <div class="app-modal__body">
+                <div id="triggers-options"></div>
             </div>
         </div>
     </div>
-    <div id="triggers-modal" class="modal fade" tabindex="-1">
-        <div class="modal-dialog modal-lg modal-dialog-scrollable">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Triggery</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div id="triggers-options"></div>
-                </div>
+    <div id="recordings-modal" class="app-modal" hidden>
+        <div class="app-modal__dialog app-modal__dialog--lg" tabindex="-1">
+            <div class="app-modal__header">
+                <h2 class="app-modal__title">Nagrania</h2>
+                <button type="button" class="app-modal__close" data-modal-dismiss title="Zamknij">&times;</button>
+            </div>
+            <div class="app-modal__body">
+                <div id="recordings-options"></div>
             </div>
         </div>
     </div>
-    <div id="recordings-modal" class="modal fade" tabindex="-1">
-        <div class="modal-dialog modal-lg modal-dialog-scrollable">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Nagrania</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div id="recordings-options"></div>
-                </div>
+    <div id="places-modal" class="app-modal" hidden>
+        <div class="app-modal__dialog app-modal__dialog--xl app-modal__dialog--phone-full" tabindex="-1">
+            <div class="app-modal__header">
+                <h2 class="app-modal__title">Miejsca</h2>
+                <button type="button" class="app-modal__close" data-modal-dismiss title="Zamknij">&times;</button>
+            </div>
+            <div class="app-modal__body app-modal__body--flush">
+                <div id="places-options"></div>
             </div>
         </div>
     </div>
-    <div id="shortcuts-modal" class="modal fade" tabindex="-1">
-        <div class="modal-dialog modal-lg modal-dialog-scrollable">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Skróty</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div id="shortcuts-options"></div>
-                </div>
+    <div id="helper-modal" class="app-modal" hidden>
+        <div class="app-modal__dialog app-modal__dialog--xl" tabindex="-1">
+            <div class="app-modal__header">
+                <h2 class="app-modal__title">Arkadia Helper</h2>
+                <button type="button" class="app-modal__close" data-modal-dismiss title="Zamknij">&times;</button>
+            </div>
+            <div class="app-modal__body app-modal__body--flush">
+                <div id="helper-options"></div>
             </div>
         </div>
     </div>
-    <div id="location-notes-modal" class="modal fade" tabindex="-1">
-        <div class="modal-dialog modal-lg modal-dialog-scrollable">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Notatki lokacji</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div id="location-notes-options"></div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div id="helper-modal" class="modal fade" tabindex="-1">
-        <div class="modal-dialog modal-xl">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Arkadia Helper</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body p-0">
-                    <div id="helper-options"></div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div id="location-note-editor-root"></div>
     <div id="knowledge-root"></div>
     <div id="knowledge-details-root"></div>
     <div id="clock-root"></div>
     <div id="contracts-root"></div>
-    <div id="input-area">
-        <button id="connect-button-inline">Połącz</button>
-        <div id="history-buttons">
-            <button id="history-up-button">▲</button>
-            <button id="history-down-button">▼</button>
-        </div>
-        <textarea id="message-input" data-command-input autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" rows="1"></textarea>
-        <input type="password" id="message-input-password" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" style="display:none">
-        <button id="voice-button" type="button" title="Dyktowanie głosowe">🎤</button>
-        <button id="send-button">➢</button>
-        <div class="dropdown me-0 me-md-2">
-            <button id="menu-button" class="dropdown-toggle h-100" data-bs-toggle="dropdown">⋮</button>
-            <ul class="dropdown-menu dropdown-menu-end mb-1 gap-2">
-                <li>
-                    <button class="w-100 p-1" id="options-button">Ustawienia</button>
-                </li>
-                <li>
-                    <button class="w-100 p-1" id="export-import-button">Eksport / import</button>
-                </li>
-                <li>
-                    <button class="w-100 p-1" id="ui-settings-button">Interfejs</button>
-                </li>
-                <li>
-                    <button class="w-100 p-1" id="mobile-buttons-button">Przyciski</button>
-                </li>
-                <li>
-                    <button class="w-100 p-1" id="mobile-radial-button">Menu kołowe</button>
-                </li>
-                <li>
-                    <button class="w-100 p-1" id="binds-button">Bindowanie</button>
-                </li>
-                <li>
-                    <button class="w-100 p-1" id="npc-button">Odbiorcy paczek</button>
-                </li>
-                <li>
-                    <button class="w-100 p-1" id="scripts-button">Skrypty</button>
-                </li>
-                <li>
-                    <button class="w-100 p-1" id="aliases-button">Aliasy</button>
-                </li>
-                <li>
-                    <button class="w-100 p-1" id="triggers-button">Triggery</button>
-                </li>
-                <li>
-                    <button class="w-100 p-1" id="recordings-button">Nagrania</button>
-                </li>
-                <li>
-                    <button class="w-100 p-1" id="shortcuts-button">Skróty</button>
-                </li>
-                <li>
-                    <button class="w-100 p-1" id="location-notes-button">Notatki lokacji</button>
-                </li>
-                <li>
-                    <button class="w-100 p-1" id="people-browser-button">Baza postaci</button>
-                </li>
-                <li>
-                    <button class="w-100 p-1" id="data-sources-button">Źródła danych</button>
-                </li>
-                <li>
-                    <button class="w-100 p-1" id="docs-button">Dokumentacja</button>
-                </li>
-                <li>
-                    <button class="w-100 p-1" id="logs-button">Logi</button>
-                </li>
-                <li>
-                    <button class="w-100 p-1" id="share-location-button">Kod QR lokacji</button>
-                </li>
-                <li>
-                    <button class="w-100 p-1" id="helper-button">Helper</button>
-                </li>
-                <li>
-                    <button class="w-100 p-1 menu-disconnect-button" id="disconnect-button">Rozłącz</button>
-                </li>
-                <li>
-                    <button class="w-100 p-1" id="fullscreen-button" title="Pełny ekran">⛶</button>
-                </li>
-            </ul>
-        </div>
-    </div>
+    <!-- Command line (history, field, microphone, send, the menu): CommandLine.tsx -->
+    <div id="command-line-root" style="display: contents"></div>
 
     <div id="layout-bottom-dock-host"></div>
 
+    <!-- Logowanie: the ids are what main.ts wires and what password managers
+         recognise; the connection footer (#proxy-controls-root) is ProxyControls.tsx. -->
     <div id="auth-overlay">
-        <button id="auth-close" class="overlay-close">✖</button>
-        <button id="enable-notifications-connection" class="btn btn-warning btn-sm">Włącz powiadomienia</button>
-        <div id="auth-panel">
-            <img src="logo.png" class="logo mb-3" alt="Logo" />
-            <div id="connecting-spinner" class="spinner-border text-light"></div>
-            <button id="connect-button">Połącz</button>
-            <div class="auth-or">- LUB -</div>
-            <form id="login-form" class="d-flex flex-column gap-2 mb-1">
-                <input id="login-character" class="form-control" placeholder="Postać" autocomplete="username" autofocus>
-                <input id="login-password" type="password" class="form-control" placeholder="Hasło" autocomplete="current-password">
-                <button id="login-submit" class="btn btn-primary" type="submit">Zaloguj</button>
-            </form>
-            <div id="system-login-message"></div>
-            <div class="form-check mt-3">
-                <input class="form-check-input" type="checkbox" id="mccp-enabled" checked>
-                <label class="form-check-label" for="mccp-enabled">Kompresja MCCP</label>
-            </div>
-            <div id="proxy-controls-root" class="mt-2"></div>
-            <a href="https://buycoffee.to/dargoth" target="_blank" class="mt-4"><img src="https://buycoffee.to/static/img/share/share-button-primary.png" style="width: 146px; height: 38px" alt="Postaw mi kawę na buycoffee.to"></a>
+        <div id="auth-notify" class="auth-notify">
+            <span class="auth-notify__icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg></span>
+            <span class="auth-notify__text"><span>Powiadomienia wyłączone.</span> <span class="auth-dim auth-notify__more">Nie dowiesz się o wiadomościach, gdy karta jest w tle.</span></span>
+            <button id="enable-notifications-connection" type="button" class="auth-btn auth-btn--sm">Włącz</button>
+            <button id="auth-notify-dismiss" type="button" class="auth-ib auth-ib--sm" title="Nie teraz"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg></button>
         </div>
-        <div id="layout-manager-suggestion" style="display: none;">
-            <p>Wlacz menedzer okien, aby lepiej zarzadzac oknami na duzym ekranie.</p>
-            <div class="d-flex gap-2">
-                <button id="layout-suggestion-enable" class="btn btn-primary btn-sm">Wlacz</button>
-                <button id="layout-suggestion-dismiss" class="btn btn-secondary btn-sm">Nie pokazuj wiecej</button>
+        <div class="auth-top">
+            <button id="auth-close" type="button" class="auth-btn auth-btn--ghost auth-btn--sm">Bez połączenia<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg></button>
+        </div>
+        <section id="auth-panel">
+            <img src="logo.png" class="auth-logo" alt="Dargoth Client" />
+            <div class="auth-body">
+                <h1 class="auth-title">Wejdź do Arkadii</h1>
+                <div id="connecting-spinner"><span class="auth-spinner"></span>Łączenie…</div>
+                <div id="system-login-message"></div>
+                <form id="login-form">
+                    <label class="auth-field"><span class="auth-label">Postać</span>
+                        <input id="login-character" class="auth-input" type="text" autocomplete="username" spellcheck="false" autofocus></label>
+                    <label class="auth-field"><span class="auth-label">Hasło</span>
+                        <span class="auth-pass">
+                            <input id="login-password" type="password" autocomplete="current-password">
+                            <button id="login-password-toggle" type="button" class="auth-ib" title="Pokaż hasło"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>
+                        </span></label>
+                    <button id="login-submit" class="auth-btn auth-btn--solid auth-btn--lg" type="submit">Zaloguj</button>
+                </form>
+                <div class="auth-or"><span></span>albo<span></span></div>
+                <button id="connect-button" type="button" class="auth-btn auth-btn--two">
+                    <span>Połącz bez logowania</span><span class="auth-muted">nowa postać albo logowanie w grze</span>
+                </button>
+            </div>
+            <div id="proxy-controls-root" class="auth-conn"></div>
+        </section>
+        <div id="layout-manager-suggestion" class="auth-suggest" style="display: none;">
+            <span class="auth-suggest__icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><path d="M3 9h18"></path><path d="M9 21V9"></path></svg></span>
+            <div class="auth-suggest__body">
+                <p>Duży ekran? Menedżer okien pozwala układać okna obok siebie.</p>
+                <div class="auth-suggest__actions">
+                    <button id="layout-suggestion-enable" type="button" class="auth-btn auth-btn--sm auth-btn--solid">Włącz</button>
+                    <button id="layout-suggestion-dismiss" type="button" class="auth-btn auth-btn--sm auth-btn--ghost">Nie pokazuj więcej</button>
+                </div>
             </div>
         </div>
-        <div id="commit-info"></div>
+        <div class="auth-meta">
+            <a class="auth-coffee" href="https://buycoffee.to/dargoth" target="_blank" rel="noopener noreferrer"><img src="https://buycoffee.to/static/img/share/share-button-primary--pl.png" alt="Postaw kawę dla dargoth na buycoffee.to"></a>
+            <div id="commit-info"></div>
+        </div>
     </div>
 
 
-    <div id="trigger-tester-modal" class="modal fade" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Tester triggerów</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body d-flex flex-column gap-2">
-                    <div>
-                        <label for="trigger-tester-filter" class="form-label mb-1">Filtr wzorca</label>
-                        <input id="trigger-tester-filter" class="form-control" />
-                    </div>
-                    <div>
-                        <label class="form-label mb-1">Wybierz trigger</label>
-                        <div id="trigger-tester-tree" class="border p-1" style="max-height:15rem;overflow:auto;"></div>
-                    </div>
-                    <div>
-                        <label for="trigger-tester-line" class="form-label mb-1">Linia</label>
-                        <input id="trigger-tester-line" class="form-control" />
-                    </div>
-                    <div>
-                        <label for="trigger-tester-type" class="form-label mb-1">Typ GMCP</label>
-                        <input id="trigger-tester-type" class="form-control" />
-                    </div>
-                    <button class="btn btn-primary" id="trigger-tester-run">Testuj</button>
-                    <pre id="trigger-tester-output" class="mb-0"></pre>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div id="trigger-finder-modal" class="modal fade" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Trigger finder</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body d-flex flex-column gap-2">
-                    <div>
-                        <label for="trigger-finder-lines" class="form-label mb-1">Linie</label>
-                        <textarea id="trigger-finder-lines" class="form-control" rows="6"></textarea>
-                    </div>
-                    <div>
-                        <label for="trigger-finder-type" class="form-label mb-1">Typ GMCP</label>
-                        <input id="trigger-finder-type" class="form-control" />
-                    </div>
-                    <button class="btn btn-primary" id="trigger-finder-run">Znajdź</button>
-                    <pre id="trigger-finder-output" class="mb-0"></pre>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div id="logs-modal" class="modal fade" tabindex="-1">
-        <div class="modal-dialog modal-xl modal-fullscreen-md-down logs-modal-dialog">
-            <div class="modal-content">
-                <!-- No Bootstrap header: the viewer renders its own, with the
-                     session title, the export menu and the close control. -->
-                <div class="modal-body logs-modal-body">
-                    <!-- Filled by logBrowserMount.tsx -->
-                </div>
+    <div id="logs-modal" class="app-modal app-modal--logs" hidden>
+        <div class="app-modal__dialog app-modal__dialog--xl app-modal__dialog--fill app-modal__dialog--phone-full logs-modal-dialog" tabindex="-1">
+            <!-- No header of the shell: the viewer renders its own, with the
+                 session title, the export menu and the close control. -->
+            <div class="app-modal__body app-modal__body--panel logs-modal-body">
+                <!-- Filled by logBrowserMount.tsx -->
             </div>
         </div>
     </div>
 
-    <div id="location-share-modal" class="modal fade" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Kod QR lokacji</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body d-flex justify-content-center">
-                    <img id="location-qr-image" alt="QR code">
-                </div>
+    <div id="location-share-modal" class="app-modal" hidden>
+        <div class="app-modal__dialog" tabindex="-1">
+            <div class="app-modal__header">
+                <h2 class="app-modal__title">Kod QR lokacji</h2>
+                <button type="button" class="app-modal__close" data-modal-dismiss title="Zamknij">&times;</button>
+            </div>
+            <div class="app-modal__body app-modal__body--center">
+                <img id="location-qr-image" alt="QR code">
             </div>
         </div>
     </div>
@@ -513,7 +297,6 @@
 <div id="map-note-tooltip" class="map-note-tooltip"></div>
 <div id="hover-tooltip" class="hover-tooltip"></div>
 <script type="module" src="/src/web/main.ts"></script>
-<script type="module" src="/src/web/docs.ts"></script>
 <script type="module" src="/src/web/logBrowserMount.tsx"></script>
 </body>
 </html>

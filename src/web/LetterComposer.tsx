@@ -235,78 +235,78 @@ const LetterComposer: React.FC = () => {
                             onClick={togglePinned}
                             title={isPinned ? 'Odepnij okno' : 'Przypnij okno'}
                         />
-                        <button type="button" className="panel-button panel-button--close btn-close btn-close-white" onClick={close} />
+                        <button type="button" className="panel-button panel-button--close" onClick={close} title="Zamknij" />
                     </div>
                 </div>
                 <div className="window-body letter-composer-body">
                     <form className="letter-composer-form" onSubmit={handleSubmit} onKeyDown={handleKeyDown}>
                         <div className="letter-composer-field">
-                            <label htmlFor="letter-to" className="form-label">Do:</label>
+                            <label htmlFor="letter-to" className="popup-field__label">Do:</label>
                             <input
                                 ref={toInputRef}
                                 id="letter-to"
                                 name="letter-to"
-                                className="form-control form-control-sm"
+                                className="popup-input popup-input--control"
                                 type="text"
                                 autoComplete="off"
                                 tabIndex={1}
                             />
                         </div>
                         <div className="letter-composer-field">
-                            <label htmlFor="letter-dw" className="form-label">DW:</label>
+                            <label htmlFor="letter-dw" className="popup-field__label">DW:</label>
                             <input
                                 ref={dwInputRef}
                                 id="letter-dw"
                                 name="letter-dw"
-                                className="form-control form-control-sm"
+                                className="popup-input popup-input--control"
                                 type="text"
                                 autoComplete="off"
                                 tabIndex={4}
                             />
                         </div>
                         <div className="letter-composer-field">
-                            <label htmlFor="letter-udw" className="form-label">UDW:</label>
+                            <label htmlFor="letter-udw" className="popup-field__label">UDW:</label>
                             <input
                                 ref={udwInputRef}
                                 id="letter-udw"
                                 name="letter-udw"
-                                className="form-control form-control-sm"
+                                className="popup-input popup-input--control"
                                 type="text"
                                 autoComplete="off"
                                 tabIndex={5}
                             />
                         </div>
                         <div className="letter-composer-field">
-                            <label htmlFor="letter-subject" className="form-label">Temat:</label>
+                            <label htmlFor="letter-subject" className="popup-field__label">Temat:</label>
                             <input
                                 ref={subjectInputRef}
                                 id="letter-subject"
                                 name="letter-subject"
-                                className="form-control form-control-sm"
+                                className="popup-input popup-input--control"
                                 type="text"
                                 autoComplete="off"
                                 tabIndex={2}
                             />
                         </div>
                         <div className="letter-composer-field letter-composer-field--grow">
-                            <label htmlFor="letter-content" className="form-label">Tresc:</label>
+                            <label htmlFor="letter-content" className="popup-field__label">Tresc:</label>
                             <textarea
                                 ref={contentInputRef}
                                 id="letter-content"
                                 name="letter-content"
-                                className="form-control"
+                                className="popup-input popup-input--control"
                                 onChange={handleContentChange}
                                 tabIndex={3}
                             />
                         </div>
                         <div className="letter-composer-actions">
                             <div className="letter-template-group">
-                                <label htmlFor="letter-template" className="form-label mb-0">Szablon:</label>
+                                <label htmlFor="letter-template" className="popup-field__label letter-template-label">Szablon:</label>
                                 <select
                                     ref={templateSelectRef}
                                     id="letter-template"
                                     name="letter-template"
-                                    className="form-select form-select-sm letter-template-select"
+                                    className="popup-input popup-input--control letter-template-select"
                                     defaultValue={templateSelection}
                                     onChange={handleTemplateChange}
                                 >
@@ -317,10 +317,10 @@ const LetterComposer: React.FC = () => {
                                     ))}
                                 </select>
                             </div>
-                            <button type="button" className="btn btn-secondary btn-sm" onClick={handlePreview}>
+                            <button type="button" className="popup-btn popup-btn--control popup-btn--sm" onClick={handlePreview}>
                                 Podglad
                             </button>
-                            <button type="submit" className="btn btn-primary btn-sm">Wyslij</button>
+                            <button type="submit" className="popup-btn popup-btn--control popup-btn--sm popup-btn--solid">Wyslij</button>
                         </div>
                     </form>
                     {isWideScreen && (

@@ -2,8 +2,8 @@ import type {Locator, Page} from '@playwright/test';
 import {expect} from './fixtures';
 
 /**
- * Helpers for the unified settings dialog (#settings-modal): one Bootstrap
- * modal with a sidebar of pages (desktop) or a page <select> (narrow dialogs).
+ * Helpers for the unified settings dialog (#settings-modal): one window
+ * with a sidebar of pages (desktop) or a page <select> (narrow dialogs).
  */
 
 export const SETTINGS_MODAL = '#settings-modal';
@@ -24,7 +24,10 @@ export type SettingsCategory =
     | 'ui-footer'
     | 'ui-map'
     | 'ui-sound'
-    | 'ui-other';
+    | 'ui-other'
+    | 'data-sync'
+    | 'data-backup'
+    | 'data-devices';
 
 /** Waits until a previous hide animation of the settings modal has finished. */
 export async function waitForSettingsModalClosed(page: Page) {
@@ -34,15 +37,9 @@ export async function waitForSettingsModalClosed(page: Page) {
     });
 }
 
-/** Waits for Bootstrap's show animation, so a following hide() is not silently ignored. */
+/** Waits for the settings window to be open. */
 export async function waitForSettingsModalShown(page: Page) {
-    await page.waitForSelector('#settings-modal.show', {timeout: 5000});
-    await page.waitForFunction(() => {
-        const d = document.querySelector('#settings-modal .modal-dialog') as HTMLElement | null;
-        if (!d) return false;
-        const t = window.getComputedStyle(d).transform;
-        return t === 'none' || t === 'matrix(1, 0, 0, 1, 0, 0)';
-    });
+    await page.waitForSelector('#settings-modal:not([hidden])', {timeout: 5000});
 }
 
 /**
@@ -76,24 +73,34 @@ export async function openButtonsSettings(page: Page, category: 'ui-buttons' | '
     return modal;
 }
 
-/** Shows a settings page through whichever navigation the dialog's width offers. */
+/**
+ * Shows a settings page through whichever navigation the dialog's width
+ * offers: the sidebar, or on a phone the list of pages (back to it first when
+ * another page is open).
+ */
 export async function goToSettingsPage(page: Page, category: SettingsCategory) {
     const modal = page.locator(SETTINGS_MODAL);
-    const select = modal.locator('#settings-category-select');
-    if (await select.isVisible()) {
-        await select.selectOption(category);
-    } else {
-        await modal.locator(`.settings-dialog__nav-item[data-settings-category="${category}"]`).click();
+    const target = modal.locator(`.settings-page[data-settings-category="${category}"]`);
+    const sidebar = modal.locator(`.settings-dialog__nav-item[data-settings-category="${category}"]`);
+    const phone = modal.locator('.settings-dialog--phone');
+    await expect(sidebar.or(phone)).toBeVisible();
+    if (await sidebar.isVisible()) {
+        await sidebar.click();
+    } else if (!(await target.isVisible())) {
+        const back = modal.locator('#settings-phone-back');
+        if (await back.isVisible()) await back.click();
+        // Back returns to search results when the page was opened from them.
+        const search = modal.locator('#settings-search');
+        if (await search.inputValue()) await search.fill('');
+        await modal.locator(`.settings-phone__row[data-settings-category="${category}"]`).click();
     }
-    await expect(
-        modal.locator(`.settings-page[data-settings-category="${category}"]`),
-        `settings page ${category} should be shown`,
-    ).toBeVisible();
+    await expect(target, `settings page ${category} should be shown`).toBeVisible();
 }
 
 /** Clicks the single Save button and waits for the dialog to close. */
 export async function saveSettings(page: Page) {
     const modal = page.locator(SETTINGS_MODAL);
-    await modal.locator(SETTINGS_SAVE).click();
+    // On a phone Save is the bar that appears once something changed.
+    await modal.locator(`#settings-phone-save, ${SETTINGS_SAVE}:visible`).first().click();
     await expect(modal, 'settings modal should close after saving').not.toBeVisible();
 }

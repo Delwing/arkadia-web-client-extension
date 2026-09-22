@@ -1,6 +1,6 @@
 import guilds from "./guilds";
 import GuildRow from "./GuildRow";
-import {Form} from "react-bootstrap";
+import {Check} from "@web-ui/primitives/index.ts";
 
 interface Props {
     selected: string[];
@@ -15,34 +15,32 @@ interface Props {
     onAllyChange: (guild: string, checked: boolean) => void;
     onColorChange: (guild: string, color?: string) => void;
     onChangeAll: (checked: boolean) => void;
-    onChangeAllEnemy: (checked: boolean) => void;
 }
 
-export default function GuildSection({selected, enemySelected, allySelected, colors = {}, defaultColors, onChange, onEnemyChange, onAllyChange, onColorChange, onChangeAll, onChangeAllEnemy}: Props) {
+export default function GuildSection({selected, enemySelected, allySelected, colors = {}, defaultColors, onChange, onEnemyChange, onAllyChange, onColorChange, onChangeAll}: Props) {
     const allSelected = selected.length === guilds.length;
-    const allEnemySelected = enemySelected.length === guilds.length;
     return (
         <section className="character-settings-section character-settings-section--full">
-            <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
-                <h5 className="character-settings-section-title mb-0">Gildie</h5>
-                <div className="d-flex gap-2">
-                    <Form.Check
-                        type="checkbox"
-                        id="guild-all"
-                        label="Wszystkie"
-                        checked={allSelected}
-                        onChange={ev => onChangeAll(ev.target.checked)}
-                    />
-                    <Form.Check
-                        type="checkbox"
-                        id="enemy-guild-all"
-                        label="Wrogowie"
-                        checked={allEnemySelected}
-                        onChange={ev => onChangeAllEnemy(ev.target.checked)}
-                    />
-                </div>
-            </div>
-            <div className="d-flex flex-column">
+            <h5 className="character-settings-section-title">Gildie</h5>
+            <table className="popup-table guilds-table">
+                <thead>
+                <tr>
+                    <th>Gildia</th>
+                    <th>
+                        <Check
+                            id="guild-all"
+                            label="Triggery"
+                            title="Ładowanie triggerów — zaznacz wszystkie"
+                            checked={allSelected}
+                            onChange={ev => onChangeAll(ev.target.checked)}
+                        />
+                    </th>
+                    <th>Wróg</th>
+                    <th>Sojusz</th>
+                    <th>Kolor</th>
+                </tr>
+                </thead>
+                <tbody>
                 {guilds.map(g => (
                     <GuildRow
                         key={g}
@@ -58,7 +56,8 @@ export default function GuildSection({selected, enemySelected, allySelected, col
                         onColorChange={onColorChange}
                     />
                 ))}
-            </div>
+                </tbody>
+            </table>
         </section>
     );
 }

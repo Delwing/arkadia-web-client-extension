@@ -1,5 +1,5 @@
 import {useState} from 'react';
-import {Button, Modal} from 'react-bootstrap';
+import {Button, Dialog, Field, Input} from '@web-ui/primitives/index.ts';
 
 const SETUP_GUIDE_URL =
     'https://github.com/Delwing/arkadia-web-client-extension/blob/master/proxy/deploy/SETUP.md';
@@ -58,19 +58,18 @@ export function HostProxyModal({show, onClose, onUseProxy}: HostProxyModalProps)
 
     const trimmed = url.trim();
 
+    if (!show) return null;
+
     return (
-        <Modal show={show} onHide={onClose} size="lg" scrollable centered>
-            <Modal.Header closeButton>
-                <Modal.Title>Uruchom własne proxy</Modal.Title>
-            </Modal.Header>
-            <Modal.Body>
+        <Dialog title="Uruchom własne proxy" onClose={onClose} size="lg" className="host-proxy">
+            <div className="popup-stack">
                 <p>
                     Proxy trzyma połączenie z Arkadią u siebie, dzięki czemu zamrożona
                     przez telefon karta przeglądarki nie zrywa sesji. Domyślne proxy
                     działa od ręki i nie trzeba nic konfigurować — własne ma sens, jeśli
                     wolisz, żeby ruch szedł przez twój serwer.
                 </p>
-                <p className="text-muted">
+                <p className="host-proxy__muted">
                     To nie jest kreator: potrzebny jest serwer, domena i dostęp przez SSH.
                     Liczone w minutach — raczej pół godziny niż pięć.
                 </p>
@@ -105,55 +104,39 @@ export function HostProxyModal({show, onClose, onUseProxy}: HostProxyModalProps)
                     </li>
                 </ol>
 
-                <p className="small text-muted">
+                <p className="host-proxy__muted host-proxy__small">
                     Do zbudowania potrzebny jest <a href="https://go.dev/dl/" target="_blank" rel="noreferrer">Go</a>{' '}
                     i kod z repozytorium. Pełna instrukcja, razem z pułapkami Oracle:{' '}
                     <a href={SETUP_GUIDE_URL} target="_blank" rel="noreferrer">SETUP.md</a>.
                 </p>
 
-                <div className="rounded overflow-hidden" style={{border: '1px solid rgba(255, 255, 255, 0.15)'}}>
-                    <div
-                        className="d-flex align-items-center justify-content-between px-2 py-1"
-                        style={{backgroundColor: '#2b2b2b'}}
-                    >
-                        <span className="small font-monospace" style={{color: '#bbb'}}>instalacja</span>
-                        <Button variant="outline-light" size="sm" onClick={handleCopy}>
+                <div className="host-proxy__code">
+                    <div className="host-proxy__code-bar">
+                        <span>instalacja</span>
+                        <Button size="sm" onClick={handleCopy}>
                             {copied ? 'Skopiowano!' : 'Skopiuj'}
                         </Button>
                     </div>
-                    <pre
-                        className="m-0 p-2"
-                        style={{backgroundColor: '#1e1e1e', color: '#e0e0e0', maxHeight: '14rem', overflow: 'auto'}}
-                    >
-                        <code>{INSTALL_COMMANDS}</code>
-                    </pre>
+                    <pre><code>{INSTALL_COMMANDS}</code></pre>
                 </div>
 
-                <hr/>
+                <hr className="host-proxy__rule"/>
 
-                <label className="form-label" htmlFor="host-proxy-url">
-                    Masz już uruchomione proxy? Wklej jego adres:
-                </label>
-                <div className="d-flex gap-2">
-                    <input
-                        id="host-proxy-url"
-                        type="text"
-                        className="form-control"
-                        value={url}
-                        onChange={e => setUrl(e.target.value)}
-                        placeholder="wss://twoja-domena.pl/attach"
-                        spellCheck={false}
-                        autoComplete="off"
-                    />
-                    <Button
-                        variant="primary"
-                        disabled={!trimmed}
-                        onClick={() => onUseProxy(trimmed)}
-                    >
-                        Użyj
-                    </Button>
-                </div>
-            </Modal.Body>
-        </Modal>
+                <Field label="Masz już uruchomione proxy? Wklej jego adres:" htmlFor="host-proxy-url">
+                    <div className="popup-inline">
+                        <Input
+                            id="host-proxy-url"
+                            mono
+                            value={url}
+                            onChange={e => setUrl(e.target.value)}
+                            placeholder="wss://twoja-domena.pl/attach"
+                        />
+                        <Button variant="solid" disabled={!trimmed} onClick={() => onUseProxy(trimmed)}>
+                            Użyj
+                        </Button>
+                    </div>
+                </Field>
+            </div>
+        </Dialog>
     );
 }

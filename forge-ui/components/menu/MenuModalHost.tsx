@@ -1,10 +1,10 @@
 import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react';
 import type Client from '@client/Client';
 import MenuModal from './MenuModal';
-import { holdPortaledModalScope } from './portaledModalScope';
 import { getHelperConnection } from '../../client/bootstrap';
-import { CLOSE_SETTINGS_EVENT, SAVE_SETTINGS_EVENT, SETTINGS_MODAL_ID, type SettingsCategoryKey } from '@web/settings/categories.ts';
+import { CLOSE_SETTINGS_EVENT, OPEN_SETTINGS_PAGE_EVENT, SAVE_SETTINGS_EVENT, SETTINGS_MODAL_ID, requestSettingsCategory, type OpenSettingsPageDetail, type SettingsCategoryKey } from '@web/settings/categories.ts';
 import { buttonsSettingsCategory } from '@web/settings/buttonsCategory.ts';
+import { MODAL_EVENT } from '@web/modals/appModal.ts';
 
 // The stock settings panels are lazy-loaded to keep their weight out of forge's
 // initial bundle: together they're ~140 kB gzip of JS (Skrypty alone is ~40 kB,
@@ -81,7 +81,7 @@ export type ModalKey =
     | 'docs';
 
 /**
- * Warms every modal's code (and the shared scoped-Bootstrap CSS) in the
+ * Warms every modal's code (and the shared scoped stock-layout CSS) in the
  * background, so opening any of them never flashes the Suspense "Ładowanie…"
  * fallback. The menu calls this once, on an idle callback after forge's initial
  * render — it downloads only the panels' own JS (~140 kB gzip); their heavy
@@ -92,13 +92,13 @@ export type ModalKey =
 export function prefetchAllModals(): void {
     // The scoped stylesheet the editors are built against loads with the first
     // modal too; warm it once so the panel paints styled, not just un-suspended.
-    void import('./scopedModalCss');
+    void import('./menuStockCss');
     for (const loader of Object.values(load)) void loader();
 }
 
 interface MenuModalHostProps {
-    /** The modal stack, bottom-to-top. Stock hosts these as independent Bootstrap
-     *  modals that can stack (e.g. Postacie opens *over* Opcje at a higher
+    /** The modal stack, bottom-to-top. Stock hosts these as independent page-level
+     *  windows that can stack (e.g. Postacie opens *over* Opcje at a higher
      *  z-index); a stack reproduces that instead of the old single-active key. */
     stack: ModalKey[];
     client: Client;
@@ -170,14 +170,14 @@ const SIZE: Partial<Record<ModalKey, 'md' | 'lg' | 'xl'>> = {
  * (header included) without these dispatching before the shell exists.
  */
 function ModalOpenEffects({ modalKey }: { modalKey: ModalKey }) {
-    // SettingsDialog hooks the Bootstrap show/hidden lifecycle of `#settings-modal`
+    // SettingsDialog follows the show/hidden events of `#settings-modal` (MODAL_EVENT)
     // to refresh its drafts on open and restore live-previewed values on dismiss.
     useEffect(() => {
         if (!SETTINGS_KEYS.has(modalKey)) return;
         const el = document.getElementById(SETTINGS_MODAL_ID);
-        el?.dispatchEvent(new Event('show.bs.modal'));
+        el?.dispatchEvent(new Event(MODAL_EVENT.show));
         return () => {
-            el?.dispatchEvent(new Event('hidden.bs.modal'));
+            el?.dispatchEvent(new Event(MODAL_EVENT.hidden));
         };
     }, [modalKey]);
 
@@ -185,8 +185,15 @@ function ModalOpenEffects({ modalKey }: { modalKey: ModalKey }) {
 }
 
 const SETTINGS_KEYS: ReadonlySet<ModalKey> = new Set(['options', 'ui', 'buttons', 'radial']);
+/** Set by an openSettingsPage() request: the page the next "options" dialog opens on. */
+let requestedSettingsPage: SettingsCategoryKey | null = null;
+
 const SETTINGS_START: Partial<Record<ModalKey, () => SettingsCategoryKey>> = {
-    options: () => 'character-general',
+    options: () => {
+        const page = requestedSettingsPage ?? 'character-general';
+        requestedSettingsPage = null;
+        return page;
+    },
     ui: () => 'ui-appearance',
     buttons: buttonsSettingsCategory,
     radial: () => 'ui-radial',
@@ -221,7 +228,7 @@ function BindsImportButton() {
     return (
         <button
             type="button"
-            className="btn btn-secondary btn-sm"
+            className="popup-btn popup-btn--control popup-btn--sm"
             disabled={parsing}
             onClick={() => window.dispatchEvent(new Event('binds-open-import'))}
         >
@@ -253,7 +260,7 @@ function MenuModalEntry({ modalKey, isTop, client, onClose, pushKey, replaceKey 
         footer = (
             <button
                 type="button"
-                className="btn btn-primary"
+                className="popup-btn popup-btn--control popup-btn--solid"
                 onClick={() => window.dispatchEvent(new Event(SAVE_SETTINGS_EVENT))}
             >
                 Zapisz
@@ -264,14 +271,14 @@ function MenuModalEntry({ modalKey, isTop, client, onClose, pushKey, replaceKey 
             <>
                 <button
                     type="button"
-                    className="btn btn-secondary me-auto"
+                    className="popup-btn popup-btn--control forge-menu-modal__footer-start"
                     onClick={() => window.dispatchEvent(new Event('binds-add-custom'))}
                 >
                     Dodaj skrót
                 </button>
                 <button
                     type="button"
-                    className="btn btn-primary"
+                    className="popup-btn popup-btn--control popup-btn--solid"
                     onClick={() => window.dispatchEvent(new Event('binds-save'))}
                 >
                     Zapisz
@@ -287,10 +294,10 @@ function MenuModalEntry({ modalKey, isTop, client, onClose, pushKey, replaceKey 
     if (SETTINGS_KEYS.has(modalKey)) {
         headerExtras = (
             <>
-                <button type="button" className="btn btn-secondary btn-sm" onClick={() => replaceKey('export-import')}>
+                <button type="button" className="popup-btn popup-btn--control popup-btn--sm" onClick={() => replaceKey('export-import')}>
                     Eksport/Import
                 </button>
-                <button type="button" className="btn btn-secondary btn-sm" onClick={() => pushKey('characters')}>
+                <button type="button" className="popup-btn popup-btn--control popup-btn--sm" onClick={() => pushKey('characters')}>
                     Postacie
                 </button>
             </>
@@ -383,8 +390,25 @@ function MenuModalEntry({ modalKey, isTop, client, onClose, pushKey, replaceKey 
 export default function MenuModalHost({ stack, client, closeKey, closeTop, pushKey, replaceKey }: MenuModalHostProps) {
     const open = stack.length > 0;
 
+    // A window's shortcut (e.g. "Import z Mudleta") asks for a settings page.
+    // Listened to even with no modal open: the request usually comes from a
+    // docked window. An open settings dialog switches page itself.
+    useEffect(() => {
+        const onOpenPage = (event: Event) => {
+            const { category } = (event as CustomEvent<OpenSettingsPageDetail>).detail;
+            if (stack.includes('options')) {
+                requestSettingsCategory(category);
+                return;
+            }
+            requestedSettingsPage = category;
+            pushKey('options');
+        };
+        window.addEventListener(OPEN_SETTINGS_PAGE_EVENT, onOpenPage);
+        return () => window.removeEventListener(OPEN_SETTINGS_PAGE_EVENT, onOpenPage);
+    }, [stack, pushKey]);
+
     // Several option components dispatch these on save/cancel (the same contract
-    // the stock Bootstrap modals honour) — they mean "dismiss the current modal",
+    // the stock windows honour) — they mean "dismiss the current modal",
     // so close the front-most one. Others dispatch the show-* events to open a
     // sibling (the same events stock's option headers fire).
     useEffect(() => {
@@ -404,20 +428,12 @@ export default function MenuModalHost({ stack, client, closeKey, closeTop, pushK
         };
     }, [open, closeTop, pushKey]);
 
-    // Inject the scoped Bootstrap stylesheet the editors are built against, the
+    // Inject the scoped stock layout stylesheet the editors need, the
     // first time any modal opens (kept out of forge's initial chunk). See
-    // scopedModalCss.ts.
+    // menuStockCss.ts.
     useEffect(() => {
         if (!open) return;
-        void import('./scopedModalCss').then((m) => m.injectScopedModalCss());
-    }, [open]);
-
-    // Several panels open a react-bootstrap <Modal> as a sub-dialog; those portal
-    // to <body>, outside every `.forge-menu-modal …` selector. Tag them so the
-    // stylesheet above reaches them. See portaledModalScope.ts.
-    useEffect(() => {
-        if (!open) return;
-        return holdPortaledModalScope();
+        void import('./menuStockCss').then((m) => m.injectMenuStockCss());
     }, [open]);
 
     if (!open) return null;

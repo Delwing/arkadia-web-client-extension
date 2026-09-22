@@ -27,7 +27,7 @@ test.describe('Mobile buttons color and command configuration', () => {
         await expect(buttonsPage, 'mobile buttons page should be visible').toBeVisible();
 
         // Get the current visible preview grid (solo mode by default)
-        const soloPreview = page.locator('#mobile-buttons-preview-solo:not(.d-none)');
+        const soloPreview = page.locator('#mobile-buttons-preview-solo:visible');
         await expect(soloPreview, 'solo preview grid should be visible').toBeVisible();
 
         // Wait for buttons to be rendered in the visible grid
@@ -92,7 +92,7 @@ test.describe('Mobile buttons color and command configuration', () => {
         expect(buttonText, 'button label should be updated in preview').toBe('Test Button');
 
         // Close the config panel first
-        const closeConfigButton = configPanel.locator('.btn-close');
+        const closeConfigButton = configPanel.locator('.mobile-button-config__close');
         await closeConfigButton.click();
         await expect(configPanel, 'config panel should close').not.toBeVisible();
 
@@ -147,7 +147,7 @@ test.describe('Mobile buttons color and command configuration', () => {
         const modalAfterReload = await openMobileButtonsSettings(page);
         await expect(modalAfterReload, 'mobile buttons modal should be visible after reload').toBeVisible();
 
-        const soloPreviewAfterReload = page.locator('#mobile-buttons-preview-solo:not(.d-none)');
+        const soloPreviewAfterReload = page.locator('#mobile-buttons-preview-solo:visible');
         await expect(soloPreviewAfterReload, 'solo preview grid should be visible after reload').toBeVisible();
 
         const button2AfterReload = soloPreviewAfterReload.locator('[data-button-id="button-2"]');
@@ -190,7 +190,7 @@ test.describe('Mobile buttons color and command configuration', () => {
         await expect(modal).toBeVisible();
 
         // Get the current visible preview grid (solo mode by default)
-        const soloPreview = page.locator('#mobile-buttons-preview-solo:not(.d-none)');
+        const soloPreview = page.locator('#mobile-buttons-preview-solo:visible');
         await expect(soloPreview, 'solo preview grid should be visible').toBeVisible();
 
         // Wait for buttons to be rendered in the visible grid
@@ -212,7 +212,7 @@ test.describe('Mobile buttons color and command configuration', () => {
         await expect(directionSelect, 'direction select should be visible for kierunek macro').toBeVisible();
 
         // Close config panel
-        const closeButton = configPanel.locator('.btn-close');
+        const closeButton = configPanel.locator('.mobile-button-config__close');
         await closeButton.click();
         await expect(configPanel).not.toBeVisible();
 
@@ -277,7 +277,7 @@ test.describe('Mobile buttons color and command configuration', () => {
         const modal = await openMobileButtonsSettings(page);
 
         // Get the solo preview grid
-        const soloPreview = page.locator('#mobile-buttons-preview-solo:not(.d-none)');
+        const soloPreview = page.locator('#mobile-buttons-preview-solo:visible');
         await soloPreview.locator('[data-button-id="button-1"]').waitFor({ timeout: 5000 });
 
         // Configure button-1 with a command
@@ -297,7 +297,7 @@ test.describe('Mobile buttons color and command configuration', () => {
         await labelInput.fill('Zerknij');
 
         // Close the config panel first
-        const closeButton = configPanel.locator('.btn-close');
+        const closeButton = configPanel.locator('.mobile-button-config__close');
         await closeButton.click();
         await expect(configPanel, 'config panel should close').not.toBeVisible();
 

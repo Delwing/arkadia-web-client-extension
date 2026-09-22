@@ -3,6 +3,7 @@ import type { SoundCategory } from "@shared/events/clientEvents.ts";
 import { saveCustomSounds, type CustomSound } from "@modules/core/customSounds";
 import type { UiSettings } from "../../uiSettingsCore";
 import { ALL_SOUND_CATEGORIES } from "../../uiSettingsCore";
+import { Button, Field, Select } from "@web-ui/primitives/index.ts";
 import { SettingsSection } from "../fields";
 
 interface SoundSectionProps {
@@ -116,52 +117,66 @@ function SoundSection({ draft, update, customSounds, onCustomSoundsChange, previ
         return '';
     };
 
+    // What "Domyślny beep" actually plays: the built-in one, or the custom sound
+    // that took its place. Named in the category options so the two settings read
+    // as one, rather than a category quietly playing something else.
+    const beepSound = draft.customBeepSoundKey
+        ? customSounds.find(s => s.key === draft.customBeepSoundKey)
+        : undefined;
+    const beepOptionLabel = beepSound ? `Domyślny beep (${beepSound.name})` : 'Domyślny beep';
+
     return (
         <SettingsSection title="Dźwięki" full>
-            <div>
-                <label className="form-label" htmlFor="ui-custom-beep-sound">Własny dźwięk beep</label>
-                <select id="ui-custom-beep-sound" className="form-select" value={draft.customBeepSoundKey || ''} onChange={(e) => onBeepSelect(e.target.value)}>
-                    <option value="">Domyślny beep</option>
-                    {customSounds.map(s => <option key={s.key} value={s.key}>{s.name}</option>)}
-                    <option value="__upload__">Dodaj dźwięk…</option>
-                </select>
-            </div>
-            <div className="ui-sound-tiles">
+            <Field
+                label="Własny dźwięk beep"
+                htmlFor="ui-custom-beep-sound"
+                hint="Zastępuje domyślny beep — gra wszędzie tam, gdzie kategoria niżej została na „Domyślny beep”."
+            >
+                <div className="popup-inline">
+                    <Select id="ui-custom-beep-sound" className="settings-narrow" value={draft.customBeepSoundKey || ''} onChange={(e) => onBeepSelect(e.target.value)}>
+                        <option value="">Domyślny beep</option>
+                        {customSounds.map(s => <option key={s.key} value={s.key}>{s.name}</option>)}
+                        <option value="__upload__">Dodaj dźwięk…</option>
+                    </Select>
+                    <Button size="sm" variant="ghost" title="Odtwórz" onClick={() => previewKey(draft.customBeepSoundKey || 'beep')}>{'▶'}</Button>
+                    {draft.customBeepSoundKey && (
+                        <Button id="ui-reset-beep-sound" size="sm" variant="ghost" onClick={() => update({ customBeepSoundKey: undefined })}>Przywróć domyślny</Button>
+                    )}
+                </div>
+            </Field>
+            <div className="settings-rows ui-sound-rows">
                 {ALL_SOUND_CATEGORIES.map(cat => (
-                    <div key={cat} className="ui-sound-tile border rounded p-2 d-flex flex-column gap-1">
-                        <div className="d-flex justify-content-between align-items-start gap-1">
-                            <div className="d-flex flex-column" style={{ lineHeight: 1.15 }}>
-                                <span className="small fw-semibold">{CATEGORY_TITLES[cat]}</span>
-                                {CATEGORY_HINTS[cat] && (
-                                    <span className="text-muted" style={{ fontSize: '0.65rem' }}>{CATEGORY_HINTS[cat]}</span>
-                                )}
-                            </div>
-                            <button
-                                type="button"
-                                className="btn btn-sm btn-outline-secondary flex-shrink-0"
+                    <div key={cat} className="settings-row">
+                        <label className="popup-field__label" htmlFor={`ui-sound-category-${cat}`}>
+                            {CATEGORY_TITLES[cat]}
+                            {CATEGORY_HINTS[cat] && <span className="settings-inline-note">{CATEGORY_HINTS[cat]}</span>}
+                        </label>
+                        <div className="popup-inline">
+                            <Select id={`ui-sound-category-${cat}`} className="settings-narrow" value={categoryValue(cat)} onChange={(e) => onCategorySelect(cat, e.target.value)}>
+                                <option value="">{beepOptionLabel}</option>
+                                <option value="__disabled__">Wyciszony</option>
+                                {customSounds.map(s => <option key={s.key} value={s.key}>{s.name}</option>)}
+                                <option value="__upload__">Dodaj dźwięk…</option>
+                            </Select>
+                            <Button
+                                size="sm"
+                                variant="ghost"
                                 title="Odtwórz"
+                                disabled={categoryValue(cat) === '__disabled__'}
                                 onClick={() => {
-                                    const v = categoryValue(cat);
-                                    if (v === '__disabled__') return;
                                     // For a "default beep" category, preview whatever the
                                     // (possibly unsaved) custom beep currently resolves to.
-                                    previewKey(v || draft.customBeepSoundKey || 'beep');
+                                    previewKey(categoryValue(cat) || draft.customBeepSoundKey || 'beep');
                                 }}
                             >
                                 {'▶'}
-                            </button>
+                            </Button>
                         </div>
-                        <select id={`ui-sound-category-${cat}`} className="form-select form-select-sm" value={categoryValue(cat)} onChange={(e) => onCategorySelect(cat, e.target.value)}>
-                            <option value="">Domyślny beep</option>
-                            <option value="__disabled__">Wyciszony</option>
-                            {customSounds.map(s => <option key={s.key} value={s.key}>{s.name}</option>)}
-                            <option value="__upload__">Dodaj dźwięk…</option>
-                        </select>
                     </div>
                 ))}
             </div>
-            <input ref={fileRef} id="ui-sound-category-file" type="file" accept="audio/*" style={{ display: 'none' }} onChange={onFileChange} />
-            <button type="button" className="btn btn-secondary btn-sm align-self-start" id="ui-manage-sounds-button" onClick={onManage}>Zarządzaj dźwiękami</button>
+            <input ref={fileRef} id="ui-sound-category-file" type="file" accept="audio/*" hidden onChange={onFileChange} />
+            <Button size="sm" className="ui-settings-self-start" id="ui-manage-sounds-button" onClick={onManage}>Zarządzaj dźwiękami</Button>
         </SettingsSection>
     );
 }

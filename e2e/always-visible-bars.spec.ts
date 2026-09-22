@@ -63,7 +63,7 @@ test.describe('Always visible status bars', () => {
         await waitForCommandInput(page);
         await ensureGameSocket(page);
 
-        const charStateText = page.locator('#char-state-text');
+        const charStateText = page.locator('#char-state-vitals');
 
         // mana default = 8, stuffed default = 3, encumbrance default = 0
         await pushCharState(page, {
@@ -84,7 +84,7 @@ test.describe('Always visible status bars', () => {
         await waitForCommandInput(page);
         await ensureGameSocket(page);
 
-        const charStateText = page.locator('#char-state-text');
+        const charStateText = page.locator('#char-state-vitals');
 
         // Push default mana value — should be hidden before setting change
         await pushCharState(page, {hp: 5, mana: 8});
@@ -129,7 +129,7 @@ test.describe('Always visible status bars', () => {
 
         // Push stuffed at its default value — should still be visible after reload
         await pushCharState(page, {hp: 5, stuffed: 3});
-        const charStateText = page.locator('#char-state-text');
+        const charStateText = page.locator('#char-state-vitals');
         await expect(
             charStateText,
             'stuffed should be visible at default after reload when always-visible is enabled',
@@ -160,7 +160,7 @@ test.describe('Always visible status bars', () => {
 
         // soaked default = 3, confirm it is visible at its default
         await pushCharState(page, {hp: 5, soaked: 3});
-        const charStateText = page.locator('#char-state-text');
+        const charStateText = page.locator('#char-state-vitals');
         await expect(charStateText, 'soaked should be visible when always-visible is enabled').toContainText('PRA');
 
         // Disable always-visible for soaked
@@ -304,7 +304,7 @@ test.describe('Always visible status bars', () => {
         // Push default values for all three: mana=8, improve=0, intox=0
         await pushCharState(page, {hp: 5, mana: 8, improve: 0, intox: 0});
 
-        const charStateText = page.locator('#char-state-text');
+        const charStateText = page.locator('#char-state-vitals');
         await expect(charStateText, 'mana should be visible at its default value').toContainText('MANA');
         await expect(charStateText, 'improve should be visible at its default value').toContainText('POS');
         await expect(charStateText, 'intox should be visible at its default value').toContainText('UPI');
@@ -315,7 +315,7 @@ test.describe('Always visible status bars', () => {
         await waitForCommandInput(page);
         await ensureGameSocket(page);
 
-        const charStateText = page.locator('#char-state-text');
+        const charStateText = page.locator('#char-state-vitals');
 
         // No always-visible settings changed — push non-default values
         await pushCharState(page, {
@@ -346,7 +346,7 @@ test.describe('Always visible status bars', () => {
         // headache=0 (default, but always-visible), panic=0 (default, NOT always-visible)
         await pushCharState(page, {hp: 5, headache: 0, panic: 0});
 
-        const charStateText = page.locator('#char-state-text');
+        const charStateText = page.locator('#char-state-vitals');
         await expect(charStateText, 'headache should be visible due to always-visible setting').toContainText('KAC');
         await expect(charStateText, 'panic should remain hidden (at default, not always-visible)').not.toContainText('PAN');
     });

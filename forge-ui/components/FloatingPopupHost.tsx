@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { windowManager } from '@web/layout/WindowManager';
 import { getPopup, subscribeToRegistry } from '@web/layout/popupRegistry';
+import { useWindowAppearance } from '@web/layout/hooks/useWindowAppearance';
+import { WindowSettingsMenu } from '@web/layout/components/WindowSettingsMenu';
 
 /**
  * FloatingPopupHost — a floating home for a stock dockable popup, with no
@@ -45,6 +47,8 @@ export default function FloatingPopupHost({
         () => getPopup(popupId),
     );
     const registered = popup != null;
+    // Font overrides from the window's settings cog (same as the stock shells).
+    useWindowAppearance(popupId, registered);
 
     const bodyRef = useRef<HTMLDivElement | null>(null);
     const [pos, setPos] = useState<Pos>({ x: initialX, y: initialY });
@@ -167,6 +171,11 @@ export default function FloatingPopupHost({
                 <span className="panel__title">{liveTitle}</span>
                 <div className="forge-floating__head-actions">
                     {headerActions}
+                    <WindowSettingsMenu
+                        windowId={popupId}
+                        title={liveTitle}
+                        fields={popup?.settingsFields}
+                    />
                     <button
                         type="button"
                         className="forge-floating__close"

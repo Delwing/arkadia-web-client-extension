@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import { Spinner } from "react-bootstrap";
 import { AlertTriangle, Check, Circle, FileCode2, Globe, Store } from "lucide-react";
 import type { PluginSource } from "./useInstalledPlugins";
 
@@ -34,7 +33,7 @@ export function SourceChip({ source }: { source: PluginSource }) {
 
 function StatusMark({ status, title }: { status: CardStatus; title?: string }) {
     if (status === "none") return null;
-    if (status === "loading") return <Spinner animation="border" size="sm" className="plugin-card__status" />;
+    if (status === "loading") return <span className="popup-spinner plugin-card__status" />;
 
     const icon =
         status === "error" ? <AlertTriangle size={14} /> : status === "warning" ? <Circle size={10} fill="currentColor" /> : <Check size={14} />;

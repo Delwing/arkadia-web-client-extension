@@ -30,6 +30,7 @@ export default class Recorder<CommandOptions = unknown> {
     private isRecording = false;
     private recordedMessages: RecordedEvent[] = [];
     private currentRecordingName: string | null = null;
+    private recordingStartedAt: number | null = null;
     private pendingInitialLocationId: number | null = null;
     private playbackTimeout: number | null = null;
     private playbackIndex = 0;
@@ -69,6 +70,7 @@ export default class Recorder<CommandOptions = unknown> {
     startRecording(name: string) {
         this.recordedMessages = [];
         this.currentRecordingName = name;
+        this.recordingStartedAt = eventNow();
         this.isRecording = true;
         this.pendingInitialLocationId = this.readCurrentLocation();
         this.hooks.emit('recording.start', name);
@@ -86,6 +88,16 @@ export default class Recorder<CommandOptions = unknown> {
 
     isRecordingActive() {
         return this.isRecording;
+    }
+
+    /** When the running recording started, and how many events it holds so far. */
+    getRecordingProgress() {
+        if (!this.isRecording) return null;
+        return { startedAt: this.recordingStartedAt ?? eventNow(), events: this.recordedMessages.length };
+    }
+
+    isPlaybackActive() {
+        return this.isPlaying;
     }
 
     getCurrentRecordingName() {

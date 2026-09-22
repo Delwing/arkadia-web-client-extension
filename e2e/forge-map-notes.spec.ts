@@ -84,19 +84,16 @@ test.describe('forge location notes', () => {
         await expect(menu).toBeVisible();
         await menu.locator('button', { hasText: 'Notatka' }).click();
 
-        const modal = page.locator('.modal-content').filter({ hasText: NOTE_MODAL_TITLE });
+        const modal = page.locator('.popup-dialog').filter({ hasText: NOTE_MODAL_TITLE });
         await expect(modal).toBeVisible();
-        await expect(modal.locator('.text-muted')).toContainText(`ID: ${ROOM_ID}`);
-        // The dialog is portaled to <body>, outside forge's modal scope — it only
-        // gets Bootstrap (and the forge theme) if it is tagged on arrival.
-        await expect(page.locator('div.modal.forge-portaled-modal')).toHaveCount(1);
+        await expect(modal.locator('.location-note-editor__room')).toContainText(`ID: ${ROOM_ID}`);
     });
 
     test('a note saved from the editor shows up in the tooltip', async ({ page }) => {
         await dispatchRoomEvent(page, 'roomcontextmenu', ROOM_ID);
         await page.locator(CONTEXT_MENU).locator('button', { hasText: 'Notatka' }).click();
 
-        const modal = page.locator('.modal-content').filter({ hasText: NOTE_MODAL_TITLE });
+        const modal = page.locator('.popup-dialog').filter({ hasText: NOTE_MODAL_TITLE });
         await expect(modal).toBeVisible();
         await modal.locator('textarea').fill('Notatka z forge');
         await modal.locator('button', { hasText: 'Zapisz' }).click();

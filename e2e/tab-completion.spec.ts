@@ -1,5 +1,6 @@
 import {expect, test} from './support/fixtures';
 import type {Page} from '@playwright/test';
+import {openSettings, saveSettings} from './support/settings';
 import {
     ensureGameSocket,
     waitForCommandInput,
@@ -7,6 +8,7 @@ import {
     pushGmcp,
     pushText,
     waitForOutputContaining,
+    submitCommand,
     GMCP_PATHS,
 } from './support/mocks';
 
@@ -35,12 +37,12 @@ async function loadSuggestionPlugin(page: Page, words: string[]): Promise<void> 
     await modal.getByRole('button', {name: 'Dodaj plugin'}).click();
     await page.locator('.plugin-route', {hasText: 'Z adresu URL'}).click();
 
-    const dialog = page.locator('.modal', {hasText: 'Dodaj skrypt z URL'}).last();
+    const dialog = page.locator('.popup-dialog', {hasText: 'Dodaj skrypt z URL'}).last();
     await dialog.getByPlaceholder('URL skryptu').fill(SUGGESTION_PLUGIN_URL);
     await dialog.getByRole('button', {name: 'Dodaj', exact: true}).click();
     await expect(modal.getByText('Suggestion Plugin')).toBeVisible();
 
-    await modal.locator('.btn-close').first().click();
+    await modal.locator('.app-modal__close').first().click();
     await expect(modal).not.toBeVisible();
 }
 
@@ -228,5 +230,81 @@ test.describe('Tab completion — output buffer based', () => {
         const value = await getInputValue(page);
         // Should only replace the last word "pote" with a match, keeping "zabij "
         expect(value.startsWith('zabij ')).toBe(true);
+    });
+});
+
+test.describe('Tab completion — command history', () => {
+    test.beforeEach(async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+    });
+
+    test('Tab finishes a command already sent, before words from the output', async ({page}) => {
+        await pushText(page, 'Widzisz tutaj zabawke i zabytek.\n');
+        await waitForOutputContaining(page, 'zabawke');
+        await submitCommand(page, 'zabij ob_12345');
+
+        await setInputValue(page, 'zab');
+        await pressTab(page);
+        expect(await getInputValue(page), 'the whole command from history first').toBe('zabij ob_12345');
+
+        await pressTab(page);
+        expect(await getInputValue(page), 'then words from the output').not.toBe('zabij ob_12345');
+    });
+
+    test('Tab completes a command past a space, where no word is being typed', async ({page}) => {
+        await submitCommand(page, 'wejdz na statek');
+
+        await setInputValue(page, 'wejdz na ');
+        await pressTab(page);
+        expect(await getInputValue(page)).toBe('wejdz na statek');
+    });
+});
+
+test.describe('Tab completion hint', () => {
+    test('shows what Tab would complete after the caret, and Tab takes it', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+        await pushText(page, 'Przy najdalszym pomoscie cumuje szeroki statek handlowy.');
+
+        await page.click('#message-input');
+        await page.keyboard.type('wejdz na st');
+        await expect(page.locator('.command-field__ghost-rest'), 'the rest of the word, dimmed').toHaveText('atek');
+        await expect(page.locator('.command-field__tab-hint')).toBeVisible();
+        await expect(page.locator('#message-input'), 'the hint is not typed into the line').toHaveValue('wejdz na st');
+
+        // Typing along the hinted word keeps the hint on screen, one letter shorter.
+        await page.keyboard.type('a');
+        const rest = await page.locator('.command-field__ghost-rest').textContent({timeout: 50});
+        expect(rest, 'no blink while typing along the hint').toBe('tek');
+
+        await page.keyboard.press('Tab');
+        await expect(page.locator('#message-input')).toHaveValue('wejdz na statek');
+        await expect(page.locator('.command-field__ghost'), 'nothing more to hint mid-cycle').toHaveCount(0);
+    });
+});
+
+test.describe('Tab completion hint setting', () => {
+    test('switched off, no hint is shown but Tab still completes', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+
+        const modal = await openSettings(page, 'ui-commands');
+        await modal.locator('#ui-tab-completion-hint').uncheck();
+        await saveSettings(page);
+
+        await pushText(page, 'Przy najdalszym pomoscie cumuje szeroki statek handlowy.');
+        await page.fill('#message-input', 'wejdz na st');
+        await page.focus('#message-input');
+        // Longer than the hint's own delay.
+        await page.waitForTimeout(400);
+        await expect(page.locator('.command-field__ghost')).toHaveCount(0);
+        await expect(page.locator('.command-field__tab-hint')).toHaveCount(0);
+
+        await page.keyboard.press('Tab');
+        await expect(page.locator('#message-input')).toHaveValue('wejdz na statek');
     });
 });

@@ -57,7 +57,7 @@ test.describe('Version check', () => {
         // Check that the warning div appears
         const warningDiv = commitInfo.locator('div').filter({hasText: 'Nowa wersja dostępna'});
         await expect(warningDiv, 'should show new version warning').toBeVisible();
-        await expect(warningDiv, 'warning should be in red').toHaveCSS('color', 'rgb(255, 0, 0)');
+        await expect(warningDiv, 'warning should stand out').toHaveClass(/commit-info-update/);
         await expect(warningDiv, 'warning should have correct text').toContainText('Nowa wersja dostępna - odśwież stronę');
     });
 

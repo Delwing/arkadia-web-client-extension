@@ -109,7 +109,7 @@ const PocztaPopup: React.FC = () => {
             initialWidth={500}
             initialHeight={400}
             className="poczta-window"
-            bodyClassName="poczta-window-body"
+            bodyClassName="popup-body"
             headerActions={headerActions}
         >
             {!isConnected ? (

@@ -32,7 +32,14 @@ export default function LogViewerApp() {
             // The session being written to right now, when this page was opened
             // from a client tab that passed it along.
             const liveSessionName = new URLSearchParams(window.location.search).get("live") ?? undefined;
-            const loaded = await loadAllSessions({ liveSessionName });
+            // The session the page opens on comes first; the rest join the
+            // list as they are parsed.
+            const loaded = await loadAllSessions(
+                { liveSessionName, priority: [preferences?.sessionId, liveSessionName] },
+                (partial) => {
+                    if (!cancelled) setSessions(partial);
+                },
+            );
             if (!cancelled) setSessions(loaded);
         })();
         return () => {

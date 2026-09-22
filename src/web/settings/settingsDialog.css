@@ -3,8 +3,8 @@
  * under .settings-* so the sheet is safe to load in both the stock UI and forge;
  * colours come from the --popup-* variables both hosts define.
  *
- * Layout switches on the dialog's own width (container queries), not the
- * viewport, so a narrow forge shell or popout gets the phone layout too.
+ * The phone layout switches on the dialog's own width (SettingsDialog measures
+ * it), not the viewport, so a narrow forge shell or popout gets it too.
  */
 
 .settings-dialog-host {
@@ -60,12 +60,12 @@
   justify-content: space-between;
   gap: 0.5rem;
   width: 100%;
-  padding: 0.35rem 0.5rem 0.35rem 0.75rem;
+  padding: 6px 8px 6px 12px;
   border: 0;
-  border-radius: 0.375rem;
+  border-radius: var(--ui-radius, 6px);
   background: transparent;
   color: inherit;
-  font-size: 0.875rem;
+  font-size: var(--ui-fs, 13px);
   text-align: left;
 }
 
@@ -95,20 +95,71 @@
   box-shadow: inset 3px 0 0 var(--popup-accent);
 }
 
+/* Searching: how many sections matched on a page, and pages with none. */
+.settings-dialog__nav-count {
+  flex-shrink: 0;
+  min-width: 1.25rem;
+  padding: 0 0.3rem;
+  border-radius: 1rem;
+  background: var(--popup-accent);
+  color: var(--popup-bg);
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  text-align: center;
+}
+
+.settings-dialog__nav-item--empty {
+  opacity: 0.4;
+}
+
+/* The find bar: which page of results you are on, and the way to the next. */
+.settings-dialog__matches {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 0.4rem;
+}
+
+.settings-dialog__matches-count {
+  flex: 1;
+  min-width: 0;
+  color: var(--popup-text-dim);
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.settings-dialog__matches-btn {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  border: 1px solid var(--popup-border);
+  border-radius: var(--ui-radius, 6px);
+  background: var(--popup-control-bg);
+  color: inherit;
+}
+
+.settings-dialog__matches-btn:hover:not(:disabled) {
+  background: var(--popup-control-hover-bg);
+}
+
+.settings-dialog__matches-btn:disabled {
+  opacity: 0.4;
+}
+
 .settings-dialog__dirty {
   flex-shrink: 0;
   width: 0.45rem;
   height: 0.45rem;
   border-radius: 50%;
   background: var(--popup-accent);
-}
-
-/* Qualified past .form-select (and forge's .forge-menu-modal .form-select),
-   whose display:block would otherwise auto-place the select into an implicit
-   grid cell in the bottom-right corner of the wide layout. */
-.settings-dialog select.settings-dialog__select {
-  grid-area: select;
-  display: none;
 }
 
 .settings-dialog__pages {
@@ -139,7 +190,7 @@
 
 .settings-page__title {
   margin: 0;
-  font-size: 1.1rem;
+  font-size: 15px;
   font-weight: 600;
 }
 
@@ -162,19 +213,6 @@
   color: var(--popup-text-bright);
 }
 
-.settings-scope-badge {
-  display: inline-block;
-  padding: 0 0.4rem;
-  border: 1px dashed var(--popup-border);
-  border-radius: 1rem;
-  font-size: 0.65rem;
-  font-weight: 500;
-  line-height: 1.5;
-  color: var(--popup-text-dim);
-  vertical-align: middle;
-  white-space: nowrap;
-}
-
 .settings-page__fieldset {
   min-width: 0;
   margin: 0;
@@ -188,7 +226,7 @@
 .settings-page__layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 1rem;
+  gap: 12px;
   align-items: stretch;
 }
 
@@ -200,6 +238,12 @@
 .settings-page__layout > section.ui-settings-section--full,
 .settings-page__layout > section.character-settings-section--full {
   grid-column: 1 / -1;
+}
+
+/* "Dane" pages (sync, backup, devices) lay out their own content. */
+.settings-page__layout > .settings-data-page {
+  grid-column: 1 / -1;
+  min-width: 0;
 }
 
 @container settings-pages (min-width: 44rem) {
@@ -225,39 +269,449 @@
   color: inherit;
 }
 
-@container settings-dialog (max-width: 40rem) {
-  .settings-dialog {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto auto minmax(0, 1fr);
-    grid-template-areas:
-      "search"
-      "select"
-      "pages";
-  }
+/*
+ * Phone (PhoneSettings.tsx): SettingsDialog adds .settings-dialog--phone when
+ * the dialog is 40rem wide or less, with -list (the pages to drill into, or
+ * search results) or -page (one page, with its own header and section chips).
+ * The host's header stays on the list; the page brings its own. The host's
+ * Save gives way to a bar that appears only while something is unsaved.
+ */
+.app-modal__dialog:has(.settings-dialog--phone) > .app-modal__footer,
+.app-modal__dialog:has(.settings-dialog--phone-page) > .app-modal__header {
+  display: none;
+}
 
-  .settings-dialog__nav {
-    display: none;
-  }
+.settings-dialog.settings-dialog--phone {
+  display: flex;
+  flex-direction: column;
+  --settings-phone-warn: var(--footer-vital-warn, #d9bf62);
+}
 
-  .settings-dialog__search {
-    padding: 0.5rem 0.75rem 0.25rem;
-    border-right: 0;
-  }
+.settings-dialog--phone .settings-dialog__dirty {
+  background: var(--settings-phone-warn);
+}
 
-  .settings-dialog select.settings-dialog__select {
-    display: block;
-    width: auto;
-    margin: 0.25rem 0.75rem 0.5rem;
-  }
+.settings-dialog--phone-list .settings-dialog__pages {
+  display: none;
+}
 
-  /* 16px keeps iOS from zooming the page when the field takes focus. */
-  .settings-dialog__search .form-control,
-  .settings-dialog select.settings-dialog__select {
-    font-size: 16px;
-    min-height: 2.5rem;
-  }
+.settings-dialog--phone .settings-dialog__pages {
+  flex: 1;
+  padding: 14px 12px 20px;
+}
 
-  .settings-dialog__pages {
-    padding: 0.5rem 0.75rem;
+/* The page's own title and chip are in the phone header. */
+.settings-dialog--phone .settings-page__header {
+  display: none;
+}
+
+.settings-phone__start {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 0;
+  padding: 12px;
+  overflow-y: auto;
+}
+
+.settings-phone__search {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  margin: 0;
+  padding-left: 12px;
+  border: 1px solid var(--popup-border);
+  border-radius: 10px;
+  background: var(--popup-input-bg);
+  color: var(--popup-text-dim);
+}
+
+.settings-phone__search:focus-within {
+  border-color: var(--popup-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--popup-accent) 30%, transparent);
+}
+
+.settings-dialog .settings-phone__search input[type=search],
+.settings-dialog .settings-phone__search input[type=search]:focus {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  outline: none;
+  box-shadow: none;
+  background: transparent;
+  color: var(--popup-text);
+  font-size: 16px;
+}
+
+.settings-phone__search input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.settings-phone__clear {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 42px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--popup-text-dim);
+}
+
+.settings-phone__group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.settings-phone__group-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 4px;
+}
+
+.settings-phone__caption {
+  color: var(--popup-text-dim);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.settings-phone__caption--pages {
+  padding: 4px 4px 0;
+  margin-bottom: -10px;
+}
+
+.settings-phone__count {
+  padding: 0 4px;
+  margin-bottom: -10px;
+  color: var(--popup-text-dim);
+  font-size: 13px;
+}
+
+.settings-phone__group-head .settings-scope-chip {
+  font-size: 11px;
+}
+
+.settings-phone__card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--popup-border);
+  border-radius: 12px;
+  background: var(--popup-section-bg);
+}
+
+.settings-phone__row,
+.settings-phone__result {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 56px;
+  padding: 0 10px 0 12px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+.settings-phone__result {
+  min-height: 60px;
+  padding: 8px 12px;
+}
+
+.settings-phone__row + .settings-phone__row,
+.settings-phone__result + .settings-phone__result {
+  border-top: 1px solid var(--popup-border);
+}
+
+.settings-phone__row:active,
+.settings-phone__result--open:active {
+  background: var(--popup-hover-bg);
+}
+
+.settings-phone__row-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: var(--popup-control-bg);
+  color: var(--popup-text-subtle);
+}
+
+.settings-phone__row-text,
+.settings-phone__result-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.settings-phone__row-label,
+.settings-phone__result-label {
+  font-size: 15px;
+  color: var(--popup-text-bright);
+}
+
+.settings-phone__row-summary {
+  overflow: hidden;
+  color: var(--popup-text-dim);
+  font-size: 12.5px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.settings-phone__trail {
+  color: var(--popup-text-dim);
+  font-size: 12px;
+}
+
+.settings-phone__via {
+  color: var(--popup-text-dim);
+}
+
+.settings-phone__mark {
+  padding: 0 1px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--settings-phone-warn) 30%, transparent);
+  color: inherit;
+}
+
+.settings-phone__preview {
+  flex-shrink: 0;
+  max-width: 40%;
+  overflow: hidden;
+  color: var(--popup-text-subtle);
+  font-size: 13px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.settings-phone__chevron {
+  flex-shrink: 0;
+  color: var(--popup-text-dim);
+}
+
+/* A switch: the results' toggles, and every stand-alone checkbox on a phone page. */
+.settings-phone__switch,
+.settings-dialog--phone .settings-page label.popup-check:not(:is(table, .settings-check-grid, .settings-sort-item) *) > input[type=checkbox] {
+  position: relative;
+  flex-shrink: 0;
+  width: 40px;
+  height: 24px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--popup-border-strong);
+  border-radius: 999px;
+  background: var(--popup-control-bg);
+  appearance: none;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.settings-phone__switch::after,
+.settings-dialog--phone .settings-page label.popup-check:not(:is(table, .settings-check-grid, .settings-sort-item) *) > input[type=checkbox]::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--popup-text-dim);
+  transition: left 0.15s ease, background-color 0.15s ease;
+}
+
+.settings-phone__switch.is-on,
+.settings-dialog--phone .settings-page label.popup-check:not(:is(table, .settings-check-grid, .settings-sort-item) *) > input[type=checkbox]:checked {
+  border-color: var(--popup-accent);
+  background: var(--popup-accent);
+}
+
+.settings-phone__switch.is-on::after,
+.settings-dialog--phone .settings-page label.popup-check:not(:is(table, .settings-check-grid, .settings-sort-item) *) > input[type=checkbox]:checked::after {
+  left: 19px;
+  background: var(--popup-bg);
+}
+
+.settings-phone__switch:disabled,
+.settings-dialog--phone .settings-page label.popup-check > input[type=checkbox]:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* Page view: switches on the right of their row, fields full width under their label. */
+.settings-dialog--phone .settings-page label.popup-check:not(:is(table, .settings-check-grid, .settings-sort-item) *):has(> input[type=checkbox]) {
+  display: flex;
+  flex-direction: row-reverse;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  font-size: 14px;
+}
+
+.settings-dialog--phone .settings-page__layout {
+  gap: 16px;
+}
+
+.settings-dialog--phone .settings-page__layout > section.ui-settings-section,
+.settings-dialog--phone .settings-page__layout > section.character-settings-section {
+  padding: 12px;
+  border-radius: 12px;
+}
+
+.settings-dialog--phone .settings-page .popup-field > :is(select, textarea, input:not([type=checkbox]):not([type=radio]):not([type=color]):not([type=range])) {
+  width: 100%;
+  max-width: none;
+  min-height: 44px;
+  font-size: 16px;
+}
+
+.settings-phone__flash {
+  animation: settings-phone-flash 1.6s ease-out;
+  border-radius: 6px;
+}
+
+@keyframes settings-phone-flash {
+  0%, 35% {
+    background: color-mix(in srgb, var(--popup-accent) 22%, transparent);
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--popup-accent) 22%, transparent);
   }
+  100% {
+    background: transparent;
+    box-shadow: 0 0 0 6px transparent;
+  }
+}
+
+/* The page's header and chips. */
+.settings-phone__page-head {
+  flex-shrink: 0;
+}
+
+.settings-phone__header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 52px;
+  padding: 0 6px 0 4px;
+  border-bottom: 1px solid var(--popup-border);
+  background: var(--popup-section-bg);
+}
+
+.settings-phone__title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 16px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.settings-phone__header .settings-scope-chip {
+  margin-right: 4px;
+}
+
+.settings-phone__icon-btn {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--popup-text-dim);
+}
+
+.settings-phone__back {
+  color: var(--popup-accent);
+}
+
+.settings-phone__chips {
+  display: flex;
+  gap: 6px;
+  padding: 10px 12px;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--popup-border);
+  scrollbar-width: none;
+}
+
+.settings-phone__chip {
+  flex-shrink: 0;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--popup-border);
+  border-radius: 999px;
+  background: var(--popup-control-bg);
+  color: var(--popup-text-subtle);
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.settings-phone__chip.is-active {
+  border-color: var(--popup-accent-border);
+  background: var(--popup-accent-bg);
+  color: var(--popup-accent);
+}
+
+/* The save bar, only while something is unsaved. */
+.settings-phone__savebar {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px calc(12px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--popup-border-strong);
+  background: var(--popup-section-bg);
+}
+
+.settings-phone__savebar-dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--settings-phone-warn);
+}
+
+.settings-phone__savebar-text {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+}
+
+.settings-phone__btn {
+  flex-shrink: 0;
+  height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--popup-border-strong);
+  border-radius: 6px;
+  background: var(--popup-control-bg);
+  color: var(--popup-text);
+  font-weight: 500;
+}
+
+.settings-phone__btn--primary {
+  border-color: var(--popup-accent);
+  background: var(--popup-accent);
+  color: var(--popup-bg);
+  font-weight: 600;
 }

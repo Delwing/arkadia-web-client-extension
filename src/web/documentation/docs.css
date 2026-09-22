@@ -1,0 +1,443 @@
+/* Dokumentacja: pages and search on the left, the page on the right; on a phone contents behind a button. */
+
+.docs-window-body {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.doc {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  color: var(--popup-text);
+  font-size: 14px;
+  line-height: 1.35;
+  outline: none;
+}
+.doc button,
+.doc input {
+  font: inherit;
+  line-height: normal; /* one-line controls: see .popup-btn--control */
+  color: inherit;
+}
+
+.doc-grow { flex: 1; min-width: 0; }
+.doc-muted { color: var(--popup-text-dim); }
+.doc-dim { color: var(--popup-text-subtle); }
+.doc-cap {
+  display: block;
+  padding: 12px 10px 4px;
+  color: var(--popup-text-dim);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.doc-split {
+  display: grid;
+  flex: 1;
+  grid-template-columns: 270px minmax(0, 1fr);
+  min-height: 0;
+}
+
+/* ── contents ─────────────────────────────────────────────────────────── */
+
+.doc-nav {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-right: 1px solid var(--popup-border);
+  background: var(--popup-section-bg);
+}
+.doc-nav__search {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 12px;
+  border-bottom: 1px solid var(--popup-border);
+}
+/* The assistant (/pomoc): for what the pages do not say. */
+.doc-ask { justify-content: center; gap: 7px; height: 32px; color: var(--popup-accent); }
+.doc-ask > svg { flex-shrink: 0; }
+.doc-nav__list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 4px 8px 12px;
+}
+/* Groups apart, their captions smaller and fainter than the pages under them. */
+.doc-nav__group + .doc-nav__group {
+  margin-top: 10px;
+  border-top: 1px solid var(--popup-border-subtle, var(--popup-border));
+}
+.doc-nav__group > .doc-cap {
+  padding: 14px 10px 6px;
+  color: var(--popup-text-dimmer);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+.doc-nav__page {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--popup-text-subtle);
+  text-align: left;
+  cursor: pointer;
+}
+.doc-nav__page:hover { background: var(--popup-hover-bg); color: var(--popup-text); }
+.doc-nav__page.is-active {
+  background: var(--popup-accent-dim-bg);
+  color: var(--popup-text-bright);
+  font-weight: 600;
+}
+.doc-nav__sub {
+  display: flex;
+  flex-direction: column;
+  margin: 2px 0 6px 12px;
+  padding-left: 10px;
+  border-left: 1px solid var(--popup-border);
+}
+.doc-nav__sub > button {
+  min-height: 28px;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--popup-text-dim);
+  font-size: 13px;
+  line-height: 1.25;
+  text-align: left;
+  cursor: pointer;
+}
+.doc-nav__sub > button:hover { color: var(--popup-text); }
+.doc-nav__sub > button.is-active { color: var(--popup-accent); font-weight: 600; }
+.doc-nav__none { display: block; padding: 4px 10px; }
+.doc-count {
+  flex-shrink: 0;
+  min-width: 22px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--popup-control-bg);
+  color: var(--popup-text-subtle);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 18px;
+  text-align: center;
+}
+
+.doc-search {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  height: 34px;
+  margin: 0;
+  padding: 0 4px 0 9px;
+  border: 1px solid var(--popup-border);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--popup-text-dim);
+  cursor: text;
+}
+.doc-search:focus-within { border-color: var(--popup-accent); box-shadow: 0 0 0 3px var(--popup-accent-border); }
+/* Past the global text-input look: the box around it is the field. */
+.doc-search input[type="text"],
+.doc-search input[type="text"]:focus {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  outline: none;
+  box-shadow: none;
+  background: transparent;
+  color: var(--popup-text);
+}
+.doc-search__clear {
+  display: inline-flex;
+  padding: 6px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--popup-text-dim);
+  cursor: pointer;
+}
+.doc-kbd {
+  margin-right: 4px;
+  padding: 1px 5px;
+  border: 1px solid var(--popup-border);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  color: var(--popup-text-subtle);
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 10.5px;
+}
+
+/* ── page ─────────────────────────────────────────────────────────────── */
+
+.doc-main {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 24px 36px 48px;
+}
+.doc-page,
+.doc-results {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  max-width: 900px;
+}
+.doc-crumb { color: var(--popup-text-dim); font-size: 12.5px; }
+.doc-head { display: flex; flex-direction: column; gap: 6px; max-width: 760px; }
+.doc-head h1,
+.doc-results__head h1 {
+  margin: 0;
+  color: var(--popup-text-bright);
+  font-size: 26px;
+  font-weight: 600;
+}
+.doc-lead { margin: 0; color: var(--popup-text-subtle); font-size: 15px; }
+.doc-sec { display: flex; flex-direction: column; gap: 10px; }
+.doc-sec h2 {
+  margin: 6px 0 0;
+  color: var(--popup-text-bright);
+  font-size: 17px;
+  font-weight: 600;
+}
+.doc-h3 {
+  margin: 4px 0 0;
+  color: var(--popup-text);
+  font-size: 14.5px;
+  font-weight: 600;
+}
+
+.doc-cmds {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--popup-border);
+  border-radius: 8px;
+}
+.doc-cmd {
+  display: grid;
+  grid-template-columns: 190px minmax(0, 1fr) 76px;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 12px;
+}
+.doc-cmd + .doc-cmd { border-top: 1px solid var(--popup-border); }
+.doc-cmd:hover { background: var(--popup-hover-bg); }
+.doc-cmd--text { display: block; }
+.doc-cmd__desc { color: var(--popup-text-subtle); font-size: 13.5px; line-height: 1.45; }
+.doc-cmd__act { justify-self: end; }
+.doc-token {
+  display: inline-block;
+  max-width: 100%;
+  padding: 2px 7px;
+  border: 1px solid var(--popup-border);
+  border-radius: 5px;
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--popup-accent);
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 12.5px;
+  line-height: 18px;
+  overflow-wrap: anywhere;
+}
+.doc-token i { color: var(--popup-text-dim); }
+
+.doc-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 26px;
+  padding: 0 9px;
+  border: 1px solid var(--popup-border-strong);
+  border-radius: 6px;
+  background: var(--popup-control-bg);
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.doc-btn:hover { background: var(--popup-control-hover-bg); }
+/* Wstaw shows on the row under the mouse; always on touch. */
+.doc-insert { opacity: 0; }
+.doc-cmd:hover .doc-insert,
+.doc-insert:focus-visible { opacity: 1; }
+@media (pointer: coarse) {
+  .doc-insert { opacity: 1; }
+}
+
+.doc-link {
+  padding: 0 6px;
+  border: 0;
+  background: transparent;
+  color: var(--popup-accent);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.doc-link:hover { text-decoration: underline; }
+
+.doc-tip {
+  display: flex;
+  gap: 10px;
+  padding: 10px 14px;
+  border: 1px solid rgba(98, 184, 190, 0.35);
+  border-radius: 8px;
+  background: rgba(98, 184, 190, 0.08);
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+.doc-tip > svg { flex-shrink: 0; margin-top: 2px; color: #62b8be; }
+.doc-tip__body { color: var(--popup-text-subtle); }
+.doc-tip__body > :first-child { margin-top: 0; }
+.doc-tip__body > :last-child { margin-bottom: 0; }
+.doc-tip__body strong { color: var(--popup-text); }
+.doc-cmd--text .doc-tip { margin: -2px 0; }
+
+.doc-text { color: var(--popup-text-subtle); line-height: 1.5; }
+.doc-text > :first-child { margin-top: 0; }
+.doc-text > :last-child { margin-bottom: 0; }
+.doc-text ul,
+.doc-text ol { margin: 0; padding-left: 1.4rem; }
+.doc-sec > .doc-text + .doc-text { margin-top: -6px; }
+.doc-text strong { color: var(--popup-text); }
+.doc-text table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.doc-text th,
+.doc-text td { padding: 6px 10px; border: 1px solid var(--popup-border); text-align: left; vertical-align: top; }
+.doc-text th { color: var(--popup-text-dim); font-size: 12px; font-weight: 600; }
+.doc code,
+.doc-tip code {
+  padding: 0 4px;
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.3);
+  color: var(--popup-text);
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 12px;
+}
+.doc pre {
+  margin: 0;
+  padding: 10px 12px;
+  overflow-x: auto;
+  border: 1px solid var(--popup-border);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.3);
+}
+.doc pre code { padding: 0; background: none; }
+.doc mark {
+  padding: 0 1px;
+  border-radius: 2px;
+  background: rgba(217, 191, 98, 0.28);
+  color: var(--popup-text-bright);
+}
+.doc-custom { color: var(--popup-text-subtle); }
+.doc-custom h2 { margin: 18px 0 8px; color: var(--popup-text-bright); font-size: 17px; font-weight: 600; }
+
+/* ── search results ───────────────────────────────────────────────────── */
+
+.doc-results { gap: 20px; }
+.doc-results__head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; }
+.doc-results__head h1 { font-size: 22px; }
+.doc-hits { display: flex; flex-direction: column; gap: 8px; }
+.doc-hits__head { display: flex; align-items: baseline; gap: 8px; }
+.doc-hits__page { font-weight: 600; }
+.doc-empty { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 32px 8px; color: var(--popup-text-dim); text-align: center; }
+
+/* ── phone ────────────────────────────────────────────────────────────── */
+
+.doc-bar {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 6px;
+  height: 52px;
+  padding: 0 4px;
+  border-bottom: 1px solid var(--popup-border);
+  background: var(--popup-section-bg);
+}
+.doc-bar__title {
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.doc-icon-btn {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--popup-text-subtle);
+  cursor: pointer;
+}
+.doc-icon-btn.is-on { color: var(--popup-accent); }
+.doc-chips {
+  display: flex;
+  flex-shrink: 0;
+  gap: 6px;
+  padding: 10px 12px;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--popup-border);
+  scrollbar-width: none;
+}
+.doc-chip {
+  flex-shrink: 0;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--popup-border);
+  border-radius: 999px;
+  background: var(--popup-control-bg);
+  color: var(--popup-text-subtle);
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.doc-chip.is-active { border-color: var(--popup-accent-border); background: var(--popup-accent-dim-bg); color: var(--popup-accent); }
+
+.doc--narrow .doc-nav--sheet { flex: 1; border-right: 0; }
+.doc--narrow .doc-nav__page { min-height: 44px; }
+.doc--narrow .doc-main { padding: 16px 14px 32px; }
+.doc--narrow .doc-crumb { display: none; }
+.doc--narrow .doc-head h1 { font-size: 20px; }
+.doc--narrow .doc-lead { font-size: 14px; }
+/* Each command a card: the command and Wstaw on top, what it does below. */
+.doc--narrow .doc-cmds { gap: 8px; overflow: visible; border: 0; border-radius: 0; }
+.doc--narrow .doc-cmd {
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px 8px;
+  padding: 12px;
+  border: 1px solid var(--popup-border);
+  border-radius: 10px;
+  background: var(--popup-section-bg);
+}
+.doc--narrow .doc-cmd + .doc-cmd { border-top: 1px solid var(--popup-border); }
+.doc--narrow .doc-cmd__desc { grid-column: 1 / -1; grid-row: 2; font-size: 14px; }
+.doc--narrow .doc-cmd__act { grid-column: 2; grid-row: 1; }
+.doc--narrow .doc-insert { height: 36px; opacity: 1; }
+.doc--narrow .doc-cmd__act:empty { display: none; }
+.doc--narrow .doc-search { height: 36px; }
+.doc-nav__search .doc-search { flex: none; }

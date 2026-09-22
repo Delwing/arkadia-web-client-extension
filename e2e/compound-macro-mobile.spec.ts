@@ -23,7 +23,7 @@ test.describe('Mobile buttons compound macro', () => {
         await ensureGameSocket(page);
 
         await openMobileButtonsSettings(page);
-        const soloPreview = page.locator('#mobile-buttons-preview-solo:not(.d-none)');
+        const soloPreview = page.locator('#mobile-buttons-preview-solo:visible');
         await soloPreview.locator('[data-button-id="button-1"]').waitFor({ timeout: 5000 });
 
         // Select button-1 and set macro to compound
@@ -47,7 +47,7 @@ test.describe('Mobile buttons compound macro', () => {
         await ensureGameSocket(page);
 
         const modal = await openMobileButtonsSettings(page);
-        const soloPreview = page.locator('#mobile-buttons-preview-solo:not(.d-none)');
+        const soloPreview = page.locator('#mobile-buttons-preview-solo:visible');
         await soloPreview.locator('[data-button-id="button-1"]').waitFor({ timeout: 5000 });
 
         const button1 = soloPreview.locator('[data-button-id="button-1"]');
@@ -66,7 +66,7 @@ test.describe('Mobile buttons compound macro', () => {
         await expect(page.getByText('Krok 2')).toBeVisible();
 
         // Configure step 1 as command
-        const steps = configPanel.locator('.border.rounded.mb-2.p-2');
+        const steps = configPanel.locator('.macro-step');
         const step1 = steps.nth(0);
         const step1Select = step1.locator('select').first();
         await step1Select.selectOption('command');
@@ -85,7 +85,7 @@ test.describe('Mobile buttons compound macro', () => {
         await labelInput.fill('Combo');
 
         // Close config panel and save
-        const closeButton = configPanel.locator('.btn-close');
+        const closeButton = configPanel.locator('.mobile-button-config__close');
         await closeButton.click();
         await page.locator(SETTINGS_SAVE).click();
         await expect(modal).not.toBeVisible({ timeout: 5000 });
@@ -183,7 +183,7 @@ test.describe('Mobile buttons compound macro', () => {
 
         // Configure a compound button through the UI
         const modal = await openMobileButtonsSettings(page);
-        const soloPreview = page.locator('#mobile-buttons-preview-solo:not(.d-none)');
+        const soloPreview = page.locator('#mobile-buttons-preview-solo:visible');
         await soloPreview.locator('[data-button-id="button-1"]').waitFor({ timeout: 5000 });
 
         const button1 = soloPreview.locator('[data-button-id="button-1"]');
@@ -194,7 +194,7 @@ test.describe('Mobile buttons compound macro', () => {
         await macroSelect.selectOption('compound');
 
         await page.getByText('+ Dodaj krok').click();
-        const steps = configPanel.locator('.border.rounded.mb-2.p-2');
+        const steps = configPanel.locator('.macro-step');
         const step1 = steps.first();
         const step1Select = step1.locator('select').first();
         await step1Select.selectOption('command');
@@ -204,7 +204,7 @@ test.describe('Mobile buttons compound macro', () => {
         const labelInput = configPanel.locator('.mobile-button-label');
         await labelInput.fill('Persist');
 
-        const closeButton = configPanel.locator('.btn-close');
+        const closeButton = configPanel.locator('.mobile-button-config__close');
         await closeButton.click();
         await page.locator(SETTINGS_SAVE).click();
         await expect(modal).not.toBeVisible({ timeout: 5000 });
@@ -220,7 +220,7 @@ test.describe('Mobile buttons compound macro', () => {
 
         // Reopen settings and verify compound config
         await openMobileButtonsSettings(page);
-        const soloPreviewReload = page.locator('#mobile-buttons-preview-solo:not(.d-none)');
+        const soloPreviewReload = page.locator('#mobile-buttons-preview-solo:visible');
         await soloPreviewReload.locator('[data-button-id="button-1"]').waitFor({ timeout: 5000 });
 
         const button1Reload = soloPreviewReload.locator('[data-button-id="button-1"]');
@@ -240,7 +240,7 @@ test.describe('Mobile buttons compound macro', () => {
         await ensureGameSocket(page);
 
         await openMobileButtonsSettings(page);
-        const soloPreview = page.locator('#mobile-buttons-preview-solo:not(.d-none)');
+        const soloPreview = page.locator('#mobile-buttons-preview-solo:visible');
         await soloPreview.locator('[data-button-id="button-1"]').waitFor({ timeout: 5000 });
 
         const button1 = soloPreview.locator('[data-button-id="button-1"]');
@@ -254,7 +254,7 @@ test.describe('Mobile buttons compound macro', () => {
         await page.getByText('+ Dodaj krok').click();
         await page.getByText('+ Dodaj krok').click();
 
-        const steps = configPanel.locator('.border.rounded.mb-2.p-2');
+        const steps = configPanel.locator('.macro-step');
 
         // Configure step 1 as command "first"
         const step1Select = steps.nth(0).locator('select').first();
@@ -283,7 +283,7 @@ test.describe('Mobile buttons compound macro', () => {
         await ensureGameSocket(page);
 
         await openMobileButtonsSettings(page);
-        const soloPreview = page.locator('#mobile-buttons-preview-solo:not(.d-none)');
+        const soloPreview = page.locator('#mobile-buttons-preview-solo:visible');
         await soloPreview.locator('[data-button-id="button-1"]').waitFor({ timeout: 5000 });
 
         const button1 = soloPreview.locator('[data-button-id="button-1"]');
@@ -299,8 +299,8 @@ test.describe('Mobile buttons compound macro', () => {
         await expect(page.getByText('Krok 2')).toBeVisible();
 
         // Delete step 1
-        const steps = configPanel.locator('.border.rounded.mb-2.p-2');
-        const deleteButton = steps.nth(0).getByRole('button', { name: 'X' });
+        const steps = configPanel.locator('.macro-step');
+        const deleteButton = steps.nth(0).getByRole('button', { name: 'Usuń krok' });
         await deleteButton.click();
 
         // Only one step should remain
@@ -314,7 +314,7 @@ test.describe('Mobile buttons compound macro', () => {
         await ensureGameSocket(page);
 
         await openMobileButtonsSettings(page);
-        const soloPreview = page.locator('#mobile-buttons-preview-solo:not(.d-none)');
+        const soloPreview = page.locator('#mobile-buttons-preview-solo:visible');
         await soloPreview.locator('[data-button-id="button-1"]').waitFor({ timeout: 5000 });
 
         const button1 = soloPreview.locator('[data-button-id="button-1"]');
@@ -326,7 +326,7 @@ test.describe('Mobile buttons compound macro', () => {
 
         await page.getByText('+ Dodaj krok').click();
 
-        const steps = configPanel.locator('.border.rounded.mb-2.p-2');
+        const steps = configPanel.locator('.macro-step');
         const stepSelect = steps.first().locator('select').first();
 
         // Check that 'compound' and 'empty' options are not available

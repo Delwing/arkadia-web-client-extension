@@ -9,6 +9,7 @@ export type {
     MapHighlightShape,
     PathFindingAlgorithm,
     ColorTheme,
+    FooterButtonConfig,
     FooterComponentConfig,
     UiSettings,
 } from '@shared/uiSettingsTypes';
@@ -49,10 +50,12 @@ export const defaultChromeSettings: ChromeSettings = {
     objectsFontSize: 0.6,
     showButtons: true,
     showVoiceButton: true,
+    tabCompletionHint: true,
     mapHeight: typeof window !== 'undefined' && window.innerWidth < 768 ? 25 : 30,
     mapPosition: 'top-overlay',
-    footerMode: 0,
+    footerMode: 4, // 4 = Kafelki (pips); 0-3 = Liczbowy, Pasek, Pasek jednolity, Pasek graficzny
     footerComponents: defaultFooterComponents,
+    footerButtons: [],
     mobileFooterCompact: true,
     mobileFooterExpand: 'toggle',
     keepMultibindsVisible: false,
@@ -61,6 +64,12 @@ export const defaultChromeSettings: ChromeSettings = {
     objectListBackgroundAlpha: 0.4,
     alwaysVisibleBars: [],
     barOrder: ['hp', 'fatigue', 'stuffed', 'encumbrance', 'soaked', 'mana', 'improve', 'form', 'intox', 'headache', 'panic'],
+    ttsEnabled: true,
+    ttsVoice: '',
+    ttsRate: 1,
+    ttsPitch: 1,
+    ttsVolume: 1,
+    ttsInterrupt: false,
 };
 
 // The full stock default is composed from the concern slices — one source of

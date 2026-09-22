@@ -19,7 +19,7 @@ async function login(page: Page): Promise<void> {
 async function openLogs(page: Page): Promise<void> {
     await page.click('#menu-button');
     await page.click('#logs-button');
-    await page.waitForSelector('#logs-modal.show', {timeout: 5000});
+    await page.waitForSelector('#logs-modal:not([hidden])', {timeout: 5000});
     // The browser mounts with the modal and reads every session before it can
     // render anything.
     await expect(page.locator('.lv')).toBeVisible();

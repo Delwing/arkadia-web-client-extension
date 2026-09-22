@@ -1,6 +1,6 @@
 import { useEffect, useState, ChangeEvent, useRef } from "react";
-import { Button, Form } from "react-bootstrap";
-import { Trash2, Pencil, Zap } from "lucide-react";
+import { Pencil, Zap } from "lucide-react";
+import { Button, DeleteButton, Input } from "@web-ui/primitives/index.ts";
 import { globalStorage } from "@modules/core/storage";
 import { CustomSound, getCustomSounds, saveCustomSounds } from "@modules/core/customSounds";
 import {
@@ -20,7 +20,7 @@ import {
     type ConditionOperator,
 } from "@client/scripts/userTriggers";
 
-export type BuiltInMacroType = 'uppercase' | 'color' | 'replace' | 'beep' | 'mute' | 'unmute' | 'command' | 'slowBlink' | 'rapidBlink' | 'dim' | 'functionalBind' | 'wrap' | 'notify' | 'push';
+export type BuiltInMacroType = 'uppercase' | 'color' | 'replace' | 'beep' | 'mute' | 'unmute' | 'command' | 'slowBlink' | 'rapidBlink' | 'dim' | 'functionalBind' | 'wrap' | 'notify' | 'push' | 'speak';
 
 export type DimEasing = 'linear' | 'ease' | 'ease-in' | 'ease-out' | 'ease-in-out';
 
@@ -31,7 +31,7 @@ export interface UserMacro {
     command?: string;
     soundKey?: string;
     label?: string;
-    message?: string;  // notification text (notify); empty falls back to matched text for pattern triggers
+    message?: string;  // notify/push/speak text; empty falls back to matched text for pattern triggers
     /** push only: send even inside the rate-limit window. Mirrors the field on
      *  `UserMacro` in @client/scripts/userTriggers, which this duplicates. */
     bypassCooldown?: boolean;
@@ -268,59 +268,52 @@ function UserTriggers() {
     }
 
     function remove(idx: number) {
-        if (!confirm('Delete trigger?')) return;
+        if (!confirm('Czy na pewno chcesz usunąć ten trigger?')) return;
         const updated = triggers.filter((_, i) => i !== idx);
         saveList(updated);
     }
 
-    function macrosToText(list: UserMacro[]): string {
-        return list
-            .map(m => {
-                switch (m.type) {
-                    case 'uppercase':
-                        return 'uppercase';
-                    case 'color':
-                        return m.color ? `color ${m.color}` : 'color';
-                    case 'replace':
-                        return m.to ? `replace ${m.to}` : 'replace';
-                    case 'beep': {
-                        const key = m.soundKey || 'beep';
-                        if (key === 'beep') {
-                            return 'sound beep';
-                        }
-                        const sound = customSounds.find(s => s.key === key);
-                        return sound ? `sound ${sound.name}` : 'sound';
-                    }
-                    case 'mute':
-                        return 'mute';
-                    case 'unmute':
-                        return 'unmute';
-                    case 'command':
-                        return m.command ? `command ${m.command}` : 'command';
-                    case 'slowBlink':
-                        return 'slow blink';
-                    case 'rapidBlink':
-                        return 'rapid blink';
-                    case 'functionalBind':
-                        return m.label && m.command ? `bind [${m.label}] → ${m.command}` : 'functional bind';
-                    case 'notify':
-                        return m.message ? `notify ${m.message}` : 'notify';
-                    case 'push': {
-                        const label = m.message ? `push ${m.message}` : 'push';
-                        return m.bypassCooldown ? `${label} (zawsze)` : label;
-                    }
-                    case 'wrap': {
-                        const parts: string[] = [];
-                        if (m.wrapPrefix) parts.push(`"${m.wrapPrefix}" +`);
-                        parts.push(m.wrapScope === 'line' ? 'linia' : 'dopasowanie');
-                        if (m.wrapSuffix) parts.push(`+ "${m.wrapSuffix}"`);
-                        return `wrap ${parts.join(' ')}`;
-                    }
-                    default:
-                        return m.type;
-                }
-            })
-            .join(', ');
+    /** One chip per action, named as in the editor's action list. */
+    function macroChip(m: UserMacro, i: number) {
+        let text: string;
+        let swatch: string | undefined;
+        switch (m.type) {
+            case 'uppercase': text = 'Wielkie litery'; break;
+            case 'color': text = 'Koloruj'; swatch = m.color; break;
+            case 'replace': text = m.to ? `Zamien: ${m.to}` : 'Zamien'; break;
+            case 'beep': {
+                const key = m.soundKey || 'beep';
+                const sound = key === 'beep' ? undefined : customSounds.find(s => s.key === key);
+                text = key === 'beep' ? 'Dzwiek' : `Dzwiek: ${sound?.name ?? key}`;
+                break;
+            }
+            case 'mute': text = 'Wycisz dzwieki'; break;
+            case 'unmute': text = 'Wlacz dzwieki'; break;
+            case 'command': text = m.command ? `Komenda: ${m.command}` : 'Komenda'; break;
+            case 'slowBlink': text = 'Wolne miganie'; break;
+            case 'rapidBlink': text = 'Szybkie miganie'; break;
+            case 'dim': text = 'Pulsowanie'; break;
+            case 'functionalBind': text = m.label && m.command ? `Bind [${m.label}]: ${m.command}` : 'Funkcyjny bind'; break;
+            case 'notify': text = m.message ? `Powiadomienie: ${m.message}` : 'Powiadomienie'; break;
+            case 'speak': text = m.message ? `Czytaj: ${m.message}` : 'Czytaj na glos'; break;
+            case 'push': text = (m.message ? `Na telefon: ${m.message}` : 'Na telefon') + (m.bypassCooldown ? ' (zawsze)' : ''); break;
+            case 'wrap': {
+                const parts: string[] = [];
+                if (m.wrapPrefix) parts.push(`"${m.wrapPrefix}" +`);
+                parts.push(m.wrapScope === 'line' ? 'linia' : 'dopasowanie');
+                if (m.wrapSuffix) parts.push(`+ "${m.wrapSuffix}"`);
+                text = `Otocz: ${parts.join(' ')}`;
+                break;
+            }
+            default:
+                text = pluginMacros.find(pm => pm.id === m.type)?.label ?? m.type;
+        }
+        return (
+            <span key={i} className="trigger-chip" title={text}>
+                {swatch && <span className="trigger-chip__swatch" style={{ backgroundColor: swatch }} />}
+                {text}
+            </span>
+        );
     }
 
     const filteredTriggers = triggers
@@ -339,65 +332,64 @@ function UserTriggers() {
         });
 
     return (
-        <div className="m-2 d-flex flex-column gap-2">
-            <input
-                ref={fileInputRef}
-                type="file"
-                accept="audio/*"
-                style={{ display: 'none' }}
-                onChange={handleSoundFileChange}
-            />
-            <div className="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 w-100">
-                <Form.Control
-                    type="text"
-                    size="sm"
+        <div className="alias-manager">
+            <input ref={fileInputRef} type="file" accept="audio/*" hidden onChange={handleSoundFileChange} />
+            <div className="alias-manager__toolbar">
+                <Input
+                    type="search"
                     placeholder="Filtruj"
                     value={filter}
                     onChange={(e: ChangeEvent<HTMLInputElement>) => setFilter(e.target.value)}
-                    className="flex-grow-1"
-                    style={{ minWidth: 0 }}
                 />
-                <Button size="sm" className="w-100 w-md-auto text-nowrap" onClick={openNew}>Dodaj trigger</Button>
+                <Button size="sm" variant="solid" onClick={openNew}>Dodaj trigger</Button>
             </div>
 
-            <div className="d-flex flex-column gap-2">
-                {filteredTriggers.map(t => (
-                    <div key={t.idx} className="alias-card">
-                        <div className="alias-card-body">
-                            <div className="alias-entry">
-                                {t.type === 'event' && t.event ? (
-                                    <>
-                                        <Zap size={16} className="text-warning" style={{ flexShrink: 0 }} />
-                                        <code className="alias-pattern">
-                                            {SUPPORTED_EVENTS.find(e => e.id === t.event)?.label || t.event}
-                                        </code>
-                                        {t.conditions?.some(c => c.arg) && (
-                                            <span className="badge bg-secondary ms-1 trigger-conditions">
-                                                gdy {conditionsToText(t.conditions)}
+            {triggers.length === 0 ? (
+                <p className="popup-field__hint alias-manager__empty">
+                    Brak triggerów. Trigger reaguje na linię tekstu z gry albo na zdarzenie i wykonuje akcje: koloruje, wysyła komendę, gra dźwięk…
+                </p>
+            ) : filteredTriggers.length === 0 ? (
+                <p className="popup-field__hint alias-manager__empty">Brak triggerów pasujących do filtra.</p>
+            ) : (
+                <div className="alias-list">
+                    {filteredTriggers.map(t => (
+                        <div key={t.idx} className="alias-card">
+                            <div className="alias-card-body">
+                                <div className="alias-entry">
+                                    {t.type === 'event' && t.event ? (
+                                        <>
+                                            <Zap size={14} className="trigger-event-icon" />
+                                            <span className="trigger-event-name">
+                                                {SUPPORTED_EVENTS.find(e => e.id === t.event)?.label || t.event}
                                             </span>
-                                        )}
-                                    </>
-                                ) : (
-                                    <>
-                                        <code className="alias-pattern">{t.pattern}</code>
-                                        {t.flags && <code className="alias-flags text-muted ms-1">/{t.flags}</code>}
-                                        {t.gmcpMsgType && <span className="badge bg-secondary ms-1">{t.gmcpMsgType}</span>}
-                                    </>
-                                )}
+                                            {t.conditions?.some(c => c.arg) && (
+                                                <span className="trigger-conditions">
+                                                    gdy {conditionsToText(t.conditions)}
+                                                </span>
+                                            )}
+                                        </>
+                                    ) : (
+                                        <>
+                                            <code className="alias-pattern">{t.pattern}</code>
+                                            {t.flags && <code className="alias-flags">/{t.flags}</code>}
+                                            {t.gmcpMsgType && <span className="alias-override-char">{t.gmcpMsgType}</span>}
+                                        </>
+                                    )}
+                                </div>
                                 {t.macros?.length ? (
-                                    <span className="alias-entry-command">
-                                        <code className="alias-command">{macrosToText(t.macros)}</code>
-                                    </span>
+                                    <div className="trigger-chips">{t.macros.map(macroChip)}</div>
                                 ) : null}
                             </div>
+                            <div className="alias-card-actions">
+                                <Button size="sm" variant="ghost" className="popup-btn--icon" title="Edytuj" onClick={() => openEdit(t.idx)}>
+                                    <Pencil size={15} strokeWidth={1.75} />
+                                </Button>
+                                <DeleteButton onClick={() => remove(t.idx)} />
+                            </div>
                         </div>
-                        <div className="alias-card-actions">
-                            <Button size="sm" variant="secondary" onClick={() => openEdit(t.idx)}><Pencil size={16} /></Button>
-                            <Button size="sm" variant="danger" onClick={() => remove(t.idx)}><Trash2 size={16} /></Button>
-                        </div>
-                    </div>
-                ))}
-            </div>
+                    ))}
+                </div>
+            )}
 
             <TriggerEditModal
                 show={showModal}

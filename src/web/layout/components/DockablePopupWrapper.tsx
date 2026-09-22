@@ -4,6 +4,7 @@ import { useDockablePopup } from '../hooks/useDockablePopup';
 import { PopupType } from '../types';
 import { refreshPopupContent } from '../popupRegistry';
 import { windowManager } from '../WindowManager';
+import type { WindowSettingField } from '../windowSettings';
 
 export interface DockablePopupWrapperProps {
   popupId: string;
@@ -20,6 +21,8 @@ export interface DockablePopupWrapperProps {
   resetCounter?: number;
   children: ReactNode;
   headerActions?: ReactNode;
+  /** The window's own fields in its settings cog. Pass a stable (module-level) array. */
+  settingsFields?: WindowSettingField[];
   minWidth?: number;
   minHeight?: number;
   initialWidth?: number;
@@ -51,6 +54,7 @@ export function DockablePopupWrapper({
   resetCounter = 0,
   children,
   headerActions,
+  settingsFields,
   minWidth = 300,
   minHeight = 200,
   initialWidth,
@@ -97,6 +101,7 @@ export function DockablePopupWrapper({
     initialHeight,
     renderContent,
     headerActions,
+    settingsFields,
     panelClassName: className,
     bodyClassName,
     disableLayoutManagement,

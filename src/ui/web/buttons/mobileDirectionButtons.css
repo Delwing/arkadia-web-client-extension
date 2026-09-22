@@ -48,6 +48,7 @@
   min-height: 0;
   padding: 0;
   font-size: 14px;
+  line-height: normal; /* centres the glyph exactly in the fixed box */
   border: 1px solid #a0d0e0;
   border-radius: 4px;
   background-color: #6EB4DC;

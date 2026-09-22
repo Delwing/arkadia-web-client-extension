@@ -87,7 +87,7 @@ test('Package helper highlights NPCs and guides selected deliveries', async ({pa
 
     const status = page.locator('#package-status');
     await expect(status, 'should reveal package status after collection').toBeVisible();
-    await expect(status, 'should show selected NPC in package status').toHaveText('📦: Borgaf Kriegmann');
+    await expect(status.locator('.chip__val'), 'should show selected NPC in package status').toHaveText('Borgaf Kriegmann');
 });
 
 test('Package helper respects disabled setting and avoids assisting deliveries', async ({page}) => {

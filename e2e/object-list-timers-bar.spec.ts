@@ -50,13 +50,13 @@ async function gotoWithLayout(page: Page): Promise<void> {
 
 // Open the hamburger menu inside the object list header.
 async function openObjectListMenu(page: Page): Promise<void> {
-    // The hamburger toggle is .map-header-menu__toggle inside the docked panel header.
+    // The ☰ toggle (title "Ustawienia listy") sits in the docked panel header.
     // The objectList docked panel has data-panel-id="objectList".
     const toggle = page
         .locator('[data-panel-id="objectList"]')
-        .locator('.map-header-menu__toggle');
+        .getByTitle('Ustawienia listy');
     await toggle.waitFor({state: 'visible'});
-    const dropdown = page.locator('.map-header-menu__dropdown');
+    const dropdown = page.locator('.popup-menu');
     // Retry the click until the dropdown opens. Right after a page reload the
     // click can land before the toggle's handler is bound, silently doing nothing.
     await expect(async () => {
@@ -69,7 +69,7 @@ async function openObjectListMenu(page: Page): Promise<void> {
 
 // Click a checkbox menu item by its label text. The menu closes after clicking.
 async function clickMenuToggle(page: Page, label: string): Promise<void> {
-    const item = page.locator('.map-header-menu__dropdown').getByText(label);
+    const item = page.locator('.popup-menu').getByText(label);
     await item.click();
 }
 
@@ -93,7 +93,7 @@ test.describe('Object list timers bar', () => {
             await gotoWithLayout(page);
             await openObjectListMenu(page);
 
-            const dropdown = page.locator('.map-header-menu__dropdown');
+            const dropdown = page.locator('.popup-menu');
             await expect(dropdown.getByText('Stan broni'), 'should show "Stan broni" toggle').toBeVisible();
             await expect(dropdown.getByText('Timer zaslony'), 'should show "Timer zaslony" toggle').toBeVisible();
             await expect(dropdown.getByText('Timer rozkazu'), 'should show "Timer rozkazu" toggle').toBeVisible();
@@ -104,10 +104,9 @@ test.describe('Object list timers bar', () => {
             await gotoWithLayout(page);
             await openObjectListMenu(page);
 
-            const dropdown = page.locator('.map-header-menu__dropdown');
-            // Each toggle item has a span with class map-header-menu__checkbox.
-            // When checked it gains map-header-menu__checkbox--checked.
-            const checkboxes = dropdown.locator('.map-header-menu__checkbox');
+            const dropdown = page.locator('.popup-menu');
+            // Each toggle is a .popup-menu__item with a check box; checked items carry .is-on.
+            const checkboxes = dropdown.locator('.popup-menu__item:has(.popup-menu__check)');
             const count = await checkboxes.count();
             expect(count, 'should have 4 checkboxes').toBe(4);
 
@@ -115,7 +114,7 @@ test.describe('Object list timers bar', () => {
                 await expect(
                     checkboxes.nth(i),
                     `checkbox ${i} should not be checked initially`,
-                ).not.toHaveClass(/map-header-menu__checkbox--checked/);
+                ).not.toHaveClass(/\bis-on\b/);
             }
         });
 
@@ -123,20 +122,18 @@ test.describe('Object list timers bar', () => {
             await gotoWithLayout(page);
             await openObjectListMenu(page);
 
-            const dropdown = page.locator('.map-header-menu__dropdown');
-            const weaponItem = dropdown.locator('.map-header-menu__item', {hasText: 'Stan broni'});
-            const weaponCheckbox = weaponItem.locator('.map-header-menu__checkbox');
+            const dropdown = page.locator('.popup-menu');
+            const weaponItem = dropdown.locator('.popup-menu__item', {hasText: 'Stan broni'});
 
-            await expect(weaponCheckbox, 'should be unchecked initially').not.toHaveClass(/map-header-menu__checkbox--checked/);
+            await expect(weaponItem, 'should be unchecked initially').not.toHaveClass(/\bis-on\b/);
 
             // Click the item to enable it (menu closes on click).
             await weaponItem.click();
 
             // Re-open to verify it persisted.
             await openObjectListMenu(page);
-            const weaponItem2 = page.locator('.map-header-menu__dropdown').locator('.map-header-menu__item', {hasText: 'Stan broni'});
-            const weaponCheckbox2 = weaponItem2.locator('.map-header-menu__checkbox');
-            await expect(weaponCheckbox2, 'should be checked after toggle').toHaveClass(/map-header-menu__checkbox--checked/);
+            const weaponItem2 = page.locator('.popup-menu').locator('.popup-menu__item', {hasText: 'Stan broni'});
+            await expect(weaponItem2, 'should be checked after toggle').toHaveClass(/\bis-on\b/);
         });
 
         test('each toggle persists its setting across a page reload', async ({page}) => {
@@ -160,10 +157,9 @@ test.describe('Object list timers bar', () => {
 
             // The menu should still show cover timer as checked after reload.
             await openObjectListMenu(page);
-            const dropdown = page.locator('.map-header-menu__dropdown');
-            const coverItem = dropdown.locator('.map-header-menu__item', {hasText: 'Timer zaslony'});
-            const coverCheckbox = coverItem.locator('.map-header-menu__checkbox');
-            await expect(coverCheckbox, 'cover timer toggle should be checked after reload').toHaveClass(/map-header-menu__checkbox--checked/);
+            const dropdown = page.locator('.popup-menu');
+            const coverItem = dropdown.locator('.popup-menu__item', {hasText: 'Timer zaslony'});
+            await expect(coverItem, 'cover timer toggle should be checked after reload').toHaveClass(/\bis-on\b/);
         });
     });
 

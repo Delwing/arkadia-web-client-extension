@@ -1,0 +1,33 @@
+/* The 256-colour grid in the "Paleta kolorów" preview (PalettePreviewDialog). */
+.palette-preview__tabs {
+  margin-bottom: 8px;
+}
+
+.palette-preview {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(38px, 1fr));
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.palette-preview__cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.palette-preview__swatch {
+  width: 100%;
+  height: 22px;
+  border: 1px solid var(--popup-border-subtle);
+  border-radius: 4px;
+}
+
+.palette-preview__code {
+  color: var(--popup-text-subtle);
+  font-family: var(--output-font-family);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}

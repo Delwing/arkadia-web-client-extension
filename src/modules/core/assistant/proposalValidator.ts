@@ -830,11 +830,11 @@ export function validateAlias(input: Record<string, unknown>): ValidationResult<
 
 const BUILT_IN_MACRO_TYPES: readonly BuiltInMacroType[] = [
     'uppercase', 'color', 'replace', 'beep', 'mute', 'unmute', 'command',
-    'slowBlink', 'rapidBlink', 'dim', 'functionalBind', 'wrap', 'notify', 'push',
+    'slowBlink', 'rapidBlink', 'dim', 'functionalBind', 'wrap', 'notify', 'push', 'speak',
 ];
 
 /** Macros `applyEventMacros` actually handles; the rest need text context. */
-const EVENT_SAFE_MACRO_TYPES: readonly string[] = ['beep', 'mute', 'unmute', 'command', 'functionalBind', 'notify', 'push'];
+const EVENT_SAFE_MACRO_TYPES: readonly string[] = ['beep', 'mute', 'unmute', 'command', 'functionalBind', 'notify', 'push', 'speak'];
 
 const DIM_EASINGS = ['linear', 'ease-in', 'ease-out', 'ease-in-out'];
 
@@ -953,7 +953,8 @@ function validateMacro(raw: unknown, index: number, triggerType: 'pattern' | 'ev
             }
             break;
         }
-        case 'notify': {
+        case 'notify':
+        case 'speak': {
             if (raw.message !== undefined) {
                 if (typeof raw.message !== 'string') {
                     issues.push(err('wrongValueType', `${path}.message`, 'Pole "message" musi byc tekstem.'));
@@ -964,7 +965,7 @@ function validateMacro(raw: unknown, index: number, triggerType: 'pattern' | 'ev
                 issues.push(err(
                     'missingMacroMessage',
                     `${path}.message`,
-                    'Makro "notify" w triggerze zdarzeniowym wymaga pola "message" - nie ma linii tekstu, z ktorej mozna wziac tresc.',
+                    `Makro "${type}" w triggerze zdarzeniowym wymaga pola "message" - nie ma linii tekstu, z ktorej mozna wziac tresc.`,
                 ));
             }
             break;

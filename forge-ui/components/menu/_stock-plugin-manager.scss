@@ -5,7 +5,7 @@
 //  are not Bootstrap, they live in stock global `src/web/style.css`, and forge
 //  cannot load that sheet globally. This partial carries just the
 //  `.plugin-*` block and is @imported INSIDE the `.forge-menu-modal { … }`
-//  block of forge-modal-bootstrap.scss, so every selector compiles prefixed.
+//  block of forge-menu-stock.scss, so every selector compiles prefixed.
 //  All colours come through the `--popup-*` vars floatingPopup.css defines on
 //  `.forge-menu-modal`, so the copy stays faithful and recolours for free.
 //  Keep it in sync with the "Plugin manager (Skrypty)" block in style.css.

@@ -1,6 +1,7 @@
 import {useCallback, useEffect, useState} from 'react';
 import eventBus, {type ClientEvents} from '@modules/core/eventBus';
 import {getPopupLockedState, getPopupPinnedState, shouldPopupAutoOpen} from '../layout/utils/layoutStorage';
+import {windowManager} from '../layout/WindowManager';
 
 export interface UsePopupOptions<K extends keyof ClientEvents = keyof ClientEvents> {
     /** Event name that triggers opening the popup */
@@ -112,8 +113,12 @@ export function usePopup<K extends keyof ClientEvents = keyof ClientEvents>(
         return eventBus.on(options.openEvent, ((data: ClientEvents[K]) => {
             options.onOpen?.(data);
             setIsOpen(true);
+            // Already open, it may sit behind another window or in a tab
+            // that is not showing: asking again brings it forward.
+            windowManager.setActiveTab(popupId);
+            windowManager.bringToFront(popupId);
         }) as any);
-    }, [options?.openEvent, options?.onOpen]);
+    }, [options?.openEvent, options?.onOpen, popupId]);
 
     // Listen for layout state imports (settings import from file/cloud/device)
     // and re-evaluate auto-open state since the stored layout may have changed

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Alert, Button, Form, Card, Badge, ListGroup, Spinner, InputGroup } from "react-bootstrap";
+import { Button, DeleteButton, Input, Notice } from "@web-ui/primitives/index.ts";
 import {
     getDeviceInfo,
     setDeviceCustomName,
@@ -369,8 +369,8 @@ function DeviceManagementTab() {
     };
 
     return (
-        <div className="d-flex flex-column gap-3">
-            <p className="mb-0">
+        <div className="popup-stack">
+            <p className="popup-field__hint">
                 Informacje o tym urzadzeniu. Ustawienia urzadzenia (pozycje okien, konfiguracja przyciskow)
                 sa automatycznie synchronizowane razem z ustawieniami interfejsu.
             </p>
@@ -379,27 +379,23 @@ function DeviceManagementTab() {
             <section className="character-settings-section">
                 <h5 className="character-settings-section-title">To urzadzenie</h5>
                 {deviceInfo && (
-                    <Card className="bg-dark">
-                        <Card.Body>
-                            <div className="d-flex flex-column gap-2">
-                                <div className="d-flex justify-content-between align-items-start">
+                    <div className="device-card">
+                            <div className="popup-stack popup-stack--sm">
+                                <div className="popup-spread popup-spread--top">
                                     <div>
                                         {isEditing ? (
-                                            <div className="d-flex gap-2 align-items-center">
-                                                <Form.Control
-                                                    type="text"
-                                                    size="sm"
+                                            <div className="popup-inline">
+                                                <Input
                                                     value={customName}
                                                     onChange={e => setCustomName(e.target.value)}
                                                     placeholder={deviceInfo.name}
                                                     style={{ maxWidth: "200px" }}
                                                 />
-                                                <Button size="sm" variant="primary" onClick={handleSaveName}>
+                                                <Button variant="solid" size="sm" onClick={handleSaveName}>
                                                     Zapisz
                                                 </Button>
                                                 <Button
                                                     size="sm"
-                                                    variant="outline-secondary"
                                                     onClick={() => {
                                                         setCustomName(deviceInfo.customName || "");
                                                         setIsEditing(false);
@@ -409,12 +405,11 @@ function DeviceManagementTab() {
                                                 </Button>
                                             </div>
                                         ) : (
-                                            <div className="d-flex gap-2 align-items-center">
+                                            <div className="popup-inline">
                                                 <strong>{deviceInfo.customName || deviceInfo.name}</strong>
-                                                <Button
+                                                <Button variant="ghost"
                                                     size="sm"
-                                                    variant="link"
-                                                    className="p-0 text-muted"
+                                                    className="popup-muted"
                                                     onClick={() => setIsEditing(true)}
                                                 >
                                                     Zmien
@@ -422,12 +417,12 @@ function DeviceManagementTab() {
                                             </div>
                                         )}
                                         {deviceInfo.customName && (
-                                            <div className="text-muted small">{deviceInfo.name}</div>
+                                            <div className="popup-muted popup-small">{deviceInfo.name}</div>
                                         )}
                                     </div>
-                                    <Badge bg="primary">Aktywne</Badge>
+                                    <span className="popup-chip popup-chip--accent">Aktywne</span>
                                 </div>
-                                <div className="text-muted small">
+                                <div className="popup-muted popup-small">
                                     <div>ID: {deviceInfo.id.substring(0, 16)}...</div>
                                     <div>Utworzono: {formatDate(deviceInfo.createdAt)}</div>
                                     {deviceInfo.lastSyncedAt && (
@@ -435,8 +430,7 @@ function DeviceManagementTab() {
                                     )}
                                 </div>
                             </div>
-                        </Card.Body>
-                    </Card>
+                        </div>
                 )}
             </section>
 
@@ -444,34 +438,32 @@ function DeviceManagementTab() {
             <section className="character-settings-section">
                 <h5 className="character-settings-section-title">Synchronizacja urzadzen</h5>
                 {!syncGroup ? (
-                    <div className="d-flex flex-column gap-3">
+                    <div className="popup-stack">
                         {/* Cloud sync groups available to join */}
                         {isLoggedIn && cloudSyncGroups.length > 0 && cloudSyncGroups.map(group => (
-                            <Card key={group.id} className="bg-dark border-success">
-                                <Card.Body>
-                                    <div className="d-flex flex-column gap-2">
-                                        <div className="d-flex justify-content-between align-items-start">
+                            <div key={group.id} className="device-card device-card--active">
+                                    <div className="popup-stack popup-stack--sm">
+                                        <div className="popup-spread popup-spread--top">
                                             <div>
                                                 <strong>{group.name}</strong>
-                                                <div className="text-muted small">
+                                                <div className="popup-muted popup-small">
                                                     Grupa z chmury ({group.devices.length} {group.devices.length === 1 ? "urzadzenie" : "urzadzen"})
                                                 </div>
                                             </div>
-                                            <Badge bg="success">W chmurze</Badge>
+                                            <span className="popup-chip popup-chip--success">W chmurze</span>
                                         </div>
-                                        <p className="text-muted small mb-2">
+                                        <div className="popup-muted popup-small">
                                             Dolacz do tej grupy, aby zsynchronizowac ustawienia urzadzenia z innymi urzadzeniami.
-                                        </p>
-                                        <div className="d-flex gap-2">
-                                            <Button
-                                                variant="success"
+                                        </div>
+                                        <div className="popup-inline">
+                                            <Button variant="solid"
                                                 size="sm"
                                                 onClick={() => handleJoinCloudSyncGroup(group)}
                                                 disabled={joiningGroupId === group.id}
                                             >
                                                 {joiningGroupId === group.id ? (
                                                     <>
-                                                        <Spinner size="sm" className="me-1" />
+                                                        <span className="popup-spinner" />
                                                         Dolaczanie...
                                                     </>
                                                 ) : (
@@ -479,15 +471,14 @@ function DeviceManagementTab() {
                                                 )}
                                             </Button>
                                             {group.devices.length === 0 && (
-                                                <Button
-                                                    variant="outline-danger"
+                                                <Button variant="danger"
                                                     size="sm"
                                                     onClick={() => handleDeleteEmptyGroup(group)}
                                                     disabled={deletingGroupId === group.id}
                                                 >
                                                     {deletingGroupId === group.id ? (
                                                         <>
-                                                            <Spinner size="sm" className="me-1" />
+                                                            <span className="popup-spinner" />
                                                             Usuwanie...
                                                         </>
                                                     ) : (
@@ -497,104 +488,95 @@ function DeviceManagementTab() {
                                             )}
                                         </div>
                                     </div>
-                                </Card.Body>
-                            </Card>
+                                </div>
                         ))}
 
                         {/* Loading cloud sync groups */}
                         {isLoggedIn && isLoadingCloudGroups && cloudSyncGroups.length === 0 && (
-                            <Card className="bg-dark">
-                                <Card.Body className="d-flex align-items-center gap-2 text-muted">
-                                    <Spinner size="sm" />
+                            <div className="device-card device-card--muted">
+                                    <span className="popup-spinner" />
                                     <span>Sprawdzanie grup w chmurze...</span>
-                                </Card.Body>
-                            </Card>
+                                </div>
                         )}
 
                         {/* Create new sync group */}
-                        <Card className="bg-dark">
-                            <Card.Body>
-                                <p className="text-muted small mb-3">
+                        <div className="device-card">
+                                <p className="popup-muted popup-small device-card__lead">
                                     {cloudSyncGroups.length > 0
                                         ? "Mozesz tez utworzyc nowa grupe synchronizacji:"
                                         : "Utworz grupe synchronizacji, aby synchronizowac ustawienia urzadzenia (pozycje okien, przyciski) miedzy wieloma urzadzeniami."
                                     }
                                     {!isLoggedIn && " Zaloguj sie, aby synchronizowac automatycznie, lub eksportuj/importuj reczne."}
                                 </p>
-                                <Form onSubmit={e => { e.preventDefault(); handleCreateSyncGroup(); }}>
-                                    <InputGroup className="mb-0">
-                                        <Form.Control
-                                            type="text"
+                                <form onSubmit={e => { e.preventDefault(); handleCreateSyncGroup(); }}>
+                                    <div className="popup-inline device-card__form">
+                                        <Input
                                             placeholder="Nazwa grupy (np. Moje urzadzenia)"
                                             value={syncGroupName}
                                             onChange={e => setSyncGroupName(e.target.value)}
                                             disabled={isCreatingGroup}
                                         />
-                                        <Button
-                                            variant="primary"
+                                        <Button variant="solid"
                                             onClick={handleCreateSyncGroup}
                                             disabled={isCreatingGroup}
                                         >
                                             {isCreatingGroup ? (
                                                 <>
-                                                    <Spinner size="sm" className="me-2" />
+                                                    <span className="popup-spinner" />
                                                     Tworzenie...
                                                 </>
                                             ) : (
                                                 "Utworz grupe"
                                             )}
                                         </Button>
-                                    </InputGroup>
-                                </Form>
-                            </Card.Body>
-                        </Card>
+                                    </div>
+                                </form>
+                            </div>
                     </div>
                 ) : (
-                    <Card className="bg-dark">
-                        <Card.Body>
-                            <div className="d-flex flex-column gap-3">
-                                <div className="d-flex justify-content-between align-items-start">
+                    <div className="device-card">
+                            <div className="popup-stack">
+                                <div className="popup-spread popup-spread--top">
                                     <div>
                                         <strong>{syncGroup.name}</strong>
-                                        <div className="text-muted small">
+                                        <div className="popup-muted popup-small">
                                             {syncGroup.devices.length} {syncGroup.devices.length === 1 ? "urzadzenie" : "urzadzen"}
                                         </div>
                                     </div>
-                                    <Badge bg={isLoggedIn ? "success" : "secondary"}>
+                                    <span className={`popup-chip${isLoggedIn ? " popup-chip--success" : ""}`}>
                                         {isLoggedIn ? "Polaczone" : "Lokalna"}
-                                    </Badge>
+                                    </span>
                                 </div>
 
                                 {!isLoggedIn && (
-                                    <Alert variant="info" className="mb-0 small">
+                                    <div className="popup-notice">
                                         Zaloguj sie, aby automatycznie synchronizowac ustawienia.
                                         Mozesz tez uzywac eksportu/importu recznego.
-                                    </Alert>
+                                    </div>
                                 )}
 
                                 {isLoggedIn && (
-                                    <p className="text-muted small mb-0">
+                                    <div className="popup-muted popup-small">
                                         Ustawienia interfejsu synchronizuja sie automatycznie z urzadzeniami w tej grupie
-                                        (razem z pozostalymi kategoriami w zakladce Synchronizacja konfiguracji).
-                                    </p>
+                                        (razem z pozostalymi kategoriami w zakladce Synchronizacja).
+                                    </div>
                                 )}
 
-                                <div className="text-muted small">
+                                <div className="popup-muted popup-small">
                                     <div>ID grupy: {syncGroup.id.substring(0, 16)}...</div>
                                     <div>Utworzono: {formatDate(syncGroup.createdAt)}</div>
                                     <div>Ostatnia zmiana: {formatDate(syncGroup.updatedAt)}</div>
                                 </div>
 
-                                <div className="d-flex gap-2">
-                                    <Button
-                                        variant="danger"
+                                <div className="popup-inline">
+                                    <Button variant="danger"
                                         size="sm"
                                         onClick={handleLeaveSyncGroup}
                                         disabled={isLeavingGroup}
                                     >
                                         {isLeavingGroup ? (
                                             <>
-                                                <Spinner size="sm" className="me-2" />
+                                                <span className="popup-spinner" />
                                                 Opuszczanie...
                                             </>
                                         ) : (
@@ -603,8 +585,7 @@ function DeviceManagementTab() {
                                     </Button>
                                 </div>
                             </div>
-                        </Card.Body>
-                    </Card>
+                        </div>
                 )}
             </section>
 
@@ -612,43 +593,38 @@ function DeviceManagementTab() {
             {isLoggedIn && (cloudDevices.length > 0 || isLoadingCloudDevices) && (
                 <section className="character-settings-section">
                     <h5 className="character-settings-section-title">Urzadzenia w chmurze</h5>
-                    <p className="text-muted small mb-2">
+                    <div className="popup-muted popup-small">
                         Inne urzadzenia zarejestrowane na tym koncie. Mozesz dolaczyc do ich grupy synchronizacji.
-                    </p>
+                    </div>
                     {isLoadingCloudDevices ? (
-                        <Card className="bg-dark">
-                            <Card.Body className="d-flex align-items-center gap-2 text-muted">
-                                <Spinner size="sm" />
+                        <div className="device-card device-card--muted">
+                                <span className="popup-spinner" />
                                 <span>Ladowanie urzadzen z chmury...</span>
-                            </Card.Body>
-                        </Card>
+                            </div>
                     ) : (
-                        <ListGroup variant="flush" className="bg-dark">
+                        <div className="dialog-list">
                             {cloudDevices.map(device => {
                                 // Find all groups this device is in
                                 const deviceGroups = cloudSyncGroups.filter(g => g.devices.includes(device.id));
                                 const isInCurrentGroup = syncGroup?.devices.includes(device.id);
                                 return (
-                                    <ListGroup.Item
-                                        key={device.id}
-                                        className="bg-dark border-secondary py-3"
-                                    >
-                                        <div className="d-flex flex-column gap-2">
-                                            <div className="d-flex align-items-center gap-2 flex-wrap">
+                                    <div key={device.id} className="dialog-list__row dialog-list__row--block">
+                                        <div className="popup-stack popup-stack--sm">
+                                            <div className="popup-row">
                                                 <strong>
                                                     {device.customName || device.name}
                                                 </strong>
-                                                <Badge bg="info">Chmura</Badge>
+                                                <span className="popup-chip popup-chip--accent">Chmura</span>
                                                 {isInCurrentGroup && (
-                                                    <Badge bg="success">W Twojej grupie</Badge>
+                                                    <span className="popup-chip popup-chip--success">W Twojej grupie</span>
                                                 )}
                                                 {deviceGroups.map(group => (
-                                                    <Badge key={group.id} bg="warning" text="dark">
+                                                    <span key={group.id} className="popup-chip popup-chip--warning">
                                                         Grupa: {group.name}
-                                                    </Badge>
+                                                    </span>
                                                 ))}
                                             </div>
-                                            <div className="text-muted small">
+                                            <div className="popup-muted popup-small">
                                                 <div>ID: {device.id.substring(0, 16)}...</div>
                                                 {device.browserInfo && (
                                                     <div>{device.browserInfo.browser} na {device.browserInfo.os}</div>
@@ -660,19 +636,18 @@ function DeviceManagementTab() {
                                                 const deviceDisplayName = device.customName || device.name;
                                                 const isCurrentDevice = device.id === deviceInfo?.id;
                                                 return (
-                                                    <div className="d-flex gap-2 flex-wrap">
+                                                    <div className="popup-row">
                                                         {/* Join buttons - only show if not in any group */}
                                                         {!syncGroup && deviceGroups.map(group => (
-                                                            <Button
+                                                            <Button variant="solid"
                                                                 key={group.id}
                                                                 size="sm"
-                                                                variant="success"
                                                                 onClick={() => handleJoinCloudSyncGroup(group)}
                                                                 disabled={joiningGroupId === group.id}
                                                             >
                                                                 {joiningGroupId === group.id ? (
                                                                     <>
-                                                                        <Spinner size="sm" className="me-1" />
+                                                                        <span className="popup-spinner" />
                                                                         Dolaczanie...
                                                                     </>
                                                                 ) : (
@@ -684,13 +659,12 @@ function DeviceManagementTab() {
                                                         {!isCurrentDevice && (
                                                             <Button
                                                                 size="sm"
-                                                                variant="primary"
                                                                 onClick={() => handleCopyFromCloudDevice(device.id, deviceDisplayName)}
                                                                 disabled={copyingFromDeviceId === device.id}
                                                             >
                                                                 {copyingFromDeviceId === device.id ? (
                                                                     <>
-                                                                        <Spinner size="sm" className="me-1" />
+                                                                        <span className="popup-spinner" />
                                                                         Kopiowanie...
                                                                     </>
                                                                 ) : (
@@ -702,10 +676,10 @@ function DeviceManagementTab() {
                                                 );
                                             })()}
                                         </div>
-                                    </ListGroup.Item>
+                                    </div>
                                 );
                             })}
-                        </ListGroup>
+                        </div>
                     )}
                 </section>
             )}
@@ -714,44 +688,40 @@ function DeviceManagementTab() {
             {importedDevices.length > 0 && (
                 <section className="character-settings-section">
                     <h5 className="character-settings-section-title">Zaimportowane urzadzenia</h5>
-                    <p className="text-muted small mb-2">
+                    <div className="popup-muted popup-small">
                         Urzadzenia z zaimportowanych plikow. Mozesz skopiowac ich ustawienia na to urzadzenie.
-                    </p>
-                    <ListGroup variant="flush" className="bg-dark">
+                    </div>
+                    <div className="dialog-list">
                         {importedDevices.map(entry => (
-                            <ListGroup.Item
-                                key={entry.deviceInfo.id}
-                                className="bg-dark border-secondary py-3"
-                            >
-                                <div className="d-flex flex-column gap-2">
-                                    <div className="d-flex align-items-center gap-2 flex-wrap">
+                            <div key={entry.deviceInfo.id} className="dialog-list__row dialog-list__row--block">
+                                <div className="popup-stack popup-stack--sm">
+                                    <div className="popup-row">
                                         <strong>
                                             {entry.deviceInfo.customName || entry.deviceInfo.name}
                                         </strong>
-                                        <Badge bg="secondary">
+                                        <span className="popup-chip">
                                             Zaimportowane
-                                        </Badge>
+                                        </span>
                                         {entry.syncGroup && (
-                                            <Badge bg="info">
+                                            <span className="popup-chip popup-chip--accent">
                                                 Grupa: {entry.syncGroup.name}
-                                            </Badge>
+                                            </span>
                                         )}
                                     </div>
-                                    <div className="text-muted small">
+                                    <div className="popup-muted popup-small">
                                         <div>ID: {entry.deviceInfo.id.substring(0, 16)}...</div>
                                         <div>Zaimportowano: {formatDate(entry.importedAt)}</div>
                                     </div>
-                                    <div className="d-flex gap-2 flex-wrap">
+                                    <div className="popup-row">
                                         {entry.syncGroup && !syncGroup && (
-                                            <Button
+                                            <Button variant="solid"
                                                 size="sm"
-                                                variant="success"
                                                 onClick={() => handleJoinSyncGroup(entry)}
                                                 disabled={joiningGroupId === entry.syncGroup?.id}
                                             >
                                                 {joiningGroupId === entry.syncGroup?.id ? (
                                                     <>
-                                                        <Spinner size="sm" className="me-1" />
+                                                        <span className="popup-spinner" />
                                                         Dolaczanie...
                                                     </>
                                                 ) : (
@@ -761,36 +731,29 @@ function DeviceManagementTab() {
                                         )}
                                         <Button
                                             size="sm"
-                                            variant="primary"
                                             onClick={() => handleCopyFromDevice(entry)}
                                         >
                                             Kopiuj ustawienia
                                         </Button>
-                                        <Button
-                                            size="sm"
-                                            variant="danger"
-                                            onClick={() => handleDeleteImported(entry)}
-                                        >
-                                            Usun
-                                        </Button>
+                                        <DeleteButton title="Usuń urządzenie" onClick={() => handleDeleteImported(entry)} />
                                     </div>
                                 </div>
-                            </ListGroup.Item>
+                            </div>
                         ))}
-                    </ListGroup>
+                    </div>
                 </section>
             )}
 
             {/* Status/Error Messages */}
             {status && (
-                <Alert variant="success" className="mb-0" dismissible onClose={() => setStatus(null)}>
+                <Notice variant="success" onClose={() => setStatus(null)}>
                     {status}
-                </Alert>
+                </Notice>
             )}
             {error && (
-                <Alert variant="danger" className="mb-0" dismissible onClose={() => setError(null)}>
+                <Notice variant="danger" onClose={() => setError(null)}>
                     {error}
-                </Alert>
+                </Notice>
             )}
         </div>
     );

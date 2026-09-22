@@ -48,6 +48,8 @@ export interface LogViewerProps {
      * the database and passes nothing.
      */
     noSessionsAction?: React.ReactNode;
+    /** Opens with this in the search box, across every log ("Szukaj w logach"). */
+    initialQuery?: string;
 }
 
 /**
@@ -60,7 +62,7 @@ export interface LogViewerProps {
 const LINE_HEIGHT = 21;
 
 /** Search is cheap up to here; past it the query is debounced. */
-const DEBOUNCE_THRESHOLD_LINES = 4000;
+const DEBOUNCE_THRESHOLD_LINES = 20000;
 const DEBOUNCE_MS = 100;
 
 export function LogViewer({
@@ -71,6 +73,7 @@ export function LogViewer({
     onCopy,
     onExport,
     noSessionsAction,
+    initialQuery,
 }: LogViewerProps) {
     const [state, setState] = useState<ViewerState>(() => {
         const preferredId = preferences?.sessionId;
@@ -78,7 +81,8 @@ export function LogViewer({
             preferredId && sessions.some((session) => session.id === preferredId)
                 ? preferredId
                 : initialSessionId(sessions);
-        return applyPreferences(initialViewerState(initialId), preferences);
+        const restored = applyPreferences(initialViewerState(initialId), preferences);
+        return initialQuery ? { ...restored, query: initialQuery, scope: "all" } : restored;
     });
 
     /**
@@ -123,19 +127,21 @@ export function LogViewer({
 
     /* --- debounced query ------------------------------------------------ */
 
-    const activeSessionLineCount = useMemo(
-        () => sessions.find((session) => session.id === state.sessionId)?.lines.length ?? 0,
-        [sessions, state.sessionId],
+    // Every keystroke counts hits in every log (the sidebar badges), so it is
+    // the lines of all of them that decide whether typing needs a debounce.
+    const searchedLineCount = useMemo(
+        () => sessions.reduce((sum, session) => sum + session.lines.length, 0),
+        [sessions],
     );
 
     useEffect(() => {
-        if (activeSessionLineCount < DEBOUNCE_THRESHOLD_LINES) {
+        if (searchedLineCount < DEBOUNCE_THRESHOLD_LINES) {
             setActiveQuery(state.query);
             return;
         }
         const timer = window.setTimeout(() => setActiveQuery(state.query), DEBOUNCE_MS);
         return () => window.clearTimeout(timer);
-    }, [state.query, activeSessionLineCount]);
+    }, [state.query, searchedLineCount]);
 
     const view = useMemo(
         () => deriveView(sessions, { ...state, query: activeQuery }),
@@ -185,16 +191,19 @@ export function LogViewer({
         requestScroll({ kind: "row", row: currentRow, align: "center" });
     }, [currentRow, sessionId, state.follow, requestScroll]);
 
-    // A new session starts at its end when live, at its top otherwise.
+    // A new session starts at its end when live, at its top otherwise. Once
+    // per session: the list growing while older logs load must not move it.
+    const sessionsRef = useRef(sessions);
+    sessionsRef.current = sessions;
     useEffect(() => {
-        const session = sessions.find((candidate) => candidate.id === sessionId);
+        const session = sessionsRef.current.find((candidate) => candidate.id === sessionId);
         if (!session) return;
         if (matchJump.current === sessionId) {
             matchJump.current = null;
             return;
         }
         requestScroll({ kind: session.live ? "bottom" : "top" });
-    }, [sessionId, sessions, requestScroll]);
+    }, [sessionId, requestScroll]);
 
     /* --- scope and range ------------------------------------------------- */
 
@@ -739,6 +748,7 @@ export function LogViewer({
                     <LogPane
                         rows={view.rows}
                         sessionKey={session?.id ?? "brak"}
+                        background={session?.background}
                         showTimestamps={state.showTimestamps}
                         showMeta={state.showMeta}
                         showColors={state.showColors}

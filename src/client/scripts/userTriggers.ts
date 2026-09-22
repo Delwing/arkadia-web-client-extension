@@ -6,7 +6,7 @@ import {executeTriggerMacro} from "@modules/core/pluginTriggerMacroRegistry";
 import { globalStorage } from "@modules/core/storage";
 import { sendPush } from "@modules/push/pushClient";
 
-export type BuiltInMacroType = 'uppercase' | 'color' | 'replace' | 'beep' | 'mute' | 'unmute' | 'command' | 'slowBlink' | 'rapidBlink' | 'dim' | 'functionalBind' | 'wrap' | 'notify' | 'push';
+export type BuiltInMacroType = 'uppercase' | 'color' | 'replace' | 'beep' | 'mute' | 'unmute' | 'command' | 'slowBlink' | 'rapidBlink' | 'dim' | 'functionalBind' | 'wrap' | 'notify' | 'push' | 'speak';
 
 export interface UserMacro {
     type: BuiltInMacroType | string;  // string allows plugin macros like "plugin:..."
@@ -15,7 +15,7 @@ export interface UserMacro {
     command?: string;
     soundKey?: string;
     label?: string;
-    message?: string;  // notification text (notify); empty falls back to matched text for pattern triggers
+    message?: string;  // notify/push/speak text; empty falls back to matched text for pattern triggers
     /**
      * push only: send even if another push went out within the rate-limit
      * window. For alerts the player considers important enough that being
@@ -262,6 +262,20 @@ export const GMCP_EVENT_CATEGORY = 'GMCP';
 
 const STORAGE_KEY = 'triggers';
 
+/**
+ * Replace `{0}`, `{1}`… and `{name}` in a pattern trigger's macro text with
+ * the regex match's groups. Like `interpolateEventArgs`, a placeholder with no
+ * such group — or one that did not participate in the match — is left standing.
+ */
+export function interpolateMatchGroups(text: string, match: RegExpMatchArray): string {
+    if (!text || !text.includes('{')) return text;
+
+    return text.replace(/\{([A-Za-z_][A-Za-z0-9_]*|\d+)\}/g, (whole, name: string) => {
+        const value = /^\d+$/.test(name) ? match[Number(name)] : match.groups?.[name];
+        return value === undefined ? whole : value;
+    });
+}
+
 function applyMacrosToMatch(
     client: Client,
     line: AnsiAwareBuffer,
@@ -352,6 +366,15 @@ function applyMacrosToMatch(
                     { title: 'Arkadia', body: text },
                     { bypassCooldown: macro.bypassCooldown },
                 );
+                break;
+            }
+            case 'speak': {
+                const text = macro.message
+                    ? interpolateMatchGroups(macro.message, match)
+                    : line.text.substring(matchRange[0], matchRange[1]);
+                if (text.trim()) {
+                    client.sendEvent("tts:speak", { text });
+                }
                 break;
             }
             default:
@@ -499,6 +522,12 @@ function applyEventMacros(
                         { title: 'Arkadia', body: message },
                         { bypassCooldown: macro.bypassCooldown },
                     );
+                }
+                break;
+            case 'speak':
+                // As with push, nothing to fall back on without a matched line.
+                if (message?.trim()) {
+                    client.sendEvent("tts:speak", { text: message });
                 }
                 break;
             // Note: Plugin macros are not supported for event triggers

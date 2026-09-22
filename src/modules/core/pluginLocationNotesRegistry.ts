@@ -10,6 +10,7 @@ import eventBus from "./eventBus";
 interface StoredNote {
   note: string;
   pluginName: string;
+  builtin: boolean;
 }
 
 export interface PluginLocationNote {
@@ -17,6 +18,8 @@ export interface PluginLocationNote {
   pluginName: string;
   roomId: number;
   note: string;
+  /** Set by the client itself (e.g. the Wiedza hints), not by an installed plugin. */
+  builtin?: boolean;
 }
 
 // Map of roomId -> Map of pluginId -> StoredNote
@@ -28,12 +31,14 @@ const pluginNotes = new Map<number, Map<string, StoredNote>>();
  * @param pluginName - Display name of the plugin
  * @param roomId - Room ID to add note to
  * @param note - Note content (empty string to remove)
+ * @param options.builtin - The client's own note source rather than an installed plugin
  */
 export function setPluginLocationNote(
   pluginId: string,
   pluginName: string,
   roomId: number,
-  note: string
+  note: string,
+  options: { builtin?: boolean } = {}
 ): void {
   if (!note || note.trim() === '') {
     removePluginLocationNote(pluginId, roomId);
@@ -46,7 +51,7 @@ export function setPluginLocationNote(
     pluginNotes.set(roomId, roomNotes);
   }
 
-  roomNotes.set(pluginId, { note: note.trim(), pluginName });
+  roomNotes.set(pluginId, { note: note.trim(), pluginName, builtin: !!options.builtin });
   eventBus.emit('pluginLocationNote.changed', { roomId, pluginId });
 }
 
@@ -101,7 +106,25 @@ export function getPluginLocationNotes(roomId: number): PluginLocationNote[] {
 
   const result: PluginLocationNote[] = [];
   for (const [pluginId, stored] of roomNotes) {
-    result.push({ pluginId, pluginName: stored.pluginName, roomId, note: stored.note });
+    result.push({
+      pluginId,
+      pluginName: stored.pluginName,
+      roomId,
+      note: stored.note,
+      ...(stored.builtin ? { builtin: true } : {}),
+    });
+  }
+  return result;
+}
+
+/**
+ * Get every plugin note, across all locations
+ * @returns Array of all plugin notes
+ */
+export function getAllPluginLocationNotes(): PluginLocationNote[] {
+  const result: PluginLocationNote[] = [];
+  for (const roomId of pluginNotes.keys()) {
+    result.push(...getPluginLocationNotes(roomId));
   }
   return result;
 }

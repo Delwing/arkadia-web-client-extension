@@ -51,7 +51,6 @@ body.layout-manager-enabled.layout-rails-vertical #main-container {
   gap: 0 12px;
 }
 
-
 /* In vertical mode #content-area holds only the top dock + main output. */
 body.layout-manager-enabled.layout-rails-vertical #content-area {
   grid-area: content;
@@ -109,8 +108,10 @@ body.layout-objectlist-enabled #objects-list {
    default classes), so they still spawn, move, resize and close. Drag-to-dock,
    undock and the split context menu are disabled in JS (dockDetect /
    startUndockableDrag / handleTitlebarContextMenu). */
-body.layout-locked .docked-panel .panel-button,
-body.layout-locked .tab-group-panel .panel-button {
+/* The lock freezes the layout, not a window's own options: the settings cog
+   stays while the placement controls (pin, lock, reset, popout, close) go. */
+body.layout-locked .docked-panel .panel-button:not(.panel-button--settings),
+body.layout-locked .tab-group-panel .panel-button:not(.panel-button--settings) {
   display: none;
 }
 body.layout-locked .dock-edge-splitter,
@@ -174,50 +175,6 @@ body.layout-locked .tab-group-tab--closable {
   width: 100%;
 }
 
-.dock-zone--main {
-  grid-area: main;
-  overflow: auto;
-}
-
-/* Slot wrapper within dock - contains panels stacked in opposite direction */
-.dock-zone__slot-wrapper {
-  display: flex;
-  position: relative;
-  min-width: 0;
-  min-height: 0;
-}
-
-/* TOP dock: slots are horizontal (side by side), panels within stack vertically */
-.dock-zone--top .dock-zone__slot-wrapper {
-  flex-direction: column;
-}
-
-/* LEFT/RIGHT docks: slots are vertical (stacked), panels within are side by side */
-.dock-zone--left .dock-zone__slot-wrapper,
-.dock-zone--right .dock-zone__slot-wrapper {
-  flex-direction: row;
-}
-
-/* Panel wrapper within slot */
-.dock-zone__panel-wrapper {
-  display: flex;
-  position: relative;
-  min-width: 0;
-  min-height: 0;
-  overflow: hidden;
-}
-
-/* In TOP dock slots: panels stack vertically, so wrapper is column */
-.dock-zone--top .dock-zone__panel-wrapper {
-  flex-direction: column;
-}
-
-/* In LEFT/RIGHT dock slots: panels are side by side, so wrapper is row */
-.dock-zone--left .dock-zone__panel-wrapper,
-.dock-zone--right .dock-zone__panel-wrapper {
-  flex-direction: row;
-}
-
 /* ==========================================================================
    MANAGED PANEL BASE CLASSES
    Usage: Add "managed-panel" alongside specific class, e.g.:
@@ -235,29 +192,40 @@ body.layout-locked .tab-group-tab--closable {
   color: var(--popup-text, #ccc);
 }
 
-/* Panel header base */
+/* Panel header base — one height and inset for docked, floating and
+   popped-out windows (tab bars match via .tab-group-tabbar). */
 .managed-panel__header {
   flex-shrink: 0;
   display: flex;
   align-items: center;
+  gap: 6px;
+  box-sizing: border-box;
+  height: var(--ui-header-h, 28px);
+  padding: 0 4px 0 10px;
   background: var(--popup-control-bg, var(--surface-raised, #252525));
   border-bottom: 1px solid var(--popup-border-subtle, var(--surface-border, #333));
+  font-family: var(--font-ui, sans-serif);
   user-select: none;
 }
 
-/* Panel title base */
+/* Panel title base — spaced capitals (tab titles match). */
 .managed-panel__title {
-  font-size: 0.7rem;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--ui-fs-xs, 11px);
   font-weight: 600;
-  color: var(--popup-text-medium, var(--text-secondary, #888));
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  color: var(--popup-text-bright, var(--text-primary, #ddd));
 }
 
 /* Panel header actions base */
 .managed-panel__header-actions {
   display: flex;
   align-items: center;
+  gap: 2px;
   margin-left: auto;
 }
 
@@ -285,22 +253,12 @@ body.layout-locked .tab-group-tab--closable {
 }
 
 .docked-panel__header {
-  height: 28px;
-  padding: 0 0.5rem;
   cursor: grab;
   touch-action: none;
 }
 
 .docked-panel__header:active {
   cursor: grabbing;
-}
-
-.docked-panel__title {
-  /* Inherits from managed-panel__title */
-}
-
-.docked-panel__content {
-  /* Inherits from managed-panel__content */
 }
 
 /* Panel-specific containers */
@@ -345,140 +303,9 @@ body.layout-manager-enabled .object-list-panel-container #objects-list {
   touch-action: none;
 }
 
-.resize-handle:hover,
-.resize-handle--active {
+.resize-handle:hover {
   background: var(--layout-accent, #589aff);
   opacity: 0.5;
-}
-
-/* Horizontal resize handle (for LEFT/RIGHT dock zone edges) */
-.resize-handle--horizontal {
-  width: 4px;
-  height: 100%;
-  top: 0;
-  cursor: ew-resize;
-}
-
-.resize-handle--horizontal.resize-handle--right {
-  right: 0;
-}
-
-.resize-handle--horizontal.resize-handle--left {
-  left: 0;
-}
-
-/* Vertical resize handle (for TOP dock zone edge) */
-.resize-handle--vertical {
-  height: 4px;
-  width: 100%;
-  left: 0;
-  cursor: ns-resize;
-}
-
-.resize-handle--vertical.resize-handle--bottom {
-  bottom: 0;
-}
-
-.resize-handle--vertical.resize-handle--top {
-  top: 0;
-}
-
-/* Slot Resize Handles (between slots in a dock) */
-.slot-resize-handle {
-  flex-shrink: 0;
-  background: var(--surface-border, #333);
-  position: relative;
-  transition: background-color 0.15s ease;
-  touch-action: none;
-}
-
-/* Extended hit area using ::before */
-.slot-resize-handle::before {
-  content: '';
-  position: absolute;
-  z-index: 1;
-}
-
-.slot-resize-handle:hover,
-.slot-resize-handle--active {
-  background: var(--layout-accent, #589aff);
-}
-
-/* TOP dock: slots are side by side, so slot resize handles are vertical */
-.slot-resize-handle--horizontal {
-  width: 1px;
-  cursor: ew-resize;
-  align-self: stretch;
-}
-
-.slot-resize-handle--horizontal::before {
-  left: -2px;
-  right: -2px;
-  top: 0;
-  bottom: 0;
-}
-
-/* LEFT/RIGHT docks: slots are stacked, so slot resize handles are horizontal */
-.slot-resize-handle--vertical {
-  height: 1px;
-  cursor: ns-resize;
-  align-self: stretch;
-}
-
-.slot-resize-handle--vertical::before {
-  top: -2px;
-  bottom: -2px;
-  left: 0;
-  right: 0;
-}
-
-/* Panel Resize Handles (between panels within a slot) */
-.panel-resize-handle {
-  flex-shrink: 0;
-  background: var(--surface-border, #333);
-  position: relative;
-  transition: background-color 0.15s ease;
-  touch-action: none;
-}
-
-/* Extended hit area using ::before */
-.panel-resize-handle::before {
-  content: '';
-  position: absolute;
-  z-index: 1;
-}
-
-.panel-resize-handle:hover,
-.panel-resize-handle--active {
-  background: var(--layout-accent, #589aff);
-}
-
-/* In TOP dock slots: panels stack vertically, so panel resize handles are horizontal */
-/* In LEFT/RIGHT dock slots: panels are side by side, so panel resize handles are vertical */
-.panel-resize-handle--horizontal {
-  width: 1px;
-  cursor: ew-resize;
-  align-self: stretch;
-}
-
-.panel-resize-handle--horizontal::before {
-  left: -2px;
-  right: -2px;
-  top: 0;
-  bottom: 0;
-}
-
-.panel-resize-handle--vertical {
-  height: 1px;
-  cursor: ns-resize;
-  align-self: stretch;
-}
-
-.panel-resize-handle--vertical::before {
-  top: -2px;
-  bottom: -2px;
-  left: 0;
-  right: 0;
 }
 
 /* Dragging state - cursor feedback */
@@ -489,87 +316,6 @@ body.layout-dragging {
 body.layout-dragging * {
   cursor: grabbing !important;
   user-select: none !important;
-}
-
-/* Dock preview container */
-.dock-preview-container {
-  pointer-events: none;
-  z-index: 1000;
-}
-
-/* Panel preview in dock */
-.dock-panel-preview {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 2px solid;
-  box-sizing: border-box;
-}
-
-/* Inline preview placeholder in dock zone */
-.dock-zone__panel-preview,
-.dock-zone__slot-preview {
-  pointer-events: none;
-}
-
-/* Slot preview (new column/row) should be visible */
-.dock-zone__slot-preview {
-  min-width: 40px;
-  min-height: 40px;
-}
-
-.dock-panel-preview-inline {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(88, 154, 255, 0.25);
-  border: 2px dashed var(--layout-accent, #589aff);
-  box-sizing: border-box;
-  animation: dock-inline-preview-pulse 1s ease-in-out infinite;
-}
-
-@keyframes dock-inline-preview-pulse {
-  0%, 100% {
-    background: rgba(88, 154, 255, 0.2);
-  }
-  50% {
-    background: rgba(88, 154, 255, 0.35);
-  }
-}
-
-.dock-panel-preview-inline__title {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--popup-text-bright);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding: 0.25rem 0.5rem;
-  background: rgba(0, 0, 0, 0.4);
-  border-radius: 3px;
-}
-
-/* Overlay preview for empty dock zones */
-.dock-panel-preview-overlay {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(88, 154, 255, 0.25);
-  border: 2px dashed var(--layout-accent, #589aff);
-  box-sizing: border-box;
-  pointer-events: none;
-  animation: dock-inline-preview-pulse 1s ease-in-out infinite;
-}
-
-.dock-panel-preview-overlay__title {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--popup-text-bright);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding: 0.25rem 0.5rem;
-  background: rgba(0, 0, 0, 0.4);
-  border-radius: 3px;
 }
 
 /* Floating Panels - extends managed-panel for floating state */
@@ -586,36 +332,8 @@ body.layout-dragging * {
 
 .floating-panel__header {
   justify-content: space-between;
-  padding: 0.35rem 0.5rem;
   cursor: move;
-  min-height: 24px;
   touch-action: none;
-}
-
-.floating-panel__title {
-  /* Inherits from managed-panel__title */
-}
-
-.floating-panel__drag-hint {
-  margin-left: auto;
-  font-size: 0.65rem;
-  font-weight: 500;
-  color: var(--popup-text-dim);
-  background: var(--popup-subtle-bg);
-  padding: 0.15rem 0.4rem;
-  border-radius: 3px;
-  white-space: nowrap;
-  min-width: 100px;
-  text-align: center;
-}
-
-.floating-panel__drag-hint--active {
-  color: var(--layout-warning, #ffc107);
-  background: rgba(255, 193, 7, 0.15);
-}
-
-.floating-panel__drag-hint--hidden {
-  visibility: hidden;
 }
 
 .floating-panel__content {
@@ -671,40 +389,6 @@ body.layout-dragging * {
   cursor: ew-resize;
 }
 
-/* Corner resize handles */
-.floating-panel__corner {
-  position: absolute;
-  width: 12px;
-  height: 12px;
-  background: transparent;
-  z-index: 11;
-  touch-action: none;
-}
-
-.floating-panel__corner--nw {
-  top: 0;
-  left: 0;
-  cursor: nwse-resize;
-}
-
-.floating-panel__corner--ne {
-  top: 0;
-  right: 0;
-  cursor: nesw-resize;
-}
-
-.floating-panel__corner--sw {
-  bottom: 0;
-  left: 0;
-  cursor: nesw-resize;
-}
-
-.floating-panel__corner--se {
-  bottom: 0;
-  right: 0;
-  cursor: nwse-resize;
-}
-
 /* Floating panel content containers */
 .floating-panel .map-panel-container,
 .floating-panel .object-list-panel-container {
@@ -732,19 +416,8 @@ body.layout-manager-enabled .compass-rose-box {
 }
 
 .docked-panel--popup .docked-panel__header {
-  /* Inherits from managed-panel__header, overrides specific values */
   justify-content: space-between;
-  padding: 0 0.4rem;
   background: var(--popup-control-bg, var(--surface-raised, #252830));
-}
-
-.docked-panel--popup .docked-panel__title {
-  font-size: 0.65rem;
-}
-
-/* Header actions container - extends managed-panel__header-actions */
-.docked-panel__header-actions {
-  gap: 0.2rem;
 }
 
 /* Ensure all children in header actions fit within header */
@@ -790,37 +463,24 @@ body.layout-manager-enabled .compass-rose-box {
   overflow: auto;
 }
 
-/* Dock hint for floating popups */
-.plugin-window-dock-hint {
-  position: absolute;
-  bottom: 8px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 0.7rem;
-  font-weight: 500;
-  color: var(--text-secondary, #aaa);
-  background: rgba(0, 0, 0, 0.7);
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  white-space: nowrap;
-  pointer-events: none;
-  z-index: 10;
+/* The two wrappers a plugin's popup content is mounted in fill the body, so
+   the plugin's own root can take height: 100% and fill the window instead of
+   collapsing to its content. The inner one stays a block: the content may be
+   loose HTML or a fragment, which a flex box would stack item by item. */
+.plugin-popup-content {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
 }
-
-/* Dock preview styling for plugin windows */
-.plugin-window--dock-preview {
-  border-color: var(--layout-accent, #589aff);
-  box-shadow: 0 0 0 2px var(--layout-accent, #589aff), 0 1.5rem 3rem #00000080;
+.plugin-popup-content__body {
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 /* ============================================
    Floating Panel Popup Styles
    ============================================ */
-
-/* Header actions for floating panels - extends managed-panel__header-actions */
-.floating-panel__header-actions {
-  gap: 0.25rem;
-}
 
 /* Floating panel button styles are now in style.css base classes */
 
@@ -887,199 +547,12 @@ body.layout-manager-enabled .compass-rose-box {
   height: 100%;
 }
 
-/* ============================================
-   Map Header Menu Styles
-   ============================================ */
-
-.map-header-menu {
-  position: relative;
+/* Map header actions: "copy as image" next to the ☰ menu (MapHeaderMenu.tsx).
+   The menu itself is the shared .popup-menu in popups.css. */
+.map-header-actions {
   display: flex;
   align-items: center;
   gap: 0.25rem;
-}
-
-.map-header-menu__image-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: var(--popup-control-bg);
-  border: 1px solid var(--popup-border);
-  color: var(--popup-text-dim);
-  border-radius: 0.25rem;
-  padding: 0.2rem;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.map-header-menu__image-btn:hover {
-  background-color: var(--popup-control-hover-bg);
-  color: var(--popup-text-bright);
-}
-
-.map-header-menu__image-btn:active {
-  background-color: var(--popup-control-pressed-bg);
-}
-
-.map-header-menu__toggle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  padding: 0;
-  border: none;
-  border-radius: 3px;
-  background: transparent;
-  cursor: pointer;
-  transition: background-color 0.15s ease;
-}
-
-.map-header-menu__toggle:hover {
-  background-color: var(--popup-control-hover-bg);
-}
-
-.map-header-menu__hamburger {
-  display: block;
-  width: 12px;
-  height: 2px;
-  background-color: var(--popup-text-subtle);
-  position: relative;
-}
-
-.map-header-menu__hamburger::before,
-.map-header-menu__hamburger::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  width: 12px;
-  height: 2px;
-  background-color: var(--popup-text-subtle);
-}
-
-.map-header-menu__hamburger::before {
-  top: -4px;
-}
-
-.map-header-menu__hamburger::after {
-  top: 4px;
-}
-
-.map-header-menu__toggle:hover .map-header-menu__hamburger,
-.map-header-menu__toggle:hover .map-header-menu__hamburger::before,
-.map-header-menu__toggle:hover .map-header-menu__hamburger::after {
-  background-color: var(--popup-text-strong);
-}
-
-.map-header-menu__dropdown {
-  /* position, top, right set via inline styles for fixed positioning */
-  min-width: 140px;
-  background-color: var(--popup-bg);
-  border: 1px solid var(--popup-border);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-  z-index: 1020;
-  overflow-y: auto;
-  overflow-x: hidden;
-}
-
-.map-header-menu__item {
-  display: block;
-  width: 100%;
-  padding: 0.5rem 0.75rem;
-  border: none;
-  border-radius: 0;
-  background: transparent;
-  color: var(--popup-text-bright);
-  font-size: 0.75rem;
-  text-align: left;
-  cursor: pointer;
-  transition: background-color 0.15s ease;
-}
-
-.map-header-menu__item:hover {
-  background-color: var(--popup-hover-bg);
-  color: var(--popup-text);
-}
-
-.map-header-menu__item--back {
-  border-bottom: 1px solid var(--popup-border-subtle);
-  font-weight: 500;
-  color: var(--popup-accent);
-}
-
-.map-header-menu__item--back:hover {
-  color: var(--popup-accent);
-}
-
-.map-header-menu__item--active {
-  background-color: var(--popup-accent-subtle-bg);
-  color: var(--popup-accent);
-}
-
-.map-header-menu__item--active:hover {
-  background-color: var(--popup-accent-hover-bg);
-}
-
-.map-header-menu__zoom-row {
-  display: flex;
-}
-
-.map-header-menu__zoom-row .map-header-menu__item {
-  flex: 1;
-}
-
-.map-header-menu__area-list {
-  max-height: 300px;
-  overflow-y: auto;
-}
-
-.map-header-menu__area-list::-webkit-scrollbar {
-  width: 6px;
-}
-
-.map-header-menu__area-list::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.map-header-menu__area-list::-webkit-scrollbar-thumb {
-  background-color: var(--popup-border-stronger);
-  border-radius: 3px;
-}
-
-.map-header-menu__area-list::-webkit-scrollbar-thumb:hover {
-  background-color: var(--popup-border-strong);
-}
-
-.map-header-menu__item--checkbox {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.map-header-menu__checkbox {
-  width: 14px;
-  height: 14px;
-  border: 1px solid var(--popup-border-stronger);
-  border-radius: 3px;
-  background: transparent;
-  flex-shrink: 0;
-  position: relative;
-}
-
-.map-header-menu__checkbox--checked {
-  background: var(--popup-accent-hover-bg);
-  border-color: var(--popup-accent);
-}
-
-.map-header-menu__checkbox--checked::after {
-  content: '';
-  position: absolute;
-  left: 4px;
-  top: 1px;
-  width: 4px;
-  height: 8px;
-  border: solid var(--popup-accent);
-  border-width: 0 2px 2px 0;
-  transform: rotate(45deg);
 }
 
 /* ============================================
@@ -1259,40 +732,6 @@ body.layout-manager-enabled .compass-rose-box {
   flex-direction: row;
 }
 
-/* Dock slot — wraps a single panel, a tab group, or a split group. */
-.dock-panel-slot {
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  position: relative;
-}
-.dock-area-top .dock-panel-slot,
-.dock-area-bottom .dock-panel-slot {
-  flex-direction: row;
-}
-
-/* Splitter between adjacent slots within a dock area. */
-.dock-panel-splitter {
-  background: var(--surface-border, #333);
-  flex-shrink: 0;
-  transition: background 0.12s;
-  z-index: 5;
-}
-.dock-panel-splitter:hover,
-.dock-panel-splitter:active {
-  background: var(--layout-accent, #589aff);
-}
-.dock-panel-splitter-h {
-  height: 1px;
-  cursor: ns-resize;
-  width: 100%;
-}
-.dock-panel-splitter-v {
-  width: 1px;
-  cursor: ew-resize;
-  height: 100%;
-}
-
 /* Edge splitter — between the dock area and the main viewport. */
 .dock-edge-splitter {
   position: absolute;
@@ -1318,9 +757,6 @@ body.layout-manager-enabled .compass-rose-box {
   opacity: 0.18;
   border: 2px dashed var(--layout-accent, #589aff);
   animation: dock-drop-preview-pulse 1.2s ease-in-out infinite;
-}
-.dock-panel-slot--preview {
-  pointer-events: none;
 }
 
 /* Fill preview for a wholly-empty dock side being drag-targeted (no leaf ghost
@@ -1378,6 +814,9 @@ body.layout-manager-enabled .compass-rose-box {
   background: var(--popup-control-bg, var(--surface-raised, #252525));
   border-bottom: 1px solid var(--surface-border, #333);
   height: 28px;
+  /* The tabs bring their own padding; the single-window header inset
+     (managed-panel__header, also on this bar) would double it. */
+  padding: 0;
 }
 
 /* Tabs scroll horizontally if there are too many, but actions stay pinned right. */
@@ -1446,51 +885,21 @@ body.layout-manager-enabled .compass-rose-box {
 .tab-group-tab--closable { padding-right: 6px; }
 
 .tab-group-tab-title {
-  font-family: var(--font-ui), sans-serif;
-  font-size: 0.7rem;
+  font-family: var(--font-ui, sans-serif);
+  font-size: var(--ui-fs-xs, 11px);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   color: var(--popup-text-medium, #888);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   max-width: 120px;
   pointer-events: none;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
 }
 .tab-group-tab--active .tab-group-tab-title {
   color: var(--popup-text-bright, #ccc);
 }
-
-/* ── Split group ────────────────────────────────────────────────────────── */
-.split-group-panel {
-  display: flex;
-  flex: 1;
-  overflow: hidden;
-  min-height: 0;
-  min-width: 0;
-}
-.split-group-panel--col { flex-direction: column; }
-.split-group-panel--row { flex-direction: row; }
-
-.split-group-slot {
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  position: relative;
-}
-
-.split-group-splitter {
-  background: var(--surface-border, #333);
-  flex-shrink: 0;
-  transition: background 0.12s;
-  z-index: 5;
-}
-.split-group-splitter:hover,
-.split-group-splitter:active {
-  background: var(--layout-accent, #589aff);
-}
-.split-group-splitter--h { height: 1px; cursor: ns-resize; width: 100%; }
-.split-group-splitter--v { width: 1px; cursor: ew-resize; height: 100%; }
 
 /* ── Recursive layout tree (LayoutNodeView) ──────────────────────────────── */
 .layout-split {
@@ -1516,11 +925,8 @@ body.layout-manager-enabled .compass-rose-box {
 }
 
 /* Split context menu (right-click a docked titlebar). */
-.layout-split-menu .dropdown-item {
-  display: flex;
-  align-items: center;
-  gap: 0.5em;
-  font-size: calc(1rem - 1pt);
+.layout-split-menu .popup-menu__item {
+  font-size: var(--ui-fs, 13px);
 }
 .layout-split-menu__icon {
   display: inline-flex;

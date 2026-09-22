@@ -41,12 +41,12 @@ async function loadPlugin(page: Page): Promise<void> {
     await modal.getByRole('button', {name: 'Dodaj plugin'}).click();
     await page.locator('.plugin-route', {hasText: 'Z adresu URL'}).click();
 
-    const dialog = page.locator('.modal', {hasText: 'Dodaj skrypt z URL'}).last();
+    const dialog = page.locator('.popup-dialog', {hasText: 'Dodaj skrypt z URL'}).last();
     await dialog.getByPlaceholder('URL skryptu').fill(PLUGIN_URL);
     await dialog.getByRole('button', {name: 'Dodaj', exact: true}).click();
     await expect(modal.getByText(PLUGIN_NAME), 'plugin should load and show its name').toBeVisible();
 
-    await modal.locator('.btn-close').first().click();
+    await modal.locator('.app-modal__close').first().click();
     await expect(modal).not.toBeVisible();
 }
 
@@ -59,15 +59,14 @@ async function openFooterSettings(page: Page) {
 /** The plugin's own span, wherever the footer put it. */
 const chip = (page: Page) => page.locator('.plugin-footer-component', {hasText: CHIP_TEXT});
 
-/** The flex item the plugin component is laid out as, and the last stock chip. */
+/** The chip slot the plugin component is laid out in, and the last shown stock chip
+ *  (the connection chip after it is hidden out of the box, so it has no slot). */
 const PLUGIN_ITEM = '#char-state .footer-plugin-item';
-const LAST_CHIP = '#connection-status';
+const LAST_CHIP = '#break-item-warning';
 
 /**
- * Where the footer actually puts something. #char-state is a flex row, so a
- * position is the computed `order` of a flex item - the stock chips are elements
- * in that row, and the plugin component sits in a `display: contents` slot so
- * that it is one too.
+ * Where the footer actually puts something: the computed flex `order` of an item's
+ * slot in the status line's chip row.
  */
 async function footerOrder(page: Page, selector: string): Promise<number> {
     return page.evaluate((sel) => {
@@ -95,12 +94,12 @@ test.describe('plugin footer components in the footer settings', () => {
 
         // Listed under the plugin's name rather than its `plugin:<id>:chip` id,
         // which is the whole reason the registry carries a label.
-        const row = list.locator('.d-flex.align-items-center', {hasText: PLUGIN_NAME});
+        const row = list.locator('.settings-sort-item', {hasText: PLUGIN_NAME});
         await expect(row, 'plugin should have a row in the footer settings').toHaveCount(1);
-        await expect(row.locator('.badge'), 'plugin rows are marked as such').toHaveText('plugin');
+        await expect(row.locator('.settings-sort-item__badge'), 'plugin rows are marked as such').toHaveText('plugin');
 
         // Switching it off has to reach the footer, not just the config.
-        const toggle = row.locator('.form-check-input');
+        const toggle = row.locator('input[type=checkbox]');
         await expect(toggle, 'plugin chip starts visible').toBeChecked();
         await toggle.uncheck();
         await modal.locator(SETTINGS_SAVE).click();
@@ -111,9 +110,9 @@ test.describe('plugin footer components in the footer settings', () => {
         const modalAgain = await openFooterSettings(page);
         const rowAgain = modalAgain
             .locator('#ui-footer-components-settings')
-            .locator('.d-flex.align-items-center', {hasText: PLUGIN_NAME});
+            .locator('.settings-sort-item', {hasText: PLUGIN_NAME});
         await expect(rowAgain, 'a hidden plugin is still offered in the list').toHaveCount(1);
-        await rowAgain.locator('.form-check-input').check();
+        await rowAgain.locator('input[type=checkbox]').check();
         await modalAgain.locator(SETTINGS_SAVE).click();
         await expect(modalAgain).not.toBeVisible();
         await expect(chip(page), 'switching it back on should restore the chip').toBeVisible();
@@ -128,11 +127,12 @@ test.describe('plugin footer components in the footer settings', () => {
         await expect(chip(page), 'plugin chip should be in the footer').toBeVisible();
 
         // Registered as 'end', so it starts behind every built-in chip.
-        expect(await footerOrder(page, PLUGIN_ITEM), 'an unmoved "end" component sits last')
+        const before = await footerOrder(page, PLUGIN_ITEM);
+        expect(before, 'an unmoved "end" component sits last')
             .toBeGreaterThan(await footerOrder(page, LAST_CHIP));
 
         const modal = await openFooterSettings(page);
-        const rows = modal.locator('#ui-footer-components-settings').locator('.d-flex.align-items-center');
+        const rows = modal.locator('#ui-footer-components-settings').locator('.settings-sort-item');
         const row = rows.filter({hasText: PLUGIN_NAME});
         const lastBuiltIn = await rows.count() - 2;
 
@@ -155,8 +155,73 @@ test.describe('plugin footer components in the footer settings', () => {
         await modal.locator(SETTINGS_SAVE).click();
         await expect(modal).not.toBeVisible();
 
+        // One place up puts it before the (hidden) connection chip, still after the rest.
         expect(await footerOrder(page, PLUGIN_ITEM), 'moving it up should move it in the footer')
-            .toBeLessThan(await footerOrder(page, LAST_CHIP));
+            .toBeLessThan(before);
+        expect(await footerOrder(page, PLUGIN_ITEM), 'and keep it behind the shown chips')
+            .toBeGreaterThan(await footerOrder(page, LAST_CHIP));
         await expect(chip(page), 'and it should still be shown').toBeVisible();
+    });
+});
+
+test.describe('plugin footer components in the status line', () => {
+    // Plugin components (an animated companion, a smoking pipe) are drawn to spill
+    // out of their tile, up over the bind row even - nothing around them may clip.
+    test('are not clipped by the status line', async ({page}) => {
+        await page.goto('/');
+        await ensureGameSocket(page);
+        await waitForCommandInput(page);
+
+        await loadPlugin(page);
+        await expect(chip(page), 'plugin chip should be in the footer').toBeVisible();
+
+        const clipping = await chip(page).evaluate((el) => {
+            const found: string[] = [];
+            for (let node = el.parentElement; node; node = node.parentElement) {
+                const style = getComputedStyle(node);
+                if (style.overflowX !== 'visible' || style.overflowY !== 'visible') {
+                    found.push(`${node.tagName}.${node.className}`);
+                }
+                if (node.id === 'char-state') break;
+            }
+            return found;
+        });
+        expect(clipping, 'no ancestor up to and including the status line clips it').toEqual([]);
+    });
+
+    test('spill out of the tile and draw over the bind row', async ({page}) => {
+        await page.goto('/');
+        await ensureGameSocket(page);
+        await waitForCommandInput(page);
+
+        await loadPlugin(page);
+        await expect(chip(page), 'plugin chip should be in the footer').toBeVisible();
+
+        // Stand in for the animated companion: something the plugin draws well above
+        // its own tile. The bind row is faked active - what matters here is the CSS.
+        const report = await page.evaluate(() => {
+            const bar = document.getElementById('multi-binds')!;
+            bar.classList.add('active');
+            const pill = document.createElement('button');
+            pill.className = 'multi-bind';
+            pill.textContent = 'bind';
+            bar.appendChild(pill);
+
+            const host = document.querySelector('.plugin-footer-component') as HTMLElement;
+            host.style.position = 'relative';
+            const spill = document.createElement('i');
+            spill.id = 'spill-probe';
+            spill.style.cssText = 'position:absolute;left:0;bottom:100%;display:block;width:24px;height:64px';
+            host.appendChild(spill);
+
+            const probe = spill.getBoundingClientRect();
+            const row = bar.getBoundingClientRect();
+            const hit = document.elementFromPoint(probe.left + probe.width / 2, probe.top + 4);
+            return {spillTop: probe.top, spillHeight: probe.height, barBottom: row.bottom, hitId: hit?.id ?? null};
+        });
+
+        expect(report.spillHeight, 'the spill keeps its full height, uncropped').toBe(64);
+        expect(report.spillTop, 'and reaches up past the bind row').toBeLessThan(report.barBottom);
+        expect(report.hitId, 'drawn over the bind row, not behind it').toBe('spill-probe');
     });
 });

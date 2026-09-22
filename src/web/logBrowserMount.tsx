@@ -3,7 +3,7 @@
  *
  * Kept out of `LogBrowser.tsx` so that module stays side-effect free: forge-ui
  * hosts the same component inside its own modal shell, where stock's
- * `#logs-button` / `#logs-modal` do not exist.
+ * `#logs-modal` does not exist.
  *
  * The browser is mounted only while the window is open. It loads every session
  * into memory when it mounts, and the client must not read the whole log
@@ -13,36 +13,45 @@
  */
 import { useEffect, useState } from "react";
 import { LogBrowser } from "./LogBrowser";
+import { registerMainMenuItem } from "@modules/core/mainMenuRegistry";
+import { setLogSearchHandler } from "./logSearchRequest";
+import { AppModal, MODAL_EVENT } from "./modals/appModal";
 
 let initialized = false;
 let warned = false;
+/** The query "Szukaj w logach" asked for, taken by the next opening. */
+let pendingQuery: string | undefined;
 
 export function LogBrowserWindow({ modalEl }: { modalEl: HTMLElement }) {
     const [open, setOpen] = useState(false);
+    const [query, setQuery] = useState<string | undefined>();
 
     useEffect(() => {
-        const show = () => setOpen(true);
+        const show = () => {
+            setQuery(pendingQuery);
+            pendingQuery = undefined;
+            setOpen(true);
+        };
         const hide = () => setOpen(false);
-        modalEl.addEventListener("show.bs.modal", show);
-        modalEl.addEventListener("hidden.bs.modal", hide);
+        modalEl.addEventListener(MODAL_EVENT.show, show);
+        modalEl.addEventListener(MODAL_EVENT.hidden, hide);
         return () => {
-            modalEl.removeEventListener("show.bs.modal", show);
-            modalEl.removeEventListener("hidden.bs.modal", hide);
+            modalEl.removeEventListener(MODAL_EVENT.show, show);
+            modalEl.removeEventListener(MODAL_EVENT.hidden, hide);
         };
     }, [modalEl]);
 
-    return open ? <LogBrowser /> : null;
+    return open ? <LogBrowser initialQuery={query} /> : null;
 }
 
 function initLogBrowser(): boolean {
   if (initialized) return true;
 
-  const button = document.getElementById("logs-button") as HTMLButtonElement | null;
   const modalEl = document.getElementById("logs-modal") as HTMLElement | null;
 
-  if (!button || !modalEl) return false;
+  if (!modalEl) return false;
 
-  const modalBody = modalEl.querySelector(".modal-body");
+  const modalBody = modalEl.querySelector(".app-modal__body");
   if (!modalBody) {
     console.error("[Logs] Failed to find modal body");
     return false;
@@ -56,17 +65,34 @@ function initLogBrowser(): boolean {
   modalBody.innerHTML = "";
   modalBody.appendChild(reactContainer);
 
-  Promise.all([
-    import("react-dom/client"),
-    import("bootstrap/js/dist/modal")
-  ]).then(([{ createRoot }, { default: Modal }]) => {
+  void import("react-dom/client").then(({ createRoot }) => {
     const root = createRoot(reactContainer);
     root.render(<LogBrowserWindow modalEl={modalEl} />);
 
-    const modal = new Modal(modalEl);
-    button.addEventListener("click", () => {
-      modal.show();
-    });
+    const modal = AppModal.for(modalEl);
+    showModal = () => modal.show();
+    if (openRequested) showModal();
+  });
+
+  // In the menu at once; a click before the chunks above arrive opens it when they do.
+  let showModal: (() => void) | null = null;
+  let openRequested = false;
+  const open = () => {
+    if (showModal) showModal();
+    else openRequested = true;
+  };
+  registerMainMenuItem({
+    id: "logs-button",
+    label: "Logi",
+    group: "narzedzia",
+    icon: "file-text",
+    order: 170,
+    source: "builtin",
+    onSelect: open,
+  });
+  setLogSearchHandler((query) => {
+    pendingQuery = query;
+    open();
   });
 
   initialized = true;
@@ -79,7 +105,7 @@ function ensureLogBrowser() {
   // injected later. Warn once instead of on every mutation.
   if (!warned) {
     warned = true;
-    console.warn("[Logs] #logs-button / #logs-modal not present yet, waiting for them");
+    console.warn("[Logs] #logs-modal not present yet, waiting for it");
   }
   const observer = new MutationObserver(() => {
     if (initLogBrowser()) {

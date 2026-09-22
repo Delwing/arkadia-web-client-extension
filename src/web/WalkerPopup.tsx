@@ -90,7 +90,7 @@ const WalkerPopup: React.FC = () => {
             initialWidth={320}
             initialHeight={300}
             className="walker-popup"
-            bodyClassName="walker-popup-body"
+            bodyClassName="popup-body"
         >
             <div className="walker-popup__content">
                 {/* Status Section */}

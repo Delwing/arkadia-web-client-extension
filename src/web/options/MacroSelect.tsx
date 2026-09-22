@@ -1,4 +1,4 @@
-import { Form } from "react-bootstrap";
+import { Select } from "@web-ui/primitives/index.ts";
 import { macroOptions } from "../buttonSettings";
 import type { MacroType } from "../buttonSettings";
 import {
@@ -12,7 +12,7 @@ interface MacroSelectProps {
     pluginMacros: PluginButtonMacro[];
     /** Filter which built-in macro options to show. Default: all. */
     filter?: (opt: { value: MacroType; label: string }) => boolean;
-    /** Show border-warning class when the current macro is unavailable. Default: false. */
+    /** Outline the select in warning colour when the current macro is unavailable. Default: false. */
     showUnavailableWarning?: boolean;
     className?: string;
 }
@@ -37,11 +37,10 @@ export default function MacroSelect({
     }
 
     return (
-        <Form.Select
-            size="sm"
+        <Select
             value={value}
             onChange={e => onChange(e.target.value)}
-            className={`${className || ''} ${isUnavailable ? 'border-warning' : ''}`.trim()}
+            className={`${className || ''} ${isUnavailable ? 'is-warning' : ''}`.trim()}
         >
             {filtered.map(opt => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -58,6 +57,6 @@ export default function MacroSelect({
                     {value} (wtyczka niedostępna)
                 </option>
             )}
-        </Form.Select>
+        </Select>
     );
 }

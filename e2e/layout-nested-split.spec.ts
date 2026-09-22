@@ -17,7 +17,7 @@ async function openUiSettingsModal(page: Page): Promise<void> {
 
 async function closeUiSettingsModal(page: Page): Promise<void> {
   await page.click(SETTINGS_SAVE);
-  await page.waitForSelector('#settings-modal.show', { state: 'hidden', timeout: 5000 });
+  await page.waitForSelector('#settings-modal:not([hidden])', { state: 'hidden', timeout: 5000 });
 }
 
 async function enableLayoutManager(page: Page): Promise<void> {
