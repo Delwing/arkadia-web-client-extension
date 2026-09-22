@@ -30,12 +30,15 @@
   --theme-ground: #161a24;
   --theme-text: #f1f5f9;
   --theme-accent: #6da7da;
-  --theme-line: #c3cad8;
-  --theme-tint: #b4bccc;
+  /* Neutral washes and borders: the ground is blue-black, the chrome over it
+     stays grey rather than turning the whole UI blue. */
+  --theme-line: #c8c8c8;
+  --theme-tint: #a8a8a8;
   --theme-success: #32b562;
   --theme-warning: #de9822;
   --theme-danger: #de5555;
   --theme-input: #0b0f17;
+  --theme-footer: #242424;
   --theme-data-shift: 10%;
 }
 
