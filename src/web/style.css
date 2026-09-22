@@ -434,6 +434,14 @@ body {
   text-transform: uppercase;
   color: var(--popup-text-bright);
 }
+/* Header actions (Postacie, Importuj bazę…) stay the header's 28px, like the
+   close button: neither the touch tier's 34px small controls nor the phone's
+   8vmin button floor applies (desktop is 28px already). */
+.modal .modal-header .btn-sm {
+  --bs-btn-line-height: 26px;
+  min-width: 0;
+  min-height: 0;
+}
 .modal .modal-header .btn-close {
   width: 28px;
   height: 28px;
