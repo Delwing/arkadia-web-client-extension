@@ -13,7 +13,7 @@ import {
 
 /**
  * The single settings dialog: character ("Ustawienia") and UI ("Interfejs")
- * settings share one Bootstrap modal with a page sidebar, a search box and one
+ * settings share one window with a page sidebar, a search box and one
  * Save button.
  */
 
@@ -30,7 +30,7 @@ async function boot(page: Page) {
 }
 
 async function closeWithoutSaving(page: Page) {
-    await page.locator(`${SETTINGS_MODAL} .btn-close`).click();
+    await page.locator(`${SETTINGS_MODAL} .app-modal__close`).click();
     await expect(page.locator(SETTINGS_MODAL), 'settings modal should close').not.toBeVisible();
     await waitForSettingsModalClosed(page);
 }
@@ -43,8 +43,8 @@ test.describe('Settings dialog', () => {
         await page.click('#menu-button');
         await page.click('#options-button');
         await waitForSettingsModalShown(page);
-        await expect(page.locator('.modal.show'), 'only one settings modal is open').toHaveCount(1);
-        await expect(modal.locator('.modal-title')).toHaveText('Ustawienia');
+        await expect(page.locator('.app-modal:not([hidden])'), 'only one settings modal is open').toHaveCount(1);
+        await expect(modal.locator('.app-modal__title')).toHaveText('Ustawienia');
         await expect(settingsPage(page, 'character-general'), 'Ustawienia opens on Postac > Ogolne').toBeVisible();
         await expect(navItem(page, 'character-general')).toHaveClass(/settings-dialog__nav-item--active/);
         await expect(settingsPage(page, 'ui-appearance')).toBeHidden();
@@ -54,8 +54,8 @@ test.describe('Settings dialog', () => {
         await page.click('#menu-button');
         await page.click('#ui-settings-button');
         await waitForSettingsModalShown(page);
-        await expect(page.locator('.modal.show'), 'only one settings modal is open').toHaveCount(1);
-        await expect(modal.locator('.modal-title')).toHaveText('Ustawienia');
+        await expect(page.locator('.app-modal:not([hidden])'), 'only one settings modal is open').toHaveCount(1);
+        await expect(modal.locator('.app-modal__title')).toHaveText('Ustawienia');
         await expect(settingsPage(page, 'ui-appearance'), 'Interfejs opens on Interfejs > Wyglad').toBeVisible();
         await expect(navItem(page, 'ui-appearance')).toHaveClass(/settings-dialog__nav-item--active/);
         await expect(settingsPage(page, 'character-general')).toBeHidden();
@@ -85,8 +85,7 @@ test.describe('Settings dialog', () => {
 
         await search.press('Escape');
         await expect(search, 'Escape clears the query').toHaveValue('');
-        await expect(modal, 'Escape in a non-empty search does not close the dialog').toHaveClass(/\bshow\b/);
-        await expect(modal).toBeVisible();
+        await expect(modal, 'Escape in a non-empty search does not close the dialog').toBeVisible();
         await expect(settingsPage(page, 'ui-appearance'), 'back on the page that was open').toBeVisible();
         await expect(settingsPage(page, 'ui-map')).toBeHidden();
         await expect(modal.locator('#ui-map-scale')).toBeHidden();
@@ -292,12 +291,12 @@ test.describe('Settings dialog on a phone', () => {
         await expect(modal.locator('[data-settings-group="ui"] .settings-scope-chip')).toHaveText('wszystkie postacie');
         await expect(modal.locator('[data-settings-group="data"] .settings-scope-chip'), 'Dane carry no chip').toHaveCount(0);
         await expect(phoneRow(page, 'ui-commands').locator('.settings-phone__row-summary'), 'a summary of the page').toContainText('multibindy');
-        await expect(modal.locator('.modal-footer'), 'no Save until something changes').toBeHidden();
+        await expect(modal.locator('.app-modal__footer'), 'no Save until something changes').toBeHidden();
 
         await phoneRow(page, 'ui-map').click();
         await expect(settingsPage(page, 'ui-map')).toBeVisible();
         await expect(modal.locator('.settings-phone__title')).toHaveText('Mapa');
-        await expect(modal.locator('.modal-header'), 'the page brings its own header').toBeHidden();
+        await expect(modal.locator('.app-modal__header'), 'the page brings its own header').toBeHidden();
 
         await modal.locator('#settings-phone-back').click();
         await expect(settingsPage(page, 'ui-map')).toBeHidden();

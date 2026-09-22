@@ -26,7 +26,7 @@ const IMPORT_ROW = '#settings-modal #import-multibinds';
 
 async function closeImportPage(page: Page) {
     const modal = page.locator('#settings-modal');
-    await modal.locator('.btn-close').first().click();
+    await modal.locator('.app-modal__close').first().click();
     await expect(modal, 'should close the settings dialog after finishing checks').not.toBeVisible();
 }
 
@@ -147,7 +147,7 @@ test.describe('Multibind import', () => {
             'should display newly created alias entry',
         ).toContainText(aliasCommand);
 
-        await aliasesModal.locator('.btn-close').click();
+        await aliasesModal.locator('.app-modal__close').click();
         await expect(aliasesModal, 'should close aliases modal after creating alias').not.toBeVisible();
 
         await submitCommand(page, `/mbind 3 ${aliasPattern}`);

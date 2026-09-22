@@ -35,13 +35,13 @@ async function pressKey(
 async function openBindsModal(page: Page): Promise<void> {
     await page.click('#menu-button');
     await page.click('#binds-button');
-    await page.waitForSelector('#binds-modal.show', {timeout: 5000});
+    await page.waitForSelector('#binds-modal:not([hidden])', {timeout: 5000});
     await page.waitForSelector('#binds-keymap-select', {timeout: 5000});
 }
 
 async function saveBindsModal(page: Page): Promise<void> {
     await page.locator('#binds-modal button:has-text("Zapisz")').click();
-    await page.waitForSelector('#binds-modal.show', {state: 'hidden', timeout: 5000});
+    await page.waitForSelector('#binds-modal:not([hidden])', {state: 'hidden', timeout: 5000});
 }
 
 // ---------------------------------------------------------------------------

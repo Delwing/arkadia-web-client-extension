@@ -387,97 +387,176 @@ body {
    END FLOATING WINDOW BASE CLASSES
    ========================================================================== */
 
-/* Shared dark surfaces and input styling */
-.modal-backdrop.show {
+/* ── Page-level windows (src/web/modals/appModal.ts) ───────────────────────
+   Settings, aliases, triggers, binds… declared in index.html. The open modal is
+   its own backdrop; the frame inside wears the Dialog primitive's look (40px
+   header, spaced-capitals title, 28px controls). Frames sit at the top, not
+   centred, so switching a tab that changes the height does not make the whole
+   window jump. */
+.app-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1050;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  box-sizing: border-box;
+  padding: 1.75rem 16px;
   background-color: rgba(2, 4, 8, 0.82);
-}
-
-.modal-content {
-  background-color: var(--popup-bg);
   color: var(--popup-text);
-  border: 1px solid var(--popup-border);
-  box-shadow: 0 1.5rem 3rem rgba(0, 0, 0, 0.65);
-}
-
-.modal-header,
-.modal-footer {
-  background-color: var(--popup-subtle-bg);
-  border-color: var(--popup-border-subtle);
-}
-
-.modal-body {
-  background-color: var(--popup-bg);
-}
-
-/* ── Bootstrap modal shells in the shared Dialog style ─────────────────────
-   The windows in index.html (settings, aliases, triggers, binds…) still open
-   through Bootstrap's Modal JS; this gives their chrome and the controls
-   inside them the look of src/ui/web/primitives/Dialog + the popup-* controls
-   (40px header, spaced-capitals title, 28px controls). Scoped to .modal, so
-   nothing outside a modal changes. Swapped for the Dialog component itself
-   when Bootstrap goes. */
-.modal {
-  --bs-modal-bg: var(--popup-bg);
-  --bs-modal-border-color: var(--popup-border);
-  --bs-modal-border-radius: var(--ui-radius-lg, 10px);
-  --bs-modal-inner-border-radius: calc(var(--ui-radius-lg, 10px) - 1px);
-  --bs-modal-padding: 16px;
-  --bs-modal-header-padding: 0 6px 0 16px;
-  --bs-modal-header-border-color: var(--popup-border);
-  --bs-modal-footer-border-color: var(--popup-border);
-  --bs-modal-footer-gap: 8px;
-  --bs-modal-title-line-height: 1.2;
   font-family: var(--font-ui);
   font-size: var(--ui-fs, 13px);
+  line-height: 1.45;
+  text-align: left;
 }
-.modal .modal-content {
-  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.5), 0 2px 6px rgba(0, 0, 0, 0.35);
+.app-modal[hidden] {
+  display: none;
 }
-.modal .modal-header {
-  min-height: 40px;
+body.app-modal-open {
+  overflow: hidden;
+}
+.app-modal__dialog {
+  display: flex;
+  flex-direction: column;
   box-sizing: border-box;
-  background-color: transparent;
+  width: 100%;
+  max-width: 500px;
+  max-height: 100%;
+  overflow: hidden;
+  border: 1px solid var(--popup-border);
+  border-radius: var(--ui-radius-lg, 10px);
+  background-color: var(--popup-bg);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.5), 0 2px 6px rgba(0, 0, 0, 0.35);
+  outline: none;
 }
-.modal .modal-header .modal-title {
+.app-modal__dialog--lg { max-width: 800px; }
+.app-modal__dialog--xl { max-width: 1140px; }
+/* Panels that scroll inside themselves need a definite height to fill. */
+.app-modal__dialog--fill { height: 100%; }
+.app-modal__header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  box-sizing: border-box;
+  padding: 0 6px 0 16px;
+  border-bottom: 1px solid var(--popup-border);
+}
+.app-modal__title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: var(--ui-fs-sm, 12px);
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--popup-text-bright);
 }
-/* Header actions (Postacie, Importuj bazę…) stay the header's 28px, like the
-   close button: neither the touch tier's 34px small controls nor the phone's
-   8vmin button floor applies (desktop is 28px already). */
-.modal .modal-header .btn-sm {
-  --bs-btn-line-height: 26px;
-  min-width: 0;
-  min-height: 0;
-}
-.modal .modal-header .btn-close {
+.app-modal__close {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 28px;
   height: 28px;
-  margin: 0 0 0 auto;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  border: 1px solid transparent;
   border-radius: var(--ui-radius-sm, 4px);
-  background-color: transparent;
-  background-size: 10px;
-  opacity: 0.7;
-  box-shadow: none;
-}
-.modal .modal-header .btn-close:hover,
-.modal .modal-header .btn-close:focus-visible {
-  background-color: var(--popup-control-hover-bg);
+  background: transparent;
+  color: var(--popup-text-subtle);
+  font: inherit;
+  font-size: 18px;
+  line-height: 1;
   opacity: 1;
-  box-shadow: none;
+  cursor: pointer;
 }
-.modal .modal-footer {
+.app-modal__close:hover,
+.app-modal__close:focus-visible {
+  background-color: var(--popup-control-hover-bg);
+  color: var(--popup-text);
+}
+.app-modal__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 16px;
+  overflow: auto;
+}
+.app-modal__body--flush {
+  padding: 0;
+}
+/* The panel inside scrolls its own regions; the body only frames it. */
+.app-modal__body--panel {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+}
+.app-modal__panel {
+  flex: 1 1 auto;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+.app-modal__body--center {
+  display: flex;
+  justify-content: center;
+}
+.app-modal__footer {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
   padding: 10px 16px;
+  border-top: 1px solid var(--popup-border);
   background-color: var(--popup-control-bg);
 }
-.modal .modal-footer > * {
-  margin: 0;
+.app-modal__footer-start {
+  margin-right: auto;
 }
+.app-modal__spinner {
+  width: 14px;
+  height: 14px;
+  box-sizing: border-box;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  color: var(--popup-text-subtle);
+  animation: app-modal-spin 0.75s linear infinite;
+}
+.app-modal__spinner[hidden] {
+  display: none;
+}
+@keyframes app-modal-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 575.98px) {
+  .app-modal {
+    padding: 8px;
+  }
+}
+/* The whole screen on a phone. */
+@media (max-width: 767.98px) {
+  .app-modal:has(> .app-modal__dialog--phone-full) {
+    padding: 0;
+  }
+  .app-modal__dialog--phone-full {
+    max-width: none;
+    height: 100%;
+    border: 0;
+    border-radius: 0;
+  }
+}
+
 /* Buttons: 28px (24px small), UI font, the dialog radius. */
-.modal .btn {
+.app-modal .btn {
   --bs-btn-padding-y: 0;
   --bs-btn-padding-x: 12px;
   --bs-btn-font-family: var(--font-ui);
@@ -486,8 +565,8 @@ body {
   --bs-btn-line-height: calc(var(--ui-ctrl, 28px) - 2px);
   --bs-btn-border-radius: var(--ui-radius, 6px);
 }
-.modal .btn-sm,
-.modal .btn-group-sm > .btn {
+.app-modal .btn-sm,
+.app-modal .btn-group-sm > .btn {
   --bs-btn-padding-x: 8px;
   --bs-btn-font-size: var(--ui-fs-sm, 12px);
   --bs-btn-line-height: calc(var(--ui-ctrl-sm, 24px) - 2px);
@@ -495,8 +574,8 @@ body {
 }
 /* Inputs and selects: 28px, beating the global input[type=…] rules (0,1,1)
    and their 0.2rem focus ring. */
-.modal .form-control,
-.modal .form-select {
+.app-modal .form-control,
+.app-modal .form-select {
   min-height: 0;
   height: var(--ui-ctrl, 28px);
   padding: 0 8px;
@@ -504,59 +583,59 @@ body {
   font-size: var(--ui-input-fs, 14px);
   line-height: calc(var(--ui-ctrl, 28px) - 2px);
 }
-.modal .form-select {
+.app-modal .form-select {
   padding-right: 26px;
   background-position: right 8px center;
   background-size: 12px;
 }
-.modal textarea.form-control {
+.app-modal textarea.form-control {
   height: auto;
   min-height: var(--ui-ctrl, 28px);
   padding: 5px 8px;
   line-height: 1.4;
 }
-.modal .form-control-sm,
-.modal .form-select-sm {
+.app-modal .form-control-sm,
+.app-modal .form-select-sm {
   height: var(--ui-ctrl-sm, 24px);
   padding-left: 6px;
   border-radius: var(--ui-radius-sm, 4px);
   font-size: var(--ui-input-fs, 14px);
   line-height: calc(var(--ui-ctrl-sm, 24px) - 2px);
 }
-.modal .form-select-sm {
+.app-modal .form-select-sm {
   padding-right: 22px;
 }
-.modal textarea.form-control-sm {
+.app-modal textarea.form-control-sm {
   height: auto;
   line-height: 1.4;
 }
-.modal .form-control[type="color"] {
+.app-modal .form-control[type="color"] {
   padding: 2px;
 }
-.modal .form-control:focus,
-.modal .form-select:focus {
+.app-modal .form-control:focus,
+.app-modal .form-select:focus {
   border-color: var(--popup-accent);
   box-shadow: 0 0 0 2px var(--popup-accent-subtle-bg);
 }
-.modal .form-label {
+.app-modal .form-label {
   margin-bottom: 4px;
   font-size: var(--ui-fs-sm, 12px);
   font-weight: 600;
 }
-.modal .form-text {
+.app-modal .form-text {
   font-size: var(--ui-fs-xs, 11px);
 }
-.modal .form-check-input {
+.app-modal .form-check-input {
   width: var(--ui-check, 16px);
   height: var(--ui-check, 16px);
   margin-top: 0.2em;
 }
-.modal .input-group-text {
+.app-modal .input-group-text {
   padding: 0 8px;
   font-size: var(--ui-fs, 13px);
 }
 
-.modal .btn-close,
+.app-modal .btn-close,
 .letter-composer .btn-close,
 .plugin-window .btn-close,
 .herb-window .btn-close {
@@ -580,8 +659,8 @@ body {
   transition: opacity 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.modal .btn-close:hover,
-.modal .btn-close:focus-visible,
+.app-modal .btn-close:hover,
+.app-modal .btn-close:focus-visible,
 .letter-composer .btn-close:hover,
 .letter-composer .btn-close:focus-visible,
 .plugin-window .btn-close:hover,
@@ -608,9 +687,9 @@ body {
 
 /* Locked state styling for plugin windows */
 
-.modal .form-text,
-.modal .form-label,
-.modal .form-check-label {
+.app-modal .form-text,
+.app-modal .form-label,
+.app-modal .form-check-label {
   color: var(--popup-text-subtle);
 }
 
@@ -624,9 +703,9 @@ input[type="number"],
 input[type="search"],
 input[type="tel"],
 input[type="url"],
-.modal textarea,
-.modal input,
-.modal select {
+.app-modal textarea,
+.app-modal input,
+.app-modal select {
   background-color: var(--popup-input-bg);
   border: 1px solid var(--popup-border-control);
   color: var(--popup-input-text);
@@ -676,7 +755,7 @@ input[type="url"]:disabled {
 }
 
 .form-select option,
-.modal option {
+.app-modal option {
   background-color: var(--popup-bg);
   color: var(--popup-text);
 }
@@ -970,34 +1049,14 @@ h1 {
   background-color: var(--bs-body-bg);
 }
 
-/* Stock Logi dialog: as wide as the screen allows and full height. The window
-   has no Bootstrap header of its own — the viewer's own header is the header,
-   and it carries the close control (see `LogBrowser.tsx`). */
-#logs-modal .logs-modal-dialog {
-  height: calc(100% - var(--bs-modal-margin) * 2);
-}
-
-/* On a phone `modal-fullscreen-md-down` already takes the whole viewport, and
-   the height above would fight it — Bootstrap's own margin is 0 there. Below
-   this width every pixel spent on a margin is a line of log, and the global
-   `.modal-dialog { max-height: 85% }` further down this file is 127px of
-   nothing at the bottom of the screen. */
-@media (max-width: 767.98px) {
-  #logs-modal .logs-modal-dialog {
-    height: 100%;
-    max-height: 100%;
-  }
-}
-
+/* Stock Logi dialog: as wide as the screen allows and full height (the fill
+   and phone-full frame modifiers). The window has no header of the shell —
+   the viewer's own header is the header, and it carries the close control
+   (see `LogBrowser.tsx`). */
 @media (min-width: 1200px) {
   #logs-modal .logs-modal-dialog {
-    --bs-modal-width: min(1800px, calc(100vw - 4rem));
+    max-width: min(1800px, calc(100vw - 4rem));
   }
-}
-
-#logs-modal .modal-content {
-  height: 100%;
-  overflow: hidden;
 }
 
 #logs-modal .logs-modal-body {
@@ -2844,35 +2903,29 @@ span.import-source__icon > svg {
   font-weight: 500;
 }
 
-#debug-modal .modal-dialog,
-#aliases-modal .modal-dialog {
-  margin-top: 5vh;
-  margin-bottom: 5vh;
+#aliases-modal {
+  padding-top: 5vh;
+  padding-bottom: 5vh;
 }
 
 /* Settings dialog: the shell itself (sidebar, search, page columns) lives in
-   src/web/settings/settingsDialog.css; this only sizes the Bootstrap modal. */
+   src/web/settings/settingsDialog.css; this only sizes the window. */
 @media (min-width: 768px) {
-  #settings-modal .modal-dialog {
-    width: min(1100px, 92vw);
-    max-width: none;
-    margin-top: 5vh;
-    margin-bottom: 5vh;
+  #settings-modal {
+    padding-top: 5vh;
+    padding-bottom: 5vh;
+  }
+  #settings-modal .app-modal__dialog {
+    max-width: min(1100px, 92vw);
   }
 }
 
 @media (min-width: 1400px) {
-  #settings-modal .modal-dialog {
-    width: min(1400px, 90vw);
+  #settings-modal .app-modal__dialog {
+    max-width: min(1400px, 90vw);
   }
 }
 
-/* Full screen on phones (modal-fullscreen-md-down); lift the global 85% cap. */
-@media (max-width: 767.98px) {
-  #settings-modal .modal-dialog {
-    max-height: none;
-  }
-}
 
 .ui-settings-section,
 .character-settings-section {
@@ -3418,14 +3471,9 @@ select.popup-input.popup-input--control.is-warning {
 }
 
 /* Sound category tiles (Dźwięk tab) */
-.modal-dialog {
-  max-height: 85%;
-  pointer-events: auto;
-}
-
-.modal input,
-.modal textarea,
-.modal select {
+.app-modal input,
+.app-modal textarea,
+.app-modal select {
   -webkit-user-select: text;
   user-select: text;
 }

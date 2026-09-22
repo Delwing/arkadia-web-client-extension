@@ -4,6 +4,7 @@ import {domEditableField} from "./editableField";
 import {localStorageHistoryStore} from "./commandHistoryStore";
 import {harvestOutputWords} from "./outputWords";
 import {type ActiveCommandLine, setActiveCommandLine} from "./activeCommandLine";
+import {isAnyModalOpen} from "@web/modals/appModal.ts";
 
 export interface CommandInputDeps {
     messageInput: HTMLTextAreaElement;
@@ -155,7 +156,11 @@ export class CommandInputController {
         this.input.addEventListener('focus', () => {
             this.deps.outputWrapper.scrollTop = this.deps.outputWrapper.scrollHeight;
             if (this.suppressFocusSelectAll) return;
-            setTimeout(() => this.input.select());
+            // select() focuses too: if focus has moved on meanwhile (a window
+            // opening focuses its own field), leave it there.
+            setTimeout(() => {
+                if (document.activeElement === this.input) this.input.select();
+            });
         }, o);
     }
 
@@ -259,7 +264,7 @@ export class CommandInputController {
         if (e.key === 'Enter') {
             if (e.shiftKey) return;
             const active = document.activeElement as HTMLElement | null;
-            const modalOpen = document.querySelector('.modal.show');
+            const modalOpen = isAnyModalOpen();
             if (modalOpen && (!active || active.id !== 'message-input')) return;
             if (active && active.id !== 'message-input' &&
                 (active.matches('input, textarea') || active.isContentEditable)) {

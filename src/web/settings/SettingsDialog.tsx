@@ -22,6 +22,7 @@ import { indexPage, matchSettings, pageMatches, pageSections } from "./settingsI
 import { PhonePageHeader, PhoneSaveBar, PhoneSectionChips, PhoneStart, type PhoneResults, type ScopeChip } from "./PhoneSettings";
 import { pageSignature } from "./settingsDirty";
 import { NavIcon } from "./categoryIcons";
+import { MODAL_EVENT } from "@web/modals/appModal.ts";
 import "./settingsDialog.css";
 
 const GROUPS: readonly SettingsGroup[] = ["character", "ui", "data"];
@@ -323,14 +324,14 @@ function SettingsDialog({ soundManager, onEnableNotifications, initialCategory }
         window.addEventListener(SHOW_SETTINGS_EVENT, onShowCategory);
         window.addEventListener(OPEN_SETTINGS_EVENT, onAssistantOpen);
         window.addEventListener(SAVE_SETTINGS_EVENT, onSave);
-        modalEl?.addEventListener("show.bs.modal", onModalShow);
-        modalEl?.addEventListener("hidden.bs.modal", onModalHidden);
+        modalEl?.addEventListener(MODAL_EVENT.show, onModalShow);
+        modalEl?.addEventListener(MODAL_EVENT.hidden, onModalHidden);
         return () => {
             window.removeEventListener(SHOW_SETTINGS_EVENT, onShowCategory);
             window.removeEventListener(OPEN_SETTINGS_EVENT, onAssistantOpen);
             window.removeEventListener(SAVE_SETTINGS_EVENT, onSave);
-            modalEl?.removeEventListener("show.bs.modal", onModalShow);
-            modalEl?.removeEventListener("hidden.bs.modal", onModalHidden);
+            modalEl?.removeEventListener(MODAL_EVENT.show, onModalShow);
+            modalEl?.removeEventListener(MODAL_EVENT.hidden, onModalHidden);
         };
     }, [navigate, resetDirty]);
 

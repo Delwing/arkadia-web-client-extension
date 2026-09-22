@@ -26,7 +26,7 @@ async function dispatchRoomContextMenu(page: import('@playwright/test').Page, ro
 async function addStopViaContextMenu(page: import('@playwright/test').Page, roomId: number): Promise<void> {
     await dispatchRoomContextMenu(page, roomId);
     const menu = page.locator(CONTEXT_MENU_SELECTOR);
-    await expect(menu).toHaveClass(/show/);
+    await expect(menu).toBeVisible();
     const addStopButton = menu.locator('button', { hasText: 'Przystanek w planie trasy' });
     await addStopButton.click();
 }

@@ -15,7 +15,7 @@ async function login(page: Page): Promise<void> {
 }
 
 async function closeSettings(page: Page): Promise<void> {
-    await page.locator(`${SETTINGS_MODAL} .btn-close`).first().click();
+    await page.locator(`${SETTINGS_MODAL} .app-modal__close`).first().click();
     await expect(page.locator(SETTINGS_MODAL)).not.toBeVisible();
 }
 
@@ -31,7 +31,7 @@ async function setLogging(page: Page, enabled: boolean): Promise<void> {
 async function openLogs(page: Page): Promise<void> {
     await page.click('#menu-button');
     await page.click('#logs-button');
-    await page.waitForSelector('#logs-modal.show', {timeout: 5000});
+    await page.waitForSelector('#logs-modal:not([hidden])', {timeout: 5000});
     await expect(page.locator('.lv')).toBeVisible();
 }
 
@@ -44,7 +44,7 @@ test.describe('Logging toggle', () => {
         await openLogs(page);
         await expect(page.locator('#logs-modal #logs-enabled')).toHaveCount(0);
         await page.locator('#logs-close').click();
-        await page.waitForSelector('#logs-modal.show', {state: 'hidden', timeout: 5000});
+        await page.waitForSelector('#logs-modal:not([hidden])', {state: 'hidden', timeout: 5000});
 
         const modal = await openSettings(page, 'ui-other');
         await expect(modal.locator('#logs-enabled')).toBeVisible();

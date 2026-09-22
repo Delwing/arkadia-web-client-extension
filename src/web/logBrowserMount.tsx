@@ -15,6 +15,7 @@ import { useEffect, useState } from "react";
 import { LogBrowser } from "./LogBrowser";
 import { registerMainMenuItem } from "@modules/core/mainMenuRegistry";
 import { setLogSearchHandler } from "./logSearchRequest";
+import { AppModal, MODAL_EVENT } from "./modals/appModal";
 
 let initialized = false;
 let warned = false;
@@ -32,11 +33,11 @@ export function LogBrowserWindow({ modalEl }: { modalEl: HTMLElement }) {
             setOpen(true);
         };
         const hide = () => setOpen(false);
-        modalEl.addEventListener("show.bs.modal", show);
-        modalEl.addEventListener("hidden.bs.modal", hide);
+        modalEl.addEventListener(MODAL_EVENT.show, show);
+        modalEl.addEventListener(MODAL_EVENT.hidden, hide);
         return () => {
-            modalEl.removeEventListener("show.bs.modal", show);
-            modalEl.removeEventListener("hidden.bs.modal", hide);
+            modalEl.removeEventListener(MODAL_EVENT.show, show);
+            modalEl.removeEventListener(MODAL_EVENT.hidden, hide);
         };
     }, [modalEl]);
 
@@ -50,7 +51,7 @@ function initLogBrowser(): boolean {
 
   if (!modalEl) return false;
 
-  const modalBody = modalEl.querySelector(".modal-body");
+  const modalBody = modalEl.querySelector(".app-modal__body");
   if (!modalBody) {
     console.error("[Logs] Failed to find modal body");
     return false;
@@ -64,14 +65,11 @@ function initLogBrowser(): boolean {
   modalBody.innerHTML = "";
   modalBody.appendChild(reactContainer);
 
-  Promise.all([
-    import("react-dom/client"),
-    import("bootstrap/js/dist/modal")
-  ]).then(([{ createRoot }, { default: Modal }]) => {
+  void import("react-dom/client").then(({ createRoot }) => {
     const root = createRoot(reactContainer);
     root.render(<LogBrowserWindow modalEl={modalEl} />);
 
-    const modal = new Modal(modalEl);
+    const modal = AppModal.for(modalEl);
     showModal = () => modal.show();
     if (openRequested) showModal();
   });

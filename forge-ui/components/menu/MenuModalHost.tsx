@@ -4,6 +4,7 @@ import MenuModal from './MenuModal';
 import { getHelperConnection } from '../../client/bootstrap';
 import { CLOSE_SETTINGS_EVENT, OPEN_SETTINGS_PAGE_EVENT, SAVE_SETTINGS_EVENT, SETTINGS_MODAL_ID, requestSettingsCategory, type OpenSettingsPageDetail, type SettingsCategoryKey } from '@web/settings/categories.ts';
 import { buttonsSettingsCategory } from '@web/settings/buttonsCategory.ts';
+import { MODAL_EVENT } from '@web/modals/appModal.ts';
 
 // The stock settings panels are lazy-loaded to keep their weight out of forge's
 // initial bundle: together they're ~140 kB gzip of JS (Skrypty alone is ~40 kB,
@@ -169,14 +170,14 @@ const SIZE: Partial<Record<ModalKey, 'md' | 'lg' | 'xl'>> = {
  * (header included) without these dispatching before the shell exists.
  */
 function ModalOpenEffects({ modalKey }: { modalKey: ModalKey }) {
-    // SettingsDialog hooks the Bootstrap show/hidden lifecycle of `#settings-modal`
+    // SettingsDialog follows the show/hidden events of `#settings-modal` (MODAL_EVENT)
     // to refresh its drafts on open and restore live-previewed values on dismiss.
     useEffect(() => {
         if (!SETTINGS_KEYS.has(modalKey)) return;
         const el = document.getElementById(SETTINGS_MODAL_ID);
-        el?.dispatchEvent(new Event('show.bs.modal'));
+        el?.dispatchEvent(new Event(MODAL_EVENT.show));
         return () => {
-            el?.dispatchEvent(new Event('hidden.bs.modal'));
+            el?.dispatchEvent(new Event(MODAL_EVENT.hidden));
         };
     }, [modalKey]);
 

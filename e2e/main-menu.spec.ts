@@ -42,11 +42,11 @@ test.describe('main menu', () => {
         const modal = page.locator('#scripts-modal');
         await modal.getByRole('button', { name: 'Dodaj plugin' }).click();
         await page.locator('.plugin-route', { hasText: 'Z adresu URL' }).click();
-        const dialog = page.locator('.modal', { hasText: 'Dodaj skrypt z URL' }).last();
+        const dialog = page.locator('.popup-dialog', { hasText: 'Dodaj skrypt z URL' }).last();
         await dialog.getByPlaceholder('URL skryptu').fill(PLUGIN_URL);
         await dialog.getByRole('button', { name: 'Dodaj', exact: true }).click();
         await expect(modal.getByText('Menu Test')).toBeVisible();
-        await modal.locator('.btn-close').first().click();
+        await modal.locator('.app-modal__close').first().click();
         await expect(modal).not.toBeVisible();
 
         await page.click('#menu-button');

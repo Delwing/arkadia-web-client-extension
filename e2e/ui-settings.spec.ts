@@ -380,8 +380,8 @@ test.describe('UI settings', () => {
         await expect(reset).toHaveCount(0);
     });
 
-    // The sound manager is a sub-dialog opened from inside the Bootstrap-driven
-    // #settings-modal. Rendering it as a portaled react-bootstrap <Modal> made
+    // The sound manager is a sub-dialog opened from inside the
+    // #settings-modal window. Rendering it as a portaled react-bootstrap <Modal> made
     // Bootstrap's FocusTrap and react-overlays' enforceFocus bounce focus between
     // the two dialogs thousands of times a second, which pegged the CPU until the
     // page stopped responding. It also swallowed Escape into the host window and
@@ -431,7 +431,7 @@ test.describe('UI settings', () => {
         // swallows every click.
         await modal.locator(SETTINGS_SAVE).click();
         await expect(modal, 'settings window should close').not.toBeVisible();
-        await expect(page.locator('.modal-backdrop'), 'no stray backdrop').toHaveCount(0);
+        await expect(page.locator('.app-modal:not([hidden])'), 'no stray window left open').toHaveCount(0);
         await page.click(MENU_BUTTON);
         await expect(
             page.locator(UI_SETTINGS_BUTTON),

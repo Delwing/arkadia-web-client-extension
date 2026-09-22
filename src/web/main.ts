@@ -18,7 +18,7 @@ import {ProxyControls} from "./hostProxy/ProxyControls.tsx";
 import recordingManager from "./RecordingManager.ts";
 import eventBus from "@modules/core/eventBus";
 import {setupOutputContextMenu} from "./outputContextMenu";
-import {Modal} from 'bootstrap';
+import {AppModal} from './modals/appModal';
 import ObjectList from "./ObjectList";
 import {mountMigratedComponents} from "@web-ui/mountComponents.tsx";
 import {setupMobileFooter} from "./mobileFooter.ts";
@@ -797,25 +797,25 @@ document.addEventListener('DOMContentLoaded', () => {
     wakeLockButton = document.getElementById('wake-lock-button') as HTMLButtonElement | null;
     updateWakeLockButton();
 
-    // Initialize Bootstrap modal
+    // The page-level windows (index.html, src/web/modals/appModal.ts)
     const settingsModalElement = document.getElementById('settings-modal');
-    const settingsModal = settingsModalElement ? new Modal(settingsModalElement) : null;
+    const settingsModal = settingsModalElement ? AppModal.for(settingsModalElement) : null;
     const characterManagementModalElement = document.getElementById('character-management-modal');
-    const characterManagementModal = characterManagementModalElement ? new Modal(characterManagementModalElement) : null;
+    const characterManagementModal = characterManagementModalElement ? AppModal.for(characterManagementModalElement) : null;
     const bindsModalElement = document.getElementById('binds-modal');
-    const bindsModal = bindsModalElement ? new Modal(bindsModalElement) : null;
+    const bindsModal = bindsModalElement ? AppModal.for(bindsModalElement) : null;
     const scriptsModalElement = document.getElementById('scripts-modal');
-    const scriptsModal = scriptsModalElement ? new Modal(scriptsModalElement) : null;
+    const scriptsModal = scriptsModalElement ? AppModal.for(scriptsModalElement) : null;
     const aliasesModalElement = document.getElementById('aliases-modal');
-    const aliasesModal = aliasesModalElement ? new Modal(aliasesModalElement) : null;
+    const aliasesModal = aliasesModalElement ? AppModal.for(aliasesModalElement) : null;
     const triggersModalElement = document.getElementById('triggers-modal');
-    const triggersModal = triggersModalElement ? new Modal(triggersModalElement) : null;
+    const triggersModal = triggersModalElement ? AppModal.for(triggersModalElement) : null;
     const recordingsModalElement = document.getElementById('recordings-modal');
-    const recordingsModal = recordingsModalElement ? new Modal(recordingsModalElement) : null;
+    const recordingsModal = recordingsModalElement ? AppModal.for(recordingsModalElement) : null;
     const placesModalElement = document.getElementById('places-modal');
-    const placesModal = placesModalElement ? new Modal(placesModalElement) : null;
+    const placesModal = placesModalElement ? AppModal.for(placesModalElement) : null;
     const helperModalElement = document.getElementById('helper-modal');
-    const helperModal = helperModalElement ? new Modal(helperModalElement) : null;
+    const helperModal = helperModalElement ? AppModal.for(helperModalElement) : null;
     const loginCharacter = document.getElementById('login-character') as HTMLInputElement | null;
     const loginPassword = document.getElementById('login-password') as HTMLInputElement | null;
     const loginForm = document.getElementById('login-form') as HTMLFormElement | null;
@@ -833,7 +833,7 @@ document.addEventListener('DOMContentLoaded', () => {
     mudClient.on('client.connect', focusCommandInputOnConnect);
 
     if (contentArea) {
-        const interactiveSelector = 'a, button, input, textarea, select, [contenteditable], .plugin-window, .modal, .managed-panel';
+        const interactiveSelector = 'a, button, input, textarea, select, [contenteditable], .plugin-window, .app-modal, .managed-panel';
 
         const focusMessageInput = (target: EventTarget | null) => {
             // Check if there's a text selection
@@ -887,7 +887,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const enableNotificationsConnection = document.getElementById('enable-notifications-connection') as HTMLButtonElement | null;
     const locationQrImage = document.getElementById('location-qr-image') as HTMLImageElement | null;
     const locationShareModalElement = document.getElementById('location-share-modal');
-    const locationShareModal = locationShareModalElement ? new Modal(locationShareModalElement) : null;
+    const locationShareModal = locationShareModalElement ? AppModal.for(locationShareModalElement) : null;
 
     // The login screen's banner: gone once notifications are on, or for now on its cross.
     const authNotify = document.getElementById('auth-notify');
@@ -1001,12 +1001,9 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener(OPEN_SETTINGS_PAGE_EVENT, (event) => {
         const { category, anchor } = (event as CustomEvent<OpenSettingsPageDetail>).detail;
         window.dispatchEvent(new Event('close-options'));
-        // Let a closing Bootstrap modal finish before the next one opens.
-        window.setTimeout(() => {
-            requestSettingsCategory(category);
-            settingsModal?.show();
-            if (anchor) window.setTimeout(() => document.getElementById(anchor)?.scrollIntoView({ block: 'center' }), 350);
-        }, 150);
+        requestSettingsCategory(category);
+        settingsModal?.show();
+        if (anchor) window.setTimeout(() => document.getElementById(anchor)?.scrollIntoView({ block: 'center' }), 350);
     });
 
     window.addEventListener('show-export-import', () => {
@@ -1068,7 +1065,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('binds-parsing', (ev) => {
         const parsing = (ev as CustomEvent<boolean>).detail;
         if (bindsImportButton) bindsImportButton.disabled = parsing;
-        bindsImportSpinner?.classList.toggle('d-none', !parsing);
+        if (bindsImportSpinner) bindsImportSpinner.hidden = !parsing;
     });
     const bindsSave = document.getElementById('binds-save') as HTMLButtonElement | null;
     if (bindsSave) {

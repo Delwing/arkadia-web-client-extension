@@ -1,7 +1,4 @@
 /* Miejsca: list of places on the left, the selected place on the right. */
-#places-modal .modal-body {
-  padding: 0;
-}
 .places {
   display: grid;
   grid-template-columns: minmax(18rem, 26rem) minmax(0, 1fr);
@@ -384,10 +381,6 @@
 
 /* Narrow: one pane at a time — the list, or the place with a back button. */
 @media (max-width: 767.98px) {
-  /* modal-fullscreen-md-down: lift the global 85% cap, as Ustawienia does. */
-  #places-modal .modal-dialog {
-    max-height: none;
-  }
   .places {
     grid-template-columns: minmax(0, 1fr);
     /* Full screen below the 40px window header. */

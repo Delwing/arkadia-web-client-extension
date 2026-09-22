@@ -45,7 +45,7 @@ test.describe('Map context menu', () => {
         await dispatchRoomContextMenu(page, 2);
 
         const menu = page.locator(CONTEXT_MENU_SELECTOR);
-        await expect(menu).toHaveClass(/show/);
+        await expect(menu).toBeVisible();
 
         await expect(menu.locator('.context-menu__quick'), 'three big buttons, Idz the primary one')
             .toHaveText(['Idź', 'Prowadź', 'Tu jestem']);
@@ -60,7 +60,7 @@ test.describe('Map context menu', () => {
         await dispatchRoomContextMenu(page, 2);
 
         const menu = page.locator(CONTEXT_MENU_SELECTOR);
-        await expect(menu).toHaveClass(/show/);
+        await expect(menu).toBeVisible();
 
         const opensWindowButtons = menu.locator('button.opens-window');
         await expect(opensWindowButtons).toHaveCount(5);
@@ -83,7 +83,7 @@ test.describe('Map context menu', () => {
 
         await dispatchRoomContextMenu(page, 3);
         const menu = page.locator(CONTEXT_MENU_SELECTOR);
-        await expect(menu).toHaveClass(/show/);
+        await expect(menu).toBeVisible();
 
         const setLocationButton = menu.locator('button', { hasText: 'Tu jestem' });
         await setLocationButton.click();
@@ -96,7 +96,7 @@ test.describe('Map context menu', () => {
         await dispatchRoomContextMenu(page, 3);
 
         const menu = page.locator(CONTEXT_MENU_SELECTOR);
-        await expect(menu).toHaveClass(/show/);
+        await expect(menu).toBeVisible();
 
         const leadButton = menu.locator('button', { hasText: 'Prowadź' });
         await leadButton.click();
@@ -112,7 +112,7 @@ test.describe('Map context menu', () => {
         await dispatchRoomContextMenu(page, 3);
 
         const menu = page.locator(CONTEXT_MENU_SELECTOR);
-        await expect(menu).toHaveClass(/show/);
+        await expect(menu).toBeVisible();
 
         const walkButton = menu.locator('button', { hasText: 'Idź' });
         await walkButton.click();
@@ -126,7 +126,7 @@ test.describe('Map context menu', () => {
         await dispatchRoomContextMenu(page, 2);
 
         const menu = page.locator(CONTEXT_MENU_SELECTOR);
-        await expect(menu).toHaveClass(/show/);
+        await expect(menu).toBeVisible();
 
         // Click the first non-window-opening button (Tu jestem)
         const firstButton = menu.locator('button', { hasText: 'Tu jestem' });
@@ -139,7 +139,7 @@ test.describe('Map context menu', () => {
         await dispatchRoomContextMenu(page, 2);
 
         const menu = page.locator(CONTEXT_MENU_SELECTOR);
-        await expect(menu).toHaveClass(/show/);
+        await expect(menu).toBeVisible();
 
         const shortcutButton = menu.locator('button', { hasText: 'Skrót' });
         await shortcutButton.click();
@@ -174,7 +174,7 @@ test.describe('Map context menu', () => {
         await dispatchRoomContextMenu(page, 4);
 
         const menu = page.locator(CONTEXT_MENU_SELECTOR);
-        await expect(menu).toHaveClass(/show/);
+        await expect(menu).toBeVisible();
 
         const leadButton = menu.locator('button', { hasText: 'Prowadź' });
         await leadButton.click();
@@ -190,7 +190,7 @@ test.describe('Map context menu', () => {
         await dispatchRoomContextMenu(page, 3);
 
         const menu = page.locator(CONTEXT_MENU_SELECTOR);
-        await expect(menu).toHaveClass(/show/);
+        await expect(menu).toBeVisible();
 
         const walkButton = menu.locator('button', { hasText: 'Idź' });
         await walkButton.click();

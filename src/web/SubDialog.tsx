@@ -7,7 +7,7 @@ import { Dialog } from "@web-ui/primitives/Dialog.tsx";
  * are.
  *
  * Panels under `src/web/options` and `src/web/uiSettings` are mounted inside
- * stock's Bootstrap-driven modals (`#scripts-modal`, `#binds-modal`,
+ * stock's page-level windows (`#scripts-modal`, `#binds-modal`,
  * `#export-import-modal`, `#settings-modal`) and, under forge, inside
  * `.forge-menu-modal`. A portaled dialog there makes the two focus managers
  * fight (CPU pegged, inputs untypeable) and can leave a stray backdrop behind

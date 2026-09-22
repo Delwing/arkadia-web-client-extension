@@ -4,6 +4,7 @@ import {Button, DeleteButton, Input, InputGroup, MenuButton, Notice} from '@web-
 import {deleteRecording, getRecordingSummaries, saveRecording, type RecordedEvent, type RecordingSummary} from '@web/recordingStorage.ts';
 import eventBus from "@modules/core/eventBus";
 import recordingManager from "../RecordingManager";
+import { MODAL_EVENT } from "@web/modals/appModal.ts";
 
 const BLACK_BOX_RECENT_MS = 3 * 60 * 1000;
 
@@ -111,8 +112,8 @@ function Recordings() {
     useEffect(() => {
         load();
         const modal = document.getElementById('recordings-modal');
-        modal?.addEventListener('show.bs.modal', load);
-        return () => modal?.removeEventListener('show.bs.modal', load);
+        modal?.addEventListener(MODAL_EVENT.show, load);
+        return () => modal?.removeEventListener(MODAL_EVENT.show, load);
     }, [load]);
 
     // The recording card and the black box tick once a second.

@@ -149,15 +149,15 @@ export function LogBrowser({ headerTrailing, initialQuery }: LogBrowserProps) {
                                 <Icon name="archive" />
                             </IconButton>
                             {headerTrailing}
-                            {/* Stock's window has no Bootstrap header any more,
-                                so the close control lives here. Bootstrap's own
-                                delegated handler does the closing; under forge,
-                                where there is no `#logs-modal`, the host passes
-                                its own control as `headerTrailing` instead. */}
+                            {/* Stock's window has no header of the shell, so the
+                                close control lives here; the shell closes on any
+                                [data-modal-dismiss] inside it. Under forge, where
+                                there is no `#logs-modal`, the host passes its own
+                                control as `headerTrailing` instead. */}
                             {inStockModal ? (
                                 <IconButton
                                     id="logs-close"
-                                    data-bs-dismiss="modal"
+                                    data-modal-dismiss
                                     title="Zamknij  Esc"
                                 >
                                     <Icon name="close" />

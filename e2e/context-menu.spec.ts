@@ -45,7 +45,7 @@ test.describe('Context menu', () => {
         await output.click({button: 'right'});
 
         const menu = page.locator(CONTEXT_MENU_SELECTOR);
-        await expect(menu).toHaveClass(/show/);
+        await expect(menu).toBeVisible();
     });
 
     test('menu contains expected items', async ({page}) => {
@@ -53,7 +53,7 @@ test.describe('Context menu', () => {
         await output.click({button: 'right'});
 
         const menu = page.locator(CONTEXT_MENU_SELECTOR);
-        await expect(menu).toHaveClass(/show/);
+        await expect(menu).toBeVisible();
 
         await expect(menu).toContainText('Znaczniki czasu');
         await expect(menu).toContainText('Wiedza');
@@ -105,7 +105,7 @@ test.describe('Context menu', () => {
         await output.click({button: 'right'});
 
         const menu = page.locator(CONTEXT_MENU_SELECTOR);
-        await expect(menu).toHaveClass(/show/);
+        await expect(menu).toBeVisible();
 
         const firstButton = menu.locator('button').first();
         await firstButton.click();
@@ -118,7 +118,7 @@ test.describe('Context menu', () => {
         await output.click({button: 'right'});
 
         const menu = page.locator(CONTEXT_MENU_SELECTOR);
-        await expect(menu).toHaveClass(/show/);
+        await expect(menu).toBeVisible();
 
         const wiedzaButton = menu.locator('.context-menu__tile', {hasText: 'Wiedza'});
         await wiedzaButton.click();
@@ -139,7 +139,7 @@ test.describe('Context menu', () => {
         // Right-click and toggle timestamps
         await output.click({button: 'right'});
         const menu = page.locator(CONTEXT_MENU_SELECTOR);
-        await expect(menu).toHaveClass(/show/);
+        await expect(menu).toBeVisible();
 
         const timestampButton = menu.locator('button', {hasText: 'Znaczniki czasu'});
         await expect(timestampButton.locator('.context-menu__icon--check svg')).toHaveCount(initialHasTimestamps ? 1 : 0);
@@ -208,7 +208,7 @@ test.describe('Context menu', () => {
         await output.click({button: 'right'});
 
         const menu = page.locator(CONTEXT_MENU_SELECTOR);
-        await expect(menu).toHaveClass(/show/);
+        await expect(menu).toBeVisible();
 
         const menuHtml = await menu.innerHTML();
         expect(menuHtml).not.toContain('Kopiuj jako obraz');
@@ -227,7 +227,7 @@ test.describe('Context menu', () => {
             .toHaveText('Ctrl+C');
 
         await menu.locator('.context-menu__item', {hasText: 'Szukaj w logach'}).click();
-        await page.waitForSelector('#logs-modal.show', {timeout: 5000});
+        await page.waitForSelector('#logs-modal:not([hidden])', {timeout: 5000});
         await expect(page.locator('#lv-search')).toHaveValue('Goblin atakuje cie');
         await expect(page.locator('.lv-segmented__item[data-state="on"]', {hasText: 'Wszystkie logi'}))
             .toHaveCount(1);
@@ -239,7 +239,7 @@ test.describe('Context menu', () => {
         await rightClickSelection(page, 'Some selectable text here');
 
         const menu = page.locator(CONTEXT_MENU_SELECTOR);
-        await expect(menu).toHaveClass(/show/);
+        await expect(menu).toBeVisible();
         await expect(menu).toContainText('Kopiuj jako obraz');
         await expect(menu).toContainText('Zapisz jako HTML');
     });

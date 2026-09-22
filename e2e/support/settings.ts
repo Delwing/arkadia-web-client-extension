@@ -2,8 +2,8 @@ import type {Locator, Page} from '@playwright/test';
 import {expect} from './fixtures';
 
 /**
- * Helpers for the unified settings dialog (#settings-modal): one Bootstrap
- * modal with a sidebar of pages (desktop) or a page <select> (narrow dialogs).
+ * Helpers for the unified settings dialog (#settings-modal): one window
+ * with a sidebar of pages (desktop) or a page <select> (narrow dialogs).
  */
 
 export const SETTINGS_MODAL = '#settings-modal';
@@ -37,15 +37,9 @@ export async function waitForSettingsModalClosed(page: Page) {
     });
 }
 
-/** Waits for Bootstrap's show animation, so a following hide() is not silently ignored. */
+/** Waits for the settings window to be open. */
 export async function waitForSettingsModalShown(page: Page) {
-    await page.waitForSelector('#settings-modal.show', {timeout: 5000});
-    await page.waitForFunction(() => {
-        const d = document.querySelector('#settings-modal .modal-dialog') as HTMLElement | null;
-        if (!d) return false;
-        const t = window.getComputedStyle(d).transform;
-        return t === 'none' || t === 'matrix(1, 0, 0, 1, 0, 0)';
-    });
+    await page.waitForSelector('#settings-modal:not([hidden])', {timeout: 5000});
 }
 
 /**

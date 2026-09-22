@@ -39,7 +39,7 @@ async function openFirebaseTab(page: Page) {
  */
 async function closeModal(page: Page) {
     const modal = page.locator(EXPORT_IMPORT_MODAL);
-    await modal.locator('.btn-close').click();
+    await modal.locator('.app-modal__close').click();
     await expect(modal).not.toBeVisible();
 }
 

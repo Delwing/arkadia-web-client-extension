@@ -27,13 +27,13 @@ async function openFromMapMenu(page: Page, roomId: number, item: 'Notatka' | 'Sk
         }));
     }, roomId);
     const menu = page.locator('#context-menu');
-    await expect(menu).toHaveClass(/show/);
+    await expect(menu).toBeVisible();
     await menu.locator('button', { hasText: item }).click();
     await expect(modal(page)).toBeVisible();
 }
 
 async function closePlaces(page: Page) {
-    await modal(page).locator('.btn-close').click();
+    await modal(page).locator('.app-modal__close').click();
     await expect(modal(page)).not.toBeVisible();
 }
 
@@ -253,7 +253,7 @@ test.describe('Miejsca (skróty i notatki lokacji)', () => {
         const row = modal(page).locator('.places-row', { hasText: 'Kamienny Most' });
         await row.click({ button: 'right' });
         const menu = page.locator('#context-menu');
-        await expect(menu).toHaveClass(/show/);
+        await expect(menu).toBeVisible();
         await expect(menu).toContainText('Kamienny Most');
         await expect(menu.locator('button')).toHaveText(['Idź', 'Prowadź', 'Usuń miejsce']);
 
@@ -267,7 +267,7 @@ test.describe('Miejsca (skróty i notatki lokacji)', () => {
         await page.click('#places-button');
         await expect(modal(page)).toBeVisible();
         await row.click({ button: 'right' });
-        await expect(menu).toHaveClass(/show/);
+        await expect(menu).toBeVisible();
         await menu.locator('button', { hasText: 'Usuń miejsce' }).click();
         await expect.poll(() => storedShortcuts(page)).toEqual([]);
         await expect(row).toHaveCount(0);
@@ -289,11 +289,11 @@ test.describe('Miejsca (skróty i notatki lokacji)', () => {
         const scripts = page.locator('#scripts-modal');
         await scripts.getByRole('button', { name: 'Dodaj plugin' }).click();
         await page.locator('.plugin-route', { hasText: 'Z adresu URL' }).click();
-        const dialog = page.locator('.modal', { hasText: 'Dodaj skrypt z URL' }).last();
+        const dialog = page.locator('.popup-dialog', { hasText: 'Dodaj skrypt z URL' }).last();
         await dialog.getByPlaceholder('URL skryptu').fill(pluginUrl);
         await dialog.getByRole('button', { name: 'Dodaj', exact: true }).click();
         await expect(scripts.getByText('Notki Test')).toBeVisible();
-        await scripts.locator('.btn-close').first().click();
+        await scripts.locator('.app-modal__close').first().click();
         await expect(scripts).not.toBeVisible();
 
         await page.click('#menu-button');
@@ -331,7 +331,7 @@ test.describe('Miejsca (skróty i notatki lokacji)', () => {
         await expect(match).toBeVisible();
         await match.click({ button: 'right' });
         const menu = page.locator('#context-menu');
-        await expect(menu).toHaveClass(/show/);
+        await expect(menu).toBeVisible();
         await expect(menu.locator('button'), 'nothing of yours is saved there yet').toHaveText(['Idź', 'Prowadź']);
 
         await menu.locator('button', { hasText: 'Idź' }).click();

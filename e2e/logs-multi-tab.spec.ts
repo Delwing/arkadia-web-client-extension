@@ -19,13 +19,13 @@ async function login(page: Page, name: string): Promise<void> {
 async function openLogs(page: Page): Promise<void> {
     await page.click('#menu-button');
     await page.click('#logs-button');
-    await page.waitForSelector('#logs-modal.show', {timeout: 5000});
+    await page.waitForSelector('#logs-modal:not([hidden])', {timeout: 5000});
     await expect(page.locator('.lv')).toBeVisible();
 }
 
 async function closeLogs(page: Page): Promise<void> {
     await page.locator('#logs-close').click();
-    await page.waitForSelector('#logs-modal.show', {state: 'hidden', timeout: 5000});
+    await page.waitForSelector('#logs-modal:not([hidden])', {state: 'hidden', timeout: 5000});
 }
 
 /** Sessions are a sidebar list now, not a `<select>`. */

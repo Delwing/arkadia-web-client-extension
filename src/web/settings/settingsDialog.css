@@ -276,8 +276,8 @@
  * The host's header stays on the list; the page brings its own. The host's
  * Save gives way to a bar that appears only while something is unsaved.
  */
-.modal-content:has(.settings-dialog--phone) > .modal-footer,
-.modal-content:has(.settings-dialog--phone-page) > .modal-header {
+.app-modal__dialog:has(.settings-dialog--phone) > .app-modal__footer,
+.app-modal__dialog:has(.settings-dialog--phone-page) > .app-modal__header {
   display: none;
 }
 

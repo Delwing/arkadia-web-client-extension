@@ -19,7 +19,7 @@ async function openOptions(page: Page) {
 }
 
 async function closeOptions(page: Page) {
-    await page.locator(`${SETTINGS_MODAL} .btn-close`).first().click();
+    await page.locator(`${SETTINGS_MODAL} .app-modal__close`).first().click();
     await expect(page.locator(SETTINGS_MODAL), 'settings modal should close').not.toBeVisible();
 }
 

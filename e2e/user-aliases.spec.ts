@@ -43,7 +43,7 @@ test.describe('User aliases', () => {
         const createdAlias = aliasesModal.locator('.alias-card').filter({ hasText: aliasPattern });
         await expect(createdAlias, 'should list newly created alias entry').toContainText(aliasCommand);
 
-        await aliasesModal.locator('.btn-close').click();
+        await aliasesModal.locator('.app-modal__close').click();
         await expect(aliasesModal, 'should close aliases modal before executing commands').not.toBeVisible();
 
         await submitCommand(page, aliasPattern);
@@ -61,7 +61,7 @@ test.describe('User aliases', () => {
         const persistedAlias = reloadedModal.locator('.alias-card').filter({ hasText: aliasPattern });
         await expect(persistedAlias, 'should persist alias entry after reload').toContainText(aliasCommand);
 
-        await reloadedModal.locator('.btn-close').click();
+        await reloadedModal.locator('.app-modal__close').click();
         await expect(reloadedModal, 'should close aliases modal after persistence check').not.toBeVisible();
 
         await submitCommand(page, aliasPattern);
@@ -123,7 +123,7 @@ test.describe('User aliases', () => {
         ).toContainText('alpha cmd');
 
         // Close the aliases modal
-        await aliasesModal.locator('.btn-close').first().click();
+        await aliasesModal.locator('.app-modal__close').first().click();
         await expect(aliasesModal, 'should close aliases modal before executing commands').not.toBeVisible();
 
         // Execute the alias as CharAlpha — expect the override command to be sent
@@ -169,7 +169,7 @@ test.describe('User aliases', () => {
             'should persist alpha cmd override command after reload',
         ).toContainText('alpha cmd');
 
-        await reloadedModal.locator('.btn-close').first().click();
+        await reloadedModal.locator('.app-modal__close').first().click();
         await expect(reloadedModal, 'should close aliases modal after persistence check').not.toBeVisible();
     });
 });

@@ -29,7 +29,7 @@ async function openExportImportModal(page: Page) {
 
 async function closeExportImportModal(page: Page) {
     const modal = page.locator(EXPORT_IMPORT_MODAL);
-    await modal.locator('.btn-close').click();
+    await modal.locator('.app-modal__close').click();
     await expect(modal, 'should close export/import modal').not.toBeVisible();
 }
 
@@ -57,8 +57,8 @@ test.describe('Export/Import', () => {
             await waitForCommandInput(page);
             await ensureGameSocket(page);
 
-            const modal = await openExportImportModal(page);
-            await expect(page.locator(EXPORT_IMPORT_MODAL).locator('.modal-title')).toContainText('Ustawienia');
+            await openExportImportModal(page);
+            await expect(page.locator(EXPORT_IMPORT_MODAL).locator('.app-modal__title')).toContainText('Ustawienia');
             await closeExportImportModal(page);
         });
     });

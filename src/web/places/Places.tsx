@@ -9,6 +9,7 @@ import { getPluginLocationNotes } from "@modules/core/pluginLocationNotesRegistr
 import { deleteNote, saveNote } from "@modules/data/locationNotesStorage";
 import { showContextMenu, type ContextMenuEntry } from "@web/contextMenu";
 import { subscribeEmbeddedMap } from "@web/embedRegistry.ts";
+import { MODAL_EVENT } from "@web/modals/appModal.ts";
 import { MapStrip } from "./MapStrip";
 import {
     deletePlace,
@@ -61,18 +62,18 @@ function savedLabel(ts: number) {
 }
 
 /**
- * Focus a field in the Miejsca window. A Bootstrap modal that is still opening
- * focuses itself once its transition ends (it is already .show by then), so
- * focus now and again when it reports being shown, if that comes shortly.
+ * Focus a field in the Miejsca window. A window that is still opening is hidden
+ * and cannot take focus yet, so focus now and again when it reports being
+ * shown, if that comes shortly.
  */
 function focusInWindow(el: HTMLElement | null) {
     if (!el) return;
     el.focus();
-    const modal = el.closest(".modal");
+    const modal = el.closest(".app-modal");
     if (!modal) return;
     const refocus = () => el.focus();
-    modal.addEventListener("shown.bs.modal", refocus, { once: true });
-    window.setTimeout(() => modal.removeEventListener("shown.bs.modal", refocus), 1000);
+    modal.addEventListener(MODAL_EVENT.shown, refocus, { once: true });
+    window.setTimeout(() => modal.removeEventListener(MODAL_EVENT.shown, refocus), 1000);
 }
 
 interface Row {
@@ -400,7 +401,7 @@ export default function Places() {
         });
         const offMove = eventBus.on("enterLocation", ({ id }) => setHere(id));
         const modal = document.getElementById("places-modal");
-        modal?.addEventListener("show.bs.modal", load);
+        modal?.addEventListener(MODAL_EVENT.show, load);
         const onOpen = (e: Event) => {
             const detail = (e as CustomEvent<OpenPlaceDetail>).detail;
             setSelected(detail.roomId);
@@ -414,7 +415,7 @@ export default function Places() {
             offPluginNotes?.();
             if (pluginReload !== null) window.clearTimeout(pluginReload);
             offMove?.();
-            modal?.removeEventListener("show.bs.modal", load);
+            modal?.removeEventListener(MODAL_EVENT.show, load);
             window.removeEventListener(OPEN_PLACE_EVENT, onOpen);
         };
     }, [load]);

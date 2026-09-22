@@ -14,20 +14,13 @@ async function openBindsModal(page: Page): Promise<void> {
         return !el || window.getComputedStyle(el).display === 'none';
     });
     await page.click('#binds-button');
-    await page.waitForSelector('#binds-modal.show', {timeout: 5000});
-    await page.waitForSelector('#binds-keymap-select', {timeout: 5000});
-    // Wait for Bootstrap show animation to complete so modal.hide() won't be silently ignored
-    await page.waitForFunction(() => {
-        const d = document.querySelector('#binds-modal .modal-dialog') as HTMLElement | null;
-        if (!d) return false;
-        const t = window.getComputedStyle(d).transform;
-        return t === 'none' || t === 'matrix(1, 0, 0, 1, 0, 0)';
-    });
+    await page.waitForSelector('#binds-modal:not([hidden])', {timeout: 5000});
+    await page.waitForSelector('#binds-keymap-select', {timeout: 5000});
 }
 
 async function closeBindsModal(page: Page): Promise<void> {
-    await page.locator('#binds-modal .btn-close').first().click();
-    await page.waitForSelector('#binds-modal.show', {state: 'hidden', timeout: 5000});
+    await page.locator('#binds-modal .app-modal__close').first().click();
+    await page.waitForSelector('#binds-modal:not([hidden])', {state: 'hidden', timeout: 5000});
 }
 
 async function login(page: Page): Promise<void> {

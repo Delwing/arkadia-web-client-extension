@@ -259,7 +259,7 @@
 
 /* ── Dialog (src/ui/web/primitives/Dialog.tsx) ─────────────────────────────
    Rendered inline over its host (see Dialog.tsx), so the backdrop is fixed and
-   sits above Bootstrap's .modal (1055). */
+   sits above the page-level window it opens from (.app-modal, 1055). */
 .popup-dialog-backdrop {
   position: fixed;
   inset: 0;

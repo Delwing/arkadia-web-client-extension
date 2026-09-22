@@ -127,5 +127,5 @@ export function openSettingsPage(category: SettingsCategoryKey, anchor?: string)
 export const SAVE_SETTINGS_EVENT = "save-settings";
 /** Dispatched by the dialog after saving, asking the host to close it. */
 export const CLOSE_SETTINGS_EVENT = "close-settings";
-/** DOM id of the element whose Bootstrap `show.bs.modal`/`hidden.bs.modal` the dialog follows. */
+/** DOM id of the window whose open/close events (MODAL_EVENT, appModal.ts) the dialog follows. */
 export const SETTINGS_MODAL_ID = "settings-modal";

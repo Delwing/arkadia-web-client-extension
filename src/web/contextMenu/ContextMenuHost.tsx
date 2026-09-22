@@ -33,12 +33,14 @@ function renderLabel(label: ContextMenuEntry['label']): ReactNode {
 
 /**
  * Runs an entry, then closes the menu and hands the keyboard back to the
- * command line. The action goes first so Safari's transient user activation
+ * command line - unless the entry opened a window, which focuses its own
+ * field. The action goes first so Safari's transient user activation
  * (clipboard.write etc.) isn't invalidated by the unmount.
  */
-function run(action: () => void) {
+function run(action: () => void, opensWindow?: boolean) {
     action();
     hideContextMenu();
+    if (opensWindow) return;
     const input = document.getElementById('message-input') as HTMLTextAreaElement | null;
     if (input) {
         input.focus();
@@ -93,7 +95,7 @@ function Row({ item, withIcons }: { item: ContextMenuEntry; withIcons: boolean }
     }
 
     return (
-        <button type="button" className={classes.join(' ')} onClick={() => run(item.action)}>
+        <button type="button" className={classes.join(' ')} onClick={() => run(item.action, item.opensWindow)}>
             {withIcons && <EntryIcon item={item} />}
             {text}
             {item.hint ? <span className="context-menu__hint">{item.hint}</span> : null}
@@ -112,7 +114,7 @@ function Tile({ item }: { item: ContextMenuEntry }) {
     if (item.variant === 'quick') classes.push('context-menu__quick');
     if (item.active) classes.push('is-active');
     return (
-        <button type="button" className={classes.join(' ')} onClick={() => run(item.action)}>
+        <button type="button" className={classes.join(' ')} onClick={() => run(item.action, item.opensWindow)}>
             {Icon ? <Icon size={18} /> : null}
             <span className="context-menu__tile-label">{renderLabel(item.label)}</span>
             {item.variant === 'tile' && item.active ? <span className="context-menu__open-dot" /> : null}
