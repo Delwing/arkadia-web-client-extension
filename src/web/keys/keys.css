@@ -294,7 +294,7 @@ button.keys-kc:hover { border-color: var(--popup-accent-border); }
 }
 .keys-top--medium { display: block; }
 .keys-board { min-width: 0; }
-/* 22.75 x 6.25 key units — see keyboardLayout.ts. */
+/* Key units; the exact ratio comes from the drawn layout — see keyboardLayout.ts. */
 .keys-board__inner {
   position: relative;
   aspect-ratio: 22.75 / 6.25;
@@ -317,6 +317,19 @@ button.keys-kc:hover { border-color: var(--popup-accent-border); }
   cursor: pointer;
 }
 .keys-key:hover:not(:disabled) { border-color: var(--popup-accent-border); }
+/* Half-height keys (the Mac arrow cluster) have no room for two stacked lines. */
+.keys-key.is-half {
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+  padding: 0 4px;
+  border-bottom-width: 2px;
+}
+.keys-key.is-half .keys-key__fn { font-size: 9px; }
+.keys-key.is-half .keys-key__badge {
+  top: 50%;
+  transform: translateY(-50%);
+}
 .keys-key.is-inert {
   opacity: 0.45;
   cursor: default;

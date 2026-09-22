@@ -880,6 +880,8 @@ export default function Keys({ helperConnection, headerSlot, onImport }: KeysPro
         const capturingThis = capture?.target.kind === "entry" && sameCombo(capture.target.entry.combo, combo);
         const cls = [
             "keys-key",
+            // A Mac arrow key is half a row tall: cap and function go side by side.
+            (cap.h ?? 1) < 1 && "is-half",
             cap.inert && "is-inert",
             list.length && "is-bound",
             conflict && "is-conflict",
@@ -939,7 +941,7 @@ export default function Keys({ helperConnection, headerSlot, onImport }: KeysPro
             {/* The height comes from the aspect ratio in CSS, not from the measured
                 width: the board must hold its place on the very first paint, or the
                 window jumps the moment the keys arrive. */}
-            <div className="keys-board__inner">
+            <div className="keys-board__inner" style={{ aspectRatio: `${KEYBOARD_WIDTH} / ${KEYBOARD_HEIGHT}` }}>
                 {kbWidth > 0 && KEYBOARD.map(cap => keyCell(cap, mini))}
             </div>
         </div>

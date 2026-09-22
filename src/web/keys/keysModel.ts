@@ -10,6 +10,7 @@ import type { Bind, BindSettings, DirectionBinds } from "@modules/core/keymapTyp
 import type { StoredBind } from "@modules/helper/helperBinds";
 import type { BindMode } from "@modules/helper/helperProtocol";
 import { KEYBOARD, keyDistance } from "./keyboardLayout";
+import { IS_MAC } from "./platform";
 
 // ── Keystrokes ──────────────────────────────────────────────────────────
 
@@ -27,8 +28,7 @@ export type Layer = string;
 /** The layers the window always offers, in tab order. Others appear when used. */
 export const BASE_LAYERS: readonly Layer[] = ["", "ctrl", "alt", "shift", "ctrl+alt"];
 
-const isMac = typeof navigator !== "undefined" && /Mac/.test(navigator.platform);
-const ALT_LABEL = isMac ? "⌥" : "Alt";
+const ALT_LABEL = IS_MAC ? "⌥" : "Alt";
 
 /**
  * Stored keys are usually a `code` (`KeyQ`), but older binds and imports hold
@@ -92,8 +92,19 @@ const KEY_LABELS: Record<string, string> = {
     ShiftLeft: "Shift", ShiftRight: "Shift", MetaLeft: "Win", MetaRight: "Win", ContextMenu: "Menu",
 };
 
+/** What an Apple keyboard prints instead. */
+const MAC_KEY_LABELS: Record<string, string> = {
+    Backspace: "⌫", Enter: "return", CapsLock: "⇪", NumpadEnter: "NumEnter", NumpadEqual: "Num=",
+    AltLeft: "⌥", AltRight: "⌥", MetaLeft: "⌘", MetaRight: "⌘", NumLock: "Clear", Fn: "fn",
+};
+
 /** The key alone, as printed on a keycap: `KeyQ` → `Q`, `Numpad8` → `Num8`. */
 export function keyLabel(code: string): string {
+    return keyLabelFor(code, IS_MAC);
+}
+
+export function keyLabelFor(code: string, mac: boolean): string {
+    if (mac && MAC_KEY_LABELS[code]) return MAC_KEY_LABELS[code];
     if (KEY_LABELS[code]) return KEY_LABELS[code];
     if (code.startsWith("Key")) return code.slice(3);
     if (code.startsWith("Digit")) return code.slice(5);
