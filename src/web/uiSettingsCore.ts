@@ -302,11 +302,10 @@ export function apply(settings: UiSettings) {
     if (objects) {
         // --window-font-* is set by the Kondycje window's settings cog when the
         // user overrides the font for that window alone (windowSettings.ts).
-        // With no fallback, an unset --window-font-family makes the declaration
-        // invalid and the font inherits, as a removed property would.
-        objects.style.fontFamily = resolvedFontFamily
-            ? `var(--window-font-family, ${resolvedFontFamily})`
-            : 'var(--window-font-family)';
+        // The fallback must be spelled out: an unset var with no fallback makes
+        // the inline declaration invalid, and the element then inherits the
+        // proportional UI font instead of the stylesheet's monospace.
+        objects.style.fontFamily = `var(--window-font-family, ${resolvedFontFamily || 'monospace'})`;
         objects.style.fontSize = `var(--window-font-size, ${settings.objectsFontSize}rem)`;
         objects.style.backgroundColor = hexAlphaToRgba(settings.objectListBackgroundColor, settings.objectListBackgroundAlpha);
     }
