@@ -63,9 +63,15 @@ function rel(absolute: string): string {
     return path.relative(ROOT, absolute).split(path.sep).join('/');
 }
 
+/**
+ * Newlines are normalised because whole source files end up inside the bundle
+ * (the proposal schemas quote their interfaces verbatim). A checkout with CRLF
+ * would otherwise produce a different bundle — and therefore a different
+ * KB_VERSION, invalidating every cached answer — for identical sources.
+ */
 function readFile(absolute: string): string {
     if (!fs.existsSync(absolute)) fail(`missing source file: ${rel(absolute)}`);
-    return fs.readFileSync(absolute, 'utf8');
+    return fs.readFileSync(absolute, 'utf8').replace(/\r\n/g, '\n');
 }
 
 const sourceCache = new Map<string, ts.SourceFile>();
@@ -382,6 +388,12 @@ const CONTROL_TAGS: Record<string, SettingControl> = {
     'Form.Select': 'select',
     'Form.Range': 'range',
     'Form.Control': 'text',
+    // @web-ui/primitives, which the panels are being rewritten onto. A panel may
+    // mix both sets, so the old names stay.
+    Check: 'checkbox',
+    Select: 'select',
+    Input: 'text',
+    TextArea: 'text',
     select: 'select',
     input: 'text',
     textarea: 'text',
@@ -616,18 +628,39 @@ function cleanLabel(text: string): string {
     return text.replace(/\s*:\s*$/, '').trim();
 }
 
-/** Map of `id` -> label text, from `<label htmlFor="id">` anywhere in the file. */
+/**
+ * Map of `id` -> label text, from `<label htmlFor="id">` and from the
+ * `<Field label="Tekst" htmlFor="id">` wrapper the primitives use, anywhere in
+ * the file.
+ */
 function labelsById(sf: ts.SourceFile): Map<string, string> {
     const out = new Map<string, string>();
     for (const el of collect(sf, isJsxElementLike)) {
-        if (!isLabelTag(el, sf)) continue;
         const htmlFor = stringAttr(el, 'htmlFor', sf);
         if (!htmlFor) continue;
-        const text = ts.isJsxElement(el) ? jsxText(el, sf) : '';
+        const text = isLabelTag(el, sf)
+            ? (ts.isJsxElement(el) ? jsxText(el, sf) : '')
+            : (tagOf(el, sf) === 'Field' ? stringAttr(el, 'label', sf) ?? '' : '');
         if (!text) continue;
         if (!out.has(htmlFor)) out.set(htmlFor, cleanLabel(text));
     }
     return out;
+}
+
+/**
+ * Last resort for `<Field label="Tekst"><Input …/></Field>` with no `htmlFor`
+ * to tie the two together: take the label off the nearest enclosing `Field`.
+ */
+function fieldLabel(el: JsxElementLike, sf: ts.SourceFile): string | undefined {
+    let node: ts.Node | undefined = el.parent;
+    for (let level = 0; level < 4 && node; level++) {
+        if (isJsxElementLike(node) && tagOf(node, sf) === 'Field') {
+            const label = stringAttr(node, 'label', sf);
+            if (label) return cleanLabel(label);
+        }
+        node = node.parent;
+    }
+    return undefined;
 }
 
 /**
@@ -693,7 +726,8 @@ function extractPanel(file: string, basePath: string): UiControl[] {
                     const id = stringAttr(node, 'id', sf);
                     const label = stringAttr(node, 'label', sf)
                         ?? (id ? labels.get(id) : undefined)
-                        ?? siblingLabel(node, sf);
+                        ?? siblingLabel(node, sf)
+                        ?? fieldLabel(node, sf);
                     const entry: UiControl = {
                         key,
                         label,
@@ -744,7 +778,8 @@ interface PanelSpec {
     sections?: string[];
 }
 
-const MENU = 'Menu (⋮)';
+/** The hamburger next to the command input (`#menu-button`, MainMenu.tsx). */
+const MENU = 'Menu (☰)';
 const SETTINGS_DIALOG = 'Ustawienia';
 
 const CATEGORIES_FILE = 'src/web/settings/categories.ts';
@@ -765,11 +800,22 @@ const SETTINGS_PANELS: PanelSpec[] = [
     { category: 'ui-commands', files: ['src/web/uiSettings/sections/CommandsSection.tsx'] },
     { category: 'ui-footer', files: ['src/web/uiSettings/sections/FooterSections.tsx'] },
     { category: 'ui-map', files: ['src/web/uiSettings/sections/MapSections.tsx'] },
-    { category: 'ui-sound', files: ['src/web/uiSettings/sections/NotificationsSection.tsx', 'src/web/uiSettings/sections/SoundSection.tsx'] },
+    {
+        category: 'ui-sound',
+        files: [
+            'src/web/uiSettings/sections/NotificationsSection.tsx',
+            'src/web/uiSettings/sections/SoundSection.tsx',
+            'src/web/uiSettings/sections/SpeechSection.tsx',
+        ],
+    },
     { category: 'ui-buttons', files: ['src/web/options/DesktopButtons.tsx'] },
     { category: 'ui-mobile-buttons', files: ['src/web/uiSettings/sections/OtherSections.tsx'], sections: ['Wyświetlanie'] },
     { category: 'ui-radial', files: ['src/web/options/MobileRadialCommands.tsx'] },
-    { category: 'ui-other', files: ['src/web/uiSettings/sections/OtherSections.tsx'], sections: ['Inne'] },
+    {
+        category: 'ui-other',
+        files: ['src/web/uiSettings/sections/OtherSections.tsx', 'src/web/uiSettings/sections/LogsSection.tsx'],
+        sections: ['Inne', 'Logi'],
+    },
     { category: 'data-sync', files: ['src/web/options/FirebaseTab.tsx'] },
     { category: 'data-backup', files: ['src/web/options/LocalExportTab.tsx', 'src/web/options/GoogleDriveTab.tsx'] },
     { category: 'data-devices', files: ['src/web/options/DeviceManagementTab.tsx'] },
@@ -799,9 +845,20 @@ function assertPanelMap(panels: PanelSpec[]): void {
             if (!fs.existsSync(path.join(ROOT, f))) fail(`panel file ${f} no longer exists`);
         }
     }
+    // A section file nobody lists is the failure mode that actually happened:
+    // SpeechSection.tsx was split out of the sound page and every tts* setting
+    // quietly lost its label and its panel path. Listing is cheap; a file with
+    // no settings in it costs one line here.
+    const listed = new Set(panels.flatMap(p => p.files));
+    const dir = 'src/web/uiSettings/sections';
+    const missing = fs.readdirSync(path.join(ROOT, dir))
+        .filter(f => f.endsWith('.tsx'))
+        .map(f => `${dir}/${f}`)
+        .filter(f => !listed.has(f));
+    if (missing.length > 0) fail(`settings section files not in SETTINGS_PANELS: [${missing}]`);
 }
 
-/** `Menu (⋮) → Ustawienia → <group> → <page>`, the path the sidebar shows. */
+/** `Menu (☰) → Ustawienia → <group> → <page>`, the path the sidebar shows. */
 function pagePath(category: SettingsCategoryKey): string {
     const page = SETTINGS_CATEGORIES.find(c => c.key === category);
     if (!page) return fail(`unknown settings page ${category}`);
@@ -1473,7 +1530,7 @@ function buildSchemas(): { schemas: SchemaCatalog; events: EventEntry[]; macroTy
             'Propozycja bindu ZAWSZE zawiera `command` — to CustomBind dopisywany do tablicy `binds.custom`. Bez `command` klient ja odrzuci.',
             'Modyfikator pominiety oznacza "nie moze byc wcisniety" — podawaj tylko te, ktore maja byc trzymane.',
             `Sloty wbudowane w BindSettings: ${bindSlots.join(', ')}; kierunki w \`directions\`: ${directionSlots.join(', ')}.`,
-            'Bindy edytuje sie w: Menu (⋮) → Bindowanie.',
+            `Bindy edytuje sie w: ${MENU} → Klawisze.`,
         ],
     };
 

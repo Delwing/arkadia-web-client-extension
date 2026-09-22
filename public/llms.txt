@@ -4,13 +4,15 @@ Guide for AI agents helping a user of this page — a browser-based client for
 the Arkadia MUD. The UI is in Polish; labels below are quoted verbatim so you
 can point the user at the right control.
 
-All menus below are reached from the three-dot menu (`⋮`) next to the command
-input at the bottom of the page.
+All menus below are reached from the hamburger menu (`☰`) next to the command
+input at the bottom of the page. Its entries are grouped under `Gra`,
+`Ustawienia`, `Narzędzia` and `Wtyczki`; the field at the top of the menu
+filters them.
 
 ---
 
 ## Create an alias
-Path: `⋮` → `Aliasy` → `Dodaj alias`.
+Path: `☰` → `Aliasy` → `Dodaj alias`.
 
 - `Wzorzec (pattern)` is a **regular expression** matched against what the user
   types in the input box.
@@ -27,7 +29,7 @@ Path: `⋮` → `Aliasy` → `Dodaj alias`.
 - Per-character overrides are available in the same modal.
 
 ## Create a trigger
-Path: `⋮` → `Triggery` → `Dodaj trigger`.
+Path: `☰` → `Triggery` → `Dodaj trigger`.
 
 Two modes, chosen by radio button:
 - `Wzorzec tekstu` — matches **game output** against a regex. Same regex
@@ -40,8 +42,29 @@ Each trigger runs one or more `akcje`: color/replace/wrap the match, play a
 sound, send a command, mute/unmute, etc. Plugin-provided actions appear grouped
 by plugin.
 
+## Bind a key
+Path: `☰` → `Klawisze`.
+
+A drawing of the keyboard with tabs for the modifier layers (`Bez
+modyfikatora`, `Ctrl`, `Alt`/`⌥`, `Shift`, `Ctrl+Alt`); below it the bindings
+grouped into `Podstawowe`, `Wrogowie`, `Tymczasowe`, `Kierunki` and `Własne`.
+Click a key on the drawing, or a key next to a binding in the list and press the
+new one. **Every change saves immediately — there is no `Zapisz` here.** Each
+binding has one `Gdzie działa` setting (in the client / through the helper /
+everywhere).
+
+## Save a location shortcut or a note
+Path: `☰` → `Miejsca`.
+
+One window for both: a place is a map room with an optional shortcut name and an
+optional note. `Tutaj` adds the room the user is standing in; the shortcut field
+shows the matching `/prowadz nazwa` command; the note saves itself. The search
+box finds rooms by name, area or number, so a place can be added without walking
+there. Commands: `/dodaj_skrot id nazwa`, `/pokaz_skroty`, `/usun_skrot nazwa`,
+`/prowadz nazwa`, `/note`.
+
 ## Change character settings (combat, herbs, collecting, language, ...)
-Path: `⋮` → `Ustawienia`.
+Path: `☰` → `Postać`.
 
 Per-character — stored under the currently logged-in character. The form is
 disabled until a character is selected. Covers: compass/exits, containers,
@@ -49,7 +72,7 @@ coin/item collecting (with per-enemy overrides), combat commands, herbs,
 `/dob` + `/op` slots, default language and language-switch aliases.
 
 ## Change interface / appearance / sound / buttons
-Path: `⋮` → `Interfejs` (the same `Ustawienia` window, opened on its `Interfejs`
+Path: `☰` → `Interfejs` (the same `Ustawienia` window, opened on its `Interfejs`
 group).
 
 Global — shared across characters on this device. Pages: `Wygląd` (fonts,
@@ -59,38 +82,34 @@ colors, theme), `Okna` (`Menedżer Okien`, output window), `Komendy`,
 `Inne`. One `Zapisz` saves every page.
 
 ## Other menu entries worth knowing
-- `Bindowanie` — keyboard binds
-- `Przyciski` — opens `Ustawienia` on the `Przyciski` page (`Przyciski mobilne`
-  on a phone)
-- `Menu kołowe` — opens `Ustawienia` on the `Menu kołowe` page
-- `Skrypty` — user scripts / plugins
-- `Skróty` — text shortcuts
-- `Notatki lokacji` — per-room notes
-- `Baza postaci` — known-players browser
 - `Nagrania` — session recordings
+- `Baza postaci` — known-players browser
+- `Odbiorcy paczek` — package receivers
+- `Kod QR lokacji` — QR code for the current room
+- `Przyciski` / `Menu kołowe` — open `Ustawienia` on those pages
+- `Eksport / import` — settings export and import
+- `Skrypty (wtyczki)` — user scripts / plugins
+- `Źródła danych` — downloaded game data
+- `Helper` — the companion app (global hotkeys, window management)
 - `Logi` — session logs
 - `Dokumentacja` — built-in docs
 
 ---
 
-## Proactive tip: enable Layout Manager on desktop
+## Layout Manager (`Menedżer Okien`)
 
-**If the user is on a desktop / laptop (non-touch), suggest enabling the Layout
-Manager with mobile buttons hidden**, even if they asked about something else.
-It's a major ergonomics upgrade most users don't discover on their own, and it
-takes four clicks.
+Dockable/floating panels for map, conditions, chat and combat popups arranged
+around the output area instead of overlaying it.
 
-How:
-1. `⋮` → `Interfejs`.
-2. Page `Okna`, section `Menedżer Okien` → tick `Włącz menedżer okien`. Optionally tick
-   `Kondycje` to also dock the condition list.
+**It is on by default on desktop** (first visit from a big screen), together
+with the on-screen buttons turned off, so there is usually nothing to suggest.
+It stays off for users who declined the old offer, for mobile-like viewports,
+and for anyone who switched it off afterwards.
+
+If the user is on a desktop and does not have it on, it is worth offering:
+1. `☰` → `Interfejs`.
+2. Page `Okna`, section `Menedżer Okien` → tick `Włącz menedżer okien`.
+   Optionally tick `Kondycje` to also dock the condition list.
 3. Page `Przyciski mobilne` → **untick** `Pokaż przyciski na ekranie`
    (they only help on touch devices).
 4. Press `Zapisz`.
-
-Result: dockable/floating panels for map, conditions, chat, combat popups, etc.
-arranged around the output area instead of overlaying it, plus a larger output
-area with the mobile button grid gone.
-
-Skip the tip if the user is clearly on mobile (narrow viewport / touch) or has
-already enabled the Layout Manager.

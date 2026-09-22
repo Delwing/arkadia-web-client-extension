@@ -13,34 +13,36 @@
       "\"docs\": spis stron dokumentacji uzytkownika z ich naglowkami; tresc mozna dociagnac osobno."
     ],
     "panels": [
-      "P1 = Menu (⋮) → Ustawienia → Postać → Gildie",
-      "P2 = Menu (⋮) → Ustawienia → Postać → Walka → Walka",
-      "P3 = Menu (⋮) → Ustawienia → Postać → Ogólne → Pozostałe opcje",
-      "P4 = Menu (⋮) → Ustawienia → Postać → Przedmioty → Zbieranie przedmiotów",
-      "P5 = Menu (⋮) → Ustawienia → Postać → Ogólne → Wyjścia",
-      "P6 = Menu (⋮) → Ustawienia → Postać → Przedmioty → Pojemniki",
-      "P7 = Menu (⋮) → Ustawienia → Postać → Przedmioty → Wycinanie/Wyrywanie",
-      "P8 = Menu (⋮) → Ustawienia → Postać → Walka → Dobywanie/Opuszczanie",
-      "P9 = Menu (⋮) → Ustawienia → Postać → Walka → Bindy wrogów (F1-F3)",
-      "P10 = Menu (⋮) → Ustawienia → Postać → Magiki",
-      "P11 = Menu (⋮) → Ustawienia → Postać → Przedmioty → Zioła",
-      "P12 = Menu (⋮) → Ustawienia → Postać → Ogólne → Język",
-      "P13 = Menu (⋮) → Ustawienia → Postać → Magiki → Kolory",
-      "P14 = Menu (⋮) → Ustawienia → Interfejs → Komendy → Komendy",
-      "P15 = Menu (⋮) → Ustawienia → Interfejs → Mapa → Mapa",
-      "P16 = Menu (⋮) → Ustawienia → Interfejs → Okna → Okno wyjścia i lista obiektów",
-      "P17 = Menu (⋮) → Ustawienia → Interfejs → Dźwięk i powiadomienia → Powiadomienia",
-      "P18 = Menu (⋮) → Ustawienia → Interfejs → Stopka → Stan postaci",
-      "P19 = Menu (⋮) → Ustawienia → Interfejs → Mapa → Pomieszczenia i linie",
-      "P20 = Menu (⋮) → Ustawienia → Interfejs → Mapa → Podświetlenie pomieszczeń",
-      "P21 = Menu (⋮) → Ustawienia → Interfejs → Mapa → Marker gracza",
-      "P22 = Menu (⋮) → Ustawienia → Interfejs → Wygląd → Wygląd",
-      "P23 = Menu (⋮) → Ustawienia → Interfejs → Dźwięk i powiadomienia → Dźwięki",
+      "P1 = Menu (☰) → Ustawienia → Postać → Gildie",
+      "P2 = Menu (☰) → Ustawienia → Postać → Walka → Walka",
+      "P3 = Menu (☰) → Ustawienia → Postać → Ogólne → Pozostałe opcje",
+      "P4 = Menu (☰) → Ustawienia → Postać → Przedmioty → Zbieranie przedmiotów",
+      "P5 = Menu (☰) → Ustawienia → Postać → Ogólne → Wyjścia",
+      "P6 = Menu (☰) → Ustawienia → Postać → Przedmioty → Pojemniki",
+      "P7 = Menu (☰) → Ustawienia → Postać → Przedmioty → Wycinanie/Wyrywanie",
+      "P8 = Menu (☰) → Ustawienia → Postać → Walka → Dobywanie/Opuszczanie",
+      "P9 = Menu (☰) → Ustawienia → Postać → Walka → Bindy wrogów (F1-F3)",
+      "P10 = Menu (☰) → Ustawienia → Postać → Magiki",
+      "P11 = Menu (☰) → Ustawienia → Postać → Przedmioty → Zioła",
+      "P12 = Menu (☰) → Ustawienia → Postać → Ogólne → Język",
+      "P13 = Menu (☰) → Ustawienia → Postać → Magiki → Kolory",
+      "P14 = Menu (☰) → Ustawienia → Interfejs → Komendy → Komendy",
+      "P15 = Menu (☰) → Ustawienia → Interfejs → Mapa → Mapa",
+      "P16 = Menu (☰) → Ustawienia → Interfejs → Okna → Okno wyjścia i lista obiektów",
+      "P17 = Menu (☰) → Ustawienia → Interfejs → Dźwięk i powiadomienia → Powiadomienia",
+      "P18 = Menu (☰) → Ustawienia → Interfejs → Stopka → Stan postaci",
+      "P19 = Menu (☰) → Ustawienia → Interfejs → Mapa → Pomieszczenia i linie",
+      "P20 = Menu (☰) → Ustawienia → Interfejs → Mapa → Podświetlenie pomieszczeń",
+      "P21 = Menu (☰) → Ustawienia → Interfejs → Mapa → Marker gracza",
+      "P22 = Menu (☰) → Ustawienia → Interfejs → Wygląd → Wygląd",
+      "P23 = Menu (☰) → Ustawienia → Interfejs → Dźwięk i powiadomienia → Dźwięki",
       "P24 = Menu kontekstowe (prawy przycisk myszy) w oknie wyjścia",
-      "P25 = Menu (⋮) → Ustawienia → Interfejs → Inne → Inne",
-      "P26 = Menu (⋮) → Ustawienia → Interfejs → Przyciski mobilne → Wyświetlanie",
-      "P27 = Menu (⋮) → Ustawienia → Interfejs → Stopka → Elementy stopki",
-      "P28 = Menu (⋮) → Ustawienia → Interfejs → Stopka → Stopka na telefonie"
+      "P25 = Menu (☰) → Ustawienia → Interfejs → Inne → Inne",
+      "P26 = Menu (☰) → Ustawienia → Interfejs → Przyciski mobilne → Wyświetlanie",
+      "P27 = Menu (☰) → Ustawienia → Interfejs → Stopka → Przyciski przy linii komend",
+      "P28 = Menu (☰) → Ustawienia → Interfejs → Stopka → Elementy stopki",
+      "P29 = Menu (☰) → Ustawienia → Interfejs → Stopka → Stopka na telefonie",
+      "P30 = Menu (☰) → Ustawienia → Interfejs → Dźwięk i powiadomienia → Czytanie na głos"
     ],
     "settings": [
       "## settings.* (character)",
@@ -52,7 +54,7 @@
       "collectGems | Kamienie | P4 | boolean | true",
       "collectGold | Zlote monety | P4 | boolean | true",
       "collectMode | Tryb zbierania | P4 | enum: 1|2|3|4 | 1",
-      "collectOverrides | Wyjątki zbierania dla wrogów | P4 | CollectOverride[] | [{\"enemy\":\"troll\",\"collectCopper\":false,\"collectSilver\":true,\"collectGold\":true,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"bykocentaur\",\"collectCopper\":false,\"collectSilver\":true,\"collectGold\":true,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"ghoul\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"grzyboczlek\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"bagiennik\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"zjawa\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"potepieniec\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"wietrzyca\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"amfisbena\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"wiwerna\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"wyverna\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"harpia\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"krasnozwierz\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"bestia\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"zywiolak ziemi\",\"collectCopper\":false,\"collectSilver\":true,\"collectGold\":true,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"zywiolak wody\",\"collectCopper\":false,\"collectSilver\":true,\"collectGold\":true,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"zywiolak powietrza\",\"collectCopper\":false,\"collectSilver\":true,\"collectGold\":true,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"zywiolak ognia\",\"collectCopper\":false,\"collectSilver\":true,\"collectGold\":true,\"collectGems\":true,\"collectExtra\":[]}]",
+      "collectOverrides | Wyjątki zbierania dla wrogów | P4 | CollectOverride[] | [{\"enemy\":\"troll\",\"collectCopper\":false,\"collectSilver\":true,\"collectGold\":true,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"bykocentaur\",\"collectCopper\":false,\"collectSilver\":true,\"collectGold\":true,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"ghoul\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"grzyboczlek\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"bagiennik\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"zjawa\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"potepieniec\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"wietrzyca\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"amfisbena\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"wiwerna\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"wyverna\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"harpia\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"krasnozwierz\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"bestia\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"zywiolak ziemi\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"zywiolak wody\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"zywiolak powietrza\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]},{\"enemy\":\"zywiolak ognia\",\"collectCopper\":false,\"collectSilver\":false,\"collectGold\":false,\"collectGems\":true,\"collectExtra\":[]}]",
       "collectSilver | Srebrne monety | P4 | boolean | true",
       "collectTiming | Kiedy zbierac | P4 | enum: 1|2|3 | 1",
       "compassBackExits | Powrót na czerwono | P5 | boolean | false",
@@ -65,6 +67,8 @@
       "dobCommand2 | Komenda /dob 2 | P8 | string | \"\"",
       "dobCommand3 | Komenda /dob 3 | P8 | string | \"\"",
       "drawWeaponCommand | Komenda dobycia broni | P2 | string | dobadz",
+      "enemyBindsAttackCommand | Komenda bindu ataku (F1-F3) | P9 | string | \"\"",
+      "enemyBindsBlockCommand | Komenda bindu blokowania (Ctrl+F1-F3) | P9 | string | \"\"",
       "enemyBindsEnabledSlots | Włączone sloty bindów wrogów (F1-F3) | P9 | [boolean, boolean, boolean] | [true,true,true]",
       "enemyBindsKeepUnchanged | Nie zmieniaj przypisanych wrogow | P9 | boolean | false",
       "enemyBindsShowMode | Wyświetlanie bindów wrogów | P9 | enum: always|whenBound|never | always",
@@ -158,24 +162,32 @@
       "barOrder | Kolejność pasków stanu | P18 | string[] | [\"hp\",\"fatigue\",\"stuffed\",\"encumbrance\",\"soaked\",\"mana\",\"improve\",\"form\",\"intox\",\"headache\",\"panic\"]",
       "buttonSize | Rozmiar przycisków (przestarzałe) | P- | number | -",
       "contentFontSize | Rozmiar czcionki treści (rem) | P22 | number | 0.775",
-      "footerComponents | Elementy stopki | P27 | FooterComponentConfig[] | [{\"id\":\"clock-display\",\"visible\":true,\"order\":0},{\"id\":\"transport-timer\",\"visible\":true,\"order\":1},{\"id\":\"lamp-timer\",\"visible\":true,\"order\":2},{\"id\":\"pipe-status\",\"visible\":true,\"order\":3},{\"id\":\"break-item-warning\",\"visible\":true,\"order\":4},{\"id\":\"mail-status\",\"visible\":true,\"order\":5},{\"id\":\"package-status\",\"visible\":true,\"order\":6},{\"id\":\"weapon-state\",\"visible\":true,\"order\":7},{\"id\":\"attack-mode\",\"visible\":true,\"order\":8},{\"id\":\"release-guard-timer\",\"visible\":true,\"order\":9},{\"id\":\"zask-timer\",\"visible\":true,\"order\":10},{\"id\":\"order-timer\",\"visible\":true,\"order\":11},{\"id\":\"combat-timer\",\"visible\":true,\"order\":12},{\"id\":\"world-destruction-timer\",\"visible\":true,\"order\":13},{\"id\":\"team-panel\",\"visible\":true,\"order\":14},{\"id\":\"connection-status\",\"visible\":false,\"order\":15}]",
-      "footerMode | Tryb stopki | P18 | enum: 0|1|2|3 | 0",
+      "footerButtons | Przyciski przy linii komend | P27 | FooterButtonConfig[] | []",
+      "footerComponents | Elementy stopki | P28 | FooterComponentConfig[] | [{\"id\":\"clock-display\",\"visible\":true,\"order\":0},{\"id\":\"transport-timer\",\"visible\":true,\"order\":1},{\"id\":\"lamp-timer\",\"visible\":true,\"order\":2},{\"id\":\"pipe-status\",\"visible\":true,\"order\":3},{\"id\":\"break-item-warning\",\"visible\":true,\"order\":4},{\"id\":\"mail-status\",\"visible\":true,\"order\":5},{\"id\":\"package-status\",\"visible\":true,\"order\":6},{\"id\":\"weapon-state\",\"visible\":true,\"order\":7},{\"id\":\"attack-mode\",\"visible\":true,\"order\":8},{\"id\":\"release-guard-timer\",\"visible\":true,\"order\":9},{\"id\":\"zask-timer\",\"visible\":true,\"order\":10},{\"id\":\"order-timer\",\"visible\":true,\"order\":11},{\"id\":\"combat-timer\",\"visible\":true,\"order\":12},{\"id\":\"world-destruction-timer\",\"visible\":true,\"order\":13},{\"id\":\"team-panel\",\"visible\":true,\"order\":14},{\"id\":\"connection-status\",\"visible\":false,\"order\":15}]",
+      "footerMode | Tryb stopki | P18 | enum: 4|0|1|2|3 | 4",
       "keepMultibindsVisible | Zawsze pokazuj pasek multibindów | P14 | boolean | false",
       "mapHeight | Wysokość mapy (vh) | P15 | number | 30",
       "mapPosition | Położenie mapy | P15 | enum: top-overlay|bottom-overlay|right-overlay|left-overlay|top|bottom|right|left | top-overlay",
       "mapScale | Powiększenie mapy | P15 | number 0.05.. | 0.3",
-      "mobileFooterCompact | Kompaktowa stopka na telefonie | P28 | boolean | true",
-      "mobileFooterExpand | Rozwijanie stopki na telefonie | P28 | enum: toggle|expanded|collapsed | toggle",
+      "mobileFooterCompact | Kompaktowa stopka na telefonie | P29 | boolean | true",
+      "mobileFooterExpand | Rozwijanie stopki na telefonie | P29 | enum: toggle|expanded|collapsed | toggle",
       "multibindKeyHints | Skroty klawiszowe na pasku bindow | P14 | enum: auto|always|never | auto",
       "objectListBackgroundAlpha | Przezroczystość | P22 | number 0..1 | 0.4",
       "objectListBackgroundColor | Kolor tła listy obiektów | P22 | string | #000000",
       "objectsFontSize | Rozmiar czcionki listy obiektów (rem) | P22 | number | 0.6",
       "outputMaxElements | Maksymalna liczba linii w buforze | P16 | number 100.. | 1000",
       "showButtons | Pokazuj przyciski | P26 | boolean | true",
-      "showCombatTimer | Pokazuj licznik walki | P27 | boolean | -",
-      "showTransportLabel | Pokazuj etykietę transportu | P27 | boolean | -",
+      "showCombatTimer | Pokazuj licznik walki | P28 | boolean | -",
+      "showTransportLabel | Pokazuj etykietę transportu | P28 | boolean | -",
       "showVoiceButton | Przycisk mikrofonu (dyktowanie głosowe) | P14 | boolean | true",
-      "splitViewHeight | Wysokość podzielonego widoku | P- | number | -"
+      "splitViewHeight | Wysokość podzielonego widoku | P- | number | -",
+      "tabCompletionHint | Podpowiedź uzupełniania (Tab) za kursorem | P14 | boolean | true",
+      "ttsEnabled | Czytanie na głos włączone | P30 | boolean | true",
+      "ttsInterrupt | Nowy komunikat przerywa aktualnie czytany | P30 | boolean | false",
+      "ttsPitch | Wysokość | P30 | number 0..2 | 1",
+      "ttsRate | Tempo | P30 | number 0.5..2 | 1",
+      "ttsVoice | Głos | P30 | enum:  | \"\"",
+      "ttsVolume | Głośność | P30 | number 0..1 | 1"
     ],
     "commands": [
       "' ('<tekst>) — Mow w ustawionym jezyku (pojedynczy apostrof przed tekstem)",
@@ -208,6 +220,7 @@
       "/labirynt — Przelacz tryb labiryntu (dynamicznie usuwa nieistniejace wyjscia)",
       "/labirynt_mapa — Przelacz mapper Labiryntu Rinde",
       "/leczenie — Wyswietl liste wszystkich chorob i zapisanych na nie ziol",
+      "/lisica — Wystukaj na drzwiach zapamietane haslo (pierwsza cyfra = liczba pukniec)",
       "/list — Otworz edytor pisania listow w kliencie",
       "/loot — Przeszukaj wszystkie ciala na lokacji (ob 1. cialo, ob 2. cialo, ...)",
       "/mapa — Otworz nowe okno mapy na biezacej lokacji",
@@ -223,7 +236,7 @@
       "/naprawa — Wyjmij monety, naostrz wszystkie bronie i napraw zbroje (alias: /napraw)",
       "/nie_zbieraj_extra (/nie_zbieraj_extra [przedmiot]) — Usun przedmiot z listy ekstra (bez parametru czyści cala liste)",
       "/nn — Atakuj nastepny cel z kolejki",
-      "/note — Otworz edytor notatki dla biezacej lokacji",
+      "/note — Otworz okno Miejsca na biezacej lokacji, z kursorem w notatce",
       "/o_eksport — Zapisz baze oswajania tej postaci do pliku JSON",
       "/o_historia — Pokaz historie karmienia wszystkich aktywnych zwierzat",
       "/o_import — Wczytaj baze z pliku JSON (nadpisuje baze tej postaci)",
@@ -238,7 +251,7 @@
       "/odloz_magie (/odloz_magie [pojemnik]) — Skanuj inwentarz i ustaw bind odkładania magicznych przedmiotow",
       "/odpornosci — Otworz okno odpornosci przeciwnikow (tabela przeciwnik x rodzaj obrazen)",
       "/odpornosci-reset — Wyczysc cala baze odpornosci",
-      "/odpornosci-usun (/odpornosci-usun <nazwa>) — Usun wpis przeciwnika (rodzaj w mianowniku, np. `kikimora`)",
+      "/odpornosci-usun (/odpornosci-usun <nazwa>) — Usun wpisy przeciwnika ze wszystkich obszarow (rodzaj w mianowniku, np. `kikimora`)",
       "/op — Wykonaj komendy opuszczania ze slotow 1 i 2",
       "/opoz (/opoz sekundy) — Ustaw domyslne opoznienie krokow",
       "/ostatnio — Sprawdz aktywnosc czlonkow druzyny (zielony = aktywny, czerwony = nieaktywny)",
@@ -246,7 +259,7 @@
       "/poczta — Otworz okno poczty z lista listow",
       "/pojemnik — Uruchom konfiguracje menedzera pojemnikow",
       "/pojemniki — Wyswietl biezace ustawienia",
-      "/pokaz_skroty — Wyswietl liste zapisanych skrotow",
+      "/pokaz_skroty — Wypisz liste zapisanych skrotow w oknie gry",
       "/pomoc — Otworz panel asystenta AI",
       "/por (/por [id]) — Porownaj sile, zrecznosc i wytrzymalosc z obiektem",
       "/post_walk (/post_walk komendy) — Ustaw komendy wykonywane po kazdym kroku (rozdzielone `#`)",
@@ -270,10 +283,11 @@
       "/prowadz (/prowadz id) — Rozpocznij prowadzenie innej osoby do wskazanego pokoju (gdy pieszo nie da sie dojsc, trasa jest liczona z transportem)",
       "/prowadz- — Zakoncz prowadzenie (czysci tez trase z transportem)",
       "/prowadzt (/prowadzt id) — Prowadz z uwzglednieniem transportow (statki, dylizanse) - przesiadki widoczne jako kolorowe pierscienie na mapie",
-      "/prze (/prze [id]) — Przelamuje obrone celu lub wskazanego obiektu",
+      "/prze (/prze [id]) — Przelamuje obrone wskazanego obiektu, celu ataku, a gdy go brak - aktualnie atakowanego przeciwnika",
       "/przedstawieni — Wyswietl liste przedstawionych postaci",
       "/przejrzyj (/przejrzyj [co]) — Pokaz zawartosc skrzyn z kluczami i magicznymi przedmiotami",
       "/przeszukaj (/przeszukaj tekst) — Wyszukaj pokoje z nazwami zawierajacymi tekst (do 10 najblizszych)",
+      "/przycisk (/przycisk nazwa on) — Zapal przyciski o tym stanie (`wl` dziala tak samo)",
       "/przyplyw — Przelacz system przyplywow (zmienia mape: pokoje przybrzezne przesuwaja sie pod wode, tworza sie pokoje na powierzchni)",
       "/puszczaj — Przelacz automatyczne zwalnianie zaslony",
       "/q (/q id) — Dodaj przeciwnika do kolejki ataku (przyjmuje id lub `ob_id`)",
@@ -285,7 +299,7 @@
       "/reload-plugins — Przeladuj wszystkie pluginy klienta bez odswiezania strony",
       "/roza — Przelacz roze wiatrow (wl./wyl.)",
       "/rz (/rz id) — Rozkaz druzynie zaslonic obiekt",
-      "/skrotyw — Otworz okno z lista skrotow",
+      "/skrotyw — Otworz stare, male okienko z sama lista skrotow (przyciski Prowadz / Idz)",
       "/slonce — Otworz kalendarz slonca z obserwacjami wschodow i zachodow",
       "/slonce2",
       "/sounds — Przelacz wyciszenie/wlaczenie dzwiekow",
@@ -347,6 +361,7 @@
       "/zap (/zap numer) — Zapros do druzyny obiekt o podanym numerze",
       "/zapal — Nabij fajke pierwszym ziolem do palenia (jesli pusta) i zapal ja",
       "/zas (/zas id) — Zaslon obiekt (uzywa `zaslon przed` gdy nie w druzynie)",
+      "/zaslony — Otworz okno podgladu zaslon (kto jest zaslaniany, przez kogo i przed kim)",
       "/zawod — Otworz okno zawodu: postepy, staz i wydarzenia zawodowe",
       "/zaznaczaj — Wlacz zaznaczanie odwiedzanych lokacji na mapie",
       "/zaznaczaj- — Wylacz zaznaczanie i usun dotychczasowe zaznaczenia",
@@ -413,7 +428,7 @@
           "Kategorie dokumentacji",
           "Wlasne aliasy"
         ],
-        "tokens": 269
+        "tokens": 279
       },
       {
         "id": "NAVIGATION.md",
@@ -431,7 +446,7 @@
           "Okno mapy",
           "Multibindy lokacji"
         ],
-        "tokens": 1331
+        "tokens": 1393
       },
       {
         "id": "COMBAT.md",
@@ -449,7 +464,7 @@
           "Loot",
           "Okno walki"
         ],
-        "tokens": 924
+        "tokens": 1058
       },
       {
         "id": "INVENTORY.md",
@@ -500,18 +515,19 @@
           "Domyslne bindy",
           "Konfiguracja",
           "Komendy",
-          "Tymczasowe bindy"
+          "Tymczasowe bindy",
+          "Wlasne przyciski przy linii komend"
         ],
-        "tokens": 258
+        "tokens": 1721
       },
       {
         "id": "SHORTCUTS.md",
-        "title": "Skroty lokacji",
+        "title": "Miejsca (skroty lokacji)",
         "headings": [
-          "Komendy",
-          "Interfejs"
+          "Okno Miejsca",
+          "Komendy"
         ],
-        "tokens": 231
+        "tokens": 428
       },
       {
         "id": "ALIASES.md",
@@ -533,13 +549,15 @@
           "Lowienie ryb",
           "Zlom (baza ocenionych przedmiotow)",
           "Odpornosci przeciwnikow",
+          "Zaslony (debug)",
           "Oswajanie",
           "Woz/bryczka",
           "Odkladanie magii",
           "Labirynty",
+          "Skarbce",
           "Odswiezanie danych"
         ],
-        "tokens": 4071
+        "tokens": 4966
       },
       {
         "id": "SKRYPTY.md",
@@ -552,7 +570,7 @@
           "System pluginow",
           "Wbudowane skrypty"
         ],
-        "tokens": 2073
+        "tokens": 2122
       },
       {
         "id": "SYNCHRONIZACJA.md",
@@ -578,12 +596,14 @@
         "headings": [
           "Create an alias",
           "Create a trigger",
+          "Bind a key",
+          "Save a location shortcut or a note",
           "Change character settings (combat, herbs, collecting, language, ...)",
           "Change interface / appearance / sound / buttons",
           "Other menu entries worth knowing",
-          "Proactive tip: enable Layout Manager on desktop"
+          "Layout Manager (`Menedżer Okien`)"
         ],
-        "tokens": 1017
+        "tokens": 1288
       }
     ]
   },
@@ -591,7 +611,7 @@
     "alias": {
       "name": "UserAlias",
       "description": "Alias uzytkownika: wzorzec wpisywany w linii komend zamieniany na komende (lub kilka komend) wysylana do gry. Przechowywany w localStorage pod kluczem `aliases` jako tablica UserAlias[].",
-      "typescript": "export interface UserAlias {\r\n    pattern: string;\r\n    command: string;\r\n    overrides?: Record<string, string>;\r\n}",
+      "typescript": "export interface UserAlias {\n    pattern: string;\n    command: string;\n    overrides?: Record<string, string>;\n}",
       "fields": [
         {
           "name": "pattern",
@@ -656,7 +676,7 @@
     "trigger": {
       "name": "UserTrigger",
       "description": "Trigger uzytkownika. Przechowywany w localStorage pod kluczem `triggers` jako tablica UserTrigger[]. Dwa rodzaje: wzorcowy (dopasowuje tekst z gry) i zdarzeniowy (reaguje na zdarzenie klienta).",
-      "typescript": "export type TriggerType = 'pattern' | 'event';\n\nexport interface UserTrigger {\r\n    type?: TriggerType;  // defaults to 'pattern' for backwards compatibility\r\n    pattern?: string;    // for pattern triggers\r\n    event?: string;      // for event triggers (e.g., 'kill', 'combatState')\r\n    flags?: string;      // for pattern triggers only\r\n    gmcpMsgType?: string; // limit pattern trigger to specific GMCP message type\r\n    /** Event triggers only: every condition must hold for the macros to run. */\r\n    conditions?: TriggerCondition[];\r\n    macros: UserMacro[];\r\n}\n\nexport type ConditionOperator = 'eq' | 'neq' | 'like' | 'notLike' | 'gt' | 'gte' | 'lt' | 'lte';\n\nexport interface TriggerCondition {\r\n    arg: string;\r\n    op: ConditionOperator;\r\n    value: string;\r\n}\n\nexport interface EventArg {\r\n    name: string;\r\n    label: string;\r\n    /** Decides which condition operators the editor offers for this arg. */\r\n    type?: EventArgType;\r\n}\n\nexport interface SupportedEvent {\r\n    id: string;\r\n    label: string;\r\n    category: string;\r\n    /**\r\n     * When the event actually fires, shown under the picker in the editor.\r\n     *\r\n     * Worth writing wherever the label alone leaves it ambiguous — several of\r\n     * these fire on a delay, or only when some other setting is enabled, and a\r\n     * label has no room to say so. Omitted where the label is self-evident.\r\n     */\r\n    description?: string;\r\n    /**\r\n     * Values this event's payload carries. Macro text fields may reference them\r\n     * as `{name}`; see `interpolateEventArgs`. Events without a declared list\r\n     * simply offer no placeholders rather than offering broken ones.\r\n     */\r\n    args?: EventArg[];\r\n}",
+      "typescript": "export type TriggerType = 'pattern' | 'event';\n\nexport interface UserTrigger {\n    type?: TriggerType;  // defaults to 'pattern' for backwards compatibility\n    pattern?: string;    // for pattern triggers\n    event?: string;      // for event triggers (e.g., 'kill', 'combatState')\n    flags?: string;      // for pattern triggers only\n    gmcpMsgType?: string; // limit pattern trigger to specific GMCP message type\n    /** Event triggers only: every condition must hold for the macros to run. */\n    conditions?: TriggerCondition[];\n    macros: UserMacro[];\n}\n\nexport type ConditionOperator = 'eq' | 'neq' | 'like' | 'notLike' | 'gt' | 'gte' | 'lt' | 'lte';\n\nexport interface TriggerCondition {\n    arg: string;\n    op: ConditionOperator;\n    value: string;\n}\n\nexport interface EventArg {\n    name: string;\n    label: string;\n    /** Decides which condition operators the editor offers for this arg. */\n    type?: EventArgType;\n}\n\nexport interface SupportedEvent {\n    id: string;\n    label: string;\n    category: string;\n    /**\n     * When the event actually fires, shown under the picker in the editor.\n     *\n     * Worth writing wherever the label alone leaves it ambiguous — several of\n     * these fire on a delay, or only when some other setting is enabled, and a\n     * label has no room to say so. Omitted where the label is self-evident.\n     */\n    description?: string;\n    /**\n     * Values this event's payload carries. Macro text fields may reference them\n     * as `{name}`; see `interpolateEventArgs`. Events without a declared list\n     * simply offer no placeholders rather than offering broken ones.\n     */\n    args?: EventArg[];\n}",
       "fields": [
         {
           "name": "type",
@@ -791,13 +811,13 @@
     "userMacro": {
       "name": "UserMacro",
       "description": "Pojedyncza akcja wykonywana przez trigger uzytkownika. Trigger ma tablice `macros` wykonywanych po kolei.",
-      "typescript": "export type BuiltInMacroType = 'uppercase' | 'color' | 'replace' | 'beep' | 'mute' | 'unmute' | 'command' | 'slowBlink' | 'rapidBlink' | 'dim' | 'functionalBind' | 'wrap' | 'notify' | 'push';\n\nexport interface UserMacro {\r\n    type: BuiltInMacroType | string;  // string allows plugin macros like \"plugin:...\"\r\n    color?: string;\r\n    to?: string;\r\n    command?: string;\r\n    soundKey?: string;\r\n    label?: string;\r\n    message?: string;  // notification text (notify); empty falls back to matched text for pattern triggers\r\n    /**\r\n     * push only: send even if another push went out within the rate-limit\r\n     * window. For alerts the player considers important enough that being\r\n     * swallowed by an unrelated hp alert a moment earlier is worse than the\r\n     * extra buzz.\r\n     */\r\n    bypassCooldown?: boolean;\r\n    pluginConfig?: Record<string, any>;\r\n    // Dim effect options\r\n    dimStartOpacity?: number;\r\n    dimEndOpacity?: number;\r\n    dimDuration?: number;\r\n    dimEasing?: DimEasing;\r\n    // Wrap (prefix/suffix) options\r\n    wrapPrefix?: string;\r\n    wrapSuffix?: string;\r\n    wrapScope?: 'match' | 'line';\r\n}",
+      "typescript": "export type BuiltInMacroType = 'uppercase' | 'color' | 'replace' | 'beep' | 'mute' | 'unmute' | 'command' | 'slowBlink' | 'rapidBlink' | 'dim' | 'functionalBind' | 'wrap' | 'notify' | 'push' | 'speak';\n\nexport interface UserMacro {\n    type: BuiltInMacroType | string;  // string allows plugin macros like \"plugin:...\"\n    color?: string;\n    to?: string;\n    command?: string;\n    soundKey?: string;\n    label?: string;\n    message?: string;  // notify/push/speak text; empty falls back to matched text for pattern triggers\n    /**\n     * push only: send even if another push went out within the rate-limit\n     * window. For alerts the player considers important enough that being\n     * swallowed by an unrelated hp alert a moment earlier is worse than the\n     * extra buzz.\n     */\n    bypassCooldown?: boolean;\n    pluginConfig?: Record<string, any>;\n    // Dim effect options\n    dimStartOpacity?: number;\n    dimEndOpacity?: number;\n    dimDuration?: number;\n    dimEasing?: DimEasing;\n    // Wrap (prefix/suffix) options\n    wrapPrefix?: string;\n    wrapSuffix?: string;\n    wrapScope?: 'match' | 'line';\n}",
       "fields": [
         {
           "name": "type",
           "type": "BuiltInMacroType | string",
           "required": true,
-          "note": "Jeden z: uppercase, color, replace, beep, mute, unmute, command, slowBlink, rapidBlink, dim, functionalBind, wrap, notify, push. Wartosci zaczynajace sie od \"plugin:\" to makra z pluginow."
+          "note": "Jeden z: uppercase, color, replace, beep, mute, unmute, command, slowBlink, rapidBlink, dim, functionalBind, wrap, notify, push, speak. Wartosci zaczynajace sie od \"plugin:\" to makra z pluginow."
         },
         {
           "name": "color",
@@ -946,7 +966,7 @@
     "bind": {
       "name": "Bind",
       "description": "Bindy klawiszy. `binds` w localStorage trzyma aktywny zestaw (BindSettings); pelna kolekcja zestawow siedzi w `keymaps` (KeymapStore), a wybrany zestaw per urzadzenie w `arkadia.activeKeymap`. Do proponowania zmian uzywaj pojedynczego Bind albo CustomBind.",
-      "typescript": "export interface Bind {\r\n    key: string;\r\n    ctrl?: boolean;\r\n    alt?: boolean;\r\n    shift?: boolean;\r\n}\n\nexport interface CustomBind extends Bind {\r\n    command: string;\r\n}\n\nexport interface DirectionBinds {\r\n    n: Bind;\r\n    s: Bind;\r\n    w: Bind;\r\n    e: Bind;\r\n    nw: Bind;\r\n    ne: Bind;\r\n    sw: Bind;\r\n    se: Bind;\r\n    u: Bind;\r\n    d: Bind;\r\n    zerknij: Bind;\r\n    special: Bind;\r\n}\n\nexport interface BindSettings {\r\n    main: Bind;\r\n    /** Optional separate key for gates functional bind. When undefined, inherits from `main`. */\r\n    mainGates?: Bind;\r\n    /** Optional separate key for transport functional bind. When undefined, inherits from `main`. */\r\n    mainTransport?: Bind;\r\n    /** Optional separate key for loot functional bind. When undefined, inherits from `main`. */\r\n    mainLoot?: Bind;\r\n    lamp: Bind;\r\n    attack: Bind;\r\n    support: Bind;\r\n    moveMode: Bind;\r\n    roomBind: Bind;\r\n    drinkable: Bind;\r\n    /** Gate bind - knocks on the gate of the current location. */\r\n    gateBind: Bind;\r\n    /** Double-press bind that sends the `+k` game command. */\r\n    doubleK: Bind;\r\n    directions: DirectionBinds;\r\n    custom: CustomBind[];\r\n    temp: Bind[];\r\n    enemy: Bind[];\r\n    enemyBlock: Bind[];\r\n}\n\nexport interface Keymap {\r\n    /** Unique keymap identifier (UUID). */\r\n    id: string;\r\n    /** User-facing name (e.g. \"Laptop\", \"Numpad\"). */\r\n    name: string;\r\n    /** The actual bindings for this keymap. */\r\n    binds: BindSettings;\r\n    /** ISO timestamp of creation. */\r\n    createdAt: string;\r\n}\n\nexport interface KeymapStore {\r\n    /** Format version for future-proofing migration. */\r\n    version: 1;\r\n    /** All keymaps keyed by their ID. */\r\n    keymaps: Record<string, Keymap>;\r\n}",
+      "typescript": "export interface Bind {\n    key: string;\n    ctrl?: boolean;\n    alt?: boolean;\n    shift?: boolean;\n}\n\nexport interface CustomBind extends Bind {\n    command: string;\n}\n\nexport interface DirectionBinds {\n    n: Bind;\n    s: Bind;\n    w: Bind;\n    e: Bind;\n    nw: Bind;\n    ne: Bind;\n    sw: Bind;\n    se: Bind;\n    u: Bind;\n    d: Bind;\n    zerknij: Bind;\n    special: Bind;\n}\n\nexport interface BindSettings {\n    main: Bind;\n    /** Optional separate key for gates functional bind. When undefined, inherits from `main`. */\n    mainGates?: Bind;\n    /** Optional separate key for transport functional bind. When undefined, inherits from `main`. */\n    mainTransport?: Bind;\n    /** Optional separate key for loot functional bind. When undefined, inherits from `main`. */\n    mainLoot?: Bind;\n    lamp: Bind;\n    attack: Bind;\n    support: Bind;\n    moveMode: Bind;\n    roomBind: Bind;\n    drinkable: Bind;\n    /** Gate bind - knocks on the gate of the current location. */\n    gateBind: Bind;\n    /** Double-press bind that sends the `+k` game command. */\n    doubleK: Bind;\n    directions: DirectionBinds;\n    custom: CustomBind[];\n    temp: Bind[];\n    enemy: Bind[];\n    enemyBlock: Bind[];\n}\n\nexport interface Keymap {\n    /** Unique keymap identifier (UUID). */\n    id: string;\n    /** User-facing name (e.g. \"Laptop\", \"Numpad\"). */\n    name: string;\n    /** The actual bindings for this keymap. */\n    binds: BindSettings;\n    /** ISO timestamp of creation. */\n    createdAt: string;\n}\n\nexport interface KeymapStore {\n    /** Format version for future-proofing migration. */\n    version: 1;\n    /** All keymaps keyed by their ID. */\n    keymaps: Record<string, Keymap>;\n}",
       "fields": [
         {
           "name": "key",
@@ -1010,7 +1030,7 @@
         "Propozycja bindu ZAWSZE zawiera `command` — to CustomBind dopisywany do tablicy `binds.custom`. Bez `command` klient ja odrzuci.",
         "Modyfikator pominiety oznacza \"nie moze byc wcisniety\" — podawaj tylko te, ktore maja byc trzymane.",
         "Sloty wbudowane w BindSettings: main, mainGates, mainTransport, mainLoot, lamp, attack, support, moveMode, roomBind, drinkable, gateBind, doubleK, directions, custom, temp, enemy, enemyBlock; kierunki w `directions`: n, s, w, e, nw, ne, sw, se, u, d, zerknij, special.",
-        "Bindy edytuje sie w: Menu (⋮) → Bindowanie."
+        "Bindy edytuje sie w: Menu (☰) → Klawisze."
       ]
     },
     "settingChange": {
@@ -1078,7 +1098,7 @@
         "scripts/assistant-kb-overrides.json"
       ],
       "label": "Gildie sojusznicze",
-      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Gildie"
+      "uiLocation": "Menu (☰) → Ustawienia → Postać → Gildie"
     },
     {
       "path": "character.settings.attackCommand",
@@ -1095,7 +1115,7 @@
         "src/web/options/Settings.tsx"
       ],
       "label": "Komenda ataku",
-      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Walka → Walka"
+      "uiLocation": "Menu (☰) → Ustawienia → Postać → Walka → Walka"
     },
     {
       "path": "character.settings.carriageTeamTickets",
@@ -1112,7 +1132,7 @@
         "src/web/options/Settings.tsx"
       ],
       "label": "Bilety dla druzyny przy wjezdzie wozem",
-      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Ogólne → Pozostałe opcje"
+      "uiLocation": "Menu (☰) → Ustawienia → Postać → Ogólne → Pozostałe opcje"
     },
     {
       "path": "character.settings.collectCopper",
@@ -1129,7 +1149,7 @@
         "src/web/options/Settings.tsx"
       ],
       "label": "Miedziane monety",
-      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Przedmioty → Zbieranie przedmiotów"
+      "uiLocation": "Menu (☰) → Ustawienia → Postać → Przedmioty → Zbieranie przedmiotów"
     },
     {
       "path": "character.settings.collectExtra",
@@ -1140,14 +1160,13 @@
       "optional": false,
       "default": [],
       "control": "list",
-      "exposedInUi": true,
+      "exposedInUi": false,
       "sources": [
         "src/modules/core/defaultSettings.ts",
-        "src/web/options/Settings.tsx",
         "scripts/assistant-kb-overrides.json"
       ],
       "label": "Dodatkowe przedmioty do zbierania",
-      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Przedmioty → Zbieranie przedmiotów"
+      "uiLocation": "Menu (☰) → Ustawienia → Postać → Przedmioty → Zbieranie przedmiotów"
     },
     {
       "path": "character.settings.collectGems",
@@ -1164,7 +1183,7 @@
         "src/web/options/Settings.tsx"
       ],
       "label": "Kamienie",
-      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Przedmioty → Zbieranie przedmiotów"
+      "uiLocation": "Menu (☰) → Ustawienia → Postać → Przedmioty → Zbieranie przedmiotów"
     },
     {
       "path": "character.settings.collectGold",
@@ -1181,7 +1200,7 @@
         "src/web/options/Settings.tsx"
       ],
       "label": "Zlote monety",
-      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Przedmioty → Zbieranie przedmiotów"
+      "uiLocation": "Menu (☰) → Ustawienia → Postać → Przedmioty → Zbieranie przedmiotów"
     },
     {
       "path": "character.settings.collectMode",
@@ -1216,7 +1235,7 @@
         }
       ],
       "label": "Tryb zbierania",
-      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Przedmioty → Zbieranie przedmiotów"
+      "uiLocation": "Menu (☰) → Ustawienia → Postać → Przedmioty → Zbieranie przedmiotów"
     },
     {
       "path": "character.settings.collectOverrides",
@@ -1341,32 +1360,32 @@
         {
           "enemy": "zywiolak ziemi",
           "collectCopper": false,
-          "collectSilver": true,
-          "collectGold": true,
+          "collectSilver": false,
+          "collectGold": false,
           "collectGems": true,
           "collectExtra": []
         },
         {
           "enemy": "zywiolak wody",
           "collectCopper": false,
-          "collectSilver": true,
-          "collectGold": true,
+          "collectSilver": false,
+          "collectGold": false,
           "collectGems": true,
           "collectExtra": []
         },
         {
           "enemy": "zywiolak powietrza",
           "collectCopper": false,
-          "collectSilver": true,
-          "collectGold": true,
+          "collectSilver": false,
+          "collectGold": false,
           "collectGems": true,
           "collectExtra": []
         },
         {
           "enemy": "zywiolak ognia",
           "collectCopper": false,
-          "collectSilver": true,
-          "collectGold": true,
+          "collectSilver": false,
+          "collectGold": false,
           "collectGems": true,
           "collectExtra": []
         }
@@ -1378,7 +1397,7 @@
         "scripts/assistant-kb-overrides.json"
       ],
       "label": "Wyjątki zbierania dla wrogów",
-      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Przedmioty → Zbieranie przedmiotów",
+      "uiLocation": "Menu (☰) → Ustawienia → Postać → Przedmioty → Zbieranie przedmiotów",
       "note": "Edytowane w podoknie 'Wyjatki'. Kazdy wpis nadpisuje ustawienia zbierania dla jednego typu przeciwnika."
     },
     {
@@ -1396,7 +1415,7 @@
         "src/web/options/Settings.tsx"
       ],
       "label": "Srebrne monety",
-      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Przedmioty → Zbieranie przedmiotów"
+      "uiLocation": "Menu (☰) → Ustawienia → Postać → Przedmioty → Zbieranie przedmiotów"
     },
     {
       "path": "character.settings.collectTiming",
@@ -1427,7 +1446,7 @@
         }
       ],
       "label": "Kiedy zbierac",
-      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Przedmioty → Zbieranie przedmiotów"
+      "uiLocation": "Menu (☰) → Ustawienia → Postać → Przedmioty → Zbieranie przedmiotów"
     },
     {
       "path": "character.settings.compassBackExits",
@@ -1444,7 +1463,7 @@
         "src/web/options/Settings.tsx"
       ],
       "label": "Powrót na czerwono",
-      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Ogólne → Wyjścia"
+      "uiLocation": "Menu (☰) → Ustawienia → Postać → Ogólne → Wyjścia"
     },
     {
       "path": "character.settings.containerClose",
@@ -1461,7 +1480,7 @@
         "src/web/options/Settings.tsx"
       ],
       "label": "Zamykaj pojemnik",
-      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Przedmioty → Pojemniki"
+      "uiLocation": "Menu (☰) → Ustawienia → Postać → Przedmioty → Pojemniki"
     },
     {
       "path": "character.settings.containerColumns",
@@ -1480,7 +1499,7 @@
       "min": 1,
       "max": 4,
       "label": "Kolumny",
-      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Przedmioty → Pojemniki"
+      "uiLocation": "Menu (☰) → Ustawienia → Postać → Przedmioty → Pojemniki"
     },
     {
       "path": "character.settings.containerOpen",
@@ -1497,7 +1516,7 @@
         "src/web/options/Settings.tsx"
       ],
       "label": "Otwieraj pojemnik",
-      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Przedmioty → Pojemniki"
+      "uiLocation": "Menu (☰) → Ustawienia → Postać → Przedmioty → Pojemniki"
     },
     {
       "path": "character.settings.cuttingPostAction",
@@ -1514,7 +1533,7 @@
         "src/web/options/Settings.tsx"
       ],
       "label": "Komendy po wycinaniu",
-      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Przedmioty → Wycinanie/Wyrywanie"
+      "uiLocation": "Menu (☰) → Ustawienia → Postać → Przedmioty → Wycinanie/Wyrywanie"
     },
     {
       "path": "character.settings.cuttingPreAction",
@@ -1531,7 +1550,7 @@
         "src/web/options/Settings.tsx"
       ],
       "label": "Komendy przed wycinaniem",
-      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Przedmioty → Wycinanie/Wyrywanie"
+      "uiLocation": "Menu (☰) → Ustawienia → Postać → Przedmioty → Wycinanie/Wyrywanie"
     },
     {
       "path": "character.settings.dobCommand1",
@@ -1542,13 +1561,14 @@
       "optional": false,
       "default": "",
       "control": "text",
-      "exposedInUi": true,
+      "exposedInUi": false,
       "sources": [
         "src/modules/core/defaultSettings.ts",
-        "src/web/options/Settings.tsx"
+        "scripts/assistant-kb-overrides.json"
       ],
       "label": "Komenda /dob 1",
-      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Walka → Dobywanie/Opuszczanie"
+      "uiLocation": "Menu (☰) → Ustawienia → Postać → Walka → Dobywanie/Opuszczanie",
+      "note": "/dob bez argumentu wysyla komendy 1 i 2, /dob [1-3] wybrany slot. Kilka komend oddziel srednikiem."
     },
     {
       "path": "character.settings.dobCommand2",
@@ -1559,13 +1579,13 @@
       "optional": false,
       "default": "",
       "control": "text",
-      "exposedInUi": true,
+      "exposedInUi": false,
       "sources": [
         "src/modules/core/defaultSettings.ts",
-        "src/web/options/Settings.tsx"
+        "scripts/assistant-kb-overrides.json"
       ],
       "label": "Komenda /dob 2",
-      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Walka → Dobywanie/Opuszczanie"
+      "uiLocation": "Menu (☰) → Ustawienia → Postać → Walka → Dobywanie/Opuszczanie"
     },
     {
       "path": "character.settings.dobCommand3",
@@ -1576,13 +1596,14 @@
       "optional": false,
       "default": "",
       "control": "text",
-      "exposedInUi": true,
+      "exposedInUi": false,
       "sources": [
         "src/modules/core/defaultSettings.ts",
-        "src/web/options/Settings.tsx"
+        "scripts/assistant-kb-overrides.json"
       ],
       "label": "Komenda /dob 3",
-      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Walka → Dobywanie/Opuszczanie"
+      "uiLocation": "Menu (☰) → Ustawienia → Postać → Walka → Dobywanie/Opuszczanie",
+      "note": "Wysylana tylko przez /dob 3."
     },
     {
       "path": "character.settings.drawWeaponCommand",
@@ -1599,7 +1620,43 @@
         "src/web/options/Settings.tsx"
       ],
       "label": "Komenda dobycia broni",
-      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Walka → Walka"
+      "uiLocation": "Menu (☰) → Ustawienia → Postać → Walka → Walka"
+    },
+    {
+      "path": "character.settings.enemyBindsAttackCommand",
+      "scope": "character",
+      "storageKey": "settings",
+      "key": "enemyBindsAttackCommand",
+      "type": "string",
+      "optional": false,
+      "default": "",
+      "control": "text",
+      "exposedInUi": false,
+      "sources": [
+        "src/modules/core/defaultSettings.ts",
+        "scripts/assistant-kb-overrides.json"
+      ],
+      "label": "Komenda bindu ataku (F1-F3)",
+      "uiLocation": "Menu (☰) → Ustawienia → Postać → Walka → Bindy wrogów (F1-F3)",
+      "note": "Pusto = zwykly atak klienta. {wrog} zastapi wroga (ob_…), {atak} to zwykly atak klienta, {blok} to zablokowanie; kolejne komendy oddziel srednikiem."
+    },
+    {
+      "path": "character.settings.enemyBindsBlockCommand",
+      "scope": "character",
+      "storageKey": "settings",
+      "key": "enemyBindsBlockCommand",
+      "type": "string",
+      "optional": false,
+      "default": "",
+      "control": "text",
+      "exposedInUi": false,
+      "sources": [
+        "src/modules/core/defaultSettings.ts",
+        "scripts/assistant-kb-overrides.json"
+      ],
+      "label": "Komenda bindu blokowania (Ctrl+F1-F3)",
+      "uiLocation": "Menu (☰) → Ustawienia → Postać → Walka → Bindy wrogów (F1-F3)",
+      "note": "Pusto = zablokuj {wrog}. Dzialaja te same {wrog}, {atak}, {blok} i sredniki."
     },
     {
       "path": "character.settings.enemyBindsEnabledSlots",
@@ -1620,7 +1677,7 @@
         "scripts/assistant-kb-overrides.json"
       ],
       "label": "Włączone sloty bindów wrogów (F1-F3)",
-      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Walka → Bindy wrogów (F1-F3)",
+      "uiLocation": "Menu (☰) → Ustawienia → Postać → Walka → Bindy wrogów (F1-F3)",
       "note": "Trzy wartosci logiczne, po jednej na slot F1-F3, np. [true, false, true]. Dlugosc musi wynosic dokladnie 3."
     },
     {
@@ -1638,7 +1695,7 @@
         "scripts/assistant-kb-overrides.json"
       ],
       "label": "Nie zmieniaj przypisanych wrogow",
-      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Walka → Bindy wrogów (F1-F3)"
+      "uiLocation": "Menu (☰) → Ustawienia → Postać → Walka → Bindy wrogów (F1-F3)"
     },
     {
       "path": "character.settings.enemyBindsShowMode",
@@ -1666,7 +1723,7 @@
         }
       ],
       "label": "Wyświetlanie bindów wrogów",
-      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Walka → Bindy wrogów (F1-F3)"
+      "uiLocation": "Menu (☰) → Ustawienia → Postać → Walka → Bindy wrogów (F1-F3)"
     },
     {
       "path": "character.settings.enemyGuilds",
@@ -1683,7 +1740,7 @@
         "scripts/assistant-kb-overrides.json"
       ],
       "label": "Gildie wrogie",
-      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Gildie",
+      "uiLocation": "Menu (☰) → Ustawienia → Postać → Gildie",
       "note": "Czlonkowie tych gildii sa traktowani jako wrogowie (kolorowanie, bindy wrogow)."
     },
     {
@@ -1701,7 +1758,7 @@
         "scripts/assistant-kb-overrides.json"
       ],
       "label": "Ulubione klucze magiczne",
-      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Magiki"
+      "uiLocation": "Menu (☰) → Ustawienia → Postać → Magiki"
     },
     {
       "path": "character.settings.favoriteMagicTypes",
@@ -1718,7 +1775,7 @@
         "scripts/assistant-kb-overrides.json"
       ],
       "label": "Ulubione magiki",
-      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Magiki"
+      "uiLocation": "Menu (☰) → Ustawienia → Postać → Magiki"
     },
     {
       "path": "character.settings.fullHpMessage",
@@ -1735,7 +1792,7 @@
         "src/web/options/Settings.tsx"
       ],
       "label": "Informacja o pelnym zdrowiu",
-      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Ogólne → Pozostałe opcje"
+      "uiLocation": "Menu (☰) → Ustawienia → Postać → Ogólne → Pozostałe opcje"
     },
     {
       "path": "character.settings.guildColors",
@@ -1752,7 +1809,7 @@
         "scripts/assistant-kb-overrides.json"
       ],
       "label": "Kolory gildii",
-      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Gildie",
+      "uiLocation": "Menu (☰) → Ustawienia → Postać → Gildie",
       "note": "Mapa nazwaGildii -> kolor hex uzywany przy kolorowaniu postaci."
     },
     {
@@ -1770,7 +1827,7 @@
         "scripts/assistant-kb-overrides.json"
       ],
       "label": "Moje gildie",
-      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Gildie",
+      "uiLocation": "Menu (☰) → Ustawienia → Postać → Gildie",
       "note": "Lista gildii, do ktorych nalezy postac. Zapisywana z zakladki Gildie."
     },
     {
@@ -1788,7 +1845,7 @@
         "src/web/options/Settings.tsx"
       ],
       "label": "Komendy po użyciu",
-      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Przedmioty → Zioła"
+      "uiLocation": "Menu (☰) → Ustawienia → Postać → Przedmioty → Zioła"
     },
     {
       "path": "character.settings.herbPreUseCommand",
@@ -1805,7 +1862,7 @@
         "src/web/options/Settings.tsx"
       ],
       "label": "Komendy przed użyciem",
-      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Przedmioty → Zioła"
+      "uiLocation": "Menu (☰) → Ustawienia → Postać → Przedmioty → Zioła"
     },
     {
       "path": "character.settings.herbWieleCount",
@@ -1823,7 +1880,7 @@
       ],
       "min": 1,
       "label": "Ilosc \"wiele\"",
-      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Przedmioty → Zioła"
+      "uiLocation": "Menu (☰) → Ustawienia → Postać → Przedmioty → Zioła"
     },
     {
       "path": "character.settings.inlineCompassRose",
@@ -1862,7 +1919,7 @@
         }
       ],
       "label": "Roza wiatrow",
-      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Ogólne → Wyjścia"
+      "uiLocation": "Menu (☰) → Ustawienia → Postać → Ogólne → Wyjścia"
     },
     {
       "path": "character.settings.language",
@@ -1965,7 +2022,7 @@
         }
       ],
       "label": "Domyślny język",
-      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Ogólne → Język"
+      "uiLocation": "Menu (☰) → Ustawienia → Postać → Ogólne → Język"
     },
     {
       "path": "character.settings.languageAdjective",
@@ -1982,7 +2039,7 @@
         "src/web/options/Settings.tsx"
       ],
       "label": "Przyslowek",
-      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Ogólne → Język"
+      "uiLocation": "Menu (☰) → Ustawienia → Postać → Ogólne → Język"
     },
     {
       "path": "character.settings.languageAliases",
@@ -1999,7 +2056,7 @@
         "scripts/assistant-kb-overrides.json"
       ],
       "label": "Aliasy języków",
-      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Ogólne → Język"
+      "uiLocation": "Menu (☰) → Ustawienia → Postać → Ogólne → Język"
     },
     {
       "path": "character.settings.letterLineWidth",
@@ -2016,7 +2073,7 @@
         "src/web/options/Settings.tsx"
       ],
       "label": "Szerokosc linii listu",
-      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Ogólne → Pozostałe opcje"
+      "uiLocation": "Menu (☰) → Ustawienia → Postać → Ogólne → Pozostałe opcje"
     },
     {
       "path": "character.settings.lowHpAlert",
@@ -2067,7 +2124,7 @@
         }
       ],
       "label": "Alarm niskiego zdrowia",
-      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Ogólne → Pozostałe opcje"
+      "uiLocation": "Menu (☰) → Ustawienia → Postać → Ogólne → Pozostałe opcje"
     },
     {
       "path": "character.settings.magicKeysColor",
@@ -2084,7 +2141,7 @@
         "scripts/assistant-kb-overrides.json"
       ],
       "label": "Kolor kluczy magicznych",
-      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Magiki → Kolory"
+      "uiLocation": "Menu (☰) → Ustawienia → Postać → Magiki → Kolory"
     },
     {
       "path": "character.settings.magicsColor",
@@ -2101,7 +2158,7 @@
         "scripts/assistant-kb-overrides.json"
       ],
       "label": "Kolor magików",
-      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Magiki → Kolory"
+      "uiLocation": "Menu (☰) → Ustawienia → Postać → Magiki → Kolory"
     },
     {
       "path": "character.settings.opCommand1",
@@ -2112,13 +2169,14 @@
       "optional": false,
       "default": "",
       "control": "text",
-      "exposedInUi": true,
+      "exposedInUi": false,
       "sources": [
         "src/modules/core/defaultSettings.ts",
-        "src/web/options/Settings.tsx"
+        "scripts/assistant-kb-overrides.json"
       ],
       "label": "Komenda /op 1",
-      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Walka → Dobywanie/Opuszczanie"
+      "uiLocation": "Menu (☰) → Ustawienia → Postać → Walka → Dobywanie/Opuszczanie",
+      "note": "/op bez argumentu wysyla komendy 1 i 2, /op [1-3] wybrany slot."
     },
     {
       "path": "character.settings.opCommand2",
@@ -2129,13 +2187,13 @@
       "optional": false,
       "default": "",
       "control": "text",
-      "exposedInUi": true,
+      "exposedInUi": false,
       "sources": [
         "src/modules/core/defaultSettings.ts",
-        "src/web/options/Settings.tsx"
+        "scripts/assistant-kb-overrides.json"
       ],
       "label": "Komenda /op 2",
-      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Walka → Dobywanie/Opuszczanie"
+      "uiLocation": "Menu (☰) → Ustawienia → Postać → Walka → Dobywanie/Opuszczanie"
     },
     {
       "path": "character.settings.opCommand3",
@@ -2146,13 +2204,14 @@
       "optional": false,
       "default": "",
       "control": "text",
-      "exposedInUi": true,
+      "exposedInUi": false,
       "sources": [
         "src/modules/core/defaultSettings.ts",
-        "src/web/options/Settings.tsx"
+        "scripts/assistant-kb-overrides.json"
       ],
       "label": "Komenda /op 3",
-      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Walka → Dobywanie/Opuszczanie"
+      "uiLocation": "Menu (☰) → Ustawienia → Postać → Walka → Dobywanie/Opuszczanie",
+      "note": "Wysylana tylko przez /op 3."
     },
     {
       "path": "character.settings.packageHelper",
@@ -2169,7 +2228,7 @@
         "src/web/options/Settings.tsx"
       ],
       "label": "Asystent paczek",
-      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Ogólne → Pozostałe opcje"
+      "uiLocation": "Menu (☰) → Ustawienia → Postać → Ogólne → Pozostałe opcje"
     },
     {
       "path": "character.settings.packageInContainer",
@@ -2186,7 +2245,7 @@
         "src/web/options/Settings.tsx"
       ],
       "label": "Paczka do pojemnika",
-      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Ogólne → Pozostałe opcje"
+      "uiLocation": "Menu (☰) → Ustawienia → Postać → Ogólne → Pozostałe opcje"
     },
     {
       "path": "character.settings.prettyContainers",
@@ -2203,7 +2262,7 @@
         "src/web/options/Settings.tsx"
       ],
       "label": "Formatuj pojemniki",
-      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Przedmioty → Pojemniki"
+      "uiLocation": "Menu (☰) → Ustawienia → Postać → Przedmioty → Pojemniki"
     },
     {
       "path": "character.settings.shortenExits",
@@ -2220,7 +2279,7 @@
         "src/web/options/Settings.tsx"
       ],
       "label": "Skrócone wyjścia",
-      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Ogólne → Wyjścia"
+      "uiLocation": "Menu (☰) → Ustawienia → Postać → Ogólne → Wyjścia"
     },
     {
       "path": "character.settings.shortExitsBackgroundColor",
@@ -2238,7 +2297,7 @@
         "scripts/assistant-kb-overrides.json"
       ],
       "label": "Kolor tła skróconych wyjść",
-      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Ogólne → Wyjścia",
+      "uiLocation": "Menu (☰) → Ustawienia → Postać → Ogólne → Wyjścia",
       "note": "Widoczne dopiero po wlaczeniu `shortenExits`. Wartosc 'transparent' wylacza tlo."
     },
     {
@@ -2257,7 +2316,7 @@
         "scripts/assistant-kb-overrides.json"
       ],
       "label": "Kolor skróconych wyjść",
-      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Ogólne → Wyjścia",
+      "uiLocation": "Menu (☰) → Ustawienia → Postać → Ogólne → Wyjścia",
       "note": "Widoczne dopiero po wlaczeniu `shortenExits`."
     },
     {
@@ -2276,7 +2335,7 @@
         "scripts/assistant-kb-overrides.json"
       ],
       "label": "Przedrostek skróconych wyjść",
-      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Ogólne → Wyjścia",
+      "uiLocation": "Menu (☰) → Ustawienia → Postać → Ogólne → Wyjścia",
       "note": "Widoczne dopiero po wlaczeniu `shortenExits`."
     },
     {
@@ -2295,7 +2354,7 @@
         "scripts/assistant-kb-overrides.json"
       ],
       "label": "Separator skróconych wyjść",
-      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Ogólne → Wyjścia",
+      "uiLocation": "Menu (☰) → Ustawienia → Postać → Ogólne → Wyjścia",
       "note": "Widoczne dopiero po wlaczeniu `shortenExits`."
     },
     {
@@ -2313,7 +2372,7 @@
         "src/web/options/Settings.tsx"
       ],
       "label": "Ramki wschodu/zachodu",
-      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Ogólne → Pozostałe opcje"
+      "uiLocation": "Menu (☰) → Ustawienia → Postać → Ogólne → Pozostałe opcje"
     },
     {
       "path": "character.settings.supportCommand",
@@ -2330,7 +2389,7 @@
         "src/web/options/Settings.tsx"
       ],
       "label": "Komenda wsparcia",
-      "uiLocation": "Menu (⋮) → Ustawienia → Postać → Walka → Walka"
+      "uiLocation": "Menu (☰) → Ustawienia → Postać → Walka → Walka"
     },
     {
       "path": "character.settings.zlomSilver",
@@ -2367,7 +2426,7 @@
         "src/web/uiSettings/sections/CommandsSection.tsx"
       ],
       "label": "Bindy trasy wozu (nastepny krok, zsiadanie)",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Komendy → Komendy"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Komendy → Komendy"
     },
     {
       "path": "ui.behaviorSettings.dismountOnRefusedRide",
@@ -2385,7 +2444,7 @@
         "src/web/uiSettings/sections/CommandsSection.tsx"
       ],
       "label": "Powtorzenie odrzuconej jazdy zsiada z wozu i idzie pieszo",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Komendy → Komendy"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Komendy → Komendy"
     },
     {
       "path": "ui.behaviorSettings.drinkableAsFunctionalBind",
@@ -2403,7 +2462,7 @@
         "src/web/uiSettings/sections/CommandsSection.tsx"
       ],
       "label": "Bind picia na bind funkcyjny",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Komendy → Komendy"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Komendy → Komendy"
     },
     {
       "path": "ui.behaviorSettings.explorationMode",
@@ -2421,7 +2480,7 @@
         "src/web/uiSettings/sections/MapSections.tsx"
       ],
       "label": "Tryb eksploracji mapy",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Mapa → Mapa"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Mapa → Mapa"
     },
     {
       "path": "ui.behaviorSettings.gateAsFunctionalBind",
@@ -2439,7 +2498,7 @@
         "src/web/uiSettings/sections/CommandsSection.tsx"
       ],
       "label": "Bind bramy na bind funkcyjny",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Komendy → Komendy"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Komendy → Komendy"
     },
     {
       "path": "ui.behaviorSettings.instantMove",
@@ -2457,7 +2516,7 @@
         "src/web/uiSettings/sections/MapSections.tsx"
       ],
       "label": "Natychmiastowe przechodzenie po mapie",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Mapa → Mapa"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Mapa → Mapa"
     },
     {
       "path": "ui.behaviorSettings.objectContextMenuCommands",
@@ -2480,7 +2539,7 @@
         "scripts/assistant-kb-overrides.json"
       ],
       "label": "Komendy menu kontekstowego obiektów",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Okna → Okno wyjścia i lista obiektów"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Okna → Okno wyjścia i lista obiektów"
     },
     {
       "path": "ui.behaviorSettings.pushOnlyWhenHidden",
@@ -2498,7 +2557,7 @@
         "scripts/assistant-kb-overrides.json"
       ],
       "label": "Wysylaj powiadomienia push tylko gdy karta jest ukryta",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Dźwięk i powiadomienia → Powiadomienia",
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Dźwięk i powiadomienia → Powiadomienia",
       "note": "Domyslnie wylaczone, czyli powiadomienia na sparowane urzadzenia sa wysylane niezaleznie od tego, czy karta klienta jest aktywna. Wlaczenie wstrzymuje je, gdy gracz patrzy na klienta."
     },
     {
@@ -2527,7 +2586,7 @@
         }
       ],
       "label": "Numerowanie druzyny na liscie obiektow",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Okna → Okno wyjścia i lista obiektów"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Okna → Okno wyjścia i lista obiektów"
     },
     {
       "path": "ui.mapSettings.emojiLabels",
@@ -2545,7 +2604,7 @@
         "src/web/uiSettings/sections/FooterSections.tsx"
       ],
       "label": "Etykiety emoji",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Stopka → Stan postaci"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Stopka → Stan postaci"
     },
     {
       "path": "ui.mapSettings.highlightCurrentRoom",
@@ -2563,7 +2622,7 @@
         "src/web/uiSettings/sections/MapSections.tsx"
       ],
       "label": "Podświetl bieżące pomieszczenie",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Mapa → Mapa"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Mapa → Mapa"
     },
     {
       "path": "ui.mapSettings.labelRenderMode",
@@ -2595,7 +2654,7 @@
         }
       ],
       "label": "Tryb renderowania etykiet",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Mapa → Mapa"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Mapa → Mapa"
     },
     {
       "path": "ui.mapSettings.mapBackgroundColor",
@@ -2613,7 +2672,7 @@
         "src/web/uiSettings/sections/MapSections.tsx"
       ],
       "label": "Kolor tła mapy",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Mapa → Pomieszczenia i linie"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Mapa → Pomieszczenia i linie"
     },
     {
       "path": "ui.mapSettings.mapHighlightDashEnabled",
@@ -2631,7 +2690,7 @@
         "src/web/uiSettings/sections/MapSections.tsx"
       ],
       "label": "Przerywane obramowanie",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Mapa → Podświetlenie pomieszczeń"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Mapa → Podświetlenie pomieszczeń"
     },
     {
       "path": "ui.mapSettings.mapHighlightFillAlpha",
@@ -2652,7 +2711,7 @@
       "max": 1,
       "step": 0.01,
       "label": "Przezroczystość wypełnienia",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Mapa → Podświetlenie pomieszczeń"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Mapa → Podświetlenie pomieszczeń"
     },
     {
       "path": "ui.mapSettings.mapHighlightShape",
@@ -2688,7 +2747,7 @@
         }
       ],
       "label": "Kształt podświetlenia",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Mapa → Podświetlenie pomieszczeń"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Mapa → Podświetlenie pomieszczeń"
     },
     {
       "path": "ui.mapSettings.mapHighlightSizeFactor",
@@ -2709,7 +2768,7 @@
       "max": 3,
       "step": 0.025,
       "label": "Mnożnik rozmiaru",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Mapa → Podświetlenie pomieszczeń"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Mapa → Podświetlenie pomieszczeń"
     },
     {
       "path": "ui.mapSettings.mapHighlightStrokeAlpha",
@@ -2730,7 +2789,7 @@
       "max": 1,
       "step": 0.01,
       "label": "Przezroczystość obramowania",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Mapa → Podświetlenie pomieszczeń"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Mapa → Podświetlenie pomieszczeń"
     },
     {
       "path": "ui.mapSettings.mapHighlightStrokeWidth",
@@ -2751,7 +2810,7 @@
       "max": 0.3,
       "step": 0.01,
       "label": "Grubość obramowania",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Mapa → Podświetlenie pomieszczeń"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Mapa → Podświetlenie pomieszczeń"
     },
     {
       "path": "ui.mapSettings.mapLineColor",
@@ -2769,7 +2828,7 @@
         "src/web/uiSettings/sections/MapSections.tsx"
       ],
       "label": "Kolor linii",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Mapa → Pomieszczenia i linie"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Mapa → Pomieszczenia i linie"
     },
     {
       "path": "ui.mapSettings.mapLineWidth",
@@ -2790,7 +2849,7 @@
       "max": 0.1,
       "step": 0.001,
       "label": "Szerokość linii",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Mapa → Pomieszczenia i linie"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Mapa → Pomieszczenia i linie"
     },
     {
       "path": "ui.mapSettings.mapPlayerMarkerDashEnabled",
@@ -2808,7 +2867,7 @@
         "src/web/uiSettings/sections/MapSections.tsx"
       ],
       "label": "Przerywane obramowanie markera",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Mapa → Marker gracza"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Mapa → Marker gracza"
     },
     {
       "path": "ui.mapSettings.mapPlayerMarkerFillAlpha",
@@ -2829,7 +2888,7 @@
       "max": 1,
       "step": 0.01,
       "label": "Przezroczystość wypełnienia",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Mapa → Marker gracza"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Mapa → Marker gracza"
     },
     {
       "path": "ui.mapSettings.mapPlayerMarkerFillColor",
@@ -2847,7 +2906,7 @@
         "src/web/uiSettings/sections/MapSections.tsx"
       ],
       "label": "Kolor wypełnienia markera gracza",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Mapa → Marker gracza"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Mapa → Marker gracza"
     },
     {
       "path": "ui.mapSettings.mapPlayerMarkerSizeFactor",
@@ -2868,7 +2927,7 @@
       "max": 3,
       "step": 0.1,
       "label": "Mnożnik rozmiaru markera",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Mapa → Marker gracza"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Mapa → Marker gracza"
     },
     {
       "path": "ui.mapSettings.mapPlayerMarkerStrokeAlpha",
@@ -2889,7 +2948,7 @@
       "max": 1,
       "step": 0.01,
       "label": "Przezroczystość obramowania",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Mapa → Marker gracza"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Mapa → Marker gracza"
     },
     {
       "path": "ui.mapSettings.mapPlayerMarkerStrokeColor",
@@ -2907,7 +2966,7 @@
         "src/web/uiSettings/sections/MapSections.tsx"
       ],
       "label": "Kolor obramowania markera gracza",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Mapa → Marker gracza"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Mapa → Marker gracza"
     },
     {
       "path": "ui.mapSettings.mapPlayerMarkerStrokeWidth",
@@ -2928,7 +2987,7 @@
       "max": 0.3,
       "step": 0.01,
       "label": "Grubość obramowania markera",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Mapa → Marker gracza"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Mapa → Marker gracza"
     },
     {
       "path": "ui.mapSettings.mapRoomShape",
@@ -2960,7 +3019,7 @@
         }
       ],
       "label": "Kształt pomieszczeń",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Mapa → Pomieszczenia i linie"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Mapa → Pomieszczenia i linie"
     },
     {
       "path": "ui.mapSettings.mapRoomSize",
@@ -2981,7 +3040,7 @@
       "max": 1.5,
       "step": 0.01,
       "label": "Rozmiar pomieszczeń",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Mapa → Pomieszczenia i linie"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Mapa → Pomieszczenia i linie"
     },
     {
       "path": "ui.mapSettings.pathFindingAlgorithm",
@@ -3009,7 +3068,7 @@
         }
       ],
       "label": "Algorytm wyszukiwania drogi",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Mapa → Mapa"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Mapa → Mapa"
     },
     {
       "path": "ui.mapSettings.transparentLabels",
@@ -3027,7 +3086,7 @@
         "src/web/uiSettings/sections/MapSections.tsx"
       ],
       "label": "Przezroczyste etykiety (wymusza tryb danych)",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Mapa → Mapa"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Mapa → Mapa"
     },
     {
       "path": "ui.renderSettings.autoLowercaseCommands",
@@ -3045,7 +3104,7 @@
         "src/web/uiSettings/sections/CommandsSection.tsx"
       ],
       "label": "Automatycznie małe litery w komendach",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Komendy → Komendy"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Komendy → Komendy"
     },
     {
       "path": "ui.renderSettings.clearInputOnSend",
@@ -3063,7 +3122,7 @@
         "src/web/uiSettings/sections/CommandsSection.tsx"
       ],
       "label": "Czyść pole komend po wysłaniu",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Komendy → Komendy"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Komendy → Komendy"
     },
     {
       "path": "ui.renderSettings.colorTheme",
@@ -3119,7 +3178,7 @@
         }
       ],
       "label": "Motyw kolorystyczny",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Wygląd → Wygląd"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Wygląd → Wygląd"
     },
     {
       "path": "ui.renderSettings.commandEcho",
@@ -3137,7 +3196,7 @@
         "src/web/uiSettings/sections/CommandsSection.tsx"
       ],
       "label": "Echo komend",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Komendy → Komendy"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Komendy → Komendy"
     },
     {
       "path": "ui.renderSettings.customBeepSoundKey",
@@ -3166,7 +3225,7 @@
         }
       ],
       "label": "Własny dźwięk beep",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Dźwięk i powiadomienia → Dźwięki"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Dźwięk i powiadomienia → Dźwięki"
     },
     {
       "path": "ui.renderSettings.customFontFamily",
@@ -3184,7 +3243,7 @@
         "src/web/uiSettings/sections/AppearanceSection.tsx"
       ],
       "label": "Nazwa rodziny czcionki",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Wygląd → Wygląd"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Wygląd → Wygląd"
     },
     {
       "path": "ui.renderSettings.customFontUrl",
@@ -3202,7 +3261,7 @@
         "src/web/uiSettings/sections/AppearanceSection.tsx"
       ],
       "label": "Adres arkusza czcionki",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Wygląd → Wygląd"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Wygląd → Wygląd"
     },
     {
       "path": "ui.renderSettings.customThemeColor",
@@ -3221,7 +3280,7 @@
         "scripts/assistant-kb-overrides.json"
       ],
       "label": "Kolor własnego motywu",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Wygląd → Wygląd",
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Wygląd → Wygląd",
       "note": "Uzywane tylko gdy colorTheme = 'custom-dark'."
     },
     {
@@ -3262,7 +3321,7 @@
         }
       ],
       "label": "Czcionka okna wyjścia i listy obiektów",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Wygląd → Wygląd"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Wygląd → Wygląd"
     },
     {
       "path": "ui.renderSettings.highlightMessageBlocks",
@@ -3280,7 +3339,7 @@
         "src/web/uiSettings/sections/AppearanceSection.tsx"
       ],
       "label": "Wyróżniaj bloki wiadomości",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Wygląd → Wygląd"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Wygląd → Wygląd"
     },
     {
       "path": "ui.renderSettings.outputBackground",
@@ -3298,7 +3357,7 @@
         "src/web/uiSettings/sections/AppearanceSection.tsx"
       ],
       "label": "Kolor tła okna głównego",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Wygląd → Wygląd"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Wygląd → Wygląd"
     },
     {
       "path": "ui.renderSettings.outputBottomPadding",
@@ -3318,7 +3377,7 @@
       "min": 0,
       "step": 1,
       "label": "Dolny padding okna (px)",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Okna → Okno wyjścia i lista obiektów"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Okna → Okno wyjścia i lista obiektów"
     },
     {
       "path": "ui.renderSettings.showTimestamps",
@@ -3355,7 +3414,7 @@
         "scripts/assistant-kb-overrides.json"
       ],
       "label": "Dźwięki kategorii",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Dźwięk i powiadomienia → Dźwięki",
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Dźwięk i powiadomienia → Dźwięki",
       "note": "Mapa kategoria -> klucz dzwieku. null = kategoria wyciszona, brak klucza = domyslny beep."
     },
     {
@@ -3384,7 +3443,7 @@
         }
       ],
       "label": "Paleta kolorów",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Wygląd → Wygląd"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Wygląd → Wygląd"
     },
     {
       "path": "ui.shellSettings.fightTitleIcon",
@@ -3402,7 +3461,7 @@
         "src/web/uiSettings/sections/OtherSections.tsx"
       ],
       "label": "Ikona walki w tytule",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Inne → Inne"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Inne → Inne"
     },
     {
       "path": "ui.shellSettings.hapticFeedback",
@@ -3421,7 +3480,7 @@
         "scripts/assistant-kb-overrides.json"
       ],
       "label": "Wibracje (haptyka) na urządzeniach mobilnych",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Przyciski mobilne → Wyświetlanie"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Przyciski mobilne → Wyświetlanie"
     },
     {
       "path": "ui.shellSettings.wakeLock",
@@ -3439,7 +3498,7 @@
         "src/web/uiSettings/sections/OtherSections.tsx"
       ],
       "label": "Blokada usypiania ekranu (Wake Lock)",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Inne → Inne"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Inne → Inne"
     },
     {
       "path": "ui.uiSettings.alwaysVisibleBars",
@@ -3457,7 +3516,7 @@
         "scripts/assistant-kb-overrides.json"
       ],
       "label": "Zawsze widoczne paski stanu",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Stopka → Stan postaci"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Stopka → Stan postaci"
     },
     {
       "path": "ui.uiSettings.barOrder",
@@ -3487,7 +3546,7 @@
         "scripts/assistant-kb-overrides.json"
       ],
       "label": "Kolejność pasków stanu",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Stopka → Stan postaci"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Stopka → Stan postaci"
     },
     {
       "path": "ui.uiSettings.buttonSize",
@@ -3524,7 +3583,26 @@
       ],
       "step": 0.1,
       "label": "Rozmiar czcionki treści (rem)",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Wygląd → Wygląd"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Wygląd → Wygląd"
+    },
+    {
+      "path": "ui.uiSettings.footerButtons",
+      "scope": "ui",
+      "storageKey": "uiSettings",
+      "key": "footerButtons",
+      "type": "FooterButtonConfig[]",
+      "optional": false,
+      "default": [],
+      "control": "complex",
+      "exposedInUi": false,
+      "sources": [
+        "src/shared/uiSettingsTypes.ts",
+        "src/web/defaultUiSettings.ts",
+        "scripts/assistant-kb-overrides.json"
+      ],
+      "label": "Przyciski przy linii komend",
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Stopka → Przyciski przy linii komend",
+      "note": "Wlasne przyciski obok pola komend: na komputerze miedzy \"Wyslij\" a menu, na telefonie w rozwinietej stopce."
     },
     {
       "path": "ui.uiSettings.footerComponents",
@@ -3623,7 +3701,7 @@
         "scripts/assistant-kb-overrides.json"
       ],
       "label": "Elementy stopki",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Stopka → Elementy stopki",
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Stopka → Elementy stopki",
       "note": "Kolejnosc i widocznosc kafelkow stopki; przeciaganie na liscie."
     },
     {
@@ -3633,7 +3711,7 @@
       "key": "footerMode",
       "type": "number",
       "optional": false,
-      "default": 0,
+      "default": 4,
       "control": "select",
       "exposedInUi": true,
       "sources": [
@@ -3642,6 +3720,10 @@
         "src/web/uiSettings/sections/FooterSections.tsx"
       ],
       "options": [
+        {
+          "value": "4",
+          "label": "Kafelki"
+        },
         {
           "value": "0",
           "label": "Liczbowy"
@@ -3660,7 +3742,7 @@
         }
       ],
       "label": "Tryb stopki",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Stopka → Stan postaci"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Stopka → Stan postaci"
     },
     {
       "path": "ui.uiSettings.keepMultibindsVisible",
@@ -3678,7 +3760,7 @@
         "src/web/uiSettings/sections/CommandsSection.tsx"
       ],
       "label": "Zawsze pokazuj pasek multibindów",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Komendy → Komendy"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Komendy → Komendy"
     },
     {
       "path": "ui.uiSettings.mapHeight",
@@ -3699,7 +3781,7 @@
       "defaultExpression": "typeof window !== 'undefined' && window.innerWidth < 768 ? 25 : 30",
       "step": 1,
       "label": "Wysokość mapy (vh)",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Mapa → Mapa",
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Mapa → Mapa",
       "note": "Domyslnie 30 (vh) na desktopie i 25 na ekranach wezszych niz 768 px."
     },
     {
@@ -3752,7 +3834,7 @@
         }
       ],
       "label": "Położenie mapy",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Mapa → Mapa"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Mapa → Mapa"
     },
     {
       "path": "ui.uiSettings.mapScale",
@@ -3772,7 +3854,7 @@
       "min": 0.05,
       "step": 0.05,
       "label": "Powiększenie mapy",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Mapa → Mapa"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Mapa → Mapa"
     },
     {
       "path": "ui.uiSettings.mobileFooterCompact",
@@ -3790,7 +3872,7 @@
         "src/web/uiSettings/sections/FooterSections.tsx"
       ],
       "label": "Kompaktowa stopka na telefonie",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Stopka → Stopka na telefonie"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Stopka → Stopka na telefonie"
     },
     {
       "path": "ui.uiSettings.mobileFooterExpand",
@@ -3822,7 +3904,7 @@
         }
       ],
       "label": "Rozwijanie stopki na telefonie",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Stopka → Stopka na telefonie"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Stopka → Stopka na telefonie"
     },
     {
       "path": "ui.uiSettings.multibindKeyHints",
@@ -3842,7 +3924,7 @@
       "options": [
         {
           "value": "auto",
-          "label": "Automatycznie (gdy wykryta klawiatura)"
+          "label": "Automatycznie (na telefonie po Alt, Ctrl lub Tab)"
         },
         {
           "value": "always",
@@ -3854,7 +3936,7 @@
         }
       ],
       "label": "Skroty klawiszowe na pasku bindow",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Komendy → Komendy"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Komendy → Komendy"
     },
     {
       "path": "ui.uiSettings.objectListBackgroundAlpha",
@@ -3875,7 +3957,7 @@
       "max": 1,
       "step": 0.01,
       "label": "Przezroczystość",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Wygląd → Wygląd"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Wygląd → Wygląd"
     },
     {
       "path": "ui.uiSettings.objectListBackgroundColor",
@@ -3893,7 +3975,7 @@
         "src/web/uiSettings/sections/AppearanceSection.tsx"
       ],
       "label": "Kolor tła listy obiektów",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Wygląd → Wygląd"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Wygląd → Wygląd"
     },
     {
       "path": "ui.uiSettings.objectsFontSize",
@@ -3912,7 +3994,7 @@
       ],
       "step": 0.1,
       "label": "Rozmiar czcionki listy obiektów (rem)",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Wygląd → Wygląd"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Wygląd → Wygląd"
     },
     {
       "path": "ui.uiSettings.outputMaxElements",
@@ -3932,7 +4014,7 @@
       "min": 100,
       "step": 100,
       "label": "Maksymalna liczba linii w buforze",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Okna → Okno wyjścia i lista obiektów"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Okna → Okno wyjścia i lista obiektów"
     },
     {
       "path": "ui.uiSettings.showButtons",
@@ -3951,7 +4033,7 @@
         "scripts/assistant-kb-overrides.json"
       ],
       "label": "Pokazuj przyciski",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Przyciski mobilne → Wyświetlanie"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Przyciski mobilne → Wyświetlanie"
     },
     {
       "path": "ui.uiSettings.showCombatTimer",
@@ -3969,7 +4051,7 @@
         "scripts/assistant-kb-overrides.json"
       ],
       "label": "Pokazuj licznik walki",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Stopka → Elementy stopki"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Stopka → Elementy stopki"
     },
     {
       "path": "ui.uiSettings.showTransportLabel",
@@ -3987,7 +4069,7 @@
         "scripts/assistant-kb-overrides.json"
       ],
       "label": "Pokazuj etykietę transportu",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Stopka → Elementy stopki"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Stopka → Elementy stopki"
     },
     {
       "path": "ui.uiSettings.showVoiceButton",
@@ -4005,7 +4087,7 @@
         "src/web/uiSettings/sections/CommandsSection.tsx"
       ],
       "label": "Przycisk mikrofonu (dyktowanie głosowe)",
-      "uiLocation": "Menu (⋮) → Ustawienia → Interfejs → Komendy → Komendy"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Komendy → Komendy"
     },
     {
       "path": "ui.uiSettings.splitViewHeight",
@@ -4024,6 +4106,147 @@
       ],
       "label": "Wysokość podzielonego widoku",
       "note": "Ustawiane przez przeciaganie belki w interfejsie, nie w panelu ustawien."
+    },
+    {
+      "path": "ui.uiSettings.tabCompletionHint",
+      "scope": "ui",
+      "storageKey": "uiSettings",
+      "key": "tabCompletionHint",
+      "type": "boolean",
+      "optional": false,
+      "default": true,
+      "control": "checkbox",
+      "exposedInUi": true,
+      "sources": [
+        "src/shared/uiSettingsTypes.ts",
+        "src/web/defaultUiSettings.ts",
+        "src/web/uiSettings/sections/CommandsSection.tsx"
+      ],
+      "label": "Podpowiedź uzupełniania (Tab) za kursorem",
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Komendy → Komendy"
+    },
+    {
+      "path": "ui.uiSettings.ttsEnabled",
+      "scope": "ui",
+      "storageKey": "uiSettings",
+      "key": "ttsEnabled",
+      "type": "boolean",
+      "optional": false,
+      "default": true,
+      "control": "checkbox",
+      "exposedInUi": true,
+      "sources": [
+        "src/shared/uiSettingsTypes.ts",
+        "src/web/defaultUiSettings.ts",
+        "src/web/uiSettings/sections/SpeechSection.tsx"
+      ],
+      "label": "Czytanie na głos włączone",
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Dźwięk i powiadomienia → Czytanie na głos"
+    },
+    {
+      "path": "ui.uiSettings.ttsInterrupt",
+      "scope": "ui",
+      "storageKey": "uiSettings",
+      "key": "ttsInterrupt",
+      "type": "boolean",
+      "optional": false,
+      "default": false,
+      "control": "checkbox",
+      "exposedInUi": true,
+      "sources": [
+        "src/shared/uiSettingsTypes.ts",
+        "src/web/defaultUiSettings.ts",
+        "src/web/uiSettings/sections/SpeechSection.tsx"
+      ],
+      "label": "Nowy komunikat przerywa aktualnie czytany",
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Dźwięk i powiadomienia → Czytanie na głos"
+    },
+    {
+      "path": "ui.uiSettings.ttsPitch",
+      "scope": "ui",
+      "storageKey": "uiSettings",
+      "key": "ttsPitch",
+      "type": "number",
+      "optional": false,
+      "default": 1,
+      "control": "range",
+      "exposedInUi": true,
+      "sources": [
+        "src/shared/uiSettingsTypes.ts",
+        "src/web/defaultUiSettings.ts",
+        "src/web/uiSettings/sections/SpeechSection.tsx"
+      ],
+      "min": 0,
+      "max": 2,
+      "step": 0.1,
+      "label": "Wysokość",
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Dźwięk i powiadomienia → Czytanie na głos"
+    },
+    {
+      "path": "ui.uiSettings.ttsRate",
+      "scope": "ui",
+      "storageKey": "uiSettings",
+      "key": "ttsRate",
+      "type": "number",
+      "optional": false,
+      "default": 1,
+      "control": "range",
+      "exposedInUi": true,
+      "sources": [
+        "src/shared/uiSettingsTypes.ts",
+        "src/web/defaultUiSettings.ts",
+        "src/web/uiSettings/sections/SpeechSection.tsx"
+      ],
+      "min": 0.5,
+      "max": 2,
+      "step": 0.1,
+      "label": "Tempo",
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Dźwięk i powiadomienia → Czytanie na głos"
+    },
+    {
+      "path": "ui.uiSettings.ttsVoice",
+      "scope": "ui",
+      "storageKey": "uiSettings",
+      "key": "ttsVoice",
+      "type": "string",
+      "optional": false,
+      "default": "",
+      "control": "select",
+      "exposedInUi": true,
+      "sources": [
+        "src/shared/uiSettingsTypes.ts",
+        "src/web/defaultUiSettings.ts",
+        "src/web/uiSettings/sections/SpeechSection.tsx"
+      ],
+      "options": [
+        {
+          "value": "",
+          "label": "Automatyczny"
+        }
+      ],
+      "label": "Głos",
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Dźwięk i powiadomienia → Czytanie na głos"
+    },
+    {
+      "path": "ui.uiSettings.ttsVolume",
+      "scope": "ui",
+      "storageKey": "uiSettings",
+      "key": "ttsVolume",
+      "type": "number",
+      "optional": false,
+      "default": 1,
+      "control": "range",
+      "exposedInUi": true,
+      "sources": [
+        "src/shared/uiSettingsTypes.ts",
+        "src/web/defaultUiSettings.ts",
+        "src/web/uiSettings/sections/SpeechSection.tsx"
+      ],
+      "min": 0,
+      "max": 1,
+      "step": 0.05,
+      "label": "Głośność",
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Dźwięk i powiadomienia → Czytanie na głos"
     }
   ],
   "commands": [
@@ -4302,6 +4525,14 @@
       "documentedIn": "HERBS.md"
     },
     {
+      "name": "/lisica",
+      "pattern": "/^\\/lisica(?:\\s+(.*))?$/",
+      "source": "src/client/scripts/skarbce/lisica.ts",
+      "usage": "/lisica",
+      "description": "Wystukaj na drzwiach zapamietane haslo (pierwsza cyfra = liczba pukniec)",
+      "documentedIn": "ALIASES.md"
+    },
+    {
       "name": "/list",
       "pattern": "/^\\/list$/",
       "source": "src/client/scripts/letter.ts",
@@ -4464,7 +4695,7 @@
       "pattern": "/^\\/note$/i",
       "source": "src/client/scripts/mapAliases.ts",
       "usage": "/note",
-      "description": "Otworz edytor notatki dla biezacej lokacji",
+      "description": "Otworz okno Miejsca na biezacej lokacji, z kursorem w notatce",
       "documentedIn": "NAVIGATION.md"
     },
     {
@@ -4592,7 +4823,7 @@
       "pattern": "/^\\/odpornosci-usun\\s+(.+)$/",
       "source": "src/client/scripts/enemyResistances.ts",
       "usage": "/odpornosci-usun <nazwa>",
-      "description": "Usun wpis przeciwnika (rodzaj w mianowniku, np. `kikimora`)",
+      "description": "Usun wpisy przeciwnika ze wszystkich obszarow (rodzaj w mianowniku, np. `kikimora`)",
       "documentedIn": "ALIASES.md"
     },
     {
@@ -4664,7 +4895,7 @@
       "pattern": "/^\\/pokaz_skroty$/",
       "source": "src/client/scripts/shortcuts.ts",
       "usage": "/pokaz_skroty",
-      "description": "Wyswietl liste zapisanych skrotow",
+      "description": "Wypisz liste zapisanych skrotow w oknie gry",
       "documentedIn": "SHORTCUTS.md"
     },
     {
@@ -4885,7 +5116,7 @@
       "pattern": "/\\/prze(?: ([A-Za-z0-9@]+))?$/",
       "source": "src/client/scripts/objectAliases.ts",
       "usage": "/prze [id]",
-      "description": "Przelamuje obrone celu lub wskazanego obiektu",
+      "description": "Przelamuje obrone wskazanego obiektu, celu ataku, a gdy go brak - aktualnie atakowanego przeciwnika",
       "documentedIn": "COMBAT.md"
     },
     {
@@ -4911,6 +5142,14 @@
       "usage": "/przeszukaj tekst",
       "description": "Wyszukaj pokoje z nazwami zawierajacymi tekst (do 10 najblizszych)",
       "documentedIn": "NAVIGATION.md"
+    },
+    {
+      "name": "/przycisk",
+      "pattern": "/^\\/przycisk\\s+(\\S+)(?:\\s+(on|off|wl|wyl))?$/i",
+      "source": "src/client/main.ts",
+      "usage": "/przycisk nazwa on",
+      "description": "Zapal przyciski o tym stanie (`wl` dziala tak samo)",
+      "documentedIn": "BINDS.md"
     },
     {
       "name": "/przyplyw",
@@ -5020,7 +5259,7 @@
       "pattern": "/^\\/skrotyw$/",
       "source": "src/client/scripts/shortcuts.ts",
       "usage": "/skrotyw",
-      "description": "Otworz okno z lista skrotow",
+      "description": "Otworz stare, male okienko z sama lista skrotow (przyciski Prowadz / Idz)",
       "documentedIn": "SHORTCUTS.md"
     },
     {
@@ -5613,6 +5852,14 @@
       "documentedIn": "COMBAT.md"
     },
     {
+      "name": "/zaslony",
+      "pattern": "/^\\/zaslony$/",
+      "source": "src/client/scripts/coverTracker.ts",
+      "usage": "/zaslony",
+      "description": "Otworz okno podgladu zaslon (kto jest zaslaniany, przez kogo i przed kim)",
+      "documentedIn": "ALIASES.md"
+    },
+    {
       "name": "/zawod",
       "pattern": "/^\\/zawod$/",
       "source": "src/client/scripts/profession.ts",
@@ -6193,8 +6440,8 @@
         "Kategorie dokumentacji",
         "Wlasne aliasy"
       ],
-      "tokens": 269,
-      "content": "# Rozszerzenie Arkadia\n\nRozszerzenie dodaje wiele przydatnych funkcji do klienta webowego Arkadii, w tym aliasy, bindy, zarzadzanie pojemnikami i automatyzacje.\n\n## Kategorie dokumentacji\n\n| Dokument | Opis |\n|----------|------|\n| **Walka** | Atakowanie, zaslanianie, kolejka celow |\n| **Mapa i nawigacja** | Chodzenie, mapa, prowadzenie |\n| **Ekwipunek** | Pojemniki, zbieranie lupow, depozyty |\n| **Postepy** | Postepy, zabici, zlecenia, staz |\n| **Ziola** | Licznik i zarzadzanie ziolami |\n| **Bindowanie** | Bindy |\n| **Skroty** | Zapisane lokacje na mapie |\n| **Synchronizacja** | Synchronizacja ustawien przez Firebase |\n| **Skrypty i automatyzacja** | Aliasy, triggery, bindy, edytor i pluginy — przeglad mozliwosci |\n| **Inne** | Pozostale aliasy i funkcje |\n\n## Wlasne aliasy\n\nMozesz tworzyc wlasne aliasy w ustawieniach klienta:\n- **Wzorzec** - wyrazenie regularne dopasowujace komende\n- **Komenda** - tekst wysylany do serwera, moze uzywac `$1`, `$2` itp. dla grup z dopasowania\n- **Skroty obiektow** - `@1`, `@A`, `@@` zostana zamienione na identyfikatory obiektow"
+      "tokens": 279,
+      "content": "# Rozszerzenie Arkadia\n\nRozszerzenie dodaje wiele przydatnych funkcji do klienta webowego Arkadii, w tym aliasy, bindy, zarzadzanie pojemnikami i automatyzacje.\n\n## Kategorie dokumentacji\n\n| Dokument | Opis |\n|----------|------|\n| **Walka** | Atakowanie, zaslanianie, kolejka celow |\n| **Mapa i nawigacja** | Chodzenie, mapa, prowadzenie |\n| **Ekwipunek** | Pojemniki, zbieranie lupow, depozyty |\n| **Postepy** | Postepy, zabici, zlecenia, staz |\n| **Ziola** | Licznik i zarzadzanie ziolami |\n| **Bindowanie** | Bindy — okno **Klawisze** |\n| **Miejsca** | Zapisane lokacje na mapie: skroty i notatki |\n| **Synchronizacja** | Synchronizacja ustawien przez Firebase |\n| **Skrypty i automatyzacja** | Aliasy, triggery, bindy, edytor i pluginy — przeglad mozliwosci |\n| **Inne** | Pozostale aliasy i funkcje |\n\n## Wlasne aliasy\n\nMozesz tworzyc wlasne aliasy w ustawieniach klienta:\n- **Wzorzec** - wyrazenie regularne dopasowujace komende\n- **Komenda** - tekst wysylany do serwera, moze uzywac `$1`, `$2` itp. dla grup z dopasowania\n- **Skroty obiektow** - `@1`, `@A`, `@@` zostana zamienione na identyfikatory obiektow"
     },
     {
       "id": "NAVIGATION.md",
@@ -6213,8 +6460,8 @@
         "Okno mapy",
         "Multibindy lokacji"
       ],
-      "tokens": 1331,
-      "content": "# Mapa i nawigacja\n\nKomendy do poruszania sie, mapy i automatycznego chodzenia.\n\n## Podstawowy ruch\n\n| Komenda | Opis |\n|---------|------|\n| `/cofnij` | Cofnij postac do poprzedniego pomieszczenia na mapie |\n| `/move kierunek` | Przesun mape bez wysylania komendy do serwera |\n| `/ustaw id` | Ustaw biezaca pozycje na mapie na podany identyfikator |\n| `/zlok` | Wymus odswiezenie biezacej pozycji na mapie |\n| `/idz kierunek` | Wybierz przeciwne wyjscie w pomieszczeniu |\n| `n!` `s!` `e!` `w!` `ne!` `nw!` `se!` `sw!` `u!` `d!` | Wyslij czysty kierunek do serwera z pominieciem ruchu po mapie |\n\n> **Wskazowka:** Kiedy mapper na pewno zgubi pozycje - nie udalo mu sie odtworzyc ruchu za druzyna albo gra podaje lokacje spoza mapy - w prawym gornym rogu mapy zapala sie czerwona plakietka **ZGUBIONY**. Znacznik zostaje na ostatnim pewnym pomieszczeniu; plakietka gasnie sama, gdy gra poda znane mapie polozenie, albo po recznym ustawieniu pozycji (`/ustaw id`, `/zlok`, GPS, menu mapy).\n\n## Automatyczne chodzenie\n\n| Komenda | Opis |\n|---------|------|\n| `/idz id [opoznienie]` | Automatycznie idz do wskazanej lokacji |\n| `/stop` | Zatrzymaj automatyczne chodzenie |\n| `/dalej [opoznienie]` | Wznow wedrowke z opcjonalnym opoznieniem |\n| `/opoz sekundy` | Ustaw domyslne opoznienie krokow |\n| `/szybciej` | Zmniejsz opoznienie o 0.5 s |\n| `/wolniej` | Zwieksz opoznienie o 0.5 s |\n| `/walkerw` | Otworz okno walkera |\n\n## Komendy przed/po kroku\n\n| Komenda | Opis |\n|---------|------|\n| `/pre_walk komendy` | Ustaw komendy wykonywane przed kazdym krokiem (rozdzielone `#`) |\n| `/pre_walk-` | Wyczysc komendy pre-walk |\n| `/post_walk komendy` | Ustaw komendy wykonywane po kazdym kroku (rozdzielone `#`) |\n| `/post_walk-` | Wyczysc komendy post-walk |\n\n## Prowadzenie\n\n| Komenda | Opis |\n|---------|------|\n| `/prowadz id` | Rozpocznij prowadzenie innej osoby do wskazanego pokoju (gdy pieszo nie da sie dojsc, trasa jest liczona z transportem) |\n| `/prowadz-` | Zakoncz prowadzenie (czysci tez trase z transportem) |\n| `/prowadzt id` | Prowadz z uwzglednieniem transportow (statki, dylizanse) - przesiadki widoczne jako kolorowe pierscienie na mapie |\n| `/prowadzt! id` | Jak `/prowadzt`, ale agresywnie minimalizuje chodzenie pieszo (zero kary za przesiadki, transport ~10x tanszy) |\n| `/go` | Wybierz wyjscie zgodnie z wyznaczona trasa (gdy aktywne prowadzenie) |\n\n> **Wskazowka:** `/prowadzt` rysuje pieszej odcinki na mapie tak jak `/prowadz`, a punkty wsiadania/wysiadania znaczy pierscieniami w kolorze odcinka. Pelna instrukcja (na ktora lodz wsiasc, jaka komenda, gdzie wysiasc) trafia do okna wyjscia.\n\n> **Wskazowka:** Kiedy `/prowadz` nie znajduje drogi pieszo, klient sam szuka trasy z transportem i wypisuje ja tak, jak zrobilby to `/prowadzt`. Jesli w tym czasie jedziesz wozem, dojazd i rejs sa liczone razem. Woz mozna zabrac na statek, wiec zostaje on dopiero tam, gdzie naprawde nie wjedzie — instrukcja pokazuje to jako `Jedz wozem`, `Wsiadz z wozem` i `zostaw woz na`.\n\n> **Wskazowka:** Przy wjezdzie wozem na statek bind wejscia kupuje bilety takze dla czlonkow druzyny obecnych na lokacji i wrecza im je (tak jak `/bilety`), bez podwajania `wem`/`wlm`. Mozna to wylaczyc w ustawieniach postaci (opcja \"Bilety dla druzyny przy wjezdzie wozem\") — wtedy kupowany jest tylko wlasny bilet.\n\n## Wyszukiwanie na mapie\n\n| Komenda | Opis |\n|---------|------|\n| `/przeszukaj tekst` | Wyszukaj pokoje z nazwami zawierajacymi tekst (do 10 najblizszych) |\n\n## Roza wiatrow\n\n| Komenda | Opis |\n|---------|------|\n| `/roza` | Przelacz roze wiatrow (wl./wyl.) |\n| `/roza 0` | Wylacz roze wiatrow |\n| `/roza 1` | Wlacz tryb 1 - inline (wyswietlana w tekscie) |\n| `/roza 2` | Wlacz tryb 2 - ramka (staly element w rogu obszaru gry) |\n\n> **Wskazowka:** Przelaczanie trybu (`/roza 1`, `/roza 2`) wlacza roze jesli byla wylaczona. Tryb mozna rowniez zmienic w ustawieniach postaci (opcja \"Roza wiatrow\").\n\n## Zaznaczanie lokacji\n\n| Komenda | Opis |\n|---------|------|\n| `/zaznaczaj` | Wlacz zaznaczanie odwiedzanych lokacji na mapie |\n| `/zaznaczaj-` | Wylacz zaznaczanie i usun dotychczasowe zaznaczenia |\n\n## Informacje o lokacji\n\n| Komenda | Opis |\n|---------|------|\n| `/info` | Wyswietl informacje o biezacej lokacji w oknie wyjscia |\n| `/info id` | Wyswietl informacje o lokacji o podanym id |\n\n## Notatki lokacji\n\n| Komenda | Opis |\n|---------|------|\n| `/note` | Otworz edytor notatki dla biezacej lokacji |\n\n## Okno mapy\n\n| Komenda | Opis |\n|---------|------|\n| `/mapa` | Otworz nowe okno mapy na biezacej lokacji |\n| `/mapa id` | Otworz nowe okno mapy na lokacji o podanym id |\n| `/mapa nazwa` | Otworz nowe okno mapy wycentrowane na obszarze o podanej nazwie |\n\n> **Wskazowka:** Okna mapy sa niezalezne od glownej mapy - nie sledza ruchu gracza. Mozna otworzyc wiele okien jednoczesnie. Kliknij prawym przyciskiem na lokacje i wybierz \"Otworz okno mapy\" aby otworzyc okno na wybranej lokacji.\n\n## Multibindy lokacji\n\n| Komenda | Opis |\n|---------|------|\n| `/mbind numer akcja` | Ustaw multibind 1-4 dla biezacej lokacji |\n| `/mbind+ akcja` | Dodaj akcje do pierwszego wolnego multibinda |\n| `/mbind-` | Usun wszystkie multibindy z biezacej lokacji |\n| `/mbind- numer` | Usun wskazany multibind |\n| `/mbind` | Wyswietl multibindy biezacej lokacji |\n| `/mbind id` | Wyswietl multibindy dla lokacji o podanym id |"
+      "tokens": 1393,
+      "content": "# Mapa i nawigacja\n\nKomendy do poruszania sie, mapy i automatycznego chodzenia.\n\n## Podstawowy ruch\n\n| Komenda | Opis |\n|---------|------|\n| `/cofnij` | Cofnij postac do poprzedniego pomieszczenia na mapie |\n| `/move kierunek` | Przesun mape bez wysylania komendy do serwera |\n| `/ustaw id` | Ustaw biezaca pozycje na mapie na podany identyfikator |\n| `/zlok` | Wymus odswiezenie biezacej pozycji na mapie |\n| `/idz kierunek` | Wybierz przeciwne wyjscie w pomieszczeniu |\n| `n!` `s!` `e!` `w!` `ne!` `nw!` `se!` `sw!` `u!` `d!` | Wyslij czysty kierunek do serwera z pominieciem ruchu po mapie |\n\n> **Wskazowka:** Kiedy mapper na pewno zgubi pozycje - nie udalo mu sie odtworzyc ruchu za druzyna albo gra podaje lokacje spoza mapy - w prawym gornym rogu mapy zapala sie czerwona plakietka **ZGUBIONY**. Znacznik zostaje na ostatnim pewnym pomieszczeniu; plakietka gasnie sama, gdy gra poda znane mapie polozenie, albo po recznym ustawieniu pozycji (`/ustaw id`, `/zlok`, GPS, menu mapy).\n\n## Automatyczne chodzenie\n\n| Komenda | Opis |\n|---------|------|\n| `/idz id [opoznienie]` | Automatycznie idz do wskazanej lokacji |\n| `/stop` | Zatrzymaj automatyczne chodzenie |\n| `/dalej [opoznienie]` | Wznow wedrowke z opcjonalnym opoznieniem |\n| `/opoz sekundy` | Ustaw domyslne opoznienie krokow |\n| `/szybciej` | Zmniejsz opoznienie o 0.5 s |\n| `/wolniej` | Zwieksz opoznienie o 0.5 s |\n| `/walkerw` | Otworz okno walkera |\n\n## Komendy przed/po kroku\n\n| Komenda | Opis |\n|---------|------|\n| `/pre_walk komendy` | Ustaw komendy wykonywane przed kazdym krokiem (rozdzielone `#`) |\n| `/pre_walk-` | Wyczysc komendy pre-walk |\n| `/post_walk komendy` | Ustaw komendy wykonywane po kazdym kroku (rozdzielone `#`) |\n| `/post_walk-` | Wyczysc komendy post-walk |\n\n## Prowadzenie\n\n| Komenda | Opis |\n|---------|------|\n| `/prowadz id` | Rozpocznij prowadzenie innej osoby do wskazanego pokoju (gdy pieszo nie da sie dojsc, trasa jest liczona z transportem) |\n| `/prowadz-` | Zakoncz prowadzenie (czysci tez trase z transportem) |\n| `/prowadzt id` | Prowadz z uwzglednieniem transportow (statki, dylizanse) - przesiadki widoczne jako kolorowe pierscienie na mapie |\n| `/prowadzt! id` | Jak `/prowadzt`, ale agresywnie minimalizuje chodzenie pieszo (zero kary za przesiadki, transport ~10x tanszy) |\n| `/go` | Wybierz wyjscie zgodnie z wyznaczona trasa (gdy aktywne prowadzenie) |\n\n> **Wskazowka:** `/prowadzt` rysuje pieszej odcinki na mapie tak jak `/prowadz`, a punkty wsiadania/wysiadania znaczy pierscieniami w kolorze odcinka. Pelna instrukcja (na ktora lodz wsiasc, jaka komenda, gdzie wysiasc) trafia do okna wyjscia.\n\n> **Wskazowka:** Kiedy `/prowadz` nie znajduje drogi pieszo, klient sam szuka trasy z transportem i wypisuje ja tak, jak zrobilby to `/prowadzt`. Jesli w tym czasie jedziesz wozem, dojazd i rejs sa liczone razem. Woz mozna zabrac na statek, wiec zostaje on dopiero tam, gdzie naprawde nie wjedzie — instrukcja pokazuje to jako `Jedz wozem`, `Wsiadz z wozem` i `zostaw woz na`.\n\n> **Wskazowka:** Przy wjezdzie wozem na statek bind wejscia kupuje bilety takze dla czlonkow druzyny obecnych na lokacji i wrecza im je (tak jak `/bilety`), bez podwajania `wem`/`wlm`. Mozna to wylaczyc w ustawieniach postaci (opcja \"Bilety dla druzyny przy wjezdzie wozem\") — wtedy kupowany jest tylko wlasny bilet.\n\n## Wyszukiwanie na mapie\n\n| Komenda | Opis |\n|---------|------|\n| `/przeszukaj tekst` | Wyszukaj pokoje z nazwami zawierajacymi tekst (do 10 najblizszych) |\n\n## Roza wiatrow\n\n| Komenda | Opis |\n|---------|------|\n| `/roza` | Przelacz roze wiatrow (wl./wyl.) |\n| `/roza 0` | Wylacz roze wiatrow |\n| `/roza 1` | Wlacz tryb 1 - inline (wyswietlana w tekscie) |\n| `/roza 2` | Wlacz tryb 2 - ramka (staly element w rogu obszaru gry) |\n\n> **Wskazowka:** Przelaczanie trybu (`/roza 1`, `/roza 2`) wlacza roze jesli byla wylaczona. Tryb mozna rowniez zmienic w ustawieniach postaci (opcja \"Roza wiatrow\").\n\n## Zaznaczanie lokacji\n\n| Komenda | Opis |\n|---------|------|\n| `/zaznaczaj` | Wlacz zaznaczanie odwiedzanych lokacji na mapie |\n| `/zaznaczaj-` | Wylacz zaznaczanie i usun dotychczasowe zaznaczenia |\n\n## Informacje o lokacji\n\n| Komenda | Opis |\n|---------|------|\n| `/info` | Wyswietl informacje o biezacej lokacji w oknie wyjscia |\n| `/info id` | Wyswietl informacje o lokacji o podanym id |\n\n## Notatki lokacji\n\n| Komenda | Opis |\n|---------|------|\n| `/note` | Otworz okno Miejsca na biezacej lokacji, z kursorem w notatce |\n\n> **Wskazowka:** Skroty (`/idz`, `/prowadz`) i notatki lokacji sa w jednym oknie **Miejsca** (menu). Kazde miejsce to lokacja z opcjonalnym skrotem i notatka; przycisk \"Tutaj\" dodaje biezaca lokacje, a notatka zapisuje sie sama.\n\n## Okno mapy\n\n| Komenda | Opis |\n|---------|------|\n| `/mapa` | Otworz nowe okno mapy na biezacej lokacji |\n| `/mapa id` | Otworz nowe okno mapy na lokacji o podanym id |\n| `/mapa nazwa` | Otworz nowe okno mapy wycentrowane na obszarze o podanej nazwie |\n\n> **Wskazowka:** Okna mapy sa niezalezne od glownej mapy - nie sledza ruchu gracza. Mozna otworzyc wiele okien jednoczesnie. Kliknij prawym przyciskiem na lokacje i wybierz \"Otworz okno mapy\" aby otworzyc okno na wybranej lokacji.\n\n## Multibindy lokacji\n\n| Komenda | Opis |\n|---------|------|\n| `/mbind numer akcja` | Ustaw multibind 1-4 dla biezacej lokacji |\n| `/mbind+ akcja` | Dodaj akcje do pierwszego wolnego multibinda |\n| `/mbind-` | Usun wszystkie multibindy z biezacej lokacji |\n| `/mbind- numer` | Usun wskazany multibind |\n| `/mbind` | Wyswietl multibindy biezacej lokacji |\n| `/mbind id` | Wyswietl multibindy dla lokacji o podanym id |"
     },
     {
       "id": "COMBAT.md",
@@ -6233,8 +6480,8 @@
         "Loot",
         "Okno walki"
       ],
-      "tokens": 924,
-      "content": "# Walka\n\nKomendy do walki, zaslaniania i zarzadzania celami ataku.\n\n## Tryb ataku\n\n| Komenda | Opis |\n|---------|------|\n| `/awr` | Przelacz tryb ataku: A (atak) → AW (atak + wskazanie) → AWR (atak + wskazanie + rozkaz) |\n\n> **Wskazowka:** Tryb ataku mozna tez przelaczac klikajac na wskaznik \"Atk:\" w stopce.\n\n## Atakowanie\n\n| Komenda | Opis |\n|---------|------|\n| `/z id` | Zabij obiekt o podanym id |\n| `/z` | Atakuj cel oznaczony jako cel ataku |\n| `/z_id id` | Zaatakuj obiekt po ID (przyjmuje id lub `ob_id`) |\n| `/zz cel` | Zaatakuj podany cel (bez ob_), np. `/zz rusalke` → `zabij rusalke` |\n| `/x id` | Zaskocz obiekt o podanym id |\n| `/x` | Zaskocz cel oznaczony jako cel ataku |\n| `/prze [id]` | Przelamuje obrone celu lub wskazanego obiektu |\n| `/z_all` | Atakuj wrogow druzyny na lokacji: tych, ktorzy atakuja czlonka druzyny, oraz tych, ktorych druzyna juz atakuje (pomija sojusznikow, gwardie i postronnych) |\n| `/z_all!` | Atakuj wszystkich nie-druzynowych na lokacji, lacznie z postronnymi (pomija sojusznikow) |\n\n## Kolejka ataku\n\n| Komenda | Opis |\n|---------|------|\n| `/q id` | Dodaj przeciwnika do kolejki ataku (przyjmuje id lub `ob_id`) |\n| `/cq` | Wyczysc kolejke ataku |\n| `/nn` | Atakuj nastepny cel z kolejki |\n\n## Zaslanianie\n\n| Komenda | Opis |\n|---------|------|\n| `/zas id` | Zaslon obiekt (uzywa `zaslon przed` gdy nie w druzynie) |\n| `/za id` | Alias do `/zas` |\n| `/zas` | Zaslon cel oznaczony jako cel obrony |\n| `/za` | Alias do `/zas` |\n| `/w id` | Wycofaj postac za wskazany obiekt |\n| `/puszczaj` | Przelacz automatyczne zwalnianie zaslony |\n\n## Zaslona grupowa\n\n| Komenda | Opis |\n|---------|------|\n| `/za2 id` | Zaslon z poziomem krycia 2 |\n| `/za3 id` | Zaslon z poziomem krycia 3 |\n| `/za4 id` | Zaslon z poziomem krycia 4 |\n\n## Oznaczanie celow\n\n| Komenda | Opis |\n|---------|------|\n| `/wa id` | Oznacz obiekt jako cel ataku |\n| `/wz id` | Oznacz obiekt z druzyny jako cel obrony |\n\n## Rozkazy druzyny\n\n| Komenda | Opis |\n|---------|------|\n| `/ra id` | Rozkaz druzynie atakowac osobe o podanym numerze |\n| `/ra` | Rozkaz druzynie atakowac aktualny cel ataku |\n| `/rz id` | Rozkaz druzynie zaslonic obiekt |\n| `/rz` | Rozkaz druzynie zaslonic aktualny cel obrony |\n| `/zap numer` | Zapros do druzyny obiekt o podanym numerze |\n| `/zap 0` | Zapros do druzyny wszystkich przedstawionych na lokacji (pomija wrogow i wrogie gildie) |\n| `/zap *` | Zapros do druzyny wszystkich sojusznikow (gildie sojusznicze + osoby oznaczone jako sojusznicy), niezaleznie czy walcza |\n| `/pro id` | Przekaz prowadzenie obiektowi |\n\n## Wrogowie na bindach\n\n| Komenda | Opis |\n|---------|------|\n| `/nabindach` | Wyswietl aktualnie przypisanych wrogow na bindach |\n| `/nabindach--` | Wyczysc bindy wrogow (tymczasowo do zmiany lokacji) |\n\n## Reset skrotow druzyny\n\n| Komenda | Opis |\n|---------|------|\n| `/walka_restart` | Resetuj skroty druzyny i przypisz je od nowa od A |\n\n## Loot\n\n| Komenda | Opis |\n|---------|------|\n| `/loot` | Przeszukaj wszystkie ciala na lokacji (ob 1. cialo, ob 2. cialo, ...) |\n\n> **Wskazowka:** `/loot` otwiera okno z przedmiotami ze wszystkich cial, w ktorym mozna kliknac przedmiot aby go podniesc. Samodzielne `ob cialo` koloruje i podlinkuje przedmioty bezposrednio w tekscie gry.\n\n## Okno walki\n\n| Komenda | Opis |\n|---------|------|\n| `/walkaw` lub `/walka okno` | Otworz okno walki z logiem komunikatow walki |\n\n> **Wskazowka:** przewiniecie loga w gore dzieli okno walki na dwie czesci — na dole zostaje przyklejony podglad najnowszych linii, wiec walka leci dalej, a przewijany log stoi w miejscu. Powrot na sam dol zamyka podglad. Wysokosc dolnej czesci zmienia sie przeciaganiem paska miedzy nimi. Tak samo dziala okno glowne."
+      "tokens": 1058,
+      "content": "# Walka\n\nKomendy do walki, zaslaniania i zarzadzania celami ataku.\n\n## Tryb ataku\n\n| Komenda | Opis |\n|---------|------|\n| `/awr` | Przelacz tryb ataku: A (atak) → AW (atak + wskazanie) → AWR (atak + wskazanie + rozkaz) |\n\n> **Wskazowka:** Tryb ataku mozna tez przelaczac klikajac na wskaznik \"Atk:\" w stopce.\n\n## Atakowanie\n\n| Komenda | Opis |\n|---------|------|\n| `/z id` | Zabij obiekt o podanym id |\n| `/z` | Atakuj cel oznaczony jako cel ataku |\n| `/z_id id` | Zaatakuj obiekt po ID (przyjmuje id lub `ob_id`) |\n| `/zz cel` | Zaatakuj podany cel (bez ob_), np. `/zz rusalke` → `zabij rusalke` |\n| `/x id` | Zaskocz obiekt o podanym id |\n| `/x` | Zaskocz cel oznaczony jako cel ataku |\n| `/prze [id]` | Przelamuje obrone wskazanego obiektu, celu ataku, a gdy go brak - aktualnie atakowanego przeciwnika |\n| `/z_all` | Atakuj wrogow druzyny na lokacji: tych, ktorzy atakuja czlonka druzyny, oraz tych, ktorych druzyna juz atakuje (pomija sojusznikow, gwardie i postronnych) |\n| `/z_all!` | Atakuj wszystkich nie-druzynowych na lokacji, lacznie z postronnymi (pomija sojusznikow) |\n\n## Kolejka ataku\n\n| Komenda | Opis |\n|---------|------|\n| `/q id` | Dodaj przeciwnika do kolejki ataku (przyjmuje id lub `ob_id`) |\n| `/cq` | Wyczysc kolejke ataku |\n| `/nn` | Atakuj nastepny cel z kolejki |\n\n## Zaslanianie\n\n| Komenda | Opis |\n|---------|------|\n| `/zas id` | Zaslon obiekt (uzywa `zaslon przed` gdy nie w druzynie) |\n| `/za id` | Alias do `/zas` |\n| `/zas` | Zaslon cel oznaczony jako cel obrony |\n| `/za` | Alias do `/zas` |\n| `/w id` | Wycofaj postac za wskazany obiekt |\n| `/puszczaj` | Przelacz automatyczne zwalnianie zaslony |\n\n## Zaslona grupowa\n\n| Komenda | Opis |\n|---------|------|\n| `/za2 id` | Zaslon z poziomem krycia 2 |\n| `/za3 id` | Zaslon z poziomem krycia 3 |\n| `/za4 id` | Zaslon z poziomem krycia 4 |\n\n## Oznaczanie celow\n\n| Komenda | Opis |\n|---------|------|\n| `/wa id` | Oznacz obiekt jako cel ataku |\n| `/wz id` | Oznacz obiekt z druzyny jako cel obrony |\n\n## Rozkazy druzyny\n\n| Komenda | Opis |\n|---------|------|\n| `/ra id` | Rozkaz druzynie atakowac osobe o podanym numerze |\n| `/ra` | Rozkaz druzynie atakowac aktualny cel ataku |\n| `/rz id` | Rozkaz druzynie zaslonic obiekt |\n| `/rz` | Rozkaz druzynie zaslonic aktualny cel obrony |\n| `/zap numer` | Zapros do druzyny obiekt o podanym numerze |\n| `/zap 0` | Zapros do druzyny wszystkich przedstawionych na lokacji (pomija wrogow i wrogie gildie) |\n| `/zap *` | Zapros do druzyny wszystkich sojusznikow (gildie sojusznicze + osoby oznaczone jako sojusznicy), niezaleznie czy walcza |\n| `/pro id` | Przekaz prowadzenie obiektowi |\n\n## Wrogowie na bindach\n\n| Komenda | Opis |\n|---------|------|\n| `/nabindach` | Wyswietl aktualnie przypisanych wrogow na bindach |\n| `/nabindach--` | Wyczysc bindy wrogow (tymczasowo do zmiany lokacji) |\n\nW Ustawieniach (Postac -> Walka, sekcja \"Bindy wrogow\") mozna podac wlasne\nkomendy dla bindu ataku (F1-F3) i bindu blokowania (CTRL+F1-F3). W komendzie\n`{wrog}` zastepuje wroga ze slotu (`ob_12345`), np. `wesprzyj {wrog}`. Kolejne\nkomendy oddziela sie srednikiem, a `{atak}` i `{blok}` to domyslne zachowanie\nbindow (zwykly atak klienta razem ze wskazaniem celu druzynie, `zablokuj {wrog}`),\nnp. `dobadz broni; {atak}` albo `{blok}; {atak}`. Puste pole zostawia domyslne\nzachowanie.\n\n## Reset skrotow druzyny\n\n| Komenda | Opis |\n|---------|------|\n| `/walka_restart` | Resetuj skroty druzyny i przypisz je od nowa od A |\n\n## Loot\n\n| Komenda | Opis |\n|---------|------|\n| `/loot` | Przeszukaj wszystkie ciala na lokacji (ob 1. cialo, ob 2. cialo, ...) |\n\n> **Wskazowka:** `/loot` otwiera okno z przedmiotami ze wszystkich cial, w ktorym mozna kliknac przedmiot aby go podniesc. Samodzielne `ob cialo` koloruje i podlinkuje przedmioty bezposrednio w tekscie gry.\n\n## Okno walki\n\n| Komenda | Opis |\n|---------|------|\n| `/walkaw` lub `/walka okno` | Otworz okno walki z logiem komunikatow walki |\n\n> **Wskazowka:** przewiniecie loga w gore dzieli okno walki na dwie czesci — na dole zostaje przyklejony podglad najnowszych linii, wiec walka leci dalej, a przewijany log stoi w miejscu. Powrot na sam dol zamyka podglad. Wysokosc dolnej czesci zmienia sie przeciaganiem paska miedzy nimi. Tak samo dziala okno glowne."
     },
     {
       "id": "INVENTORY.md",
@@ -6293,22 +6540,25 @@
       "headings": [
         "Domyslne bindy",
         "Konfiguracja",
+        "Klawisze zajete przez przegladarke i helper",
+        "Gdzie dziala - jeden przelacznik",
         "Komendy",
-        "Tymczasowe bindy"
+        "Tymczasowe bindy",
+        "Wlasne przyciski przy linii komend"
       ],
-      "tokens": 258,
-      "content": "# Bindowanie\n\nRozszerzenie umozliwia ustawienie bindow do szybkiego wykonywania akcji.\n\n## Domyslne bindy\n\n| Klawisz | Nazwa | Akcja |\n|---------|-------|-------|\n| `]` | Domyslny | Akcje kontekstowe (zbieranie lupow, powtarzanie polecen) |\n| `Ctrl+1` | Atakuj | Wysyla `zabij ob_ID` gdzie ID to cel ataku z GMCP |\n| `Ctrl+4` | Napelnij lampe | Wysyla `napelnij lampe olejem` |\n| `Ctrl+Q` | Wesprzyj | Wysyla `wesprzyj` (+ `wesprzyj ob_ID` przywodcy druzyny) |\n| `` ` `` | Tryb ruchu | Zmienia tryb ruchu |\n\n## Konfiguracja\n\nBindy mozna modyfikowac w zakladce **Bindowanie** na stronie opcji rozszerzenia. Mozesz tez dodac wlasne bindy wysylajace dowolne komendy.\n\n## Komendy\n\n| Komenda | Opis |\n|---------|------|\n| `/binds` | Wyswietl aktualnie ustawione bindy |\n\n## Tymczasowe bindy\n\n| Komenda | Opis |\n|---------|------|\n| `/tbind1 [komenda]` | Ustaw (lub wyczysc) pierwszy tymczasowy bind |\n| `/tbind2 [komenda]` | Ustaw (lub wyczysc) drugi tymczasowy bind |\n\n> **Wskazowka:** Komendy w bindach mozna rozdzielac znakiem `#`."
+      "tokens": 1721,
+      "content": "# Bindowanie\n\nRozszerzenie umozliwia ustawienie bindow do szybkiego wykonywania akcji.\n\n## Domyslne bindy\n\n| Klawisz | Nazwa | Akcja |\n|---------|-------|-------|\n| `]` | Domyslny | Akcje kontekstowe (zbieranie lupow, powtarzanie polecen) |\n| `Ctrl+1` | Atakuj | Wysyla `zabij ob_ID` gdzie ID to cel ataku z GMCP |\n| `Ctrl+4` | Napelnij lampe | Wysyla `napelnij lampe olejem` |\n| `Ctrl+Q` | Wesprzyj | Wysyla `wesprzyj` (+ `wesprzyj ob_ID` przywodcy druzyny) |\n| `` ` `` | Tryb ruchu | Zmienia tryb ruchu |\n\n## Konfiguracja\n\nBindy ustawiasz w oknie **Klawisze** (menu -> Klawisze). Kazda zmiana zapisuje\nsie od razu, nie ma przycisku \"Zapisz\".\n\n- **Rysunek klawiatury** pokazuje, co jest pod kazdym klawiszem. Zakladki nad nim\n  (Bez modyfikatora, Ctrl, Alt, Shift, Ctrl+Alt) przelaczaja warstwe. Kolor mowi,\n  do jakiej grupy nalezy bind (Podstawowe, Wrogowie, Tymczasowe, Kierunki, Wlasne).\n- **Klikniecie klawisza na rysunku** pokazuje szczegoly: co robi, czy dziala, a\n  wolnemu klawiszowi mozna od razu przypisac komende.\n- **Zmiana klawisza:** kliknij klawisz na liscie pod rysunkiem i nacisnij nowy.\n  Esc anuluje, Backspace czysci. Mozna tez kliknac klawisz na rysunku.\n- **Konflikt:** dwa bindy na jednym klawiszu swieca na czerwono; nacisniecie\n  uruchamia oba naraz. Okno podpowiada wolne klawisze w poblizu - klikniecie\n  przenosi tam bind.\n- **Wlasne** - \"+ Komenda\" dodaje skrot wysylajacy dowolna komende.\n- **Kierunki** - \"Uzyj strzalek\" przenosi N/S/W/E na strzalki (i z powrotem).\n- W menu `...`: nowa mapa klawiszy, zmiana nazwy, import bazy multibindow,\n  przywrocenie domyslnych bindow, usuniecie mapy.\n\n### Klawisze zajete przez przegladarke i helper\n\nNiektorych skrotow przegladarka nie oddaje stronie (np. `Ctrl+W` zamyka karte,\n`Ctrl+T` otwiera nowa). Na rysunku sa kreskowane. Mozna je przypisac klikajac na\nrysunku - obsluzy je wtedy **Arkadia Helper**, gdy jest polaczony. Przy skrocie\nobslugiwanym przez helpera wybierasz, gdzie dziala:\n\n- **w kliencie, przez helpera** - gdy okno klienta jest aktywne,\n- **wszedzie** - takze gdy grasz w innym oknie (opcjonalnie z przywolaniem okna klienta).\n\n### Gdzie dziala - jeden przelacznik\n\nKazdy bind ma jedno ustawienie. Kliknij go na liscie (albo jego klawisz na\nrysunku) i w panelu obok wybierz **gdzie dziala**:\n\n- **w kliencie** - zwyklny bind klienta;\n- **przez helpera** - klawisz lapie helper, dzieki czemu dziala tez wtedy, gdy\n  przegladarka go nie oddaje (`Ctrl+W`);\n- **wszedzie** - dziala takze wtedy, gdy grasz w innym oknie; opcjonalnie\n  z przywolaniem okna klienta.\n\nPod spodem \"wszedzie\" to ten sam klawisz zarejestrowany dodatkowo w helperze,\nale nie musisz o tym wiedziec: na liscie jest **jeden wiersz** z ikona\n(wtyczka/globus), a przelacznik dodaje i zdejmuje te druga rejestracje za\nciebie. Zmiana klawisza albo komendy przestawia oba naraz, usuniecie - usuwa\noba. Helper **polyka** taki klawisz, wiec nacisniecie robi jedna rzecz: wersje\nhelpera, gdy helper chodzi, a bind klienta, gdy nie chodzi. To nie jest\nkonflikt - konflikt to dopiero dwa rozne bindy po tej samej stronie.\n\nWlasne skroty na klawiszach zajetych przez przegladarke tez sa zwyklymi wpisami\nna liscie **Wlasne** - po prostu slucha ich helper.\n\nNowy wlasny skrot dodajesz na dwa sposoby:\n\n- **\"+ Komenda\"** - zwykly skrot klienta: wpisujesz komende, potem klikasz pole\n  klawisza i naciskasz klawisz;\n- **\"+ Komenda przez helpera\"** - od razu globalny: najpierw naciskasz klawisz\n  (bo hotkey rejestruje sie po klawiszu), potem wpisujesz komende.\n\nWszystko edytujesz na miejscu: komende w polu obok klawisza, klawisz klikajac\ngo i naciskajac nowy, a \"gdzie dziala\" w panelu po prawej. Wolny klawisz\nwybrany na rysunku ma przycisk \"Przypisz komende\" - robi wiersz od razu na tym\nklawiszu.\n\nCzerwony kosz w panelu **zdejmuje klawisz** z wbudowanej funkcji (zostaje bez\nklawisza) albo usuwa wlasny skrot.\n\nKazda wbudowana funkcja moze tez dostac **inny, drugi klawisz** przez helpera,\nnp. globalny - przycisk jest w panelu pod lista przypisan.\n\nLista **\"Obslugiwane przez helpera\"** na dole okna zbiera wszystkie takie skroty:\ntam zmieniasz ich komendy i klawisze, dodajesz nowe (\"+ Komenda\") i usuwasz je.\nJest tam tez \"+ Przywolaj okno klienta\" - skrot, ktory tylko wyciaga okno klienta\nna wierzch. Tak samo dziala opcja \"wszedzie + okno\" przy kazdym skrocie: helper\nodnajduje okno po tytule karty klienta i przelacza sie na nie.\n\nKarty to granica, ktorej nie da sie przeskoczyc: identyfikatory kart ma tylko\nrozszerzenie przegladarki, a tytul okna to tytul jego **aktywnej** karty. Gdy\nklient siedzi w karcie w tle, nic go nie wskazuje i helper swiadomie nie\npodnosi nic (lepsze to niz wyciagniecie przypadkowego okna). Sa dwa wyjscia:\n\n- **Zainstaluj klienta jako aplikacje** (menu przegladarki -> Zainstaluj) -\n  dostanie wlasne okno i przywolanie zawsze trafia prosto w gre;\n- albo trzymaj klienta jako aktywna karte swojego okna.\n\nNa Linuksie przywolywanie wymaga X11 oraz `xdotool` albo `wmctrl`, a na macOS -\nuprawnienia Dostepnosc. Gdy helper jest polaczony, klawisz mozna po prostu nacisnac (slucha\nhelper, przegladarka nic nie dostaje); gdy nie jest - wskaz klawisz na rysunku.\n\nStrona **Ustawienia -> Arkadia Helper** sluzy juz tylko do pobrania i uruchomienia\naplikacji; same skroty ustawiasz tutaj.\n\n## Komendy\n\n| Komenda | Opis |\n|---------|------|\n| `/binds` | Wyswietl aktualnie ustawione bindy |\n\n## Tymczasowe bindy\n\n| Komenda | Opis |\n|---------|------|\n| `/tbind1 [komenda]` | Ustaw (lub wyczysc) pierwszy tymczasowy bind |\n| `/tbind2 [komenda]` | Ustaw (lub wyczysc) drugi tymczasowy bind |\n\n> **Wskazowka:** Komendy w bindach mozna rozdzielac znakiem `#`.\n\n## Wlasne przyciski przy linii komend\n\nZamiast pamietac bind, mozna miec przycisk. W **Ustawieniach -> Stopka ->\n\"Przyciski przy linii komend\"** dodajesz wlasne przyciski: napis, komenda do\nwyslania (zwykla komenda, alias, cokolwiek przyjmuje linia komend), kolor\n(zwykly, wyrozniony, czerwony) i - opcjonalnie - nazwa stanu.\n\nNa komputerze przyciski stoja obok pola komend, miedzy \"Wyslij\" a menu; to, co\nsie nie miesci, chowa sie pod wlasnym \"...\". Na telefonie zwinieta stopka ich nie\npokazuje (to jedna linia stanu), a rozwinieta pokazuje je jako siatke duzych\nkafelkow, zakonczona kafelkiem `+`, ktory otwiera te ustawienia.\n\nPrzycisk z nazwa stanu swieci sie (wypelnienie i kropka), gdy ten stan jest\nwlaczony - tak dziala np. \"Tryb: podroz\".\n\n| Komenda | Opis |\n|---------|------|\n| `/przycisk nazwa on` | Zapal przyciski o tym stanie (`wl` dziala tak samo) |\n| `/przycisk nazwa off` | Zgas je (`wyl` dziala tak samo) |\n| `/przycisk nazwa` | Przelacz |\n\nStan mozna wiec wlaczac z triggera albo skryptu. Wtyczki maja do tego wlasne\nAPI: `api.ui.registerFooterButton(id, { label, command, tone, state })` dodaje\nprzycisk (rysowany przerywana ramka, jak plakietki wtyczek), a\n`api.ui.setFooterButtonState(nazwa, on)` zapala i gasi stan."
     },
     {
       "id": "SHORTCUTS.md",
       "path": "docs/SHORTCUTS.md",
-      "title": "Skroty lokacji",
+      "title": "Miejsca (skroty lokacji)",
       "headings": [
-        "Komendy",
-        "Interfejs"
+        "Okno Miejsca",
+        "Komendy"
       ],
-      "tokens": 231,
-      "content": "# Skroty lokacji\n\nModul skrotow pozwala powiazac numery lokacji z mapy z wybrana nazwa, dzieki czemu mozesz szybko wracac do ulubionych miejsc.\n\n## Komendy\n\n| Komenda | Opis |\n|---------|------|\n| `/dodaj_skrot id nazwa [opis]` | Zapisz skrot do lokacji (opis opcjonalny) |\n| `/dodaj_skrot id \"nazwa ze spacjami\" [opis]` | Zapisz skrot z nazwa zawierajaca spacje |\n| `/pokaz_skroty` | Wyswietl liste zapisanych skrotow |\n| `/skrotyw` | Otworz okno z lista skrotow |\n| `/usun_skrot nazwa` | Usun wskazany skrot |\n| `/usun_skrot \"nazwa ze spacjami\"` | Usun skrot z nazwa zawierajaca spacje |\n| `/usun_skroty` | Usun wszystkie skroty |\n| `/prowadz nazwa` | Przejdz do zapisanej lokacji |\n| `/prowadz \"nazwa ze spacjami\"` | Przejdz do lokacji ze spacjami w nazwie |\n\n## Interfejs\n\nNa liscie skrotow mozesz kliknac przycisk **Prowadz** aby rozpoczac podroz do wybranej lokacji.\n\n> Dane przechowywane sa w pamieci przegladarki."
+      "tokens": 428,
+      "content": "# Miejsca (skroty lokacji)\n\nMiejsce to lokacja z mapy z wlasna nazwa (skrotem) i opcjonalna notatka. Dzieki\nskrotowi wracasz do ulubionej lokacji jedna komenda, bez szukania jej numeru.\n\n## Okno Miejsca\n\nOtwierasz je z menu (ikona ☰ przy polu komend) -> **Miejsca**. Skroty i notatki\nlokacji sa w tym jednym oknie — osobnego okna \"Skroty\" juz nie ma.\n\n- **Tutaj** dodaje lokacje, w ktorej stoisz, i otwiera ja do edycji.\n- **Pole skrotu** nadaje miejscu nazwe; podpowiedz pokazuje gotowa komende\n  `/prowadz nazwa`.\n- **Notatka** zapisuje sie sama, bez przycisku \"Zapisz\".\n- **Prowadz** rozpoczyna podroz do wybranego miejsca.\n- **Wyszukiwarka** znajduje lokacje po nazwie, krainie albo numerze (np. `321`),\n  wiec miejsce mozna dodac nie bedac na miejscu. Lokacje z mapy mozesz tez\n  wybrac prawym przyciskiem myszy.\n- Zakladki oddzielaja **Twoje** miejsca od opisow autorow mapy i wtyczek (te sa\n  tylko do odczytu).\n\n## Komendy\n\n| Komenda | Opis |\n|---------|------|\n| `/dodaj_skrot id nazwa [opis]` | Zapisz skrot do lokacji (opis opcjonalny) |\n| `/dodaj_skrot id \"nazwa ze spacjami\" [opis]` | Zapisz skrot z nazwa zawierajaca spacje |\n| `/pokaz_skroty` | Wypisz liste zapisanych skrotow w oknie gry |\n| `/usun_skrot nazwa` | Usun wskazany skrot |\n| `/usun_skrot \"nazwa ze spacjami\"` | Usun skrot z nazwa zawierajaca spacje |\n| `/usun_skroty` | Usun wszystkie skroty |\n| `/prowadz nazwa` | Przejdz do zapisanej lokacji |\n| `/prowadz \"nazwa ze spacjami\"` | Przejdz do lokacji ze spacjami w nazwie |\n| `/note` | Otworz Miejsca na biezacej lokacji, z kursorem w notatce |\n| `/skrotyw` | Otworz stare, male okienko z sama lista skrotow (przyciski Prowadz / Idz) |\n\n> Dane przechowywane sa w pamieci przegladarki."
     },
     {
       "id": "ALIASES.md",
@@ -6332,14 +6582,16 @@
         "Lowienie ryb",
         "Zlom (baza ocenionych przedmiotow)",
         "Odpornosci przeciwnikow",
+        "Zaslony (debug)",
         "Oswajanie",
         "Woz/bryczka",
         "Odkladanie magii",
         "Labirynty",
+        "Skarbce",
         "Odswiezanie danych"
       ],
-      "tokens": 4071,
-      "content": "# Inne aliasy\n\nPozostale aliasy i funkcje rozszerzenia.\n\n## Wlasne aliasy\n\nMozesz tworzyc wlasne aliasy w ustawieniach klienta:\n- **Wzorzec** - wyrazenie regularne dopasowujace komende\n- **Komenda** - tekst wysylany do serwera, moze uzywac `$1`, `$2` itp. dla grup z dopasowania\n- **Skroty obiektow** - `@1`, `@A`, `@@` zostana zamienione na identyfikatory obiektow\n- **Wieloliniowe komendy** - kazda nowa linia w komendzie dziala jak osobna komenda (jak srednik)\n\n### Zakresy ($i)\n\nUzyj `$i` w komendzie, aby powtorzyc ja dla zakresu liczb. Zakres podajesz jako argument aliasu w formacie `X-Y`.\n\n**Przyklad:**\n- Wzorzec: `kok (.+)`\n- Komenda: `rozerwij $i. kokon`\n- Wpisz: `kok 1-7`\n- Wynik: `rozerwij 1. kokon`, `rozerwij 2. kokon`, ..., `rozerwij 7. kokon`\n\nZakresy dzialaja rosnaco (`1-7`) i malejaco (`7-1`). Maksymalnie 50 iteracji.\n\n## Asystent AI\n\n| Komenda | Opis |\n|---------|------|\n| `/pomoc` | Otworz panel asystenta AI |\n| `/pomoc <pytanie>` | Otworz panel i od razu zadaj pytanie |\n\n> **Wskazowka:** Asystent odpowiada po polsku i zna ustawienia, komendy i zdarzenia tego klienta. Jesli w odpowiedzi jest konkretna zmiana (ustawienie, alias, trigger, bind), pojawi sie karta z przyciskami **Zastosuj** / **Odrzuc** - nic nie zostanie zapisane, dopoki sam nie klikniesz \"Zastosuj\". Panel jest zwyklym oknem: mozna go zadokowac, przypiac i odlaczyc do osobnego okna. Wlasny klucz API (opcjonalny) ustawisz przyciskiem \"Ustawienia\" w naglowku panelu; jest zapisywany tylko na tym urzadzeniu i nie trafia do synchronizacji w chmurze.\n\n## Komunikacja\n\n| Komenda | Opis |\n|---------|------|\n| `/fake tekst` | Wyswietl podany tekst jak zwykle wiadomosc klienta |\n| `/chat` | Wyswietl ostatnie 20 wiadomosci z czatu GMCP |\n| `/chatw` lub `/chat okno` | Otworz okno czatu z historia 100 wiadomosci |\n| `/list` | Otworz edytor pisania listow w kliencie |\n| `/poczta` | Otworz okno poczty z lista listow |\n\n> **Wskazowka:** W oknie czatu przycisk \"Druzyna\" filtruje wiadomosci od czlonkow druzyny. Przewiniecie historii w gore dzieli okno na dwie czesci — na dole zostaje przyklejony podglad najnowszych wiadomosci, tak samo jak w oknie glownym i w oknie walki.\n\n## Czas\n\n| Komenda | Opis |\n|---------|------|\n| `/czas` | Otworz okno zegara z aktualnym czasem w grze |\n| `/czas imperium <godzina> [<dzien>]` | Ustaw czas w Imperium (godzina 0-23, opcjonalnie dzien roku 1-400) |\n| `/czas ishtar <godzina> [<dzien>]` | Ustaw czas w Ishtar (godzina 0-23, opcjonalnie dzien roku 1-360) |\n\n> **Wskazowka:** Czas mozna rowniez ustawic w oknie zegara - wybierz godzine, miesiac i dzien, a nastepnie kliknij \"Ustaw\".\n\n## Jezyk\n\n| Komenda | Opis |\n|---------|------|\n| `justaw jezyk` | Ustaw jezyk rozmow (np. `justaw krasnoludzki`) |\n| `'tekst` | Mow w ustawionym jezyku (pojedynczy apostrof przed tekstem) |\n\n## Druzyna\n\n| Komenda | Opis |\n|---------|------|\n| `/ostatnio` | Sprawdz aktywnosc czlonkow druzyny (zielony = aktywny, czerwony = nieaktywny) |\n| `/bilety` | Kup bilet dla kazdego czlonka druzyny na lokacji i wreczaj go (wyciaga monety przed i odklada po) |\n| `/hp` | Wyswietl pomoc dla komendy ostatnio widzianych kondycji |\n| `/hp wszystkich` | Wyswietl ostatnio widziane kondycje wszystkich postaci na lokacji |\n| `/hp wroga` | Pokaz tylko kondycje oznaczonych wrogow (alias: `/hp przeciwnika`) |\n| `/hp imiona` | Pokaz tylko kondycje postaci po imieniu (jednowyrazowe opisy) |\n| `/hp <fraza>` | Filtruj kondycje po fragmencie opisu (np. `/hp gobl`) |\n| `/hp -` | Wyczysc cala liste zapamietanych kondycji |\n| `/hp -<fraza>` | Usun z listy wpisy pasujace do frazy |\n\n> **Wskazowka:** Kondycje sa zbierane automatycznie z danych GMCP, a wpisy znikaja po 15 minutach lub gdy postac umrze. Pasek HP jest kolorowany wedlug poziomu zdrowia, a opisy wrogow podswietlone na czerwono, czlonkow druzyny na zielono. Dla opisow zawierajacych spacje wyswietlana jest dopasowana postac z bazy ludzi (imie i gildia).\n\n## Przedstawieni\n\n| Komenda | Opis |\n|---------|------|\n| `/przedstawieni` | Wyswietl liste przedstawionych postaci |\n\n## Bindy\n\n| Komenda | Opis |\n|---------|------|\n| `/binds` | Wyswietl liste skonfigurowanych bindow |\n\n## Dzwiek\n\n| Komenda | Opis |\n|---------|------|\n| `/sounds` | Przelacz wyciszenie/wlaczenie dzwiekow |\n| `/mute` | Wycisz dzwieki |\n| `/unmute` | Wlacz dzwieki |\n\n## Przyplyw\n\n| Komenda | Opis |\n|---------|------|\n| `/przyplyw` | Przelacz system przyplywow (zmienia mape: pokoje przybrzezne przesuwaja sie pod wode, tworza sie pokoje na powierzchni) |\n\n> **Wskazowka:** System przyplywow aktywuje sie i dezaktywuje rowniez automatycznie na podstawie komunikatow w grze, gdy znajdujesz sie w strefie przyplywow.\n\n## Dobywanie/Opuszczanie\n\n| Komenda | Opis |\n|---------|------|\n| `/dob` | Wykonaj komendy dobywania ze slotow 1 i 2 |\n| `/dob [1-3]` | Wykonaj komende dobywania z wybranego slotu |\n| `/op` | Wykonaj komendy opuszczania ze slotow 1 i 2 |\n| `/op [1-3]` | Wykonaj komende opuszczania z wybranego slotu |\n\n> **Konfiguracja:** Komendy konfiguruje sie w ustawieniach postaci w sekcji \"Dobywanie/Opuszczanie\". Kazdy slot moze zawierac wiele komend oddzielonych srednikiem (;).\n\n## Kalendarz slonca\n\n| Komenda | Opis |\n|---------|------|\n| `/slonce` | Otworz kalendarz slonca z obserwacjami wschodow i zachodow |\n\n## Kolorowanie\n\n| Komenda | Opis |\n|---------|------|\n| `/tcolor fraza` | Dodaje tymczasowe kolorowanie frazy na pomaranczowo (tylko na czas sesji) |\n\n> **Wskazowka:** Mozna wywolywac wielokrotnie, aby kolorowac wiele fraz jednoczesnie. Kolorowanie znika po zakonczeniu sesji.\n\n## Lowienie ryb\n\n| Komenda | Opis |\n|---------|------|\n| `/wedka` | Otworz okno lowienia ryb z wyborem przynety i przyciskami akcji |\n\n> **Wskazowka:** Gdy ryba bierze, kliknij przycisk \"Zatnij rybe\" lub uzyj funkcjonalnego bindu (domyslnie `]`).\n\n## Zlom (baza ocenionych przedmiotow)\n\n| Komenda | Opis |\n|---------|------|\n| `/zlom` | Wyswietl zapisane bronie (alias `/zlom bronie`) |\n| `/zlom tarcze` | Wyswietl zapisane tarcze |\n| `/zlom zbroje` | Wyswietl zapisane zbroje |\n| `/zlomw` | Otworz okno zlomu z tabelami i importem bazy z Mudleta |\n| `/zlom-reset` | Wyczysc baze i zdejmij podswietlenia shortow |\n\n> **Wskazowka:** Baza automatycznie zapisuje wyniki komendy `ocen <przedmiot>` i podswietla rozpoznane shorty w tekscie (pogrubienie + podkreslenie dla broni ze srebrem, dymek z typem). Kolory shortow ustawiasz w oknie `/zlomw` (kolumna \"Kolor\") — te same kolory stosowane sa w listach lupu (`loot`) i w pojemnikach (`pretty containers`). Przelacznik \"Srebro\" w naglowku okna kontroluje podkreslanie broni ze srebra. Okno pozwala tez zaimportowac plik `.db` z profilu Mudleta (tabele `bronie`, `tarcze`, `zbroje`).\n\n## Odpornosci przeciwnikow\n\n| Alias | Opis |\n|-------|------|\n| `/odpornosci` | Otworz okno odpornosci przeciwnikow (tabela przeciwnik x rodzaj obrazen) |\n| `/odpornosci <fraza>` | Wypisz w oknie gry przeciwnikow, ktorych nazwa zawiera fraze (np. `/odpornosci kikimora`) |\n| `/odpornosci-usun <nazwa>` | Usun wpis przeciwnika (rodzaj w mianowniku, np. `kikimora`) |\n| `/odpornosci-reset` | Wyczysc cala baze odpornosci |\n\n> **Wskazowka:** Baza zapisuje sie sama z wynikow `ocen <przeciwnik>` — wystarczy linia \"Twoje doswiadczenie i umiejetnosci podpowiadaja ci, ze jest on odporny/wrazliwy na ...\". Nazwa w mianowniku brana jest z linii porownania (\"... niz wielka krwiozercza kikimora.\"); gdy jej brak, przeciwnik jest dopasowywany do obiektow na lokacji. Przymiotniki sa pomijane — \"wielka krwiozercza kikimora\" i \"mala kikimora\" to jeden wpis `kikimora` (nazwy dwuczlonowe, np. `zywiolak ognia`, `troll jaskiniowy`, zostaja w calosci). Postaci z imieniem (gracze, nazwani NPC) nie sa zapisywane. Jesli linii z odpornosciami nie da sie odczytac albo nie wiadomo, ktorego przeciwnika dotyczy, pod linia pojawia sie pomaranczowy komunikat - klikniecie kopiuje oryginalna linie do schowka, zeby mozna ja bylo zglosic. Przelacznik Tabela/Lista zmienia widok: lista pokazuje dla kazdego przeciwnika wrazliwosci i odpornosci jako ikonki. W oknie `W` (zielone) oznacza wrazliwosc, `O` (czerwone) odpornosc; klikniecie naglowka kolumny sortuje najpierw przeciwnikow wrazliwych na dany rodzaj obrazen. Okno otworzysz tez z menu kontekstowego (pozycja \"Odpornosci\").\n\n## Oswajanie\n\n| Komenda | Opis |\n|---------|------|\n| `/o_pomoc` | Otworz okno oswajania z pomoca i lista aliasow |\n| `/o_pokaz` | Pokaz liste oswajanych zwierzat (z przyciskiem aktywne/nieaktywne) |\n| `/o_pokaz <zwierze>` | Pokaz historie karmienia i poziomy oswojenia danego zwierzecia |\n| `/o_ostatnio` | Pokaz historie ostatnio karmionego zwierzecia |\n| `/o_historia` | Pokaz historie karmienia wszystkich aktywnych zwierzat |\n| `/o_wylacz <zwierze>` | Oznacz zwierze jako nieaktywne (ukrywa z historii) |\n| `/o_wlacz <zwierze>` | Oznacz zwierze jako aktywne |\n| `/o_przemianuj <stare> na <nowe>` | Zmien nazwe zwierzecia w bazie |\n| `/o_eksport` | Zapisz baze oswajania tej postaci do pliku JSON |\n| `/o_import` | Wczytaj baze z pliku JSON (nadpisuje baze tej postaci) |\n\n> **Wskazowka:** Baza buduje sie automatycznie z komend `oswajaj zwierze ...`. Po oswojeniu wykonaj `ocen zwierze` (po nakarmieniu jest to automatycznie podstawiane pod funkcjonalny bind), aby zapisac poziom oswojenia. Dane sa zapisywane osobno dla kazdej postaci. Po nakarmieniu, po uplywie czasu odnowienia, pojawi sie powiadomienie, ze mozna oswajac ponownie. Okno otworzysz tez z menu kontekstowego (prawy przycisk myszy na oknie gry, pozycja \"Oswajanie\").\n\n> **Widok zwierzecia:** Na gorze wybierasz zwierze z listy; nieaktywne mozna wlaczyc przyciskiem \"Aktywuj\". W tabeli kolumna \"ile\" rozwija (klik) poprzednie wpisy danego pokarmu. Rozne opisy tego samego pokarmu (np. `miesem` i `kawalkiem miesa`) mozesz scalic ikona polaczenia przy pokarmie — wtedy maja wspolny licznik czasu i jedna grupe, a kolejne karmienia automatycznie trafiaja do tej grupy. Polaczenie pokarmow jest globalne (wspolne dla wszystkich postaci); cofniesz je ikona rozlaczenia.\n\n## Woz/bryczka\n\n| Komenda | Opis |\n|---------|------|\n| `/woz` | Przelacz tryb wozu (wlacz/wylacz) |\n| `/wozw` | Otworz okno \"Wozy\": data najmu, wozownia, koszt, kaucja i miejsce postoju. Przycisk \"Blokady\" w naglowku otwiera liste lokacji nieprzejezdnych z podgladem na mapie, usuwaniem pojedynczych wpisow i czyszczeniem calej listy |\n| `/wozblok` | Oznacz/odznacz biezaca lokacje jako nieprzejezdna dla wozu (opcjonalnie numer lokacji) |\n| `/wozbloki` | Pokaz liste nieprzejezdnych lokacji i linie do skopiowania |\n| `/wozbloki+ <numery>` | Wczytaj liste nieprzejezdnych lokacji |\n| `/wozbloki-` | Wyczysc liste nieprzejezdnych lokacji |\n\n> **Wskazowka:** Tryb wozu wlacza sie i wylacza automatycznie przy wsiadaniu/zsiadaniu, wstawaniu i zwracaniu pojazdu, a takze gdy pojazd sam sie zatrzyma (rozdroze, brak dalszej drogi). Alias `/woz` pozwala przelaczyc go recznie, gdyby automatyczne wykrywanie zawiodlo. W trybie wozu przycisk trybu ruchu jest zablokowany.\n\n> **Wskazowka:** Tryb wozu wlacza sie tylko wtedy, gdy to ty powozisz — czyli kiedy jedziesz sam albo prowadzisz druzyne. Jako pasazer (jestes w druzynie, ale nie ty ja prowadzisz) masz strzalki i klawisz `zerknij` bez zmian, bo i tak nie mozesz kierowac pojazdem; pojazd jest za to normalnie zapisywany w oknie `/wozw` i na mapie, a bind `usiadz ...` dalej sie pokazuje. Jesli przejmiesz prowadzenie druzyny w trakcie jazdy, tryb wozu wlaczy sie sam (i wylaczy, gdy oddasz prowadzenie). Alias `/woz` ma pierwszenstwo przed tym sprawdzeniem — mozesz nim wlaczyc tryb wozu takze jako pasazer.\n\n> **Wskazowka:** Okno \"Wozy\" (`/wozw`, takze z menu pod prawym przyciskiem myszy) pamieta kazdy wynajety pojazd osobno, wiec dziala takze gdy masz ich kilka. Wozownia i miejsce postoju maja przyciski prowadzenia z odlegloscia w nawiasie. Kaucja w calosci wraca tylko przez 6 godzin od najmu; po tym terminie wozownia zatrzymuje jej czesc, dlatego okno pokazuje godzine wygasniecia i ile czasu zostalo (na 30 minut przed koncem wpis sie podswietla). Wpis znika po zwrocie pojazdu, mozna go tez usunac recznie przyciskiem `X`.\n\n> **Wskazowka:** Zaparkowane pojazdy sa zaznaczone na mapie kolem wozu z nazwa typu pojazdu (`woz`, `bryczka`, `dylizans`). Znacznik znika, kiedy wsiadasz do pojazdu, i wraca w nowym miejscu po zsiadnieciu.\n\n> **Wskazowka:** Okno rozroznia, czy siedzisz w stojacym pojezdzie, czy jedziesz — znacznik przy nazwie pokazuje `stoisz` albo `jedziesz`, na podstawie komunikatow `... rusza na ...` i `... zatrzymuje sie.` twojego pojazdu.\n\n> **Wskazowka:** W czasie jazdy `zerknij` zatrzymuje pojazd — wysyla `zatrzymaj woz` / `zatrzymaj bryczke` / `zatrzymaj dylizans`. Kiedy pojazd stoi, `zerknij` znowu rozglada sie po lokacji. Tak dziala klawisz `zerknij` (domyslnie Numpad5) i srodkowy przycisk krzyzaka na panelu mobilnym; to samo mozna przypisac dowolnemu przyciskowi mobilnemu lub desktopowemu, wybierajac makro **Zerknij / zatrzymaj pojazd**.\n\n> **Wskazowka:** Po ponownym polaczeniu z gra (\"przywracam polaczenie\" albo \"polaczenie zostalo przywrocone\") gra wysadza cie z pojazdu, wiec klient zapisuje pojazd jako zaparkowany w biezacej lokacji. Jesli przerwa byla na tyle dluga, ze logujesz sie od nowa, pojazd zostaje zaparkowany w ostatniej znanej lokacji. Jesli mapa nie nadazyla, miejsce postoju poprawia sie samo, gdy zobaczysz pojazd w opisie lokacji.\n\n> **Wskazowka:** Lokacje oznaczone przez `/wozblok` sa omijane przy prowadzeniu (`/prowadz`, `/prowadzt`, klikniecie na mapie) tylko wtedy, gdy jedziesz wozem — pieszo nic sie nie zmienia. Jesli cel jest nieprzejezdny (np. wnetrze budynku), trasa dzieli sie na dwa odcinki w roznych kolorach: dojazd wozem i dalsza droga pieszo, a klient wypisuje, gdzie zostawic woz. Wyjscia specjalne skladajace sie z kilku slow (`wejdz na skaly`, `zejdz na dol`, `przecisnij sie przez szczeline`) sa pomijane przy jezdzie automatycznie — to czynnosci, ktorych nie wykonasz siedzac na wozie, wiec nie trzeba ich oznaczac. Kiedy pojazd stanie na koncu drogi (`Nie ma tu zadnej drogi, ktora mozna by dalej jechac.`), klient oznacza wszystkie sasiednie lokacje poza ta, z ktorej przyjechales — ale tylko wtedy, gdy gra wypisala przy opisie lokacji liste wyjsc; bez niej nic nie jest zapamietywane. Klient dopisuje lokacje sam, kiedy gra odmowi przejazdu (`Nie mozna jechac na ...`) — blokowana jest lokacja **za** tym wyjsciem, nie ta, w ktorej stoisz. Lista jest wspolna dla wszystkich postaci i na razie zbierana samodzielnie — `/wozbloki` wypisuje ja w formie gotowej do skopiowania. Oznaczone lokacje mozna pokazac na mapie jako przekreslone kolko — wlacza sie to w menu mapy (\"Nieprzejezdne dla wozu\"), domyslnie jest wylaczone. Znaczniki widac takze wtedy, gdy idziesz pieszo, bo czesto dopiero wtedy widac, ze woz tam nie wjedzie.\n\n> **Wskazowka:** Bindy: kiedy wracasz pieszo do lokacji, w ktorej stoi twoj pojazd, bind zmienia sie na `usiadz na wozie` / `usiadz w bryczce` / `usiadz w dylizansie`. Bind znika, gdy odejdziesz z lokacji. Kiedy prowadzisz trase wozem, na bindzie glownym pojawia sie kolejny krok trasy (a w miejscu, gdzie trzeba zostawic woz — `zsiadz z ...`). Bind pokazuje sie tylko wtedy, gdy woz stoi, i aktualizuje sie, gdy trasa sie zmieni; wylaczysz go opcja \"Bindy trasy wozu\". W ustawieniach (Interfejs → Komendy) mozna wlaczyc opcje, ktora sprawia, ze powtorzenie odrzuconej komendy jazdy (`Nie mozna jechac na ...`) wysyla dwie komendy: zsiadniecie z wozu i przejscie pieszo w tym kierunku. Komunikaty konczace jazde (`Dojechaliscie do rozdrozy.` i `Nie ma tu zadnej drogi, ktora mozna by dalej jechac.`) sa podswietlane na zolto, zeby nie zginely w opisach mijanych lokacji.\n\n## Odkladanie magii\n\n| Komenda | Opis |\n|---------|------|\n| `/odloz_magie [pojemnik]` | Odloz magie do pojemnika |\n\n## Labirynty\n\n| Komenda | Opis |\n|---------|------|\n| `/labirynt` | Przelacz tryb labiryntu (dynamicznie usuwa nieistniejace wyjscia) |\n| `/labirynt_mapa` | Przelacz mapper Labiryntu Rinde |\n| `/raon_mapa` | Przelacz mapper Labiryntu Raon |\n| `/taragorn` | Rozpoznaj ponownie lokacje w labiryncie pod swiatynia Taragorna |\n\n## Odswiezanie danych\n\n| Komenda | Opis |\n|---------|------|\n| `/refresh_magics` | Wymus odswiezenie danych magii |\n| `/refresh_keys` | Wymus odswiezenie danych kluczy magii |\n| `/refresh_knowledge` | Wymus odswiezenie danych wiedzy |"
+      "tokens": 4966,
+      "content": "# Inne aliasy\n\nPozostale aliasy i funkcje rozszerzenia.\n\n## Wlasne aliasy\n\nMozesz tworzyc wlasne aliasy w ustawieniach klienta:\n- **Wzorzec** - wyrazenie regularne dopasowujace komende\n- **Komenda** - tekst wysylany do serwera, moze uzywac `$1`, `$2` itp. dla grup z dopasowania\n- **Skroty obiektow** - `@1`, `@A`, `@@` zostana zamienione na identyfikatory obiektow\n- **Wieloliniowe komendy** - kazda nowa linia w komendzie dziala jak osobna komenda (jak srednik)\n\n### Zakresy ($i)\n\nUzyj `$i` w komendzie, aby powtorzyc ja dla zakresu liczb. Zakres podajesz jako argument aliasu w formacie `X-Y`.\n\n**Przyklad:**\n- Wzorzec: `kok (.+)`\n- Komenda: `rozerwij $i. kokon`\n- Wpisz: `kok 1-7`\n- Wynik: `rozerwij 1. kokon`, `rozerwij 2. kokon`, ..., `rozerwij 7. kokon`\n\nZakresy dzialaja rosnaco (`1-7`) i malejaco (`7-1`). Maksymalnie 50 iteracji.\n\n## Asystent AI\n\n| Komenda | Opis |\n|---------|------|\n| `/pomoc` | Otworz panel asystenta AI |\n| `/pomoc <pytanie>` | Otworz panel i od razu zadaj pytanie |\n\n> **Wskazowka:** Asystent odpowiada po polsku i zna ustawienia, komendy i zdarzenia tego klienta. Jesli w odpowiedzi jest konkretna zmiana (ustawienie, alias, trigger, bind), pojawi sie karta z przyciskami **Zastosuj** / **Odrzuc** - nic nie zostanie zapisane, dopoki sam nie klikniesz \"Zastosuj\". Panel jest zwyklym oknem: mozna go zadokowac, przypiac i odlaczyc do osobnego okna. Wlasny klucz API (opcjonalny) ustawisz przyciskiem \"Ustawienia\" w naglowku panelu; jest zapisywany tylko na tym urzadzeniu i nie trafia do synchronizacji w chmurze.\n\n## Komunikacja\n\n| Komenda | Opis |\n|---------|------|\n| `/fake tekst` | Wyswietl podany tekst jak zwykle wiadomosc klienta |\n| `/chat` | Wyswietl ostatnie 20 wiadomosci z czatu GMCP |\n| `/chatw` lub `/chat okno` | Otworz okno czatu z historia 100 wiadomosci |\n| `/list` | Otworz edytor pisania listow w kliencie |\n| `/poczta` | Otworz okno poczty z lista listow |\n\n> **Wskazowka:** W oknie czatu przycisk \"Druzyna\" filtruje wiadomosci od czlonkow druzyny. Przewiniecie historii w gore dzieli okno na dwie czesci — na dole zostaje przyklejony podglad najnowszych wiadomosci, tak samo jak w oknie glownym i w oknie walki.\n\n## Czas\n\n| Komenda | Opis |\n|---------|------|\n| `/czas` | Otworz okno zegara z aktualnym czasem w grze |\n| `/czas imperium <godzina> [<dzien>]` | Ustaw czas w Imperium (godzina 0-23, opcjonalnie dzien roku 1-400) |\n| `/czas ishtar <godzina> [<dzien>]` | Ustaw czas w Ishtar (godzina 0-23, opcjonalnie dzien roku 1-360) |\n\n> **Wskazowka:** Czas mozna rowniez ustawic w oknie zegara - wybierz godzine, miesiac i dzien, a nastepnie kliknij \"Ustaw\".\n\n## Jezyk\n\n| Komenda | Opis |\n|---------|------|\n| `justaw jezyk` | Ustaw jezyk rozmow (np. `justaw krasnoludzki`) |\n| `'tekst` | Mow w ustawionym jezyku (pojedynczy apostrof przed tekstem) |\n\n## Druzyna\n\n| Komenda | Opis |\n|---------|------|\n| `/ostatnio` | Sprawdz aktywnosc czlonkow druzyny (zielony = aktywny, czerwony = nieaktywny) |\n| `/bilety` | Kup bilet dla kazdego czlonka druzyny na lokacji i wreczaj go (wyciaga monety przed i odklada po) |\n| `/hp` | Wyswietl pomoc dla komendy ostatnio widzianych kondycji |\n| `/hp wszystkich` | Wyswietl ostatnio widziane kondycje wszystkich postaci na lokacji |\n| `/hp wroga` | Pokaz tylko kondycje oznaczonych wrogow (alias: `/hp przeciwnika`) |\n| `/hp imiona` | Pokaz tylko kondycje postaci po imieniu (jednowyrazowe opisy) |\n| `/hp <fraza>` | Filtruj kondycje po fragmencie opisu (np. `/hp gobl`) |\n| `/hp -` | Wyczysc cala liste zapamietanych kondycji |\n| `/hp -<fraza>` | Usun z listy wpisy pasujace do frazy |\n\n> **Wskazowka:** Kondycje sa zbierane automatycznie z danych GMCP, a wpisy znikaja po 15 minutach lub gdy postac umrze. Pasek HP jest kolorowany wedlug poziomu zdrowia, a opisy wrogow podswietlone na czerwono, czlonkow druzyny na zielono. Dla opisow zawierajacych spacje wyswietlana jest dopasowana postac z bazy ludzi (imie i gildia).\n\n## Przedstawieni\n\n| Komenda | Opis |\n|---------|------|\n| `/przedstawieni` | Wyswietl liste przedstawionych postaci |\n\n## Bindy\n\n| Komenda | Opis |\n|---------|------|\n| `/binds` | Wyswietl liste skonfigurowanych bindow |\n| `/przycisk nazwa [on\\|off]` | Zapal lub zgas wlasne przyciski stopki o tym stanie (bez `on`/`off` przelacza) |\n\n## Dzwiek\n\n| Komenda | Opis |\n|---------|------|\n| `/sounds` | Przelacz wyciszenie/wlaczenie dzwiekow |\n| `/mute` | Wycisz dzwieki |\n| `/unmute` | Wlacz dzwieki |\n\n## Przyplyw\n\n| Komenda | Opis |\n|---------|------|\n| `/przyplyw` | Przelacz system przyplywow (zmienia mape: pokoje przybrzezne przesuwaja sie pod wode, tworza sie pokoje na powierzchni) |\n\n> **Wskazowka:** System przyplywow aktywuje sie i dezaktywuje rowniez automatycznie na podstawie komunikatow w grze, gdy znajdujesz sie w strefie przyplywow.\n\n## Dobywanie/Opuszczanie\n\n| Komenda | Opis |\n|---------|------|\n| `/dob` | Wykonaj komendy dobywania ze slotow 1 i 2 |\n| `/dob [1-3]` | Wykonaj komende dobywania z wybranego slotu |\n| `/op` | Wykonaj komendy opuszczania ze slotow 1 i 2 |\n| `/op [1-3]` | Wykonaj komende opuszczania z wybranego slotu |\n\n> **Konfiguracja:** Komendy konfiguruje sie w ustawieniach postaci w sekcji \"Dobywanie/Opuszczanie\". Kazdy slot moze zawierac wiele komend oddzielonych srednikiem (;).\n\n## Kalendarz slonca\n\n| Komenda | Opis |\n|---------|------|\n| `/slonce` | Otworz kalendarz slonca z obserwacjami wschodow i zachodow |\n\n## Kolorowanie\n\n| Komenda | Opis |\n|---------|------|\n| `/tcolor fraza` | Dodaje tymczasowe kolorowanie frazy na pomaranczowo (tylko na czas sesji) |\n\n> **Wskazowka:** Mozna wywolywac wielokrotnie, aby kolorowac wiele fraz jednoczesnie. Kolorowanie znika po zakonczeniu sesji.\n\n## Lowienie ryb\n\n| Komenda | Opis |\n|---------|------|\n| `/wedka` | Otworz okno lowienia ryb z wyborem przynety i przyciskami akcji |\n\n> **Wskazowka:** Gdy ryba bierze, kliknij przycisk \"Zatnij rybe\" lub uzyj funkcjonalnego bindu (domyslnie `]`).\n\n## Zlom (baza ocenionych przedmiotow)\n\n| Komenda | Opis |\n|---------|------|\n| `/zlom` | Wyswietl zapisane bronie (alias `/zlom bronie`) |\n| `/zlom tarcze` | Wyswietl zapisane tarcze |\n| `/zlom zbroje` | Wyswietl zapisane zbroje |\n| `/zlomw` | Otworz okno zlomu z tabelami i importem bazy z Mudleta |\n| `/zlom-reset` | Wyczysc baze i zdejmij podswietlenia shortow |\n\n> **Wskazowka:** Baza automatycznie zapisuje wyniki komendy `ocen <przedmiot>` i podswietla rozpoznane shorty w tekscie (pogrubienie + podkreslenie dla broni ze srebrem, dymek z typem). Kolory shortow ustawiasz w oknie `/zlomw` (kolumna \"Kolor\") — te same kolory stosowane sa w listach lupu (`loot`) i w pojemnikach (`pretty containers`). Przelacznik \"Srebro\" w naglowku okna kontroluje podkreslanie broni ze srebra. Okno pozwala tez zaimportowac plik `.db` z profilu Mudleta (tabele `bronie`, `tarcze`, `zbroje`).\n\n## Odpornosci przeciwnikow\n\n| Alias | Opis |\n|-------|------|\n| `/odpornosci` | Otworz okno odpornosci przeciwnikow (tabela przeciwnik x rodzaj obrazen) |\n| `/odpornosci <fraza>` | Wypisz w oknie gry przeciwnikow, ktorych nazwa zawiera fraze (np. `/odpornosci kikimora`) |\n| `/odpornosci-usun <nazwa>` | Usun wpisy przeciwnika ze wszystkich obszarow (rodzaj w mianowniku, np. `kikimora`) |\n| `/odpornosci-reset` | Wyczysc cala baze odpornosci |\n\n> **Wskazowka:** Baza zapisuje sie sama z wynikow `ocen <przeciwnik>` — wystarczy linia \"Twoje doswiadczenie i umiejetnosci podpowiadaja ci, ze jest on odporny/wrazliwy na ...\". Nazwa w mianowniku brana jest z linii porownania (\"... niz wielka krwiozercza kikimora.\"); gdy jej brak, przeciwnik jest dopasowywany do obiektow na lokacji. Przymiotniki sa pomijane — \"wielka krwiozercza kikimora\" i \"mala kikimora\" to jeden wpis `kikimora` (nazwy dwuczlonowe, np. `zywiolak ognia`, `troll jaskiniowy`, zostaja w calosci). Postaci z imieniem (gracze, nazwani NPC) nie sa zapisywane. Wpis zapamietuje tez obszar mapy, na ktorym ocenialas — ten sam rodzaj potrafi miec inne odpornosci w roznych obszarach. Dopoki odpornosci sa wszedzie takie same, widzisz jeden wiersz bez zadnej wzmianki o obszarze; dopiero gdy gdzies wyjda inne, wiersz rozdziela sie na kilka, a przy nazwie pojawia sie nazwa obszaru (`X` w wierszu usuwa tylko ten obszar). Pomaranczowy trojkat przy nazwie oznacza wpis bez obszaru (zapisany, zanim obszary byly zapamietywane, albo poza mapa) — ocen przeciwnika ponownie, zeby go przypisac. Jesli linii z odpornosciami nie da sie odczytac albo nie wiadomo, ktorego przeciwnika dotyczy, pod linia pojawia sie pomaranczowy komunikat - klikniecie kopiuje oryginalna linie do schowka, zeby mozna ja bylo zglosic. Przelacznik Tabela/Lista zmienia widok: lista pokazuje dla kazdego przeciwnika wrazliwosci i odpornosci jako ikonki. W oknie `W` (zielone) oznacza wrazliwosc, `O` (czerwone) odpornosc; klikniecie naglowka kolumny sortuje najpierw przeciwnikow wrazliwych na dany rodzaj obrazen. Okno otworzysz tez z menu kontekstowego (pozycja \"Odpornosci\").\n\n## Zaslony (debug)\n\n| Alias | Opis |\n|-------|------|\n| `/zaslony` | Otworz okno podgladu zaslon (kto jest zaslaniany, przez kogo i przed kim) |\n\n> **Wskazowka:** Okno jest narzedziem diagnostycznym dla mechaniki zaslon. Gra nie wysyla stanu zaslony w GMCP - nie ma zadnego pola `covered_by` - wiec stan jest wnioskowany z linii tekstu. Zaslona nie ma wlasnego czasu trwania: trwa, dopoki nie zostanie przelamana, zdjeta, zastapiona nowa zaslona przed tym samym atakujacym albo ktoras ze stron nie umrze. Gorna tabela pokazuje wszystkie postacie na lokacji podzielone na `Druzyna` i `Wrogowie`. Kluczowa jest kolumna **przed kim**: zaslona dziala tylko przeciw atakujacym wymienionym w linii `zaslania ... przed ciosami ...`, wiec ten sam cel moze byc zablokowany dla czlonka druzyny i calkowicie dostepny dla ciebie. Twoj wpis jest pogrubiony, a status `ZASLONIETY` (czerwony) oznacza, ze to *ty* nie mozesz trafic; `zaslaniany` (pomaranczowy) oznacza zaslone przed kims innym. Stan bierze sie wylacznie z tekstu gry. Przeskok `attack_num` w GMCP wyglada tak samo, gdy zaslona przekierowala cios, jak i wtedy, gdy ktos po prostu zmienil cel, wiec trafia tylko do logu (wpis `GMCP`, ukrywany przyciskiem **bez GMCP**) i nigdy nie tworzy zaslony - logowane sa przy tym tylko te przeskoki, ktorych nie tlumaczy zadna znana zaslona. Wpisy pisane kursywa sa niepewne (nie dalo sie jednoznacznie dopasowac opisu do postaci na lokacji). Licznik `nieznane blokady` liczy sytuacje, w ktorych linia `staje ci na drodze` trafila na zaslone, o ktorej nie wiedzielismy - wartosc wieksza od zera w normalnej walce oznacza przeoczona linie zalozenia zaslony, nie szum. Wpis `WYGASLO` podaje przyczyne: `zastapiona nowa zaslona` (przed jednym atakujacym stoi naraz tylko jedna zaslona - `attack_num` to jedna wartosc i gra przesuwa ja na najnowszego zaslaniajacego, wiec nowa zaslona przed tym samym atakujacym konczy poprzednia), `znikl z lokacji` (wraz z opisem, kto znikl), `smierc`, `ogluszenie` lub `limit wieku` (10 minut - jedyne ograniczenie czasowe, zabezpieczenie na wypadek zaslony zakonczonej bez zadnej czytelnej linii; w normalnej walce nie powinno wystapic).  Dolny panel to log zdarzen (najnowsze na gorze, do 200 wpisow) z oryginalna linia gry pod kazdym wpisem; przycisk **bez GMCP** ukrywa wpisy wywnioskowane wylacznie z GMCP, **Wyczysc** czysci log i licznik. Udane `przelam obrone` zdejmuje zaslone dla calej druzyny naraz, nieudane nie zdejmuje jej nikomu.\n\n## Oswajanie\n\n| Komenda | Opis |\n|---------|------|\n| `/o_pomoc` | Otworz okno oswajania z pomoca i lista aliasow |\n| `/o_pokaz` | Pokaz liste oswajanych zwierzat (z przyciskiem aktywne/nieaktywne) |\n| `/o_pokaz <zwierze>` | Pokaz historie karmienia i poziomy oswojenia danego zwierzecia |\n| `/o_ostatnio` | Pokaz historie ostatnio karmionego zwierzecia |\n| `/o_historia` | Pokaz historie karmienia wszystkich aktywnych zwierzat |\n| `/o_wylacz <zwierze>` | Oznacz zwierze jako nieaktywne (ukrywa z historii) |\n| `/o_wlacz <zwierze>` | Oznacz zwierze jako aktywne |\n| `/o_przemianuj <stare> na <nowe>` | Zmien nazwe zwierzecia w bazie |\n| `/o_eksport` | Zapisz baze oswajania tej postaci do pliku JSON |\n| `/o_import` | Wczytaj baze z pliku JSON (nadpisuje baze tej postaci) |\n\n> **Wskazowka:** Baza buduje sie automatycznie z komend `oswajaj zwierze ...`. Po oswojeniu wykonaj `ocen zwierze` (po nakarmieniu jest to automatycznie podstawiane pod funkcjonalny bind), aby zapisac poziom oswojenia. Dane sa zapisywane osobno dla kazdej postaci. Po nakarmieniu, po uplywie czasu odnowienia, pojawi sie powiadomienie, ze mozna oswajac ponownie. Okno otworzysz tez z menu kontekstowego (prawy przycisk myszy na oknie gry, pozycja \"Oswajanie\").\n\n> **Widok zwierzecia:** Na gorze wybierasz zwierze z listy; nieaktywne mozna wlaczyc przyciskiem \"Aktywuj\". W tabeli kolumna \"ile\" rozwija (klik) poprzednie wpisy danego pokarmu. Rozne opisy tego samego pokarmu (np. `miesem` i `kawalkiem miesa`) mozesz scalic ikona polaczenia przy pokarmie — wtedy maja wspolny licznik czasu i jedna grupe, a kolejne karmienia automatycznie trafiaja do tej grupy. Polaczenie pokarmow jest globalne (wspolne dla wszystkich postaci); cofniesz je ikona rozlaczenia.\n\n## Woz/bryczka\n\n| Komenda | Opis |\n|---------|------|\n| `/woz` | Przelacz tryb wozu (wlacz/wylacz) |\n| `/wozw` | Otworz okno \"Wozy\": data najmu, wozownia, koszt, kaucja i miejsce postoju. Przycisk \"Blokady\" w naglowku otwiera liste lokacji nieprzejezdnych z podgladem na mapie, usuwaniem pojedynczych wpisow i czyszczeniem calej listy |\n| `/wozblok` | Oznacz/odznacz biezaca lokacje jako nieprzejezdna dla wozu (opcjonalnie numer lokacji) |\n| `/wozbloki` | Pokaz liste nieprzejezdnych lokacji i linie do skopiowania |\n| `/wozbloki+ <numery>` | Wczytaj liste nieprzejezdnych lokacji |\n| `/wozbloki-` | Wyczysc liste nieprzejezdnych lokacji |\n\n> **Wskazowka:** Tryb wozu wlacza sie i wylacza automatycznie przy wsiadaniu/zsiadaniu, wstawaniu i zwracaniu pojazdu, a takze gdy pojazd sam sie zatrzyma (rozdroze, brak dalszej drogi). Alias `/woz` pozwala przelaczyc go recznie, gdyby automatyczne wykrywanie zawiodlo. W trybie wozu przycisk trybu ruchu jest zablokowany.\n\n> **Wskazowka:** Tryb wozu wlacza sie tylko wtedy, gdy to ty powozisz — czyli kiedy jedziesz sam albo prowadzisz druzyne. Jako pasazer (jestes w druzynie, ale nie ty ja prowadzisz) masz strzalki i klawisz `zerknij` bez zmian, bo i tak nie mozesz kierowac pojazdem; pojazd jest za to normalnie zapisywany w oknie `/wozw` i na mapie, a bind `usiadz ...` dalej sie pokazuje. Jesli przejmiesz prowadzenie druzyny w trakcie jazdy, tryb wozu wlaczy sie sam (i wylaczy, gdy oddasz prowadzenie). Alias `/woz` ma pierwszenstwo przed tym sprawdzeniem — mozesz nim wlaczyc tryb wozu takze jako pasazer.\n\n> **Wskazowka:** Okno \"Wozy\" (`/wozw`, takze z menu pod prawym przyciskiem myszy) pamieta kazdy wynajety pojazd osobno, wiec dziala takze gdy masz ich kilka. Wozownia i miejsce postoju maja przyciski prowadzenia z odlegloscia w nawiasie. Kaucja w calosci wraca tylko przez 6 godzin od najmu; po tym terminie wozownia zatrzymuje jej czesc, dlatego okno pokazuje godzine wygasniecia i ile czasu zostalo (na 30 minut przed koncem wpis sie podswietla). Wpis znika po zwrocie pojazdu, mozna go tez usunac recznie przyciskiem `X`.\n\n> **Wskazowka:** Zaparkowane pojazdy sa zaznaczone na mapie kolem wozu z nazwa typu pojazdu (`woz`, `bryczka`, `dylizans`). Znacznik znika, kiedy wsiadasz do pojazdu, i wraca w nowym miejscu po zsiadnieciu.\n\n> **Wskazowka:** Okno rozroznia, czy siedzisz w stojacym pojezdzie, czy jedziesz — znacznik przy nazwie pokazuje `stoisz` albo `jedziesz`, na podstawie komunikatow `... rusza na ...` i `... zatrzymuje sie.` twojego pojazdu.\n\n> **Wskazowka:** W czasie jazdy `zerknij` zatrzymuje pojazd — wysyla `zatrzymaj woz` / `zatrzymaj bryczke` / `zatrzymaj dylizans`. Kiedy pojazd stoi, `zerknij` znowu rozglada sie po lokacji. Tak dziala klawisz `zerknij` (domyslnie Numpad5) i srodkowy przycisk krzyzaka na panelu mobilnym; to samo mozna przypisac dowolnemu przyciskowi mobilnemu lub desktopowemu, wybierajac makro **Zerknij / zatrzymaj pojazd**.\n\n> **Wskazowka:** Po ponownym polaczeniu z gra (\"przywracam polaczenie\" albo \"polaczenie zostalo przywrocone\") gra wysadza cie z pojazdu, wiec klient zapisuje pojazd jako zaparkowany w biezacej lokacji. Jesli przerwa byla na tyle dluga, ze logujesz sie od nowa, pojazd zostaje zaparkowany w ostatniej znanej lokacji. Jesli mapa nie nadazyla, miejsce postoju poprawia sie samo, gdy zobaczysz pojazd w opisie lokacji.\n\n> **Wskazowka:** Lokacje oznaczone przez `/wozblok` sa omijane przy prowadzeniu (`/prowadz`, `/prowadzt`, klikniecie na mapie) tylko wtedy, gdy jedziesz wozem — pieszo nic sie nie zmienia. Jesli cel jest nieprzejezdny (np. wnetrze budynku), trasa dzieli sie na dwa odcinki w roznych kolorach: dojazd wozem i dalsza droga pieszo, a klient wypisuje, gdzie zostawic woz. Wyjscia specjalne skladajace sie z kilku slow (`wejdz na skaly`, `zejdz na dol`, `przecisnij sie przez szczeline`) sa pomijane przy jezdzie automatycznie — to czynnosci, ktorych nie wykonasz siedzac na wozie, wiec nie trzeba ich oznaczac. Kiedy pojazd stanie na koncu drogi (`Nie ma tu zadnej drogi, ktora mozna by dalej jechac.`), klient oznacza wszystkie sasiednie lokacje poza ta, z ktorej przyjechales — ale tylko wtedy, gdy gra wypisala przy opisie lokacji liste wyjsc; bez niej nic nie jest zapamietywane. Klient dopisuje lokacje sam, kiedy gra odmowi przejazdu (`Nie mozna jechac na ...`) — blokowana jest lokacja **za** tym wyjsciem, nie ta, w ktorej stoisz. Lista jest wspolna dla wszystkich postaci i na razie zbierana samodzielnie — `/wozbloki` wypisuje ja w formie gotowej do skopiowania. Oznaczone lokacje mozna pokazac na mapie jako przekreslone kolko — wlacza sie to w menu mapy (\"Nieprzejezdne dla wozu\"), domyslnie jest wylaczone. Znaczniki widac takze wtedy, gdy idziesz pieszo, bo czesto dopiero wtedy widac, ze woz tam nie wjedzie.\n\n> **Wskazowka:** Bindy: kiedy wracasz pieszo do lokacji, w ktorej stoi twoj pojazd, bind zmienia sie na `usiadz na wozie` / `usiadz w bryczce` / `usiadz w dylizansie`. Bind znika, gdy odejdziesz z lokacji. Kiedy prowadzisz trase wozem, na bindzie glownym pojawia sie kolejny krok trasy (a w miejscu, gdzie trzeba zostawic woz — `zsiadz z ...`). Bind pokazuje sie tylko wtedy, gdy woz stoi, i aktualizuje sie, gdy trasa sie zmieni; wylaczysz go opcja \"Bindy trasy wozu\". W ustawieniach (Interfejs → Komendy) mozna wlaczyc opcje, ktora sprawia, ze powtorzenie odrzuconej komendy jazdy (`Nie mozna jechac na ...`) wysyla dwie komendy: zsiadniecie z wozu i przejscie pieszo w tym kierunku. Komunikaty konczace jazde (`Dojechaliscie do rozdrozy.` i `Nie ma tu zadnej drogi, ktora mozna by dalej jechac.`) sa podswietlane na zolto, zeby nie zginely w opisach mijanych lokacji.\n\n## Odkladanie magii\n\n| Komenda | Opis |\n|---------|------|\n| `/odloz_magie [pojemnik]` | Odloz magie do pojemnika |\n\n## Labirynty\n\n| Komenda | Opis |\n|---------|------|\n| `/labirynt` | Przelacz tryb labiryntu (dynamicznie usuwa nieistniejace wyjscia) |\n| `/labirynt_mapa` | Przelacz mapper Labiryntu Rinde |\n| `/raon_mapa` | Przelacz mapper Labiryntu Raon |\n| `/taragorn` | Rozpoznaj ponownie lokacje w labiryncie pod swiatynia Taragorna |\n\n## Skarbce\n\n| Komenda | Opis |\n|---------|------|\n| `/lisica` | Wystukaj na drzwiach zapamietane haslo (pierwsza cyfra = liczba pukniec) |\n| `/lisica 1-9-5-2` | Wystukaj podane haslo i zapamietaj je (dziala tez `1952`, `1 9 5 2`) |\n| `/lisica stop` | Przerwij wystukiwanie hasla |\n\n> **Wskazowka:** Haslo z wiadomosci (\"aktualnie to: 1-9-5-2\") zapamietuje sie samo. Po odpowiedzi drzwi kolejna grupa pukniec trafia na funkcjonalny bind (domyslnie `]`).\n\n## Odswiezanie danych\n\n| Komenda | Opis |\n|---------|------|\n| `/refresh_magics` | Wymus odswiezenie danych magii |\n| `/refresh_keys` | Wymus odswiezenie danych kluczy magii |\n| `/refresh_knowledge` | Wymus odswiezenie danych wiedzy |"
     },
     {
       "id": "SKRYPTY.md",
@@ -6357,8 +6609,8 @@
         "Typy TypeScript",
         "Wbudowane skrypty"
       ],
-      "tokens": 2073,
-      "content": "# Skrypty i automatyzacja — co mozesz robic\n\nPodsumowanie mozliwosci systemu skryptow, pluginow i automatyzacji dostepnych dla graczy.\n\n---\n\n## Wlasne aliasy\n\nTworzysz skroty do dlugich lub czestych komend — bez pisania ani linijki kodu.\n\n- **Wzorzec regex** — alias reaguje na to, co wpiszesz (np. `^aa (.+)$` zamieni `aa goblin` na `zabij goblin`)\n- **Grupy przechwytujace** — `$1`, `$2` itd. wstawiaja fragmenty z dopasowania do komendy\n- **Skroty obiektow** — `@1`, `@A`, `@@` automatycznie zamieniaja sie na identyfikatory obiektow z lokacji\n- **Nadpisania per postac** — ten sam alias moze wysylac inna komende w zaleznosci od postaci\n- **Import z Blowtorch i Arkadii** — przeniesienie aliasow z innych klientow jednym kliknieciem\n\n## Wlasne triggery\n\nReagujesz na to, co pojawia sie na ekranie — automatycznie, bez czekania.\n\n- **Wzorzec regex z flagami** — ignorowanie wielkosci liter, tryb globalny, wieloliniowy\n- **Filtr typu GMCP** — trigger moze reagowac tylko na walke, czat, opisy lokacji, poczte i 20+ innych kategorii\n- **Triggery zdarzeniowe** — zamiast tekstu, reaguj na zdarzenia: zabicie wroga, start/koniec walki, ogluszenie, polaczenie, rozlaczenie, timery\n- **Wiele akcji na jednym triggerze** — kazdy trigger moze wykonac dowolna kombinacje:\n  - Zmiana na wielkie litery\n  - Kolorowanie dopasowania\n  - Zamiana tekstu\n  - Otoczenie prefiksem/sufiksem\n  - Odtworzenie dzwieku (domyslny beep lub wlasny plik audio)\n  - Wyciszenie / wlaczenie dzwiekow\n  - Wysylanie komendy do serwera\n  - Wolne lub szybkie miganie tekstu\n  - Pulsowanie (dim z konfigurowalna krzywą animacji)\n  - Ustawienie funkcyjnego bindu\n- **Wlasne dzwieki** — wgrywasz plik audio i uzywasz go w triggerach\n- **Makra z pluginow** — pluginy moga dodawac wlasne typy akcji do triggerow (pojawia sie w ustawieniach automatycznie)\n\n## Bindowanie klawiszy\n\nMapujesz klawisze na akcje — bez odrywania rak od klawiatury.\n\n- **Domyslne bindy** — `]` kontekstowe akcje, `Ctrl+1` atak, `Ctrl+Q` wsparcie, `` ` `` tryb ruchu, i inne\n- **Wlasne bindy** — przypisujesz dowolny klawisz do dowolnej komendy\n- **Tymczasowe bindy** — `/tbind1 komenda` i `/tbind2 komenda` ustawiaja bindy na czas sesji\n- **Funkcyjne bindy z pluginow** — plugin moze dynamicznie ustawiac co robi dany klawisz\n\n## Edytor skryptow\n\nPiszesz wlasne pluginy w przegladarce, w pelni wyposazonym edytorze.\n\n- **Monaco Editor** — ten sam edytor co w Visual Studio Code, z kolorowaniem skladni i podpowiadaniem\n- **JavaScript i TypeScript** — piszesz w czym chcesz; TypeScript kompiluje sie automatycznie\n- **Podpowiadanie API** — edytor zna cale API pluginow, podpowiada metody i parametry\n- **Snippety** — wpisz `alias`, `trigger`, `eventListener` lub `fBind` i edytor wstawi gotowy szablon\n- **AI asystent** — wbudowany panel AI (OpenAI / Anthropic) pomoze pisac i modyfikowac kod pluginow\n- **Zapis automatyczny** — skompilowany plugin od razu synchronizuje sie z klientem gry\n- **Osobna baza danych** — zrodla TypeScript i skompilowany JS przechowywane osobno, bezpiecznie\n\n## System pluginow\n\nRozszerzasz klienta o wlasne funkcje — lub instalujesz pluginy innych graczy.\n\n### Instalacja\n\nPanel **Skrypty** ma dwie zakladki: *Zainstalowane* (co masz) i *Katalog* (co mozesz miec).\n\n- **Z katalogu** — zakladka \"Katalog\" pokazuje pluginy innych graczy: szukaj, filtruj po tagach,\n  zajrzyj w opis i historie wersji, a potem kliknij \"Zainstaluj\". Klient zapamietuje konkretna\n  wersje, wiec plugin nie zmieni sie sam pod reka — gdy autor wyda nowsza, na liscie\n  zainstalowanych pojawi sie przycisk \"Aktualizuj\"\n- **Przez link** — otworz URL z parametrem `?add-script=...` i plugin zainstaluje sie automatycznie\n- **Wlasny plugin** — przycisk \"Dodaj plugin\" prowadzi do pozostalych drog: import paczki ZIP,\n  wklejenie kodu, adres URL, wygenerowanie promptu dla AI albo napisanie pluginu w edytorze\n\n### Co plugin moze robic\n\n**Triggery:**\n- Rejestracja triggerow na wzorce regex\n- Triggery jednorazowe (usuwaja sie po pierwszym dopasowaniu)\n- Triggery tokenowe (dopasowuja calé slowa)\n- Modyfikacja tekstu — kolorowanie, dodawanie prefiksu/sufiksu, wstawianie, zamiana, usuwanie\n- Tworzenie klikalnych linkow w tekscie\n- Ukrywanie linii (zwrocenie `null`)\n\n**Aliasy:**\n- Rejestracja wlasnych komend (np. `/dom`, `/tp miasto`)\n- Przechwytywanie grup z regex\n\n**Wysylanie komend:**\n- `api.command.send(\"komenda\")` — wyslij komende do serwera\n- Mozliwosc wysylania wielu komend sekwencyjnie\n\n**Zdarzenia:**\n- Nasluchiwanie zdarzen gry: ruch na mapie, zabicie wroga, dane GMCP, konkretne sciezki GMCP\n- Emitowanie wlasnych zdarzen\n- Odtwarzanie dzwiekow, wyswietlanie powiadomien\n\n**Mapa:**\n- Odczyt aktualnego pokoju (nazwa, koordynaty, wyjscia, area)\n- Ustawianie lokalizacji\n- Cofanie sie do poprzedniego pokoju\n\n**Druzyna:**\n- Lista czlonkow druzyny\n- Lider, ID lidera, numer gracza\n\n**Dane GMCP:**\n- Pelny dostep do danych GMCP (HP, mana, nazwa pokoju, itd.)\n\n**Kolejka ataku:**\n- Dodawanie, usuwanie, czyszczenie kolejki celow\n- Odczyt aktualnej kolejki\n\n**Obiekty na lokacji:**\n- Lista obiektow z numerem, opisem, stanem, skrotem\n\n**Kolorowy tekst:**\n- `AnsiAwareBuffer` — tworzenie bogatego tekstu z kolorami, formatowaniem, linkami\n- Kolory z hex (`#ff0000`) lub RGB\n\n**Przyciski:**\n- Rejestracja wlasnych makr przyciskow (mobilne i desktopowe)\n- Pola konfiguracji: tekst, textarea, numer, checkbox, select\n- Przyciski stanowe (toggle ON/OFF, przelaczanie trybow)\n- Handle do kontroli stanu z poziomu aliasow\n\n**Filtry listy obiektow:**\n- Zmiana koloru, ikony, prefiksu, sufiksu wpisow na liscie obiektow\n- Modyfikacja paska HP\n- Skracanie nazw\n- System priorytetow — filtry composable, wiele pluginow wspolpracuje\n\n**Makra triggerow:**\n- Plugin moze definiowac wlasne typy akcji dla triggerow uzytkownika\n- Pojawiaja sie automatycznie w ustawieniach triggerow\n- Konfiguracja przez pola formularza\n\n### Lifecycle pluginu\n\n- `init(api)` — inicjalizacja, rejestracja wszystkiego\n- `destroy()` — czyszczenie przy wyladowaniu\n- Metadane: nazwa, wersja, autor, opis\n- Kompatybilnosc wsteczna — stare skrypty (legacy) dzialaja bez zmian\n\n### Typy TypeScript\n\n- Pakiet `@arkadia/plugin-types` z pelnym wsparciem IDE\n- Autocomplete i hover documentation w edytorze\n\n## Wbudowane skrypty\n\nKlient zawiera ponad 150 gotowych skryptow pokrywajacych praktycznie kazdy aspekt gry:\n\n**Walka:** kolejka ataku, tryby ataku, timer walki, okno walki, zaslanianie, ucieczka, alarm HP, alert braku broni, ogluszenie wroga, zlamana obrona, zaznaczanie celow, ochrona sojusznikow, ostrzezenie o ataku lidera\n\n**Ekwipunek:** menedzer pojemnikow, zbieranie lupow, ciecie, depozyt bankowy, porownywanie przedmiotow (inline i w oknie), wytrzymalosc, stan broni, ocena zbroi/broni/tarczy, kolorowanie monet, kolorowanie broni, sklep\n\n**Nawigacja:** chodzenie, GPS, mapa, tryb ruchu, specjalne wyjscia, skroty lokacji, kompas, przechodzenie bram, autobus/transport, lokalizatory, statki\n\n**Magia:** ladowanie magii, klucze magiczne, zaklecia, odkadanie magii\n\n**Ziola:** licznik ziol, opisy ziol, sklep zielarski, ladowanie ziol, leczenie chorob i zatruc\n\n**Rzemioslo:** kowalstwo, lowienie ryb, oswajanie zwierzat, wiedza, umiejetnosci, jezyki, nauczyciel jezykow\n\n**Komunikacja:** historia czatu, poczta, nowa wiadomosc, lista przedstawionych, listy\n\n**Sledzenie:** postepy (zabici, zlecenia, staz), kontrakty, dostawy, licznik usprawnien, wyroznienie, profesja\n\n**Czas i srodowisko:** zegar (Imperium 400 dni, Ishtar 360 dni), sledzenie slonca, pory roku, system przyplywow, labirynty (Raon, Rinde, Taragorn)\n\n**Interfejs:** bindy, multibindy, funkcyjny bind, kolorowanie tymczasowe, gagging (ukrywanie tekstu), pretty containers, krotkie wyjscia, podswietlanie braku wyjscia, podswietlanie kurczacych sie kamieni wprawionych w sprzet, opis osoby, emoji aligatora, dobywanie/opuszczanie, siedzenia, dzwieki\n\n**Swiat:** timer zniszczenia swiata, odrodzenie swiata, Brokilon, gorskie lokacje, opal, kamienna plyta na bagnach, wrak brygu, wycena kamieni, wycena cen, szyldy gildii\n\n---\n\n> System skryptow i pluginow pozwala graczom automatyzowac, rozszerzac i personalizowac\n> praktycznie kazdy aspekt rozgrywki — od prostych aliasow po pelne pluginy z wlasnym UI,\n> stanami i integracjami.\n>\n> Szczegolowy opis API pluginow znajdziesz w [PLUGINS.md](PLUGINS.md)."
+      "tokens": 2122,
+      "content": "# Skrypty i automatyzacja — co mozesz robic\n\nPodsumowanie mozliwosci systemu skryptow, pluginow i automatyzacji dostepnych dla graczy.\n\n---\n\n## Wlasne aliasy\n\nTworzysz skroty do dlugich lub czestych komend — bez pisania ani linijki kodu.\n\n- **Wzorzec regex** — alias reaguje na to, co wpiszesz (np. `^aa (.+)$` zamieni `aa goblin` na `zabij goblin`)\n- **Grupy przechwytujace** — `$1`, `$2` itd. wstawiaja fragmenty z dopasowania do komendy\n- **Skroty obiektow** — `@1`, `@A`, `@@` automatycznie zamieniaja sie na identyfikatory obiektow z lokacji\n- **Nadpisania per postac** — ten sam alias moze wysylac inna komende w zaleznosci od postaci\n- **Import z Blowtorch i Arkadii** — przeniesienie aliasow z innych klientow jednym kliknieciem\n\n## Wlasne triggery\n\nReagujesz na to, co pojawia sie na ekranie — automatycznie, bez czekania.\n\n- **Wzorzec regex z flagami** — ignorowanie wielkosci liter, tryb globalny, wieloliniowy\n- **Filtr typu GMCP** — trigger moze reagowac tylko na walke, czat, opisy lokacji, poczte i 20+ innych kategorii\n- **Triggery zdarzeniowe** — zamiast tekstu, reaguj na zdarzenia: zabicie wroga, start/koniec walki, ogluszenie, polaczenie, rozlaczenie, timery\n- **Wiele akcji na jednym triggerze** — kazdy trigger moze wykonac dowolna kombinacje:\n  - Zmiana na wielkie litery\n  - Kolorowanie dopasowania\n  - Zamiana tekstu\n  - Otoczenie prefiksem/sufiksem\n  - Odtworzenie dzwieku (domyslny beep lub wlasny plik audio)\n  - Wyciszenie / wlaczenie dzwiekow\n  - Wysylanie komendy do serwera\n  - Wolne lub szybkie miganie tekstu\n  - Pulsowanie (dim z konfigurowalna krzywą animacji)\n  - Ustawienie funkcyjnego bindu\n  - Czytanie na glos (synteza mowy) — wlasny tekst z `{1}`/`{nazwa}` z grup wzorca albo `{arg}` ze zdarzenia; glos, tempo, wysokosc i glosnosc w Ustawieniach interfejsu → Dzwiek i powiadomienia\n- **Wlasne dzwieki** — wgrywasz plik audio i uzywasz go w triggerach\n- **Makra z pluginow** — pluginy moga dodawac wlasne typy akcji do triggerow (pojawia sie w ustawieniach automatycznie)\n\n## Bindowanie klawiszy\n\nMapujesz klawisze na akcje — bez odrywania rak od klawiatury.\n\n- **Domyslne bindy** — `]` kontekstowe akcje, `Ctrl+1` atak, `Ctrl+Q` wsparcie, `` ` `` tryb ruchu, i inne\n- **Wlasne bindy** — przypisujesz dowolny klawisz do dowolnej komendy\n- **Tymczasowe bindy** — `/tbind1 komenda` i `/tbind2 komenda` ustawiaja bindy na czas sesji\n- **Funkcyjne bindy z pluginow** — plugin moze dynamicznie ustawiac co robi dany klawisz\n\n## Edytor skryptow\n\nPiszesz wlasne pluginy w przegladarce, w pelni wyposazonym edytorze.\n\n- **Monaco Editor** — ten sam edytor co w Visual Studio Code, z kolorowaniem skladni i podpowiadaniem\n- **JavaScript i TypeScript** — piszesz w czym chcesz; TypeScript kompiluje sie automatycznie\n- **Podpowiadanie API** — edytor zna cale API pluginow, podpowiada metody i parametry\n- **Snippety** — wpisz `alias`, `trigger`, `eventListener` lub `fBind` i edytor wstawi gotowy szablon\n- **AI asystent** — wbudowany panel AI (OpenAI / Anthropic) pomoze pisac i modyfikowac kod pluginow\n- **Zapis automatyczny** — skompilowany plugin od razu synchronizuje sie z klientem gry\n- **Osobna baza danych** — zrodla TypeScript i skompilowany JS przechowywane osobno, bezpiecznie\n\n## System pluginow\n\nRozszerzasz klienta o wlasne funkcje — lub instalujesz pluginy innych graczy.\n\n### Instalacja\n\nPanel **Skrypty** ma dwie zakladki: *Zainstalowane* (co masz) i *Katalog* (co mozesz miec).\n\n- **Z katalogu** — zakladka \"Katalog\" pokazuje pluginy innych graczy: szukaj, filtruj po tagach,\n  zajrzyj w opis i historie wersji, a potem kliknij \"Zainstaluj\". Klient zapamietuje konkretna\n  wersje, wiec plugin nie zmieni sie sam pod reka — gdy autor wyda nowsza, na liscie\n  zainstalowanych pojawi sie przycisk \"Aktualizuj\"\n- **Przez link** — otworz URL z parametrem `?add-script=...` i plugin zainstaluje sie automatycznie\n- **Wlasny plugin** — przycisk \"Dodaj plugin\" prowadzi do pozostalych drog: import paczki ZIP,\n  wklejenie kodu, adres URL, wygenerowanie promptu dla AI albo napisanie pluginu w edytorze\n\n### Co plugin moze robic\n\n**Triggery:**\n- Rejestracja triggerow na wzorce regex\n- Triggery jednorazowe (usuwaja sie po pierwszym dopasowaniu)\n- Triggery tokenowe (dopasowuja calé slowa)\n- Modyfikacja tekstu — kolorowanie, dodawanie prefiksu/sufiksu, wstawianie, zamiana, usuwanie\n- Tworzenie klikalnych linkow w tekscie\n- Ukrywanie linii (zwrocenie `null`)\n\n**Aliasy:**\n- Rejestracja wlasnych komend (np. `/dom`, `/tp miasto`)\n- Przechwytywanie grup z regex\n\n**Wysylanie komend:**\n- `api.command.send(\"komenda\")` — wyslij komende do serwera\n- Mozliwosc wysylania wielu komend sekwencyjnie\n\n**Zdarzenia:**\n- Nasluchiwanie zdarzen gry: ruch na mapie, zabicie wroga, dane GMCP, konkretne sciezki GMCP\n- Emitowanie wlasnych zdarzen\n- Odtwarzanie dzwiekow, wyswietlanie powiadomien\n\n**Mapa:**\n- Odczyt aktualnego pokoju (nazwa, koordynaty, wyjscia, area)\n- Ustawianie lokalizacji\n- Cofanie sie do poprzedniego pokoju\n\n**Druzyna:**\n- Lista czlonkow druzyny\n- Lider, ID lidera, numer gracza\n\n**Dane GMCP:**\n- Pelny dostep do danych GMCP (HP, mana, nazwa pokoju, itd.)\n\n**Kolejka ataku:**\n- Dodawanie, usuwanie, czyszczenie kolejki celow\n- Odczyt aktualnej kolejki\n\n**Obiekty na lokacji:**\n- Lista obiektow z numerem, opisem, stanem, skrotem\n\n**Kolorowy tekst:**\n- `AnsiAwareBuffer` — tworzenie bogatego tekstu z kolorami, formatowaniem, linkami\n- Kolory z hex (`#ff0000`) lub RGB\n\n**Przyciski:**\n- Rejestracja wlasnych makr przyciskow (mobilne i desktopowe)\n- Pola konfiguracji: tekst, textarea, numer, checkbox, select\n- Przyciski stanowe (toggle ON/OFF, przelaczanie trybow)\n- Handle do kontroli stanu z poziomu aliasow\n\n**Filtry listy obiektow:**\n- Zmiana koloru, ikony, prefiksu, sufiksu wpisow na liscie obiektow\n- Modyfikacja paska HP\n- Skracanie nazw\n- System priorytetow — filtry composable, wiele pluginow wspolpracuje\n\n**Makra triggerow:**\n- Plugin moze definiowac wlasne typy akcji dla triggerow uzytkownika\n- Pojawiaja sie automatycznie w ustawieniach triggerow\n- Konfiguracja przez pola formularza\n\n### Lifecycle pluginu\n\n- `init(api)` — inicjalizacja, rejestracja wszystkiego\n- `destroy()` — czyszczenie przy wyladowaniu\n- Metadane: nazwa, wersja, autor, opis\n- Kompatybilnosc wsteczna — stare skrypty (legacy) dzialaja bez zmian\n\n### Typy TypeScript\n\n- Pakiet `@arkadia/plugin-types` z pelnym wsparciem IDE\n- Autocomplete i hover documentation w edytorze\n\n## Wbudowane skrypty\n\nKlient zawiera ponad 150 gotowych skryptow pokrywajacych praktycznie kazdy aspekt gry:\n\n**Walka:** kolejka ataku, tryby ataku, timer walki, okno walki, zaslanianie, ucieczka, alarm HP, alert braku broni, ogluszenie wroga, zlamana obrona, zaznaczanie celow, ochrona sojusznikow, ostrzezenie o ataku lidera\n\n**Ekwipunek:** menedzer pojemnikow, zbieranie lupow, ciecie, depozyt bankowy, porownywanie przedmiotow (inline i w oknie), wytrzymalosc, stan broni, ocena zbroi/broni/tarczy, kolorowanie monet, kolorowanie broni, sklep\n\n**Nawigacja:** chodzenie, GPS, mapa, tryb ruchu, specjalne wyjscia, skroty lokacji, kompas, przechodzenie bram, autobus/transport, lokalizatory, statki\n\n**Magia:** ladowanie magii, klucze magiczne, zaklecia, odkadanie magii\n\n**Ziola:** licznik ziol, opisy ziol, sklep zielarski, ladowanie ziol, leczenie chorob i zatruc\n\n**Rzemioslo:** kowalstwo, lowienie ryb, oswajanie zwierzat, wiedza, umiejetnosci, jezyki, nauczyciel jezykow\n\n**Komunikacja:** historia czatu, poczta, nowa wiadomosc, lista przedstawionych, listy\n\n**Sledzenie:** postepy (zabici, zlecenia, staz), kontrakty, dostawy, licznik usprawnien, wyroznienie, profesja\n\n**Czas i srodowisko:** zegar (Imperium 400 dni, Ishtar 360 dni), sledzenie slonca, pory roku, system przyplywow, labirynty (Raon, Rinde, Taragorn)\n\n**Interfejs:** bindy, multibindy, funkcyjny bind, kolorowanie tymczasowe, gagging (ukrywanie tekstu), pretty containers, krotkie wyjscia, podswietlanie braku wyjscia, podswietlanie kurczacych sie kamieni wprawionych w sprzet, opis osoby, emoji aligatora, dobywanie/opuszczanie, siedzenia, dzwieki\n\n**Swiat:** timer zniszczenia swiata, odrodzenie swiata, Brokilon, gorskie lokacje, opal, kamienna plyta na bagnach, wrak brygu, wycena kamieni, wycena cen, szyldy gildii\n\n---\n\n> System skryptow i pluginow pozwala graczom automatyzowac, rozszerzac i personalizowac\n> praktycznie kazdy aspekt rozgrywki — od prostych aliasow po pelne pluginy z wlasnym UI,\n> stanami i integracjami.\n>\n> Szczegolowy opis API pluginow znajdziesz w [PLUGINS.md](PLUGINS.md)."
     },
     {
       "id": "SYNCHRONIZACJA.md",
@@ -6417,28 +6669,30 @@
       "headings": [
         "Create an alias",
         "Create a trigger",
+        "Bind a key",
+        "Save a location shortcut or a note",
         "Change character settings (combat, herbs, collecting, language, ...)",
         "Change interface / appearance / sound / buttons",
         "Other menu entries worth knowing",
-        "Proactive tip: enable Layout Manager on desktop"
+        "Layout Manager (`Menedżer Okien`)"
       ],
-      "tokens": 1017,
-      "content": "# llm.txt — Arkadia Web Client\n\nGuide for AI agents helping a user of this page — a browser-based client for\nthe Arkadia MUD. The UI is in Polish; labels below are quoted verbatim so you\ncan point the user at the right control.\n\nAll menus below are reached from the three-dot menu (`⋮`) next to the command\ninput at the bottom of the page.\n\n---\n\n## Create an alias\nPath: `⋮` → `Aliasy` → `Dodaj alias`.\n\n- `Wzorzec (pattern)` is a **regular expression** matched against what the user\n  types in the input box.\n- Aliases are almost always anchored with `^` so they fire only when the line\n  **starts** with that word. A typical pattern looks like `^zab (.+)$` — `^`\n  means \"start of line\", then literal text, then a capture group.\n- In the `Komenda` field use `$1`, `$2`, ... to reference capture groups.\n- Object shortcuts `@1`, `@A`, `@@` expand to object IDs from the object list —\n  useful in combat aliases.\n- `$i` enables range expansion: pattern `^kok (.+)$` with command\n  `rozerwij $i. kokon` lets the user type `kok 1-7` to run the command seven\n  times.\n- Each new line in the command runs as a separate command (same as `;`).\n- Per-character overrides are available in the same modal.\n\n## Create a trigger\nPath: `⋮` → `Triggery` → `Dodaj trigger`.\n\nTwo modes, chosen by radio button:\n- `Wzorzec tekstu` — matches **game output** against a regex. Same regex\n  semantics as aliases. Triggers often match mid-line, so leave `^` off unless\n  the match really must be at line start. Flags (`i` case-insensitive, `g`\n  global, `m` multiline) are set via the `Flagi` picker.\n- `Zdarzenie` — fires on a client event instead of a text pattern.\n\nEach trigger runs one or more `akcje`: color/replace/wrap the match, play a\nsound, send a command, mute/unmute, etc. Plugin-provided actions appear grouped\nby plugin.\n\n## Change character settings (combat, herbs, collecting, language, ...)\nPath: `⋮` → `Ustawienia`.\n\nPer-character — stored under the currently logged-in character. The form is\ndisabled until a character is selected. Covers: compass/exits, containers,\ncoin/item collecting (with per-enemy overrides), combat commands, herbs,\n`/dob` + `/op` slots, default language and language-switch aliases.\n\n## Change interface / appearance / sound / buttons\nPath: `⋮` → `Interfejs` (the same `Ustawienia` window, opened on its `Interfejs`\ngroup).\n\nGlobal — shared across characters on this device. Pages: `Wygląd` (fonts,\ncolors, theme), `Okna` (`Menedżer Okien`, output window), `Komendy`,\n`Przyciski` (on-screen buttons), `Przyciski mobilne` (mobile button grid),\n`Menu kołowe` (mobile radial menu), `Stopka`, `Mapa`, `Dźwięk i powiadomienia`,\n`Inne`. One `Zapisz` saves every page.\n\n## Other menu entries worth knowing\n- `Bindowanie` — keyboard binds\n- `Przyciski` — opens `Ustawienia` on the `Przyciski` page (`Przyciski mobilne`\n  on a phone)\n- `Menu kołowe` — opens `Ustawienia` on the `Menu kołowe` page\n- `Skrypty` — user scripts / plugins\n- `Skróty` — text shortcuts\n- `Notatki lokacji` — per-room notes\n- `Baza postaci` — known-players browser\n- `Nagrania` — session recordings\n- `Logi` — session logs\n- `Dokumentacja` — built-in docs\n\n---\n\n## Proactive tip: enable Layout Manager on desktop\n\n**If the user is on a desktop / laptop (non-touch), suggest enabling the Layout\nManager with mobile buttons hidden**, even if they asked about something else.\nIt's a major ergonomics upgrade most users don't discover on their own, and it\ntakes four clicks.\n\nHow:\n1. `⋮` → `Interfejs`.\n2. Page `Okna`, section `Menedżer Okien` → tick `Włącz menedżer okien`. Optionally tick\n   `Kondycje` to also dock the condition list.\n3. Page `Przyciski mobilne` → **untick** `Pokaż przyciski na ekranie`\n   (they only help on touch devices).\n4. Press `Zapisz`.\n\nResult: dockable/floating panels for map, conditions, chat, combat popups, etc.\narranged around the output area instead of overlaying it, plus a larger output\narea with the mobile button grid gone.\n\nSkip the tip if the user is clearly on mobile (narrow viewport / touch) or has\nalready enabled the Layout Manager."
+      "tokens": 1288,
+      "content": "# llm.txt — Arkadia Web Client\n\nGuide for AI agents helping a user of this page — a browser-based client for\nthe Arkadia MUD. The UI is in Polish; labels below are quoted verbatim so you\ncan point the user at the right control.\n\nAll menus below are reached from the hamburger menu (`☰`) next to the command\ninput at the bottom of the page. Its entries are grouped under `Gra`,\n`Ustawienia`, `Narzędzia` and `Wtyczki`; the field at the top of the menu\nfilters them.\n\n---\n\n## Create an alias\nPath: `☰` → `Aliasy` → `Dodaj alias`.\n\n- `Wzorzec (pattern)` is a **regular expression** matched against what the user\n  types in the input box.\n- Aliases are almost always anchored with `^` so they fire only when the line\n  **starts** with that word. A typical pattern looks like `^zab (.+)$` — `^`\n  means \"start of line\", then literal text, then a capture group.\n- In the `Komenda` field use `$1`, `$2`, ... to reference capture groups.\n- Object shortcuts `@1`, `@A`, `@@` expand to object IDs from the object list —\n  useful in combat aliases.\n- `$i` enables range expansion: pattern `^kok (.+)$` with command\n  `rozerwij $i. kokon` lets the user type `kok 1-7` to run the command seven\n  times.\n- Each new line in the command runs as a separate command (same as `;`).\n- Per-character overrides are available in the same modal.\n\n## Create a trigger\nPath: `☰` → `Triggery` → `Dodaj trigger`.\n\nTwo modes, chosen by radio button:\n- `Wzorzec tekstu` — matches **game output** against a regex. Same regex\n  semantics as aliases. Triggers often match mid-line, so leave `^` off unless\n  the match really must be at line start. Flags (`i` case-insensitive, `g`\n  global, `m` multiline) are set via the `Flagi` picker.\n- `Zdarzenie` — fires on a client event instead of a text pattern.\n\nEach trigger runs one or more `akcje`: color/replace/wrap the match, play a\nsound, send a command, mute/unmute, etc. Plugin-provided actions appear grouped\nby plugin.\n\n## Bind a key\nPath: `☰` → `Klawisze`.\n\nA drawing of the keyboard with tabs for the modifier layers (`Bez\nmodyfikatora`, `Ctrl`, `Alt`/`⌥`, `Shift`, `Ctrl+Alt`); below it the bindings\ngrouped into `Podstawowe`, `Wrogowie`, `Tymczasowe`, `Kierunki` and `Własne`.\nClick a key on the drawing, or a key next to a binding in the list and press the\nnew one. **Every change saves immediately — there is no `Zapisz` here.** Each\nbinding has one `Gdzie działa` setting (in the client / through the helper /\neverywhere).\n\n## Save a location shortcut or a note\nPath: `☰` → `Miejsca`.\n\nOne window for both: a place is a map room with an optional shortcut name and an\noptional note. `Tutaj` adds the room the user is standing in; the shortcut field\nshows the matching `/prowadz nazwa` command; the note saves itself. The search\nbox finds rooms by name, area or number, so a place can be added without walking\nthere. Commands: `/dodaj_skrot id nazwa`, `/pokaz_skroty`, `/usun_skrot nazwa`,\n`/prowadz nazwa`, `/note`.\n\n## Change character settings (combat, herbs, collecting, language, ...)\nPath: `☰` → `Postać`.\n\nPer-character — stored under the currently logged-in character. The form is\ndisabled until a character is selected. Covers: compass/exits, containers,\ncoin/item collecting (with per-enemy overrides), combat commands, herbs,\n`/dob` + `/op` slots, default language and language-switch aliases.\n\n## Change interface / appearance / sound / buttons\nPath: `☰` → `Interfejs` (the same `Ustawienia` window, opened on its `Interfejs`\ngroup).\n\nGlobal — shared across characters on this device. Pages: `Wygląd` (fonts,\ncolors, theme), `Okna` (`Menedżer Okien`, output window), `Komendy`,\n`Przyciski` (on-screen buttons), `Przyciski mobilne` (mobile button grid),\n`Menu kołowe` (mobile radial menu), `Stopka`, `Mapa`, `Dźwięk i powiadomienia`,\n`Inne`. One `Zapisz` saves every page.\n\n## Other menu entries worth knowing\n- `Nagrania` — session recordings\n- `Baza postaci` — known-players browser\n- `Odbiorcy paczek` — package receivers\n- `Kod QR lokacji` — QR code for the current room\n- `Przyciski` / `Menu kołowe` — open `Ustawienia` on those pages\n- `Eksport / import` — settings export and import\n- `Skrypty (wtyczki)` — user scripts / plugins\n- `Źródła danych` — downloaded game data\n- `Helper` — the companion app (global hotkeys, window management)\n- `Logi` — session logs\n- `Dokumentacja` — built-in docs\n\n---\n\n## Layout Manager (`Menedżer Okien`)\n\nDockable/floating panels for map, conditions, chat and combat popups arranged\naround the output area instead of overlaying it.\n\n**It is on by default on desktop** (first visit from a big screen), together\nwith the on-screen buttons turned off, so there is usually nothing to suggest.\nIt stays off for users who declined the old offer, for mobile-like viewports,\nand for anyone who switched it off afterwards.\n\nIf the user is on a desktop and does not have it on, it is worth offering:\n1. `☰` → `Interfejs`.\n2. Page `Okna`, section `Menedżer Okien` → tick `Włącz menedżer okien`.\n   Optionally tick `Kondycje` to also dock the condition list.\n3. Page `Przyciski mobilne` → **untick** `Pokaż przyciski na ekranie`\n   (they only help on touch devices).\n4. Press `Zapisz`."
     }
   ],
   "gaps": [],
-  "version": "ce9f6b920e1e8a14",
-  "generatedAt": "2026-09-17T15:55:33.954Z",
+  "version": "c4dc700a54e86424",
+  "generatedAt": "2026-09-22T23:17:52.390Z",
   "stats": {
-    "settings": 127,
-    "settingsWithLabels": 127,
-    "commands": 231,
-    "commandsWithDescriptions": 229,
+    "settings": 137,
+    "settingsWithLabels": 137,
+    "commands": 234,
+    "commandsWithDescriptions": 232,
     "events": 28,
     "docs": 12,
-    "leanChars": 45087,
-    "leanTokens": 11272,
-    "fatChars": 234706,
-    "fatTokens": 58677
+    "leanChars": 46451,
+    "leanTokens": 11613,
+    "fatChars": 254498,
+    "fatTokens": 63625
   }
 }

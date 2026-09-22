@@ -94,22 +94,22 @@ describe('tabLabelOf', () => {
     it('takes the page from a navigation path', () => {
         // Opening the dialog was not enough — it landed on whatever page it was
         // last on. The path names the page, always as the fourth segment.
-        expect(tabLabelOf('Menu (⋮) → Ustawienia → Interfejs → Stopka → Elementy stopki'))
+        expect(tabLabelOf('Menu (☰) → Ustawienia → Interfejs → Stopka → Elementy stopki'))
             .toBe('Stopka');
-        expect(tabLabelOf('Menu (⋮) → Ustawienia → Postać → Ogólne → Język'))
+        expect(tabLabelOf('Menu (☰) → Ustawienia → Postać → Ogólne → Język'))
             .toBe('Ogólne');
     });
 
     it('is undefined for a path with no page segment', () => {
         expect(tabLabelOf(undefined)).toBeUndefined();
-        expect(tabLabelOf('Menu (⋮) → Ustawienia → Interfejs')).toBeUndefined();
+        expect(tabLabelOf('Menu (☰) → Ustawienia → Interfejs')).toBeUndefined();
     });
 
     it('resolves a section that shares its name with a page to the parent page', () => {
         // "Walka" is both a page and a section on it; "Inne" likewise. Taking the
         // fourth segment keeps the section name from being read as the page.
-        expect(tabLabelOf('Menu (⋮) → Ustawienia → Postać → Walka → Walka')).toBe('Walka');
-        expect(tabLabelOf('Menu (⋮) → Ustawienia → Interfejs → Inne → Inne')).toBe('Inne');
+        expect(tabLabelOf('Menu (☰) → Ustawienia → Postać → Walka → Walka')).toBe('Walka');
+        expect(tabLabelOf('Menu (☰) → Ustawienia → Interfejs → Inne → Inne')).toBe('Inne');
     });
 
     it('agrees with the pages the settings dialog renders, in the right group', () => {
@@ -118,7 +118,7 @@ describe('tabLabelOf', () => {
         // dialog on the wrong page with no error.
         const paths = bundleSettings
             .map(s => s.uiLocation)
-            .filter((loc): loc is string => Boolean(loc?.startsWith('Menu (⋮) → Ustawienia →')));
+            .filter((loc): loc is string => Boolean(loc?.startsWith('Menu (☰) → Ustawienia →')));
         expect(paths.length).toBeGreaterThan(40);
         for (const loc of paths) {
             const page = settingsCategoryByLabel(tabLabelOf(loc));

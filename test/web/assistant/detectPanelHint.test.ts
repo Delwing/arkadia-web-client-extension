@@ -19,7 +19,7 @@ const bundle = bundleJson as unknown as KnowledgeBundle;
 /** A live Gemini answer that produced no card (path updated to the merged dialog). */
 const FOOTER_ANSWER =
     'Widoczność pasków w stopce (takich jak HP, mana, zmęczenie czy obciążenie) ' +
-    'zmienisz w menu interfejsu. Przejdź do Menu (⋮) → Ustawienia → Interfejs → ' +
+    'zmienisz w menu interfejsu. Przejdź do Menu (☰) → Ustawienia → Interfejs → ' +
     'Stopka → Elementy stopki. Tam możesz włączać, wyłączać i zmieniać kolejność ' +
     'poszczególnych pasków oraz elementów.';
 
@@ -62,7 +62,7 @@ describe('detectPanelHint', () => {
         // reach — the buttons dialog, the output window's right-click menu.
         // Offering to open those would open the wrong dialog, which is worse
         // than offering nothing; the card's text still names the real place.
-        expect(detectPanelHint('Znajdziesz to w Menu (⋮) → Menu kołowe.', bundle)).toBeNull();
+        expect(detectPanelHint('Znajdziesz to w Menu (☰) → Menu kołowe.', bundle)).toBeNull();
         expect(
             detectPanelHint('Uzyj Menu kontekstowe (prawy przycisk myszy) w oknie wyjscia.', bundle),
         ).toBeNull();
@@ -70,7 +70,7 @@ describe('detectPanelHint', () => {
 
     it('finds a character-settings panel too, not just interface ones', () => {
         const hint = detectPanelHint(
-            'Ustawisz to w Menu (⋮) → Ustawienia → Postać → Przedmioty → Zbieranie przedmiotów.',
+            'Ustawisz to w Menu (☰) → Ustawienia → Postać → Przedmioty → Zbieranie przedmiotów.',
             bundle,
         );
         expect(hint).not.toBeNull();

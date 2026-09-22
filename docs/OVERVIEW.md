@@ -11,8 +11,8 @@ Rozszerzenie dodaje wiele przydatnych funkcji do klienta webowego Arkadii, w tym
 | **Ekwipunek** | Pojemniki, zbieranie lupow, depozyty |
 | **Postepy** | Postepy, zabici, zlecenia, staz |
 | **Ziola** | Licznik i zarzadzanie ziolami |
-| **Bindowanie** | Bindy |
-| **Skroty** | Zapisane lokacje na mapie |
+| **Bindowanie** | Bindy — okno **Klawisze** |
+| **Miejsca** | Zapisane lokacje na mapie: skroty i notatki |
 | **Synchronizacja** | Synchronizacja ustawien przez Firebase |
 | **Skrypty i automatyzacja** | Aliasy, triggery, bindy, edytor i pluginy — przeglad mozliwosci |
 | **Inne** | Pozostale aliasy i funkcje |

@@ -920,7 +920,7 @@ export interface UiApi {
   registerPersistentPopup(config: PersistentPopupConfig): Promise<PersistentPopupHandle>;
 
   /**
-   * Add an entry to the popup (⋮) menu
+   * Add an entry to the main (☰) menu
    * @param label - Entry label (string or DOM node for rich content like SVG icons)
    * @param onSelect - Callback invoked when entry is selected
    * @returns Handle for updating or removing the entry
