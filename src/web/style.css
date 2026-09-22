@@ -4523,7 +4523,7 @@ body.layout-manager-enabled #notification-center {
   min-width: 0;
 }
 
-.plugin-search .popup-input {
+.plugin-search .popup-input.popup-input--control {
   padding-left: 2rem;
   padding-right: 2rem;
 }
