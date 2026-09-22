@@ -5,6 +5,7 @@ import {Trigger} from "../Triggers";
 import {executeTriggerMacro} from "@modules/core/pluginTriggerMacroRegistry";
 import { globalStorage } from "@modules/core/storage";
 import { sendPush } from "@modules/push/pushClient";
+import { isAutomationActiveNow, onAutomationScopeChange, type AutomationMeta } from "@modules/core/automation";
 
 export type BuiltInMacroType = 'uppercase' | 'color' | 'replace' | 'beep' | 'mute' | 'unmute' | 'command' | 'slowBlink' | 'rapidBlink' | 'dim' | 'functionalBind' | 'wrap' | 'notify' | 'push' | 'speak';
 
@@ -37,7 +38,15 @@ export interface UserMacro {
 
 export type TriggerType = 'pattern' | 'event';
 
-export interface UserTrigger {
+/**
+ * Actions that need no line of game text, so they also run on an event, an
+ * alias, and later a timer. The rest (colour, replace, blink...) edit the line.
+ */
+export const LINELESS_MACRO_TYPES: ReadonlySet<string> = new Set([
+    'beep', 'mute', 'unmute', 'command', 'functionalBind', 'notify', 'push', 'speak',
+]);
+
+export interface UserTrigger extends AutomationMeta {
     type?: TriggerType;  // defaults to 'pattern' for backwards compatibility
     pattern?: string;    // for pattern triggers
     event?: string;      // for event triggers (e.g., 'kill', 'combatState')
@@ -556,65 +565,76 @@ export function evaluateCondition(condition: TriggerCondition, payload: unknown)
     }
 }
 
+/**
+ * Run one action that needs no line of text (see `LINELESS_MACRO_TYPES`).
+ *
+ * `interpolate` fills the placeholders of the element that fired it: `{name}`
+ * from an event's payload, `$1` from an alias's match. Actions that edit a line
+ * are ignored, and so are plugin macros, which need a line to work on.
+ */
+export function applyLinelessMacro(
+    client: Client,
+    macro: UserMacro,
+    interpolate: (text: string) => string,
+): void {
+    const command = macro.command && interpolate(macro.command);
+    const label = macro.label && interpolate(macro.label);
+    const message = macro.message && interpolate(macro.message);
+
+    switch (macro.type) {
+        case 'beep':
+            client.sendEvent("sound:play", {key: macro.soundKey || "beep"});
+            break;
+        case 'mute':
+            client.SoundManager.mute();
+            break;
+        case 'unmute':
+            client.SoundManager.unmute();
+            break;
+        case 'command':
+            if (command) {
+                client.sendCommand(command);
+            }
+            break;
+        case 'functionalBind':
+            if (command && label) {
+                client.FunctionalBind.set(label, () => {
+                    client.sendCommand(command);
+                });
+            }
+            break;
+        case 'notify':
+            if (message) {
+                client.sendEvent("notify", { text: message, system: true });
+            }
+            break;
+        case 'push':
+            // No matched text to fall back on without a line, so a
+            // message is required rather than optional.
+            if (message) {
+                void sendPush(
+                    { title: 'Arkadia', body: message },
+                    { bypassCooldown: macro.bypassCooldown },
+                );
+            }
+            break;
+        case 'speak':
+            // As with push, nothing to fall back on without a matched line.
+            if (message?.trim()) {
+                client.sendEvent("tts:speak", { text: message });
+            }
+            break;
+    }
+}
+
 function applyEventMacros(
     client: Client,
     macros: UserMacro[],
     payload?: unknown
 ): void {
-    macros?.forEach(macro => {
-        // Every user-authored text field on an event macro supports {name}
-        // placeholders drawn from the event payload.
-        const command = macro.command && interpolateEventArgs(macro.command, payload);
-        const label = macro.label && interpolateEventArgs(macro.label, payload);
-        const message = macro.message && interpolateEventArgs(macro.message, payload);
-
-        switch (macro.type) {
-            case 'beep':
-                client.sendEvent("sound:play", {key: macro.soundKey || "beep"});
-                break;
-            case 'mute':
-                client.SoundManager.mute();
-                break;
-            case 'unmute':
-                client.SoundManager.unmute();
-                break;
-            case 'command':
-                if (command) {
-                    client.sendCommand(command);
-                }
-                break;
-            case 'functionalBind':
-                if (command && label) {
-                    client.FunctionalBind.set(label, () => {
-                        client.sendCommand(command);
-                    });
-                }
-                break;
-            case 'notify':
-                if (message) {
-                    client.sendEvent("notify", { text: message, system: true });
-                }
-                break;
-            case 'push':
-                // No matched text to fall back on for an event trigger, so a
-                // message is required rather than optional.
-                if (message) {
-                    void sendPush(
-                        { title: 'Arkadia', body: message },
-                        { bypassCooldown: macro.bypassCooldown },
-                    );
-                }
-                break;
-            case 'speak':
-                // As with push, nothing to fall back on without a matched line.
-                if (message?.trim()) {
-                    client.sendEvent("tts:speak", { text: message });
-                }
-                break;
-            // Note: Plugin macros are not supported for event triggers
-            // because they require text context (line, match, matchRange)
-        }
-    });
+    // Every user-authored text field on an event macro supports {name}
+    // placeholders drawn from the event payload.
+    macros?.forEach(macro => applyLinelessMacro(client, macro, text => interpolateEventArgs(text, payload)));
 }
 
 type EventHandler = { event: string; handler: (data: unknown) => void };
@@ -622,8 +642,10 @@ type EventHandler = { event: string; handler: (data: unknown) => void };
 export default function initUserTriggers(client: Client) {
     let registeredPatternTriggers: Trigger[] = [];
     let registeredEventHandlers: EventHandler[] = [];
+    let stored: UserTrigger[] = [];
 
-    const apply = (list: UserTrigger[] = []) => {
+    const apply = (list: UserTrigger[] = stored) => {
+        stored = list;
         // Clean up pattern triggers
         registeredPatternTriggers.forEach(t => client.Triggers.removeTrigger(t));
         registeredPatternTriggers = [];
@@ -634,8 +656,8 @@ export default function initUserTriggers(client: Client) {
         });
         registeredEventHandlers = [];
 
-        // Process each trigger
-        list.forEach(item => {
+        // Only the ones that are on, in a group that is on, for this character.
+        list.filter(isAutomationActiveNow).forEach(item => {
             const triggerType = item.type || 'pattern';
 
             if (triggerType === 'event' && item.event) {
@@ -711,4 +733,5 @@ export default function initUserTriggers(client: Client) {
     globalStorage.onChange(STORAGE_KEY, (newValue) => {
         apply(Array.isArray(newValue) ? newValue : []);
     });
+    onAutomationScopeChange(() => apply());
 }

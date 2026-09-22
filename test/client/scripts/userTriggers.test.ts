@@ -9,7 +9,7 @@ import initUserTriggers, {
 } from '@client/scripts/userTriggers';
 import Triggers from '@client/Triggers';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
-import { globalStorage } from '@modules/core/storage';
+import { characterStorage, globalStorage } from '@modules/core/storage';
 import { sendPush } from '@modules/push/pushClient';
 
 vi.mock('@modules/push/pushClient', () => ({
@@ -463,5 +463,49 @@ describe('userTriggers', () => {
 
     expect(result?.text).toBe('foo');
     expect(client.FunctionalBind.set).not.toHaveBeenCalled();
+  });
+
+  describe('automation scope', () => {
+    const upper = (extra: Partial<UserTrigger>): UserTrigger => ({ pattern: 'foo', macros: [{ type: 'uppercase' }], ...extra });
+    const parse = (client: FakeClient) => client.Triggers.parseLine(new AnsiAwareBuffer('foo'), '')?.text;
+
+    test('a switched off trigger does not fire', () => {
+      const client = new FakeClient();
+      initUserTriggers((client as unknown) as any);
+      globalStorage.set('triggers', [upper({ enabled: false })]);
+      expect(parse(client)).toBe('foo');
+    });
+
+    test('follows its group being switched off and on', () => {
+      const client = new FakeClient();
+      initUserTriggers((client as unknown) as any);
+      globalStorage.set('triggers', [upper({ group: 'g' })]);
+      expect(parse(client)).toBe('FOO');
+
+      globalStorage.set('automationGroups', [{ id: 'g', name: 'Walka', enabled: false }]);
+      expect(parse(client)).toBe('foo');
+
+      globalStorage.set('automationGroups', [{ id: 'g', name: 'Walka' }]);
+      expect(parse(client)).toBe('FOO');
+    });
+
+    test('event triggers follow the character they are limited to', () => {
+      characterStorage.setCharacter('Arel');
+      const client = new FakeClient();
+      initUserTriggers((client as unknown) as any);
+      globalStorage.set('triggers', [{
+        type: 'event',
+        event: 'kill',
+        characters: ['Morwen'],
+        macros: [{ type: 'command', command: 'wez monety' }],
+      }]);
+
+      client.sendEvent('kill', {});
+      expect(client.sendCommand).not.toHaveBeenCalled();
+
+      characterStorage.setCharacter('Morwen');
+      client.sendEvent('kill', {});
+      expect(client.sendCommand).toHaveBeenCalledWith('wez monety');
+    });
   });
 });

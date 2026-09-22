@@ -11,7 +11,9 @@ Tworzysz skroty do dlugich lub czestych komend — bez pisania ani linijki kodu.
 - **Wzorzec regex** — alias reaguje na to, co wpiszesz (np. `^aa (.+)$` zamieni `aa goblin` na `zabij goblin`)
 - **Grupy przechwytujace** — `$1`, `$2` itd. wstawiaja fragmenty z dopasowania do komendy
 - **Skroty obiektow** — `@1`, `@A`, `@@` automatycznie zamieniaja sie na identyfikatory obiektow z lokacji
-- **Nadpisania per postac** — ten sam alias moze wysylac inna komende w zaleznosci od postaci
+- **Wiele akcji** — poza komenda alias moze zagrac dzwiek, wyslac powiadomienie (takze na telefon), przeczytac tekst na glos albo ustawic funkcyjny bind
+- **Inaczej dla postaci** — ten sam alias moze wysylac inna komende w zaleznosci od postaci
+- **Grupy, wlaczanie i wybrane postacie** — alias (tak jak trigger) moze nalezec do grupy, byc wylaczony albo dzialac tylko na wybranych postaciach
 - **Import z Blowtorch i Arkadii** — przeniesienie aliasow z innych klientow jednym kliknieciem
 
 ## Wlasne triggery
@@ -35,6 +37,7 @@ Reagujesz na to, co pojawia sie na ekranie — automatycznie, bez czekania.
   - Czytanie na glos (synteza mowy) — wlasny tekst z `{1}`/`{nazwa}` z grup wzorca albo `{arg}` ze zdarzenia; glos, tempo, wysokosc i glosnosc w Ustawieniach interfejsu → Dzwiek i powiadomienia
 - **Wlasne dzwieki** — wgrywasz plik audio i uzywasz go w triggerach
 - **Makra z pluginow** — pluginy moga dodawac wlasne typy akcji do triggerow (pojawia sie w ustawieniach automatycznie)
+- **Grupy, wlaczanie i wybrane postacie** — trigger moze nalezec do grupy, byc wylaczony albo dzialac tylko na wybranych postaciach
 
 ## Bindowanie klawiszy
 

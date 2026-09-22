@@ -2262,6 +2262,24 @@ span.import-source__icon > svg {
   color: var(--popup-text-subtle);
   font-size: var(--ui-fs-sm, 13px);
 }
+/* Name, group, off and characters on an alias/trigger card (automationListParts.tsx). */
+.automation-badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+}
+.automation-badges__name {
+  color: var(--popup-text-bright);
+  font-weight: 600;
+}
+.automation-badges .popup-badge.is-muted {
+  color: var(--popup-text-dim);
+}
+.alias-card.is-inactive .alias-entry,
+.alias-card.is-inactive .trigger-chips {
+  opacity: 0.55;
+}
 .trigger-chips {
   display: flex;
   flex-wrap: wrap;

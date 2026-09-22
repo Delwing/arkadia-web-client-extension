@@ -6,9 +6,18 @@ Pozostale aliasy i funkcje rozszerzenia.
 
 Mozesz tworzyc wlasne aliasy w ustawieniach klienta:
 - **Wzorzec** - wyrazenie regularne dopasowujace komende
-- **Komenda** - tekst wysylany do serwera, moze uzywac `$1`, `$2` itp. dla grup z dopasowania
+- **Akcje** - co ma sie stac, po kolei: komenda wysylana do serwera, dzwiek, powiadomienie (takze na telefon), czytanie na glos, funkcyjny bind. W tekstach akcji `$1`, `$2` itp. wstawiaja grupy z dopasowania
 - **Skroty obiektow** - `@1`, `@A`, `@@` zostana zamienione na identyfikatory obiektow
-- **Wieloliniowe komendy** - kazda nowa linia w komendzie dziala jak osobna komenda (jak srednik)
+- **Kilka komend** - srednik rozdziela kilka komend w jednym polu
+- **Inaczej dla postaci** - dla wybranej postaci alias moze wysylac inna komende; zastepuje ona wszystkie komendy z akcji
+
+### Nazwa, grupa, wlaczanie i postacie
+
+Aliasy i triggery maja te same pola na gorze edytora:
+- **Nazwa** - opcjonalna etykieta widoczna na liscie
+- **Grupa** - wpisz nazwe, zeby wrzucic alias lub trigger do grupy (nowa grupa tworzy sie sama). Grupy sa wspolne dla aliasow i triggerow
+- **Wlaczony** - wylaczony alias lub trigger zostaje zapisany, ale nie dziala
+- **Dla kogo** - wszystkie postacie albo tylko wybrane; na innej postaci element nie dziala
 
 ### Zakresy ($i)
 

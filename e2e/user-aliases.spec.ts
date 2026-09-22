@@ -2,8 +2,10 @@ import {expect, test} from './support/fixtures';
 import type {Page} from '@playwright/test';
 import {
     ensureGameSocket,
+    getCommandLog,
     getLastOutgoingCommand,
     pushGmcp,
+    resetCommandLog,
     GMCP_PATHS,
     submitCommand,
     waitForCharacter,
@@ -97,7 +99,7 @@ test.describe('User aliases', () => {
 
         // Add a character override for CharAlpha:
         // The select defaults to the first available character; CharAlpha should be present
-        await aliasesModal.locator('select').selectOption('CharAlpha');
+        await aliasesModal.locator('select.alias-edit__char-select').selectOption('CharAlpha');
 
         // Click the override "Dodaj" button (inside the dialog body)
         await aliasesModal.locator('.popup-dialog__body').getByRole('button', {name: 'Dodaj', exact: true}).click();
@@ -171,5 +173,52 @@ test.describe('User aliases', () => {
 
         await reloadedModal.locator('.app-modal__close').first().click();
         await expect(reloadedModal, 'should close aliases modal after persistence check').not.toBeVisible();
+    });
+
+    test('runs several actions, shows its group and stops when switched off', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+
+        const aliasesModal = await openAliasesModal(page);
+        await aliasesModal.getByRole('button', {name: 'Dodaj alias'}).click();
+
+        await aliasesModal.getByPlaceholder('np. zab (.+)').fill('zabx (.+)');
+        await aliasesModal.getByPlaceholder('np. zabij $1').fill('zabij $1');
+        await aliasesModal.getByRole('button', {name: 'Dodaj akcję'}).click();
+        await aliasesModal.getByPlaceholder('np. zabij $1').nth(1).fill('zapal pochodnie');
+        await aliasesModal.getByLabel('Grupa').fill('Walka');
+        await aliasesModal.locator('.popup-dialog__footer').getByRole('button', {name: 'Dodaj', exact: true}).click();
+
+        const card = aliasesModal.locator('.alias-card').filter({hasText: 'zabx'});
+        await expect(card.locator('.trigger-chip'), 'should list both actions as chips').toHaveText([
+            'Komenda: zabij $1',
+            'Komenda: zapal pochodnie',
+        ]);
+        await expect(card.locator('.automation-badges'), 'should show the group').toContainText('Walka');
+
+        await aliasesModal.locator('.app-modal__close').first().click();
+        await resetCommandLog(page);
+        await submitCommand(page, 'zabx goblina');
+        await expect
+            .poll(async () => await getCommandLog(page), {message: 'should send every command action in order'})
+            .toEqual(expect.arrayContaining(['zabij goblina', 'zapal pochodnie']));
+
+        const reopened = await openAliasesModal(page);
+        await reopened.locator('.alias-card').filter({hasText: 'zabx'}).getByTitle('Edytuj').click();
+        await reopened.getByLabel('Wlaczony').uncheck();
+        await reopened.locator('.popup-dialog__footer').getByRole('button', {name: 'Zapisz'}).click();
+        await expect(
+            reopened.locator('.alias-card').filter({hasText: 'zabx'}),
+            'should mark the alias as switched off',
+        ).toContainText('wylaczony');
+
+        await reopened.locator('.app-modal__close').first().click();
+        await resetCommandLog(page);
+        await submitCommand(page, 'zabx orka');
+        await expect
+            .poll(async () => await getLastOutgoingCommand(page), {message: 'should send the typed text unchanged'})
+            .toBe('zabx orka');
+        expect(await getCommandLog(page)).not.toContain('zabij orka');
     });
 });

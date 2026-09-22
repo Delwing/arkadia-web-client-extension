@@ -1,10 +1,35 @@
 import Client from "../Client";
 import { characterStorage, globalStorage } from "@modules/core/storage";
+import { isAutomationActiveNow, onAutomationScopeChange, type AutomationMeta } from "@modules/core/automation";
+import { applyLinelessMacro, type UserMacro } from "./userTriggers";
 
-export interface UserAlias {
+export interface UserAlias extends AutomationMeta {
     pattern: string;
+    /**
+     * The commands to send, `;` or newline separated. When `macros` is set
+     * this is only a mirror of its command actions, kept so writers and readers
+     * that predate actions (the assistant, imports, an older synced client)
+     * still see a working alias.
+     */
     command: string;
+    /** Actions run in order. Absent means one command action with `command`. */
+    macros?: UserMacro[];
+    /** Per character: replaces every command action of the alias. */
     overrides?: Record<string, string>;
+}
+
+/** The alias's actions, reading an alias saved before actions existed as one command. */
+export function aliasActions(alias: Pick<UserAlias, "command" | "macros">): UserMacro[] {
+    if (Array.isArray(alias.macros)) return alias.macros;
+    return alias.command ? [{ type: "command", command: alias.command }] : [];
+}
+
+/** The `command` mirror of an action list. See `UserAlias.command`. */
+export function aliasCommandMirror(macros: UserMacro[]): string {
+    return macros
+        .filter(m => m.type === "command" && m.command?.trim())
+        .map(m => m.command!.trim())
+        .join(";");
 }
 
 const STORAGE_KEY = "aliases";
@@ -39,16 +64,38 @@ function substituteGroups(cmd: string, m: RegExpMatchArray): string {
     return cmd.replace(/\$(\d+)/g, (_, n) => m[parseInt(n)] ?? '');
 }
 
+/** Sends one command with `$1` groups filled and a `$i` range expanded. */
+async function sendAliasCommand(client: Client, command: string, m: RegExpMatchArray): Promise<void> {
+    const normalized = command.replace(/\n/g, ';');
+
+    if (normalized.includes('$i')) {
+        const range = findRange(m);
+        if (range) {
+            const values = expandRange(range.start, range.end);
+            for (const val of values) {
+                const cmd = substituteGroups(normalized, m).replace(/\$i/g, String(val));
+                await client.sendCommand(cmd);
+            }
+            return;
+        }
+    }
+
+    return client.sendCommand(substituteGroups(normalized, m));
+}
+
 export default function initUserAliases(client: Client, aliases?: { pattern: RegExp; callback: Function }[]) {
     const list = aliases || client.aliases;
     let mapped: { pattern: RegExp; callback: (matches: RegExpMatchArray) => Promise<void> }[] = [];
 
-    const apply = (arr: UserAlias[] = []) => {
+    let stored: UserAlias[] = [];
+
+    const apply = (arr: UserAlias[] = stored) => {
+        stored = arr;
         mapped.forEach(a => {
             const idx = list.indexOf(a);
             if (idx !== -1) list.splice(idx, 1);
         });
-        mapped = arr.map(item => {
+        mapped = arr.filter(isAutomationActiveNow).map(item => {
             let regexp: RegExp;
             try {
                 regexp = new RegExp('^' + item.pattern + '$');
@@ -60,23 +107,26 @@ export default function initUserAliases(client: Client, aliases?: { pattern: Reg
                 pattern: regexp,
                 callback: async (m: RegExpMatchArray) => {
                     const char = characterStorage.getCharacter();
-                    const baseCmd = (char && item.overrides?.[char]) || item.command;
-                    const normalized = baseCmd.replace(/\n/g, ';');
-
-                    if (normalized.includes('$i')) {
-                        const range = findRange(m);
-                        if (range) {
-                            const values = expandRange(range.start, range.end);
-                            for (const val of values) {
-                                const cmd = substituteGroups(normalized, m).replace(/\$i/g, String(val));
-                                await client.sendCommand(cmd);
-                            }
-                            return;
+                    const override = char ? item.overrides?.[char] : undefined;
+                    const actions = aliasActions(item);
+                    // A character override stands in for all the command
+                    // actions together, sent where the first of them was.
+                    let overrideSent = false;
+                    if (override && !actions.some(a => a.type === 'command')) {
+                        overrideSent = true;
+                        await sendAliasCommand(client, override, m);
+                    }
+                    for (const action of actions) {
+                        if (action.type !== 'command') {
+                            applyLinelessMacro(client, action, text => substituteGroups(text, m));
+                        } else if (override) {
+                            if (overrideSent) continue;
+                            overrideSent = true;
+                            await sendAliasCommand(client, override, m);
+                        } else if (action.command) {
+                            await sendAliasCommand(client, action.command, m);
                         }
                     }
-
-                    const cmd = substituteGroups(normalized, m);
-                    return client.sendCommand(cmd);
                 }
             };
         }).filter((v): v is { pattern: RegExp; callback: (matches: RegExpMatchArray) => Promise<void> } => v !== null);
@@ -89,4 +139,5 @@ export default function initUserAliases(client: Client, aliases?: { pattern: Reg
     globalStorage.onChange(STORAGE_KEY, (newValue) => {
         apply(Array.isArray(newValue) ? newValue : []);
     });
+    onAutomationScopeChange(() => apply());
 }

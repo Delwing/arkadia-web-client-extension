@@ -1,15 +1,18 @@
-import { useEffect, useState, ChangeEvent, useRef } from "react";
+import { useEffect, useState, ChangeEvent } from "react";
 import { Pencil, Zap } from "lucide-react";
 import { Button, DeleteButton, Input } from "@web-ui/primitives/index.ts";
 import { globalStorage } from "@modules/core/storage";
-import { CustomSound, getCustomSounds, saveCustomSounds } from "@modules/core/customSounds";
-import {
-    getRegisteredTriggerMacros,
-    type PluginTriggerMacro,
-} from "@modules/core/pluginTriggerMacroRegistry";
-import eventBus from "@modules/core/eventBus";
+import { withAutomationId, type AutomationMeta } from "@modules/core/automation";
 import TriggerEditModal from "./TriggerEditModal";
 import { normalizeTriggerList } from "./userTriggerNormalize";
+import { useCustomSounds, usePluginMacros } from "./useCustomSounds";
+import {
+    AutomationBadges,
+    MacroChip,
+    automationSearchText,
+    isSwitchedOff,
+    useAutomationGroups,
+} from "./automationListParts";
 import {
     SUPPORTED_EVENTS,
     GMCP_EVENT_CATEGORY,
@@ -49,7 +52,7 @@ export interface UserMacro {
 
 export type TriggerType = 'pattern' | 'event';
 
-export interface UserTrigger {
+export interface UserTrigger extends AutomationMeta {
     type?: TriggerType;  // defaults to 'pattern' for backwards compatibility
     pattern?: string;    // for pattern triggers
     event?: string;      // for event triggers (e.g., 'kill', 'combatState')
@@ -121,26 +124,9 @@ function UserTriggers() {
     const [filter, setFilter] = useState('');
     const [showModal, setShowModal] = useState(false);
     const [modalTrigger, setModalTrigger] = useState<{ trigger: UserTrigger; index: number } | undefined>(undefined);
-    const [customSounds, setCustomSounds] = useState<CustomSound[]>([]);
-    const [pluginMacros, setPluginMacros] = useState<PluginTriggerMacro[]>([]);
-    const fileInputRef = useRef<HTMLInputElement | null>(null);
-    const pendingSoundResolver = useRef<((value?: string) => void) | null>(null);
-    const customSoundsRef = useRef<CustomSound[]>([]);
-
-    useEffect(() => {
-        customSoundsRef.current = customSounds;
-    }, [customSounds]);
-
-    useEffect(() => {
-        setPluginMacros(getRegisteredTriggerMacros());
-        const handleMacrosChanged = () => {
-            setPluginMacros(getRegisteredTriggerMacros());
-        };
-        eventBus.on('pluginTriggerMacrosChanged', handleMacrosChanged);
-        return () => {
-            eventBus.off('pluginTriggerMacrosChanged', handleMacrosChanged);
-        };
-    }, []);
+    const { customSounds, requestSoundUpload, soundInput } = useCustomSounds();
+    const pluginMacros = usePluginMacros();
+    const groups = useAutomationGroups();
 
     useEffect(() => {
         let active = true;
@@ -159,84 +145,8 @@ function UserTriggers() {
         };
     }, []);
 
-    useEffect(() => {
-        let active = true;
-        getCustomSounds().then(list => {
-            if (active) {
-                setCustomSounds(list);
-            }
-        });
-        const unsub = globalStorage.onChange('custom_sounds', () => {
-            if (!active) return;
-            getCustomSounds().then(sounds => {
-                if (active) {
-                    setCustomSounds(sounds);
-                }
-            });
-        });
-        return () => {
-            active = false;
-            unsub();
-            pendingSoundResolver.current?.(undefined);
-            pendingSoundResolver.current = null;
-        };
-    }, []);
-
-    function requestSoundUpload(): Promise<string | undefined> {
-        return new Promise(resolve => {
-            if (pendingSoundResolver.current) {
-                pendingSoundResolver.current(undefined);
-            }
-            pendingSoundResolver.current = resolve;
-            fileInputRef.current?.click();
-        });
-    }
-
-    function handleSoundFileChange(e: ChangeEvent<HTMLInputElement>) {
-        const resolver = pendingSoundResolver.current;
-        pendingSoundResolver.current = null;
-        const file = e.target.files?.[0] ?? null;
-        e.target.value = '';
-        if (!file) {
-            resolver?.(undefined);
-            return;
-        }
-        const reader = new FileReader();
-        reader.onload = () => {
-            const result = reader.result;
-            if (typeof result !== 'string') {
-                resolver?.(undefined);
-                return;
-            }
-            const baseName = file.name.replace(/\.[^/.]+$/, '') || file.name;
-            const existingKeys = new Set(customSoundsRef.current.map(sound => sound.key));
-            const slug = baseName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-            const prefix = slug ? `user:${slug}` : `user:${Date.now()}`;
-            let key = prefix;
-            let counter = 1;
-            while (existingKeys.has(key)) {
-                key = `${prefix}-${counter++}`;
-            }
-            const sound: CustomSound = { key, name: baseName, data: result };
-            const nextSounds = [...customSoundsRef.current, sound];
-            customSoundsRef.current = nextSounds;
-            setCustomSounds(nextSounds);
-            void saveCustomSounds(nextSounds)
-                .catch(error => {
-                    console.error('Failed to save custom sound', error);
-                })
-                .finally(() => {
-                    resolver?.(sound.key);
-                });
-        };
-        reader.onerror = () => {
-            resolver?.(undefined);
-        };
-        reader.readAsDataURL(file);
-    }
-
     function saveList(list: UserTrigger[]) {
-        const normalized = normalizeTriggerList(list);
+        const normalized = normalizeTriggerList(list).map(withAutomationId);
         setTriggers(normalized);
         globalStorage.set('triggers', normalized);
     }
@@ -273,54 +183,12 @@ function UserTriggers() {
         saveList(updated);
     }
 
-    /** One chip per action, named as in the editor's action list. */
-    function macroChip(m: UserMacro, i: number) {
-        let text: string;
-        let swatch: string | undefined;
-        switch (m.type) {
-            case 'uppercase': text = 'Wielkie litery'; break;
-            case 'color': text = 'Koloruj'; swatch = m.color; break;
-            case 'replace': text = m.to ? `Zamien: ${m.to}` : 'Zamien'; break;
-            case 'beep': {
-                const key = m.soundKey || 'beep';
-                const sound = key === 'beep' ? undefined : customSounds.find(s => s.key === key);
-                text = key === 'beep' ? 'Dzwiek' : `Dzwiek: ${sound?.name ?? key}`;
-                break;
-            }
-            case 'mute': text = 'Wycisz dzwieki'; break;
-            case 'unmute': text = 'Wlacz dzwieki'; break;
-            case 'command': text = m.command ? `Komenda: ${m.command}` : 'Komenda'; break;
-            case 'slowBlink': text = 'Wolne miganie'; break;
-            case 'rapidBlink': text = 'Szybkie miganie'; break;
-            case 'dim': text = 'Pulsowanie'; break;
-            case 'functionalBind': text = m.label && m.command ? `Bind [${m.label}]: ${m.command}` : 'Funkcyjny bind'; break;
-            case 'notify': text = m.message ? `Powiadomienie: ${m.message}` : 'Powiadomienie'; break;
-            case 'speak': text = m.message ? `Czytaj: ${m.message}` : 'Czytaj na glos'; break;
-            case 'push': text = (m.message ? `Na telefon: ${m.message}` : 'Na telefon') + (m.bypassCooldown ? ' (zawsze)' : ''); break;
-            case 'wrap': {
-                const parts: string[] = [];
-                if (m.wrapPrefix) parts.push(`"${m.wrapPrefix}" +`);
-                parts.push(m.wrapScope === 'line' ? 'linia' : 'dopasowanie');
-                if (m.wrapSuffix) parts.push(`+ "${m.wrapSuffix}"`);
-                text = `Otocz: ${parts.join(' ')}`;
-                break;
-            }
-            default:
-                text = pluginMacros.find(pm => pm.id === m.type)?.label ?? m.type;
-        }
-        return (
-            <span key={i} className="trigger-chip" title={text}>
-                {swatch && <span className="trigger-chip__swatch" style={{ backgroundColor: swatch }} />}
-                {text}
-            </span>
-        );
-    }
-
     const filteredTriggers = triggers
         .map((t, idx) => ({ ...t, idx }))
         .filter(t => {
             const searchText = filter.toLowerCase();
             if (!searchText) return true;
+            if (automationSearchText(t, groups).includes(searchText)) return true;
             if (t.type === 'event' && t.event) {
                 const eventInfo = SUPPORTED_EVENTS.find(e => e.id === t.event);
                 return t.event.toLowerCase().includes(searchText) ||
@@ -333,7 +201,7 @@ function UserTriggers() {
 
     return (
         <div className="alias-manager">
-            <input ref={fileInputRef} type="file" accept="audio/*" hidden onChange={handleSoundFileChange} />
+            {soundInput}
             <div className="alias-manager__toolbar">
                 <Input
                     type="search"
@@ -353,8 +221,9 @@ function UserTriggers() {
             ) : (
                 <div className="alias-list">
                     {filteredTriggers.map(t => (
-                        <div key={t.idx} className="alias-card">
+                        <div key={t.idx} className={`alias-card${isSwitchedOff(t, groups) ? ' is-inactive' : ''}`}>
                             <div className="alias-card-body">
+                                <AutomationBadges item={t} groups={groups} />
                                 <div className="alias-entry">
                                     {t.type === 'event' && t.event ? (
                                         <>
@@ -377,7 +246,11 @@ function UserTriggers() {
                                     )}
                                 </div>
                                 {t.macros?.length ? (
-                                    <div className="trigger-chips">{t.macros.map(macroChip)}</div>
+                                    <div className="trigger-chips">
+                                        {t.macros.map((m, i) => (
+                                            <MacroChip key={i} macro={m} customSounds={customSounds} pluginMacros={pluginMacros} />
+                                        ))}
+                                    </div>
                                 ) : null}
                             </div>
                             <div className="alias-card-actions">

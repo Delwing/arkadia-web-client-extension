@@ -37,6 +37,7 @@ describe('CATEGORY_REGISTRY', () => {
             'renderSettings',
             'mapSettings',
             'behaviorSettings',
+            'automationGroups',
         ]);
     });
 

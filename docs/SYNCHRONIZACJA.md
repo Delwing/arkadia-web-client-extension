@@ -48,6 +48,7 @@ Mozesz wybrac, ktore kategorie danych maja byc synchronizowane. Kazda kategorie 
 | **Ustawienia postaci** | Ustawienia rozgrywki (profesja, staz, itp.) |
 | **Triggery** | Triggery reagujace na tekst z gry |
 | **Aliasy** | Aliasy komend |
+| **Grupy automatyzacji** | Grupy aliasow i triggerow oraz to, czy sa wlaczone |
 | **Multibindy** | Wielokrotne przypisania klawiszy |
 | **Przyciski** | Konfiguracja przyciskow na ekranie |
 | **Menu radialne** | Ustawienia menu radialnego |

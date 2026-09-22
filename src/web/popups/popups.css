@@ -1045,6 +1045,25 @@ select.popup-input.popup-input--control {
   line-height: 1.6;
 }
 
+/* Name, group, on/off and characters of an automation element
+   (AutomationMetaFields.tsx), at the top of the alias and trigger editors. */
+.automation-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.automation-meta__row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: 0.6rem;
+}
+.automation-meta__characters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  margin-top: 0.4rem;
+}
+
 /* Floating panel anchored to a button (window settings cog; header menus
    next). position: fixed so a small docked window can't clip it; the opener
    sets top/left. */

@@ -27,6 +27,7 @@ const EXPORT_OPTION_GROUPS: { title: string; options: { key: keyof ExportOptions
     { title: "Automatyzacja", options: [
         { key: "triggers", label: "Triggery" },
         { key: "aliases", label: "Aliasy" },
+        { key: "automationGroups", label: "Grupy automatyzacji" },
         { key: "multibinds", label: "Multibindy" },
         { key: "scripts", label: "Skrypty" },
     ] },
