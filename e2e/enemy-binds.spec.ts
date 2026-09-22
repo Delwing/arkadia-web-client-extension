@@ -278,8 +278,8 @@ test.describe('Enemy bind keys (F1/F2/F3 and Ctrl+F1/F2/F3)', () => {
             await pushGmcp(page, GMCP_PATHS.OBJECTS_NUMS, [PLAYER_NUM, ENEMY1_NUM]);
         }
 
-        test('F1 sends the configured command with {obj_id} filled in', async ({page}) => {
-            await setCharacterSettings(page, 'Warrior', {enemyBindsAttackCommand: 'wesprzyj ob_{obj_id}'});
+        test('F1 sends the configured command with {wrog} filled in', async ({page}) => {
+            await setCharacterSettings(page, 'Warrior', {enemyBindsAttackCommand: 'wesprzyj {wrog}'});
             await bindOneEnemy(page);
 
             await resetCommandLog(page);
@@ -289,8 +289,19 @@ test.describe('Enemy bind keys (F1/F2/F3 and Ctrl+F1/F2/F3)', () => {
                 .toBe(`wesprzyj ob_${ENEMY1_NUM}`);
         });
 
+        test('F1 runs a ;-separated sequence with the built-in attack as a step', async ({page}) => {
+            await setCharacterSettings(page, 'Warrior', {enemyBindsAttackCommand: 'dobadz broni; {atak}; krzyknij {wrog}'});
+            await bindOneEnemy(page);
+
+            await resetCommandLog(page);
+            await pressKey(page, 'F1');
+            await expect
+                .poll(async () => await getCommandLog(page), {timeout: 3000})
+                .toEqual(['dobadz broni', `zabij ob_${ENEMY1_NUM}`, `krzyknij ob_${ENEMY1_NUM}`]);
+        });
+
         test('Ctrl+F1 sends the configured block command', async ({page}) => {
-            await setCharacterSettings(page, 'Warrior', {enemyBindsBlockCommand: 'rozbroj ob_$id'});
+            await setCharacterSettings(page, 'Warrior', {enemyBindsBlockCommand: 'rozbroj {wrog}'});
             await bindOneEnemy(page);
 
             await resetCommandLog(page);

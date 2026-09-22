@@ -52,9 +52,9 @@ export interface Settings {
     enemyBindsKeepUnchanged: boolean;
     enemyBindsShowMode: 'always' | 'whenBound' | 'never';
     enemyBindsEnabledSlots: [boolean, boolean, boolean];
-    /** Command F1-F3 send instead of the usual attack; `{obj_id}` is the enemy. */
+    /** Command F1-F3 send instead of the usual attack; `{wrog}` is the enemy, `{atak}`/`{blok}` the built-ins, `;` separates steps. */
     enemyBindsAttackCommand: string;
-    /** Command the block binds send instead of `zablokuj ob_{obj_id}`. */
+    /** Command the block binds send instead of `zablokuj {wrog}`; same placeholders. */
     enemyBindsBlockCommand: string;
     favoriteMagicTypes?: string[];
     favoriteMagicKeys?: string[];

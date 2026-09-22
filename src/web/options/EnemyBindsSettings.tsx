@@ -79,26 +79,26 @@ function EnemyBindsSettings({ registerSave }: { registerSave: (cb: (sharedSettin
                 <Field
                     label="Komenda bindu ataku (F1-F3)"
                     htmlFor="enemyBindsAttackCommand"
-                    hint="Pusto = zwykły atak klienta. Wpisz własną komendę, a {obj_id} zastąpi numer wroga z GMCP, np. zabij ob_{obj_id} albo wesprzyj ob_{obj_id}."
+                    hint="Pusto = zwykły atak klienta. {wrog} zastąpi wroga (ob_…), {atak} to zwykły atak klienta, {blok} to zablokowanie; kolejne komendy oddziel średnikiem, np. dobadz broni; {atak} albo wesprzyj {wrog}."
                 >
                     <Input
                         id="enemyBindsAttackCommand"
                         mono
                         value={attackCommand}
-                        placeholder="np. zabij ob_{obj_id}"
+                        placeholder="np. dobadz broni; {atak}"
                         onChange={(e) => setAttackCommand(e.target.value)}
                     />
                 </Field>
                 <Field
                     label="Komenda bindu blokowania (CTRL+F1-F3)"
                     htmlFor="enemyBindsBlockCommand"
-                    hint="Pusto = zablokuj ob_{obj_id}."
+                    hint="Pusto = zablokuj {wrog}. Działają te same {wrog}, {atak}, {blok} i średniki, np. {blok}; {atak}."
                 >
                     <Input
                         id="enemyBindsBlockCommand"
                         mono
                         value={blockCommand}
-                        placeholder="np. zablokuj ob_{obj_id}"
+                        placeholder="np. {blok}; {atak}"
                         onChange={(e) => setBlockCommand(e.target.value)}
                     />
                 </Field>

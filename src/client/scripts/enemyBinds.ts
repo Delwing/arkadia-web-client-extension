@@ -8,7 +8,7 @@ import { globalStorage, characterStorage } from '@modules/core/storage';
 import { defaultSettings } from '@modules/core/defaultSettings';
 import { type Bind, bindMatches } from '@modules/core/keymapTypes';
 import { enemyBindResolvers } from './enemyBindResolvers';
-import { enemyBindCommand, enemyBindCommandLabel } from '../utils/enemyBindCommand';
+import { enemyBindSteps, enemyBindCommandLabel } from '../utils/enemyBindCommand';
 
 const isMac = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform);
 const ALT_LABEL = isMac ? '⌥' : 'ALT';
@@ -110,21 +110,38 @@ export default function initEnemyBinds(
 
     /**
      * What a bind does with the enemy in its slot. With a command of the player's
-     * own (Ustawienia -> Walka), that command is sent with `{obj_id}` filled in;
-     * otherwise the built-in behaviour stands - the attack controller for F1-F3,
-     * `zablokuj` for the block binds.
+     * own (Ustawienia -> Walka), its `;`-separated steps run in order with
+     * `{wrog}` filled in and `{atak}`/`{blok}` standing for the built-in
+     * behaviour; otherwise the built-in behaviour stands - the attack controller
+     * for F1-F3, `zablokuj` for the block binds.
      */
-    function attackSlotTarget(objectId: number) {
-        const command = enemyBindCommand(attackCommandTemplate, objectId);
-        if (command) {
-            client.sendCommand(command);
-            return;
-        }
+    function defaultAttack(objectId: number) {
         attackController.attackById(objectId);
     }
 
+    function defaultBlock(objectId: number) {
+        client.sendCommand(`zablokuj ob_${objectId}`);
+    }
+
+    function runSteps(template: string, objectId: number, fallback: (objectId: number) => void) {
+        const steps = enemyBindSteps(template, objectId);
+        if (!steps) {
+            fallback(objectId);
+            return;
+        }
+        for (const step of steps) {
+            if (step.kind === 'attack') defaultAttack(objectId);
+            else if (step.kind === 'block') defaultBlock(objectId);
+            else client.sendCommand(step.command);
+        }
+    }
+
+    function attackSlotTarget(objectId: number) {
+        runSteps(attackCommandTemplate, objectId, defaultAttack);
+    }
+
     function blockSlotTarget(objectId: number) {
-        client.sendCommand(enemyBindCommand(blockCommandTemplate, objectId) ?? `zablokuj ob_${objectId}`);
+        runSteps(blockCommandTemplate, objectId, defaultBlock);
     }
 
     function isEnemy(desc: string): boolean {

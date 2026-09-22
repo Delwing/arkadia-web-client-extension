@@ -80,9 +80,11 @@ Komendy do walki, zaslaniania i zarzadzania celami ataku.
 
 W Ustawieniach (Postac -> Walka, sekcja "Bindy wrogow") mozna podac wlasne
 komendy dla bindu ataku (F1-F3) i bindu blokowania (CTRL+F1-F3). W komendzie
-`{obj_id}` zastepuje numer obiektu wroga z GMCP, np. `zabij ob_{obj_id}` albo
-`wesprzyj ob_{obj_id}`; dziala tez zapis `$id`. Puste pole zostawia domyslne
-zachowanie - zwykly atak klienta i `zablokuj ob_{obj_id}`.
+`{wrog}` zastepuje wroga ze slotu (`ob_12345`), np. `wesprzyj {wrog}`. Kolejne
+komendy oddziela sie srednikiem, a `{atak}` i `{blok}` to domyslne zachowanie
+bindow (zwykly atak klienta razem ze wskazaniem celu druzynie, `zablokuj {wrog}`),
+np. `dobadz broni; {atak}` albo `{blok}; {atak}`. Puste pole zostawia domyslne
+zachowanie.
 
 ## Reset skrotow druzyny
 
