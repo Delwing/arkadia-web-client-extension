@@ -1,0 +1,45 @@
+/* Bitstream Vera Sans Mono, self-hosted (the Mudlet default output font).
+
+   Vera covers Latin-1 only, so Polish letters are filled from DejaVu Sans Mono,
+   Vera's own extension with the same design and metrics, under the same family
+   name - the line never mixes two typefaces. An installed copy wins via local().
+   Nothing is downloaded until the font is actually selected. Licenses next to
+   the files. */
+
+/* latin (Vera) */
+@font-face {
+  font-family: "Bitstream Vera Sans Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local("Bitstream Vera Sans Mono"), url("./vera-sans-mono/vera-sans-mono.woff2") format("woff2");
+  unicode-range: U+0000-00FF;
+}
+
+@font-face {
+  font-family: "Bitstream Vera Sans Mono";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local("Bitstream Vera Sans Mono Bold"), url("./vera-sans-mono/vera-sans-mono-bold.woff2") format("woff2");
+  unicode-range: U+0000-00FF;
+}
+
+/* latin-ext, punctuation, arrows, box drawing (DejaVu) */
+@font-face {
+  font-family: "Bitstream Vera Sans Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("./vera-sans-mono/vera-sans-mono-ext.woff2") format("woff2");
+  unicode-range: U+0100-017F, U+0218-021B, U+1E9E, U+2013-2014, U+2018-201E, U+2026, U+20AC, U+2190-2193, U+2500-259F;
+}
+
+@font-face {
+  font-family: "Bitstream Vera Sans Mono";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("./vera-sans-mono/vera-sans-mono-ext-bold.woff2") format("woff2");
+  unicode-range: U+0100-017F, U+0218-021B, U+1E9E, U+2013-2014, U+2018-201E, U+2026, U+20AC, U+2190-2193, U+2500-259F;
+}

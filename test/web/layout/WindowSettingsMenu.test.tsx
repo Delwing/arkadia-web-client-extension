@@ -111,7 +111,7 @@ describe('WindowSettingsMenu', () => {
     const select = panel.querySelector<HTMLSelectElement>('select')!;
     const options = [...select.options];
     expect(options.map(o => o.textContent)).toEqual([
-      'Jak okno glowne', 'Systemowa monospace', 'Fira Code', 'JetBrains Mono', 'Cascadia Mono',
+      'Jak okno glowne', 'Systemowa monospace', 'Fira Code', 'JetBrains Mono', 'Cascadia Mono', 'Bitstream Vera Sans Mono',
     ]);
     expect(options.find(o => o.value === 'fira-code')!.style.fontFamily).toContain('Fira Code');
 
