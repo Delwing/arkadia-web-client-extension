@@ -1,6 +1,6 @@
 import { globalStorage } from "@modules/core/storage";
 import { getRoomInfo } from "@modules/core/roomInfoProvider";
-import { getAllNotes, type LocationNote } from "@modules/data/locationNotesStorage";
+import { deleteNote, getAllNotes, type LocationNote } from "@modules/data/locationNotesStorage";
 import { getEmbeddedMap } from "@web/embedRegistry.ts";
 
 /**
@@ -62,6 +62,12 @@ export async function loadPlaces(): Promise<Place[]> {
     readShortcuts().forEach(s => place(s.id).shortcuts.push(s));
     notes.forEach(n => { place(n.id).note = n; });
     return [...byRoom.values()];
+}
+
+/** Forget a place: its shortcuts and its note. What the map knows stays. */
+export async function deletePlace(roomId: number): Promise<void> {
+    writeShortcuts(readShortcuts().filter(s => s.id !== roomId));
+    await deleteNote(roomId);
 }
 
 /**

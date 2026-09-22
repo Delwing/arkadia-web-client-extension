@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import { ArrowDownAZ, ArrowLeft, FileText, Footprints, LocateFixed, Map as MapIcon, MapPin, Navigation, NotebookPen, Plus, Puzzle, Search, X } from "lucide-react";
 import { Button, DeleteButton, Input, InputGroup, TextArea } from "@web-ui/primitives/index.ts";
 import eventBus from "@modules/core/eventBus";
@@ -7,9 +7,11 @@ import { getCurrentRoomId } from "@modules/core/currentRoomProvider";
 import { getRoomDistance } from "@modules/core/roomInfoProvider";
 import { getPluginLocationNotes } from "@modules/core/pluginLocationNotesRegistry";
 import { deleteNote, saveNote } from "@modules/data/locationNotesStorage";
+import { showContextMenu, type ContextMenuEntry } from "@web/contextMenu";
 import { subscribeEmbeddedMap } from "@web/embedRegistry.ts";
 import { MapStrip } from "./MapStrip";
 import {
+    deletePlace,
     describeRoom,
     listDescribedRooms,
     loadPlaces,
@@ -117,11 +119,13 @@ function ShortcutField({ entry, autoFocus, onCommit, onRemove }: {
     );
 }
 
-function PlaceDetail({ roomId, place, focus, onBack }: {
+function PlaceDetail({ roomId, place, focus, onBack, onRemoved }: {
     roomId: number;
     place: Place | null;
     focus: OpenPlaceDetail["focus"];
     onBack: () => void;
+    /** Deleted: the window drops the selection, so no pane is left describing it. */
+    onRemoved: () => void;
 }) {
     const room = describeRoom(roomId, place?.note);
     const shortcuts = place?.shortcuts ?? [];
@@ -222,10 +226,8 @@ function PlaceDetail({ roomId, place, focus, onBack }: {
     async function removePlace() {
         pending.current = null;
         if (timer.current !== null) window.clearTimeout(timer.current);
-        writeShortcuts(readShortcuts().filter(s => s.id !== roomId));
-        await deleteNote(roomId);
-        setNoteText("");
-        setSavedAt(null);
+        await deletePlace(roomId);
+        onRemoved();
     }
 
     const walkTarget = shortcuts[0]?.key ?? String(roomId);
@@ -340,9 +342,14 @@ function PlaceDetail({ roomId, place, focus, onBack }: {
  * description is only shown in the place pane (and searched): it is free-form
  * text, often ruled lines, and does not fit a row.
  */
-function MapRoomRow({ room, selected, onSelect }: { room: MapRoomMatch; selected: boolean; onSelect: () => void }) {
+function MapRoomRow({ room, selected, onSelect, onContextMenu }: {
+    room: MapRoomMatch;
+    selected: boolean;
+    onSelect: () => void;
+    onContextMenu: (e: MouseEvent<HTMLElement>) => void;
+}) {
     return (
-        <button type="button" className={`places-row places-row--map${selected ? " is-selected" : ""}`} onClick={onSelect}>
+        <button type="button" className={`places-row places-row--map${selected ? " is-selected" : ""}`} onClick={onSelect} onContextMenu={onContextMenu}>
             <span className="places-row__top">
                 <span className="places-row__name">{room.name}</span>
                 <span className="places-row__meta">#{room.roomId}</span>
@@ -440,6 +447,26 @@ export default function Places() {
         setFocus(focusField);
     }
 
+    // Deleting drops the selection: a pane still describing the place just
+    // deleted is the confusing part, not the deletion.
+    const removePlace = useCallback(async (roomId: number) => {
+        await deletePlace(roomId);
+        setSelected(current => (current === roomId ? null : current));
+    }, []);
+
+    /** Right-click on a row: what the place pane offers, without opening it. */
+    function rowMenu(e: MouseEvent<HTMLElement>, roomId: number, name: string, place: Place | null) {
+        e.preventDefault();
+        const target = place?.shortcuts[0]?.key ?? String(roomId);
+        const items: ContextMenuEntry[] = [
+            { label: "Idź", action: () => { closeWindow(); eventBus.emit("sendCommand", { command: `/idz ${target}` }); } },
+            { label: "Prowadź", action: () => { closeWindow(); eventBus.emit("leadTo", roomId); } },
+        ];
+        // Nothing of yours is saved for a room found on the map, so nothing to forget.
+        if (place) items.push({ label: "Usuń miejsce", action: () => { void removePlace(roomId); } });
+        showContextMenu(items, e.clientX, e.clientY, { header: name, smallHeader: true });
+    }
+
     const renderRow = (r: Row) => {
         const note = r.place.note?.note ?? r.place.shortcuts.find(s => s.label)?.label ?? "";
         return (
@@ -448,6 +475,7 @@ export default function Places() {
                 type="button"
                 className={`places-row${selected === r.place.roomId ? " is-selected" : ""}`}
                 onClick={() => select(r.place.roomId)}
+                onContextMenu={e => rowMenu(e, r.place.roomId, r.name, r.place)}
             >
                 <span className="places-row__top">
                     <span className="places-row__name">{r.name}</span>
@@ -576,7 +604,7 @@ export default function Places() {
                     {source === "described" ? (
                         <>
                             {describedVisible.slice(0, DESCRIBED_LIMIT).map(m => (
-                                <MapRoomRow key={m.roomId} room={m} selected={selected === m.roomId} onSelect={() => select(m.roomId)} />
+                                <MapRoomRow key={m.roomId} room={m} selected={selected === m.roomId} onSelect={() => select(m.roomId)} onContextMenu={e => rowMenu(e, m.roomId, m.name, null)} />
                             ))}
                             {describedVisible.length > DESCRIBED_LIMIT && (
                                 <p className="places-empty">Pokazano {DESCRIBED_LIMIT} z {describedVisible.length}. Zawęź wyszukiwanie.</p>
@@ -590,7 +618,7 @@ export default function Places() {
                             {visible.other.map(renderRow)}
                             {mapMatches.length > 0 && <span className="places-list__group">Lokacje na mapie</span>}
                             {mapMatches.map(m => (
-                                <MapRoomRow key={m.roomId} room={m} selected={selected === m.roomId} onSelect={() => select(m.roomId)} />
+                                <MapRoomRow key={m.roomId} room={m} selected={selected === m.roomId} onSelect={() => select(m.roomId)} onContextMenu={e => rowMenu(e, m.roomId, m.name, null)} />
                             ))}
                         </>
                     )}
@@ -606,7 +634,7 @@ export default function Places() {
             </div>
 
             {selected !== null ? (
-                <PlaceDetail roomId={selected} place={selectedPlace} focus={focus} onBack={() => setSelected(null)} />
+                <PlaceDetail roomId={selected} place={selectedPlace} focus={focus} onBack={() => setSelected(null)} onRemoved={() => setSelected(null)} />
             ) : (
                 <div className="places-detail places-detail--empty">
                     <MapPin size={22} strokeWidth={1.6} />

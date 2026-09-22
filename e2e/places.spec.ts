@@ -220,6 +220,69 @@ test.describe('Miejsca (skróty i notatki lokacji)', () => {
         await expect.poll(() => storedShortcuts(page)).toEqual([]);
         await expect.poll(() => readNote(page, 1)).toBeNull();
     });
+
+    test('deleting a place leaves the right pane empty, not showing what was deleted', async ({ page }) => {
+        await openFromMapMenu(page, ROOM_ID, 'Notatka');
+        await noteBox(page).fill('Do skasowania');
+        await expect.poll(() => readNote(page, ROOM_ID)).toBe('Do skasowania');
+        await expect(modal(page).locator('.places-hero__title')).toContainText('Kamienny Most');
+
+        await modal(page).getByRole('button', { name: 'Usuń miejsce' }).click();
+        await expect.poll(() => readNote(page, ROOM_ID)).toBeNull();
+        await expect(modal(page).locator('.places-detail--empty'), 'the pane goes back to its prompt').toBeVisible();
+        await expect(modal(page).locator('.places-hero__title')).toHaveCount(0);
+        await expect(modal(page).locator('.places-row', { hasText: 'Kamienny Most' })).toHaveCount(0);
+    });
+
+    test('right-click on a list row offers Idź, Prowadź and Usuń miejsce', async ({ page }) => {
+        await setCurrentRoom(page, OTHER_ROOM_ID, 'Poczta', 0);
+        await openFromMapMenu(page, ROOM_ID, 'Dodaj skrót');
+        const field = modal(page).locator('.places-shortcut input');
+        await field.fill('most');
+        await field.press('Enter');
+        await expect.poll(() => storedShortcuts(page)).toEqual([{ key: 'most', id: ROOM_ID, label: '' }]);
+
+        const row = modal(page).locator('.places-row', { hasText: 'Kamienny Most' });
+        await row.click({ button: 'right' });
+        const menu = page.locator('#context-menu');
+        await expect(menu).toHaveClass(/show/);
+        await expect(menu).toContainText('Kamienny Most');
+        await expect(menu.locator('button')).toHaveText(['Idź', 'Prowadź', 'Usuń miejsce']);
+
+        // Idź walks there (by the shortcut name) and closes the window.
+        await menu.locator('button', { hasText: 'Idź' }).click();
+        await expect(modal(page)).not.toBeVisible();
+        await expect(page.locator('#location-text'), '/idz sets the walk target').toContainText(`→ #${ROOM_ID}`);
+
+        // Usuń miejsce forgets it from the list, without opening the pane.
+        await page.click('#menu-button');
+        await page.click('#places-button');
+        await expect(modal(page)).toBeVisible();
+        await row.click({ button: 'right' });
+        await expect(menu).toHaveClass(/show/);
+        await menu.locator('button', { hasText: 'Usuń miejsce' }).click();
+        await expect.poll(() => storedShortcuts(page)).toEqual([]);
+        await expect(row).toHaveCount(0);
+        await expect(modal(page).locator('.places-detail--empty')).toBeVisible();
+    });
+
+    test('right-click on a room found on the map offers only Idź and Prowadź', async ({ page }) => {
+        await setCurrentRoom(page, OTHER_ROOM_ID, 'Poczta', 0);
+        await page.click('#menu-button');
+        await page.click('#places-button');
+        await expect(modal(page)).toBeVisible();
+        await modal(page).locator('.places-list__search input').fill('kamienny');
+
+        const match = modal(page).locator('.places-row--map', { hasText: 'Kamienny Most' });
+        await expect(match).toBeVisible();
+        await match.click({ button: 'right' });
+        const menu = page.locator('#context-menu');
+        await expect(menu).toHaveClass(/show/);
+        await expect(menu.locator('button'), 'nothing of yours is saved there yet').toHaveText(['Idź', 'Prowadź']);
+
+        await menu.locator('button', { hasText: 'Idź' }).click();
+        await expect(page.locator('#location-text'), '/idz by room number').toContainText(`→ #${ROOM_ID}`);
+    });
 });
 
 test.describe('Miejsca: opisy z mapy', () => {
