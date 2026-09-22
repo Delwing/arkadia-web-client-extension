@@ -1,11 +1,12 @@
 /* ==========================================================================
    Phone footer.
 
-   Collapsed (the resting state), the status line is one line of fixed height:
-   the vitals, then as many chips as fit - urgent ones first, so a fight's
-   warnings are what shows - and the expander. Nothing the game does changes its
-   height, so the output above never jumps. Expanded, it becomes a sheet: every
-   vital in two columns with bigger pips, every chip wrapped.
+   Collapsed (the resting state), the status line is two rows of fixed height:
+   every vital in one (with the expander at its end), every chip in the other -
+   urgent ones first, so a fight's warnings are what shows - each scrolling
+   sideways when it does not fit. Nothing the game does changes the height, so
+   the output above never jumps. Expanded, it becomes a sheet: the vitals in two
+   columns with bigger pips, every chip wrapped.
 
    Scoped to `body[data-mobile-footer="1"]` (the `mobileFooterCompact` setting);
    without it a phone gets the desktop line. See src/web/mobileFooter.ts for the
@@ -30,17 +31,57 @@
   body[data-mobile-footer="1"] .vital__pips {
     width: clamp(28px, calc(var(--pips) * 6px), 48px);
   }
-  /* Folded, the first two vitals (the player's order) leave room for the most
-     urgent chips; the sheet shows them all. */
-  body[data-mobile-footer="1"]:not([data-footer-expanded="1"]) .status-vitals .vital:nth-child(n+3) {
+  body[data-mobile-footer="1"] .status-chips {
+    height: var(--chip-h);
+  }
+  /* Two rows: vitals + expander, then chips; each scrolls sideways. */
+  body[data-mobile-footer="1"]:not([data-footer-expanded="1"]) #char-state {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 5px 6px;
+    padding: 5px 0 6px 10px;
+  }
+  body[data-mobile-footer="1"]:not([data-footer-expanded="1"]) .status-vitals,
+  body[data-mobile-footer="1"]:not([data-footer-expanded="1"]) .status-chips {
+    flex-wrap: nowrap;
+    min-width: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 1rem), transparent);
+    mask-image: linear-gradient(to right, #000 calc(100% - 1rem), transparent);
+  }
+  body[data-mobile-footer="1"]:not([data-footer-expanded="1"]) .status-vitals::-webkit-scrollbar,
+  body[data-mobile-footer="1"]:not([data-footer-expanded="1"]) .status-chips::-webkit-scrollbar {
     display: none;
   }
-  body[data-mobile-footer="1"] .status-chips {
-    min-width: 72px;
+  body[data-mobile-footer="1"]:not([data-footer-expanded="1"]) .status-vitals {
+    grid-column: 1;
+    grid-row: 1;
+    height: 26px;
   }
-  body[data-mobile-footer="1"] .status-chips {
-    justify-content: flex-end;
-    height: var(--chip-h);
+  body[data-mobile-footer="1"]:not([data-footer-expanded="1"]) .status-vitals .vital,
+  body[data-mobile-footer="1"]:not([data-footer-expanded="1"]) .status-chips > * {
+    flex-shrink: 0;
+  }
+  body[data-mobile-footer="1"]:not([data-footer-expanded="1"]) .status-chips {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-content: flex-start;
+    padding-right: 10px;
+  }
+  body[data-mobile-footer="1"]:not([data-footer-expanded="1"]) #char-state #footer-expand {
+    grid-column: 2;
+    grid-row: 1;
+    margin-right: 6px;
+  }
+  /* Pinned shut there is no expander: the vitals take the whole row. */
+  body[data-mobile-footer="1"]:not([data-footer-expanded="1"]):not([data-footer-expand="toggle"]) .status-vitals {
+    grid-column: 1 / -1;
+    padding-right: 10px;
   }
   body[data-mobile-footer="1"] #char-state {
     --chip-h: 22px;
@@ -93,7 +134,6 @@
     padding: 0;
     overflow-y: auto;
     border-top-color: var(--popup-border-strong);
-    border-radius: 14px 14px 0 0;
   }
   body[data-mobile-footer="1"][data-footer-expanded="1"] .status-vitals {
     display: grid;

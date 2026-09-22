@@ -1,14 +1,8 @@
 import { useLayoutEffect, useRef, useState } from "react";
-import { MoreHorizontal, Plus } from "lucide-react";
+import { MoreHorizontal } from "lucide-react";
 import type { FooterButton } from "@modules/core/footerButtonRegistry";
-import { openSettingsPage } from "@web/settings/categories";
 import { useClientCommand } from "../hooks/useClientCommand";
 import { useFooterButtons } from "./useFooterButtons";
-
-/** Opens Ustawienia on the footer page, scrolled to the button editor. */
-function editButtons() {
-  openSettingsPage("ui-footer", "ui-footer-buttons-settings");
-}
 
 function buttonClass(button: FooterButton, extra?: string): string {
   return [
@@ -123,15 +117,16 @@ export default function FooterButtons() {
 }
 
 /**
- * The same buttons in the phone footer sheet: a grid of big targets, ending in
- * a dashed tile that opens the settings page where they are edited. The folded
- * footer shows none of them - it is one line of status, and a button row there
- * would cost the output its height.
+ * The same buttons in the phone footer sheet: a grid of big targets. The folded
+ * footer shows none of them - it is status only, and a button row there would
+ * cost the output its height. Without buttons there is no grid at all (they are
+ * added in Ustawienia → Stopka).
  */
 export function FooterButtonSheet() {
   const buttons = useFooterButtons();
   const send = useClientCommand();
 
+  if (buttons.length === 0) return null;
   return (
     <div id="footer-buttons-sheet" className="footer-buttons-sheet">
       {buttons.map(button => (
@@ -146,15 +141,6 @@ export function FooterButtonSheet() {
           {button.label}
         </button>
       ))}
-      <button
-        type="button"
-        id="footer-buttons-add"
-        className="footer-buttons-sheet__tile footer-buttons-sheet__add"
-        title="Dodaj przycisk"
-        onClick={editButtons}
-      >
-        <Plus size={18} strokeWidth={2} />
-      </button>
     </div>
   );
 }

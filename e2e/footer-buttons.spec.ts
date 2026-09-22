@@ -167,7 +167,6 @@ test.describe('Footer buttons', () => {
         const sheet = page.locator('#footer-buttons-sheet');
         await expect(sheet).toBeVisible();
         await expect(sheet).toHaveCSS('grid-template-columns', /(\S+ ){2}\S+/);
-        await expect(sheet.locator('#footer-buttons-add'), 'the dashed tile that adds one').toBeVisible();
 
         await resetCommandLog(page);
         await sheet.locator('[data-footer-button-sheet="a"]').click();

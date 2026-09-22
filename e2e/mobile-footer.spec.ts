@@ -37,10 +37,10 @@ async function openFooterSettings(page: Page) {
 test.describe('Mobile footer', () => {
     test.use({viewport: PHONE});
 
-    /** Vitals actually on screen (the folded line hides all but the first two). */
+    /** Vitals rendered visible (folded ones may sit past the row's scroll edge). */
     const shownVitals = (page: Page) => page.locator('#char-state-vitals .vital:visible');
 
-    test('folded, it is one line: the first two vitals, then the chips', async ({page}) => {
+    test('folded, it is two rows: every vital, then the chips, each scrolling sideways', async ({page}) => {
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
@@ -48,9 +48,15 @@ test.describe('Mobile footer', () => {
         await pushGmcp(page, 'char.state', CALM_STATE);
 
         await expect(page.locator('#char-state-vitals .vital'), 'every stat worth showing is there').toHaveCount(4);
-        await expect(shownVitals(page), 'the folded line shows the first two').toHaveCount(2);
+        await expect(shownVitals(page), 'folded, every vital is still there').toHaveCount(4);
         await expect(shownVitals(page).first()).toHaveAttribute('data-vital', 'hp');
         await expect(page.locator('#char-state-vitals .vital[data-vital="hp"] .vital__pip.is-on')).toHaveCount(6);
+
+        const vitals = await page.locator('#char-state-vitals').boundingBox();
+        const chips = await page.locator('#footer-chips').boundingBox();
+        expect(chips!.y, 'the chips have a row of their own, under the vitals').toBeGreaterThanOrEqual(vitals!.y + vitals!.height);
+        await expect(page.locator('#char-state-vitals')).toHaveCSS('overflow-x', 'auto');
+        await expect(page.locator('#footer-chips')).toHaveCSS('overflow-x', 'auto');
     });
 
     test('keeps one height while stats and chips come and go', async ({page}) => {
@@ -111,7 +117,7 @@ test.describe('Mobile footer', () => {
         await expander.click();
         await expect(page.locator('body')).toHaveAttribute('data-footer-expanded', '0');
         expect(await footerHeight(page), 'folding back restores the line').toBe(collapsed);
-        await expect(shownVitals(page)).toHaveCount(2);
+        await expect(shownVitals(page)).toHaveCount(11);
     });
 
     // Someone who never wants to fold it (or never wants it folded) says so once,
@@ -147,13 +153,14 @@ test.describe('Mobile footer', () => {
         await ensureGameSocket(page);
 
         await pushGmcp(page, 'char.state', CALM_STATE);
-        await expect(shownVitals(page)).toHaveCount(2);
+        await expect(page.locator('#footer-chips')).toHaveCSS('overflow-x', 'auto');
 
         const modal = await openFooterSettings(page);
         await modal.locator('#ui-mobile-footer-compact').uncheck();
         await saveSettings(page);
 
         await expect(shownVitals(page), 'every vital back on the line').toHaveCount(4);
+        await expect(page.locator('#footer-chips'), 'no longer a scrolling row of its own').not.toHaveCSS('overflow-x', 'auto');
         await expect(page.locator('#footer-expand')).toBeHidden();
     });
 });
