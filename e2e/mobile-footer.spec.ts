@@ -9,7 +9,7 @@ import {openSettings, saveSettings} from './support/settings';
  * What is being pinned here is that the footer stops resizing itself. Its
  * contents are dynamic - the player picks which chips exist, and how many stats
  * show depends on the character's condition - so folded it is one line of fixed
- * height, and only the expander (a sheet with everything) changes its height.
+ * height, and only the expander (wrapping the rows to show everything) changes its height.
  */
 
 const PHONE = {width: 390, height: 844};
@@ -27,6 +27,17 @@ async function footerHeight(page: Page): Promise<number> {
     const box = await page.locator('#char-state').boundingBox();
     if (!box) throw new Error('footer has no box');
     return box.height;
+}
+
+/** What unfolding must leave alone: a chip's height and each vital's size. */
+async function footerSizes(page: Page) {
+    return page.evaluate(() => ({
+        chip: Math.round(document.querySelector('#footer-chips .chip')?.getBoundingClientRect().height ?? -1),
+        vitals: Array.from(document.querySelectorAll('#char-state-vitals .vital'), (el) => {
+            const box = el.getBoundingClientRect();
+            return `${Math.round(box.width)}x${Math.round(box.height)}`;
+        }),
+    }));
 }
 
 /** On a phone the dialog swaps its sidebar for a page select, which the helper uses. */
@@ -97,7 +108,7 @@ test.describe('Mobile footer', () => {
         expect(heights.size, `chips differ in height: ${JSON.stringify(chips)}`).toBe(1);
     });
 
-    test('the expander unfolds the line into a sheet and folds it back', async ({page}) => {
+    test('the expander unfolds the rows (wrapped, same sizes) and folds them back', async ({page}) => {
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
@@ -105,6 +116,7 @@ test.describe('Mobile footer', () => {
         await pushGmcp(page, 'char.state', BUSY_STATE);
         await expect(page.locator('#char-state-vitals .vital')).toHaveCount(11);
         const collapsed = await footerHeight(page);
+        const sizes = await footerSizes(page);
 
         const expander = page.locator('#footer-expand');
         await expect(expander, 'the expander belongs to the phone footer').toBeVisible();
@@ -113,6 +125,7 @@ test.describe('Mobile footer', () => {
         await expect(page.locator('body')).toHaveAttribute('data-footer-expanded', '1');
         expect(await footerHeight(page), 'unfolding shows more, so the footer grows').toBeGreaterThan(collapsed);
         await expect(shownVitals(page), 'unfolded, every vital is shown').toHaveCount(11);
+        expect(await footerSizes(page), 'unfolding only wraps the rows; chips and bars keep their size').toEqual(sizes);
 
         await expander.click();
         await expect(page.locator('body')).toHaveAttribute('data-footer-expanded', '0');

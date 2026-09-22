@@ -5,8 +5,8 @@
    every vital in one (with the expander at its end), every chip in the other -
    urgent ones first, so a fight's warnings are what shows - each scrolling
    sideways when it does not fit. Nothing the game does changes the height, so
-   the output above never jumps. Expanded, it becomes a sheet: the vitals in two
-   columns with bigger pips, every chip wrapped.
+   the output above never jumps. Expanded, the same rows at the same sizes wrap
+   instead of scrolling, so everything shows at once.
 
    Scoped to `body[data-mobile-footer="1"]` (the `mobileFooterCompact` setting);
    without it a phone gets the desktop line. See src/web/mobileFooter.ts for the
@@ -124,49 +124,41 @@
     }
   }
 
-  /* -- expanded: a sheet --------------------------------------------------- */
+  /* -- expanded: everything at once ---------------------------------------- */
+  /* The same rows at the same sizes; they wrap instead of scrolling sideways. */
   body[data-mobile-footer="1"][data-footer-expanded="1"] #char-state {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: start;
-    gap: 0;
+    gap: 5px 6px;
     max-height: 45vh;
-    padding: 0;
+    padding: 5px 0 6px 10px;
     overflow-y: auto;
-    border-top-color: var(--popup-border-strong);
   }
   body[data-mobile-footer="1"][data-footer-expanded="1"] .status-vitals {
-    display: grid;
     grid-column: 1;
     grid-row: 1;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px 14px;
-    padding: 12px 14px;
-    border-bottom: 1px solid var(--popup-border-subtle);
-  }
-  body[data-mobile-footer="1"][data-footer-expanded="1"] .vital__pips {
-    width: auto;
-    flex: 1;
-    max-width: 120px;
+    flex-wrap: wrap;
+    row-gap: 9px;
+    min-width: 0;
+    padding: 4px 0 5px; /* each wrapped line sits like the folded 26px one */
   }
   body[data-mobile-footer="1"][data-footer-expanded="1"] #footer-expand {
     grid-column: 2;
     grid-row: 1;
-    margin: 6px 6px 0 0;
+    margin-right: 6px;
   }
   body[data-mobile-footer="1"][data-footer-expanded="1"] .status-chips {
     grid-column: 1 / -1;
     grid-row: 2;
+    flex-wrap: wrap;
     justify-content: flex-start;
     height: auto;
-    padding: 12px 14px;
+    padding-right: 10px;
     overflow: visible;
   }
-  body[data-mobile-footer="1"][data-footer-expanded="1"] #char-state .chip {
-    height: 30px;
-  }
   /* StatusLine hides chips past the first line for the desktop's "+N"; the
-     sheet wraps them all into view, so none may stay hidden (they would leave
+     expanded footer wraps them all into view, so none may stay hidden (they would leave
      an empty line). */
   body[data-mobile-footer="1"][data-footer-expanded="1"] .status-slot.is-wrapped {
     visibility: visible;
@@ -176,7 +168,7 @@
     display: inline-flex;
     grid-column: 1 / -1;
     grid-row: 3;
-    padding: 0 14px 12px;
+    padding-right: 10px;
   }
 
   /* -- location binds ---------------------------------------------------- */
@@ -235,7 +227,7 @@
     grid-row: 4;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 8px;
-    padding: 0 14px 14px;
+    padding-right: 10px;
   }
 
   body[data-mobile-footer="1"][data-footer-expanded="1"] .footer-buttons-sheet__tile {
