@@ -317,58 +317,339 @@
   }
 }
 
-/* The ⋯ menu: two columns of plain rows, opening upwards. */
+/* The ⋯ menu (commandInput/MainMenu.tsx): a filter, sections with icons (Gra on the
+   left, Ustawienia over Narzędzia on the right, Wtyczki across the bottom) and a bar
+   with the connection and Pełny ekran / Rozłącz. Opens upwards; a sheet on phones. */
 .command-menu {
   flex-shrink: 0;
 }
 #input-area #menu-button.is-active {
-  border-color: var(--popup-border-strong);
-  background-color: var(--popup-control-active-bg);
-  color: var(--popup-text);
+  border-color: var(--popup-accent-border);
+  background-color: var(--popup-accent-bg);
+  color: var(--popup-accent);
 }
 .popup-popover.command-menu__panel {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 2px;
-  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
   border-color: var(--popup-border-strong);
-  border-radius: var(--ui-radius-lg, 10px);
+  border-radius: 12px;
   font-size: var(--ui-fs, 14px);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.6);
 }
-@media (max-width: 440px) {
-  .popup-popover.command-menu__panel {
+@media (max-width: 560px) {
+  .popup-popover.command-menu__panel:not(.command-menu__panel--sheet) {
     left: 8px !important;
     width: auto !important;
     right: 8px;
   }
 }
+.command-menu__filter {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  margin: 10px 10px 6px;
+  padding: 0 10px;
+  border: 1px solid var(--popup-border);
+  border-radius: 6px;
+  background-color: var(--popup-input-bg);
+  color: var(--popup-text-dim);
+  cursor: text;
+}
+.command-menu__filter:focus-within {
+  border-color: var(--popup-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--popup-accent) 30%, transparent);
+}
+.command-menu__filter input,
+.command-menu__filter input:focus {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  outline: none;
+  box-shadow: none;
+  background: transparent;
+  color: var(--popup-text);
+  font: inherit;
+}
+.command-menu__filter input::placeholder {
+  color: var(--popup-text-dim);
+}
+.command-menu__sections {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-areas:
+    "gra ustawienia"
+    "gra narzedzia"
+    "wtyczki wtyczki";
+  align-content: start;
+  column-gap: 8px;
+  min-height: 0;
+  padding: 2px 8px 8px;
+  overflow-y: auto;
+}
+.command-menu__section {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.command-menu__section[data-group="gra"] { grid-area: gra; }
+.command-menu__section[data-group="ustawienia"] { grid-area: ustawienia; }
+.command-menu__section[data-group="narzedzia"] { grid-area: narzedzia; }
+.command-menu__section[data-group="wtyczki"] {
+  grid-area: wtyczki;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--popup-border);
+}
+.command-menu__section[data-group="narzedzia"]:not(:first-child) {
+  margin-top: 6px;
+}
+/* Filtering can empty a column: the rest then fill the panel from the top. */
+.command-menu__sections:not(:has([data-group="gra"])) {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: "ustawienia" "narzedzia" "wtyczki";
+}
+.command-menu__sections:not(:has([data-group="ustawienia"])):not(:has([data-group="narzedzia"])) {
+  grid-template-areas: "gra gra" "wtyczki wtyczki";
+}
+.command-menu__caption {
+  padding: 6px 10px 4px;
+  color: var(--popup-text-dim);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.command-menu__items {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.command-menu__section[data-group="wtyczki"] .command-menu__items {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.command-menu__empty {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 10px;
+  color: var(--popup-text-dim);
+}
 #input-area .command-menu__item {
   justify-content: flex-start;
+  gap: 10px;
   width: 100%;
   min-width: 0;
-  height: var(--ui-ctrl, 32px);
+  height: 32px;
   padding: 0 10px;
   border: 0;
-  border-radius: var(--ui-radius, 6px);
+  border-radius: 6px;
   background: transparent;
   color: var(--popup-text-bright);
   text-align: left;
   white-space: nowrap;
+}
+.command-menu__icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  justify-content: center;
+  width: 16px;
+  color: var(--popup-text-dim);
+}
+.command-menu__label {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-#input-area .command-menu__item:hover:not(:disabled) {
+#input-area .command-menu__item:hover:not(:disabled),
+#input-area .command-menu__item:focus-visible,
+#input-area .command-menu__item.is-first {
+  outline: none;
   background-color: var(--popup-hover-bg);
   color: var(--popup-text);
 }
-#input-area .command-menu__item--danger,
-#input-area .command-menu__item--danger:hover:not(:disabled) {
-  color: var(--popup-danger);
-}
-#input-area .command-menu__item--danger:hover:not(:disabled) {
-  background-color: color-mix(in srgb, var(--popup-danger) 14%, transparent);
+#input-area .command-menu__sections .command-menu__item:hover:not(:disabled) .command-menu__icon,
+#input-area .command-menu__sections .command-menu__item.is-first .command-menu__icon {
+  color: var(--popup-accent);
 }
 #input-area .command-menu__item:disabled {
   opacity: 0.5;
   cursor: default;
+}
+
+/* Bottom bar: connection on the left, the session actions on the right. */
+.command-menu__bar {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border-top: 1px solid var(--popup-border);
+  background-color: var(--popup-section-bg);
+}
+.command-menu__status {
+  display: inline-flex;
+  flex: 1;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  white-space: nowrap;
+}
+.command-menu__status-dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--popup-text-dim);
+}
+.command-menu__status[data-status="connected"] .command-menu__status-dot {
+  background-color: var(--popup-success);
+}
+.command-menu__status[data-status="connecting"] .command-menu__status-dot {
+  background-color: var(--footer-vital-warn, #d9bf62);
+}
+.command-menu__status-name {
+  font-size: 13px;
+}
+.command-menu__status-text {
+  overflow: hidden;
+  color: var(--popup-text-dim);
+  font-size: 12.5px;
+  text-overflow: ellipsis;
+}
+#input-area .command-menu__item--bar {
+  flex-shrink: 0;
+  gap: 6px;
+  width: auto;
+  height: 28px;
+  padding: 0 9px;
+  border: 1px solid transparent;
+  color: var(--popup-text-subtle);
+  font-size: 13px;
+  font-weight: 500;
+}
+#input-area .command-menu__item--bar .command-menu__icon {
+  width: auto;
+  color: inherit;
+}
+#input-area .command-menu__item--danger {
+  border-color: color-mix(in srgb, var(--popup-danger) 50%, transparent);
+  background-color: color-mix(in srgb, var(--popup-danger) 10%, transparent);
+  color: color-mix(in srgb, var(--popup-danger) 70%, #fff);
+}
+#input-area .command-menu__item--danger:hover:not(:disabled),
+#input-area .command-menu__item--danger.is-first {
+  background-color: color-mix(in srgb, var(--popup-danger) 18%, transparent);
+  color: color-mix(in srgb, var(--popup-danger) 60%, #fff);
+}
+#input-area .command-menu__item--danger .command-menu__icon,
+#input-area .command-menu__item--danger:hover .command-menu__icon {
+  color: inherit;
+}
+
+/* Phone: a bottom sheet over a dimmed game, tiles four to a row. */
+.command-menu__scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(6, 8, 12, 0.55);
+}
+.popup-popover.command-menu__panel--sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  top: auto;
+  width: auto;
+  max-height: calc(100dvh - 64px);
+  padding: 8px 12px 0;
+  border: 0;
+  border-top: 1px solid var(--popup-border-strong);
+  border-radius: 16px 16px 0 0;
+}
+.command-menu__grip {
+  flex-shrink: 0;
+  align-self: center;
+  width: 40px;
+  height: 4px;
+  margin-bottom: 4px;
+  border-radius: 999px;
+  background-color: var(--popup-border-strong);
+}
+.command-menu__panel--sheet .command-menu__filter {
+  height: 44px;
+  margin: 4px 0 8px;
+}
+.command-menu__panel--sheet .command-menu__filter input {
+  font-size: 16px;
+}
+.command-menu__panel--sheet .command-menu__sections {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0;
+}
+.command-menu__panel--sheet .command-menu__section,
+.command-menu__panel--sheet .command-menu__section[data-group] {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.command-menu__panel--sheet .command-menu__caption {
+  padding: 4px 2px;
+}
+.command-menu__panel--sheet .command-menu__items,
+.command-menu__panel--sheet .command-menu__section[data-group] .command-menu__items {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+#input-area .command-menu__panel--sheet .command-menu__items .command-menu__item {
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  height: 66px;
+  padding: 0 2px;
+  border: 1px solid var(--popup-border);
+  border-radius: 10px;
+  background-color: var(--popup-section-bg);
+  color: var(--popup-text-subtle);
+  font-size: 12px;
+  line-height: 1.15;
+  text-align: center;
+  white-space: normal;
+}
+#input-area .command-menu__panel--sheet .command-menu__items .command-menu__icon {
+  width: auto;
+  color: var(--popup-text);
+}
+.command-menu__panel--sheet .command-menu__label {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.command-menu__panel--sheet .command-menu__bar {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 8px;
+  padding: 10px 0 calc(16px + env(safe-area-inset-bottom, 0px));
+  background: transparent;
+}
+#input-area .command-menu__panel--sheet .command-menu__item--bar {
+  justify-content: center;
+  width: 100%;
+  height: 46px;
+  border-color: var(--popup-border-strong);
+  background-color: var(--popup-control-bg);
+  font-size: 14px;
+}
+#input-area .command-menu__panel--sheet .command-menu__item--danger {
+  border-color: color-mix(in srgb, var(--popup-danger) 50%, transparent);
+  background-color: color-mix(in srgb, var(--popup-danger) 10%, transparent);
 }

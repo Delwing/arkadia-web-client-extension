@@ -65,8 +65,8 @@ import {globalStorage} from "@modules/core/storage"
 import {setOutputTimestampVisibility, setupOutputMessageHandler} from "@shared/dom/outputMessageHandler";
 import {isLikelyTouchDevice, isMobileLikeViewport, isTouchPointerType} from "@shared/dom/pointerEnvironment.ts";
 import CommandLine from "./commandInput/CommandLine";
-import {setConnectionOffline, setReconnectHandler} from "./commandInput/connectionView";
-import {registerMainMenuItem, updateMainMenuItem} from "@modules/core/mainMenuRegistry";
+import {setConnectionOffline, setConnectionStatus, setReconnectHandler} from "./commandInput/connectionView";
+import {registerMainMenuItem, updateMainMenuItem, type MainMenuGroup} from "@modules/core/mainMenuRegistry";
 import {harvestOutputLines} from "./commandInput/outputWords";
 import {installClientPorts} from "./installClientPorts";
 import {installContentWidthMeasurer} from "./contentWidthMeasurer";
@@ -423,6 +423,7 @@ function updateConnectButtons() {
     // Offline with the login screen dismissed: the command line shows the closed
     // connection and offers to reconnect in place of the send button.
     setConnectionOffline(!isConnected && !isConnecting && authClosed);
+    setConnectionStatus(isConnected ? 'connected' : isConnecting ? 'connecting' : 'disconnected', mudClient.getProxyMode());
 
 
     if (loginForm) {
@@ -438,8 +439,8 @@ function updateConnectButtons() {
     }
 
     updateMainMenuItem('disconnect-button', isConnected
-        ? { label: 'Rozłącz', disabled: isDisconnecting }
-        : { label: 'Połącz', disabled: isConnecting });
+        ? { label: 'Rozłącz', disabled: isDisconnecting, tone: 'danger' }
+        : { label: 'Połącz', disabled: isConnecting, tone: undefined });
 
     const systemLoginMessageEl = document.getElementById('system-login-message');
     if (systemLoginMessageEl) {
@@ -1091,28 +1092,30 @@ document.addEventListener('DOMContentLoaded', () => {
             document.exitFullscreen().catch(err => console.error('Failed to exit fullscreen:', err));
         }
     };
-    ([
-        ['options-button', 'Ustawienia', 10, () => openSettingsOn('character-general')],
-        ['export-import-button', 'Eksport / import', 20, () => window.dispatchEvent(new Event('show-export-import'))],
-        ['ui-settings-button', 'Interfejs', 30, () => openSettingsOn('ui-appearance')],
-        ['mobile-buttons-button', 'Przyciski', 40, () => openSettingsOn(buttonsSettingsCategory())],
-        ['mobile-radial-button', 'Menu kołowe', 50, () => openSettingsOn('ui-radial')],
-        ['binds-button', 'Bindowanie', 60, () => bindsModal?.show()],
-        ['npc-button', 'Odbiorcy paczek', 70, () => eventBus.emit('packageReceiver.popup.open')],
-        ['scripts-button', 'Skrypty', 80, () => scriptsModal?.show()],
-        ['aliases-button', 'Aliasy', 90, () => aliasesModal?.show()],
-        ['triggers-button', 'Triggery', 100, () => triggersModal?.show()],
-        ['recordings-button', 'Nagrania', 110, () => recordingsModal?.show()],
-        ['places-button', 'Miejsca', 120, () => placesModal?.show()],
-        ['people-browser-button', 'Baza postaci', 130, () => eventBus.emit('peopleBrowser.popup.open')],
-        ['data-sources-button', 'Źródła danych', 140, () => eventBus.emit('dataSources.popup.open')],
-        ['share-location-button', 'Kod QR lokacji', 170, shareLocation],
-        ['helper-button', 'Helper', 180, () => helperModal?.show()],
-        ['disconnect-button', isConnected ? 'Rozłącz' : 'Połącz', 190, toggleConnection],
-        ['fullscreen-button', 'Pełny ekran', 200, toggleFullscreen],
-    ] as const).forEach(([id, label, order, onSelect]) => {
-        registerMainMenuItem({id, label, order, onSelect, source: 'builtin', tone: id === 'disconnect-button' ? 'danger' : undefined});
+    const builtins: [string, string, MainMenuGroup, string, () => void, string?][] = [
+        ['aliases-button', 'Aliasy', 'gra', 'terminal', () => aliasesModal?.show()],
+        ['triggers-button', 'Triggery', 'gra', 'zap', () => triggersModal?.show()],
+        ['binds-button', 'Bindowanie', 'gra', 'keyboard', () => bindsModal?.show()],
+        ['places-button', 'Miejsca', 'gra', 'map-pin', () => placesModal?.show()],
+        ['recordings-button', 'Nagrania', 'gra', 'record', () => recordingsModal?.show()],
+        ['people-browser-button', 'Baza postaci', 'gra', 'users', () => eventBus.emit('peopleBrowser.popup.open')],
+        ['npc-button', 'Odbiorcy paczek', 'gra', 'package', () => eventBus.emit('packageReceiver.popup.open')],
+        ['share-location-button', 'Kod QR lokacji', 'gra', 'qr-code', shareLocation, 'Kod QR'],
+        ['options-button', 'Postać', 'ustawienia', 'settings', () => openSettingsOn('character-general')],
+        ['ui-settings-button', 'Interfejs', 'ustawienia', 'layout', () => openSettingsOn('ui-appearance')],
+        ['mobile-buttons-button', 'Przyciski', 'ustawienia', 'grid', () => openSettingsOn(buttonsSettingsCategory())],
+        ['mobile-radial-button', 'Menu kołowe', 'ustawienia', 'radial', () => openSettingsOn('ui-radial')],
+        ['export-import-button', 'Eksport / import', 'ustawienia', 'upload', () => window.dispatchEvent(new Event('show-export-import')), 'Eksport'],
+        ['scripts-button', 'Skrypty (wtyczki)', 'narzedzia', 'code', () => scriptsModal?.show(), 'Skrypty'],
+        ['data-sources-button', 'Źródła danych', 'narzedzia', 'database', () => eventBus.emit('dataSources.popup.open')],
+        ['helper-button', 'Helper', 'narzedzia', 'plug', () => helperModal?.show()],
+    ];
+    builtins.forEach(([id, label, group, icon, onSelect, shortLabel], index) => {
+        registerMainMenuItem({id, label, shortLabel, group, icon, order: (index + 1) * 10, onSelect, source: 'builtin'});
     });
+    // Logi (170) and Dokumentacja (180) register themselves in Narzędzia.
+    registerMainMenuItem({id: 'fullscreen-button', label: 'Pełny ekran', group: 'sesja', icon: 'fullscreen', order: 900, onSelect: toggleFullscreen, source: 'builtin'});
+    registerMainMenuItem({id: 'disconnect-button', label: isConnected ? 'Rozłącz' : 'Połącz', group: 'sesja', icon: 'power', order: 910, onSelect: toggleConnection, tone: 'danger', source: 'builtin'});
 
     if (recordingButton) {
         recordingButton.addEventListener('click', () => {

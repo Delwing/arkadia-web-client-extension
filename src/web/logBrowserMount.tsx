@@ -74,7 +74,9 @@ function initLogBrowser(): boolean {
   registerMainMenuItem({
     id: "logs-button",
     label: "Logi",
-    order: 160,
+    group: "narzedzia",
+    icon: "file-text",
+    order: 170,
     source: "builtin",
     onSelect: () => {
       if (showModal) showModal();

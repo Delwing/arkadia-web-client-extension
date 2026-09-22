@@ -265,7 +265,10 @@ function initDocs() {
   registerMainMenuItem({
     id: "docs-button",
     label: "Dokumentacja",
-    order: 150,
+    shortLabel: "Pomoc",
+    group: "narzedzia",
+    icon: "book",
+    order: 180,
     source: "builtin",
     onSelect: () => {
       showDoc(docs[0].key);

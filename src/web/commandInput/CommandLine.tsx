@@ -1,12 +1,11 @@
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
-import { ChevronDown, ChevronUp, Lock, Menu, Mic, ArrowRight } from "lucide-react";
+import { ChevronDown, ChevronUp, Lock, Mic, ArrowRight } from "lucide-react";
 import eventBus from "@modules/core/eventBus";
 import { globalStorage } from "@modules/core/storage";
-import { getMainMenuItems, subscribeMainMenu, type MainMenuItem } from "@modules/core/mainMenuRegistry";
-import { usePopover } from "@web/layout/hooks/usePopover.ts";
 import { attachVoiceInput, type VoiceInputHandle } from "@web/voice/voiceInput.ts";
 import { CommandInputController, type CommandInputDeps } from "./CommandInputController";
 import { getConnectionView, requestReconnect, subscribeConnectionView } from "./connectionView";
+import MainMenu from "./MainMenu";
 import { useHardwareKeyboard } from "@web-ui/hooks";
 
 export type CommandLineDeps = Pick<CommandInputDeps,
@@ -53,8 +52,7 @@ export default function CommandLine({ deps }: { deps: CommandLineDeps }) {
   const [passwordMode, setPasswordMode] = useState(() => deps.isPasswordMode());
   const [showVoice, setShowVoice] = useState(showVoiceSetting);
   const connection = useSyncExternalStore(subscribeConnectionView, getConnectionView);
-  const menuItems = useSyncExternalStore(subscribeMainMenu, getMainMenuItems);
-  const menu = usePopover({ width: 416, maxHeight: 560, placement: "above" });
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     const controller = new CommandInputController({
@@ -185,7 +183,7 @@ export default function CommandLine({ deps }: { deps: CommandLineDeps }) {
     : undefined;
 
   return (
-    <div id="input-area" className={menu.open ? "menu-open" : undefined} data-offline={offline ? "1" : "0"}>
+    <div id="input-area" className={menuOpen ? "menu-open" : undefined} data-offline={offline ? "1" : "0"}>
       <div id="history-buttons">
         <button id="history-up-button" ref={upRef} type="button" title="Poprzednia komenda">
           <ChevronUp size={14} strokeWidth={2.2} />
@@ -257,54 +255,7 @@ export default function CommandLine({ deps }: { deps: CommandLineDeps }) {
       {offline && (
         <button id="connect-button-inline" type="button" onClick={requestReconnect}>Połącz ponownie</button>
       )}
-      <div className="command-menu" ref={menu.rootRef}>
-        <button
-          id="menu-button"
-          ref={menu.anchorRef}
-          type="button"
-          title="Menu"
-          className={menu.open ? "is-active" : undefined}
-          onClick={menu.toggle}
-        >
-          <Menu size={17} strokeWidth={2.1} />
-        </button>
-        {menu.style && (
-          <div className="popup-popover command-menu__panel" style={menu.style}>
-            {menuItems.map((item) => (
-              <MainMenuEntry key={item.id} item={item} onDone={menu.close} />
-            ))}
-          </div>
-        )}
-      </div>
+      <MainMenu onOpenChange={setMenuOpen} />
     </div>
   );
-}
-
-function MainMenuEntry({ item, onDone }: { item: MainMenuItem; onDone: () => void }) {
-  const pluginAttr = item.source === "plugin" ? { "data-plugin-menu-entry-id": item.id } : { id: item.id };
-  return (
-    <button
-      type="button"
-      {...pluginAttr}
-      className={`command-menu__item${item.tone === "danger" ? " command-menu__item--danger" : ""}`}
-      disabled={item.disabled}
-      onClick={() => {
-        onDone();
-        item.onSelect();
-      }}
-    >
-      {typeof item.label === "string" ? item.label : <NodeLabel node={item.label} />}
-    </button>
-  );
-}
-
-/** A plugin's DOM label, copied in (the plugin keeps its own node). */
-function NodeLabel({ node }: { node: Node }) {
-  const ref = useRef<HTMLSpanElement>(null);
-  useEffect(() => {
-    const host = ref.current;
-    if (!host) return;
-    host.replaceChildren(node.cloneNode(true));
-  }, [node]);
-  return <span ref={ref} />;
 }

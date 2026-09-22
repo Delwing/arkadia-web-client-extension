@@ -1,4 +1,10 @@
 /**
+ * Sections of the menu. "sesja" is the bar at its bottom (Pełny ekran, Rozłącz);
+ * plugin entries land in "wtyczki".
+ */
+export type MainMenuGroup = "gra" | "ustawienia" | "narzedzia" | "wtyczki" | "sesja";
+
+/**
  * The main "⋯" menu next to the command line, as data: the stock UI registers its
  * built-in entries (Ustawienia, Aliasy, Rozłącz…) and plugins add theirs through
  * `api.ui` (see pluginUiRegistry.ts). The footer renders whatever is here, sorted
@@ -10,8 +16,14 @@ export interface MainMenuItem {
   /** Also the rendered button's id, which e2e specs and older code look up. */
   id: string;
   label: string | Node;
+  /** A shorter caption for the phone's tiles; defaults to the label. */
+  shortLabel?: string;
+  /** Defaults to "wtyczki". */
+  group?: MainMenuGroup;
+  /** A name the host maps to an icon ("zap", "map-pin"…); unknown or absent → a generic one. */
+  icon?: string;
   onSelect: () => void;
-  /** Built-ins sit at 10..200; plugin entries default to 1000 (after them). */
+  /** Order within the group. Built-ins sit at 10..910; plugin entries default to 1000. */
   order: number;
   disabled?: boolean;
   tone?: "danger";
