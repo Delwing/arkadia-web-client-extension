@@ -108,6 +108,36 @@ describe('MainMenu', () => {
         expect(container.querySelector('#disconnect-button')!.classList.contains('command-menu__item--danger')).toBe(true);
     });
 
+    test('a plugin entry that brings its own icon has it in the icon slot, not the puzzle', () => {
+        const withSvg = document.createElement('span');
+        withSvg.innerHTML = '<span style="margin-right: 6px"><svg></svg></span> Czat';
+        add({ id: 'plugin-svg', label: withSvg, source: 'plugin' });
+        add({ id: 'plugin-emoji', label: '⛭ Zegar', source: 'plugin' });
+        const trailing = document.createElement('span');
+        trailing.innerHTML = 'Mapa <svg></svg>';
+        add({ id: 'plugin-trailing', label: trailing, source: 'plugin' });
+        mount();
+        open();
+        const entry = (id: string) => container.querySelector(`[data-plugin-menu-entry-id="${id}"]`)!;
+        const icons = (id: string) => entry(id).querySelectorAll('.command-menu__icon');
+        const label = (id: string) => entry(id).querySelector('.command-menu__label')!;
+
+        expect(icons('plugin-svg')).toHaveLength(1);
+        expect(entry('plugin-svg').querySelector('.command-menu__icon--own svg')).not.toBeNull();
+        expect(label('plugin-svg').querySelector('svg'), 'the icon left the label').toBeNull();
+        expect(label('plugin-svg').innerHTML, 'with its spacing wrapper').not.toContain('margin');
+        expect(label('plugin-svg').textContent).toBe('Czat');
+        expect(withSvg.querySelector('svg'), 'the plugin keeps its own node').not.toBeNull();
+
+        expect(entry('plugin-emoji').querySelector('.command-menu__icon--own')?.textContent).toBe('⛭');
+        expect(label('plugin-emoji').textContent).toBe('Zegar');
+
+        expect(entry('plugin-trailing').querySelector('.command-menu__icon--own'), 'an icon after the text stays').toBeNull();
+        expect(label('plugin-trailing').querySelector('svg')).not.toBeNull();
+        expect(icons('plugin-1'), 'a plain label keeps the puzzle').toHaveLength(1);
+        expect(entry('plugin-1').querySelector('.command-menu__icon--own')).toBeNull();
+    });
+
     test('a click runs the entry and closes the menu', () => {
         mount();
         open();
