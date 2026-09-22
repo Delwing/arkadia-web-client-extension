@@ -17,6 +17,7 @@
    chunk splitting. forge keeps its own (JS-imported) copies. This is the same
    fix master applied for layout.css (156a1eeb) and forge uses in
    layout-theme.css / buttons-theme.css. */
+@import './fonts/radio-canada.css';
 @import './base.css';
 @import './style.css';
 @import './commandLine.css';

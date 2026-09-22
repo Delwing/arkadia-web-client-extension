@@ -30,7 +30,7 @@
   /* ── UI chrome scale ─────────────────────────────────────────────────────
      Interface text and sizes (window headers, menus, dialogs) — not game text,
      which follows --output-font-*. */
-  --font-ui: "Barlow", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-ui: "Radio Canada", system-ui, -apple-system, "Segoe UI", sans-serif;
   --ui-fs-xs: 12px;
   --ui-fs-sm: 13px;
   --ui-fs: 14px;
