@@ -95,6 +95,20 @@ export default function MainMenu({ onOpenChange }: { onOpenChange?: (open: boole
   // Straight into the filter when there is a keyboard to type on; a phone would
   // pop its keyboard over the tiles.
   const shown = menu.style !== null;
+
+  // The phone sheet stands on the command line rather than covering it, so the
+  // menu button that opened it closes it again; the multibinds go under it.
+  const [sheetBottom, setSheetBottom] = useState(0);
+  useLayoutEffect(() => {
+    if (!shown || !phone) return;
+    const bar = menu.anchorRef.current?.closest("#input-area");
+    if (!bar) return;
+    const measure = () => setSheetBottom(Math.max(0, window.innerHeight - bar.getBoundingClientRect().top));
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [shown, phone, menu.anchorRef]);
+
   useLayoutEffect(() => {
     if (shown && hardwareKeyboard && !phone) filterRef.current?.focus();
   }, [shown, hardwareKeyboard, phone]);
@@ -164,11 +178,11 @@ export default function MainMenu({ onOpenChange }: { onOpenChange?: (open: boole
       </button>
       {menu.style && (
         <>
-          {phone && <div className="command-menu__scrim" onClick={menu.close} />}
+          {phone && <div className="command-menu__scrim" style={{ bottom: sheetBottom }} onClick={menu.close} />}
           <div
             ref={panelRef}
             className={`popup-popover command-menu__panel${phone ? " command-menu__panel--sheet" : ""}`}
-            style={phone ? undefined : menu.style}
+            style={phone ? { bottom: sheetBottom, maxHeight: `calc(100dvh - ${sheetBottom}px - 48px)` } : menu.style}
             onKeyDown={onKeyDown}
           >
             {phone && <span className="command-menu__grip" />}

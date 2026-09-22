@@ -241,7 +241,7 @@ describe('MainMenu', () => {
             mount();
             open();
             expect(panel()!.classList.contains('command-menu__panel--sheet')).toBe(true);
-            expect(panel()!.getAttribute('style')).toBeNull();
+            expect(panel()!.style.left, 'not placed by the desktop popover').toBe('');
             expect(filter()).toBeNull();
             expect(container.querySelector('.command-menu__status')).toBeNull();
             expect(container.querySelector('.command-menu__bar #disconnect-button')).not.toBeNull();

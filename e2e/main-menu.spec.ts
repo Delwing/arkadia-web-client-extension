@@ -105,7 +105,9 @@ test.describe('main menu on a phone', () => {
         const box = await menu.boundingBox();
         expect(Math.round(box!.x)).toBe(0);
         expect(Math.round(box!.width)).toBe(390);
-        expect(Math.round(box!.y + box!.height)).toBe(844);
+        // It stands on the command line, which stays usable: its menu button closes it.
+        const bar = await page.locator('#input-area').boundingBox();
+        expect(Math.round(box!.y + box!.height)).toBe(Math.round(bar!.y));
         await expect(menu.locator('.command-menu__caption')).toHaveText(['Gra', 'Ustawienia', 'Narzędzia i wtyczki']);
         await expect(menu.locator('#share-location-button')).toHaveText('Kod QR');
         await expect(menu.locator('#docs-button')).toHaveText('Pomoc');
@@ -117,6 +119,11 @@ test.describe('main menu on a phone', () => {
         await page.screenshot({ path: 'test-results/main-menu-phone.png' });
 
         await page.locator('.command-menu__scrim').click({ position: { x: 20, y: 20 } });
+        await expect(page.locator(panel)).toHaveCount(0);
+
+        await page.click('#menu-button');
+        await expect(menu).toBeVisible();
+        await page.click('#menu-button');
         await expect(page.locator(panel)).toHaveCount(0);
     });
 });
