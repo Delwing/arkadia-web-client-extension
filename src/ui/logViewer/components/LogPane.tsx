@@ -42,6 +42,32 @@ export interface LogPaneProps {
     scrollRequest: ScrollRequest | null;
     /** Right-click on a row — opens the range menu. */
     onLineContextMenu: (event: React.MouseEvent, row: RenderedRow) => void;
+    /**
+     * The output background the session was recorded with. Without one the
+     * pane takes the client's current output background (`--output-bg`).
+     */
+    background?: string;
+}
+
+/** A CSS colour the pane can use, or undefined for anything else. */
+function usableColor(value: string | undefined): string | undefined {
+    if (!value) return undefined;
+    if (typeof CSS === "undefined" || typeof CSS.supports !== "function") return value;
+    return CSS.supports("color", value) ? value : undefined;
+}
+
+/**
+ * Whether a computed `rgb()`/`rgba()` colour is dark or light, so the text
+ * over it can be picked to match. Null when it cannot be read.
+ */
+export function groundOf(computed: string): "dark" | "light" | null {
+    const channels = computed.match(/rgba?\(\s*([\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)/);
+    if (!channels) return null;
+    const [r, g, b] = channels.slice(1, 4).map((value) => {
+        const c = Number(value) / 255;
+        return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+    });
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.18 ? "light" : "dark";
 }
 
 export interface ScrollRequest {
@@ -100,8 +126,11 @@ export function LogPane({
     follow,
     scrollRequest,
     onLineContextMenu,
+    background,
 }: LogPaneProps) {
     const scrollRef = useRef<HTMLDivElement>(null);
+    const color = usableColor(background);
+    const [ground, setGround] = useState<"dark" | "light" | null>(null);
     const probeRef = useRef<HTMLDivElement>(null);
     const lastRequest = useRef<number>(-1);
     const ignoreScrollUntil = useRef(0);
@@ -110,6 +139,17 @@ export function LogPane({
     const markProgrammaticScroll = useCallback(() => {
         ignoreScrollUntil.current = Date.now() + PROGRAMMATIC_SCROLL_GRACE_MS;
     }, []);
+
+    /**
+     * Dark or light text, for whichever background the pane ended up on: the
+     * recorded one, the client's current one, or the theme's.
+     */
+    const hasRows = !emptyMessage;
+    useLayoutEffect(() => {
+        const element = scrollRef.current;
+        if (!element || !hasRows) return;
+        setGround(groundOf(getComputedStyle(element).backgroundColor));
+    }, [color, hasRows]);
 
     /**
      * Measures the text column and one character of it, from a hidden row that
@@ -408,6 +448,8 @@ export function LogPane({
         <div
             className="lv-log"
             ref={scrollRef}
+            style={color ? ({ "--lv-bg-log": color } as React.CSSProperties) : undefined}
+            data-ground={ground ?? undefined}
             data-timestamps={showTimestamps}
             data-meta={showMeta}
             data-wrap={wrap}

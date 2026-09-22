@@ -743,6 +743,7 @@ export function LogViewer({
                     <LogPane
                         rows={view.rows}
                         sessionKey={session?.id ?? "brak"}
+                        background={session?.background}
                         showTimestamps={state.showTimestamps}
                         showMeta={state.showMeta}
                         showColors={state.showColors}

@@ -50,6 +50,17 @@ interface StoredEntry {
      * changed, and on nothing else — see `src/web/sessionLogger.ts`.
      */
     character?: string;
+    /** Written by `sessionLogger` on the first record after the output background changed. */
+    background?: string;
+}
+
+/** The output background the session was last recorded with, if it says. */
+export function recordedBackground(entries: StoredEntry[]): string | undefined {
+    for (let index = entries.length - 1; index >= 0; index -= 1) {
+        const background = entries[index].background;
+        if (typeof background === "string" && background) return background;
+    }
+    return undefined;
 }
 
 /**
@@ -150,6 +161,7 @@ export async function loadSession(
         endedAt,
         live,
         file: `${storeName}.txt`,
+        background: recordedBackground(entries),
         lines,
     };
 }

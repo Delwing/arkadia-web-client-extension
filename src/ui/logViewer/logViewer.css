@@ -525,9 +525,47 @@
     min-height: 0;
     overflow: auto;
     padding: var(--lv-space-3) 0;
-    background: var(--lv-bg-app);
+    /* The game window's own background: the one the session was recorded with
+       (`--lv-bg-log`, set by the pane), else the client's current one. The
+       standalone page has neither and keeps the theme's. */
+    background: var(--lv-bg-log, var(--output-bg, var(--lv-bg-app)));
+    color: var(--lv-text);
     font-family: var(--lv-font-mono);
     font-size: var(--lv-text-5);
+}
+
+/* The output background need not match the theme (a light theme over a dark
+   game window is the default), so the pane picks its text for the ground it is
+   actually on. The pane measures which one that is. Channel colours are
+   restated because they resolve against the theme's text where declared. */
+.lv-log[data-ground='dark'] {
+    --lv-text: #eeeeec;
+    --lv-text-secondary: #b5b3ad;
+    --lv-text-tertiary: #8a8880;
+    --lv-text-faint: #6f6d66;
+    --lv-accent-text: color-mix(in srgb, var(--lv-accent-solid) 60%, #fff);
+    --lv-log-notify: #4ccce6;
+    --lv-log-script: #ffca16;
+}
+
+.lv-log[data-ground='light'] {
+    --lv-text: #1c1c1a;
+    --lv-text-secondary: #4f4d48;
+    --lv-text-tertiary: #6f6d66;
+    --lv-text-faint: #8a8880;
+    --lv-accent-text: color-mix(in srgb, var(--lv-accent-solid) 70%, #000);
+    --lv-log-notify: #0e7490;
+    --lv-log-script: #8a6100;
+}
+
+.lv-log[data-ground] {
+    --lv-log-comm: var(--lv-text);
+    --lv-log-combat: var(--lv-text);
+    --lv-log-other: var(--lv-text);
+    --lv-log-room: var(--lv-text-secondary);
+    --lv-log-system: var(--lv-text-tertiary);
+    --lv-log-command: var(--lv-accent-text);
+    --lv-log-event-login: var(--lv-text-secondary);
 }
 
 /* An empty pane centres its explanation rather than leaving it pinned to the
