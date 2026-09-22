@@ -40,7 +40,7 @@ export function matchesAllTerms(foldedText: string, terms: readonly string[]): b
 }
 
 /** Sections directly on a page, ignoring any section nested inside another. */
-function topLevelSections(page: HTMLElement): HTMLElement[] {
+export function topLevelSections(page: HTMLElement): HTMLElement[] {
     return Array.from(page.querySelectorAll<HTMLElement>("section")).filter(
         section => !section.parentElement?.closest("section"),
     );
@@ -51,7 +51,7 @@ function topLevelSections(page: HTMLElement): HTMLElement[] {
  * `textContent` glues neighbouring elements together ("KolorZT" + "Ładowanie"),
  * which lets a term match across two unrelated labels.
  */
-function sectionText(section: HTMLElement): string {
+export function sectionText(section: HTMLElement): string {
     const parts: string[] = [];
     const walker = document.createTreeWalker(section, NodeFilter.SHOW_TEXT);
     for (let node = walker.nextNode(); node; node = walker.nextNode()) {
@@ -61,7 +61,7 @@ function sectionText(section: HTMLElement): string {
 }
 
 /** A serialized editor value (see SettingsValue), not text the user reads. */
-function isStoredValue(node: Node): boolean {
+export function isStoredValue(node: Node): boolean {
     return !!node.parentElement?.closest(`[${SETTINGS_VALUE_ATTR}]`);
 }
 

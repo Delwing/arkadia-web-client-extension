@@ -1,7 +1,7 @@
 import {expect, test} from './support/fixtures';
 import type {Page} from '@playwright/test';
 import {ensureGameSocket, pushGmcp, submitCommand, waitForCommandInput} from './support/mocks';
-import {openSettings, SETTINGS_SAVE} from './support/settings';
+import {openSettings, saveSettings} from './support/settings';
 
 /**
  * The phone footer (src/web/mobileFooter.ts + footerMobile.css).
@@ -127,8 +127,7 @@ test.describe('Mobile footer', () => {
 
         const modal = await openFooterSettings(page);
         await modal.locator('#ui-mobile-footer-expand').selectOption('expanded');
-        await modal.locator(SETTINGS_SAVE).click();
-        await expect(modal).not.toBeVisible();
+        await saveSettings(page);
 
         await expect(page.locator('#footer-expand'), 'nothing left to press').toBeHidden();
         expect(await footerHeight(page), 'pinned open, the footer shows everything').toBeGreaterThan(folded);
@@ -136,8 +135,7 @@ test.describe('Mobile footer', () => {
 
         const back = await openFooterSettings(page);
         await back.locator('#ui-mobile-footer-expand').selectOption('collapsed');
-        await back.locator(SETTINGS_SAVE).click();
-        await expect(back).not.toBeVisible();
+        await saveSettings(page);
 
         await expect(page.locator('#footer-expand'), 'still nothing to press').toBeHidden();
         expect(await footerHeight(page), 'pinned shut, the line is back').toBe(folded);
@@ -153,8 +151,7 @@ test.describe('Mobile footer', () => {
 
         const modal = await openFooterSettings(page);
         await modal.locator('#ui-mobile-footer-compact').uncheck();
-        await modal.locator(SETTINGS_SAVE).click();
-        await expect(modal).not.toBeVisible();
+        await saveSettings(page);
 
         await expect(shownVitals(page), 'every vital back on the line').toHaveCount(4);
         await expect(page.locator('#footer-expand')).toBeHidden();
@@ -223,8 +220,7 @@ test.describe('Bind shortcut hints without a keyboard', () => {
         // on the Komendy page.
         const modal = await openSettings(page, 'ui-commands');
         await modal.locator('#ui-multibind-key-hints').selectOption('always');
-        await modal.locator(SETTINGS_SAVE).click();
-        await expect(modal).not.toBeVisible();
+        await saveSettings(page);
 
         await expect(hint).toHaveText('ALT+1');
     });

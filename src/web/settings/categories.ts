@@ -94,10 +94,16 @@ export const SHOW_SETTINGS_EVENT = "show-settings";
 
 export interface ShowSettingsDetail {
     category?: SettingsCategoryKey;
+    /**
+     * A general "open settings" rather than a particular page: on a phone the
+     * dialog starts on its list of pages (with `category` still the one the
+     * wide layout shows).
+     */
+    overview?: boolean;
 }
 
-export function requestSettingsCategory(category: SettingsCategoryKey): void {
-    window.dispatchEvent(new CustomEvent<ShowSettingsDetail>(SHOW_SETTINGS_EVENT, { detail: { category } }));
+export function requestSettingsCategory(category: SettingsCategoryKey, options: { overview?: boolean } = {}): void {
+    window.dispatchEvent(new CustomEvent<ShowSettingsDetail>(SHOW_SETTINGS_EVENT, { detail: { category, ...options } }));
 }
 
 /**

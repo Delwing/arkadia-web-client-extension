@@ -1071,8 +1071,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // The ⋯ menu next to the command line (Dokumentacja and Logi register themselves).
-    const openSettingsOn = (category: SettingsCategoryKey) => {
-        requestSettingsCategory(category);
+    const openSettingsOn = (category: SettingsCategoryKey, overview = false) => {
+        requestSettingsCategory(category, {overview});
         settingsModal?.show();
     };
     const shareLocation = () => {
@@ -1101,8 +1101,8 @@ document.addEventListener('DOMContentLoaded', () => {
         ['people-browser-button', 'Baza postaci', 'gra', 'users', () => eventBus.emit('peopleBrowser.popup.open')],
         ['npc-button', 'Odbiorcy paczek', 'gra', 'package', () => eventBus.emit('packageReceiver.popup.open')],
         ['share-location-button', 'Kod QR lokacji', 'gra', 'qr-code', shareLocation, 'Kod QR'],
-        ['options-button', 'Postać', 'ustawienia', 'settings', () => openSettingsOn('character-general')],
-        ['ui-settings-button', 'Interfejs', 'ustawienia', 'layout', () => openSettingsOn('ui-appearance')],
+        ['options-button', 'Postać', 'ustawienia', 'settings', () => openSettingsOn('character-general', true)],
+        ['ui-settings-button', 'Interfejs', 'ustawienia', 'layout', () => openSettingsOn('ui-appearance', true)],
         ['mobile-buttons-button', 'Przyciski', 'ustawienia', 'grid', () => openSettingsOn(buttonsSettingsCategory())],
         ['mobile-radial-button', 'Menu kołowe', 'ustawienia', 'radial', () => openSettingsOn('ui-radial')],
         ['export-import-button', 'Eksport / import', 'ustawienia', 'upload', () => window.dispatchEvent(new Event('show-export-import')), 'Eksport'],

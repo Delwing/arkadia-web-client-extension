@@ -48,7 +48,7 @@ test.describe('Settings dialog', () => {
         await expect(settingsPage(page, 'character-general'), 'Ustawienia opens on Postac > Ogolne').toBeVisible();
         await expect(navItem(page, 'character-general')).toHaveClass(/settings-dialog__nav-item--active/);
         await expect(settingsPage(page, 'ui-appearance')).toBeHidden();
-        await expect(modal.locator('#settings-category-select'), 'wide dialog has no page select').toBeHidden();
+        await expect(modal.locator('.settings-dialog--phone'), 'wide dialog is not the phone one').toHaveCount(0);
         await closeWithoutSaving(page);
 
         await page.click('#menu-button');
@@ -273,20 +273,110 @@ test.describe('Settings dialog', () => {
 test.describe('Settings dialog on a phone', () => {
     test.use({viewport: {width: 390, height: 844}});
 
-    test('swaps the sidebar for a page select', async ({page}) => {
-        await boot(page);
+    const phoneRow = (page: Page, category: string) =>
+        page.locator(`${SETTINGS_MODAL} .settings-phone__row[data-settings-category="${category}"]`);
+
+    async function openFromMenu(page: Page, item: string) {
         await page.click('#menu-button');
-        await page.click('#ui-settings-button');
+        await page.click(item);
         await waitForSettingsModalShown(page);
+    }
+
+    test('opens on a list of pages grouped by where they are saved, and drills in', async ({page}) => {
+        await boot(page);
+        await openFromMenu(page, '#ui-settings-button');
         const modal = page.locator(SETTINGS_MODAL);
 
-        const select = modal.locator('#settings-category-select');
-        await expect(select, 'narrow dialog shows the page select').toBeVisible();
-        await expect(modal.locator('.settings-dialog__nav'), 'and hides the sidebar').toBeHidden();
-        await expect(select).toHaveValue('ui-appearance');
+        await expect(modal.locator('.settings-dialog__nav'), 'no sidebar on a phone').toHaveCount(0);
+        await expect(modal.locator('.settings-phone__caption')).toHaveText(['Postać', 'Interfejs', 'Dane']);
+        await expect(modal.locator('[data-settings-group="ui"] .settings-scope-chip')).toHaveText('wszystkie postacie');
+        await expect(modal.locator('[data-settings-group="data"] .settings-scope-chip'), 'Dane carry no chip').toHaveCount(0);
+        await expect(phoneRow(page, 'ui-commands').locator('.settings-phone__row-summary'), 'a summary of the page').toContainText('multibindy');
+        await expect(modal.locator('.modal-footer'), 'no Save until something changes').toBeHidden();
 
-        await select.selectOption('ui-map');
+        await phoneRow(page, 'ui-map').click();
         await expect(settingsPage(page, 'ui-map')).toBeVisible();
-        await expect(settingsPage(page, 'ui-appearance')).toBeHidden();
+        await expect(modal.locator('.settings-phone__title')).toHaveText('Mapa');
+        await expect(modal.locator('.modal-header'), 'the page brings its own header').toBeHidden();
+
+        await modal.locator('#settings-phone-back').click();
+        await expect(settingsPage(page, 'ui-map')).toBeHidden();
+        await expect(phoneRow(page, 'ui-map')).toBeVisible();
+    });
+
+    test('a specific page opens straight on it', async ({page}) => {
+        await boot(page);
+        await openFromMenu(page, '#mobile-radial-button');
+        await expect(settingsPage(page, 'ui-radial')).toBeVisible();
+        await expect(page.locator(`${SETTINGS_MODAL} #settings-phone-back`)).toBeVisible();
+    });
+
+    test('section chips jump within the page', async ({page}) => {
+        await boot(page);
+        await openFromMenu(page, '#ui-settings-button');
+        await phoneRow(page, 'ui-map').click();
+        const chips = page.locator(`${SETTINGS_MODAL} .settings-phone__chip`);
+        await expect(chips.first()).toHaveClass(/is-active/);
+        const count = await chips.count();
+        expect(count, 'Mapa has several cards').toBeGreaterThan(1);
+        await chips.nth(count - 1).click();
+        await expect(chips.nth(count - 1)).toHaveClass(/is-active/);
+        const pane = page.locator(`${SETTINGS_MODAL} .settings-dialog__pages`);
+        expect(await pane.evaluate((el) => el.scrollTop)).toBeGreaterThan(0);
+    });
+
+    test('search lists individual settings; a switch flips in place and the save bar follows', async ({page}) => {
+        await boot(page);
+        await openFromMenu(page, '#ui-settings-button');
+        const modal = page.locator(SETTINGS_MODAL);
+
+        await modal.locator('#settings-search').fill('echo komend');
+        const result = modal.locator('.settings-phone__result', {hasText: 'Echo komend'});
+        await expect(result.locator('.settings-phone__trail')).toHaveText('Interfejs › Komendy');
+        await expect(result.locator('.settings-phone__mark').first()).toHaveText('Echo');
+        const toggle = result.locator('.settings-phone__switch');
+        const before = await toggle.getAttribute('data-checked');
+
+        await toggle.click();
+        await expect(toggle).not.toHaveAttribute('data-checked', before!);
+        await expect(modal.locator('#settings-phone-unsaved')).toHaveText('1 niezapisana zmiana');
+
+        await modal.locator('#settings-phone-revert').click();
+        await expect(modal.locator('#settings-phone-unsaved')).toHaveCount(0);
+        await expect(toggle).toHaveAttribute('data-checked', before!);
+    });
+
+    test('a value setting opens its page at that setting; Back returns to the results', async ({page}) => {
+        await boot(page);
+        await openFromMenu(page, '#ui-settings-button');
+        const modal = page.locator(SETTINGS_MODAL);
+
+        await modal.locator('#settings-search').fill('skroty klawiszowe');
+        const result = modal.locator('.settings-phone__result--open', {hasText: 'Skroty klawiszowe na pasku bindow'});
+        await expect(result.locator('.settings-phone__preview')).toHaveText('Automatycznie (gdy wykryta klawiatura)');
+        await expect(modal.locator('.settings-phone__caption--pages'), 'a setting is not a page').toHaveCount(0);
+
+        await result.click();
+        await expect(settingsPage(page, 'ui-commands')).toBeVisible();
+        await expect(modal.locator('#ui-multibind-key-hints')).toBeInViewport();
+
+        await modal.locator('#settings-phone-back').click();
+        await expect(modal.locator('#settings-search')).toHaveValue('skroty klawiszowe');
+    });
+
+    test('pages that match are listed under Strony; a change is saved from the bar', async ({page}) => {
+        await boot(page);
+        await openFromMenu(page, '#ui-settings-button');
+        const modal = page.locator(SETTINGS_MODAL);
+
+        await modal.locator('#settings-search').fill('mapa');
+        await expect(modal.locator('.settings-phone__caption--pages')).toBeVisible();
+        await modal.locator('.settings-phone__card .settings-phone__row[data-settings-category="ui-map"]').click();
+        await expect(settingsPage(page, 'ui-map')).toBeVisible();
+
+        await goToSettingsPage(page, 'ui-commands');
+        await modal.locator('#ui-command-echo').click();
+        await expect(modal.locator('#settings-phone-unsaved')).toHaveText('1 niezapisana zmiana');
+        await saveSettings(page);
     });
 });
