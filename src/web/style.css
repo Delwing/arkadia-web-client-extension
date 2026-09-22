@@ -14,103 +14,17 @@
   --input-background: rgba(11, 15, 23, 0.94);
   --input-border: rgba(118, 127, 150, 0.45);
   --input-placeholder: rgba(226, 232, 240, 0.45);
-  --input-focus-ring: rgba(88, 154, 255, 0.45);
   --text-primary: #f1f5f9;
   --text-secondary: rgba(226, 232, 240, 0.72);
   --text-tertiary: #666;
   --text-muted: #888;
   --text-default: #e0e0e0;
-  --primary: #589aff;
   --output-bg: #242424;
   --dim-start: 1;
   --dim-end: 0.3;
   --dim-duration: 1000ms;
   --dim-easing: ease-in-out;
 
-  /* Popup semantic colors */
-  --popup-bg: var(--surface-elevated);
-  --popup-text: var(--text-primary);
-  --popup-text-dim: rgba(241, 245, 249, 0.5);
-  --popup-text-dimmer: rgba(241, 245, 249, 0.4);
-  --popup-text-subtle: var(--text-secondary);
-  --popup-text-strong: rgba(241, 245, 249, 0.9);
-  --popup-text-faint: var(--input-placeholder);
-  --popup-text-medium: rgba(241, 245, 249, 0.6);
-  --popup-text-bright: rgba(241, 245, 249, 0.8);
-  --popup-hover-bg: rgba(255, 255, 255, 0.05);
-  --popup-subtle-bg: rgba(255, 255, 255, 0.03);
-  --popup-section-bg: var(--surface-raised);
-  --popup-control-bg: rgba(255, 255, 255, 0.06);
-  --popup-control-hover-bg: rgba(255, 255, 255, 0.1);
-  --popup-control-active-bg: rgba(255, 255, 255, 0.12);
-  --popup-control-pressed-bg: rgba(255, 255, 255, 0.15);
-  --popup-border: var(--surface-border);
-  --popup-border-subtle: rgba(255, 255, 255, 0.08);
-  --popup-border-control: var(--input-border);
-  --popup-border-strong: rgba(148, 163, 184, 0.45);
-  --popup-border-stronger: rgba(255, 255, 255, 0.45);
-  --popup-accent: #60a5fa;
-  --popup-accent-bg: rgba(96, 165, 250, 0.2);
-  --popup-accent-hover-bg: rgba(96, 165, 250, 0.3);
-  --popup-accent-subtle-bg: rgba(96, 165, 250, 0.15);
-  --popup-accent-border: rgba(96, 165, 250, 0.4);
-  --popup-accent-dim-bg: rgba(96, 165, 250, 0.12);
-  --popup-accent-strong-bg: rgba(59, 130, 246, 0.15);
-  --popup-accent-strong-hover-bg: rgba(59, 130, 246, 0.25);
-  --popup-accent-strong-active-bg: rgba(59, 130, 246, 0.4);
-  --popup-accent-team-bg: rgba(59, 130, 246, 0.08);
-  --popup-accent-team-hover-bg: rgba(59, 130, 246, 0.15);
-  --popup-success: #22c55e;
-  --popup-success-light: #4ade80;
-  --popup-success-bg: rgba(34, 197, 94, 0.2);
-  --popup-success-hover-bg: rgba(34, 197, 94, 0.3);
-  --popup-success-border: rgba(34, 197, 94, 0.2);
-  --popup-success-subtle-bg: rgba(34, 197, 94, 0.1);
-  --popup-success-active-bg: rgba(34, 197, 94, 0.35);
-  --popup-warning: #f59e0b;
-  --popup-warning-light: #fbbf24;
-  --popup-warning-border: rgba(245, 158, 11, 0.2);
-  --popup-warning-bg: rgba(245, 158, 11, 0.2);
-  --popup-warning-hover-bg: rgba(245, 158, 11, 0.3);
-  --popup-danger: #ef4444;
-  --popup-danger-light: #f87171;
-  --popup-danger-soft: #ff6b6b;
-  --popup-danger-bg: rgba(239, 68, 68, 0.2);
-  --popup-danger-hover-bg: rgba(239, 68, 68, 0.3);
-  --popup-danger-subtle-bg: rgba(239, 68, 68, 0.1);
-  --popup-danger-border: rgba(239, 68, 68, 0.2);
-  --popup-danger-active-bg: rgba(239, 68, 68, 0.35);
-  --popup-data-yellow: #ffff00;
-  --popup-data-gold: #ffd700;
-  --popup-data-green: #7cfc00;
-  --popup-data-green-light: #90ee90;
-  --popup-data-blue: #87ceeb;
-  --popup-data-orange: #ffa500;
-  --popup-data-orange-warm: #e8a04e;
-  --popup-data-orange-light: #fb923c;
-  --popup-data-pink: #ffb6c1;
-  --popup-data-purple: #6a5acd;
-  --popup-data-purple-light: #8a7aed;
-  --popup-data-gray: #808080;
-  --popup-data-gray-light: #999999;
-  --popup-data-tomato: #ff6347;
-  --popup-data-magic-green: #00ff87;
-  --popup-data-spring-green: #00ff7f;
-  --popup-input-bg: var(--input-background);
-  --popup-input-text: #f1f5f9;
-  --popup-input-focus-border: var(--input-focus-ring);
-  /* Footer / bottom chrome */
-  --footer-bg: var(--surface-content, #242424);
-  --footer-border: rgba(255, 255, 255, 0.1);
-  --footer-control-bg: rgba(255, 255, 255, 0.08);
-  --footer-control-border: rgba(255, 255, 255, 0.2);
-  --footer-control-hover-bg: rgba(255, 255, 255, 0.16);
-  --footer-control-hover-border: rgba(255, 255, 255, 0.35);
-  --footer-button-bg: #3e3f3a;
-  --footer-input-focus-border: #646cff;
-  --footer-text-strong: rgba(255, 255, 255, 0.95);
-  --footer-text: rgba(255, 255, 255, 0.8);
-  --footer-text-dim: rgba(255, 255, 255, 0.5);
   --output-font-family: monospace;
   --output-font-size: 0.875rem;
   /* ── UI chrome scale ─────────────────────────────────────────────────────
@@ -158,9 +72,9 @@
   --floating-pin-background: rgba(255, 255, 255, 0.08);
   --floating-pin-hover-background: rgba(148, 163, 184, 0.24);
   --floating-pin-hover-shadow: 0 0 0 1px rgba(148, 197, 253, 0.4);
-  --floating-pin-active-background: rgba(96, 165, 250, 0.35);
-  --floating-pin-active-hover-background: rgba(96, 165, 250, 0.48);
-  --floating-pin-active-hover-shadow: 0 0 0 1px rgba(96, 165, 250, 0.55);
+  --floating-pin-active-background: color-mix(in srgb, var(--popup-accent) 35%, transparent);
+  --floating-pin-active-hover-background: color-mix(in srgb, var(--popup-accent) 48%, transparent);
+  --floating-pin-active-hover-shadow: 0 0 0 1px color-mix(in srgb, var(--popup-accent) 55%, transparent);
   --close-button-size: var(--floating-close-size);
   --close-button-icon-size: var(--floating-close-icon-size);
   --close-button-icon: var(--floating-close-icon);
@@ -224,11 +138,11 @@ html, body {
 
 a {
   font-weight: 500;
-  color: #646cff;
+  color: var(--popup-accent);
   text-decoration: inherit;
 }
 a:hover {
-  color: #535bf2;
+  color: color-mix(in oklab, var(--popup-accent) 80%, var(--popup-text));
 }
 
 body {
@@ -1247,7 +1161,7 @@ button {
   opacity: 0.75;
 }
 button:hover {
-  border-color: #646cff;
+  border-color: var(--popup-accent);
 }
 button:focus,
 button:focus-visible {
