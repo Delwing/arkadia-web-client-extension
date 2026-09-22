@@ -86,7 +86,7 @@ test.describe('Context menu', () => {
         const menu = page.locator(CONTEXT_MENU_SELECTOR);
         await expect(menu.locator('.context-menu__open-dot')).toHaveCount(0);
         await menu.locator('.context-menu__tile', {hasText: 'Wiedza'}).click();
-        await expect(page.getByText('Raport wiedzy')).toBeVisible({timeout: 5000});
+        await expect(page.locator('.knowledge-window')).toBeVisible({timeout: 5000});
 
         // Unpinned windows close on a click elsewhere; a pinned one stays open.
         const pin = page.locator('button[title="Przypnij okno"]').last();
@@ -95,8 +95,9 @@ test.describe('Context menu', () => {
         // The window now covers the middle of the output: right-click its free edge.
         const box = (await output.boundingBox())!;
         await output.click({button: 'right', position: {x: box.width - 30, y: box.height - 60}});
-        await expect(menu.locator('.context-menu__tile.is-active')).toHaveText(['Wiedza']);
-        await expect(menu.locator('.context-menu__open-dot')).toHaveCount(1);
+        await expect(menu.locator('.context-menu__tile.is-active')).toHaveText(['Wiedza', 'Biblioteki']);
+        // Wiedza and Biblioteki are one window, so both tiles have the dot.
+        await expect(menu.locator('.context-menu__open-dot')).toHaveCount(2);
     });
 
     test('clicking a menu item hides the menu', async ({page}) => {
@@ -123,7 +124,7 @@ test.describe('Context menu', () => {
         await wiedzaButton.click();
 
         // /wiedza is a client-side alias that opens the knowledge details report popup.
-        await expect(page.getByText('Raport wiedzy')).toBeVisible({timeout: 5000});
+        await expect(page.locator('.knowledge-window')).toBeVisible({timeout: 5000});
     });
 
     test('timestamp toggle adds/removes output-show-timestamps class', async ({page}) => {

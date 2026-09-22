@@ -75,7 +75,7 @@ const command = (value: string) => () => eventBus.emit('sendCommand', { command:
 /** Every window, in the order players know; all of them, always (no overflow). */
 const WINDOW_LAUNCHERS: WindowLauncher[] = [
     { label: 'Wiedza', icon: BookOpen, popupId: 'popup:knowledgeDetails', open: command('/wiedza') },
-    { label: 'Biblioteki', icon: Library, popupId: 'popup:knowledgeReport', open: command('/biblioteki') },
+    { label: 'Biblioteki', icon: Library, popupId: 'popup:knowledgeDetails', open: command('/biblioteki') },
     { label: 'Zioła', icon: Leaf, popupId: 'popup:herb', open: command('/ziola') },
     { label: 'Zioła (tekst)', icon: FileText, popupId: 'popup:herb-text', open: command('/ziola2') },
     { label: 'Zlecenia', icon: ScrollText, popupId: 'popup:contracts', open: command('/zlecenia') },

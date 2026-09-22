@@ -646,6 +646,8 @@ type KnowledgeReportLibrary = Omit<LibraryProgressSummary, 'categories'> & {
     id: string;
     name: string;
     locationId: string;
+    /** The map room of `locationId`, for the window's distances and areas. */
+    roomId?: number | null;
     categories: KnowledgeReportLibraryCategory[];
 };
 
@@ -823,6 +825,14 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
     const detailsStore = getKnowledgeDetailsStore();
     let currentLibraryId: string | null = null;
     let currentSnapshot: KnowledgeSnapshot | undefined;
+
+    /** Libraries are keyed by the map's internal ids; the window wants rooms. */
+    const withRoomIds = (report: KnowledgeReportPayload): KnowledgeReportPayload => {
+        for (const library of report.libraries) {
+            library.roomId = client.Map.getRoomIdByInternalId(library.locationId);
+        }
+        return report;
+    };
     let knowledgeDetailsSnapshot: KnowledgeDetailsSnapshot | undefined;
     let currentCharacterGender: KnowledgeCharacterGender | null = null;
     let pendingGenderUpdate = false;
@@ -2020,7 +2030,7 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
         if (report) {
             report.currentLibraryId = currentLibraryId;
         }
-        client.sendEvent('knowledgeReport', report);
+        client.sendEvent('knowledgeReport', report && withRoomIds(report));
     }
 
     function dispatchBookReport(overrideCharacter?: string) {
@@ -2125,7 +2135,7 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
         const report = buildKnowledgeReport(libraryEntries, characterProgress);
         if (report) {
             report.currentLibraryId = currentLibraryId;
-            client.sendEvent('knowledgeReport', report);
+            client.sendEvent('knowledgeReport', withRoomIds(report));
         }
     });
 
@@ -2624,7 +2634,7 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
         }
 
         report.currentLibraryId = currentLibraryId;
-        client.sendEvent('knowledgeReport', report);
+        client.sendEvent('knowledgeReport', withRoomIds(report));
         client.sendEvent('knowledgeReport.popup.open');
     }
 

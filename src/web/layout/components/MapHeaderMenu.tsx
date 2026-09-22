@@ -77,7 +77,7 @@ export function MapHeaderMenu({ className = '' }: MapHeaderMenuProps) {
     eventBus.emit('mapShowCarriageBlocks', showCarriageBlocks);
   }, [showCarriageBlocks]);
 
-  // Keep hintsEnabled and showCompleted in sync with KnowledgeDetailsReport
+  // Keep hintsEnabled and showCompleted in sync with the Wiedza window
   useEffect(() => {
     const handler = (detail: unknown) => {
       const payload = detail as { enabled: boolean; hideCompleted: boolean } | undefined;

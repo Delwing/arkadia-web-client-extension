@@ -1044,7 +1044,7 @@ h1 {
   --fw-min-width: min(300px, calc(100vw - 2rem));
 }
 
-/* knowledge popup (/wiedza, /biblioteki) — moved to src/web/popups/popups.css (shared by both UIs). */
+/* knowledge window (/wiedza, /biblioteki) — src/web/knowledge/knowledge.css. */
 
 /* herbManager (ziola bags) — moved to src/web/popups/popups.css (shared by both UIs). */
 
@@ -1871,11 +1871,6 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
   }
   }
 
-  /* Knowledge window mobile adjustments */
-  .knowledge-window {
-    min-width: calc(100vw - 2rem);
-    min-height: 300px;
-  }
 }
 
 /* Direction Buttons (visible on both mobile and desktop) — moved to
