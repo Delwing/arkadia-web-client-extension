@@ -4,12 +4,11 @@ import { createPortal } from 'react-dom';
 /**
  * A forged modal shell for menu-launched settings/editors.
  *
- * The stock UI hosts these components (Skrypty, Triggery, Aliasy, …) inside
- * Bootstrap modals; forge has no Bootstrap CSS, so this reuses the sidebar's
- * `.forged.panel` chrome instead and portals it to `document.body` as a centred
- * dialog over a dimming backdrop. The body carries `.forge-menu-modal`, the scope
- * under which menu.css maps the components' Bootstrap form classes to the forge
- * palette.
+ * The stock UI hosts these components (Skrypty, Triggery, Aliasy, …) in its own
+ * page-level windows; forge reuses the sidebar's `.forged.panel` chrome instead
+ * and portals it to `document.body` as a dialog over a dimming backdrop. The
+ * dialog carries `.forge-menu-modal`, the scope under which forge's palette and
+ * menu.css's forged skin reach the components' popup-* controls.
  *
  * Closing: the backdrop, the header "×", and Esc all call `onClose`. Several
  * option components dispatch `close-options` / `close-settings` on save/cancel
@@ -35,7 +34,7 @@ interface MenuModalProps {
     /** Footer content (e.g. a Save button); omitted when absent. */
     footer?: ReactNode;
     /** When several modals are stacked only the top one should react to Esc,
-     *  matching stock (Esc dismisses the front-most Bootstrap modal only). */
+     *  matching stock (Esc dismisses the front-most window only). */
     closeOnEsc?: boolean;
     children: ReactNode;
 }
@@ -66,11 +65,6 @@ export default function MenuModal({
             <div
                 id={dialogId}
                 className={`forged panel panel--modal forge-menu-modal forge-menu-modal--${size}${fill ? ' forge-menu-modal--fill' : ''}`}
-                // The editors are Bootstrap; the scoped stylesheet
-                // (forge-modal-bootstrap.scss) carries Bootstrap's dark theme,
-                // which this attribute activates as the base the forge --bs-*
-                // overrides recolour.
-                data-bs-theme="dark"
                 // Clicks inside the dialog must not fall through to the backdrop.
                 onPointerDown={(e) => e.stopPropagation()}
             >

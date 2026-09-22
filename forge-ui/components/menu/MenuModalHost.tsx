@@ -81,7 +81,7 @@ export type ModalKey =
     | 'docs';
 
 /**
- * Warms every modal's code (and the shared scoped-Bootstrap CSS) in the
+ * Warms every modal's code (and the shared scoped stock-layout CSS) in the
  * background, so opening any of them never flashes the Suspense "Ładowanie…"
  * fallback. The menu calls this once, on an idle callback after forge's initial
  * render — it downloads only the panels' own JS (~140 kB gzip); their heavy
@@ -92,13 +92,13 @@ export type ModalKey =
 export function prefetchAllModals(): void {
     // The scoped stylesheet the editors are built against loads with the first
     // modal too; warm it once so the panel paints styled, not just un-suspended.
-    void import('./scopedModalCss');
+    void import('./menuStockCss');
     for (const loader of Object.values(load)) void loader();
 }
 
 interface MenuModalHostProps {
-    /** The modal stack, bottom-to-top. Stock hosts these as independent Bootstrap
-     *  modals that can stack (e.g. Postacie opens *over* Opcje at a higher
+    /** The modal stack, bottom-to-top. Stock hosts these as independent page-level
+     *  windows that can stack (e.g. Postacie opens *over* Opcje at a higher
      *  z-index); a stack reproduces that instead of the old single-active key. */
     stack: ModalKey[];
     client: Client;
@@ -228,7 +228,7 @@ function BindsImportButton() {
     return (
         <button
             type="button"
-            className="btn btn-secondary btn-sm"
+            className="popup-btn popup-btn--control popup-btn--sm"
             disabled={parsing}
             onClick={() => window.dispatchEvent(new Event('binds-open-import'))}
         >
@@ -260,7 +260,7 @@ function MenuModalEntry({ modalKey, isTop, client, onClose, pushKey, replaceKey 
         footer = (
             <button
                 type="button"
-                className="btn btn-primary"
+                className="popup-btn popup-btn--control popup-btn--solid"
                 onClick={() => window.dispatchEvent(new Event(SAVE_SETTINGS_EVENT))}
             >
                 Zapisz
@@ -271,14 +271,14 @@ function MenuModalEntry({ modalKey, isTop, client, onClose, pushKey, replaceKey 
             <>
                 <button
                     type="button"
-                    className="btn btn-secondary me-auto"
+                    className="popup-btn popup-btn--control forge-menu-modal__footer-start"
                     onClick={() => window.dispatchEvent(new Event('binds-add-custom'))}
                 >
                     Dodaj skrót
                 </button>
                 <button
                     type="button"
-                    className="btn btn-primary"
+                    className="popup-btn popup-btn--control popup-btn--solid"
                     onClick={() => window.dispatchEvent(new Event('binds-save'))}
                 >
                     Zapisz
@@ -294,10 +294,10 @@ function MenuModalEntry({ modalKey, isTop, client, onClose, pushKey, replaceKey 
     if (SETTINGS_KEYS.has(modalKey)) {
         headerExtras = (
             <>
-                <button type="button" className="btn btn-secondary btn-sm" onClick={() => replaceKey('export-import')}>
+                <button type="button" className="popup-btn popup-btn--control popup-btn--sm" onClick={() => replaceKey('export-import')}>
                     Eksport/Import
                 </button>
-                <button type="button" className="btn btn-secondary btn-sm" onClick={() => pushKey('characters')}>
+                <button type="button" className="popup-btn popup-btn--control popup-btn--sm" onClick={() => pushKey('characters')}>
                     Postacie
                 </button>
             </>
@@ -408,7 +408,7 @@ export default function MenuModalHost({ stack, client, closeKey, closeTop, pushK
     }, [stack, pushKey]);
 
     // Several option components dispatch these on save/cancel (the same contract
-    // the stock Bootstrap modals honour) — they mean "dismiss the current modal",
+    // the stock windows honour) — they mean "dismiss the current modal",
     // so close the front-most one. Others dispatch the show-* events to open a
     // sibling (the same events stock's option headers fire).
     useEffect(() => {
@@ -428,12 +428,12 @@ export default function MenuModalHost({ stack, client, closeKey, closeTop, pushK
         };
     }, [open, closeTop, pushKey]);
 
-    // Inject the scoped Bootstrap stylesheet the editors are built against, the
+    // Inject the scoped stock layout stylesheet the editors need, the
     // first time any modal opens (kept out of forge's initial chunk). See
-    // scopedModalCss.ts.
+    // menuStockCss.ts.
     useEffect(() => {
         if (!open) return;
-        void import('./scopedModalCss').then((m) => m.injectScopedModalCss());
+        void import('./menuStockCss').then((m) => m.injectMenuStockCss());
     }, [open]);
 
     if (!open) return null;

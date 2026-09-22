@@ -9,7 +9,7 @@
 //  live `.object-card` component styles (style.css "Object List Card View"
 //  section) both live. forge can't load that sheet globally, so this partial
 //  carries just those two blocks and is @imported INSIDE the `.forge-menu-modal`
-//  block of forge-modal-bootstrap.scss — every selector compiles prefixed with
+//  block of forge-menu-stock.scss — every selector compiles prefixed with
 //  `.forge-menu-modal`, so nothing leaks to forge's own HUD (whose "W poblizu"
 //  panel reuses the same `.object-card` class names but lives outside the modal).
 //

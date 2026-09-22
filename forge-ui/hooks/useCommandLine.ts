@@ -149,7 +149,7 @@ export function useCommandLine({ inputRef, passwordRef, getOutputElement }: UseC
         document.addEventListener('keydown', (e) => {
             if (e.key !== 'Enter' || e.shiftKey) return;
             const active = document.activeElement as HTMLElement | null;
-            if (document.querySelector('.modal.show') && (!active || active.id !== COMMAND_INPUT_ID)) return;
+            if (document.querySelector('.forge-menu-backdrop, .popup-dialog-backdrop') && (!active || active.id !== COMMAND_INPUT_ID)) return;
             if (active && active.id !== COMMAND_INPUT_ID &&
                 (active.matches('input, textarea') || active.isContentEditable)) {
                 return;
@@ -166,7 +166,7 @@ export function useCommandLine({ inputRef, passwordRef, getOutputElement }: UseC
             if (selection && selection.toString().length > 0) return;
             const target = e.target;
             if (target instanceof Element &&
-                target.closest('a, button, input, textarea, select, [contenteditable], .modal')) {
+                target.closest('a, button, input, textarea, select, [contenteditable], .forge-menu-backdrop, .popup-dialog-backdrop')) {
                 return;
             }
             (mudClient.isPasswordMode() ? password : input)?.focus();

@@ -15,7 +15,7 @@ Arkadia Web Client Extension is a browser-based client for the Arkadia MUD (Mult
 
 - **Framework**: React 19 with TypeScript 5.8
 - **Build Tool**: Vite 7 (multi-entry: client + editor + viewer + log-viewer)
-- **UI**: React-Bootstrap + Bootstrap 5
+- **UI**: own primitives (`@web-ui/primitives`, `popup-*` classes in `src/web/popups/popups.css`) - no Bootstrap
 - **Code Editor**: Monaco Editor with Shiki syntax highlighting
 - **Backend**: Firebase
 - **Special**: lua-in-js (Lua interpreter), sql.js (SQLite in WASM), esbuild-wasm
@@ -142,7 +142,7 @@ yarn test:e2e -- --shard=1/12              # Run one CI shard
 - Keep patterns ASCII-compatible
 
 ### Styling
-- Use React-Bootstrap components where appropriate
+- Build UI from `@web-ui/primitives` (Dialog, Button, Input, Field, Check, Select, …) and the `popup-*` classes; page-level windows go through `src/web/modals/appModal.ts`. Do not add Bootstrap or Bootstrap class names
 - Follow existing CSS patterns
 
 ## Protected Directories
