@@ -149,6 +149,12 @@ func handleMessage(env protocol.Envelope, hotkeyMgr *hk.Manager, focusMonitor *w
 			log.Printf("invalid register_binds message: %v", err)
 			return nil
 		}
+		// The message carries the client's whole set, so it replaces what we
+		// hold. Without dropping the old registrations first, a bind the user
+		// deleted stays live for the rest of the session — and a bind is a
+		// *suppressed* key, so a stale one on Ctrl+W keeps swallowing it and
+		// the browser tab never closes.
+		hotkeyMgr.UnregisterAll()
 		for _, bind := range msg.Binds {
 			err := hotkeyMgr.Register(bind)
 			responses = append(responses, protocol.NewBindResultMsg(bind.ID, err == nil, err))

@@ -5,7 +5,6 @@ import { bindMatches } from "@modules/core/keymapTypes";
 import { switchKeymap, getActiveKeymapId } from "@modules/core/keymapStorage";
 import type { HelperConnection } from "@modules/helper/HelperConnection";
 import type { HotkeyMsg } from "@modules/helper/helperProtocol";
-import { registerHelperBind } from "@modules/helper/helperBindRegistry";
 
 const DOUBLE_PRESS_WINDOW_MS = 1000;
 const DOUBLE_K_COMMAND = '+k';
@@ -38,7 +37,6 @@ export default class KeyBindingManager {
         this.setupKeydownListener();
         this.setupBindsListener();
         this.setupHelperBindListener();
-        this.registerBuiltInHelperBinds();
         if (helperConnection) {
             this.setupHelperListener(helperConnection);
         }
@@ -104,39 +102,6 @@ export default class KeyBindingManager {
                     break;
             }
         });
-    }
-
-    private registerBuiltInHelperBinds() {
-        registerHelperBind({ id: 'lamp', label: 'Napełnij lampę', category: 'Ogólne' });
-        registerHelperBind({ id: 'attack', label: 'Atakuj', category: 'Walka' });
-        registerHelperBind({ id: 'support', label: 'Wesprzyj', category: 'Walka' });
-        registerHelperBind({ id: 'moveMode', label: 'Tryb ruchu', category: 'Ruch' });
-        registerHelperBind({ id: 'functional', label: 'Funkcyjny', category: 'Ogólne' });
-        registerHelperBind({ id: 'functionalGates', label: 'Funkcyjny (wrota)', category: 'Ogólne' });
-        registerHelperBind({ id: 'functionalTransport', label: 'Funkcyjny (transport)', category: 'Ogólne' });
-        registerHelperBind({ id: 'functionalLoot', label: 'Funkcyjny (zbieranie)', category: 'Ogólne' });
-        registerHelperBind({ id: 'roomBind', label: 'Bind w lokacji', category: 'Ruch' });
-        registerHelperBind({ id: 'drinkable', label: 'Napij się wody', category: 'Ogólne' });
-        registerHelperBind({ id: 'gateBind', label: 'Wrota', category: 'Ruch' });
-        registerHelperBind({ id: 'temp1', label: 'Tymczasowe 1', category: 'Ogólne' });
-        registerHelperBind({ id: 'temp2', label: 'Tymczasowe 2', category: 'Ogólne' });
-        registerHelperBind({ id: 'enemy1', label: 'Atakuj wroga 1', category: 'Walka' });
-        registerHelperBind({ id: 'enemy2', label: 'Atakuj wroga 2', category: 'Walka' });
-        registerHelperBind({ id: 'enemy3', label: 'Atakuj wroga 3', category: 'Walka' });
-        registerHelperBind({ id: 'enemyBlock1', label: 'Blokuj wroga 1', category: 'Walka' });
-        registerHelperBind({ id: 'enemyBlock2', label: 'Blokuj wroga 2', category: 'Walka' });
-        registerHelperBind({ id: 'enemyBlock3', label: 'Blokuj wroga 3', category: 'Walka' });
-        registerHelperBind({ id: 'dir_n', label: 'Kierunek: N', category: 'Kierunki' });
-        registerHelperBind({ id: 'dir_s', label: 'Kierunek: S', category: 'Kierunki' });
-        registerHelperBind({ id: 'dir_w', label: 'Kierunek: W', category: 'Kierunki' });
-        registerHelperBind({ id: 'dir_e', label: 'Kierunek: E', category: 'Kierunki' });
-        registerHelperBind({ id: 'dir_nw', label: 'Kierunek: NW', category: 'Kierunki' });
-        registerHelperBind({ id: 'dir_ne', label: 'Kierunek: NE', category: 'Kierunki' });
-        registerHelperBind({ id: 'dir_sw', label: 'Kierunek: SW', category: 'Kierunki' });
-        registerHelperBind({ id: 'dir_se', label: 'Kierunek: SE', category: 'Kierunki' });
-        registerHelperBind({ id: 'dir_u', label: 'Kierunek: Góra', category: 'Kierunki' });
-        registerHelperBind({ id: 'dir_d', label: 'Kierunek: Dół', category: 'Kierunki' });
-        registerHelperBind({ id: 'dir_special', label: 'Wyjście specjalne', category: 'Kierunki' });
     }
 
     setTempBind(index: number, command: string) {

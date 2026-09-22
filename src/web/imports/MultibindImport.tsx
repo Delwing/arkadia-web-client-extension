@@ -74,7 +74,7 @@ function applyConflictPolicy(rows: MultibindImportRow[], policy: ConflictPolicy)
  *
  * `row` renders it as a row of the "Import z innych klientów" page. Without it
  * the component is headless and opens its file picker on `openEvent` — how the
- * Bindowanie window keeps answering forge's "Importuj bazę multibindów" button.
+ * Klawisze window's ⋯ "Importuj bazę multibindów" works in forge.
  */
 export default function MultibindImport({ row, openEvent }: { row?: boolean; openEvent?: string }) {
     const [multibinds, setMultibinds] = useState<StoredMultibindRecord[]>([]);

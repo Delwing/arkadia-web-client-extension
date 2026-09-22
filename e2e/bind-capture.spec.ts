@@ -12,6 +12,7 @@ import {
     waitForCommandInput,
 } from './support/mocks';
 import type {Page} from '@playwright/test';
+import {bindKey, captureKey, closeKeysWindow, openKeysWindow} from './support/keys';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -32,17 +33,6 @@ async function pressKey(
     if (modifiers.ctrl) await page.keyboard.up('Control');
 }
 
-async function openBindsModal(page: Page): Promise<void> {
-    await page.click('#menu-button');
-    await page.click('#binds-button');
-    await page.waitForSelector('#binds-modal:not([hidden])', {timeout: 5000});
-    await page.waitForSelector('#binds-keymap-select', {timeout: 5000});
-}
-
-async function saveBindsModal(page: Page): Promise<void> {
-    await page.locator('#binds-modal button:has-text("Zapisz")').click();
-    await page.waitForSelector('#binds-modal:not([hidden])', {state: 'hidden', timeout: 5000});
-}
 
 // ---------------------------------------------------------------------------
 // Test suites
@@ -62,20 +52,13 @@ test.describe('Bind capture via UI: lamp bind', () => {
 
     test('reassigned lamp bind (F9) sends "napelnij lampe olejem"; old Ctrl+4 no longer fires', async ({page}) => {
         // Open binds modal and capture F9 for the lamp bind
-        await openBindsModal(page);
+        await openKeysWindow(page);
 
-        const lampInput = page
-            .locator('#binds-modal .bind-row', {hasText: 'lamp'})
-            .locator('input[type="text"]');
-        await expect(lampInput).toBeVisible();
+        const lampInput = bindKey(page, 'slot:lamp');
+        await captureKey(page, 'slot:lamp', 'F9');
+        await expect(lampInput).toHaveText('F9');
 
-        await lampInput.focus();
-        await page.keyboard.press('F9');
-        await page.waitForTimeout(100);
-
-        await expect(lampInput).toHaveValue('F9');
-
-        await saveBindsModal(page);
+        await closeKeysWindow(page);
 
         // F9 should now send the lamp command
         await resetCommandLog(page);
@@ -127,22 +110,14 @@ test.describe('Bind capture via UI: attack bind', () => {
         await pushGmcp(page, GMCP_PATHS.OBJECTS_NUMS, [PLAYER_NUM, ENEMY_ID]);
 
         // Open binds modal and capture F10 for the attack bind
-        await openBindsModal(page);
+        await openKeysWindow(page);
 
         // Use "Atakuj" exactly (not "Atakuj wroga") — first row matching "Atakuj"
-        const attackInput = page
-            .locator('#binds-modal .bind-row', {hasText: 'Atakuj'})
-            .first()
-            .locator('input[type="text"]');
-        await expect(attackInput).toBeVisible();
+        const attackInput = bindKey(page, 'slot:attack');
+        await captureKey(page, 'slot:attack', 'F10');
+        await expect(attackInput).toHaveText('F10');
 
-        await attackInput.focus();
-        await page.keyboard.press('F10');
-        await page.waitForTimeout(100);
-
-        await expect(attackInput).toHaveValue('F10');
-
-        await saveBindsModal(page);
+        await closeKeysWindow(page);
 
         // F10 should now send the attack command
         await resetCommandLog(page);
@@ -179,22 +154,14 @@ test.describe('Bind capture via UI: direction bind (N)', () => {
     // -----------------------------------------------------------------------
 
     test('reassigned N direction bind (F7) sends "n"; old Numpad8 no longer fires', async ({page}) => {
-        await openBindsModal(page);
+        await openKeysWindow(page);
 
         // Find the "N" row by matching the first <td> with exactly "N"
-        const nInput = page
-            .locator('#binds-modal .bind-row')
-            .filter({has: page.locator('.bind-row__label', {hasText: /^N$/})})
-            .locator('input[type="text"]');
-        await expect(nInput).toBeVisible();
+        const nInput = bindKey(page, 'slot:directions.n');
+        await captureKey(page, 'slot:directions.n', 'F7');
+        await expect(nInput).toHaveText('F7');
 
-        await nInput.focus();
-        await page.keyboard.press('F7');
-        await page.waitForTimeout(100);
-
-        await expect(nInput).toHaveValue('F7');
-
-        await saveBindsModal(page);
+        await closeKeysWindow(page);
 
         // F7 should now send "n"
         await resetCommandLog(page);
@@ -231,20 +198,13 @@ test.describe('Bind capture via UI: functional bind', () => {
     // -----------------------------------------------------------------------
 
     test('reassigned functional bind (Backslash) fires "usiadz"; old BracketRight no longer fires', async ({page}) => {
-        await openBindsModal(page);
+        await openKeysWindow(page);
 
-        const funcInput = page
-            .locator('#binds-modal .bind-row', {hasText: 'Funkcyjny'})
-            .locator('input[type="text"]');
-        await expect(funcInput).toBeVisible();
+        const funcInput = bindKey(page, 'slot:main');
+        await captureKey(page, 'slot:main', 'Backslash');
+        await expect(funcInput).toHaveText('\\');
 
-        await funcInput.focus();
-        await page.keyboard.press('Backslash');
-        await page.waitForTimeout(100);
-
-        await expect(funcInput).toHaveValue('Backslash');
-
-        await saveBindsModal(page);
+        await closeKeysWindow(page);
 
         const output = page.locator('#main_text_output_msg_wrapper');
 
@@ -297,21 +257,14 @@ test.describe('Bind capture via UI: drinkable bind', () => {
             exits: {n: 9201},
         });
 
-        await openBindsModal(page);
+        await openKeysWindow(page);
 
         // Find the drinkable row by searching for "wody" text
-        const drinkableInput = page
-            .locator('#binds-modal .bind-row', {hasText: 'wody'})
-            .locator('input[type="text"]');
-        await expect(drinkableInput).toBeVisible();
+        const drinkableInput = bindKey(page, 'slot:drinkable');
+        await captureKey(page, 'slot:drinkable', 'F11');
+        await expect(drinkableInput).toHaveText('F11');
 
-        await drinkableInput.focus();
-        await page.keyboard.press('F11');
-        await page.waitForTimeout(100);
-
-        await expect(drinkableInput).toHaveValue('F11');
-
-        await saveBindsModal(page);
+        await closeKeysWindow(page);
 
         // F11 should now send the drink command
         await resetCommandLog(page);
@@ -360,20 +313,13 @@ test.describe('Bind capture via UI: mid-session change', () => {
             .toBe('napelnij lampe olejem');
 
         // Open binds modal and reassign lamp bind to F9
-        await openBindsModal(page);
+        await openKeysWindow(page);
 
-        const lampInput = page
-            .locator('#binds-modal .bind-row', {hasText: 'lamp'})
-            .locator('input[type="text"]');
-        await expect(lampInput).toBeVisible();
+        const lampInput = bindKey(page, 'slot:lamp');
+        await captureKey(page, 'slot:lamp', 'F9');
+        await expect(lampInput).toHaveText('F9');
 
-        await lampInput.focus();
-        await page.keyboard.press('F9');
-        await page.waitForTimeout(100);
-
-        await expect(lampInput).toHaveValue('F9');
-
-        await saveBindsModal(page);
+        await closeKeysWindow(page);
 
         // F9 should now send the lamp command
         await resetCommandLog(page);

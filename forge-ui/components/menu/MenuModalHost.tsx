@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react';
+import { lazy, Suspense, useEffect, useRef, type ReactNode } from 'react';
 import type Client from '@client/Client';
 import MenuModal from './MenuModal';
 import { getHelperConnection } from '../../client/bootstrap';
@@ -32,7 +32,7 @@ const load = {
     buttons: () => import('@web/settings/SettingsDialog'),
     'export-import': () => import('@web/options/ExportImport'),
     characters: () => import('@web/options/CharacterManagementModal'),
-    binds: () => import('@web/options/Binds'),
+    binds: () => import('@web/keys/Keys'),
     scripts: () => import('@web/options/Scripts'),
     aliases: () => import('@web/options/Aliases'),
     triggers: () => import('@web/options/UserTriggers'),
@@ -48,7 +48,7 @@ const load = {
 const SettingsDialog = lazy(load.options);
 const ExportImport = lazy(load['export-import']);
 const CharacterManagement = lazy(load.characters);
-const Binds = lazy(load.binds);
+const Keys = lazy(load.binds);
 const Scripts = lazy(load.scripts);
 const Aliases = lazy(load.aliases);
 const UserTriggers = lazy(load.triggers);
@@ -117,7 +117,7 @@ const TITLES: Record<ModalKey, string> = {
     ui: 'Ustawienia',
     'export-import': 'Eksport i import ustawień',
     characters: 'Zarządzanie postaciami',
-    binds: 'Bindowanie',
+    binds: 'Klawisze',
     scripts: 'Skrypty',
     aliases: 'Aliasy',
     triggers: 'Triggery',
@@ -158,6 +158,8 @@ const SIZE: Partial<Record<ModalKey, 'md' | 'lg' | 'xl'>> = {
     scripts: 'xl',
     characters: 'md',
     helper: 'xl',
+    // Klawisze draws a whole keyboard beside the selected key.
+    binds: 'xl',
     logs: 'xl',
     docs: 'xl',
 };
@@ -215,28 +217,6 @@ function DocsBody() {
     return <div ref={ref} className="forge-docs-host" style={{ minHeight: 0, flex: '1 1 auto', display: 'flex', flexDirection: 'column' }} />;
 }
 
-/** The Bindowanie modal's import trigger, hosted in the title bar. It drives the
- *  shared <Binds/> body through a window event and reflects the parsing state the
- *  body broadcasts back (disabled + label swap), matching the stock header button. */
-function BindsImportButton() {
-    const [parsing, setParsing] = useState(false);
-    useEffect(() => {
-        const onParsing = (ev: Event) => setParsing(!!(ev as CustomEvent<boolean>).detail);
-        window.addEventListener('binds-parsing', onParsing);
-        return () => window.removeEventListener('binds-parsing', onParsing);
-    }, []);
-    return (
-        <button
-            type="button"
-            className="popup-btn popup-btn--control popup-btn--sm"
-            disabled={parsing}
-            onClick={() => window.dispatchEvent(new Event('binds-open-import'))}
-        >
-            {parsing ? 'Wczytywanie…' : 'Importuj bazę multibindów…'}
-        </button>
-    );
-}
-
 interface MenuModalEntryProps {
     modalKey: ModalKey;
     /** True for the front-most modal; only it responds to Esc. */
@@ -266,25 +246,6 @@ function MenuModalEntry({ modalKey, isTop, client, onClose, pushKey, replaceKey 
                 Zapisz
             </button>
         );
-    } else if (modalKey === 'binds') {
-        footer = (
-            <>
-                <button
-                    type="button"
-                    className="popup-btn popup-btn--control forge-menu-modal__footer-start"
-                    onClick={() => window.dispatchEvent(new Event('binds-add-custom'))}
-                >
-                    Dodaj skrót
-                </button>
-                <button
-                    type="button"
-                    className="popup-btn popup-btn--control popup-btn--solid"
-                    onClick={() => window.dispatchEvent(new Event('binds-save'))}
-                >
-                    Zapisz
-                </button>
-            </>
-        );
     }
 
     // The settings dialog offers export/import + character shortcuts in its header.
@@ -302,8 +263,6 @@ function MenuModalEntry({ modalKey, isTop, client, onClose, pushKey, replaceKey 
                 </button>
             </>
         );
-    } else if (modalKey === 'binds') {
-        headerExtras = <BindsImportButton />;
     }
 
     let body: ReactNode;
@@ -327,7 +286,7 @@ function MenuModalEntry({ modalKey, isTop, client, onClose, pushKey, replaceKey 
             body = <CharacterManagement />;
             break;
         case 'binds':
-            body = <Binds />;
+            body = <Keys helperConnection={getHelperConnection()} />;
             break;
         case 'scripts':
             body = <Scripts />;
@@ -416,15 +375,18 @@ export default function MenuModalHost({ stack, client, closeKey, closeTop, pushK
         const close = () => closeTop();
         const toExport = () => pushKey('export-import');
         const toChars = () => pushKey('characters');
+        const toBinds = () => pushKey('binds');
         window.addEventListener('close-options', close);
         window.addEventListener(CLOSE_SETTINGS_EVENT, close);
         window.addEventListener('show-export-import', toExport);
         window.addEventListener('show-character-management', toChars);
+        window.addEventListener('show-binds', toBinds);
         return () => {
             window.removeEventListener('close-options', close);
             window.removeEventListener(CLOSE_SETTINGS_EVENT, close);
             window.removeEventListener('show-export-import', toExport);
             window.removeEventListener('show-character-management', toChars);
+            window.removeEventListener('show-binds', toBinds);
         };
     }, [open, closeTop, pushKey]);
 

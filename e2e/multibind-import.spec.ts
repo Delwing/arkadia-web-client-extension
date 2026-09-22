@@ -1,5 +1,6 @@
 import {expect, test} from './support/fixtures';
 import type {Page} from '@playwright/test';
+import {openKeysMenu} from './support/keys';
 import {
     ensureGameSocket,
     getLastOutgoingCommand,
@@ -21,7 +22,7 @@ async function openBindsModal(page: Page) {
     return modal;
 }
 
-/** The Bindowanie import button hands over to Ustawienia → Import z innych klientów. */
+/** The Klawisze ⋯ menu import hands over to Ustawienia → Import z innych klientów. */
 const IMPORT_ROW = '#settings-modal #import-multibinds';
 
 async function closeImportPage(page: Page) {
@@ -62,6 +63,7 @@ test.describe('Multibind import', () => {
             },
         });
 
+        await openKeysMenu(page);
         await page.getByRole('button', { name: 'Importuj bazę multibindów…' }).click();
         await expect(page.locator(IMPORT_ROW), 'should open the import page').toBeVisible();
         await page.setInputFiles(`${IMPORT_ROW} input[type="file"]`, {
@@ -211,6 +213,7 @@ test.describe('Multibind import', () => {
             payload: { rows, totalRows: rows.length, invalidRows: 0 },
         });
 
+        await openKeysMenu(page);
         await page.getByRole('button', { name: 'Importuj bazę multibindów…' }).click();
         await expect(page.locator(IMPORT_ROW), 'should open the import page').toBeVisible();
         await page.setInputFiles(`${IMPORT_ROW} input[type="file"]`, {
@@ -243,6 +246,7 @@ test.describe('Multibind import', () => {
             message: 'Nie udało się sparsować bazy.',
         });
 
+        await openKeysMenu(page);
         await page.getByRole('button', { name: 'Importuj bazę multibindów…' }).click();
         await expect(page.locator(IMPORT_ROW), 'should open the import page').toBeVisible();
         await page.setInputFiles(`${IMPORT_ROW} input[type="file"]`, {

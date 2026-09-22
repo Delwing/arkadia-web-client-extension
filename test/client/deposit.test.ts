@@ -42,7 +42,6 @@ describe('deposits', () => {
   beforeEach(() => {
     localStorage.clear();
     characterStorage.setCharacter('TestChar');
-    (global as any).Input = { send: jest.fn() };
     client = new FakeClient();
     const aliases: { pattern: RegExp; callback: () => void }[] = [];
     initDeposits((client as unknown) as any, aliases);

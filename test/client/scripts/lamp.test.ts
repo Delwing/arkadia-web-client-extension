@@ -22,7 +22,6 @@ describe('lamp triggers', () => {
 
   beforeEach(() => {
     jest.useFakeTimers();
-    (global as any).Input = { send: jest.fn() };
     client = new FakeClient();
     initLamp((client as unknown) as any);
     parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), '');

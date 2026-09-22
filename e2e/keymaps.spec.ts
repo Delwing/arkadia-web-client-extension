@@ -32,7 +32,7 @@ test.describe('Keymaps management', () => {
         await openBindsModal(page);
 
         // The keymap selector should be visible with the label
-        const keymapLabel = page.locator('#binds-modal').locator('text=Mapa klawiszy');
+        const keymapLabel = page.locator('#binds-modal').getByText('Mapa', {exact: true});
         await expect(keymapLabel).toBeVisible();
 
         // The select should have the default keymap option

@@ -828,10 +828,12 @@ select.popup-input.popup-input--control {
 .popup-segmented__item:has(.popup-segmented__input:focus-visible) {
   box-shadow: 0 0 0 2px var(--popup-accent-subtle-bg);
 }
+/* The weight stays put on purpose: bolding the active option made it wider,
+   which re-measured the whole control and nudged every option sideways on each
+   switch. The fill and the brighter text carry the selection instead. */
 .popup-segmented__item.is-active {
   background-color: var(--popup-control-active-bg);
   color: var(--popup-text-strong);
-  font-weight: 600;
 }
 
 /* Small shared bits used by the dialogs. */

@@ -40,6 +40,17 @@ var keysymToVK = map[xproto.Keysym]KeyCode{
 	0xff09: VK_TAB, 0xff0d: VK_RETURN, 0xff1b: VK_ESCAPE,
 	0x0020: VK_SPACE, 0xffff: VK_DELETE, 0xff08: VK_BACK,
 	0xff51: VK_LEFT, 0xff52: VK_UP, 0xff53: VK_RIGHT, 0xff54: VK_DOWN,
+	// Punctuation and the numeric keypad: "]" carries the functional bind and
+	// the numpad carries the directions, so these matter more than most.
+	0x005b: VK_OEM_4, 0x005d: VK_OEM_6, 0x003b: VK_OEM_1, 0x0027: VK_OEM_7,
+	0x002c: VK_OEM_COMMA, 0x002e: VK_OEM_PERIOD, 0x002f: VK_OEM_2,
+	0x005c: VK_OEM_5, 0x0060: VK_OEM_3, 0x002d: VK_OEM_MINUS, 0x003d: VK_OEM_PLUS,
+	0xffb0: VKNumpad(0), 0xffb1: VKNumpad(1), 0xffb2: VKNumpad(2),
+	0xffb3: VKNumpad(3), 0xffb4: VKNumpad(4), 0xffb5: VKNumpad(5),
+	0xffb6: VKNumpad(6), 0xffb7: VKNumpad(7), 0xffb8: VKNumpad(8),
+	0xffb9: VKNumpad(9),
+	0xffaa: VK_MULTIPLY, 0xffab: VK_ADD, 0xffad: VK_SUBTRACT,
+	0xffae: VK_DECIMAL, 0xffaf: VK_DIVIDE,
 }
 
 // Reverse: VK code to X11 keysym

@@ -137,6 +137,17 @@ func (m *Manager) UnregisterAll() {
 	}
 }
 
+// RegisteredIDs lists the ids currently held, in no particular order.
+func (m *Manager) RegisteredIDs() []string {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	ids := make([]string, 0, len(m.registrations))
+	for id := range m.registrations {
+		ids = append(ids, id)
+	}
+	return ids
+}
+
 // CaptureNextKey sets up a one-shot capture. The next full key combo
 // (press and release) will be reported via callback. Escape cancels (empty key).
 func (m *Manager) CaptureNextKey(callback func(protocol.KeyCapturedMsg)) {

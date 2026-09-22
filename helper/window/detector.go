@@ -12,6 +12,35 @@ type Detector interface {
 	BringToFront(patterns []string) error
 }
 
+// WindowMatch is a candidate for BringToFront: a platform handle and its title.
+type WindowMatch struct {
+	Handle uintptr
+	Title  string
+}
+
+// PickWindow chooses which window to raise.
+//
+// The patterns arrive in the order the web client sent them, most specific
+// first (its own live tab title, then the generic fallbacks), and an earlier
+// pattern always wins. That matters on a machine where several windows carry
+// the game's name — a chat client in a channel called "arkadia-…", an editor
+// with the repository open — and only the first pattern names the client
+// itself.
+func PickWindow(windows []WindowMatch, patterns []string) (WindowMatch, bool) {
+	for _, p := range patterns {
+		if p == "" {
+			continue
+		}
+		needle := strings.ToLower(p)
+		for _, w := range windows {
+			if w.Title != "" && strings.Contains(strings.ToLower(w.Title), needle) {
+				return w, true
+			}
+		}
+	}
+	return WindowMatch{}, false
+}
+
 // FocusMonitor polls the active window and matches against patterns.
 type FocusMonitor struct {
 	detector Detector

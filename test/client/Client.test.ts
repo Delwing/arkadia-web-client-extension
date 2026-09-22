@@ -74,7 +74,6 @@ vi.mock('@client/scripts/functionalBind', () => ({
   LINE_START_EVENT: 'line-start',
 }));
 
-
 vi.mock('@shared/map/MapHelper', () => {
   return {
     __esModule: true,
@@ -92,8 +91,6 @@ beforeEach(() => {
   localStorage.clear();
   characterStorage.setCharacter('TestChar');
   document.body.innerHTML = '<iframe id="cm-frame"></iframe>';
-  (globalThis as any).Output = { flush_buffer: jest.fn(), send: jest.fn() };
-  (globalThis as any).Text = { parse_patterns: jest.fn((v: any) => v) };
   (globalThis as any).dispatchEvent = jest.fn();
   (global as any).clientAdapterMock = { send: jest.fn(), stop: jest.fn(), connect: jest.fn(), output: jest.fn(), sendGmcp: jest.fn(), shouldEchoCommand: jest.fn(() => false), flushMessageBuffer: jest.fn(), emit: jest.fn() };
   jest.clearAllMocks();

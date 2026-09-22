@@ -1,6 +1,7 @@
 import {expect, test} from './support/fixtures';
 import {ensureGameSocket, pushGmcp, waitForCharacter, waitForCommandInput} from './support/mocks';
 import type {Page} from '@playwright/test';
+import {openKeysMenu} from './support/keys';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -15,7 +16,7 @@ async function openBindsModal(page: Page): Promise<void> {
     });
     await page.click('#binds-button');
     await page.waitForSelector('#binds-modal:not([hidden])', {timeout: 5000});
-    await page.waitForSelector('#binds-keymap-select', {timeout: 5000});
+    await page.waitForSelector('#binds-keymap-select', {timeout: 5000});
 }
 
 async function closeBindsModal(page: Page): Promise<void> {
@@ -72,8 +73,10 @@ test.describe('Keymap deletion', () => {
         // This test only makes sense when there is exactly one keymap in storage
         // (fresh page, no other keymaps created)
         if (optionCount === 1) {
+            await openKeysMenu(page);
             const deleteBtn = page.locator('#binds-modal button[title="Usuń mapę klawiszy"]').first();
             await expect(deleteBtn).toBeDisabled();
+            await openKeysMenu(page); // closes it again
         } else {
             // More than one keymap exists: delete until only one remains so we
             // can test the disabled state.  This keeps the test deterministic
@@ -86,14 +89,17 @@ test.describe('Keymap deletion', () => {
                 if (lastVal) {
                     await keymapSelect.selectOption(lastVal);
                 }
-                await page.locator('#binds-modal button[title="Usuń mapę klawiszy"]').first().click();
+                await openKeysMenu(page);
+        await page.locator('#binds-modal button[title="Usuń mapę klawiszy"]').first().click();
                 const confirmDelete = page.locator('button:has-text("Usuń")').last();
                 await confirmDelete.click();
                 await page.waitForTimeout(300);
             }
 
+            await openKeysMenu(page);
             const deleteBtn = page.locator('#binds-modal button[title="Usuń mapę klawiszy"]').first();
             await expect(deleteBtn).toBeDisabled();
+            await openKeysMenu(page); // closes it again
         }
 
         await closeBindsModal(page);
@@ -118,6 +124,7 @@ test.describe('Keymap deletion', () => {
         const currentValue = await keymapSelect.inputValue();
 
         // Click the "Usuń" (delete keymap) button
+        await openKeysMenu(page);
         await page.locator('#binds-modal button[title="Usuń mapę klawiszy"]').first().click();
 
         // Confirmation modal should appear; click the danger "Usuń" button inside it
@@ -159,6 +166,7 @@ test.describe('Keymap deletion', () => {
         const deletedValue = await keymapSelect.inputValue();
 
         // Delete it
+        await openKeysMenu(page);
         await page.locator('#binds-modal button[title="Usuń mapę klawiszy"]').first().click();
         const confirmModal = page.locator('.popup-dialog').last();
         await confirmModal.locator('button.popup-btn--danger:has-text("Usuń")').click();
@@ -193,6 +201,7 @@ test.describe('Keymap deletion', () => {
         const deletedValue = await keymapSelect.inputValue();
 
         // Delete it
+        await openKeysMenu(page);
         await page.locator('#binds-modal button[title="Usuń mapę klawiszy"]').first().click();
         const confirmModal = page.locator('.popup-dialog').last();
         await confirmModal.locator('button.popup-btn--danger:has-text("Usuń")').click();
@@ -231,6 +240,7 @@ test.describe('Keymap deletion', () => {
         await createKeymap(page);
 
         // Click the delete button
+        await openKeysMenu(page);
         await page.locator('#binds-modal button[title="Usuń mapę klawiszy"]').first().click();
 
         // Confirmation modal should be visible with the expected title text

@@ -40,3 +40,27 @@ func TestParseKeyCombo(t *testing.T) {
 		})
 	}
 }
+
+// The functional bind lives on "]" and the directions on the numpad, so these
+// have to survive the round trip the web client and the capture both rely on.
+func TestParseKeyComboCoversPunctuationAndNumpad(t *testing.T) {
+	cases := map[string]KeyCode{
+		"rbracket": VK_OEM_6,
+		"lbracket": VK_OEM_4,
+		"grave":    VK_OEM_3,
+		"minus":    VK_OEM_MINUS,
+		"slash":    VK_OEM_2,
+		"num8":     VKNumpad(8),
+		"numadd":   VK_ADD,
+		"numdiv":   VK_DIVIDE,
+	}
+	for name, want := range cases {
+		mods, key, err := ParseKeyCombo("ctrl+" + name)
+		if err != nil || key != want || mods != ModCtrl {
+			t.Fatalf("ParseKeyCombo(ctrl+%s) = %v, %v, %v", name, mods, key, err)
+		}
+		if got := (KeyEvent{Mods: ModCtrl, VK: key}).ComboString(); got != "ctrl+"+name {
+			t.Fatalf("ComboString for %s = %q", name, got)
+		}
+	}
+}

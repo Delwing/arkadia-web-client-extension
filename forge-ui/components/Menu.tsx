@@ -28,7 +28,7 @@ const ITEMS: Item[] = [
     { kind: 'modal', label: 'Interfejs', modal: 'ui' },
     { kind: 'modal', label: 'Przyciski', modal: 'buttons' },
     { kind: 'modal', label: 'Menu kołowe', modal: 'radial' },
-    { kind: 'modal', label: 'Bindowanie', modal: 'binds' },
+    { kind: 'modal', label: 'Klawisze', modal: 'binds' },
     { kind: 'divider' },
     { kind: 'event', label: 'Odbiorcy paczek', event: 'packageReceiver.popup.open' },
     { kind: 'modal', label: 'Skrypty', modal: 'scripts' },

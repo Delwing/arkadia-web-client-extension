@@ -49,7 +49,7 @@ import {flushSync} from 'react-dom'
 import {LocationLabel} from "@web-ui/components/map/LocationLabel"
 import {PauseIcon} from "@web-ui/components/map/PauseIcon"
 import {MapLostBadge} from "@web-ui/components/map/MapLostBadge"
-import Binds from "./options/Binds.tsx"
+import Keys from "./keys/Keys.tsx"
 import Scripts from "./options/Scripts.tsx"
 import Aliases from "./options/Aliases.tsx"
 import Recordings from "./options/Recordings.tsx"
@@ -1014,6 +1014,11 @@ document.addEventListener('DOMContentLoaded', () => {
         settingsModal?.show();
     });
 
+    // Helper settings sends the user here: its shortcuts are edited in Klawisze.
+    window.addEventListener('show-binds', () => {
+        bindsModal?.show();
+    });
+
     window.addEventListener('show-character-management', () => {
         if (characterManagementModal) {
             characterManagementModal.show();
@@ -1053,36 +1058,6 @@ document.addEventListener('DOMContentLoaded', () => {
         settingsModal?.show();
     });
 
-    // The Bindowanie modal's import trigger lives in its title bar and Save in its
-    // footer (both outside the scrollable body). They drive the shared <Binds/>
-    // body through window events; Binds broadcasts its parsing state back so the
-    // title-bar button can disable itself and show a spinner.
-    const bindsImportButton = document.getElementById('binds-import-btn') as HTMLButtonElement | null;
-    const bindsImportSpinner = document.getElementById('binds-import-spinner');
-    if (bindsImportButton) {
-        // The import itself is in Ustawienia → Import z innych klientów.
-        bindsImportButton.addEventListener('click', () => {
-            openSettingsPage('data-import', 'import-multibinds');
-        });
-    }
-    window.addEventListener('binds-parsing', (ev) => {
-        const parsing = (ev as CustomEvent<boolean>).detail;
-        if (bindsImportButton) bindsImportButton.disabled = parsing;
-        if (bindsImportSpinner) bindsImportSpinner.hidden = !parsing;
-    });
-    const bindsSave = document.getElementById('binds-save') as HTMLButtonElement | null;
-    if (bindsSave) {
-        bindsSave.addEventListener('click', () => {
-            window.dispatchEvent(new Event('binds-save'));
-        });
-    }
-    const bindsAddCustom = document.getElementById('binds-add-custom') as HTMLButtonElement | null;
-    if (bindsAddCustom) {
-        bindsAddCustom.addEventListener('click', () => {
-            window.dispatchEvent(new Event('binds-add-custom'));
-        });
-    }
-
     // The map's "Dodaj skrót" and "Notatka" (and /notatka) open Miejsca on that room.
     if (placesModal) {
         window.addEventListener(OPEN_PLACE_EVENT, () => placesModal.show());
@@ -1116,7 +1091,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const builtins: [string, string, MainMenuGroup, string, () => void, string?][] = [
         ['aliases-button', 'Aliasy', 'gra', 'terminal', () => aliasesModal?.show()],
         ['triggers-button', 'Triggery', 'gra', 'zap', () => triggersModal?.show()],
-        ['binds-button', 'Bindowanie', 'gra', 'keyboard', () => bindsModal?.show()],
+        ['binds-button', 'Klawisze', 'gra', 'keyboard', () => bindsModal?.show()],
         ['places-button', 'Miejsca', 'gra', 'map-pin', () => placesModal?.show()],
         ['recordings-button', 'Nagrania', 'gra', 'record', () => recordingsModal?.show()],
         ['people-browser-button', 'Baza postaci', 'gra', 'users', () => eventBus.emit('peopleBrowser.popup.open')],
@@ -1397,7 +1372,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const bindsRoot = document.getElementById('binds-options');
     if (bindsRoot) {
-        createRoot(bindsRoot).render(createElement(Binds));
+        // The multibind import lives in Ustawienia → Import z innych klientów.
+        createRoot(bindsRoot).render(createElement(Keys, {
+            helperConnection,
+            headerSlot: document.getElementById('binds-header-slot'),
+            onImport: () => openSettingsPage('data-import', 'import-multibinds'),
+        }));
     }
 
     const scriptsRoot = document.getElementById('scripts-options');

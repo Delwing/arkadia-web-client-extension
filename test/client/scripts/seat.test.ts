@@ -13,7 +13,6 @@ describe('seat trigger', () => {
   let parse: (line: string) => AnsiAwareBuffer | null;
 
   beforeEach(() => {
-    (global as any).Input = { send: jest.fn() };
     client = new FakeClient();
     initSeat((client as unknown) as any);
     parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), '');

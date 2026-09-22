@@ -7,28 +7,12 @@ import {
     resetCommandLog,
     waitForCommandInput,
 } from './support/mocks';
-import type {Page} from '@playwright/test';
+import {bindKey, captureKey, closeKeysWindow, openKeysWindow} from './support/keys';
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-async function openBindsModal(page: Page): Promise<void> {
-    await page.click('#menu-button');
-    await page.click('#binds-button');
-    await page.waitForSelector('#binds-modal:not([hidden])', {timeout: 5000});
-    await page.waitForSelector('#binds-keymap-select', {timeout: 5000});
-}
-
-async function closeBindsModal(page: Page): Promise<void> {
-    await page.locator('#binds-modal .app-modal__close').first().click();
-    await page.waitForSelector('#binds-modal:not([hidden])', {state: 'hidden', timeout: 5000});
-}
-
-async function saveAndCloseBindsModal(page: Page): Promise<void> {
-    await page.locator('#binds-modal button:has-text("Zapisz")').click();
-    await page.waitForSelector('#binds-modal:not([hidden])', {state: 'hidden', timeout: 5000});
-}
 
 // ---------------------------------------------------------------------------
 // Tests
@@ -151,7 +135,7 @@ test.describe('Functional bind categories with separate keys', () => {
     });
 });
 
-test.describe('Duplicate key assignment in Binds modal', () => {
+test.describe('Duplicate key assignment in the Klawisze window', () => {
     test.beforeEach(async ({page}) => {
         await page.goto('/');
         await waitForCommandInput(page);
@@ -164,54 +148,38 @@ test.describe('Duplicate key assignment in Binds modal', () => {
     // -----------------------------------------------------------------------
 
     test('assigning the same key to two different bind rows saves without error', async ({page}) => {
-        await openBindsModal(page);
+        await openKeysWindow(page);
 
         // Locate the "Tymczasowe 1" and "Tymczasowe 2" row inputs by their
         // preceding label text.  Both are readOnly Form.Controls that capture
         // keys on keydown.
-        const temp1Input = page
-            .locator('#binds-modal .bind-row', {hasText: 'Tymczasowe 1'})
-            .locator('input[type="text"]');
-        const temp2Input = page
-            .locator('#binds-modal .bind-row', {hasText: 'Tymczasowe 2'})
-            .locator('input[type="text"]');
+        const temp1Input = bindKey(page, 'slot:temp[0]');
+        const temp2Input = bindKey(page, 'slot:temp[1]');
 
-        await expect(temp1Input).toBeVisible();
-        await expect(temp2Input).toBeVisible();
+        // Assign F8 to both Tymczasowe binds
+        await captureKey(page, 'slot:temp[0]', 'F8');
+        await captureKey(page, 'slot:temp[1]', 'F8');
 
-        // Assign F8 to Tymczasowe 1
-        await temp1Input.focus();
-        await page.keyboard.press('F8');
-        await page.waitForTimeout(100);
+        // Both show F8, marked as a conflict
+        await expect(temp1Input).toHaveText('F8');
+        await expect(temp2Input).toHaveText('F8');
+        await expect(temp1Input).toHaveClass(/is-conflict/);
 
-        // Assign the same F8 to Tymczasowe 2
-        await temp2Input.focus();
-        await page.keyboard.press('F8');
-        await page.waitForTimeout(100);
-
-        // Both inputs should now show "F8"
-        await expect(temp1Input).toHaveValue('F8');
-        await expect(temp2Input).toHaveValue('F8');
-
-        // Save — no error alert should appear
-        await saveAndCloseBindsModal(page);
+        // Changes are stored at once — close the window
+        await closeKeysWindow(page);
 
         // Verify the modal is gone (saved without complaint)
         await expect(page.locator('#binds-modal')).not.toBeVisible();
 
         // Reopen and verify both binds still show F8
-        await openBindsModal(page);
+        await openKeysWindow(page);
 
-        const temp1After = page
-            .locator('#binds-modal .bind-row', {hasText: 'Tymczasowe 1'})
-            .locator('input[type="text"]');
-        const temp2After = page
-            .locator('#binds-modal .bind-row', {hasText: 'Tymczasowe 2'})
-            .locator('input[type="text"]');
+        const temp1After = bindKey(page, 'slot:temp[0]');
+        const temp2After = bindKey(page, 'slot:temp[1]');
 
-        await expect(temp1After).toHaveValue('F8');
-        await expect(temp2After).toHaveValue('F8');
+        await expect(temp1After).toHaveText('F8');
+        await expect(temp2After).toHaveText('F8');
 
-        await closeBindsModal(page);
+        await closeKeysWindow(page);
     });
 });

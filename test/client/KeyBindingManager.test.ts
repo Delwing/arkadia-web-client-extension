@@ -1,13 +1,3 @@
-(globalThis as any).Input = { send: jest.fn() };
-(globalThis as any).Output = { send: jest.fn(), flush_buffer: jest.fn(), buffer: [] };
-(globalThis as any).Text = { parse_patterns: jest.fn((v: any) => v) };
-(globalThis as any).Maps = {
-  refresh_position: jest.fn(),
-  set_position: jest.fn(),
-  unset_position: jest.fn(),
-  data: undefined,
-};
-(globalThis as any).Gmcp = { parse_option_subnegotiation: jest.fn() };
 
 vi.mock('@client/main', () => ({
   __esModule: true
@@ -65,8 +55,6 @@ const realDispatchEvent = window.dispatchEvent.bind(window);
 beforeEach(() => {
   localStorage.clear();
   document.body.innerHTML = '<iframe id="cm-frame"></iframe>';
-  (globalThis as any).Output = { flush_buffer: jest.fn(), send: jest.fn() };
-  (globalThis as any).Text = { parse_patterns: jest.fn((v: any) => v) };
   (globalThis as any).dispatchEvent = jest.fn((...args: any[]) => realDispatchEvent(...args));
   (global as any).clientAdapterMock = {
     send: jest.fn(),
@@ -173,5 +161,47 @@ describe('KeyBindingManager', () => {
 
     // sendCommand should not have been called for F4
     expect(sendSpy).not.toHaveBeenCalledWith(expect.stringContaining('temp'));
+  });
+
+  // A key handed to the helper so it works outside the client: the helper hears
+  // it anywhere, swallows it, and reports it over the socket. Routing that back
+  // onto a built-in bind is what makes "F1 attacks, even from another window"
+  // work — the scripts (enemyBinds, directionBinds, …) listen for the same
+  // 'helperBind' event the local keydown path raises.
+  function fakeHelper() {
+    let onHotkey = (_msg: any) => {};
+    return {
+      connection: { onHotkey: (cb: any) => { onHotkey = cb; return () => {}; } } as any,
+      press: (id: string, key: string) => onHotkey({ type: 'hotkey', id, key, timestamp: Date.now() }),
+    };
+  }
+
+  test('a helper hotkey aimed at a built-in bind fires that bind', () => {
+    localStorage.setItem('arkadia.helperBinds', JSON.stringify([
+      { id: 'h1', key: 'f1', mode: 'global', action: 'bind', targetBind: 'enemy1', focusBrowser: false },
+    ]));
+    const client = new Client((global as any).clientAdapterMock as any);
+    const fired: string[] = [];
+    client.on('helperBind', (name: string) => fired.push(name));
+
+    const helper = fakeHelper();
+    client.keyBindingManager.setHelperConnection(helper.connection);
+    helper.press('h1', 'f1');
+
+    expect(fired).toEqual(['enemy1']);
+  });
+
+  test('a helper hotkey carrying a command sends it', () => {
+    localStorage.setItem('arkadia.helperBinds', JSON.stringify([
+      { id: 'h2', key: 'ctrl+f9', mode: 'global', action: 'command', command: 'zabij cel', focusBrowser: false },
+    ]));
+    const client = new Client((global as any).clientAdapterMock as any);
+    const sendSpy = jest.spyOn(client, 'sendCommand').mockImplementation();
+
+    const helper = fakeHelper();
+    client.keyBindingManager.setHelperConnection(helper.connection);
+    helper.press('h2', 'ctrl+f9');
+
+    expect(sendSpy).toHaveBeenCalledWith('zabij cel');
   });
 });

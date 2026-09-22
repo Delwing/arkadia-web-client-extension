@@ -33,7 +33,6 @@ describe('gates triggers', () => {
   let parse: (line: string) => AnsiAwareBuffer | null;
 
   beforeEach(() => {
-    (global as any).Input = { send: jest.fn() };
     localStorage.clear();
     client = new FakeClient();
     jest.clearAllMocks();

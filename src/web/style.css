@@ -331,6 +331,18 @@ body.app-modal-open {
 }
 .app-modal__dialog--lg { max-width: 800px; }
 .app-modal__dialog--xl { max-width: 1140px; }
+/* Klawisze: a whole keyboard beside the selected key. */
+.app-modal__dialog--keys { max-width: 1400px; }
+/* Controls a panel puts in the header, between the title and ×. */
+.app-modal__header-slot {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.app-modal__header:has(> .app-modal__header-slot) > .app-modal__title {
+  flex: 0 0 auto;
+  margin-right: 6px;
+}
 /* Panels that scroll inside themselves need a definite height to fill. */
 .app-modal__dialog--fill { height: 100%; }
 .app-modal__header {
@@ -2231,182 +2243,6 @@ span.import-source__icon > svg {
   display: flex;
   flex-direction: column;
   gap: 6px;
-}
-
-/* ── Bindowanie (options/Binds.tsx) ─────────────────────────────────── */
-.binds-editor {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-.binds-editor__hint {
-  margin: -6px 0 0;
-}
-.binds-keymap {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-}
-.binds-keymap > .popup-field__label {
-  margin-right: 4px;
-}
-.popup-input.popup-input--control.binds-keymap__control {
-  width: 14rem;
-  margin-right: 4px;
-}
-.binds-section {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.binds-section__title {
-  margin: 0;
-  padding-bottom: 4px;
-  border-bottom: 1px solid var(--popup-border-subtle);
-  color: var(--popup-text-dim);
-  font-size: var(--ui-fs-xs, 12px);
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-/* Binds in columns; a group keeps an override under the bind it overrides. */
-.binds-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
-  gap: 6px 24px;
-}
-.binds-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-/* Podstawowe reads down a column, then the next (CSS columns, not grid). */
-.binds-grid.binds-grid--columns {
-  display: block;
-  columns: 2 16rem;
-  column-gap: 24px;
-}
-.binds-grid--columns > * {
-  break-inside: avoid;
-  margin-bottom: 6px;
-}
-/* Funkcyjny: the bind, and beside it the situations that can have their own key. */
-.binds-functional {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
-  align-items: start;
-  gap: 8px 24px;
-}
-.binds-functional > .binds-group > .popup-field__label {
-  margin-bottom: -2px;
-}
-.binds-keymap__actions {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-}
-.bind-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-}
-.bind-row__label {
-  flex: 1 1 auto;
-  min-width: 0;
-  overflow: hidden;
-  color: var(--popup-text);
-  font-size: var(--ui-fs, 14px);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.bind-row__keys {
-  display: flex;
-  flex: 0 0 auto;
-  align-items: center;
-  gap: 2px;
-}
-/* The key itself: centred, monospace, reads like a keycap. */
-.popup-input.popup-input--control.bind-key {
-  width: 9rem;
-  cursor: pointer;
-  caret-color: transparent;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: var(--ui-fs-sm, 13px);
-  text-align: center;
-}
-.popup-input.popup-input--control.bind-key:focus {
-  background-color: var(--popup-accent-subtle-bg);
-}
-/* Kierunki: a 3x3 compass beside U / D / Specjalne. */
-.binds-directions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  gap: 16px 32px;
-}
-.binds-compass {
-  display: grid;
-  grid-template-columns: repeat(3, 7.5rem);
-  gap: 6px;
-}
-.bind-row--stacked {
-  flex-direction: column;
-  align-items: stretch;
-  gap: 2px;
-}
-.bind-row--stacked .bind-row__label {
-  color: var(--popup-text-subtle);
-  font-size: var(--ui-fs-xs, 12px);
-  font-weight: 600;
-  text-align: center;
-}
-.bind-row--stacked .popup-input.popup-input--control.bind-key {
-  width: 100%;
-}
-.binds-directions > .binds-group {
-  min-width: 16rem;
-  padding-top: 18px;
-}
-.binds-custom {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.bind-row--custom > .popup-input.popup-input--mono {
-  flex: 1 1 auto;
-}
-/* Multibind import summary. */
-.binds-import__summary {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  font-size: var(--ui-fs-sm, 13px);
-}
-.binds-import__row > span {
-  display: inline-block;
-  min-width: 11rem;
-  color: var(--popup-text-subtle);
-}
-.binds-import__row > strong {
-  color: var(--popup-text-bright);
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
-.binds-import__progress-text {
-  display: flex;
-  justify-content: space-between;
-  color: var(--popup-text-subtle);
-  font-size: var(--ui-fs-xs, 12px);
-}
-@media (max-width: 600px) {
-  .binds-compass {
-    grid-template-columns: repeat(3, 1fr);
-  }
-  .popup-input.popup-input--control.bind-key {
-    width: 7.5rem;
-  }
 }
 
 /* Triggery (options/UserTriggers.tsx) reuses the alias list. */

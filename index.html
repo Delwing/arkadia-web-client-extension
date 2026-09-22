@@ -118,19 +118,16 @@
         </div>
     </div>
     <div id="binds-modal" class="app-modal" hidden>
-        <div class="app-modal__dialog app-modal__dialog--lg" tabindex="-1">
+        <div class="app-modal__dialog app-modal__dialog--keys app-modal__dialog--phone-full" tabindex="-1">
+            <!-- Keys (src/web/keys/Keys.tsx) puts its keymap toolbar in the header slot.
+                 Every change is stored at once, so there is no footer. -->
             <div class="app-modal__header">
-                <h2 class="app-modal__title">Bindowanie</h2>
-                <button type="button" class="popup-btn popup-btn--control popup-btn--sm" id="binds-import-btn">Importuj bazę multibindów…</button>
-                <span id="binds-import-spinner" class="app-modal__spinner" role="status" hidden></span>
+                <h2 class="app-modal__title">Klawisze</h2>
+                <div id="binds-header-slot" class="app-modal__header-slot"></div>
                 <button type="button" class="app-modal__close" data-modal-dismiss title="Zamknij">&times;</button>
             </div>
-            <div class="app-modal__body">
+            <div class="app-modal__body app-modal__body--flush">
                 <div id="binds-options"></div>
-            </div>
-            <div class="app-modal__footer">
-                <button type="button" class="popup-btn popup-btn--control app-modal__footer-start" id="binds-add-custom">Dodaj skrót</button>
-                <button type="button" class="popup-btn popup-btn--control popup-btn--solid" id="binds-save">Zapisz</button>
             </div>
         </div>
     </div>

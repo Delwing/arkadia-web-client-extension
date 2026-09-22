@@ -41,6 +41,15 @@ var macKeyToVK = map[C.CGKeyCode]KeyCode{
 	0x76: VKFunctionKey(4), 0x60: VKFunctionKey(5), 0x61: VKFunctionKey(6),
 	0x62: VKFunctionKey(7), 0x64: VKFunctionKey(8), 0x65: VKFunctionKey(9),
 	0x6D: VKFunctionKey(10), 0x67: VKFunctionKey(11), 0x6F: VKFunctionKey(12),
+	// Punctuation and the numeric keypad: "]" carries the functional bind and
+	// the numpad carries the directions, so these matter more than most.
+	0x21: VK_OEM_4, 0x1E: VK_OEM_6, 0x29: VK_OEM_1, 0x27: VK_OEM_7,
+	0x2B: VK_OEM_COMMA, 0x2F: VK_OEM_PERIOD, 0x2C: VK_OEM_2,
+	0x2A: VK_OEM_5, 0x32: VK_OEM_3, 0x1B: VK_OEM_MINUS, 0x18: VK_OEM_PLUS,
+	0x52: VKNumpad(0), 0x53: VKNumpad(1), 0x54: VKNumpad(2), 0x55: VKNumpad(3),
+	0x56: VKNumpad(4), 0x57: VKNumpad(5), 0x58: VKNumpad(6), 0x59: VKNumpad(7),
+	0x5B: VKNumpad(8), 0x5C: VKNumpad(9),
+	0x43: VK_MULTIPLY, 0x45: VK_ADD, 0x4E: VK_SUBTRACT, 0x41: VK_DECIMAL, 0x4B: VK_DIVIDE,
 }
 
 // macOS modifier flag masks

@@ -115,7 +115,6 @@ describe('object aliases', () => {
     orderShieldTarget = getAlias(/^\/rz$/) as unknown as () => void;
     markAttack = getAlias(/\/wa ([0-9]+)$/);
     markDefense = getAlias(/\/wz ([A-Za-z0-9@]+)$/);
-    (global as any).Input = { send: jest.fn() };
     (globalThis as any).gmcp = gmcp;
     gmcp.char = { options: { group_cover: 1 } } as any;
 

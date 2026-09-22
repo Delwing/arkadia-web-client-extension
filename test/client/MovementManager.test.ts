@@ -1,13 +1,3 @@
-(globalThis as any).Input = { send: jest.fn() };
-(globalThis as any).Output = { send: jest.fn(), flush_buffer: jest.fn(), buffer: [] };
-(globalThis as any).Text = { parse_patterns: jest.fn((v: any) => v) };
-(globalThis as any).Maps = {
-  refresh_position: jest.fn(),
-  set_position: jest.fn(),
-  unset_position: jest.fn(),
-  data: undefined,
-};
-(globalThis as any).Gmcp = { parse_option_subnegotiation: jest.fn() };
 
 vi.mock('@client/main', () => ({ __esModule: true }));
 
@@ -79,8 +69,6 @@ beforeEach(() => {
   localStorage.clear();
   characterStorage.setCharacter('TestChar');
   document.body.innerHTML = '<iframe id="cm-frame"></iframe>';
-  (globalThis as any).Output = { flush_buffer: jest.fn(), send: jest.fn() };
-  (globalThis as any).Text = { parse_patterns: jest.fn((v: any) => v) };
   (globalThis as any).dispatchEvent = jest.fn();
   clientAdapterMock = {
     send: jest.fn(),
