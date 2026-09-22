@@ -83,7 +83,7 @@ interface Row {
     distance: number | null;
 }
 
-/** One shortcut name: /idz prefix, commit on Enter or leaving the field. */
+/** One shortcut name: /prowadz prefix, commit on Enter or leaving the field. */
 function ShortcutField({ entry, autoFocus, onCommit, onRemove }: {
     entry: ShortcutEntry | null;
     autoFocus?: boolean;
@@ -105,7 +105,7 @@ function ShortcutField({ entry, autoFocus, onCommit, onRemove }: {
     return (
         <div className="places-shortcut">
             <div className="places-shortcut__row">
-                <InputGroup before="/idz">
+                <InputGroup before="/prowadz">
                     <Input
                         mono
                         ref={inputRef}
@@ -266,7 +266,7 @@ function PlaceDetail({ roomId, place, focus, onBack, onRemoved }: {
                     <div className="places-sec__head">
                         <MapPin size={15} strokeWidth={1.9} className="places-ic--shortcut" />
                         <span className="places-sec__title">Skrót</span>
-                        <span className="places-sec__hint">do /idz i /prowadz</span>
+                        <span className="places-sec__hint">do /prowadz i /idz</span>
                     </div>
                     {shortcuts.map(s => (
                         <div key={s.key}>
@@ -369,7 +369,7 @@ function MapRoomRow({ room, selected, onSelect, onContextMenu }: {
     );
 }
 
-/** Miejsca: shortcuts (/idz, /prowadz) and location notes, one entry per room. */
+/** Miejsca: shortcuts (/prowadz, /idz) and location notes, one entry per room. */
 export default function Places() {
     const [places, setPlaces] = useState<Place[]>([]);
     const [query, setQuery] = useState("");

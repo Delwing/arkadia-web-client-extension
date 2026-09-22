@@ -135,7 +135,7 @@ test.describe('Miejsca (skróty i notatki lokacji)', () => {
         await expect.poll(() => canvas.evaluate((el) => (el as HTMLCanvasElement).width)).toBeGreaterThan(100);
     });
 
-    test('"Skrót" on the map adds a /idz shortcut for that room', async ({ page }) => {
+    test('"Skrót" on the map adds a /prowadz shortcut for that room', async ({ page }) => {
         await openFromMapMenu(page, ROOM_ID, 'Skrót');
         const field = modal(page).locator('.places-shortcut input');
         await expect(field).toBeFocused();
@@ -145,7 +145,7 @@ test.describe('Miejsca (skróty i notatki lokacji)', () => {
         await expect(modal(page).locator('.places-row', { hasText: 'Kamienny Most' }).locator('.places-key')).toHaveText('most');
     });
 
-    test('a shortcut name /idz cannot take is refused', async ({ page }) => {
+    test('a shortcut name /prowadz cannot take is refused', async ({ page }) => {
         await openFromMapMenu(page, ROOM_ID, 'Skrót');
         const field = modal(page).locator('.places-shortcut input');
         await field.fill('zły most');
