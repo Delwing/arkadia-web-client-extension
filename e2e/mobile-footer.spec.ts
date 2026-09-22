@@ -147,6 +147,20 @@ test.describe('Mobile footer', () => {
         expect(await footerHeight(page), 'pinned shut, the line is back').toBe(folded);
     });
 
+    test('expanded on a narrow phone, chips that wrap stay visible', async ({page}) => {
+        await page.setViewportSize({width: 300, height: 700});
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await page.locator('#footer-expand').click();
+        await expect(page.locator('body')).toHaveAttribute('data-footer-expanded', '1');
+
+        const slots = page.locator('#footer-chips .status-slot');
+        const tops = await slots.evaluateAll((els) => els.map((el) => (el as HTMLElement).offsetTop));
+        expect(new Set(tops).size, 'the chips wrap at this width').toBeGreaterThan(1);
+        const hidden = await slots.evaluateAll((els) => els.filter((el) => getComputedStyle(el).visibility === 'hidden').length);
+        expect(hidden, 'no wrapped chip is left invisible').toBe(0);
+    });
+
     test('can be switched off, which restores the wide-screen line', async ({page}) => {
         await page.goto('/');
         await waitForCommandInput(page);

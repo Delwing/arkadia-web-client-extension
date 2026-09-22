@@ -165,6 +165,13 @@
   body[data-mobile-footer="1"][data-footer-expanded="1"] #char-state .chip {
     height: 30px;
   }
+  /* StatusLine hides chips past the first line for the desktop's "+N"; the
+     sheet wraps them all into view, so none may stay hidden (they would leave
+     an empty line). */
+  body[data-mobile-footer="1"][data-footer-expanded="1"] .status-slot.is-wrapped {
+    visibility: visible;
+    pointer-events: auto;
+  }
   body[data-mobile-footer="1"][data-footer-expanded="1"] .status-connection {
     display: inline-flex;
     grid-column: 1 / -1;
