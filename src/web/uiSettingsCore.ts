@@ -12,7 +12,6 @@ import {
     type UiSettings
 } from "./defaultUiSettings";
 import {globalStorage} from "@modules/core/storage";
-import {CONFIG_ORDER_BASE} from "@modules/core/footerRegistry";
 import {getEmbeddedMap} from "./embedRegistry";
 import {
     setShellSettings,
@@ -203,31 +202,6 @@ export async function guessFontFamilyFromStylesheet(href: string): Promise<strin
     }
 }
 
-/** Ids that are also real DOM ids of stock chips, and safe inside a selector. */
-const STOCK_CHIP_ID = /^[A-Za-z0-9_-]+$/;
-
-function applyFooterComponents(footerComponents: FooterComponentConfig[]) {
-    const charState = document.getElementById('char-state');
-    if (!charState) return;
-    for (const config of footerComponents) {
-        // Only the stock chips are elements under #char-state. A plugin's
-        // component is rendered by PluginFooterItems from the common registry,
-        // which applies this same config itself - and its id (`plugin:<url>:x`)
-        // is not a valid selector, so asking for it here throws.
-        if (!STOCK_CHIP_ID.test(config.id)) continue;
-        const element = charState.querySelector(`#${config.id}`) as HTMLElement | null;
-        if (element) {
-            // Same band the registry places configured items in, so a chip and a
-            // plugin component next to each other in the settings list end up
-            // next to each other in the footer. Everything #char-state holds
-            // that the config says nothing about - the char state text, the bars
-            // - keeps flex order 0 and stays in front.
-            element.style.order = String(CONFIG_ORDER_BASE + config.order);
-            element.dataset.footerHidden = config.visible ? '0' : '1';
-        }
-    }
-}
-
 export function apply(settings: UiSettings) {
     const customHref = settings.customFontUrl?.trim();
     const normalizedHref = customHref && /^https?:\/\//i.test(customHref) ? customHref : undefined;
@@ -279,7 +253,6 @@ export function apply(settings: UiSettings) {
     }
     const charState = document.getElementById('char-state');
     if (charState) {
-        charState.style.fontSize = settings.contentFontSize + 'rem';
         charState.setAttribute('data-footer-mode', String(settings.footerMode));
     }
     if (document.body) {
@@ -295,7 +268,6 @@ export function apply(settings: UiSettings) {
     if (objectsList) {
         objectsList.style.fontSize = settings.contentFontSize + 'rem';
     }
-    applyFooterComponents(settings.footerComponents);
     const objects = document.getElementById('objects-list');
     if (objects) {
         // --window-font-* is set by the Kondycje window's settings cog when the

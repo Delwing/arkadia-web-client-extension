@@ -2,38 +2,25 @@ import {expect, test} from './support/fixtures';
 import {ensureGameSocket, pushText, waitForCommandInput} from './support/mocks';
 
 test.describe('Cover timer', () => {
-    // Cover timer is now integrated into the release-guard-timer element
-    // Format: "Pusc Zas: OK" or "Pusc Zas: X.XX"
-    // The timer value is in the 3rd span (index 2)
+    // The cover cooldown is the "Zaslona" footer chip (#release-guard-timer):
+    // "OK" in the ok tone when ready, a countdown ("4.9") in the warn tone while recharging.
 
     test('starts countdown after successful cover', async ({page}) => {
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
 
-        const releaseGuardTimer = page.locator('#release-guard-timer');
+        const chip = page.locator('#release-guard-timer .chip');
+        const value = chip.locator('.chip__val');
 
-        // Initially, the timer should show OK (ready state)
-        await expect(releaseGuardTimer, 'should display ready state initially').toContainText('Zas:');
-        await expect(releaseGuardTimer, 'should display OK initially').toContainText('OK');
+        await expect(chip.locator('.chip__lab'), 'should be the cover chip').toHaveText('Zaslona');
+        await expect(value, 'should display OK initially').toHaveText('OK');
+        await expect(chip, 'should be in the ready tone').toHaveClass(/chip--ok/);
 
-        // Check that the value "OK" is green (springgreen) - it's the 3rd span (index 2)
-        const okSpan = releaseGuardTimer.locator('span').nth(2);
-        await expect(okSpan, 'should have green color initially').toHaveCSS('color', 'rgb(0, 255, 127)'); // springgreen
-
-        // Trigger cover timer with a successful cover message
         await pushText(page, 'Zrecznie zaslaniasz Aldousa przed ciosami orka.');
 
-        // Timer should start counting down
-        await expect(releaseGuardTimer, 'should display countdown after cover').toContainText('Zas:');
-
-        // Check that the countdown value is yellow - it's the 3rd span (index 2)
-        const valueSpan = releaseGuardTimer.locator('span').nth(2);
-        await expect(valueSpan, 'should have yellow color during countdown').toHaveCSS('color', 'rgb(255, 255, 0)'); // yellow
-
-        // Verify countdown is showing a number
-        const timerText = await releaseGuardTimer.textContent();
-        expect(timerText, 'should show countdown value').toMatch(/Zas: [0-9]\.[0-9]{2}/);
+        await expect(value, 'should show countdown value').toHaveText(/^[0-9]\.[0-9]$/);
+        await expect(chip, 'should be in the warn tone while recharging').toHaveClass(/chip--warn/);
     });
 
     test('starts countdown after failed cover attempt', async ({page}) => {
@@ -41,17 +28,12 @@ test.describe('Cover timer', () => {
         await waitForCommandInput(page);
         await ensureGameSocket(page);
 
-        const releaseGuardTimer = page.locator('#release-guard-timer');
+        const chip = page.locator('#release-guard-timer .chip');
 
-        // Trigger cover timer with a failed cover message
         await pushText(page, 'Probujesz zaslonic Berenika przed ciosami goblina, jednak nie jestes w stanie tego uczynic.');
 
-        // Timer should start counting down even on failure
-        await expect(releaseGuardTimer, 'should display countdown after failed cover').toContainText('Zas:');
-
-        // Check that the countdown value is yellow - it's the 3rd span (index 2)
-        const valueSpan = releaseGuardTimer.locator('span').nth(2);
-        await expect(valueSpan, 'should have yellow color during countdown').toHaveCSS('color', 'rgb(255, 255, 0)'); // yellow
+        await expect(chip.locator('.chip__val'), 'should count down even on failure').toHaveText(/^[0-9]\.[0-9]$/);
+        await expect(chip).toHaveClass(/chip--warn/);
     });
 
     test('returns to ready state after timer expires', async ({page}) => {
@@ -60,27 +42,16 @@ test.describe('Cover timer', () => {
         await waitForCommandInput(page);
         await ensureGameSocket(page);
 
-        const releaseGuardTimer = page.locator('#release-guard-timer');
+        const chip = page.locator('#release-guard-timer .chip');
 
-        // Trigger cover timer
         await pushText(page, 'Z wprawa stajesz pomiedzy Cedrikiem a trolem, przyjmujac na siebie nadchodzace ciosy.');
+        await expect(chip, 'should count down').toHaveClass(/chip--warn/);
 
-        // Wait for countdown
-        await expect(releaseGuardTimer, 'should display countdown').toContainText('Zas:');
-
-        // Check that the countdown value is yellow - it's the 3rd span (index 2)
-        const valueSpanCountdown = releaseGuardTimer.locator('span').nth(2);
-        await expect(valueSpanCountdown, 'should have yellow color during countdown').toHaveCSS('color', 'rgb(255, 255, 0)'); // yellow
-
-        // Wait for timer to expire (5 seconds + buffer)
+        // 5 second timer + buffer
         await page.clock.runFor(5500);
 
-        // Timer should return to ready state
-        await expect(releaseGuardTimer, 'should return to ready state after timer expires').toContainText('OK');
-
-        // Check that the value "OK" is green after timer expires - it's the 3rd span (index 2)
-        const okSpan = releaseGuardTimer.locator('span').nth(2);
-        await expect(okSpan, 'should have green color after timer expires').toHaveCSS('color', 'rgb(0, 255, 127)'); // springgreen
+        await expect(chip.locator('.chip__val'), 'should return to ready state').toHaveText('OK');
+        await expect(chip).toHaveClass(/chip--ok/);
     });
 
     test('starts countdown for guard position with weapon', async ({page}) => {
@@ -88,16 +59,11 @@ test.describe('Cover timer', () => {
         await waitForCommandInput(page);
         await ensureGameSocket(page);
 
-        const releaseGuardTimer = page.locator('#release-guard-timer');
+        const chip = page.locator('#release-guard-timer .chip');
 
-        // Trigger cover timer with weapon-based cover message
         await pushText(page, 'Unosisz swoja szable i szybko przesuwasz sie za Dagne, kryjac sie przed atakami');
 
-        // Timer should start counting down
-        await expect(releaseGuardTimer, 'should display countdown for weapon cover').toContainText('Zas:');
-
-        // Check that the countdown value is yellow - it's the 3rd span (index 2)
-        const valueSpan = releaseGuardTimer.locator('span').nth(2);
-        await expect(valueSpan, 'should have yellow color during countdown').toHaveCSS('color', 'rgb(255, 255, 0)'); // yellow
+        await expect(chip.locator('.chip__val'), 'should count down for weapon cover').toHaveText(/^[0-9]\.[0-9]$/);
+        await expect(chip).toHaveClass(/chip--warn/);
     });
 });

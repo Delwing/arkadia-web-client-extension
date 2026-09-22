@@ -21,10 +21,12 @@ export const CHIP_LONG_PRESS_MS = 300;
  * once the hold completes it fires the action, buzzes the phone, flashes
  * `chip--held` and swallows the click that the release would otherwise send.
  */
-export function Chip({ icon, label, value, tone, onClick, onLongPress, title, className }: {
+export function Chip({ icon, label, value, valueFirst, tone, onClick, onLongPress, title, className }: {
   icon: ReactNode;
   label: string;
   value: ReactNode;
+  /** The value leads and the label follows it ("14:32 dzien"). */
+  valueFirst?: boolean;
   tone?: ChipTone;
   onClick?: () => void;
   onLongPress?: () => void;
@@ -40,8 +42,9 @@ export function Chip({ icon, label, value, tone, onClick, onLongPress, title, cl
     <>
       {icon}
       <span className="chip__text">
-        <span className="chip__lab">{label}</span>
-        <span className="chip__val">{value}</span>
+        {valueFirst && <span className="chip__val">{value}</span>}
+        {label && <span className="chip__lab">{label}</span>}
+        {!valueFirst && <span className="chip__val">{value}</span>}
       </span>
     </>
   );

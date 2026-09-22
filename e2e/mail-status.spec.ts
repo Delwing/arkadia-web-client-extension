@@ -36,7 +36,7 @@ test.describe('Mail status', () => {
         });
 
         await expect(mailStatus, 'should be visible with multiple flags').toBeVisible();
-        await expect(mailStatus, 'should show only unreceived and unsent').toHaveText('✉: Nowa, Niewyslana');
+        await expect(mailStatus.locator('.chip__val'), 'should show only unreceived and unsent').toHaveText('Nowa, Niewyslana');
     });
 
     test('hides when all flags are false', async ({page}) => {
@@ -75,14 +75,14 @@ test.describe('Mail status', () => {
             unsent: true,
         });
 
-        await expect(mailStatus, 'should show initial state').toHaveText('✉: Niewyslana');
+        await expect(mailStatus.locator('.chip__val'), 'should show initial state').toHaveText('Niewyslana');
 
         // Change to different state
         await pushGmcp(page, 'mail.state', {
             unreceived: true,
         });
 
-        await expect(mailStatus, 'should update to new state').toHaveText('✉: Nowa');
+        await expect(mailStatus.locator('.chip__val'), 'should update to new state').toHaveText('Nowa');
     });
 
     test('shows only unreceived status', async ({page}) => {
@@ -96,7 +96,7 @@ test.describe('Mail status', () => {
             unreceived: true,
         });
 
-        await expect(mailStatus, 'should display unreceived status').toHaveText('✉: Nowa');
+        await expect(mailStatus.locator('.chip__val'), 'should display unreceived status').toHaveText('Nowa');
     });
 
     test('shows only unsent status', async ({page}) => {
@@ -110,7 +110,7 @@ test.describe('Mail status', () => {
             unsent: true,
         });
 
-        await expect(mailStatus, 'should display unsent status').toHaveText('✉: Niewyslana');
+        await expect(mailStatus.locator('.chip__val'), 'should display unsent status').toHaveText('Niewyslana');
     });
 
     test('sends command when clicked', async ({page}) => {
@@ -140,7 +140,7 @@ test.describe('Mail status', () => {
         await waitForCommandInput(page);
         await ensureGameSocket(page);
 
-        const badge = page.locator('#mail-status > span');
+        const badge = page.locator('#mail-status > .chip');
 
         await pushGmcp(page, 'mail.state', {
             unreceived: true,

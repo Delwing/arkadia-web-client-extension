@@ -821,16 +821,14 @@ test.describe('Firebase Sync', () => {
             await waitForCommandInput(page);
             await ensureGameSocket(page);
 
-            const combatTimerState = await page.evaluate(() => {
-                const timer = document.getElementById('combat-timer');
-                if (!timer) return null;
-                return {
-                    footerHidden: timer.dataset.footerHidden,
-                };
-            });
+            // A hidden footer item is left out of the footer; the visible ones keep their slot.
+            const slots = await page.evaluate(() => ({
+                combat: document.getElementById('combat-timer') !== null,
+                zask: document.getElementById('zask-timer') !== null,
+            }));
 
-            expect(combatTimerState).toBeTruthy();
-            expect(combatTimerState!.footerHidden).toBe('1');
+            expect(slots.combat).toBe(false);
+            expect(slots.zask).toBe(true);
         });
 
         test('footer mode is applied from uiSettings', async ({ page }) => {
@@ -955,14 +953,12 @@ test.describe('Firebase Sync', () => {
             const appliedStyles = await page.evaluate(() => {
                 const content = document.getElementById('main_text_output_msg_wrapper');
                 const charState = document.getElementById('char-state');
-                const combatTimer = document.getElementById('combat-timer');
 
                 return {
                     backgroundColor: content ? getComputedStyle(content).backgroundColor : null,
                     fontSize: content ? getComputedStyle(content).fontSize : null,
                     mapPosition: document.body.dataset.mapPosition,
                     footerMode: charState?.getAttribute('data-footer-mode'),
-                    combatTimerEnabled: combatTimer?.dataset.enabled,
                 };
             });
 
@@ -970,7 +966,6 @@ test.describe('Firebase Sync', () => {
             expect(appliedStyles.fontSize).toBe('24px'); // 1.5 * 16px
             expect(appliedStyles.mapPosition).toBe('right');
             expect(appliedStyles.footerMode).toBe('1');
-            expect(appliedStyles.combatTimerEnabled).toBe('1');
         });
 
         test('character-scoped settings from sync are applied correctly', async ({ page }) => {

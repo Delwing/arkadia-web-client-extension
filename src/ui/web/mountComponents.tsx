@@ -1,27 +1,10 @@
 import { createRoot, type Root } from "react-dom/client";
-import {
-  ZaskTimer,
-  OrderTimer,
-  CombatTimer,
-  TransportTimer,
-  WorldDestructionTimer,
-  CharStateInfo,
-  ReleaseGuardTimer,
-  BreakItemWarning,
-  CharState,
-  AttackMode,
-  PackageStatus,
-  ClockDisplay,
-  MailStatus,
-  WeaponState,
-  TeamPanel,
-  PlaybackControls,
-  ConnectionStatus
-} from "./components";
+import { flushSync } from "react-dom";
+import { PlaybackControls } from "./components";
 import { ContextMenuHost } from "@web/contextMenu";
 import MultiBindStrip from "./footer/MultiBindStrip";
-import { LampChip } from "./footer/chips";
-import PluginFooterItems from "./footer/PluginFooterItems";
+import StatusLine from "./footer/StatusLine";
+import { registerBuiltinFooterItems } from "./footer/builtinItems";
 
 type MountResult = {
   destroy: () => void;
@@ -34,35 +17,16 @@ type MountResult = {
 export const mountMigratedComponents = (): MountResult => {
   const roots: Root[] = [];
 
-  const componentConfigs = [
-    { id: "package-status", Component: PackageStatus },
-    { id: "attack-mode", Component: AttackMode },
-    { id: "clock-display", Component: ClockDisplay },
-    { id: "lamp-timer", Component: LampChip },
-    { id: "release-guard-timer", Component: ReleaseGuardTimer },
-    { id: "zask-timer", Component: ZaskTimer },
-    { id: "order-timer", Component: OrderTimer },
-    { id: "combat-timer", Component: CombatTimer },
-    { id: "transport-timer", Component: TransportTimer },
-    { id: "world-destruction-timer", Component: WorldDestructionTimer },
-    { id: "state-info", Component: CharStateInfo },
-    { id: "break-item-warning", Component: BreakItemWarning },
-    { id: "mail-status", Component: MailStatus },
-    { id: "weapon-state", Component: WeaponState },
-    { id: "team-panel", Component: TeamPanel },
-    { id: "connection-status", Component: ConnectionStatus },
-  ];
-
-  componentConfigs.forEach(({ id, Component }) => {
-    const container = document.getElementById(id);
-    if (container) {
-      const root = createRoot(container);
-      root.render(<Component />);
-      roots.push(root);
-    } else {
-      console.warn(`Container #${id} not found, skipping mount for ${Component.name}`);
-    }
-  });
+  // The status line: vitals, then the chips from the common footer registry (the
+  // built-ins registered here, plugin items as they come). Rendered synchronously:
+  // setupMobileFooter wires its expander button right after this returns.
+  registerBuiltinFooterItems();
+  const statusContainer = document.getElementById("char-state");
+  if (statusContainer) {
+    const root = createRoot(statusContainer);
+    flushSync(() => root.render(<StatusLine />));
+    roots.push(root);
+  }
 
   // MultiBinds is special: it mounts into the persistent #multi-binds container
   // (kept by index.html so main.ts's cached reference + split-view MutationObserver
@@ -78,24 +42,6 @@ export const mountMigratedComponents = (): MountResult => {
     );
     roots.push(root);
   }
-
-  // Plugin (and other dynamically-registered) footer items render from the
-  // common footerRegistry into the stock footer's #plugin-footer-components slot.
-  const pluginFooterContainer = document.getElementById("plugin-footer-components");
-  if (pluginFooterContainer) {
-    const root = createRoot(pluginFooterContainer);
-    root.render(<PluginFooterItems />);
-    roots.push(root);
-  }
-
-  // CharState is special - it uses portals to render to #char-state-text and #char-state-bars
-  // We mount it to a hidden container so it can manage its own rendering
-  const charStateContainer = document.createElement("div");
-  charStateContainer.style.display = "none";
-  document.body.appendChild(charStateContainer);
-  const charStateRoot = createRoot(charStateContainer);
-  charStateRoot.render(<CharState />);
-  roots.push(charStateRoot);
 
   // PlaybackControls uses a portal to render directly to document.body
   const playbackControlsContainer = document.createElement("div");
@@ -116,9 +62,6 @@ export const mountMigratedComponents = (): MountResult => {
   return {
     destroy: () => {
       roots.forEach((root) => root.unmount());
-      if (charStateContainer.parentNode) {
-        charStateContainer.parentNode.removeChild(charStateContainer);
-      }
       if (playbackControlsContainer.parentNode) {
         playbackControlsContainer.parentNode.removeChild(playbackControlsContainer);
       }

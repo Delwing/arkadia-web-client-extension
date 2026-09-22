@@ -59,15 +59,14 @@ async function openFooterSettings(page: Page) {
 /** The plugin's own span, wherever the footer put it. */
 const chip = (page: Page) => page.locator('.plugin-footer-component', {hasText: CHIP_TEXT});
 
-/** The flex item the plugin component is laid out as, and the last stock chip. */
+/** The chip slot the plugin component is laid out in, and the last shown stock chip
+ *  (the connection chip after it is hidden out of the box, so it has no slot). */
 const PLUGIN_ITEM = '#char-state .footer-plugin-item';
-const LAST_CHIP = '#connection-status';
+const LAST_CHIP = '#break-item-warning';
 
 /**
- * Where the footer actually puts something. #char-state is a flex row, so a
- * position is the computed `order` of a flex item - the stock chips are elements
- * in that row, and the plugin component sits in a `display: contents` slot so
- * that it is one too.
+ * Where the footer actually puts something: the computed flex `order` of an item's
+ * slot in the status line's chip row.
  */
 async function footerOrder(page: Page, selector: string): Promise<number> {
     return page.evaluate((sel) => {
@@ -128,7 +127,8 @@ test.describe('plugin footer components in the footer settings', () => {
         await expect(chip(page), 'plugin chip should be in the footer').toBeVisible();
 
         // Registered as 'end', so it starts behind every built-in chip.
-        expect(await footerOrder(page, PLUGIN_ITEM), 'an unmoved "end" component sits last')
+        const before = await footerOrder(page, PLUGIN_ITEM);
+        expect(before, 'an unmoved "end" component sits last')
             .toBeGreaterThan(await footerOrder(page, LAST_CHIP));
 
         const modal = await openFooterSettings(page);
@@ -155,8 +155,11 @@ test.describe('plugin footer components in the footer settings', () => {
         await modal.locator(SETTINGS_SAVE).click();
         await expect(modal).not.toBeVisible();
 
+        // One place up puts it before the (hidden) connection chip, still after the rest.
         expect(await footerOrder(page, PLUGIN_ITEM), 'moving it up should move it in the footer')
-            .toBeLessThan(await footerOrder(page, LAST_CHIP));
+            .toBeLessThan(before);
+        expect(await footerOrder(page, PLUGIN_ITEM), 'and keep it behind the shown chips')
+            .toBeGreaterThan(await footerOrder(page, LAST_CHIP));
         await expect(chip(page), 'and it should still be shown').toBeVisible();
     });
 });

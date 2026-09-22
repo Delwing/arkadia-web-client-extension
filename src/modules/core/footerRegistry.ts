@@ -34,6 +34,8 @@ export interface FooterItem {
    * because `plugin:towarzysz-a1b2:towarzysz` is not something to show anyone.
    */
   label?: string;
+  /** Left out until the config switches it on (a diagnostic chip nobody asked for). */
+  hiddenByDefault?: boolean;
   /** React content (built-in chips). Mutually exclusive with `node`. */
   render?: () => ReactNode;
   /** Raw DOM content the host adopts (plugin components). */
@@ -46,11 +48,8 @@ export interface FooterItem {
  * nobody has moved yet - still sits before or after the configured ones as it
  * asked.
  *
- * The whole footer is laid out in this one space. The stock UI puts the same
- * band on its own chip elements (see `applyFooterComponents`), because there
- * the built-ins are plain DOM and only the plugin items come from this registry
- * - the two have to agree, or a plugin component could never be dragged past a
- * built-in chip.
+ * The whole footer is laid out in this one space, built-ins and plugin items
+ * alike, so a plugin component can be dragged past a built-in chip.
  */
 export const CONFIG_ORDER_BASE = 100;
 
@@ -87,7 +86,7 @@ function recompute(): void {
     const cfg = config.get(item.id);
     const placed = cfg ? { ...item, order: CONFIG_ORDER_BASE + cfg.order } : item;
     all.push(placed);
-    if (cfg && !cfg.visible) continue; // switched off by the user
+    if (cfg ? !cfg.visible : item.hiddenByDefault) continue; // switched off, or never switched on
     visible.push(placed);
   }
   snapshot = visible.sort(byOrder);

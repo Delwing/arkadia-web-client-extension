@@ -16,7 +16,7 @@ const PIPE_BURN_OUT = new RegExp(
 /**
  * Pipe-smoking script.
  *
- * Tracks the pipe's lit state (drives the footer icon in src/web/pipeStatus.ts
+ * Tracks the pipe's lit state (drives the Fajka footer chip, @web-ui/footer/chips.tsx
  * via the `pipeLit` event) and its filled state (persisted per-character as
  * `pipe_filled`), and provides the `/zapal` and `/ziola_fajka` aliases.
  *

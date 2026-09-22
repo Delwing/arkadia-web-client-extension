@@ -160,7 +160,7 @@ const CHROME_FIELDS: Record<string, Constraint & { optional?: boolean }> = {
             'top', 'bottom', 'right', 'left',
         ],
     },
-    footerMode: { type: 'number', min: 0, max: 3, integer: true },
+    footerMode: { type: 'number', min: 0, max: 4, integer: true },
     footerComponents: { type: 'complex' },
     mobileFooterCompact: { type: 'boolean', label: 'Kompaktowa stopka na telefonie' },
     mobileFooterExpand: {

@@ -34,12 +34,12 @@ async function setEmojiLabels(page: Page, enabled: boolean) {
 }
 
 test.describe('Character state', () => {
-    test('displays character stats in text mode', async ({page}) => {
+    test('displays character stats', async ({page}) => {
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
 
-        const charStateText = page.locator('#char-state-text');
+        const charStateText = page.locator('#char-state-vitals');
 
         // Send initial character state via GMCP
         await pushGmcp(page, 'char.state', {
@@ -62,7 +62,7 @@ test.describe('Character state', () => {
         await waitForCommandInput(page);
         await ensureGameSocket(page);
 
-        const charStateText = page.locator('#char-state-text');
+        const charStateText = page.locator('#char-state-vitals');
 
         // Send state with default values for some stats
         await pushGmcp(page, 'char.state', {
@@ -86,10 +86,9 @@ test.describe('Character state', () => {
         await waitForCommandInput(page);
         await ensureGameSocket(page);
 
-        const charStateBars = page.locator('#char-state-bars');
-        const charStateText = page.locator('#char-state-text');
+        const vitals = page.locator('#char-state-vitals');
 
-        // Set footer mode to 3 (bars) via UI
+        // Set footer mode to 3 (graphic bars) via UI
         await setFooterMode(page, 3);
 
         // Send character state
@@ -98,13 +97,10 @@ test.describe('Character state', () => {
             fatigue: 5,
         });
 
-        // Verify bars are visible and text is hidden
-        await expect(charStateBars, 'should display bars mode').toBeVisible();
-        await expect(charStateText, 'should hide text mode').not.toBeVisible();
-
-        // Check that bars are rendered
-        const bars = charStateBars.locator('.char-state-bar');
+        // One meter per shown stat, with the numbers on it
+        const bars = vitals.locator('.vital__bar');
         await expect(bars, 'should render character state bars').toHaveCount(2);
+        await expect(bars.first(), 'should show the numbers').toHaveText('5/7');
     });
 
     test('switches between text and emoji labels', async ({page}) => {
@@ -112,7 +108,7 @@ test.describe('Character state', () => {
         await waitForCommandInput(page);
         await ensureGameSocket(page);
 
-        const charStateText = page.locator('#char-state-text');
+        const charStateText = page.locator('#char-state-vitals');
 
         // Send character state
         await pushGmcp(page, 'char.state', {
@@ -143,7 +139,7 @@ test.describe('Character state', () => {
         await waitForCommandInput(page);
         await ensureGameSocket(page);
 
-        const charStateText = page.locator('#char-state-text');
+        const charStateText = page.locator('#char-state-vitals');
 
         // Send state with extreme values (encumbrance at max, stuffed at 0)
         await pushGmcp(page, 'char.state', {
@@ -152,9 +148,10 @@ test.describe('Character state', () => {
             stuffed: 0, // min value, opposite of default (3)
         });
 
-        // Check that extreme values are highlighted
-        const html = await charStateText.innerHTML();
-        expect(html, 'should highlight extreme values with tomato color').toContain('tomato');
+        // Stats at the far end from where they rest are flagged
+        await expect(charStateText.locator('.vital--alert'), 'should flag both extreme values').toHaveCount(2);
+        await expect(charStateText.locator('.vital--alert[data-vital="encumbrance"]')).toHaveCount(1);
+        await expect(charStateText.locator('.vital--alert[data-vital="stuffed"]')).toHaveCount(1);
     });
 
     test('displays HP with transformed values (value+1, max+1)', async ({page}) => {
@@ -162,15 +159,19 @@ test.describe('Character state', () => {
         await waitForCommandInput(page);
         await ensureGameSocket(page);
 
-        const charStateText = page.locator('#char-state-text');
+        const charStateText = page.locator('#char-state-vitals');
 
         // Send HP value of 5 (should display as 6/7)
         await pushGmcp(page, 'char.state', {
             hp: 5,
         });
 
-        // Verify HP is transformed
-        await expect(charStateText, 'should transform HP value').toContainText('[6/7]');
+        // Verify HP is transformed: 6 of 7 pips, and 6/7 in the numeric mode
+        const hp = charStateText.locator('.vital[data-vital="hp"]');
+        await expect(hp.locator('.vital__pip'), 'should draw one pip per point').toHaveCount(7);
+        await expect(hp.locator('.vital__pip.is-on'), 'should fill value+1 pips').toHaveCount(6);
+        await setFooterMode(page, 0);
+        await expect(hp.locator('.vital__text'), 'should transform HP value').toHaveText('6/7');
     });
 
     test('hides form stat when both state.form and options.form are 0', async ({page}) => {
@@ -178,7 +179,7 @@ test.describe('Character state', () => {
         await waitForCommandInput(page);
         await ensureGameSocket(page);
 
-        const charStateText = page.locator('#char-state-text');
+        const charStateText = page.locator('#char-state-vitals');
 
         // Send options with form=0
         await pushGmcp(page, 'char.options', {
@@ -200,7 +201,7 @@ test.describe('Character state', () => {
         await waitForCommandInput(page);
         await ensureGameSocket(page);
 
-        const charStateText = page.locator('#char-state-text');
+        const charStateText = page.locator('#char-state-vitals');
 
         // Set footer mode to 1 (bars with variable length) via UI
         await setFooterMode(page, 1);
@@ -211,9 +212,10 @@ test.describe('Character state', () => {
             fatigue: 6,
         });
 
-        // Verify bars with # and - characters are rendered
-        const html = await charStateText.innerHTML();
-        expect(html, 'should render bar with # characters').toContain('#');
-        expect(html, 'should render bar with - characters').toContain('-');
+        // One mark per point in mode 1, a fixed 10 in mode 2
+        const hp = charStateText.locator('.vital[data-vital="hp"] .vital__text');
+        await expect(hp, 'should render the bar with one mark per point').toHaveText('[#####--]');
+        await setFooterMode(page, 2);
+        await expect(hp, 'should render the fixed-length bar').toHaveText('[#######---]');
     });
 });

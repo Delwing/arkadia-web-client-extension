@@ -13,7 +13,8 @@ function FooterSections({ draft, update }: FooterSectionsProps) {
     return (
         <>
             <SettingsSection title="Stan postaci">
-                <SelectField id="ui-footer-mode" label="Tryb stopki" value={String(draft.footerMode)} onChange={(v) => update({ footerMode: parseInt(v) || 0 })}>
+                <SelectField id="ui-footer-mode" label="Tryb stopki" value={String(draft.footerMode)} onChange={(v) => update({ footerMode: parseInt(v, 10) })}>
+                    <option value="4">Kafelki</option>
                     <option value="0">Liczbowy</option>
                     <option value="1">Pasek</option>
                     <option value="2">Pasek jednolity</option>
@@ -34,11 +35,10 @@ function FooterSections({ draft, update }: FooterSectionsProps) {
 
             <SettingsSection title="Stopka na telefonie">
                 <p className="popup-field__hint">
-                    Na waskim ekranie stopka jest podzielona na dwa przewijane paski o stalej
-                    wysokosci (stan postaci i plakietki), a stan postaci pokazywany jest w postaci
-                    kompaktowych miernikow zamiast trybu stopki. Przycisk po prawej stronie stopki
-                    rozwija oba paski - a jesli stopka ma byc zawsze rozwinieta albo zawsze
-                    zwinieta, przycisku nie ma wcale.
+                    Na waskim ekranie stopka zajmuje jedna linie o stalej wysokosci: dwa
+                    pierwsze paski stanu i najpilniejsze plakietki. Przycisk po prawej rozwija
+                    ja w panel ze wszystkimi paskami i plakietkami - a jesli stopka ma byc
+                    zawsze rozwinieta albo zawsze zwinieta, przycisku nie ma wcale.
                 </p>
                 <CheckboxRow
                     id="ui-mobile-footer-compact"

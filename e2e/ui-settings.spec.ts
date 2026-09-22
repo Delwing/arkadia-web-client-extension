@@ -121,8 +121,6 @@ test.describe('UI settings', () => {
             const content = document.getElementById('main_text_output_msg_wrapper')!;
             const objects = document.getElementById('objects-list')!;
             const charState = document.getElementById('char-state')!;
-            const combatTimer = document.getElementById('combat-timer')!;
-            const transportTimer = document.getElementById('transport-timer')!;
             const splitBottom = document.getElementById('split-bottom')!;
             const contentArea = document.getElementById('content-area')!;
             return {
@@ -133,10 +131,10 @@ test.describe('UI settings', () => {
                 objectsFontFamily: getComputedStyle(objects).fontFamily,
                 contentBackground: getComputedStyle(content).backgroundColor,
                 splitBackground: getComputedStyle(splitBottom).backgroundColor,
-                charStateFontSize: getComputedStyle(charState).fontSize,
                 footerMode: charState.getAttribute('data-footer-mode'),
-                combatTimerFooterHidden: combatTimer.dataset.footerHidden,
-                transportTimerFooterHidden: transportTimer.dataset.footerHidden,
+                // A footer item switched off is left out of the status line entirely.
+                combatTimerShown: document.getElementById('combat-timer') !== null,
+                transportTimerShown: document.getElementById('transport-timer') !== null,
                 bodyMapPosition: document.body.dataset.mapPosition,
                 contentMapPosition: contentArea.getAttribute('data-map-position'),
                 mapSize: contentArea.style.getPropertyValue('--map-size'),
@@ -144,14 +142,13 @@ test.describe('UI settings', () => {
         });
 
         expect(styles.contentFontSize, 'should apply content font size multiplier').toBe('24px');
-        expect(styles.charStateFontSize, 'should apply footer font size multiplier').toBe('24px');
         expect(styles.objectsFontSize, 'should apply objects font size multiplier').toBe('20px');
         expect(styles.objectsFontFamily, 'should apply configured font family').toBe('"Cascadia Mono", monospace');
         expect(styles.contentBackground, 'should apply configured output background color').toBe('rgb(18, 52, 86)');
         expect(styles.splitBackground, 'should sync split background with output background').toBe('rgb(18, 52, 86)');
         expect(styles.footerMode, 'should persist selected footer mode').toBe('2');
-        expect(styles.combatTimerFooterHidden, 'should mark combat timer as hidden via footer component').toBe('1');
-        expect(styles.transportTimerFooterHidden, 'should mark transport timer as hidden via footer component').toBe('1');
+        expect(styles.combatTimerShown, 'should leave the hidden combat timer out of the footer').toBe(false);
+        expect(styles.transportTimerShown, 'should leave the hidden transport timer out of the footer').toBe(false);
         expect(styles.bodyMapPosition, 'should update body map position data attribute').toBe('bottom');
         expect(styles.contentMapPosition, 'should update content map position attribute').toBe('bottom');
         expect(styles.mapSize, 'should apply configured map height').toBe('40vh');

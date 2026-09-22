@@ -18,7 +18,6 @@ import {ProxyControls} from "./hostProxy/ProxyControls.tsx";
 import recordingManager from "./RecordingManager.ts";
 import eventBus from "@modules/core/eventBus";
 import {setupOutputContextMenu} from "./outputContextMenu";
-import initPipeStatus from "./pipeStatus";
 import {Modal} from 'bootstrap';
 import ObjectList from "./ObjectList";
 import {mountMigratedComponents} from "@web-ui/mountComponents.tsx";
@@ -255,7 +254,6 @@ if (multiBindsElement) {
 
 setupOutputContextMenu(outputWrapper);
 
-initPipeStatus();
 
 function closeHistoryScrollback() {
     outputWrapper.scrollTop = outputWrapper.scrollHeight;

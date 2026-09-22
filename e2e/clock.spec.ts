@@ -164,8 +164,8 @@ test.describe('Clock System', () => {
         await expect(clockDisplay).toContainText('±60');
 
         // Clock should be clickable
-        const title = await clockDisplay.getAttribute('title');
-        expect(title).toContain('Kliknij');
+        const title = await clockDisplay.locator('.chip').getAttribute('title');
+        expect(title).toContain('kliknij');
     });
 
     test('Ishtar sunrise event works independently from Empire', async ({page}) => {
@@ -247,8 +247,8 @@ test.describe('Clock System', () => {
         await pushGmcp(page, 'room.time', { daylight: true });
         await page.clock.runFor(500);
 
-        // Clock still not initialized — shows placeholder
-        await expect(clockDisplay).toContainText('--:--');
+        // Clock still not initialized — no chip yet
+        await expect(clockDisplay.locator('.chip')).toHaveCount(0);
 
         // Now czas fires — should initialize with precision 0
         await pushText(page, 'Jest w przyblizeniu piata rano, 10 dzien miesiaca Pflugzeit wedlug Kalendarza Imperialnego.');
@@ -302,7 +302,7 @@ test.describe('Clock System', () => {
         await expect(clockDisplay).toContainText('±60');
     });
 
-    test('clock shows day/night color coding', async ({page}) => {
+    test('clock shows whether it is day or night', async ({page}) => {
         await page.clock.install();
         await page.goto('/');
         await waitForCommandInput(page);
@@ -320,10 +320,9 @@ test.describe('Clock System', () => {
         // Wait for display to update
         await page.clock.runFor(1000);
 
-        // Check that clock has yellow color for daytime (calculated from hour vs sunrise/sunset)
-        // Daytime color is #fbbf24 (yellow) → rgb(251, 191, 36)
-        const timeSpan = clockDisplay.locator('span').nth(1);
-        await expect(timeSpan).toHaveCSS('color', 'rgb(251, 191, 36)');
+        // Daytime (calculated from hour vs sunrise/sunset)
+        const dayPart = clockDisplay.locator('.chip__lab');
+        await expect(dayPart).toHaveText('dzien');
 
         // Set time at sunset
         await pushText(page, 'Jest w przyblizeniu osma wieczorem, 10 dzien miesiaca Pflugzeit wedlug Kalendarza Imperialnego.');
@@ -333,7 +332,6 @@ test.describe('Clock System', () => {
         await pushGmcp(page, 'room.time', { daylight: false });
         await page.clock.runFor(2000);
 
-        // Nighttime color is #60a5fa (blue) → rgb(96, 165, 250)
-        await expect(timeSpan).toHaveCSS('color', 'rgb(96, 165, 250)');
+        await expect(dayPart).toHaveText('noc');
     });
 });

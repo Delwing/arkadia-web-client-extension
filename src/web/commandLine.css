@@ -114,13 +114,14 @@
   padding: 0 12px;
   border: 1px solid var(--popup-border-control);
   border-radius: 8px;
-  background-color: var(--popup-input-bg);
+  /* A shade of the footer itself, so it sits with whatever the theme and the
+     output background are, instead of a fixed input colour. */
+  background-color: color-mix(in srgb, var(--footer-bg) 82%, #000);
   cursor: text;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 #command-field:focus-within {
-  border-color: var(--popup-accent);
-  box-shadow: 0 0 0 3px var(--popup-accent-subtle-bg);
+  border-color: var(--popup-accent-border);
 }
 .command-field__prompt {
   flex-shrink: 0;

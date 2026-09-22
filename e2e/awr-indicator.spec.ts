@@ -20,8 +20,7 @@ test.describe('AWR indicator', () => {
 
         // Should show AWR indicator
         await expect(attackModeIndicator, 'should show AWR indicator when player is leader').toBeVisible();
-        await expect(attackModeIndicator, 'should show default mode "A"').toContainText('Atk: A');
-        await expect(attackModeIndicator, 'should have class "A"').toHaveClass('A');
+        await expect(attackModeIndicator.locator('.chip__val'), 'should show default mode "A"').toHaveText('A');
     });
 
     test('hides AWR indicator when player is not team leader', async ({page}) => {
@@ -62,23 +61,19 @@ test.describe('AWR indicator', () => {
             '100': {desc: 'Player', team: true, team_leader: true},
         });
 
-        await expect(attackModeIndicator, 'should show mode "A" initially').toContainText('Atk: A');
-        await expect(attackModeIndicator, 'should have class "A"').toHaveClass('A');
+        await expect(attackModeIndicator.locator('.chip__val'), 'should show mode "A" initially').toHaveText('A');
 
         // Click to cycle to AW
         await attackModeIndicator.click();
-        await expect(attackModeIndicator, 'should show mode "AW" after first click').toContainText('Atk: AW');
-        await expect(attackModeIndicator, 'should have class "AW"').toHaveClass('AW');
+        await expect(attackModeIndicator.locator('.chip__val'), 'should show mode "AW" after first click').toHaveText('AW');
 
         // Click to cycle to AWR
         await attackModeIndicator.click();
-        await expect(attackModeIndicator, 'should show mode "AWR" after second click').toContainText('Atk: AWR');
-        await expect(attackModeIndicator, 'should have class "AWR"').toHaveClass('AWR');
+        await expect(attackModeIndicator.locator('.chip__val'), 'should show mode "AWR" after second click').toHaveText('AWR');
 
         // Click to cycle back to A
         await attackModeIndicator.click();
-        await expect(attackModeIndicator, 'should show mode "A" after third click').toContainText('Atk: A');
-        await expect(attackModeIndicator, 'should have class "A"').toHaveClass('A');
+        await expect(attackModeIndicator.locator('.chip__val'), 'should show mode "A" after third click').toHaveText('A');
     });
 
     test('restores attack mode from localStorage', async ({page}) => {
@@ -102,8 +97,7 @@ test.describe('AWR indicator', () => {
         });
 
         const attackModeIndicator = page.locator('#attack-mode');
-        await expect(attackModeIndicator, 'should restore mode "AWR" from localStorage').toContainText('Atk: AWR');
-        await expect(attackModeIndicator, 'should have class "AWR"').toHaveClass('AWR');
+        await expect(attackModeIndicator.locator('.chip__val'), 'should restore mode "AWR" from localStorage').toHaveText('AWR');
     });
 
     test('shows indicator only for team leader, not for team members', async ({page}) => {
@@ -138,11 +132,11 @@ test.describe('AWR indicator', () => {
         });
 
         await expect(attackModeIndicator, 'should show indicator').toBeVisible();
-        await expect(attackModeIndicator, 'should show mode "A"').toContainText('Atk: A');
+        await expect(attackModeIndicator.locator('.chip__val'), 'should show mode "A"').toHaveText('A');
 
         // Click to cycle to AW
         await attackModeIndicator.click();
-        await expect(attackModeIndicator, 'should show mode "AW"').toContainText('Atk: AW');
+        await expect(attackModeIndicator.locator('.chip__val'), 'should show mode "AW"').toHaveText('AW');
 
         // Now remove leadership
         await pushGmcp(page, 'objects.data', {
@@ -166,11 +160,11 @@ test.describe('AWR indicator', () => {
         });
 
         const attackModeIndicator = page.locator('#attack-mode');
-        await expect(attackModeIndicator, 'should show default mode "A"').toContainText('Atk: A');
+        await expect(attackModeIndicator.locator('.chip__val'), 'should show default mode "A"').toHaveText('A');
 
         // Click to cycle to AW
         await attackModeIndicator.click();
-        await expect(attackModeIndicator, 'should show mode "AW" after click').toContainText('Atk: AW');
+        await expect(attackModeIndicator.locator('.chip__val'), 'should show mode "AW" after click').toHaveText('AW');
 
         // Switch to a different character — before the fix this caused an infinite
         // synchronous loop between characterStorage.onChange and client.on handlers
@@ -189,7 +183,7 @@ test.describe('AWR indicator', () => {
             '200': {desc: 'Player2', team: true, team_leader: true},
         });
 
-        await expect(attackModeIndicator, 'should reset to "A" for new character').toContainText('Atk: A');
+        await expect(attackModeIndicator.locator('.chip__val'), 'should reset to "A" for new character').toHaveText('A');
     });
 
     test('persists attack mode changes to localStorage', async ({page}) => {
@@ -205,11 +199,11 @@ test.describe('AWR indicator', () => {
             '100': {desc: 'Player', team: true, team_leader: true},
         });
 
-        await expect(attackModeIndicator, 'should show mode "A"').toContainText('Atk: A');
+        await expect(attackModeIndicator.locator('.chip__val'), 'should show mode "A"').toHaveText('A');
 
         // Click to cycle to AW
         await attackModeIndicator.click();
-        await expect(attackModeIndicator, 'should show mode "AW"').toContainText('Atk: AW');
+        await expect(attackModeIndicator.locator('.chip__val'), 'should show mode "AW"').toHaveText('AW');
 
         // Check localStorage was updated
         const storedMode = await page.evaluate(() => {

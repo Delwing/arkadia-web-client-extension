@@ -51,7 +51,7 @@ export const defaultChromeSettings: ChromeSettings = {
     showVoiceButton: true,
     mapHeight: typeof window !== 'undefined' && window.innerWidth < 768 ? 25 : 30,
     mapPosition: 'top-overlay',
-    footerMode: 0,
+    footerMode: 4, // 4 = Kafelki (pips); 0-3 = Liczbowy, Pasek, Pasek jednolity, Pasek graficzny
     footerComponents: defaultFooterComponents,
     mobileFooterCompact: true,
     mobileFooterExpand: 'toggle',

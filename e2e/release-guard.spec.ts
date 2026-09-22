@@ -1,109 +1,55 @@
 import {expect, test} from './support/fixtures';
 import {ensureGameSocket, pushText, waitForCommandInput} from './support/mocks';
 
+// The "Zaslona" footer chip (#release-guard-timer) carries both the cover cooldown and
+// the guard-release toggle (/puszczaj): an outline shield while covers are released
+// automatically (the default), a filled one while the guard is held.
 test.describe('Release guard timer', () => {
-    test('displays initial state with guard ON and timer OK', async ({page}) => {
+    test('displays initial state with guard released and timer OK', async ({page}) => {
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
 
-        const releaseGuardTimer = page.locator('#release-guard-timer');
+        const chip = page.locator('#release-guard-timer .chip');
 
-        // Should be visible with initial state
-        await expect(releaseGuardTimer, 'should be visible initially').toBeVisible();
-        await expect(releaseGuardTimer, 'should display Pusc').toContainText('Pusc');
-        await expect(releaseGuardTimer, 'should display Zas:').toContainText('Zas:');
-        await expect(releaseGuardTimer, 'should show OK state').toContainText('OK');
-
-        // Pusc should be white when active
-        const puscSpan = releaseGuardTimer.locator('span').first();
-        await expect(puscSpan, 'Pusc should be white when active').toHaveCSS('color', 'rgba(255, 255, 255, 0.95)');
+        await expect(chip, 'should be visible initially').toBeVisible();
+        await expect(chip.locator('.chip__val'), 'should show OK state').toHaveText('OK');
+        await expect(chip.locator('.chip__ico--fill'), 'shield outline: covers released').toHaveCount(0);
     });
 
-    test('toggles guard state when clicking anywhere on element', async ({page}) => {
+    test('toggles guard state on click', async ({page}) => {
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
 
-        const releaseGuardTimer = page.locator('#release-guard-timer');
-        const puscSpan = releaseGuardTimer.locator('span').first();
+        const chip = page.locator('#release-guard-timer .chip');
+        const filled = chip.locator('.chip__ico--fill');
 
-        // Initial state should be ON (strong)
-        await expect(puscSpan, 'Pusc should be strong initially').toHaveCSS('color', 'rgba(255, 255, 255, 0.95)');
-
-        // Click anywhere to turn OFF
-        await releaseGuardTimer.click();
-
-        // Should change to OFF state (dim)
-        await expect(puscSpan, 'Pusc should be dim after click').toHaveCSS('color', 'rgba(255, 255, 255, 0.5)');
-
-        // Click again to toggle back ON
-        await releaseGuardTimer.click();
-
-        // Should return to ON state (strong)
-        await expect(puscSpan, 'Pusc should be strong again').toHaveCSS('color', 'rgba(255, 255, 255, 0.95)');
+        await expect(filled, 'released initially').toHaveCount(0);
+        await chip.click();
+        await expect(filled, 'held after a click').toHaveCount(1);
+        await chip.click();
+        await expect(filled, 'released again').toHaveCount(0);
+        await expect(chip, 'should remain visible after toggling').toBeVisible();
     });
 
-    test('always remains visible', async ({page}) => {
-        await page.goto('/');
-        await waitForCommandInput(page);
-        await ensureGameSocket(page);
-
-        const releaseGuardTimer = page.locator('#release-guard-timer');
-
-        // Should always be visible
-        await expect(releaseGuardTimer, 'should be visible initially').toBeVisible();
-
-        // Click to change state
-        await releaseGuardTimer.click();
-
-        // Should still be visible
-        await expect(releaseGuardTimer, 'should remain visible after toggle').toBeVisible();
-    });
-
-    test('shows timer countdown when cover is triggered', async ({page}) => {
-        await page.goto('/');
-        await waitForCommandInput(page);
-        await ensureGameSocket(page);
-
-        const releaseGuardTimer = page.locator('#release-guard-timer');
-
-        // Initially shows OK
-        await expect(releaseGuardTimer, 'should display OK initially').toContainText('OK');
-
-        // Trigger cover timer with a cover message
-        await pushText(page, 'Zrecznie zaslaniasz Aldousa przed ciosami orka.');
-
-        // Should show countdown value (5 second timer)
-        await expect(releaseGuardTimer, 'should show countdown').toContainText('Zas:');
-
-        // The countdown value should be yellow
-        const valueSpan = releaseGuardTimer.locator('span').nth(2);
-        await expect(valueSpan, 'countdown should be yellow').toHaveCSS('color', 'rgb(255, 255, 0)');
-    });
-
-    test('shows OK when timer completes', async ({page}) => {
+    test('shows the countdown when cover is triggered, OK when it completes', async ({page}) => {
         await page.clock.install();
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
 
-        const releaseGuardTimer = page.locator('#release-guard-timer');
+        const chip = page.locator('#release-guard-timer .chip');
+        const value = chip.locator('.chip__val');
 
-        // Trigger cover timer with a cover message
+        await expect(value, 'should display OK initially').toHaveText('OK');
+
         await pushText(page, 'Zrecznie zaslaniasz Aldousa przed ciosami orka.');
+        await expect(value, 'should show countdown').toHaveText(/^[0-9]\.[0-9]$/);
+        await expect(chip, 'countdown in the warn tone').toHaveClass(/chip--warn/);
 
-        // Should show countdown
-        await expect(releaseGuardTimer, 'should show countdown').toContainText('Zas:');
-
-        // Wait for timer to expire (5 seconds + buffer)
         await page.clock.runFor(5500);
-
-        // Should show OK again
-        await expect(releaseGuardTimer, 'should show OK after timer completes').toContainText('OK');
-
-        // OK should be green
-        const okSpan = releaseGuardTimer.locator('span').nth(2);
-        await expect(okSpan, 'OK should be green').toHaveCSS('color', 'rgb(0, 255, 127)');
+        await expect(value, 'should show OK after timer completes').toHaveText('OK');
+        await expect(chip, 'OK in the ready tone').toHaveClass(/chip--ok/);
     });
 });

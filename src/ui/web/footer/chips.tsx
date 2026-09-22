@@ -8,14 +8,13 @@ import { ChipIcon } from "./icons";
 /**
  * The footer status chips.
  *
- * Each chip is a self-contained component subscribing to the same client event
- * the stock footer components use (src/ui/web/components/**), but rendering pure
- * JSX through the shared <Chip>. A chip returns null when its data is absent, so
+ * Each chip is a self-contained component subscribing to the client event it
+ * reads, rendering pure JSX through the shared <Chip>. A chip returns null when its data is absent, so
  * a strip only ever shows what is currently relevant; Fajka and Lampa are the
  * always-on chips (both double as an on/off switch).
  *
  * These are the building blocks — hosts compose them: the forge HUD renders them
- * all through <FooterStrip>, and other UIs can pick a subset.
+ * through <FooterStrip>, the stock status line through <StatusLine>.
  */
 
 /** M:SS from a seconds count (floored). */
@@ -191,19 +190,34 @@ export function ApocalypseChip() {
 
 type Domain = "Empire" | "Ishtar";
 
-/** In-game clock (HH:MM) for the active domain; date rides in the tooltip. */
+type ClockReading = { hours: number; minutes: number; precision?: number; dayLabel?: string; daylight?: boolean };
+
+/**
+ * In-game clock (HH:MM, ±precision while it is still an estimate) for the active
+ * domain, then "dzien" / "noc". The date rides in the tooltip; a click opens the
+ * clock window.
+ */
 export function ClockChip() {
   const [active, setActive] = useState<Domain | undefined>();
-  const [clocks, setClocks] = useState<Record<string, { hours: number; minutes: number; dayLabel?: string }>>({});
+  const [clocks, setClocks] = useState<Record<string, ClockReading>>({});
   useClientEvent<{ domain: Domain }>("clock.domain.active", ({ domain }) => setActive(domain));
-  useClientEvent<{ domain: Domain; hours: number; minutes: number; dayLabel?: string }>(
-    "clock.update",
-    (d) => setClocks((prev) => ({ ...prev, [d.domain]: { hours: d.hours, minutes: d.minutes, dayLabel: d.dayLabel } }))
-  );
+  useClientEvent<ClockReading & { domain: Domain }>("clock.update", ({ domain, ...reading }) =>
+    setClocks((prev) => ({ ...prev, [domain]: reading })));
   const clock = active ? clocks[active] : undefined;
   if (!clock) return null;
-  const value = `${String(clock.hours).padStart(2, "0")}:${String(Math.floor(clock.minutes)).padStart(2, "0")}`;
-  return <Chip icon={<ChipIcon name="clock" />} label="Zegar" value={value} title={clock.dayLabel} />;
+  const time = `${String(clock.hours).padStart(2, "0")}:${String(Math.floor(clock.minutes)).padStart(2, "0")}`;
+  const value = clock.precision && clock.precision > 0 ? `${time} ±${clock.precision}` : time;
+  const part = clock.daylight === true ? "dzien" : clock.daylight === false ? "noc" : "";
+  return (
+    <Chip
+      icon={<ChipIcon name="clock" />}
+      label={part}
+      value={value}
+      valueFirst
+      title={clock.dayLabel ? `${clock.dayLabel} (kliknij: zegar)` : "Zegar"}
+      onClick={() => eventBus.emit("clock.popup.open", { domain: active })}
+    />
+  );
 }
 
 /** Whether a weapon is drawn. */
@@ -231,7 +245,8 @@ export function CoverChip() {
       label="Zaslona"
       value={active ? cover!.toFixed(1) : "OK"}
       tone={active ? "warn" : "ok"}
-      title="Przelacz puszczanie zaslon"
+      title={guard ? "Zaslony puszczane automatycznie (kliknij: trzymaj)" : "Zaslony trzymane (kliknij: puszczaj automatycznie)"}
+      className={guard ? undefined : "chip--guard-held"}
       onClick={() => eventBus.emit("releaseGuard", !guard)}
     />
   );
@@ -268,7 +283,7 @@ export function ConnectionChip() {
   return (
     <Chip
       icon={<ChipIcon name="signal" />}
-      label="Lacze"
+      label=""
       value={parts.join(" ")}
       tone={tone}
       title={drift == null ? "Ping" : "Ping i zegar proxy wzgledem tego komputera"}
