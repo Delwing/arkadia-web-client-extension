@@ -202,6 +202,17 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Scrollbars everywhere: thin, a quiet thumb in the text colour on no track,
+ * a little brighter while the pointer is over what scrolls. Rules that hide
+ * one (scrollbar-width: none) are more specific and still win. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--popup-text, #ebe7df) 16%, transparent) transparent;
+}
+*:hover {
+  scrollbar-color: color-mix(in srgb, var(--popup-text, #ebe7df) 30%, transparent) transparent;
+}
+
 /* Touch screens: finger-sized controls and 16px input text (no iOS focus
    zoom). Keyed on the pointer, not the width, so a landscape tablet gets it
    too and a narrow desktop window keeps the compact scale. */
