@@ -561,7 +561,6 @@
   justify-content: space-between;
   align-items: center;
   gap: 12px;
-  width: 100%;
   min-height: 44px;
   font-size: 14px;
 }
