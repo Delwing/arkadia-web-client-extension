@@ -105,6 +105,16 @@ export interface SupportedEvent {
     args?: EventArg[];
 }
 
+const TRANSPORT_EVENT_ARGS: EventArg[] = [
+    { name: 'transport', label: 'Nazwa transportu', type: 'string' },
+    { name: 'stop', label: 'Przystanek', type: 'string' },
+];
+
+const TRANSPORT_APPROACHING_ARGS: EventArg[] = [
+    ...TRANSPORT_EVENT_ARGS,
+    { name: 'remaining', label: 'Pozostale sekundy', type: 'number' },
+];
+
 export const SUPPORTED_EVENTS: SupportedEvent[] = [
     // Combat
     { id: 'kill', label: 'Zabicie (ja/druzyna)', category: 'Walka' },
@@ -160,10 +170,65 @@ export const SUPPORTED_EVENTS: SupportedEvent[] = [
     { id: 'client.connect', label: 'Polaczenie', category: 'Polaczenie' },
     { id: 'client.disconnect', label: 'Rozlaczenie', category: 'Polaczenie' },
 
-    // Timers
-    { id: 'zaskTimer', label: 'Timer zaskoczenia', category: 'Timery' },
-    { id: 'coverTimer', label: 'Timer oslony', category: 'Timery' },
-    { id: 'transportTimer', label: 'Timer transportu', category: 'Timery' },
+    // Timers. Each fires once per countdown; the per-tick events that drive
+    // the on-screen timers are deliberately not offered.
+    {
+        id: 'zask.ready',
+        label: 'Zaskoczenie - mozna zaskoczyc',
+        category: 'Timery',
+        description: 'Gdy od wejscia na lokacje w trybie przemykania minie 30 sekund i licznik zaskoczenia zmieni kolor na zielony.',
+        args: [{ name: 'seconds', label: 'Sekundy od wejscia', type: 'number' }],
+    },
+    {
+        id: 'cover.start',
+        label: 'Oslona - start odliczania',
+        category: 'Timery',
+        description: 'W chwili proby zaslony, zastawienia sie lub wycofania — rusza 5-sekundowe odliczanie.',
+    },
+    {
+        id: 'cover.ready',
+        label: 'Oslona - koniec odliczania',
+        category: 'Timery',
+        description: 'Gdy 5-sekundowe odliczanie po probie zaslony dobiegnie konca.',
+    },
+
+    // Transport
+    {
+        id: 'transport.stop',
+        label: 'Postoj (na pokladzie)',
+        category: 'Transport',
+        description: 'Gdy pojazd, ktorym jedziesz, zatrzyma sie na dowolnym przystanku.',
+        args: TRANSPORT_EVENT_ARGS,
+    },
+    {
+        id: 'transport.arrived',
+        label: 'Przyjazd (czekajac na przystanku)',
+        category: 'Transport',
+        description: 'Gdy czekasz na przystanku i podjedzie pojazd, do ktorego mozna wsiasc (ten sam moment, w ktorym pojawia sie bind wsiadania).',
+        args: TRANSPORT_EVENT_ARGS,
+    },
+    {
+        id: 'transport.destination',
+        label: 'Postoj w celu podrozy (dzwonek)',
+        category: 'Transport',
+        description: 'Gdy pojazd zatrzyma sie na przystanku oznaczonym dzwonkiem w oknie trasy transportu.',
+        args: TRANSPORT_EVENT_ARGS,
+    },
+    {
+        id: 'transport.approaching',
+        label: 'Zbliza sie przystanek',
+        category: 'Transport',
+        description: 'Raz na odcinek, gdy do najblizszego przystanku zostanie mniej niz 10 sekund (licznik transportu robi sie czerwony). '
+            + 'Tylko dla odcinkow ze znanym czasem przejazdu.',
+        args: TRANSPORT_APPROACHING_ARGS,
+    },
+    {
+        id: 'transport.approachingDestination',
+        label: 'Zbliza sie cel podrozy (dzwonek)',
+        category: 'Transport',
+        description: 'Jak "Zbliza sie przystanek", ale tylko przed przystankiem oznaczonym dzwonkiem w oknie trasy transportu.',
+        args: TRANSPORT_APPROACHING_ARGS,
+    },
 
     // Raw GMCP packages, fired as `gmcp.<package>` for every message the server
     // sends. The editor collapses this category into a single "GMCP" choice
@@ -259,6 +324,22 @@ export const SUPPORTED_EVENTS: SupportedEvent[] = [
 
 /** Category of the raw GMCP entries in `SUPPORTED_EVENTS`. */
 export const GMCP_EVENT_CATEGORY = 'GMCP';
+
+/**
+ * Event ids that used to be offered and were replaced. The old "Timery" entries
+ * bound to the events that redraw the on-screen timers, so their macros ran on
+ * every tick (up to ten times a second); each maps to the one-shot that is the
+ * closest reading of what the player meant.
+ */
+export const LEGACY_EVENT_IDS: Readonly<Record<string, string>> = {
+    zaskTimer: 'zask.ready',
+    coverTimer: 'cover.ready',
+    transportTimer: 'transport.stop',
+};
+
+export function canonicalEventId(event: string): string {
+    return LEGACY_EVENT_IDS[event] ?? event;
+}
 
 const STORAGE_KEY = 'triggers';
 
@@ -559,7 +640,7 @@ export default function initUserTriggers(client: Client) {
 
             if (triggerType === 'event' && item.event) {
                 // Event-based trigger
-                const [eventName, eventValue] = item.event.split(':');
+                const [eventName, eventValue] = canonicalEventId(item.event).split(':');
 
                 const handler = (data: unknown) => {
                     // For events like 'combatState:true', check the value

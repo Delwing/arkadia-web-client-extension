@@ -661,10 +661,10 @@ describe('trigger proposals - event', () => {
 
     it('requires notify text on an event trigger', () => {
         expect(errorCodes(validateProposal({
-            kind: 'trigger', type: 'event', event: 'zaskTimer', macros: [{ type: 'notify' }],
+            kind: 'trigger', type: 'event', event: 'zask.ready', macros: [{ type: 'notify' }],
         }))).toEqual(['missingMacroMessage']);
         expect(validateProposal({
-            kind: 'trigger', type: 'event', event: 'zaskTimer', macros: [{ type: 'notify', message: 'Zask gotowy' }],
+            kind: 'trigger', type: 'event', event: 'zask.ready', macros: [{ type: 'notify', message: 'Zask gotowy' }],
         }).ok).toBe(true);
     });
 

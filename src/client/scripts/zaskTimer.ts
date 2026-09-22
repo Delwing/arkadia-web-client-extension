@@ -37,6 +37,9 @@ export default function initZaskTimer(client: Client) {
         if (seconds >= SAFE_THRESHOLD_SECONDS) {
             clearTimer();
             emit({ seconds, ok: true });
+            // The per-second `zaskTimer` drives the display; this one-shot is
+            // what user triggers bind to.
+            client.sendEvent('zask.ready', { seconds });
         } else {
             emit({ seconds, ok: false });
         }

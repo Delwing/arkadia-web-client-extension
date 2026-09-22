@@ -1,6 +1,7 @@
 import { useState } from "react";
 import eventBus from "@modules/core/eventBus";
 import type { PackageStatus } from "@shared/events/clientEvents";
+import { TRANSPORT_SOON_SECONDS } from "@client/types/transport.ts";
 import { useAttentionBlink, useClientEvent } from "../hooks";
 import { Chip, type ChipTone } from "./Chip";
 import { ChipIcon } from "./icons";
@@ -120,7 +121,7 @@ export function TransportChip() {
   if (!payload) return null;
   const hasTimer = typeof payload.remaining === "number" && typeof payload.total === "number";
   const remaining = hasTimer ? Math.max(0, payload.remaining!) : null;
-  const tone: ChipTone = remaining == null ? "ok" : remaining < 10 ? "danger" : remaining < 30 ? "warn" : "ok";
+  const tone: ChipTone = remaining == null ? "ok" : remaining < TRANSPORT_SOON_SECONDS ? "danger" : remaining < 30 ? "warn" : "ok";
   const value = remaining == null ? payload.label : `${payload.label} ${mmss(remaining)}`;
   return (
     <Chip

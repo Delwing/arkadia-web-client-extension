@@ -15,12 +15,15 @@
  * generic lets both call these without a cast and without either type winning.
  */
 
+import { canonicalEventId } from "@client/scripts/userTriggers.ts";
+
 interface MacroLike {
     type: string;
     soundKey?: string;
 }
 
 interface TriggerLike<M extends MacroLike> {
+    event?: string;
     macros: M[];
 }
 
@@ -37,7 +40,9 @@ export function normalizeMacro<M extends MacroLike>(macro: M): M {
 
 export function normalizeTrigger<M extends MacroLike, T extends TriggerLike<M>>(trigger: T): T {
     const macros = Array.isArray(trigger.macros) ? trigger.macros.map(normalizeMacro) : [];
-    return { ...trigger, macros };
+    // Retired event ids are rewritten so the editor shows (and saves) the replacement.
+    const event = trigger.event ? canonicalEventId(trigger.event) : trigger.event;
+    return { ...trigger, event, macros };
 }
 
 export function normalizeTriggerList<M extends MacroLike, T extends TriggerLike<M>>(

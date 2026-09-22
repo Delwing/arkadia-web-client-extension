@@ -12,7 +12,7 @@ export type SoundCategory =
 
 import {CommandOptions} from "@client/scripts/commandPreserveCaseMode.ts";
 import {LetterSubmitPayload} from "@client/types/letter.ts";
-import {TransportTimerPayload, TransportRoutePayload, TransportDebugState, TransportTimesDebugPayload, TransportLegResetPayload} from "@client/types/transport.ts";
+import {TransportTimerPayload, TransportApproachingPayload, TransportStopEventPayload, TransportRoutePayload, TransportDebugState, TransportTimesDebugPayload, TransportLegResetPayload} from "@client/types/transport.ts";
 import {AnsiAwareBuffer} from "@client/ansi/FormatState.ts";
 import {PluginInfo} from "@shared/types/Plugin.ts";
 import type {RecordedEvent} from "@shared/recorder/Recorder.ts";
@@ -217,6 +217,10 @@ export interface KnownEvents {
     "notify": NotificationPayload;
     "lampTimer": number | null;
     "coverTimer": number | null;
+    /** A maneuver was attempted and the 5s cover cooldown started (or restarted). */
+    "cover.start": void;
+    /** The cover cooldown ran out. Fires once per cooldown, unlike the per-tick `coverTimer`. */
+    "cover.ready": void;
     "breakItem": { text: string; command?: string } | null;
     "pipeLit": boolean;
     "packageStatus": PackageStatus | null;
@@ -231,6 +235,8 @@ export interface KnownEvents {
     "letterComposer.preview": LetterSubmitPayload;
     "npc": unknown;
     "zaskTimer": { seconds: number; ok: boolean } | null;
+    /** The surprise timer reached its safe threshold. Fires once per room, unlike the per-tick `zaskTimer`. */
+    "zask.ready": { seconds: number };
     "moveModeChanged": number;
     "carriageModeChanged": boolean;
     "ping": number | null;
@@ -246,6 +252,18 @@ export interface KnownEvents {
     "transportDeparture": void;
     "transport.popup.open": void;
     "transport.onBoard": boolean;
+    /** On board: the vehicle stopped at a stop. */
+    "transport.stop": TransportStopEventPayload;
+    /** Waiting at a dock: a vehicle you can board has just pulled in. */
+    "transport.arrived": TransportStopEventPayload;
+    /** On board: the vehicle stopped at the destination picked in the route popup. */
+    "transport.destination": TransportStopEventPayload;
+    /** On board: the current leg dropped under TRANSPORT_SOON_SECONDS. */
+    "transport.approaching": TransportApproachingPayload;
+    /** As `transport.approaching`, but only for the leg ending at the picked destination. */
+    "transport.approachingDestination": TransportApproachingPayload;
+    /** Route popup -> tracker: the stop label the player marked with the bell, or null. */
+    "transport.target": string | null;
     "combatTimer": number | null;
     "worldDestructionTimer": number | null;
     "combatState": boolean;

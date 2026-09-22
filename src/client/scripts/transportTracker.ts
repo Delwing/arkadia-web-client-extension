@@ -16,7 +16,7 @@ import {
     recordTransportSegment,
     type StoredTransportSegmentRecord,
 } from "../utils/transportStats";
-import type { TransportDebugState } from "../types/transport";
+import { TRANSPORT_SOON_SECONDS, type TransportDebugState } from "../types/transport";
 import {
     RAW_TRANSPORT_DEFINITIONS,
     type RawTransportDefinition,
@@ -199,6 +199,10 @@ class Tracker {
     private readonly exitCmds: Set<string>;
     /** Last transport bind we set, so it can be re-rendered when carriage mode toggles. */
     private lastBind?: { kind: 'board'; def: Def; uncertain: boolean } | { kind: 'exit'; def: Def; stopIdx: number };
+    /** Stop label the player marked with the bell in the route popup; matched against destLabel(). */
+    private target: string | null = null;
+    /** Leg (`stopIdx@startedAt`) that already fired `transport.approaching`, so it fires once per leg. */
+    private approachedLeg?: string;
 
     constructor(private readonly client: Client) {
         this.defs = RAW.map(([name, raw]) => compile(name, raw));
@@ -414,11 +418,14 @@ class Tracker {
                 const stop = def.stops[stopIdx];
                 if (typeof locId !== 'number') {
                     this.setBoardBind(def, true, true);
+                    this.emitStopEvent('transport.arrived', def, stopIdx);
                 } else if (stop.destination === locId || stop.start === locId) {
                     this.setBoardBind(def, true);
+                    this.emitStopEvent('transport.arrived', def, stopIdx);
                 } else if (!this.anyTransportAtLocation(locId)) {
                     // Location is not a stop for any transport — show bind with (?) as fallback
                     this.setBoardBind(def, true, true);
+                    this.emitStopEvent('transport.arrived', def, stopIdx);
                 }
                 // else: another transport docks here and its pattern matched — skip to prevent double-bind
                 // Stage the next leg — stop pattern already tells us which direction is next
@@ -434,6 +441,7 @@ class Tracker {
             this.client.Map.setMapRoomById(def.stops[stopIdx].destination);
             this.setExitBind(def, stopIdx);
             this.client.sendEvent('transportArrival', stopIdx);
+            this.emitOnBoardStop(def, stopIdx);
             console.log(`${LOG} Adopted ${def.name} from stop pattern at ${stopIdx}`);
             return;
         }
@@ -468,7 +476,39 @@ class Tracker {
             this.setExitBind(def, stopIdx);
         }
         this.client.sendEvent('transportArrival', stopIdx);
+        this.emitOnBoardStop(def, stopIdx);
         console.log(`${LOG} Arrived at stop ${stopIdx} on ${def.name}`);
+    }
+
+    // ── trigger events ────────────────────────────────────────────────────────
+
+    private emitStopEvent(
+        event: 'transport.stop' | 'transport.arrived' | 'transport.destination',
+        def: Def,
+        stopIdx: number,
+    ): void {
+        this.client.sendEvent(event, { transport: def.name, stop: destLabel(def, stopIdx) });
+    }
+
+    /** The vehicle we ride stopped: always `transport.stop`, plus `transport.destination` at the bell. */
+    private emitOnBoardStop(def: Def, stopIdx: number): void {
+        this.emitStopEvent('transport.stop', def, stopIdx);
+        if (this.isTarget(def, stopIdx)) this.emitStopEvent('transport.destination', def, stopIdx);
+    }
+
+    private isTarget(def: Def, stopIdx: number): boolean {
+        return this.target !== null && destLabel(def, stopIdx) === this.target;
+    }
+
+    /** Fire the approaching events once per leg, the first time it drops under the red threshold. */
+    private checkApproaching(def: Def, stopIdx: number, startedAt: number, remaining: number | null): void {
+        if (remaining === null || remaining >= TRANSPORT_SOON_SECONDS) return;
+        const key = `${stopIdx}@${startedAt}`;
+        if (this.approachedLeg === key) return;
+        this.approachedLeg = key;
+        const payload = { transport: def.name, stop: destLabel(def, stopIdx), remaining: Math.ceil(remaining) };
+        this.client.sendEvent('transport.approaching', payload);
+        if (this.isTarget(def, stopIdx)) this.client.sendEvent('transport.approachingDestination', payload);
     }
 
     private onSet(def: Def, stopIdx: number): void {
@@ -660,11 +700,14 @@ class Tracker {
             total: hasDuration ? stop.time! : null,
         };
         this.client.sendEvent('transportTimer', payload);
+        this.checkApproaching(def, stopIdx, startedAt, payload.remaining);
     }
 
     private emitRoute(): void {
         const s = this.state;
         if (s.kind === 'idle' || s.kind === 'pending') {
+            // The popup drops its bell when the route goes away; forget it here too.
+            this.target = null;
             this.client.sendEvent('transportRoute', null);
             return;
         }
@@ -894,6 +937,11 @@ class Tracker {
 
         // Reset
         this.client.on('reset', () => this.onReset());
+
+        // Destination picked (bell) in the route popup
+        this.client.on('transport.target', (label) => {
+            this.target = label ?? null;
+        });
 
         // Per-definition patterns
         for (const def of this.defs) {

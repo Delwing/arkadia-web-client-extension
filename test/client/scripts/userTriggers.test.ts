@@ -325,13 +325,30 @@ describe('userTriggers', () => {
     initUserTriggers((client as unknown) as any);
     const list: UserTrigger[] = [{
       type: 'event',
-      event: 'zaskTimer',
+      event: 'moveModeChanged',
       macros: [{ type: 'command', command: 'echo {value}' }],
     }];
     globalStorage.set('triggers', list);
-    client.sendEvent('zaskTimer', 12);
+    client.sendEvent('moveModeChanged', 12);
 
     expect(client.sendCommand).toHaveBeenCalledWith('echo 12');
+  });
+
+  test('a retired per-tick timer id runs on its one-shot replacement', () => {
+    const client = new FakeClient();
+    initUserTriggers((client as unknown) as any);
+    globalStorage.set('triggers', [{
+      type: 'event',
+      event: 'coverTimer',
+      macros: [{ type: 'command', command: 'zaslon' }],
+    }] as UserTrigger[]);
+
+    client.sendEvent('coverTimer', 4.9);
+    client.sendEvent('coverTimer', 4.8);
+    expect(client.sendCommand).not.toHaveBeenCalled();
+
+    client.sendEvent('cover.ready');
+    expect(client.sendCommand).toHaveBeenCalledTimes(1);
   });
 
   test('slowBlink applies slow blink to match', () => {

@@ -20,7 +20,7 @@ Reagujesz na to, co pojawia sie na ekranie — automatycznie, bez czekania.
 
 - **Wzorzec regex z flagami** — ignorowanie wielkosci liter, tryb globalny, wieloliniowy
 - **Filtr typu GMCP** — trigger moze reagowac tylko na walke, czat, opisy lokacji, poczte i 20+ innych kategorii
-- **Triggery zdarzeniowe** — zamiast tekstu, reaguj na zdarzenia: zabicie wroga, start/koniec walki, ogluszenie, polaczenie, rozlaczenie, timery
+- **Triggery zdarzeniowe** — zamiast tekstu, reaguj na zdarzenia: zabicie wroga, start/koniec walki, ogluszenie, polaczenie, rozlaczenie, koniec odliczania zaskoczenia i oslony, transport (postoj, przyjazd na przystanek, dotarcie do celu oznaczonego dzwonkiem, zblizanie sie do przystanku)
 - **Wiele akcji na jednym triggerze** — kazdy trigger moze wykonac dowolna kombinacje:
   - Zmiana na wielkie litery
   - Kolorowanie dopasowania

@@ -175,37 +175,23 @@ const TransportRoutePopup: React.FC = () => {
 
     useEffect(() => {
         return eventBus.on('transportArrival', (stopIndex) => {
-            const currentRoute = routeRef.current;
-            const nodeLabel = currentRoute?.stops[stopIndex]?.label ?? null;
-            setCurrentNodeLabel(nodeLabel);
-
-            if (!alertNodeLabel || !currentRoute) return;
-
-            // For loop routes, check directly against stop labels
-            if (currentRoute.loop) {
-                if (nodeLabel === alertNodeLabel) {
-                    const stopLabel = nodeLabel;
-                    const verb = gender === 'female' ? 'Dotarlas' : 'Dotarles';
-                    eventBus.emit('notify', { text: `${verb} do: ${stopLabel}` });
-                    const ARRIVAL_COLOR = createColorFormat('#00cc66');
-                    eventBus.emit('printLine', colorString(`${verb} do: ${stopLabel}`, ARRIVAL_COLOR));
-                    setArrivedNodeLabel(alertNodeLabel);
-                }
-                return;
-            }
-
-            if (!graph) return;
-            const stopIndexes = graph.nodeToStopIndexes.get(alertNodeLabel);
-            if (stopIndexes && stopIndexes.includes(stopIndex)) {
-                const stopLabel = nodeLabel ?? alertNodeLabel;
-                const verb = gender === 'female' ? 'Dotarlas' : 'Dotarles';
-                eventBus.emit('notify', { text: `${verb} do: ${stopLabel}` });
-                const ARRIVAL_COLOR = createColorFormat('#00cc66');
-                eventBus.emit('printLine', colorString(`${verb} do: ${stopLabel}`, ARRIVAL_COLOR));
-                setArrivedNodeLabel(alertNodeLabel);
-            }
+            setCurrentNodeLabel(routeRef.current?.stops[stopIndex]?.label ?? null);
         });
-    }, [alertNodeLabel, graph, route, gender]);
+    }, []);
+
+    // The tracker decides when the bell destination is reached (it also fires the
+    // `transport.destination` user trigger), so the popup only reacts to it.
+    useEffect(() => {
+        return eventBus.on('transport.destination', ({ stop }) => {
+            const verb = gender === 'female' ? 'Dotarlas' : 'Dotarles';
+            eventBus.emit('notify', { text: `${verb} do: ${stop}` });
+            eventBus.emit('printLine', colorString(`${verb} do: ${stop}`, createColorFormat('#00cc66')));
+            setArrivedNodeLabel(stop);
+        });
+    }, [gender]);
+
+    // The bell lives in this component's state; don't leave the tracker holding one nobody sees.
+    useEffect(() => () => { eventBus.emit('transport.target', null); }, []);
 
     // Determine which edge + direction is active (graph mode)
     const activeEdgeInfo = useMemo(() => {
@@ -222,9 +208,11 @@ const TransportRoutePopup: React.FC = () => {
     }, []);
 
     const handleNodeClick = useCallback((label: string) => {
+        const next = alertNodeLabel === label ? null : label;
         setArrivedNodeLabel(null);
-        setAlertNodeLabel(prev => prev === label ? null : label);
-    }, []);
+        setAlertNodeLabel(next);
+        eventBus.emit('transport.target', next);
+    }, [alertNodeLabel]);
 
     const title = route ? `Trasa: ${route.transportName}` : 'Trasa';
 

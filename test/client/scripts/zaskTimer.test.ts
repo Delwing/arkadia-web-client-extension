@@ -52,9 +52,11 @@ describe("zask timer", () => {
     });
 
     jest.advanceTimersByTime(1000);
-    expect(client.sendEvent).toHaveBeenLastCalledWith("zaskTimer",
+    expect(client.sendEvent).toHaveBeenCalledWith("zaskTimer",
         expect.objectContaining({ ok: true })
     );
+    expect(client.sendEvent).toHaveBeenLastCalledWith("zask.ready", { seconds: 30 });
+    expect(client.sendEvent.mock.calls.filter(c => c[0] === "zask.ready")).toHaveLength(1);
 
     client.dispatchEvent(new CustomEvent("moveModeChanged", { detail: 0 }));
     expect(client.sendEvent).toHaveBeenLastCalledWith("zaskTimer", null);
