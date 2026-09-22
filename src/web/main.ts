@@ -1070,7 +1070,7 @@ document.addEventListener('DOMContentLoaded', () => {
         eventBus.on('locationNote.open', ({ roomId }) => openPlace(roomId, 'note'));
     }
 
-    // The ⋯ menu next to the command line (Dokumentacja and Logi register themselves).
+    // The ⋯ menu next to the command line (Logi registers itself).
     const openSettingsOn = (category: SettingsCategoryKey, overview = false) => {
         requestSettingsCategory(category, {overview});
         settingsModal?.show();
@@ -1113,7 +1113,8 @@ document.addEventListener('DOMContentLoaded', () => {
     builtins.forEach(([id, label, group, icon, onSelect, shortLabel], index) => {
         registerMainMenuItem({id, label, shortLabel, group, icon, order: (index + 1) * 10, onSelect, source: 'builtin'});
     });
-    // Logi (170) and Dokumentacja (180) register themselves in Narzędzia.
+    // Logi (170) registers itself in Narzędzia.
+    registerMainMenuItem({id: 'docs-button', label: 'Dokumentacja', shortLabel: 'Pomoc', group: 'narzedzia', icon: 'book', order: 180, onSelect: () => eventBus.emit('docs.popup.open'), source: 'builtin'});
     registerMainMenuItem({id: 'fullscreen-button', label: 'Pełny ekran', group: 'sesja', icon: 'fullscreen', order: 900, onSelect: toggleFullscreen, source: 'builtin'});
     registerMainMenuItem({id: 'disconnect-button', label: isConnected ? 'Rozłącz' : 'Połącz', group: 'sesja', icon: 'power', order: 910, onSelect: toggleConnection, tone: 'danger', source: 'builtin'});
 

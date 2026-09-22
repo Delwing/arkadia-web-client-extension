@@ -275,6 +275,8 @@ export interface KnownEvents {
     "knowledgeDetailsReport": unknown | null;
     "knowledgeDetailsUpdated": { character: string };
     "knowledgeDetails.popup.open": void;
+    /** Dokumentacja; optionally on a page (its key in docPages.ts). */
+    "docs.popup.open": void | { page?: string };
     "knowledgeReportAction": KnowledgeReportAction;
     "requestKnowledgeReport": void | { character?: string };
     "requestKnowledgeDetailsReport": void;

@@ -59,6 +59,7 @@ export type BuiltInPopupType =
   | 'herb'
   | 'knowledgeReport'
   | 'knowledgeDetails'
+  | 'docs'
   | 'chat'
   | 'combat'
   | 'combatStatus'
