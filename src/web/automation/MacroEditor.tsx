@@ -207,7 +207,7 @@ export function MacroEditor({
                             </Select>
                         </div>
                     ) : (
-                        <div className="popup-field__warning">Nie ma jeszcze grup. Wpisz nazwe grupy w naglowku dowolnego elementu.</div>
+                        <div className="popup-field__warning">Nie ma jeszcze grup. Utworz grupe przyciskiem z folderem nad lista.</div>
                     );
                 })()}
                 {macro.type === 'beep' && (

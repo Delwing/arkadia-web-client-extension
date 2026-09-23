@@ -128,72 +128,165 @@ export function renameGroup(id: string, name: string): void {
     saveAutomationGroups(getAutomationGroups().map(g => (g.id === id ? { ...g, name: trimmed } : g)));
 }
 
-/** Deletes the group; what was in it stays, without a group. */
+/** A group named "Nowa grupa" (numbered when taken), added last; its id. */
+export function createGroup(base = "Nowa grupa"): string {
+    const groups = getAutomationGroups();
+    const taken = new Set(groups.map(g => g.name.toLowerCase()));
+    let name = base;
+    for (let n = 2; taken.has(name.toLowerCase()); n++) name = `${base} ${n}`;
+    const id = newAutomationId();
+    saveAutomationGroups([...groups, { id, name }]);
+    return id;
+}
+
+/** Moves a group before another one, or to the end. */
+export function moveGroup(id: string, beforeId?: string): void {
+    const groups = getAutomationGroups();
+    const moving = groups.find(g => g.id === id);
+    if (!moving || id === beforeId) return;
+    const rest = groups.filter(g => g.id !== id);
+    const idx = beforeId ? rest.findIndex(g => g.id === beforeId) : -1;
+    rest.splice(idx === -1 ? rest.length : idx, 0, moving);
+    saveAutomationGroups(rest);
+}
+
+/**
+ * The group an element is shown in: its own, unless that group no longer
+ * exists (deleted, or not synced yet), in which case none.
+ */
+export function effectiveGroup(item: AutomationItem, groups: AutomationGroup[]): string | undefined {
+    const group = item.data.group;
+    return group && groups.some(g => g.id === group) ? group : undefined;
+}
+
+/** Elements in their set order; ones never placed keep their stored order, after the placed ones. */
+export function sortItems(items: AutomationItem[]): AutomationItem[] {
+    return items
+        .map((item, index) => ({ item, index }))
+        .sort((a, b) => (a.item.data.order ?? Infinity) - (b.item.data.order ?? Infinity) || a.index - b.index)
+        .map(({ item }) => item);
+}
+
+/** Writes changed elements, each storage key once. */
+function writeMany(changed: AutomationItem[]): void {
+    for (const kind of ["alias", "trigger", "script"] as const) {
+        const mine = changed.filter(i => i.kind === kind);
+        if (!mine.length) continue;
+        const byId = new Map(mine.map(i => [i.id, i.data]));
+        if (kind === "alias") globalStorage.set("aliases", storedAliases().map(a => (a.id && byId.get(a.id) as UserAlias) || a));
+        else if (kind === "script") globalStorage.set("automationScripts", storedScripts().map(a => (a.id && byId.get(a.id) as UserScript) || a));
+        else globalStorage.set("triggers", normalizeTriggerList(storedTriggers().map(a => (a.id && byId.get(a.id) as UserTrigger) || a)));
+    }
+}
+
+function placed<T extends AutomationData>(data: T, group: string | undefined, order: number): T {
+    const { group: _g, order: _o, ...rest } = data;
+    return { ...rest, ...(group ? { group } : {}), order } as T;
+}
+
+/**
+ * Moves an element into a group (undefined: none), before another element
+ * of that group or to its end, and numbers the group's elements in their new
+ * order. Aliases, triggers and scripts share one order within a group.
+ */
+export function moveItem(kind: AutomationKind, id: string, group: string | undefined, beforeId?: string): void {
+    const groups = getAutomationGroups();
+    const items = loadItems();
+    const moving = items.find(i => i.kind === kind && i.id === id);
+    if (!moving || (beforeId === id)) return;
+    const members = sortItems(items.filter(i => i !== moving && effectiveGroup(i, groups) === group));
+    const idx = beforeId ? members.findIndex(i => i.id === beforeId) : -1;
+    members.splice(idx === -1 ? members.length : idx, 0, moving);
+    const changed = members
+        .map((item, order) => ({ item, order }))
+        .filter(({ item, order }) => item.data.order !== order || (item === moving && item.data.group !== group))
+        .map(({ item, order }) => ({ ...item, data: placed(item.data, group, order) }) as AutomationItem);
+    writeMany(changed);
+}
+
+/** Deletes the group together with everything in it. */
 export function deleteGroup(id: string): void {
-    const ungroup = <T extends { group?: string }>(item: T): T => {
-        if (item.group !== id) return item;
-        const { group: _old, ...rest } = item;
-        return rest as T;
-    };
+    const outside = (item: { group?: string }) => item.group !== id;
     const aliases = storedAliases();
-    if (aliases.some(a => a.group === id)) globalStorage.set("aliases", aliases.map(ungroup));
+    if (!aliases.every(outside)) globalStorage.set("aliases", aliases.filter(outside));
     const triggers = storedTriggers();
-    if (triggers.some(t => t.group === id)) globalStorage.set("triggers", triggers.map(ungroup));
+    if (!triggers.every(outside)) globalStorage.set("triggers", triggers.filter(outside));
     const scripts = storedScripts();
-    if (scripts.some(t => t.group === id)) globalStorage.set("automationScripts", scripts.map(ungroup));
+    if (!scripts.every(outside)) globalStorage.set("automationScripts", scripts.filter(outside));
     saveAutomationGroups(getAutomationGroups().filter(g => g.id !== id));
 }
 
 // ── Drafts ───────────────────────────────────────────────────────────────────
 
 /**
- * What the editor holds while an element is being edited. The group is kept
- * by name, so a new one can be typed in; it becomes an id only on save. An
- * alias always carries its actions as a list here, whichever way it is stored.
+ * What the editor holds while an element is being edited. An alias always
+ * carries its actions as a list here, whichever way it is stored.
+ *
+ * Where the element sits (group, order) is not the editor's business: it is
+ * changed by dragging in the list, and taken from storage on save (see
+ * `placeDraft`), so a move made while editing is not undone by saving.
  */
 export interface Draft {
     kind: AutomationKind;
     id: string;
     /** Not stored yet. */
     isNew: boolean;
-    groupName: string;
     data: AutomationData;
 }
 
-export function draftFromItem(item: AutomationItem, groups: AutomationGroup[] = getAutomationGroups()): Draft {
-    const groupName = automationGroupName(item.data.group, groups);
+export function draftFromItem(item: AutomationItem): Draft {
     if (item.kind === "alias") {
         // The command used to be a textarea where a newline separated commands;
         // the action field is one line, and would drop them.
         const macros = aliasActions(item.data).map(m =>
             m.type === "command" && m.command ? { ...m, command: m.command.replace(/\n+/g, ";") } : normalizeMacro(m),
         );
-        return { kind: "alias", id: item.id, isNew: false, groupName, data: { ...item.data, macros } };
+        return { kind: "alias", id: item.id, isNew: false, data: { ...item.data, macros } };
     }
-    if (item.kind === "script") return { kind: "script", id: item.id, isNew: false, groupName, data: { ...item.data } };
-    return { kind: "trigger", id: item.id, isNew: false, groupName, data: { ...item.data, macros: item.data.macros.map(normalizeMacro) } };
+    if (item.kind === "script") return { kind: "script", id: item.id, isNew: false, data: { ...item.data } };
+    return { kind: "trigger", id: item.id, isNew: false, data: { ...item.data, macros: item.data.macros.map(normalizeMacro) } };
 }
 
 /** What a new script starts with. */
-export const NEW_SCRIPT = `// api: API wtyczek (Dokumentacja -> Wtyczki), args: grupy z aliasu lub wyzwalacza ($1 to args[0]),
-// ctx.log(...) pisze do konsoli ponizej.
-export default function (api, args, ctx) {
-    ctx.log('uruchomiony', args);
-}
+export const NEW_SCRIPT = `// Pod reka: args (grupy z wzorca, $1 to args[0]), api (API wtyczek),
+// ctx oraz skroty log(), send(), print() i gmcp.
+log('uruchomiony', args);
 `;
 
-export function newDraft(kind: AutomationKind, groupName = ""): Draft {
+/** A new element, in `group` when given. */
+export function newDraft(kind: AutomationKind, group?: string): Draft {
     const id = newAutomationId();
     const data: AutomationData = kind === "alias"
         ? { id, pattern: "", command: "", macros: [{ type: "command", command: "" }] }
         : kind === "script"
             ? { id, name: "", code: NEW_SCRIPT }
             : { id, type: "pattern", pattern: "", macros: [] };
-    return { kind, id, isNew: true, groupName, data };
+    if (group) data.group = group;
+    return { kind, id, isNew: true, data };
 }
 
+/** Same content, wherever each one sits. */
 export function sameDraft(a: Draft, b: Draft): boolean {
-    return a.groupName.trim() === b.groupName.trim() && JSON.stringify(a.data) === JSON.stringify(b.data);
+    const content = (d: Draft) => {
+        const { group: _g, order: _o, ...rest } = d.data;
+        return JSON.stringify(rest);
+    };
+    return content(a) === content(b);
+}
+
+/**
+ * The draft with its place taken from storage: an element's current group and
+ * order, or for a new one the end of its group.
+ */
+export function placeDraft(draft: Draft, items: AutomationItem[]): Draft {
+    const groups = getAutomationGroups();
+    const stored = items.find(i => i.kind === draft.kind && i.id === draft.id);
+    if (stored) {
+        return { ...draft, data: placed(draft.data, effectiveGroup(stored, groups), stored.data.order ?? 0) };
+    }
+    const group = draft.data.group && groups.some(g => g.id === draft.data.group) ? draft.data.group : undefined;
+    const last = Math.max(-1, ...items.filter(i => effectiveGroup(i, groups) === group).map(i => i.data.order ?? -1));
+    return { ...draft, data: placed(draft.data, group, last + 1) };
 }
 
 /** An action that would do nothing without a line: no text to fall back on. */
@@ -251,15 +344,13 @@ export function draftError(draft: Draft, items: AutomationItem[]): string | null
     return null;
 }
 
-/** The stored form of a draft. Creates the draft's group if it is new. */
+/** The stored form of a draft. */
 export function itemFromDraft(draft: Draft): AutomationItem {
-    const group = ensureAutomationGroup(draft.groupName);
     const meta = (data: AutomationData) => {
-        const { group: _g, name, characters, ...rest } = data;
+        const { name, characters, ...rest } = data;
         return {
             ...rest,
             ...(name?.trim() ? { name: name.trim() } : {}),
-            ...(group ? { group } : {}),
             ...(characters?.length ? { characters } : {}),
         };
     };
@@ -458,10 +549,8 @@ export function parsePack(text: string): AutomationPack {
  * name; everything gets new ids, so importing the same file twice never
  * overwrites, and the actions that run a script or switch a group are pointed
  * at the new ids. An alias whose pattern already exists is skipped, and so is
- * a trigger or script identical to one already there.
- *
- * Scripts arrive switched off: they are someone else's code, to be read
- * before it runs.
+ * a trigger or script identical to one already there. Everything keeps the
+ * on/off state it had in the pack, scripts included.
  */
 export function importPack(pack: AutomationPack): { aliases: number; triggers: number; scripts: number; skipped: number } {
     const groupIds = new Map<string, string>();
@@ -485,7 +574,7 @@ export function importPack(pack: AutomationPack): { aliases: number; triggers: n
         if (sc.id) scriptIds.set(sc.id, id);
         const { group, ...rest } = sc;
         const mapped = group ? groupIds.get(group) : undefined;
-        newScripts.push({ ...rest, id, enabled: false, ...(mapped ? { group: mapped } : {}) });
+        newScripts.push({ ...rest, id, ...(mapped ? { group: mapped } : {}) });
     }
     if (newScripts.length) globalStorage.set("automationScripts", [...scripts, ...newScripts]);
 

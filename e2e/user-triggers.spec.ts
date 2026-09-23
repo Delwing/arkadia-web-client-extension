@@ -9,7 +9,7 @@ import {
     resetCommandLog,
     waitForCommandInput,
 } from './support/mocks';
-import {addPatternTrigger, closeAutomation, openAutomation, row, saveEditor, startNew} from './support/automation';
+import {addGroup, addPatternTrigger, closeAutomation, openAutomation, row, saveEditor, startNew, startNewInGroup} from './support/automation';
 
 test('User trigger creation executes command and persists after reload', async ({page}) => {
     await page.goto('/');
@@ -139,9 +139,9 @@ test('exports a group and imports it back as a pack', async ({page}) => {
     await ensureGameSocket(page);
 
     const modal = await openAutomation(page);
-    await startNew(page, modal, 'trigger');
+    await addGroup(modal, 'Paczka');
+    await startNewInGroup(page, modal, 'Paczka', 'trigger');
     await modal.getByTitle('Wzorzec', {exact: true}).fill('Pakiet test');
-    await modal.getByTitle('Grupa', {exact: true}).fill('Paczka');
     await modal.getByRole('button', {name: 'Dodaj akcję'}).click();
     await modal.locator('.automation-act').last().getByPlaceholder('Command').fill('say pakiet');
     await saveEditor(modal);

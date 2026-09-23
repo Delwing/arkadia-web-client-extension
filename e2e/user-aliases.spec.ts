@@ -10,7 +10,7 @@ import {
     waitForCharacter,
     waitForCommandInput,
 } from './support/mocks';
-import {addAlias, closeAutomation, openAutomation, row, saveEditor, selectRow, startNew} from './support/automation';
+import {addAlias, addGroup, closeAutomation, openAutomation, row, saveEditor, selectRow, startNew, startNewInGroup} from './support/automation';
 
 test.describe('User aliases', () => {
     test('creates, executes, and persists custom alias', async ({page}) => {
@@ -113,12 +113,12 @@ test.describe('User aliases', () => {
         await ensureGameSocket(page);
 
         const modal = await openAutomation(page);
-        await startNew(page, modal, 'alias');
+        await addGroup(modal, 'Walka');
+        await startNewInGroup(page, modal, 'Walka', 'alias');
         await modal.getByPlaceholder('np. zab (.+)').fill('zabx (.+)');
         await modal.getByPlaceholder('np. zabij $1').fill('zabij $1');
         await modal.getByRole('button', {name: 'Dodaj akcję'}).click();
         await modal.getByPlaceholder('np. zabij $1').nth(1).fill('zapal pochodnie');
-        await modal.getByTitle('Grupa', {exact: true}).fill('Walka');
 
         // The test line shows what the alias would send before it is saved.
         await modal.getByTitle('Przykladowa komenda').fill('zabx goblina');
@@ -155,11 +155,14 @@ test.describe('User aliases', () => {
         await ensureGameSocket(page);
 
         const modal = await openAutomation(page);
-        await startNew(page, modal, 'alias');
-        await modal.getByPlaceholder('np. zab (.+)').fill('grx');
-        await modal.getByPlaceholder('np. zabij $1').fill('powiedz grupa');
-        await modal.getByTitle('Grupa', {exact: true}).fill('Handel');
-        await saveEditor(modal);
+        await addAlias(page, modal, 'grx', 'powiedz grupa');
+
+        // Into a new group from the row's menu (the way to move without dragging).
+        await addGroup(modal, 'Handel');
+        await row(modal, 'grx').click({button: 'right'});
+        await page.getByRole('button', {name: 'Handel', exact: true}).click();
+        const handel = modal.locator('.automation-section').filter({has: page.locator('.automation-group', {hasText: 'Handel'})});
+        await expect(handel.locator('.automation-item'), 'should move the alias into the group').toContainText('grx');
 
         await modal.locator('.automation-group', {hasText: 'Handel'}).getByTitle('Grupa wlaczona').click();
         await expect(modal.locator('.automation-group', {hasText: 'Handel'}), 'should show the group as off').toContainText('wylaczona');

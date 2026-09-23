@@ -4,19 +4,31 @@ import eventBus from "@modules/core/eventBus";
 import { globalStorage } from "@modules/core/storage";
 import { isAutomationActiveNow, onAutomationScopeChange, type AutomationMeta } from "@modules/core/automation";
 import { appendScriptLog } from "@modules/core/scriptConsole";
+import { SCRIPT_API_NAMES } from "./scriptScope";
 
 /**
- * A script in Automatyzacja: a JavaScript module whose default export runs
- * when an alias, trigger or event calls it ("Uruchom skrypt"), when its own
- * command is typed, or from the editor.
+ * A script in Automatyzacja: JavaScript that runs when an alias, trigger or
+ * event calls it ("Uruchom skrypt"), when its own command is typed, or from
+ * the editor.
  *
- *     export default function leczenie(api, args, ctx) { ... }
+ * The player writes only the body; it runs as an async function with these
+ * in scope (see `toModuleSource`):
  *
- * `api` is the plugin API (docs/PLUGINS.md), `args` the groups of the
- * alias/trigger that called it ($1 is args[0]) or the words after its
- * command, `ctx` says what started it and offers `ctx.log()` for the console.
- * A script is one run at a time: something that should stay registered
- * (a trigger, a popup) belongs in a plugin.
+ *     api   - the plugin API (docs/PLUGINS.md)
+ *     args  - the groups of the alias/trigger that called it ($1 is args[0]),
+ *             or the words after its command
+ *     ctx   - what started it (source, label, line, event), ctx.log() and
+ *             ctx.vars
+ *     vars  - one object shared by every script (ctx.vars)
+ *     log, send, print, gmcp - shortcuts for ctx.log, api.command.send,
+ *             api.output.print and api.gmcp.get() at the start of the run
+ *     command, map, team, … - every section of api by its own name
+ *             (SCRIPT_API_NAMES), so api. can be left out
+ *
+ * Code that exports a default function (or imports something) runs as a
+ * whole module instead, called with (api, args, ctx). A script is one run at a
+ * time: something that should stay registered (a trigger, a popup) belongs in
+ * a plugin.
  */
 export interface UserScript extends AutomationMeta {
     name: string;
@@ -37,6 +49,8 @@ export interface ScriptContext {
     event?: unknown;
     /** Writes to the script's console in Automatyzacja. */
     log: (...values: unknown[]) => void;
+    /** Shared by every script, so one can leave data for another. See `sharedVars`. */
+    vars: Record<string, any>;
 }
 
 export const SCRIPTS_KEY = "automationScripts";
@@ -55,6 +69,13 @@ const compiled = new Map<string, Compiled>();
 const apis = new Map<string, PluginApiImpl>();
 let depth = 0;
 
+/**
+ * What scripts keep for each other: `vars.cel = args[0]` in one, `vars.cel`
+ * in the next. Like globals in Mudlet it lives as long as the page, and is
+ * not stored: data that changes every fight has no business in storage sync.
+ */
+const sharedVars: Record<string, any> = {};
+
 export function getUserScripts(): UserScript[] {
     const value = globalStorage.get(SCRIPTS_KEY);
     return Array.isArray(value) ? value : [];
@@ -70,24 +91,53 @@ function describe(value: unknown): string {
     }
 }
 
-/** The script line an error happened on, read off the blob module's stack. */
-function errorLine(err: unknown): number | null {
-    const stack = err instanceof Error ? err.stack ?? "" : "";
-    const m = stack.match(/blob:[^\s)]*:(\d+):\d+/);
-    return m ? Number(m[1]) : null;
+/**
+ * What a body-only script has in scope besides api, args and ctx. One line,
+ * so the body starts on line 2 of the module.
+ */
+const SCOPE = `const { ${SCRIPT_API_NAMES.join(", ")} } = api; `
+    + "const vars = ctx.vars, log = ctx.log, send = (command) => api.command.send(command), "
+    + "print = (text) => api.output.print(text), gmcp = api.gmcp.get();";
+
+/** Code that is a module of its own rather than a function body. */
+export function isModuleScript(code: string): boolean {
+    return /^\s*(export\s+default\b|import[\s{*])/m.test(code);
 }
 
-function errorText(err: unknown): string {
-    const line = errorLine(err);
+/**
+ * The module a script's code runs as: a body is wrapped in an async default
+ * function with the scope above, a module is used as it is.
+ *
+ * The body gets a function of its own inside that one, so a script may name
+ * its own variable `map` or `settings`: it shadows the API section instead of
+ * clashing with it.
+ */
+export function toModuleSource(code: string): string {
+    if (isModuleScript(code)) return code;
+    return `export default async function (api, args, ctx) { ${SCOPE} return (async () => {\n${code}\n})(); }\n`;
+}
+
+/** The script line an error happened on, read off the blob module's stack. */
+function errorLine(err: unknown, code: string): number | null {
+    const stack = err instanceof Error ? err.stack ?? "" : "";
+    const m = stack.match(/blob:[^\s)]*:(\d+):\d+/);
+    if (!m) return null;
+    // The wrapper's first line comes before a body's first line.
+    const line = Number(m[1]) - (isModuleScript(code) ? 0 : 1);
+    return line > 0 ? line : null;
+}
+
+function errorText(err: unknown, code: string): string {
+    const line = errorLine(err, code);
     return `blad: ${describe(err)}${line ? ` (linia ${line})` : ""}`;
 }
 
 async function compile(code: string): Promise<ScriptFn> {
-    const url = URL.createObjectURL(new Blob([code], { type: "application/javascript" }));
+    const url = URL.createObjectURL(new Blob([toModuleSource(code)], { type: "application/javascript" }));
     try {
         const module = await import(/* @vite-ignore */ url);
         if (typeof module.default !== "function") {
-            throw new Error("skrypt musi eksportowac funkcje: export default function (api, args, ctx) { ... }");
+            throw new Error("modul skryptu musi eksportowac funkcje: export default function (api, args, ctx) { ... }");
         }
         return module.default as ScriptFn;
     } finally {
@@ -193,10 +243,11 @@ export async function runUserScript(client: Client, id: string, args: string[], 
             line: options.line,
             event: options.event,
             log: (...values) => appendScriptLog(id, "log", values.map(describe).join(" ")),
+            vars: sharedVars,
         };
         await fn(runApi(apiFor(client, id), id), args, ctx);
     } catch (err) {
-        appendScriptLog(id, "error", errorText(err));
+        appendScriptLog(id, "error", errorText(err, code));
         console.error(`[userScripts] script ${script?.name ?? id} failed`, err);
     } finally {
         depth--;

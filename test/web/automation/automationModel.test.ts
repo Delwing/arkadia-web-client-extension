@@ -4,7 +4,13 @@ import type { UserAlias } from '@client/scripts/userAliases';
 import type { UserTrigger } from '@client/scripts/userTriggers';
 import {
     buildPack,
+    createGroup,
     deleteGroup,
+    effectiveGroup,
+    moveGroup,
+    moveItem,
+    placeDraft,
+    sortItems,
     draftError,
     draftFromItem,
     ensureStoredIds,
@@ -22,6 +28,12 @@ import {
 } from '@web/automation/automationModel';
 
 const aliases = () => globalStorage.get('aliases') as UserAlias[];
+
+/** The window's items for these stored aliases. */
+function loadItemsWith(list: UserAlias[]): AutomationItem[] {
+    globalStorage.set('aliases', list);
+    return loadItems();
+}
 const triggers = () => globalStorage.get('triggers') as UserTrigger[];
 
 describe('automationModel', () => {
@@ -51,8 +63,8 @@ describe('automationModel', () => {
     describe('drafts', () => {
         it('round-trips a plain alias without changing how it is stored', () => {
             const item: AutomationItem = { kind: 'alias', id: 'a', data: { id: 'a', pattern: 'zab (.+)', command: 'zabij $1' } };
-            const draft = draftFromItem(item, []);
-            expect(sameDraft(draft, draftFromItem(item, []))).toBe(true);
+            const draft = draftFromItem(item);
+            expect(sameDraft(draft, draftFromItem(item))).toBe(true);
             expect(itemFromDraft(draft).data).toEqual(item.data);
         });
 
@@ -74,14 +86,27 @@ describe('automationModel', () => {
             expect(data.macros?.map(m => m.type)).toEqual(['command', 'command']);
         });
 
-        it('turns the typed group name into a group, created once', () => {
-            const draft = newDraft('trigger', 'Walka');
-            draft.data = { ...draft.data, pattern: 'foo' } as UserTrigger;
-            const first = itemFromDraft(draft);
-            const second = itemFromDraft({ ...draft, id: 'other' });
-            expect(getAutomationGroups()).toHaveLength(1);
-            expect(first.data.group).toBe(getAutomationGroups()[0].id);
-            expect(second.data.group).toBe(first.data.group);
+        it('does not count a move as an edit', () => {
+            const item: AutomationItem = { kind: 'alias', id: 'a', data: { id: 'a', pattern: 'x', command: 'y' } };
+            const moved: AutomationItem = { ...item, data: { ...item.data, group: 'g', order: 3 } };
+            expect(sameDraft(draftFromItem(item), draftFromItem(moved))).toBe(true);
+        });
+
+        it('saves an edited element where it is now, not where it was when opened', () => {
+            globalStorage.set('automationGroups', [{ id: 'g', name: 'Walka' }]);
+            const draft = draftFromItem({ kind: 'alias', id: 'a', data: { id: 'a', pattern: 'x', command: 'y' } });
+            const stored = loadItemsWith([{ id: 'a', pattern: 'x', command: 'y', group: 'g', order: 2 }]);
+            expect(placeDraft(draft, stored).data).toMatchObject({ group: 'g', order: 2 });
+        });
+
+        it('puts a new element at the end of its group', () => {
+            globalStorage.set('automationGroups', [{ id: 'g', name: 'Walka' }]);
+            const stored = loadItemsWith([
+                { id: 'a', pattern: 'a', command: 'a', group: 'g', order: 0 },
+                { id: 'b', pattern: 'b', command: 'b', group: 'g', order: 4 },
+                { id: 'c', pattern: 'c', command: 'c', order: 9 },
+            ]);
+            expect(placeDraft(newDraft('trigger', 'g'), stored).data).toMatchObject({ group: 'g', order: 5 });
         });
 
         it('keeps only the fields of the trigger type being saved', () => {
@@ -142,12 +167,63 @@ describe('automationModel', () => {
         expect('enabled' in triggers()[0]).toBe(false);
     });
 
-    it('deleting a group keeps its elements, ungrouped', () => {
-        globalStorage.set('automationGroups', [{ id: 'g', name: 'Walka' }]);
-        globalStorage.set('aliases', [{ id: 'a', pattern: 'x', command: 'y', group: 'g' }]);
+    it('deleting a group deletes its elements too', () => {
+        globalStorage.set('automationGroups', [{ id: 'g', name: 'Walka' }, { id: 'h', name: 'Handel' }]);
+        globalStorage.set('aliases', [
+            { id: 'a', pattern: 'x', command: 'y', group: 'g' },
+            { id: 'b', pattern: 'z', command: 'y' },
+        ]);
+        globalStorage.set('triggers', [{ id: 't', pattern: 'foo', macros: [], group: 'g' }, { id: 'u', pattern: 'bar', macros: [], group: 'h' }]);
+        globalStorage.set('automationScripts', [{ id: 's', name: 'x', code: 'log(1)', group: 'g' }]);
         deleteGroup('g');
-        expect(getAutomationGroups()).toEqual([]);
-        expect(aliases()[0]).toEqual({ id: 'a', pattern: 'x', command: 'y' });
+        expect(getAutomationGroups().map(g => g.id)).toEqual(['h']);
+        expect(aliases().map(a => a.id)).toEqual(['b']);
+        expect(triggers().map(t => t.id)).toEqual(['u']);
+        expect(globalStorage.get('automationScripts')).toEqual([]);
+    });
+
+    describe('groups and order', () => {
+        const order = () => sortItems(loadItems()).map(i => `${i.id}:${i.data.group ?? '-'}`);
+
+        beforeEach(() => {
+            globalStorage.set('automationGroups', [{ id: 'g', name: 'Walka' }, { id: 'h', name: 'Handel' }]);
+            globalStorage.set('aliases', [
+                { id: 'a', pattern: 'a', command: 'a', group: 'g' },
+                { id: 'b', pattern: 'b', command: 'b', group: 'g' },
+            ]);
+            globalStorage.set('triggers', [{ id: 't', pattern: 't', macros: [], group: 'g' }]);
+        });
+
+        it('keeps the stored order until something is moved', () => {
+            expect(order()).toEqual(['a:g', 'b:g', 't:g']);
+        });
+
+        it('reorders across kinds within a group', () => {
+            moveItem('trigger', 't', 'g', 'a');
+            expect(order()).toEqual(['t:g', 'a:g', 'b:g']);
+        });
+
+        it('moves into another group and out of any', () => {
+            moveItem('alias', 'b', 'h');
+            expect(order().filter(x => x.endsWith(':h'))).toEqual(['b:h']);
+            moveItem('alias', 'b', undefined);
+            expect(aliases().find(a => a.id === 'b')).not.toHaveProperty('group');
+        });
+
+        it('treats a group that is gone as none', () => {
+            globalStorage.set('aliases', [{ id: 'a', pattern: 'a', command: 'a', group: 'gone' }]);
+            expect(effectiveGroup(loadItems()[0], getAutomationGroups())).toBeUndefined();
+        });
+
+        it('creates numbered new groups and reorders groups', () => {
+            const id = createGroup();
+            const second = createGroup();
+            expect(getAutomationGroups().map(g => g.name)).toEqual(['Walka', 'Handel', 'Nowa grupa', 'Nowa grupa 2']);
+            moveGroup(second, 'g');
+            expect(getAutomationGroups().map(g => g.id)[0]).toBe(second);
+            moveGroup('g');
+            expect(getAutomationGroups().map(g => g.id)).toEqual([second, 'h', id, 'g']);
+        });
     });
 
     describe('row text', () => {
@@ -202,8 +278,11 @@ describe('automationModel', () => {
             expect(importPack(buildPack())).toEqual({ aliases: 0, triggers: 0, scripts: 0, skipped: 3 });
         });
 
-        it('imports scripts switched off and points actions at their new ids', () => {
-            globalStorage.set('automationScripts', [{ id: 's', name: 'leczenie', code: 'x', group: 'g' }]);
+        it('imports scripts as they were and points actions at their new ids', () => {
+            globalStorage.set('automationScripts', [
+                { id: 's', name: 'leczenie', code: 'x', group: 'g' },
+                { id: 'off', name: 'stary', code: 'y', group: 'g', enabled: false },
+            ]);
             globalStorage.set('aliases', [{
                 id: 'a', pattern: 'lecz', command: '', group: 'g',
                 macros: [{ type: 'script', scriptId: 's' }, { type: 'group', groupId: 'g', groupState: 'toggle' }],
@@ -211,9 +290,10 @@ describe('automationModel', () => {
             const pack = buildPack('g');
             localStorage.clear();
 
-            expect(importPack(pack)).toMatchObject({ aliases: 1, scripts: 1 });
-            const script = (globalStorage.get('automationScripts') as { id: string; enabled?: boolean }[])[0];
-            expect(script.enabled).toBe(false);
+            expect(importPack(pack)).toMatchObject({ aliases: 1, scripts: 2 });
+            const [script, off] = globalStorage.get('automationScripts') as { id: string; enabled?: boolean }[];
+            expect(script.enabled).toBeUndefined();
+            expect(off.enabled).toBe(false);
             expect(script.id).not.toBe('s');
             const [run, group] = aliases()[0].macros!;
             expect(run.scriptId).toBe(script.id);

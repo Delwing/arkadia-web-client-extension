@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent, type HTMLAttributes, type KeyboardEvent, type MouseEvent } from "react";
 import {
     ArrowLeft,
     ChevronDown,
@@ -6,6 +6,7 @@ import {
     Code2,
     Folder,
     FolderOpen,
+    FolderPlus,
     LayoutList,
     MoreHorizontal,
     Plus,
@@ -28,6 +29,7 @@ import type { UserTrigger } from "@client/scripts/userTriggers";
 import type { UserScript } from "@client/scripts/userScripts";
 import { openSettingsPage } from "@web/settings/categories.ts";
 import { MODAL_EVENT } from "@web/modals/appModal.ts";
+import { showContextMenu, type ContextMenuEntry } from "@web/contextMenu";
 import { AliasEditor } from "./AliasEditor";
 import { TriggerEditor } from "./TriggerEditor";
 import { ScriptEditor } from "./ScriptEditor";
@@ -36,7 +38,9 @@ import { useCustomSounds, usePluginMacros } from "./useCustomSounds";
 import {
     KIND_LABEL,
     buildPack,
+    createGroup,
     deleteGroup,
+    effectiveGroup,
     draftError,
     draftFromItem,
     ensureStoredIds,
@@ -46,14 +50,18 @@ import {
     itemSummary,
     itemTitle,
     loadItems,
+    moveGroup,
+    moveItem,
     newDraft,
     parsePack,
+    placeDraft,
     removeItem,
     renameGroup,
     scriptUsers,
     sameDraft,
     setGroupEnabled,
     setItemEnabled,
+    sortItems,
     writeItem,
     type AutomationItem,
     type AutomationKind,
@@ -62,6 +70,15 @@ import {
 import "./automation.css";
 
 type KindFilter = "all" | AutomationKind;
+
+/** What is being dragged in the list. */
+type Drag = { type: "item"; kind: AutomationKind; id: string } | { type: "group"; id: string };
+
+/** Where it would land: before/after a row, into a group, before a group. */
+interface DropAt {
+    target: string;
+    where: "before" | "after" | "into";
+}
 
 const KIND_ICON = { alias: SquareTerminal, trigger: Zap, script: Code2 } as const;
 
@@ -103,7 +120,7 @@ function charactersChip(n: number) {
 }
 
 /** Group header in the list: collapse, name (renamable), count, on/off. */
-function GroupHeader({ group, count, collapsed, onToggleCollapse, onMenu, renaming, onRenamed }: {
+function GroupHeader({ group, count, collapsed, onToggleCollapse, onMenu, renaming, onRenamed, dnd, drop }: {
     group: AutomationGroup | null;
     count: number;
     collapsed: boolean;
@@ -111,6 +128,10 @@ function GroupHeader({ group, count, collapsed, onToggleCollapse, onMenu, renami
     onMenu?: (e: MouseEvent<HTMLElement>) => void;
     renaming: boolean;
     onRenamed: () => void;
+    /** Drag and drop handlers for the header. */
+    dnd: HTMLAttributes<HTMLDivElement>;
+    /** Where a drop would land, to draw it. */
+    drop?: "into" | "before";
 }) {
     const [name, setName] = useState(group?.name ?? "");
     useEffect(() => setName(group?.name ?? ""), [group?.name, renaming]);
@@ -118,7 +139,7 @@ function GroupHeader({ group, count, collapsed, onToggleCollapse, onMenu, renami
     const Chevron = collapsed ? ChevronRight : ChevronDown;
     const Icon = collapsed ? Folder : FolderOpen;
     return (
-        <div className={`automation-group${off ? " is-off" : ""}`} onContextMenu={onMenu}>
+        <div className={`automation-group${off ? " is-off" : ""}${drop ? ` is-drop-${drop}` : ""}`} onContextMenu={onMenu} {...dnd}>
             <button type="button" className="automation-group__toggle" onClick={onToggleCollapse} title={collapsed ? "Rozwin" : "Zwin"}>
                 <Chevron size={14} />
                 <Icon size={14} className="automation-group__ic" />
@@ -132,6 +153,7 @@ function GroupHeader({ group, count, collapsed, onToggleCollapse, onMenu, renami
                     title="Nazwa grupy"
                     value={name}
                     autoFocus
+                    onFocus={e => e.currentTarget.select()}
                     onChange={e => setName(e.target.value)}
                     onBlur={() => { renameGroup(group.id, name); onRenamed(); }}
                     onKeyDown={e => {
@@ -168,6 +190,8 @@ export default function AutomationWindow() {
     const [drafts, setDrafts] = useState<Record<string, Draft>>({});
     const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
     const [renamingGroup, setRenamingGroup] = useState<string | null>(null);
+    const [drag, setDrag] = useState<Drag | null>(null);
+    const [dropAt, setDropAt] = useState<DropAt | null>(null);
     const [saveError, setSaveError] = useState<string | null>(null);
     const [notice, setNotice] = useState<string | null>(null);
     const fileRef = useRef<HTMLInputElement>(null);
@@ -242,9 +266,8 @@ export default function AutomationWindow() {
     const filtering = !!query.trim() || kindFilter !== "all" || !showDisabled || onlyThisCharacter;
     const sections = useMemo(() => {
         const byGroup = new Map<string, AutomationItem[]>();
-        const known = new Set(groups.map(g => g.id));
-        for (const item of visible) {
-            const key = item.data.group && known.has(item.data.group) ? item.data.group : "";
+        for (const item of sortItems(visible)) {
+            const key = effectiveGroup(item, groups) ?? "";
             if (!byGroup.has(key)) byGroup.set(key, []);
             byGroup.get(key)!.push(item);
         }
@@ -252,13 +275,14 @@ export default function AutomationWindow() {
             // Empty groups stay listed while nothing is filtered, so they can be managed.
             .filter(g => byGroup.has(g.id) || !filtering)
             .map(g => ({ group: g, items: byGroup.get(g.id) ?? [] }));
-        if (byGroup.has("")) list.push({ group: null, items: byGroup.get("")! });
+        // Bez grupy stays while groups exist, as a place to drag things out to.
+        if (byGroup.has("") || (groups.length > 0 && !filtering)) list.push({ group: null, items: byGroup.get("") ?? [] });
         return list;
     }, [visible, groups, filtering]);
 
     const selectedItem = items.find(i => i.id === selectedId) ?? null;
     const selectedDraft: Draft | null = selectedId
-        ? drafts[selectedId] ?? (selectedItem ? draftFromItem(selectedItem, groups) : null)
+        ? drafts[selectedId] ?? (selectedItem ? draftFromItem(selectedItem) : null)
         : null;
 
     // A stored element that disappeared (deleted elsewhere) is no longer selected.
@@ -269,7 +293,7 @@ export default function AutomationWindow() {
     const isDirty = (draft: Draft) => {
         if (draft.isNew) return true;
         const stored = items.find(i => i.id === draft.id);
-        return !stored || !sameDraft(draft, draftFromItem(stored, groups));
+        return !stored || !sameDraft(draft, draftFromItem(stored));
     };
 
     function select(id: string) {
@@ -294,8 +318,8 @@ export default function AutomationWindow() {
         });
     }
 
-    function create(kind: AutomationKind, groupName = "") {
-        const draft = newDraft(kind, groupName);
+    function create(kind: AutomationKind, group?: string) {
+        const draft = newDraft(kind, group);
         setDrafts(prev => ({ ...prev, [draft.id]: draft }));
         select(draft.id);
     }
@@ -307,7 +331,7 @@ export default function AutomationWindow() {
             setSaveError(error);
             return;
         }
-        writeItem(itemFromDraft(selectedDraft));
+        writeItem(itemFromDraft(placeDraft(selectedDraft, items)));
         dropDraft(selectedDraft.id);
         setSaveError(null);
     }
@@ -319,26 +343,156 @@ export default function AutomationWindow() {
         setSaveError(null);
     }
 
-    function remove() {
-        if (!selectedDraft) return;
-        if (!selectedDraft.isNew) {
-            const users = selectedDraft.kind === "script" ? scriptUsers(selectedDraft.id, items).length : 0;
-            const warning = users ? ` Uzywa go ${users} ${users === 1 ? "element" : "elementow"} - ich akcja przestanie dzialac.` : "";
-            if (!confirm(`Czy na pewno chcesz usunąć ${THIS_ONE[selectedDraft.kind]}?${warning}`)) return;
-            removeItem(selectedDraft.kind, selectedDraft.id);
-        }
-        dropDraft(selectedDraft.id);
-        setSelectedId(null);
+    /** Deletes a stored element after asking; false when the player said no. */
+    function confirmRemove(kind: AutomationKind, id: string): boolean {
+        const users = kind === "script" ? scriptUsers(id, items).length : 0;
+        const warning = users ? ` Uzywa go ${users} ${users === 1 ? "element" : "elementow"} - ich akcja przestanie dzialac.` : "";
+        if (!confirm(`Czy na pewno chcesz usunąć ${THIS_ONE[kind]}?${warning}`)) return false;
+        removeItem(kind, id);
+        dropDraft(id);
+        setSelectedId(current => (current === id ? null : current));
+        return true;
     }
 
-    function duplicate() {
+    /** Deletes a group with everything in it, after asking. */
+    function confirmRemoveGroup(group: AutomationGroup) {
+        const members = items.filter(i => i.data.group === group.id);
+        const memberIds = new Set(members.map(i => i.id));
+        const count = (kind: AutomationKind) => members.filter(i => i.kind === kind).length;
+        const contents = members.length
+            ? ` razem z tym, co w niej jest (${countLabel(count("alias"), count("trigger"), count("script"))})`
+            : "";
+        // A script in the group may be run by an element that stays.
+        const users = new Set(members
+            .filter(i => i.kind === "script")
+            .flatMap(i => scriptUsers(i.id, items))
+            .filter(u => !memberIds.has(u.id))
+            .map(u => u.id)).size;
+        const warning = users ? ` Skrypty z tej grupy uzywa ${users} ${users === 1 ? "element" : "elementow"} spoza niej - ich akcja przestanie dzialac.` : "";
+        if (!confirm(`Usunac grupe "${group.name}"${contents}?${warning}`)) return;
+        deleteGroup(group.id);
+        // Unsaved changes to what was in the group go with it.
+        setDrafts(prev => Object.fromEntries(
+            Object.entries(prev).filter(([id, d]) => !memberIds.has(id) && d.data.group !== group.id),
+        ));
+    }
+
+    function remove() {
         if (!selectedDraft) return;
-        const copy = newDraft(selectedDraft.kind, selectedDraft.groupName);
-        const data = { ...selectedDraft.data, id: copy.id, name: selectedDraft.data.name ? `${selectedDraft.data.name} (kopia)` : undefined };
+        if (selectedDraft.isNew) {
+            dropDraft(selectedDraft.id);
+            setSelectedId(null);
+            return;
+        }
+        confirmRemove(selectedDraft.kind, selectedDraft.id);
+    }
+
+    function duplicateOf(source: Draft) {
+        const copy = newDraft(source.kind, source.data.group);
+        const { order: _order, ...rest } = source.data;
+        const data = { ...rest, id: copy.id, name: source.data.name ? `${source.data.name} (kopia)` : undefined };
         const draft = { ...copy, data };
         setDrafts(prev => ({ ...prev, [draft.id]: draft }));
         select(draft.id);
     }
+
+    function duplicate() {
+        if (selectedDraft) duplicateOf(selectedDraft);
+    }
+
+    /** A new group, its name ready to type over. */
+    function addGroup(): string {
+        const id = createGroup();
+        setRenamingGroup(id);
+        return id;
+    }
+
+    /** Right-click on a row: what the editor and the list offer, without opening it. */
+    function rowMenu(e: MouseEvent<HTMLElement>, item: AutomationItem) {
+        e.preventDefault();
+        const current = effectiveGroup(item, groups);
+        const off = item.data.enabled === false;
+        const move = "Przenies do grupy";
+        const entries: ContextMenuEntry[] = [
+            { label: "Edytuj", action: () => select(item.id) },
+            { label: "Duplikuj", action: () => duplicateOf(drafts[item.id] ?? draftFromItem(item)) },
+            { label: off ? "Wlacz" : "Wylacz", action: () => toggleItem(item, off) },
+            ...groups.filter(g => g.id !== current).map(g => ({ label: g.name, section: move, action: () => moveItem(item.kind, item.id, g.id) })),
+            ...(current ? [{ label: "Bez grupy", section: move, action: () => moveItem(item.kind, item.id, undefined) }] : []),
+            { label: "Nowa grupa", section: move, icon: FolderPlus, action: () => moveItem(item.kind, item.id, addGroup()) },
+            { label: "Usun", tone: "danger", separator: true, icon: Trash2, action: () => { confirmRemove(item.kind, item.id); } },
+        ];
+        showContextMenu(entries, e.clientX, e.clientY, { header: itemTitle(item).text, smallHeader: true });
+    }
+
+    // ── Drag and drop: rows into groups and between rows, groups between groups ──
+
+    const endDrag = () => {
+        setDrag(null);
+        setDropAt(null);
+    };
+
+    function showDrop(target: string, where: DropAt["where"]) {
+        setDropAt(prev => (prev?.target === target && prev.where === where ? prev : { target, where }));
+    }
+
+    /** Before or after a row, by which half of it the pointer is over. */
+    function half(e: DragEvent<HTMLElement>): "before" | "after" {
+        const rect = e.currentTarget.getBoundingClientRect();
+        return e.clientY < rect.top + rect.height / 2 ? "before" : "after";
+    }
+
+    function rowDnd(item: AutomationItem, sectionItems: AutomationItem[], index: number, group: string | undefined): HTMLAttributes<HTMLDivElement> {
+        return {
+            draggable: true,
+            onDragStart: e => {
+                e.dataTransfer.effectAllowed = "move";
+                e.dataTransfer.setData("text/plain", item.id);
+                setDrag({ type: "item", kind: item.kind, id: item.id });
+            },
+            onDragEnd: endDrag,
+            onDragOver: e => {
+                if (drag?.type !== "item") return;
+                e.preventDefault();
+                showDrop(`item:${item.id}`, half(e));
+            },
+            onDrop: e => {
+                if (drag?.type !== "item") return;
+                e.preventDefault();
+                const before = half(e) === "before" ? item.id : sectionItems[index + 1]?.id;
+                moveItem(drag.kind, drag.id, group, before);
+                endDrag();
+            },
+        };
+    }
+
+    function groupDnd(group: AutomationGroup | null): HTMLAttributes<HTMLDivElement> {
+        const target = `group:${group?.id ?? ""}`;
+        return {
+            draggable: !!group && renamingGroup !== group.id,
+            onDragStart: group ? e => {
+                e.dataTransfer.effectAllowed = "move";
+                e.dataTransfer.setData("text/plain", group.id);
+                setDrag({ type: "group", id: group.id });
+            } : undefined,
+            onDragEnd: endDrag,
+            onDragOver: e => {
+                if (!drag) return;
+                e.preventDefault();
+                showDrop(target, drag.type === "item" ? "into" : "before");
+            },
+            onDrop: e => {
+                if (!drag) return;
+                e.preventDefault();
+                if (drag.type === "item") moveItem(drag.kind, drag.id, group?.id);
+                // Onto a group: before it. Onto Bez grupy (always last): to the end.
+                else moveGroup(drag.id, group?.id);
+                endDrag();
+            },
+        };
+    }
+
+    const dropOn = (target: string) => (dropAt?.target === target ? dropAt.where : undefined);
 
     function toggleItem(item: AutomationItem, on: boolean) {
         setItemEnabled(item, on);
@@ -350,29 +504,32 @@ export default function AutomationWindow() {
     function groupMenu(e: MouseEvent<HTMLElement>, group: AutomationGroup) {
         e.preventDefault();
         openMenuAt(e, [
-            { label: "Nowy alias w grupie", action: () => create("alias", group.name) },
-            { label: "Nowy wyzwalacz w grupie", action: () => create("trigger", group.name) },
-            { label: "Nowy skrypt w grupie", action: () => create("script", group.name) },
+            { label: "Nowy alias w grupie", action: () => create("alias", group.id) },
+            { label: "Nowy wyzwalacz w grupie", action: () => create("trigger", group.id) },
+            { label: "Nowy skrypt w grupie", action: () => create("script", group.id) },
             { label: "Zmien nazwe", action: () => setRenamingGroup(group.id) },
             { label: "Eksportuj grupe", action: () => download(packFileName(group.name), JSON.stringify(buildPack(group.id), null, 2)) },
             {
                 label: "Usun grupe",
-                action: () => {
-                    if (confirm(`Usunac grupe "${group.name}"? Jej aliasy i wyzwalacze zostana, bez grupy.`)) deleteGroup(group.id);
-                },
+                tone: "danger",
+                separator: true,
+                icon: Trash2,
+                action: () => confirmRemoveGroup(group),
             },
         ]);
     }
 
     function addMenu(e: MouseEvent<HTMLElement>) {
-        if (kindFilter !== "all") {
-            create(kindFilter);
-            return;
-        }
+        const kinds: ContextMenuEntry[] = [
+            { label: "Alias - gdy wpiszesz komende", icon: SquareTerminal, action: () => create("alias") },
+            { label: "Wyzwalacz - gdy gra wypisze linie lub zajdzie zdarzenie", icon: Zap, action: () => create("trigger") },
+            { label: "Skrypt - kod JavaScript uruchamiany akcja lub komenda", icon: Code2, action: () => create("script") },
+        ];
+        // Filtered to one kind, only that one is offered; a group always is.
+        const shown = kindFilter === "all" ? kinds : [kinds[["alias", "trigger", "script"].indexOf(kindFilter)]];
         openMenuAt(e, [
-            { label: "Alias - gdy wpiszesz komende", action: () => create("alias") },
-            { label: "Wyzwalacz - gdy gra wypisze linie lub zajdzie zdarzenie", action: () => create("trigger") },
-            { label: "Skrypt - kod JavaScript uruchamiany akcja lub komenda", action: () => create("script") },
+            ...shown,
+            { label: "Grupa - do porzadkowania elementow", icon: FolderPlus, separator: true, action: () => { addGroup(); } },
         ]);
     }
 
@@ -388,8 +545,7 @@ export default function AutomationWindow() {
         try {
             const result = importPack(parsePack(await file.text()));
             const skipped = result.skipped ? ` Pominieto ${result.skipped} juz istniejacych.` : "";
-            const scripts = result.scripts ? " Skrypty sa wylaczone - przejrzyj ich kod, zanim je wlaczysz." : "";
-            setNotice(`Zaimportowano: ${countLabel(result.aliases, result.triggers, result.scripts)}.${skipped}${scripts}`);
+            setNotice(`Zaimportowano: ${countLabel(result.aliases, result.triggers, result.scripts)}.${skipped}`);
         } catch (err) {
             setNotice(err instanceof SyntaxError ? "Plik nie jest poprawnym JSON-em." : (err as Error).message);
         }
@@ -402,13 +558,20 @@ export default function AutomationWindow() {
         }
     }
 
-    const renderRow = (item: AutomationItem) => {
+    const renderRow = (item: AutomationItem, index: number, sectionItems: AutomationItem[], group: string | undefined) => {
         const draft = drafts[item.id];
         const shown: AutomationItem = draft ? { ...item, data: draft.data } as AutomationItem : item;
         const title = itemTitle(shown);
         const off = item.data.enabled === false;
+        const drop = dropOn(`item:${item.id}`);
+        const dragging = drag?.type === "item" && drag.id === item.id;
         return (
-            <div key={item.id} className={`automation-item${selectedId === item.id ? " is-selected" : ""}${off ? " is-off" : ""}`}>
+            <div
+                key={item.id}
+                className={`automation-item${selectedId === item.id ? " is-selected" : ""}${off ? " is-off" : ""}${drop ? ` is-drop-${drop}` : ""}${dragging ? " is-dragging" : ""}`}
+                onContextMenu={e => rowMenu(e, item)}
+                {...rowDnd(item, sectionItems, index, group)}
+            >
                 <button type="button" className="automation-item__main" onClick={() => select(item.id)}>
                     <KindIcon kind={item.kind} />
                     <span className="automation-item__text">
@@ -507,6 +670,9 @@ export default function AutomationWindow() {
                         onKeyDown={e => { if (e.key === "Escape" && query) { e.stopPropagation(); setQuery(""); } }}
                     />
                 </InputGroup>
+                <Button className="popup-btn--icon" title="Nowa grupa" onClick={addGroup}>
+                    <FolderPlus size={16} />
+                </Button>
                 <Button variant="solid" className="popup-btn--icon" title="Dodaj" onClick={addMenu}>
                     <Plus size={16} />
                 </Button>
@@ -531,12 +697,22 @@ export default function AutomationWindow() {
                                     onMenu={group ? e => groupMenu(e, group) : undefined}
                                     renaming={!!group && renamingGroup === group.id}
                                     onRenamed={() => setRenamingGroup(null)}
+                                    dnd={groupDnd(group)}
+                                    drop={dropOn(`group:${key}`) as "into" | "before" | undefined}
                                 />
                             )}
                             {!isCollapsed && (
                                 <div className={group || groups.length > 0 ? "automation-section__items" : undefined}>
-                                    {sectionItems.map(renderRow)}
-                                    {group && sectionItems.length === 0 && <p className="automation-empty is-small">Pusta grupa.</p>}
+                                    {sectionItems.map((item, index) => renderRow(item, index, sectionItems, group?.id))}
+                                    {(group || groups.length > 0) && sectionItems.length === 0 && (
+                                        <p
+                                            className={`automation-empty is-small${dropOn(`group:${key}`) === "into" ? " is-drop-into" : ""}`}
+                                            {...groupDnd(group)}
+                                            draggable={false}
+                                        >
+                                            {group ? "Pusta grupa - przeciagnij tu elementy." : "Przeciagnij tu, zeby wyjac z grupy."}
+                                        </p>
+                                    )}
                                 </div>
                             )}
                         </div>
@@ -572,19 +748,6 @@ export default function AutomationWindow() {
                     placeholder={selectedDraft.kind === "script" ? "Skrypt - nazwa" : `${KIND_LABEL[selectedDraft.kind]} - nazwa (opcjonalna)`}
                     onChange={e => updateDraft({ ...selectedDraft, data: { ...selectedDraft.data, name: e.target.value || undefined } })}
                 />
-                <input
-                    className="automation-editor__group popup-input"
-                    autoComplete="off"
-                    {...NO_PASSWORD_MANAGER}
-                    title="Grupa"
-                    list="automation-groups"
-                    value={selectedDraft.groupName}
-                    placeholder="Bez grupy"
-                    onChange={e => updateDraft({ ...selectedDraft, groupName: e.target.value })}
-                />
-                <datalist id="automation-groups">
-                    {groups.map(g => <option key={g.id} value={g.name} />)}
-                </datalist>
                 <Switch
                     on={selectedDraft.data.enabled !== false}
                     title="Wlaczony"
@@ -612,6 +775,7 @@ export default function AutomationWindow() {
                         users={scriptUsers(selectedDraft.id, items)}
                         onChange={data => updateDraft({ ...selectedDraft, data })}
                         onSelect={select}
+                        onSave={save}
                     />
                 ) : selectedDraft.kind === "alias" ? (
                     <AliasEditor

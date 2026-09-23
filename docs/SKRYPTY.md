@@ -48,21 +48,24 @@ Reagujesz na to, co pojawia sie na ekranie — automatycznie, bez czekania.
 Gdy akcje aliasu czy triggera to za malo, piszesz krotki skrypt w JavaScripcie — w tym samym oknie (Menu → Automatyzacja → + → Skrypt).
 
 ```js
-export default function (api, args, ctx) {
-    const hp = api.gmcp.get()?.char?.state?.hp;
-    if (hp > 3) return;
-    api.command.send('wypij miksture');
-    ctx.log('hp', hp);
-}
+const hp = gmcp.char?.state?.hp;
+if (hp > 3) return;
+await send('wypij miksture');
+log('hp', hp);
 ```
 
+Piszesz od razu kod — bez zadnej funkcji dookola. Mozna uzyc `await` i `return`. Edytor podpowiada (`api.`, `ctx.`) i koloruje skladnie; na telefonie jest zwykle pole tekstowe.
+
 - **Kiedy sie uruchamia** — przez akcje **Uruchom skrypt** w dowolnym aliasie lub triggerze, przez wlasna komende (np. `/leczenie goblin`) albo przyciskiem **Uruchom** w edytorze (dziala tez na niezapisanym kodzie)
-- **`api`** — to samo API, ktore dostaja wtyczki (zob. dokumentacje wtyczek)
 - **`args`** — grupy z wzorca aliasu lub triggera (`$1` to `args[0]`) albo slowa po komendzie
-- **`ctx`** — skad przyszlo uruchomienie (`ctx.source`, `ctx.line` z linia gry, `ctx.event` z danymi zdarzenia) i `ctx.log(...)`, ktore pisze do konsoli skryptu
+- **`api`** — to samo API, ktore dostaja wtyczki (zob. dokumentacje wtyczek). Jego czesci sa tez pod wlasnymi nazwami, bez `api.`: `command.send(...)`, `map`, `team`, `objects`, `triggers`... Wlasna zmienna o takiej nazwie (np. `const map = new Map()`) po prostu ja przyslania
+- **`ctx`** — skad przyszlo uruchomienie (`ctx.source`, `ctx.line` z linia gry, `ctx.event` z danymi zdarzenia)
+- **`vars`** — obiekt wspolny dla wszystkich skryptow: jeden zapisze `vars.cel = args[0]`, drugi odczyta `vars.cel`. Trzyma dane do przeladowania strony (nie zapisuje ich na stale). W module to `ctx.vars`
+- **Skroty** — `log(...)` pisze do konsoli skryptu, `send(komenda)` wysyla komende, `print(tekst)` wypisuje tekst w oknie gry, `gmcp` to dane GMCP z chwili uruchomienia
+- **Biblioteki** — z sieci przez `await import('https://esm.sh/nazwa')`. Kod z `import ... from` na poczatku albo z `export default function (api, args, ctx)` dziala jako caly modul
 - **Konsola** — pod kodem widac, kto uruchomil skrypt, co wyslal do gry i jaki blad go zatrzymal (z numerem linii)
 - **Na raz** — skrypt dziala raz na uruchomienie; cos, co ma zostac zarejestrowane na stale (trigger, okno), zrob jako wtyczke
-- **Import** — skrypty z cudzej paczki przychodza wylaczone: przejrzyj kod, zanim je wlaczysz
+- **Import** — skrypty z paczki przychodza wlaczone albo wylaczone tak, jak byly u autora. Paczke od kogos obcego przejrzyj przed importem: skrypt ma dostep do calego API
 
 Druga nowa akcja, **Wlacz / wylacz grupe**, wlacza, wylacza albo przelacza cala grupe — np. trigger na wejscie do walki moze wlaczyc grupe "Walka", a trigger na jej koniec ja wylaczyc.
 

@@ -59,3 +59,32 @@ export async function addPatternTrigger(
     await fillAction(modal.locator('.automation-act').last());
     await saveEditor(modal);
 }
+
+/**
+ * Replaces a script's code. Monaco is not a form field: select all, then insert
+ * the text in one go, which skips its bracket and quote auto-closing.
+ */
+export async function fillScriptCode(page: Page, modal: Locator, code: string): Promise<void> {
+    const editor = modal.locator('.automation-monaco .monaco-editor');
+    await expect(editor, 'should load the code editor').toBeVisible();
+    await editor.click();
+    await page.keyboard.press('ControlOrMeta+a');
+    await page.keyboard.insertText(code);
+}
+
+/** Creates a group with the "Nowa grupa" button and names it. */
+export async function addGroup(modal: Locator, name: string): Promise<void> {
+    await modal.getByTitle('Nowa grupa', {exact: true}).click();
+    const input = modal.getByTitle('Nazwa grupy');
+    await input.fill(name);
+    await input.press('Enter');
+    await expect(modal.locator('.automation-group', {hasText: name}), 'should list the new group').toBeVisible();
+}
+
+const NEW_IN_GROUP = {alias: 'Nowy alias w grupie', trigger: 'Nowy wyzwalacz w grupie', script: 'Nowy skrypt w grupie'};
+
+/** Starts a new element inside a group, from the group's menu. */
+export async function startNewInGroup(page: Page, modal: Locator, group: string, kind: 'alias' | 'trigger' | 'script'): Promise<void> {
+    await modal.locator('.automation-group', {hasText: group}).getByTitle('Opcje grupy').click();
+    await page.getByRole('button', {name: NEW_IN_GROUP[kind]}).click();
+}

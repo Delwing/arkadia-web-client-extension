@@ -14,7 +14,8 @@ Wlasne aliasy tworzysz w oknie **Automatyzacja** (Menu → Automatyzacja), razem
 ### Okno Automatyzacja
 
 - **Lista** - aliasy i wyzwalacze razem, podzielone na grupy. Po lewej wybierasz rodzaj (Wszystko, Aliasy, Wyzwalacze) i to, co pokazac (wylaczone, tylko to, co dziala na tej postaci). Przelacznik przy kazdym wierszu wlacza i wylacza element od razu
-- **Grupy** - wpisz nazwe grupy na gorze edytora, a nowa grupa utworzy sie sama. Przelacznik przy grupie wlacza lub wylacza wszystko, co w niej jest. Menu grupy (`...` albo prawy przycisk) pozwala zmienic nazwe, wyeksportowac ja do pliku albo usunac (elementy zostaja, bez grupy)
+- **Grupy** - `+` → Grupa (albo przycisk z folderem obok) tworzy nowa grupe; od razu wpisujesz jej nazwe. Elementy przeciagasz na grupe albo miedzy innymi elementami, zeby zmienic kolejnosc - aliasy, wyzwalacze i skrypty moga byc w grupie wymieszane. Grupy tez mozna przeciagac. Przelacznik przy grupie wlacza lub wylacza wszystko, co w niej jest. Menu grupy (`...` albo prawy przycisk) pozwala dodac do niej nowy element, zmienic nazwe, wyeksportowac ja do pliku albo usunac razem ze wszystkim, co w niej jest
+- **Prawy przycisk na elemencie** - edycja, duplikat, wlaczenie/wylaczenie, przeniesienie do grupy (takze do nowej; tak przenosisz elementy na telefonie) i usuniecie
 - **Edytor** - krok 1 *Kiedy* (wzorzec i linia testowa, ktora od razu pokazuje, czy wzorzec pasuje i co trafi do `$1`), krok 2 *Co zrobic* (akcje po kolei; kolejnosc zmienisz, przeciagajac za uchwyt, a pod spodem widac, co zostanie wyslane), krok 3 *Dla kogo*. Zmiany zapisuje **Zapisz** (albo `Ctrl+Enter`); kropka przy wierszu oznacza niezapisane zmiany
 - **Wlaczony** - wylaczony alias lub wyzwalacz zostaje zapisany, ale nie dziala
 - **Dla kogo** - wszystkie postacie albo tylko wybrane; na innej postaci element nie dziala

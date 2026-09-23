@@ -6,6 +6,7 @@ import { clearScriptLog, getScriptLog, onScriptLog, type ScriptLogEntry } from "
 import type { UserScript } from "@client/scripts/userScripts";
 import { CharacterScope, CharacterScopeSwitch, Section } from "./EditorParts";
 import { itemTitle, type AutomationItem } from "./automationModel";
+import type { ScriptEditorHandle } from "./scriptMonaco";
 
 const INDENT = "    ";
 
@@ -59,13 +60,69 @@ function CodeField({ value, onChange }: { value: string; onChange: (code: string
     );
 }
 
-export function ScriptEditor({ id, script, users, onChange, onSelect }: {
+/**
+ * Monaco with completion from the plugin API types, loaded when the first
+ * script is opened. Until it arrives, if it fails, and on touch screens (where
+ * Monaco is hard to use) the plain field stands in.
+ */
+function ScriptCodeEditor({ value, onChange, onSave }: {
+    value: string;
+    onChange: (code: string) => void;
+    onSave: () => void;
+}) {
+    const [mode, setMode] = useState<"loading" | "monaco" | "plain">(() =>
+        window.matchMedia?.("(pointer: coarse)").matches ? "plain" : "loading");
+    const host = useRef<HTMLDivElement>(null);
+    const handle = useRef<ScriptEditorHandle | null>(null);
+    const latest = useRef({ value, onChange, onSave });
+    latest.current = { value, onChange, onSave };
+
+    useEffect(() => {
+        if (mode !== "loading") return;
+        let cancelled = false;
+        import("./scriptMonaco")
+            .then(({ createScriptEditor }) => {
+                if (cancelled || !host.current) return;
+                handle.current = createScriptEditor(host.current, {
+                    value: latest.current.value,
+                    onChange: code => latest.current.onChange(code),
+                    onSave: () => latest.current.onSave(),
+                });
+                setMode("monaco");
+            })
+            .catch(err => {
+                console.error("[automation] Monaco failed to load, using the plain editor", err);
+                if (!cancelled) setMode("plain");
+            });
+        return () => {
+            cancelled = true;
+            handle.current?.dispose();
+            handle.current = null;
+        };
+        // Once per mount; the editor is remounted for another script.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    // A change from outside (Cofnij zmiany) reaches the editor too.
+    useEffect(() => { handle.current?.setValue(value); }, [value]);
+
+    return (
+        <>
+            {mode !== "monaco" && <CodeField value={value} onChange={onChange} />}
+            <div ref={host} className="automation-monaco" hidden={mode !== "monaco"} title="Kod skryptu" />
+        </>
+    );
+}
+
+export function ScriptEditor({ id, script, users, onChange, onSelect, onSave }: {
     id: string;
     script: UserScript;
     /** The aliases and triggers that run it. */
     users: AutomationItem[];
     onChange: (script: UserScript) => void;
     onSelect: (id: string) => void;
+    /** Ctrl+Enter in the code editor. */
+    onSave: () => void;
 }) {
     const log = useScriptLog(id);
     const consoleEnd = useRef<HTMLDivElement>(null);
@@ -113,11 +170,15 @@ export function ScriptEditor({ id, script, users, onChange, onSelect }: {
                     </Button>
                 }
             >
-                <CodeField value={script.code} onChange={code => onChange({ ...script, code })} />
+                <ScriptCodeEditor value={script.code} onChange={code => onChange({ ...script, code })} onSave={onSave} />
                 <p className="automation-hint">
-                    <code>export default function (api, args, ctx)</code> — <code>api</code> to API wtyczek (Dokumentacja → Wtyczki),
-                    <code> args</code> to grupy z wzorca, <code>ctx.log()</code> pisze do konsoli. Skrypt dziala raz na uruchomienie;
-                    cos, co ma zostac zarejestrowane na stale, zrob jako wtyczke.
+                    Piszesz od razu kod: pod reka sa <code>args</code> (grupy z wzorca, $1 to <code>args[0]</code>),
+                    <code> api</code> (API wtyczek), <code>ctx</code> i skroty <code>log()</code>, <code>send()</code>, <code>print()</code>,
+                    <code> gmcp</code>, a czesci API bez <code>api.</code> na poczatku: <code>command.send()</code>, <code>map</code>,
+                    <code> team</code>... Dane dla innych skryptow zostaw w <code>vars</code> (np. <code>vars.cel = args[0]</code>),
+                    wspolnym dla wszystkich skryptow do przeladowania strony. Mozna uzyc <code>await</code> i <code>return</code>, a biblioteke z sieci wczytac przez
+                    <code> await import('https://esm.sh/...')</code>. Skrypt dziala raz na uruchomienie; cos, co ma zostac
+                    zarejestrowane na stale, zrob jako wtyczke.
                 </p>
                 <div className="automation-console">
                     <div className="automation-console__head">

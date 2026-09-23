@@ -6,12 +6,10 @@ import {
     submitCommand,
     waitForCommandInput,
 } from './support/mocks';
-import {closeAutomation, openAutomation, row, saveEditor, startNew} from './support/automation';
+import {closeAutomation, fillScriptCode, openAutomation, row, saveEditor, startNew} from './support/automation';
 
-const CODE = `export default function (api, args, ctx) {
-    ctx.log('cel', args[0]);
-    api.command.send('zabij ' + args[0]);
-}`;
+const CODE = `log('cel', args[0]);
+await send('zabij ' + args[0]);`;
 
 test.describe('Automation scripts', () => {
     test.beforeEach(async ({page}) => {
@@ -25,7 +23,7 @@ test.describe('Automation scripts', () => {
         await startNew(page, modal, 'script');
         await modal.getByTitle('Nazwa (opcjonalna)').fill('atak');
         await modal.getByTitle('Komenda', {exact: true}).fill('atak');
-        await modal.getByTitle('Kod skryptu').fill(CODE);
+        await fillScriptCode(page, modal, CODE);
 
         // Run from the editor, before saving.
         await modal.getByRole('button', {name: 'Uruchom'}).click();
@@ -50,7 +48,7 @@ test.describe('Automation scripts', () => {
         const modal = await openAutomation(page);
         await startNew(page, modal, 'script');
         await modal.getByTitle('Nazwa (opcjonalna)').fill('atak');
-        await modal.getByTitle('Kod skryptu').fill(CODE);
+        await fillScriptCode(page, modal, CODE);
         await saveEditor(modal);
 
         await startNew(page, modal, 'alias');

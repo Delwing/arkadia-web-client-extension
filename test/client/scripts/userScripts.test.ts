@@ -1,5 +1,5 @@
 import { vi } from 'vitest';
-import initUserScripts, { runUserScript, scriptLoader } from '@client/scripts/userScripts';
+import initUserScripts, { isModuleScript, runUserScript, scriptLoader, toModuleSource } from '@client/scripts/userScripts';
 import initUserTriggers from '@client/scripts/userTriggers';
 import Triggers from '@client/Triggers';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
@@ -102,6 +102,60 @@ describe('userScripts', () => {
         expect(cleanup).toHaveBeenCalled();
         await runUserScript(client as never, 's2', [], { source: 'manual' });
         expect(log('s2').at(-1)).toBe('log: v2');
+    });
+
+    it('shares vars between scripts', async () => {
+        const client = new FakeClient();
+        setScripts([
+            { id: 's1', name: 'zapamietaj', code: "ctx.vars.cel = args[0];" },
+            { id: 's2', name: 'atakuj', code: "ctx.log('zabij', ctx.vars.cel);" },
+        ]);
+
+        await runUserScript(client as never, 's1', ['goblin'], { source: 'alias', label: '1 (.*)' });
+        await runUserScript(client as never, 's2', [], { source: 'alias', label: '1' });
+
+        expect(log('s2')).toContain('log: zabij goblin');
+    });
+
+    describe('module source', () => {
+        /** Runs a wrapped body the way the module would, without importing a blob. */
+        async function runBody(body: string, api: Record<string, unknown>) {
+            const source = toModuleSource(body).replace(/^export default /, 'return ');
+            const fn = new Function(source)() as (api: unknown, args: string[], ctx: unknown) => Promise<unknown>;
+            return fn(api, ['goblin'], { log: () => {}, vars: {} });
+        }
+
+        it('puts the body on line 2, inside the scope line', () => {
+            const lines = toModuleSource("send('x');\nreturn 1;").split('\n');
+            expect(lines[0]).toMatch(/^export default async function \(api, args, ctx\) \{ const \{ triggers, aliases, /);
+            expect(lines[0]).toContain('gmcp = api.gmcp.get();');
+            expect(lines[0]).toContain('const vars = ctx.vars,');
+            expect(lines[1]).toBe("send('x');");
+        });
+
+        it('has the API sections by name, and lets the body shadow them', async () => {
+            const sent: string[] = [];
+            const api = {
+                command: { send: async (c: string) => { sent.push(c); } },
+                output: { print: () => {} },
+                gmcp: { get: () => ({ char: { state: { hp: 2 } } }) },
+                map: { name: 'mapa' },
+            };
+            const result = await runBody(
+                "await command.send('zabij ' + args[0]);\nconst hp = gmcp.char.state.hp;\nconst map = new Map([[1, api.map.name]]);\nreturn [hp, map.get(1)];",
+                api,
+            );
+            expect(sent).toEqual(['zabij goblin']);
+            // The body's own `map` shadows the section instead of clashing with it.
+            expect(result).toEqual([2, 'mapa']);
+        });
+
+        it('leaves a module as it is', () => {
+            const module = "import confetti from 'https://esm.sh/canvas-confetti';\nexport default function () {}";
+            expect(isModuleScript(module)).toBe(true);
+            expect(toModuleSource(module)).toBe(module);
+            expect(isModuleScript("const lib = await import('https://esm.sh/x');")).toBe(false);
+        });
     });
 
     describe('actions', () => {
