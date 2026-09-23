@@ -45,7 +45,7 @@ const buttonClass = (variant: ButtonProps['variant'], size: ButtonProps['size'],
     size === 'sm' && 'popup-btn--sm',
     variant === 'solid' && 'popup-btn--solid',
     variant === 'ghost' && 'popup-btn--ghost',
-    variant === 'danger' && 'popup-btn--danger popup-btn--ghost',
+    variant === 'danger' && 'popup-btn--danger',
     className,
 );
 
@@ -59,12 +59,12 @@ export function LinkButton({ variant = 'secondary', size = 'md', className, ...r
 }
 
 /**
- * Removes one item from a list: a red bin, named by its tooltip. The
- * confirming button of a delete dialog stays a worded danger Button.
+ * Removes one item from a list: a quiet red bin, named by its tooltip. The
+ * confirming button of a delete dialog stays a worded (tinted) danger Button.
  */
 export function DeleteButton({ title = 'Usuń', size = 'sm', className, ...rest }: Omit<ButtonProps, 'variant' | 'children'>) {
     return (
-        <Button variant="danger" size={size} title={title} className={cx('popup-btn--icon', className)} {...rest}>
+        <Button variant="danger" size={size} title={title} className={cx('popup-btn--icon popup-btn--ghost', className)} {...rest}>
             <Trash2 size={size === 'sm' ? 15 : 17} strokeWidth={1.75} />
         </Button>
     );

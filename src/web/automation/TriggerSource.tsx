@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { Trash2 } from 'lucide-react';
-import { Button, Input, Select } from '@web-ui/primitives/index.ts';
+import { Button, DeleteButton, Input, Select } from '@web-ui/primitives/index.ts';
 import {
     CONDITION_OPERATORS,
     GMCP_EVENT_CATEGORY,
@@ -194,14 +193,10 @@ export function ConditionsEditor({
                                 onChange={(e) => update(idx, { value: e.target.value })}
                             />
                         )}
-                        <Button
-                            variant="danger"
-                            size="sm"
+                        <DeleteButton
                             onClick={() => onChange(conditions.filter((_, i) => i !== idx))}
                             title="Usun warunek"
-                        >
-                            <Trash2 size={14} />
-                        </Button>
+                        />
                     </div>
                 );
             })}

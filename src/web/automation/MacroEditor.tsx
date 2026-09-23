@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
-import { Trash2 } from 'lucide-react';
 import { CustomSound } from '@modules/core/customSounds';
 import {
     isTriggerMacroAvailable,
     type PluginTriggerMacro,
 } from '@modules/core/pluginTriggerMacroRegistry';
-import { Button, Check, Field, Input, Select } from '@web-ui/primitives/index.ts';
+import { Check, DeleteButton, Field, Input, Select } from '@web-ui/primitives/index.ts';
 import type { UserMacro } from '@client/scripts/userTriggers';
 import type { DimEasing } from '@client/ansi/FormatState';
 import type { UserScript } from '@client/scripts/userScripts';
@@ -497,9 +496,7 @@ export function MacroEditor({
                     onChange={e => onChange({ ...macro, to: e.target.value })}
                 />
             )}
-            <Button variant="danger" size="sm" onClick={onRemove} title="Usun akcje">
-                <Trash2 size={14} />
-            </Button>
+            <DeleteButton onClick={onRemove} title="Usun akcje" />
         </div>
     );
 }
