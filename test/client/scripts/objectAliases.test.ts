@@ -95,26 +95,26 @@ describe('object aliases', () => {
       return entry.callback as (m: RegExpMatchArray) => void;
     };
 
-    kill = getAlias(/\/z ([0-9]+)$/);
-    surprise = getAlias(/\/x ([0-9]+)$/);
-    shield = getAlias(/\/zas ([A-Za-z0-9@]+)$/);
+    kill = getAlias(/^\/z (.+)$/);
+    surprise = getAlias(/^\/x (.+)$/);
+    shield = getAlias(/^\/zas (.+)$/);
     killTarget = getAlias(/^\/z$/) as unknown as () => void;
     surpriseTarget = getAlias(/^\/x$/) as unknown as () => void;
     shieldTarget = getAlias(/^\/zas$/) as unknown as () => void;
-    invite = getAlias(/\/zap ([0-9]+)$/);
+    invite = getAlias(/^\/zap (.+)$/);
     toggle = getAlias(/^\/puszczaj$/) as unknown as () => void;
-    shieldGroup = getAlias(/^\/za([234]) ([A-Za-z0-9@]+)$/);
-    withdraw = getAlias(/\/w ([A-Za-z0-9@]+)$/);
-    passLeadership = getAlias(/\/pro ([A-Za-z0-9@]+)$/);
-    breakDefense = getAlias(/\/prze(?: ([A-Za-z0-9@]+))?$/) as unknown as (
+    shieldGroup = getAlias(/^\/za([234]) (.+)$/);
+    withdraw = getAlias(/^\/w (.+)$/);
+    passLeadership = getAlias(/^\/pro (.+)$/);
+    breakDefense = getAlias(/^\/prze(?: (.+))?$/) as unknown as (
       m?: RegExpMatchArray,
     ) => void;
-    orderAttack = getAlias(/\/ra ([0-9]+)$/);
+    orderAttack = getAlias(/^\/ra (.+)$/);
     orderAttackTarget = getAlias(/^\/ra$/) as unknown as () => void;
-    orderShield = getAlias(/\/rz ([A-Za-z0-9@]+)$/);
+    orderShield = getAlias(/^\/rz (.+)$/);
     orderShieldTarget = getAlias(/^\/rz$/) as unknown as () => void;
-    markAttack = getAlias(/\/wa ([0-9]+)$/);
-    markDefense = getAlias(/\/wz ([A-Za-z0-9@]+)$/);
+    markAttack = getAlias(/^\/wa (.+)$/);
+    markDefense = getAlias(/^\/wz (.+)$/);
     (globalThis as any).gmcp = gmcp;
     gmcp.char = { options: { group_cover: 1 } } as any;
 
@@ -208,6 +208,115 @@ describe('object aliases', () => {
     client.TeamManager.getAccumulatedObjectsData.mockReturnValue(mockMap);
     shield(['', 'B'] as unknown as RegExpMatchArray);
     expect(client.sendCommand).toHaveBeenCalledWith('zaslon przed ob_9');
+  });
+
+  describe('zaslon by name or description', () => {
+    const room = [
+      { num: 1, shortcut: '@', desc: 'Gerwazy' },
+      { num: 2, shortcut: 'A', desc: 'Gerwazy' },
+      { num: 3, shortcut: '1', desc: 'zielony goblin' },
+      { num: 4, shortcut: '2', desc: '\u017c\u00f3\u0142ty goblin' },
+      { num: 5, shortcut: 'B', desc: 'Ada' },
+      { num: 6, shortcut: 'C', desc: 'Adalbert' },
+    ];
+    beforeEach(() => {
+      client.ObjectManager.getObjectsOnLocation.mockReturnValue(room as any);
+    });
+
+    test('shortcut still wins over a name', () => {
+      shield(['', 'b'] as unknown as RegExpMatchArray);
+      expect(client.sendCommand).toHaveBeenCalledWith('zaslon przed ob_5');
+    });
+
+    test('full name ignores case and skips self', () => {
+      shield(['', 'GERWAZY'] as unknown as RegExpMatchArray);
+      expect(client.sendCommand).toHaveBeenCalledWith('zaslon przed ob_2');
+    });
+
+    test('exact name beats a longer prefix match', () => {
+      shield(['', 'ada'] as unknown as RegExpMatchArray);
+      expect(client.sendCommand).toHaveBeenCalledWith('zaslon przed ob_5');
+    });
+
+    test('unique word prefix of a description', () => {
+      shield(['', 'ziel'] as unknown as RegExpMatchArray);
+      expect(client.sendCommand).toHaveBeenCalledWith('zaslon przed ob_3');
+    });
+
+    test('ignores Polish diacritics', () => {
+      shield(['', 'zolty'] as unknown as RegExpMatchArray);
+      expect(client.sendCommand).toHaveBeenCalledWith('zaslon przed ob_4');
+    });
+
+    test('substring anywhere as the last resort', () => {
+      shield(['', 'lber'] as unknown as RegExpMatchArray);
+      expect(client.sendCommand).toHaveBeenCalledWith('zaslon przed ob_6');
+    });
+
+    test('ambiguous fragment prints candidates and sends nothing', () => {
+      shield(['', 'goblin'] as unknown as RegExpMatchArray);
+      expect(client.sendCommand).not.toHaveBeenCalled();
+      expect(client.print).toHaveBeenCalledWith(expect.stringContaining('zielony goblin (1)'));
+    });
+
+    test('a single team member settles an ambiguous fragment', () => {
+      client.TeamManager.getAccumulatedObjectsData.mockReturnValue(new Map([[4, { team: true }]]) as any);
+      shield(['', 'goblin'] as unknown as RegExpMatchArray);
+      expect(client.sendCommand).toHaveBeenCalledWith('zaslon ob_4');
+    });
+
+    test('several team members among the hits stay ambiguous', () => {
+      client.TeamManager.getAccumulatedObjectsData.mockReturnValue(
+        new Map([[3, { team: true }], [4, { team: true }]]) as any,
+      );
+      shield(['', 'goblin'] as unknown as RegExpMatchArray);
+      expect(client.sendCommand).not.toHaveBeenCalled();
+    });
+
+    test('attack aliases break a tie toward the lone non-team hit', () => {
+      client.TeamManager.getAccumulatedObjectsData.mockReturnValue(new Map([[4, { team: true }]]) as any);
+      kill(['', 'goblin'] as unknown as RegExpMatchArray);
+      expect(client.sendCommand).toHaveBeenCalledWith('zabij ob_3');
+    });
+
+    test('other aliases resolve names too', () => {
+      surprise(['', 'ziel'] as unknown as RegExpMatchArray);
+      expect(client.sendCommand).toHaveBeenLastCalledWith('zaskocz ob_3');
+      invite(['', 'adalb'] as unknown as RegExpMatchArray);
+      expect(client.sendCommand).toHaveBeenLastCalledWith('zapros ob_6');
+      passLeadership(['', 'gerwazy'] as unknown as RegExpMatchArray);
+      expect(client.sendCommand).toHaveBeenLastCalledWith('przekaz prowadzenie ob_2');
+      orderAttack(['', 'zolty'] as unknown as RegExpMatchArray);
+      expect(client.sendCommand).toHaveBeenLastCalledWith('rozkaz druzynie zaatakowac ob_4');
+      orderShield(['', 'ada'] as unknown as RegExpMatchArray);
+      expect(client.sendCommand).toHaveBeenLastCalledWith('rozkaz druzynie zaslonic ob_5');
+      markAttack(['', 'ziel'] as unknown as RegExpMatchArray);
+      expect(client.sendCommand).toHaveBeenLastCalledWith('wskaz ob_3 jako cel ataku');
+      markDefense(['', 'gerw'] as unknown as RegExpMatchArray);
+      expect(client.sendCommand).toHaveBeenLastCalledWith('wskaz ob_2 jako cel obrony');
+    });
+
+    test('/w withdraws behind a named object', () => {
+      withdraw(['', 'gerw'] as unknown as RegExpMatchArray);
+      expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'gzwycofaj sie za ob_2');
+    });
+
+    test('/prze with a name breaks that defense', () => {
+      breakDefense(['', 'ziel'] as unknown as RegExpMatchArray);
+      expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'przelam obrone ob_3');
+    });
+
+    test('/prze with an ambiguous name prints only the candidates', () => {
+      breakDefense(['', 'goblin'] as unknown as RegExpMatchArray);
+      expect(client.sendCommand).not.toHaveBeenCalled();
+      expect(client.print).toHaveBeenCalledTimes(1);
+    });
+
+    test('no match prints a hint', () => {
+      shield(['', 'troll'] as unknown as RegExpMatchArray);
+      expect(client.sendCommand).not.toHaveBeenCalled();
+      expect(client.print).toHaveBeenCalledWith(expect.stringContaining('troll'));
+    });
   });
 
   test('/z alias attacks attack target', () => {

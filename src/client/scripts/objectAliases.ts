@@ -22,15 +22,62 @@ export default function initObjectAliases(
             .find(o => o.shortcut?.toLowerCase() === lower);
     }
 
-    function exec(short: string, command: string) {
-        const obj = findByShortcut(short);
+    function exec(query: string, command: string, prefer: 'team' | 'enemy') {
+        const obj = findTarget(query, prefer);
         if (obj) {
             client.sendCommand(`${command} ob_${obj.num}`);
         }
     }
 
-    function shield(short: string) {
-        const obj = findByShortcut(short);
+    function fold(text: string) {
+        return text.toLowerCase().normalize("NFD").replace(/\p{M}/gu, "").split(String.fromCharCode(0x142)).join("l");
+    }
+
+    /**
+     * Shortcut first, then the object's description: an exact match, then the
+     * query as the start of a word ("gerw" -> "Gerwazy", "gob" -> "zielony
+     * goblin"), then anywhere in it. The first tier with exactly one hit wins,
+     * so the shortest unique fragment is enough. Within an ambiguous tier the
+     * alias's side settles it: a lone team member for support aliases (cover,
+     * withdraw, lead), a lone non-team hit for attack ones. Case and Polish
+     * diacritics are ignored. Ambiguity or no hit prints why instead of
+     * silently doing nothing.
+     */
+    function findTarget(query: string, prefer: 'team' | 'enemy') {
+        const byShortcut = findByShortcut(query);
+        if (byShortcut) {
+            return byShortcut;
+        }
+        const needle = fold(query.trim());
+        const named = client.ObjectManager.getObjectsOnLocation()
+            .filter(o => o.desc && o.shortcut !== '@')
+            .map(o => ({ obj: o, desc: fold(o.desc!) }));
+        const tiers = [
+            named.filter(n => n.desc === needle),
+            named.filter(n => n.desc.startsWith(needle) || n.desc.includes(` ${needle}`)),
+            named.filter(n => n.desc.includes(needle)),
+        ];
+        for (const tier of tiers) {
+            if (tier.length === 1) {
+                return tier[0].obj;
+            }
+            if (tier.length > 1) {
+                const data = client.TeamManager.getAccumulatedObjectsData?.();
+                const side = tier.filter(n => !!data?.get(n.obj.num)?.team === (prefer === 'team'));
+                if (side.length === 1) {
+                    return side[0].obj;
+                }
+                const list = tier.map(n => `${n.obj.desc}${n.obj.shortcut ? ` (${n.obj.shortcut})` : ''}`).join(', ');
+                client.print(`Niejednoznaczne "${query}": ${list}`);
+                return undefined;
+            }
+        }
+        client.print(`Nie ma tu nikogo pasujacego do "${query}".`);
+        return undefined;
+    }
+
+    function shield(query: string) {
+        const obj = findTarget(query, 'team');
         if (obj) {
             const data = client.TeamManager.getAccumulatedObjectsData?.();
             const isTeam = data && data.get(obj.num)?.team;
@@ -42,8 +89,8 @@ export default function initObjectAliases(
         }
     }
 
-    function withdraw(short: string) {
-        const obj = findByShortcut(short);
+    function withdraw(query: string) {
+        const obj = findTarget(query, 'team');
         if (obj) {
             client.sendCommand(`gzwycofaj sie za ob_${obj.num}`);
             if (releaseGuard) {
@@ -52,8 +99,8 @@ export default function initObjectAliases(
         }
     }
 
-    function passLeadership(short: string) {
-        const obj = findByShortcut(short);
+    function passLeadership(query: string) {
+        const obj = findTarget(query, 'team');
         if (obj) {
             client.sendCommand(`przekaz prowadzenie ob_${obj.num}`);
         }
@@ -69,12 +116,15 @@ export default function initObjectAliases(
      * the game answers with "Nie widzisz zadnej takiej osoby." - a wasted round
      * in the middle of a fight.
      */
-    function breakDefenseTarget(short?: string) {
+    function breakDefenseTarget(query?: string) {
         let id: number | undefined;
         let alreadyFighting = false;
 
-        if (short) {
-            id = findByShortcut(short)?.num;
+        if (query) {
+            id = findTarget(query, 'enemy')?.num;
+            if (id === undefined) {
+                return; // findTarget already said why
+            }
         } else {
             const marked = client.TeamManager.getAttackTargetId();
             if (marked !== undefined && isOnLocation(marked)) {
@@ -209,15 +259,15 @@ export default function initObjectAliases(
         attackController.attackById(id, command);
     };
 
-    function attack(short: string) {
-        const obj = findByShortcut(short);
+    function attack(query: string) {
+        const obj = findTarget(query, 'enemy');
         if (obj) {
             attackById(obj.num);
         }
     }
 
-    function surprise(short: string) {
-        const obj = findByShortcut(short);
+    function surprise(query: string) {
+        const obj = findTarget(query, 'enemy');
         if (obj) {
             attackById(obj.num, "zaskocz");
         }
@@ -233,15 +283,15 @@ export default function initObjectAliases(
 
     if (aliases) {
         aliases.push({
-            pattern: /\/z ([0-9]+)$/,
+            pattern: /^\/z (.+)$/,
             callback: (m: RegExpMatchArray) => attack(m[1])
         });
         aliases.push({
-            pattern: /\/x ([0-9]+)$/,
+            pattern: /^\/x (.+)$/,
             callback: (m: RegExpMatchArray) => surprise(m[1])
         });
         aliases.push({
-            pattern: /\/zas ([A-Za-z0-9@]+)$/,
+            pattern: /^\/zas (.+)$/,
             callback: (m: RegExpMatchArray) => shield(m[1])
         });
         aliases.push({
@@ -308,11 +358,11 @@ export default function initObjectAliases(
             callback: () => inviteAll()
         });
         aliases.push({
-            pattern: /\/zap ([0-9]+)$/,
-            callback: (m: RegExpMatchArray) => exec(m[1], "zapros")
+            pattern: /^\/zap (.+)$/,
+            callback: (m: RegExpMatchArray) => exec(m[1], "zapros", 'enemy')
         });
         aliases.push({
-            pattern: /\/za ([A-Za-z0-9@]+)$/,
+            pattern: /^\/za (.+)$/,
             callback: (m: RegExpMatchArray) => shield(m[1])
         });
         aliases.push({
@@ -341,7 +391,7 @@ export default function initObjectAliases(
             }
         });
         aliases.push({
-            pattern: /^\/za([234]) ([A-Za-z0-9@]+)$/,
+            pattern: /^\/za([234]) (.+)$/,
             callback: (m: RegExpMatchArray) => {
                 // Fall back to the game default — restoring an undefined value
                 // would serialize to an empty payload and leave the elevated
@@ -356,21 +406,21 @@ export default function initObjectAliases(
             }
         });
         aliases.push({
-            pattern: /\/w ([A-Za-z0-9@]+)$/,
+            pattern: /^\/w (.+)$/,
             callback: (m: RegExpMatchArray) => withdraw(m[1])
         });
         aliases.push({
-            pattern: /\/pro ([A-Za-z0-9@]+)$/,
+            pattern: /^\/pro (.+)$/,
             callback: (m: RegExpMatchArray) => passLeadership(m[1])
         });
         aliases.push({
-            pattern: /\/prze(?: ([A-Za-z0-9@]+))?$/,
+            pattern: /^\/prze(?: (.+))?$/,
             callback: (m?: RegExpMatchArray) => breakDefenseTarget(m?.[1])
         });
         aliases.push({
-            pattern: /\/ra ([0-9]+)$/,
+            pattern: /^\/ra (.+)$/,
             callback: (m: RegExpMatchArray) => {
-                const obj = findByShortcut(m[1]);
+                const obj = findTarget(m[1], 'enemy');
                 if (obj) {
                     client.sendCommand(`wskaz ob_${obj.num} jako cel ataku`);
                     client.sendCommand(`rozkaz druzynie zaatakowac ob_${obj.num}`);
@@ -388,14 +438,14 @@ export default function initObjectAliases(
             }
         });
         aliases.push({
-            pattern: /\/rz ([A-Za-z0-9@]+)$/,
+            pattern: /^\/rz (.+)$/,
             callback: (m: RegExpMatchArray) => {
                 if (m[1] === '@') {
                     client.sendCommand(`wskaz siebie jako cel obrony`);
                     client.sendCommand(`rozkaz druzynie zaslonic siebie`);
                     return;
                 }
-                const obj = findByShortcut(m[1]);
+                const obj = findTarget(m[1], 'team');
                 if (obj) {
                     client.sendCommand(`wskaz ob_${obj.num} jako cel obrony`);
                     client.sendCommand(`rozkaz druzynie zaslonic ob_${obj.num}`);
@@ -419,22 +469,22 @@ export default function initObjectAliases(
             }
         });
         aliases.push({
-            pattern: /\/wa ([0-9]+)$/,
+            pattern: /^\/wa (.+)$/,
             callback: (m: RegExpMatchArray) => {
-                const obj = findByShortcut(m[1]);
+                const obj = findTarget(m[1], 'enemy');
                 if (obj) {
                     client.sendCommand(`wskaz ob_${obj.num} jako cel ataku`);
                 }
             }
         });
         aliases.push({
-            pattern: /\/wz ([A-Za-z0-9@]+)$/,
+            pattern: /^\/wz (.+)$/,
             callback: (m: RegExpMatchArray) => {
                 if (m[1] === '@') {
                     client.sendCommand(`wskaz siebie jako cel obrony`);
                     return;
                 }
-                const obj = findByShortcut(m[1]);
+                const obj = findTarget(m[1], 'team');
                 if (obj) {
                     client.sendCommand(`wskaz ob_${obj.num} jako cel obrony`);
                 }

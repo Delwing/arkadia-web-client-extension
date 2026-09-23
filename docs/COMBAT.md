@@ -10,6 +10,10 @@ Komendy do walki, zaslaniania i zarzadzania celami ataku.
 
 > **Wskazowka:** Tryb ataku mozna tez przelaczac klikajac na wskaznik "Atk:" w stopce.
 
+## Wskazywanie celu
+
+Aliasy przyjmujace `id` (`/z`, `/x`, `/prze`, `/za`, `/zas`, `/za2`-`/za4`, `/w`, `/pro`, `/zap`, `/ra`, `/rz`, `/wa`, `/wz`) przyjmuja skrot obiektu z listy albo imie lub fragment opisu - bez wzgledu na wielkosc liter i ogonki, np. `/za gerw`, `/z zolty`. Wystarczy najkrotszy jednoznaczny fragment. Gdy pasuje kilka osob, aliasy wsparcia (`/za`, `/w`, `/pro`, `/rz`, `/wz`) wybieraja jedynego czlonka druzyny, a pozostale (atak, `/zap`) jedyna osobe spoza druzyny; w pozostalych przypadkach nic nie jest wysylane i wypisywana jest lista kandydatow ze skrotami.
+
 ## Atakowanie
 
 | Komenda | Opis |
