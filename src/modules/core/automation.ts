@@ -64,6 +64,20 @@ export function ensureAutomationGroup(name: string): string | undefined {
     return group.id;
 }
 
+/** Switches a group on or off, or flips it. Unknown ids are ignored. */
+export function setAutomationGroupEnabled(id: string, state: boolean | "toggle"): void {
+    const groups = getAutomationGroups();
+    const group = groups.find(g => g.id === id);
+    if (!group) return;
+    const on = state === "toggle" ? group.enabled === false : state;
+    if (on === (group.enabled !== false)) return;
+    saveAutomationGroups(groups.map(g => {
+        if (g.id !== id) return g;
+        const { enabled: _old, ...rest } = g;
+        return on ? rest : { ...rest, enabled: false };
+    }));
+}
+
 export function automationGroupName(id: string | undefined, groups = getAutomationGroups()): string {
     if (!id) return "";
     return groups.find(g => g.id === id)?.name ?? "";

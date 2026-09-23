@@ -13,8 +13,10 @@ import {
     getAutomationGroups,
     newAutomationId,
     saveAutomationGroups,
+    setAutomationGroupEnabled,
     type AutomationGroup,
 } from "@modules/core/automation";
+import type { UserScript } from "@client/scripts/userScripts";
 import { aliasActions, aliasCommandMirror, type UserAlias } from "@client/scripts/userAliases";
 import {
     CONDITION_OPERATORS,
@@ -27,13 +29,19 @@ import {
 import { normalizeTriggerList } from "@web/options/userTriggerNormalize.ts";
 import { normalizeMacro } from "./MacroEditor";
 
-export type AutomationKind = "alias" | "trigger";
+export type AutomationKind = "alias" | "trigger" | "script";
 
 export type AutomationItem =
     | { kind: "alias"; id: string; data: UserAlias }
-    | { kind: "trigger"; id: string; data: UserTrigger };
+    | { kind: "trigger"; id: string; data: UserTrigger }
+    | { kind: "script"; id: string; data: UserScript };
 
-export const KIND_LABEL: Record<AutomationKind, string> = { alias: "Alias", trigger: "Wyzwalacz" };
+type AutomationData = UserAlias | UserTrigger | UserScript;
+
+export const KIND_LABEL: Record<AutomationKind, string> = { alias: "Alias", trigger: "Wyzwalacz", script: "Skrypt" };
+
+/** A script's command: letters, digits, _ and -, typed after a slash. */
+const SCRIPT_COMMAND = /^[A-Za-z0-9_-]+$/;
 
 // ── Reading and writing ──────────────────────────────────────────────────────
 
@@ -45,6 +53,11 @@ function storedAliases(): UserAlias[] {
 function storedTriggers(): UserTrigger[] {
     const value = globalStorage.get("triggers");
     return Array.isArray(value) ? normalizeTriggerList(value) : [];
+}
+
+export function storedScripts(): UserScript[] {
+    const value = globalStorage.get("automationScripts");
+    return Array.isArray(value) ? value : [];
 }
 
 /**
@@ -61,12 +74,17 @@ export function ensureStoredIds(): void {
     if (triggers.some(t => !t.id)) {
         globalStorage.set("triggers", triggers.map(t => (t.id ? t : { ...t, id: newAutomationId() })));
     }
+    const scripts = storedScripts();
+    if (scripts.some(t => !t.id)) {
+        globalStorage.set("automationScripts", scripts.map(t => (t.id ? t : { ...t, id: newAutomationId() })));
+    }
 }
 
 export function loadItems(): AutomationItem[] {
     return [
         ...storedAliases().filter(a => a.id).map(data => ({ kind: "alias" as const, id: data.id!, data })),
         ...storedTriggers().filter(t => t.id).map(data => ({ kind: "trigger" as const, id: data.id!, data })),
+        ...storedScripts().filter(t => t.id).map(data => ({ kind: "script" as const, id: data.id!, data })),
     ];
 }
 
@@ -76,6 +94,10 @@ export function writeItem(item: AutomationItem): void {
         const list = storedAliases();
         const idx = list.findIndex(a => a.id === item.id);
         globalStorage.set("aliases", idx === -1 ? [...list, item.data] : list.map((a, i) => (i === idx ? item.data : a)));
+    } else if (item.kind === "script") {
+        const list = storedScripts();
+        const idx = list.findIndex(a => a.id === item.id);
+        globalStorage.set("automationScripts", idx === -1 ? [...list, item.data] : list.map((a, i) => (i === idx ? item.data : a)));
     } else {
         const list = storedTriggers();
         const idx = list.findIndex(t => t.id === item.id);
@@ -86,6 +108,7 @@ export function writeItem(item: AutomationItem): void {
 
 export function removeItem(kind: AutomationKind, id: string): void {
     if (kind === "alias") globalStorage.set("aliases", storedAliases().filter(a => a.id !== id));
+    else if (kind === "script") globalStorage.set("automationScripts", storedScripts().filter(t => t.id !== id));
     else globalStorage.set("triggers", storedTriggers().filter(t => t.id !== id));
 }
 
@@ -96,11 +119,7 @@ export function setItemEnabled(item: AutomationItem, enabled: boolean): void {
 }
 
 export function setGroupEnabled(id: string, enabled: boolean): void {
-    saveAutomationGroups(getAutomationGroups().map(g => {
-        if (g.id !== id) return g;
-        const { enabled: _old, ...rest } = g;
-        return enabled ? rest : { ...rest, enabled: false };
-    }));
+    setAutomationGroupEnabled(id, enabled);
 }
 
 export function renameGroup(id: string, name: string): void {
@@ -120,6 +139,8 @@ export function deleteGroup(id: string): void {
     if (aliases.some(a => a.group === id)) globalStorage.set("aliases", aliases.map(ungroup));
     const triggers = storedTriggers();
     if (triggers.some(t => t.group === id)) globalStorage.set("triggers", triggers.map(ungroup));
+    const scripts = storedScripts();
+    if (scripts.some(t => t.group === id)) globalStorage.set("automationScripts", scripts.map(ungroup));
     saveAutomationGroups(getAutomationGroups().filter(g => g.id !== id));
 }
 
@@ -136,7 +157,7 @@ export interface Draft {
     /** Not stored yet. */
     isNew: boolean;
     groupName: string;
-    data: UserAlias | UserTrigger;
+    data: AutomationData;
 }
 
 export function draftFromItem(item: AutomationItem, groups: AutomationGroup[] = getAutomationGroups()): Draft {
@@ -149,14 +170,25 @@ export function draftFromItem(item: AutomationItem, groups: AutomationGroup[] = 
         );
         return { kind: "alias", id: item.id, isNew: false, groupName, data: { ...item.data, macros } };
     }
+    if (item.kind === "script") return { kind: "script", id: item.id, isNew: false, groupName, data: { ...item.data } };
     return { kind: "trigger", id: item.id, isNew: false, groupName, data: { ...item.data, macros: item.data.macros.map(normalizeMacro) } };
 }
 
+/** What a new script starts with. */
+export const NEW_SCRIPT = `// api: API wtyczek (Dokumentacja -> Wtyczki), args: grupy z aliasu lub wyzwalacza ($1 to args[0]),
+// ctx.log(...) pisze do konsoli ponizej.
+export default function (api, args, ctx) {
+    ctx.log('uruchomiony', args);
+}
+`;
+
 export function newDraft(kind: AutomationKind, groupName = ""): Draft {
     const id = newAutomationId();
-    const data: UserAlias | UserTrigger = kind === "alias"
+    const data: AutomationData = kind === "alias"
         ? { id, pattern: "", command: "", macros: [{ type: "command", command: "" }] }
-        : { id, type: "pattern", pattern: "", macros: [] };
+        : kind === "script"
+            ? { id, name: "", code: NEW_SCRIPT }
+            : { id, type: "pattern", pattern: "", macros: [] };
     return { kind, id, isNew: true, groupName, data };
 }
 
@@ -172,6 +204,8 @@ export function isEmptyLinelessAction(m: UserMacro): boolean {
         case "push":
         case "speak": return !m.message?.trim();
         case "functionalBind": return !m.label?.trim() || !m.command?.trim();
+        case "script": return !m.scriptId;
+        case "group": return !m.groupId;
         default: return false;
     }
 }
@@ -187,6 +221,17 @@ function compiles(source: string): boolean {
 
 /** Why the draft cannot be saved, or null. */
 export function draftError(draft: Draft, items: AutomationItem[]): string | null {
+    if (draft.kind === "script") {
+        const script = draft.data as UserScript;
+        if (!script.name?.trim()) return "Nadaj skryptowi nazwe.";
+        if (!script.code.trim()) return "Skrypt nie ma kodu.";
+        const command = script.command?.trim().replace(/^\//, "") ?? "";
+        if (command && !SCRIPT_COMMAND.test(command)) return "Komenda moze miec tylko litery, cyfry, _ i -.";
+        if (command && items.some(i => i.kind === "script" && i.id !== draft.id && i.data.command?.trim().replace(/^\//, "") === command)) {
+            return "Inny skrypt ma juz te komende.";
+        }
+        return null;
+    }
     if (draft.kind === "alias") {
         const alias = draft.data as UserAlias;
         const pattern = alias.pattern.trim();
@@ -209,7 +254,7 @@ export function draftError(draft: Draft, items: AutomationItem[]): string | null
 /** The stored form of a draft. Creates the draft's group if it is new. */
 export function itemFromDraft(draft: Draft): AutomationItem {
     const group = ensureAutomationGroup(draft.groupName);
-    const meta = (data: UserAlias | UserTrigger) => {
+    const meta = (data: AutomationData) => {
         const { group: _g, name, characters, ...rest } = data;
         return {
             ...rest,
@@ -237,6 +282,14 @@ export function itemFromDraft(draft: Draft): AutomationItem {
             ...(Object.keys(overrides).length ? { overrides } : {}),
         };
         return { kind: "alias", id: draft.id, data };
+    }
+
+    if (draft.kind === "script") {
+        const script = meta(draft.data) as UserScript;
+        const { command, ...base } = script;
+        const cmd = command?.trim().replace(/^\//, "");
+        const data: UserScript = { ...base, name: script.name?.trim() ?? "", ...(cmd ? { command: cmd } : {}) };
+        return { kind: "script", id: draft.id, data };
     }
 
     const trigger = meta(draft.data) as UserTrigger;
@@ -279,18 +332,30 @@ export function actionShort(m: UserMacro, pluginLabel?: (type: string) => string
         case "notify": return m.message ? `powiadomienie "${m.message}"` : "powiadomienie";
         case "push": return m.message ? `na telefon "${m.message}"` : "na telefon";
         case "speak": return m.message ? `czytaj "${m.message}"` : "czytaj";
+        case "script": return `skrypt ${storedScripts().find(sc => sc.id === m.scriptId)?.name || "?"}`;
+        case "group": {
+            const verb = m.groupState === "on" ? "wlacz" : m.groupState === "off" ? "wylacz" : "przelacz";
+            return `${verb} grupe ${automationGroupName(m.groupId) || "?"}`;
+        }
         default: return pluginLabel?.(m.type) ?? m.type;
     }
 }
 
 export function itemActions(item: AutomationItem): UserMacro[] {
+    if (item.kind === "script") return [];
     return item.kind === "alias" ? aliasActions(item.data) : item.data.macros ?? [];
+}
+
+/** The aliases and triggers that run a script. */
+export function scriptUsers(scriptId: string, items: AutomationItem[]): AutomationItem[] {
+    return items.filter(i => itemActions(i).some(m => m.type === "script" && m.scriptId === scriptId));
 }
 
 /** The row's first line: the name, else what starts it. */
 export function itemTitle(item: AutomationItem): { text: string; mono: boolean; prefix?: string } {
     const name = item.data.name?.trim();
     if (name) return { text: name, mono: false };
+    if (item.kind === "script") return { text: "(skrypt bez nazwy)", mono: false };
     if (item.kind === "trigger" && item.data.type === "event") {
         return { text: eventLabel(item.data.event), mono: false, prefix: "Zdarzenie:" };
     }
@@ -307,7 +372,16 @@ export function conditionsText(conditions: TriggerCondition[] = []): string {
 }
 
 /** The row's second line: what it does (and what starts it, when the name took the first). */
-export function itemSummary(item: AutomationItem, pluginLabel?: (type: string) => string | undefined): string {
+export function itemSummary(
+    item: AutomationItem,
+    pluginLabel?: (type: string) => string | undefined,
+    items: AutomationItem[] = [],
+): string {
+    if (item.kind === "script") {
+        const users = scriptUsers(item.id, items).length;
+        const used = users ? `uzywany przez ${users} ${users === 1 ? "element" : users < 5 ? "elementy" : "elementow"}` : "nieuzywany";
+        return item.data.command ? `/${item.data.command} \u00b7 ${used}` : used;
+    }
     const actions = itemActions(item).map(m => actionShort(m, pluginLabel));
     let does = actions.length ? `→ ${actions.join(item.kind === "alias" ? " ; " : ", ")}` : "brak akcji";
     const when = item.kind === "trigger" && item.data.type === "event" ? conditionsText(item.data.conditions) : "";
@@ -326,7 +400,8 @@ export function itemSearchText(item: AutomationItem, groups: AutomationGroup[]):
         d.name ?? "",
         automationGroupName(d.group, groups),
         ...(d.characters ?? []),
-        item.kind === "alias" ? item.data.pattern : item.data.pattern ?? "",
+        item.kind === "alias" ? item.data.pattern : item.kind === "trigger" ? item.data.pattern ?? "" : "",
+        item.kind === "script" ? `/${item.data.command ?? ""}\n${item.data.code}` : "",
         item.kind === "trigger" ? eventLabel(item.data.event) : "",
         item.kind === "trigger" ? item.data.event ?? "" : "",
         item.kind === "trigger" ? item.data.gmcpMsgType ?? "" : "",
@@ -346,6 +421,7 @@ export interface AutomationPack {
     groups: AutomationGroup[];
     aliases: UserAlias[];
     triggers: UserTrigger[];
+    scripts?: UserScript[];
 }
 
 /** Everything, or only one group (with the group itself). */
@@ -353,13 +429,15 @@ export function buildPack(groupId?: string): AutomationPack {
     const inScope = (item: { group?: string }) => groupId === undefined || item.group === groupId;
     const aliases = storedAliases().filter(inScope);
     const triggers = storedTriggers().filter(inScope);
-    const used = new Set([...aliases, ...triggers].map(i => i.group).filter(Boolean));
+    const scripts = storedScripts().filter(inScope);
+    const used = new Set([...aliases, ...triggers, ...scripts].map(i => i.group).filter(Boolean));
     return {
         format: PACK_FORMAT,
         version: 1,
         groups: getAutomationGroups().filter(g => used.has(g.id)),
         aliases,
         triggers,
+        scripts,
     };
 }
 
@@ -368,27 +446,60 @@ export function parsePack(text: string): AutomationPack {
     if (!value || value.format !== PACK_FORMAT || !Array.isArray(value.aliases) || !Array.isArray(value.triggers)) {
         throw new Error("To nie jest plik automatyzacji z tego klienta.");
     }
-    return { ...value, groups: Array.isArray(value.groups) ? value.groups : [] };
+    return {
+        ...value,
+        groups: Array.isArray(value.groups) ? value.groups : [],
+        scripts: Array.isArray(value.scripts) ? value.scripts : [],
+    };
 }
 
 /**
  * Adds a pack to what is stored. Its groups are matched to existing ones by
  * name; everything gets new ids, so importing the same file twice never
- * overwrites. An alias whose pattern already exists is skipped, and so is a
- * trigger identical to one already there.
+ * overwrites, and the actions that run a script or switch a group are pointed
+ * at the new ids. An alias whose pattern already exists is skipped, and so is
+ * a trigger or script identical to one already there.
+ *
+ * Scripts arrive switched off: they are someone else's code, to be read
+ * before it runs.
  */
-export function importPack(pack: AutomationPack): { aliases: number; triggers: number; skipped: number } {
+export function importPack(pack: AutomationPack): { aliases: number; triggers: number; scripts: number; skipped: number } {
     const groupIds = new Map<string, string>();
     for (const g of pack.groups) {
         const id = ensureAutomationGroup(g.name);
         if (id) groupIds.set(g.id, id);
     }
+    let skipped = 0;
+
+    const scripts = storedScripts();
+    const scriptIds = new Map<string, string>();
+    const newScripts: UserScript[] = [];
+    for (const sc of pack.scripts ?? []) {
+        const same = scripts.find(o => o.name === sc.name && o.code === sc.code);
+        if (same?.id) {
+            if (sc.id) scriptIds.set(sc.id, same.id);
+            skipped++;
+            continue;
+        }
+        const id = newAutomationId();
+        if (sc.id) scriptIds.set(sc.id, id);
+        const { group, ...rest } = sc;
+        const mapped = group ? groupIds.get(group) : undefined;
+        newScripts.push({ ...rest, id, enabled: false, ...(mapped ? { group: mapped } : {}) });
+    }
+    if (newScripts.length) globalStorage.set("automationScripts", [...scripts, ...newScripts]);
+
+    const remapMacro = (m: UserMacro): UserMacro => {
+        if (m.type === "script" && m.scriptId) return { ...m, scriptId: scriptIds.get(m.scriptId) ?? m.scriptId };
+        if (m.type === "group" && m.groupId) return { ...m, groupId: groupIds.get(m.groupId) ?? m.groupId };
+        return m;
+    };
     const remap = <T extends UserAlias | UserTrigger>(item: T): T => {
         const { group, ...rest } = item;
         const mapped = group ? groupIds.get(group) : undefined;
-        return { ...rest, id: newAutomationId(), ...(mapped ? { group: mapped } : {}) } as T;
+        const macros = item.macros?.map(remapMacro);
+        return { ...rest, id: newAutomationId(), ...(macros ? { macros } : {}), ...(mapped ? { group: mapped } : {}) } as T;
     };
-    let skipped = 0;
 
     const aliases = storedAliases();
     const newAliases = pack.aliases.filter(a => {
@@ -401,12 +512,12 @@ export function importPack(pack: AutomationPack): { aliases: number; triggers: n
     const triggers = storedTriggers();
     const shape = (t: UserTrigger) => JSON.stringify([t.type ?? "pattern", t.pattern ?? "", t.event ?? "", t.flags ?? "", t.gmcpMsgType ?? "", t.macros]);
     const known = new Set(triggers.map(shape));
-    const newTriggers = normalizeTriggerList(pack.triggers).filter(t => {
+    const newTriggers = normalizeTriggerList(pack.triggers).map(remap).filter(t => {
         const dup = known.has(shape(t));
         if (dup) skipped++;
         return !dup;
-    }).map(remap);
+    });
     if (newTriggers.length) globalStorage.set("triggers", normalizeTriggerList([...triggers, ...newTriggers]));
 
-    return { aliases: newAliases.length, triggers: newTriggers.length, skipped };
+    return { aliases: newAliases.length, triggers: newTriggers.length, scripts: newScripts.length, skipped };
 }

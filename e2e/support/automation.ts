@@ -15,10 +15,12 @@ export async function closeAutomation(modal: Locator): Promise<void> {
     await expect(modal, 'should close the Automatyzacja window').not.toBeVisible();
 }
 
-/** Starts a new alias or trigger through the + button. */
-export async function startNew(page: Page, modal: Locator, kind: 'alias' | 'trigger'): Promise<void> {
+const NEW_ITEM = {alias: /^Alias - /, trigger: /^Wyzwalacz - /, script: /^Skrypt - /};
+
+/** Starts a new alias, trigger or script through the + button. */
+export async function startNew(page: Page, modal: Locator, kind: 'alias' | 'trigger' | 'script'): Promise<void> {
     await modal.getByTitle('Dodaj', {exact: true}).click();
-    await page.getByRole('button', {name: kind === 'alias' ? /^Alias - / : /^Wyzwalacz - /}).click();
+    await page.getByRole('button', {name: NEW_ITEM[kind]}).click();
 }
 
 /** The list row showing `text` (a pattern, a name). */

@@ -77,6 +77,7 @@ export const CATEGORY_REGISTRY = {
     mapSettings: { name: 'Wyglad mapy', group: 'map', scope: 'shared', speed: 'hot', globalKeys: ['mapSettings'] },
     behaviorSettings: { name: 'Zachowanie interfejsu', group: 'interface', scope: 'shared', speed: 'hot', globalKeys: ['behaviorSettings'] },
     automationGroups: { name: 'Grupy automatyzacji', group: 'control', scope: 'shared', speed: 'hot', globalKeys: ['automationGroups'] },
+    automationScripts: { name: 'Skrypty automatyzacji', group: 'control', scope: 'shared', speed: 'hot', globalKeys: ['automationScripts'] },
 } as const satisfies Record<string, CategoryDefinition>;
 
 // Sync category names (matches SyncOptions keys)

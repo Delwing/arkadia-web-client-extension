@@ -6,7 +6,7 @@ Pozostale aliasy i funkcje rozszerzenia.
 
 Wlasne aliasy tworzysz w oknie **Automatyzacja** (Menu → Automatyzacja), razem z triggerami (wyzwalaczami):
 - **Wzorzec** - wyrazenie regularne dopasowujace komende
-- **Akcje** - co ma sie stac, po kolei: komenda wysylana do serwera, dzwiek, powiadomienie (takze na telefon), czytanie na glos, funkcyjny bind. W tekstach akcji `$1`, `$2` itp. wstawiaja grupy z dopasowania
+- **Akcje** - co ma sie stac, po kolei: komenda wysylana do serwera, dzwiek, powiadomienie (takze na telefon), czytanie na glos, funkcyjny bind, uruchomienie skryptu, wlaczenie lub wylaczenie grupy. W tekstach akcji `$1`, `$2` itp. wstawiaja grupy z dopasowania
 - **Skroty obiektow** - `@1`, `@A`, `@@` zostana zamienione na identyfikatory obiektow
 - **Kilka komend** - srednik rozdziela kilka komend w jednym polu
 - **Inaczej dla postaci** - dla wybranej postaci alias moze wysylac inna komende; zastepuje ona wszystkie komendy z akcji

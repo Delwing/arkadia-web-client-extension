@@ -807,6 +807,162 @@ select.automation-override__select.popup-input.popup-input--control {
   font-weight: 700;
 }
 
+/* ── Scripts ── */
+.automation-kind--script {
+  background-color: color-mix(in srgb, var(--automation-script, #a898dc) 15%, transparent);
+  color: var(--automation-script, #a898dc);
+}
+.automation-users {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.automation-users .popup-input-group {
+  flex: 0 1 16rem;
+  min-width: 10rem;
+}
+.automation-user {
+  display: inline-flex;
+  max-width: 100%;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px 0 4px;
+  border: 1px solid var(--popup-border-subtle);
+  border-radius: 999px;
+  background-color: var(--popup-section-bg);
+  color: var(--popup-text);
+  font: inherit;
+  font-size: var(--ui-fs-sm, 13px);
+  cursor: pointer;
+}
+.automation-user:hover {
+  border-color: var(--popup-accent-border);
+}
+.automation-user > span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.automation-user .is-mono {
+  font-family: var(--font-mono, ui-monospace, monospace);
+}
+.automation-user__kind {
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.automation-user__kind--alias {
+  background-color: color-mix(in srgb, var(--popup-accent) 14%, transparent);
+  color: var(--popup-accent);
+}
+.automation-user__kind--trigger {
+  background-color: color-mix(in srgb, var(--popup-warning) 14%, transparent);
+  color: var(--popup-warning);
+}
+.automation-code {
+  display: flex;
+  height: 18rem;
+  min-height: 8rem;
+  overflow: hidden;
+  border: 1px solid var(--popup-border-subtle);
+  border-radius: var(--ui-radius, 6px);
+  background-color: var(--popup-input-bg);
+  resize: vertical;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: var(--ui-fs-sm, 13px);
+  line-height: 1.5;
+}
+.automation-code:focus-within {
+  border-color: var(--popup-accent);
+}
+.automation-code__gutter {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  overflow: hidden;
+  padding: 8px 8px 8px 10px;
+  border-right: 1px solid var(--popup-border-subtle);
+  color: var(--popup-text-dim);
+  text-align: right;
+  user-select: none;
+}
+.automation .automation-code__text {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--popup-text-bright);
+  font: inherit;
+  line-height: inherit;
+  white-space: pre;
+  tab-size: 4;
+  resize: none;
+  outline: none;
+}
+.automation-console {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--popup-border-subtle);
+  border-radius: var(--ui-radius, 6px);
+  background-color: var(--popup-input-bg);
+}
+.automation-console__head {
+  display: flex;
+  align-items: center;
+  padding: 4px 6px 4px 10px;
+  border-bottom: 1px solid var(--popup-border-subtle);
+}
+.automation-console__lines {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 10rem;
+  overflow-y: auto;
+  padding: 8px 10px;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: var(--ui-fs-xs, 12px);
+}
+.automation-console__line {
+  color: var(--popup-text-medium);
+  overflow-wrap: anywhere;
+}
+.automation-console__line.is-run {
+  color: var(--popup-text-subtle);
+}
+.automation-console__line.is-error {
+  color: var(--popup-danger, #d8736b);
+}
+.automation-console__time {
+  margin-right: 8px;
+  color: var(--popup-text-dim);
+}
+.automation-console__empty {
+  color: var(--popup-text-subtle);
+  font-family: var(--ui-font, inherit);
+}
+.automation-link:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.trigger-action__pair {
+  display: flex;
+  gap: 6px;
+}
+.trigger-action__pair > select.popup-input.popup-input--control {
+  flex: 1;
+  width: auto;
+}
+.trigger-action__pair > select.popup-input.popup-input--control:first-child {
+  flex: 0 0 8rem;
+}
+
 /* Mid width: the kinds become a strip above the list. */
 @media (max-width: 1099.98px) {
   .automation {

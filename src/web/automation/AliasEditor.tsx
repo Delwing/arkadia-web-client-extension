@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowRight, Bell, Check as CheckIcon, FlaskConical, Smartphone, Volume2, X } from "lucide-react";
+import { ArrowRight, Bell, Check as CheckIcon, Code2, FlaskConical, Folder, Smartphone, Volume2, X } from "lucide-react";
 import { Button, DeleteButton, Input, InputGroup, NO_PASSWORD_MANAGER, Select } from "@web-ui/primitives/index.ts";
 import { aliasActions, type UserAlias } from "@client/scripts/userAliases";
 import type { UserMacro } from "@client/scripts/userTriggers";
@@ -14,6 +14,8 @@ const OUTPUT_ICON: Partial<Record<PreviewOutput["kind"], typeof ArrowRight>> = {
     push: Smartphone,
     speak: Volume2,
     sound: Volume2,
+    script: Code2,
+    group: Folder,
 };
 
 export function OutputLine({ output }: { output: PreviewOutput }) {

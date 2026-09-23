@@ -5,9 +5,10 @@ import {Trigger} from "../Triggers";
 import {executeTriggerMacro} from "@modules/core/pluginTriggerMacroRegistry";
 import { globalStorage } from "@modules/core/storage";
 import { sendPush } from "@modules/push/pushClient";
-import { isAutomationActiveNow, onAutomationScopeChange, type AutomationMeta } from "@modules/core/automation";
+import { isAutomationActiveNow, onAutomationScopeChange, setAutomationGroupEnabled, type AutomationMeta } from "@modules/core/automation";
+import { runUserScript, type RunOptions } from "./userScripts";
 
-export type BuiltInMacroType = 'uppercase' | 'color' | 'replace' | 'beep' | 'mute' | 'unmute' | 'command' | 'slowBlink' | 'rapidBlink' | 'dim' | 'functionalBind' | 'wrap' | 'notify' | 'push' | 'speak';
+export type BuiltInMacroType = 'uppercase' | 'color' | 'replace' | 'beep' | 'mute' | 'unmute' | 'command' | 'slowBlink' | 'rapidBlink' | 'dim' | 'functionalBind' | 'wrap' | 'notify' | 'push' | 'speak' | 'script' | 'group';
 
 export interface UserMacro {
     type: BuiltInMacroType | string;  // string allows plugin macros like "plugin:..."
@@ -25,6 +26,12 @@ export interface UserMacro {
      */
     bypassCooldown?: boolean;
     pluginConfig?: Record<string, any>;
+    /** script: the automation script to run. */
+    scriptId?: string;
+    /** group: the automation group to switch. */
+    groupId?: string;
+    /** group: what to do with it; absent flips it. */
+    groupState?: 'on' | 'off' | 'toggle';
     // Dim effect options
     dimStartOpacity?: number;
     dimEndOpacity?: number;
@@ -43,8 +50,35 @@ export type TriggerType = 'pattern' | 'event';
  * alias, and later a timer. The rest (colour, replace, blink...) edit the line.
  */
 export const LINELESS_MACRO_TYPES: ReadonlySet<string> = new Set([
-    'beep', 'mute', 'unmute', 'command', 'functionalBind', 'notify', 'push', 'speak',
+    'beep', 'mute', 'unmute', 'command', 'functionalBind', 'notify', 'push', 'speak', 'script', 'group',
 ]);
+
+/** What a "run script" action passes on: the groups, and what started it. */
+export interface ScriptCall {
+    args: string[];
+    options: RunOptions;
+}
+
+/**
+ * The actions that reach beyond the element itself: running a script and
+ * switching a group. Shared by every kind of element. Returns whether it was
+ * one of them.
+ */
+function applyAutomationMacro(client: Client, macro: UserMacro, call: ScriptCall): boolean {
+    switch (macro.type) {
+        case 'script':
+            if (macro.scriptId) void runUserScript(client, macro.scriptId, call.args, call.options);
+            return true;
+        case 'group':
+            if (macro.groupId) {
+                const state = macro.groupState === 'on' ? true : macro.groupState === 'off' ? false : 'toggle';
+                setAutomationGroupEnabled(macro.groupId, state);
+            }
+            return true;
+        default:
+            return false;
+    }
+}
 
 export interface UserTrigger extends AutomationMeta {
     type?: TriggerType;  // defaults to 'pattern' for backwards compatibility
@@ -380,12 +414,18 @@ function applyMacrosToMatch(
     client: Client,
     line: AnsiAwareBuffer,
     match: RegExpMatchArray,
-    macros: UserMacro[]
+    macros: UserMacro[],
+    label = ''
 ): void {
     const matchStart = match.index ?? 0;
     let matchRange: TextRange = [matchStart, matchStart + match[0].length];
 
     macros?.forEach(macro => {
+        const call: ScriptCall = {
+            args: Array.from(match).slice(1).map(g => g ?? ''),
+            options: { source: 'trigger', label, line: line.text },
+        };
+        if (applyAutomationMacro(client, macro, call)) return;
         switch (macro.type) {
             case 'uppercase':
                 line.replace(matchRange, line.text.substring(matchRange[0], matchRange[1]).toUpperCase());
@@ -587,7 +627,9 @@ export function applyLinelessMacro(
     client: Client,
     macro: UserMacro,
     interpolate: (text: string) => string,
+    call: ScriptCall = { args: [], options: { source: 'event' } },
 ): void {
+    if (applyAutomationMacro(client, macro, call)) return;
     const command = macro.command && interpolate(macro.command);
     const label = macro.label && interpolate(macro.label);
     const message = macro.message && interpolate(macro.message);
@@ -641,11 +683,13 @@ export function applyLinelessMacro(
 function applyEventMacros(
     client: Client,
     macros: UserMacro[],
-    payload?: unknown
+    payload?: unknown,
+    event = ''
 ): void {
     // Every user-authored text field on an event macro supports {name}
     // placeholders drawn from the event payload.
-    macros?.forEach(macro => applyLinelessMacro(client, macro, text => interpolateEventArgs(text, payload)));
+    const call: ScriptCall = { args: [], options: { source: 'event', label: event, event: payload } };
+    macros?.forEach(macro => applyLinelessMacro(client, macro, text => interpolateEventArgs(text, payload), call));
 }
 
 type EventHandler = { event: string; handler: (data: unknown) => void };
@@ -681,7 +725,7 @@ export default function initUserTriggers(client: Client) {
                         if (String(data) !== eventValue) return;
                     }
                     if (item.conditions?.some(c => c.arg && !evaluateCondition(c, data))) return;
-                    applyEventMacros(client, item.macros, data);
+                    applyEventMacros(client, item.macros, data, item.event);
                 };
 
                 client.on(eventName as any, handler);
@@ -721,10 +765,10 @@ export default function initUserTriggers(client: Client) {
 
                         // Apply in reverse order to preserve indices
                         for (let i = allMatches.length - 1; i >= 0; i--) {
-                            applyMacrosToMatch(client, line, allMatches[i], item.macros);
+                            applyMacrosToMatch(client, line, allMatches[i], item.macros, item.pattern);
                         }
                     } else {
-                        applyMacrosToMatch(client, line, matches, item.macros);
+                        applyMacrosToMatch(client, line, matches, item.macros, item.pattern);
                     }
                     return line;
                 };

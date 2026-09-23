@@ -86,6 +86,7 @@ import initNewMail from './scripts/newMail'
 import initExternalScripts from './scripts/externalScripts'
 import initUserAliases from './scripts/userAliases'
 import initUserTriggers from './scripts/userTriggers'
+import initUserScripts from './scripts/userScripts'
 import initWeaponEvaluation from './scripts/weaponEvaluation'
 import initArmorEvaluation from './scripts/armorEvaluation'
 import initParryShieldEvaluation from './scripts/parryShieldEvaluation'
@@ -364,6 +365,7 @@ export function registerScripts(client: Client) {
     pluginManager = initExternalScripts(client)
     initUserAliases(client, aliases)
     initUserTriggers(client)
+    initUserScripts(client, aliases)
     initZlom(client, aliases)
     initEnemyResistances(client, aliases)
     initCoverTracker(client, aliases)

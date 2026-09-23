@@ -98,6 +98,24 @@ describe('automationModel', () => {
             expect(data).toEqual({ id: draft.id, type: 'event', event: 'kill', macros: [] });
         });
 
+        it('stores a script with its command without the slash', () => {
+            const draft = newDraft('script');
+            draft.data = { ...draft.data, name: ' leczenie ', command: '/lecz' } as never;
+            expect(itemFromDraft(draft).data).toMatchObject({ name: 'leczenie', command: 'lecz' });
+        });
+
+        it('checks a script name and command', () => {
+            const items: AutomationItem[] = [{ kind: 'script', id: 'x', data: { id: 'x', name: 'a', code: 'c', command: 'lecz' } }];
+            const draft = newDraft('script');
+            expect(draftError(draft, items)).toBe('Nadaj skryptowi nazwe.');
+            draft.data = { ...draft.data, name: 'b', command: 'zly znak' } as never;
+            expect(draftError(draft, items)).toMatch(/litery, cyfry/);
+            draft.data = { ...draft.data, command: '/lecz' } as never;
+            expect(draftError(draft, items)).toBe('Inny skrypt ma juz te komende.');
+            draft.data = { ...draft.data, command: 'inna' } as never;
+            expect(draftError(draft, items)).toBeNull();
+        });
+
         it('explains what stops a save', () => {
             const items: AutomationItem[] = [{ kind: 'alias', id: 'x', data: { id: 'x', pattern: 'zab', command: 'zabij' } }];
             const alias = newDraft('alias');
@@ -174,14 +192,32 @@ describe('automationModel', () => {
             localStorage.clear();
             globalStorage.set('automationGroups', [{ id: 'mine', name: 'walka' }]);
 
-            expect(importPack(pack)).toEqual({ aliases: 1, triggers: 1, skipped: 0 });
+            expect(importPack(pack)).toEqual({ aliases: 1, triggers: 1, scripts: 0, skipped: 0 });
             expect(getAutomationGroups()).toEqual([{ id: 'mine', name: 'walka' }]);
             expect(aliases()[0].group).toBe('mine');
             expect(aliases()[0].id).not.toBe('a');
         });
 
         it('skips what is already there', () => {
-            expect(importPack(buildPack())).toEqual({ aliases: 0, triggers: 0, skipped: 3 });
+            expect(importPack(buildPack())).toEqual({ aliases: 0, triggers: 0, scripts: 0, skipped: 3 });
+        });
+
+        it('imports scripts switched off and points actions at their new ids', () => {
+            globalStorage.set('automationScripts', [{ id: 's', name: 'leczenie', code: 'x', group: 'g' }]);
+            globalStorage.set('aliases', [{
+                id: 'a', pattern: 'lecz', command: '', group: 'g',
+                macros: [{ type: 'script', scriptId: 's' }, { type: 'group', groupId: 'g', groupState: 'toggle' }],
+            }]);
+            const pack = buildPack('g');
+            localStorage.clear();
+
+            expect(importPack(pack)).toMatchObject({ aliases: 1, scripts: 1 });
+            const script = (globalStorage.get('automationScripts') as { id: string; enabled?: boolean }[])[0];
+            expect(script.enabled).toBe(false);
+            expect(script.id).not.toBe('s');
+            const [run, group] = aliases()[0].macros!;
+            expect(run.scriptId).toBe(script.id);
+            expect(group.groupId).toBe(getAutomationGroups()[0].id);
         });
 
         it('refuses a file that is not a pack', () => {

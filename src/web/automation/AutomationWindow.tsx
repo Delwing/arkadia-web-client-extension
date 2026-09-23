@@ -3,6 +3,7 @@ import {
     ArrowLeft,
     ChevronDown,
     ChevronRight,
+    Code2,
     Folder,
     FolderOpen,
     LayoutList,
@@ -24,10 +25,12 @@ import {
 } from "@modules/core/automation";
 import type { UserAlias } from "@client/scripts/userAliases";
 import type { UserTrigger } from "@client/scripts/userTriggers";
+import type { UserScript } from "@client/scripts/userScripts";
 import { openSettingsPage } from "@web/settings/categories.ts";
 import { MODAL_EVENT } from "@web/modals/appModal.ts";
 import { AliasEditor } from "./AliasEditor";
 import { TriggerEditor } from "./TriggerEditor";
+import { ScriptEditor } from "./ScriptEditor";
 import { Switch, openMenuAt } from "./EditorParts";
 import { useCustomSounds, usePluginMacros } from "./useCustomSounds";
 import {
@@ -47,6 +50,7 @@ import {
     parsePack,
     removeItem,
     renameGroup,
+    scriptUsers,
     sameDraft,
     setGroupEnabled,
     setItemEnabled,
@@ -59,7 +63,11 @@ import "./automation.css";
 
 type KindFilter = "all" | AutomationKind;
 
-const KIND_ICON = { alias: SquareTerminal, trigger: Zap } as const;
+const KIND_ICON = { alias: SquareTerminal, trigger: Zap, script: Code2 } as const;
+
+const KIND_NAV: Record<AutomationKind, string> = { alias: "Aliasy", trigger: "Wyzwalacze", script: "Skrypty" };
+const NEW_NAME: Record<AutomationKind, string> = { alias: "Nowy alias", trigger: "Nowy wyzwalacz", script: "Nowy skrypt" };
+const THIS_ONE: Record<AutomationKind, string> = { alias: "ten alias", trigger: "ten wyzwalacz", script: "ten skrypt" };
 
 function KindIcon({ kind, size = 14 }: { kind: AutomationKind; size?: number }) {
     const Icon = KIND_ICON[kind];
@@ -81,10 +89,11 @@ function packFileName(label: string) {
     return `automatyzacja-${slug}-${date}.json`;
 }
 
-function countLabel(aliases: number, triggers: number) {
+function countLabel(aliases: number, triggers: number, scripts = 0) {
     const parts: string[] = [];
     if (aliases) parts.push(`${aliases} ${aliases === 1 ? "alias" : "aliasow"}`);
     if (triggers) parts.push(`${triggers} ${triggers === 1 ? "wyzwalacz" : "wyzwalaczy"}`);
+    if (scripts) parts.push(`${scripts} ${scripts === 1 ? "skrypt" : "skryptow"}`);
     return parts.join(" i ") || "nic nowego";
 }
 
@@ -184,6 +193,7 @@ export default function AutomationWindow() {
         const onShow = () => reload(true);
         const offAliases = globalStorage.onChange("aliases", onChange);
         const offTriggers = globalStorage.onChange("triggers", onChange);
+        const offScripts = globalStorage.onChange("automationScripts", onChange);
         const offGroups = globalStorage.onChange(AUTOMATION_GROUPS_KEY, () => setGroups(getAutomationGroups()));
         const offCharacter = characterStorage.onCharacterChange(setCharacter);
         const modal = document.getElementById("automation-modal");
@@ -191,6 +201,7 @@ export default function AutomationWindow() {
         return () => {
             offAliases();
             offTriggers();
+            offScripts();
             offGroups();
             offCharacter();
             modal?.removeEventListener(MODAL_EVENT.show, onShow);
@@ -212,6 +223,7 @@ export default function AutomationWindow() {
         all: items.length,
         alias: items.filter(i => i.kind === "alias").length,
         trigger: items.filter(i => i.kind === "trigger").length,
+        script: items.filter(i => i.kind === "script").length,
     };
 
     const newDrafts = Object.values(drafts).filter(d => d.isNew);
@@ -310,8 +322,9 @@ export default function AutomationWindow() {
     function remove() {
         if (!selectedDraft) return;
         if (!selectedDraft.isNew) {
-            const what = selectedDraft.kind === "alias" ? "ten alias" : "ten wyzwalacz";
-            if (!confirm(`Czy na pewno chcesz usunąć ${what}?`)) return;
+            const users = selectedDraft.kind === "script" ? scriptUsers(selectedDraft.id, items).length : 0;
+            const warning = users ? ` Uzywa go ${users} ${users === 1 ? "element" : "elementow"} - ich akcja przestanie dzialac.` : "";
+            if (!confirm(`Czy na pewno chcesz usunąć ${THIS_ONE[selectedDraft.kind]}?${warning}`)) return;
             removeItem(selectedDraft.kind, selectedDraft.id);
         }
         dropDraft(selectedDraft.id);
@@ -339,6 +352,7 @@ export default function AutomationWindow() {
         openMenuAt(e, [
             { label: "Nowy alias w grupie", action: () => create("alias", group.name) },
             { label: "Nowy wyzwalacz w grupie", action: () => create("trigger", group.name) },
+            { label: "Nowy skrypt w grupie", action: () => create("script", group.name) },
             { label: "Zmien nazwe", action: () => setRenamingGroup(group.id) },
             { label: "Eksportuj grupe", action: () => download(packFileName(group.name), JSON.stringify(buildPack(group.id), null, 2)) },
             {
@@ -358,6 +372,7 @@ export default function AutomationWindow() {
         openMenuAt(e, [
             { label: "Alias - gdy wpiszesz komende", action: () => create("alias") },
             { label: "Wyzwalacz - gdy gra wypisze linie lub zajdzie zdarzenie", action: () => create("trigger") },
+            { label: "Skrypt - kod JavaScript uruchamiany akcja lub komenda", action: () => create("script") },
         ]);
     }
 
@@ -373,7 +388,8 @@ export default function AutomationWindow() {
         try {
             const result = importPack(parsePack(await file.text()));
             const skipped = result.skipped ? ` Pominieto ${result.skipped} juz istniejacych.` : "";
-            setNotice(`Zaimportowano: ${countLabel(result.aliases, result.triggers)}.${skipped}`);
+            const scripts = result.scripts ? " Skrypty sa wylaczone - przejrzyj ich kod, zanim je wlaczysz." : "";
+            setNotice(`Zaimportowano: ${countLabel(result.aliases, result.triggers, result.scripts)}.${skipped}${scripts}`);
         } catch (err) {
             setNotice(err instanceof SyntaxError ? "Plik nie jest poprawnym JSON-em." : (err as Error).message);
         }
@@ -401,7 +417,7 @@ export default function AutomationWindow() {
                             {title.text}
                             {draft && <span className="automation-dot" title="Niezapisane zmiany" />}
                         </span>
-                        <span className="automation-item__sub">{itemSummary(shown, pluginLabel)}</span>
+                        <span className="automation-item__sub">{itemSummary(shown, pluginLabel, items)}</span>
                     </span>
                     {item.data.characters?.length ? (
                         <span className="automation-chip" title={item.data.characters.join(", ")}>{charactersChip(item.data.characters.length)}</span>
@@ -418,7 +434,7 @@ export default function AutomationWindow() {
                 <KindIcon kind={draft.kind} />
                 <span className="automation-item__text">
                     <span className="automation-item__title">
-                        {draft.data.name?.trim() || (draft.kind === "alias" ? "Nowy alias" : "Nowy wyzwalacz")}
+                        {draft.data.name?.trim() || NEW_NAME[draft.kind]}
                         <span className="automation-dot" title="Niezapisane zmiany" />
                     </span>
                     <span className="automation-item__sub">niezapisany</span>
@@ -429,7 +445,7 @@ export default function AutomationWindow() {
 
     const nav = (
         <nav className="automation-nav">
-            {(["all", "alias", "trigger"] as const).map(kind => (
+            {(["all", "alias", "trigger", "script"] as const).map(kind => (
                 <button
                     key={kind}
                     type="button"
@@ -439,7 +455,7 @@ export default function AutomationWindow() {
                     {kind === "all"
                         ? <span className="automation-kind"><LayoutList size={14} /></span>
                         : <KindIcon kind={kind} />}
-                    <span className="automation-nav__label">{kind === "all" ? "Wszystko" : kind === "alias" ? "Aliasy" : "Wyzwalacze"}</span>
+                    <span className="automation-nav__label">{kind === "all" ? "Wszystko" : KIND_NAV[kind]}</span>
                     <span className="automation-nav__count">{counts[kind]}</span>
                 </button>
             ))}
@@ -553,7 +569,7 @@ export default function AutomationWindow() {
                     {...NO_PASSWORD_MANAGER}
                     title="Nazwa (opcjonalna)"
                     value={selectedDraft.data.name ?? ""}
-                    placeholder={`${KIND_LABEL[selectedDraft.kind]} - nazwa (opcjonalna)`}
+                    placeholder={selectedDraft.kind === "script" ? "Skrypt - nazwa" : `${KIND_LABEL[selectedDraft.kind]} - nazwa (opcjonalna)`}
                     onChange={e => updateDraft({ ...selectedDraft, data: { ...selectedDraft.data, name: e.target.value || undefined } })}
                 />
                 <input
@@ -589,7 +605,15 @@ export default function AutomationWindow() {
                 </button>
             </div>
             <div className="automation-editor__body" key={selectedDraft.id}>
-                {selectedDraft.kind === "alias" ? (
+                {selectedDraft.kind === "script" ? (
+                    <ScriptEditor
+                        id={selectedDraft.id}
+                        script={selectedDraft.data as UserScript}
+                        users={scriptUsers(selectedDraft.id, items)}
+                        onChange={data => updateDraft({ ...selectedDraft, data })}
+                        onSelect={select}
+                    />
+                ) : selectedDraft.kind === "alias" ? (
                     <AliasEditor
                         alias={selectedDraft.data as UserAlias}
                         onChange={data => updateDraft({ ...selectedDraft, data })}
@@ -618,7 +642,7 @@ export default function AutomationWindow() {
     ) : (
         <section className="automation-editor automation-editor--empty">
             <Zap size={22} strokeWidth={1.6} />
-            <p>Wybierz alias lub wyzwalacz z listy albo dodaj nowy przyciskiem +.</p>
+            <p>Wybierz alias, wyzwalacz lub skrypt z listy albo dodaj nowy przyciskiem +.</p>
             {items.length === 0 && (
                 <div className="automation-editor__starters">
                     <Button onClick={() => create("alias")}><SquareTerminal size={15} />Nowy alias</Button>

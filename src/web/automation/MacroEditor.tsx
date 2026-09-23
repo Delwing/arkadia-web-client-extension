@@ -8,6 +8,14 @@ import {
 import { Button, Check, Field, Input, Select } from '@web-ui/primitives/index.ts';
 import type { UserMacro } from '@client/scripts/userTriggers';
 import type { DimEasing } from '@client/ansi/FormatState';
+import type { UserScript } from '@client/scripts/userScripts';
+import { getAutomationGroups } from '@modules/core/automation';
+import { globalStorage } from '@modules/core/storage';
+
+function storedScripts(): UserScript[] {
+    const value = globalStorage.get('automationScripts');
+    return Array.isArray(value) ? value.filter(s => s.id) : [];
+}
 
 /**
  * One action of an automation element: the type picker plus that type's
@@ -115,6 +123,9 @@ export function MacroEditor({
                             ...macro,
                             type: nextType,
                             soundKey: nextType === 'beep' ? macro.soundKey || 'beep' : undefined,
+                            scriptId: nextType === 'script' ? macro.scriptId ?? storedScripts()[0]?.id : undefined,
+                            groupId: nextType === 'group' ? macro.groupId ?? getAutomationGroups()[0]?.id : undefined,
+                            groupState: nextType === 'group' ? macro.groupState ?? 'toggle' : undefined,
                         });
                     }}
                 >
@@ -133,6 +144,8 @@ export function MacroEditor({
                     {!lineless && <option value="rapidBlink">Szybkie miganie</option>}
                     {!lineless && <option value="dim">Pulsowanie</option>}
                     <option value="functionalBind">Funkcyjny bind</option>
+                    <option value="script">Uruchom skrypt</option>
+                    <option value="group">Wlacz / wylacz grupe</option>
                     {(() => {
                         const byPlugin = new Map<string, typeof pluginMacros>();
                         for (const pm of pluginMacros) {
@@ -159,6 +172,44 @@ export function MacroEditor({
                         Ta wtyczka nie jest zaladowana. Makro nie bedzie dzialac.
                     </div>
                 )}
+                {macro.type === 'script' && (() => {
+                    const scripts = storedScripts();
+                    return scripts.length ? (
+                        <>
+                            <Select title="Skrypt" value={macro.scriptId ?? ''} onChange={e => onChange({ ...macro, scriptId: e.target.value })}>
+                                {!scripts.some(sc => sc.id === macro.scriptId) && <option value={macro.scriptId ?? ''}>(brak skryptu)</option>}
+                                {scripts.map(sc => <option key={sc.id} value={sc.id}>{sc.name || '(bez nazwy)'}</option>)}
+                            </Select>
+                            <div className="popup-field__hint">
+                                Skrypt dostaje grupy z wzorca jako <code>args</code> ($1 to <code>args[0]</code>).
+                            </div>
+                        </>
+                    ) : (
+                        <div className="popup-field__warning">Nie ma jeszcze skryptow. Dodaj skrypt przyciskiem + w oknie Automatyzacja.</div>
+                    );
+                })()}
+                {macro.type === 'group' && (() => {
+                    const groups = getAutomationGroups();
+                    return groups.length ? (
+                        <div className="trigger-action__pair">
+                            <Select
+                                title="Co zrobic z grupa"
+                                value={macro.groupState ?? 'toggle'}
+                                onChange={e => onChange({ ...macro, groupState: e.target.value as UserMacro['groupState'] })}
+                            >
+                                <option value="on">Wlacz</option>
+                                <option value="off">Wylacz</option>
+                                <option value="toggle">Przelacz</option>
+                            </Select>
+                            <Select title="Grupa" value={macro.groupId ?? ''} onChange={e => onChange({ ...macro, groupId: e.target.value })}>
+                                {!groups.some(g => g.id === macro.groupId) && <option value={macro.groupId ?? ''}>(brak grupy)</option>}
+                                {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+                            </Select>
+                        </div>
+                    ) : (
+                        <div className="popup-field__warning">Nie ma jeszcze grup. Wpisz nazwe grupy w naglowku dowolnego elementu.</div>
+                    );
+                })()}
                 {macro.type === 'beep' && (
                     <Select
                         value={macro.soundKey || 'beep'}

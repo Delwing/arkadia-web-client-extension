@@ -124,7 +124,10 @@ export default function initUserAliases(client: Client, aliases?: { pattern: Reg
                     }
                     for (const action of actions) {
                         if (action.type !== 'command') {
-                            applyLinelessMacro(client, action, text => substituteGroups(text, m));
+                            applyLinelessMacro(client, action, text => substituteGroups(text, m), {
+                                args: Array.from(m).slice(1).map(g => g ?? ''),
+                                options: { source: 'alias', label: item.pattern },
+                            });
                         } else if (override) {
                             if (overrideSent) continue;
                             overrideSent = true;

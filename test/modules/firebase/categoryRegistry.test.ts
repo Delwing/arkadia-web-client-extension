@@ -38,6 +38,7 @@ describe('CATEGORY_REGISTRY', () => {
             'mapSettings',
             'behaviorSettings',
             'automationGroups',
+            'automationScripts',
         ]);
     });
 

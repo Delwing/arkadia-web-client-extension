@@ -9,6 +9,7 @@
  */
 import { expandAliasCommand, substituteGroups } from "@client/scripts/userAliases";
 import { interpolateMatch, type UserMacro } from "@client/scripts/userTriggers";
+import { actionShort } from "./automationModel";
 
 export interface PatternTest {
     error?: string;
@@ -76,14 +77,14 @@ export interface LineSegment {
     effect?: boolean;
 }
 
-export type OutputKind = "command" | "notify" | "push" | "speak" | "sound" | "bind" | "other";
+export type OutputKind = "command" | "notify" | "push" | "speak" | "sound" | "bind" | "script" | "group" | "other";
 
 export interface PreviewOutput {
     kind: OutputKind;
     text: string;
 }
 
-function linelessOutput(m: UserMacro, fill: (t: string) => string, fallback: string): PreviewOutput | null {
+function linelessOutput(m: UserMacro, fill: (t: string) => string, fallback: string, args: string[] = []): PreviewOutput | null {
     // Without a message these fall back to the matched text; an alias has none, and skips them.
     const message = (kind: OutputKind): PreviewOutput | null => {
         const text = fill(m.message ?? "") || fallback;
@@ -99,6 +100,10 @@ function linelessOutput(m: UserMacro, fill: (t: string) => string, fallback: str
         case "unmute": return { kind: "sound", text: "wlaczenie dzwiekow" };
         case "functionalBind":
             return m.label && m.command ? { kind: "bind", text: `[${fill(m.label)}] ${fill(m.command)}` } : null;
+        case "script":
+            return m.scriptId ? { kind: "script", text: `${actionShort(m)}${args.length ? ` (${args.join(", ")})` : ""}` } : null;
+        case "group":
+            return m.groupId ? { kind: "group", text: actionShort(m) } : null;
         default: return null;
     }
 }
@@ -148,7 +153,7 @@ export function previewTrigger(text: string, matches: RegExpMatchArray[], macros
 
     // Lineless actions run once per match, as in the runtime.
     const outputs = matches.flatMap(m => macros
-        .map(macro => linelessOutput(macro, t => interpolateMatch(t, m), m[0]))
+        .map(macro => linelessOutput(macro, t => interpolateMatch(t, m), m[0], Array.from(m).slice(1).map(g => g ?? "")))
         .filter((o): o is PreviewOutput => o !== null));
     return { segments, outputs };
 }
@@ -179,7 +184,7 @@ export function previewAlias(match: RegExpMatchArray, actions: UserMacro[], over
             }
             continue;
         }
-        const out = linelessOutput(action, t => substituteGroups(t, match), "");
+        const out = linelessOutput(action, t => substituteGroups(t, match), "", Array.from(match).slice(1).map(g => g ?? ""));
         if (out) outputs.push(out);
     }
     return outputs;

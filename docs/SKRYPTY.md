@@ -43,6 +43,29 @@ Reagujesz na to, co pojawia sie na ekranie — automatycznie, bez czekania.
 - **Makra z pluginow** — pluginy moga dodawac wlasne typy akcji do triggerow (pojawia sie w ustawieniach automatycznie)
 - **Grupy, wlaczanie i wybrane postacie** — trigger moze nalezec do grupy, byc wylaczony albo dzialac tylko na wybranych postaciach
 
+## Skrypty w Automatyzacji
+
+Gdy akcje aliasu czy triggera to za malo, piszesz krotki skrypt w JavaScripcie — w tym samym oknie (Menu → Automatyzacja → + → Skrypt).
+
+```js
+export default function (api, args, ctx) {
+    const hp = api.gmcp.get()?.char?.state?.hp;
+    if (hp > 3) return;
+    api.command.send('wypij miksture');
+    ctx.log('hp', hp);
+}
+```
+
+- **Kiedy sie uruchamia** — przez akcje **Uruchom skrypt** w dowolnym aliasie lub triggerze, przez wlasna komende (np. `/leczenie goblin`) albo przyciskiem **Uruchom** w edytorze (dziala tez na niezapisanym kodzie)
+- **`api`** — to samo API, ktore dostaja wtyczki (zob. dokumentacje wtyczek)
+- **`args`** — grupy z wzorca aliasu lub triggera (`$1` to `args[0]`) albo slowa po komendzie
+- **`ctx`** — skad przyszlo uruchomienie (`ctx.source`, `ctx.line` z linia gry, `ctx.event` z danymi zdarzenia) i `ctx.log(...)`, ktore pisze do konsoli skryptu
+- **Konsola** — pod kodem widac, kto uruchomil skrypt, co wyslal do gry i jaki blad go zatrzymal (z numerem linii)
+- **Na raz** — skrypt dziala raz na uruchomienie; cos, co ma zostac zarejestrowane na stale (trigger, okno), zrob jako wtyczke
+- **Import** — skrypty z cudzej paczki przychodza wylaczone: przejrzyj kod, zanim je wlaczysz
+
+Druga nowa akcja, **Wlacz / wylacz grupe**, wlacza, wylacza albo przelacza cala grupe — np. trigger na wejscie do walki moze wlaczyc grupe "Walka", a trigger na jej koniec ja wylaczyc.
+
 ## Bindowanie klawiszy
 
 Mapujesz klawisze na akcje — bez odrywania rak od klawiatury.

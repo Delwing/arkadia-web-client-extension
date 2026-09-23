@@ -49,6 +49,7 @@ Mozesz wybrac, ktore kategorie danych maja byc synchronizowane. Kazda kategorie 
 | **Triggery** | Triggery reagujace na tekst z gry |
 | **Aliasy** | Aliasy komend |
 | **Grupy automatyzacji** | Grupy aliasow i triggerow oraz to, czy sa wlaczone |
+| **Skrypty automatyzacji** | Skrypty JavaScript z okna Automatyzacja |
 | **Multibindy** | Wielokrotne przypisania klawiszy |
 | **Przyciski** | Konfiguracja przyciskow na ekranie |
 | **Menu radialne** | Ustawienia menu radialnego |

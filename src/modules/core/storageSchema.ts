@@ -16,6 +16,7 @@ import type { DeviceInfo } from '@modules/device/deviceTypes';
 import type { UserTrigger } from '@client/scripts/userTriggers';
 import type { UserAlias } from '@client/scripts/userAliases';
 import type { AutomationGroup } from './automation';
+import type { UserScript } from '@client/scripts/userScripts';
 import type { ShortcutEntry } from '@client/scripts/shortcuts';
 import type { ContractsSnapshot } from '@client/scripts/contracts';
 import type { AttackMode } from '@client/utils/attackController';
@@ -78,6 +79,8 @@ export interface GlobalStorageSchema {
     aliases: UserAlias[];
     /** Groups that aliases and triggers can belong to. See @modules/core/automation. */
     automationGroups: AutomationGroup[];
+    /** Scripts run by aliases, triggers and their own command. See @client/scripts/userScripts. */
+    automationScripts: UserScript[];
     mobileButtonSettings: MobileButtonsSettings;
     desktopButtonSettings: DesktopButtonsSettings;
     scripts: string[];
@@ -187,6 +190,7 @@ export const globalStorageKeys = [
     'triggers',
     'aliases',
     'automationGroups',
+    'automationScripts',
     'mobileButtonSettings',
     'desktopButtonSettings',
     'scripts',
