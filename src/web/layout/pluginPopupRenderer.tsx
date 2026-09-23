@@ -21,20 +21,17 @@ import {
   type PluginPopupConfig,
 } from './pluginPopupRegistry';
 import eventBus from '@modules/core/eventBus';
+import { windowManager } from './WindowManager';
+import {
+  POPUP_MIN_HEIGHT,
+  POPUP_MIN_WIDTH,
+  centeredPopupOffset,
+  getInitialPopupSize,
+  measurePopupContent,
+} from './utils/popupSize';
 
-// Compute viewport-aware initial width for plugin popups
-function getInitialPopupWidth(): number {
-  const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 800;
-  // Use 50% of viewport width, clamped between 350 and 700
-  return Math.min(700, Math.max(350, Math.floor(viewportWidth * 0.5)));
-}
-
-// Compute viewport-aware initial height for plugin popups
-function getInitialPopupHeight(): number {
-  const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 600;
-  // Use 40% of viewport height, clamped between 250 and 500
-  return Math.min(500, Math.max(250, Math.floor(viewportHeight * 0.4)));
-}
+// Frames to wait for the floating shell to mount before giving up on a fit.
+const FIT_FRAME_LIMIT = 60;
 
 /**
  * Individual plugin popup component that wraps DockablePopupWrapper.
@@ -47,9 +44,14 @@ function PluginPopupItem({ config }: { config: PluginPopupConfig }) {
   const [isLocked, setIsLocked] = useState(() => getPopupLockedState(config.popupId));
   const [resetCounter, setResetCounter] = useState(0);
   const onPanelRefCalled = useRef(false);
+  const contentRef = useRef<HTMLDivElement | null>(null);
   // Compute initial dimensions once on mount
-  const [initialWidth] = useState(getInitialPopupWidth);
-  const [initialHeight] = useState(getInitialPopupHeight);
+  const [initialSize] = useState(() => getInitialPopupSize(config));
+  const fitsContent = initialSize.fitWidth || initialSize.fitHeight;
+  // Fit to content only where the popup takes its starting size: a fresh
+  // open (read before the wrapper's effect opens the window) or a reset.
+  const [fitOnOpen] = useState(() => fitsContent && !windowManager.hasStoredGeometry(config.popupId));
+  const fitPendingRef = useRef(fitOnOpen);
 
   // Store callbacks in refs to avoid stale closures and dependency issues
   const onCloseRef = useRef(config.onClose);
@@ -88,11 +90,41 @@ function PluginPopupItem({ config }: { config: PluginPopupConfig }) {
   }, []);
 
   const handleReset = useCallback(() => {
+    fitPendingRef.current = fitsContent;
     setResetCounter((c) => c + 1);
-  }, []);
+  }, [fitsContent]);
+
+  // Size a 'content' popup to its content once the floating shell is up (the
+  // window manager renders it a frame or more after the open).
+  useEffect(() => {
+    if (!fitPendingRef.current || body === undefined) return;
+    const popupId = config.popupId;
+    let frame = 0;
+    let frames = 0;
+    const fit = () => {
+      const panel = contentRef.current?.closest<HTMLElement>('.floating-panel');
+      if (!panel) {
+        if (++frames < FIT_FRAME_LIMIT) frame = requestAnimationFrame(fit);
+        return;
+      }
+      fitPendingRef.current = false;
+      const w = windowManager.get(popupId);
+      if (!w || w.docked || w.poppedOut) return;
+      const measured = measurePopupContent(panel, initialSize.fitWidth, POPUP_MIN_WIDTH);
+      const height = Math.min(initialSize.height ?? measured.height, window.innerHeight);
+      windowManager.patch(popupId, {
+        x: centeredPopupOffset(measured.width, 'width'),
+        y: centeredPopupOffset(height, 'height'),
+        width: measured.width,
+      });
+    };
+    frame = requestAnimationFrame(fit);
+    return () => cancelAnimationFrame(frame);
+  }, [body, resetCounter, config.popupId, initialSize]);
 
   // Report panel ref to parent using callback ref - only call once when first mounted
   const setContainerRef = useCallback((el: HTMLDivElement | null) => {
+    contentRef.current = el;
     if (el && !onPanelRefCalled.current) {
       onPanelRefCalled.current = true;
       onPanelRefRef.current?.(el);
@@ -112,10 +144,10 @@ function PluginPopupItem({ config }: { config: PluginPopupConfig }) {
       onLockedChange={handleLockedChange}
       onReset={handleReset}
       resetCounter={resetCounter}
-      minWidth={300}
-      minHeight={150}
-      initialWidth={initialWidth}
-      initialHeight={initialHeight}
+      minWidth={POPUP_MIN_WIDTH}
+      minHeight={POPUP_MIN_HEIGHT}
+      initialWidth={initialSize.width}
+      initialHeight={initialSize.height}
       className="plugin-window"
       bodyClassName="plugin-window-body"
       headerActions={headerActions instanceof Node ? <NodeRenderer node={headerActions} /> : headerActions}

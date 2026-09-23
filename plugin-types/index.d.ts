@@ -1472,6 +1472,63 @@ export interface PopupHandle {
 }
 
 /**
+ * Starting size of a popup along one axis:
+ * - a number - pixels (`420`)
+ * - any CSS length - `'420px'`, `'30em'`, `'40%'` / `'50vw'` (of the game window),
+ *   `'min(600px, 80vw)'`
+ * - `'content'` - fit the popup's content
+ *
+ * The result is kept on screen (with a small margin) and never below the
+ * resize minimum (300x150). It is used when the popup first opens and when the
+ * user resets it - a size the user set by resizing always wins.
+ */
+
+export type PopupSize = number | string;
+
+/**
+ * Starting size of a popup. Leave a field out to get the default
+ * (half the game window width, 40% of its height).
+ */
+
+export interface PopupSizeOptions {
+    initialWidth?: PopupSize;
+    initialHeight?: PopupSize;
+}
+
+/**
+ * Configuration for creating a persistent popup
+ */
+
+export interface PersistentPopupConfig extends PopupSizeOptions {
+    /**
+     * Unique identifier for this popup (will be namespaced by plugin).
+     * Use a consistent ID across sessions to enable persistence.
+     */
+    id: string;
+    /**
+     * Popup title (can be updated later via handle)
+     */
+    title: string;
+    /**
+     * Factory function to create popup content.
+     * Called when popup is created or restored from a previous session.
+     * Can be async to support loading data before rendering.
+     */
+    createContent: () => PopupContent | Promise<PopupContent>;
+    /**
+     * Custom actions to display in the popup header (buttons, etc.).
+     * These appear before the built-in lock/pin/close buttons.
+     * Can be a DOM node or React element.
+     */
+    headerActions?: Node | React.ReactNode;
+    /**
+     * Initial pinned state (default: false).
+     * When pinned, popup will be restored on page reload.
+     */
+    pinned?: boolean;
+}
+
+/**
  * Handle returned when registering a persistent popup.
  * Extends PopupHandle with additional persistence features.
  */
@@ -1584,9 +1641,10 @@ export interface UiApi {
      *
      * @param title - Popup title text
      * @param body - Popup body content (string or DOM node)
+     * @param options - Starting size of the popup
      * @returns Promise that resolves with handle for controlling the popup once mounted
      */
-    createPopup(title: string, body: PopupContent): Promise<PopupHandle>;
+    createPopup(title: string, body: PopupContent, options?: PopupSizeOptions): Promise<PopupHandle>;
     /**
      * Register a persistent popup that can be docked and restored on page reload.
      *
@@ -1621,7 +1679,7 @@ export interface UiApi {
      */
     registerPersistentPopup(config: PersistentPopupConfig): Promise<PersistentPopupHandle>;
     /**
-     * Add an entry to the popup (⋮) menu
+     * Add an entry to the main (☰) menu
      * @param label - Entry label (string or DOM node for rich content like SVG icons)
      * @param onSelect - Callback invoked when entry is selected
      * @returns Handle for updating or removing the entry
@@ -1643,6 +1701,12 @@ export interface UiApi {
      * - HTML strings: Simple inline HTML
      * - DOM nodes: Pre-created DOM elements
      * - React elements: Full React components with state and hooks
+     *
+     * The content is drawn as it is, with no frame around it. To look like the
+     * built-in chips, use their classes:
+     * `<span class="chip"><span class="chip__ico">…</span><span class="chip__text">`
+     * `<span class="chip__lab">Label</span><span class="chip__val">value</span></span></span>`
+     * (add `chip--warn` / `chip--danger` for urgency).
      *
      * @param id - Unique identifier for this component (will be namespaced by plugin)
      * @param content - HTML string, DOM node, or React element
@@ -1722,6 +1786,49 @@ export interface UiApi {
      * ```
      */
     registerFooterComponent(id: string, content: string | Node | ReactElement, position?: 'start' | 'end' | number): FooterComponentHandle;
+    /**
+     * Add a button beside the command line, alongside the player's own
+     * (Ustawienia -> Stopka). The button sends `command` when clicked; give it a
+     * `state` name and it lights up whenever {@link UiApi.setFooterButtonState}
+     * turns that state on. Plugin buttons are drawn dashed, and only the plugin
+     * adds or removes them.
+     *
+     * @example
+     * ```typescript
+     * api.ui.registerFooterButton('podroz', {
+     *   label: 'Tryb: podroz',
+     *   command: 'tryb podroz',
+     *   tone: 'accent',
+     *   state: 'podroz',
+     * });
+     * api.ui.setFooterButtonState('podroz', true);
+     * ```
+     */
+    registerFooterButton(id: string, button: FooterButtonOptions): FooterButtonHandle;
+    /**
+     * Turn a footer button's state on or off. Any button - the plugin's or the
+     * player's own - whose state carries this name draws itself as on.
+     */
+    setFooterButtonState(name: string, on: boolean): void;
+}
+
+/** What a plugin's footer button is. */
+
+export interface FooterButtonOptions {
+    label: string;
+    /** Sent on click: a command, an alias, anything the command line accepts. */
+    command: string;
+    tone?: FooterButtonTone;
+    /** Name of the state that lights this button up, if it stands for a mode. */
+    state?: string;
+    /** Where it sits among the buttons; higher is further right. Default 1000. */
+    order?: number;
+}
+
+export interface FooterButtonHandle {
+    /** Replace what the button says or does. */
+    update(button: Partial<FooterButtonOptions>): void;
+    remove(): void;
 }
 
 /**

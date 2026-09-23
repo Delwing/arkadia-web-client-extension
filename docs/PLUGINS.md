@@ -1185,6 +1185,7 @@ Na telefonach klient podnosi te wartości (większe kontrolki pod palec) — uż
 - Nie otwieraj okna w `init()`. Gracz otwiera je sam (wpis w menu ⋮), a przypięte wraca po przeładowaniu bez Twojej pomocy.
 - Treść buduj przez DOM (`document.createElement`) albo HTML-em; dodaj własny padding.
 - Korzeń treści może wypełnić okno: `height: 100%` (np. z `display: flex; flex-direction: column`, a przewijana lista w środku `flex: 1; min-height: 0; overflow-y: auto`).
+- Rozmiar startowy: `initialWidth` / `initialHeight` — liczba (px), dowolna długość CSS (`'420px'`, `'30em'`, `'40%'` i `'50vw'` liczone od okna gry, `'min(600px, 80vw)'`) albo `'content'` (dopasuj do treści). Bez nich okno dostaje połowę szerokości i 40% wysokości okna gry. Rozmiar zawsze mieści się na ekranie (z małym marginesem) i nie schodzi poniżej 300×150. Działa przy pierwszym otwarciu i po „Przywróć domyślną pozycję i rozmiar” — rozmiar ustawiony przez gracza ma pierwszeństwo. Przy `initialHeight: 'content'` korzeń treści nie może mieć `height: 100%`, bo nie będzie czego mierzyć. To samo działa w `createPopup(title, body, { initialWidth, initialHeight })`.
 - Przyciski w nagłówku (`headerActions`): małe i ciche — `popup-btn popup-btn--control popup-btn--sm popup-btn--ghost`.
 - Otwieranie z menu ⋮: `api.ui.addPopupMenuEntry('Nazwa okna', () => popup.isOpen ? popup.close() : popup.open())`.
 
@@ -1216,7 +1217,13 @@ function view(): HTMLElement {
   return root;
 }
 
-const popup = await api.ui.registerPersistentPopup({ id: 'lupy', title: 'Łupy', createContent: view });
+const popup = await api.ui.registerPersistentPopup({
+  id: 'lupy',
+  title: 'Łupy',
+  createContent: view,
+  initialWidth: 420,     // albo '30em', '40%', 'content'
+  initialHeight: '50vh',
+});
 api.ui.addPopupMenuEntry('Łupy', () => (popup.isOpen ? popup.close() : popup.open()));
 ```
 

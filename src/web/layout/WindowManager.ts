@@ -446,6 +446,15 @@ export class WindowManager {
     return this.windows.has(id);
   }
 
+  /** True when open() would restore a place for this window rather than use
+   *  the caller's size: a live record, a hint, a dock slot, or a popup's
+   *  saved dock / floating state. */
+  hasStoredGeometry(id: string): boolean {
+    if (this.windows.has(id) || this.windowHints.has(id) || this.findWindowSide(id)) return true;
+    const popupState = this.popupDockState.get(id);
+    return !!(popupState?.isDocked || popupState?.floatingState);
+  }
+
   /** Remove a window's last-known geometry hint entirely. Called when a popup
    *  is closed and not pinned, so `shouldPopupAutoOpen` doesn't see its
    *  previous dock placement on next page load. */

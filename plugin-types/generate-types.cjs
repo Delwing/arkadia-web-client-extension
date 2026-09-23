@@ -95,6 +95,8 @@ function shouldExport(node) {
         name === 'PluginInfo' ||
         name === 'Plugin' ||
         name === 'PopupContent' ||
+        name === 'PopupSize' ||
+        name === 'PersistentPopupConfig' ||
         name === 'TriggerCallback' ||
         name === 'TriggerMatchFunction' ||
         name === 'TriggerPattern' ||
