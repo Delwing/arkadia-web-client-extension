@@ -320,9 +320,11 @@ test.describe('Clock System', () => {
         // Wait for display to update
         await page.clock.runFor(1000);
 
-        // Daytime (calculated from hour vs sunrise/sunset)
-        const dayPart = clockDisplay.locator('.chip__lab');
-        await expect(dayPart).toHaveText('dzien');
+        // Daytime (calculated from hour vs sunrise/sunset). The label is the season;
+        // day or night rides in the icon and the tooltip.
+        const chip = clockDisplay.locator('.chip');
+        await expect(chip.locator('.chip__lab')).toHaveText('wiosna');
+        await expect(chip).toHaveAttribute('title', /wiosna, dzien/);
 
         // Set time at sunset
         await pushText(page, 'Jest w przyblizeniu osma wieczorem, 10 dzien miesiaca Pflugzeit wedlug Kalendarza Imperialnego.');
@@ -332,6 +334,6 @@ test.describe('Clock System', () => {
         await pushGmcp(page, 'room.time', { daylight: false });
         await page.clock.runFor(2000);
 
-        await expect(dayPart).toHaveText('noc');
+        await expect(chip).toHaveAttribute('title', /wiosna, noc/);
     });
 });
