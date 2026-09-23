@@ -108,24 +108,22 @@ describe('FunctionalBindManager re-set priority', () => {
     window.dispatchEvent(new KeyboardEvent('keydown', { code: 'BracketRight', key: ']', bubbles: true }));
   }
 
-  // Regression: after a fight the loot bind is re-asserted on every objects.nums
-  // update, which used to steal the key back from the chimney follow bind.
-  test('re-setting the same command does not take the key from a newer bind', () => {
+  // Regression: a gate that stays shut re-arms the same "uderz w brame" bind, which
+  // must take the key back from an enemy bind set in between.
+  test('re-setting the same command takes the key back from a newer bind', () => {
     const manager = new FunctionalBindManager(createMockClient());
 
-    const lootCb = jest.fn();
-    const followCb = jest.fn();
+    const gateCb = jest.fn();
+    const enemyCb = jest.fn();
 
-    manager.setCategory('loot', 'wez z ciala', lootCb);
-    manager.setCategory('default', 'opusc bronie;wejdz do komina;dobadz wszystkich broni', followCb);
-
-    // Someone leaves the room: the loot bind is rebound unchanged.
-    manager.setCategory('loot', 'wez z ciala', lootCb);
+    manager.setCategory('gates', 'uderz w brame', gateCb);
+    manager.setCategory('default', 'chzabij <niski zabandazowany mutant>', enemyCb);
+    manager.setCategory('gates', 'uderz w brame', gateCb);
 
     pressBind();
 
-    expect(followCb).toHaveBeenCalled();
-    expect(lootCb).not.toHaveBeenCalled();
+    expect(gateCb).toHaveBeenCalled();
+    expect(enemyCb).not.toHaveBeenCalled();
   });
 
   test('a changed command still takes over the key', () => {

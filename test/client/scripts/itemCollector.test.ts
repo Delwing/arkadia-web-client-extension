@@ -16,6 +16,7 @@ class FakeClient {
         clearCategory: vi.fn(() => {
             this.bind = null;
         }),
+        getCategory: vi.fn(() => ({ getPrintable: () => this.bind?.label ?? null })),
     };
     TeamManager = { isInAnyTeam: () => false, isLeader: () => false };
     on(event: string, cb: (...args: any[]) => void) { this.emitter.on(event, cb); }
@@ -67,6 +68,14 @@ describe('ItemCollector', () => {
         const commands = client.sendCommand.mock.calls.map(c => c[0]);
         expect(commands.filter(c => c === 'wez kamienie')).toHaveLength(1);
         expect(commands).not.toContain('wez srebrne monety');
+    });
+
+    it('does not re-set an unchanged loot bind on repeated allEnemiesKilled', () => {
+        kill('ogromny szary troll', true);
+        client.emit('allEnemiesKilled');
+        client.emit('allEnemiesKilled');
+
+        expect(client.FunctionalBind.setCategory).toHaveBeenCalledTimes(1);
     });
 
     it('does not search the floor after a bodiless enemy without an override', () => {

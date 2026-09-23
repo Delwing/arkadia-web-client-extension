@@ -388,6 +388,11 @@ export default class ItemCollector {
 
         if (pending.length > 0) {
             const label = pending.some((record) => record.hasBody) ? "wez z ciala" : "wez z ziemi";
+            // allEnemiesKilled fires again on every objects.nums update while a body lies
+            // around; re-setting the unchanged bind would take the key from a newer one (follow).
+            if (this.bindActive && this.client.FunctionalBind.getCategory('loot')?.getPrintable() === label) {
+                return;
+            }
             this.client.FunctionalBind.setCategory('loot', label, () => this.collectAllBodies());
             this.bindActive = true;
         }
