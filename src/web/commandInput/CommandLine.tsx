@@ -235,16 +235,21 @@ export default function CommandLine({ deps }: { deps: CommandLineDeps }) {
             </div>
           )}
         </div>
-        <input
-          type="password"
-          id="message-input-password"
-          ref={passwordRef}
-          autoComplete="off"
-          autoCapitalize="off"
-          autoCorrect="off"
-          spellCheck={false}
-          style={passwordMode ? undefined : { display: "none" }}
-        />
+        {/* Its own form: Chrome pools every formless field on the page into one
+            form, and a password field in that pool turns other text fields
+            (the settings' command inputs) into a "username" it offers saved logins on. */}
+        <form className="command-field__password-form" onSubmit={(e) => e.preventDefault()}>
+          <input
+            type="password"
+            id="message-input-password"
+            ref={passwordRef}
+            autoComplete="off"
+            autoCapitalize="off"
+            autoCorrect="off"
+            spellCheck={false}
+            style={passwordMode ? undefined : { display: "none" }}
+          />
+        </form>
         {passwordMode && <span className="command-field__hint">nie trafi do historii</span>}
         {!passwordMode && ghost && (
           <span className="command-field__hint command-field__tab-hint"><kbd>Tab</kbd> uzupełnij</span>

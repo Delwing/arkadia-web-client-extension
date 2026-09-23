@@ -137,6 +137,10 @@
 .command-field__hint {
   flex-shrink: 0;
 }
+/* The password input's own form (see CommandLine.tsx) stays out of the layout. */
+.command-field__password-form {
+  display: contents;
+}
 #message-input,
 #message-input-password {
   flex: 1 1 0;
