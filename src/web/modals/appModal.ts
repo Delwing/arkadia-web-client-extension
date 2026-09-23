@@ -1,5 +1,5 @@
 /**
- * The stock UI's page-level windows (Ustawienia, Aliasy, Triggery, Bindowanie…):
+ * The stock UI's page-level windows (Ustawienia, Automatyzacja, Klawisze…):
  * declared once in index.html as `.app-modal` and opened by id. Replaces
  * Bootstrap's Modal JS.
  *

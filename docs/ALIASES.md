@@ -4,20 +4,21 @@ Pozostale aliasy i funkcje rozszerzenia.
 
 ## Wlasne aliasy
 
-Mozesz tworzyc wlasne aliasy w ustawieniach klienta:
+Wlasne aliasy tworzysz w oknie **Automatyzacja** (Menu → Automatyzacja), razem z triggerami (wyzwalaczami):
 - **Wzorzec** - wyrazenie regularne dopasowujace komende
 - **Akcje** - co ma sie stac, po kolei: komenda wysylana do serwera, dzwiek, powiadomienie (takze na telefon), czytanie na glos, funkcyjny bind. W tekstach akcji `$1`, `$2` itp. wstawiaja grupy z dopasowania
 - **Skroty obiektow** - `@1`, `@A`, `@@` zostana zamienione na identyfikatory obiektow
 - **Kilka komend** - srednik rozdziela kilka komend w jednym polu
 - **Inaczej dla postaci** - dla wybranej postaci alias moze wysylac inna komende; zastepuje ona wszystkie komendy z akcji
 
-### Nazwa, grupa, wlaczanie i postacie
+### Okno Automatyzacja
 
-Aliasy i triggery maja te same pola na gorze edytora:
-- **Nazwa** - opcjonalna etykieta widoczna na liscie
-- **Grupa** - wpisz nazwe, zeby wrzucic alias lub trigger do grupy (nowa grupa tworzy sie sama). Grupy sa wspolne dla aliasow i triggerow
-- **Wlaczony** - wylaczony alias lub trigger zostaje zapisany, ale nie dziala
+- **Lista** - aliasy i wyzwalacze razem, podzielone na grupy. Po lewej wybierasz rodzaj (Wszystko, Aliasy, Wyzwalacze) i to, co pokazac (wylaczone, tylko to, co dziala na tej postaci). Przelacznik przy kazdym wierszu wlacza i wylacza element od razu
+- **Grupy** - wpisz nazwe grupy na gorze edytora, a nowa grupa utworzy sie sama. Przelacznik przy grupie wlacza lub wylacza wszystko, co w niej jest. Menu grupy (`...` albo prawy przycisk) pozwala zmienic nazwe, wyeksportowac ja do pliku albo usunac (elementy zostaja, bez grupy)
+- **Edytor** - krok 1 *Kiedy* (wzorzec i linia testowa, ktora od razu pokazuje, czy wzorzec pasuje i co trafi do `$1`), krok 2 *Co zrobic* (akcje po kolei; kolejnosc zmienisz, przeciagajac za uchwyt, a pod spodem widac, co zostanie wyslane), krok 3 *Dla kogo*. Zmiany zapisuje **Zapisz** (albo `Ctrl+Enter`); kropka przy wierszu oznacza niezapisane zmiany
+- **Wlaczony** - wylaczony alias lub wyzwalacz zostaje zapisany, ale nie dziala
 - **Dla kogo** - wszystkie postacie albo tylko wybrane; na innej postaci element nie dziala
+- **Eksport i import** - "Eksportuj wszystko" albo eksport jednej grupy zapisuje plik `.json`, ktory ktos inny wczyta przez "Importuj" → "Plik automatyzacji". Import niczego nie nadpisuje: alias o istniejacym wzorcu i identyczny wyzwalacz zostaja pominiete
 
 ### Zakresy ($i)
 

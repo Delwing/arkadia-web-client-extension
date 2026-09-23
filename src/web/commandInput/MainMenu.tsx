@@ -76,7 +76,7 @@ function capitalize(name: string): string {
  * connection and the session actions (Pełny ekran, Rozłącz). On a phone the same
  * panel is a bottom sheet of tiles.
  *
- * Entries come from mainMenuRegistry; built-ins keep their ids (#aliases-button…),
+ * Entries come from mainMenuRegistry; built-ins keep their ids (#automation-button…),
  * plugin entries carry data-plugin-menu-entry-id.
  */
 export default function MainMenu({ onOpenChange }: { onOpenChange?: (open: boolean) => void }) {
@@ -116,7 +116,10 @@ export default function MainMenu({ onOpenChange }: { onOpenChange?: (open: boole
 
   const needle = fold(query.trim());
   const matches = (item: MainMenuItem) =>
-    !needle || fold(labelText(item)).includes(needle) || (item.shortLabel !== undefined && fold(item.shortLabel).includes(needle));
+    !needle
+    || fold(labelText(item)).includes(needle)
+    || (item.shortLabel !== undefined && fold(item.shortLabel).includes(needle))
+    || !!item.keywords?.some((word) => fold(word).includes(needle));
 
   const { sections, session, first } = useMemo(() => {
     const byGroup = new Map<MainMenuGroup, MainMenuItem[]>();

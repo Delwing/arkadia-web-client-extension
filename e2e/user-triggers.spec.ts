@@ -6,8 +6,10 @@ import {
     primeCharInfo,
     pushGmcp,
     pushText,
+    resetCommandLog,
     waitForCommandInput,
 } from './support/mocks';
+import {addPatternTrigger, closeAutomation, openAutomation, row, saveEditor, startNew} from './support/automation';
 
 test('User trigger creation executes command and persists after reload', async ({page}) => {
     await page.goto('/');
@@ -15,80 +17,61 @@ test('User trigger creation executes command and persists after reload', async (
     await ensureGameSocket(page);
     await primeCharInfo(page);
 
-    await page.click('#menu-button');
-    await page.click('#triggers-button');
-
-    const triggersModal = page.locator('#triggers-modal');
-    await expect(triggersModal, 'should display triggers modal').toBeVisible();
-
-    await triggersModal.getByRole('button', {name: 'Dodaj trigger'}).click();
-
-    await triggersModal.getByPlaceholder('Pattern').fill('Trigger test');
-
-    await triggersModal.getByRole('button', {name: 'Dodaj akcję'}).click();
-
-    await triggersModal.locator('select').first().selectOption('command');
-    await triggersModal.getByPlaceholder('Command').fill('say triggered');
-
-    await triggersModal.getByRole('button', {name: 'Dodaj', exact: true}).click();
-
-    await expect(
-        triggersModal.locator('code.alias-pattern', {hasText: 'Trigger test'}),
-        'should list newly created trigger pattern',
-    ).toBeVisible();
-    await expect(
-        triggersModal.locator('.trigger-chip', {hasText: 'Komenda: say triggered'}),
-        'should display command macro summary',
-    ).toBeVisible();
-
-    await triggersModal.locator('button.app-modal__close').click();
-    await expect(triggersModal, 'should close triggers modal').not.toBeVisible();
-
-    await page.evaluate(() => {
-        const globalScope: any = window;
-        globalScope.__resetCommandLog?.();
+    const modal = await openAutomation(page);
+    await addPatternTrigger(page, modal, 'Trigger test', async action => {
+        await action.locator('select').first().selectOption('command');
+        await action.getByPlaceholder('Command').fill('say triggered');
     });
 
-    await pushText(page, 'Trigger test incoming!');
+    await expect(row(modal, 'Trigger test'), 'should list the trigger with its command').toContainText('say triggered');
+    await closeAutomation(modal);
 
+    await resetCommandLog(page);
+    await pushText(page, 'Trigger test incoming!');
     await expect
-        .poll(async () => {
-            return await getLastOutgoingCommand(page);
-        }, {message: 'should send command macro when trigger matches'})
+        .poll(async () => await getLastOutgoingCommand(page), {message: 'should send command macro when trigger matches'})
         .toBe('say triggered');
 
     await page.reload();
     await waitForCommandInput(page);
     await ensureGameSocket(page);
+    await resetCommandLog(page);
 
-    await page.evaluate(() => {
-        const globalScope: any = window;
-        globalScope.__resetCommandLog?.();
-    });
-
-    await page.click('#menu-button');
-    await page.click('#triggers-button');
-
-    await expect(triggersModal, 'should reopen triggers modal').toBeVisible();
-    await expect(
-        triggersModal.locator('code.alias-pattern', {hasText: 'Trigger test'}),
-        'should preserve trigger pattern after reload',
-    ).toBeVisible();
-    await expect(
-        triggersModal.locator('.trigger-chip', {hasText: 'Komenda: say triggered'}),
-        'should preserve macro summary after reload',
-    ).toBeVisible();
-
-    await triggersModal.locator('button.app-modal__close').click();
-    await expect(triggersModal, 'should close triggers modal after verification').not.toBeVisible();
+    const reloaded = await openAutomation(page);
+    await expect(row(reloaded, 'Trigger test'), 'should preserve the trigger after reload').toContainText('say triggered');
+    await closeAutomation(reloaded);
 
     await pushText(page, 'Trigger test incoming again!');
-
     await expect
-        .poll(async () => {
-            return await getLastOutgoingCommand(page);
-        }, {message: 'should keep executing macro after reload'})
+        .poll(async () => await getLastOutgoingCommand(page), {message: 'should keep executing macro after reload'})
         .toBe('say triggered');
+});
+
+test('pattern trigger fills $1 from the match and previews it on a test line', async ({page}) => {
+    await page.goto('/');
+    await waitForCommandInput(page);
+    await ensureGameSocket(page);
+    await primeCharInfo(page);
+
+    const modal = await openAutomation(page);
+    await startNew(page, modal, 'trigger');
+    await modal.getByTitle('Wzorzec', {exact: true}).fill('^(\\w+) atakuje cie');
+    await modal.getByRole('button', {name: 'Dodaj akcję'}).click();
+    const action = modal.locator('.automation-act').last();
+    await action.locator('select').first().selectOption('command');
+    await action.getByPlaceholder('Command').fill('zabij $1');
+
+    await modal.getByTitle('Linia do testu').fill('Goblin atakuje cie!');
+    await expect(modal.locator('.automation-test'), 'should show the match and its group').toContainText('$1 = Goblin');
+    await expect(modal.locator('.automation-out'), 'should preview the command').toContainText('zabij Goblin');
+    await saveEditor(modal);
+    await closeAutomation(modal);
+
+    await resetCommandLog(page);
+    await pushText(page, 'Ork atakuje cie!');
+    await expect
+        .poll(async () => await getLastOutgoingCommand(page), {message: 'should send the command with the group filled in'})
+        .toBe('zabij Ork');
 });
 
 test('GMCP event trigger lets the user pick a known GMCP package', async ({page}) => {
@@ -97,59 +80,46 @@ test('GMCP event trigger lets the user pick a known GMCP package', async ({page}
     await ensureGameSocket(page);
     await primeCharInfo(page);
 
-    await page.click('#menu-button');
-    await page.click('#triggers-button');
+    const modal = await openAutomation(page);
+    await startNew(page, modal, 'trigger');
+    await modal.getByLabel('Zdarzenie').check();
 
-    const triggersModal = page.locator('#triggers-modal');
-    await expect(triggersModal, 'should display triggers modal').toBeVisible();
-
-    await triggersModal.getByRole('button', {name: 'Dodaj trigger'}).click();
-    await triggersModal.getByLabel('Zdarzenie').check();
-
-    const gmcpType = triggersModal.getByTestId('trigger-gmcp-type');
+    const gmcpType = modal.getByTestId('trigger-gmcp-type');
     await expect(gmcpType, 'package picker should stay hidden until GMCP is chosen').toHaveCount(0);
 
-    await triggersModal.locator('select').first().selectOption('__gmcp__');
+    await modal.getByTitle('Zdarzenie', {exact: true}).selectOption('__gmcp__');
     await expect(gmcpType, 'should show GMCP package picker').toBeVisible();
-    await expect(
-        triggersModal.getByRole('button', {name: 'Dodaj', exact: true}),
-        'should not save without a GMCP package',
-    ).toBeDisabled();
+
+    // Without a package it cannot be saved.
+    await modal.locator('.automation-editor__foot').getByRole('button', {name: 'Zapisz', exact: true}).click();
+    await expect(modal.locator('.automation-error'), 'should not save without a GMCP package').toHaveText('Wybierz zdarzenie.');
 
     await gmcpType.selectOption('gmcp.core.ping');
     await expect(
-        triggersModal.getByRole('button', {name: 'Dodaj warunek'}),
+        modal.getByRole('button', {name: 'Dodaj warunek'}),
         'conditions should be hidden for an event without args',
     ).toHaveCount(0);
 
     await gmcpType.selectOption('gmcp.char.state');
 
-    await triggersModal.getByRole('button', {name: 'Dodaj warunek'}).click();
-    const condition = triggersModal.locator('.trigger-condition');
+    await modal.getByRole('button', {name: 'Dodaj warunek'}).click();
+    const condition = modal.locator('.trigger-condition');
     await expect(condition.locator('select').first(), 'should default to the first event arg').toHaveValue('hp');
     await condition.locator('select').nth(1).selectOption('lte');
     await condition.getByPlaceholder('Wartosc').fill('2');
 
-    await triggersModal.getByRole('button', {name: 'Dodaj akcję'}).click();
-    // Selects in order: event, GMCP package, condition field, condition operator, macro type.
-    await triggersModal.locator('select').nth(4).selectOption('command');
-    await triggersModal.getByPlaceholder('Command').fill('say hp {hp}');
+    await modal.getByRole('button', {name: 'Dodaj akcję'}).click();
+    const action = modal.locator('.automation-act').last();
+    await action.locator('select').first().selectOption('command');
+    await action.getByPlaceholder('Command').fill('say hp {hp}');
+    await saveEditor(modal);
 
-    await triggersModal.getByRole('button', {name: 'Dodaj', exact: true}).click();
+    const trigger = row(modal, 'Char.State');
+    await expect(trigger, 'should list the GMCP event trigger by its label').toBeVisible();
+    await expect(trigger, 'should summarise the condition').toContainText('gdy hp <= 2');
+    await closeAutomation(modal);
 
-    await expect(
-        triggersModal.locator('.trigger-event-name', {hasText: 'Char.State'}),
-        'should list the GMCP event trigger by its label',
-    ).toBeVisible();
-    await expect(triggersModal.locator('.trigger-conditions'), 'should summarise the condition').toHaveText('gdy hp <= 2');
-
-    await triggersModal.locator('button.app-modal__close').click();
-    await expect(triggersModal).not.toBeVisible();
-
-    await page.evaluate(() => {
-        (window as any).__resetCommandLog?.();
-    });
-
+    await resetCommandLog(page);
     await pushGmcp(page, 'char.state', {hp: 4});
     await pushGmcp(page, 'char.state', {mana: 1});
     await pushGmcp(page, 'char.state', {hp: 2});
@@ -161,4 +131,40 @@ test('GMCP event trigger lets the user pick a known GMCP package', async ({page}
         (await getCommandLog(page)).some(c => c.includes('say hp 4')),
         'should not run macro while the condition fails',
     ).toBe(false);
+});
+
+test('exports a group and imports it back as a pack', async ({page}) => {
+    await page.goto('/');
+    await waitForCommandInput(page);
+    await ensureGameSocket(page);
+
+    const modal = await openAutomation(page);
+    await startNew(page, modal, 'trigger');
+    await modal.getByTitle('Wzorzec', {exact: true}).fill('Pakiet test');
+    await modal.getByTitle('Grupa', {exact: true}).fill('Paczka');
+    await modal.getByRole('button', {name: 'Dodaj akcję'}).click();
+    await modal.locator('.automation-act').last().getByPlaceholder('Command').fill('say pakiet');
+    await saveEditor(modal);
+
+    const downloadPromise = page.waitForEvent('download');
+    await modal.locator('.automation-group', {hasText: 'Paczka'}).getByTitle('Opcje grupy').click();
+    await page.getByRole('button', {name: 'Eksportuj grupe'}).click();
+    const download = await downloadPromise;
+    const file = await download.path();
+    expect(download.suggestedFilename(), 'should name the file after the group').toContain('paczka');
+
+    // Delete the trigger, then bring it back from the file.
+    await row(modal, 'Pakiet test').locator('.automation-item__main').click();
+    page.once('dialog', dialog => dialog.accept());
+    await modal.locator('.automation-editor__foot').getByRole('button', {name: 'Usun'}).click();
+    await expect(row(modal, 'Pakiet test'), 'should delete the trigger').toHaveCount(0);
+
+    await modal.getByRole('button', {name: 'Importuj'}).click();
+    const chooser = page.waitForEvent('filechooser');
+    await page.getByRole('button', {name: 'Plik automatyzacji (.json)'}).click();
+    await (await chooser).setFiles(file!);
+
+    await expect(modal.locator('.automation-notice'), 'should report what came in').toContainText('1 wyzwalacz');
+    const group = modal.locator('.automation-section').filter({has: page.locator('.automation-group', {hasText: 'Paczka'})});
+    await expect(group.locator('.automation-item'), 'should restore the trigger into its group').toContainText('Pakiet test');
 });

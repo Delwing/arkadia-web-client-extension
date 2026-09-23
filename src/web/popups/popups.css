@@ -865,7 +865,8 @@ select.popup-input.popup-input--control {
   border-color: transparent;
 }
 
-/* Trigger editor (TriggerEditModal.tsx) */
+/* Actions and conditions in the Automatyzacja editor (automation/MacroEditor.tsx,
+   automation/TriggerSource.tsx). */
 .trigger-section {
   display: flex;
   flex-direction: column;
@@ -929,22 +930,6 @@ select.popup-input.popup-input--control {
 .trigger-condition > select.popup-input.popup-input--control {
   flex: 0 1 12rem;
   width: auto;
-}
-.trigger-flags {
-  display: inline-flex;
-  flex-shrink: 0;
-}
-.trigger-flags__toggle.popup-btn.popup-btn--control {
-  min-width: 4.5rem;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 12.5px;
-}
-.trigger-flags__toggle.is-set {
-  border-color: var(--popup-accent-border);
-  color: var(--popup-accent);
-}
-.trigger-flags__menu {
-  gap: 6px;
 }
 .trigger-arg-chips {
   display: flex;
@@ -1026,42 +1011,6 @@ select.popup-input.popup-input--control {
 .popup-dialog__footer > .collect-overrides__reset {
   margin-right: auto;
   color: var(--popup-warning);
-}
-
-/* Alias editor (AliasEditModal.tsx) */
-.alias-edit__char {
-  flex: 0 0 8rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: var(--ui-fs-sm, 12px);
-}
-.alias-edit__char-select.popup-input.popup-input--control {
-  width: auto;
-  min-width: 8rem;
-  max-width: 14rem;
-}
-.alias-edit__help {
-  line-height: 1.6;
-}
-
-/* Name, group, on/off and characters of an automation element
-   (AutomationMetaFields.tsx), at the top of the alias and trigger editors. */
-.automation-meta {
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-}
-.automation-meta__row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
-  gap: 0.6rem;
-}
-.automation-meta__characters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem 1rem;
-  margin-top: 0.4rem;
 }
 
 /* Floating panel anchored to a button (window settings cog; header menus

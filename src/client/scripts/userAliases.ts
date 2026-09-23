@@ -60,27 +60,33 @@ function expandRange(start: number, end: number): number[] {
     return result;
 }
 
-function substituteGroups(cmd: string, m: RegExpMatchArray): string {
+export function substituteGroups(cmd: string, m: RegExpMatchArray): string {
     return cmd.replace(/\$(\d+)/g, (_, n) => m[parseInt(n)] ?? '');
 }
 
-/** Sends one command with `$1` groups filled and a `$i` range expanded. */
-async function sendAliasCommand(client: Client, command: string, m: RegExpMatchArray): Promise<void> {
+/**
+ * The commands one command action sends for a match: `$1` groups filled and a
+ * `$i` range expanded into one command per value. Each may still hold several
+ * `;`-separated commands. Shared with the editor's preview.
+ */
+export function expandAliasCommand(command: string, m: RegExpMatchArray): string[] {
     const normalized = command.replace(/\n/g, ';');
 
     if (normalized.includes('$i')) {
         const range = findRange(m);
         if (range) {
-            const values = expandRange(range.start, range.end);
-            for (const val of values) {
-                const cmd = substituteGroups(normalized, m).replace(/\$i/g, String(val));
-                await client.sendCommand(cmd);
-            }
-            return;
+            return expandRange(range.start, range.end)
+                .map(val => substituteGroups(normalized, m).replace(/\$i/g, String(val)));
         }
     }
 
-    return client.sendCommand(substituteGroups(normalized, m));
+    return [substituteGroups(normalized, m)];
+}
+
+async function sendAliasCommand(client: Client, command: string, m: RegExpMatchArray): Promise<void> {
+    for (const cmd of expandAliasCommand(command, m)) {
+        await client.sendCommand(cmd);
+    }
 }
 
 export default function initUserAliases(client: Client, aliases?: { pattern: RegExp; callback: Function }[]) {

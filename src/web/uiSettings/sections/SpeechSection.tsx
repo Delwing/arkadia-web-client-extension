@@ -51,7 +51,7 @@ function SpeechSection({ draft, update }: SpeechSectionProps) {
     return (
         <SettingsSection title="Czytanie na głos">
             <div className="popup-field__hint">
-                Czyta teksty z akcji „Czytaj na głos” w triggerach (Menu → Triggery).
+                Czyta teksty z akcji „Czytaj na głos” w wyzwalaczach (Menu → Automatyzacja).
                 „Wycisz dźwięki” ucisza też mowę.
             </div>
             <CheckboxRow id="ui-tts-enabled" label="Czytanie na głos włączone" checked={draft.ttsEnabled} onChange={(v) => update({ ttsEnabled: v })} />

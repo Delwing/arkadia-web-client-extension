@@ -366,6 +366,16 @@ export function interpolateMatchGroups(text: string, match: RegExpMatchArray): s
     });
 }
 
+/**
+ * The text of a pattern trigger's action with the match filled in: `$0`,
+ * `$1`... (as in aliases) and `{1}`, `{name}` (see `interpolateMatchGroups`).
+ * A `$` group that does not exist becomes empty, as it does in aliases.
+ */
+export function interpolateMatch(text: string, match: RegExpMatchArray): string {
+    if (!text) return text;
+    return interpolateMatchGroups(text.replace(/\$(\d+)/g, (_, n: string) => match[Number(n)] ?? ''), match);
+}
+
 function applyMacrosToMatch(
     client: Client,
     line: AnsiAwareBuffer,
@@ -402,7 +412,7 @@ function applyMacrosToMatch(
                 break;
             case 'command':
                 if (macro.command) {
-                    client.sendCommand(macro.command);
+                    client.sendCommand(interpolateMatch(macro.command, match));
                 }
                 break;
             case 'slowBlink':
@@ -437,18 +447,19 @@ function applyMacrosToMatch(
             }
             case 'functionalBind':
                 if (macro.command && macro.label) {
-                    client.FunctionalBind.set(macro.label, () => {
-                        client.sendCommand(macro.command!);
+                    const command = interpolateMatch(macro.command, match);
+                    client.FunctionalBind.set(interpolateMatch(macro.label, match), () => {
+                        client.sendCommand(command);
                     });
                 }
                 break;
             case 'notify': {
-                const text = macro.message || line.text.substring(matchRange[0], matchRange[1]);
+                const text = interpolateMatch(macro.message ?? '', match) || line.text.substring(matchRange[0], matchRange[1]);
                 client.sendEvent("notify", { text, system: true });
                 break;
             }
             case 'push': {
-                const text = macro.message || line.text.substring(matchRange[0], matchRange[1]);
+                const text = interpolateMatch(macro.message ?? '', match) || line.text.substring(matchRange[0], matchRange[1]);
                 // Unlike the automatic hp alert, this is sent whether or not the
                 // client is on screen: a trigger the player wrote deliberately
                 // should not silently do nothing while they are at the desk.
@@ -460,7 +471,7 @@ function applyMacrosToMatch(
             }
             case 'speak': {
                 const text = macro.message
-                    ? interpolateMatchGroups(macro.message, match)
+                    ? interpolateMatch(macro.message, match)
                     : line.text.substring(matchRange[0], matchRange[1]);
                 if (text.trim()) {
                     client.sendEvent("tts:speak", { text });

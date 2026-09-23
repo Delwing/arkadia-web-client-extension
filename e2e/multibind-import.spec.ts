@@ -1,6 +1,7 @@
 import {expect, test} from './support/fixtures';
 import type {Page} from '@playwright/test';
 import {openKeysMenu} from './support/keys';
+import {addAlias, closeAutomation, openAutomation, row} from './support/automation';
 import {
     ensureGameSocket,
     getLastOutgoingCommand,
@@ -29,14 +30,6 @@ async function closeImportPage(page: Page) {
     const modal = page.locator('#settings-modal');
     await modal.locator('.app-modal__close').first().click();
     await expect(modal, 'should close the settings dialog after finishing checks').not.toBeVisible();
-}
-
-async function openAliasesModal(page: Page) {
-    await page.click('#menu-button');
-    await page.click('#aliases-button');
-    const modal = page.locator('#aliases-modal');
-    await expect(modal, 'should display aliases modal when requested').toBeVisible();
-    return modal;
 }
 
 test.beforeEach(async ({context}) => {
@@ -138,19 +131,10 @@ test.describe('Multibind import', () => {
 
         const aliasPattern = 'fooalias';
         const aliasCommand = 'powiedz czesc';
-        const aliasesModal = await openAliasesModal(page);
-
-        await aliasesModal.getByRole('button', { name: 'Dodaj alias' }).click();
-        await aliasesModal.getByPlaceholder('np. zab (.+)').fill(aliasPattern);
-        await aliasesModal.getByPlaceholder('np. zabij $1').fill(aliasCommand);
-        await aliasesModal.getByRole('button', { name: 'Dodaj', exact: true }).click();
-        await expect(
-            aliasesModal.locator('.alias-card').filter({ hasText: aliasPattern }),
-            'should display newly created alias entry',
-        ).toContainText(aliasCommand);
-
-        await aliasesModal.locator('.app-modal__close').click();
-        await expect(aliasesModal, 'should close aliases modal after creating alias').not.toBeVisible();
+        const automation = await openAutomation(page);
+        await addAlias(page, automation, aliasPattern, aliasCommand);
+        await expect(row(automation, aliasPattern), 'should display newly created alias entry').toContainText(aliasCommand);
+        await closeAutomation(automation);
 
         await submitCommand(page, `/mbind 3 ${aliasPattern}`);
         await expect(entries, 'should include alias multi-bind entry for current room').toHaveCount(3);

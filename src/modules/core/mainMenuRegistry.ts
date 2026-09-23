@@ -18,6 +18,8 @@ export interface MainMenuItem {
   label: string | Node;
   /** A shorter caption for the phone's tiles; defaults to the label. */
   shortLabel?: string;
+  /** Other words the menu filter finds the entry by (an old name, what it holds). */
+  keywords?: string[];
   /** Defaults to "wtyczki". */
   group?: MainMenuGroup;
   /** A name the host maps to an icon ("zap", "map-pin"…); unknown or absent → a generic one. */

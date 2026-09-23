@@ -6,7 +6,8 @@ import {
     type PluginTriggerMacro,
 } from '@modules/core/pluginTriggerMacroRegistry';
 import { Button, Check, Field, Input, Select } from '@web-ui/primitives/index.ts';
-import type { UserMacro, DimEasing } from './UserTriggers';
+import type { UserMacro } from '@client/scripts/userTriggers';
+import type { DimEasing } from '@client/ansi/FormatState';
 
 /**
  * One action of an automation element: the type picker plus that type's

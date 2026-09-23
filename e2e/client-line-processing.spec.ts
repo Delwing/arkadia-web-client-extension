@@ -6,6 +6,7 @@ import {
     pushText,
     waitForCommandInput,
 } from './support/mocks';
+import {addPatternTrigger, closeAutomation, openAutomation, row} from './support/automation';
 
 test.describe('Line processing pipeline', () => {
     test.beforeEach(async ({page}) => {
@@ -45,26 +46,13 @@ test.describe('Line processing pipeline', () => {
 
     test('trigger fires command when matching text arrives', async ({page}) => {
         // Create a trigger via the UI: pattern "dragon appears" -> command "flee"
-        await page.click('#menu-button');
-        await page.click('#triggers-button');
-
-        const triggersModal = page.locator('#triggers-modal');
-        await expect(triggersModal, 'should open triggers modal').toBeVisible();
-
-        await triggersModal.getByRole('button', {name: 'Dodaj trigger'}).click();
-        await triggersModal.getByPlaceholder('Pattern').fill('dragon appears');
-        await triggersModal.getByRole('button', {name: 'Dodaj akcję'}).click();
-        await triggersModal.locator('select').first().selectOption('command');
-        await triggersModal.getByPlaceholder('Command').fill('flee');
-        await triggersModal.getByRole('button', {name: 'Dodaj', exact: true}).click();
-
-        await expect(
-            triggersModal.locator('code.alias-pattern', {hasText: 'dragon appears'}),
-            'should list the new trigger pattern',
-        ).toBeVisible();
-
-        await triggersModal.locator('button.app-modal__close').click();
-        await expect(triggersModal, 'should close triggers modal').not.toBeVisible();
+        const modal = await openAutomation(page);
+        await addPatternTrigger(page, modal, 'dragon appears', async action => {
+            await action.locator('select').first().selectOption('command');
+            await action.getByPlaceholder('Command').fill('flee');
+        });
+        await expect(row(modal, 'dragon appears'), 'should list the new trigger pattern').toBeVisible();
+        await closeAutomation(modal);
 
         await page.evaluate(() => {
             const globalScope: any = window;
@@ -83,21 +71,12 @@ test.describe('Line processing pipeline', () => {
 
     test('non-matching text passes through unchanged with an active trigger', async ({page}) => {
         // Create a trigger that only fires on a specific phrase
-        await page.click('#menu-button');
-        await page.click('#triggers-button');
-
-        const triggersModal = page.locator('#triggers-modal');
-        await expect(triggersModal, 'should open triggers modal').toBeVisible();
-
-        await triggersModal.getByRole('button', {name: 'Dodaj trigger'}).click();
-        await triggersModal.getByPlaceholder('Pattern').fill('specific match phrase');
-        await triggersModal.getByRole('button', {name: 'Dodaj akcję'}).click();
-        await triggersModal.locator('select').first().selectOption('command');
-        await triggersModal.getByPlaceholder('Command').fill('some command');
-        await triggersModal.getByRole('button', {name: 'Dodaj', exact: true}).click();
-
-        await triggersModal.locator('button.app-modal__close').click();
-        await expect(triggersModal, 'should close triggers modal').not.toBeVisible();
+        const modal = await openAutomation(page);
+        await addPatternTrigger(page, modal, 'specific match phrase', async action => {
+            await action.locator('select').first().selectOption('command');
+            await action.getByPlaceholder('Command').fill('some command');
+        });
+        await closeAutomation(modal);
 
         await page.evaluate(() => {
             const globalScope: any = window;
@@ -124,29 +103,13 @@ test.describe('Line processing pipeline', () => {
         const MATCH_TEXT = 'highlight this word';
 
         // Create a trigger: pattern "highlight this word" -> color red
-        await page.click('#menu-button');
-        await page.click('#triggers-button');
-
-        const triggersModal = page.locator('#triggers-modal');
-        await expect(triggersModal, 'should open triggers modal').toBeVisible();
-
-        await triggersModal.getByRole('button', {name: 'Dodaj trigger'}).click();
-        await triggersModal.getByPlaceholder('Pattern').fill(MATCH_TEXT);
-        await triggersModal.getByRole('button', {name: 'Dodaj akcję'}).click();
-        await triggersModal.locator('select').first().selectOption('color');
-
-        // Set the color picker to red
-        await triggersModal.locator('input[type="color"]').fill(HIGHLIGHT_COLOR);
-
-        await triggersModal.getByRole('button', {name: 'Dodaj', exact: true}).click();
-
-        await expect(
-            triggersModal.locator('code.alias-pattern', {hasText: MATCH_TEXT}),
-            'should list the color trigger pattern',
-        ).toBeVisible();
-
-        await triggersModal.locator('button.app-modal__close').click();
-        await expect(triggersModal, 'should close triggers modal').not.toBeVisible();
+        const modal = await openAutomation(page);
+        await addPatternTrigger(page, modal, MATCH_TEXT, async action => {
+            await action.locator('select').first().selectOption('color');
+            await action.locator('input[type="color"]').fill(HIGHLIGHT_COLOR);
+        });
+        await expect(row(modal, MATCH_TEXT), 'should list the color trigger pattern').toBeVisible();
+        await closeAutomation(modal);
 
         const output = page.locator('#main_text_output_msg_wrapper');
 
@@ -166,26 +129,12 @@ test.describe('Line processing pipeline', () => {
         const MATCH_TEXT = 'transform this text';
 
         // Create a trigger: pattern "transform this text" -> uppercase
-        await page.click('#menu-button');
-        await page.click('#triggers-button');
-
-        const triggersModal = page.locator('#triggers-modal');
-        await expect(triggersModal, 'should open triggers modal').toBeVisible();
-
-        await triggersModal.getByRole('button', {name: 'Dodaj trigger'}).click();
-        await triggersModal.getByPlaceholder('Pattern').fill(MATCH_TEXT);
-        await triggersModal.getByRole('button', {name: 'Dodaj akcję'}).click();
-        // Default action for pattern triggers is already 'uppercase', but select it explicitly
-        await triggersModal.locator('select').first().selectOption('uppercase');
-        await triggersModal.getByRole('button', {name: 'Dodaj', exact: true}).click();
-
-        await expect(
-            triggersModal.locator('code.alias-pattern', {hasText: MATCH_TEXT}),
-            'should list the uppercase trigger pattern',
-        ).toBeVisible();
-
-        await triggersModal.locator('button.app-modal__close').click();
-        await expect(triggersModal, 'should close triggers modal').not.toBeVisible();
+        const modal = await openAutomation(page);
+        await addPatternTrigger(page, modal, MATCH_TEXT, async action => {
+            await action.locator('select').first().selectOption('uppercase');
+        });
+        await expect(row(modal, MATCH_TEXT), 'should list the uppercase trigger pattern').toBeVisible();
+        await closeAutomation(modal);
 
         const output = page.locator('#main_text_output_msg_wrapper');
 
