@@ -21,9 +21,11 @@ export const CHIP_LONG_PRESS_MS = 300;
  * once the hold completes it fires the action, buzzes the phone, flashes
  * `chip--held` and swallows the click that the release would otherwise send.
  */
-export function Chip({ icon, label, value, valueFirst, tone, onClick, onLongPress, title, className }: {
+export function Chip({ icon, label, labelColor, value, valueFirst, tone, onClick, onLongPress, title, className }: {
   icon: ReactNode;
   label: string;
+  /** Tints the label (the clock chip colours its season name). */
+  labelColor?: string;
   value: ReactNode;
   /** The value leads and the label follows it ("14:32 dzien"). */
   valueFirst?: boolean;
@@ -43,7 +45,7 @@ export function Chip({ icon, label, value, valueFirst, tone, onClick, onLongPres
       {icon}
       <span className="chip__text">
         {valueFirst && <span className="chip__val">{value}</span>}
-        {label && <span className="chip__lab">{label}</span>}
+        {label && <span className="chip__lab" style={labelColor ? { color: labelColor } : undefined}>{label}</span>}
         {!valueFirst && <span className="chip__val">{value}</span>}
       </span>
     </>
