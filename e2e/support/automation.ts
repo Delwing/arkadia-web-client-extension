@@ -88,3 +88,10 @@ export async function startNewInGroup(page: Page, modal: Locator, group: string,
     await modal.locator('.automation-group', {hasText: group}).getByTitle('Opcje grupy').click();
     await page.getByRole('button', {name: NEW_IN_GROUP[kind]}).click();
 }
+
+/** The row whose title is exactly `title` (other rows may mention it in their summary). */
+export function rowTitled(modal: Locator, title: string): Locator {
+    return modal.locator('.automation-item').filter({
+        has: modal.page().locator('.automation-item__title', {hasText: new RegExp(`^${title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`)}),
+    });
+}

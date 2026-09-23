@@ -160,7 +160,7 @@ test.describe('User aliases', () => {
         // Into a new group from the row's menu (the way to move without dragging).
         await addGroup(modal, 'Handel');
         await row(modal, 'grx').click({button: 'right'});
-        await page.getByRole('button', {name: 'Handel', exact: true}).click();
+        await page.locator('#context-menu').getByRole('button', {name: 'Handel', exact: true}).click();
         const handel = modal.locator('.automation-section').filter({has: page.locator('.automation-group', {hasText: 'Handel'})});
         await expect(handel.locator('.automation-item'), 'should move the alias into the group').toContainText('grx');
 

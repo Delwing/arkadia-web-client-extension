@@ -6,7 +6,7 @@ import {
     submitCommand,
     waitForCommandInput,
 } from './support/mocks';
-import {closeAutomation, fillScriptCode, openAutomation, row, saveEditor, startNew} from './support/automation';
+import {closeAutomation, fillScriptCode, openAutomation, row, rowTitled, saveEditor, startNew} from './support/automation';
 
 const CODE = `log('cel', args[0]);
 await send('zabij ' + args[0]);`;
@@ -30,7 +30,7 @@ test.describe('Automation scripts', () => {
         await expect(modal.locator('.automation-console__line.is-log'), 'should log from the draft run').toContainText('cel');
 
         await saveEditor(modal);
-        await expect(row(modal, 'atak'), 'should list the script with its command').toContainText('/atak');
+        await expect(rowTitled(modal, 'atak'), 'should list the script with its command').toContainText('/atak');
         await closeAutomation(modal);
 
         await resetCommandLog(page);
@@ -40,7 +40,7 @@ test.describe('Automation scripts', () => {
             .toBe('zabij goblina');
 
         const reopened = await openAutomation(page);
-        await row(reopened, 'atak').locator('.automation-item__main').click();
+        await rowTitled(reopened, 'atak').locator('.automation-item__main').click();
         await expect(reopened.locator('.automation-console'), 'should show what the run sent').toContainText('zabij goblina');
     });
 
@@ -59,7 +59,7 @@ test.describe('Automation scripts', () => {
         await saveEditor(modal);
 
         await expect(row(modal, 'za (.+)'), 'should name the script in the summary').toContainText('skrypt atak');
-        await expect(row(modal, 'atak'), 'should count who uses the script').toContainText('uzywany przez 1 element');
+        await expect(rowTitled(modal, 'atak'), 'should count who uses the script').toContainText('uzywany przez 1 element');
         await closeAutomation(modal);
 
         await resetCommandLog(page);
