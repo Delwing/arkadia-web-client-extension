@@ -51,12 +51,11 @@ import {PauseIcon} from "@web-ui/components/map/PauseIcon"
 import {MapLostBadge} from "@web-ui/components/map/MapLostBadge"
 import Keys from "./keys/Keys.tsx"
 import Scripts from "./options/Scripts.tsx"
-import Aliases from "./options/Aliases.tsx"
+import AutomationWindow from "./automation/AutomationWindow.tsx"
 import Recordings from "./options/Recordings.tsx"
 import {CLOSE_SETTINGS_EVENT, OPEN_SETTINGS_PAGE_EVENT, SAVE_SETTINGS_EVENT, openSettingsPage, requestSettingsCategory, type OpenSettingsPageDetail, type SettingsCategoryKey} from "./settings/categories.ts";
 import {buttonsSettingsCategory} from "./settings/buttonsCategory.ts";
 import CharacterManagement from "./options/CharacterManagementModal.tsx"
-import UserTriggers from "./options/UserTriggers.tsx"
 import Places from "./places/Places.tsx"
 import { OPEN_PLACE_EVENT, openPlace } from "./places/placesData.ts"
 import HelperSettings from "./options/HelperSettings.tsx"
@@ -812,10 +811,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const bindsModal = bindsModalElement ? AppModal.for(bindsModalElement) : null;
     const scriptsModalElement = document.getElementById('scripts-modal');
     const scriptsModal = scriptsModalElement ? AppModal.for(scriptsModalElement) : null;
-    const aliasesModalElement = document.getElementById('aliases-modal');
-    const aliasesModal = aliasesModalElement ? AppModal.for(aliasesModalElement) : null;
-    const triggersModalElement = document.getElementById('triggers-modal');
-    const triggersModal = triggersModalElement ? AppModal.for(triggersModalElement) : null;
+    const automationModalElement = document.getElementById('automation-modal');
+    const automationModal = automationModalElement ? AppModal.for(automationModalElement) : null;
     const recordingsModalElement = document.getElementById('recordings-modal');
     const recordingsModal = recordingsModalElement ? AppModal.for(recordingsModalElement) : null;
     const placesModalElement = document.getElementById('places-modal');
@@ -990,11 +987,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (scriptsModal) {
             scriptsModal.hide();
         }
-        if (aliasesModal) {
-            aliasesModal.hide();
-        }
-        if (triggersModal) {
-            triggersModal.hide();
+        if (automationModal) {
+            automationModal.hide();
         }
         if (recordingsModal) {
             recordingsModal.hide();
@@ -1093,9 +1087,8 @@ document.addEventListener('DOMContentLoaded', () => {
             document.exitFullscreen().catch(err => console.error('Failed to exit fullscreen:', err));
         }
     };
-    const builtins: [string, string, MainMenuGroup, string, () => void, string?][] = [
-        ['aliases-button', 'Aliasy', 'gra', 'terminal', () => aliasesModal?.show()],
-        ['triggers-button', 'Triggery', 'gra', 'zap', () => triggersModal?.show()],
+    const builtins: [string, string, MainMenuGroup, string, () => void, string?, string[]?][] = [
+        ['automation-button', 'Automatyzacja', 'gra', 'zap', () => automationModal?.show(), undefined, ['aliasy', 'triggery', 'wyzwalacze']],
         ['binds-button', 'Klawisze', 'gra', 'keyboard', () => bindsModal?.show()],
         ['places-button', 'Miejsca', 'gra', 'map-pin', () => placesModal?.show()],
         ['recordings-button', 'Nagrania', 'gra', 'record', () => recordingsModal?.show()],
@@ -1111,8 +1104,8 @@ document.addEventListener('DOMContentLoaded', () => {
         ['data-sources-button', 'Źródła danych', 'narzedzia', 'database', () => eventBus.emit('dataSources.popup.open')],
         ['helper-button', 'Helper', 'narzedzia', 'plug', () => helperModal?.show()],
     ];
-    builtins.forEach(([id, label, group, icon, onSelect, shortLabel], index) => {
-        registerMainMenuItem({id, label, shortLabel, group, icon, order: (index + 1) * 10, onSelect, source: 'builtin'});
+    builtins.forEach(([id, label, group, icon, onSelect, shortLabel, keywords], index) => {
+        registerMainMenuItem({id, label, shortLabel, keywords, group, icon, order: (index + 1) * 10, onSelect, source: 'builtin'});
     });
     // Logi (170) registers itself in Narzędzia.
     registerMainMenuItem({id: 'docs-button', label: 'Dokumentacja', shortLabel: 'Pomoc', group: 'narzedzia', icon: 'book', order: 180, onSelect: () => eventBus.emit('docs.popup.open'), source: 'builtin'});
@@ -1356,14 +1349,9 @@ document.addEventListener('DOMContentLoaded', () => {
         createRoot(scriptsRoot).render(createElement(Scripts));
     }
 
-    const aliasesRoot = document.getElementById('aliases-options');
-    if (aliasesRoot) {
-        createRoot(aliasesRoot).render(createElement(Aliases));
-    }
-
-    const triggersRoot = document.getElementById('triggers-options');
-    if (triggersRoot) {
-        createRoot(triggersRoot).render(createElement(UserTriggers));
+    const automationRoot = document.getElementById('automation-options');
+    if (automationRoot) {
+        createRoot(automationRoot).render(createElement(AutomationWindow));
     }
 
     const recordingsRoot = document.getElementById('recordings-options');

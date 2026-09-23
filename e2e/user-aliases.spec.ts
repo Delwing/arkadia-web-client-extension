@@ -1,22 +1,16 @@
 import {expect, test} from './support/fixtures';
-import type {Page} from '@playwright/test';
 import {
     ensureGameSocket,
+    getCommandLog,
     getLastOutgoingCommand,
     pushGmcp,
+    resetCommandLog,
     GMCP_PATHS,
     submitCommand,
     waitForCharacter,
     waitForCommandInput,
 } from './support/mocks';
-
-async function openAliasesModal(page: Page) {
-    await page.click('#menu-button');
-    await page.click('#aliases-button');
-    const modal = page.locator('#aliases-modal');
-    await expect(modal, 'should display aliases modal after navigation').toBeVisible();
-    return modal;
-}
+import {addAlias, addGroup, closeAutomation, openAutomation, row, saveEditor, selectRow, startNew, startNewInGroup} from './support/automation';
 
 test.describe('User aliases', () => {
     test('creates, executes, and persists custom alias', async ({page}) => {
@@ -24,28 +18,15 @@ test.describe('User aliases', () => {
         await waitForCommandInput(page);
         await ensureGameSocket(page);
 
-        const aliasesModal = await openAliasesModal(page);
+        const modal = await openAutomation(page);
+        await expect(modal.locator('.automation-item'), 'should start with no aliases or triggers').toHaveCount(0);
 
-        const aliasEntries = aliasesModal.locator('.alias-card');
-        await expect(aliasEntries, 'should start with no custom aliases').toHaveCount(0);
-
-        await aliasesModal.getByRole('button', { name: 'Dodaj alias' }).click();
-
-        const patternInput = aliasesModal.getByPlaceholder('np. zab (.+)');
-        const commandInput = aliasesModal.getByPlaceholder('np. zabij $1');
         const aliasPattern = 'fooalias';
         const aliasCommand = 'powiedz czesc';
+        await addAlias(page, modal, aliasPattern, aliasCommand);
+        await expect(row(modal, aliasPattern), 'should list newly created alias entry').toContainText(aliasCommand);
 
-        await patternInput.fill(aliasPattern);
-        await commandInput.fill(aliasCommand);
-        await aliasesModal.getByRole('button', { name: 'Dodaj', exact: true }).click();
-
-        const createdAlias = aliasesModal.locator('.alias-card').filter({ hasText: aliasPattern });
-        await expect(createdAlias, 'should list newly created alias entry').toContainText(aliasCommand);
-
-        await aliasesModal.locator('.app-modal__close').click();
-        await expect(aliasesModal, 'should close aliases modal before executing commands').not.toBeVisible();
-
+        await closeAutomation(modal);
         await submitCommand(page, aliasPattern);
         await expect
             .poll(async () => await getLastOutgoingCommand(page), {
@@ -57,12 +38,9 @@ test.describe('User aliases', () => {
         await waitForCommandInput(page);
         await ensureGameSocket(page);
 
-        const reloadedModal = await openAliasesModal(page);
-        const persistedAlias = reloadedModal.locator('.alias-card').filter({ hasText: aliasPattern });
-        await expect(persistedAlias, 'should persist alias entry after reload').toContainText(aliasCommand);
-
-        await reloadedModal.locator('.app-modal__close').click();
-        await expect(reloadedModal, 'should close aliases modal after persistence check').not.toBeVisible();
+        const reloaded = await openAutomation(page);
+        await expect(row(reloaded, aliasPattern), 'should persist alias entry after reload').toContainText(aliasCommand);
+        await closeAutomation(reloaded);
 
         await submitCommand(page, aliasPattern);
         await expect
@@ -77,56 +55,26 @@ test.describe('User aliases', () => {
         await waitForCommandInput(page);
         await ensureGameSocket(page);
 
-        // Establish two characters via GMCP so they appear in the override dropdown.
         // Pushing char.info with object_num creates CharName:object_num in localStorage,
         // which collectCharacters() uses to discover known characters.
         await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'CharBeta', object_num: 91002});
         await waitForCharacter(page, 'CharBeta');
-
         await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'CharAlpha', object_num: 91001});
         await waitForCharacter(page, 'CharAlpha');
 
-        const aliasesModal = await openAliasesModal(page);
+        const modal = await openAutomation(page);
+        await startNew(page, modal, 'alias');
+        await modal.getByPlaceholder('np. zab (.+)').fill('testalias');
+        await modal.getByPlaceholder('np. zabij $1').fill('default cmd');
 
-        // Open the add alias form
-        await aliasesModal.getByRole('button', {name: 'Dodaj alias'}).click();
+        await modal.locator('select.automation-override__select').selectOption('CharAlpha');
+        await modal.getByRole('button', {name: 'Dodaj dla postaci'}).click();
+        await modal.getByPlaceholder('Komenda dla tej postaci').fill('alpha cmd');
+        await saveEditor(modal);
 
-        // Fill in the pattern and default command
-        await aliasesModal.getByPlaceholder('np. zab (.+)').fill('testalias');
-        await aliasesModal.getByPlaceholder('np. zabij $1').fill('default cmd');
+        await expect(row(modal, 'testalias'), 'should list the alias').toBeVisible();
+        await closeAutomation(modal);
 
-        // Add a character override for CharAlpha:
-        // The select defaults to the first available character; CharAlpha should be present
-        await aliasesModal.locator('select').selectOption('CharAlpha');
-
-        // Click the override "Dodaj" button (inside the dialog body)
-        await aliasesModal.locator('.popup-dialog__body').getByRole('button', {name: 'Dodaj', exact: true}).click();
-
-        // Fill the override command input that appeared
-        await aliasesModal.getByPlaceholder('Komenda dla tej postaci').fill('alpha cmd');
-
-        // Save the alias using the "Dodaj" button in the dialog footer
-        await aliasesModal.locator('.popup-dialog__footer').getByRole('button', {name: 'Dodaj', exact: true}).click();
-
-        // Verify the alias card shows the override entry for CharAlpha
-        const aliasCard = aliasesModal.locator('.alias-card').filter({hasText: 'testalias'});
-        await expect(aliasCard, 'should list newly created alias with override').toBeVisible();
-
-        const overrideEntry = aliasCard.locator('.alias-override-entry');
-        await expect(
-            overrideEntry.locator('.alias-override-char'),
-            'should show CharAlpha as the override character',
-        ).toContainText('CharAlpha');
-        await expect(
-            overrideEntry.locator('.alias-command'),
-            'should show alpha cmd as the override command',
-        ).toContainText('alpha cmd');
-
-        // Close the aliases modal
-        await aliasesModal.locator('.app-modal__close').first().click();
-        await expect(aliasesModal, 'should close aliases modal before executing commands').not.toBeVisible();
-
-        // Execute the alias as CharAlpha — expect the override command to be sent
         await submitCommand(page, 'testalias');
         await expect
             .poll(async () => await getLastOutgoingCommand(page), {
@@ -134,10 +82,9 @@ test.describe('User aliases', () => {
             })
             .toBe('alpha cmd');
 
-        // Switch to CharBeta — no override exists, so the default command should be sent
+        // No override for CharBeta, so the default command goes.
         await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'CharBeta', object_num: 91002});
         await waitForCharacter(page, 'CharBeta');
-
         await submitCommand(page, 'testalias');
         await expect
             .poll(async () => await getLastOutgoingCommand(page), {
@@ -145,31 +92,86 @@ test.describe('User aliases', () => {
             })
             .toBe('default cmd');
 
-        // Reload to verify the override persists across page loads
         await page.reload();
         await waitForCommandInput(page);
         await ensureGameSocket(page);
-
-        // Switch back to CharAlpha after reload
         await pushGmcp(page, GMCP_PATHS.CHAR_INFO, {name: 'CharAlpha', object_num: 91001});
         await waitForCharacter(page, 'CharAlpha');
 
-        // Open the aliases modal and confirm the override was persisted
-        const reloadedModal = await openAliasesModal(page);
-        const reloadedCard = reloadedModal.locator('.alias-card').filter({hasText: 'testalias'});
-        await expect(reloadedCard, 'should persist alias card after reload').toBeVisible();
-
-        const reloadedOverride = reloadedCard.locator('.alias-override-entry');
+        const reloaded = await openAutomation(page);
+        await selectRow(reloaded, 'testalias');
         await expect(
-            reloadedOverride.locator('.alias-override-char'),
-            'should persist CharAlpha override character after reload',
-        ).toContainText('CharAlpha');
-        await expect(
-            reloadedOverride.locator('.alias-command'),
-            'should persist alpha cmd override command after reload',
-        ).toContainText('alpha cmd');
+            reloaded.getByTitle('Komenda dla CharAlpha'),
+            'should persist the CharAlpha override after reload',
+        ).toHaveValue('alpha cmd');
+        await closeAutomation(reloaded);
+    });
 
-        await reloadedModal.locator('.app-modal__close').first().click();
-        await expect(reloadedModal, 'should close aliases modal after persistence check').not.toBeVisible();
+    test('runs several actions, shows its group and stops when switched off', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+
+        const modal = await openAutomation(page);
+        await addGroup(modal, 'Walka');
+        await startNewInGroup(page, modal, 'Walka', 'alias');
+        await modal.getByPlaceholder('np. zab (.+)').fill('zabx (.+)');
+        await modal.getByPlaceholder('np. zabij $1').fill('zabij $1');
+        await modal.getByRole('button', {name: 'Dodaj akcję'}).click();
+        await modal.getByPlaceholder('np. zabij $1').nth(1).fill('zapal pochodnie');
+
+        // The test line shows what the alias would send before it is saved.
+        await modal.getByTitle('Przykladowa komenda').fill('zabx goblina');
+        await expect(modal.locator('.automation-out'), 'should preview the commands').toContainText('zabij goblina');
+        await expect(modal.locator('.automation-out'), 'should preview the commands').toContainText('zapal pochodnie');
+        await saveEditor(modal);
+
+        const group = modal.locator('.automation-section').filter({has: page.locator('.automation-group', {hasText: 'Walka'})});
+        await expect(group.locator('.automation-item'), 'should put the alias in its group').toContainText('zabij $1 ; zapal pochodnie');
+
+        await closeAutomation(modal);
+        await resetCommandLog(page);
+        await submitCommand(page, 'zabx goblina');
+        await expect
+            .poll(async () => await getCommandLog(page), {message: 'should send every command action in order'})
+            .toEqual(expect.arrayContaining(['zabij goblina', 'zapal pochodnie']));
+
+        const reopened = await openAutomation(page);
+        await row(reopened, 'zabx').getByTitle('Wlaczony').click();
+        await expect(row(reopened, 'zabx'), 'should mark the alias as switched off').toHaveClass(/is-off/);
+
+        await closeAutomation(reopened);
+        await resetCommandLog(page);
+        await submitCommand(page, 'zabx orka');
+        await expect
+            .poll(async () => await getLastOutgoingCommand(page), {message: 'should send the typed text unchanged'})
+            .toBe('zabx orka');
+        expect(await getCommandLog(page)).not.toContain('zabij orka');
+    });
+
+    test('a switched off group stops its aliases', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+
+        const modal = await openAutomation(page);
+        await addAlias(page, modal, 'grx', 'powiedz grupa');
+
+        // Into a new group from the row's menu (the way to move without dragging).
+        await addGroup(modal, 'Handel');
+        await row(modal, 'grx').click({button: 'right'});
+        await page.getByRole('button', {name: 'Handel', exact: true}).click();
+        const handel = modal.locator('.automation-section').filter({has: page.locator('.automation-group', {hasText: 'Handel'})});
+        await expect(handel.locator('.automation-item'), 'should move the alias into the group').toContainText('grx');
+
+        await modal.locator('.automation-group', {hasText: 'Handel'}).getByTitle('Grupa wlaczona').click();
+        await expect(modal.locator('.automation-group', {hasText: 'Handel'}), 'should show the group as off').toContainText('wylaczona');
+        await closeAutomation(modal);
+
+        await resetCommandLog(page);
+        await submitCommand(page, 'grx');
+        await expect
+            .poll(async () => await getLastOutgoingCommand(page), {message: 'should not run an alias of a group that is off'})
+            .toBe('grx');
     });
 });

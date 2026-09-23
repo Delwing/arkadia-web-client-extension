@@ -21,5 +21,5 @@ Rozszerzenie dodaje wiele przydatnych funkcji do klienta webowego Arkadii, w tym
 
 Mozesz tworzyc wlasne aliasy w ustawieniach klienta:
 - **Wzorzec** - wyrazenie regularne dopasowujace komende
-- **Komenda** - tekst wysylany do serwera, moze uzywac `$1`, `$2` itp. dla grup z dopasowania
+- **Akcje** - komenda wysylana do serwera (moze uzywac `$1`, `$2` itp. dla grup z dopasowania), dzwiek, powiadomienie, czytanie na glos, funkcyjny bind
 - **Skroty obiektow** - `@1`, `@A`, `@@` zostana zamienione na identyfikatory obiektow

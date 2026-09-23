@@ -29,18 +29,19 @@ test.describe('forge menu', () => {
         await page.locator('.forge-menu__button').click();
         const list = page.locator('.forge-menu__list');
         await expect(list).toBeVisible();
-        await expect(list.getByRole('button', { name: 'Triggery' })).toBeVisible();
+        await expect(list.getByRole('button', { name: 'Automatyzacja' })).toBeVisible();
         await expect(list.getByRole('button', { name: 'Skrypty' })).toBeVisible();
         await expect(list.getByRole('button', { name: 'Dokumentacja' })).toBeVisible();
         await expect(list.getByRole('button', { name: 'Ustawienia' })).toBeVisible();
     });
 
-    test('opens the triggers editor in a forged modal', async ({ page }) => {
+    test('opens Automatyzacja in a forged modal', async ({ page }) => {
         await page.locator('.forge-menu__button').click();
-        await page.locator('.forge-menu__list').getByRole('button', { name: 'Triggery' }).click();
+        await page.locator('.forge-menu__list').getByRole('button', { name: 'Automatyzacja' }).click();
         const modal = page.locator('.forge-menu-modal');
         await expect(modal).toBeVisible();
-        await expect(modal.locator('.panel__title')).toHaveText('Triggery');
+        await expect(modal.locator('.panel__title')).toHaveText('Automatyzacja');
+        await expect(modal.locator('.automation-nav')).toBeVisible();
         // Backdrop click dismisses it.
         await page.locator('.forge-menu-backdrop').click({ position: { x: 5, y: 5 } });
         await expect(modal).toHaveCount(0);
@@ -113,22 +114,23 @@ test.describe('forge menu', () => {
     });
 
     test('nested edit sub-modal opens as a centred overlay', async ({ page }) => {
-        // The editors (Aliasy, Triggery, …) open their "add / edit" form as the
-        // shared inline Dialog (.popup-dialog). It must render as a fixed,
+        // Panels open their confirmations and forms as the shared inline Dialog
+        // (.popup-dialog; Klawisze here). It must render as a fixed,
         // full-viewport overlay with a bounded content card, not dump into the
-        // list's flow with no header/footer framing.
+        // panel's flow with no header/footer framing.
         await page.locator('.forge-menu__button').click();
-        await page.locator('.forge-menu__list').getByRole('button', { name: 'Aliasy' }).click();
+        await page.locator('.forge-menu__list').getByRole('button', { name: 'Klawisze' }).click();
         const modal = page.locator('.forge-menu-modal');
         await expect(modal).toBeVisible();
 
-        await modal.getByRole('button', { name: 'Dodaj alias' }).click();
+        await modal.getByTitle('Więcej', { exact: true }).click();
+        await modal.getByRole('button', { name: 'Przywróć domyślne' }).click();
         // The overlay is the fixed backdrop; the card (.popup-dialog) sits inside it.
         const dialog = modal.locator('.popup-dialog-backdrop');
         await expect(dialog).toBeVisible();
         await expect(dialog).toHaveCSS('position', 'fixed');
         // The header lays out its title and close button on one row.
-        await expect(dialog.locator('.popup-dialog__title')).toHaveText('Dodaj alias');
+        await expect(dialog.locator('.popup-dialog__title')).toHaveText('Przywrócić domyślne bindy?');
         await expect(dialog.locator('.popup-dialog__body')).toBeVisible();
 
         // Backdrop click on the sub-modal dismisses just it, not the list.

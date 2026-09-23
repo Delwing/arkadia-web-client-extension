@@ -23,7 +23,7 @@ test.describe('main menu', () => {
         await expect(menu).toBeVisible();
         const captions = menu.locator('.command-menu__caption');
         await expect(captions).toHaveText(['Gra', 'Ustawienia', 'Narzędzia']);
-        await expect(menu.locator('[data-group="gra"] .command-menu__item').first()).toHaveText('Aliasy');
+        await expect(menu.locator('[data-group="gra"] .command-menu__item').first()).toHaveText('Automatyzacja');
         await expect(menu.locator('[data-group="narzedzia"] #docs-button')).toBeVisible();
         await expect(menu.locator('.command-menu__bar #fullscreen-button')).toBeVisible();
         await expect(menu.locator('.command-menu__bar #disconnect-button')).toHaveText('Rozłącz');
@@ -72,10 +72,12 @@ test.describe('main menu', () => {
         await filter.fill('xyzzy');
         await expect(page.locator('.command-menu__empty')).toBeVisible();
 
+        // Automatyzacja is found by what it holds, too.
         await filter.fill('alia');
+        await expect(items).toHaveText(['Automatyzacja']);
         await filter.press('Enter');
         await expect(page.locator(panel)).toHaveCount(0);
-        await expect(page.locator('#aliases-modal')).toBeVisible();
+        await expect(page.locator('#automation-modal')).toBeVisible();
     });
 
     test('reopening starts with an empty filter', async ({ page }) => {

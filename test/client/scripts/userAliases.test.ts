@@ -1,4 +1,4 @@
-import initUserAliases from '@client/scripts/userAliases';
+import initUserAliases, { aliasActions, aliasCommandMirror } from '@client/scripts/userAliases';
 import { FakeClient, initHerbClient, defaultHerbData } from '../helpers/herbClient';
 import { globalStorage, characterStorage } from '@modules/core/storage';
 
@@ -268,6 +268,110 @@ describe('user aliases', () => {
         'wez 2. rzecz',
         'schowaj 2. rzecz',
       ]);
+    });
+  });
+
+  describe('actions', () => {
+    function setup(aliases: unknown[], character = 'Arel') {
+      characterStorage.setCharacter(character);
+      const client = new AliasClient();
+      (client as any).sendEvent = jest.fn();
+      (client as any).FunctionalBind = { set: jest.fn() };
+      initUserAliases((client as unknown) as any, client.aliases);
+      globalStorage.set('aliases', aliases as any);
+      return client;
+    }
+
+    async function run(client: AliasClient, input: string) {
+      const alias = client.aliases.find((e) => e.pattern.test(input));
+      if (!alias) return false;
+      await alias.callback(input.match(alias.pattern) as RegExpMatchArray);
+      await client.flush();
+      return true;
+    }
+
+    test('reads an alias without actions as one command', () => {
+      expect(aliasActions({ command: 'zabij $1' })).toEqual([{ type: 'command', command: 'zabij $1' }]);
+      expect(aliasActions({ command: '' })).toEqual([]);
+    });
+
+    test('mirrors command actions into command', () => {
+      expect(aliasCommandMirror([
+        { type: 'command', command: 'zabij $1' },
+        { type: 'beep' },
+        { type: 'command', command: ' zapal pochodnie ' },
+      ])).toBe('zabij $1;zapal pochodnie');
+    });
+
+    test('runs actions in order with groups filled in', async () => {
+      const client = setup([{
+        pattern: 'zab (.+)',
+        command: 'zabij $1;zapal pochodnie',
+        macros: [
+          { type: 'command', command: 'zabij $1' },
+          { type: 'notify', message: 'Atakuje $1' },
+          { type: 'command', command: 'zapal pochodnie' },
+        ],
+      }]);
+
+      await run(client, 'zab goblina');
+
+      expect(client.executed).toEqual(['zabij goblina', 'zapal pochodnie']);
+      expect((client as any).sendEvent).toHaveBeenCalledWith('notify', { text: 'Atakuje goblina', system: true });
+    });
+
+    test('a character override replaces all command actions once', async () => {
+      const client = setup([{
+        pattern: 'zab (.+)',
+        command: 'zabij $1;zapal pochodnie',
+        macros: [
+          { type: 'command', command: 'zabij $1' },
+          { type: 'beep', soundKey: 'beep' },
+          { type: 'command', command: 'zapal pochodnie' },
+        ],
+        overrides: { Arel: 'dobadz miecza;zabij $1' },
+      }]);
+
+      await run(client, 'zab goblina');
+
+      expect(client.executed).toEqual(['dobadz miecza', 'zabij goblina']);
+      expect((client as any).sendEvent).toHaveBeenCalledWith('sound:play', { key: 'beep' });
+    });
+
+    test('an override still runs when the alias has no command action', async () => {
+      const client = setup([{
+        pattern: 'dzwon',
+        command: '',
+        macros: [{ type: 'beep', soundKey: 'beep' }],
+        overrides: { Arel: 'krzyknij hej' },
+      }]);
+
+      await run(client, 'dzwon');
+
+      expect(client.executed).toEqual(['krzyknij hej']);
+    });
+
+    test('skips a switched off alias', async () => {
+      const client = setup([{ pattern: 'zab (.+)', command: 'zabij $1', enabled: false }]);
+      expect(await run(client, 'zab goblina')).toBe(false);
+    });
+
+    test('follows its group being switched on and off', async () => {
+      globalStorage.set('automationGroups', [{ id: 'g', name: 'Walka', enabled: false }]);
+      const client = setup([{ pattern: 'zab (.+)', command: 'zabij $1', group: 'g' }]);
+      expect(await run(client, 'zab goblina')).toBe(false);
+
+      globalStorage.set('automationGroups', [{ id: 'g', name: 'Walka' }]);
+      expect(await run(client, 'zab goblina')).toBe(true);
+      expect(client.executed).toEqual(['zabij goblina']);
+    });
+
+    test('applies only to the listed characters and follows a switch', async () => {
+      const client = setup([{ pattern: 'zab (.+)', command: 'zabij $1', characters: ['Morwen'] }], 'Arel');
+      expect(await run(client, 'zab goblina')).toBe(false);
+
+      characterStorage.setCharacter('Morwen');
+      expect(await run(client, 'zab goblina')).toBe(true);
     });
   });
 });

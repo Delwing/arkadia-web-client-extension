@@ -51,6 +51,8 @@ export interface ExportOptions {
     characterSettings: boolean; // Character gameplay settings
     triggers: boolean;
     aliases: boolean;
+    automationGroups: boolean;
+    automationScripts: boolean;
     buttons: boolean;
     radial: boolean;
     scripts: boolean;
@@ -69,6 +71,8 @@ export const DEFAULT_EXPORT_OPTIONS: ExportOptions = {
     characterSettings: true,
     triggers: true,
     aliases: true,
+    automationGroups: true,
+    automationScripts: true,
     buttons: true,
     radial: true,
     scripts: true,
@@ -92,6 +96,8 @@ export const EXPORT_SPECIFIC_GLOBAL_KEYS: Record<string, keyof ExportOptions> = 
     shortcuts: "shortcuts",
     triggers: "triggers",
     aliases: "aliases",
+    automationGroups: "automationGroups",
+    automationScripts: "automationScripts",
     mobileButtonSettings: "buttons",
     desktopButtonSettings: "buttons",
     scripts: "scripts",

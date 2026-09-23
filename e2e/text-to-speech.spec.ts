@@ -2,6 +2,7 @@ import type {Page} from '@playwright/test';
 import {expect, test} from './support/fixtures';
 import {ensureGameSocket, primeCharInfo, pushText, waitForCommandInput} from './support/mocks';
 import {openSettings, saveSettings} from './support/settings';
+import {addPatternTrigger, closeAutomation, openAutomation, row} from './support/automation';
 
 /**
  * Headless Chromium has no audio device, so the browser's synthesizer is
@@ -42,17 +43,13 @@ test('speak trigger reads its text with capture groups, using the TTS settings',
     await settings.locator('#ui-tts-rate').fill('1.5');
     await saveSettings(page);
 
-    await page.click('#menu-button');
-    await page.click('#triggers-button');
-    const triggersModal = page.locator('#triggers-modal');
-    await triggersModal.getByRole('button', {name: 'Dodaj trigger'}).click();
-    await triggersModal.getByPlaceholder('Pattern').fill('Atakuje cie (.+)!');
-    await triggersModal.getByRole('button', {name: 'Dodaj akcję'}).click();
-    await triggersModal.locator('select').first().selectOption('speak');
-    await triggersModal.getByPlaceholder('Tekst do przeczytania (puste = dopasowany tekst)').fill('Atak: {1}');
-    await triggersModal.getByRole('button', {name: 'Dodaj', exact: true}).click();
-    await expect(triggersModal.locator('.trigger-chip', {hasText: 'Czytaj: Atak: {1}'})).toBeVisible();
-    await triggersModal.locator('button.app-modal__close').click();
+    const modal = await openAutomation(page);
+    await addPatternTrigger(page, modal, 'Atakuje cie (.+)!', async action => {
+        await action.locator('select').first().selectOption('speak');
+        await action.getByPlaceholder('Tekst do przeczytania (puste = dopasowany tekst)').fill('Atak: {1}');
+    });
+    await expect(row(modal, 'Atakuje cie'), 'should list the speak action').toContainText('czytaj "Atak: {1}"');
+    await closeAutomation(modal);
 
     await pushText(page, 'Atakuje cie wielki troll!');
 

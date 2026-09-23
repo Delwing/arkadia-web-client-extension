@@ -308,6 +308,8 @@ export interface KnownEvents {
     "wiedzaImportTotalLevels": { character: string; levels: unknown[] };
     "leadToByInternalId": string;
     "sendCommand": SendCommandEvent;
+    /** Run an automation script now, from its editor; `code` runs a draft instead of the saved code. */
+    "automation.runScript": { id: string; code?: string };
     "printLine": string | AnsiAwareBuffer;
     "requestHerbCounts": void;
     "herbManagerClose": void;

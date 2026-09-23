@@ -17,7 +17,7 @@ const cx = (...parts: (string | false | undefined | null)[]) => parts.filter(Boo
  * field. Every dialog field opts out; the login form doesn't use these
  * primitives, so it keeps its password-manager support.
  */
-const NO_PASSWORD_MANAGER = {
+export const NO_PASSWORD_MANAGER = {
     'data-1p-ignore': 'true',
     'data-lpignore': 'true',
     'data-bwignore': 'true',

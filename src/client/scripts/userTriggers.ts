@@ -5,8 +5,10 @@ import {Trigger} from "../Triggers";
 import {executeTriggerMacro} from "@modules/core/pluginTriggerMacroRegistry";
 import { globalStorage } from "@modules/core/storage";
 import { sendPush } from "@modules/push/pushClient";
+import { isAutomationActiveNow, onAutomationScopeChange, setAutomationGroupEnabled, type AutomationMeta } from "@modules/core/automation";
+import { runUserScript, type RunOptions } from "./userScripts";
 
-export type BuiltInMacroType = 'uppercase' | 'color' | 'replace' | 'beep' | 'mute' | 'unmute' | 'command' | 'slowBlink' | 'rapidBlink' | 'dim' | 'functionalBind' | 'wrap' | 'notify' | 'push' | 'speak';
+export type BuiltInMacroType = 'uppercase' | 'color' | 'replace' | 'beep' | 'mute' | 'unmute' | 'command' | 'slowBlink' | 'rapidBlink' | 'dim' | 'functionalBind' | 'wrap' | 'notify' | 'push' | 'speak' | 'script' | 'group';
 
 export interface UserMacro {
     type: BuiltInMacroType | string;  // string allows plugin macros like "plugin:..."
@@ -24,6 +26,12 @@ export interface UserMacro {
      */
     bypassCooldown?: boolean;
     pluginConfig?: Record<string, any>;
+    /** script: the automation script to run. */
+    scriptId?: string;
+    /** group: the automation group to switch. */
+    groupId?: string;
+    /** group: what to do with it; absent flips it. */
+    groupState?: 'on' | 'off' | 'toggle';
     // Dim effect options
     dimStartOpacity?: number;
     dimEndOpacity?: number;
@@ -37,7 +45,42 @@ export interface UserMacro {
 
 export type TriggerType = 'pattern' | 'event';
 
-export interface UserTrigger {
+/**
+ * Actions that need no line of game text, so they also run on an event, an
+ * alias, and later a timer. The rest (colour, replace, blink...) edit the line.
+ */
+export const LINELESS_MACRO_TYPES: ReadonlySet<string> = new Set([
+    'beep', 'mute', 'unmute', 'command', 'functionalBind', 'notify', 'push', 'speak', 'script', 'group',
+]);
+
+/** What a "run script" action passes on: the groups, and what started it. */
+export interface ScriptCall {
+    args: string[];
+    options: RunOptions;
+}
+
+/**
+ * The actions that reach beyond the element itself: running a script and
+ * switching a group. Shared by every kind of element. Returns whether it was
+ * one of them.
+ */
+function applyAutomationMacro(client: Client, macro: UserMacro, call: ScriptCall): boolean {
+    switch (macro.type) {
+        case 'script':
+            if (macro.scriptId) void runUserScript(client, macro.scriptId, call.args, call.options);
+            return true;
+        case 'group':
+            if (macro.groupId) {
+                const state = macro.groupState === 'on' ? true : macro.groupState === 'off' ? false : 'toggle';
+                setAutomationGroupEnabled(macro.groupId, state);
+            }
+            return true;
+        default:
+            return false;
+    }
+}
+
+export interface UserTrigger extends AutomationMeta {
     type?: TriggerType;  // defaults to 'pattern' for backwards compatibility
     pattern?: string;    // for pattern triggers
     event?: string;      // for event triggers (e.g., 'kill', 'combatState')
@@ -357,16 +400,32 @@ export function interpolateMatchGroups(text: string, match: RegExpMatchArray): s
     });
 }
 
+/**
+ * The text of a pattern trigger's action with the match filled in: `$0`,
+ * `$1`... (as in aliases) and `{1}`, `{name}` (see `interpolateMatchGroups`).
+ * A `$` group that does not exist becomes empty, as it does in aliases.
+ */
+export function interpolateMatch(text: string, match: RegExpMatchArray): string {
+    if (!text) return text;
+    return interpolateMatchGroups(text.replace(/\$(\d+)/g, (_, n: string) => match[Number(n)] ?? ''), match);
+}
+
 function applyMacrosToMatch(
     client: Client,
     line: AnsiAwareBuffer,
     match: RegExpMatchArray,
-    macros: UserMacro[]
+    macros: UserMacro[],
+    label = ''
 ): void {
     const matchStart = match.index ?? 0;
     let matchRange: TextRange = [matchStart, matchStart + match[0].length];
 
     macros?.forEach(macro => {
+        const call: ScriptCall = {
+            args: Array.from(match).slice(1).map(g => g ?? ''),
+            options: { source: 'trigger', label, line: line.text },
+        };
+        if (applyAutomationMacro(client, macro, call)) return;
         switch (macro.type) {
             case 'uppercase':
                 line.replace(matchRange, line.text.substring(matchRange[0], matchRange[1]).toUpperCase());
@@ -393,7 +452,7 @@ function applyMacrosToMatch(
                 break;
             case 'command':
                 if (macro.command) {
-                    client.sendCommand(macro.command);
+                    client.sendCommand(interpolateMatch(macro.command, match));
                 }
                 break;
             case 'slowBlink':
@@ -428,18 +487,19 @@ function applyMacrosToMatch(
             }
             case 'functionalBind':
                 if (macro.command && macro.label) {
-                    client.FunctionalBind.set(macro.label, () => {
-                        client.sendCommand(macro.command!);
+                    const command = interpolateMatch(macro.command, match);
+                    client.FunctionalBind.set(interpolateMatch(macro.label, match), () => {
+                        client.sendCommand(command);
                     });
                 }
                 break;
             case 'notify': {
-                const text = macro.message || line.text.substring(matchRange[0], matchRange[1]);
+                const text = interpolateMatch(macro.message ?? '', match) || line.text.substring(matchRange[0], matchRange[1]);
                 client.sendEvent("notify", { text, system: true });
                 break;
             }
             case 'push': {
-                const text = macro.message || line.text.substring(matchRange[0], matchRange[1]);
+                const text = interpolateMatch(macro.message ?? '', match) || line.text.substring(matchRange[0], matchRange[1]);
                 // Unlike the automatic hp alert, this is sent whether or not the
                 // client is on screen: a trigger the player wrote deliberately
                 // should not silently do nothing while they are at the desk.
@@ -451,7 +511,7 @@ function applyMacrosToMatch(
             }
             case 'speak': {
                 const text = macro.message
-                    ? interpolateMatchGroups(macro.message, match)
+                    ? interpolateMatch(macro.message, match)
                     : line.text.substring(matchRange[0], matchRange[1]);
                 if (text.trim()) {
                     client.sendEvent("tts:speak", { text });
@@ -556,65 +616,80 @@ export function evaluateCondition(condition: TriggerCondition, payload: unknown)
     }
 }
 
+/**
+ * Run one action that needs no line of text (see `LINELESS_MACRO_TYPES`).
+ *
+ * `interpolate` fills the placeholders of the element that fired it: `{name}`
+ * from an event's payload, `$1` from an alias's match. Actions that edit a line
+ * are ignored, and so are plugin macros, which need a line to work on.
+ */
+export function applyLinelessMacro(
+    client: Client,
+    macro: UserMacro,
+    interpolate: (text: string) => string,
+    call: ScriptCall = { args: [], options: { source: 'event' } },
+): void {
+    if (applyAutomationMacro(client, macro, call)) return;
+    const command = macro.command && interpolate(macro.command);
+    const label = macro.label && interpolate(macro.label);
+    const message = macro.message && interpolate(macro.message);
+
+    switch (macro.type) {
+        case 'beep':
+            client.sendEvent("sound:play", {key: macro.soundKey || "beep"});
+            break;
+        case 'mute':
+            client.SoundManager.mute();
+            break;
+        case 'unmute':
+            client.SoundManager.unmute();
+            break;
+        case 'command':
+            if (command) {
+                client.sendCommand(command);
+            }
+            break;
+        case 'functionalBind':
+            if (command && label) {
+                client.FunctionalBind.set(label, () => {
+                    client.sendCommand(command);
+                });
+            }
+            break;
+        case 'notify':
+            if (message) {
+                client.sendEvent("notify", { text: message, system: true });
+            }
+            break;
+        case 'push':
+            // No matched text to fall back on without a line, so a
+            // message is required rather than optional.
+            if (message) {
+                void sendPush(
+                    { title: 'Arkadia', body: message },
+                    { bypassCooldown: macro.bypassCooldown },
+                );
+            }
+            break;
+        case 'speak':
+            // As with push, nothing to fall back on without a matched line.
+            if (message?.trim()) {
+                client.sendEvent("tts:speak", { text: message });
+            }
+            break;
+    }
+}
+
 function applyEventMacros(
     client: Client,
     macros: UserMacro[],
-    payload?: unknown
+    payload?: unknown,
+    event = ''
 ): void {
-    macros?.forEach(macro => {
-        // Every user-authored text field on an event macro supports {name}
-        // placeholders drawn from the event payload.
-        const command = macro.command && interpolateEventArgs(macro.command, payload);
-        const label = macro.label && interpolateEventArgs(macro.label, payload);
-        const message = macro.message && interpolateEventArgs(macro.message, payload);
-
-        switch (macro.type) {
-            case 'beep':
-                client.sendEvent("sound:play", {key: macro.soundKey || "beep"});
-                break;
-            case 'mute':
-                client.SoundManager.mute();
-                break;
-            case 'unmute':
-                client.SoundManager.unmute();
-                break;
-            case 'command':
-                if (command) {
-                    client.sendCommand(command);
-                }
-                break;
-            case 'functionalBind':
-                if (command && label) {
-                    client.FunctionalBind.set(label, () => {
-                        client.sendCommand(command);
-                    });
-                }
-                break;
-            case 'notify':
-                if (message) {
-                    client.sendEvent("notify", { text: message, system: true });
-                }
-                break;
-            case 'push':
-                // No matched text to fall back on for an event trigger, so a
-                // message is required rather than optional.
-                if (message) {
-                    void sendPush(
-                        { title: 'Arkadia', body: message },
-                        { bypassCooldown: macro.bypassCooldown },
-                    );
-                }
-                break;
-            case 'speak':
-                // As with push, nothing to fall back on without a matched line.
-                if (message?.trim()) {
-                    client.sendEvent("tts:speak", { text: message });
-                }
-                break;
-            // Note: Plugin macros are not supported for event triggers
-            // because they require text context (line, match, matchRange)
-        }
-    });
+    // Every user-authored text field on an event macro supports {name}
+    // placeholders drawn from the event payload.
+    const call: ScriptCall = { args: [], options: { source: 'event', label: event, event: payload } };
+    macros?.forEach(macro => applyLinelessMacro(client, macro, text => interpolateEventArgs(text, payload), call));
 }
 
 type EventHandler = { event: string; handler: (data: unknown) => void };
@@ -622,8 +697,10 @@ type EventHandler = { event: string; handler: (data: unknown) => void };
 export default function initUserTriggers(client: Client) {
     let registeredPatternTriggers: Trigger[] = [];
     let registeredEventHandlers: EventHandler[] = [];
+    let stored: UserTrigger[] = [];
 
-    const apply = (list: UserTrigger[] = []) => {
+    const apply = (list: UserTrigger[] = stored) => {
+        stored = list;
         // Clean up pattern triggers
         registeredPatternTriggers.forEach(t => client.Triggers.removeTrigger(t));
         registeredPatternTriggers = [];
@@ -634,8 +711,8 @@ export default function initUserTriggers(client: Client) {
         });
         registeredEventHandlers = [];
 
-        // Process each trigger
-        list.forEach(item => {
+        // Only the ones that are on, in a group that is on, for this character.
+        list.filter(isAutomationActiveNow).forEach(item => {
             const triggerType = item.type || 'pattern';
 
             if (triggerType === 'event' && item.event) {
@@ -648,7 +725,7 @@ export default function initUserTriggers(client: Client) {
                         if (String(data) !== eventValue) return;
                     }
                     if (item.conditions?.some(c => c.arg && !evaluateCondition(c, data))) return;
-                    applyEventMacros(client, item.macros, data);
+                    applyEventMacros(client, item.macros, data, item.event);
                 };
 
                 client.on(eventName as any, handler);
@@ -688,10 +765,10 @@ export default function initUserTriggers(client: Client) {
 
                         // Apply in reverse order to preserve indices
                         for (let i = allMatches.length - 1; i >= 0; i--) {
-                            applyMacrosToMatch(client, line, allMatches[i], item.macros);
+                            applyMacrosToMatch(client, line, allMatches[i], item.macros, item.pattern);
                         }
                     } else {
-                        applyMacrosToMatch(client, line, matches, item.macros);
+                        applyMacrosToMatch(client, line, matches, item.macros, item.pattern);
                     }
                     return line;
                 };
@@ -711,4 +788,5 @@ export default function initUserTriggers(client: Client) {
     globalStorage.onChange(STORAGE_KEY, (newValue) => {
         apply(Array.isArray(newValue) ? newValue : []);
     });
+    onAutomationScopeChange(() => apply());
 }

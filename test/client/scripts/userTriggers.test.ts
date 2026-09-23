@@ -3,13 +3,14 @@ import initUserTriggers, {
   GMCP_EVENT_CATEGORY,
   SUPPORTED_EVENTS,
   evaluateCondition,
+  interpolateMatch,
   interpolateMatchGroups,
   type TriggerCondition,
   type UserTrigger,
 } from '@client/scripts/userTriggers';
 import Triggers from '@client/Triggers';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
-import { globalStorage } from '@modules/core/storage';
+import { characterStorage, globalStorage } from '@modules/core/storage';
 import { sendPush } from '@modules/push/pushClient';
 
 vi.mock('@modules/push/pushClient', () => ({
@@ -463,5 +464,75 @@ describe('userTriggers', () => {
 
     expect(result?.text).toBe('foo');
     expect(client.FunctionalBind.set).not.toHaveBeenCalled();
+  });
+
+  describe('automation scope', () => {
+    const upper = (extra: Partial<UserTrigger>): UserTrigger => ({ pattern: 'foo', macros: [{ type: 'uppercase' }], ...extra });
+    const parse = (client: FakeClient) => client.Triggers.parseLine(new AnsiAwareBuffer('foo'), '')?.text;
+
+    test('a switched off trigger does not fire', () => {
+      const client = new FakeClient();
+      initUserTriggers((client as unknown) as any);
+      globalStorage.set('triggers', [upper({ enabled: false })]);
+      expect(parse(client)).toBe('foo');
+    });
+
+    test('follows its group being switched off and on', () => {
+      const client = new FakeClient();
+      initUserTriggers((client as unknown) as any);
+      globalStorage.set('triggers', [upper({ group: 'g' })]);
+      expect(parse(client)).toBe('FOO');
+
+      globalStorage.set('automationGroups', [{ id: 'g', name: 'Walka', enabled: false }]);
+      expect(parse(client)).toBe('foo');
+
+      globalStorage.set('automationGroups', [{ id: 'g', name: 'Walka' }]);
+      expect(parse(client)).toBe('FOO');
+    });
+
+    test('event triggers follow the character they are limited to', () => {
+      characterStorage.setCharacter('Arel');
+      const client = new FakeClient();
+      initUserTriggers((client as unknown) as any);
+      globalStorage.set('triggers', [{
+        type: 'event',
+        event: 'kill',
+        characters: ['Morwen'],
+        macros: [{ type: 'command', command: 'wez monety' }],
+      }]);
+
+      client.sendEvent('kill', {});
+      expect(client.sendCommand).not.toHaveBeenCalled();
+
+      characterStorage.setCharacter('Morwen');
+      client.sendEvent('kill', {});
+      expect(client.sendCommand).toHaveBeenCalledWith('wez monety');
+    });
+  });
+
+  describe('match placeholders in pattern trigger actions', () => {
+    test('interpolateMatch fills $N and {N}, empty for a missing $ group', () => {
+      const match = 'Goblin atakuje cie'.match(/^(\w+) atakuje (cie)/)!;
+      expect(interpolateMatch('zabij $1 ($0)', match)).toBe('zabij Goblin (Goblin atakuje cie)');
+      expect(interpolateMatch('{1} -> {2}', match)).toBe('Goblin -> cie');
+      expect(interpolateMatch('x$5y', match)).toBe('xy');
+    });
+
+    test('command, notify and bind get the match filled in', () => {
+      const client = new FakeClient();
+      initUserTriggers((client as unknown) as any);
+      globalStorage.set('triggers', [{
+        pattern: '^(\\w+) atakuje cie',
+        macros: [
+          { type: 'command', command: 'zabij $1' },
+          { type: 'notify', message: '$1 cie atakuje!' },
+          { type: 'functionalBind', label: 'bij $1', command: 'zabij $1' },
+        ],
+      }]);
+      client.Triggers.parseLine(new AnsiAwareBuffer('Goblin atakuje cie!'), '');
+      expect(client.sendCommand).toHaveBeenCalledWith('zabij Goblin');
+      expect(client.sendEvent).toHaveBeenCalledWith('notify', { text: 'Goblin cie atakuje!', system: true });
+      expect(client.FunctionalBind.set).toHaveBeenCalledWith('bij Goblin', expect.any(Function));
+    });
   });
 });

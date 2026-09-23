@@ -1065,7 +1065,7 @@ api.triggerMacros.register({
 
 **Uwagi:**
 - ID makra zostanie automatycznie poprzedzone `plugin:` (np. `plugin:alertZWalki`)
-- Makra triggerów działają w kontekście triggerów użytkownika (Ustawienia → Triggery)
+- Makra triggerów działają w kontekście triggerów użytkownika (Menu → Automatyzacja)
 - Jeśli plugin jest wyładowany, triggery z jego makrami wykonają się jako no-op (bez akcji)
 
 ### Popularne Kolory

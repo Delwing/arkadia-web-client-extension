@@ -333,6 +333,8 @@ body.app-modal-open {
 .app-modal__dialog--xl { max-width: 1140px; }
 /* Klawisze: a whole keyboard beside the selected key. */
 .app-modal__dialog--keys { max-width: 1400px; }
+/* Automatyzacja: kinds, the grouped list and the editor side by side. */
+.app-modal__dialog--automation { max-width: 1400px; }
 /* Controls a panel puts in the header, between the title and ×. */
 .app-modal__header-slot {
   display: flex;
@@ -2018,96 +2020,6 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
   margin: 0.25rem 0;
 }
 
-/* ── Aliasy (options/Aliases.tsx) ─────────────────────────────────────── */
-.alias-manager {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.alias-manager__toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-}
-.alias-manager__toolbar > * {
-  flex-shrink: 0;
-}
-.alias-manager__toolbar > .popup-input {
-  flex: 1 1 12rem;
-}
-.alias-manager__empty {
-  margin: 0;
-  padding: 16px 0;
-  text-align: center;
-}
-/* One bordered list; rows split by hairlines. */
-.alias-list {
-  display: flex;
-  flex-direction: column;
-  border: 1px solid var(--popup-border-subtle);
-  border-radius: var(--ui-radius, 6px);
-}
-.alias-card {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  padding: 6px 6px 6px 12px;
-}
-.alias-card + .alias-card {
-  border-top: 1px solid var(--popup-border-subtle);
-}
-.alias-card:hover {
-  background-color: var(--popup-hover-bg);
-}
-.alias-card-body {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-  padding: 5px 0;
-}
-.alias-card-actions {
-  display: flex;
-  flex-shrink: 0;
-  gap: 2px;
-}
-.alias-entry,
-.alias-override-entry {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 4px 8px;
-  min-width: 0;
-}
-.alias-entry code,
-.alias-override-entry code {
-  padding: 0;
-  background: none;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: calc(var(--ui-fs, 14px) - 0.5px);
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-.alias-pattern {
-  color: var(--popup-text-bright);
-  font-weight: 600;
-}
-.alias-arrow {
-  color: var(--popup-text-dim);
-}
-.alias-entry .alias-command,
-.alias-override-entry .alias-command {
-  color: var(--popup-accent);
-}
-.alias-overrides {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding-left: 12px;
-  border-left: 2px solid var(--popup-border-subtle);
-}
 /* ── Eksport i import (options/ExportImport.tsx + tabs) ────────────────── */
 .export-import {
   display: flex;
@@ -2243,64 +2155,6 @@ span.import-source__icon > svg {
   display: flex;
   flex-direction: column;
   gap: 6px;
-}
-
-/* Triggery (options/UserTriggers.tsx) reuses the alias list. */
-.alias-flags {
-  color: var(--popup-text-dim);
-}
-.trigger-event-icon {
-  flex-shrink: 0;
-  align-self: center;
-  color: var(--popup-warning, #d9a441);
-}
-.trigger-event-name {
-  color: var(--popup-text-bright);
-  font-weight: 600;
-}
-.trigger-conditions {
-  color: var(--popup-text-subtle);
-  font-size: var(--ui-fs-sm, 13px);
-}
-.trigger-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-.trigger-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  max-width: 100%;
-  overflow: hidden;
-  padding: 1px 7px;
-  border: 1px solid var(--popup-accent-border);
-  border-radius: 999px;
-  background-color: var(--popup-accent-subtle-bg);
-  color: var(--popup-accent);
-  font-size: var(--ui-fs-xs, 12px);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.trigger-chip__swatch {
-  flex-shrink: 0;
-  width: 10px;
-  height: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 50%;
-}
-.alias-override-char {
-  padding: 0 6px;
-  border-radius: var(--ui-radius-sm, 4px);
-  background-color: var(--popup-control-active-bg);
-  color: var(--popup-text-subtle);
-  font-size: var(--ui-fs-xs, 12px);
-  font-weight: 500;
-}
-
-#aliases-modal {
-  padding-top: 5vh;
-  padding-bottom: 5vh;
 }
 
 /* Settings dialog: the shell itself (sidebar, search, page columns) lives in

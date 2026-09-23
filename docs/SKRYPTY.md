@@ -4,6 +4,8 @@ Podsumowanie mozliwosci systemu skryptow, pluginow i automatyzacji dostepnych dl
 
 ---
 
+Aliasy i triggery (wyzwalacze) tworzysz w jednym oknie: **Menu → Automatyzacja**. Maja wspolne grupy, ktore wlaczasz i wylaczasz jednym przelacznikiem i ktore mozna wyeksportowac do pliku i komus przekazac.
+
 ## Wlasne aliasy
 
 Tworzysz skroty do dlugich lub czestych komend — bez pisania ani linijki kodu.
@@ -11,7 +13,9 @@ Tworzysz skroty do dlugich lub czestych komend — bez pisania ani linijki kodu.
 - **Wzorzec regex** — alias reaguje na to, co wpiszesz (np. `^aa (.+)$` zamieni `aa goblin` na `zabij goblin`)
 - **Grupy przechwytujace** — `$1`, `$2` itd. wstawiaja fragmenty z dopasowania do komendy
 - **Skroty obiektow** — `@1`, `@A`, `@@` automatycznie zamieniaja sie na identyfikatory obiektow z lokacji
-- **Nadpisania per postac** — ten sam alias moze wysylac inna komende w zaleznosci od postaci
+- **Wiele akcji** — poza komenda alias moze zagrac dzwiek, wyslac powiadomienie (takze na telefon), przeczytac tekst na glos albo ustawic funkcyjny bind
+- **Inaczej dla postaci** — ten sam alias moze wysylac inna komende w zaleznosci od postaci
+- **Grupy, wlaczanie i wybrane postacie** — alias (tak jak trigger) moze nalezec do grupy, byc wylaczony albo dzialac tylko na wybranych postaciach
 - **Import z Blowtorch i Arkadii** — przeniesienie aliasow z innych klientow jednym kliknieciem
 
 ## Wlasne triggery
@@ -19,6 +23,8 @@ Tworzysz skroty do dlugich lub czestych komend — bez pisania ani linijki kodu.
 Reagujesz na to, co pojawia sie na ekranie — automatycznie, bez czekania.
 
 - **Wzorzec regex z flagami** — ignorowanie wielkosci liter, tryb globalny, wieloliniowy
+- **Linia testowa** — wklejasz (albo wybierasz z ostatnich linii gry) tekst i od razu widzisz, czy wzorzec pasuje, co trafi do `$1` i jak linia bedzie wygladac po akcjach
+- **Grupy z wzorca w akcjach** — `$1`, `$2` (albo `{1}`) wstawiaja dopasowane fragmenty do komendy, powiadomienia czy bindu, np. wzorzec `^(\w+) atakuje cie` i komenda `zabij $1`
 - **Filtr typu GMCP** — trigger moze reagowac tylko na walke, czat, opisy lokacji, poczte i 20+ innych kategorii
 - **Triggery zdarzeniowe** — zamiast tekstu, reaguj na zdarzenia: zabicie wroga, start/koniec walki, ogluszenie, polaczenie, rozlaczenie, koniec odliczania zaskoczenia i oslony, transport (postoj, przyjazd na przystanek, dotarcie do celu oznaczonego dzwonkiem, zblizanie sie do przystanku)
 - **Wiele akcji na jednym triggerze** — kazdy trigger moze wykonac dowolna kombinacje:
@@ -35,6 +41,33 @@ Reagujesz na to, co pojawia sie na ekranie — automatycznie, bez czekania.
   - Czytanie na glos (synteza mowy) — wlasny tekst z `{1}`/`{nazwa}` z grup wzorca albo `{arg}` ze zdarzenia; glos, tempo, wysokosc i glosnosc w Ustawieniach interfejsu → Dzwiek i powiadomienia
 - **Wlasne dzwieki** — wgrywasz plik audio i uzywasz go w triggerach
 - **Makra z pluginow** — pluginy moga dodawac wlasne typy akcji do triggerow (pojawia sie w ustawieniach automatycznie)
+- **Grupy, wlaczanie i wybrane postacie** — trigger moze nalezec do grupy, byc wylaczony albo dzialac tylko na wybranych postaciach
+
+## Skrypty w Automatyzacji
+
+Gdy akcje aliasu czy triggera to za malo, piszesz krotki skrypt w JavaScripcie — w tym samym oknie (Menu → Automatyzacja → + → Skrypt).
+
+```js
+const hp = gmcp.char?.state?.hp;
+if (hp > 3) return;
+await send('wypij miksture');
+log('hp', hp);
+```
+
+Piszesz od razu kod — bez zadnej funkcji dookola. Mozna uzyc `await` i `return`. Edytor podpowiada (`api.`, `ctx.`) i koloruje skladnie; na telefonie jest zwykle pole tekstowe.
+
+- **Kiedy sie uruchamia** — przez akcje **Uruchom skrypt** w dowolnym aliasie lub triggerze, przez wlasna komende (np. `/leczenie goblin`) albo przyciskiem **Uruchom** w edytorze (dziala tez na niezapisanym kodzie)
+- **`args`** — grupy z wzorca aliasu lub triggera (`$1` to `args[0]`) albo slowa po komendzie
+- **`api`** — to samo API, ktore dostaja wtyczki (zob. dokumentacje wtyczek). Jego czesci sa tez pod wlasnymi nazwami, bez `api.`: `command.send(...)`, `map`, `team`, `objects`, `triggers`... Wlasna zmienna o takiej nazwie (np. `const map = new Map()`) po prostu ja przyslania
+- **`ctx`** — skad przyszlo uruchomienie (`ctx.source`, `ctx.line` z linia gry, `ctx.event` z danymi zdarzenia)
+- **`vars`** — obiekt wspolny dla wszystkich skryptow: jeden zapisze `vars.cel = args[0]`, drugi odczyta `vars.cel`. Trzyma dane do przeladowania strony (nie zapisuje ich na stale). W module to `ctx.vars`
+- **Skroty** — `log(...)` pisze do konsoli skryptu, `send(komenda)` wysyla komende, `print(tekst)` wypisuje tekst w oknie gry, `gmcp` to dane GMCP z chwili uruchomienia
+- **Biblioteki** — z sieci przez `await import('https://esm.sh/nazwa')`. Kod z `import ... from` na poczatku albo z `export default function (api, args, ctx)` dziala jako caly modul
+- **Konsola** — pod kodem widac, kto uruchomil skrypt, co wyslal do gry i jaki blad go zatrzymal (z numerem linii)
+- **Na raz** — skrypt dziala raz na uruchomienie; cos, co ma zostac zarejestrowane na stale (trigger, okno), zrob jako wtyczke
+- **Import** — skrypty z paczki przychodza wlaczone albo wylaczone tak, jak byly u autora. Paczke od kogos obcego przejrzyj przed importem: skrypt ma dostep do calego API
+
+Druga nowa akcja, **Wlacz / wylacz grupe**, wlacza, wylacza albo przelacza cala grupe — np. trigger na wejscie do walki moze wlaczyc grupe "Walka", a trigger na jej koniec ja wylaczyc.
 
 ## Bindowanie klawiszy
 

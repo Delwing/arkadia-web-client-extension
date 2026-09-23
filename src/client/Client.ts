@@ -31,6 +31,7 @@ import SoundManager from "./SoundManager";
 import NotificationManager from "./NotificationManager";
 import KeyBindingManager from "./KeyBindingManager";
 import {AnsiAwareBuffer} from "@client/ansi/FormatState.ts";
+import {recordRecentLine} from "@modules/core/recentLines.ts";
 
 type EventKey = keyof ClientEvents;
 type EventParams<K extends EventKey> = [ClientEvents[K]] extends [void]
@@ -326,6 +327,7 @@ export default class Client {
         // and without this the per-line pass would match against that rewritten text —
         // an inserted prefix silently breaks every `^`-anchored single-line trigger.
         const originalLines = splitPristineLines(buffer.text)
+        originalLines.forEach(line => recordRecentLine(line, type))
         this.inLineProcess = true
         try {
             this.sendEvent(LINE_START_EVENT)

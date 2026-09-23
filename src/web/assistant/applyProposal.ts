@@ -108,7 +108,11 @@ function applyAlias(proposal: AliasProposal): ApplyResult {
     const existing = list.findIndex(item => item.pattern === alias.pattern);
     if (existing !== -1) {
         const updated = [...list];
-        updated[existing] = alias;
+        // Replaces what the alias does, not where it lives: its name, group,
+        // on/off and characters stay. Its actions go, since the proposal's
+        // command is the whole of what it should now do.
+        const { id, name, group, enabled, characters } = list[existing];
+        updated[existing] = { id, name, group, enabled, characters, ...alias };
         globalStorage.set('aliases', updated);
         return { ok: true, message: `Nadpisano istniejacy alias "${alias.pattern}".` };
     }

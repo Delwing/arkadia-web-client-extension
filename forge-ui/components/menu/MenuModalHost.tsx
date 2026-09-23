@@ -34,8 +34,7 @@ const load = {
     characters: () => import('@web/options/CharacterManagementModal'),
     binds: () => import('@web/keys/Keys'),
     scripts: () => import('@web/options/Scripts'),
-    aliases: () => import('@web/options/Aliases'),
-    triggers: () => import('@web/options/UserTriggers'),
+    automation: () => import('@web/automation/AutomationWindow'),
     recordings: () => import('@web/options/Recordings'),
     shortcuts: () => import('@web/options/Shortcuts'),
     'location-notes': () => import('@web/options/LocationNotes'),
@@ -50,8 +49,7 @@ const ExportImport = lazy(load['export-import']);
 const CharacterManagement = lazy(load.characters);
 const Keys = lazy(load.binds);
 const Scripts = lazy(load.scripts);
-const Aliases = lazy(load.aliases);
-const UserTriggers = lazy(load.triggers);
+const AutomationWindow = lazy(load.automation);
 const Recordings = lazy(load.recordings);
 const Shortcuts = lazy(load.shortcuts);
 const LocationNotes = lazy(load['location-notes']);
@@ -69,8 +67,7 @@ export type ModalKey =
     | 'characters'
     | 'binds'
     | 'scripts'
-    | 'aliases'
-    | 'triggers'
+    | 'automation'
     | 'recordings'
     | 'shortcuts'
     | 'location-notes'
@@ -119,8 +116,7 @@ const TITLES: Record<ModalKey, string> = {
     characters: 'Zarządzanie postaciami',
     binds: 'Klawisze',
     scripts: 'Skrypty',
-    aliases: 'Aliasy',
-    triggers: 'Triggery',
+    automation: 'Automatyzacja',
     recordings: 'Nagrania',
     shortcuts: 'Skróty',
     'location-notes': 'Notatki lokacji',
@@ -160,6 +156,8 @@ const SIZE: Partial<Record<ModalKey, 'md' | 'lg' | 'xl'>> = {
     helper: 'xl',
     // Klawisze draws a whole keyboard beside the selected key.
     binds: 'xl',
+    // Kinds, the grouped list and the editor side by side.
+    automation: 'xl',
     logs: 'xl',
     docs: 'xl',
 };
@@ -291,11 +289,8 @@ function MenuModalEntry({ modalKey, isTop, client, onClose, pushKey, replaceKey 
         case 'scripts':
             body = <Scripts />;
             break;
-        case 'aliases':
-            body = <Aliases />;
-            break;
-        case 'triggers':
-            body = <UserTriggers />;
+        case 'automation':
+            body = <AutomationWindow />;
             break;
         case 'recordings':
             body = <Recordings />;
