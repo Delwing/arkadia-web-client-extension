@@ -28,7 +28,7 @@ export const CHIP_LONG_PRESS_MS = 300;
  * It is a floor, not a cap: a value longer than every candidate still grows it.
  * Digits are tabular there, so "8.8" stands for any one-decimal countdown.
  */
-export function Chip({ icon, label, labelColor, labelSizeTo, value, sizeTo, valueFirst, tone, onClick, onLongPress, title, className }: {
+export function Chip({ icon, label, labelColor, labelSizeTo, value, sizeTo, sizeCenter, valueFirst, tone, onClick, onLongPress, title, className }: {
   icon: ReactNode;
   label: string;
   /** Tints the label (the clock chip colours its season name). */
@@ -38,6 +38,8 @@ export function Chip({ icon, label, labelColor, labelSizeTo, value, sizeTo, valu
   value: ReactNode;
   /** Every shape the value can take, widest wins; the chip reserves that width. */
   sizeTo?: readonly string[];
+  /** Centres the value in the width `sizeTo` reserves ("OK" under a countdown). */
+  sizeCenter?: boolean;
   /** The value leads and the label follows it ("14:32 dzien"). */
   valueFirst?: boolean;
   tone?: ChipTone;
@@ -55,9 +57,9 @@ export function Chip({ icon, label, labelColor, labelSizeTo, value, sizeTo, valu
     <>
       {icon}
       <span className="chip__text">
-        {valueFirst && <Sized className="chip__val" sizeTo={sizeTo}>{value}</Sized>}
+        {valueFirst && <Sized className="chip__val" sizeTo={sizeTo} center={sizeCenter}>{value}</Sized>}
         {label && <Sized className="chip__lab" style={labelColor ? { color: labelColor } : undefined} sizeTo={labelSizeTo}>{label}</Sized>}
-        {!valueFirst && <Sized className="chip__val" sizeTo={sizeTo}>{value}</Sized>}
+        {!valueFirst && <Sized className="chip__val" sizeTo={sizeTo} center={sizeCenter}>{value}</Sized>}
       </span>
     </>
   );
@@ -81,15 +83,16 @@ export function Chip({ icon, label, labelColor, labelSizeTo, value, sizeTo, valu
  * (chip.css). The candidates are empty spans drawn by ::before, so textContent
  * stays the text itself.
  */
-function Sized({ className, style, sizeTo, children }: {
+function Sized({ className, style, sizeTo, center, children }: {
   className: string;
   style?: CSSProperties;
   sizeTo?: readonly string[];
+  center?: boolean;
   children: ReactNode;
 }) {
   if (!sizeTo) return <span className={className} style={style}>{children}</span>;
   return (
-    <span className={`${className} chip__sized`} style={style}>
+    <span className={`${className} chip__sized${center ? " chip__sized--center" : ""}`} style={style}>
       {sizeTo.map((size) => <span key={size} data-size={size} />)}
       <span>{children}</span>
     </span>
