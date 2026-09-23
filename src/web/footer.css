@@ -147,7 +147,7 @@
 }
 
 /* -- status line ----------------------------------------------------------
-   Vitals | chips (urgent first, the rest behind "+N") | connection. */
+   Vitals | chips (configured order, optionally urgent first; the rest behind "+N") | connection. */
 #char-state {
   --chip-h: 22px;
   display: flex;
@@ -287,11 +287,12 @@
 .status-slot:empty {
   display: none;
 }
-/* Urgent first: danger, then warnings, each group in the configured order. */
-.status-slot:has(> .chip--warn) {
+/* Opt-in (footerUrgentChipsFirst): danger, then warnings first, each group in
+   the configured order. Off, a chip keeps its slot whatever its tone. */
+body[data-urgent-chips-first="1"] .status-slot:has(> .chip--warn) {
   order: calc(var(--order, 0) - 5000);
 }
-.status-slot:has(> .chip--danger) {
+body[data-urgent-chips-first="1"] .status-slot:has(> .chip--danger) {
   order: calc(var(--order, 0) - 10000);
 }
 .status-more {

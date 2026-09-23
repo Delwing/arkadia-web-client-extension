@@ -56,6 +56,7 @@ export const defaultChromeSettings: ChromeSettings = {
     footerMode: 4, // 4 = Kafelki (pips); 0-3 = Liczbowy, Pasek, Pasek jednolity, Pasek graficzny
     footerComponents: defaultFooterComponents,
     footerButtons: [],
+    footerUrgentChipsFirst: false,
     mobileFooterCompact: true,
     mobileFooterExpand: 'toggle',
     keepMultibindsVisible: false,

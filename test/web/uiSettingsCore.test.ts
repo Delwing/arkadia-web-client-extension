@@ -98,3 +98,14 @@ describe('uiSettingsCore load()/save() round-trip', () => {
         expect(second).toEqual(first);
     });
 });
+
+describe('footerUrgentChipsFirst', () => {
+    test('defaults to off, so chips keep their configured slots', () => {
+        expect(load().footerUrgentChipsFirst).toBe(false);
+    });
+
+    test('survives save() -> load()', () => {
+        save({ ...load(), footerUrgentChipsFirst: true });
+        expect(load().footerUrgentChipsFirst).toBe(true);
+    });
+});

@@ -158,6 +158,12 @@ export interface ChromeSettings extends DeviceViewSettings {
     /** The player's own buttons beside the command line; empty out of the box. */
     footerButtons: FooterButtonConfig[];
     /**
+     * Pull warn/danger chips to the front of the footer (danger first), each
+     * group in the configured order. Off by default: chips keep their
+     * configured slot whatever their tone, so they do not jump around.
+     */
+    footerUrgentChipsFirst: boolean;
+    /**
      * The phone footer: two fixed-height scrolling rails plus compact stat
      * meters, instead of the desktop footer's one wrapping row. On by default;
      * off restores the old layout on narrow screens. Desktop is unaffected
