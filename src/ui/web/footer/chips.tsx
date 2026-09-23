@@ -191,12 +191,47 @@ export function ApocalypseChip() {
 
 type Domain = "Empire" | "Ishtar";
 
-type ClockReading = { hours: number; minutes: number; precision?: number; dayLabel?: string; daylight?: boolean };
+type ClockReading = {
+  hours: number;
+  minutes: number;
+  precision?: number;
+  dayLabel?: string;
+  daylight?: boolean;
+  season?: number;
+  sunrise?: number;
+  sunset?: number;
+};
+
+const SEASON_NAMES = ["wiosna", "lato", "jesien", "zima"];
+const SEASON_COLORS = [
+  "var(--popup-data-spring-green)",
+  "var(--popup-data-yellow)",
+  "var(--popup-data-orange)",
+  "var(--popup-data-blue)",
+];
+
+/**
+ * Game hours before sunrise that are dawn (still night), and before sunset that
+ * are dusk (still day) - a heads-up that the light is about to change.
+ */
+const TWILIGHT_HOURS = 2;
+
+const SUN_COLOR = "var(--popup-data-gold)";
+const MOON_COLOR = "color-mix(in oklab, var(--popup-data-blue) 65%, var(--popup-text))";
+const DAWN_COLOR = "var(--popup-data-purple-light)";
+const DUSK_COLOR = "var(--popup-data-orange-light)";
+
+function hhmm(hour: number): string {
+  const h = Math.floor(hour);
+  return `${String(h).padStart(2, "0")}:${String(Math.round((hour - h) * 60)).padStart(2, "0")}`;
+}
 
 /**
  * In-game clock (HH:MM, ±precision while it is still an estimate) for the active
- * domain, then "dzien" / "noc". The date rides in the tooltip; a click opens the
- * clock window.
+ * domain, then the season. The icon tells the time of day - sun, moon, or half a
+ * sun on the horizon in the last hours before sunrise and before sunset - and the
+ * season name wears the season's colour. Date and sun times ride in the
+ * tooltip; a click opens the clock window.
  */
 export function ClockChip() {
   const [active, setActive] = useState<Domain | undefined>();
@@ -209,13 +244,31 @@ export function ClockChip() {
   const time = `${String(clock.hours).padStart(2, "0")}:${String(Math.floor(clock.minutes)).padStart(2, "0")}`;
   const value = clock.precision && clock.precision > 0 ? `${time} ±${clock.precision}` : time;
   const part = clock.daylight === true ? "dzien" : clock.daylight === false ? "noc" : "";
+  const season = clock.season !== undefined ? SEASON_NAMES[clock.season] : undefined;
+  const now = clock.hours + clock.minutes / 60;
+  const { sunrise, sunset } = clock;
+  const twilight = sunrise !== undefined && now >= sunrise - TWILIGHT_HOURS && now < sunrise ? "swit"
+    : sunset !== undefined && now >= sunset - TWILIGHT_HOURS && now < sunset ? "zmierzch"
+    : undefined;
+  const icon = clock.daylight === undefined ? "clock" : twilight ? "dawn" : clock.daylight ? "sun" : "moon";
+  const iconColor = icon === "clock" ? undefined
+    : twilight === "swit" ? DAWN_COLOR : twilight === "zmierzch" ? DUSK_COLOR
+    : clock.daylight ? SUN_COLOR : MOON_COLOR;
+  const tip = [
+    clock.dayLabel,
+    season && [season, twilight ?? part].filter(Boolean).join(", "),
+    clock.sunrise !== undefined && clock.sunset !== undefined
+      ? `wschod ${hhmm(clock.sunrise)}, zachod ${hhmm(clock.sunset)}`
+      : undefined,
+  ].filter(Boolean).join("\n");
   return (
     <Chip
-      icon={<ChipIcon name="clock" />}
-      label={part}
+      icon={<ChipIcon name={icon} color={iconColor} />}
+      label={season ?? part}
+      labelColor={clock.season !== undefined ? SEASON_COLORS[clock.season] : undefined}
       value={value}
       valueFirst
-      title={clock.dayLabel ? `${clock.dayLabel} (kliknij: zegar)` : "Zegar"}
+      title={tip ? `${tip}\n(kliknij: zegar)` : "Zegar"}
       onClick={() => eventBus.emit("clock.popup.open", { domain: active })}
     />
   );

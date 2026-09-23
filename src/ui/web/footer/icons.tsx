@@ -78,6 +78,22 @@ const PATHS: Record<string, ReactNode> = {
       <path d="M10 5.6V10l3 2" />
     </>
   ),
+  sun: (
+    <>
+      <circle cx="10" cy="10" r="3.2" />
+      <path d="M10 2.7v2M10 15.3v2M2.7 10h2M15.3 10h2" />
+      <path d="M4.84 4.84l1.41 1.41M13.75 13.75l1.41 1.41M15.16 4.84l-1.41 1.41M6.25 13.75l-1.41 1.41" />
+    </>
+  ),
+  moon: <path d="M10 3a4.7 4.7 0 0 0 7 7 7 7 0 1 1-7-7z" />,
+  // half a sun on the horizon: sunrise and sunset alike
+  dawn: (
+    <>
+      <path d="M2.8 14.5h14.4" />
+      <path d="M6.4 14.5a3.6 3.6 0 0 1 7.2 0" />
+      <path d="M10 6.2v2M4.6 8.9l1.3 1.3M15.4 8.9l-1.3 1.3" />
+    </>
+  ),
   signal: (
     <>
       <path d="M4 13v3" />
@@ -101,11 +117,12 @@ export type ChipIconName = keyof typeof PATHS;
  * `fill` adds the `chip__ico--fill` modifier so the skin can tint the glyph's
  * interior a shade of the icon colour (rather than leaving a bare outline) — a
  * cheap on/off state signal localised to the icon, e.g. the shield filling in
- * when the cover guard is held.
+ * when the cover guard is held. `color` tints the glyph itself (the clock's
+ * season colour).
  */
-export function ChipIcon({ name, fill = false }: { name: ChipIconName; fill?: boolean }) {
+export function ChipIcon({ name, fill = false, color }: { name: ChipIconName; fill?: boolean; color?: string }) {
   return (
-    <span className={fill ? "chip__ico chip__ico--fill" : "chip__ico"}>
+    <span className={fill ? "chip__ico chip__ico--fill" : "chip__ico"} style={color ? { color } : undefined}>
       <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
         {PATHS[name]}
       </svg>
