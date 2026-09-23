@@ -33,7 +33,14 @@ export interface LogLine {
     character?: string;
 }
 
-export interface LogSession {
+/**
+ * What the session list knows about a log without holding its lines.
+ *
+ * A store of years of play does not fit in memory as parsed lines, so the list
+ * carries only this; the lines of one session at a time come from the host's
+ * `loadSession` (see `LogViewer`).
+ */
+export interface LogSessionInfo {
     id: string;
     /**
      * Characters played in this session, in order of first appearance.
@@ -61,7 +68,16 @@ export interface LogSession {
      * it; the viewer then uses the current one.
      */
     background?: string;
+    lineCount: number;
+}
+
+export interface LogSession extends LogSessionInfo {
     lines: LogLine[];
+}
+
+/** Whether `session` came with its lines, or is only a list entry. */
+export function hasLines(session: LogSessionInfo | undefined): session is LogSession {
+    return Boolean(session && "lines" in session);
 }
 
 /**

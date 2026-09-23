@@ -9,7 +9,7 @@
 import { allChannelsOn, CHANNELS, type Channel, type ChannelFilter } from "./channels";
 import type { LogEventKind } from "./events";
 import { findLineHits, makeMatcher, normalizeMatchIndex, splitMatches, type LineHit, type MatchSegment } from "./search";
-import type { LogSession, SearchScope, TimeRange } from "./types";
+import { hasLines, type LogLine, type LogSession, type LogSessionInfo, type SearchScope, type TimeRange } from "./types";
 
 export interface ViewerState {
     sessionId: string;
@@ -46,12 +46,12 @@ export interface ViewerState {
  * hands sessions over oldest-first, mock data comes newest-first, and neither
  * should decide which log the viewer opens on.
  */
-export function orderSessions(sessions: LogSession[]): LogSession[] {
+export function orderSessions<T extends LogSessionInfo>(sessions: T[]): T[] {
     return [...sessions].sort((a, b) => b.startedAt - a.startedAt);
 }
 
 /** The session to open: the one still recording, else the most recent. */
-export function initialSessionId(sessions: LogSession[]): string {
+export function initialSessionId(sessions: LogSessionInfo[]): string {
     const live = sessions.find((session) => session.live);
     if (live) return live.id;
     return orderSessions(sessions)[0]?.id ?? "";
@@ -187,12 +187,15 @@ export interface MatchRef {
 
 export interface DerivedView {
     /**
-     * Undefined when there is no session to show at all. The viewer renders its
-     * chrome anyway — see `LogViewer` — so an empty store is not a dead end.
+     * The selected session's list entry. Undefined when there is no session to
+     * show at all. The viewer renders its chrome anyway — see `LogViewer` — so
+     * an empty store is not a dead end.
      */
+    sessionInfo: LogSessionInfo | undefined;
+    /** The selected session with its lines; undefined while they load. */
     session: LogSession | undefined;
     /** Sessions surviving the sidebar filter, in display order. */
-    visibleSessions: LogSession[];
+    visibleSessions: LogSessionInfo[];
     rows: RenderedRow[];
     matches: MatchRef[];
     totalMatches: number;
@@ -209,7 +212,7 @@ export interface DerivedView {
     range: TimeRange | null;
 }
 
-function matchesSessionFilter(session: LogSession, filter: string): boolean {
+function matchesSessionFilter(session: LogSessionInfo, filter: string): boolean {
     if (!filter) return true;
     const haystack =
         `${session.characters.join(" ")} ${session.dayLabel} ${session.dateLabel} ${session.file}`.toLowerCase();
@@ -315,32 +318,75 @@ function buildRows(
     return result;
 }
 
-export function deriveView(sessions: LogSession[], state: ViewerState): DerivedView {
+/** Hit counts for sessions whose lines are not in memory — see `useCrossSearch`. */
+export interface CrossHits {
+    hitsBySession: Record<string, number>;
+    matchEdges: Record<string, MatchEdges>;
+}
+
+/**
+ * One session's hits over the visible channels, and who was playing at the
+ * first and last of them. Deliberately NOT range-filtered: the range belongs to
+ * the session being viewed, so applying it to another session's badge would be
+ * meaningless.
+ */
+export function sessionHits(
+    lines: readonly LogLine[],
+    state: Pick<ViewerState, "query" | "regex" | "caseSensitive" | "channels">,
+    regex: RegExp,
+): { total: number; edges: MatchEdges } {
+    let total = 0;
+    const edges: MatchEdges = {};
+    for (const hit of findLineHits(lines, state.query, state, regex)) {
+        const line = lines[hit.line];
+        if (!state.channels[line.channel]) continue;
+        if (total === 0) edges.first = line.character;
+        edges.last = line.character;
+        total += hit.count;
+    }
+    return { total, edges };
+}
+
+export interface DeriveOptions {
+    /** The selected session's lines, when the list carries only entries. */
+    open?: LogSession;
+    /** Other sessions' hits in All-logs scope, counted outside the render. */
+    crossHits?: CrossHits;
+}
+
+export function deriveView(sessions: LogSessionInfo[], state: ViewerState, options: DeriveOptions = {}): DerivedView {
     const matcher = makeMatcher(state.query, { regex: state.regex, caseSensitive: state.caseSensitive });
     const range = appliedRange(state);
     const filter = state.sessionFilter.trim().toLowerCase();
     const ordered = orderSessions(sessions);
     const visibleSessions = ordered.filter((session) => matchesSessionFilter(session, filter));
-    const session = ordered.find((candidate) => candidate.id === state.sessionId) ?? ordered[0];
+    const sessionInfo = ordered.find((candidate) => candidate.id === state.sessionId) ?? ordered[0];
+    const session =
+        options.open && options.open.id === sessionInfo?.id
+            ? options.open
+            : hasLines(sessionInfo)
+              ? sessionInfo
+              : undefined;
 
-    // Deliberately NOT range-filtered: the range belongs to the session being
-    // viewed, so applying it to another session's badge would be meaningless.
+    // The open session is always counted here, from its lines. The others only
+    // matter in All-logs scope: from `crossHits` when the host streams them, or
+    // from their own lines when the list holds them (mock data, tests).
     const hitsBySession: Record<string, number> = {};
     const matchEdges: Record<string, MatchEdges> = {};
-    for (const candidate of ordered) {
-        let total = 0;
-        const edges: MatchEdges = {};
-        if (matcher.regex) {
-            for (const hit of findLineHits(candidate.lines, state.query, state, matcher.regex)) {
-                const line = candidate.lines[hit.line];
-                if (!state.channels[line.channel]) continue;
-                if (total === 0) edges.first = line.character;
-                edges.last = line.character;
-                total += hit.count;
+    if (matcher.regex) {
+        for (const candidate of ordered) {
+            const open = candidate.id === session?.id;
+            if (!open && state.scope !== "all") continue;
+            const lines = open ? session.lines : hasLines(candidate) ? candidate.lines : null;
+            if (lines) {
+                const { total, edges } = sessionHits(lines, state, matcher.regex);
+                hitsBySession[candidate.id] = total;
+                matchEdges[candidate.id] = edges;
+            } else if (options.crossHits) {
+                hitsBySession[candidate.id] = options.crossHits.hitsBySession[candidate.id] ?? 0;
+                matchEdges[candidate.id] = options.crossHits.matchEdges[candidate.id] ?? {};
             }
         }
-        hitsBySession[candidate.id] = total;
-        matchEdges[candidate.id] = edges;
     }
 
     const searchKey = matcher.regex ? `${state.regex ? "r" : "p"}${state.caseSensitive ? "c" : "i"}:${state.query}` : "";
@@ -356,6 +402,7 @@ export function deriveView(sessions: LogSession[], state: ViewerState): DerivedV
     const totalMatches = matches.length;
     const currentMatch = normalizeMatchIndex(state.matchIndex, totalMatches);
     return {
+        sessionInfo,
         session,
         visibleSessions,
         rows,
@@ -391,7 +438,7 @@ export function stepMatch(
     direction: 1 | -1,
     state: ViewerState,
     view: DerivedView,
-    sessionOrder: LogSession[],
+    sessionOrder: LogSessionInfo[],
 ): StepResult | null {
     const { totalMatches, currentMatch, hitsBySession, matchEdges } = view;
 

@@ -1,11 +1,11 @@
 import { Badge, Button, Icon, IconButton, Menu, MenuItem, MenuLabel, MenuSeparator } from "../ui";
 import { charactersLabel } from "../model/characters";
 import { formatClock, formatDuration, pluralLines } from "../model/format";
-import type { LogSession } from "../model/types";
+import type { LogSessionInfo } from "../model/types";
 
 export interface ViewerHeaderProps {
     /** Undefined when the store is empty — the header still renders. */
-    session: LogSession | undefined;
+    session: LogSessionInfo | undefined;
     /** Shown on the drawer button, so the count is visible before opening it. */
     sessionCount: number;
     /** Opens the session list while it is a drawer; hidden once it is docked. */
@@ -49,7 +49,7 @@ export function ViewerHeader({
               session.dateLabel,
               `${formatClock(session.startedAt, true)}–${session.live ? "teraz" : formatClock(session.endedAt, true)}`,
               formatDuration(session.endedAt - session.startedAt),
-              `${session.lines.length} ${pluralLines(session.lines.length)}`,
+              `${session.lineCount} ${pluralLines(session.lineCount)}`,
               session.file,
           ].join("  ·  ")
         : "Nie ma jeszcze zadnego logu";

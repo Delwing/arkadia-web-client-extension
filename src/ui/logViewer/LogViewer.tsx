@@ -4,7 +4,8 @@ import { charactersLabel } from "./model/characters";
 import { formatClock, pluralLogs } from "./model/format";
 import { normalizeMatchIndex } from "./model/search";
 import { indexAtOrAfter } from "./model/timeline";
-import type { LogSession, SearchScope, TimeRange } from "./model/types";
+import { hasLines, type LogSession, type LogSessionInfo, type SearchScope, type TimeRange } from "./model/types";
+import { useCrossSearch } from "./useCrossSearch";
 import {
     applyPreferences,
     deriveView,
@@ -30,7 +31,20 @@ import "./ui/controls.css";
 import "./logViewer.css";
 
 export interface LogViewerProps {
-    sessions: LogSession[];
+    /**
+     * The session list. Entries may come without their lines, which is how a
+     * host with a large store keeps memory bounded; `loadSession` then supplies
+     * the lines of the one being read, and of each one an All-logs search goes
+     * through. Sessions that do carry `lines` (mock data) are used as they are.
+     */
+    sessions: LogSessionInfo[];
+    loadSession?: (id: string) => Promise<LogSession | null>;
+    /**
+     * Set while the host is still listing sessions. The list works as it
+     * grows, but an All-logs search waits for it: counting hits in half the
+     * logs would look like an answer.
+     */
+    loading?: { done: number; total: number } | null;
     /** Rendered at the right end of the header — a close control, typically. */
     headerTrailing?: React.ReactNode;
     /** Preferences to restore; `onPreferencesChange` reports them back. */
@@ -67,6 +81,8 @@ const DEBOUNCE_MS = 100;
 
 export function LogViewer({
     sessions,
+    loadSession,
+    loading,
     headerTrailing,
     preferences,
     onPreferencesChange,
@@ -127,11 +143,18 @@ export function LogViewer({
 
     /* --- debounced query ------------------------------------------------ */
 
-    // Every keystroke counts hits in every log (the sidebar badges), so it is
-    // the lines of all of them that decide whether typing needs a debounce.
+    // Every keystroke counts hits in every log held in memory (the sidebar
+    // badges), so it is their lines that decide whether typing needs a
+    // debounce. A session loaded on demand counts once it is the open one;
+    // the rest are searched off the render by `useCrossSearch`.
     const searchedLineCount = useMemo(
-        () => sessions.reduce((sum, session) => sum + session.lines.length, 0),
-        [sessions],
+        () =>
+            sessions.reduce(
+                (sum, session) =>
+                    sum + (hasLines(session) || session.id === state.sessionId ? session.lineCount : 0),
+                0,
+            ),
+        [sessions, state.sessionId],
     );
 
     useEffect(() => {
@@ -143,9 +166,56 @@ export function LogViewer({
         return () => window.clearTimeout(timer);
     }, [state.query, searchedLineCount]);
 
+    /* --- the open session's lines ---------------------------------------- */
+
+    /**
+     * The selected session with its lines, when the list does not carry them.
+     * Only this one is held: the one before it is let go as soon as the next
+     * arrives, which is what keeps a large store from filling memory.
+     */
+    const [openSession, setOpenSession] = useState<LogSession | null>(null);
+    const [openFailed, setOpenFailed] = useState("");
+    const selectedInfo = sessions.find((session) => session.id === state.sessionId);
+    const needsLoad = Boolean(loadSession && selectedInfo && !hasLines(selectedInfo));
+    useEffect(() => {
+        if (!needsLoad || !loadSession) {
+            setOpenSession(null);
+            return;
+        }
+        let cancelled = false;
+        setOpenFailed("");
+        loadSession(state.sessionId)
+            .then((loaded) => {
+                if (cancelled) return;
+                setOpenSession(loaded);
+                if (!loaded) setOpenFailed(state.sessionId);
+            })
+            .catch(() => {
+                if (!cancelled) setOpenFailed(state.sessionId);
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [needsLoad, loadSession, state.sessionId]);
+
+    const crossSearch = useCrossSearch({
+        sessions,
+        loadSession,
+        enabled: state.scope === "all" && !loading,
+        query: activeQuery,
+        regex: state.regex,
+        caseSensitive: state.caseSensitive,
+        channels: state.channels,
+    });
+
     const view = useMemo(
-        () => deriveView(sessions, { ...state, query: activeQuery }),
-        [sessions, state, activeQuery],
+        () =>
+            deriveView(
+                sessions,
+                { ...state, query: activeQuery },
+                { open: openSession ?? undefined, crossHits: crossSearch ?? undefined },
+            ),
+        [sessions, state, activeQuery, openSession, crossSearch],
     );
 
     /* --- preference persistence ----------------------------------------- */
@@ -192,18 +262,19 @@ export function LogViewer({
     }, [currentRow, sessionId, state.follow, requestScroll]);
 
     // A new session starts at its end when live, at its top otherwise. Once
-    // per session: the list growing while older logs load must not move it.
-    const sessionsRef = useRef(sessions);
-    sessionsRef.current = sessions;
+    // per session, when its lines are there to scroll: the list growing while
+    // older logs load must not move it.
+    const loadedId = view.session?.id;
+    const loadedLive = Boolean(view.session?.live);
     useEffect(() => {
-        const session = sessionsRef.current.find((candidate) => candidate.id === sessionId);
-        if (!session) return;
-        if (matchJump.current === sessionId) {
+        if (!loadedId) return;
+        if (matchJump.current === loadedId) {
             matchJump.current = null;
             return;
         }
-        requestScroll({ kind: session.live ? "bottom" : "top" });
-    }, [sessionId, requestScroll]);
+        requestScroll({ kind: loadedLive ? "bottom" : "top" });
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- once per session, not whenever its live flag changes
+    }, [loadedId, requestScroll]);
 
     /* --- scope and range ------------------------------------------------- */
 
@@ -338,11 +409,12 @@ export function LogViewer({
 
     /* --- range ----------------------------------------------------------- */
 
+    const openLines = view.session?.lines;
     const setRangeBound = useCallback(
         (edge: "from" | "to", timestamp: number) => {
             setLineMenu(null);
             setState((previous) => {
-                const lines = sessions.find((entry) => entry.id === previous.sessionId)?.lines ?? [];
+                const lines = openLines ?? [];
                 const first = lines[0]?.timestamp ?? timestamp;
                 const last = lines[lines.length - 1]?.timestamp ?? timestamp;
                 let from = previous.range?.from ?? first;
@@ -358,7 +430,7 @@ export function LogViewer({
             // "end here" at the bottom of the narrowed slice.
             requestScroll({ kind: edge === "from" ? "top" : "bottom" });
         },
-        [sessions, requestScroll],
+        [openLines, requestScroll],
     );
 
     const setRange = useCallback(
@@ -587,21 +659,29 @@ export function LogViewer({
         if (state.notice) return { subLine: state.notice, subIsNotice: true };
         if (!view.searching) return { subLine: "", subIsNotice: false };
         if (state.scope === "all") {
+            if (loading) return { subLine: "Szukanie ruszy po wczytaniu listy logow...", subIsNotice: false };
             const withHits = sessions.filter((session) => (view.hitsBySession[session.id] ?? 0) > 0).length;
             const total = sessions.reduce((sum, session) => sum + (view.hitsBySession[session.id] ?? 0), 0);
-            return { subLine: `${total} w ${withHits} ${pluralLogs(withHits)}`, subIsNotice: false };
+            const summary = `${total} w ${withHits} ${pluralLogs(withHits)}`;
+            const progress = crossSearch?.running ? ` (przeszukano ${crossSearch.scanned} z ${crossSearch.total})` : "";
+            return { subLine: `${summary}${progress}`, subIsNotice: false };
         }
         return { subLine: "Enter / Shift+Enter", subIsNotice: false };
-    }, [state.notice, state.scope, view.searching, view.hitsBySession, sessions]);
+    }, [state.notice, state.scope, view.searching, view.hitsBySession, sessions, loading, crossSearch]);
 
     const emptyMessage = useMemo(() => {
         if (view.rows.length > 0) return null;
-        if (!view.session) return "Nie ma tu jeszcze zadnego zapisanego logu.";
+        if (!view.sessionInfo) {
+            return loading ? "Wczytywanie listy logow..." : "Nie ma tu jeszcze zadnego zapisanego logu.";
+        }
+        if (!view.session) {
+            return openFailed === view.sessionInfo.id ? "Nie udalo sie wczytac tego logu." : "Wczytywanie logu...";
+        }
         if (allChannelsOff(state.channels)) return "Wszystkie kanaly sa ukryte.";
         if (state.onlyMatches && activeQuery) return `Zadna linia w tym logu nie pasuje do „${activeQuery}”.`;
         if (anyChannelOff(state.channels)) return "Nic do pokazania przy obecnych filtrach.";
         return "Ta sesja nie ma zapisanych linii.";
-    }, [view.rows.length, view.session, state.channels, state.onlyMatches, activeQuery]);
+    }, [view.rows.length, view.sessionInfo, view.session, openFailed, loading, state.channels, state.onlyMatches, activeQuery]);
 
     /* --- render ---------------------------------------------------------- */
 
@@ -614,6 +694,7 @@ export function LogViewer({
      * with no logs wants. The session-shaped parts stand down; the rest works.
      */
     const session = view.session;
+    const info = view.sessionInfo;
 
     // The histogram must show activity OUTSIDE the range too, or the part of
     // the track you need in order to move the handles is empty.
@@ -636,7 +717,7 @@ export function LogViewer({
             tabIndex={-1}
         >
             <ViewerHeader
-                session={session}
+                session={info}
                 sessionCount={sessions.length}
                 onToggleSessions={() => setSidebarOpen((open) => !open)}
                 onPrevSession={() => stepSession(-1)}
@@ -678,10 +759,11 @@ export function LogViewer({
                     hitsBySession={view.hitsBySession}
                     searching={view.searching}
                     allScope={state.scope === "all"}
+                    loading={loading}
                 />
 
                 <div className="lv__main">
-                    {session ? (
+                    {info ? (
                         <>
                         <SearchBar
                             ref={searchRef}
@@ -696,6 +778,7 @@ export function LogViewer({
                             scope={state.scope}
                             onScopeChange={selectScope}
                             hasRange={hasRange}
+                            allScopePending={Boolean(loading)}
                             onStep={step}
                             onKeyDown={onSearchKeyDown}
                             counter={counter}
@@ -725,6 +808,7 @@ export function LogViewer({
                             onShowAll={showAllChannels}
                         />
 
+                        {session ? (
                         <Timeline
                             allLines={session.lines}
                             activityLines={activityLines}
@@ -742,13 +826,14 @@ export function LogViewer({
                             rangeActive={view.range !== null}
                             onRangeChange={setRange}
                         />
+                        ) : null}
                         </>
                     ) : null}
 
                     <LogPane
                         rows={view.rows}
-                        sessionKey={session?.id ?? "brak"}
-                        background={session?.background}
+                        sessionKey={info?.id ?? "brak"}
+                        background={info?.background}
                         showTimestamps={state.showTimestamps}
                         showMeta={state.showMeta}
                         showColors={state.showColors}
@@ -759,7 +844,7 @@ export function LogViewer({
                             view.totalMatches ? view.matches[view.currentMatch].occurrence : -1
                         }
                         emptyMessage={emptyMessage}
-                        emptyAction={session ? undefined : noSessionsAction}
+                        emptyAction={info || loading ? undefined : noSessionsAction}
                         onResetFilters={() =>
                             patch({ channels: allChannelsOn(), onlyMatches: false, matchIndex: 0 })
                         }
@@ -780,7 +865,7 @@ export function LogViewer({
 
                     <StatusBar
                         shownLines={view.rows.length}
-                        totalLines={session?.lines.length ?? 0}
+                        totalLines={session?.lines.length ?? info?.lineCount ?? 0}
                         viewport={viewport}
                         range={state.range}
                         rangeActive={view.range !== null}
@@ -795,7 +880,7 @@ export function LogViewer({
                         colorsAvailable={(session?.lines ?? []).some((line) => Boolean(line.html))}
                         wrap={state.wrap}
                         onWrapChange={(value) => patch({ wrap: value })}
-                        live={Boolean(session?.live)}
+                        live={Boolean(info?.live)}
                         follow={state.follow}
                         onFollowChange={(value) => patch({ follow: value })}
                     />

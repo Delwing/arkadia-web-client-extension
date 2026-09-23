@@ -35,6 +35,8 @@ export interface SearchBarProps {
     onScopeChange: (value: SearchScope) => void;
     /** "Zakres" is only offered once a slice has been selected. */
     hasRange: boolean;
+    /** "Wszystkie logi" waits until the host has listed every session. */
+    allScopePending?: boolean;
     onStep: (direction: 1 | -1) => void;
     onKeyDown: (event: React.KeyboardEvent<HTMLInputElement>) => void;
     /** Pre-rendered counter line and its tone — see `LogViewer` for the wording. */
@@ -64,6 +66,7 @@ export const SearchBar = forwardRef<HTMLInputElement, SearchBarProps>(function S
         scope,
         onScopeChange,
         hasRange,
+        allScopePending,
         onStep,
         onKeyDown,
         counter,
@@ -165,7 +168,10 @@ export const SearchBar = forwardRef<HTMLInputElement, SearchBarProps>(function S
                         value: "all",
                         label: "Wszystkie logi",
                         shortLabel: "Wszystkie",
-                        title: SCOPE_TITLE.all,
+                        // Still selectable when it already is: the search then
+                        // simply starts once the list is complete.
+                        disabled: allScopePending && scope !== "all",
+                        title: allScopePending ? "Dostepne po wczytaniu listy logow" : SCOPE_TITLE.all,
                     },
                     {
                         value: "range",

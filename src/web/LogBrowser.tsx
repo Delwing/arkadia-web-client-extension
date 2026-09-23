@@ -15,9 +15,9 @@
  */
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { Button, Icon, IconButton, LogViewer, Spinner } from "@ui/logViewer";
-import type { LogSession, PersistedPreferences } from "@ui/logViewer";
+import type { LogSessionInfo, PersistedPreferences } from "@ui/logViewer";
 import { readPreferences, writePreferences } from "../../log-viewer/preferences";
-import { loadAllSessions } from "../../log-viewer/sessionAdapter";
+import { createSessionSource, type ListProgress, type SessionSource } from "../../log-viewer/sessionAdapter";
 import { LogManager } from "./LogManager";
 import { currentSessionName } from "./sessionLogger";
 import "./logBrowser.css";
@@ -47,7 +47,10 @@ export function LogBrowser({ headerTrailing, initialQuery }: LogBrowserProps) {
      * same component in a shell of its own and supplies its own close control.
      */
     const [inStockModal] = useState(() => Boolean(document.getElementById("logs-modal")));
-    const [sessions, setSessions] = useState<LogSession[] | null>(null);
+    const [sessions, setSessions] = useState<LogSessionInfo[] | null>(null);
+    /** Set while the list is still being built; the manager waits for it. */
+    const [listing, setListing] = useState<ListProgress | null>(null);
+    const [source, setSource] = useState<SessionSource | null>(null);
     const [manageOpen, setManageOpen] = useState(false);
     /** Set when the manager should open straight on the file picker. */
     const [importOnOpen, setImportOnOpen] = useState(false);
@@ -70,28 +73,47 @@ export function LogBrowser({ headerTrailing, initialQuery }: LogBrowserProps) {
     const [openSessionId, setOpenSessionId] = useState<string | undefined>();
 
     useEffect(() => {
-        let cancelled = false;
-        void (async () => {
-            // A snapshot, taken each time the window opens. The pane does not
-            // stream: the game's own output is where a line is watched as it
-            // arrives, and re-reading the store on every line would fight the
-            // virtualizer for no gain. The session still being written to is
-            // marked live all the same — that is what opens it at its end
-            // rather than at the top, which is where a player wants to land.
-            // The session being recorded opens first; older ones join the
-            // list as they are parsed.
-            const loaded = await loadAllSessions(
-                { liveSessionName: currentSessionName, priority: [currentSessionName] },
-                (partial) => {
-                    if (!cancelled) setSessions(partial);
-                },
-            );
-            if (!cancelled) setSessions(loaded);
-        })();
+        // A snapshot, taken each time the window opens. The pane does not
+        // stream: the game's own output is where a line is watched as it
+        // arrives, and re-reading the store on every line would fight the
+        // virtualizer for no gain. The session still being written to is
+        // marked live all the same — that is what opens it at its end rather
+        // than at the top, which is where a player wants to land. The session
+        // being recorded is listed first; older ones join as they are indexed.
+        //
+        // Closing the window (or a reload) stops the listing and lets go of
+        // every parsed log: nothing of a large store outlives the window.
+        const created = createSessionSource({ liveSessionName: currentSessionName, priority: [currentSessionName] });
+        const controller = new AbortController();
+        setSource(created);
+        setListing({ done: 0, total: 0 });
+        created
+            .list((partial, progress) => {
+                if (controller.signal.aborted) return;
+                setSessions(partial);
+                setListing(progress);
+            }, controller.signal)
+            .then((all) => {
+                if (controller.signal.aborted) return;
+                setSessions(all);
+                setListing(null);
+            })
+            .catch((error: unknown) => {
+                console.error("[Logs] Failed to list sessions:", error);
+                if (controller.signal.aborted) return;
+                setSessions((previous) => previous ?? []);
+                setListing(null);
+            });
         return () => {
-            cancelled = true;
+            controller.abort();
+            created.release();
         };
     }, [reloadToken]);
+
+    const loadSession = useCallback(
+        (id: string) => (source ? source.load(id) : Promise.resolve(null)),
+        [source],
+    );
 
     const onPreferencesChange = useCallback((next: PersistedPreferences) => {
         writePreferences(next);
@@ -118,6 +140,8 @@ export function LogBrowser({ headerTrailing, initialQuery }: LogBrowserProps) {
             ) : (
                 <LogViewer
                     sessions={sessions}
+                    loadSession={loadSession}
+                    loading={listing}
                     preferences={initialPreferences}
                     initialQuery={initialQuery}
                     onPreferencesChange={onPreferencesChange}
@@ -143,8 +167,15 @@ export function LogBrowser({ headerTrailing, initialQuery }: LogBrowserProps) {
                                 <Icon name="open-external" />
                             </IconButton>
                             <IconButton
+                                // Deleting or importing reloads the list; not
+                                // while it is still being built.
+                                disabled={listing !== null}
                                 onClick={() => openManager(false)}
-                                title="Zarzadzanie logami: usuwanie, archiwum, import"
+                                title={
+                                    listing
+                                        ? "Zarzadzanie logami - dostepne po wczytaniu listy"
+                                        : "Zarzadzanie logami: usuwanie, archiwum, import"
+                                }
                             >
                                 <Icon name="archive" />
                             </IconButton>
