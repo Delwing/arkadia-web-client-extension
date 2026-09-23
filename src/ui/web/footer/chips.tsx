@@ -40,7 +40,6 @@ const COVER_SIZES = ["8.8", "OK"];
 const ORDER_SIZES = ["88.88", "OK"];
 // A floor, not a cap: a longer value (a team with names missing) still grows.
 const TEAM_SIZES = ["Wszyscy [88]"];
-const MAIL_SIZES = ["Nowa, Niewyslana"];
 const APOCALYPSE_SIZES = ["88:88"];
 const CLOCK_SIZES = ["88:88"];
 // The label is the season, or the part of the day before a season is known.
@@ -200,7 +199,6 @@ export function MailChip() {
       icon={<ChipIcon name="mail" />}
       label="Poczta"
       value={parts.join(", ")}
-      sizeTo={MAIL_SIZES}
       tone="warn"
       title="Wyslij zwierze pocztowe"
       className={blinking ? "attention-blink" : undefined}
@@ -388,7 +386,7 @@ export function OrderChip() {
   useClientEvent<number | null>("orderTimer", (v) => setOrder(v));
   if (!leader) return null;
   const active = order != null && order > 0;
-  return <Chip icon={<ChipIcon name="banner" />} label="Rozkaz" value={active ? order!.toFixed(2) : "OK"} sizeTo={ORDER_SIZES} tone={active ? "warn" : "ok"} />;
+  return <Chip icon={<ChipIcon name="banner" />} label="Rozkaz" value={active ? order!.toFixed(2) : "OK"} sizeTo={ORDER_SIZES} sizeCenter tone={active ? "warn" : "ok"} />;
 }
 
 /**

@@ -6,6 +6,9 @@
   display: inline-grid;
   font-variant-numeric: tabular-nums;
 }
+.chip__sized--center {
+  justify-items: center;
+}
 .chip__sized > * {
   grid-area: 1 / 1;
 }
