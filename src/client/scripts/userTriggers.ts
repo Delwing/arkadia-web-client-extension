@@ -1,5 +1,5 @@
 import Client from "../Client";
-import {createColorFormat} from "@modules/core/Colors";
+import {colorString, createColorFormat} from "@modules/core/Colors";
 import {AnsiAwareBuffer, TextRange, DimEasing} from "@client/ansi/FormatState";
 import {Trigger} from "../Triggers";
 import {executeTriggerMacro} from "@modules/core/pluginTriggerMacroRegistry";
@@ -8,16 +8,16 @@ import { sendPush } from "@modules/push/pushClient";
 import { isAutomationActiveNow, onAutomationScopeChange, setAutomationGroupEnabled, type AutomationMeta } from "@modules/core/automation";
 import { runUserScript, type RunOptions } from "./userScripts";
 
-export type BuiltInMacroType = 'uppercase' | 'color' | 'replace' | 'beep' | 'mute' | 'unmute' | 'command' | 'slowBlink' | 'rapidBlink' | 'dim' | 'functionalBind' | 'wrap' | 'notify' | 'push' | 'speak' | 'script' | 'group';
+export type BuiltInMacroType = 'uppercase' | 'color' | 'replace' | 'beep' | 'mute' | 'unmute' | 'command' | 'slowBlink' | 'rapidBlink' | 'dim' | 'functionalBind' | 'wrap' | 'notify' | 'push' | 'speak' | 'echo' | 'script' | 'group';
 
 export interface UserMacro {
     type: BuiltInMacroType | string;  // string allows plugin macros like "plugin:..."
-    color?: string;
+    color?: string;  // color: the match's colour; echo: the printed line's, absent = default
     to?: string;
     command?: string;
     soundKey?: string;
     label?: string;
-    message?: string;  // notify/push/speak text; empty falls back to matched text for pattern triggers
+    message?: string;  // notify/push/speak/echo text; empty falls back to matched text for pattern triggers (not echo)
     /**
      * push only: send even if another push went out within the rate-limit
      * window. For alerts the player considers important enough that being
@@ -50,8 +50,16 @@ export type TriggerType = 'pattern' | 'event';
  * alias, and later a timer. The rest (colour, replace, blink...) edit the line.
  */
 export const LINELESS_MACRO_TYPES: ReadonlySet<string> = new Set([
-    'beep', 'mute', 'unmute', 'command', 'functionalBind', 'notify', 'push', 'speak', 'script', 'group',
+    'beep', 'mute', 'unmute', 'command', 'functionalBind', 'notify', 'push', 'speak', 'echo', 'script', 'group',
 ]);
+
+/**
+ * echo: a line of its own in the game window, in the macro's colour if it has
+ * one. Printed after the line that fired it, as other scripts' messages are.
+ */
+function echoLine(client: Client, text: string, color?: string): void {
+    client.println(color ? colorString(text, createColorFormat(color)) : text);
+}
 
 /** What a "run script" action passes on: the groups, and what started it. */
 export interface ScriptCall {
@@ -509,6 +517,11 @@ function applyMacrosToMatch(
                 );
                 break;
             }
+            case 'echo': {
+                const text = interpolateMatch(macro.message ?? '', match);
+                if (text) echoLine(client, text, macro.color);
+                break;
+            }
             case 'speak': {
                 const text = macro.message
                     ? interpolateMatch(macro.message, match)
@@ -670,6 +683,9 @@ export function applyLinelessMacro(
                     { bypassCooldown: macro.bypassCooldown },
                 );
             }
+            break;
+        case 'echo':
+            if (message) echoLine(client, message, macro.color);
             break;
         case 'speak':
             // As with push, nothing to fall back on without a matched line.

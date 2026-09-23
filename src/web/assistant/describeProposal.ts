@@ -74,6 +74,7 @@ const MACRO_LABELS: Record<string, string> = {
     wrap: 'otocz tekstem',
     notify: 'powiadomienie',
     speak: 'czytaj na glos',
+    echo: 'wypisz tekst',
 };
 
 function describeMacro(macro: { type: string; command?: string; color?: string; to?: string; message?: string; soundKey?: string }): string {

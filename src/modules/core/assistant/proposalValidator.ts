@@ -830,11 +830,11 @@ export function validateAlias(input: Record<string, unknown>): ValidationResult<
 
 const BUILT_IN_MACRO_TYPES: readonly BuiltInMacroType[] = [
     'uppercase', 'color', 'replace', 'beep', 'mute', 'unmute', 'command',
-    'slowBlink', 'rapidBlink', 'dim', 'functionalBind', 'wrap', 'notify', 'push', 'speak',
+    'slowBlink', 'rapidBlink', 'dim', 'functionalBind', 'wrap', 'notify', 'push', 'speak', 'echo',
 ];
 
 /** Macros `applyEventMacros` actually handles; the rest need text context. */
-const EVENT_SAFE_MACRO_TYPES: readonly string[] = ['beep', 'mute', 'unmute', 'command', 'functionalBind', 'notify', 'push', 'speak'];
+const EVENT_SAFE_MACRO_TYPES: readonly string[] = ['beep', 'mute', 'unmute', 'command', 'functionalBind', 'notify', 'push', 'speak', 'echo'];
 
 const DIM_EASINGS = ['linear', 'ease-in', 'ease-out', 'ease-in-out'];
 
@@ -967,6 +967,18 @@ function validateMacro(raw: unknown, index: number, triggerType: 'pattern' | 'ev
                     `${path}.message`,
                     `Makro "${type}" w triggerze zdarzeniowym wymaga pola "message" - nie ma linii tekstu, z ktorej mozna wziac tresc.`,
                 ));
+            }
+            break;
+        }
+        case 'echo': {
+            const message = requireString('message', 'missingMacroMessage', 'Makro "echo" wymaga pola "message" (tekst do wypisania).');
+            if (message !== undefined) macro.message = message;
+            if (raw.color !== undefined) {
+                if (typeof raw.color !== 'string' || !HEX_COLOR.test(raw.color)) {
+                    issues.push(err('invalidColor', `${path}.color`, `Kolor "${String(raw.color)}" nie jest w formacie "#rrggbb".`));
+                } else {
+                    macro.color = raw.color;
+                }
             }
             break;
         }

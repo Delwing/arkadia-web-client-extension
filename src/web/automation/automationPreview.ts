@@ -77,7 +77,7 @@ export interface LineSegment {
     effect?: boolean;
 }
 
-export type OutputKind = "command" | "notify" | "push" | "speak" | "sound" | "bind" | "script" | "group" | "other";
+export type OutputKind = "command" | "notify" | "push" | "speak" | "echo" | "sound" | "bind" | "script" | "group" | "other";
 
 export interface PreviewOutput {
     kind: OutputKind;
@@ -95,6 +95,7 @@ function linelessOutput(m: UserMacro, fill: (t: string) => string, fallback: str
         case "notify": return message("notify");
         case "push": return message("push");
         case "speak": return message("speak");
+        case "echo": return m.message ? { kind: "echo", text: fill(m.message) } : null;
         case "beep": return { kind: "sound", text: m.soundKey && m.soundKey !== "beep" ? m.soundKey : "domyslny beep" };
         case "mute": return { kind: "sound", text: "wyciszenie dzwiekow" };
         case "unmute": return { kind: "sound", text: "wlaczenie dzwiekow" };

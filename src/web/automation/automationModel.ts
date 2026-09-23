@@ -295,7 +295,8 @@ export function isEmptyLinelessAction(m: UserMacro): boolean {
         case "command": return !m.command?.trim();
         case "notify":
         case "push":
-        case "speak": return !m.message?.trim();
+        case "speak":
+        case "echo": return !m.message?.trim();
         case "functionalBind": return !m.label?.trim() || !m.command?.trim();
         case "script": return !m.scriptId;
         case "group": return !m.groupId;
@@ -423,6 +424,7 @@ export function actionShort(m: UserMacro, pluginLabel?: (type: string) => string
         case "notify": return m.message ? `powiadomienie "${m.message}"` : "powiadomienie";
         case "push": return m.message ? `na telefon "${m.message}"` : "na telefon";
         case "speak": return m.message ? `czytaj "${m.message}"` : "czytaj";
+        case "echo": return m.message ? `wypisz "${m.message}"` : "wypisz";
         case "script": return `skrypt ${storedScripts().find(sc => sc.id === m.scriptId)?.name || "?"}`;
         case "group": {
             const verb = m.groupState === "on" ? "wlacz" : m.groupState === "off" ? "wylacz" : "przelacz";
