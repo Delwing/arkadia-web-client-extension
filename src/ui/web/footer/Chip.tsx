@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties, type MouseEvent, type PointerEvent, type ReactNode } from "react";
+import "./chip.css";
 
 export type ChipTone = "ok" | "warn" | "danger";
 
@@ -20,13 +21,23 @@ export const CHIP_LONG_PRESS_MS = 300;
  * it carries `chip--holding` (hosts animate a fill over `--chip-hold-ms`), and
  * once the hold completes it fires the action, buzzes the phone, flashes
  * `chip--held` and swallows the click that the release would otherwise send.
+ *
+ * A chip whose values are a known set (OK / a countdown, on / off) passes them as
+ * `sizeTo`: they are laid invisibly under the real value in one grid cell, so the
+ * chip is as wide as its widest state and never resizes as the value changes.
+ * It is a floor, not a cap: a value longer than every candidate still grows it.
+ * Digits are tabular there, so "8.8" stands for any one-decimal countdown.
  */
-export function Chip({ icon, label, labelColor, value, valueFirst, tone, onClick, onLongPress, title, className }: {
+export function Chip({ icon, label, labelColor, labelSizeTo, value, sizeTo, valueFirst, tone, onClick, onLongPress, title, className }: {
   icon: ReactNode;
   label: string;
   /** Tints the label (the clock chip colours its season name). */
   labelColor?: string;
+  /** Like `sizeTo`, for a label that changes (the clock's season). */
+  labelSizeTo?: readonly string[];
   value: ReactNode;
+  /** Every shape the value can take, widest wins; the chip reserves that width. */
+  sizeTo?: readonly string[];
   /** The value leads and the label follows it ("14:32 dzien"). */
   valueFirst?: boolean;
   tone?: ChipTone;
@@ -44,9 +55,9 @@ export function Chip({ icon, label, labelColor, value, valueFirst, tone, onClick
     <>
       {icon}
       <span className="chip__text">
-        {valueFirst && <span className="chip__val">{value}</span>}
-        {label && <span className="chip__lab" style={labelColor ? { color: labelColor } : undefined}>{label}</span>}
-        {!valueFirst && <span className="chip__val">{value}</span>}
+        {valueFirst && <Sized className="chip__val" sizeTo={sizeTo}>{value}</Sized>}
+        {label && <Sized className="chip__lab" style={labelColor ? { color: labelColor } : undefined} sizeTo={labelSizeTo}>{label}</Sized>}
+        {!valueFirst && <Sized className="chip__val" sizeTo={sizeTo}>{value}</Sized>}
       </span>
     </>
   );
@@ -62,6 +73,26 @@ export function Chip({ icon, label, labelColor, value, valueFirst, tone, onClick
     >
       {inner}
     </button>
+  );
+}
+
+/**
+ * A value or label, sized to its widest `sizeTo` candidate when it has them
+ * (chip.css). The candidates are empty spans drawn by ::before, so textContent
+ * stays the text itself.
+ */
+function Sized({ className, style, sizeTo, children }: {
+  className: string;
+  style?: CSSProperties;
+  sizeTo?: readonly string[];
+  children: ReactNode;
+}) {
+  if (!sizeTo) return <span className={className} style={style}>{children}</span>;
+  return (
+    <span className={`${className} chip__sized`} style={style}>
+      {sizeTo.map((size) => <span key={size} data-size={size} />)}
+      <span>{children}</span>
+    </span>
   );
 }
 

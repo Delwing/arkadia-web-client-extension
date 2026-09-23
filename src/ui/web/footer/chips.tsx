@@ -24,6 +24,28 @@ function mmss(seconds: number): string {
   return `${Math.floor(total / 60)}:${(total % 60).toString().padStart(2, "0")}`;
 }
 
+/*
+ * Every state of the fixed-range chips, so they hold one width (see Chip's
+ * `sizeTo`). Digits are tabular, so "8" stands for any digit; the counts are the
+ * timers' ceilings - lamp 5:00, combat 32s, zask ~30s, cover 5s, order 15s.
+ * The transport and package chips size to their own name plus "88:88".
+ */
+const FAJKA_SIZES = ["pali sie", "zgasla"];
+const LAMP_SIZES = ["8:88", "off"];
+const COMBAT_SIZES = ["88"];
+const ZASK_SIZES = ["88", "OK"];
+const ATTACK_SIZES = ["A", "AW", "AWR"];
+const WEAPON_SIZES = ["dobyta", "schowana"];
+const COVER_SIZES = ["8.8", "OK"];
+const ORDER_SIZES = ["88.88", "OK"];
+// A floor, not a cap: a longer value (a team with names missing) still grows.
+const TEAM_SIZES = ["Wszyscy [88]"];
+const MAIL_SIZES = ["Nowa, Niewyslana"];
+const APOCALYPSE_SIZES = ["88:88"];
+const CLOCK_SIZES = ["88:88"];
+// The label is the season, or the part of the day before a season is known.
+const CLOCK_LABEL_SIZES = ["wiosna", "lato", "jesien", "zima", "dzien", "noc"];
+
 /** Pipe: lit ember when puffed, dim when out. Click lights / snuffs it. */
 export function FajkaChip() {
   const [lit, setLit] = useState(false);
@@ -33,6 +55,7 @@ export function FajkaChip() {
       icon={<span className="chip__ico"><span className={`chip__ember${lit ? " chip__ember--lit" : ""}`} /></span>}
       label="Fajka"
       value={lit ? "pali sie" : "zgasla"}
+      sizeTo={FAJKA_SIZES}
       tone={lit ? "warn" : undefined}
       title={lit ? "Zgas fajke" : "Zapal fajke"}
       onClick={() => eventBus.emit("sendCommand", { command: lit ? "zgas fajke" : "/zapal" })}
@@ -54,6 +77,7 @@ export function LampChip() {
       icon={<ChipIcon name="lamp" />}
       label="Lampa"
       value={lit ? mmss(seconds!) : "off"}
+      sizeTo={LAMP_SIZES}
       tone={tone}
       title={`${lit ? "Zgas lampe" : "Zapal lampe"} (przytrzymaj: napelnij olejem)`}
       onClick={() => eventBus.emit("sendCommand", { command: lit ? "zgas lampe" : "zapal lampe" })}
@@ -68,7 +92,7 @@ export function CombatChip() {
   useClientEvent<number | null>("combatTimer", (v) => setSeconds(v));
   if (seconds == null || seconds <= 0) return null;
   const tone: ChipTone = seconds > 20 ? "danger" : seconds > 10 ? "warn" : "ok";
-  return <Chip icon={<ChipIcon name="sword" />} label="Walka" value={seconds} tone={tone} />;
+  return <Chip icon={<ChipIcon name="sword" />} label="Walka" value={seconds} sizeTo={COMBAT_SIZES} tone={tone} />;
 }
 
 /** Surprise-attack readiness: OK when charged, else the remaining count. */
@@ -77,7 +101,7 @@ export function ZaskChip() {
   useClientEvent<{ seconds: number; ok: boolean } | null>("zaskTimer", (v) => setPayload(v));
   if (!payload) return null;
   const tone: ChipTone = payload.ok ? "ok" : payload.seconds >= 20 ? "warn" : "danger";
-  return <Chip icon={<ChipIcon name="shield" />} label="Zask" value={payload.ok ? "OK" : payload.seconds} tone={tone} />;
+  return <Chip icon={<ChipIcon name="shield" />} label="Zask" value={payload.ok ? "OK" : payload.seconds} sizeTo={ZASK_SIZES} tone={tone} />;
 }
 
 /** Attack mode (leader only): A / AW / AWR. Click cycles through them. */
@@ -92,7 +116,7 @@ export function AttackChip() {
     const next = order[(order.indexOf(mode) + 1) % order.length];
     eventBus.emit("attackMode", next); // attackController persists + re-emits
   };
-  return <Chip icon={<ChipIcon name="target" />} label="Atk" value={mode} title="Zmien tryb ataku" onClick={cycle} />;
+  return <Chip icon={<ChipIcon name="target" />} label="Atk" value={mode} sizeTo={ATTACK_SIZES} title="Zmien tryb ataku" onClick={cycle} />;
 }
 
 /** Team presence on the current room. Click lists the roster. */
@@ -107,6 +131,7 @@ export function TeamChip() {
       icon={<ChipIcon name="team" />}
       label="Druzyna"
       value={allHere ? `Wszyscy [${status.teamSize}]` : `Brak: ${status.missing.join(", ")}`}
+      sizeTo={TEAM_SIZES}
       tone={allHere ? "ok" : "warn"}
       title="Pokaz sklad druzyny"
       onClick={() => eventBus.emit("sendCommand", { command: "druzyna" })}
@@ -128,6 +153,7 @@ export function TransportChip() {
       icon={<ChipIcon name="wheel" />}
       label="Tr"
       value={value}
+      sizeTo={[`${payload.label} 88:88`]}
       tone={tone}
       title="Otworz trase transportu"
       onClick={() => eventBus.emit("transport.popup.open")}
@@ -149,6 +175,7 @@ export function PackageChip() {
       icon={<ChipIcon name="box" />}
       label="Paczka"
       value={`${status.recipient}${time}`}
+      sizeTo={[`${status.recipient} 88:88`]}
       title={onClick ? "Prowadz do odbiorcy" : undefined}
       onClick={onClick}
     />
@@ -173,6 +200,7 @@ export function MailChip() {
       icon={<ChipIcon name="mail" />}
       label="Poczta"
       value={parts.join(", ")}
+      sizeTo={MAIL_SIZES}
       tone="warn"
       title="Wyslij zwierze pocztowe"
       className={blinking ? "attention-blink" : undefined}
@@ -186,7 +214,7 @@ export function ApocalypseChip() {
   const [seconds, setSeconds] = useState<number | null>(null);
   useClientEvent<number | null>("worldDestructionTimer", (v) => setSeconds(v));
   if (seconds == null || seconds <= 0) return null;
-  return <Chip icon={<ChipIcon name="skull" />} label="Apokalipsa" value={mmss(Math.ceil(seconds))} tone="danger" />;
+  return <Chip icon={<ChipIcon name="skull" />} label="Apokalipsa" value={mmss(Math.ceil(seconds))} sizeTo={APOCALYPSE_SIZES} tone="danger" />;
 }
 
 type Domain = "Empire" | "Ishtar";
@@ -266,7 +294,9 @@ export function ClockChip() {
       icon={<ChipIcon name={icon} color={iconColor} />}
       label={season ?? part}
       labelColor={clock.season !== undefined ? SEASON_COLORS[clock.season] : undefined}
+      labelSizeTo={CLOCK_LABEL_SIZES}
       value={value}
+      sizeTo={CLOCK_SIZES}
       valueFirst
       title={tip ? `${tip}\n(kliknij: zegar)` : "Zegar"}
       onClick={() => eventBus.emit("clock.popup.open", { domain: active })}
@@ -283,7 +313,7 @@ export function WeaponChip() {
   useClientEvent("client.disconnect", () => setInCombat(false));
   if (drawn === null) return null;
   const tone: ChipTone | undefined = inCombat && !drawn ? "danger" : undefined;
-  return <Chip icon={<ChipIcon name="sword" />} label="Bron" value={drawn ? "dobyta" : "schowana"} tone={tone} />;
+  return <Chip icon={<ChipIcon name="sword" />} label="Bron" value={drawn ? "dobyta" : "schowana"} sizeTo={WEAPON_SIZES} tone={tone} />;
 }
 
 /** Cover cooldown + guard-release toggle (the /puszczaj alias). Click toggles guard. */
@@ -302,6 +332,7 @@ export function CoverChip() {
       icon={<ChipIcon name="shield" fill={!guard} />}
       label="Zaslona"
       value={active ? cover!.toFixed(1) : "OK"}
+      sizeTo={COVER_SIZES}
       tone={active ? "warn" : "ok"}
       title={guard ? "Zaslony puszczane automatycznie (kliknij: trzymaj)" : "Zaslony trzymane (kliknij: puszczaj automatycznie)"}
       className={guard ? undefined : "chip--guard-held"}
@@ -357,7 +388,7 @@ export function OrderChip() {
   useClientEvent<number | null>("orderTimer", (v) => setOrder(v));
   if (!leader) return null;
   const active = order != null && order > 0;
-  return <Chip icon={<ChipIcon name="banner" />} label="Rozkaz" value={active ? order!.toFixed(2) : "OK"} tone={active ? "warn" : "ok"} />;
+  return <Chip icon={<ChipIcon name="banner" />} label="Rozkaz" value={active ? order!.toFixed(2) : "OK"} sizeTo={ORDER_SIZES} tone={active ? "warn" : "ok"} />;
 }
 
 /**
