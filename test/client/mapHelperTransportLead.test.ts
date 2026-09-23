@@ -191,3 +191,29 @@ describe('MapHelper leading with transports', () => {
     expect(client.events.filter((e) => e.type === 'routePlanned')).toHaveLength(announcements);
   });
 });
+
+describe('MapHelper switching lead mode', () => {
+  test('turns a lead on foot into one with transports and back', () => {
+    const { map, client } = newMap({ walkingPath: [1, 2, 3] });
+    map.leadTo(3);
+
+    client.sendEvent('switchLeadMode', { transport: true, aggressive: true });
+    expect((map as any).leadTarget).toBe(3);
+    expect((map as any).leadOptions).toEqual({ transport: true, aggressive: true });
+    expect(map.destinations).toEqual([3]);
+
+    client.sendEvent('switchLeadMode', { transport: false });
+    expect((map as any).leadOptions).toEqual({});
+    expect((map as any)._transportRoute).toBeNull();
+    expect(map.destinations).toEqual([3]);
+  });
+
+  test('says so when there is nothing to switch', () => {
+    const { client } = newMap();
+
+    client.sendEvent('switchLeadMode', { transport: true });
+
+    expect(lastEvent(client, 'notify')?.payload).toEqual({ text: 'Nie prowadzisz nigdzie' });
+    expect(client.events.some((e) => e.type === 'mapPath')).toBe(false);
+  });
+});

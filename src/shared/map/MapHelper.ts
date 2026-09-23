@@ -319,6 +319,10 @@ export default class MapHelper {
             this.leadTo(request.roomId, { transport: true, aggressive: request.aggressive === true });
         });
 
+        this.client.on("switchLeadMode", (request: { transport: boolean; aggressive?: boolean }) => {
+            this.switchLeadMode(request.transport, request.aggressive === true);
+        });
+
         // Mounting or leaving a carriage changes which rooms are passable, as does marking one, so
         // a route already on screen has to be worked out again.
         this.client.on("carriageModeChanged", () => this.releadForChangedRules());
@@ -1426,6 +1430,21 @@ export default class MapHelper {
                 boarding: route.boarding,
             });
         }
+    }
+
+    /**
+     * Lead on to where we are already leading, by the other rules: turn a /prowadz into a
+     * /prowadzt or back, without having to name the target again.
+     */
+    switchLeadMode(transport: boolean, aggressive = false) {
+        const target = this.leadTarget;
+        // The trip planner draws its stops without a lead target, and a target already reached
+        // is forgotten - either way there is nothing to switch.
+        if (target === null || !this._destinations.includes(target)) {
+            this.client.sendEvent("notify", { text: 'Nie prowadzisz nigdzie' });
+            return;
+        }
+        this.leadTo(target, transport ? { transport: true, aggressive } : {});
     }
 
     setMultiDestinations(ids: number[]) {

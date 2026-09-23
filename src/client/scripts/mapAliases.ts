@@ -68,6 +68,20 @@ export default function initMapAliases(client: Client, aliases: { pattern: RegEx
             }
         },
         {
+            // Without a target: lead on to the current one, on foot again.
+            pattern: /^\/prowadz\s*$/,
+            callback: () => {
+                client.sendEvent('switchLeadMode', { transport: false });
+            }
+        },
+        {
+            // Without a target: lead on to the current one, by ship and coach.
+            pattern: /^\/prowadzt(!?)\s*$/,
+            callback: (matches: RegExpMatchArray) => {
+                client.sendEvent('switchLeadMode', { transport: true, aggressive: matches[1] === '!' });
+            }
+        },
+        {
             pattern: /^\/prowadz-$/,
             callback: () => {
                 client.sendEvent('clearLeadTo');
