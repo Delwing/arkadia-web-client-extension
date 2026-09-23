@@ -6,7 +6,7 @@ import { attachVoiceInput, type VoiceInputHandle } from "@web/voice/voiceInput.t
 import { CommandInputController, type CommandInputDeps } from "./CommandInputController";
 import { getConnectionView, requestReconnect, subscribeConnectionView } from "./connectionView";
 import MainMenu from "./MainMenu";
-import { useHardwareKeyboard } from "@web-ui/hooks";
+import { useHardwareKeyboard, useMediaQuery } from "@web-ui/hooks";
 import FooterButtons from "@web-ui/footer/FooterButtons.tsx";
 
 export type CommandLineDeps = Pick<CommandInputDeps,
@@ -77,15 +77,19 @@ export default function CommandLine({ deps }: { deps: CommandLineDeps }) {
   }, []);
 
   // What Tab would complete, shown after the caret (Ustawienia → Komendy). Only with
-  // a keyboard to press Tab on, with the caret at the end of a one-line command and
-  // nothing selected. Worked out on every keystroke (the output's words are cached
-  // by the controller until the output changes).
+  // a keyboard to press Tab on, or a touch screen where a tap on the hint takes it,
+  // with the caret at the end of a one-line command and nothing selected. Worked out
+  // on every keystroke (the output's words are cached by the controller until the
+  // output changes).
   const hardwareKeyboard = useHardwareKeyboard();
+  const touch = useMediaQuery("(pointer: coarse)");
   const [tabHint, setTabHint] = useState(tabHintSetting);
   const [ghost, setGhost] = useState<{ text: string; suffix: string } | null>(null);
+  const ghostRef = useRef<HTMLDivElement>(null);
+  const refreshGhostRef = useRef<() => void>(() => {});
   useEffect(() => {
     const input = inputRef.current;
-    if (!input || !hardwareKeyboard || !tabHint) {
+    if (!input || !(hardwareKeyboard || touch) || !tabHint) {
       setGhost(null);
       return;
     }
@@ -110,6 +114,12 @@ export default function CommandLine({ deps }: { deps: CommandLineDeps }) {
     const clear = () => {
       setGhost(null);
     };
+    // A phone's line slides sideways instead of wrapping; the hint slides with it.
+    const syncScroll = () => {
+      if (ghostRef.current) ghostRef.current.scrollLeft = input.scrollLeft;
+    };
+    refreshGhostRef.current = update;
+    input.addEventListener("scroll", syncScroll);
     input.addEventListener("input", update);
     input.addEventListener("keyup", update);
     input.addEventListener("focus", update);
@@ -120,8 +130,13 @@ export default function CommandLine({ deps }: { deps: CommandLineDeps }) {
       input.removeEventListener("keyup", update);
       input.removeEventListener("focus", update);
       input.removeEventListener("blur", clear);
+      input.removeEventListener("scroll", syncScroll);
+      refreshGhostRef.current = () => {};
     };
-  }, [hardwareKeyboard, tabHint]);
+  }, [hardwareKeyboard, touch, tabHint]);
+  useLayoutEffect(() => {
+    if (ghost && ghostRef.current && inputRef.current) ghostRef.current.scrollLeft = inputRef.current.scrollLeft;
+  }, [ghost]);
 
   // The server asks for a password by taking echo away.
   useEffect(() => eventBus.on("telnet.echo", (echoing: boolean) => setPasswordMode(echoing)), []);
@@ -205,9 +220,18 @@ export default function CommandLine({ deps }: { deps: CommandLineDeps }) {
           {ghost && (
             // The typed text laid out invisibly under the textarea's, so the
             // completion lands right after the caret.
-            <div className="command-field__ghost">
+            <div className="command-field__ghost" ref={ghostRef}>
               <span className="command-field__ghost-typed">{ghost.text}</span>
-              <span className="command-field__ghost-rest">{ghost.suffix}</span>
+              <span
+                className="command-field__ghost-rest"
+                onPointerDown={(e) => {
+                  // No Tab key on a touch screen: a tap on the hint takes it. Cancelled
+                  // so the caret (and the on-screen keyboard) stay in the field.
+                  e.preventDefault();
+                  controllerRef.current?.acceptTabCompletion();
+                  refreshGhostRef.current();
+                }}
+              >{ghost.suffix}</span>
             </div>
           )}
         </div>

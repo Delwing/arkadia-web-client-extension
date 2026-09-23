@@ -17,7 +17,7 @@
 }
 @media (pointer: coarse), (max-width: 768px) {
   #input-area {
-    --cmd-h: 46px;
+    --cmd-h: 41px;
     gap: 6px;
     padding: 6px 8px 8px;
   }
@@ -64,7 +64,7 @@
   pointer-events: none;
 }
 
-/* History: a stacked pair on desktop, side by side (40×46) on phones. */
+/* History: a stacked pair on desktop, side by side (36×41) on phones. */
 #history-buttons {
   display: inline-flex;
   flex-direction: column;
@@ -94,7 +94,7 @@
     flex-direction: row;
   }
   #input-area #history-buttons button {
-    width: 40px;
+    width: 36px;
     height: 100%;
   }
   #input-area #history-buttons button + button {
@@ -200,6 +200,9 @@
 .command-field__ghost-rest {
   color: var(--popup-text-faint);
 }
+.command-field__ghost-rest {
+  pointer-events: auto;
+}
 /* "Tab" and "uzupełnij" on one baseline; the pair is centred in the field. */
 .command-field__tab-hint {
   display: inline-flex;
@@ -221,6 +224,41 @@
   font-family: var(--output-font-family);
   font-size: 10.5px;
   line-height: 1;
+}
+
+/* Phone: no ">" prompt and no "Tab uzupełnij" (a tap on the dimmed rest takes it),
+   and a long command slides sideways instead of wrapping onto more lines - only a
+   typed line break (Shift+Enter) adds one. No scrollbar for the slide. */
+@media (pointer: coarse), (max-width: 768px) {
+  .command-field__prompt,
+  .command-field__tab-hint {
+    display: none;
+  }
+  #message-input {
+    overflow-x: auto;
+    white-space: pre;
+    overflow-wrap: normal;
+    scrollbar-width: none;
+  }
+  #message-input::-webkit-scrollbar {
+    display: none;
+  }
+  .command-field__ghost {
+    white-space: pre;
+    overflow-wrap: normal;
+  }
+}
+/* A touch screen's 16px input text, a tenth smaller in this row. Not on iOS: under
+   16px Safari zooms the page in on focus. */
+@media (pointer: coarse) {
+  #input-area {
+    --ui-input-fs: 14.4px;
+  }
+  @supports (-webkit-touch-callout: none) {
+    #input-area {
+      --ui-input-fs: 16px;
+    }
+  }
 }
 
 /* Password mode: a lock instead of the prompt, the field tinted amber. */
