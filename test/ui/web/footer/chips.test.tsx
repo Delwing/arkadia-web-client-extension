@@ -1,7 +1,7 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import eventBus from "@modules/core/eventBus";
-import { AttackChip, ClockChip, ConnectionChip } from "@web-ui/footer/chips";
+import { AttackChip, ClockChip, ConnectionChip, WeaponChip } from "@web-ui/footer/chips";
 
 // The stock footer used to have its own components for these; it now renders the
 // shared chips, so their behaviour is pinned here.
@@ -91,6 +91,29 @@ describe("footer chips", () => {
       act(() => chip()!.click());
       expect(opened).toEqual([{ domain: "Empire" }]);
       off();
+    });
+  });
+
+  describe("WeaponChip", () => {
+    const tone = () => [...chip()!.classList].filter((c) => /^chip--(warn|danger|ok)$/.test(c));
+
+    test("neutral out of combat, drawn or not", () => {
+      mount(<WeaponChip />);
+      emit("weapon_state", true);
+      expect(tone()).toEqual([]);
+      emit("weapon_state", false);
+      expect(tone()).toEqual([]);
+    });
+
+    test("red only while fighting with the weapon sheathed", () => {
+      mount(<WeaponChip />);
+      emit("weapon_state", true);
+      emit("combatState", true);
+      expect(tone()).toEqual([]);
+      emit("weapon_state", false);
+      expect(tone()).toEqual(["chip--danger"]);
+      emit("combatState", false);
+      expect(tone()).toEqual([]);
     });
   });
 });

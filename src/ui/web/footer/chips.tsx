@@ -274,12 +274,16 @@ export function ClockChip() {
   );
 }
 
-/** Whether a weapon is drawn. */
+/** Whether a weapon is drawn. Neutral either way; red only when fighting without it. */
 export function WeaponChip() {
   const [drawn, setDrawn] = useState<boolean | null>(null);
+  const [inCombat, setInCombat] = useState(false);
   useClientEvent<boolean>("weapon_state", (v) => setDrawn(Boolean(v)));
+  useClientEvent<boolean>("combatState", (v) => setInCombat(Boolean(v)));
+  useClientEvent("client.disconnect", () => setInCombat(false));
   if (drawn === null) return null;
-  return <Chip icon={<ChipIcon name="sword" />} label="Bron" value={drawn ? "dobyta" : "schowana"} tone={drawn ? "warn" : undefined} />;
+  const tone: ChipTone | undefined = inCombat && !drawn ? "danger" : undefined;
+  return <Chip icon={<ChipIcon name="sword" />} label="Bron" value={drawn ? "dobyta" : "schowana"} tone={tone} />;
 }
 
 /** Cover cooldown + guard-release toggle (the /puszczaj alias). Click toggles guard. */
