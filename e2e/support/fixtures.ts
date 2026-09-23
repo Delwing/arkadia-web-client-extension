@@ -24,6 +24,9 @@ const test = base.extend({
             window.__DISABLE_GA__ = true;
             // @ts-expect-error for disabling Firebase
             window.__DISABLE_FIREBASE__ = true;
+            // Desktop profiles get the layout manager switched on once, on first
+            // boot. Tests expect the stock layout unless they turn it on themselves.
+            localStorage.setItem('layoutManagerDefaultApplied', '1');
         });
 
         await mockMapDownloads(context);

@@ -33,6 +33,9 @@ const test = base.extend({
         await context.addInitScript(() => {
             // @ts-expect-error for disabling GA
             window.__DISABLE_GA__ = true;
+            // Desktop profiles get the layout manager switched on once, on first
+            // boot. Tests expect the stock layout unless they turn it on themselves.
+            localStorage.setItem('layoutManagerDefaultApplied', '1');
         });
 
         // Install mock Firebase
