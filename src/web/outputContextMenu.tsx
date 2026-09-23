@@ -1,6 +1,5 @@
 import {
     BookOpen,
-    Library,
     Leaf,
     FileText,
     ScrollText,
@@ -73,10 +72,9 @@ interface WindowLauncher {
 
 const command = (value: string) => () => eventBus.emit('sendCommand', { command: value });
 
-/** Every window, in the order players know; all of them, always (no overflow). */
-const WINDOW_LAUNCHERS: WindowLauncher[] = [
+/** Every window, alphabetically (Polish collation); all of them, always (no overflow). */
+const WINDOW_LAUNCHERS: WindowLauncher[] = ([
     { label: 'Wiedza', icon: BookOpen, popupId: 'popup:knowledgeDetails', open: command('/wiedza') },
-    { label: 'Biblioteki', icon: Library, popupId: 'popup:knowledgeDetails', open: command('/biblioteki') },
     { label: 'Zioła', icon: Leaf, popupId: 'popup:herb', open: command('/ziola') },
     { label: 'Zioła (tekst)', icon: FileText, popupId: 'popup:herb-text', open: command('/ziola2') },
     { label: 'Zlecenia', icon: ScrollText, popupId: 'popup:contracts', open: command('/zlecenia') },
@@ -99,7 +97,7 @@ const WINDOW_LAUNCHERS: WindowLauncher[] = [
     { label: 'Złom', icon: Shield, popupId: 'popup:zlom', open: () => eventBus.emit('zlom.popup.open') },
     { label: 'Odporności', icon: ShieldHalf, popupId: 'popup:enemyResistances', open: () => eventBus.emit('enemyResistances.popup.open') },
     { label: 'Oswajanie', icon: PawPrint, popupId: 'popup:oswajanie', open: () => eventBus.emit('oswajanie.popup.open', {}) },
-];
+] satisfies WindowLauncher[]).sort((a, b) => a.label.localeCompare(b.label, 'pl'));
 
 /** The longest selection quoted in the "Szukaj w logach" row. */
 const QUOTE_MAX = 28;

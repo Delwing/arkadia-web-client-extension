@@ -57,7 +57,6 @@ test.describe('Context menu', () => {
 
         await expect(menu).toContainText('Znaczniki czasu');
         await expect(menu).toContainText('Wiedza');
-        await expect(menu).toContainText('Biblioteki');
         await expect(menu).toContainText('Chat');
         await expect(menu).toContainText('Walka');
     });
@@ -71,9 +70,9 @@ test.describe('Context menu', () => {
         await expect(menu.locator('.context-menu__item')).toHaveText(['Znaczniki czasu', 'Typy wiadomości']);
         // All of them, always: no search and no "+N".
         const tiles = menu.locator('.context-menu__tiles .context-menu__tile');
-        await expect(tiles).toHaveCount(24);
-        await expect(tiles.first()).toHaveText('Wiedza');
-        await expect(tiles.last()).toHaveText('Oswajanie');
+        await expect(tiles).toHaveCount(23);
+        await expect(tiles.first()).toHaveText('Cechy');
+        await expect(tiles.last()).toHaveText('Złom');
         const columns = await menu.locator('.context-menu__tiles').evaluate(
             (el) => getComputedStyle(el).gridTemplateColumns.split(' ').length,
         );
@@ -95,9 +94,8 @@ test.describe('Context menu', () => {
         // The window now covers the middle of the output: right-click its free edge.
         const box = (await output.boundingBox())!;
         await output.click({button: 'right', position: {x: box.width - 30, y: box.height - 60}});
-        await expect(menu.locator('.context-menu__tile.is-active')).toHaveText(['Wiedza', 'Biblioteki']);
-        // Wiedza and Biblioteki are one window, so both tiles have the dot.
-        await expect(menu.locator('.context-menu__open-dot')).toHaveCount(2);
+        await expect(menu.locator('.context-menu__tile.is-active')).toHaveText(['Wiedza']);
+        await expect(menu.locator('.context-menu__open-dot')).toHaveCount(1);
     });
 
     test('clicking a menu item hides the menu', async ({page}) => {
