@@ -397,7 +397,7 @@ export default class MapHelper {
     }
 
     /** The room id GMCP is pointing at, or undefined when the map has no such room. */
-    resolveGmcpRoom(data?: Position): number | undefined {
+    resolveGmcpRoom(data?: Partial<Pick<Position, 'x' | 'y' | 'name'>>): number | undefined {
         if (!data || data.x === undefined || data.y === undefined || !data.name) {
             return undefined;
         }
