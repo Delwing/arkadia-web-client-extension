@@ -5,11 +5,11 @@
  * hosts the same component inside its own modal shell, where stock's
  * `#logs-modal` does not exist.
  *
- * The browser is mounted only while the window is open. It loads every session
- * into memory when it mounts, and the client must not read the whole log
- * database at startup; unmounting on close also lets go of those sessions and
- * of the database connection underneath them, which is what lets another tab
- * create its own session (see `e2e/logs-multi-tab.spec.ts`).
+ * The browser is mounted only while the window is open. It lists every session
+ * when it mounts, and the client must not touch the log database at startup;
+ * unmounting on close also stops a listing still under way and lets go of the
+ * parsed logs and the database connection underneath them, which is what lets
+ * another tab create its own session (see `e2e/logs-multi-tab.spec.ts`).
  */
 import { useEffect, useState } from "react";
 import { LogBrowser } from "./LogBrowser";

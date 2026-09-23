@@ -308,3 +308,35 @@ test.describe('Tab completion hint setting', () => {
         await expect(page.locator('#message-input')).toHaveValue('wejdz na statek');
     });
 });
+
+test.describe('Command line on a phone', () => {
+    test.use({hasTouch: true, isMobile: true, viewport: {width: 390, height: 800}});
+
+    test('no prompt, a tap on the hint completes, and a long line slides instead of wrapping', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+        await pushText(page, 'Przy najdalszym pomoscie cumuje szeroki statek handlowy.');
+
+        await expect(page.locator('.command-field__prompt')).toBeHidden();
+
+        await page.focus('#message-input');
+        await page.keyboard.type('wejdz na st');
+        await expect(page.locator('.command-field__ghost-rest')).toHaveText('atek');
+        await expect(page.locator('.command-field__tab-hint'), 'no Tab key to point at').toBeHidden();
+
+        await page.locator('.command-field__ghost-rest').tap();
+        await expect(page.locator('#message-input')).toHaveValue('wejdz na statek');
+        await expect(page.locator('#message-input'), 'the tap left the caret in the field').toBeFocused();
+
+        const input = page.locator('#message-input');
+        const oneLine = await input.evaluate((el) => el.getBoundingClientRect().height);
+        await page.keyboard.type(' i jeszcze bardzo dluga komenda ktora nie miesci sie w polu wcale');
+        const box = await input.evaluate((el) => ({
+            height: el.getBoundingClientRect().height,
+            overflows: el.scrollWidth > el.clientWidth,
+        }));
+        expect(box.overflows, 'the line is wider than the field').toBe(true);
+        expect(box.height, 'but the field stays one line tall').toBe(oneLine);
+    });
+});

@@ -7,9 +7,9 @@
  * logs and never writes to the database — so this is the one place in the
  * client where a log can be removed or restored.
  *
- * The session list comes in already loaded (`LogSession[]`), so line counts
- * and time spans are read from memory rather than re-counted through a second
- * pass over IndexedDB.
+ * The session list comes in already indexed (`LogSessionInfo[]`), so line
+ * counts and time spans are read from the list rather than re-counted through
+ * a second pass over IndexedDB.
  *
  * Bootstrap here, unlike in the viewer itself: this screen only ever runs in
  * the client, where Bootstrap is loaded anyway. It uses `SubDialog` rather than
@@ -18,7 +18,7 @@
  * managers against each other and pegs the CPU.
  */
 import { Fragment, useCallback, useEffect, useRef, useState } from "react";
-import { formatClock, type LogSession } from "@ui/logViewer";
+import { formatClock, type LogSessionInfo } from "@ui/logViewer";
 import SubDialog from "./SubDialog";
 import type { LogExportData, LogsExportWorkerResponse } from "./logsExport.shared";
 import LogsExportWorker from "./logsExport.worker?worker";
@@ -91,12 +91,12 @@ function today(): string {
     return new Date().toISOString().slice(0, 10);
 }
 
-function sessionYear(session: LogSession): number {
+function sessionYear(session: LogSessionInfo): number {
     return new Date(session.startedAt).getFullYear();
 }
 
 /** "14.09 20:31 - 22:04", collapsing the date when it does not change. */
-function spanLabel(session: LogSession): string {
+function spanLabel(session: LogSessionInfo): string {
     const from = new Date(session.startedAt);
     const to = new Date(session.endedAt);
     const day = (date: Date) =>
@@ -116,7 +116,7 @@ export interface LogManagerProps {
     onOpenChange: (open: boolean) => void;
     /** Opens the file picker as soon as the window appears. */
     startImport?: boolean;
-    sessions: LogSession[];
+    sessions: LogSessionInfo[];
     /** Deleting or importing changes the store; the host reloads from it. */
     onSessionsChanged: () => void;
 }
@@ -536,7 +536,7 @@ export function LogManager({
                                                         : session.dateLabel}
                                                 </td>
                                                 <td className="logs-manage__span">{spanLabel(session)}</td>
-                                                <td className="logs-manage__num">{session.lines.length}</td>
+                                                <td className="logs-manage__num">{session.lineCount}</td>
                                                 <td className="logs-manage__flag">
                                                     {downloaded.has(session.id) ? "✓" : ""}
                                                 </td>

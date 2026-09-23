@@ -1,14 +1,14 @@
 import { Badge, Field, Input, Kbd } from "../ui";
 import { charactersLabel } from "../model/characters";
 import { formatClock, formatDuration, pluralSessions } from "../model/format";
-import type { LogSession } from "../model/types";
+import type { LogSessionInfo } from "../model/types";
 
 interface SessionGroup {
     label: string;
-    sessions: LogSession[];
+    sessions: LogSessionInfo[];
 }
 
-function groupByDay(sessions: LogSession[]): SessionGroup[] {
+function groupByDay(sessions: LogSessionInfo[]): SessionGroup[] {
     const groups: SessionGroup[] = [];
     for (const session of sessions) {
         const last = groups[groups.length - 1];
@@ -22,8 +22,8 @@ function groupByDay(sessions: LogSession[]): SessionGroup[] {
 }
 
 export interface SessionSidebarProps {
-    sessions: LogSession[];
-    visibleSessions: LogSession[];
+    sessions: LogSessionInfo[];
+    visibleSessions: LogSessionInfo[];
     selectedId: string;
     filter: string;
     onFilterChange: (value: string) => void;
@@ -33,6 +33,8 @@ export interface SessionSidebarProps {
     searching: boolean;
     /** In All-logs scope every session shows its hit count, not just the open one. */
     allScope: boolean;
+    /** Set while the host is still listing sessions. */
+    loading?: { done: number; total: number } | null;
     /**
      * Whether the drawer is showing. Meaningless on a wide screen, where the
      * sidebar is docked and this attribute is not styled at all.
@@ -50,6 +52,7 @@ export function SessionSidebar({
     hitsBySession,
     searching,
     allScope,
+    loading,
     open,
 }: SessionSidebarProps) {
     const groups = groupByDay(visibleSessions);
@@ -116,7 +119,7 @@ export function SessionSidebar({
                                             {" · "}
                                             {formatDuration(session.endedAt - session.startedAt)}
                                             {" · "}
-                                            {session.lines.length} ln
+                                            {session.lineCount} ln
                                         </span>
                                     </button>
                                 );
@@ -128,7 +131,11 @@ export function SessionSidebar({
 
             <div className="lv-sidebar__foot">
                 <span>
-                    {shown === total ? `${total} ${pluralSessions(total)}` : `${shown} z ${total} ${pluralSessions(total)}`}
+                    {loading
+                        ? `Wczytywanie ${loading.done} z ${loading.total}...`
+                        : shown === total
+                          ? `${total} ${pluralSessions(total)}`
+                          : `${shown} z ${total} ${pluralSessions(total)}`}
                 </span>
                 {/* A keyboard hint is noise on a touch screen, where the
                     drawer is how you change session. */}

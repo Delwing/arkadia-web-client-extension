@@ -19,6 +19,7 @@ import {
     type CharacterMark,
     type LogLine,
     type LogSession,
+    type LogSessionInfo,
 } from "@ui/logViewer";
 import { getRawSessionData, splitLines } from "@web/logBrowserUtils";
 import { LogsDatabase } from "@web/logsDatabase";
@@ -187,163 +188,310 @@ export function parseSession(storeName: string, entries: StoredEntry[], options:
         live,
         file: `${storeName}.txt`,
         background: recordedBackground(entries),
+        lineCount: lines.length,
         lines,
     };
 }
 
-export async function loadSession(
-    db: IDBDatabase,
-    storeName: string,
-    options: LoadOptions = {},
-): Promise<LogSession | null> {
-    const entries = (await getRawSessionData(db, storeName)) as StoredEntry[];
-    return parseSession(storeName, entries, options);
+// --- The session index ------------------------------------------------------
+//
+// What the list shows about a log — its characters, span, line count — takes
+// reading and parsing every record of it. Done on every opening, that read the
+// whole store into memory at once, which a few years of logs do not survive.
+// So it is worked out once per log, one log at a time, and kept here. A log is
+// read again only when its record count changes, which a finished one never
+// does.
+
+/** One log's list entry, as kept in the index. */
+interface IndexEntry {
+    /** Record count the entry was computed at; a different one means stale. */
+    count: number;
+    characters: string[];
+    startedAt: number;
+    endedAt: number;
+    background?: string;
+    lineCount: number;
+    /**
+     * The characters were read off login banners (a log from before the
+     * client stamped names), so they depend on which characters this device
+     * knows — see `IndexFile.candidates`.
+     */
+    fromBanner?: boolean;
 }
 
-/**
- * Parsed sessions, kept between openings of the window. A finished log never
- * changes, so one whose record count is what it was is not read or parsed
- * again; only the one still being written to is.
- */
-const parsedCache = new Map<string, { count: number; session: LogSession | null }>();
+interface IndexFile {
+    version: 1;
+    /** The candidate characters the banner-read entries were matched against. */
+    candidates: string;
+    entries: Record<string, IndexEntry>;
+}
 
-/** What one store holds: the cached parse when its count still matches, else its records. */
-type StoreRead =
-    | { count: number; session: LogSession | null }
-    | { count: number; entries: StoredEntry[] };
+/** Shared by both hosts, like the preferences: they read the same database. */
+const INDEX_KEY = "arkadia.logViewer.sessionIndex";
 
-/**
- * Reads several stores in ONE transaction, every request in flight together:
- * the count first, and the records only for a store the cache cannot answer.
- */
-function readStores(db: IDBDatabase, names: string[]): Promise<Map<string, StoreRead>> {
-    const result = new Map<string, StoreRead>();
-    if (names.length === 0) return Promise.resolve(result);
+let index: IndexFile | null = null;
+
+function loadIndex(candidates: string): IndexFile {
+    if (!index) {
+        try {
+            const raw = window.localStorage.getItem(INDEX_KEY);
+            const parsed = raw ? (JSON.parse(raw) as IndexFile) : null;
+            if (parsed && parsed.version === 1 && parsed.entries && typeof parsed.entries === "object") index = parsed;
+        } catch {
+            // Unreadable: rebuilt below, as on a first opening.
+        }
+        index ??= { version: 1, candidates, entries: {} };
+    }
+    if (index.candidates !== candidates) {
+        // A character added or removed can change what an old log's banner
+        // names; the logs that were stamped are unaffected.
+        for (const [name, entry] of Object.entries(index.entries)) {
+            if (entry.fromBanner) delete index.entries[name];
+        }
+        index.candidates = candidates;
+    }
+    return index;
+}
+
+function saveIndex(): void {
+    if (!index) return;
+    try {
+        window.localStorage.setItem(INDEX_KEY, JSON.stringify(index));
+    } catch {
+        // A full quota costs the next opening a re-read, nothing more.
+    }
+}
+
+/** Forgets the index in memory, so the next source reads it back from storage. For tests. */
+export function resetSessionIndex(): void {
+    index = null;
+}
+
+function indexEntry(session: LogSession, count: number, entries: StoredEntry[]): IndexEntry {
+    return {
+        count,
+        characters: session.characters,
+        startedAt: session.startedAt,
+        endedAt: session.endedAt,
+        background: session.background,
+        lineCount: session.lines.length,
+        fromBanner: session.characters.length > 0 && !entries.some((entry) => entry.character),
+    };
+}
+
+function infoFromEntry(name: string, entry: IndexEntry, options: LoadOptions, now: number): LogSessionInfo {
+    return {
+        id: name,
+        characters: entry.characters,
+        dayLabel: formatDayLabel(entry.startedAt, now),
+        dateLabel: formatDateLong(entry.startedAt),
+        startedAt: entry.startedAt,
+        endedAt: entry.endedAt,
+        live: name === options.liveSessionName,
+        file: `${name}.txt`,
+        background: entry.background,
+        lineCount: entry.lineCount,
+    };
+}
+
+// --- Reading the store -------------------------------------------------------
+
+function storeNames(db: IDBDatabase): string[] {
+    return Array.from(db.objectStoreNames).sort(
+        (a, b) => (sessionStartFromName(a) ?? 0) - (sessionStartFromName(b) ?? 0),
+    );
+}
+
+/** Record counts of the stores, in one transaction; a store that cannot be read is left out. */
+function countStores(db: IDBDatabase, names: string[]): Promise<Map<string, number>> {
+    const counts = new Map<string, number>();
+    if (names.length === 0) return Promise.resolve(counts);
     return new Promise((resolve) => {
         let tx: IDBTransaction;
         try {
             tx = db.transaction(names, "readonly");
         } catch {
             if (names.length === 1) {
-                resolve(result);
+                resolve(counts);
                 return;
             }
-            // A store vanished under us (deleted in another tab): read the
+            // A store vanished under us (deleted in another tab): count the
             // others one by one rather than losing them all.
-            void Promise.all(names.map((name) => readStores(db, [name]))).then((parts) => {
-                for (const part of parts) part.forEach((value, key) => result.set(key, value));
-                resolve(result);
+            void Promise.all(names.map((name) => countStores(db, [name]))).then((parts) => {
+                for (const part of parts) part.forEach((value, key) => counts.set(key, value));
+                resolve(counts);
             });
             return;
         }
         for (const name of names) {
-            const store = tx.objectStore(name);
-            const counting = store.count();
-            counting.onsuccess = () => {
-                const count = counting.result;
-                const known = parsedCache.get(name);
-                if (known && known.count === count) {
-                    result.set(name, { count, session: known.session });
-                    return;
-                }
-                if (count === 0) return;
-                const reading = store.getAll();
-                reading.onsuccess = () => {
-                    result.set(name, { count, entries: reading.result as StoredEntry[] });
-                };
-            };
+            const request = tx.objectStore(name).count();
+            request.onsuccess = () => counts.set(name, request.result);
         }
-        tx.oncomplete = () => resolve(result);
-        tx.onerror = () => resolve(result);
-        tx.onabort = () => resolve(result);
+        tx.oncomplete = () => resolve(counts);
+        tx.onerror = () => resolve(counts);
+        tx.onabort = () => resolve(counts);
     });
 }
 
-/** Lets the page paint and handle input between slices of parsing. */
+/** Lets the page paint and handle input between logs. */
 const yieldToBrowser = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
 
-/** How long one slice of parsing may hold the main thread. */
-const PARSE_SLICE_MS = 40;
-/** How often the growing list is handed over while the rest parse. */
+/** How often the growing list is handed over while the rest are indexed. */
 const UPDATE_EVERY_MS = 400;
 
 /**
- * Loads every session, oldest first.
- *
- * The newest session and the `priority` ones come first and go to `onUpdate`
- * straight away, so the viewer opens on them; the rest follow, newest to
- * oldest, parsed in slices that leave the page responsive, the growing list
- * handed over now and then. A past session that has not changed comes from
- * the cache. The promise resolves with the full list.
+ * Parsed logs kept by one source, by line count. Enough for the open log and
+ * a good few around it — and for a small store, all of it, so a search across
+ * every log stays instant there — without ever growing with the store.
  */
-export async function loadAllSessions(
-    options: LoadOptions = {},
-    onUpdate?: (sessions: LogSession[]) => void,
-): Promise<LogSession[]> {
+const CACHED_LINES = 200_000;
+
+export interface ListProgress {
+    done: number;
+    total: number;
+}
+
+export interface SessionSource {
+    /**
+     * Every log's list entry, oldest first. The `priority` logs and the newest
+     * come first and go to `onUpdate` at once, so the viewer can open; the rest
+     * follow newest to oldest. Stops early, with what it has, once `signal`
+     * aborts.
+     */
+    list(
+        onUpdate?: (sessions: LogSessionInfo[], progress: ListProgress) => void,
+        signal?: AbortSignal,
+    ): Promise<LogSessionInfo[]>;
+    /** One log with its lines; null when it is gone or empty. */
+    load(id: string): Promise<LogSession | null>;
+    /** Drops the cached logs and the database connection. */
+    release(): void;
+}
+
+/**
+ * The adapter a host holds while its viewer is open. Only a bounded number of
+ * logs is ever parsed in memory at once, however large the store; everything
+ * is let go on `release`, which the host calls when its window closes.
+ */
+export function createSessionSource(options: LoadOptions = {}): SessionSource {
     const database = new LogsDatabase();
-    let names: string[] = [];
-    let firstNames: string[] = [];
-    let first = new Map<string, StoreRead>();
-    let rest = new Map<string, StoreRead>();
-    try {
-        const db = await database.get();
-        if (!db) return [];
-        names = Array.from(db.objectStoreNames).sort(
-            (a, b) => (sessionStartFromName(a) ?? 0) - (sessionStartFromName(b) ?? 0),
-        );
-        const wanted = new Set<string | undefined>([...(options.priority ?? []), names[names.length - 1]]);
-        firstNames = names.filter((name) => wanted.has(name));
-        first = await readStores(db, firstNames);
-        rest = await readStores(db, names.filter((name) => !wanted.has(name)));
-    } finally {
-        // Everything is in memory by now, so the connection has no further use
-        // — and a held one makes the next tab that starts logging wait for a
-        // `versionchange` round trip before it can create its store.
-        database.release();
-    }
+    // One sweep of localStorage for every log; it does not change under us.
+    const candidates = options.candidates ?? collectCharacters();
+    const parseOptions: LoadOptions = { ...options, candidates };
+    const candidatesKey = [...candidates].sort().join("|");
 
-    // Stores that are gone (deleted, or replaced by an import) leave the cache.
-    for (const name of Array.from(parsedCache.keys())) {
-        if (!names.includes(name)) parsedCache.delete(name);
-    }
+    const cache = new Map<string, { count: number; session: LogSession | null }>();
+    let cachedLines = 0;
+    const inFlight = new Map<string, Promise<LogSession | null>>();
+    /** Set by `release`: a late call must not reopen the connection and hold it. */
+    let released = false;
 
-    // One sweep of localStorage for all of them; it does not change under us.
-    const parseOptions: LoadOptions = { ...options, candidates: options.candidates ?? collectCharacters() };
-    const now = parseOptions.now ?? Date.now();
-    const parsed = new Map<string, LogSession>();
-    const take = (name: string, read: StoreRead | undefined) => {
-        if (!read) return;
-        let session: LogSession | null;
-        if (!("entries" in read)) {
-            // The day label and the live flag depend on today and on which tab asks.
-            session = read.session && {
-                ...read.session,
-                live: name === options.liveSessionName,
-                dayLabel: formatDayLabel(read.session.startedAt, now),
-            };
-        } else {
-            session = parseSession(name, read.entries, parseOptions);
-            parsedCache.set(name, { count: read.count, session });
+    const remember = (name: string, count: number, session: LogSession | null) => {
+        const previous = cache.get(name);
+        if (previous) {
+            cachedLines -= previous.session?.lines.length ?? 0;
+            cache.delete(name);
         }
-        if (session) parsed.set(name, session);
+        cache.set(name, { count, session });
+        cachedLines += session?.lines.length ?? 0;
+        // Oldest-used first, as a Map keeps insertion order; the one just
+        // added stays even when it alone is over the budget.
+        for (const [key, value] of cache) {
+            if (cachedLines <= CACHED_LINES || key === name) break;
+            cache.delete(key);
+            cachedLines -= value.session?.lines.length ?? 0;
+        }
     };
-    const list = () => names.flatMap((name) => parsed.get(name) ?? []);
 
-    for (const name of firstNames) take(name, first.get(name));
-    if (onUpdate && parsed.size > 0) onUpdate(list());
+    /** Reads and parses one store, and brings its index entry up to date. */
+    const readAndParse = async (db: IDBDatabase, name: string): Promise<LogSession | null> => {
+        const entries = (await getRawSessionData(db, name)) as StoredEntry[];
+        const session = parseSession(name, entries, parseOptions);
+        const file = loadIndex(candidatesKey);
+        if (session) file.entries[name] = indexEntry(session, entries.length, entries);
+        else delete file.entries[name];
+        remember(name, entries.length, session);
+        return session;
+    };
 
-    let sliceStart = performance.now();
-    let lastUpdate = sliceStart;
-    const remaining = names.filter((name) => rest.has(name)).reverse();
-    for (const name of remaining) {
-        take(name, rest.get(name));
-        if (!onUpdate || performance.now() - sliceStart < PARSE_SLICE_MS) continue;
-        if (performance.now() - lastUpdate > UPDATE_EVERY_MS) {
-            onUpdate(list());
-            lastUpdate = performance.now();
+    const load = async (id: string): Promise<LogSession | null> => {
+        if (released) return null;
+        const db = await database.get();
+        if (!db || !db.objectStoreNames.contains(id)) return null;
+        const count = (await countStores(db, [id])).get(id);
+        if (!count) return null;
+        const cached = cache.get(id);
+        if (cached && cached.count === count) {
+            // Touched: to the back of the eviction order.
+            cache.delete(id);
+            cache.set(id, cached);
+            return cached.session;
         }
-        await yieldToBrowser();
-        sliceStart = performance.now();
-    }
-    return list();
+        const session = await readAndParse(db, id);
+        saveIndex();
+        return session;
+    };
+
+    return {
+        async list(onUpdate, signal) {
+            if (released) return [];
+            const db = await database.get();
+            if (!db) return [];
+            const names = storeNames(db);
+            const counts = await countStores(db, names);
+            const file = loadIndex(candidatesKey);
+            // Stores that are gone (deleted, or replaced by an import) leave the index.
+            for (const name of Object.keys(file.entries)) {
+                if (!counts.has(name)) delete file.entries[name];
+            }
+
+            const now = options.now ?? Date.now();
+            const listed = new Map<string, LogSessionInfo>();
+            const present = names.filter((name) => (counts.get(name) ?? 0) > 0);
+            const wanted = new Set<string | undefined>([...(options.priority ?? []), present[present.length - 1]]);
+            const first = present.filter((name) => wanted.has(name));
+            const order = [...first, ...present.filter((name) => !wanted.has(name)).reverse()];
+            const list = () => present.flatMap((name) => listed.get(name) ?? []);
+
+            let lastUpdate = performance.now();
+            for (let position = 0; position < order.length; position += 1) {
+                if (signal?.aborted || released) break;
+                const name = order[position];
+                const known = file.entries[name];
+                if (known && known.count === counts.get(name)) {
+                    listed.set(name, infoFromEntry(name, known, options, now));
+                } else {
+                    const session = await readAndParse(db, name);
+                    if (session) listed.set(name, infoFromEntry(name, file.entries[name], options, now));
+                    // Reading a log is the slow part; let the page breathe.
+                    await yieldToBrowser();
+                }
+                const firstBatchDone = position === first.length - 1;
+                if (onUpdate && (firstBatchDone || performance.now() - lastUpdate > UPDATE_EVERY_MS)) {
+                    onUpdate(list(), { done: position + 1, total: order.length });
+                    saveIndex();
+                    lastUpdate = performance.now();
+                }
+            }
+            saveIndex();
+            return list();
+        },
+
+        load(id) {
+            // Two callers asking at once (the open log and a search) share one read.
+            let pending = inFlight.get(id);
+            if (!pending) {
+                pending = load(id).finally(() => inFlight.delete(id));
+                inFlight.set(id, pending);
+            }
+            return pending;
+        },
+
+        release() {
+            released = true;
+            cache.clear();
+            cachedLines = 0;
+            database.release();
+        },
+    };
 }

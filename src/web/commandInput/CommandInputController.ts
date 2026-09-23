@@ -142,6 +142,8 @@ export class CommandInputController {
             const dy = touch.clientY - this.swipeStartY;
             this.swipeStartX = null;
             this.swipeStartY = null;
+            // A line wider than the field slides sideways under the finger instead.
+            if (this.input.scrollWidth > this.input.clientWidth) return;
             if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 30) {
                 e.preventDefault();
                 this.engine.historyMove(dx < 0 ? 'up' : 'down');
@@ -305,6 +307,11 @@ export class CommandInputController {
             // Normal key: reset tab completion on next typing
             this.engine.resetTabCompletionState();
         }
+    }
+
+    /** Take the hinted completion as Tab would: a tap on the hint, where there is no Tab key. */
+    acceptTabCompletion(): void {
+        this.engine.handleTabCompletion(true);
     }
 
     /** What the next Tab would append to the current line (see the engine). */

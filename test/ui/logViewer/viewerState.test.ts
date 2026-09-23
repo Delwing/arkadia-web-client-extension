@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { allChannelsOn } from "@ui/logViewer/model/channels";
-import type { LogLine, LogSession } from "@ui/logViewer/model/types";
+import type { LogLine, LogSession, LogSessionInfo } from "@ui/logViewer/model/types";
 import {
     applyPreferences,
     appliedRange,
@@ -30,6 +30,7 @@ function session(id: string, lines: LogLine[], extra: Partial<LogSession> = {}):
         endedAt: lines[lines.length - 1]?.timestamp ?? T0,
         live: false,
         file: `${id}.txt`,
+        lineCount: lines.length,
         lines,
         ...extra,
     };
@@ -114,6 +115,43 @@ describe("deriveView", () => {
 
     it("falls back to the first session when the selected id is gone", () => {
         expect(deriveView([sessionB], state({ sessionId: "missing" })).session.id).toBe("b");
+    });
+});
+
+describe("deriveView over a list without lines", () => {
+    const entry = ({ lines: _lines, ...info }: LogSession): LogSessionInfo => info;
+
+    it("shows nothing for the selected session until its lines arrive", () => {
+        const view = deriveView([entry(sessionA)], state());
+        expect(view.sessionInfo?.id).toBe("a");
+        expect(view.session).toBeUndefined();
+        expect(view.rows).toHaveLength(0);
+    });
+
+    it("renders the loaded lines of the selected session", () => {
+        const view = deriveView([entry(sessionA), entry(sessionB)], state(), { open: sessionA });
+        expect(view.session).toBe(sessionA);
+        expect(view.rows).toHaveLength(4);
+    });
+
+    it("ignores lines loaded for a session that is no longer selected", () => {
+        const view = deriveView([entry(sessionA), entry(sessionB)], state({ sessionId: "b" }), { open: sessionA });
+        expect(view.sessionInfo?.id).toBe("b");
+        expect(view.session).toBeUndefined();
+    });
+
+    it("takes other sessions' hits from crossHits in All-logs scope, and counts the open one itself", () => {
+        const view = deriveView([entry(sessionA), entry(sessionB)], state({ query: "troll", scope: "all" }), {
+            open: sessionA,
+            crossHits: { hitsBySession: { a: 99, b: 5 }, matchEdges: { b: { first: "Dorn", last: "Dorn" } } },
+        });
+        expect(view.hitsBySession).toEqual({ a: 3, b: 5 });
+        expect(view.matchEdges.b).toEqual({ first: "Dorn", last: "Dorn" });
+    });
+
+    it("counts only the open session outside All-logs scope", () => {
+        const view = deriveView([sessionA, sessionB], state({ query: "troll" }));
+        expect(view.hitsBySession).toEqual({ a: 3 });
     });
 });
 
