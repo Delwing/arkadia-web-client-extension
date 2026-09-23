@@ -52,11 +52,8 @@ function HelperSettings({ helperConnection }: HelperSettingsProps) {
     return (
         <div className="popup-stack helper-settings">
             <div className="helper-settings__head">
-                <div>
-                    <h6 className="helper-settings__title">Arkadia Helper</h6>
-                    <div className="popup-field__hint">
-                        Opcjonalna aplikacja umożliwiająca globalne skróty klawiszowe
-                    </div>
+                <div className="popup-field__hint">
+                    Opcjonalna aplikacja umożliwiająca globalne skróty klawiszowe
                 </div>
                 <span className={`popup-badge helper-settings__state helper-settings__state--${state}`}>{stateLabel}</span>
             </div>

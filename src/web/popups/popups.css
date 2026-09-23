@@ -7794,23 +7794,6 @@ select.popup-input.popup-input--control {
   border: 0;
   border-top: 1px solid var(--popup-border);
 }
-.helper-settings .popup-table tr.is-editing {
-  background-color: var(--popup-hover-bg);
-}
-.helper-settings__form {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: 8px;
-}
-.helper-settings__form .popup-field {
-  min-width: 140px;
-}
-.helper-settings__type { min-width: 110px; }
-.helper-settings__command { flex: 1; }
-.helper-settings .is-capturing {
-  border-color: var(--popup-warning);
-}
 .helper-settings__box {
   padding: 8px;
   border: 1px solid var(--popup-border);
