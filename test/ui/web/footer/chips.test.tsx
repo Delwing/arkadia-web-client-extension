@@ -1,7 +1,7 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import eventBus from "@modules/core/eventBus";
-import { AttackChip, ClockChip, ConnectionChip, WeaponChip } from "@web-ui/footer/chips";
+import { AttackChip, ClockChip, ConnectionChip, CoverChip, WeaponChip } from "@web-ui/footer/chips";
 
 // The stock footer used to have its own components for these; it now renders the
 // shared chips, so their behaviour is pinned here.
@@ -51,6 +51,20 @@ describe("footer chips", () => {
       emit("ping", 42);
       emit("ping", null);
       expect(chip()).toBeNull();
+    });
+  });
+
+  describe("fixed-width values", () => {
+    test("the cover chip reserves its widest state but reads as its value", () => {
+      mount(<CoverChip />);
+      const value = () => chip()?.querySelector(".chip__val") as HTMLElement;
+      const sizes = () => Array.from(value().querySelectorAll("[data-size]")).map((el) => el.getAttribute("data-size"));
+      expect(value().classList.contains("chip__sized")).toBe(true);
+      expect(sizes()).toEqual(["8.8", "OK"]);
+      expect(value().textContent).toBe("OK");
+      emit("coverTimer", 4.26);
+      expect(value().textContent).toBe("4.3");
+      expect(sizes()).toEqual(["8.8", "OK"]);
     });
   });
 

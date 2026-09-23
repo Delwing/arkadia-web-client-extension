@@ -293,6 +293,8 @@ export function apply(settings: UiSettings) {
         // Whether the expander is offered at all; the fold itself is written by
         // setupMobileFooter, which owns `data-footer-expanded`.
         document.body.dataset.footerExpand = settings.mobileFooterExpand;
+        // Opt-in: warn/danger chips jump ahead of the configured order (footer.css).
+        document.body.dataset.urgentChipsFirst = settings.footerUrgentChipsFirst ? '1' : '0';
     }
     const objectsList = document.getElementById('objects-list');
     if (objectsList) {
@@ -533,6 +535,9 @@ export function load(): UiSettings {
             const keepMultibindsVisible = typeof parsed.keepMultibindsVisible === 'boolean'
                 ? parsed.keepMultibindsVisible
                 : defaultUiSettings.keepMultibindsVisible;
+            const footerUrgentChipsFirst = typeof parsed.footerUrgentChipsFirst === 'boolean'
+                ? parsed.footerUrgentChipsFirst
+                : defaultUiSettings.footerUrgentChipsFirst;
             const mobileFooterCompact = typeof parsed.mobileFooterCompact === 'boolean'
                 ? parsed.mobileFooterCompact
                 : defaultUiSettings.mobileFooterCompact;
@@ -627,6 +632,7 @@ export function load(): UiSettings {
                 footerComponents,
                 footerButtons,
                 keepMultibindsVisible,
+                footerUrgentChipsFirst,
                 mobileFooterCompact,
                 mobileFooterExpand,
                 multibindKeyHints,

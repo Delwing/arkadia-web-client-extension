@@ -1,0 +1,15 @@
+/* Fixed-width chip values and labels (Chip's `sizeTo` / `labelSizeTo`): every
+   candidate and the real text share a single grid cell, so the widest sets the
+   width. The candidates are drawn as ::before content, which keeps them out of
+   the text's textContent. */
+.chip__sized {
+  display: inline-grid;
+  font-variant-numeric: tabular-nums;
+}
+.chip__sized > * {
+  grid-area: 1 / 1;
+}
+.chip__sized > [data-size]::before {
+  content: attr(data-size);
+  visibility: hidden;
+}

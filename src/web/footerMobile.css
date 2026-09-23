@@ -2,8 +2,8 @@
    Phone footer.
 
    Collapsed (the resting state), the status line is two rows of fixed height:
-   every vital in one (with the expander at its end), every chip in the other -
-   urgent ones first, so a fight's warnings are what shows - each scrolling
+   every vital in one (with the expander at its end), every chip in the other
+   in its configured place (urgent first only if footerUrgentChipsFirst) - each scrolling
    sideways when it does not fit. Nothing the game does changes the height, so
    the output above never jumps. Expanded, the same rows at the same sizes wrap
    instead of scrolling, so everything shows at once.

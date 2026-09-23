@@ -77,6 +77,12 @@ function FooterSections({ draft, update }: FooterSectionsProps) {
             </SettingsSection>
 
             <SettingsSection title="Elementy stopki">
+                <CheckboxRow
+                    id="ui-footer-urgent-chips-first"
+                    label="Pilne plakietki na poczatku"
+                    checked={draft.footerUrgentChipsFirst}
+                    onChange={(v) => update({ footerUrgentChipsFirst: v })}
+                />
                 <div id="ui-footer-components-settings">
                     <FooterComponentSettings
                         components={draft.footerComponents}

@@ -12,7 +12,8 @@ const CONNECTION_ID = "connection-status";
 /**
  * One chip slot. Keeps the chip's config id as the element id (older code, plugins
  * and the e2e specs find chips by it) and its configured position as `--order`;
- * the stylesheet moves urgent chips (danger, then warn) to the front from there.
+ * with `footerUrgentChipsFirst` on, the stylesheet moves urgent chips (danger, then
+ * warn) to the front from there, otherwise a chip keeps its slot whatever its tone.
  */
 function Slot({ item }: { item: FooterItem }) {
   const plugin = item.source !== "builtin";
