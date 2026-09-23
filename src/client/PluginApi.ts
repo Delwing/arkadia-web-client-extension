@@ -727,9 +727,31 @@ export interface PopupHandle {
 }
 
 /**
+ * Starting size of a popup along one axis:
+ * - a number - pixels (`420`)
+ * - any CSS length - `'420px'`, `'30em'`, `'40%'` / `'50vw'` (of the game window),
+ *   `'min(600px, 80vw)'`
+ * - `'content'` - fit the popup's content
+ *
+ * The result is kept on screen (with a small margin) and never below the
+ * resize minimum (300x150). It is used when the popup first opens and when the
+ * user resets it - a size the user set by resizing always wins.
+ */
+export type PopupSize = number | string;
+
+/**
+ * Starting size of a popup. Leave a field out to get the default
+ * (half the game window width, 40% of its height).
+ */
+export interface PopupSizeOptions {
+  initialWidth?: PopupSize;
+  initialHeight?: PopupSize;
+}
+
+/**
  * Configuration for creating a persistent popup
  */
-export interface PersistentPopupConfig {
+export interface PersistentPopupConfig extends PopupSizeOptions {
   /**
    * Unique identifier for this popup (will be namespaced by plugin).
    * Use a consistent ID across sessions to enable persistence.
@@ -881,9 +903,10 @@ export interface UiApi {
    *
    * @param title - Popup title text
    * @param body - Popup body content (string or DOM node)
+   * @param options - Starting size of the popup
    * @returns Promise that resolves with handle for controlling the popup once mounted
    */
-  createPopup(title: string, body: PopupContent): Promise<PopupHandle>;
+  createPopup(title: string, body: PopupContent, options?: PopupSizeOptions): Promise<PopupHandle>;
 
   /**
    * Register a persistent popup that can be docked and restored on page reload.
@@ -3007,7 +3030,7 @@ export class PluginApiImpl implements PluginApi {
 
   private createUiApi(): UiApi {
     return {
-      createPopup: (title, body) => this.createPopup(title, body),
+      createPopup: (title, body, options) => this.createPopup(title, body, options),
       registerPersistentPopup: (config) => this.registerPersistentPopup(config),
       addPopupMenuEntry: (label, onSelect) => this.addPopupMenuEntry(label, onSelect),
       addContextMenuEntry: (label, action) => this.addContextMenuEntry(label, action),
@@ -3717,7 +3740,7 @@ export class PluginApiImpl implements PluginApi {
     this.temporaryMultibindHandles.clear();
   }
 
-  private createPopup(title: string, body: PopupContent): Promise<PopupHandle> {
+  private createPopup(title: string, body: PopupContent, options?: PopupSizeOptions): Promise<PopupHandle> {
     return new Promise((resolve) => {
       // Generate stable popup ID based on title for state persistence
       // Use a simple hash of the title to create a consistent identifier
@@ -3758,6 +3781,8 @@ export class PluginApiImpl implements PluginApi {
         body: currentBody,
         isPinned,
         isOpen: true, // Open immediately for non-persistent popups
+        initialWidth: options?.initialWidth,
+        initialHeight: options?.initialHeight,
         onClose: closePopup,
         onPinnedChange: (pinned) => {
           isPinned = pinned;
@@ -3847,6 +3872,8 @@ export class PluginApiImpl implements PluginApi {
       headerActions: config.headerActions,
       isPinned: currentPinned,
       isOpen: false, // Start closed, PluginPopupRenderer will auto-open if needed
+      initialWidth: config.initialWidth,
+      initialHeight: config.initialHeight,
       onClose: closePopup,
       onPinnedChange: (pinned) => {
         currentPinned = pinned;

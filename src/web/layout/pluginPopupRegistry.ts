@@ -25,6 +25,9 @@ export interface PluginPopupConfig {
   /** Custom actions to display in the popup header (buttons, etc.) */
   headerActions?: Node | React.ReactNode;
   isPinned: boolean;
+  /** Starting size - px number, CSS length or 'content' (see utils/popupSize) */
+  initialWidth?: number | string;
+  initialHeight?: number | string;
   /** Whether the popup is currently open */
   isOpen: boolean;
   onClose: () => void;
