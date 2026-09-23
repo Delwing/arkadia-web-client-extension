@@ -140,6 +140,7 @@ export function MacroEditor({
                     <option value="notify">Powiadomienie</option>
                     <option value="push">Powiadomienie na telefon</option>
                     <option value="speak">Czytaj na glos</option>
+                    <option value="echo">Wypisz tekst</option>
                     {!lineless && <option value="slowBlink">Wolne miganie</option>}
                     {!lineless && <option value="rapidBlink">Szybkie miganie</option>}
                     {!lineless && <option value="dim">Pulsowanie</option>}
@@ -287,6 +288,28 @@ export function MacroEditor({
                                 ? 'Czytane glosem syntezatora mowy.'
                                 : <>Czytane glosem syntezatora mowy. <code>{'{1}'}</code>, <code>{'{2}'}</code>… wstawiaja grupy z wzorca (np. <code>{'Atakuje cie (.+)!'}</code> → <code>{'Atak: {1}'}</code>).</>}
                             {' '}Glos, tempo i glosnosc ustawisz w Ustawieniach interfejsu → Dzwiek i powiadomienia.
+                        </div>
+                    </>
+                )}
+                {macro.type === 'echo' && (
+                    <>
+                        <Input
+                            mono
+                            placeholder="Tekst do wypisania"
+                            value={macro.message || ''}
+                            onChange={e => onChange({ ...macro, message: e.target.value })}
+                        />
+                        <PlaceholderChips
+                            placeholders={placeholders}
+                            onInsert={(token) => onChange({ ...macro, message: (macro.message ?? '') + token })}
+                        />
+                        <Check
+                            label="Wlasny kolor"
+                            checked={!!macro.color}
+                            onChange={e => onChange({ ...macro, color: e.target.checked ? '#ffff00' : undefined })}
+                        />
+                        <div className="popup-field__hint">
+                            Wypisywane w oknie gry jako osobna linia, widoczna tylko dla ciebie.
                         </div>
                     </>
                 )}
@@ -456,7 +479,7 @@ export function MacroEditor({
                     ));
                 })()}
             </div>
-            {macro.type === 'color' && (
+            {(macro.type === 'color' || (macro.type === 'echo' && macro.color)) && (
                 <input
                     type="color"
                     className="trigger-action__color"

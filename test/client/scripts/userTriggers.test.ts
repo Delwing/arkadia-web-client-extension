@@ -175,6 +175,51 @@ describe('userTriggers', () => {
     expect(result?.text).toBe('bar foo baz');
   });
 
+  test('echo prints its message with the match filled in, leaving the line alone', () => {
+    const client = new FakeClient();
+    const println = jest.fn();
+    (client as any).println = println;
+    initUserTriggers((client as unknown) as any);
+    globalStorage.set('triggers', [{
+      pattern: 'Atakuje cie (\\w+)',
+      macros: [{ type: 'echo', message: '>> atak: $1' }],
+    }]);
+    const result = client.Triggers.parseLine(new AnsiAwareBuffer('Atakuje cie troll'), '');
+
+    expect(println).toHaveBeenCalledWith('>> atak: troll');
+    expect(result?.text).toBe('Atakuje cie troll');
+  });
+
+  test('echo colours its line when given a colour, and prints nothing without a message', () => {
+    const client = new FakeClient();
+    const println = jest.fn();
+    (client as any).println = println;
+    initUserTriggers((client as unknown) as any);
+    globalStorage.set('triggers', [{
+      pattern: 'foo',
+      macros: [{ type: 'echo' }, { type: 'echo', message: 'uwaga', color: '#ff0000' }],
+    }]);
+    client.Triggers.parseLine(new AnsiAwareBuffer('foo'), '');
+
+    expect(println).toHaveBeenCalledTimes(1);
+    const printed = println.mock.calls[0][0] as AnsiAwareBuffer;
+    expect(printed.text).toBe('uwaga');
+    expect(printed.getSegments()[0].state?.foreground).toBeDefined();
+  });
+
+  test('echo on an event trigger interpolates args', () => {
+    const client = new FakeClient();
+    const println = jest.fn();
+    (client as any).println = println;
+    initUserTriggers((client as unknown) as any);
+    globalStorage.set('triggers', [
+      { type: 'event', event: 'enemy.attack', macros: [{ type: 'echo', message: 'Atakuje {attacker}' }] },
+    ]);
+    client.sendEvent('enemy.attack', { attacker: 'troll' });
+
+    expect(println).toHaveBeenCalledWith('Atakuje troll');
+  });
+
   test('speak fills capture groups into its message', () => {
     const client = new FakeClient();
     initUserTriggers((client as unknown) as any);
