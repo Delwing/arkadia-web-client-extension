@@ -40,6 +40,8 @@ describe('improve counter', () => {
 
   beforeEach(() => {
     jest.useFakeTimers();
+    // Midday, so advancing the clock never crosses midnight and resets "Dzisiaj".
+    jest.setSystemTime(new Date(2026, 0, 15, 12, 0, 0));
     localStorage.clear();
     characterStorage.set('object_num','1');
     client = new FakeClient();
