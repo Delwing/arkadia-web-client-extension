@@ -17,7 +17,6 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
     let paused = false;
     let target: number | null = null;
     let pausedByPauser = false;
-    let awaitingRoomConfirmation = false;
 
     const isWalking = () => !paused && path.length > 0;
 
@@ -56,7 +55,6 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
         clearTimer();
         path = [];
         index = 0;
-        awaitingRoomConfirmation = false;
         target = null;
         client.sendEvent('clearLeadTo');
         emitUpdate();
@@ -66,37 +64,61 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
     };
 
     const scheduleStep = () => {
-        if (paused || awaitingRoomConfirmation) {
+        if (paused) {
             clearTimer();
-            return;
-        }
-
-        if (index >= path.length - 1) {
-            finishWalk();
-            return;
-        }
-
-        const current = client.Map.getRoomById(path[index]);
-        if (!current) {
-            finishWalk();
-            return;
-        }
-        const nextId = path[index + 1];
-        const exits = Object.assign({}, current.exits ?? {}, current.specialExits ?? {});
-        const dir = Object.keys(exits).find(d => exits[d] === nextId);
-        if (!dir) {
-            finishWalk();
             return;
         }
 
         const time = (delay + (Math.random() * 0.6 - 0.3)) * 1000;
         timer = window.setTimeout(() => {
             timer = null;
-            if (paused) return;
-            awaitingRoomConfirmation = true;
+            if (paused || target === null) return;
+
+            const currentRoomId = client.Map.currentRoom?.id;
+            if (typeof currentRoomId !== 'number') {
+                finishWalk();
+                return;
+            }
+            if (currentRoomId === target) {
+                finishWalk(target);
+                return;
+            }
+
+            // Keep the normal walk unchanged. Replan only when the mapper has
+            // corrected the room to somewhere other than the planned step.
+            if (path[index] !== currentRoomId) {
+                const nextPath = client.Map.findPath(currentRoomId, target);
+                if (!nextPath || nextPath.length < 2) {
+                    finishWalk();
+                    return;
+                }
+                path = nextPath.map((n) => parseInt(n as any, 10)).filter((n) => !isNaN(n));
+                if (path.length < 2) {
+                    finishWalk();
+                    return;
+                }
+                index = 0;
+                emitUpdate();
+            }
+
+            const current = client.Map.getRoomById(path[index]);
+            if (!current) {
+                finishWalk();
+                return;
+            }
+            const nextId = path[index + 1];
+            const exits = Object.assign({}, current.exits ?? {}, current.specialExits ?? {});
+            const dir = Object.keys(exits).find(d => exits[d] === nextId);
+            if (!dir) {
+                finishWalk();
+                return;
+            }
+
             client.suppressMapMoveEvent = true;
             client.sendCommand(longToShort[dir] ?? dir);
+            index += 1;
             emitUpdate();
+            scheduleStep();
         }, time);
     };
 
@@ -120,7 +142,6 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
             delay = Math.max(0.5, lastDelay);
         }
         paused = false;
-        awaitingRoomConfirmation = false;
         target = targetId;
         client.sendEvent('leadTo', targetId);
         clearTimer();
@@ -132,7 +153,6 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
     const stopWalk = () => {
         const wasWalking = isWalking();
         paused = true;
-        awaitingRoomConfirmation = false;
         clearTimer();
         if (wasWalking) {
             client.sendEvent('clearLeadTo');
@@ -161,33 +181,6 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
 
     client.on('stepBack', stopWalk);
     client.on('mapMove', stopWalk);
-    client.on('gmcp.room.info', (detail) => {
-        if (!awaitingRoomConfirmation || target === null) return;
-
-        const confirmedRoomId = client.Map.resolveGmcpRoom(detail?.map);
-        if (confirmedRoomId === undefined) return;
-
-        awaitingRoomConfirmation = false;
-        if (confirmedRoomId === target) {
-            finishWalk(target);
-            return;
-        }
-
-        const nextPath = client.Map.findPath(confirmedRoomId, target);
-        if (!nextPath || nextPath.length < 2) {
-            finishWalk();
-            return;
-        }
-
-        path = nextPath.map((n) => parseInt(n as any, 10)).filter((n) => !isNaN(n));
-        if (path.length < 2) {
-            finishWalk();
-            return;
-        }
-        index = 0;
-        emitUpdate();
-        scheduleStep();
-    });
     client.on('pauserStart', () => {
         if (!paused && path.length > 0) {
             paused = true;
