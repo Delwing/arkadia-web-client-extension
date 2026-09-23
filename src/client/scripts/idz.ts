@@ -17,6 +17,7 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
     let paused = false;
     let target: number | null = null;
     let pausedByPauser = false;
+    let awaitingRoomConfirmation = false;
 
     const isWalking = () => !paused && path.length > 0;
 
@@ -51,38 +52,40 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
         }
     };
 
+    const finishWalk = (reached: number | null = null) => {
+        clearTimer();
+        path = [];
+        index = 0;
+        awaitingRoomConfirmation = false;
+        target = null;
+        client.sendEvent('clearLeadTo');
+        emitUpdate();
+        if (reached !== null) {
+            client.sendEvent('notify', { text: `[WALK] reached ${reached}` });
+        }
+    };
+
     const scheduleStep = () => {
-        if (paused || index >= path.length - 1) {
+        if (paused || awaitingRoomConfirmation) {
             clearTimer();
-            if (index >= path.length - 1) {
-                path = [];
-                const reached = target;
-                target = null;
-                client.sendEvent('clearLeadTo');
-                emitUpdate();
-                if (reached !== null) {
-                    client.sendEvent('notify', { text: `[WALK] reached ${reached}` });
-                }
-            }
+            return;
+        }
+
+        if (index >= path.length - 1) {
+            finishWalk();
             return;
         }
 
         const current = client.Map.getRoomById(path[index]);
         if (!current) {
-            clearTimer();
-            path = [];
-            client.sendEvent('clearLeadTo');
-            emitUpdate();
+            finishWalk();
             return;
         }
         const nextId = path[index + 1];
         const exits = Object.assign({}, current.exits ?? {}, current.specialExits ?? {});
         const dir = Object.keys(exits).find(d => exits[d] === nextId);
         if (!dir) {
-            clearTimer();
-            path = [];
-            client.sendEvent('clearLeadTo');
-            emitUpdate();
+            finishWalk();
             return;
         }
 
@@ -90,11 +93,10 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
         timer = window.setTimeout(() => {
             timer = null;
             if (paused) return;
+            awaitingRoomConfirmation = true;
             client.suppressMapMoveEvent = true;
             client.sendCommand(longToShort[dir] ?? dir);
-            index += 1;
             emitUpdate();
-            scheduleStep();
         }, time);
     };
 
@@ -118,6 +120,7 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
             delay = Math.max(0.5, lastDelay);
         }
         paused = false;
+        awaitingRoomConfirmation = false;
         target = targetId;
         client.sendEvent('leadTo', targetId);
         clearTimer();
@@ -129,6 +132,7 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
     const stopWalk = () => {
         const wasWalking = isWalking();
         paused = true;
+        awaitingRoomConfirmation = false;
         clearTimer();
         if (wasWalking) {
             client.sendEvent('clearLeadTo');
@@ -157,6 +161,33 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
 
     client.on('stepBack', stopWalk);
     client.on('mapMove', stopWalk);
+    client.on('gmcp.room.info', (detail) => {
+        if (!awaitingRoomConfirmation || target === null) return;
+
+        const confirmedRoomId = client.Map.resolveGmcpRoom(detail?.map);
+        if (confirmedRoomId === undefined) return;
+
+        awaitingRoomConfirmation = false;
+        if (confirmedRoomId === target) {
+            finishWalk(target);
+            return;
+        }
+
+        const nextPath = client.Map.findPath(confirmedRoomId, target);
+        if (!nextPath || nextPath.length < 2) {
+            finishWalk();
+            return;
+        }
+
+        path = nextPath.map((n) => parseInt(n as any, 10)).filter((n) => !isNaN(n));
+        if (path.length < 2) {
+            finishWalk();
+            return;
+        }
+        index = 0;
+        emitUpdate();
+        scheduleStep();
+    });
     client.on('pauserStart', () => {
         if (!paused && path.length > 0) {
             paused = true;
