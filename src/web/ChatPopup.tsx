@@ -1,4 +1,4 @@
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback, useMemo, useRef } from 'react';
 import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
 import type { WindowSettingField } from './layout/windowSettings';
 import { usePopup } from './hooks/usePopup';
@@ -48,10 +48,12 @@ const ChatPopup: React.FC = () => {
         clearedValue: [],
     });
 
-    // Filter messages based on mode
-    const displayedMessages = showTeamOnly
-        ? messages.filter(m => m.isTeamMember)
-        : messages;
+    // Filter messages based on mode. Memoized: it is useAutoScroll's dep, and a
+    // fresh array on an unrelated render (the split view opening) would re-pin.
+    const displayedMessages = useMemo(
+        () => showTeamOnly ? messages.filter(m => m.isTeamMember) : messages,
+        [messages, showTeamOnly],
+    );
 
     // Auto-scroll, plus the split view that keeps the newest lines in sight
     // while the scrollback is being read — the same engine the main output runs on.

@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback, useRef } from 'react';
+import React, { useEffect, useCallback, useMemo, useRef } from 'react';
 import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
 import { usePopup } from './hooks/usePopup';
 import { usePopupSetting } from './hooks/usePopupSetting';
@@ -87,22 +87,32 @@ const CombatPopup: React.FC = () => {
         "combat.others": setShowOthers,
     };
 
-    // Filter messages based on active toggles, then clean up separators
-    const filteredMessages = messages.filter(m =>
-        m.type === "separator" || toggleStates[m.type]
-    );
+    // Memoized: it is useAutoScroll's dep, and a fresh array on an unrelated
+    // render (the split view opening) would re-pin and swallow the next scroll.
+    const displayedMessages = useMemo(() => {
+        const shown: Record<CombatMessageType, boolean> = {
+            "combat.avatar": showAvatar,
+            "combat.team": showTeam,
+            "combat.others": showOthers,
+        };
 
-    // Remove separators that don't actually separate visible messages
-    const displayedMessages = filteredMessages.filter((entry, index, arr) => {
-        if (entry.type !== "separator") return true;
+        // Filter messages based on active toggles, then clean up separators
+        const filteredMessages = messages.filter(m =>
+            m.type === "separator" || shown[m.type]
+        );
 
-        // Check if there's a non-separator message before this separator
-        const hasMsgBefore = arr.slice(0, index).some(e => e.type !== "separator");
-        // Check if there's a non-separator message after this separator
-        const hasMsgAfter = arr.slice(index + 1).some(e => e.type !== "separator");
+        // Remove separators that don't actually separate visible messages
+        return filteredMessages.filter((entry, index, arr) => {
+            if (entry.type !== "separator") return true;
 
-        return hasMsgBefore && hasMsgAfter;
-    });
+            // Check if there's a non-separator message before this separator
+            const hasMsgBefore = arr.slice(0, index).some(e => e.type !== "separator");
+            // Check if there's a non-separator message after this separator
+            const hasMsgAfter = arr.slice(index + 1).some(e => e.type !== "separator");
+
+            return hasMsgBefore && hasMsgAfter;
+        });
+    }, [messages, showAvatar, showTeam, showOthers]);
 
     // Auto-scroll, plus the split view that lets the fight be read while it is
     // still scrolling past — the same engine the main output runs on.

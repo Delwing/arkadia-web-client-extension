@@ -18,15 +18,21 @@ async function isScrolledToBottom(page: Page): Promise<boolean> {
     }, OUTPUT_SELECTOR);
 }
 
+// A scroll within 250ms of new output is ignored by the split-view detection and
+// the next pin snaps the view back down. Retry until split view actually opens,
+// which is what keeps the output scrolled up. Nudging off 0 first makes every
+// attempt fire a scroll event, even when the ignored one left it at the top.
 async function scrollOutputToTop(page: Page): Promise<void> {
-    await page.evaluate((sel) => {
-        const el = document.querySelector(sel) as HTMLElement;
-        if (el) el.scrollTop = 0;
-    }, OUTPUT_SELECTOR);
-    await page.waitForFunction((sel) => {
-        const el = document.querySelector(sel) as HTMLElement;
-        return el ? el.scrollTop === 0 : false;
-    }, OUTPUT_SELECTOR);
+    await expect(async () => {
+        await page.evaluate(async (sel) => {
+            const el = document.querySelector(sel) as HTMLElement;
+            if (!el) return;
+            el.scrollTop = 1;
+            await new Promise(requestAnimationFrame);
+            el.scrollTop = 0;
+        }, OUTPUT_SELECTOR);
+        await expect(page.locator('#split-bottom')).not.toHaveClass(/split-hidden/, {timeout: 500});
+    }).toPass({timeout: 10000});
 }
 
 test.describe('Double-click scroll to bottom', () => {
