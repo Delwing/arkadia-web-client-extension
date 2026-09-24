@@ -1,6 +1,7 @@
 import { ChangeEvent, useRef, useState } from "react";
 import { Button } from "@web-ui/primitives/index.ts";
 import { buildBackup, isRestorableBackup, restoreBackup } from "./exportUtils";
+import { confirmRestore, publishRestore } from "./restoreFlow";
 
 function LocalExportTab() {
     const [status, setStatus] = useState<string | null>(null);
@@ -52,7 +53,9 @@ function LocalExportTab() {
             if (!isRestorableBackup(parsed)) {
                 throw new Error("invalid");
             }
+            if (!confirmRestore()) return;
             const result = await restoreBackup(parsed);
+            await publishRestore();
             let msg = "Import zakończony sukcesem. Niektóre ustawienia mogą wymagać odświeżenia strony.";
             if (result.deviceSettingsSavedToImportedList) {
                 msg += " Ustawienia interfejsu z innego urzadzenia zostaly zapisane - mozesz je zastosowac w zakladce Urzadzenia.";

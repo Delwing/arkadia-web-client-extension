@@ -20,6 +20,8 @@ export interface RecordStore {
     /** Whether a type's local data was captured at least once (its seed). */
     isSeeded(type: string): Promise<boolean>;
     markSeeded(type: string): Promise<void>;
+    /** Forget everything: records, outbox and seed marks (sequence numbers keep counting). */
+    clear(): Promise<void>;
 }
 
 const itemKey = (r: UserRecord) => `${r.type}\u0000${recordId(r)}`;
@@ -64,6 +66,12 @@ export class MemoryRecordStore implements RecordStore {
 
     async markSeeded(type: string): Promise<void> {
         this.seeded.add(type);
+    }
+
+    async clear(): Promise<void> {
+        this.records.clear();
+        this.outbox.clear();
+        this.seeded.clear();
     }
 }
 
@@ -192,6 +200,21 @@ export class IndexedDbRecordStore implements RecordStore {
         const db = await this.db();
         const tx = db.transaction(META, 'readwrite');
         tx.objectStore(META).put(true, `seeded:${type}`);
+        await done(tx);
+    }
+
+    async clear(): Promise<void> {
+        const db = await this.db();
+        const tx = db.transaction([RECORDS, OUTBOX, META], 'readwrite');
+        tx.objectStore(RECORDS).clear();
+        tx.objectStore(OUTBOX).clear();
+        const meta = tx.objectStore(META);
+        const keysReq = meta.getAllKeys();
+        keysReq.onsuccess = () => {
+            for (const key of keysReq.result) {
+                if (typeof key === 'string' && key.startsWith('seeded:')) meta.delete(key);
+            }
+        };
         await done(tx);
     }
 }

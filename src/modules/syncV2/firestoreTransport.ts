@@ -86,6 +86,17 @@ export class FirestoreTransport implements SyncTransport {
         };
     }
 
+    async clear(): Promise<void> {
+        const { deleteDoc, getDoc } = await import('firebase/firestore');
+        const baseRef = await this.ref('base');
+        const chunks = (await getDoc(baseRef)).data()?.chunks;
+        for (let i = 1; i < (typeof chunks === 'number' ? chunks : 1); i += 1) {
+            await deleteDoc(await this.ref(`base__${i}`));
+        }
+        await deleteDoc(baseRef);
+        await deleteDoc(await this.ref('log'));
+    }
+
     async fold(update: (base: BaseDoc | null, log: LogDoc) => Promise<FoldResult>): Promise<void> {
         const { runTransaction } = await import('firebase/firestore');
         const logRef = await this.ref('log');

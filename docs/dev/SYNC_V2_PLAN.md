@@ -2,10 +2,13 @@
 
 Dev-facing. `docs/` root is user-facing (see `docs/SYNCHRONIZACJA.md`); this file is deliberately in `docs/dev/`.
 
-Status: **stages 1–3 done.** Sync v2 runs behind a flag (`localStorage.setItem('arkadia.syncV2', '1')`,
-reload; it then replaces the v1 listener and engine for that browser). Daily operation counts are in
-`localStorage['arkadia.syncV2.usage']`. Stages 4–5 not started. Open from stage 3:
-- Firestore security rules must allow the owner to read/write `users/{uid}/syncV2/*`.
+Status: **stages 1–5a done.** Sync v2 is on by default (`localStorage.setItem('arkadia.syncV2', '0')` and a
+reload fall back to v1 until v1 is removed). Each device migrates from v1 once (a last v1 sync, then v1
+categories with unsynced local changes seed as edits). Daily operation counts are in
+`localStorage['arkadia.syncV2.usage']`. Remaining:
+- **Stage 5b, after the one-month transition:** lock v1 writes in the security rules, then delete the v1
+  engine, listener, planSync/checksums, the conflict UI and the v1 migration step.
+- Firestore security rules must allow the owner to read/write `users/{uid}/syncV2/*` (see 10.2).
 - Other tabs of the same browser don't refresh IndexedDB-backed data applied by the syncing tab
   (localStorage values do, through the `storage` event); planned `BroadcastChannel`.
 - The two-device Playwright test needs a Firestore mock with listeners and transactions; the same
@@ -401,17 +404,31 @@ would collide across devices.
 
 ### 10.2 Cloud (stage 5)
 
-1. The first v2 client of an account imports the v1 document (`users/{uid}/sync/{SYNC_DATA_DOC}`) through
-   the registry's `legacy.importV1` and the normal merge, then writes `base`.
-2. **Every** v2 device then folds its full local state into `base` once (an oversized batch, 8.1; the
-   only full upload ever). The merge combines it with the base, so data that never reached v1 (e.g.
-   knowledge stuck in conflict) propagates. This is why the current knowledge problem fixes itself.
-3. **Old app versions.** There's no central server, but tabs keep running the old code until reloaded
-   (a PC tab can stay open for days), and they keep writing the v1 document. For a grace period of
-   **one month** v2 clients also merge later v1 updates in (one direction), and the old code sees a
-   `schemaVersion` flag in the v1 document and shows "reload to update". After the window, Firestore
-   security rules deny writes to the v1 document — that's the central enforcement point we do have.
-4. Then v1 reading, `planSync`, `categorySyncChecksums`, the conflict UI and the v1 document are removed.
+As built (differs from the first draft, which imported the v1 document into the base once):
+
+1. **Per device, once** (`@web/userData/migrateFromV1`): a last v1 sync pulls what other devices uploaded
+   to the v1 document into local data. v1 categories where the device still differs from the v1 cloud
+   (never uploaded, or in an unresolved conflict) hold real edits: their v2 types record the first capture
+   with normal stamps. Everything else seeds with the lowest stamps, so on first contact other devices'
+   versions win and data only this device has is added. The v1 document gets `syncV2Since`.
+2. **Old versions.** Deployed versions before this one have no notice code and keep writing the v1
+   document; v2 ignores it. Their data isn't lost: it joins v2 when the tab reloads and migrates. Versions
+   with this code running v1 (the fallback flag) show the notice when they see `syncV2Since`
+   (a long-lived toast; toasts have no buttons).
+3. **After one month** the security rules deny writes to the v1 document; v1 clients with this code show
+   the "no longer syncs" notice on `permission-denied`. Rules for v2 and the lock:
+
+   ```
+   match /users/{uid}/syncV2/{doc} {
+     allow read, write: if request.auth != null && request.auth.uid == uid;
+   }
+   // after the transition:
+   match /users/{uid}/sync/{doc} {
+     allow read: if request.auth != null && request.auth.uid == uid;
+     allow write: if false;
+   }
+   ```
+4. Then stage 5b removes v1.
 
 ## 11. Backup
 
@@ -421,14 +438,11 @@ still holds newer-stamped records and the next sync silently undoes the restore.
 
 - **Export** writes a file with all records of all synced types (same serializer as sync). Google Drive
   is just another place to put the file.
-- **Restore** replaces local data with the file and publishes it as new changes: every record in the file
-  is rewritten with a fresh stamp, and every current record not in the file gets a fresh tombstone. Other
-  devices converge to the backup. Shown with a clear confirmation ("this replaces data on all your
-  devices").
-- For accumulated types without deletes (knowledge, kills, visited rooms, …), restore replaces the local
-  values with the backup's and publishes them with **newest** priority for that one operation, via a
-  restore epoch per type recorded in the batch. Devices apply the epoch by discarding their older records
-  of that type. This is the only place an epoch exists; there's no user-facing reset.
+- **Restore** (as built) imports the file locally after a confirmation and uploads at once. The restored
+  values are captured as local edits with fresh stamps, so for user-edited (newest) data they win on every
+  device, and items the backup doesn't have (e.g. a trigger added later) are deleted everywhere.
+- Accumulated data (knowledge, kills, visited rooms, …) is **merged**, not replaced: there's no reset
+  (section 2), so no restore epoch was built.
 - No "merge import": a merge is what sync already does.
 
 ## 12. What gets removed from the UI
@@ -448,8 +462,9 @@ Each stage is shippable on its own and keeps the app working.
 | 2a | Change tracking core | HLC, `ArkadiaUserData` tracking copy, merge rules, capture / apply / outbox, adapters for the localStorage-backed types | Rule and capture/apply tests green for those types; no behavior change; e2e green |
 | 2b | IndexedDB-backed types | Adapters for knowledge, kills, visited rooms, notes, multibinds and the five newly synced stores; stable oswajanie ids; cache audit so applied records refresh open tabs | Every type in 4.1 has an adapter with round-trip tests; e2e green |
 | 3 | Sync engine v2 | `SyncTransport` on Firestore: `log` + `base`, outbox, batching, one listener with cursors and detach on hide, watching mode, compaction, encryption, usage counters — behind a flag | Two-device e2e (section 15) converges with the flag on; measured ops per session fit section 9.3 |
-| 4 | Types on v2 | Knowledge first, then kills, visited rooms, profession, notes, multibinds, the five new stores, then settings types with `diff` | Each type round-trips through v2 with its rule tests |
-| 5 | Cloud migration, backup, cleanup | v1 import, one-time seed per device, one-way bridge, v1 write lock in security rules, restore with epochs, then removal of v1 code and conflict UI | Flag removed; v1 code deleted after the window |
+| 4 | Types on v2 | Done within stages 2 and 3: every type has an adapter and runs on v2 | Each type round-trips through v2 with its rule tests |
+| 5a | Switch to v2 | v2 on by default, per-device v1 migration, `syncV2Since` marker and notices, restore through sync, settings tab on v2 | Done |
+| 5b | Remove v1 (after one month) | Lock v1 writes in the rules, delete v1 engine, listener, checksums, conflict UI and the migration step | v1 code deleted |
 
 ## 14. Decisions
 

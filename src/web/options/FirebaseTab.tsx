@@ -35,6 +35,7 @@ import {
 import eventBus from "@modules/core/eventBus";
 import { importCategories } from "./exportUtils";
 import ConflictResolutionModal from "./ConflictResolutionModal";
+import { flushSyncV2, isSyncV2Enabled, isSyncV2Running, resetSyncV2Cloud } from "@web/userData/syncV2";
 
 const GoogleLogo = ({ size = 18 }: { size?: number }) => (
     <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 48 48">
@@ -77,6 +78,7 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
     const [resetSuccess, setResetSuccess] = useState<string | null>(null);
 
     // Sync state
+    const [syncV2] = useState(isSyncV2Enabled);
     const [encryptionEnabled, setEncryptionEnabled] = useState(() => loadFirebaseSettings().encryptionEnabled);
     const [autoSyncEnabled, setAutoSyncEnabled] = useState(() => loadFirebaseSettings().autoSyncEnabled);
     const [passphrase, setPassphrase] = useState(() => syncEngine.getPassphrase() ?? '');
@@ -372,6 +374,16 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
         setSyncStatus(null);
 
         try {
+            if (syncV2) {
+                // Sync v2 runs in one tab per browser.
+                if (!isSyncV2Running()) {
+                    setSyncError('Synchronizacja dziala w innej karcie albo nie jest jeszcze gotowa.');
+                } else {
+                    await flushSyncV2();
+                    setSyncStatus('Zmiany zostaly wyslane.');
+                }
+                return;
+            }
             const result = await syncEngine.syncNow(false);
             if (result.status === 'skipped') {
                 if (result.reason === 'needs-passphrase') {
@@ -386,7 +398,7 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
             isSyncingRef.current = false;
             setIsSyncing(false);
         }
-    }, [authState.isAuthenticated]);
+    }, [authState.isAuthenticated, syncV2]);
 
     const handleDownload = useCallback(async (specificCategories?: SyncCategory[]) => {
         if (!authState.isAuthenticated) return;
@@ -495,6 +507,7 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
         setSyncStatus(null);
 
         try {
+            if (syncV2) await resetSyncV2Cloud();
             const result = await deleteAllCategories();
 
             if (!result.success) {
@@ -503,7 +516,9 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                 return;
             }
 
-            setSyncStatus('Dane zostaly usuniete z chmury.');
+            setSyncStatus(syncV2
+                ? 'Dane zostaly usuniete z chmury. To urzadzenie wyslalo ponownie swoje dane.'
+                : 'Dane zostaly usuniete z chmury.');
             setCloudMetadata({});
         } catch (err) {
             console.error('Delete failed', err);
@@ -512,7 +527,7 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
             setIsDeleting(false);
             setShowDeleteConfirm(false);
         }
-    }, [authState.isAuthenticated]);
+    }, [authState.isAuthenticated, syncV2]);
 
     // Render loading state
     if (isInitializing) {
@@ -866,7 +881,7 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                     </section>
 
                     {/* Delete cloud data */}
-                    {Object.values(cloudMetadata).some(m => m?.exists) && (
+                    {(syncV2 || Object.values(cloudMetadata).some(m => m?.exists)) && (
                         <section className="character-settings-section cloud-delete">
                             <div className="cloud-delete__row">
                                 <div className="cloud-delete__text">
@@ -939,19 +954,22 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                         'Wyslij do chmury'
                     )}
                 </Button>
-                <Button
-                    onClick={() => handleDownload()}
-                    disabled={isSyncing || (encryptionEnabled && !passphrase)}
-                >
-                    {isSyncing ? (
-                        <span className="popup-inline">
-                            <span className="popup-spinner" />
-                            <span>Pobieranie...</span>
-                        </span>
-                    ) : (
-                        'Pobierz z chmury'
-                    )}
-                </Button>
+                {/* Sync v2 applies cloud changes as they arrive. */}
+                {!syncV2 && (
+                    <Button
+                        onClick={() => handleDownload()}
+                        disabled={isSyncing || (encryptionEnabled && !passphrase)}
+                    >
+                        {isSyncing ? (
+                            <span className="popup-inline">
+                                <span className="popup-spinner" />
+                                <span>Pobieranie...</span>
+                            </span>
+                        ) : (
+                            'Pobierz z chmury'
+                        )}
+                    </Button>
+                )}
             </div>
 
             {/* Conflict resolution modal */}

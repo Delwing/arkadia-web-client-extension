@@ -35,6 +35,12 @@ export interface TrackerOptions {
      * this device's sync group). This device's own values always apply.
      */
     appliesFromDevice?: (deviceId: string) => boolean;
+    /**
+     * Types whose first capture on this device records real edits rather than
+     * data from before sync (e.g. changes never uploaded by the previous sync):
+     * they get normal stamps instead of the lowest ones.
+     */
+    firstCaptureIsEdit?: (typeId: string) => boolean;
 }
 
 type Draft = Omit<UserRecord, 'seq'>;
@@ -109,6 +115,11 @@ export class UserDataTracker {
         return this.options.store.getOutbox();
     }
 
+    /** Forget the tracking copy and the outbox; the next capture seeds from local data again. */
+    reset(): Promise<void> {
+        return this.serial(() => this.options.store.clear());
+    }
+
     /** Records up to and including `seq` were uploaded. */
     acknowledge(uptoSeq: number): Promise<void> {
         return this.serial(() => this.options.store.removeOutbox(uptoSeq));
@@ -140,7 +151,8 @@ export class UserDataTracker {
         // first contact the other devices' versions win and data only this
         // device has is still added. Otherwise a fresh device's defaults
         // would overwrite the user's real settings.
-        const seeding = !(await store.isSeeded(type.id));
+        const firstCapture = !(await store.isSeeded(type.id));
+        const seeding = firstCapture && !this.options.firstCaptureIsEdit?.(type.id);
         let seedCounter = 0;
         const stamp = (): string => seeding
             ? formatStamp({ wall: 0, counter: seedCounter++, device: deviceId })
@@ -186,7 +198,7 @@ export class UserDataTracker {
             }
         }
 
-        if (seeding) await store.markSeeded(type.id);
+        if (firstCapture) await store.markSeeded(type.id);
         if (drafts.length === 0) {
             if (writes.length > 0) await type.write(writes);
             return [];

@@ -62,8 +62,13 @@ export interface SyncEngineOptions {
     tracker: UserDataTracker;
     types: UserDataType[];
     transport: SyncTransport;
-    /** The passphrase when encryption is on, otherwise null. */
-    passphrase: () => string | null;
+    /** Passphrase to encrypt uploads with: set when encryption is on, otherwise null. */
+    encryptionKey: () => string | null;
+    /**
+     * Passphrase to decrypt with, whenever one is known: data encrypted before
+     * encryption was switched off still has to be read.
+     */
+    decryptionKey: () => string | null;
     /** Encryption is on but no passphrase is known: sync pauses. */
     locked: () => boolean;
     visibility: VisibilitySource;
@@ -118,6 +123,22 @@ export class SyncEngineV2 {
         await this.serial(() => this.options.transport.setWatching(this.options.deviceId, null)).catch(() => undefined);
     }
 
+    /**
+     * Delete all sync data in the cloud and start over from this device: its
+     * tracking copy and cursors are cleared, so its next upload is everything
+     * it has. Other devices keep their data.
+     */
+    resetCloud(): Promise<void> {
+        return this.serial(async () => {
+            await this.options.transport.clear();
+            await this.options.tracker.reset();
+            this.cursors = {};
+            this.options.cursors.save(this.cursors);
+            this.lastLogBytes = 0;
+            await this.upload();
+        });
+    }
+
     /** Capture local changes and upload them now. */
     flush(): Promise<void> {
         return this.serial(() => this.upload());
@@ -170,7 +191,7 @@ export class SyncEngineV2 {
     }
 
     private async receive(log: LogDoc): Promise<void> {
-        const { deviceId, tracker, passphrase, locked, usage } = this.options;
+        const { deviceId, tracker, decryptionKey, locked, usage } = this.options;
         this.lastLogBytes = JSON.stringify(log.batches).length;
         usage?.read(1, this.lastLogBytes);
 
@@ -183,7 +204,7 @@ export class SyncEngineV2 {
         }
 
         if (locked()) return;
-        const key = passphrase();
+        const key = decryptionKey();
 
         // Batches this device never saw were folded into the base: read it first.
         const behind = Object.entries(log.folded ?? {})
@@ -221,14 +242,14 @@ export class SyncEngineV2 {
     }
 
     private async upload(): Promise<void> {
-        const { deviceId, tracker, transport, passphrase, locked, usage } = this.options;
+        const { deviceId, tracker, transport, encryptionKey, locked, usage } = this.options;
         if (locked()) return;
         await tracker.capture();
         const outbox = await tracker.outbox();
         if (outbox.length === 0) return;
 
         const toSeq = Math.max(...outbox.map(r => r.seq));
-        const encoded = await encodeRecords(outbox, passphrase());
+        const encoded = await encodeRecords(outbox, encryptionKey());
         if (encoded.data.length > this.timings.directFoldBytes) {
             await this.fold(outbox);
         } else {
@@ -250,8 +271,8 @@ export class SyncEngineV2 {
 
     /** Fold the whole log (plus `extra` records of this device) into the base. */
     private async fold(extra: UserRecord[]): Promise<void> {
-        const { deviceId, transport, passphrase, usage } = this.options;
-        const key = passphrase();
+        const { deviceId, transport, encryptionKey, decryptionKey, usage } = this.options;
+        const key = decryptionKey();
         let baseBytes = 0;
         await transport.fold(async (base, log) => {
             const folded: Record<string, number> = { ...(base?.folded ?? {}), ...(log.folded ?? {}) };
@@ -264,7 +285,7 @@ export class SyncEngineV2 {
                 records = foldRecords(records, extra, this.rules);
                 folded[deviceId] = Math.max(folded[deviceId] ?? 0, ...extra.map(r => r.seq));
             }
-            const encoded = await encodeRecords(compactRecords(records, this.now()), key);
+            const encoded = await encodeRecords(compactRecords(records, this.now()), encryptionKey());
             baseBytes = encoded.data.length;
             const next: BaseDoc = { schemaVersion: 1, folded, updatedAt: this.now(), ...encoded };
             return { base: next, keep: [], folded };

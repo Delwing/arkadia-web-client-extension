@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { SHOW_SETTINGS_EVENT } from "@web/settings/categories.ts";
 import { Button } from "@web-ui/primitives/index.ts";
 import { buildBackup, isRestorableBackup, restoreBackup } from "./exportUtils";
+import { confirmRestore, publishRestore } from "./restoreFlow";
 
 const GOOGLE_CLIENT_ID = "717498712073-50tjdorsa6vk4mq0fj774u0rhqr5jkd4.apps.googleusercontent.com";
 const DRIVE_SCOPES = ["https://www.googleapis.com/auth/drive.appdata"];
@@ -456,7 +457,9 @@ function GoogleDriveTab({ onImportComplete }: GoogleDriveTabProps = {}) {
             if (!isRestorableBackup(parsed)) {
                 throw new Error("invalid");
             }
+            if (!confirmRestore()) return;
             const result = await restoreBackup(parsed);
+            await publishRestore();
             onImportComplete?.();
             let msg = `Zaimportowano plik "${fileSummary.name}" z Google Drive. Niektore ustawienia moga wymagac odswiezenia strony.`;
             if (result.deviceSettingsSavedToImportedList) {

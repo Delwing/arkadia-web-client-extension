@@ -53,7 +53,10 @@ export function createUserDataTypes(deviceId: () => string = getDeviceId): UserD
     ];
 }
 
-export function createUserDataTracker(store: RecordStore = new IndexedDbRecordStore()): UserDataTracker {
+export function createUserDataTracker(
+    store: RecordStore = new IndexedDbRecordStore(),
+    firstCaptureIsEdit?: (typeId: string) => boolean,
+): UserDataTracker {
     const deviceId = getDeviceId();
     const clock = new HybridLogicalClock(deviceId, {
         load: () => localStorage.getItem(HLC_STORAGE_KEY),
@@ -65,5 +68,6 @@ export function createUserDataTracker(store: RecordStore = new IndexedDbRecordSt
         store,
         clock,
         appliesFromDevice: other => !!getSyncGroup()?.devices.includes(other),
+        firstCaptureIsEdit,
     });
 }

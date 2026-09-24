@@ -127,6 +127,42 @@ describe('UserDataTracker', () => {
         expect(a.types.aliases.get('y')).toBe('only on b');
     });
 
+    it('records the first capture as edits for types that carry unsynced changes', async () => {
+        const a = makeDevice('a', 1_000);
+        a.types.aliases.set('x', 'the users real alias');
+        await a.tracker.capture();
+
+        // b still had an alias edit its previous sync never uploaded
+        let saved: string | null = null;
+        const types = makeTypes('b');
+        const { _device: _, ...typeMap } = types;
+        const b = new UserDataTracker({
+            deviceId: 'b',
+            types: Object.values(typeMap),
+            store: new MemoryRecordStore(),
+            clock: new HybridLogicalClock('b', { load: () => saved, save: s => { saved = s; } }, () => 9_000),
+            firstCaptureIsEdit: type => type === 'aliases',
+        });
+        typeMap.aliases.set('x', 'edited on b before migrating');
+        await b.capture();
+        await b.apply(await a.tracker.outbox());
+
+        expect(typeMap.aliases.get('x')).toBe('edited on b before migrating');
+    });
+
+    it('starts over from local data after a reset', async () => {
+        const a = makeDevice('a', 1_000);
+        a.types.aliases.set('x', 'look');
+        await a.tracker.capture();
+        await a.tracker.acknowledge(Number.MAX_SAFE_INTEGER);
+
+        await a.tracker.reset();
+        const records = await a.tracker.capture();
+
+        expect(records.map(r => r.key)).toEqual(['x']);
+        expect(await a.tracker.outbox()).toHaveLength(1);
+    });
+
     it('treats items created after the first capture as edits', async () => {
         const a = makeDevice('a', 1_000);
         const b = makeDevice('b', 1_000);

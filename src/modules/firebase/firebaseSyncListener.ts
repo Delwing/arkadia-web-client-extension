@@ -12,7 +12,7 @@
 
 import type { Unsubscribe } from 'firebase/firestore';
 import type { SyncCategory, CategoryPayload, CategoryConflictInfo } from './firebaseTypes';
-import { getDeviceId, loadFirebaseSettings, SYNC_CATEGORIES } from './firebaseTypes';
+import { getDeviceId, loadFirebaseSettings, SYNC_CATEGORIES, SYNC_V2_STARTED_NOTICE } from './firebaseTypes';
 import { ensureFirebaseInitialized } from './firebaseConfig';
 import { calculateChecksum, decrypt, isEncryptedData } from './firebaseCrypto';
 import { updateCache, recordCategorySyncState } from './firebaseUnifiedSync';
@@ -27,6 +27,7 @@ class FirebaseSyncListener {
     private pendingEncryptedPayloads: Partial<Record<SyncCategory, CategoryPayload>> = {};
     private active = false;
     private unsubscribe: Unsubscribe | null = null;
+    private syncV2NoticeShown = false;
     private passphrase: string | null = null;
     private isInitialSnapshot = true;
     private processing = false;
@@ -186,6 +187,10 @@ class FirebaseSyncListener {
         this.processing = true;
 
         try {
+            if (data?.syncV2Since && !this.syncV2NoticeShown) {
+                this.syncV2NoticeShown = true;
+                eventBus.emit('notify', { text: SYNC_V2_STARTED_NOTICE, time: 60_000 });
+            }
             const cloudCategories = data?.categories || {};
 
             // Always update cache with fresh data

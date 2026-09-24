@@ -48,6 +48,8 @@ export interface SyncTransport {
     readBase(): Promise<BaseDoc | null>;
     /** Atomically replace the base and the log's batches (a transaction; `update` may run more than once). */
     fold(update: (base: BaseDoc | null, log: LogDoc) => Promise<FoldResult>): Promise<void>;
+    /** Delete the log and the base. */
+    clear(): Promise<void>;
 }
 
 export function emptyLog(): LogDoc {
@@ -108,6 +110,13 @@ export class MemoryTransport implements SyncTransport {
             this.emit();
             return;
         }
+    }
+
+    async clear(): Promise<void> {
+        this.log = emptyLog();
+        this.base = null;
+        this.ops.writes += 2;
+        this.emit();
     }
 
     listenerCount(): number {

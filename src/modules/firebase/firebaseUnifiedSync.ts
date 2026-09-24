@@ -30,7 +30,8 @@ import {
     getDeviceId,
     loadFirebaseSettings,
     saveFirebaseSettings,
-    SYNC_CATEGORIES
+    SYNC_CATEGORIES,
+    SYNC_V1_LOCKED_NOTICE,
 } from './firebaseTypes';
 import {ensureFirebaseInitialized, getFirebaseAuth} from './firebaseConfig';
 import {calculateChecksum, decrypt, encrypt, isEncryptedData} from './firebaseCrypto';
@@ -62,6 +63,18 @@ interface LegacyPerDeviceSettings {
     };
 }
 
+/**
+ * Record on the v1 document that this account moved to sync v2, so v1 clients
+ * still running (the `arkadia.syncV2 = '0'` fallback) tell the user to reload.
+ */
+export async function markSyncV2Started(): Promise<void> {
+    const userId = getFirebaseAuth()?.currentUser?.uid;
+    if (!userId) return;
+    const { db } = await ensureFirebaseInitialized();
+    const { doc, setDoc, serverTimestamp } = await import('firebase/firestore');
+    await setDoc(doc(db, USERS_COLLECTION, userId, 'sync', SYNC_DATA_DOC), { syncV2Since: serverTimestamp() }, { merge: true });
+}
+
 export interface UnifiedSyncData {
     // Shared categories (triggers, aliases, shortcuts, characterSettings, etc.)
     categories?: {
@@ -73,6 +86,8 @@ export interface UnifiedSyncData {
     };
     // Device registry
     devices?: { [deviceId: string]: DeviceInfo };
+    /** Set when a device of this account moved to sync v2. */
+    syncV2Since?: unknown;
     // Legacy per-device settings snapshot (no longer written; read as a
     // fallback by copySettingsFromCloudDevice for devices that never synced
     // their device-scoped categories)
@@ -425,6 +440,12 @@ export async function uploadCategories(
 
     } catch (err) {
         console.error('Failed to upload categories', err);
+        if ((err as { code?: string } | null)?.code === 'permission-denied') {
+            // After the move to sync v2 the security rules lock the v1 document.
+            import('@modules/core/eventBus').then(({ default: eventBus }) => {
+                eventBus.emit('notify', { text: SYNC_V1_LOCKED_NOTICE, time: 60_000 });
+            }).catch(() => undefined);
+        }
         return { success: false, errors: { uiSettings: FIREBASE_ERRORS.SYNC_FAILED }, timestamps, checksums, conflicts };
     }
 

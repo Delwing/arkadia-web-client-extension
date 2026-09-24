@@ -15,6 +15,8 @@ const EXPORT_IMPORT_MODAL = '#settings-modal';
 const LOCAL_FILE_INPUT = '#settings-modal .settings-page[data-settings-category="data-backup"] input[type="file"][accept="application/json"]';
 
 async function openExportImportModal(page: Page) {
+    // Restoring asks for confirmation; accept it.
+    page.on('dialog', dialog => void dialog.accept());
     await page.click(MENU_BUTTON);
     await page.click(SETTINGS_BUTTON);
     const modal = page.locator(EXPORT_IMPORT_MODAL);

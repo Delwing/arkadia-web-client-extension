@@ -150,6 +150,11 @@ export function getDeviceId(): string {
     return deviceId;
 }
 
+/** Shown by v1 sync when a device of this account has moved to sync v2. */
+export const SYNC_V2_STARTED_NOTICE = 'Synchronizacja zostala zaktualizowana. Odswiez strone, aby dalej synchronizowac dane z innymi urzadzeniami.';
+/** Shown by v1 sync when its writes are refused (v1 locked by the security rules after the transition). */
+export const SYNC_V1_LOCKED_NOTICE = 'Ta wersja klienta nie synchronizuje juz danych. Odswiez strone, aby wczytac nowa wersje.';
+
 // Load Firebase settings from localStorage
 export function loadFirebaseSettings(): FirebaseSettings {
     const defaults: FirebaseSettings = {

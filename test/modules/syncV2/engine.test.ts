@@ -47,6 +47,8 @@ function makeDevice(id: string, transport: MemoryTransport, options: {
     visible?: boolean;
     timings?: Partial<SyncEngineTimings>;
     passphrase?: () => string | null;
+    /** Encryption switched off, the passphrase still known. */
+    encrypt?: () => boolean;
 } = {}): Device {
     const aliases = new MapType<string>('aliases', { kind: 'newest' }, true);
     const kills = new MapType<Record<string, number>>('kills', { kind: 'counter' });
@@ -68,7 +70,8 @@ function makeDevice(id: string, transport: MemoryTransport, options: {
         tracker,
         types,
         transport,
-        passphrase,
+        encryptionKey: () => (options.encrypt?.() ?? true ? passphrase() : null),
+        decryptionKey: passphrase,
         locked: () => false,
         visibility,
         cursors: { load: () => ({ ...cursors }), save: c => { cursors = { ...c }; } },
@@ -218,6 +221,41 @@ describe('SyncEngineV2', () => {
             expect(third.aliases.data.get('before')).toBe('fold');
             expect(third.aliases.data.get('during')).toBe('fold');
         }, { timeout: 3000 });
+    });
+
+    it('still reads data encrypted before encryption was switched off', async () => {
+        const transport = new MemoryTransport();
+        let encrypt = true;
+        const pc = makeDevice('pc', transport, { passphrase: () => 'secret', encrypt: () => encrypt });
+        const phone = makeDevice('phone', transport, { passphrase: () => 'secret', encrypt: () => encrypt });
+        start(pc);
+        pc.aliases.data.set('old', 'sent encrypted');
+        await pc.engine.flush();
+
+        encrypt = false;
+        pc.aliases.data.set('new', 'sent in the clear');
+        await pc.engine.flush();
+        expect(transport.log.batches.map(b => b.encrypted)).toEqual([true, false]);
+
+        start(phone);
+        await vi.waitFor(() => {
+            expect(phone.aliases.data.get('old')).toBe('sent encrypted');
+            expect(phone.aliases.data.get('new')).toBe('sent in the clear');
+        }, { timeout: 5000 });
+    });
+
+    it('clears the cloud and uploads this device\'s data again', async () => {
+        const transport = new MemoryTransport();
+        const pc = makeDevice('pc', transport);
+        start(pc);
+        pc.aliases.data.set('k', 'kondycja');
+        await pc.engine.flush();
+        await transport.appendBatch({ device: 'other', fromSeq: 1, toSeq: 1, stamp: 's', encrypted: false, data: '[]' });
+
+        await pc.engine.resetCloud();
+
+        expect(transport.log.batches.map(b => b.device)).toEqual(['pc']);
+        expect(transport.log.batches[0].data).toContain('kondycja');
     });
 
     it('encrypts records in the cloud and decrypts them on the other device', async () => {
