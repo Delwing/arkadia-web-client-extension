@@ -456,6 +456,11 @@ Settled:
 - Newly synced: oswajanie (level-ups earliest, feedings union), enemy resistances (newest observation),
   złom (newest observation), transport stats (current min/max only), delivery stats (union).
 - Old-version grace period: one month.
+- Library and book progress only moves forward (**max**). A manual reset or unmark in the Wiedza window is
+  undone by sync; acceptable because progress only goes back after a bug. A correction marker that beats
+  automatic progress can be added if needed.
+- Only one device can be attached to a game session, so an event (tick, kill, feeding, delivery) is never
+  observed on two devices at once and needs no deduplication beyond its key.
 - Batch interval during play: 5 minutes, immediate flush when the tab is hidden or closed.
 - Cloud layout: one shared `log` document (atomic appends) and one `base` document per user; overflow
   shards only if `base` nears the size limit.
