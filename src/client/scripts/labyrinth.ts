@@ -1,5 +1,5 @@
 import Client from "../Client";
-import {getLongDir, isDirection} from "@shared/map/directions";
+import {getLongDir, isDirection, isPolishDirection} from "@shared/map/directions";
 import {stripPolishCharacters} from "../stripPolishCharacters";
 import eventBus from "@modules/core/eventBus";
 import {PathFinder} from "mudlet-map-renderer";
@@ -42,7 +42,7 @@ function extractDirection(command: string): string | null {
     if (cmd.startsWith('przemknij z druzyna ')) cmd = cmd.substring(20);
     else if (cmd.startsWith('przemknij ')) cmd = cmd.substring(10);
     else if (cmd.startsWith('jedz na ')) cmd = cmd.substring(8);
-    if (cmd.startsWith('na ') && isDirection(cmd.substring(3))) cmd = cmd.substring(3);
+    if (cmd.startsWith('na ') && isPolishDirection(cmd.substring(3))) cmd = cmd.substring(3);
 
     if (isDirection(cmd)) return getLongDir(cmd);
     return null;

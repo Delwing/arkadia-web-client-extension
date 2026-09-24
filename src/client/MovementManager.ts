@@ -1,5 +1,5 @@
 import type Client from "./Client";
-import { isDirection } from "@shared/map/directions";
+import { isDirection, isPolishDirection } from "@shared/map/directions";
 import { isDrivableExit } from "@shared/map/exitCommands";
 import type { CommandOptions } from "./scripts/commandPreserveCaseMode";
 
@@ -30,17 +30,22 @@ export default class MovementManager {
         } else {
             direction = command;
         }
-        // "przemknij na polnoc" is as valid as "przemknij polnoc" - keep the "na" in the prefix
-        // so the command goes out the way it was typed.
-        if (movePrefix && direction.startsWith('na ') && isDirection(direction.substring(3))) {
-            movePrefix += 'na ';
+        // The game takes "przemknij na polnoc" but rejects "przemknij na sw" - "na" only goes with
+        // a full Polish direction word, so only then is it stripped for the mapper.
+        let withNa = false;
+        if (movePrefix && direction.startsWith('na ') && isPolishDirection(direction.substring(3))) {
+            withNa = true;
             direction = direction.substring(3);
         }
         // Map.move re-sends a remapped direction ("w" recorded as "nw") as a bare command, which
         // would drop the sneak prefix - resolve it here so move() takes it as-is.
         if (movePrefix && !this.carriageMode) {
-            direction = this.client.Map.resolveDirection(direction);
+            const resolved = this.client.Map.resolveDirection(direction);
+            // A remap yields a short code or a special exit, neither of which takes "na".
+            if (resolved !== direction) withNa = false;
+            direction = resolved;
         }
+        if (withNa) movePrefix += 'na ';
 
         const isOriginalDirection = isDirection(direction);
 

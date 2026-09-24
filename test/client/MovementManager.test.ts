@@ -315,6 +315,22 @@ describe('MovementManager', () => {
     expect(clientAdapterMock.send).toHaveBeenCalledWith('przemknij z druzyna na poludnie', false, undefined);
   });
 
+  test('przemknij na <short code> is left alone - the game rejects it', () => {
+    const client = new Client(clientAdapterMock);
+    moveFn.mockClear();
+    client.movementManager.sendMovement('przemknij na sw', true);
+    expect(moveFn).toHaveBeenCalledWith('na sw');
+    expect(moveFn.mock.results[0].value.moved).toBe(false);
+    expect(clientAdapterMock.send).toHaveBeenCalledWith('przemknij na sw', false, undefined);
+  });
+
+  test('przemknij na <direction> drops "na" when the exit is remapped', () => {
+    const client = new Client(clientAdapterMock);
+    resolveFn.mockImplementationOnce(() => 'nw');
+    client.movementManager.sendMovement('przemknij na zachod', true);
+    expect(clientAdapterMock.send).toHaveBeenCalledWith('przemknij nw', false, undefined);
+  });
+
   test('przemknij with a remapped exit keeps the prefix', () => {
     const client = new Client(clientAdapterMock);
     resolveFn.mockImplementationOnce(() => 'nw');
