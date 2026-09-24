@@ -30,6 +30,7 @@ vi.mock('@web/options/exportUtils', () => ({
 import { syncEngine } from '@modules/firebase/syncEngine';
 import { planSync, downloadCategories, recordCategorySyncState, uploadCategories } from '@modules/firebase/firebaseUnifiedSync';
 import { syncListener } from '@modules/firebase/firebaseSyncListener';
+import { SYNC_CATEGORIES } from '@modules/firebase/categoryRegistry';
 import { exportCategories, importCategories, mergePerCharacterEnvelopes } from '@web/options/exportUtils';
 import { saveFirebaseSettings, FIREBASE_SETTINGS_KEY } from '@modules/firebase/firebaseTypes';
 import { globalStorage } from '@modules/core/storage';
@@ -381,16 +382,13 @@ describe('FirebaseSyncEngine', () => {
             expect(mockedExport).not.toHaveBeenCalled();
         });
 
-        it('skips when no categories are enabled', async () => {
-            const allOff = Object.fromEntries(
-                Object.keys(JSON.parse(localStorage.getItem(FIREBASE_SETTINGS_KEY)!).syncOptions)
-                    .map(cat => [cat, false]),
-            );
-            saveFirebaseSettings({ syncOptions: allOff as never });
+        it('syncs every category (there is no per-category selection)', async () => {
+            givenCleanUploadPath();
 
-            const result = await syncEngine.syncNow(false);
+            await syncEngine.syncNow(false);
 
-            expect(result).toEqual({ status: 'skipped', reason: 'no-categories' });
+            expect(mockedExport).toHaveBeenCalledWith(SYNC_CATEGORIES, ['Alice']);
+            expect(mockedPlan).toHaveBeenCalledWith(expect.anything(), SYNC_CATEGORIES, undefined);
         });
 
         it('skips when there is nothing to export and nothing in the cloud', async () => {

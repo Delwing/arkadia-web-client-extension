@@ -63,159 +63,18 @@ test.describe('Export/Import', () => {
         });
     });
 
-    test.describe('Character selection', () => {
-        test('displays detected characters and allows selection', async ({page}) => {
+    test.describe('Backup contents', () => {
+        test('has no character or data selection: a backup always contains everything', async ({page}) => {
             await page.goto('/');
             await waitForCommandInput(page);
             await ensureGameSocket(page);
             await setupCharacterData(page, 'Wojownik');
 
-            // Add another character data to localStorage
-            await page.evaluate(() => {
-                localStorage.setItem('Mag:settings', JSON.stringify({language: 'krasnoludzki'}));
-            });
-
             const modal = await openExportImportModal(page);
 
-            // Both characters should be listed
-            const wojownikCheckbox = modal.locator('#export-character-Wojownik');
-            const magCheckbox = modal.locator('#export-character-Mag');
-
-            await expect(wojownikCheckbox, 'should display Wojownik checkbox').toBeVisible();
-            await expect(magCheckbox, 'should display Mag checkbox').toBeVisible();
-
-            // Both should be checked by default
-            await expect(wojownikCheckbox, 'Wojownik should be checked by default').toBeChecked();
-            await expect(magCheckbox, 'Mag should be checked by default').toBeChecked();
-
-            await closeExportImportModal(page);
-        });
-
-        test('select all and none buttons work for characters', async ({page}) => {
-            await page.goto('/');
-            await waitForCommandInput(page);
-            await ensureGameSocket(page);
-
-            // Setup multiple characters
-            await page.evaluate(() => {
-                localStorage.setItem('Elf:settings', JSON.stringify({shortenExits: true}));
-                localStorage.setItem('Krasnolud:settings', JSON.stringify({shortenExits: false}));
-            });
-
-            const modal = await openExportImportModal(page);
-
-            const elfCheckbox = modal.locator('#export-character-Elf');
-            const krasnolCheckbox = modal.locator('#export-character-Krasnolud');
-
-            // Click "Żadna" (select none)
-            await modal.getByRole('button', {name: 'Żadna'}).click();
-            await expect(elfCheckbox, 'Elf should be unchecked after none').not.toBeChecked();
-            await expect(krasnolCheckbox, 'Krasnolud should be unchecked after none').not.toBeChecked();
-
-            // Click "Wszystkie" (select all)
-            await modal.getByRole('button', {name: 'Wszystkie'}).click();
-            await expect(elfCheckbox, 'Elf should be checked after all').toBeChecked();
-            await expect(krasnolCheckbox, 'Krasnolud should be checked after all').toBeChecked();
-
-            await closeExportImportModal(page);
-        });
-
-        test('individual character toggle works', async ({page}) => {
-            await page.goto('/');
-            await waitForCommandInput(page);
-            await ensureGameSocket(page);
-
-            await page.evaluate(() => {
-                localStorage.setItem('Tropiciel:settings', JSON.stringify({shortenExits: true}));
-            });
-
-            const modal = await openExportImportModal(page);
-
-            const checkbox = modal.locator('#export-character-Tropiciel');
-            await expect(checkbox, 'should be checked initially').toBeChecked();
-
-            await checkbox.uncheck();
-            await expect(checkbox, 'should be unchecked after click').not.toBeChecked();
-
-            await checkbox.check();
-            await expect(checkbox, 'should be checked after second click').toBeChecked();
-
-            await closeExportImportModal(page);
-        });
-    });
-
-    test.describe('Export options selection', () => {
-        test('all export options are checked by default', async ({page}) => {
-            await page.goto('/');
-            await waitForCommandInput(page);
-            await ensureGameSocket(page);
-
-            const modal = await openExportImportModal(page);
-
-            const options = [
-                'export-option-uiSettings',
-                'export-option-characterSettings',
-                'export-option-binds',
-                'export-option-shortcuts',
-                'export-option-triggers',
-                'export-option-aliases',
-                'export-option-multibinds',
-                'export-option-scripts',
-                'export-option-buttons',
-                'export-option-radial',
-                'export-option-recordings',
-                'export-option-visitedRooms',
-            ];
-
-            for (const optionId of options) {
-                const checkbox = modal.locator(`#${optionId}`);
-                await expect(checkbox, `${optionId} should be checked by default`).toBeChecked();
-            }
-
-            await closeExportImportModal(page);
-        });
-
-        test('select all and none buttons work for export options', async ({page}) => {
-            await page.goto('/');
-            await waitForCommandInput(page);
-            await ensureGameSocket(page);
-
-            const modal = await openExportImportModal(page);
-
-            // Locate export options section - it has "Dane do eksportu" label
-            const optionsSection = modal.locator('.character-settings-section').filter({hasText: 'Dane do eksportu'});
-
-            // Click "Nic" (select none)
-            await optionsSection.getByRole('button', {name: 'Nic'}).click();
-
-            const triggersCheckbox = modal.locator('#export-option-triggers');
-            const aliasesCheckbox = modal.locator('#export-option-aliases');
-            await expect(triggersCheckbox, 'triggers should be unchecked after none').not.toBeChecked();
-            await expect(aliasesCheckbox, 'aliases should be unchecked after none').not.toBeChecked();
-
-            // Click "Wszystko" (select all)
-            await optionsSection.getByRole('button', {name: 'Wszystko'}).click();
-            await expect(triggersCheckbox, 'triggers should be checked after all').toBeChecked();
-            await expect(aliasesCheckbox, 'aliases should be checked after all').toBeChecked();
-
-            await closeExportImportModal(page);
-        });
-
-        test('individual option toggle works', async ({page}) => {
-            await page.goto('/');
-            await waitForCommandInput(page);
-            await ensureGameSocket(page);
-
-            const modal = await openExportImportModal(page);
-
-            const scriptsCheckbox = modal.locator('#export-option-scripts');
-            await expect(scriptsCheckbox, 'should be checked initially').toBeChecked();
-
-            await scriptsCheckbox.uncheck();
-            await expect(scriptsCheckbox, 'should be unchecked after click').not.toBeChecked();
-
-            await scriptsCheckbox.check();
-            await expect(scriptsCheckbox, 'should be checked after second click').toBeChecked();
+            await expect(modal.locator('[id^="export-character-"]'), 'no character checkboxes').toHaveCount(0);
+            await expect(modal.locator('[id^="export-option-"]'), 'no data checkboxes').toHaveCount(0);
+            await expect(modal, 'explains what the backup contains').toContainText('wszystkie Twoje dane');
 
             await closeExportImportModal(page);
         });
@@ -269,54 +128,47 @@ test.describe('Export/Import', () => {
             const content = fs.readFileSync(path!, 'utf-8');
             const payload = JSON.parse(content);
 
-            expect(payload.version, 'should have version 1').toBe(1);
+            expect(payload.version, 'should have version 2').toBe(2);
             expect(payload.createdAt, 'should have createdAt timestamp').toBeDefined();
-            expect(payload.localStorage, 'should have localStorage object').toBeDefined();
-            expect(payload.localStorage.global, 'should have global localStorage').toBeDefined();
-            expect(payload.localStorage.characters, 'should have characters localStorage').toBeDefined();
-            expect(payload.indexedDB, 'should have indexedDB object').toBeDefined();
-            expect(payload.indexedDB.multibinds, 'should have multibinds array').toBeInstanceOf(Array);
-            expect(payload.indexedDB.visitedRooms, 'should have visitedRooms array').toBeInstanceOf(Array);
+            expect(payload.device?.sourceDevice?.id, 'should name the exporting device').toBeTruthy();
+            expect(payload.categories, 'should have categories object').toBeDefined();
+            expect(JSON.parse(payload.categories.triggers).triggers, 'should contain triggers')
+                .toBe(JSON.stringify([{pattern: 'test', command: 'say test'}]));
+            expect(JSON.parse(payload.categories.characterSettings).TestChar, 'should contain character settings')
+                .toBeDefined();
 
             await closeExportImportModal(page);
         });
 
-        test('export respects character selection', async ({page}) => {
+        test('export includes every character', async ({page}) => {
             await page.goto('/');
             await waitForCommandInput(page);
             await ensureGameSocket(page);
 
-            // Setup two characters
             await page.evaluate(() => {
-                localStorage.setItem('IncludeChar:settings', JSON.stringify({shortenExits: true}));
-                localStorage.setItem('ExcludeChar:settings', JSON.stringify({shortenExits: false}));
+                localStorage.setItem('FirstChar:settings', JSON.stringify({shortenExits: true}));
+                localStorage.setItem('SecondChar:settings', JSON.stringify({shortenExits: false}));
             });
 
             const modal = await openExportImportModal(page);
-
-            // Uncheck ExcludeChar
-            const excludeCheckbox = modal.locator('#export-character-ExcludeChar');
-            await excludeCheckbox.uncheck();
 
             const downloadPromise = page.waitForEvent('download');
             await modal.getByRole('button', {name: 'Eksportuj dane'}).click();
 
             const download: Download = await downloadPromise;
             const path = await download.path();
-            const content = fs.readFileSync(path!, 'utf-8');
-            const payload = JSON.parse(content);
+            const payload = JSON.parse(fs.readFileSync(path!, 'utf-8'));
+            const characters = JSON.parse(payload.categories.characterSettings);
 
-            expect(payload.characters, 'should only include selected character').toContain('IncludeChar');
-            expect(payload.characters, 'should not include deselected character').not.toContain('ExcludeChar');
-            expect(payload.localStorage.characters['IncludeChar'], 'should have IncludeChar data').toBeDefined();
-            expect(payload.localStorage.characters['ExcludeChar'], 'should not have ExcludeChar data').toBeUndefined();
+            expect(characters.FirstChar, 'should have FirstChar data').toBeDefined();
+            expect(characters.SecondChar, 'should have SecondChar data').toBeDefined();
 
             await closeExportImportModal(page);
         });
     });
 
     test.describe('Local import', () => {
-        test('imports valid backup file and shows success message', async ({page}) => {
+        test('imports a legacy (version 1) backup file and shows success message', async ({page}) => {
             await page.goto('/');
             await waitForCommandInput(page);
             await ensureGameSocket(page);
@@ -406,7 +258,8 @@ test.describe('Export/Import', () => {
             });
 
             // Verify error message
-            const errorAlert = modal.locator('.popup-notice--danger');
+            // The Google Drive section on the same page shows its own error when its script can't load.
+            const errorAlert = modal.locator('.popup-notice--danger', {hasText: 'zaimportować'});
             await expect(errorAlert, 'should show error message').toContainText('Nie udało się zaimportować danych');
 
             await closeExportImportModal(page);
@@ -432,7 +285,8 @@ test.describe('Export/Import', () => {
                 buffer: Buffer.from(JSON.stringify(invalidPayload)),
             });
 
-            const errorAlert = modal.locator('.popup-notice--danger');
+            // The Google Drive section on the same page shows its own error when its script can't load.
+            const errorAlert = modal.locator('.popup-notice--danger', {hasText: 'zaimportować'});
             await expect(errorAlert, 'should show error for wrong version').toContainText('Nie udało się zaimportować danych');
 
             await closeExportImportModal(page);
@@ -456,7 +310,8 @@ test.describe('Export/Import', () => {
                 buffer: Buffer.from(JSON.stringify(incompletePayload)),
             });
 
-            const errorAlert = modal.locator('.popup-notice--danger');
+            // The Google Drive section on the same page shows its own error when its script can't load.
+            const errorAlert = modal.locator('.popup-notice--danger', {hasText: 'zaimportować'});
             await expect(errorAlert, 'should show error for incomplete payload').toContainText('Nie udało się zaimportować danych');
 
             await closeExportImportModal(page);
@@ -525,33 +380,6 @@ test.describe('Export/Import', () => {
             expect(settings.shortenExits, 'shortenExits should be restored').toBe(true);
             expect(settings.collectMode, 'collectMode should be restored').toBe(2);
             expect(settings.language, 'language should be restored').toBe('krasnoludzki');
-
-            await closeExportImportModal(page);
-        });
-    });
-
-    test.describe('No characters scenario', () => {
-        test('shows message when no characters are detected', async ({page}) => {
-            await page.goto('/');
-            await waitForCommandInput(page);
-            await ensureGameSocket(page);
-
-            // Clear any character-related data
-            await page.evaluate(() => {
-                const keysToRemove: string[] = [];
-                for (let i = 0; i < localStorage.length; i++) {
-                    const key = localStorage.key(i);
-                    if (key && key.includes(':') && !key.startsWith('http')) {
-                        keysToRemove.push(key);
-                    }
-                }
-                keysToRemove.forEach(key => localStorage.removeItem(key));
-            });
-
-            const modal = await openExportImportModal(page);
-
-            // Should show "no characters" message
-            await expect(modal, 'should show no characters message').toContainText('Brak zapisanych postaci');
 
             await closeExportImportModal(page);
         });

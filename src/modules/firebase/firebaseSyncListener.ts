@@ -220,13 +220,11 @@ class FirebaseSyncListener {
             const settings = loadFirebaseSettings();
             if (!settings.autoSyncEnabled) return;
 
-            const enabledCategories = SYNC_CATEGORIES.filter(cat => settings.syncOptions[cat]);
-
             const applied: SyncCategory[] = [];
             const pendingPassphrase: SyncCategory[] = [];
             const conflicts: CategoryConflictInfo[] = [];
 
-            for (const category of enabledCategories) {
+            for (const category of SYNC_CATEGORIES) {
                 if (isCategoryDeviceScoped(category)) {
                     // Device-scoped: find the most recent payload from sync group members
                     const payload = data ? this.findRelevantDevicePayload(data, category, deviceId) : undefined;

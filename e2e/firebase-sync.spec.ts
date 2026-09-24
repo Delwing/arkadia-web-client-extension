@@ -194,90 +194,6 @@ test.describe('Firebase Sync', () => {
         });
     });
 
-    test.describe('Firebase Settings Storage', () => {
-        test('saves sync options to localStorage', async ({ page }) => {
-            await page.goto('/');
-            await waitForCommandInput(page);
-            await ensureGameSocket(page);
-
-            // Set Firebase settings
-            await page.evaluate(() => {
-                const settings = {
-                    syncOptions: {
-                        triggers: true,
-                        aliases: true,
-                        killCounts: false,
-                        visitedRooms: false,
-                    },
-                    encryptionEnabled: false,
-                    autoSyncEnabled: true,
-                    categorySyncTimes: {},
-                    deviceId: 'test-device',
-                };
-                localStorage.setItem('arkadia.firebaseSettings', JSON.stringify(settings));
-            });
-
-            // Verify settings are saved
-            const savedSettings = await page.evaluate(() => {
-                const raw = localStorage.getItem('arkadia.firebaseSettings');
-                return raw ? JSON.parse(raw) : null;
-            });
-
-            expect(savedSettings).toBeTruthy();
-            expect(savedSettings.syncOptions.triggers).toBe(true);
-            expect(savedSettings.syncOptions.killCounts).toBe(false);
-            expect(savedSettings.autoSyncEnabled).toBe(true);
-        });
-
-        test('loads default sync options when none saved', async ({ page }) => {
-            await page.goto('/');
-            await waitForCommandInput(page);
-            await ensureGameSocket(page);
-
-            // Clear any existing settings
-            await page.evaluate(() => {
-                localStorage.removeItem('arkadia.firebaseSettings');
-            });
-
-            // Load default settings as the app would
-            const defaults = await page.evaluate(() => {
-                const raw = localStorage.getItem('arkadia.firebaseSettings');
-                if (!raw) {
-                    return {
-                        syncOptions: {
-                            uiSettings: true,
-                            binds: true,
-                            shortcuts: true,
-                            characterSettings: true,
-                            triggers: true,
-                            aliases: true,
-                            multibinds: true,
-                            buttons: true,
-                            radial: true,
-                            visitedRooms: true,
-                            locationNotes: true,
-                            killCounts: true,
-                            improveCounts: true,
-                            deposits: true,
-                            containers: true,
-                        },
-                        encryptionEnabled: false,
-                        autoSyncEnabled: false,
-                        categorySyncTimes: {},
-                        deviceId: 'test',
-                    };
-                }
-                return JSON.parse(raw);
-            });
-
-            // All sync options should default to true
-            expect(defaults.syncOptions.triggers).toBe(true);
-            expect(defaults.syncOptions.killCounts).toBe(true);
-            expect(defaults.syncOptions.visitedRooms).toBe(true);
-            expect(defaults.autoSyncEnabled).toBe(false);
-        });
-    });
-
     test.describe('Category Sync Times', () => {
         test('tracks last sync time per category', async ({ page }) => {
             await page.goto('/');
@@ -289,7 +205,6 @@ test.describe('Firebase Sync', () => {
             // Set sync times for different categories
             await page.evaluate((timestamp) => {
                 const settings = {
-                    syncOptions: {},
                     encryptionEnabled: false,
                     autoSyncEnabled: false,
                     categorySyncTimes: {
@@ -323,7 +238,6 @@ test.describe('Firebase Sync', () => {
             // Set old sync time
             await page.evaluate((ts) => {
                 const settings = {
-                    syncOptions: {},
                     encryptionEnabled: false,
                     autoSyncEnabled: false,
                     categorySyncTimes: { triggers: ts },
@@ -617,30 +531,6 @@ test.describe('Firebase Sync', () => {
             // Check for the disabled message or error state
             const content = await modal.textContent();
             expect(content).toContain('Firebase');
-
-            await closeModal(page);
-        });
-
-        test('sync options checkboxes exist for all categories', async ({ page }) => {
-            await page.goto('/');
-            await waitForCommandInput(page);
-            await ensureGameSocket(page);
-
-            const modal = await openFirebaseTab(page);
-
-            // Switch to Plik tab to see local export options (which mirror sync categories)
-            await goToSettingsPage(page, 'data-backup');
-
-            // Check some export options exist
-            const triggerOption = modal.locator('[id*="export-option-triggers"]');
-            const aliasOption = modal.locator('[id*="export-option-aliases"]');
-
-            // These should exist (even if not visible depending on UI state)
-            const triggersExists = await triggerOption.count();
-            const aliasesExists = await aliasOption.count();
-
-            // At least some options should exist
-            expect(triggersExists + aliasesExists).toBeGreaterThan(0);
 
             await closeModal(page);
         });

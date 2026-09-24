@@ -2,7 +2,7 @@
 
 Dev-facing. `docs/` root is user-facing (see `docs/SYNCHRONIZACJA.md`); this file is deliberately in `docs/dev/`.
 
-Status: **proposal, not started.** Replaces the category/checksum sync in `src/modules/firebase/` and the
+Status: **stage 1 done** (one registry and serializer, no per-category or per-character selection); stages 2–5 not started. Replaces the category/checksum sync in `src/modules/firebase/` and the
 `character:key` localStorage layout for user data.
 
 ---

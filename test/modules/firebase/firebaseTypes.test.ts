@@ -10,7 +10,6 @@ import {
     FIREBASE_CONFIG_KEY,
     FIREBASE_SETTINGS_KEY,
     FIREBASE_DEVICE_ID_KEY,
-    DEFAULT_SYNC_OPTIONS,
 } from '@modules/firebase/firebaseTypes';
 import { isEncryptedData } from '@modules/firebase/firebaseCrypto';
 
@@ -77,19 +76,6 @@ describe('loadFirebaseSettings', () => {
         expect(settings.autoSyncEnabled).toBe(false);
         expect(settings.encryptionEnabled).toBe(false);
         expect(settings.categorySyncTimes).toEqual({});
-        expect(settings.syncOptions).toEqual(DEFAULT_SYNC_OPTIONS);
-    });
-
-    test('default syncOptions has all sync categories enabled', () => {
-        const settings = loadFirebaseSettings();
-        expect(settings.syncOptions.uiSettings).toBe(true);
-        expect(settings.syncOptions.binds).toBe(true);
-        expect(settings.syncOptions.triggers).toBe(true);
-        expect(settings.syncOptions.aliases).toBe(true);
-        expect(settings.syncOptions.visitedRooms).toBe(true);
-        expect(settings.syncOptions.locationNotes).toBe(true);
-        expect(settings.syncOptions.killCounts).toBe(true);
-        expect(settings.syncOptions.peopleEdits).toBe(true);
     });
 
     test('default deviceId is populated via getDeviceId', () => {
@@ -103,20 +89,17 @@ describe('loadFirebaseSettings', () => {
         const settings = loadFirebaseSettings();
         expect(settings.autoSyncEnabled).toBe(true);
         expect(settings.encryptionEnabled).toBe(false);
-        expect(settings.syncOptions).toEqual(DEFAULT_SYNC_OPTIONS);
         expect(settings.categorySyncTimes).toEqual({});
     });
 
-    test('merges partial syncOptions with defaults', () => {
+    test('ignores per-category syncOptions left by older versions', () => {
         localStorage.setItem(FIREBASE_SETTINGS_KEY, JSON.stringify({
+            autoSyncEnabled: true,
             syncOptions: { uiSettings: false, binds: false },
         }));
         const settings = loadFirebaseSettings();
-        expect(settings.syncOptions.uiSettings).toBe(false);
-        expect(settings.syncOptions.binds).toBe(false);
-        // All other sync options should remain at their defaults (true)
-        expect(settings.syncOptions.triggers).toBe(true);
-        expect(settings.syncOptions.aliases).toBe(true);
+        expect(settings.autoSyncEnabled).toBe(true);
+        expect(settings).not.toHaveProperty('syncOptions');
     });
 
     test('restores all stored fields when all are present', () => {
@@ -124,14 +107,12 @@ describe('loadFirebaseSettings', () => {
             autoSyncEnabled: true,
             encryptionEnabled: true,
             categorySyncTimes: { binds: 1700000000000 },
-            syncOptions: { ...DEFAULT_SYNC_OPTIONS, uiSettings: false },
         };
         localStorage.setItem(FIREBASE_SETTINGS_KEY, JSON.stringify(stored));
         const settings = loadFirebaseSettings();
         expect(settings.autoSyncEnabled).toBe(true);
         expect(settings.encryptionEnabled).toBe(true);
         expect(settings.categorySyncTimes).toEqual({ binds: 1700000000000 });
-        expect(settings.syncOptions.uiSettings).toBe(false);
     });
 
     test('falls back to false for encryptionEnabled when stored value is not boolean', () => {
@@ -166,7 +147,6 @@ describe('loadFirebaseSettings', () => {
         const settings = loadFirebaseSettings();
         expect(settings.autoSyncEnabled).toBe(false);
         expect(settings.encryptionEnabled).toBe(false);
-        expect(settings.syncOptions).toEqual(DEFAULT_SYNC_OPTIONS);
     });
 
     test('handles null stored value gracefully and returns defaults', () => {

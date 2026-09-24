@@ -203,40 +203,14 @@ export async function simulateConflict(
 export async function enableFirebaseSettings(page: Page, options: {
     autoSync?: boolean;
     encryption?: boolean;
-    categories?: string[];
 } = {}): Promise<void> {
     await page.evaluate((opts) => {
         const settings = {
-            syncOptions: {
-                uiSettings: true,
-                binds: true,
-                shortcuts: true,
-                characterSettings: true,
-                triggers: true,
-                aliases: true,
-                multibinds: true,
-                buttons: true,
-                radial: true,
-                visitedRooms: true,
-                locationNotes: true,
-                killCounts: true,
-                improveCounts: true,
-                deposits: true,
-                containers: true,
-            },
             encryptionEnabled: opts.encryption ?? false,
             autoSyncEnabled: opts.autoSync ?? false,
             categorySyncTimes: {},
             deviceId: (window as any).__MOCK_DEVICE_ID__ || 'test-device',
         };
-
-        // Apply category overrides
-        if (opts.categories) {
-            Object.keys(settings.syncOptions).forEach(key => {
-                (settings.syncOptions as any)[key] = opts.categories!.includes(key);
-            });
-        }
-
         localStorage.setItem('arkadia.firebaseSettings', JSON.stringify(settings));
     }, options);
 }

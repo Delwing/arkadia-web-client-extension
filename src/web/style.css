@@ -2139,23 +2139,6 @@ span.import-source__icon > svg {
   max-width: 26rem;
   gap: 12px;
 }
-/* Section title with its bulk actions on the right. */
-.export-section__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-.export-option-groups {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
-  gap: 14px 20px;
-}
-.export-option-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
 
 /* Settings dialog: the shell itself (sidebar, search, page columns) lives in
    src/web/settings/settingsDialog.css; this only sizes the window. */

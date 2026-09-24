@@ -38,7 +38,7 @@ Po zalogowaniu zobaczysz informacje o koncie (email, metoda logowania). Kliknij 
 
 ## Synchronizowane kategorie
 
-Mozesz wybrac, ktore kategorie danych maja byc synchronizowane. Kazda kategorie mozna wlaczyc lub wylaczyc niezaleznie.
+Synchronizowane sa zawsze wszystkie ponizsze kategorie - nie trzeba (i nie da sie) wybierac, co ma byc wysylane. Dotyczy to tez wszystkich postaci.
 
 | Kategoria | Opis |
 |-----------|------|
@@ -60,6 +60,9 @@ Mozesz wybrac, ktore kategorie danych maja byc synchronizowane. Kazda kategorie 
 | **Depozyty** | Dane o depozytach |
 | **Pojemniki** | Konfiguracja pojemnikow |
 | **Edycje bazy postaci** | Lokalne edycje bazy postaci |
+| **Wiedza** | Postepy w bibliotekach i ksiazkach, wiedza, ticki i poziomy |
+
+Kopia zapasowa (plik lub Google Drive, w **Ustawienia > Kopia zapasowa**) zawiera zawsze wszystkie te dane, a dodatkowo nagrania sesji i zainstalowane skrypty.
 
 ### Kategorie powiazane z urzadzeniem
 
@@ -96,7 +99,6 @@ Mozesz miec otwartych kilka kart klienta jednoczesnie - wysylaniem zmian zajmuje
 1. Przejdz do **Ustawienia > Firebase**
 2. Zaloguj sie na konto
 3. Zaznacz "Automatyczna synchronizacja"
-4. Wybierz kategorie, ktore chcesz synchronizowac
 
 ---
 
@@ -106,7 +108,7 @@ Jesli nie chcesz korzystac z automatycznej synchronizacji, mozesz synchronizowac
 
 ### Wysylanie do chmury
 
-Kliknij przycisk **"Synchronizuj teraz"** w zakladce Firebase. Wyslane zostana wszystkie wlaczone kategorie.
+Kliknij przycisk **"Synchronizuj teraz"** w zakladce Firebase. Wyslane zostana wszystkie zmienione kategorie.
 
 ### Pobieranie z chmury
 
@@ -267,7 +269,6 @@ Jesli chcesz usunac wszystkie swoje dane z chmury:
 
 - Sprawdz, czy jestes zalogowany
 - Sprawdz, czy automatyczna synchronizacja jest wlaczona
-- Sprawdz, czy wybrane kategorie sa zaznaczone do synchronizacji
 - Sprawdz polaczenie internetowe
 
 ### Nie moge odszyfrowac danych
@@ -280,7 +281,6 @@ Jesli chcesz usunac wszystkie swoje dane z chmury:
 
 - Poczekaj do 30 sekund (szybka synchronizacja) lub 10 minut (wolna synchronizacja)
 - Sprawdz, czy na obu urzadzeniach jestes zalogowany na to samo konto
-- Sprawdz, czy kategoria jest wlaczona na obu urzadzeniach
 - Dla ustawien interfejsu i przyciskow - sprawdz, czy urzadzenia sa w tej samej [grupie synchronizacji](#grupy-synchronizacji)
 - Sprobuj recznie zsynchronizowac przyciskiem "Synchronizuj teraz"
 

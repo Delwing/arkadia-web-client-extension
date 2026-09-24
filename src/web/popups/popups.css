@@ -7887,19 +7887,6 @@ select.popup-input.popup-input--control {
   justify-content: space-between;
   gap: 8px;
 }
-.firebase-sync__groups {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-}
-.firebase-sync__group-name {
-  margin-bottom: 4px;
-}
-.firebase-sync__category {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
 .firebase-sync__actions {
   flex-shrink: 0;
   padding-top: 8px;

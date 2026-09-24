@@ -1,44 +1,27 @@
-import { useCallback, useState, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import LocalExportTab from "./LocalExportTab";
 import GoogleDriveTab from "./GoogleDriveTab";
 import FirebaseTab from "./FirebaseTab";
 import DeviceManagementTab from "./DeviceManagementTab";
 import ImportPage from "../imports/ImportPage";
-import { collectCharacters, DEFAULT_EXPORT_OPTIONS, type ExportOptions } from "./exportUtils";
 
 type DataPageKey = "data-sync" | "data-backup" | "data-devices" | "data-import";
 
 /**
  * The "Dane" pages of the settings dialog: sync, backup and devices, which used
- * to be the tabs of the separate "Eksport i import" window. Google Drive backs
- * up the same selection the file export shows, so that state lives here.
+ * to be the tabs of the separate "Eksport i import" window. A backup always
+ * contains all data, to a file or to Google Drive.
  */
 export function useDataPages(): { pages: Record<DataPageKey, ReactNode> } {
-    const [selectedCharacters, setSelectedCharacters] = useState<string[]>(() => collectCharacters());
-    const [exportOptions, setExportOptions] = useState<ExportOptions>({ ...DEFAULT_EXPORT_OPTIONS });
-
-    const handleSelectionChange = useCallback((characters: string[], options: ExportOptions) => {
-        setSelectedCharacters(characters);
-        setExportOptions(options);
-    }, []);
-
-    const handleImportComplete = useCallback(() => {
-        setSelectedCharacters(collectCharacters());
-    }, []);
-
     return {
         pages: {
-            "data-sync": <FirebaseTab onImportComplete={handleImportComplete} />,
+            "data-sync": <FirebaseTab />,
             "data-backup": (
                 <div className="ui-settings-stack">
-                    <LocalExportTab onSelectionChange={handleSelectionChange} />
+                    <LocalExportTab />
                     <section className="character-settings-section">
                         <h5 className="character-settings-section-title">Google Drive</h5>
-                        <GoogleDriveTab
-                            selectedCharacters={selectedCharacters}
-                            exportOptions={exportOptions}
-                            onImportComplete={handleImportComplete}
-                        />
+                        <GoogleDriveTab />
                     </section>
                 </div>
             ),

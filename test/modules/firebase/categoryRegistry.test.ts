@@ -1,13 +1,12 @@
 import {
-    CATEGORY_GROUPS,
+    BACKUP_CATEGORIES,
+    BACKUP_ONLY_REGISTRY,
     CATEGORY_REGISTRY,
     COLD_STORAGE_KEYS,
     COLD_SYNC_CATEGORIES,
-    DEFAULT_SYNC_OPTIONS,
     DEVICE_SCOPED_SYNC_CATEGORIES,
     SYNC_CATEGORIES,
     SYNC_CATEGORY_NAMES,
-    getCategoriesByGroup,
     getCategoryDefinition,
     type CategoryDefinition,
     type SyncCategory,
@@ -77,12 +76,6 @@ describe('CATEGORY_REGISTRY', () => {
         }
     });
 
-    it('all categories sync by default', () => {
-        for (const cat of SYNC_CATEGORIES) {
-            expect(DEFAULT_SYNC_OPTIONS[cat]).toBe(true);
-        }
-    });
-
     it('derives the cold categories used by the debounce manager', () => {
         expect(new Set(COLD_SYNC_CATEGORIES)).toEqual(new Set(['killCounts', 'visitedRooms']));
     });
@@ -95,21 +88,16 @@ describe('CATEGORY_REGISTRY', () => {
         expect(new Set(DEVICE_SCOPED_SYNC_CATEGORIES)).toEqual(new Set(['uiSettings', 'buttons']));
     });
 
-    it('assigns every category to exactly one declared UI group', () => {
-        const groupIds = new Set(CATEGORY_GROUPS.map(g => g.id));
-        for (const cat of SYNC_CATEGORIES) {
-            expect(groupIds.has(getCategoryDefinition(cat).group)).toBe(true);
+    it('backs up every synced category plus the backup-only ones', () => {
+        expect(BACKUP_CATEGORIES).toEqual([...SYNC_CATEGORIES, 'scripts', 'recordings']);
+        for (const cat of Object.keys(BACKUP_ONLY_REGISTRY)) {
+            expect(SYNC_CATEGORIES).not.toContain(cat);
         }
     });
 
-    it('every UI group covers a disjoint, complete partition of categories', () => {
-        const seen = new Set<SyncCategory>();
-        for (const group of CATEGORY_GROUPS) {
-            for (const cat of getCategoriesByGroup(group.id)) {
-                expect(seen.has(cat)).toBe(false);
-                seen.add(cat);
-            }
-        }
-        expect(seen).toEqual(new Set(SYNC_CATEGORIES));
+    it('resolves definitions of backup-only categories', () => {
+        expect(getCategoryDefinition('scripts').globalKeys).toEqual(['scripts', 'stored_scripts']);
+        expect(getCategoryDefinition('recordings').customSync).toBe(true);
+        expect(getCategoryDefinition('triggers')).toBe(CATEGORY_REGISTRY.triggers);
     });
 });
