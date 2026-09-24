@@ -299,4 +299,27 @@ describe('MovementManager', () => {
     expect(clientAdapterMock.send).toHaveBeenCalledWith('przemknij z druzyna polnoc', false, undefined);
   });
 
+  test('przemknij na <direction> moves the map and keeps "na"', () => {
+    const client = new Client(clientAdapterMock);
+    moveFn.mockClear();
+    client.movementManager.sendMovement('przemknij na polnoc', true);
+    expect(moveFn).toHaveBeenCalledWith('polnoc');
+    expect(clientAdapterMock.send).toHaveBeenCalledWith('przemknij na polnoc', false, undefined);
+  });
+
+  test('przemknij z druzyna na <direction> moves the map and keeps "na"', () => {
+    const client = new Client(clientAdapterMock);
+    moveFn.mockClear();
+    client.movementManager.sendMovement('przemknij z druzyna na poludnie', true);
+    expect(moveFn).toHaveBeenCalledWith('poludnie');
+    expect(clientAdapterMock.send).toHaveBeenCalledWith('przemknij z druzyna na poludnie', false, undefined);
+  });
+
+  test('przemknij with a remapped exit keeps the prefix', () => {
+    const client = new Client(clientAdapterMock);
+    resolveFn.mockImplementationOnce(() => 'nw');
+    client.movementManager.sendMovement('przemknij w', true);
+    expect(clientAdapterMock.send).toHaveBeenCalledWith('przemknij nw', false, undefined);
+  });
+
 });

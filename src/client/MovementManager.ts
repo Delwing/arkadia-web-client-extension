@@ -30,6 +30,17 @@ export default class MovementManager {
         } else {
             direction = command;
         }
+        // "przemknij na polnoc" is as valid as "przemknij polnoc" - keep the "na" in the prefix
+        // so the command goes out the way it was typed.
+        if (movePrefix && direction.startsWith('na ') && isDirection(direction.substring(3))) {
+            movePrefix += 'na ';
+            direction = direction.substring(3);
+        }
+        // Map.move re-sends a remapped direction ("w" recorded as "nw") as a bare command, which
+        // would drop the sneak prefix - resolve it here so move() takes it as-is.
+        if (movePrefix && !this.carriageMode) {
+            direction = this.client.Map.resolveDirection(direction);
+        }
 
         const isOriginalDirection = isDirection(direction);
 
