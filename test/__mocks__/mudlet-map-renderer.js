@@ -52,6 +52,7 @@ function createSettings() {
     roomSize: 0.6,
     lineWidth: 0.025,
     lineColor: 'rgb(225, 255, 225)',
+    currentRoomColor: '#784800',
     backgroundColor: '#000000',
     instantMapMove: false,
     highlightCurrentRoom: true,

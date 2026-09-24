@@ -132,6 +132,7 @@ const CONSTRAINTS: Record<string, Constraint> = {
     mapRoomShape: { type: 'enum', enumValues: ['rectangle', 'circle', 'roundedRectangle'] },
     mapBackgroundColor: { type: 'color' },
     mapLineColor: { type: 'color' },
+    mapCurrentRoomColor: { type: 'color' },
     pathFindingAlgorithm: { type: 'enum', enumValues: ['dijkstra', 'astar'] },
     labelRenderMode: { type: 'enum', enumValues: ['image', 'data', 'none'] },
 

@@ -96,6 +96,7 @@ export interface MapSettings {
     mapRoomShape: MapRoomShape;
     mapBackgroundColor: string;
     mapLineColor: string;
+    mapCurrentRoomColor: string;
     pathFindingAlgorithm: PathFindingAlgorithm;
     highlightCurrentRoom: boolean;
     labelRenderMode: 'image' | 'data' | 'none';

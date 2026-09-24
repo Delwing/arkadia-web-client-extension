@@ -243,6 +243,9 @@ export class EmbeddedMap {
                 if (typeof parsed.mapLineColor === 'string') {
                     settings.lineColor = parsed.mapLineColor;
                 }
+                if (typeof parsed.mapCurrentRoomColor === 'string') {
+                    settings.currentRoomColor = parsed.mapCurrentRoomColor;
+                }
             }
         } catch {
             // ignore malformed data
