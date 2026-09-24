@@ -2,7 +2,7 @@
 
 Dev-facing. `docs/` root is user-facing (see `docs/SYNCHRONIZACJA.md`); this file is deliberately in `docs/dev/`.
 
-Status: **stage 1 done** (one registry and serializer, no per-category or per-character selection); stages 2–5 not started. Replaces the category/checksum sync in `src/modules/firebase/` and the
+Status: **stage 1 done** (one registry and serializer, no per-category or per-character selection); stage 2a done (change tracking core, localStorage types); stage 2b in progress. Replaces the category/checksum sync in `src/modules/firebase/` and the
 `character:key` localStorage layout for user data.
 
 ---
@@ -119,8 +119,12 @@ Each type declares a rule per field. Timestamps are HLC stamps (section 6.2).
 | **newest-observation** | Highest observation stamp wins | A snapshot of state the game reported | wiedza entry lists per category, deposits, containers, enemy resistances, złom items, `expectedDuration` of a transport segment |
 | **earliest** | Lowest stamp wins | An observed transition: the first device that saw it saw it happen, later devices only noticed | knowledge `level_change` (per character/category/level), oswajanie level-up (per character/animal/level), "first visited at" |
 | **union** | Set union by id; the same fact from two devices is one element | Facts that are either observed or not | visited rooms, ticks, profession events, people edits, deliveries, feeding entries |
-| **sum** | Sum of increments, each folded exactly once | Counts | kills, improve counts |
+| **counter** | Each device owns one slot per item (its own contribution, **newest** within the slot); the value is the sum of slots | Counts | kills, improve counts |
 | **max** / **min** | Extreme value in a declared order | Progress that only moves forward; records | library status (`not_started` < `in_progress` < `completed`), book (`in_progress` < `read`), transport `longestDuration` (max) and `shortestDuration` (min) — only the current extremes, no history |
+
+Counters use slots rather than increments because values are detected by comparison (section 6): a
+device's contribution is its local total minus the other devices' slots. Only the owner writes a slot, so
+there's never a conflict, and a manual correction can lower a count.
 
 Deletions: a delete is a tombstone `{deleted: true, stamp}` under the **newest** rule. A delete that is
 newer than an edit wins, and vice versa. Only user-edited types (newest) can be deleted; accumulated types
@@ -150,68 +154,70 @@ knowing how many feedings it took between level-ups:
   observed twice on two devices, so no deduplication beyond the id is needed. Same for deliveries.
 - The `active` flag of a feeding entry and food groups are **newest**.
 
-## 6. Local storage model
+## 6. Local change tracking
 
-### 6.1 One user-data store
+Data stays where it is today: settings in localStorage (`character:key` for per-character values), large
+data in the per-feature IndexedDB databases. Sync never changes how features read or write their data.
+(An earlier draft moved everything into one IndexedDB store behind `TypedStorage`; rejected because 135
+direct `localStorage` calls in 27 files and 43 e2e specs seeding `localStorage` would all bypass or break
+it, and startup would have to await IndexedDB.)
 
-A single IndexedDB database `ArkadiaUserData` with one object store:
+### 6.1 Adapters and the tracking copy
+
+- Each synced type has an **adapter**: `read()` lists the current local items (one per alias, per room,
+  per character key, …) and `write(changes)` applies merged items back through the feature's own storage.
+- A new IndexedDB database `ArkadiaUserData` keeps the **tracking copy**: the last known record of every
+  item, with its merge metadata.
 
 ```ts
 interface UserRecord {
     type: string;            // registry type, e.g. 'aliases', 'knowledgeEvents'
     scope: string;           // 'global' | `char:${name}` | `device:${deviceId}`
     key: string;             // item key within the type, e.g. alias id, room id, event id
-    value: unknown;          // absent when deleted
+    value?: unknown;         // absent when deleted
     deleted?: true;
     stamp: string;           // HLC, section 6.2
     origin: string;          // device id that produced this version
     seq: number;             // origin's local sequence number (for sync cursors)
 }
-// primary key: [type, scope, key]; indexes: [origin, seq], [type, scope]
+// primary key: [type, scope, key]; index: [origin, seq]
 ```
-
-- Replaces `character:key` in localStorage and the per-feature IndexedDB databases in 4.1. The character
-  is an explicit `scope`, not a key prefix to parse.
-- New event ids are `${deviceId}:${seq}`, unique across devices without coordination.
-- `TypedStorage` / `characterStorage` / `globalStorage` keep their API and become a façade over an
-  in-memory cache of this store, loaded once at startup, writing through. Call sites don't change.
-- Feature stores keep their public functions but read and write through the user-data store instead of
-  their own databases.
-- Cross-tab propagation moves from the localStorage `storage` event to a `BroadcastChannel`.
-- localStorage keeps only what must be readable synchronously before startup: device id, current
-  character, theme (avoids a flash), the "user-data store ready" flag. Non-synced runtime state
-  (`mapperRoomId` and similar) can stay in localStorage and never touches sync.
-
-Startup: the web app awaits `userData.load()` before `registerScripts`. Stage 2 must measure this on a
-large profile (target: under 100 ms for a typical user) and on phones.
 
 ### 6.2 Stamps
 
-Hybrid logical clock: `(wallMs, counter, deviceId)`, encoded as a sortable string. Every local write takes
+Hybrid logical clock: `(wallMs, counter, deviceId)`, encoded as a sortable string. Every local stamp takes
 `max(now, lastStamp) + counter`, and every received record advances the local clock. This gives a total
-order even with a skewed phone clock, and `deviceId` breaks ties deterministically.
+order even with a skewed phone clock, and `deviceId` breaks ties deterministically. Rules that compare
+game events (earliest level-up, ticks) use the event's own timestamp from the data where it has one.
 
-### 6.3 Recording changes
+### 6.3 Detecting changes
 
-- Settings in localStorage today: `TypedStorage.set(key, next)` knows the previous value; the type's
-  `diff(prev, next)` produces per-item records (e.g. only the alias that changed). Scripts need no changes.
-- Event-like data (ticks, kills, visits, deliveries, feedings): the feature store writes one record per
-  event, with the event id as key.
-- Every local write bumps `seq` and marks the record pending upload (the outbox is the `[origin, seq]`
-  index filtered to the local device, above the last uploaded seq).
+- **Capture** compares `read()` with the tracking copy. An item that is new or different becomes a record
+  with a fresh stamp and the next local `seq`; a tracked item missing locally becomes a tombstone for
+  deletable (user-edited) types, and is written back for accumulated types (no reset, section 2).
+- Capture runs on every upload tick, and a type can request an immediate capture after a write (e.g.
+  `TypedStorage` changes to its keys) so stamps stay close to the actual edit.
+- Every write path is covered, including direct `localStorage` calls and e2e seeding.
+- The **first capture** on a device seeds the tracking copy from all local data; its records are the
+  one-time full upload of section 10.2.
+- **Apply** merges incoming records into the tracking copy by the type's rule and writes items whose merged
+  value differs from local data through the adapter.
+- The **outbox** is the local device's records above the last uploaded `seq`. A local record already
+  superseded by a remote one is no longer in the tracking copy and needs no upload.
 
 ## 7. Registry
 
-One entry per type replaces `CATEGORY_REGISTRY` and the `switch` blocks in `exportUtils`:
+One entry per type, next to the category registry (which keeps serving the v1 format and backups until
+stage 5):
 
 ```ts
-interface SyncedType<V> {
+interface UserDataType<V> {
     id: string;
     scope: 'global' | 'character' | 'device';
-    rule: MergeRule | Record<string, MergeRule>;   // per field when the value is an object
-    diff?(prev: V | undefined, next: V | undefined): Array<{ key: string; value?: V; deleted?: true }>;
-    compact?: CompactionPolicy;                    // e.g. drop ticks before the last level change
-    legacy?: { localStorageKey?: string; characterKey?: string; importV1?(raw: string): UserRecord[] };
+    rule: MergeRule<V>;        // newest | earliest | union | counter | max/min | custom merge
+    deletable?: boolean;       // user-edited types; accumulated types can't be deleted
+    read(): LocalItem<V>[] | Promise<LocalItem<V>[]>;
+    write(changes: ItemChange<V>[]): void | Promise<void>;
 }
 ```
 
@@ -270,10 +276,10 @@ users/{uid}/syncV2/base__{n}   overflow shard, only when `base` nears 768 KiB
   tab doesn't retry in a loop (battery), and each return costs the same 1 read whether the gap was
   2 minutes or 2 days.
 - **One listener per browser.** Only the tab holding the sync Web Lock (as `syncEngine` does today)
-  listens and uploads; other tabs receive applied records over `BroadcastChannel`.
+  listens and uploads. Other tabs see applied localStorage values through the browser's `storage` event;
+  IndexedDB-backed types notify them over a `BroadcastChannel`.
 - **Open tabs must reflect applied records:** feature stores and scripts with in-memory copies (knowledge
-  script, `DataStore` caches, the knowledge events cache, the złom cache) subscribe to the user-data store
-  and reload. Stage 2 audits every such cache.
+  script, `DataStore` caches, the knowledge events cache, the złom cache) reload when their adapter writes. Stage 2 audits every such cache.
 - **Duplicates don't matter.** A batch delivered twice (overlapping resume, two snapshots) resolves to the
   same result: records are keyed and stamped, and every rule is idempotent. Delivery affects timing and
   cost, never correctness.
@@ -374,10 +380,9 @@ The `SyncTransport` interface (section 8) keeps either move contained.
 
 ### 10.1 Local (stage 2)
 
-On first start, `migrateToUserData()` reads every legacy source in 4.1 (localStorage keys and the
-per-feature databases) and writes records stamped with the migration time and the local device id. Old
-sources are kept read-only for one release, then deleted. Idempotent: guarded by the ready flag, and
-records are keyed, so a rerun overwrites with identical values.
+Nothing moves. The first capture seeds the tracking copy from the data where it already is. Oswajanie
+feeding and level entries get stable ids (`${deviceId}:${n}`) instead of their auto-increment keys, which
+would collide across devices.
 
 ### 10.2 Cloud (stage 5)
 
@@ -425,7 +430,8 @@ Each stage is shippable on its own and keeps the app working.
 | # | Stage | Contents | Done when |
 |---|---|---|---|
 | 1 | Registry and serializer | One registry, one export/import path for Firebase, Drive and files; remove `syncOptions`, `ExportOptions`, character picker. Cloud format unchanged. | `buildExport` / `exportCategories` are one path; options UI shows no per-category choices; existing sync unaffected |
-| 2 | User-data store | `ArkadiaUserData`, HLC, `TypedStorage` façade, feature stores ported (including the five newly synced stores), stable oswajanie ids, `BroadcastChannel`, local migration, cache audit | All synced types read/write through the store; startup cost measured; e2e green |
+| 2a | Change tracking core | HLC, `ArkadiaUserData` tracking copy, merge rules, capture / apply / outbox, adapters for the localStorage-backed types | Rule and capture/apply tests green for those types; no behavior change; e2e green |
+| 2b | IndexedDB-backed types | Adapters for knowledge, kills, visited rooms, notes, multibinds and the five newly synced stores; stable oswajanie ids; cache audit so applied records refresh open tabs | Every type in 4.1 has an adapter with round-trip tests; e2e green |
 | 3 | Sync engine v2 | `SyncTransport` on Firestore: `log` + `base`, outbox, batching, one listener with cursors and detach on hide, watching mode, compaction, encryption, usage counters — behind a flag | Two-device e2e (section 15) converges with the flag on; measured ops per session fit section 9.3 |
 | 4 | Types on v2 | Knowledge first, then kills, visited rooms, profession, notes, multibinds, the five new stores, then settings types with `diff` | Each type round-trips through v2 with its rule tests |
 | 5 | Cloud migration, backup, cleanup | v1 import, one-time seed per device, one-way bridge, v1 write lock in security rules, restore with epochs, then removal of v1 code and conflict UI | Flag removed; v1 code deleted after the window |
@@ -464,8 +470,9 @@ Nothing left open.
 - **Rule tests** (Vitest): for every rule and type, randomized record sets checking that merge is
   commutative, associative and idempotent, and that folding into base then reading equals reading the raw
   log.
-- **Store tests:** `TypedStorage` façade parity with the current localStorage behavior; local migration from
-  fixture profiles (including `character:key` data for several characters and every legacy database).
+- **Adapter tests:** for every type, capture from fixture profiles (including `character:key` data for
+  several characters and every legacy database), apply of remote records, and read-after-write round
+  trips.
 - **Two-device e2e** (Playwright, two browser contexts sharing a mocked Firestore via
   `e2e/support/firebase-fixtures.ts`): both tabs open and writing at the same time; one tab stale for a
   while and then editing; a phone-style tab killed with pending changes and reopened. Assert identical
@@ -482,8 +489,8 @@ Nothing left open.
 
 ## 16. Risks
 
-- **Startup latency** from awaiting the user-data store, especially on phones. Mitigation: measure in stage
-  2; keep boot-critical values in localStorage.
+- **Capture cost:** reading every type on each tick. Mitigation: ticks are minutes apart; per-type
+  capture on write for the hot paths; measure on a large profile in stage 2.
 - **Missed in-memory caches** showing stale data in open tabs. Mitigation: the cache audit in stage 2 and a
   store-level subscription used by every feature store.
 - **Free-tier quotas are shared by all users.** Mitigation: batching, one watched document, log compaction,
