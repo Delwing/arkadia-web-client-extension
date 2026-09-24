@@ -1,10 +1,10 @@
 import { expect, test } from './support/fixtures';
 import { ensureGameSocket, getLastOutgoingCommand, waitForCommandInput } from './support/mocks';
 import {Page} from "@playwright/test";
-import {openButtonsSettings, SETTINGS_SAVE} from "./support/settings";
+import {openSettings, SETTINGS_SAVE} from "./support/settings";
 
 function openMobileButtonsSettings(page: Page) {
-    return openButtonsSettings(page, 'ui-mobile-buttons');
+    return openSettings(page, 'ui-mobile-buttons');
 }
 
 

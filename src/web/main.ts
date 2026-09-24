@@ -53,8 +53,7 @@ import Keys from "./keys/Keys.tsx"
 import Scripts from "./options/Scripts.tsx"
 import AutomationWindow from "./automation/AutomationWindow.tsx"
 import Recordings from "./options/Recordings.tsx"
-import {CLOSE_SETTINGS_EVENT, OPEN_SETTINGS_PAGE_EVENT, SAVE_SETTINGS_EVENT, openSettingsPage, requestSettingsCategory, type OpenSettingsPageDetail, type SettingsCategoryKey} from "./settings/categories.ts";
-import {buttonsSettingsCategory} from "./settings/buttonsCategory.ts";
+import {CLOSE_SETTINGS_EVENT, OPEN_SETTINGS_PAGE_EVENT, SAVE_SETTINGS_EVENT, openSettingsPage, requestSettingsCategory, requestSettingsResume, type OpenSettingsPageDetail} from "./settings/categories.ts";
 import CharacterManagement from "./options/CharacterManagementModal.tsx"
 import Places from "./places/Places.tsx"
 import { OPEN_PLACE_EVENT, openPlace } from "./places/placesData.ts"
@@ -1066,10 +1065,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // The ⋯ menu next to the command line (Logi registers itself).
-    const openSettingsOn = (category: SettingsCategoryKey, overview = false) => {
-        requestSettingsCategory(category, {overview});
-        settingsModal?.show();
-    };
     const shareLocation = () => {
         const roomId = client.Map.currentRoom?.id;
         if (!roomId || !locationQrImage) {
@@ -1095,17 +1090,17 @@ document.addEventListener('DOMContentLoaded', () => {
         ['people-browser-button', 'Baza postaci', 'gra', 'users', () => eventBus.emit('peopleBrowser.popup.open')],
         ['npc-button', 'Odbiorcy paczek', 'gra', 'package', () => eventBus.emit('packageReceiver.popup.open')],
         ['share-location-button', 'Kod QR lokacji', 'gra', 'qr-code', shareLocation, 'Kod QR'],
-        ['options-button', 'Postać', 'ustawienia', 'settings', () => openSettingsOn('character-general', true)],
-        ['ui-settings-button', 'Interfejs', 'ustawienia', 'layout', () => openSettingsOn('ui-appearance', true)],
-        ['mobile-buttons-button', 'Przyciski', 'ustawienia', 'grid', () => openSettingsOn(buttonsSettingsCategory())],
-        ['mobile-radial-button', 'Menu kołowe', 'ustawienia', 'radial', () => openSettingsOn('ui-radial')],
-        ['export-import-button', 'Eksport / import', 'ustawienia', 'upload', () => window.dispatchEvent(new Event('show-export-import')), 'Eksport'],
         ['scripts-button', 'Skrypty (wtyczki)', 'narzedzia', 'code', () => scriptsModal?.show(), 'Skrypty'],
         ['data-sources-button', 'Źródła danych', 'narzedzia', 'database', () => eventBus.emit('dataSources.popup.open')],
         ['helper-button', 'Helper', 'narzedzia', 'plug', () => helperModal?.show()],
     ];
     builtins.forEach(([id, label, group, icon, onSelect, shortLabel, keywords], index) => {
         registerMainMenuItem({id, label, shortLabel, keywords, group, icon, order: (index + 1) * 10, onSelect, source: 'builtin'});
+    });
+    // One entry for the whole dialog: it opens where it was left (page, unsaved edits).
+    registerMainMenuItem({
+        id: 'settings-button', label: 'Ustawienia', group: 'ustawienia', icon: 'settings', order: 5, onSelect: () => { requestSettingsResume(); settingsModal?.show(); }, source: 'builtin',
+        keywords: ['opcje', 'postać', 'interfejs', 'przyciski', 'menu kołowe', 'eksport', 'import', 'synchronizacja', 'kopia'],
     });
     // Logi (170) registers itself in Narzędzia.
     registerMainMenuItem({id: 'docs-button', label: 'Dokumentacja', shortLabel: 'Pomoc', group: 'narzedzia', icon: 'book', order: 180, onSelect: () => eventBus.emit('docs.popup.open'), source: 'builtin'});

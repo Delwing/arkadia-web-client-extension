@@ -112,7 +112,7 @@ test('Package helper respects disabled setting and avoids assisting deliveries',
 
     const optionsModal = page.locator('#settings-modal');
     await page.click('#menu-button');
-    await page.click('#options-button');
+    await page.click('#settings-button');
     await expect(optionsModal, 'should open options modal').toBeVisible();
 
     const packageHelperToggle = optionsModal.locator('#packageHelper');
@@ -185,7 +185,7 @@ test('Package helper works after being disabled and re-enabled', async ({page}) 
     // Disable package helper
     const optionsModal = page.locator('#settings-modal');
     await page.click('#menu-button');
-    await page.click('#options-button');
+    await page.click('#settings-button');
     await expect(optionsModal, 'should open options modal').toBeVisible();
 
     const packageHelperToggle = optionsModal.locator('#packageHelper');
@@ -206,7 +206,7 @@ test('Package helper works after being disabled and re-enabled', async ({page}) 
 
     // Re-enable package helper
     await page.click('#menu-button');
-    await page.click('#options-button');
+    await page.click('#settings-button');
     await expect(optionsModal, 'should reopen options modal').toBeVisible();
 
     await expect(packageHelperToggle, 'should be unchecked after disabling').not.toBeChecked();
@@ -251,7 +251,7 @@ test('Package helper stays disabled after page reload', async ({page}) => {
     // Disable package helper
     const optionsModal = page.locator('#settings-modal');
     await page.click('#menu-button');
-    await page.click('#options-button');
+    await page.click('#settings-button');
     await expect(optionsModal, 'should open options modal').toBeVisible();
 
     await optionsModal.locator('#packageHelper').uncheck();

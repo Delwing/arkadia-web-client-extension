@@ -64,7 +64,7 @@ there. Commands: `/dodaj_skrot id nazwa`, `/pokaz_skroty`, `/usun_skrot nazwa`,
 `/prowadz nazwa`, `/note`.
 
 ## Change character settings (combat, herbs, collecting, language, ...)
-Path: `☰` → `Postać`.
+Path: `☰` → `Ustawienia` → group `Postać` in the sidebar.
 
 Per-character — stored under the currently logged-in character. The form is
 disabled until a character is selected. Covers: compass/exits, containers,
@@ -72,8 +72,10 @@ coin/item collecting (with per-enemy overrides), combat commands, herbs,
 `/dob` + `/op` slots, default language and language-switch aliases.
 
 ## Change interface / appearance / sound / buttons
-Path: `☰` → `Interfejs` (the same `Ustawienia` window, opened on its `Interfejs`
-group).
+Path: `☰` → `Ustawienia` → group `Interfejs` in the sidebar.
+
+`Ustawienia` is one window for everything; it reopens where the user left it
+(same page, unsaved edits kept until `Zapisz` or `Odrzuć zmiany`).
 
 Global — shared across characters on this device. Pages: `Wygląd` (fonts,
 colors, theme), `Okna` (`Menedżer Okien`, output window), `Komendy`,
@@ -81,13 +83,15 @@ colors, theme), `Okna` (`Menedżer Okien`, output window), `Komendy`,
 `Menu kołowe` (mobile radial menu), `Stopka`, `Mapa`, `Dźwięk i powiadomienia`,
 `Inne`. One `Zapisz` saves every page.
 
+The third group, `Dane`, holds `Synchronizacja`, `Kopia zapasowa` (settings
+export and import to a file), `Urządzenia` and `Import z innych klientów`. These
+act at once, outside `Zapisz`.
+
 ## Other menu entries worth knowing
 - `Nagrania` — session recordings
 - `Baza postaci` — known-players browser
 - `Odbiorcy paczek` — package receivers
 - `Kod QR lokacji` — QR code for the current room
-- `Przyciski` / `Menu kołowe` — open `Ustawienia` on those pages
-- `Eksport / import` — settings export and import
 - `Skrypty (wtyczki)` — user scripts / plugins
 - `Źródła danych` — downloaded game data
 - `Helper` — the companion app (global hotkeys, window management)
@@ -107,7 +111,7 @@ It stays off for users who declined the old offer, for mobile-like viewports,
 and for anyone who switched it off afterwards.
 
 If the user is on a desktop and does not have it on, it is worth offering:
-1. `☰` → `Interfejs`.
+1. `☰` → `Ustawienia`, group `Interfejs`.
 2. Page `Okna`, section `Menedżer Okien` → tick `Włącz menedżer okien`.
    Optionally tick `Kondycje` to also dock the condition list.
 3. Page `Przyciski mobilne` → **untick** `Pokaż przyciski na ekranie`

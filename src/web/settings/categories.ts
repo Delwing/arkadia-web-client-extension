@@ -102,6 +102,11 @@ export interface ShowSettingsDetail {
     overview?: boolean;
 }
 
+/** Before showing the dialog as it was left: pages that refresh on opening hear it, the page stays. */
+export function requestSettingsResume(): void {
+    window.dispatchEvent(new CustomEvent<ShowSettingsDetail>(SHOW_SETTINGS_EVENT, { detail: {} }));
+}
+
 export function requestSettingsCategory(category: SettingsCategoryKey, options: { overview?: boolean } = {}): void {
     window.dispatchEvent(new CustomEvent<ShowSettingsDetail>(SHOW_SETTINGS_EVENT, { detail: { category, ...options } }));
 }

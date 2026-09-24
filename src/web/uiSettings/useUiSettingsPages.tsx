@@ -56,9 +56,11 @@ export interface UiSettingsPages {
     pages: Record<UiCategoryKey, ReactNode>;
     /** Rendered once next to the pages (sub-dialogs). */
     extras: ReactNode;
-    /** Dialog opened: start from what is stored. */
+    /** Dialog opened fresh (or edits discarded): start from what is stored. */
     reload: () => void;
-    /** Dialog dismissed without saving: undo the live preview. */
+    /** Dialog reopened keeping its edits: what is stored plus the edits `revert` set aside. */
+    resume: () => void;
+    /** Dialog dismissed without saving: undo the live preview, setting the edits aside for `resume`. */
     revert: () => void;
     save: () => void;
 }
@@ -164,23 +166,43 @@ export function useUiSettingsPages({ soundManager, onEnableNotifications }: UiSe
         };
     }, []);
 
-    const reload = useCallback(() => {
+    // The edits a close set aside - only the keys that differed, so whatever
+    // changed in storage meanwhile shows through the rest.
+    const heldRef = useRef<Partial<UiSettingsType> | null>(null);
+
+    const refreshStored = useCallback(() => {
         const fresh = load();
         savedRef.current = fresh;
-        setDraft(fresh);
         const ls = loadLayoutState();
         setLayoutEnabled(ls.enabled);
         setLayoutObjectList(ls.enabledPanels.objectList);
-        setButtonsGeneration(g => g + 1);
         refreshExplorationStats();
         void updateMapVersion();
+        return fresh;
     }, []);
 
+    const reload = useCallback(() => {
+        heldRef.current = null;
+        setDraft(refreshStored());
+        setButtonsGeneration(g => g + 1);
+    }, [refreshStored]);
+
+    const resume = useCallback(() => {
+        const fresh = refreshStored();
+        setDraft({ ...fresh, ...heldRef.current });
+        heldRef.current = null;
+    }, [refreshStored]);
+
     const revert = useCallback(() => {
-        setDraft(savedRef.current);
+        const saved = savedRef.current;
+        const draft = draftRef.current;
+        const keys = changedKeys(saved, draft) as (keyof UiSettingsType)[];
+        heldRef.current = keys.length > 0 ? Object.fromEntries(keys.map(k => [k, draft[k]])) as Partial<UiSettingsType> : null;
+        setDraft(saved);
     }, []);
 
     const saveDraft = useCallback(() => {
+        heldRef.current = null;
         const normalized = normalizeForSave(draftRef.current);
         save(normalized);
         savedRef.current = normalized;
@@ -306,5 +328,5 @@ export function useUiSettingsPages({ soundManager, onEnableNotifications }: UiSe
         />
     );
 
-    return { pages, extras, reload, revert, save: saveDraft };
+    return { pages, extras, reload, resume, revert, save: saveDraft };
 }

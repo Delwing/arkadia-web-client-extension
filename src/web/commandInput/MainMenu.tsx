@@ -213,7 +213,9 @@ export default function MainMenu({ onOpenChange }: { onOpenChange?: (open: boole
             <div className="command-menu__sections">
               {sections.map((section) => (
                 <section key={section.key} className="command-menu__section" data-group={section.key}>
-                  <span className="command-menu__caption">{section.title}</span>
+                  {/* A lone entry named like its section (Ustawienia) needs no caption. */}
+                  {!(section.items.length === 1 && labelText(section.items[0]) === section.title)
+                    && <span className="command-menu__caption">{section.title}</span>}
                   <div className="command-menu__items">
                     {section.items.map((item) => (
                       <MainMenuEntry key={item.id} item={item} tile={phone} first={item === first} onRun={run} />

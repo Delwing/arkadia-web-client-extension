@@ -2,19 +2,21 @@ import {expect, test} from './support/fixtures';
 import type {Page} from '@playwright/test';
 import {ensureGameSocket, waitForCommandInput} from './support/mocks';
 import {
+    discardSettings,
     goToSettingsPage,
-    openButtonsSettings,
     openSettings,
+    openSettingsDialog,
     saveSettings,
+    SETTINGS_BUTTON,
+    SETTINGS_DISCARD,
     SETTINGS_MODAL,
     waitForSettingsModalClosed,
-    waitForSettingsModalShown,
 } from './support/settings';
 
 /**
- * The single settings dialog: character ("Ustawienia") and UI ("Interfejs")
- * settings share one window with a page sidebar, a search box and one
- * Save button.
+ * The single settings dialog: character and UI settings share one window with
+ * a page sidebar, a search box and one Save button. The menu has one
+ * "Ustawienia" entry, and the dialog reopens where it was left.
  */
 
 const settingsPage = (page: Page, category: string) =>
@@ -36,33 +38,38 @@ async function closeWithoutSaving(page: Page) {
 }
 
 test.describe('Settings dialog', () => {
-    test('both menu items open the same dialog on their own page', async ({page}) => {
+    test('one menu entry opens the dialog, and reopening returns to the page, scroll and search', async ({page}) => {
         await boot(page);
-        const modal = page.locator(SETTINGS_MODAL);
-
         await page.click('#menu-button');
-        await page.click('#options-button');
-        await waitForSettingsModalShown(page);
+        await expect(page.locator(SETTINGS_BUTTON), 'one Ustawienia entry in the menu').toBeVisible();
+        await page.keyboard.press('Escape');
+
+        const modal = await openSettingsDialog(page);
         await expect(page.locator('.app-modal:not([hidden])'), 'only one settings modal is open').toHaveCount(1);
         await expect(modal.locator('.app-modal__title')).toHaveText('Ustawienia');
-        await expect(settingsPage(page, 'character-general'), 'Ustawienia opens on Postac > Ogolne').toBeVisible();
+        await expect(settingsPage(page, 'character-general'), 'the first opening is Postac > Ogolne').toBeVisible();
         await expect(navItem(page, 'character-general')).toHaveClass(/settings-dialog__nav-item--active/);
-        await expect(settingsPage(page, 'ui-appearance')).toBeHidden();
         await expect(modal.locator('.settings-dialog--phone'), 'wide dialog is not the phone one').toHaveCount(0);
-        await closeWithoutSaving(page);
-
-        await page.click('#menu-button');
-        await page.click('#ui-settings-button');
-        await waitForSettingsModalShown(page);
-        await expect(page.locator('.app-modal:not([hidden])'), 'only one settings modal is open').toHaveCount(1);
-        await expect(modal.locator('.app-modal__title')).toHaveText('Ustawienia');
-        await expect(settingsPage(page, 'ui-appearance'), 'Interfejs opens on Interfejs > Wyglad').toBeVisible();
-        await expect(navItem(page, 'ui-appearance')).toHaveClass(/settings-dialog__nav-item--active/);
-        await expect(settingsPage(page, 'character-general')).toBeHidden();
 
         // Both groups are reachable from the one sidebar.
-        await goToSettingsPage(page, 'character-combat');
-        await expect(settingsPage(page, 'ui-appearance')).toBeHidden();
+        await goToSettingsPage(page, 'ui-map');
+        await expect(settingsPage(page, 'character-general')).toBeHidden();
+        const pane = modal.locator('.settings-dialog__pages');
+        await pane.evaluate(el => { el.scrollTop = 200; });
+        const scrolled = await pane.evaluate(el => el.scrollTop);
+        expect(scrolled, 'Mapa is long enough to scroll').toBeGreaterThan(0);
+        await closeWithoutSaving(page);
+
+        await openSettingsDialog(page);
+        await expect(settingsPage(page, 'ui-map'), 'reopens on the page it was left on').toBeVisible();
+        await expect(navItem(page, 'ui-map')).toHaveClass(/settings-dialog__nav-item--active/);
+        await expect.poll(() => pane.evaluate(el => el.scrollTop), {message: 'and where it was scrolled'}).toBe(scrolled);
+
+        await modal.locator('#settings-search').fill('kolor tla');
+        await closeWithoutSaving(page);
+        await openSettingsDialog(page);
+        await expect(modal.locator('#settings-search'), 'the search is still there').toHaveValue('kolor tla');
+        await expect(modal.locator('#ui-map-background-color')).toBeVisible();
     });
 
     test('search shows matching sections across pages and Escape clears it', async ({page}) => {
@@ -166,7 +173,7 @@ test.describe('Settings dialog', () => {
         await expect(dot, 'removing it again leaves nothing unsaved').toHaveCount(0);
     });
 
-    test('marks pages with unsaved changes until the dialog is reopened', async ({page}) => {
+    test('unsaved changes survive closing, until saved or discarded', async ({page}) => {
         await boot(page);
         let modal = await openSettings(page, 'ui-mobile-buttons');
         const checkbox = modal.locator('#ui-haptic-feedback');
@@ -184,14 +191,25 @@ test.describe('Settings dialog', () => {
         await checkbox.setChecked(!initiallyChecked);
         await expect(dot).toBeVisible();
 
+        await expect(modal.locator(SETTINGS_DISCARD), 'something to discard').toBeVisible();
+
         await closeWithoutSaving(page);
 
-        modal = await openSettings(page, 'ui-mobile-buttons');
-        await expect(dot, 'reopening drops the unsaved marker').toHaveCount(0);
-        await expect(
-            modal.locator('#ui-haptic-feedback'),
-            'closing without saving discards the change',
-        ).toBeChecked({checked: initiallyChecked});
+        modal = await openSettingsDialog(page);
+        await expect(settingsPage(page, 'ui-mobile-buttons'), 'back on the same page').toBeVisible();
+        await expect(dot, 'the page is still marked').toBeVisible();
+        await expect(checkbox, 'closing keeps the unsaved change').toBeChecked({checked: !initiallyChecked});
+
+        await discardSettings(page);
+        await expect(dot, 'discarding clears the marker').toHaveCount(0);
+        await expect(checkbox, 'and the change').toBeChecked({checked: initiallyChecked});
+        await expect(modal.locator(SETTINGS_DISCARD)).toBeHidden();
+
+        await checkbox.setChecked(!initiallyChecked);
+        await saveSettings(page);
+        modal = await openSettingsDialog(page);
+        await expect(dot, 'nothing unsaved after Save').toHaveCount(0);
+        await expect(checkbox, 'the saved value').toBeChecked({checked: !initiallyChecked});
     });
 
     test('button editors are pages saved by the dialog', async ({page}) => {
@@ -199,10 +217,7 @@ test.describe('Settings dialog', () => {
         await boot(page);
         const liveButton = page.locator('.desktop-buttons-container .desktop-button', {hasText: 'Zapisany'});
 
-        await page.click('#menu-button');
-        await page.click('#mobile-buttons-button');
-        await waitForSettingsModalShown(page);
-        await expect(settingsPage(page, 'ui-buttons'), '"Przyciski" opens the buttons page on a desktop').toBeVisible();
+        await openSettings(page, 'ui-buttons');
 
         const desktopDot = navItem(page, 'ui-buttons').locator('.settings-dialog__dirty');
         await settingsPage(page, 'ui-buttons').getByRole('button', {name: '+ Dodaj przycisk'}).click();
@@ -221,12 +236,9 @@ test.describe('Settings dialog', () => {
         await closeWithoutSaving(page);
         await expect(liveButton, 'closing without saving adds no button').toHaveCount(0);
 
-        const modal = await openButtonsSettings(page, 'ui-buttons');
-        await expect(desktopDot, 'reopening drops the unsaved marker').toHaveCount(0);
-        await expect(modal.getByText('Brak przycisków.', {exact: false}), 'the unsaved button is gone').toBeVisible();
-
-        await settingsPage(page, 'ui-buttons').getByRole('button', {name: '+ Dodaj przycisk'}).click();
-        await settingsPage(page, 'ui-buttons').locator('input[type="text"]').first().fill('Zapisany');
+        await openSettings(page, 'ui-buttons');
+        await expect(desktopDot, 'reopening keeps the unsaved button').toBeVisible();
+        await expect(settingsPage(page, 'ui-buttons').locator('input[type="text"]').first()).toHaveValue('Zapisany');
         await saveSettings(page);
         await expect(liveButton, 'saving shows the new button').toBeVisible();
     });
@@ -235,11 +247,8 @@ test.describe('Settings dialog', () => {
         await page.setViewportSize({width: 1280, height: 900});
         await boot(page);
 
-        await page.click('#menu-button');
-        await page.click('#mobile-radial-button');
-        await waitForSettingsModalShown(page);
+        await openSettings(page, 'ui-radial');
         const radialPage = settingsPage(page, 'ui-radial');
-        await expect(radialPage, '"Menu kołowe" opens its page').toBeVisible();
 
         await radialPage.locator('#mobile-radial-add').click();
         await radialPage.locator('input[placeholder="Tekst komendy"]').last().fill('zerknij');
@@ -275,15 +284,9 @@ test.describe('Settings dialog on a phone', () => {
     const phoneRow = (page: Page, category: string) =>
         page.locator(`${SETTINGS_MODAL} .settings-phone__row[data-settings-category="${category}"]`);
 
-    async function openFromMenu(page: Page, item: string) {
-        await page.click('#menu-button');
-        await page.click(item);
-        await waitForSettingsModalShown(page);
-    }
-
     test('opens on a list of pages grouped by where they are saved, and drills in', async ({page}) => {
         await boot(page);
-        await openFromMenu(page, '#ui-settings-button');
+        await openSettingsDialog(page);
         const modal = page.locator(SETTINGS_MODAL);
 
         await expect(modal.locator('.settings-dialog__nav'), 'no sidebar on a phone').toHaveCount(0);
@@ -303,16 +306,25 @@ test.describe('Settings dialog on a phone', () => {
         await expect(phoneRow(page, 'ui-map')).toBeVisible();
     });
 
-    test('a specific page opens straight on it', async ({page}) => {
+    test('reopening returns to the page that was open, with its unsaved change', async ({page}) => {
         await boot(page);
-        await openFromMenu(page, '#mobile-radial-button');
-        await expect(settingsPage(page, 'ui-radial')).toBeVisible();
-        await expect(page.locator(`${SETTINGS_MODAL} #settings-phone-back`)).toBeVisible();
+        await openSettingsDialog(page);
+        const modal = page.locator(SETTINGS_MODAL);
+        await phoneRow(page, 'ui-commands').click();
+        await modal.locator('#ui-command-echo').click();
+        await expect(modal.locator('#settings-phone-unsaved')).toHaveText('1 niezapisana zmiana');
+        await page.keyboard.press('Escape');
+        await waitForSettingsModalClosed(page);
+
+        await openSettingsDialog(page);
+        await expect(settingsPage(page, 'ui-commands')).toBeVisible();
+        await expect(modal.locator('#settings-phone-back')).toBeVisible();
+        await expect(modal.locator('#settings-phone-unsaved')).toHaveText('1 niezapisana zmiana');
     });
 
     test('section chips jump within the page', async ({page}) => {
         await boot(page);
-        await openFromMenu(page, '#ui-settings-button');
+        await openSettingsDialog(page);
         await phoneRow(page, 'ui-map').click();
         const chips = page.locator(`${SETTINGS_MODAL} .settings-phone__chip`);
         await expect(chips.first()).toHaveClass(/is-active/);
@@ -326,7 +338,7 @@ test.describe('Settings dialog on a phone', () => {
 
     test('search lists individual settings; a switch flips in place and the save bar follows', async ({page}) => {
         await boot(page);
-        await openFromMenu(page, '#ui-settings-button');
+        await openSettingsDialog(page);
         const modal = page.locator(SETTINGS_MODAL);
 
         await modal.locator('#settings-search').fill('echo komend');
@@ -347,7 +359,7 @@ test.describe('Settings dialog on a phone', () => {
 
     test('a value setting opens its page at that setting; Back returns to the results', async ({page}) => {
         await boot(page);
-        await openFromMenu(page, '#ui-settings-button');
+        await openSettingsDialog(page);
         const modal = page.locator(SETTINGS_MODAL);
 
         await modal.locator('#settings-search').fill('skroty klawiszowe');
@@ -365,7 +377,7 @@ test.describe('Settings dialog on a phone', () => {
 
     test('pages that match are listed under Strony; a change is saved from the bar', async ({page}) => {
         await boot(page);
-        await openFromMenu(page, '#ui-settings-button');
+        await openSettingsDialog(page);
         const modal = page.locator(SETTINGS_MODAL);
 
         await modal.locator('#settings-search').fill('mapa');

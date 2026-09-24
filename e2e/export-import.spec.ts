@@ -9,17 +9,17 @@ import {goToSettingsPage} from './support/settings';
 import * as fs from 'fs';
 
 const MENU_BUTTON = '#menu-button';
-const EXPORT_IMPORT_BUTTON = '#export-import-button';
+const SETTINGS_BUTTON = '#settings-button';
 // Export/import lives in the settings dialog ("Dane" pages) now.
 const EXPORT_IMPORT_MODAL = '#settings-modal';
 const LOCAL_FILE_INPUT = '#settings-modal .settings-page[data-settings-category="data-backup"] input[type="file"][accept="application/json"]';
 
 async function openExportImportModal(page: Page) {
     await page.click(MENU_BUTTON);
-    await page.click(EXPORT_IMPORT_BUTTON);
+    await page.click(SETTINGS_BUTTON);
     const modal = page.locator(EXPORT_IMPORT_MODAL);
     await expect(modal, 'should display export/import modal').toBeVisible();
-    // The menu item opens on Synchronizacja; the file export is on Kopia zapasowa.
+    // The file export is on Kopia zapasowa.
     await goToSettingsPage(page, 'data-backup');
     // Wait for Local tab content to load
     await expect(modal.getByRole('button', {name: 'Eksportuj dane'})).toBeVisible();

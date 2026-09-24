@@ -94,7 +94,7 @@ test.describe('Direction key bindings', () => {
 
         // Open options modal via the menu dropdown
         await page.click('#menu-button');
-        await page.click('#options-button');
+        await page.click('#settings-button');
         await page.waitForSelector('.app-modal:not([hidden])', {timeout: 5000});
 
         await pressNumpadKey(page, 'Numpad8');

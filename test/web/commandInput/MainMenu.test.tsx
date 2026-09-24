@@ -108,6 +108,16 @@ describe('MainMenu', () => {
         expect(container.querySelector('#disconnect-button')!.classList.contains('command-menu__item--danger')).toBe(true);
     });
 
+    test('a lone entry named like its section drops the caption, and is found by its keywords', () => {
+        unregisterMainMenuItem('options-button');
+        add({ id: 'settings-button', label: 'Ustawienia', group: 'ustawienia', keywords: ['menu kołowe'] });
+        mount();
+        open();
+        expect(captions()).toEqual(['Gra', 'Narzędzia', 'Wtyczki']);
+        type('kolowe');
+        expect(sectionIds('ustawienia')).toEqual(['settings-button']);
+    });
+
     test('a plugin entry that brings its own icon has it in the icon slot, not the puzzle', () => {
         const withSvg = document.createElement('span');
         withSvg.innerHTML = '<span style="margin-right: 6px"><svg></svg></span> Czat';

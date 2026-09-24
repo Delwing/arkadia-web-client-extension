@@ -18,7 +18,7 @@ import {
 } from './support/mocks';
 
 const MENU_BUTTON = '#menu-button';
-const EXPORT_IMPORT_BUTTON = '#export-import-button';
+const SETTINGS_BUTTON = '#settings-button';
 // Sync / backup are the settings dialog's "Dane" pages now.
 const EXPORT_IMPORT_MODAL = '#settings-modal';
 
@@ -27,10 +27,10 @@ const EXPORT_IMPORT_MODAL = '#settings-modal';
  */
 async function openFirebaseTab(page: Page) {
     await page.click(MENU_BUTTON);
-    await page.click(EXPORT_IMPORT_BUTTON);
+    await page.click(SETTINGS_BUTTON);
     const modal = page.locator(EXPORT_IMPORT_MODAL);
     await expect(modal, 'should display export/import modal').toBeVisible();
-    // Firebase tab should be visible (it's the default or there's a Firebase button)
+    await goToSettingsPage(page, 'data-sync');
     return modal;
 }
 

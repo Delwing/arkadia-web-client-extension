@@ -12,6 +12,7 @@ import {
     SETTINGS_GROUP_LABELS,
     SETTINGS_MODAL_ID,
     SHOW_SETTINGS_EVENT,
+    settingsCategory,
     settingsCategoryByLabel,
     type SettingsCategoryKey,
     type SettingsGroup,
@@ -26,6 +27,8 @@ import { MODAL_EVENT } from "@web/modals/appModal.ts";
 import "./settingsDialog.css";
 
 const GROUPS: readonly SettingsGroup[] = ["character", "ui", "data"];
+/** The host's button next to Save that drops every unsaved edit. */
+const SETTINGS_DISCARD_ID = "settings-discard";
 
 function capitalize(name: string): string {
     return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
@@ -85,8 +88,13 @@ export interface SettingsDialogProps extends UiSettingsPagesProps {
  * Character and UI settings in one dialog: a sidebar of pages grouped by where
  * they are stored, a search across every page, and one Save for both.
  *
- * The host provides the chrome (title, Save button) and the Bootstrap modal
- * lifecycle on `#settings-modal`; forge fakes those events on its own shell.
+ * The host provides the chrome (title, Save button) and the modal lifecycle
+ * on `#settings-modal`; forge fakes those events on its own shell.
+ *
+ * Closing without saving is not discarding: the dialog stays mounted for the
+ * session and reopens where it was left - the page, its scroll, the search and
+ * the unsaved edits (their live preview is undone while it is closed). Only
+ * Save, "Odrzuć zmiany" or a character switch start a group from storage again.
  */
 function SettingsDialog({ soundManager, onEnableNotifications, initialCategory }: SettingsDialogProps) {
     const character = useCharacterSettingsPages();
@@ -108,7 +116,8 @@ function SettingsDialog({ soundManager, onEnableNotifications, initialCategory }
     const hostRef = useRef<HTMLDivElement>(null);
     const narrow = useNarrow(hostRef);
     // On a phone the dialog is a list of pages to drill into.
-    const [phoneView, setPhoneView] = useState<"list" | "page">("page");
+    // A general first opening starts on the list; one asked for a page, on that page.
+    const [phoneView, setPhoneView] = useState<"list" | "page">(initialCategory ? "page" : "list");
     // Bumped when the pages' DOM changes while on a phone: the list summaries,
     // the search index and the section chips are read from it.
     const [domVersion, setDomVersion] = useState(0);
@@ -124,6 +133,12 @@ function SettingsDialog({ soundManager, onEnableNotifications, initialCategory }
     const dirtyFrame = useRef(0);
     const scrollPos = useRef(new Map<SettingsCategoryKey, number>());
     const categoryRef = useRef(category);
+    // Where the last close left the pane, restored when it reopens on the same page.
+    const resumeScroll = useRef<number | null>(null);
+    const dirtyRef = useRef(dirty);
+    dirtyRef.current = dirty;
+    // The groups a close left unsaved, and whose character the edits were for.
+    const held = useRef<{ groups: ReadonlySet<SettingsGroup>; character: string | null } | null>(null);
 
     const terms = useMemo(() => searchTerms(query), [query]);
     // The wide layout's search filters the pages in place; the phone lists results instead.
@@ -140,6 +155,7 @@ function SettingsDialog({ soundManager, onEnableNotifications, initialCategory }
         setQuery("");
         setCategory(next);
         pendingAnchor.current = null;
+        resumeScroll.current = null;
         setPhoneView("page");
     }, []);
 
@@ -172,14 +188,6 @@ function SettingsDialog({ soundManager, onEnableNotifications, initialCategory }
     const pageLayout = (key: SettingsCategoryKey) =>
         pageRefs.current.get(key)?.querySelector<HTMLElement>(".settings-page__layout") ?? null;
 
-    const resetDirty = useCallback(() => {
-        cancelAnimationFrame(dirtyFrame.current);
-        baselines.current.clear();
-        controlBaselines.current.clear();
-        setDirty(new Set());
-        setDirtyCount(0);
-    }, []);
-
     const checkDirty = useCallback(() => {
         cancelAnimationFrame(dirtyFrame.current);
         // Next frame, once React has rendered the change into the page.
@@ -200,6 +208,24 @@ function SettingsDialog({ soundManager, onEnableNotifications, initialCategory }
             setDirtyCount(count);
         });
     }, []);
+
+    /** Forget the edits of `groups` (all by default): they start from storage again. */
+    const resetDirty = useCallback((groups?: readonly SettingsGroup[]) => {
+        cancelAnimationFrame(dirtyFrame.current);
+        if (groups) {
+            for (const key of [...baselines.current.keys()]) {
+                if (!groups.includes(settingsCategory(key).group)) continue;
+                baselines.current.delete(key);
+                controlBaselines.current.delete(key);
+            }
+            checkDirty();
+            return;
+        }
+        baselines.current.clear();
+        controlBaselines.current.clear();
+        setDirty(new Set());
+        setDirtyCount(0);
+    }, [checkDirty]);
 
     /**
      * Called before any input reaches a page (pointer, key, focus), so the
@@ -307,30 +333,58 @@ function SettingsDialog({ soundManager, onEnableNotifications, initialCategory }
             latest.current.character.save();
             latest.current.ui.save();
             resetDirty();
+            // The close below comes before the re-render: nothing is left unsaved.
+            dirtyRef.current = new Set();
             (document.activeElement as HTMLElement | null)?.blur?.();
             window.dispatchEvent(new Event(CLOSE_SETTINGS_EVENT));
         };
 
         const modalEl = document.getElementById(SETTINGS_MODAL_ID);
+        /**
+         * A group left unsaved picks up where it was; the others reload, so a
+         * change made elsewhere meanwhile shows. Character edits are dropped
+         * when another character is playing now - they were for the old one.
+         */
         const onModalShow = () => {
-            latest.current.character.reload();
-            latest.current.ui.reload();
-            resetDirty();
-            setQuery("");
+            const kept = held.current;
+            held.current = null;
+            const keepCharacter = !!kept?.groups.has("character") && kept.character === latest.current.character.character;
+            const keepUi = !!kept?.groups.has("ui");
+            if (!keepCharacter) latest.current.character.reload();
+            if (keepUi) latest.current.ui.resume();
+            else latest.current.ui.reload();
+            const fresh: SettingsGroup[] = [];
+            if (!keepCharacter) fresh.push("character");
+            if (!keepUi) fresh.push("ui");
+            if (fresh.length > 0) resetDirty(fresh);
         };
-        // Restore live-previewed UI settings when dismissed without saving.
+        const onModalShown = () => {
+            const pane = pagesRef.current;
+            if (pane && resumeScroll.current !== null) pane.scrollTop = resumeScroll.current;
+            resumeScroll.current = null;
+        };
+        const onModalHide = () => {
+            resumeScroll.current = pagesRef.current?.scrollTop ?? null;
+            const groups = new Set([...dirtyRef.current].map(key => settingsCategory(key).group));
+            held.current = { groups, character: latest.current.character.character };
+        };
+        // Undo the live preview of unsaved UI settings while the dialog is closed.
         const onModalHidden = () => latest.current.ui.revert();
 
         window.addEventListener(SHOW_SETTINGS_EVENT, onShowCategory);
         window.addEventListener(OPEN_SETTINGS_EVENT, onAssistantOpen);
         window.addEventListener(SAVE_SETTINGS_EVENT, onSave);
         modalEl?.addEventListener(MODAL_EVENT.show, onModalShow);
+        modalEl?.addEventListener(MODAL_EVENT.shown, onModalShown);
+        modalEl?.addEventListener(MODAL_EVENT.hide, onModalHide);
         modalEl?.addEventListener(MODAL_EVENT.hidden, onModalHidden);
         return () => {
             window.removeEventListener(SHOW_SETTINGS_EVENT, onShowCategory);
             window.removeEventListener(OPEN_SETTINGS_EVENT, onAssistantOpen);
             window.removeEventListener(SAVE_SETTINGS_EVENT, onSave);
             modalEl?.removeEventListener(MODAL_EVENT.show, onModalShow);
+            modalEl?.removeEventListener(MODAL_EVENT.shown, onModalShown);
+            modalEl?.removeEventListener(MODAL_EVENT.hide, onModalHide);
             modalEl?.removeEventListener(MODAL_EVENT.hidden, onModalHidden);
         };
     }, [navigate, resetDirty]);
@@ -463,11 +517,20 @@ function SettingsDialog({ soundManager, onEnableNotifications, initialCategory }
         requestAnimationFrame(() => setDomVersion(v => v + 1));
     };
 
-    const revertEdits = () => {
+    const revertEdits = useCallback(() => {
         latest.current.character.reload();
         latest.current.ui.reload();
         resetDirty();
-    };
+    }, [resetDirty]);
+
+    // The host's "Odrzuć zmiany" beside Save (the wide layout; a phone has its save bar).
+    useEffect(() => {
+        const button = document.getElementById(SETTINGS_DISCARD_ID);
+        if (!button) return;
+        button.hidden = dirty.size === 0;
+        button.addEventListener("click", revertEdits);
+        return () => button.removeEventListener("click", revertEdits);
+    }, [dirty, revertEdits]);
 
     return (
         <div ref={hostRef} className="settings-dialog-host" onKeyDown={onHostKeyDown}>

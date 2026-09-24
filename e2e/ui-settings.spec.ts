@@ -10,9 +10,9 @@ import {
 import {goToSettingsPage, openSettings, SETTINGS_SAVE, type SettingsCategory} from './support/settings';
 
 const MENU_BUTTON = '#menu-button';
-const UI_SETTINGS_BUTTON = '#ui-settings-button';
+const SETTINGS_BUTTON = '#settings-button';
 
-/** "Interfejs" opens the settings dialog on its UI group (the Wygląd page). */
+/** Opens the settings dialog on a UI page (Wygląd by default). */
 async function openUiSettings(page: Page, category: SettingsCategory = 'ui-appearance') {
     return openSettings(page, category);
 }
@@ -434,7 +434,7 @@ test.describe('UI settings', () => {
         await expect(page.locator('.app-modal:not([hidden])'), 'no stray window left open').toHaveCount(0);
         await page.click(MENU_BUTTON);
         await expect(
-            page.locator(UI_SETTINGS_BUTTON),
+            page.locator(SETTINGS_BUTTON),
             'the page should still be clickable afterwards',
         ).toBeVisible();
     });

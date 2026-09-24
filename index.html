@@ -102,6 +102,8 @@
                 <div id="settings-root" class="app-modal__panel"></div>
             </div>
             <div class="app-modal__footer">
+                <!-- Shown while something is unsaved; closing keeps the edits for the next opening. -->
+                <button type="button" class="popup-btn popup-btn--control" id="settings-discard" title="Wróć do zapisanych ustawień" hidden>Odrzuć zmiany</button>
                 <button type="button" class="popup-btn popup-btn--control popup-btn--solid" id="settings-save">Zapisz</button>
             </div>
         </div>

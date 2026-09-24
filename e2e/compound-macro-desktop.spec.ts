@@ -5,7 +5,7 @@ import {
     resetCommandLog,
     waitForCommandInput,
 } from './support/mocks';
-import { openButtonsSettings, saveSettings } from './support/settings';
+import { openSettings, saveSettings } from './support/settings';
 
 test.describe('Desktop buttons compound macro', () => {
     test.beforeEach(async ({ page }) => {
@@ -17,7 +17,7 @@ test.describe('Desktop buttons compound macro', () => {
         await waitForCommandInput(page);
         await ensureGameSocket(page);
 
-        await openButtonsSettings(page, 'ui-buttons');
+        await openSettings(page, 'ui-buttons');
 
         // Add a new desktop button
         await page.getByText('+ Dodaj przycisk').click();
@@ -36,7 +36,7 @@ test.describe('Desktop buttons compound macro', () => {
         await waitForCommandInput(page);
         await ensureGameSocket(page);
 
-        await openButtonsSettings(page, 'ui-buttons');
+        await openSettings(page, 'ui-buttons');
 
         // Add a new desktop button
         await page.getByText('+ Dodaj przycisk').click();
@@ -224,7 +224,7 @@ test.describe('Desktop buttons compound macro', () => {
         await waitForCommandInput(page);
         await ensureGameSocket(page);
 
-        await openButtonsSettings(page, 'ui-buttons');
+        await openSettings(page, 'ui-buttons');
 
         await page.getByText('+ Dodaj przycisk').click();
 
