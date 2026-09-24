@@ -17,6 +17,9 @@ export interface RecordStore {
     removeOutbox(uptoSeq: number): Promise<void>;
     /** Reserve `count` consecutive local sequence numbers; returns the first. */
     reserveSeq(count: number): Promise<number>;
+    /** Whether a type's local data was captured at least once (its seed). */
+    isSeeded(type: string): Promise<boolean>;
+    markSeeded(type: string): Promise<void>;
 }
 
 const itemKey = (r: UserRecord) => `${r.type}\u0000${recordId(r)}`;
@@ -25,6 +28,7 @@ export class MemoryRecordStore implements RecordStore {
     private records = new Map<string, UserRecord>();
     private outbox = new Map<string, UserRecord>();
     private seq = 0;
+    private seeded = new Set<string>();
 
     async getRecords(type: string): Promise<UserRecord[]> {
         return [...this.records.values()].filter(r => r.type === type);
@@ -52,6 +56,14 @@ export class MemoryRecordStore implements RecordStore {
         const first = this.seq + 1;
         this.seq += count;
         return first;
+    }
+
+    async isSeeded(type: string): Promise<boolean> {
+        return this.seeded.has(type);
+    }
+
+    async markSeeded(type: string): Promise<void> {
+        this.seeded.add(type);
     }
 }
 
@@ -168,5 +180,18 @@ export class IndexedDbRecordStore implements RecordStore {
         };
         await done(tx);
         return first;
+    }
+
+    async isSeeded(type: string): Promise<boolean> {
+        const db = await this.db();
+        const tx = db.transaction(META, 'readonly');
+        return (await request(tx.objectStore(META).get(`seeded:${type}`))) === true;
+    }
+
+    async markSeeded(type: string): Promise<void> {
+        const db = await this.db();
+        const tx = db.transaction(META, 'readwrite');
+        tx.objectStore(META).put(true, `seeded:${type}`);
+        await done(tx);
     }
 }

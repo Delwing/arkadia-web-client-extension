@@ -12,7 +12,7 @@
  * remote version.
  */
 
-import type { HybridLogicalClock } from './hlc';
+import { formatStamp, type HybridLogicalClock } from './hlc';
 import type { RecordStore } from './recordStore';
 import {
     counterTotal,
@@ -90,8 +90,16 @@ export class UserDataTracker {
                 // Types this version doesn't know are skipped; a newer client
                 // will pick them up from the cloud.
                 if (!type) continue;
-                await this.captureType(type);
+                // Capture first so an uncaptured local edit isn't overwritten by
+                // an older remote version. Except for newest-wins data never
+                // captured on this device: that predates sync, so the remote
+                // version wins, and what only this device has is captured right
+                // after. Other rules merge, so capturing first loses nothing
+                // (and counters need this device's own count captured first).
+                const firstContact = type.rule.kind === 'newest' && !(await this.options.store.isSeeded(type.id));
+                if (!firstContact) await this.captureType(type);
                 await this.applyType(type, typeRecords);
+                if (firstContact) await this.captureType(type);
             }
         });
     }
@@ -127,9 +135,20 @@ export class UserDataTracker {
         const local = new Map(localItems.map(item => [recordId(item), item]));
         const tracked = new Map((await store.getRecords(type.id)).map(r => [recordId(r), r]));
 
+        // A type's first capture on this device (its seed) records data that
+        // existed before sync, not edits: it gets the lowest stamps, so on
+        // first contact the other devices' versions win and data only this
+        // device has is still added. Otherwise a fresh device's defaults
+        // would overwrite the user's real settings.
+        const seeding = !(await store.isSeeded(type.id));
+        let seedCounter = 0;
+        const stamp = (): string => seeding
+            ? formatStamp({ wall: 0, counter: seedCounter++, device: deviceId })
+            : clock.tick();
+
         const drafts: Draft[] = [];
         const draft = (item: { scope: string; key: string }, fields: Partial<Draft>): void => {
-            drafts.push({ type: type.id, scope: item.scope, key: item.key, stamp: clock.tick(), origin: deviceId, ...fields });
+            drafts.push({ type: type.id, scope: item.scope, key: item.key, stamp: stamp(), origin: deviceId, ...fields });
         };
 
         for (const [id, item] of local) {
@@ -140,10 +159,10 @@ export class UserDataTracker {
                 delete others[deviceId];
                 const mine = subtract(nonZero(item.value as Record<string, number>), counterTotal(others));
                 if (current && valuesEqual(nonZero(slots[deviceId]?.v), mine)) continue;
-                const stamp = clock.tick();
+                const slotStamp = stamp();
                 drafts.push({
-                    type: type.id, scope: item.scope, key: item.key, stamp, origin: deviceId,
-                    value: { [deviceId]: { v: mine, s: stamp } },
+                    type: type.id, scope: item.scope, key: item.key, stamp: slotStamp, origin: deviceId,
+                    value: { [deviceId]: { v: mine, s: slotStamp } },
                 });
                 continue;
             }
@@ -167,6 +186,7 @@ export class UserDataTracker {
             }
         }
 
+        if (seeding) await store.markSeeded(type.id);
         if (drafts.length === 0) {
             if (writes.length > 0) await type.write(writes);
             return [];

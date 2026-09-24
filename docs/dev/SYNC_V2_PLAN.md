@@ -2,9 +2,14 @@
 
 Dev-facing. `docs/` root is user-facing (see `docs/SYNCHRONIZACJA.md`); this file is deliberately in `docs/dev/`.
 
-Status: **stages 1 and 2 done** (one registry and serializer; change tracking with adapters for every type
-in 4.1, not yet connected to the cloud); stages 3–5 not started. Replaces the category/checksum sync in
-`src/modules/firebase/`.
+Status: **stages 1–3 done.** Sync v2 runs behind a flag (`localStorage.setItem('arkadia.syncV2', '1')`,
+reload; it then replaces the v1 listener and engine for that browser). Daily operation counts are in
+`localStorage['arkadia.syncV2.usage']`. Stages 4–5 not started. Open from stage 3:
+- Firestore security rules must allow the owner to read/write `users/{uid}/syncV2/*`.
+- Other tabs of the same browser don't refresh IndexedDB-backed data applied by the syncing tab
+  (localStorage values do, through the `storage` event); planned `BroadcastChannel`.
+- The two-device Playwright test needs a Firestore mock with listeners and transactions; the same
+  scenarios run as engine unit tests against an in-memory transport (test/modules/syncV2).
 
 ---
 

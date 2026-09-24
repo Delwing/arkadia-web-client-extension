@@ -110,6 +110,36 @@ describe('UserDataTracker', () => {
         expect(second[0].seq).toBeGreaterThan(first[1].seq);
     });
 
+    it('lets other devices win on first contact: data from before sync never overrides them', async () => {
+        const a = makeDevice('a', 1_000);
+        a.types.aliases.set('x', 'the users real alias');
+        await a.tracker.capture();
+
+        // A fresh device later, with its own default for the same item and one only it has
+        const b = makeDevice('b', 9_000);
+        b.types.aliases.set('x', 'default');
+        b.types.aliases.set('y', 'only on b');
+        await sync(a, b);
+        await sync(b, a);
+
+        expect(b.types.aliases.get('x')).toBe('the users real alias');
+        expect(a.types.aliases.get('x')).toBe('the users real alias');
+        expect(a.types.aliases.get('y')).toBe('only on b');
+    });
+
+    it('treats items created after the first capture as edits', async () => {
+        const a = makeDevice('a', 1_000);
+        const b = makeDevice('b', 1_000);
+        await a.tracker.capture();
+        a.advance(1_000);
+        a.types.aliases.set('x', 'new');
+        await sync(a, b);
+        b.advance(2_000);
+        b.types.aliases.set('x', 'edited on b');
+        await sync(b, a);
+        expect(a.types.aliases.get('x')).toBe('edited on b');
+    });
+
     it('delivers an edit from one device to another', async () => {
         const a = makeDevice('a', 1_000);
         const b = makeDevice('b', 1_000);
@@ -125,6 +155,8 @@ describe('UserDataTracker', () => {
     it('lets the newest edit win on both devices when the same item changes on both', async () => {
         const a = makeDevice('a', 1_000);
         const b = makeDevice('b', 1_000);
+        await a.tracker.capture();
+        await b.tracker.capture();
         a.types.aliases.set('x', 'from-a');
         await a.tracker.capture();
         b.advance(5_000);
@@ -145,6 +177,7 @@ describe('UserDataTracker', () => {
         await a.tracker.capture();
 
         // b edits later, but hasn't captured when a's older record arrives
+        await b.tracker.capture();
         b.advance(5_000);
         b.types.aliases.set('x', 'new-on-b');
         await b.tracker.apply(await a.tracker.outbox());
@@ -248,13 +281,15 @@ describe('UserDataTracker', () => {
         const a = makeDevice('a', 1_000);
         const b = makeDevice('b', 1_000, ['a']);
         const c = makeDevice('c', 1_000);
-        a.types.layout.set('bundle', 'wide', deviceScope('a'));
+        await a.tracker.capture();
         b.types.layout.set('bundle', 'narrow', deviceScope('b'));
         c.types.layout.set('bundle', 'phone', deviceScope('c'));
         await b.tracker.capture();
         await c.tracker.capture();
 
+        // An edit on a, later than b's and c's values
         a.advance(5_000);
+        a.types.layout.set('bundle', 'wide', deviceScope('a'));
         await sync(a, b, c);
 
         expect(b.types.layout.get('bundle', deviceScope('b'))).toBe('wide');
