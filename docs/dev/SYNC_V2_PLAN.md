@@ -62,8 +62,8 @@ device's local data (section 10), so nothing is lost in the meantime.
 
 1. **Exchange changes, not whole state.** A device uploads only the records it changed. A stale tab only
    sends what it actually edited, so it can't overwrite anything else.
-2. **Each device writes only its own log.** No two devices write the same Firestore document during normal
-   sync, so there are no transactions and no conflicts.
+2. **Devices only append.** A device adds its own batches to the shared log with an atomic append and
+   never rewrites what another device wrote. Only compaction rewrites, inside a transaction. No conflicts.
 3. **Every merge is automatic, order-independent and idempotent.** `merge(a, b) == merge(b, a)` and
    applying a change twice is a no-op. This is what makes concurrent compaction and re-delivery safe.
 4. **Merge rules are declared per field, not per category.** See section 5.
@@ -223,61 +223,91 @@ The cloud side sits behind a small transport interface so Firestore can be repla
 
 ```ts
 interface SyncTransport {
-    appendBatch(batch: EncryptedBatch): Promise<void>;          // own device only
-    subscribe(fromCursors: Cursors, onBatch: (b: EncryptedBatch) => void): () => void;
-    readBase(): Promise<BaseState>;
-    compact(fold: (base: BaseState) => BaseState): Promise<void>;
+    appendBatch(batch: EncryptedBatch): Promise<void>;
+    subscribeLog(onLog: (log: LogDoc) => void): () => void;
+    readBase(): Promise<BaseDoc>;
+    fold(update: (base: BaseDoc, log: LogDoc) => { base: BaseDoc; keep: Batch[] }): Promise<void>;
+    setWatching(watching: boolean): Promise<void>;
 }
 ```
 
 ### 8.1 Firestore layout
 
+Two documents per user, plus base overflow shards only if ever needed:
+
 ```
-users/{uid}/syncV2/meta                                 { schemaVersion, devices: {id: lastSeenAt} }
-users/{uid}/syncV2/segments/{deviceId}__{segmentNo}     { device, fromSeq, toSeq, batches[] }
-users/{uid}/syncV2/base/{shard}                         { records[], folded: { [deviceId]: seq } }
+users/{uid}/syncV2/log     { batches: [{ device, seq, stamp, data }], watching: { [deviceId]: stamp } }
+users/{uid}/syncV2/base    { schemaVersion, records, folded: { [deviceId]: seq }, shards?: string[] }
+users/{uid}/syncV2/base__{n}   overflow shard, only when `base` nears 768 KiB
 ```
 
-- **Segments.** A device appends batches to its current segment document (`arrayUnion`, so only the new
-  batch is sent). When a segment reaches ~64 KiB it starts the next one. Segments are small on purpose:
-  every update delivers the whole segment to listening devices (section 9.3).
+- **Log.** Every device appends its batches to the one `log` document with `arrayUnion`. The append is
+  atomic on the Firestore side, so concurrent appends from two devices never overwrite each other and need
+  no transaction. Each batch is small (one upload interval of changes) and encrypted on its own.
+- **Base.** The compacted state of all synced types. One document: today's v1 sync document already holds
+  everything under 1 MiB, and v2's base is smaller because old ticks are dropped. If it ever nears
+  768 KiB, the largest types (`visitedRooms`, `kills`, `zlom`) move to overflow shards listed in
+  `shards`. Consistent rule: one base document until it can't be.
 - **Batching.** Pending records are uploaded immediately on `visibilitychange` (hidden) and `pagehide`,
-  otherwise at most every 5 minutes while playing. Switching devices is exactly when the tab you leave
-  goes hidden, so the device you pick up already has everything — the long interval only matters when
-  both are actively used at once. User edits in the options UI (a new alias, a bind) flush after a short
-  debounce (~5 s). The outbox is persisted, so a phone killing a background tab loses nothing.
-- **Base shards.** Few and coarse, to keep startup reads low: `global` (all small global types),
-  `char__{name}` per character, and separate shards only for types that can grow large (`visitedRooms`,
-  `kills`, `zlom`) — split further only if a shard nears 512 KiB.
+  otherwise at most every 5 minutes while playing (every ~15 s in watching mode, 8.3). Switching devices is
+  exactly when the tab you leave goes hidden, so the device you pick up already has everything. User edits
+  in the options UI (a new alias, a bind) flush after a short debounce (~5 s). The outbox is persisted, so
+  a phone killing a background tab loses nothing.
+- **Oversized batches** (the one-time migration seed, a restore, a large settings import — anything over
+  ~32 KiB) skip the log and are folded straight into `base` in a transaction (8.4).
 
-### 8.2 Reading
+### 8.2 Reading and listeners
 
-- The realtime listener watches `syncV2/segments` for documents from other devices with `toSeq` above the
-  local cursor for that device, and applies their records through `resolve`.
-- Records at or below `base.folded[deviceId]` are skipped; they're already in the base.
-- A new device, or one far behind, reads the base shards first, then the remaining segments.
-- Open tabs must reflect applied records: feature stores and scripts with in-memory copies (knowledge
+- **One listener, on `log`.** Whatever changes, a device re-reads one document. A resume after any gap
+  costs 1 read, like today.
+- **Cursors.** Each device keeps, locally, the last applied `seq` per origin device. On every log snapshot
+  it applies batches from other devices above that cursor through `resolve`, and ignores its own.
+- **Behind a compaction.** If `base.folded[device]` is above a local cursor, batches this device never saw
+  were folded away: it reads `base` once, merges it, and moves its cursors to the watermarks. That's the
+  only time `base` is read besides first start.
+- **Detach on hide.** When the tab becomes hidden: flush the outbox, clear the watching flag, unsubscribe.
+  When it becomes visible: re-subscribe. A hidden tab doesn't need live updates, a throttled background
+  tab doesn't retry in a loop (battery), and each return costs the same 1 read whether the gap was
+  2 minutes or 2 days.
+- **One listener per browser.** Only the tab holding the sync Web Lock (as `syncEngine` does today)
+  listens and uploads; other tabs receive applied records over `BroadcastChannel`.
+- **Open tabs must reflect applied records:** feature stores and scripts with in-memory copies (knowledge
   script, `DataStore` caches, the knowledge events cache, the złom cache) subscribe to the user-data store
   and reload. Stage 2 audits every such cache.
+- **Duplicates don't matter.** A batch delivered twice (overlapping resume, two snapshots) resolves to the
+  same result: records are keyed and stamped, and every rule is idempotent. Delivery affects timing and
+  cost, never correctness.
 
-### 8.3 Compaction
+### 8.3 Watching mode
 
-- When a device has more than ~4 closed segments, it folds them into the base shards in a Firestore
-  transaction, advances `folded[deviceId]`, then deletes those segments.
-- Every rule is order-independent and each record is folded once (the watermark), so plain sums are safe
-  for counters, and two devices compacting at the same time only cause a transaction retry.
+For following one device from another (e.g. improvements on the PC, watched on the phone):
+
+- A visible, listening device sets `log.watching[deviceId]` on show and removes it on hide (one write
+  each).
+- The playing device already receives `log` snapshots, so it sees whether another of the user's devices is
+  watching. While one is, it uploads every ~15 s instead of every 5 minutes.
+- When the phone's screen turns off, its tab goes hidden, the flag is cleared, and the PC falls back to the
+  5-minute interval. Stale flags (tab killed without `pagehide`) expire after 10 minutes by stamp.
+
+### 8.4 Compaction
+
+- When `log` exceeds ~64 KiB, any device runs `fold` in one Firestore transaction: read `log` and `base`,
+  resolve all log batches into `base`, advance `folded[device]` for each origin, and rewrite `log` without
+  the folded batches. An append arriving during the transaction makes it retry; nothing is lost.
+- Every rule is order-independent and each batch is folded once (the watermark), so plain sums are safe
+  for counters, and two devices compacting at the same time only cause a retry.
 - Type-specific policies run during folding. `knowledgeEvents`: ticks at or before the latest level change
   of their category are dropped; level changes are kept (they're few and give the history). Tombstones
   older than the compaction horizon (90 days) are dropped.
-- Segments of devices silent for longer than the horizon are folded by any device and the device is removed
-  from `meta.devices`.
-- A device that comes back after longer than the horizon only uploads its outbox (changes it made since its
-  last upload). It never re-uploads full state, so it can't bring back deleted items.
+- `watching` entries older than 10 minutes are removed.
+- A device that comes back after a long time reads `base` (it's behind the compaction) and uploads only its
+  outbox (changes it made since its last upload). It never re-uploads full state, so it can't bring back
+  deleted items.
 
-### 8.4 Encryption
+### 8.5 Encryption
 
-Each batch and each base shard is encrypted as a unit with the passphrase (`firebaseCrypto`). Document ids
-carry no user content (device ids, segment numbers, character shard names are hashed when encryption is on).
+Each batch and the base (and any overflow shard) are encrypted as a unit with the passphrase
+(`firebaseCrypto`). Device ids and seq numbers stay in plaintext; they carry no user content.
 
 ## 9. Firebase cost
 
@@ -287,6 +317,18 @@ Firestore: 50,000 document reads, 20,000 writes, 20,000 deletes, 1 GiB stored, 1
 transfer. These are counted per document operation, not per byte or per event, and they are **totals for
 the whole project**, so every figure below must be multiplied by the number of active players.
 
+How listeners are billed:
+
+| Situation | Reads |
+|---|---|
+| Listener attached, nothing changes | 0 |
+| The watched document changes | 1 per listening device |
+| Listener starts (page load, re-attach after hide) | 1 per matched document (minimum 1) |
+| Connection resumes within ~30 min | only changed documents |
+| Connection resumes after ~30 min | like a fresh start |
+
+With a single watched document, every row costs at most 1 read.
+
 ### 9.2 Current load (Firebase console, ~50 syncing users, some irregular)
 
 | Period | Reads | Writes |
@@ -294,39 +336,37 @@ the whole project**, so every figure below must be multiplied by the number of a
 | Last week (console figure, −38.5 % / −52.4 % vs. the week before) | 808 | 303 |
 | Today | ~1,100 | ~400 |
 
+Peak concurrent snapshot listeners today: 18 (listeners cost nothing while idle).
+
 That's about 2 % of the daily read quota and 2 % of the write quota — lots of headroom, but also a baseline
 v2 must not blow up.
 
-### 9.3 Is "write each change once" enough?
+### 9.3 Estimate
 
-Mostly yes, with three corrections:
+- **Writes count per document write, not per change.** Batching is what keeps it cheap.
+- **Every write is a read on each other listening device**, and detached (hidden) devices don't pay it.
+- **Listeners download the whole changed document**, which is why `log` is compacted at ~64 KiB.
 
-1. **Writes count per document write, not per change.** Writing each tick or kill as its own document
-   would multiply writes by the number of events. Batching many changes into one segment update is what
-   keeps it cheap.
-2. **Every write is also a read on each other listening device.** With a PC and a phone both open, each
-   batch costs 1 write + 1 read.
-3. **Listeners re-download the whole updated document.** That's why segments are capped at ~64 KiB instead
-   of one growing log per device.
-
-Per active player-session of ~2 hours with the batching in 8.1: ~24 interval batches + a few flushes on
-hide/close + options edits ≈ 30 writes, similar reads on the other device, and 5–15 reads per device
-start. For 50 users that's roughly 1,500 writes and 2,000–3,000 reads on a busy day: a few times today's
-load (today, knowledge and other IndexedDB data barely sync, and most syncs are skipped as unchanged),
-still under 10 % of the free tier. Stage 3 adds counters (writes, reads, bytes per session) to confirm it
-before rollout; the 5-minute interval is the knob if it's higher than expected.
+Per active player-session of ~2 hours: ~24 interval uploads + a few flushes on hide/close + options edits
+≈ 30 writes; 1 read per upload per other visible device; 1 read per tab show; a compaction now and then
+(1 transaction: 2 reads, 2 writes). Watching mode adds up to 4 writes a minute, only while two devices are
+visible at once. For 50 users that's roughly 1,500–2,500 writes and 2,000–4,000 reads on a busy day: a few
+times today's load (today knowledge and other IndexedDB data barely sync, and most syncs are skipped as
+unchanged), still under 15 % of the free tier. Stage 3 adds counters (writes, reads, bytes per session) to
+confirm it before rollout; the intervals are the knobs if it's higher than expected.
 
 Today, by comparison, any localStorage write (including `mapperRoomId` on every move) schedules a sync
-30 s later, and each sync that finds changes writes whole category blobs in a transaction. v2 sends only
-changed records of synced types, so bytes per sync drop a lot even where operation counts rise.
+30 s later, each sync that finds changes writes whole category blobs in a transaction, and every listener
+re-downloads the whole (up to 1 MiB) sync document on any change. v2 sends only changed records and
+listeners download a log of at most ~64 KiB.
 
 ### 9.4 If we outgrow the free tier
 
 - **Firestore Blaze (pay as you go):** same code, billed per operation beyond the free quota; at these
   volumes a small monthly cost.
 - **Cloudflare:** the repo already deploys a Worker (`worker/`). A Durable Object per user could hold the
-  log and compact server-side, with no read amplification between devices, verifying Firebase Auth tokens.
-  More work; only worth it if Firestore costs become real.
+  log and compact server-side, verifying Firebase Auth tokens. More work; only worth it if Firestore costs
+  become real.
 
 The `SyncTransport` interface (section 8) keeps either move contained.
 
@@ -342,10 +382,10 @@ records are keyed, so a rerun overwrites with identical values.
 ### 10.2 Cloud (stage 5)
 
 1. The first v2 client of an account imports the v1 document (`users/{uid}/sync/{SYNC_DATA_DOC}`) through
-   the registry's `legacy.importV1` and the normal merge, then writes base shards.
-2. **Every** v2 device then uploads its full local state once as its first batch (the only full upload
-   ever). The merge combines it with the base, so data that never reached v1 (e.g. knowledge stuck in
-   conflict) propagates. This is why the current knowledge problem fixes itself.
+   the registry's `legacy.importV1` and the normal merge, then writes `base`.
+2. **Every** v2 device then folds its full local state into `base` once (an oversized batch, 8.1; the
+   only full upload ever). The merge combines it with the base, so data that never reached v1 (e.g.
+   knowledge stuck in conflict) propagates. This is why the current knowledge problem fixes itself.
 3. **Old app versions.** There's no central server, but tabs keep running the old code until reloaded
    (a PC tab can stay open for days), and they keep writing the v1 document. For a grace period of
    **one month** v2 clients also merge later v1 updates in (one direction), and the old code sees a
@@ -386,7 +426,7 @@ Each stage is shippable on its own and keeps the app working.
 |---|---|---|---|
 | 1 | Registry and serializer | One registry, one export/import path for Firebase, Drive and files; remove `syncOptions`, `ExportOptions`, character picker. Cloud format unchanged. | `buildExport` / `exportCategories` are one path; options UI shows no per-category choices; existing sync unaffected |
 | 2 | User-data store | `ArkadiaUserData`, HLC, `TypedStorage` façade, feature stores ported (including the five newly synced stores), stable oswajanie ids, `BroadcastChannel`, local migration, cache audit | All synced types read/write through the store; startup cost measured; e2e green |
-| 3 | Sync engine v2 | `SyncTransport` on Firestore: segments, outbox, batching, listener with cursors, base shards, compaction, encryption, usage counters — behind a flag | Two-device e2e (section 15) converges with the flag on; measured ops per session fit section 9.3 |
+| 3 | Sync engine v2 | `SyncTransport` on Firestore: `log` + `base`, outbox, batching, one listener with cursors and detach on hide, watching mode, compaction, encryption, usage counters — behind a flag | Two-device e2e (section 15) converges with the flag on; measured ops per session fit section 9.3 |
 | 4 | Types on v2 | Knowledge first, then kills, visited rooms, profession, notes, multibinds, the five new stores, then settings types with `diff` | Each type round-trips through v2 with its rule tests |
 | 5 | Cloud migration, backup, cleanup | v1 import, one-time seed per device, one-way bridge, v1 write lock in security rules, restore with epochs, then removal of v1 code and conflict UI | Flag removed; v1 code deleted after the window |
 
@@ -401,6 +441,10 @@ Settled:
   złom (newest observation), transport stats (current min/max only), delivery stats (union).
 - Old-version grace period: one month.
 - Batch interval during play: 5 minutes, immediate flush when the tab is hidden or closed.
+- Cloud layout: one shared `log` document (atomic appends) and one `base` document per user; overflow
+  shards only if `base` nears the size limit.
+- One listener per browser, on `log` only, detached while the tab is hidden.
+- Watching mode: ~15 s uploads while another of the user's devices is visible.
 - Not synced: sun tracker, plugins (possible separate API later).
 - Device UI settings stay one whole value per device.
 - Stay on the Firebase free tier; transport kept replaceable.
@@ -413,18 +457,21 @@ Open:
 
 - **Rule tests** (Vitest): for every rule and type, randomized record sets checking that merge is
   commutative, associative and idempotent, and that folding into base then reading equals reading the raw
-  segments.
+  log.
 - **Store tests:** `TypedStorage` façade parity with the current localStorage behavior; local migration from
   fixture profiles (including `character:key` data for several characters and every legacy database).
 - **Two-device e2e** (Playwright, two browser contexts sharing a mocked Firestore via
   `e2e/support/firebase-fixtures.ts`): both tabs open and writing at the same time; one tab stale for a
   while and then editing; a phone-style tab killed with pending changes and reopened. Assert identical
   state on both sides and that the stale tab didn't overwrite newer data.
-- **Compaction e2e:** push segments past the threshold, compact concurrently from two contexts, assert no
+- **Compaction e2e:** push the log past the threshold, compact concurrently from two contexts while both
+  append, assert no
   loss and no double-counted kills.
 - **Migration e2e:** start from a v1 cloud document plus divergent local data on two devices; assert the
   union after both upgrade.
 - **Restore e2e:** restore a backup on one context; assert the other context converges to the backup.
+- **Watching mode e2e:** one context visible and watching, the other playing; assert the short interval
+  applies and ends when the watcher hides.
 - **Usage counters:** assert operations per simulated session stay within the section 9.3 budget.
 
 ## 16. Risks
@@ -433,7 +480,7 @@ Open:
   2; keep boot-critical values in localStorage.
 - **Missed in-memory caches** showing stale data in open tabs. Mitigation: the cache audit in stage 2 and a
   store-level subscription used by every feature store.
-- **Free-tier quotas are shared by all users.** Mitigation: batching, small segments, coarse base shards,
+- **Free-tier quotas are shared by all users.** Mitigation: batching, one watched document, log compaction,
   usage counters in stage 3 compared against the section 9.2 baseline, and the replaceable transport.
 - **Clock skew** handled by HLC; a device with a wildly wrong clock can still win **newest** ties for a
   while. Mitigation: clamp stamps that are far in the future relative to the server timestamp of the upload.
