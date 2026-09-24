@@ -370,6 +370,7 @@ export function apply(settings: UiSettings) {
         }
         mapSettings.roomShape = settings.mapRoomShape;
         mapSettings.lineColor = settings.mapLineColor;
+        mapSettings.currentRoomColor = settings.mapCurrentRoomColor;
         const isLayoutManagerEnabled = loadLayoutState().enabled;
         mapSettings.backgroundColor = (settings.mapPosition.includes('overlay') && !isLayoutManagerEnabled)
             ? 'transparent'

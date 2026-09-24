@@ -118,6 +118,7 @@
       "highlightCurrentRoom | Podświetl bieżące pomieszczenie | P15 | boolean | true",
       "labelRenderMode | Tryb renderowania etykiet | P15 | enum: image|data|none | data",
       "mapBackgroundColor | Kolor tła mapy | P19 | string | #000000",
+      "mapCurrentRoomColor | Kolor bieżącego pomieszczenia | P19 | string | #784800",
       "mapHighlightDashEnabled | Przerywane obramowanie | P20 | boolean | true",
       "mapHighlightFillAlpha | Przezroczystość wypełnienia | P20 | number 0..1 | 0",
       "mapHighlightShape | Kształt podświetlenia | P20 | enum: match|rectangle|roundedRectangle|circle | match",
@@ -2701,6 +2702,24 @@
         "src/web/uiSettings/sections/MapSections.tsx"
       ],
       "label": "Kolor tła mapy",
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Mapa → Pomieszczenia i linie"
+    },
+    {
+      "path": "ui.mapSettings.mapCurrentRoomColor",
+      "scope": "ui",
+      "storageKey": "mapSettings",
+      "key": "mapCurrentRoomColor",
+      "type": "string",
+      "optional": false,
+      "default": "#784800",
+      "control": "color",
+      "exposedInUi": true,
+      "sources": [
+        "src/shared/uiSettingsTypes.ts",
+        "src/shared/settingsDefaults.ts",
+        "src/web/uiSettings/sections/MapSections.tsx"
+      ],
+      "label": "Kolor bieżącego pomieszczenia",
       "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Mapa → Pomieszczenia i linie"
     },
     {
@@ -6875,18 +6894,18 @@
     }
   ],
   "gaps": [],
-  "version": "988fec78f05794de",
-  "generatedAt": "2026-09-24T06:49:53.643Z",
+  "version": "7b2f49576e5a5a7b",
+  "generatedAt": "2026-09-24T07:10:46.155Z",
   "stats": {
-    "settings": 138,
-    "settingsWithLabels": 138,
+    "settings": 139,
+    "settingsWithLabels": 139,
     "commands": 236,
     "commandsWithDescriptions": 234,
     "events": 34,
     "docs": 12,
-    "leanChars": 47358,
-    "leanTokens": 11840,
-    "fatChars": 266429,
-    "fatTokens": 66608
+    "leanChars": 47437,
+    "leanTokens": 11860,
+    "fatChars": 266955,
+    "fatTokens": 66739
   }
 }

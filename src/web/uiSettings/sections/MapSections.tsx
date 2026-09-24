@@ -73,6 +73,7 @@ function MapSections({ draft, update, mapVersion, refreshing, onRefreshMap, expl
                 </SelectField>
                 <ColorField id="ui-map-background-color" label="Kolor tła mapy" value={draft.mapBackgroundColor} onChange={(v) => update({ mapBackgroundColor: v })} onReset={() => update({ mapBackgroundColor: defaultUiSettings.mapBackgroundColor })} />
                 <ColorField id="ui-map-line-color" label="Kolor linii" value={draft.mapLineColor} onChange={(v) => update({ mapLineColor: v })} onReset={() => update({ mapLineColor: defaultUiSettings.mapLineColor })} />
+                <ColorField id="ui-map-current-room-color" label="Kolor bieżącego pomieszczenia" value={draft.mapCurrentRoomColor} onChange={(v) => update({ mapCurrentRoomColor: v })} onReset={() => update({ mapCurrentRoomColor: defaultUiSettings.mapCurrentRoomColor })} />
             </SettingsSection>
 
             <SettingsSection title="Marker gracza">
