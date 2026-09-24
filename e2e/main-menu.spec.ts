@@ -22,7 +22,9 @@ test.describe('main menu', () => {
         const menu = page.locator(panel);
         await expect(menu).toBeVisible();
         const captions = menu.locator('.command-menu__caption');
-        await expect(captions).toHaveText(['Gra', 'Ustawienia', 'Narzędzia']);
+        // Ustawienia is a lone entry named like its section, so it has no caption.
+        await expect(captions).toHaveText(['Gra', 'Narzędzia']);
+        await expect(menu.locator('[data-group="ustawienia"] #settings-button')).toHaveText('Ustawienia');
         await expect(menu.locator('[data-group="gra"] .command-menu__item').first()).toHaveText('Automatyzacja');
         await expect(menu.locator('[data-group="narzedzia"] #docs-button')).toBeVisible();
         await expect(menu.locator('.command-menu__bar #fullscreen-button')).toBeVisible();
@@ -110,7 +112,8 @@ test.describe('main menu on a phone', () => {
         // It stands on the command line, which stays usable: its menu button closes it.
         const bar = await page.locator('#input-area').boundingBox();
         expect(Math.round(box!.y + box!.height)).toBe(Math.round(bar!.y));
-        await expect(menu.locator('.command-menu__caption')).toHaveText(['Gra', 'Ustawienia', 'Narzędzia i wtyczki']);
+        await expect(menu.locator('.command-menu__caption')).toHaveText(['Gra', 'Narzędzia i wtyczki']);
+        await expect(menu.locator('[data-group="ustawienia"] #settings-button')).toBeVisible();
         await expect(menu.locator('#share-location-button')).toHaveText('Kod QR');
         await expect(menu.locator('#docs-button')).toHaveText('Pomoc');
         // No filter, and everything fits without scrolling.
