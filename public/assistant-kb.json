@@ -165,6 +165,7 @@
       "footerButtons | Przyciski przy linii komend | P27 | FooterButtonConfig[] | []",
       "footerComponents | Elementy stopki | P28 | FooterComponentConfig[] | [{\"id\":\"clock-display\",\"visible\":true,\"order\":0},{\"id\":\"transport-timer\",\"visible\":true,\"order\":1},{\"id\":\"lamp-timer\",\"visible\":true,\"order\":2},{\"id\":\"pipe-status\",\"visible\":true,\"order\":3},{\"id\":\"break-item-warning\",\"visible\":true,\"order\":4},{\"id\":\"mail-status\",\"visible\":true,\"order\":5},{\"id\":\"package-status\",\"visible\":true,\"order\":6},{\"id\":\"weapon-state\",\"visible\":true,\"order\":7},{\"id\":\"attack-mode\",\"visible\":true,\"order\":8},{\"id\":\"release-guard-timer\",\"visible\":true,\"order\":9},{\"id\":\"zask-timer\",\"visible\":true,\"order\":10},{\"id\":\"order-timer\",\"visible\":true,\"order\":11},{\"id\":\"combat-timer\",\"visible\":true,\"order\":12},{\"id\":\"world-destruction-timer\",\"visible\":true,\"order\":13},{\"id\":\"team-panel\",\"visible\":true,\"order\":14},{\"id\":\"connection-status\",\"visible\":false,\"order\":15}]",
       "footerMode | Tryb stopki | P18 | enum: 4|0|1|2|3 | 4",
+      "footerUrgentChipsFirst | Pilne plakietki na poczatku | P28 | boolean | false",
       "keepMultibindsVisible | Zawsze pokazuj pasek multibindów | P14 | boolean | false",
       "mapHeight | Wysokość mapy (vh) | P15 | number | 30",
       "mapPosition | Położenie mapy | P15 | enum: top-overlay|bottom-overlay|right-overlay|left-overlay|top|bottom|right|left | top-overlay",
@@ -399,6 +400,7 @@
       "enemy.paralyzed — Wrog ogluszony (Walka)",
       "enemy.paralyzed.end — Wrog - koniec ogluszenia (Walka)",
       "enemy.broken_defense — Wrog - zlamana obrona (Walka)",
+      "attack — Atak na mnie (kazdy) (Walka)",
       "enemy.attack — Atak wroga (ten z beepem) (Walka)",
       "hp.low — Niskie zycie (Postac)",
       "hp.full — Pelne zycie (3 min bez walki) (Postac)",
@@ -451,13 +453,14 @@
           "Okno mapy",
           "Multibindy lokacji"
         ],
-        "tokens": 1393
+        "tokens": 1443
       },
       {
         "id": "COMBAT.md",
         "title": "Walka",
         "headings": [
           "Tryb ataku",
+          "Wskazywanie celu",
           "Atakowanie",
           "Kolejka ataku",
           "Zaslanianie",
@@ -469,7 +472,7 @@
           "Loot",
           "Okno walki"
         ],
-        "tokens": 1058
+        "tokens": 1204
       },
       {
         "id": "INVENTORY.md",
@@ -705,7 +708,7 @@
           "name": "event",
           "type": "string",
           "required": false,
-          "note": "Identyfikator zdarzenia — tylko z listy SUPPORTED_EVENTS: kill, enemyKilled, allEnemiesKilled, combatState:true, combatState:false, enemy.paralyzed, enemy.paralyzed.end, enemy.broken_defense, enemy.attack, hp.low, hp.full, hp.idleFull, client.connect, client.disconnect, zask.ready, cover.start, cover.ready, transport.stop, transport.arrived, transport.destination, transport.approaching, transport.approachingDestination, gmcp.char.state, gmcp.char.info, gmcp.char.options, gmcp.char.options.info, gmcp.char.colors, gmcp.room.info, gmcp.room.time, gmcp.mail.state, gmcp.objects.nums, gmcp.objects.data, gmcp.core.ping."
+          "note": "Identyfikator zdarzenia — tylko z listy SUPPORTED_EVENTS: kill, enemyKilled, allEnemiesKilled, combatState:true, combatState:false, enemy.paralyzed, enemy.paralyzed.end, enemy.broken_defense, attack, enemy.attack, hp.low, hp.full, hp.idleFull, client.connect, client.disconnect, zask.ready, cover.start, cover.ready, transport.stop, transport.arrived, transport.destination, transport.approaching, transport.approachingDestination, gmcp.char.state, gmcp.char.info, gmcp.char.options, gmcp.char.options.info, gmcp.char.colors, gmcp.room.info, gmcp.room.time, gmcp.mail.state, gmcp.objects.nums, gmcp.objects.data, gmcp.core.ping."
         },
         {
           "name": "flags",
@@ -3771,6 +3774,24 @@
       "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Stopka → Stan postaci"
     },
     {
+      "path": "ui.uiSettings.footerUrgentChipsFirst",
+      "scope": "ui",
+      "storageKey": "uiSettings",
+      "key": "footerUrgentChipsFirst",
+      "type": "boolean",
+      "optional": false,
+      "default": false,
+      "control": "checkbox",
+      "exposedInUi": true,
+      "sources": [
+        "src/shared/uiSettingsTypes.ts",
+        "src/web/defaultUiSettings.ts",
+        "src/web/uiSettings/sections/FooterSections.tsx"
+      ],
+      "label": "Pilne plakietki na poczatku",
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Stopka → Elementy stopki"
+    },
+    {
       "path": "ui.uiSettings.keepMultibindsVisible",
       "scope": "ui",
       "storageKey": "uiSettings",
@@ -5107,7 +5128,7 @@
     },
     {
       "name": "/pro",
-      "pattern": "/\\/pro ([A-Za-z0-9@]+)$/",
+      "pattern": "/^\\/pro (.+)$/",
       "source": "src/client/scripts/objectAliases.ts",
       "usage": "/pro id",
       "description": "Przekaz prowadzenie obiektowi",
@@ -5116,6 +5137,14 @@
     {
       "name": "/prowadz",
       "pattern": "/^\\/prowadz (.*)$/",
+      "source": "src/client/scripts/mapAliases.ts",
+      "usage": "/prowadz id",
+      "description": "Rozpocznij prowadzenie innej osoby do wskazanego pokoju (gdy pieszo nie da sie dojsc, trasa jest liczona z transportem)",
+      "documentedIn": "NAVIGATION.md"
+    },
+    {
+      "name": "/prowadz",
+      "pattern": "/^\\/prowadz\\s*$/",
       "source": "src/client/scripts/mapAliases.ts",
       "usage": "/prowadz id",
       "description": "Rozpocznij prowadzenie innej osoby do wskazanego pokoju (gdy pieszo nie da sie dojsc, trasa jest liczona z transportem)",
@@ -5131,6 +5160,14 @@
     },
     {
       "name": "/prowadzt",
+      "pattern": "/^\\/prowadzt(!?)\\s*$/",
+      "source": "src/client/scripts/mapAliases.ts",
+      "usage": "/prowadzt id",
+      "description": "Prowadz z uwzglednieniem transportow (statki, dylizanse) - przesiadki widoczne jako kolorowe pierscienie na mapie",
+      "documentedIn": "NAVIGATION.md"
+    },
+    {
+      "name": "/prowadzt",
       "pattern": "/^\\/prowadzt(!?)\\s+(.*)$/",
       "source": "src/client/scripts/mapAliases.ts",
       "usage": "/prowadzt id",
@@ -5139,7 +5176,7 @@
     },
     {
       "name": "/prze",
-      "pattern": "/\\/prze(?: ([A-Za-z0-9@]+))?$/",
+      "pattern": "/^\\/prze(?: (.+))?$/",
       "source": "src/client/scripts/objectAliases.ts",
       "usage": "/prze [id]",
       "description": "Przelamuje obrone wskazanego obiektu, celu ataku, a gdy go brak - aktualnie atakowanego przeciwnika",
@@ -5203,7 +5240,7 @@
     },
     {
       "name": "/ra",
-      "pattern": "/\\/ra ([0-9]+)$/",
+      "pattern": "/^\\/ra (.+)$/",
       "source": "src/client/scripts/objectAliases.ts",
       "usage": "/ra id",
       "description": "Rozkaz druzynie atakowac osobe o podanym numerze",
@@ -5266,7 +5303,7 @@
     },
     {
       "name": "/rz",
-      "pattern": "/\\/rz ([A-Za-z0-9@]+)$/",
+      "pattern": "/^\\/rz (.+)$/",
       "source": "src/client/scripts/objectAliases.ts",
       "usage": "/rz id",
       "description": "Rozkaz druzynie zaslonic obiekt",
@@ -5435,7 +5472,7 @@
     },
     {
       "name": "/w",
-      "pattern": "/\\/w ([A-Za-z0-9@]+)$/",
+      "pattern": "/^\\/w (.+)$/",
       "source": "src/client/scripts/objectAliases.ts",
       "usage": "/w id",
       "description": "Wycofaj postac za wskazany obiekt",
@@ -5443,7 +5480,7 @@
     },
     {
       "name": "/wa",
-      "pattern": "/\\/wa ([0-9]+)$/",
+      "pattern": "/^\\/wa (.+)$/",
       "source": "src/client/scripts/objectAliases.ts",
       "usage": "/wa id",
       "description": "Oznacz obiekt jako cel ataku",
@@ -5658,7 +5695,7 @@
     },
     {
       "name": "/wz",
-      "pattern": "/\\/wz ([A-Za-z0-9@]+)$/",
+      "pattern": "/^\\/wz (.+)$/",
       "source": "src/client/scripts/objectAliases.ts",
       "usage": "/wz id",
       "description": "Oznacz obiekt z druzyny jako cel obrony",
@@ -5674,7 +5711,7 @@
     },
     {
       "name": "/x",
-      "pattern": "/\\/x ([0-9]+)$/",
+      "pattern": "/^\\/x (.+)$/",
       "source": "src/client/scripts/objectAliases.ts",
       "usage": "/x id",
       "description": "Zaskocz obiekt o podanym id",
@@ -5690,7 +5727,7 @@
     },
     {
       "name": "/z",
-      "pattern": "/\\/z ([0-9]+)$/",
+      "pattern": "/^\\/z (.+)$/",
       "source": "src/client/scripts/objectAliases.ts",
       "usage": "/z id",
       "description": "Zabij obiekt o podanym id",
@@ -5744,7 +5781,7 @@
     },
     {
       "name": "/za",
-      "pattern": "/\\/za ([A-Za-z0-9@]+)$/",
+      "pattern": "/^\\/za (.+)$/",
       "source": "src/client/scripts/objectAliases.ts",
       "usage": "/za id",
       "description": "Alias do `/zas`",
@@ -5752,7 +5789,7 @@
     },
     {
       "name": "/za",
-      "pattern": "/^\\/za([234]) ([A-Za-z0-9@]+)$/",
+      "pattern": "/^\\/za([234]) (.+)$/",
       "source": "src/client/scripts/objectAliases.ts",
       "usage": "/za id",
       "description": "Alias do `/zas`",
@@ -5824,14 +5861,6 @@
     },
     {
       "name": "/zap",
-      "pattern": "/\\/zap ([0-9]+)$/",
-      "source": "src/client/scripts/objectAliases.ts",
-      "usage": "/zap numer",
-      "description": "Zapros do druzyny obiekt o podanym numerze",
-      "documentedIn": "COMBAT.md"
-    },
-    {
-      "name": "/zap",
       "pattern": "/\\/zap \\*$/",
       "source": "src/client/scripts/objectAliases.ts",
       "usage": "/zap numer",
@@ -5841,6 +5870,14 @@
     {
       "name": "/zap",
       "pattern": "/\\/zap 0$/",
+      "source": "src/client/scripts/objectAliases.ts",
+      "usage": "/zap numer",
+      "description": "Zapros do druzyny obiekt o podanym numerze",
+      "documentedIn": "COMBAT.md"
+    },
+    {
+      "name": "/zap",
+      "pattern": "/^\\/zap (.+)$/",
       "source": "src/client/scripts/objectAliases.ts",
       "usage": "/zap numer",
       "description": "Zapros do druzyny obiekt o podanym numerze",
@@ -5863,7 +5900,7 @@
     },
     {
       "name": "/zas",
-      "pattern": "/\\/zas ([A-Za-z0-9@]+)$/",
+      "pattern": "/^\\/zas (.+)$/",
       "source": "src/client/scripts/objectAliases.ts",
       "usage": "/zas id",
       "description": "Zaslon obiekt (uzywa `zaslon przed` gdy nie w druzynie)",
@@ -6162,6 +6199,24 @@
       "id": "enemy.broken_defense",
       "label": "Wrog - zlamana obrona",
       "category": "Walka"
+    },
+    {
+      "id": "attack",
+      "label": "Atak na mnie (kazdy)",
+      "category": "Walka",
+      "description": "Gdy ktokolwiek cie zaatakuje, niezaleznie od gildii. Argument {enemy} mowi, czy atakujacy jest z gildii oznaczonej jako wroga.",
+      "args": [
+        {
+          "name": "attacker",
+          "label": "Nazwa atakujacego",
+          "type": "string"
+        },
+        {
+          "name": "enemy",
+          "label": "Czy z wrogiej gildii",
+          "type": "boolean"
+        }
+      ]
     },
     {
       "id": "enemy.attack",
@@ -6596,8 +6651,8 @@
         "Okno mapy",
         "Multibindy lokacji"
       ],
-      "tokens": 1393,
-      "content": "# Mapa i nawigacja\n\nKomendy do poruszania sie, mapy i automatycznego chodzenia.\n\n## Podstawowy ruch\n\n| Komenda | Opis |\n|---------|------|\n| `/cofnij` | Cofnij postac do poprzedniego pomieszczenia na mapie |\n| `/move kierunek` | Przesun mape bez wysylania komendy do serwera |\n| `/ustaw id` | Ustaw biezaca pozycje na mapie na podany identyfikator |\n| `/zlok` | Wymus odswiezenie biezacej pozycji na mapie |\n| `/idz kierunek` | Wybierz przeciwne wyjscie w pomieszczeniu |\n| `n!` `s!` `e!` `w!` `ne!` `nw!` `se!` `sw!` `u!` `d!` | Wyslij czysty kierunek do serwera z pominieciem ruchu po mapie |\n\n> **Wskazowka:** Kiedy mapper na pewno zgubi pozycje - nie udalo mu sie odtworzyc ruchu za druzyna albo gra podaje lokacje spoza mapy - w prawym gornym rogu mapy zapala sie czerwona plakietka **ZGUBIONY**. Znacznik zostaje na ostatnim pewnym pomieszczeniu; plakietka gasnie sama, gdy gra poda znane mapie polozenie, albo po recznym ustawieniu pozycji (`/ustaw id`, `/zlok`, GPS, menu mapy).\n\n## Automatyczne chodzenie\n\n| Komenda | Opis |\n|---------|------|\n| `/idz id [opoznienie]` | Automatycznie idz do wskazanej lokacji |\n| `/stop` | Zatrzymaj automatyczne chodzenie |\n| `/dalej [opoznienie]` | Wznow wedrowke z opcjonalnym opoznieniem |\n| `/opoz sekundy` | Ustaw domyslne opoznienie krokow |\n| `/szybciej` | Zmniejsz opoznienie o 0.5 s |\n| `/wolniej` | Zwieksz opoznienie o 0.5 s |\n| `/walkerw` | Otworz okno walkera |\n\n## Komendy przed/po kroku\n\n| Komenda | Opis |\n|---------|------|\n| `/pre_walk komendy` | Ustaw komendy wykonywane przed kazdym krokiem (rozdzielone `#`) |\n| `/pre_walk-` | Wyczysc komendy pre-walk |\n| `/post_walk komendy` | Ustaw komendy wykonywane po kazdym kroku (rozdzielone `#`) |\n| `/post_walk-` | Wyczysc komendy post-walk |\n\n## Prowadzenie\n\n| Komenda | Opis |\n|---------|------|\n| `/prowadz id` | Rozpocznij prowadzenie innej osoby do wskazanego pokoju (gdy pieszo nie da sie dojsc, trasa jest liczona z transportem) |\n| `/prowadz-` | Zakoncz prowadzenie (czysci tez trase z transportem) |\n| `/prowadzt id` | Prowadz z uwzglednieniem transportow (statki, dylizanse) - przesiadki widoczne jako kolorowe pierscienie na mapie |\n| `/prowadzt! id` | Jak `/prowadzt`, ale agresywnie minimalizuje chodzenie pieszo (zero kary za przesiadki, transport ~10x tanszy) |\n| `/go` | Wybierz wyjscie zgodnie z wyznaczona trasa (gdy aktywne prowadzenie) |\n\n> **Wskazowka:** `/prowadzt` rysuje pieszej odcinki na mapie tak jak `/prowadz`, a punkty wsiadania/wysiadania znaczy pierscieniami w kolorze odcinka. Pelna instrukcja (na ktora lodz wsiasc, jaka komenda, gdzie wysiasc) trafia do okna wyjscia.\n\n> **Wskazowka:** Kiedy `/prowadz` nie znajduje drogi pieszo, klient sam szuka trasy z transportem i wypisuje ja tak, jak zrobilby to `/prowadzt`. Jesli w tym czasie jedziesz wozem, dojazd i rejs sa liczone razem. Woz mozna zabrac na statek, wiec zostaje on dopiero tam, gdzie naprawde nie wjedzie — instrukcja pokazuje to jako `Jedz wozem`, `Wsiadz z wozem` i `zostaw woz na`.\n\n> **Wskazowka:** Przy wjezdzie wozem na statek bind wejscia kupuje bilety takze dla czlonkow druzyny obecnych na lokacji i wrecza im je (tak jak `/bilety`), bez podwajania `wem`/`wlm`. Mozna to wylaczyc w ustawieniach postaci (opcja \"Bilety dla druzyny przy wjezdzie wozem\") — wtedy kupowany jest tylko wlasny bilet.\n\n## Wyszukiwanie na mapie\n\n| Komenda | Opis |\n|---------|------|\n| `/przeszukaj tekst` | Wyszukaj pokoje z nazwami zawierajacymi tekst (do 10 najblizszych) |\n\n## Roza wiatrow\n\n| Komenda | Opis |\n|---------|------|\n| `/roza` | Przelacz roze wiatrow (wl./wyl.) |\n| `/roza 0` | Wylacz roze wiatrow |\n| `/roza 1` | Wlacz tryb 1 - inline (wyswietlana w tekscie) |\n| `/roza 2` | Wlacz tryb 2 - ramka (staly element w rogu obszaru gry) |\n\n> **Wskazowka:** Przelaczanie trybu (`/roza 1`, `/roza 2`) wlacza roze jesli byla wylaczona. Tryb mozna rowniez zmienic w ustawieniach postaci (opcja \"Roza wiatrow\").\n\n## Zaznaczanie lokacji\n\n| Komenda | Opis |\n|---------|------|\n| `/zaznaczaj` | Wlacz zaznaczanie odwiedzanych lokacji na mapie |\n| `/zaznaczaj-` | Wylacz zaznaczanie i usun dotychczasowe zaznaczenia |\n\n## Informacje o lokacji\n\n| Komenda | Opis |\n|---------|------|\n| `/info` | Wyswietl informacje o biezacej lokacji w oknie wyjscia |\n| `/info id` | Wyswietl informacje o lokacji o podanym id |\n\n## Notatki lokacji\n\n| Komenda | Opis |\n|---------|------|\n| `/note` | Otworz okno Miejsca na biezacej lokacji, z kursorem w notatce |\n\n> **Wskazowka:** Skroty (`/idz`, `/prowadz`) i notatki lokacji sa w jednym oknie **Miejsca** (menu). Kazde miejsce to lokacja z opcjonalnym skrotem i notatka; przycisk \"Tutaj\" dodaje biezaca lokacje, a notatka zapisuje sie sama.\n\n## Okno mapy\n\n| Komenda | Opis |\n|---------|------|\n| `/mapa` | Otworz nowe okno mapy na biezacej lokacji |\n| `/mapa id` | Otworz nowe okno mapy na lokacji o podanym id |\n| `/mapa nazwa` | Otworz nowe okno mapy wycentrowane na obszarze o podanej nazwie |\n\n> **Wskazowka:** Okna mapy sa niezalezne od glownej mapy - nie sledza ruchu gracza. Mozna otworzyc wiele okien jednoczesnie. Kliknij prawym przyciskiem na lokacje i wybierz \"Otworz okno mapy\" aby otworzyc okno na wybranej lokacji.\n\n## Multibindy lokacji\n\n| Komenda | Opis |\n|---------|------|\n| `/mbind numer akcja` | Ustaw multibind 1-4 dla biezacej lokacji |\n| `/mbind+ akcja` | Dodaj akcje do pierwszego wolnego multibinda |\n| `/mbind-` | Usun wszystkie multibindy z biezacej lokacji |\n| `/mbind- numer` | Usun wskazany multibind |\n| `/mbind` | Wyswietl multibindy biezacej lokacji |\n| `/mbind id` | Wyswietl multibindy dla lokacji o podanym id |"
+      "tokens": 1443,
+      "content": "# Mapa i nawigacja\n\nKomendy do poruszania sie, mapy i automatycznego chodzenia.\n\n## Podstawowy ruch\n\n| Komenda | Opis |\n|---------|------|\n| `/cofnij` | Cofnij postac do poprzedniego pomieszczenia na mapie |\n| `/move kierunek` | Przesun mape bez wysylania komendy do serwera |\n| `/ustaw id` | Ustaw biezaca pozycje na mapie na podany identyfikator |\n| `/zlok` | Wymus odswiezenie biezacej pozycji na mapie |\n| `/idz kierunek` | Wybierz przeciwne wyjscie w pomieszczeniu |\n| `n!` `s!` `e!` `w!` `ne!` `nw!` `se!` `sw!` `u!` `d!` | Wyslij czysty kierunek do serwera z pominieciem ruchu po mapie |\n\n> **Wskazowka:** Kiedy mapper na pewno zgubi pozycje - nie udalo mu sie odtworzyc ruchu za druzyna albo gra podaje lokacje spoza mapy - w prawym gornym rogu mapy zapala sie czerwona plakietka **ZGUBIONY**. Znacznik zostaje na ostatnim pewnym pomieszczeniu; plakietka gasnie sama, gdy gra poda znane mapie polozenie, albo po recznym ustawieniu pozycji (`/ustaw id`, `/zlok`, GPS, menu mapy).\n\n## Automatyczne chodzenie\n\n| Komenda | Opis |\n|---------|------|\n| `/idz id [opoznienie]` | Automatycznie idz do wskazanej lokacji |\n| `/stop` | Zatrzymaj automatyczne chodzenie |\n| `/dalej [opoznienie]` | Wznow wedrowke z opcjonalnym opoznieniem |\n| `/opoz sekundy` | Ustaw domyslne opoznienie krokow |\n| `/szybciej` | Zmniejsz opoznienie o 0.5 s |\n| `/wolniej` | Zwieksz opoznienie o 0.5 s |\n| `/walkerw` | Otworz okno walkera |\n\n## Komendy przed/po kroku\n\n| Komenda | Opis |\n|---------|------|\n| `/pre_walk komendy` | Ustaw komendy wykonywane przed kazdym krokiem (rozdzielone `#`) |\n| `/pre_walk-` | Wyczysc komendy pre-walk |\n| `/post_walk komendy` | Ustaw komendy wykonywane po kazdym kroku (rozdzielone `#`) |\n| `/post_walk-` | Wyczysc komendy post-walk |\n\n## Prowadzenie\n\n| Komenda | Opis |\n|---------|------|\n| `/prowadz id` | Rozpocznij prowadzenie innej osoby do wskazanego pokoju (gdy pieszo nie da sie dojsc, trasa jest liczona z transportem) |\n| `/prowadz-` | Zakoncz prowadzenie (czysci tez trase z transportem) |\n| `/prowadzt id` | Prowadz z uwzglednieniem transportow (statki, dylizanse) - przesiadki widoczne jako kolorowe pierscienie na mapie |\n| `/prowadzt! id` | Jak `/prowadzt`, ale agresywnie minimalizuje chodzenie pieszo (zero kary za przesiadki, transport ~10x tanszy) |\n| `/prowadzt` / `/prowadzt!` | Bez celu: przelacz biezace prowadzenie na trase z transportem (do tego samego celu) |\n| `/prowadz` | Bez celu: przelacz biezace prowadzenie z powrotem na trase pieszo |\n| `/go` | Wybierz wyjscie zgodnie z wyznaczona trasa (gdy aktywne prowadzenie) |\n\n> **Wskazowka:** `/prowadzt` rysuje pieszej odcinki na mapie tak jak `/prowadz`, a punkty wsiadania/wysiadania znaczy pierscieniami w kolorze odcinka. Pelna instrukcja (na ktora lodz wsiasc, jaka komenda, gdzie wysiasc) trafia do okna wyjscia.\n\n> **Wskazowka:** Kiedy `/prowadz` nie znajduje drogi pieszo, klient sam szuka trasy z transportem i wypisuje ja tak, jak zrobilby to `/prowadzt`. Jesli w tym czasie jedziesz wozem, dojazd i rejs sa liczone razem. Woz mozna zabrac na statek, wiec zostaje on dopiero tam, gdzie naprawde nie wjedzie — instrukcja pokazuje to jako `Jedz wozem`, `Wsiadz z wozem` i `zostaw woz na`.\n\n> **Wskazowka:** Przy wjezdzie wozem na statek bind wejscia kupuje bilety takze dla czlonkow druzyny obecnych na lokacji i wrecza im je (tak jak `/bilety`), bez podwajania `wem`/`wlm`. Mozna to wylaczyc w ustawieniach postaci (opcja \"Bilety dla druzyny przy wjezdzie wozem\") — wtedy kupowany jest tylko wlasny bilet.\n\n## Wyszukiwanie na mapie\n\n| Komenda | Opis |\n|---------|------|\n| `/przeszukaj tekst` | Wyszukaj pokoje z nazwami zawierajacymi tekst (do 10 najblizszych) |\n\n## Roza wiatrow\n\n| Komenda | Opis |\n|---------|------|\n| `/roza` | Przelacz roze wiatrow (wl./wyl.) |\n| `/roza 0` | Wylacz roze wiatrow |\n| `/roza 1` | Wlacz tryb 1 - inline (wyswietlana w tekscie) |\n| `/roza 2` | Wlacz tryb 2 - ramka (staly element w rogu obszaru gry) |\n\n> **Wskazowka:** Przelaczanie trybu (`/roza 1`, `/roza 2`) wlacza roze jesli byla wylaczona. Tryb mozna rowniez zmienic w ustawieniach postaci (opcja \"Roza wiatrow\").\n\n## Zaznaczanie lokacji\n\n| Komenda | Opis |\n|---------|------|\n| `/zaznaczaj` | Wlacz zaznaczanie odwiedzanych lokacji na mapie |\n| `/zaznaczaj-` | Wylacz zaznaczanie i usun dotychczasowe zaznaczenia |\n\n## Informacje o lokacji\n\n| Komenda | Opis |\n|---------|------|\n| `/info` | Wyswietl informacje o biezacej lokacji w oknie wyjscia |\n| `/info id` | Wyswietl informacje o lokacji o podanym id |\n\n## Notatki lokacji\n\n| Komenda | Opis |\n|---------|------|\n| `/note` | Otworz okno Miejsca na biezacej lokacji, z kursorem w notatce |\n\n> **Wskazowka:** Skroty (`/idz`, `/prowadz`) i notatki lokacji sa w jednym oknie **Miejsca** (menu). Kazde miejsce to lokacja z opcjonalnym skrotem i notatka; przycisk \"Tutaj\" dodaje biezaca lokacje, a notatka zapisuje sie sama.\n\n## Okno mapy\n\n| Komenda | Opis |\n|---------|------|\n| `/mapa` | Otworz nowe okno mapy na biezacej lokacji |\n| `/mapa id` | Otworz nowe okno mapy na lokacji o podanym id |\n| `/mapa nazwa` | Otworz nowe okno mapy wycentrowane na obszarze o podanej nazwie |\n\n> **Wskazowka:** Okna mapy sa niezalezne od glownej mapy - nie sledza ruchu gracza. Mozna otworzyc wiele okien jednoczesnie. Kliknij prawym przyciskiem na lokacje i wybierz \"Otworz okno mapy\" aby otworzyc okno na wybranej lokacji.\n\n## Multibindy lokacji\n\n| Komenda | Opis |\n|---------|------|\n| `/mbind numer akcja` | Ustaw multibind 1-4 dla biezacej lokacji |\n| `/mbind+ akcja` | Dodaj akcje do pierwszego wolnego multibinda |\n| `/mbind-` | Usun wszystkie multibindy z biezacej lokacji |\n| `/mbind- numer` | Usun wskazany multibind |\n| `/mbind` | Wyswietl multibindy biezacej lokacji |\n| `/mbind id` | Wyswietl multibindy dla lokacji o podanym id |"
     },
     {
       "id": "COMBAT.md",
@@ -6605,6 +6660,7 @@
       "title": "Walka",
       "headings": [
         "Tryb ataku",
+        "Wskazywanie celu",
         "Atakowanie",
         "Kolejka ataku",
         "Zaslanianie",
@@ -6616,8 +6672,8 @@
         "Loot",
         "Okno walki"
       ],
-      "tokens": 1058,
-      "content": "# Walka\n\nKomendy do walki, zaslaniania i zarzadzania celami ataku.\n\n## Tryb ataku\n\n| Komenda | Opis |\n|---------|------|\n| `/awr` | Przelacz tryb ataku: A (atak) → AW (atak + wskazanie) → AWR (atak + wskazanie + rozkaz) |\n\n> **Wskazowka:** Tryb ataku mozna tez przelaczac klikajac na wskaznik \"Atk:\" w stopce.\n\n## Atakowanie\n\n| Komenda | Opis |\n|---------|------|\n| `/z id` | Zabij obiekt o podanym id |\n| `/z` | Atakuj cel oznaczony jako cel ataku |\n| `/z_id id` | Zaatakuj obiekt po ID (przyjmuje id lub `ob_id`) |\n| `/zz cel` | Zaatakuj podany cel (bez ob_), np. `/zz rusalke` → `zabij rusalke` |\n| `/x id` | Zaskocz obiekt o podanym id |\n| `/x` | Zaskocz cel oznaczony jako cel ataku |\n| `/prze [id]` | Przelamuje obrone wskazanego obiektu, celu ataku, a gdy go brak - aktualnie atakowanego przeciwnika |\n| `/z_all` | Atakuj wrogow druzyny na lokacji: tych, ktorzy atakuja czlonka druzyny, oraz tych, ktorych druzyna juz atakuje (pomija sojusznikow, gwardie i postronnych) |\n| `/z_all!` | Atakuj wszystkich nie-druzynowych na lokacji, lacznie z postronnymi (pomija sojusznikow) |\n\n## Kolejka ataku\n\n| Komenda | Opis |\n|---------|------|\n| `/q id` | Dodaj przeciwnika do kolejki ataku (przyjmuje id lub `ob_id`) |\n| `/cq` | Wyczysc kolejke ataku |\n| `/nn` | Atakuj nastepny cel z kolejki |\n\n## Zaslanianie\n\n| Komenda | Opis |\n|---------|------|\n| `/zas id` | Zaslon obiekt (uzywa `zaslon przed` gdy nie w druzynie) |\n| `/za id` | Alias do `/zas` |\n| `/zas` | Zaslon cel oznaczony jako cel obrony |\n| `/za` | Alias do `/zas` |\n| `/w id` | Wycofaj postac za wskazany obiekt |\n| `/puszczaj` | Przelacz automatyczne zwalnianie zaslony |\n\n## Zaslona grupowa\n\n| Komenda | Opis |\n|---------|------|\n| `/za2 id` | Zaslon z poziomem krycia 2 |\n| `/za3 id` | Zaslon z poziomem krycia 3 |\n| `/za4 id` | Zaslon z poziomem krycia 4 |\n\n## Oznaczanie celow\n\n| Komenda | Opis |\n|---------|------|\n| `/wa id` | Oznacz obiekt jako cel ataku |\n| `/wz id` | Oznacz obiekt z druzyny jako cel obrony |\n\n## Rozkazy druzyny\n\n| Komenda | Opis |\n|---------|------|\n| `/ra id` | Rozkaz druzynie atakowac osobe o podanym numerze |\n| `/ra` | Rozkaz druzynie atakowac aktualny cel ataku |\n| `/rz id` | Rozkaz druzynie zaslonic obiekt |\n| `/rz` | Rozkaz druzynie zaslonic aktualny cel obrony |\n| `/zap numer` | Zapros do druzyny obiekt o podanym numerze |\n| `/zap 0` | Zapros do druzyny wszystkich przedstawionych na lokacji (pomija wrogow i wrogie gildie) |\n| `/zap *` | Zapros do druzyny wszystkich sojusznikow (gildie sojusznicze + osoby oznaczone jako sojusznicy), niezaleznie czy walcza |\n| `/pro id` | Przekaz prowadzenie obiektowi |\n\n## Wrogowie na bindach\n\n| Komenda | Opis |\n|---------|------|\n| `/nabindach` | Wyswietl aktualnie przypisanych wrogow na bindach |\n| `/nabindach--` | Wyczysc bindy wrogow (tymczasowo do zmiany lokacji) |\n\nW Ustawieniach (Postac -> Walka, sekcja \"Bindy wrogow\") mozna podac wlasne\nkomendy dla bindu ataku (F1-F3) i bindu blokowania (CTRL+F1-F3). W komendzie\n`{wrog}` zastepuje wroga ze slotu (`ob_12345`), np. `wesprzyj {wrog}`. Kolejne\nkomendy oddziela sie srednikiem, a `{atak}` i `{blok}` to domyslne zachowanie\nbindow (zwykly atak klienta razem ze wskazaniem celu druzynie, `zablokuj {wrog}`),\nnp. `dobadz broni; {atak}` albo `{blok}; {atak}`. Puste pole zostawia domyslne\nzachowanie.\n\n## Reset skrotow druzyny\n\n| Komenda | Opis |\n|---------|------|\n| `/walka_restart` | Resetuj skroty druzyny i przypisz je od nowa od A |\n\n## Loot\n\n| Komenda | Opis |\n|---------|------|\n| `/loot` | Przeszukaj wszystkie ciala na lokacji (ob 1. cialo, ob 2. cialo, ...) |\n\n> **Wskazowka:** `/loot` otwiera okno z przedmiotami ze wszystkich cial, w ktorym mozna kliknac przedmiot aby go podniesc. Samodzielne `ob cialo` koloruje i podlinkuje przedmioty bezposrednio w tekscie gry.\n\n## Okno walki\n\n| Komenda | Opis |\n|---------|------|\n| `/walkaw` lub `/walka okno` | Otworz okno walki z logiem komunikatow walki |\n\n> **Wskazowka:** przewiniecie loga w gore dzieli okno walki na dwie czesci — na dole zostaje przyklejony podglad najnowszych linii, wiec walka leci dalej, a przewijany log stoi w miejscu. Powrot na sam dol zamyka podglad. Wysokosc dolnej czesci zmienia sie przeciaganiem paska miedzy nimi. Tak samo dziala okno glowne."
+      "tokens": 1204,
+      "content": "# Walka\n\nKomendy do walki, zaslaniania i zarzadzania celami ataku.\n\n## Tryb ataku\n\n| Komenda | Opis |\n|---------|------|\n| `/awr` | Przelacz tryb ataku: A (atak) → AW (atak + wskazanie) → AWR (atak + wskazanie + rozkaz) |\n\n> **Wskazowka:** Tryb ataku mozna tez przelaczac klikajac na wskaznik \"Atk:\" w stopce.\n\n## Wskazywanie celu\n\nAliasy przyjmujace `id` (`/z`, `/x`, `/prze`, `/za`, `/zas`, `/za2`-`/za4`, `/w`, `/pro`, `/zap`, `/ra`, `/rz`, `/wa`, `/wz`) przyjmuja skrot obiektu z listy albo imie lub fragment opisu - bez wzgledu na wielkosc liter i ogonki, np. `/za gerw`, `/z zolty`. Wystarczy najkrotszy jednoznaczny fragment. Gdy pasuje kilka osob, aliasy wsparcia (`/za`, `/w`, `/pro`, `/rz`, `/wz`) wybieraja jedynego czlonka druzyny, a pozostale (atak, `/zap`) jedyna osobe spoza druzyny; w pozostalych przypadkach nic nie jest wysylane i wypisywana jest lista kandydatow ze skrotami.\n\n## Atakowanie\n\n| Komenda | Opis |\n|---------|------|\n| `/z id` | Zabij obiekt o podanym id |\n| `/z` | Atakuj cel oznaczony jako cel ataku |\n| `/z_id id` | Zaatakuj obiekt po ID (przyjmuje id lub `ob_id`) |\n| `/zz cel` | Zaatakuj podany cel (bez ob_), np. `/zz rusalke` → `zabij rusalke` |\n| `/x id` | Zaskocz obiekt o podanym id |\n| `/x` | Zaskocz cel oznaczony jako cel ataku |\n| `/prze [id]` | Przelamuje obrone wskazanego obiektu, celu ataku, a gdy go brak - aktualnie atakowanego przeciwnika |\n| `/z_all` | Atakuj wrogow druzyny na lokacji: tych, ktorzy atakuja czlonka druzyny, oraz tych, ktorych druzyna juz atakuje (pomija sojusznikow, gwardie i postronnych) |\n| `/z_all!` | Atakuj wszystkich nie-druzynowych na lokacji, lacznie z postronnymi (pomija sojusznikow) |\n\n## Kolejka ataku\n\n| Komenda | Opis |\n|---------|------|\n| `/q id` | Dodaj przeciwnika do kolejki ataku (przyjmuje id lub `ob_id`) |\n| `/cq` | Wyczysc kolejke ataku |\n| `/nn` | Atakuj nastepny cel z kolejki |\n\n## Zaslanianie\n\n| Komenda | Opis |\n|---------|------|\n| `/zas id` | Zaslon obiekt (uzywa `zaslon przed` gdy nie w druzynie) |\n| `/za id` | Alias do `/zas` |\n| `/zas` | Zaslon cel oznaczony jako cel obrony |\n| `/za` | Alias do `/zas` |\n| `/w id` | Wycofaj postac za wskazany obiekt |\n| `/puszczaj` | Przelacz automatyczne zwalnianie zaslony |\n\n## Zaslona grupowa\n\n| Komenda | Opis |\n|---------|------|\n| `/za2 id` | Zaslon z poziomem krycia 2 |\n| `/za3 id` | Zaslon z poziomem krycia 3 |\n| `/za4 id` | Zaslon z poziomem krycia 4 |\n\n## Oznaczanie celow\n\n| Komenda | Opis |\n|---------|------|\n| `/wa id` | Oznacz obiekt jako cel ataku |\n| `/wz id` | Oznacz obiekt z druzyny jako cel obrony |\n\n## Rozkazy druzyny\n\n| Komenda | Opis |\n|---------|------|\n| `/ra id` | Rozkaz druzynie atakowac osobe o podanym numerze |\n| `/ra` | Rozkaz druzynie atakowac aktualny cel ataku |\n| `/rz id` | Rozkaz druzynie zaslonic obiekt |\n| `/rz` | Rozkaz druzynie zaslonic aktualny cel obrony |\n| `/zap numer` | Zapros do druzyny obiekt o podanym numerze |\n| `/zap 0` | Zapros do druzyny wszystkich przedstawionych na lokacji (pomija wrogow i wrogie gildie) |\n| `/zap *` | Zapros do druzyny wszystkich sojusznikow (gildie sojusznicze + osoby oznaczone jako sojusznicy), niezaleznie czy walcza |\n| `/pro id` | Przekaz prowadzenie obiektowi |\n\n## Wrogowie na bindach\n\n| Komenda | Opis |\n|---------|------|\n| `/nabindach` | Wyswietl aktualnie przypisanych wrogow na bindach |\n| `/nabindach--` | Wyczysc bindy wrogow (tymczasowo do zmiany lokacji) |\n\nW Ustawieniach (Postac -> Walka, sekcja \"Bindy wrogow\") mozna podac wlasne\nkomendy dla bindu ataku (F1-F3) i bindu blokowania (CTRL+F1-F3). W komendzie\n`{wrog}` zastepuje wroga ze slotu (`ob_12345`), np. `wesprzyj {wrog}`. Kolejne\nkomendy oddziela sie srednikiem, a `{atak}` i `{blok}` to domyslne zachowanie\nbindow (zwykly atak klienta razem ze wskazaniem celu druzynie, `zablokuj {wrog}`),\nnp. `dobadz broni; {atak}` albo `{blok}; {atak}`. Puste pole zostawia domyslne\nzachowanie.\n\n## Reset skrotow druzyny\n\n| Komenda | Opis |\n|---------|------|\n| `/walka_restart` | Resetuj skroty druzyny i przypisz je od nowa od A |\n\n## Loot\n\n| Komenda | Opis |\n|---------|------|\n| `/loot` | Przeszukaj wszystkie ciala na lokacji (ob 1. cialo, ob 2. cialo, ...) |\n\n> **Wskazowka:** `/loot` otwiera okno z przedmiotami ze wszystkich cial, w ktorym mozna kliknac przedmiot aby go podniesc. Samodzielne `ob cialo` koloruje i podlinkuje przedmioty bezposrednio w tekscie gry.\n\n## Okno walki\n\n| Komenda | Opis |\n|---------|------|\n| `/walkaw` lub `/walka okno` | Otworz okno walki z logiem komunikatow walki |\n\n> **Wskazowka:** przewiniecie loga w gore dzieli okno walki na dwie czesci — na dole zostaje przyklejony podglad najnowszych linii, wiec walka leci dalej, a przewijany log stoi w miejscu. Powrot na sam dol zamyka podglad. Wysokosc dolnej czesci zmienia sie przeciaganiem paska miedzy nimi. Tak samo dziala okno glowne."
     },
     {
       "id": "INVENTORY.md",
@@ -6819,18 +6875,18 @@
     }
   ],
   "gaps": [],
-  "version": "d484701981b04a6f",
-  "generatedAt": "2026-09-23T09:23:23.498Z",
+  "version": "988fec78f05794de",
+  "generatedAt": "2026-09-24T06:49:53.643Z",
   "stats": {
-    "settings": 137,
-    "settingsWithLabels": 137,
-    "commands": 234,
-    "commandsWithDescriptions": 232,
-    "events": 33,
+    "settings": 138,
+    "settingsWithLabels": 138,
+    "commands": 236,
+    "commandsWithDescriptions": 234,
+    "events": 34,
     "docs": 12,
-    "leanChars": 47212,
-    "leanTokens": 11803,
-    "fatChars": 264207,
-    "fatTokens": 66052
+    "leanChars": 47358,
+    "leanTokens": 11840,
+    "fatChars": 266429,
+    "fatTokens": 66608
   }
 }

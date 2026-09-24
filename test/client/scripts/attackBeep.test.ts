@@ -99,6 +99,20 @@ describe('attack beep triggers', () => {
     expect(beepCalls).toHaveLength(2);
   });
 
+  test('raises attack event for every attacker, enemy.attack only for enemies', () => {
+    parse('Intia atakuje cie!');
+    parse('Nieznajomy atakuje cie!');
+    const attackCalls = client.sendEvent.mock.calls.filter(call => call[0] === 'attack');
+    expect(attackCalls).toEqual([
+      ['attack', { attacker: 'Intia', enemy: true }],
+      ['attack', { attacker: 'Nieznajomy', enemy: false }],
+    ]);
+    const enemyCalls = client.sendEvent.mock.calls.filter(call => call[0] === 'enemy.attack');
+    expect(enemyCalls).toEqual([['enemy.attack', { attacker: 'Intia' }]]);
+    const beepCalls = client.sendEvent.mock.calls.filter(call => call[0] === 'sound:category');
+    expect(beepCalls).toHaveLength(1);
+  });
+
   test('does not beep on plain phrase trigger', () => {
     const result = parse('atakuje cie!');
     const beepCalls = client.sendEvent.mock.calls.filter(call => call[0] === 'sound:category');
