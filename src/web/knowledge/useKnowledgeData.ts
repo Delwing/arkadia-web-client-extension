@@ -47,6 +47,7 @@ export function useKnowledgeData(isOpen: boolean) {
             }),
             eventBus.on('knowledgeBookReport', (payload) => setBooks(payload as BooksPayload | null)),
             eventBus.on('knowledgeTickEvent', bumpHistory),
+            eventBus.on('knowledgeEvents.changed', bumpHistory),
             eventBus.on('enterLocation', () => setRoomVersion((v) => v + 1)),
         ];
         window.addEventListener(WIEDZA_IMPORTED_EVENT, bumpHistory);

@@ -175,14 +175,20 @@ export class UserDataTracker {
         const firstSeq = await store.reserveSeq(drafts.length);
         const own: UserRecord[] = drafts.map((d, i) => ({ ...d, seq: firstSeq + i }));
         const merged: UserRecord[] = [];
+        const accepted: UserRecord[] = [];
         for (const record of own) {
             const id = recordId(record);
             const current = tracked.get(id);
             const resolved = current ? resolve(type.rule, current, record) : record;
-            if (sameRecord(resolved, current)) continue;
-            merged.push(resolved);
+            // A local value that loses the merge (e.g. progress going back
+            // under max) changes nothing and isn't uploaded.
+            if (!sameRecord(resolved, current)) {
+                merged.push(resolved);
+                accepted.push(record);
+            }
             // The merge can differ from the local value (e.g. an earlier
-            // level-up already known): bring local data in line.
+            // level-up already known): bring local data in line, or the same
+            // local value would be captured again on every tick.
             const item = local.get(id);
             if (type.rule.kind !== 'counter' && !resolved.deleted && item && !valuesEqual(resolved.value, item.value)) {
                 writes.push({ scope: resolved.scope, key: resolved.key, value: resolved.value });
@@ -191,8 +197,8 @@ export class UserDataTracker {
 
         if (writes.length > 0) await type.write(writes);
         await store.putRecords(merged);
-        await store.putOutbox(own);
-        return own;
+        await store.putOutbox(accepted);
+        return accepted;
     }
 
     private async applyType(type: UserDataType, incoming: UserRecord[]): Promise<void> {

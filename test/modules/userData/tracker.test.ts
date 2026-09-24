@@ -217,6 +217,18 @@ describe('UserDataTracker', () => {
         expect(a.types.kills.get('goblin')).toEqual({ count: 9 });
     });
 
+    it('corrects a local value that loses the merge instead of uploading it on every capture', async () => {
+        const a = makeDevice('a', 1_000);
+        a.types.levels.set('zwierzeta:srednia', { at: 100 });
+        await a.tracker.capture();
+
+        a.types.levels.set('zwierzeta:srednia', { at: 300 });
+        expect(await a.tracker.capture()).toEqual([]);
+        expect(a.types.levels.get('zwierzeta:srednia')).toEqual({ at: 100 });
+        expect(await a.tracker.capture()).toEqual([]);
+        expect(await a.tracker.outbox()).toHaveLength(1);
+    });
+
     it('keeps the earliest observation and corrects a device that saw it later', async () => {
         const a = makeDevice('a', 1_000);
         const b = makeDevice('b', 1_000);
