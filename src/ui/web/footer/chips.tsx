@@ -28,7 +28,8 @@ function mmss(seconds: number): string {
  * Every state of the fixed-range chips, so they hold one width (see Chip's
  * `sizeTo`). Digits are tabular, so "8" stands for any digit; the counts are the
  * timers' ceilings - lamp 5:00, combat 32s, zask ~30s, cover 5s, order 15s.
- * The transport and package chips size to their own name plus "88:88".
+ * The transport chip sizes to its own name plus "88:88"; mail and package
+ * chips hug their text.
  */
 const FAJKA_SIZES = ["pali sie", "zgasla"];
 const LAMP_SIZES = ["8:88", "off"];
@@ -174,7 +175,6 @@ export function PackageChip() {
       icon={<ChipIcon name="box" />}
       label="Paczka"
       value={`${status.recipient}${time}`}
-      sizeTo={[`${status.recipient} 88:88`]}
       title={onClick ? "Prowadz do odbiorcy" : undefined}
       onClick={onClick}
     />
