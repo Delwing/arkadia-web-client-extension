@@ -50,6 +50,7 @@ import {
   type FooterButtonTone,
 } from "@modules/core/footerButtonRegistry";
 import { getMapOverlays, registerMapOverlay, unregisterMapOverlay } from "@modules/core/mapOverlayRegistry";
+import { registerWalkMode, unregisterWalkMode, type WalkMode } from "@modules/core/walkModeRegistry";
 import { PluginMapOverlay } from "./pluginMapOverlay";
 import {
   registerFooterComponent,
@@ -2729,6 +2730,48 @@ export interface AttackControllerApi {
 }
 
 /**
+ * Walk modes API - walk a step your own way when the player holds a modifier
+ * with a direction key.
+ *
+ * A walk mode rides on the direction keys (numpad by default, or wherever the
+ * player moved them). The player picks its modifier in Klawisze, next to the
+ * built-in "Przemknij", so Alt+numpad can sneak while Ctrl+numpad runs your
+ * mode. It does not change the move mode the ` key cycles.
+ */
+export interface WalkModesApi {
+  /**
+   * Register a walk mode. `onMove` gets the step: a short direction (`n`, `ne`,
+   * `u`) or, for the special-exit key, that exit's command. Send it however you
+   * like - `api.command.send` still applies the current ` move mode.
+   *
+   * The id keys the player's chosen modifier, so keep it stable across
+   * versions, and make it yours (`mc.walk`) - built-in ids are refused.
+   *
+   * @example
+   * ```typescript
+   * api.walkModes.register('mc.walk', {
+   *   label: 'MC: chodzenie',
+   *   defaultModifiers: { ctrl: true },
+   *   onMove: (direction) => api.command.send(pickExit(direction), true),
+   * });
+   * ```
+   */
+  register(id: string, options: WalkModeOptions): WalkModeHandle;
+}
+
+export interface WalkModeOptions {
+  /** Name in Klawisze. */
+  label: string;
+  /** Modifier used until the player picks one. Without it the mode starts unassigned. */
+  defaultModifiers?: { ctrl?: boolean; alt?: boolean; shift?: boolean };
+  onMove(direction: string): void;
+}
+
+export interface WalkModeHandle {
+  remove(): void;
+}
+
+/**
  * People API - Manage people database entries
  */
 export interface PeopleApi {
@@ -2875,6 +2918,8 @@ export interface PluginApi {
   locationNotes: LocationNotesApi;
   /** People database - manage people entries */
   people: PeopleApi;
+  /** Walk modes - walk a direction key your own way under a player-chosen modifier */
+  walkModes: WalkModesApi;
   /**
    * AnsiAwareBuffer class for creating formatted text buffers
    *
@@ -2908,6 +2953,7 @@ export class PluginApiImpl implements PluginApi {
   private footerComponentIds: Set<string> = new Set();
   private footerButtonIds: Set<string> = new Set();
   private mapOverlayIds: Set<string> = new Set();
+  private walkModeRecords: Map<string, Omit<WalkMode, "source" | "prefix">> = new Map();
   private commandLineSuggestions: Set<string> = new Set();
   private temporaryMultibindHandles: Set<TemporaryMultibindHandle> = new Set();
   private stateChangeUnsubscribers: (() => void)[] = [];
@@ -2942,6 +2988,7 @@ export class PluginApiImpl implements PluginApi {
   public combat: CombatApi;
   public locationNotes: LocationNotesApi;
   public people: PeopleApi;
+  public walkModes: WalkModesApi;
   public AnsiAwareBuffer: typeof AnsiAwareBuffer;
 
   constructor(client: Client, pluginId: string = 'unknown') {
@@ -2978,6 +3025,7 @@ export class PluginApiImpl implements PluginApi {
     this.combat = this.createCombatApi();
     this.locationNotes = this.createLocationNotesApi();
     this.people = this.createPeopleApi();
+    this.walkModes = this.createWalkModesApi();
 
     // Expose AnsiAwareBuffer class
     this.AnsiAwareBuffer = AnsiAwareBuffer;
@@ -2996,6 +3044,8 @@ export class PluginApiImpl implements PluginApi {
     updatePluginNotesName(this.pluginId, name);
     // And any footer components, which the settings panel lists by plugin name
     updateFooterComponentPluginName(this.pluginId, name);
+    // And walk modes, which Klawisze lists by plugin name
+    for (const mode of this.walkModeRecords.values()) registerWalkMode({ ...mode, pluginName: name });
   }
 
   /**
@@ -3739,6 +3789,38 @@ export class PluginApiImpl implements PluginApi {
     };
   }
 
+  private createWalkModesApi(): WalkModesApi {
+    return {
+      register: (id, options) => {
+        // Not prefixed with the plugin id: that is its URL, and the stored modifier must outlive a new one.
+        const record = {
+          id,
+          label: options.label,
+          defaultModifiers: options.defaultModifiers,
+          onMove: (direction: string) => {
+            try {
+              options.onMove(direction);
+            } catch (e) {
+              console.error(`[PluginApi] Walk mode "${id}" failed:`, e);
+            }
+          },
+        };
+        if (!registerWalkMode({ ...record, pluginName: this._pluginName ?? undefined })) {
+          console.warn(`[PluginApi] Walk mode id "${id}" is taken by a built-in mode`);
+          return { remove: () => {} };
+        }
+        this.walkModeRecords.set(id, record);
+        return {
+          remove: () => {
+            if (this.walkModeRecords.get(id) !== record) return;
+            this.walkModeRecords.delete(id);
+            unregisterWalkMode(id);
+          }
+        };
+      }
+    };
+  }
+
   private createPeopleApi(): PeopleApi {
     return {
       add: (entry: { name: string; description: string; guild: string }): void => {
@@ -3863,6 +3945,12 @@ export class PluginApiImpl implements PluginApi {
       unregisterMapOverlay(id);
     }
     this.mapOverlayIds.clear();
+
+    // Remove all walk modes registered by this plugin
+    for (const id of Array.from(this.walkModeRecords.keys())) {
+      unregisterWalkMode(id);
+    }
+    this.walkModeRecords.clear();
 
     // Remove all button macros registered by this plugin
     for (const id of Array.from(this.buttonMacroIds)) {

@@ -20,6 +20,9 @@ export interface Bind {
     shift?: boolean;
 }
 
+/** The modifier part of a bind, without a key: what a walk mode adds to a direction key. */
+export type WalkModifiers = Pick<Bind, 'ctrl' | 'alt' | 'shift'>;
+
 export interface CustomBind extends Bind {
     command: string;
 }
@@ -58,6 +61,12 @@ export interface BindSettings {
     /** Double-press bind that sends the `+k` game command. */
     doubleK: Bind;
     directions: DirectionBinds;
+    /**
+     * Modifier held with a direction key to walk that step in a given walk mode
+     * (`przemknij`, a plugin's own walking), keyed by walk mode id. A mode with no
+     * entry uses its own default; an entry with no modifier switches it off.
+     */
+    walkModes?: Record<string, WalkModifiers>;
     custom: CustomBind[];
     temp: Bind[];
     enemy: Bind[];

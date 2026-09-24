@@ -29,6 +29,16 @@ sie od razu, nie ma przycisku "Zapisz".
   przenosi tam bind.
 - **Wlasne** - "+ Komenda" dodaje skrot wysylajacy dowolna komende.
 - **Kierunki** - "Uzyj strzalek" przenosi N/S/W/E na strzalki (i z powrotem).
+- **Tryby chodzenia** (pod Kierunkami) - kazdy tryb dostaje modyfikator (Ctrl,
+  Alt, Shift), ktory trzymany z dowolnym klawiszem kierunku idzie tym trybem.
+  Np. Alt dla "Przemknij" sprawia, ze Alt+Num8 wysyla `przemknij n`. Nie trzeba
+  bindowac kazdego kierunku osobno, a przeniesienie kierunkow na strzalki
+  przenosi tez tryby. Wtyczki moga dodac wlasne tryby (`api.walkModes.register`),
+  ktore pojawiaja sie na tej samej liscie. Modyfikator, ktorego juz uzywaja same
+  Kierunki (np. Shift+strzalki), jest wyszarzony - trybom zostaja pozostale. Na
+  macOS Ctrl+strzalki zajmuje system (Mission Control), wiec tryb na Ctrl przy
+  kierunkach na strzalkach jest oznaczony jako kolizja. Przelacznik trybu ruchu (`` ` ``) dziala
+  jak dotad, niezaleznie od tych modyfikatorow.
 - W menu `...`: nowa mapa klawiszy, zmiana nazwy, import bazy multibindow,
   przywrocenie domyslnych bindow, usuniecie mapy.
 

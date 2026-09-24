@@ -1,8 +1,9 @@
-import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { ChevronDown, ChevronRight, Download, Globe, MoreHorizontal, Pencil, Plug, Plus, Search, X } from "lucide-react";
 import { Button, DeleteButton, Input, Segmented } from "@web-ui/primitives/index.ts";
-import type { BindSettings, Keymap } from "@modules/core/keymapTypes";
+import type { BindSettings, Keymap, WalkModifiers } from "@modules/core/keymapTypes";
+import { effectiveWalkModifiers, getWalkModes, subscribeWalkModes, walkModifiersOf } from "@modules/core/walkModeRegistry";
 import {
     createKeymap,
     defaultBinds,
@@ -51,6 +52,8 @@ import {
     modeOfReach,
     sameCombo,
     toHelperKey,
+    takenWalkModifiers,
+    walkModeClashes,
     writeSlot,
     type Combo,
     type EntryRef,
@@ -86,6 +89,8 @@ interface Capture {
 }
 
 const SAVE_DELAY = 400;
+
+const WALK_MODIFIERS = ["ctrl", "alt", "shift"] as const;
 
 /** Empty own shortcuts (no key or no command) are kept on screen but never stored. */
 function sanitize(binds: BindSettings): BindSettings {
@@ -216,6 +221,22 @@ export default function Keys({ helperConnection, headerSlot, onImport }: KeysPro
     const focusEntry = merged.focus;
     const byCombo = useMemo(() => entriesByCombo(entries), [entries]);
     const conflictIds = useMemo(() => findConflicts(byCombo, helperConnected), [byCombo, helperConnected]);
+
+    const walkModes = useSyncExternalStore(subscribeWalkModes, getWalkModes);
+    // A modifier the direction keys already hold is no use to a walk mode: shown off, and locked.
+    const walkTaken = useMemo(() => takenWalkModifiers(binds), [binds]);
+    const walkRows = useMemo(() => {
+        const withMods = walkModes.map(m => {
+            const stored = walkModifiersOf(binds, m);
+            return { id: m.id, label: m.label, pluginName: m.pluginName, stored, mods: effectiveWalkModifiers(stored, walkTaken) };
+        });
+        return withMods.map(w => ({ ...w, clashes: walkModeClashes(w, withMods, binds, byCombo) }));
+    }, [walkModes, binds, byCombo, walkTaken]);
+
+    /** Flips one modifier and keeps the rest as stored, so a locked one comes back once the directions free it. */
+    const toggleWalkModifier = (id: string, stored: WalkModifiers, mods: WalkModifiers, m: typeof WALK_MODIFIERS[number]) => {
+        commit({ ...binds, walkModes: { ...binds.walkModes, [id]: { ...stored, [m]: !mods[m] } } });
+    };
 
     const layers = useMemo(() => {
         const extra = new Set<Layer>();
@@ -686,8 +707,52 @@ export default function Keys({ helperConnection, headerSlot, onImport }: KeysPro
                     );
                 })}
             </div>
+            {walkSection()}
         </section>
     );
+
+    /** Walk modes: a modifier held with any direction key walks the step that way. */
+    const walkSection = () => {
+        if (searching) return null;
+        return (
+            <div className="keys-walk" data-section="walk">
+                <div className="keys-walk__head">
+                    <span className="keys-cap">Tryby chodzenia</span>
+                    <span className="keys-muted">modyfikator + kierunek</span>
+                </div>
+                {walkRows.map(w => (
+                    <Fragment key={w.id}>
+                        <div className="keys-row" data-walk={w.id}>
+                            <span className="keys-row__label">
+                                {w.label}
+                                {w.pluginName && <span className="keys-muted">{w.pluginName}</span>}
+                            </span>
+                            {WALK_MODIFIERS.map(m => (
+                                <button
+                                    key={m}
+                                    type="button"
+                                    className={["keys-kc", "keys-walk__mod", w.mods[m] ? "is-on" : "is-none", w.mods[m] && w.clashes.length > 0 && "is-conflict"].filter(Boolean).join(" ")}
+                                    data-mod={m}
+                                    disabled={walkTaken[m]}
+                                    title={walkTaken[m]
+                                        ? `Kierunki już używają ${layerLabel(m)}`
+                                        : `${w.label}: ${w.mods[m] ? "bez" : "z"} ${layerLabel(m)}`}
+                                    onClick={() => toggleWalkModifier(w.id, w.stored, w.mods, m)}
+                                >
+                                    {layerLabel(m)}
+                                </button>
+                            ))}
+                        </div>
+                        {w.clashes.length > 0 && (
+                            <div className="keys-walk__clash" data-walk-clash={w.id}>
+                                Koliduje z: {w.clashes.join(", ")}
+                            </div>
+                        )}
+                    </Fragment>
+                ))}
+            </div>
+        );
+    };
 
     // Own shortcuts, whether the page hears them or the helper does: a shortcut
     // on a key the browser keeps is still an own shortcut, just heard elsewhere.

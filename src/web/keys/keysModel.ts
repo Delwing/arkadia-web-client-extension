@@ -6,7 +6,8 @@
  * Everything here is pure, so the window (Keys.tsx) only holds state and draws.
  */
 
-import type { Bind, BindSettings, DirectionBinds } from "@modules/core/keymapTypes";
+import type { Bind, BindSettings, DirectionBinds, WalkModifiers } from "@modules/core/keymapTypes";
+import { directionModifiers, hasWalkModifier, sameWalkModifiers } from "@modules/core/walkModeRegistry";
 import type { StoredBind } from "@modules/helper/helperBinds";
 import type { BindMode } from "@modules/helper/helperProtocol";
 import { KEYBOARD, keyDistance } from "./keyboardLayout";
@@ -549,4 +550,53 @@ export function freeKeysNear(combo: Combo, byCombo: Map<string, KeyEntry[]>, lim
     const out = near.slice(0, withShift ? limit - 1 : limit);
     if (withShift) out.push(shifted!);
     return out;
+}
+
+// ── Walk modes ──────────────────────────────────────────────────────────
+
+/** The direction slots a walk mode rides on (zerknij is a look, not a step). */
+const WALK_DIRECTIONS: readonly (keyof DirectionBinds)[] = ["nw", "n", "ne", "w", "e", "sw", "s", "se", "u", "d", "special"];
+
+/**
+ * The modifiers a walk mode cannot use because the direction keys already hold
+ * them (Shift+arrows, say): Klawisze greys them out, and the client ignores them.
+ */
+export function takenWalkModifiers(binds: BindSettings): WalkModifiers {
+    return directionModifiers(Object.values(binds.directions ?? {}).filter(b => !!b?.key));
+}
+
+/** macOS keeps Ctrl+arrows for Mission Control and Spaces: the page never hears them. */
+function macReserved(combo: Combo): boolean {
+    return combo.ctrl && !combo.alt && !combo.shift && combo.code.startsWith("Arrow");
+}
+
+/**
+ * What else a walk mode's modifier collides with: another walk mode on the
+ * same modifier (only one of them ever runs), a binding sitting on a direction
+ * key with that modifier held (both run on the one press, or the binding wins
+ * when it is itself a direction), or - on a Mac - a combo the system keeps.
+ * `mods` are the effective ones (see effectiveWalkModifiers). Labels, for the
+ * row's warning; empty when the mode is clear or has no modifier.
+ */
+export function walkModeClashes(
+    mode: { id: string; mods: WalkModifiers },
+    modes: readonly { id: string; label: string; mods: WalkModifiers }[],
+    binds: BindSettings,
+    byCombo: Map<string, KeyEntry[]>,
+    mac = IS_MAC,
+): string[] {
+    const { mods } = mode;
+    if (!hasWalkModifier(mods)) return [];
+    const clashes = new Set<string>();
+    for (const other of modes) {
+        if (other.id !== mode.id && sameWalkModifiers(other.mods, mods)) clashes.add(other.label);
+    }
+    for (const dir of WALK_DIRECTIONS) {
+        const base = comboOf(binds.directions[dir]);
+        if (!base) continue;
+        const walked: Combo = { code: base.code, ctrl: base.ctrl || !!mods.ctrl, alt: base.alt || !!mods.alt, shift: base.shift || !!mods.shift };
+        if (mac && macReserved(walked)) clashes.add("macOS (Ctrl+strzałki zajmuje Mission Control)");
+        for (const e of byCombo.get(comboId(walked)) ?? []) clashes.add(`${e.label} (${comboLabel(walked)})`);
+    }
+    return [...clashes];
 }

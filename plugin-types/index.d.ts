@@ -3821,6 +3821,53 @@ export interface AttackControllerApi {
 }
 
 /**
+ * Walk modes API - walk a step your own way when the player holds a modifier
+ * with a direction key.
+ *
+ * A walk mode rides on the direction keys (numpad by default, or wherever the
+ * player moved them). The player picks its modifier in Klawisze, next to the
+ * built-in "Przemknij", so Alt+numpad can sneak while Ctrl+numpad runs your
+ * mode. It does not change the move mode the ` key cycles.
+ */
+
+export interface WalkModesApi {
+    /**
+     * Register a walk mode. `onMove` gets the step: a short direction (`n`, `ne`,
+     * `u`) or, for the special-exit key, that exit's command. Send it however you
+     * like - `api.command.send` still applies the current ` move mode.
+     *
+     * The id keys the player's chosen modifier, so keep it stable across
+     * versions, and make it yours (`mc.walk`) - built-in ids are refused.
+     *
+     * @example
+     * ```typescript
+     * api.walkModes.register('mc.walk', {
+     *   label: 'MC: chodzenie',
+     *   defaultModifiers: { ctrl: true },
+     *   onMove: (direction) => api.command.send(pickExit(direction), true),
+     * });
+     * ```
+     */
+    register(id: string, options: WalkModeOptions): WalkModeHandle;
+}
+
+export interface WalkModeOptions {
+    /** Name in Klawisze. */
+    label: string;
+    /** Modifier used until the player picks one. Without it the mode starts unassigned. */
+    defaultModifiers?: {
+        ctrl?: boolean;
+        alt?: boolean;
+        shift?: boolean;
+    };
+    onMove(direction: string): void;
+}
+
+export interface WalkModeHandle {
+    remove(): void;
+}
+
+/**
  * People API - Manage people database entries
  */
 
@@ -3977,6 +4024,8 @@ export interface PluginApi {
     locationNotes: LocationNotesApi;
     /** People database - manage people entries */
     people: PeopleApi;
+    /** Walk modes - walk a direction key your own way under a player-chosen modifier */
+    walkModes: WalkModesApi;
     /**
      * AnsiAwareBuffer class for creating formatted text buffers
      *

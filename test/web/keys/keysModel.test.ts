@@ -17,6 +17,8 @@ import {
     normalizeCode,
     readSlot,
     toHelperKey,
+    takenWalkModifiers,
+    walkModeClashes,
     writeSlot,
     type Combo,
 } from "@web/keys/keysModel.ts";
@@ -204,5 +206,43 @@ describe("free keys", () => {
         const byCombo = entriesByCombo(buildEntries(binds(), []));
         const free = freeKeysNear(combo("Backquote"), byCombo, 8).map(c => c.code);
         expect(free.some(code => /^(Key|Digit)/.test(code))).toBe(false);
+    });
+});
+
+describe("walk mode clashes", () => {
+    const mode = (id: string, mods: Partial<Omit<Combo, "code">>) => ({ id, label: id, mods });
+
+    it("is clear without a modifier or with a free one", () => {
+        const b = binds();
+        const byCombo = entriesByCombo(buildEntries(b, []));
+        expect(walkModeClashes(mode("sneak", {}), [], b, byCombo)).toEqual([]);
+        expect(walkModeClashes(mode("sneak", { alt: true }), [], b, byCombo)).toEqual([]);
+    });
+
+    it("flags two modes on the same modifier", () => {
+        const b = binds();
+        const modes = [mode("sneak", { alt: true }), mode("mc.walk", { alt: true }), mode("sneakTeam", { ctrl: true })];
+        expect(walkModeClashes(modes[0], modes, b, entriesByCombo(buildEntries(b, [])))).toEqual(["mc.walk"]);
+    });
+
+    it("flags a binding on a direction key with the modifier held", () => {
+        const b = binds({ custom: [{ key: "Numpad8", alt: true, command: "przemknij na polnoc" }] });
+        const byCombo = entriesByCombo(buildEntries(b, []));
+        expect(walkModeClashes(mode("sneak", { alt: true }), [], b, byCombo)).toEqual(["przemknij na polnoc (Alt+Num8)"]);
+    });
+
+    it("takes the modifiers the direction keys hold", () => {
+        const b = binds({ directions: { ...defaultBinds.directions, n: { key: "ArrowUp", shift: true } } });
+        expect(takenWalkModifiers(b)).toEqual({ ctrl: false, alt: false, shift: true });
+        expect(takenWalkModifiers(binds())).toEqual({ ctrl: false, alt: false, shift: false });
+    });
+
+    it("on a Mac flags Ctrl+arrows, which the system keeps", () => {
+        const b = binds({ directions: { ...defaultBinds.directions, n: { key: "ArrowUp" } } });
+        const byCombo = entriesByCombo(buildEntries(b, []));
+        const ctrl = mode("mc.walk", { ctrl: true });
+        expect(walkModeClashes(ctrl, [], b, byCombo, true)).toEqual(["macOS (Ctrl+strzałki zajmuje Mission Control)"]);
+        expect(walkModeClashes(ctrl, [], b, byCombo, false)).toEqual([]);
+        expect(walkModeClashes(mode("sneak", { alt: true }), [], b, byCombo, true)).toEqual([]);
     });
 });

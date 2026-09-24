@@ -518,6 +518,31 @@ select.popup-input.popup-input--control.keys-row__reach {
   gap: 6px;
 }
 .keys-compass--extra { margin-top: 6px; }
+/* Walk modes: a modifier per mode, held with any direction key. */
+.keys-walk { display: flex; flex-direction: column; gap: 2px; margin-top: 10px; }
+.keys-walk__head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 2px; }
+.keys-walk__head .keys-muted { font-size: var(--ui-fs-xs, 12px); }
+.keys-walk .keys-row__label .keys-muted { font-size: var(--ui-fs-xs, 12px); }
+.keys-kc.keys-walk__mod.is-on {
+  border-color: var(--popup-accent-border);
+  background: var(--popup-accent-subtle-bg);
+  color: var(--popup-text-bright);
+}
+.keys-kc.keys-walk__mod.is-on.is-conflict {
+  border-color: var(--popup-danger);
+  background: var(--popup-danger-subtle-bg);
+  color: var(--popup-danger);
+}
+.keys-kc.keys-walk__mod:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  text-decoration: line-through;
+}
+.keys-walk__clash {
+  padding: 0 4px 4px 2px;
+  color: var(--popup-danger);
+  font-size: var(--ui-fs-xs, 12px);
+}
 .keys-compass__cell {
   display: flex;
   flex-direction: column;

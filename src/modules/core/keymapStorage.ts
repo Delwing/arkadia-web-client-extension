@@ -1,5 +1,5 @@
 import { globalStorage } from './storage';
-import type { BindSettings, Keymap, KeymapStore } from './keymapTypes';
+import type { BindSettings, Keymap, KeymapStore, WalkModifiers } from './keymapTypes';
 import {
     ACTIVE_KEYMAP_STORAGE_KEY,
     DEFAULT_KEYMAP_ID,
@@ -341,8 +341,21 @@ function mergeBindSettings(raw: any): BindSettings {
             ...defaultBinds.directions,
             ...(raw.directions || {}),
         },
+        walkModes: mergeWalkModes(raw.walkModes),
         custom: Array.isArray(raw.custom) ? raw.custom : [],
     };
+}
+
+/** Keeps only well-formed walk mode modifiers; an entry with none is kept on purpose (mode off). */
+function mergeWalkModes(raw: unknown): Record<string, WalkModifiers> | undefined {
+    if (!raw || typeof raw !== 'object') return undefined;
+    const out: Record<string, WalkModifiers> = {};
+    for (const [id, value] of Object.entries(raw as Record<string, unknown>)) {
+        if (!value || typeof value !== 'object') continue;
+        const mods = value as WalkModifiers;
+        out[id] = { ctrl: !!mods.ctrl, alt: !!mods.alt, shift: !!mods.shift };
+    }
+    return out;
 }
 
 // Also export mergeBindSettings for use in Binds.tsx
