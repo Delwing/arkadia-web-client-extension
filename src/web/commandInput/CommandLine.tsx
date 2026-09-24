@@ -4,6 +4,7 @@ import eventBus from "@modules/core/eventBus";
 import { globalStorage } from "@modules/core/storage";
 import { attachVoiceInput, type VoiceInputHandle } from "@web/voice/voiceInput.ts";
 import { CommandInputController, type CommandInputDeps } from "./CommandInputController";
+import type { TabCompletionMode } from "./CommandLineEngine";
 import { getConnectionView, requestReconnect, subscribeConnectionView } from "./connectionView";
 import MainMenu from "./MainMenu";
 import { useHardwareKeyboard, useMediaQuery } from "@web-ui/hooks";
@@ -21,6 +22,10 @@ function showVoiceSetting(): boolean {
 
 function tabHintSetting(): boolean {
   return globalStorage.get("uiSettings")?.tabCompletionHint !== false;
+}
+
+function tabModeSetting(): TabCompletionMode {
+  return globalStorage.get("uiSettings")?.tabCompletionMode ?? "cycle";
 }
 
 function formatTime(ms: number): string {
@@ -84,6 +89,7 @@ export default function CommandLine({ deps }: { deps: CommandLineDeps }) {
   const hardwareKeyboard = useHardwareKeyboard();
   const touch = useMediaQuery("(pointer: coarse)");
   const [tabHint, setTabHint] = useState(tabHintSetting);
+  const [tabMode, setTabMode] = useState(tabModeSetting);
   const [ghost, setGhost] = useState<{ text: string; suffix: string } | null>(null);
   const ghostRef = useRef<HTMLDivElement>(null);
   const refreshGhostRef = useRef<() => void>(() => {});
@@ -152,6 +158,7 @@ export default function CommandLine({ deps }: { deps: CommandLineDeps }) {
   useEffect(() => globalStorage.onChange("uiSettings", (next) => {
     if (next && "showVoiceButton" in next) setShowVoice(next.showVoiceButton !== false);
     if (next && "tabCompletionHint" in next) setTabHint(next.tabCompletionHint !== false);
+    if (next && "tabCompletionMode" in next) setTabMode(next.tabCompletionMode ?? "cycle");
   }), []);
 
   // Turning the button off detaches the recogniser entirely rather than just hiding
@@ -252,7 +259,11 @@ export default function CommandLine({ deps }: { deps: CommandLineDeps }) {
         </form>
         {passwordMode && <span className="command-field__hint">nie trafi do historii</span>}
         {!passwordMode && ghost && (
-          <span className="command-field__hint command-field__tab-hint"><kbd>Tab</kbd> uzupełnij</span>
+          <span className="command-field__hint command-field__tab-hint">
+            {tabMode === "word" ? <><kbd>Tab</kbd> słowo <kbd>→</kbd> całość</>
+              : tabMode === "whole" ? <><kbd>→</kbd> całość <kbd>Ctrl+→</kbd> słowo</>
+              : <><kbd>Tab</kbd> uzupełnij</>}
+          </span>
         )}
       </div>
       {showVoice && (

@@ -26,23 +26,26 @@
       "P11 = Menu (☰) → Ustawienia → Postać → Przedmioty → Zioła",
       "P12 = Menu (☰) → Ustawienia → Postać → Ogólne → Język",
       "P13 = Menu (☰) → Ustawienia → Postać → Magiki → Kolory",
-      "P14 = Menu (☰) → Ustawienia → Interfejs → Komendy → Komendy",
-      "P15 = Menu (☰) → Ustawienia → Interfejs → Mapa → Mapa",
-      "P16 = Menu (☰) → Ustawienia → Interfejs → Okna → Okno wyjścia i lista obiektów",
-      "P17 = Menu (☰) → Ustawienia → Interfejs → Dźwięk i powiadomienia → Powiadomienia",
-      "P18 = Menu (☰) → Ustawienia → Interfejs → Stopka → Stan postaci",
-      "P19 = Menu (☰) → Ustawienia → Interfejs → Mapa → Pomieszczenia i linie",
-      "P20 = Menu (☰) → Ustawienia → Interfejs → Mapa → Podświetlenie pomieszczeń",
-      "P21 = Menu (☰) → Ustawienia → Interfejs → Mapa → Marker gracza",
-      "P22 = Menu (☰) → Ustawienia → Interfejs → Wygląd → Wygląd",
-      "P23 = Menu (☰) → Ustawienia → Interfejs → Dźwięk i powiadomienia → Dźwięki",
-      "P24 = Menu kontekstowe (prawy przycisk myszy) w oknie wyjścia",
-      "P25 = Menu (☰) → Ustawienia → Interfejs → Inne → Inne",
-      "P26 = Menu (☰) → Ustawienia → Interfejs → Przyciski mobilne → Wyświetlanie",
-      "P27 = Menu (☰) → Ustawienia → Interfejs → Stopka → Przyciski przy linii komend",
-      "P28 = Menu (☰) → Ustawienia → Interfejs → Stopka → Elementy stopki",
-      "P29 = Menu (☰) → Ustawienia → Interfejs → Stopka → Stopka na telefonie",
-      "P30 = Menu (☰) → Ustawienia → Interfejs → Dźwięk i powiadomienia → Czytanie na głos"
+      "P14 = Menu (☰) → Ustawienia → Interfejs → Komendy → Podróż wozem",
+      "P15 = Menu (☰) → Ustawienia → Interfejs → Komendy → Pasek multibindów",
+      "P16 = Menu (☰) → Ustawienia → Interfejs → Mapa → Mapa",
+      "P17 = Menu (☰) → Ustawienia → Interfejs → Okna → Okno wyjścia i lista obiektów",
+      "P18 = Menu (☰) → Ustawienia → Interfejs → Dźwięk i powiadomienia → Powiadomienia",
+      "P19 = Menu (☰) → Ustawienia → Interfejs → Stopka → Stan postaci",
+      "P20 = Menu (☰) → Ustawienia → Interfejs → Mapa → Pomieszczenia i linie",
+      "P21 = Menu (☰) → Ustawienia → Interfejs → Mapa → Podświetlenie pomieszczeń",
+      "P22 = Menu (☰) → Ustawienia → Interfejs → Mapa → Marker gracza",
+      "P23 = Menu (☰) → Ustawienia → Interfejs → Komendy → Pole komend",
+      "P24 = Menu (☰) → Ustawienia → Interfejs → Wygląd → Wygląd",
+      "P25 = Menu (☰) → Ustawienia → Interfejs → Dźwięk i powiadomienia → Dźwięki",
+      "P26 = Menu kontekstowe (prawy przycisk myszy) w oknie wyjścia",
+      "P27 = Menu (☰) → Ustawienia → Interfejs → Inne → Inne",
+      "P28 = Menu (☰) → Ustawienia → Interfejs → Przyciski mobilne → Wyświetlanie",
+      "P29 = Menu (☰) → Ustawienia → Interfejs → Stopka → Przyciski przy linii komend",
+      "P30 = Menu (☰) → Ustawienia → Interfejs → Stopka → Elementy stopki",
+      "P31 = Menu (☰) → Ustawienia → Interfejs → Stopka → Stopka na telefonie",
+      "P32 = Menu (☰) → Ustawienia → Interfejs → Komendy → Uzupełnianie",
+      "P33 = Menu (☰) → Ustawienia → Interfejs → Dźwięk i powiadomienia → Czytanie na głos"
     ],
     "settings": [
       "## settings.* (character)",
@@ -104,92 +107,93 @@
       "supportCommand | Komenda wsparcia | P2 | string | wesprzyj",
       "zlomSilver | Kolorowanie złomu (srebro) | P- | { color: string; off?: boolean; } | {\"color\":\"#dadada\"}",
       "## behaviorSettings.* (ui)",
-      "carriageRouteBinds | Bindy trasy wozu (nastepny krok, zsiadanie) | P14 | boolean | true",
-      "dismountOnRefusedRide | Powtorzenie odrzuconej jazdy zsiada z wozu i idzie pieszo | P14 | boolean | false",
-      "drinkableAsFunctionalBind | Bind picia na bind funkcyjny | P14 | boolean | true",
-      "explorationMode | Tryb eksploracji mapy | P15 | boolean | false",
-      "gateAsFunctionalBind | Bind bramy na bind funkcyjny | P14 | boolean | false",
-      "instantMove | Natychmiastowe przechodzenie po mapie | P15 | boolean | true",
-      "objectContextMenuCommands | Komendy menu kontekstowego obiektów | P16 | string[] | [\"ob\",\"ocen\",\"zapros\",\"wskaz\"]",
-      "pushOnlyWhenHidden | Wysylaj powiadomienia push tylko gdy karta jest ukryta | P17 | boolean | false",
-      "teamNumberingMode | Numerowanie druzyny na liscie obiektow | P16 | enum: letters|numbers | letters",
+      "carriageRouteBinds | Bindy trasy wozu (następny krok, zsiadanie) | P14 | boolean | true",
+      "dismountOnRefusedRide | Powtórzenie odrzuconej jazdy zsiada z wozu i idzie pieszo | P14 | boolean | false",
+      "drinkableAsFunctionalBind | Bind picia na bind funkcyjny | P15 | boolean | true",
+      "explorationMode | Tryb eksploracji mapy | P16 | boolean | false",
+      "gateAsFunctionalBind | Bind bramy na bind funkcyjny | P15 | boolean | false",
+      "instantMove | Natychmiastowe przechodzenie po mapie | P16 | boolean | true",
+      "objectContextMenuCommands | Komendy menu kontekstowego obiektów | P17 | string[] | [\"ob\",\"ocen\",\"zapros\",\"wskaz\"]",
+      "pushOnlyWhenHidden | Wysylaj powiadomienia push tylko gdy karta jest ukryta | P18 | boolean | false",
+      "teamNumberingMode | Numerowanie druzyny na liscie obiektow | P17 | enum: letters|numbers | letters",
       "## mapSettings.* (ui)",
-      "emojiLabels | Etykiety emoji | P18 | boolean | false",
-      "highlightCurrentRoom | Podświetl bieżące pomieszczenie | P15 | boolean | true",
-      "labelRenderMode | Tryb renderowania etykiet | P15 | enum: image|data|none | data",
-      "mapBackgroundColor | Kolor tła mapy | P19 | string | #000000",
-      "mapCurrentRoomColor | Kolor bieżącego pomieszczenia | P19 | string | #784800",
-      "mapHighlightDashEnabled | Przerywane obramowanie | P20 | boolean | true",
-      "mapHighlightFillAlpha | Przezroczystość wypełnienia | P20 | number 0..1 | 0",
-      "mapHighlightShape | Kształt podświetlenia | P20 | enum: match|rectangle|roundedRectangle|circle | match",
-      "mapHighlightSizeFactor | Mnożnik rozmiaru | P20 | number 0.5..3 | 1.425",
-      "mapHighlightStrokeAlpha | Przezroczystość obramowania | P20 | number 0..1 | 1",
-      "mapHighlightStrokeWidth | Grubość obramowania | P20 | number 0.01..0.3 | 0.1",
-      "mapLineColor | Kolor linii | P19 | string | #e1ffe1",
-      "mapLineWidth | Szerokość linii | P19 | number 0.01..0.1 | 0.025",
-      "mapPlayerMarkerDashEnabled | Przerywane obramowanie markera | P21 | boolean | true",
-      "mapPlayerMarkerFillAlpha | Przezroczystość wypełnienia | P21 | number 0..1 | 0",
-      "mapPlayerMarkerFillColor | Kolor wypełnienia markera gracza | P21 | string | #00e5b2",
-      "mapPlayerMarkerSizeFactor | Mnożnik rozmiaru markera | P21 | number 0.5..3 | 1.7",
-      "mapPlayerMarkerStrokeAlpha | Przezroczystość obramowania | P21 | number 0..1 | 1",
-      "mapPlayerMarkerStrokeColor | Kolor obramowania markera gracza | P21 | string | #00e5b2",
-      "mapPlayerMarkerStrokeWidth | Grubość obramowania markera | P21 | number 0.01..0.3 | 0.1",
-      "mapRoomShape | Kształt pomieszczeń | P19 | enum: rectangle|circle|roundedRectangle | rectangle",
-      "mapRoomSize | Rozmiar pomieszczeń | P19 | number 0.1..1.5 | 0.6",
-      "pathFindingAlgorithm | Algorytm wyszukiwania drogi | P15 | enum: dijkstra|astar | dijkstra",
-      "transparentLabels | Przezroczyste etykiety (wymusza tryb danych) | P15 | boolean | true",
+      "emojiLabels | Etykiety emoji | P19 | boolean | false",
+      "highlightCurrentRoom | Podświetl bieżące pomieszczenie | P16 | boolean | true",
+      "labelRenderMode | Tryb renderowania etykiet | P16 | enum: image|data|none | data",
+      "mapBackgroundColor | Kolor tła mapy | P20 | string | #000000",
+      "mapCurrentRoomColor | Kolor bieżącego pomieszczenia | P20 | string | #784800",
+      "mapHighlightDashEnabled | Przerywane obramowanie | P21 | boolean | true",
+      "mapHighlightFillAlpha | Przezroczystość wypełnienia | P21 | number 0..1 | 0",
+      "mapHighlightShape | Kształt podświetlenia | P21 | enum: match|rectangle|roundedRectangle|circle | match",
+      "mapHighlightSizeFactor | Mnożnik rozmiaru | P21 | number 0.5..3 | 1.425",
+      "mapHighlightStrokeAlpha | Przezroczystość obramowania | P21 | number 0..1 | 1",
+      "mapHighlightStrokeWidth | Grubość obramowania | P21 | number 0.01..0.3 | 0.1",
+      "mapLineColor | Kolor linii | P20 | string | #e1ffe1",
+      "mapLineWidth | Szerokość linii | P20 | number 0.01..0.1 | 0.025",
+      "mapPlayerMarkerDashEnabled | Przerywane obramowanie markera | P22 | boolean | true",
+      "mapPlayerMarkerFillAlpha | Przezroczystość wypełnienia | P22 | number 0..1 | 0",
+      "mapPlayerMarkerFillColor | Kolor wypełnienia markera gracza | P22 | string | #00e5b2",
+      "mapPlayerMarkerSizeFactor | Mnożnik rozmiaru markera | P22 | number 0.5..3 | 1.7",
+      "mapPlayerMarkerStrokeAlpha | Przezroczystość obramowania | P22 | number 0..1 | 1",
+      "mapPlayerMarkerStrokeColor | Kolor obramowania markera gracza | P22 | string | #00e5b2",
+      "mapPlayerMarkerStrokeWidth | Grubość obramowania markera | P22 | number 0.01..0.3 | 0.1",
+      "mapRoomShape | Kształt pomieszczeń | P20 | enum: rectangle|circle|roundedRectangle | rectangle",
+      "mapRoomSize | Rozmiar pomieszczeń | P20 | number 0.1..1.5 | 0.6",
+      "pathFindingAlgorithm | Algorytm wyszukiwania drogi | P16 | enum: dijkstra|astar | dijkstra",
+      "transparentLabels | Przezroczyste etykiety (wymusza tryb danych) | P16 | boolean | true",
       "## renderSettings.* (ui)",
-      "autoLowercaseCommands | Automatycznie małe litery w komendach | P14 | boolean | false",
-      "clearInputOnSend | Czyść pole komend po wysłaniu | P14 | boolean | false",
-      "colorTheme | Motyw kolorystyczny | P22 | enum: default|fantasy|forest|icy|gray|dark-neutral|light-parchment|light-silver|custom-dark | default",
-      "commandEcho | Echo komend | P14 | boolean | true",
-      "customBeepSoundKey | Własny dźwięk beep | P23 | enum: |__upload__ | -",
-      "customFontFamily | Nazwa rodziny czcionki | P22 | string | \"\"",
-      "customFontUrl | Adres arkusza czcionki | P22 | string | \"\"",
-      "customThemeColor | Kolor własnego motywu | P22 | string | -",
-      "fontFamily | Czcionka okna wyjścia i listy obiektów | P22 | enum: default|fira-code|jetbrains-mono|cascadia-mono|vera-sans-mono|custom | default",
-      "highlightMessageBlocks | Wyróżniaj bloki wiadomości | P22 | boolean | false",
-      "outputBackground | Kolor tła okna głównego | P22 | string | #242424",
-      "outputBottomPadding | Dolny padding okna (px) | P16 | number 0.. | 0",
-      "showTimestamps | Znaczniki czasu w oknie wyjścia | P24 | boolean | false",
-      "soundCategories | Dźwięki kategorii | P23 | SoundCategories | {}",
-      "xtermPalette | Paleta kolorów | P22 | enum: arkadia|proper | arkadia",
+      "autoLowercaseCommands | Automatycznie małe litery w komendach | P23 | boolean | false",
+      "clearInputOnSend | Czyść pole komend po wysłaniu | P23 | boolean | false",
+      "colorTheme | Motyw kolorystyczny | P24 | enum: default|fantasy|forest|icy|gray|dark-neutral|light-parchment|light-silver|custom-dark | default",
+      "commandEcho | Echo komend | P23 | boolean | true",
+      "customBeepSoundKey | Własny dźwięk beep | P25 | enum: |__upload__ | -",
+      "customFontFamily | Nazwa rodziny czcionki | P24 | string | \"\"",
+      "customFontUrl | Adres arkusza czcionki | P24 | string | \"\"",
+      "customThemeColor | Kolor własnego motywu | P24 | string | -",
+      "fontFamily | Czcionka okna wyjścia i listy obiektów | P24 | enum: default|fira-code|jetbrains-mono|cascadia-mono|vera-sans-mono|custom | default",
+      "highlightMessageBlocks | Wyróżniaj bloki wiadomości | P24 | boolean | false",
+      "outputBackground | Kolor tła okna głównego | P24 | string | #242424",
+      "outputBottomPadding | Dolny padding okna (px) | P17 | number 0.. | 0",
+      "showTimestamps | Znaczniki czasu w oknie wyjścia | P26 | boolean | false",
+      "soundCategories | Dźwięki kategorii | P25 | SoundCategories | {}",
+      "xtermPalette | Paleta kolorów | P24 | enum: arkadia|proper | arkadia",
       "## shellSettings.* (ui)",
-      "fightTitleIcon | Ikona walki w tytule | P25 | boolean | true",
-      "hapticFeedback | Wibracje (haptyka) na urządzeniach mobilnych | P26 | boolean | true",
-      "wakeLock | Blokada usypiania ekranu (Wake Lock) | P25 | boolean | true",
+      "fightTitleIcon | Ikona walki w tytule | P27 | boolean | true",
+      "hapticFeedback | Wibracje (haptyka) na urządzeniach mobilnych | P28 | boolean | true",
+      "wakeLock | Blokada usypiania ekranu (Wake Lock) | P27 | boolean | true",
       "## uiSettings.* (ui)",
-      "alwaysVisibleBars | Zawsze widoczne paski stanu | P18 | string[] | []",
-      "barOrder | Kolejność pasków stanu | P18 | string[] | [\"hp\",\"fatigue\",\"stuffed\",\"encumbrance\",\"soaked\",\"mana\",\"improve\",\"form\",\"intox\",\"headache\",\"panic\"]",
+      "alwaysVisibleBars | Zawsze widoczne paski stanu | P19 | string[] | []",
+      "barOrder | Kolejność pasków stanu | P19 | string[] | [\"hp\",\"fatigue\",\"stuffed\",\"encumbrance\",\"soaked\",\"mana\",\"improve\",\"form\",\"intox\",\"headache\",\"panic\"]",
       "buttonSize | Rozmiar przycisków (przestarzałe) | P- | number | -",
-      "contentFontSize | Rozmiar czcionki treści (rem) | P22 | number | 0.775",
-      "footerButtons | Przyciski przy linii komend | P27 | FooterButtonConfig[] | []",
-      "footerComponents | Elementy stopki | P28 | FooterComponentConfig[] | [{\"id\":\"clock-display\",\"visible\":true,\"order\":0},{\"id\":\"transport-timer\",\"visible\":true,\"order\":1},{\"id\":\"lamp-timer\",\"visible\":true,\"order\":2},{\"id\":\"pipe-status\",\"visible\":true,\"order\":3},{\"id\":\"break-item-warning\",\"visible\":true,\"order\":4},{\"id\":\"mail-status\",\"visible\":true,\"order\":5},{\"id\":\"package-status\",\"visible\":true,\"order\":6},{\"id\":\"weapon-state\",\"visible\":true,\"order\":7},{\"id\":\"attack-mode\",\"visible\":true,\"order\":8},{\"id\":\"release-guard-timer\",\"visible\":true,\"order\":9},{\"id\":\"zask-timer\",\"visible\":true,\"order\":10},{\"id\":\"order-timer\",\"visible\":true,\"order\":11},{\"id\":\"combat-timer\",\"visible\":true,\"order\":12},{\"id\":\"world-destruction-timer\",\"visible\":true,\"order\":13},{\"id\":\"team-panel\",\"visible\":true,\"order\":14},{\"id\":\"connection-status\",\"visible\":false,\"order\":15}]",
-      "footerMode | Tryb stopki | P18 | enum: 4|0|1|2|3 | 4",
-      "footerUrgentChipsFirst | Pilne plakietki na poczatku | P28 | boolean | false",
-      "keepMultibindsVisible | Zawsze pokazuj pasek multibindów | P14 | boolean | false",
-      "mapHeight | Wysokość mapy (vh) | P15 | number | 30",
-      "mapPosition | Położenie mapy | P15 | enum: top-overlay|bottom-overlay|right-overlay|left-overlay|top|bottom|right|left | top-overlay",
-      "mapScale | Powiększenie mapy | P15 | number 0.05.. | 0.3",
-      "mobileFooterCompact | Kompaktowa stopka na telefonie | P29 | boolean | true",
-      "mobileFooterExpand | Rozwijanie stopki na telefonie | P29 | enum: toggle|expanded|collapsed | toggle",
-      "multibindKeyHints | Skroty klawiszowe na pasku bindow | P14 | enum: auto|always|never | auto",
-      "objectListBackgroundAlpha | Przezroczystość | P22 | number 0..1 | 0.4",
-      "objectListBackgroundColor | Kolor tła listy obiektów | P22 | string | #000000",
-      "objectsFontSize | Rozmiar czcionki listy obiektów (rem) | P22 | number | 0.6",
-      "outputMaxElements | Maksymalna liczba linii w buforze | P16 | number 100.. | 1000",
-      "showButtons | Pokazuj przyciski | P26 | boolean | true",
-      "showCombatTimer | Pokazuj licznik walki | P28 | boolean | -",
-      "showTransportLabel | Pokazuj etykietę transportu | P28 | boolean | -",
-      "showVoiceButton | Przycisk mikrofonu (dyktowanie głosowe) | P14 | boolean | true",
+      "contentFontSize | Rozmiar czcionki treści (rem) | P24 | number | 0.775",
+      "footerButtons | Przyciski przy linii komend | P29 | FooterButtonConfig[] | []",
+      "footerComponents | Elementy stopki | P30 | FooterComponentConfig[] | [{\"id\":\"clock-display\",\"visible\":true,\"order\":0},{\"id\":\"transport-timer\",\"visible\":true,\"order\":1},{\"id\":\"lamp-timer\",\"visible\":true,\"order\":2},{\"id\":\"pipe-status\",\"visible\":true,\"order\":3},{\"id\":\"break-item-warning\",\"visible\":true,\"order\":4},{\"id\":\"mail-status\",\"visible\":true,\"order\":5},{\"id\":\"package-status\",\"visible\":true,\"order\":6},{\"id\":\"weapon-state\",\"visible\":true,\"order\":7},{\"id\":\"attack-mode\",\"visible\":true,\"order\":8},{\"id\":\"release-guard-timer\",\"visible\":true,\"order\":9},{\"id\":\"zask-timer\",\"visible\":true,\"order\":10},{\"id\":\"order-timer\",\"visible\":true,\"order\":11},{\"id\":\"combat-timer\",\"visible\":true,\"order\":12},{\"id\":\"world-destruction-timer\",\"visible\":true,\"order\":13},{\"id\":\"team-panel\",\"visible\":true,\"order\":14},{\"id\":\"connection-status\",\"visible\":false,\"order\":15}]",
+      "footerMode | Tryb stopki | P19 | enum: 4|0|1|2|3 | 4",
+      "footerUrgentChipsFirst | Pilne plakietki na poczatku | P30 | boolean | false",
+      "keepMultibindsVisible | Zawsze pokazuj pasek multibindów | P15 | boolean | false",
+      "mapHeight | Wysokość mapy (vh) | P16 | number | 30",
+      "mapPosition | Położenie mapy | P16 | enum: top-overlay|bottom-overlay|right-overlay|left-overlay|top|bottom|right|left | top-overlay",
+      "mapScale | Powiększenie mapy | P16 | number 0.05.. | 0.3",
+      "mobileFooterCompact | Kompaktowa stopka na telefonie | P31 | boolean | true",
+      "mobileFooterExpand | Rozwijanie stopki na telefonie | P31 | enum: toggle|expanded|collapsed | toggle",
+      "multibindKeyHints | Skróty klawiszowe na pasku bindów | P15 | enum: auto|always|never | auto",
+      "objectListBackgroundAlpha | Przezroczystość | P24 | number 0..1 | 0.4",
+      "objectListBackgroundColor | Kolor tła listy obiektów | P24 | string | #000000",
+      "objectsFontSize | Rozmiar czcionki listy obiektów (rem) | P24 | number | 0.6",
+      "outputMaxElements | Maksymalna liczba linii w buforze | P17 | number 100.. | 1000",
+      "showButtons | Pokazuj przyciski | P28 | boolean | true",
+      "showCombatTimer | Pokazuj licznik walki | P30 | boolean | -",
+      "showTransportLabel | Pokazuj etykietę transportu | P30 | boolean | -",
+      "showVoiceButton | Przycisk mikrofonu (dyktowanie głosowe) | P23 | boolean | true",
       "splitViewHeight | Wysokość podzielonego widoku | P- | number | -",
-      "tabCompletionHint | Podpowiedź uzupełniania (Tab) za kursorem | P14 | boolean | true",
-      "ttsEnabled | Czytanie na głos włączone | P30 | boolean | true",
-      "ttsInterrupt | Nowy komunikat przerywa aktualnie czytany | P30 | boolean | false",
-      "ttsPitch | Wysokość | P30 | number 0..2 | 1",
-      "ttsRate | Tempo | P30 | number 0.5..2 | 1",
-      "ttsVoice | Głos | P30 | enum:  | \"\"",
-      "ttsVolume | Głośność | P30 | number 0..1 | 1"
+      "tabCompletionHint | Podpowiedź uzupełniania (Tab) za kursorem | P32 | boolean | true",
+      "tabCompletionMode | Uzupełnianie klawiszem Tab | P32 | enum: cycle|word|whole | cycle",
+      "ttsEnabled | Czytanie na głos włączone | P33 | boolean | true",
+      "ttsInterrupt | Nowy komunikat przerywa aktualnie czytany | P33 | boolean | false",
+      "ttsPitch | Wysokość | P33 | number 0..2 | 1",
+      "ttsRate | Tempo | P33 | number 0.5..2 | 1",
+      "ttsVoice | Głos | P33 | enum:  | \"\"",
+      "ttsVolume | Głośność | P33 | number 0..1 | 1"
     ],
     "commands": [
       "' ('<tekst>) — Mow w ustawionym jezyku (pojedynczy apostrof przed tekstem)",
@@ -2455,8 +2459,8 @@
         "src/shared/settingsDefaults.ts",
         "src/web/uiSettings/sections/CommandsSection.tsx"
       ],
-      "label": "Bindy trasy wozu (nastepny krok, zsiadanie)",
-      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Komendy → Komendy"
+      "label": "Bindy trasy wozu (następny krok, zsiadanie)",
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Komendy → Podróż wozem"
     },
     {
       "path": "ui.behaviorSettings.dismountOnRefusedRide",
@@ -2473,8 +2477,8 @@
         "src/shared/settingsDefaults.ts",
         "src/web/uiSettings/sections/CommandsSection.tsx"
       ],
-      "label": "Powtorzenie odrzuconej jazdy zsiada z wozu i idzie pieszo",
-      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Komendy → Komendy"
+      "label": "Powtórzenie odrzuconej jazdy zsiada z wozu i idzie pieszo",
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Komendy → Podróż wozem"
     },
     {
       "path": "ui.behaviorSettings.drinkableAsFunctionalBind",
@@ -2492,7 +2496,7 @@
         "src/web/uiSettings/sections/CommandsSection.tsx"
       ],
       "label": "Bind picia na bind funkcyjny",
-      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Komendy → Komendy"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Komendy → Pasek multibindów"
     },
     {
       "path": "ui.behaviorSettings.explorationMode",
@@ -2528,7 +2532,7 @@
         "src/web/uiSettings/sections/CommandsSection.tsx"
       ],
       "label": "Bind bramy na bind funkcyjny",
-      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Komendy → Komendy"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Komendy → Pasek multibindów"
     },
     {
       "path": "ui.behaviorSettings.instantMove",
@@ -3152,7 +3156,7 @@
         "src/web/uiSettings/sections/CommandsSection.tsx"
       ],
       "label": "Automatycznie małe litery w komendach",
-      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Komendy → Komendy"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Komendy → Pole komend"
     },
     {
       "path": "ui.renderSettings.clearInputOnSend",
@@ -3170,7 +3174,7 @@
         "src/web/uiSettings/sections/CommandsSection.tsx"
       ],
       "label": "Czyść pole komend po wysłaniu",
-      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Komendy → Komendy"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Komendy → Pole komend"
     },
     {
       "path": "ui.renderSettings.colorTheme",
@@ -3244,7 +3248,7 @@
         "src/web/uiSettings/sections/CommandsSection.tsx"
       ],
       "label": "Echo komend",
-      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Komendy → Komendy"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Komendy → Pole komend"
     },
     {
       "path": "ui.renderSettings.customBeepSoundKey",
@@ -3830,7 +3834,7 @@
         "src/web/uiSettings/sections/CommandsSection.tsx"
       ],
       "label": "Zawsze pokazuj pasek multibindów",
-      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Komendy → Komendy"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Komendy → Pasek multibindów"
     },
     {
       "path": "ui.uiSettings.mapHeight",
@@ -4005,8 +4009,8 @@
           "label": "Nigdy"
         }
       ],
-      "label": "Skroty klawiszowe na pasku bindow",
-      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Komendy → Komendy"
+      "label": "Skróty klawiszowe na pasku bindów",
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Komendy → Pasek multibindów"
     },
     {
       "path": "ui.uiSettings.objectListBackgroundAlpha",
@@ -4157,7 +4161,7 @@
         "src/web/uiSettings/sections/CommandsSection.tsx"
       ],
       "label": "Przycisk mikrofonu (dyktowanie głosowe)",
-      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Komendy → Komendy"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Komendy → Pole komend"
     },
     {
       "path": "ui.uiSettings.splitViewHeight",
@@ -4193,7 +4197,39 @@
         "src/web/uiSettings/sections/CommandsSection.tsx"
       ],
       "label": "Podpowiedź uzupełniania (Tab) za kursorem",
-      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Komendy → Komendy"
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Komendy → Uzupełnianie"
+    },
+    {
+      "path": "ui.uiSettings.tabCompletionMode",
+      "scope": "ui",
+      "storageKey": "uiSettings",
+      "key": "tabCompletionMode",
+      "type": "'cycle' | 'word' | 'whole'",
+      "optional": false,
+      "default": "cycle",
+      "control": "select",
+      "exposedInUi": true,
+      "sources": [
+        "src/shared/uiSettingsTypes.ts",
+        "src/web/defaultUiSettings.ts",
+        "src/web/uiSettings/sections/CommandsSection.tsx"
+      ],
+      "options": [
+        {
+          "value": "cycle",
+          "label": "Cała komenda"
+        },
+        {
+          "value": "word",
+          "label": "Słowo po słowie (jak zsh)"
+        },
+        {
+          "value": "whole",
+          "label": "Całość, słowo na żądanie (jak fish)"
+        }
+      ],
+      "label": "Uzupełnianie klawiszem Tab",
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Komendy → Uzupełnianie"
     },
     {
       "path": "ui.uiSettings.ttsEnabled",
@@ -6898,18 +6934,18 @@
     }
   ],
   "gaps": [],
-  "version": "f4ce69c5988afa59",
-  "generatedAt": "2026-09-24T15:09:26.084Z",
+  "version": "06f5c754bbc96f43",
+  "generatedAt": "2026-09-24T16:11:10.754Z",
   "stats": {
-    "settings": 139,
-    "settingsWithLabels": 139,
+    "settings": 140,
+    "settingsWithLabels": 140,
     "commands": 236,
     "commandsWithDescriptions": 234,
     "events": 34,
     "docs": 12,
-    "leanChars": 47463,
-    "leanTokens": 11866,
-    "fatChars": 268442,
-    "fatTokens": 67111
+    "leanChars": 47761,
+    "leanTokens": 11941,
+    "fatChars": 269434,
+    "fatTokens": 67359
   }
 }

@@ -5,6 +5,7 @@ import {localStorageHistoryStore} from "./commandHistoryStore";
 import {harvestOutputWords} from "./outputWords";
 import {type ActiveCommandLine, setActiveCommandLine} from "./activeCommandLine";
 import {isAnyModalOpen} from "@web/modals/appModal.ts";
+import {globalStorage} from "@modules/core/storage";
 
 export interface CommandInputDeps {
     messageInput: HTMLTextAreaElement;
@@ -62,6 +63,7 @@ export class CommandInputController {
             getOutputWords: () => this.getOutputWords(),
             getClearInputOnSend: deps.getClearInputOnSend,
             store: localStorageHistoryStore(),
+            getTabCompletionMode: () => globalStorage.get("uiSettings")?.tabCompletionMode ?? "cycle",
         });
 
         (window as any).__historyDebug = () => this.engine.getDebugState();
@@ -243,7 +245,7 @@ export class CommandInputController {
             },
             tabComplete: (text: string, forward: boolean) => {
                 this.input.value = text;
-                this.engine.handleTabCompletion(forward);
+                this.engine.handleTabKey(!forward);
                 return this.input.value;
             },
             reset: () => {
@@ -298,7 +300,9 @@ export class CommandInputController {
             this.engine.historyMove('down');
         } else if (e.key === 'Tab') {
             e.preventDefault();
-            this.engine.handleTabCompletion(!e.shiftKey);
+            this.engine.handleTabKey(e.shiftKey);
+        } else if (e.key === 'ArrowRight' && !e.altKey && !e.shiftKey && !e.metaKey && this.takeHintWithArrow(e.ctrlKey)) {
+            e.preventDefault();
         } else if (e.key === 'Escape') {
             this.engine.onEscape();
         } else if (e.key === 'Backspace' || e.key === 'Delete') {
@@ -309,9 +313,22 @@ export class CommandInputController {
         }
     }
 
-    /** Take the hinted completion as Tab would: a tap on the hint, where there is no Tab key. */
+    /**
+     * → at the end of the line takes the whole hint, Ctrl+→ its next word (not in
+     * the cycle mode, where Tab owns completion). Anywhere else the arrow moves the
+     * caret as usual; false then.
+     */
+    private takeHintWithArrow(ctrl: boolean): boolean {
+        if (this.engine.tabMode() === 'cycle' || this.input.value.includes('\n')) return false;
+        const end = this.input.value.length;
+        if (this.input.selectionStart !== end || this.input.selectionEnd !== end) return false;
+        return this.engine.acceptHint(ctrl ? 'word' : 'all');
+    }
+
+    /** Take the hinted completion: a tap on the hint, where there is no Tab key. */
     acceptTabCompletion(): void {
-        this.engine.handleTabCompletion(true);
+        if (this.engine.tabMode() === 'cycle') this.engine.handleTabCompletion(true);
+        else this.engine.acceptHint('all');
     }
 
     /** What the next Tab would append to the current line (see the engine). */

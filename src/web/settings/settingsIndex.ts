@@ -23,7 +23,7 @@ export interface SettingEntry {
     kind: "toggle" | "value";
     /** The control behind it; for radios, the first of the group. */
     control: SettingControl | null;
-    /** A select's option texts, searched too ("Tryb zbierania" has "monety"). */
+    /** A select's (or choice list's) option texts, searched too ("Tryb zbierania" has "monety"). */
     options: string[];
 }
 
@@ -71,7 +71,7 @@ function entriesIn(root: HTMLElement, section: string): SettingEntry[] {
         if (!control) continue;
         const options = control instanceof HTMLSelectElement
             ? Array.from(control.options, option => option.textContent?.trim() ?? "").filter(Boolean)
-            : [];
+            : Array.from(row.querySelectorAll(".popup-choices__label"), choice => text(choice)).filter(Boolean);
         entries.push({ section, label, element: row, kind: "value", control, options });
     }
     return entries;
@@ -109,7 +109,8 @@ export function settingPreview(entry: SettingEntry): string {
     if (control instanceof HTMLSelectElement) return control.selectedOptions[0]?.textContent?.trim() ?? "";
     if (control instanceof HTMLInputElement && control.type === "radio") {
         const checked = entry.element.querySelector<HTMLInputElement>("input[type=radio]:checked");
-        return text(checked?.closest("label"));
+        const label = checked?.closest("label");
+        return text(label?.querySelector(".popup-choices__label") ?? label);
     }
     return control.value.split("\n")[0];
 }

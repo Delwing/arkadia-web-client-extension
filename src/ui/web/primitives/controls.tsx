@@ -176,6 +176,47 @@ export function Check({ label, type = 'checkbox', className, ...rest }: CheckPro
     );
 }
 
+// ── Choice list ───────────────────────────────────────────────────────────
+
+export interface ChoiceListProps<T extends string> {
+    value: T;
+    options: { value: T; label: ReactNode; description?: ReactNode }[];
+    onChange: (value: T) => void;
+    /** Radio group name; one is generated when omitted. */
+    name?: string;
+    /** Id of the group, for a Field label and for tests. */
+    id?: string;
+}
+
+/**
+ * Mutually exclusive options as a column of rows, each a line of title with an
+ * optional line of explanation under it: for choices a select would squeeze
+ * into one line of text. Each row is a real radio input with its label.
+ */
+export function ChoiceList<T extends string>({ value, options, onChange, name, id }: ChoiceListProps<T>) {
+    const generated = useId();
+    const group = name ?? generated;
+    return (
+        <div className="popup-choices" id={id}>
+            {options.map(o => (
+                <label key={o.value} className={cx('popup-choices__item', o.value === value && 'is-active')}>
+                    <input
+                        type="radio"
+                        name={group}
+                        value={o.value}
+                        checked={o.value === value}
+                        onChange={() => onChange(o.value)}
+                    />
+                    <span className="popup-choices__text">
+                        <span className="popup-choices__label">{o.label}</span>
+                        {o.description != null && <span className="popup-choices__description">{o.description}</span>}
+                    </span>
+                </label>
+            ))}
+        </div>
+    );
+}
+
 // ── Segmented choice ──────────────────────────────────────────────────────
 
 export interface SegmentedProps<T extends string> {

@@ -1,4 +1,4 @@
-import { CommandLineEngine } from '@web/commandInput/CommandLineEngine';
+import { CommandLineEngine, type TabCompletionMode } from '@web/commandInput/CommandLineEngine';
 import type { EditableField } from '@web/commandInput/editableField';
 import type { CommandHistoryStore } from '@web/commandInput/commandHistoryStore';
 import { localStorageHistoryStore } from '@web/commandInput/commandHistoryStore';
@@ -55,7 +55,7 @@ interface Harness {
     store: CommandHistoryStore & { saved: string[] };
 }
 
-function makeEngine(opts: Partial<{ history: string[]; clearInputOnSend: boolean; outputWords: string[] }> = {}): Harness {
+function makeEngine(opts: Partial<{ history: string[]; clearInputOnSend: boolean; outputWords: string[]; tabMode: TabCompletionMode }> = {}): Harness {
     const field = new FakeField();
     const password = new FakeField();
     const sent: Harness['sent'] = [];
@@ -77,6 +77,7 @@ function makeEngine(opts: Partial<{ history: string[]; clearInputOnSend: boolean
         getCommandLineSuggestions: () => [],
         getOutputWords: () => opts.outputWords ?? [],
         getClearInputOnSend: () => h.clearInputOnSend,
+        getTabCompletionMode: () => opts.tabMode ?? 'cycle',
         store,
     });
     return h;
@@ -231,6 +232,61 @@ describe('CommandLineEngine', () => {
             h.field.type('wejdz na statek');
             h.engine.submit(false);
             expect(h.engine.peekTabCompletion('wejdz')).toBe(' na statek');
+        });
+    });
+
+    describe('word and whole completion modes', () => {
+        it('word mode: Tab takes the hint one word at a time', () => {
+            const h = makeEngine({ history: ['zabij duzego smoka'], tabMode: 'word' });
+            h.field.type('zab');
+            h.engine.handleTabKey(false);
+            expect(h.field.value).toBe('zabij ');
+            h.engine.handleTabKey(false);
+            expect(h.field.value).toBe('zabij duzego ');
+            h.engine.handleTabKey(false);
+            expect(h.field.value).toBe('zabij duzego smoka');
+            h.engine.handleTabKey(false); // nothing left to take
+            expect(h.field.value).toBe('zabij duzego smoka');
+        });
+
+        it('takes the whole hint and keeps the typed text as typed', () => {
+            const h = makeEngine({ history: ['zabij smoka'], tabMode: 'word' });
+            h.field.type('ZAB');
+            expect(h.engine.acceptHint('all')).toBe(true);
+            expect(h.field.value).toBe('ZABij smoka');
+            expect(h.engine.acceptHint('all')).toBe(false);
+        });
+
+        it('whole mode: Tab takes it all, word acceptance one word', () => {
+            const h = makeEngine({ history: ['wejdz na statek'], tabMode: 'whole' });
+            h.field.type('wejdz');
+            h.engine.acceptHint('word');
+            expect(h.field.value).toBe('wejdz na ');
+            h.engine.handleTabKey(false);
+            expect(h.field.value).toBe('wejdz na statek');
+        });
+
+        it('Shift+Tab switches the hint to the next candidate without touching the line', () => {
+            const h = makeEngine({ history: ['zabij smoka', 'zabroniony'], outputWords: ['zabawka'], tabMode: 'word' });
+            h.field.type('zab');
+            expect(h.engine.peekTabCompletion('zab')).toBe('ij smoka');
+            h.engine.handleTabKey(true);
+            expect(h.field.value).toBe('zab');
+            expect(h.engine.peekTabCompletion('zab')).toBe('roniony');
+            h.engine.handleTabKey(true);
+            expect(h.engine.peekTabCompletion('zab')).toBe('awka');
+            h.engine.handleTabKey(true); // wraps
+            expect(h.engine.peekTabCompletion('zab')).toBe('ij smoka');
+            h.engine.handleTabKey(true);
+            h.engine.handleTabKey(false);
+            expect(h.field.value).toBe('zabroniony');
+        });
+
+        it('typing puts the hint back on the best candidate', () => {
+            const h = makeEngine({ history: ['zabij smoka', 'zabroniony'], tabMode: 'word' });
+            h.field.type('za');
+            h.engine.handleTabKey(true);
+            expect(h.engine.peekTabCompletion('zab')).toBe('ij smoka');
         });
     });
 

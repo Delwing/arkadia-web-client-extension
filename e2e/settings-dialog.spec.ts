@@ -293,7 +293,7 @@ test.describe('Settings dialog on a phone', () => {
         await expect(modal.locator('.settings-phone__caption')).toHaveText(['Postać', 'Interfejs', 'Dane']);
         await expect(modal.locator('[data-settings-group="ui"] .settings-scope-chip')).toHaveText('wszystkie postacie');
         await expect(modal.locator('[data-settings-group="data"] .settings-scope-chip'), 'Dane carry no chip').toHaveCount(0);
-        await expect(phoneRow(page, 'ui-commands').locator('.settings-phone__row-summary'), 'a summary of the page').toContainText('multibindy');
+        await expect(phoneRow(page, 'ui-commands').locator('.settings-phone__row-summary'), 'a summary of the page').toContainText('Pasek multibindów');
         await expect(modal.locator('.app-modal__footer'), 'no Save until something changes').toBeHidden();
 
         await phoneRow(page, 'ui-map').click();
@@ -343,7 +343,7 @@ test.describe('Settings dialog on a phone', () => {
 
         await modal.locator('#settings-search').fill('echo komend');
         const result = modal.locator('.settings-phone__result', {hasText: 'Echo komend'});
-        await expect(result.locator('.settings-phone__trail')).toHaveText('Interfejs › Komendy');
+        await expect(result.locator('.settings-phone__trail')).toHaveText('Interfejs › Komendy › Pole komend');
         await expect(result.locator('.settings-phone__mark').first()).toHaveText('Echo');
         const toggle = result.locator('.settings-phone__switch');
         const before = await toggle.getAttribute('data-checked');
@@ -363,7 +363,7 @@ test.describe('Settings dialog on a phone', () => {
         const modal = page.locator(SETTINGS_MODAL);
 
         await modal.locator('#settings-search').fill('skroty klawiszowe');
-        const result = modal.locator('.settings-phone__result--open', {hasText: 'Skroty klawiszowe na pasku bindow'});
+        const result = modal.locator('.settings-phone__result--open', {hasText: 'Skróty klawiszowe na pasku bindów'});
         await expect(result.locator('.settings-phone__preview')).toHaveText('Automatycznie (na telefonie po Alt, Ctrl lub Tab)');
         await expect(modal.locator('.settings-phone__caption--pages'), 'a setting is not a page').toHaveCount(0);
 

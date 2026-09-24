@@ -154,6 +154,7 @@ const CHROME_FIELDS: Record<string, Constraint & { optional?: boolean }> = {
     showButtons: { type: 'boolean' },
     showVoiceButton: { type: 'boolean', label: 'Przycisk mikrofonu' },
     tabCompletionHint: { type: 'boolean', label: 'Podpowiedz uzupelniania Tab' },
+    tabCompletionMode: { type: 'enum', enumValues: ['cycle', 'word', 'whole'], label: 'Uzupelnianie Tab' },
     mapHeight: { type: 'number', min: 0, max: 100, integer: true, label: 'Wysokosc mapy (%)' },
     mapPosition: {
         type: 'enum',

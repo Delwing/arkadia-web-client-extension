@@ -309,6 +309,52 @@ test.describe('Tab completion hint setting', () => {
     });
 });
 
+test.describe('Tab completion modes', () => {
+    async function chooseMode(page: Page, mode: 'word' | 'whole'): Promise<void> {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+        const modal = await openSettings(page, 'ui-commands');
+        await modal.locator(`#ui-tab-completion-mode input[value="${mode}"]`).check();
+        await saveSettings(page);
+        await submitCommand(page, 'zabij duzego smoka');
+        await page.fill('#message-input', '');
+        await page.keyboard.type('zab');
+        await expect(page.locator('.command-field__ghost-rest')).toHaveText('ij duzego smoka');
+    }
+
+    test('word mode: Tab takes one word, the right arrow the rest', async ({page}) => {
+        await chooseMode(page, 'word');
+        await expect(page.locator('.command-field__tab-hint')).toContainText('słowo');
+
+        await page.keyboard.press('Tab');
+        await expect(page.locator('#message-input')).toHaveValue('zabij ');
+        await expect(page.locator('.command-field__ghost-rest')).toHaveText('duzego smoka');
+
+        await page.keyboard.press('ArrowRight');
+        await expect(page.locator('#message-input')).toHaveValue('zabij duzego smoka');
+    });
+
+    test('whole mode: Ctrl+right arrow takes one word, Tab the rest', async ({page}) => {
+        await chooseMode(page, 'whole');
+
+        await page.keyboard.press('Control+ArrowRight');
+        await expect(page.locator('#message-input')).toHaveValue('zabij ');
+
+        await page.keyboard.press('Tab');
+        await expect(page.locator('#message-input')).toHaveValue('zabij duzego smoka');
+    });
+
+    test('the right arrow still moves the caret inside the line', async ({page}) => {
+        await chooseMode(page, 'word');
+        await page.keyboard.press('ArrowLeft');
+        await page.keyboard.press('ArrowRight');
+        await expect(page.locator('#message-input'), 'caret back at the end, nothing taken').toHaveValue('zab');
+        await page.keyboard.press('ArrowRight');
+        await expect(page.locator('#message-input')).toHaveValue('zabij duzego smoka');
+    });
+});
+
 test.describe('Command line on a phone', () => {
     test.use({hasTouch: true, isMobile: true, viewport: {width: 390, height: 800}});
 

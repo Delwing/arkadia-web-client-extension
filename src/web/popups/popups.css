@@ -836,6 +836,57 @@ select.popup-input.popup-input--control {
   color: var(--popup-text-strong);
 }
 
+/* Choice list: exclusive options as rows, a title and a line of explanation each. */
+.popup-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.popup-choices__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 7px 10px;
+  border: 1px solid transparent;
+  border-radius: var(--ui-radius, 6px);
+  cursor: pointer;
+}
+.popup-choices__item:hover {
+  background-color: var(--popup-input-bg);
+}
+.popup-choices__item.is-active {
+  border-color: var(--popup-border-control);
+  background-color: var(--popup-control-active-bg);
+}
+.popup-choices__item > input {
+  flex-shrink: 0;
+  width: var(--ui-check, 16px);
+  height: var(--ui-check, 16px);
+  margin: 1px 0 0;
+  accent-color: var(--popup-accent);
+  cursor: pointer;
+}
+.popup-choices__item:has(> input:focus-visible) {
+  box-shadow: 0 0 0 2px var(--popup-accent-subtle-bg);
+}
+.popup-choices__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.popup-choices__label {
+  color: var(--popup-text);
+  font-size: var(--ui-fs, 13px);
+}
+.popup-choices__item.is-active .popup-choices__label {
+  color: var(--popup-text-strong);
+}
+.popup-choices__description {
+  color: var(--popup-text-subtle);
+  font-size: var(--ui-fs-sm, 12px);
+}
+
 /* Small shared bits used by the dialogs. */
 .popup-field__warning {
   font-size: var(--ui-fs-xs, 11px);

@@ -152,6 +152,8 @@ export interface ChromeSettings extends DeviceViewSettings {
     showVoiceButton: boolean;
     /** Dimmed hint after the caret of what Tab would complete. */
     tabCompletionHint: boolean;
+    /** How Tab and the right arrow take a completion (see CommandLineEngine's TabCompletionMode). */
+    tabCompletionMode: 'cycle' | 'word' | 'whole';
     mapHeight: number;
     mapPosition: MapPosition;
     footerMode: number;

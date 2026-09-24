@@ -24,7 +24,18 @@ export interface CommandLineEngineDeps {
     getClearInputOnSend: () => boolean;
     /** History persistence. */
     store: CommandHistoryStore;
+    /** How Tab and → take a completion; 'cycle' when omitted. */
+    getTabCompletionMode?: () => TabCompletionMode;
 }
+
+/**
+ * How the keys take a completion:
+ *  - `cycle`: Tab puts the whole best line in, further Tabs cycle the others;
+ *  - `word` (zsh): Tab takes the next word of the hint, → the whole hint;
+ *  - `whole` (fish / PowerShell): Tab and → take the whole hint, Ctrl+→ one word.
+ * In `word` and `whole` Shift+Tab switches the hint to the next candidate.
+ */
+export type TabCompletionMode = 'cycle' | 'word' | 'whole';
 
 /**
  * Headless command-line logic shared by every UI: the Mudlet-style history ring,
@@ -53,6 +64,11 @@ export class CommandLineEngine {
     private tabCompletionCount = -1;
     private tabCompletionOld = '';
     private userKeptOnTyping = false;
+
+    // Which candidate the hint shows ('word'/'whole' modes), for the line it was
+    // picked on; typing anything else puts the hint back on the best one.
+    private hintIndex = 0;
+    private hintFor = '';
 
     private tabCompleteBlacklist = new Set<string>();
 
@@ -287,9 +303,52 @@ export class CommandLineEngine {
      */
     peekTabCompletion(text: string): string | null {
         if (this.tabCompletionCount !== -1) return null;
-        const best = this.tabCandidates(text)[0];
-        if (!best) return null;
-        return best.slice(text.length);
+        const candidates = this.tabCandidates(text);
+        if (candidates.length === 0) return null;
+        const index = this.tabMode() === 'cycle' || this.hintFor !== text ? 0 : this.hintIndex % candidates.length;
+        return candidates[index].slice(text.length);
+    }
+
+    tabMode(): TabCompletionMode {
+        return this.deps.getTabCompletionMode?.() ?? 'cycle';
+    }
+
+    /** Tab (Shift+Tab with `shift`), as the completion mode has it. */
+    handleTabKey(shift: boolean): void {
+        const mode = this.tabMode();
+        if (mode === 'cycle') {
+            this.handleTabCompletion(!shift);
+        } else if (shift) {
+            this.nextHint();
+        } else {
+            this.acceptHint(mode === 'word' ? 'word' : 'all');
+        }
+    }
+
+    /**
+     * Append the hint (see {@link peekTabCompletion}) to the line: all of it, or
+     * its next word with the spaces around it, so the next press goes on from
+     * there. The typed text is kept as typed. False when there is no hint.
+     */
+    acceptHint(amount: 'word' | 'all'): boolean {
+        const text = this.field.value;
+        const suffix = this.peekTabCompletion(text);
+        if (!suffix) return false;
+        const taken = amount === 'all' ? suffix : (suffix.match(/^\s*\S+\s*/)?.[0] ?? suffix);
+        this.field.value = text + taken;
+        this.hintIndex = 0;
+        this.moveCursorToEnd();
+        return true;
+    }
+
+    /** Show the next candidate in the hint, without touching the line. */
+    private nextHint(): void {
+        const text = this.field.value;
+        if (this.hintFor !== text) {
+            this.hintFor = text;
+            this.hintIndex = 0;
+        }
+        this.hintIndex++;
     }
 
     handleTabCompletion(forward: boolean): void {

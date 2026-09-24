@@ -392,6 +392,7 @@ const CONTROL_TAGS: Record<string, SettingControl> = {
     // mix both sets, so the old names stay.
     Check: 'checkbox',
     Select: 'select',
+    ChoiceList: 'select',
     Input: 'text',
     TextArea: 'text',
     select: 'select',
@@ -571,6 +572,17 @@ function pushOption(opts: SettingOption[], value: string | number | boolean, lab
  */
 function optionsOf(el: JsxElementLike, sf: ts.SourceFile): SettingOption[] | undefined {
     const opts: SettingOption[] = [];
+
+    // `<ChoiceList options={[{ value, label }, …]} />`: the rows come from the prop.
+    const optionsAttr = attrOf(el, 'options');
+    if (optionsAttr?.initializer && ts.isJsxExpression(optionsAttr.initializer) && optionsAttr.initializer.expression) {
+        const source = evaluate(optionsAttr.initializer.expression, sf.fileName, 0);
+        if (source.ok && Array.isArray(source.value)) {
+            for (const item of source.value as { value?: unknown; label?: unknown }[]) {
+                if (typeof item?.value === 'string') pushOption(opts, item.value, typeof item.label === 'string' ? item.label : '');
+            }
+        }
+    }
 
     const visit = (n: ts.Node, bindings: Bindings, group: string) => {
         if (isJsxElementLike(n) && tagOf(n, sf) === 'optgroup') {
