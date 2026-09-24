@@ -3,6 +3,7 @@ import {scheduleFromEvent} from "@shared/eventClock";
 import { colorString, createColorFormat } from "@modules/core/Colors";
 import { characterStorage } from "@modules/core/storage";
 import eventBus from "@modules/core/eventBus";
+import { getDeviceId } from "@modules/firebase/firebaseTypes.ts";
 
 // This module owns the Oswajanie data layer (IndexedDB), triggers and aliases.
 // The UI is the React component in src/web/OswajaniePopup.tsx, which imports the
@@ -13,21 +14,39 @@ import eventBus from "@modules/core/eventBus";
 // ============================================================================
 
 export interface FeedingEntry {
-  id?: number;
+  /**
+   * Stable id, unique across devices: `${deviceId}:${n}` for entries migrated
+   * from the old auto-increment keys, `${deviceId}:${time}-${seq}` for new ones.
+   */
+  id?: string;
   /** Owning character (per-character scoping). */
   character: string;
   animal: string;
+  /**
+   * The name the animal had when this entry was recorded, set when the animal
+   * is renamed (absent while the entry keeps its original name). Sync
+   * identifies the observation by it, and the current name separately.
+   */
+  observedAnimal?: string;
   food: string;
   active: number; // 1 = active, 0 = inactive (IndexedDB can't index booleans)
   timestamp: number;
 }
 
-interface AnimalLevel {
-  id?: number;
+export interface AnimalLevel {
+  /** Stable id, see FeedingEntry.id. */
+  id?: string;
   character: string;
   animal: string;
+  /** See FeedingEntry.observedAnimal. */
+  observedAnimal?: string;
   level: string;
   timestamp: number;
+}
+
+export interface FoodGroupRecord {
+  food: string;
+  group: string;
 }
 
 // ============================================================================
@@ -43,7 +62,9 @@ const CONFIG = {
   // exists, even for databases that were stamped v2 before it was added.
   // (v4 once added an animalMeta store that has since been dropped; the version
   // stays at 4 so existing databases are not asked to downgrade.)
-  dbVersion: 4,
+  // v5: feeding/animals entries get stable string ids instead of auto-increment
+  // numbers, which collide between devices (see migrateToStableIds).
+  dbVersion: 5,
 };
 
 const TRIGGER_TAG = "oswajanie";
@@ -69,6 +90,36 @@ function getChar(): string {
 // ============================================================================
 
 let db: IDBDatabase | null = null;
+let idSeq = 0;
+
+/** A new stable entry id: unique across devices, never reused. */
+export function newTamingEntryId(): string {
+  return `${getDeviceId()}:${Date.now().toString(36)}-${(idSeq++).toString(36)}`;
+}
+
+/** Entries migrated from auto-increment keys keep their number, prefixed with this device. */
+export function migratedTamingEntryId(deviceId: string, n: number): string {
+  return `${deviceId}:${n}`;
+}
+
+/**
+ * One-time migration (v5 upgrade): re-key auto-increment entries with stable
+ * string ids. Values are kept as they are, so the per-character indexes keep
+ * working. New string keys sort after numbers, so the cursor never revisits them.
+ */
+function migrateToStableIds(store: IDBObjectStore, deviceId: string): void {
+  const request = store.openCursor();
+  request.onsuccess = () => {
+    const cursor = request.result;
+    if (!cursor) return;
+    if (typeof cursor.primaryKey === "number") {
+      const value = { ...(cursor.value as object), id: migratedTamingEntryId(deviceId, cursor.primaryKey) };
+      cursor.delete();
+      store.put(value);
+    }
+    cursor.continue();
+  };
+}
 
 function openDatabase(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -83,29 +134,34 @@ function openDatabase(): Promise<IDBDatabase> {
 
     request.onsuccess = () => {
       db = request.result;
+      // Another tab upgrading the database: let it, and reopen on next use.
+      db.onversionchange = () => {
+        db?.close();
+        db = null;
+      };
       resolve(db);
     };
 
     request.onupgradeneeded = (event) => {
       const database = (event.target as IDBOpenDBRequest).result;
+      const transaction = (event.target as IDBOpenDBRequest).transaction!;
 
+      // Ids are assigned by the code (newTamingEntryId), not by the database.
       if (!database.objectStoreNames.contains("feeding")) {
-        const feedingStore = database.createObjectStore("feeding", {
-          keyPath: "id",
-          autoIncrement: true,
-        });
+        const feedingStore = database.createObjectStore("feeding", { keyPath: "id" });
         feedingStore.createIndex("character", "character", { unique: false });
         feedingStore.createIndex("character_animal", ["character", "animal"], { unique: false });
+      } else if (event.oldVersion < 5) {
+        migrateToStableIds(transaction.objectStore("feeding"), getDeviceId());
       }
 
       if (!database.objectStoreNames.contains("animals")) {
-        const animalsStore = database.createObjectStore("animals", {
-          keyPath: "id",
-          autoIncrement: true,
-        });
+        const animalsStore = database.createObjectStore("animals", { keyPath: "id" });
         animalsStore.createIndex("character", "character", { unique: false });
         animalsStore.createIndex("character_animal", ["character", "animal"], { unique: false });
         animalsStore.createIndex("character_animal_level", ["character", "animal", "level"], { unique: false });
+      } else if (event.oldVersion < 5) {
+        migrateToStableIds(transaction.objectStore("animals"), getDeviceId());
       }
 
       // foodGroups is GLOBAL (shared across every character): it records which
@@ -119,6 +175,22 @@ function openDatabase(): Promise<IDBDatabase> {
   });
 }
 
+/** Close the database connection (tests, and before deleting the database). */
+export function closeOswajanieDatabase(): void {
+  if (db) {
+    db.close();
+    db = null;
+  }
+}
+
+/**
+ * Entries written by sync may be incomplete for a moment (the fields of one
+ * entry arrive as separate synced items); views only show complete ones.
+ */
+function isComplete(entry: { animal?: unknown; timestamp?: unknown }): boolean {
+  return typeof entry.animal === "string" && typeof entry.timestamp === "number";
+}
+
 // The data-layer functions below are exported for unit testing.
 export async function insertFeedingEntry(animal: string, food: string): Promise<void> {
   const database = await openDatabase();
@@ -127,6 +199,7 @@ export async function insertFeedingEntry(animal: string, food: string): Promise<
     const store = transaction.objectStore("feeding");
 
     const entry: FeedingEntry = {
+      id: newTamingEntryId(),
       character: getChar(),
       animal,
       food,
@@ -145,12 +218,18 @@ export async function insertAnimalLevel(animal: string, level: string): Promise<
   const database = await openDatabase();
   const character = getChar();
 
-  // Skip if this level already exists for this animal
+  // Skip if this level already exists for this animal, also under the name it
+  // had before a rename (the game still uses that name).
   const exists = await new Promise<boolean>((resolve, reject) => {
     const transaction = database.transaction(["animals"], "readonly");
-    const index = transaction.objectStore("animals").index("character_animal_level");
-    const request = index.count([character, animal, level]);
-    request.onsuccess = () => resolve(request.result > 0);
+    const index = transaction.objectStore("animals").index("character");
+    const request = index.getAll(IDBKeyRange.only(character));
+    request.onsuccess = () =>
+      resolve(
+        (request.result as AnimalLevel[]).some(
+          (e) => e.level === level && (e.animal === animal || e.observedAnimal === animal)
+        )
+      );
     request.onerror = () => reject(request.error);
   });
 
@@ -160,7 +239,7 @@ export async function insertAnimalLevel(animal: string, level: string): Promise<
     const transaction = database.transaction(["animals"], "readwrite");
     const store = transaction.objectStore("animals");
 
-    const entry: AnimalLevel = { character, animal, level, timestamp: Date.now() };
+    const entry: AnimalLevel = { id: newTamingEntryId(), character, animal, level, timestamp: Date.now() };
 
     const request = store.add(entry);
     request.onsuccess = () => resolve();
@@ -203,6 +282,7 @@ function renameInStore(database: IDBDatabase, storeName: "feeding" | "animals", 
       const cursor = (event.target as IDBRequest<IDBCursorWithValue>).result;
       if (cursor) {
         const entry = cursor.value as FeedingEntry | AnimalLevel;
+        if (entry.observedAnimal === undefined) entry.observedAnimal = entry.animal;
         entry.animal = newName;
         cursor.update(entry);
         cursor.continue();
@@ -214,7 +294,8 @@ function renameInStore(database: IDBDatabase, storeName: "feeding" | "animals", 
   });
 }
 
-async function renameAnimal(oldName: string, newName: string): Promise<void> {
+export async function renameAnimal(oldName: string, newName: string): Promise<void> {
+  if (oldName === newName) return;
   const database = await openDatabase();
   await renameInStore(database, "feeding", oldName, newName);
   await renameInStore(database, "animals", oldName, newName);
@@ -230,7 +311,7 @@ export async function getAnimals(): Promise<{ animal: string; active: boolean }[
     const request = index.getAll(IDBKeyRange.only(getChar()));
 
     request.onsuccess = () => {
-      const entries = request.result as FeedingEntry[];
+      const entries = (request.result as FeedingEntry[]).filter(isComplete);
       const animalsMap = new Map<string, boolean>();
 
       for (const entry of entries) {
@@ -259,7 +340,7 @@ export async function getFeedingsByAnimal(animal: string): Promise<FeedingEntry[
     const request = index.getAll(IDBKeyRange.only([getChar(), animal]));
 
     request.onsuccess = () => {
-      const entries = request.result as FeedingEntry[];
+      const entries = (request.result as FeedingEntry[]).filter(isComplete);
       entries.sort((a, b) => b.timestamp - a.timestamp);
       resolve(entries);
     };
@@ -277,7 +358,7 @@ export async function getActiveFeedings(): Promise<FeedingEntry[]> {
     const request = index.getAll(IDBKeyRange.only(getChar()));
 
     request.onsuccess = () => {
-      const entries = (request.result as FeedingEntry[]).filter((e) => e.active === 1);
+      const entries = (request.result as FeedingEntry[]).filter((e) => e.active === 1 && isComplete(e));
       entries.sort((a, b) => b.timestamp - a.timestamp);
       resolve(entries);
     };
@@ -300,7 +381,7 @@ async function getAnimalLevels(animal: string): Promise<AnimalLevel[]> {
     const request = index.getAll(IDBKeyRange.only([getChar(), animal]));
 
     request.onsuccess = () => {
-      const entries = request.result as AnimalLevel[];
+      const entries = (request.result as AnimalLevel[]).filter(isComplete);
       entries.sort((a, b) => a.timestamp - b.timestamp);
       resolve(entries);
     };
@@ -343,11 +424,6 @@ export async function getLevelByAnimal(animal: string, timestamp: number): Promi
 // ============================================================================
 // Food groups (GLOBAL across characters)
 // ============================================================================
-
-interface FoodGroupRecord {
-  food: string;
-  group: string;
-}
 
 let linkSeq = 0;
 
@@ -455,7 +531,9 @@ type ExportData = {
   animals: AnimalLevel[];
 };
 
-async function getAllFromStore<T>(storeName: "feeding" | "animals"): Promise<T[]> {
+type TamingStoreName = "feeding" | "animals" | "foodGroups";
+
+async function getAllFromStore<T>(storeName: TamingStoreName): Promise<T[]> {
   const database = await openDatabase();
   return new Promise<T[]>((resolve, reject) => {
     const tx = database.transaction([storeName], "readonly");
@@ -463,6 +541,48 @@ async function getAllFromStore<T>(storeName: "feeding" | "animals"): Promise<T[]
     req.onsuccess = () => resolve(req.result as unknown as T[]);
     req.onerror = () => reject(req.error);
   });
+}
+
+// ============================================================================
+// Raw store access for sync (src/web/userData/playerDataTypes.ts)
+// ============================================================================
+
+/** Every record of a store, all characters, including incomplete ones. */
+export function readTamingStore<T>(storeName: TamingStoreName): Promise<T[]> {
+  return getAllFromStore<T>(storeName);
+}
+
+export interface TamingStoreChanges<T> {
+  put?: T[];
+  delete?: IDBValidKey[];
+}
+
+/**
+ * Read-modify-write a store in one transaction: `mutate` gets every record and
+ * returns what to put and delete. Emits "oswajanie.updated" when anything
+ * changed, so the popup re-loads.
+ */
+export async function mutateTamingStore<T>(
+  storeName: TamingStoreName,
+  mutate: (records: T[]) => TamingStoreChanges<T>
+): Promise<void> {
+  const database = await openDatabase();
+  let changed = false;
+  await new Promise<void>((resolve, reject) => {
+    const tx = database.transaction([storeName], "readwrite");
+    const store = tx.objectStore(storeName);
+    const req = store.getAll();
+    req.onsuccess = () => {
+      const changes = mutate(req.result as T[]);
+      for (const record of changes.put ?? []) store.put(record);
+      for (const key of changes.delete ?? []) store.delete(key);
+      changed = (changes.put?.length ?? 0) + (changes.delete?.length ?? 0) > 0;
+    };
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+    tx.onabort = () => reject(tx.error);
+  });
+  if (changed) notifyUpdated();
 }
 
 function downloadJson(content: string, filename: string): void {
@@ -486,8 +606,12 @@ function formatNowForFilename(): string {
 export async function exportDatabase(): Promise<void> {
   try {
     const character = getChar();
-    const feeding = (await getAllFromStore<FeedingEntry>("feeding")).filter((f) => f.character === character);
-    const animals = (await getAllFromStore<AnimalLevel>("animals")).filter((a) => a.character === character);
+    const feeding = (await getAllFromStore<FeedingEntry>("feeding")).filter(
+      (f) => f.character === character && isComplete(f)
+    );
+    const animals = (await getAllFromStore<AnimalLevel>("animals")).filter(
+      (a) => a.character === character && isComplete(a)
+    );
 
     const data: ExportData = {
       meta: {
@@ -525,14 +649,62 @@ function isValidAnimalLevel(o: any): boolean {
   return o && typeof o.animal === "string" && typeof o.level === "string" && typeof o.timestamp === "number";
 }
 
+function feedingContentKey(animal: string, food: string, timestamp: number): string {
+  return JSON.stringify([animal, food, timestamp]);
+}
+
+function levelContentKey(animal: string, level: string): string {
+  return JSON.stringify([animal, level]);
+}
+
 /**
  * Replace the current character's data with the imported set.
- * Imported records are re-stamped with the active character and given fresh
- * ids, so importing another character's (or the old plugin's) backup is safe.
+ * Imported records are re-stamped with the active character. They keep their
+ * id when the backup has a stable one; otherwise an entry matching an existing
+ * one by content takes over its id, and the rest get fresh ids. So re-importing
+ * a backup doesn't duplicate entries sync already knows (sync can't forget
+ * entries - an entry left out of the backup comes back from other devices).
  */
 async function replaceDatabase(data: ExportData): Promise<void> {
   const database = await openDatabase();
   const character = getChar();
+
+  const existingFeedings = await getAllFromStore<FeedingEntry>("feeding");
+  const existingLevels = await getAllFromStore<AnimalLevel>("animals");
+
+  // Ids of other characters' entries are taken; the current character's are replaced.
+  const taken = new Set<string>();
+  const feedingIds = new Map<string, string>();
+  for (const f of existingFeedings) {
+    if (f.character !== character) {
+      taken.add(String(f.id));
+      continue;
+    }
+    if (typeof f.timestamp !== "number") continue;
+    feedingIds.set(feedingContentKey(f.observedAnimal ?? f.animal, f.food, f.timestamp), String(f.id));
+    feedingIds.set(feedingContentKey(f.animal, f.food, f.timestamp), String(f.id));
+  }
+  const levelIds = new Map<string, string>();
+  for (const a of existingLevels) {
+    if (a.character !== character) {
+      taken.add(String(a.id));
+      continue;
+    }
+    levelIds.set(levelContentKey(a.observedAnimal ?? a.animal, a.level), String(a.id));
+    levelIds.set(levelContentKey(a.animal, a.level), String(a.id));
+  }
+
+  const pickId = (fileId: unknown, byContent: string | undefined): string => {
+    for (const candidate of [typeof fileId === "string" ? fileId : undefined, byContent]) {
+      if (candidate && !taken.has(candidate)) {
+        taken.add(candidate);
+        return candidate;
+      }
+    }
+    return newTamingEntryId();
+  };
+  const optionalName = (name: unknown): { observedAnimal?: string } =>
+    typeof name === "string" ? { observedAnimal: name } : {};
 
   await new Promise<void>((resolve, reject) => {
     const tx = database.transaction(["feeding", "animals"], "readwrite");
@@ -540,37 +712,52 @@ async function replaceDatabase(data: ExportData): Promise<void> {
     const animalsStore = tx.objectStore("animals");
 
     // Clear only the current character's existing records.
-    const clearScoped = (store: IDBObjectStore) => {
+    const clearScoped = (store: IDBObjectStore, done: () => void) => {
       const cursorReq = store.index("character").openCursor(IDBKeyRange.only(character));
       cursorReq.onsuccess = (event) => {
         const cursor = (event.target as IDBRequest<IDBCursorWithValue>).result;
         if (cursor) {
           cursor.delete();
           cursor.continue();
+        } else {
+          done();
         }
       };
     };
-    clearScoped(feedingStore);
-    clearScoped(animalsStore);
 
-    for (const f of data.feeding) {
-      feedingStore.add({
-        character,
-        animal: String(f.animal),
-        food: String(f.food),
-        active: f.active === 1 || (f.active as unknown) === true ? 1 : 0,
-        timestamp: Number(f.timestamp),
-      } as FeedingEntry);
-    }
+    clearScoped(feedingStore, () => {
+      for (const f of data.feeding) {
+        const animal = String(f.animal);
+        const food = String(f.food);
+        const timestamp = Number(f.timestamp);
+        const observed = typeof f.observedAnimal === "string" ? f.observedAnimal : animal;
+        feedingStore.put({
+          id: pickId(f.id, feedingIds.get(feedingContentKey(observed, food, timestamp))),
+          character,
+          animal,
+          ...optionalName(f.observedAnimal),
+          food,
+          active: f.active === 1 || (f.active as unknown) === true ? 1 : 0,
+          timestamp,
+        } as FeedingEntry);
+      }
+    });
 
-    for (const a of data.animals) {
-      animalsStore.add({
-        character,
-        animal: String(a.animal),
-        level: String(a.level),
-        timestamp: Number(a.timestamp),
-      } as AnimalLevel);
-    }
+    clearScoped(animalsStore, () => {
+      for (const a of data.animals) {
+        const animal = String(a.animal);
+        const level = String(a.level);
+        const observed = typeof a.observedAnimal === "string" ? a.observedAnimal : animal;
+        animalsStore.put({
+          id: pickId(a.id, levelIds.get(levelContentKey(observed, level))),
+          character,
+          animal,
+          ...optionalName(a.observedAnimal),
+          level,
+          timestamp: Number(a.timestamp),
+        } as AnimalLevel);
+      }
+    });
 
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
@@ -864,8 +1051,5 @@ export function destroyOswajanie(): void {
     feedAlertTimer = null;
   }
   client.Triggers.removeByTag(TRIGGER_TAG);
-  if (db) {
-    db.close();
-    db = null;
-  }
+  closeOswajanieDatabase();
 }

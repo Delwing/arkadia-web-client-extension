@@ -2,8 +2,9 @@
 
 Dev-facing. `docs/` root is user-facing (see `docs/SYNCHRONIZACJA.md`); this file is deliberately in `docs/dev/`.
 
-Status: **stage 1 done** (one registry and serializer, no per-category or per-character selection); stage 2a done (change tracking core, localStorage types); stage 2b in progress. Replaces the category/checksum sync in `src/modules/firebase/` and the
-`character:key` localStorage layout for user data.
+Status: **stages 1 and 2 done** (one registry and serializer; change tracking with adapters for every type
+in 4.1, not yet connected to the cloud); stages 3–5 not started. Replaces the category/checksum sync in
+`src/modules/firebase/`.
 
 ---
 
@@ -138,8 +139,10 @@ Knowledge, concretely:
 
 - `knowledgeLibraries`: **max** per (character, library, category).
 - `knowledgeBooks`: **max** per (character, book category, book).
-- `knowledgeDetails`: **newest-observation** per (character, category) for the entry lists, unknown entries
-  and per-source levels (they come from one `wiedza` output); **newest** for character metadata (gender).
+- `knowledgeDetails`: per (character, category) for the entry lists, unknown entries and per-source levels
+  (they come from one `wiedza` output), and per character for metadata (gender). **Custom** rule: the
+  reading with the newer `updatedAt` wins, so an old reading captured late (first capture after a long
+  break) doesn't beat a newer one.
 - `knowledgeEvents`: level changes are **earliest** per (character, category, level): a device that missed
   the level-up records it later from `wiedza` output, and that later record must not move the point from
   which ticks are counted. Ticks are **union** by id and only matter until the next level-up (section 8.3).
@@ -153,6 +156,13 @@ knowing how many feedings it took between level-ups:
 - Feedings are **union** by id. They are kept (they are the statistic), and a delivered feeding can't be
   observed twice on two devices, so no deduplication beyond the id is needed. Same for deliveries.
 - The `active` flag of a feeding entry and food groups are **newest**.
+- Renames (`/o_przemianuj`) are separate **newest** items (`tamingFeedingNames`, `tamingLevelNames`); the
+  union and earliest items keep the name the game used, which never changes.
+- Feeding and level entries use stable ids (`${deviceId}:…`); the oswajanie database upgrade (v5)
+  re-keys existing auto-increment entries.
+
+Transport segments: resetting a leg keeps the record as a marker (`resetAt`); the merge only counts
+durations measured after the later reset of the two sides.
 
 ## 6. Local change tracking
 

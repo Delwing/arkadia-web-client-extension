@@ -64,7 +64,7 @@ async function getDatabase(): Promise<IDBDatabase> {
     return dbPromise;
 }
 
-interface TransportSegmentDurationEntry {
+export interface TransportSegmentDurationEntry {
     duration: number;
     startedAt: number;
     endedAt: number;
@@ -93,6 +93,29 @@ export interface StoredTransportSegmentRecord {
     longestDuration: TransportSegmentDurationEntry;
     expectedDuration?: number | null;
     updatedAt: number;
+    /** When the leg was last reset; durations from before it don't count. */
+    resetAt?: number;
+}
+
+/**
+ * A segment as stored: after a reset the record stays, without durations, so
+ * the reset is remembered (and synced) instead of the record disappearing.
+ */
+export type TransportSegmentValue = Omit<StoredTransportSegmentRecord, "shortestDuration" | "longestDuration"> & {
+    shortestDuration?: TransportSegmentDurationEntry;
+    longestDuration?: TransportSegmentDurationEntry;
+};
+
+function hasDurations(value: TransportSegmentValue): value is StoredTransportSegmentRecord {
+    return !!value.shortestDuration && !!value.longestDuration;
+}
+
+const changeListeners = new Set<() => void>();
+
+/** Called after segments were written by sync, so cached durations can be re-read. */
+export function onTransportSegmentsChanged(listener: () => void): () => void {
+    changeListeners.add(listener);
+    return () => changeListeners.delete(listener);
 }
 
 interface LegacyTransportSegmentRecord extends TransportSegmentRecord {
@@ -166,7 +189,9 @@ export async function recordTransportSegment(record: TransportSegmentRecord): Pr
             const segmentKey = createSegmentKey(record);
             const getRequest = store.get(segmentKey);
             getRequest.onsuccess = () => {
-                const existing = getRequest.result as StoredTransportSegmentRecord | undefined;
+                const stored = getRequest.result as TransportSegmentValue | undefined;
+                // A reset leg keeps its record (and resetAt) but starts over.
+                const existing = stored && hasDurations(stored) ? stored : undefined;
                 const duration = toDurationEntry(record);
                 const expectedDuration =
                     record.expectedDuration !== undefined
@@ -181,6 +206,7 @@ export async function recordTransportSegment(record: TransportSegmentRecord): Pr
                           updatedAt: Date.now(),
                       }
                     : {
+                          ...(stored?.resetAt !== undefined ? { resetAt: stored.resetAt } : {}),
                           segmentKey,
                           transport: record.transport,
                           fromId: record.fromId,
@@ -218,6 +244,11 @@ export async function recordTransportSegment(record: TransportSegmentRecord): Pr
     }
 }
 
+/**
+ * Reset a leg: its durations are dropped, and the record stays as a reset
+ * marker (resetAt) so the reset also applies to durations synced from other
+ * devices that were measured before it.
+ */
 export async function deleteTransportSegment(
     transport: string,
     fromId: number,
@@ -229,9 +260,16 @@ export async function deleteTransportSegment(
             const transaction = db.transaction([STORE_NAME], "readwrite");
             const store = transaction.objectStore(STORE_NAME);
             const segmentKey = createSegmentKey({ transport, fromId, toId });
-            const request = store.delete(segmentKey);
-            request.onsuccess = () => resolve();
-            request.onerror = () => reject(request.error ?? new Error("Failed to delete transport segment"));
+            const getRequest = store.get(segmentKey);
+            getRequest.onsuccess = () => {
+                const existing = getRequest.result as TransportSegmentValue | undefined;
+                if (!existing) return;
+                const now = Date.now();
+                const { shortestDuration: _s, longestDuration: _l, ...rest } = existing;
+                store.put({ ...rest, resetAt: now, updatedAt: Math.max(now, existing.updatedAt) });
+            };
+            transaction.oncomplete = () => resolve();
+            transaction.onerror = () => reject(transaction.error ?? new Error("Failed to delete transport segment"));
         });
     } catch (error) {
         if (typeof process === "undefined" || process.env.NODE_ENV !== "test") {
@@ -262,16 +300,35 @@ export async function clearTransportStats(): Promise<void> {
 }
 
 export async function getAllTransportSegments(): Promise<StoredTransportSegmentRecord[]> {
+    return (await getAllTransportSegmentValues()).filter(hasDurations);
+}
+
+/** Every stored segment, including reset legs without durations (for sync). */
+export async function getAllTransportSegmentValues(): Promise<TransportSegmentValue[]> {
     try {
         const db = await getDatabase();
-        return await new Promise<StoredTransportSegmentRecord[]>((resolve, reject) => {
+        return await new Promise<TransportSegmentValue[]>((resolve, reject) => {
             const transaction = db.transaction([STORE_NAME], "readonly");
             const store = transaction.objectStore(STORE_NAME);
             const request = store.getAll();
-            request.onsuccess = () => resolve((request.result as StoredTransportSegmentRecord[]) ?? []);
+            request.onsuccess = () => resolve((request.result as TransportSegmentValue[]) ?? []);
             request.onerror = () => reject(request.error ?? new Error("Failed to read transport stats"));
         });
     } catch {
         return [];
     }
+}
+
+/** Store segments as given (merged by sync) and tell listeners. */
+export async function putTransportSegmentValues(values: TransportSegmentValue[]): Promise<void> {
+    if (values.length === 0) return;
+    const db = await getDatabase();
+    await new Promise<void>((resolve, reject) => {
+        const transaction = db.transaction([STORE_NAME], "readwrite");
+        const store = transaction.objectStore(STORE_NAME);
+        for (const value of values) store.put(value);
+        transaction.oncomplete = () => resolve();
+        transaction.onerror = () => reject(transaction.error ?? new Error("Failed to store transport segments"));
+    });
+    for (const listener of changeListeners) listener();
 }

@@ -21,6 +21,9 @@ import {
     peopleEditsType,
     professionType,
 } from './localStorageTypes';
+import { createKnowledgeTypes } from './knowledgeTypes';
+import { createMapCombatTypes } from './mapCombatTypes';
+import { createPlayerDataTypes } from './playerDataTypes';
 
 const HLC_STORAGE_KEY = 'arkadia.userData.hlc';
 
@@ -44,6 +47,9 @@ export function createUserDataTypes(deviceId: () => string = getDeviceId): UserD
         improveCountsEnabledType,
         peopleEditsType,
         ...interfaceTypes(deviceId),
+        ...createKnowledgeTypes(),
+        ...createMapCombatTypes(),
+        ...createPlayerDataTypes(),
     ];
 }
 

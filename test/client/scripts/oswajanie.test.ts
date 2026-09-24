@@ -1,4 +1,8 @@
-import {
+import initOswajanie, {
+  destroyOswajanie,
+  getFeedingsByAnimal,
+  importDatabaseFromFile,
+  renameAnimal,
   parseFeedingLine,
   insertFeedingEntry,
   insertAnimalLevel,
@@ -206,3 +210,75 @@ describe("oswajanie food grouping (global)", () => {
   });
 });
 
+
+describe("oswajanie stable ids, rename and import", () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it("gives entries string ids and remembers the observed name on rename", async () => {
+    useFreshCharacter();
+    await insertFeedingEntry("sojke", "miesem");
+    await insertAnimalLevel("sojke", "nerwowe");
+
+    await renameAnimal("sojke", "Darniaka");
+
+    const [feeding] = await getFeedingsByAnimal("Darniaka");
+    expect(typeof feeding.id).toBe("string");
+    expect(feeding.observedAnimal).toBe("sojke");
+    expect(await getLevelByAnimal("Darniaka", Date.now() + 1000)).toBe("nerwowe");
+
+    // Renaming again keeps the first observed name.
+    await renameAnimal("Darniaka", "Burka");
+    expect((await getFeedingsByAnimal("Burka"))[0].observedAnimal).toBe("sojke");
+  });
+
+  it("keeps ids on re-import, so a backup doesn't duplicate synced entries", async () => {
+    const character = useFreshCharacter();
+    const fakeTrigger = { registerChild: jest.fn() };
+    const fakeClient = {
+      Triggers: { registerTrigger: jest.fn(() => fakeTrigger), removeByTag: jest.fn() },
+      FunctionalBind: { set: jest.fn() },
+      println: jest.fn(),
+      notify: jest.fn(),
+      aliases: [],
+    };
+    initOswajanie(fakeClient as never, []);
+
+    await insertFeedingEntry("wilk", "miesem");
+    const [original] = await getFeedingsByAnimal("wilk");
+    const importFile = async (content: object) => {
+      const file = new File([JSON.stringify(content)], "backup.json", { type: "application/json" });
+      const click = jest.spyOn(HTMLInputElement.prototype, "click").mockImplementation(function (this: HTMLInputElement) {
+        Object.defineProperty(this, "files", { value: [file] });
+        this.dispatchEvent(new Event("change"));
+      });
+      await importDatabaseFromFile();
+      click.mockRestore();
+    };
+    const meta = { plugin: "oswajanie", version: "2.0", character, exportedAt: "", dbVersion: 4 };
+
+    // An old backup with a numeric id: matched by content, keeps the id.
+    await importFile({
+      meta,
+      feeding: [{ id: 7, character, animal: "wilk", food: "miesem", active: 0, timestamp: original.timestamp }],
+      animals: [],
+    });
+    let feedings = await getFeedingsByAnimal("wilk");
+    expect(feedings.map((f) => [f.id, f.active])).toEqual([[original.id, 0]]);
+
+    // A new backup keeps its ids.
+    await importFile({
+      meta,
+      feeding: [
+        { id: original.id, character, animal: "wilk", food: "miesem", active: 1, timestamp: original.timestamp },
+        { id: "devX:1", character, animal: "wilk", food: "ryba", active: 1, timestamp: 5 },
+      ],
+      animals: [{ id: "devX:2", character, animal: "wilk", level: "nerwowe", timestamp: 6 }],
+    });
+    feedings = await getFeedingsByAnimal("wilk");
+    expect(feedings.map((f) => f.id).sort()).toEqual([original.id, "devX:1"].sort());
+    expect(await getLevelByAnimal("wilk", 7)).toBe("nerwowe");
+    destroyOswajanie();
+  });
+});

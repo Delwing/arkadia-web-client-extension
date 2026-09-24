@@ -2,7 +2,7 @@ import Client from "../Client";
 import {createColorFormat} from "@modules/core/Colors";
 import {AnsiAwareBuffer} from "@client/ansi/FormatState.ts";
 import {characterStorage} from "@modules/core/storage";
-import {getFromIndexedDB, storeInIndexedDB, IndexedDBConfig} from "@client/utils/dataCache.ts";
+import {getFromIndexedDB, getIndexedDBKeys, storeInIndexedDB, IndexedDBConfig} from "@client/utils/dataCache.ts";
 import {GOLD_COLOR, SILVER_COLOR, COPPER_COLOR} from "../constants/colors";
 import {createPad, createHeader} from "./counterTableUtils";
 
@@ -26,6 +26,44 @@ function getDbConfig(character: string): IndexedDBConfig {
         storeName: "deliveries",
         key: character,
     };
+}
+
+// ---------------------------------------------------------------------------
+// Storage access for sync (src/web/userData/playerDataTypes.ts)
+// ---------------------------------------------------------------------------
+
+type DeliveriesListener = (character: string, records: DeliveryRecord[]) => void;
+const deliveriesListeners = new Set<DeliveriesListener>();
+
+/** Characters with stored deliveries. */
+export async function listDeliveryCharacters(): Promise<string[]> {
+    return getIndexedDBKeys(getDbConfig(""));
+}
+
+export async function readDeliveryRecords(character: string): Promise<DeliveryRecord[]> {
+    const data = await getFromIndexedDB<DeliveryRecord[]>(getDbConfig(character));
+    return Array.isArray(data) ? data : [];
+}
+
+/** Union by timestamp (a timestamp identifies a delivery), sorted oldest first. */
+export function mergeDeliveryRecords(a: DeliveryRecord[], b: DeliveryRecord[]): DeliveryRecord[] {
+    const byTimestamp = new Map<number, DeliveryRecord>();
+    for (const r of [...a, ...b]) {
+        if (!byTimestamp.has(r.timestamp)) byTimestamp.set(r.timestamp, r);
+    }
+    return [...byTimestamp.values()].sort((x, y) => x.timestamp - y.timestamp);
+}
+
+/**
+ * Add deliveries recorded elsewhere. The running script keeps its own copy of
+ * the list and saves it whole, so it is told to merge them in too; otherwise
+ * its next save would drop them.
+ */
+export async function addDeliveryRecords(character: string, incoming: DeliveryRecord[]): Promise<void> {
+    if (incoming.length === 0) return;
+    const merged = mergeDeliveryRecords(await readDeliveryRecords(character), incoming);
+    await storeInIndexedDB(getDbConfig(character), merged);
+    for (const listener of deliveriesListeners) listener(character, merged);
 }
 
 function parsePayment(text: string): { gold: number; silver: number; copper: number } {
@@ -217,6 +255,14 @@ export default function initDeliveryStats(
         output.append("\n", {});
         client.print(output);
     }
+
+    deliveriesListeners.add((character, stored) => {
+        if (!loaded || currentConfig?.key !== character) return;
+        const merged = mergeDeliveryRecords(records, stored);
+        const hadUnsaved = merged.length > stored.length;
+        records = merged;
+        if (hadUnsaved) void save();
+    });
 
     client.on('gmcp.char.info', () => {
         void load();
