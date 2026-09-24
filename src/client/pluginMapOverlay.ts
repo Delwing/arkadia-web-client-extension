@@ -39,6 +39,8 @@ export class PluginMapOverlay implements SceneOverlay {
       currentRoomId: state.positionRoomId,
       areaId: state.currentArea,
       z: state.currentZIndex,
+      lineWidth: state.settings.lineWidth,
+      roomSize: state.settings.roomSize,
       getRoom: (roomId: number) => state.mapReader.getRoom(roomId) ?? undefined,
     };
     try {

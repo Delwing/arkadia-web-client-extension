@@ -540,6 +540,10 @@ export interface MapOverlayRenderState {
   areaId?: number;
   /** Z-level currently displayed on the map */
   z?: number;
+  /** Width of the map's exit lines in map units (user setting) - match it to blend in */
+  lineWidth: number;
+  /** Room size in map units (user setting) */
+  roomSize: number;
   /** Look up a room of the loaded map */
   getRoom(roomId: number): MapData.Room | undefined;
 }
