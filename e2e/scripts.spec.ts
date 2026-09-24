@@ -198,7 +198,8 @@ test('Catalogue tab installs a plugin and then offers its update', async ({page}
     });
 
     await page.route(`${REGISTRY}/r/katalogowy/*/plugin.js`, async (route) => {
-        const version = new URL(route.request().url()).pathname.split('/')[3];
+        const requested = new URL(route.request().url()).pathname.split('/')[3];
+        const version = requested === 'latest' ? latestVersion : requested;
         await route.fulfill({status: 200, contentType: 'application/javascript', body: bundle(version)});
     });
 
@@ -225,16 +226,28 @@ test('Catalogue tab installs a plugin and then offers its update', async ({page}
     const installed = scriptsModal.locator('.plugin-card', {hasText: 'Katalogowy'});
     await expect(installed, 'should appear on the installed tab').toBeVisible();
     await expect(installed.locator('.plugin-chip'), 'should be tagged as a catalogue install').toHaveText('Katalog');
-    await expect(installed.getByText('v1.0.0'), 'should run the version it pinned').toBeVisible();
+    await expect(installed.getByText('v1.0.0'), 'should run the current release').toBeVisible();
 
+    const latestUrl = `${REGISTRY}/r/katalogowy/latest/plugin.js`;
     await page.waitForFunction((url) => {
         const stored = localStorage.getItem('scripts');
         return Boolean(stored && JSON.parse(stored).includes(url));
-    }, `${REGISTRY}/r/katalogowy/1.0.0/plugin.js`);
+    }, latestUrl);
 
-    // A newer release shows up in the catalogue: the panel offers it, and taking
-    // it replaces the pinned URL rather than adding a second copy.
+    // A newer release shows up in the catalogue: a `latest` install just runs
+    // it on the next load, with nothing to press.
     latestVersion = '1.1.0';
+    await page.reload();
+    await waitForCommandInput(page);
+    await openScriptsModal(page);
+
+    const followed = page.locator(SCRIPTS_MODAL).locator('.plugin-card', {hasText: 'Katalogowy'});
+    await expect(followed.getByText('v1.1.0'), 'should pick up the new release by itself').toBeVisible();
+    await expect(followed.getByText('Dostepna wersja'), 'should not offer an update').toHaveCount(0);
+
+    // An older install pinned to an exact version still gets offered the update,
+    // and taking it moves it onto `latest` in place rather than adding a copy.
+    await page.evaluate((url) => localStorage.setItem('scripts', JSON.stringify([url])), `${REGISTRY}/r/katalogowy/1.0.0/plugin.js`);
     await page.reload();
     await waitForCommandInput(page);
     await openScriptsModal(page);
@@ -248,7 +261,7 @@ test('Catalogue tab installs a plugin and then offers its update', async ({page}
         const stored = localStorage.getItem('scripts');
         const parsed = stored ? JSON.parse(stored) : [];
         return parsed.length === 1 && parsed[0] === url;
-    }, `${REGISTRY}/r/katalogowy/1.1.0/plugin.js`);
+    }, latestUrl);
 
     // Uninstalling from the catalogue tab drops it whichever version is pinned.
     const modal = page.locator(SCRIPTS_MODAL);

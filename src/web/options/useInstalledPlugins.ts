@@ -11,6 +11,7 @@ import { deleteEditorPlugin } from "@client/utils/pluginEditorStorage";
 import {
     fetchRegistrySummaries,
     isUpdateAvailable,
+    LATEST_VERSION,
     parseRegistryBundleUrl,
     registryBundleUrl,
     reportRegistryInstall,
@@ -207,12 +208,18 @@ export function useInstalledPlugins() {
                 registry && isUpdateAvailable(registry.version, summary?.latestVersion)
                     ? (summary?.latestVersion ?? undefined)
                     : undefined;
+            // A `latest` install runs whatever the catalogue's newest release is;
+            // show that number rather than the alias until the plugin reports its own.
+            const followsLatest = registry?.version === LATEST_VERSION;
+            const registryVersion = followsLatest
+                ? (summary?.latestVersion ?? undefined)
+                : registry?.version;
 
             return {
                 id: url,
                 source: registry ? ("registry" as const) : ("url" as const),
                 name: runtime?.info?.name ?? summary?.displayName ?? registry?.slug ?? url,
-                version: runtime?.info?.version ?? registry?.version,
+                version: runtime?.info?.version ?? registryVersion,
                 author: runtime?.info?.author ?? (summary?.owner ? `@${summary.owner.handle}` : undefined),
                 description: runtime?.info?.description ?? summary?.description,
                 status: runtime?.status ?? "unknown",
@@ -220,7 +227,7 @@ export function useInstalledPlugins() {
                 slug: registry?.slug,
                 installedVersion: registry?.version,
                 updateVersion: update,
-                detail: registry ? `${registry.slug} · ${registry.version}` : url,
+                detail: registry ? `${registry.slug} · ${followsLatest ? "najnowsza" : registry.version}` : url,
             } satisfies InstalledPlugin;
         });
 
@@ -254,12 +261,12 @@ export function useInstalledPlugins() {
     );
 
     /**
-     * Install a catalogue release. Pinned, not `latest`: the pinned URL is
-     * immutably cached, and an explicit "Aktualizuj" beats a plugin silently
-     * changing under the player mid-session.
+     * Install a catalogue plugin. Follows `latest` unless an exact version is
+     * asked for (the detail dialog's version list), so players are not left
+     * pressing "Aktualizuj" for every release.
      */
     const installFromRegistry = useCallback(
-        (slug: string, version: string) => {
+        (slug: string, version: string = LATEST_VERSION) => {
             const url = registryBundleUrl(slug, version);
             // A different version of the same plugin is replaced, not stacked:
             // two copies of one plugin would both register their triggers.
@@ -282,10 +289,13 @@ export function useInstalledPlugins() {
         [urls, saveUrls]
     );
 
-    /** Swap a pinned catalogue URL for a newer one, keeping its place in the list. */
+    /**
+     * Move a pinned catalogue URL onto `latest`, keeping its place in the list,
+     * so this is the last update the player has to press for it.
+     */
     const updateFromRegistry = useCallback(
-        (slug: string, version: string) => {
-            const url = registryBundleUrl(slug, version);
+        (slug: string) => {
+            const url = registryBundleUrl(slug, LATEST_VERSION);
             saveUrls(
                 urls.map((entry) => (parseRegistryBundleUrl(entry)?.slug === slug ? url : entry))
             );

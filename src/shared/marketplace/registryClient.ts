@@ -77,6 +77,14 @@ export interface RegistrySearchOptions {
     signal?: AbortSignal
 }
 
+/**
+ * The moving alias the registry resolves to the newest non-yanked release. A
+ * catalogue install follows it by default, so new releases arrive without an
+ * "Aktualizuj"; an exact version is stored only when the player picks one from
+ * the version list (a deliberate pin or rollback).
+ */
+export const LATEST_VERSION = 'latest'
+
 /** `/r/<slug>/<version>/plugin.js` — the only URL shape the registry serves bundles at. */
 const BUNDLE_PATH = /^\/r\/([^/]+)\/([^/]+)\/plugin\.js$/
 
@@ -163,7 +171,7 @@ function splitVersion(version: string): [number[], string] {
 export function isUpdateAvailable(installed: string, latest: string | null | undefined): boolean {
     if (!latest || !installed) return false
     // A "latest" pin already follows the newest release; nothing to offer.
-    if (installed === 'latest') return false
+    if (installed === LATEST_VERSION) return false
     return compareVersions(latest, installed) > 0
 }
 

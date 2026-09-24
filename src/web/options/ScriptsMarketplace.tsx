@@ -5,6 +5,7 @@ import PluginCard from "./PluginCard";
 import PluginDetailDialog from "./PluginDetailDialog";
 import {
     isUpdateAvailable,
+    LATEST_VERSION,
     searchRegistry,
     type RegistryPluginSummary,
     type RegistrySort,
@@ -212,7 +213,7 @@ function ScriptsMarketplace({ search, installedSlugs, onInstall, onUninstall }: 
                                                 size="sm"
                                                 variant="solid"
                                                 className="plugin-action plugin-action--labelled"
-                                                onClick={() => onInstall(item.slug, item.latestVersion!)}
+                                                onClick={() => onInstall(item.slug, LATEST_VERSION)}
                                             >
                                                 {upgradable ? (
                                                     <>

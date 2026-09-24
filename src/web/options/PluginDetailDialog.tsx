@@ -7,6 +7,7 @@ import {
     compareVersions,
     fetchRegistryPlugin,
     isUpdateAvailable,
+    LATEST_VERSION,
     registryPageUrl,
     type RegistryPluginDetail,
 } from "@shared/marketplace/registryClient.ts";
@@ -64,6 +65,9 @@ function PluginDetailDialog({
 
     const latest = detail?.plugin.latestVersion ?? null;
     const upgradable = installedVersion ? isUpdateAvailable(installedVersion, latest) : false;
+    // A `latest` install runs whatever the newest release is, so the version
+    // list marks that one as installed and offers the rest as pins/rollbacks.
+    const runningVersion = installedVersion === LATEST_VERSION ? (latest ?? undefined) : installedVersion;
 
     return (
         <SubDialog
@@ -95,7 +99,7 @@ function PluginDetailDialog({
                         <Button
                             variant="solid"
                             onClick={() => {
-                                onInstall(slug, latest);
+                                onInstall(slug, LATEST_VERSION);
                                 onClose();
                             }}
                         >
@@ -182,10 +186,10 @@ function PluginDetailDialog({
                     <h6 className="plugin-detail__heading">Wersje</h6>
                     <ul className="plugin-version-list">
                         {visibleReleases.map((release) => {
-                            const isInstalled = release.version === installedVersion;
+                            const isInstalled = release.version === runningVersion;
                             const isOlder =
-                                Boolean(installedVersion) &&
-                                compareVersions(release.version, installedVersion!) < 0;
+                                Boolean(runningVersion) &&
+                                compareVersions(release.version, runningVersion!) < 0;
                             return (
                                 <li key={release.version} className="plugin-version">
                                     <span className="plugin-version__number">v{release.version}</span>

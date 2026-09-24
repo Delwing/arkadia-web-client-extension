@@ -1252,8 +1252,9 @@ api.ui.addPopupMenuEntry('Łupy', () => (popup.isOpen ? popup.close() : popup.op
 ### Przez UI
 
 1. Kliknij przycisk "Skrypty" w kliencie
-2. Zakładka "Katalog" — znajdź plugin i kliknij "Zainstaluj". Klient zapisuje konkretną wersję,
-   a nowsze wydania pojawiają się na liście zainstalowanych jako "Aktualizuj"
+2. Zakładka "Katalog" — znajdź plugin i kliknij "Zainstaluj". Plugin śledzi najnowsze wydanie,
+   więc nowe wersje wczytują się same przy kolejnym uruchomieniu. Konkretną wersję (np. żeby
+   cofnąć się do starszej) wybierzesz z listy "Wersje" w szczegółach pluginu
 3. Własny plugin dodasz przyciskiem "Dodaj plugin" → "Z adresu URL" (albo ZIP / wklejony kod)
 4. Plugin zostanie załadowany i zainicjalizowany
 
