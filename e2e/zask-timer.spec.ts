@@ -1,6 +1,6 @@
 import {expect, test} from './support/fixtures';
 import type {Page} from '@playwright/test';
-import {ensureGameSocket, pushGmcp, waitForCommandInput} from './support/mocks';
+import {ensureGameSocket, pushGmcp, pushText, submitCommand, waitForCommandInput} from './support/mocks';
 
 // Toggle move mode using the default keybind (Backquote = `)
 // Mode cycles: 0 (normal) -> 1 (sneak) -> 0 (normal)
@@ -172,5 +172,37 @@ test.describe('Zask timer', () => {
         const secondSeconds = parseInt(secondText?.replace('Zask', '') || '0');
 
         expect(secondSeconds, 'should restart timer on room change').toBeLessThanOrEqual(firstSeconds);
+    });
+
+    test('starts on a typed przemknij without the move mode toggle', async ({page}) => {
+        await page.clock.install();
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+
+        const zaskTimer = page.locator('#zask-timer');
+
+        await submitCommand(page, 'przemknij n');
+        await triggerRoomChange(page);
+        await expect(zaskTimer, 'should be visible after przemknij').toBeVisible();
+
+        await submitCommand(page, 's');
+        await triggerRoomChange(page);
+        await expect(zaskTimer, 'should be hidden after a plain step').not.toBeVisible();
+    });
+
+    test('runs while hidden and stops when leaving hiding', async ({page}) => {
+        await page.clock.install();
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+
+        const zaskTimer = page.locator('#zask-timer');
+
+        await pushText(page, 'Chowasz sie najlepiej jak potrafisz.');
+        await expect(zaskTimer, 'should be visible after hiding').toBeVisible();
+
+        await pushText(page, 'Wychodzisz z ukrycia.');
+        await expect(zaskTimer, 'should be hidden after leaving hiding').not.toBeVisible();
     });
 });

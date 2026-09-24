@@ -238,8 +238,8 @@ export const SUPPORTED_EVENTS: SupportedEvent[] = [
         id: 'zask.ready',
         label: 'Zaskoczenie - mozna zaskoczyc',
         category: 'Timery',
-        description: 'Gdy od wejscia na lokacje w trybie przemykania minie 30 sekund i licznik zaskoczenia zmieni kolor na zielony.',
-        args: [{ name: 'seconds', label: 'Sekundy od wejscia', type: 'number' }],
+        description: 'Gdy od przemkniecia na lokacje (tryb przemykania lub komenda przemknij) albo od schowania sie minie 30 sekund i licznik zaskoczenia zmieni kolor na zielony.',
+        args: [{ name: 'seconds', label: 'Sekundy od startu', type: 'number' }],
     },
     {
         id: 'cover.start',

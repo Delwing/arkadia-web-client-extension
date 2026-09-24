@@ -1,6 +1,8 @@
 import Client from "../Client";
+import { isDirection, isPolishDirection } from "@shared/map/directions.ts";
 
 const SAFE_THRESHOLD_SECONDS = 30;
+const SNEAK_COMMAND = /^przemknij\b/i;
 
 interface ZaskTimerPayload {
     seconds: number;
@@ -53,13 +55,44 @@ export default function initZaskTimer(client: Client) {
         timer = window.setInterval(updateTimer, 1000);
     }
 
+    // Moves sent as `przemknij ...` without the move mode toggle (typed, walk
+    // mode modifiers, plugins). One per queued sneak so a speedwalk keeps
+    // counting; a plain step drops the rest, which also clears a sneak the
+    // game refused.
+    let pendingSneaks = 0;
+
+    client.on('command', (command) => {
+        const cmd = command.trim();
+        if (SNEAK_COMMAND.test(cmd)) {
+            pendingSneaks++;
+        } else if (isDirection(cmd) || isPolishDirection(cmd)) {
+            pendingSneaks = 0;
+        }
+    });
+
     client.on('gmcp.room.info', () => {
-        if (client.moveMode > 0) {
+        const sneaked = pendingSneaks > 0;
+        if (sneaked) pendingSneaks--;
+        if (client.moveMode > 0 || sneaked) {
             startTimer();
         } else {
             stopTimer();
         }
     });
+
+    client.Triggers.registerTrigger(/^Chowasz sie najlepiej jak potrafisz\.$/, (line) => {
+        startTimer();
+        return line;
+    }, 'zask-timer');
+
+    client.Triggers.registerTrigger(
+        /^(?:Wychodzisz z ukrycia|Jest tu zbyt ciezko sie schowac, wiec jestes widoczny z powrotem)\.$/,
+        (line) => {
+            stopTimer();
+            return line;
+        },
+        'zask-timer'
+    );
 
     client.on('moveModeChanged', (mode) => {
         if (mode === 0) {
