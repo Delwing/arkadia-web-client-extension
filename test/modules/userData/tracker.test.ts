@@ -2,7 +2,7 @@ import { HybridLogicalClock } from '@modules/userData/hlc';
 import { MemoryRecordStore } from '@modules/userData/recordStore';
 import type { MergeRule, UserRecord } from '@modules/userData/records';
 import { UserDataTracker } from '@modules/userData/tracker';
-import { deviceScope, type ItemChange, type LocalItem, type UserDataType, type UserDataScope } from '@modules/userData/types';
+import { applyCounterChange, deviceScope, type ItemChange, type LocalItem, type UserDataType, type UserDataScope } from '@modules/userData/types';
 
 /** A data type backed by a plain map, standing in for localStorage or IndexedDB. */
 class MapType<V> implements UserDataType<V> {
@@ -32,11 +32,18 @@ class MapType<V> implements UserDataType<V> {
         return [...this.data.values()];
     }
 
+    /** Runs right before a write, e.g. to record a kill in between read and write. */
+    beforeWrite?: () => void;
+
     write(changes: ItemChange<V>[]): void {
+        this.beforeWrite?.();
         this.writes.push(changes);
         for (const change of changes) {
             if (change.deleted) this.delete(change.key, change.scope);
-            else this.set(change.key, change.value as V, change.scope);
+            else if (this.rule.kind === 'counter') {
+                const stored = this.get(change.key, change.scope) as Record<string, number> | undefined;
+                this.set(change.key, applyCounterChange(stored, change as ItemChange<Record<string, number>>) as V, change.scope);
+            } else this.set(change.key, change.value as V, change.scope);
         }
     }
 }
@@ -190,6 +197,24 @@ describe('UserDataTracker', () => {
         a.types.kills.set('goblin', { count: 6 });
         await sync(a, b);
         expect(b.types.kills.get('goblin')).toEqual({ count: 6 });
+    });
+
+    it('keeps a count added between the tracker reading and writing a counter', async () => {
+        const a = makeDevice('a', 1_000);
+        const b = makeDevice('b', 1_000);
+        a.types.kills.set('goblin', { count: 5 });
+        b.types.kills.set('goblin', { count: 3 });
+        await b.tracker.capture();
+
+        // A kill lands on b while a's records are being applied
+        b.types.kills.beforeWrite = () => b.types.kills.set('goblin', { count: 4 });
+        await sync(a, b);
+        b.types.kills.beforeWrite = undefined;
+
+        expect(b.types.kills.get('goblin')).toEqual({ count: 9 });
+        // ...and it is b's own change, captured and sent on
+        await sync(b, a);
+        expect(a.types.kills.get('goblin')).toEqual({ count: 9 });
     });
 
     it('keeps the earliest observation and corrects a device that saw it later', async () => {

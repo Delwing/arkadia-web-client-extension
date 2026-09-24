@@ -11,6 +11,7 @@ import type { Keymap, KeymapStore } from '@modules/core/keymapTypes';
 import { mergeProfessionStates, type ProfessionState } from '@client/scripts/profession';
 import type { PersonEditEvent, PeopleLocalEventsSnapshot } from '@client/types/people';
 import {
+    applyCounterChange,
     characterFromScope,
     characterScope,
     deviceScope,
@@ -308,7 +309,11 @@ export const improveCountsType: UserDataType<Record<string, number>> = {
             const data = readLifetime(character) ?? { entries: [] };
             const days = new Map(data.entries.map(e => [e.date, e]));
             for (const change of list) {
-                const value = change.value ?? {};
+                const stored = days.get(change.key);
+                const value = applyCounterChange(
+                    stored ? { count: stored.count, noFormCount: stored.noFormCount ?? 0 } : undefined,
+                    change,
+                );
                 const day: LifetimeDay = { date: change.key, count: value.count ?? 0 };
                 if (value.noFormCount) day.noFormCount = value.noFormCount;
                 days.set(change.key, day);

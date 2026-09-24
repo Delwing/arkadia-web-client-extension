@@ -283,4 +283,34 @@ export async function importAllKillRecords(records: KillRecord[]): Promise<void>
     });
 }
 
+type KillCountsListener = (characters: string[]) => void;
+const killCountsListeners = new Set<KillCountsListener>();
+
+/** Called after setKillCounts, with the characters whose records changed. */
+export function onKillCountsSet(listener: KillCountsListener): () => void {
+    killCountsListeners.add(listener);
+    return () => killCountsListeners.delete(listener);
+}
+
+/**
+ * Store each record's count as given, replacing the stored one (lower counts
+ * included). Used by sync to apply merged totals; importAllKillRecords keeps
+ * the higher count instead.
+ */
+export async function setKillCounts(records: KillRecord[]): Promise<void> {
+    if (records.length === 0) return;
+    const db = await openDB();
+    await new Promise<void>((resolve, reject) => {
+        const tx = db.transaction([STORE_NAME], 'readwrite');
+        const store = tx.objectStore(STORE_NAME);
+        for (const record of records) {
+            store.put({...record, id: makeId(record.character, record.mob, record.date)});
+        }
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(new Error('Failed to set kill counts'));
+    });
+    const characters = [...new Set(records.map(r => r.character))];
+    for (const listener of killCountsListeners) listener(characters);
+}
+
 export {makeId, openDB};

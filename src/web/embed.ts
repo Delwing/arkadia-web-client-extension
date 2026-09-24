@@ -280,6 +280,16 @@ export class EmbeddedMap {
             }
         });
 
+        // Rooms stored by sync: keep them in memory too, or the next save drops them.
+        eventBus.on('visitedRooms.added', ({ character, rooms }) => {
+            if (character !== characterStorage.getCharacter()) return;
+            rooms.forEach(id => this.visited.add(id));
+            const added = this.explorationLens.addVisitedAll(rooms);
+            if (added && this.explorationMode) {
+                this.renderer.refresh();
+            }
+        });
+
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'hidden') {
                 this.flushVisitedRooms();

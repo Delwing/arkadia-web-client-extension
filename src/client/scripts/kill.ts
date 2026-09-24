@@ -15,6 +15,7 @@ import {
     getAllRecords,
     getDistinctDates,
     getTodayDate,
+    onKillCountsSet,
     type LifetimeKillSummary,
     type DailyKillSummary,
     type GlobalKillStats,
@@ -567,6 +568,12 @@ class KillCounter extends BaseCounter {
         });
         this.onStorageChange(TEAM_KILLS_STORAGE_KEY, (newValue) => {
             this.loadTeamKills(isTeamMemberKills(newValue) ? newValue : {});
+        });
+
+        // Totals set from outside (sync): refresh lifetime totals and the popups.
+        onKillCountsSet((characters) => {
+            if (!characters.includes(characterStorage.getCharacter())) return;
+            void this.syncTotalsFromIDB().then(() => this.emitUpdate());
         });
 
         window.addEventListener("beforeunload", this.persistTotals);

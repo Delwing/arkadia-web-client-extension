@@ -21,6 +21,7 @@ vi.mock('@web/options/locationNotesStorage', () => ({
 vi.mock('@client/scripts/killLifetimeStorage.ts', () => ({
     exportAllKillRecords: jest.fn().mockResolvedValue([]),
     importAllKillRecords: jest.fn().mockResolvedValue(undefined),
+    migrateFromLocalStorage: jest.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('@client/scripts/profession', () => ({
@@ -65,6 +66,7 @@ import {
 import { characterStorage, globalStorage } from '@modules/core/storage';
 import { SYNC_CATEGORIES } from '@modules/firebase/categoryRegistry';
 import { saveImportedDevice, shouldApplyDeviceSettings, triggerSettingsReload } from '@modules/device';
+import { importAllKillRecords, migrateFromLocalStorage } from '@client/scripts/killLifetimeStorage.ts';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -1194,5 +1196,26 @@ describe('assistant BYOK key', () => {
         const exported = await exportCategory('characterSettings', ['Alice']);
 
         expect(exported ?? '').not.toContain(SENTINEL);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Kill records
+// ---------------------------------------------------------------------------
+
+describe('killCounts import', () => {
+    it('migrates legacy totals of each character before importing records', async () => {
+        const order: string[] = [];
+        jest.mocked(migrateFromLocalStorage).mockImplementation(async (character: string) => { order.push(`migrate:${character}`); });
+        jest.mocked(importAllKillRecords).mockImplementation(async () => { order.push('import'); });
+        const records = [
+            { id: '1', character: 'Alice', mob: 'orka', date: '2026/9/1', count: 2 },
+            { id: '2', character: 'Bob', mob: 'elfa', date: '2026/9/1', count: 1 },
+        ];
+
+        const result = await importCategory('killCounts', JSON.stringify({ _v: 2, records }));
+
+        expect(result.success).toBe(true);
+        expect(order).toEqual(['migrate:Alice', 'migrate:Bob', 'import']);
     });
 });

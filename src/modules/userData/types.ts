@@ -19,6 +19,28 @@ export interface ItemChange<V = unknown> {
     /** Absent together with `deleted`. */
     value?: V;
     deleted?: true;
+    /**
+     * Counter types only: the local value the tracker read when it computed
+     * `value`. Adapters apply the difference to what is stored at write time
+     * (see applyCounterChange), so a count added in between isn't lost.
+     */
+    previous?: V;
+}
+
+/** The counter value to store: what is stored now, moved by the change's difference. */
+export function applyCounterChange(
+    stored: Record<string, number> | undefined,
+    change: ItemChange<Record<string, number>>,
+): Record<string, number> {
+    const target = change.value ?? {};
+    const previous = change.previous ?? {};
+    const current = stored ?? {};
+    const result: Record<string, number> = {};
+    for (const field of new Set([...Object.keys(target), ...Object.keys(previous), ...Object.keys(current)])) {
+        const value = (current[field] ?? 0) + (target[field] ?? 0) - (previous[field] ?? 0);
+        if (value !== 0) result[field] = value;
+    }
+    return result;
 }
 
 export type UserDataScope = 'global' | 'character' | 'device';

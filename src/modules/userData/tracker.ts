@@ -159,8 +159,11 @@ export class UserDataTracker {
                 draft(current, { deleted: true });
             } else {
                 // Accumulated data has no reset: restore what local storage lost.
-                const value = type.rule.kind === 'counter' ? counterTotal(current.value as CounterSlots) : current.value;
-                writes.push({ scope: current.scope, key: current.key, value });
+                if (type.rule.kind === 'counter') {
+                    writes.push({ scope: current.scope, key: current.key, value: counterTotal(current.value as CounterSlots), previous: {} });
+                } else {
+                    writes.push({ scope: current.scope, key: current.key, value: current.value });
+                }
             }
         }
 
@@ -223,8 +226,9 @@ export class UserDataTracker {
             const item = local.get(recordId(record));
             if (type.rule.kind === 'counter') {
                 const total = counterTotal(record.value as CounterSlots);
-                if (!valuesEqual(nonZero(total), nonZero(item?.value as Record<string, number>))) {
-                    writes.push({ scope: record.scope, key: record.key, value: total });
+                const previous = nonZero(item?.value as Record<string, number>);
+                if (!valuesEqual(nonZero(total), previous)) {
+                    writes.push({ scope: record.scope, key: record.key, value: total, previous });
                 }
             } else if (record.deleted) {
                 if (item) writes.push({ scope: record.scope, key: record.key, deleted: true });

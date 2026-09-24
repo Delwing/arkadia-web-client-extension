@@ -1,7 +1,7 @@
 import { getSnapshot as getMultibindsSnapshot, replaceAll as replaceMultibinds, type StoredMultibindRecord } from "../dataStores/multibindStore";
 import type { RecordedEvent } from "@web/recordingStorage.ts";
 import { exportNotes, importNotes, type LocationNote } from "./locationNotesStorage";
-import { exportAllKillRecords, importAllKillRecords, type KillRecord } from "@client/scripts/killLifetimeStorage.ts";
+import { exportAllKillRecords, importAllKillRecords, migrateFromLocalStorage, type KillRecord } from "@client/scripts/killLifetimeStorage.ts";
 import { mergeProfessionStates } from "@client/scripts/profession";
 import { getKnowledgeStore, type KnowledgeProgressByCharacter, type KnowledgeBookProgressByCharacter } from "@modules/data/dataStores/knowledgeStore";
 import { getKnowledgeDetailsStore, type KnowledgeProgressByCharacter as KnowledgeDetailsProgressByCharacter, type KnowledgeCharacterMetadataMap } from "@modules/data/dataStores/knowledgeDetailsStore";
@@ -922,6 +922,12 @@ export async function importCategory(
                     // New format: IndexedDB records with date info
                     const records = (data as {_v: number; records: KillRecord[]}).records;
                     if (Array.isArray(records) && records.length > 0) {
+                        // Move each character's pre-IndexedDB totals in first: the
+                        // aggregate written below would otherwise replace them, and a
+                        // later migration would count that aggregate a second time.
+                        for (const character of new Set(records.map(r => r.character))) {
+                            await migrateFromLocalStorage(character);
+                        }
                         await importAllKillRecords(records);
                         // Also update localStorage for backward compat. Recompute from
                         // the store after the merge — importAllKillRecords keeps the
