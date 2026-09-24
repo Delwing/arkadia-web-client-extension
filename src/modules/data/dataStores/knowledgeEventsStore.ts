@@ -121,7 +121,8 @@ export async function getKnowledgeEventsForCharacter(
   character: string,
 ): Promise<KnowledgeEvent[]> {
   const allEvents = await loadKnowledgeEvents();
-  return allEvents[character]?.events ?? [];
+  // A copy: the cached array grows in place, and React skips a state set to the same array
+  return [...(allEvents[character]?.events ?? [])];
 }
 
 export async function getTickCountSinceTimestamp(

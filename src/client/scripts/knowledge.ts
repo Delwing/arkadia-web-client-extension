@@ -45,6 +45,7 @@ import {
     addKnowledgeEvent,
     parseDativeCategory,
     getKnowledgeEventsForCharacter,
+    type KnowledgeEvent,
 } from '@modules/data/dataStores/knowledgeEventsStore';
 
 interface KnowledgeJsonEntry {
@@ -1511,6 +1512,7 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
         abortTimer: number;
         results: Map<KnowledgeCategoryBaseName, string>;
         tickCounts: Map<KnowledgeCategoryBaseName, number>;
+        lastLevels: Map<string, string>;
     } | null = null;
     const WIEDZA_TOTAL_INACTIVITY_TIMEOUT = 1500;
     const WIEDZA_TOTAL_HARD_TIMEOUT = 10000;
@@ -1529,6 +1531,19 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
         9: '#16a34a', // prawie pelna - dark green
         10: '#4ade80', // pelna - bright green
     };
+
+    /** The newest level_change per category (by timestamp: imports are merged out of order). */
+    function latestLevelChanges(events: KnowledgeEvent[]): Map<string, {level: string; timestamp: number}> {
+        const latest = new Map<string, {level: string; timestamp: number}>();
+        for (const e of events) {
+            if (e.type !== 'level_change' || !e.level) continue;
+            const prev = latest.get(e.category);
+            if (!prev || e.timestamp > prev.timestamp) {
+                latest.set(e.category, {level: e.level, timestamp: e.timestamp});
+            }
+        }
+        return latest;
+    }
 
     function finishWiedzaTotalRun() {
         if (!activeWiedzaTotalRun) {
@@ -1554,18 +1569,11 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
         const characterKey = getCharacterProgressKey();
 
         // Store level_change events only if the level differs from the last known event
-        void getKnowledgeEventsForCharacter(characterKey).then((events) => {
-            const latestLevel = new Map<string, string>();
-            for (const e of events) {
-                if (e.type === 'level_change' && e.level) {
-                    latestLevel.set(e.category, e.level);
-                }
-            }
-
+        const levelEventsSaved = getKnowledgeEventsForCharacter(characterKey).then(async (events) => {
+            const latestLevel = latestLevelChanges(events);
             for (const [category, level] of run.results) {
-                const prevLevel = latestLevel.get(category);
-                if (prevLevel === level) continue;
-                void addKnowledgeEvent(characterKey, {
+                if (latestLevel.get(category)?.level === level) continue;
+                await addKnowledgeEvent(characterKey, {
                     category,
                     categoryDative: getDativeCategoryName(category),
                     type: 'level_change',
@@ -1574,6 +1582,8 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
                     level,
                 });
             }
+        }).catch((error) => {
+            console.error('Failed to store wiedza level changes:', error);
         });
 
         void detailsStore
@@ -1582,6 +1592,8 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
                 const nextProgress = applyTotalLevels(baseSnapshot.data.progress, characterKey, run.results, timestamp);
                 return {...baseSnapshot, data: {...baseSnapshot.data, progress: nextProgress}};
             })
+            // The report makes the knowledge window re-read history, so the new levels must be in it
+            .then(() => levelEventsSaved)
             .then(() => {
                 scheduleReportUpdate();
             })
@@ -1610,6 +1622,7 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
             abortTimer: window.setTimeout(() => finishWiedzaTotalRun(), WIEDZA_TOTAL_HARD_TIMEOUT),
             results: new Map(),
             tickCounts: new Map(),
+            lastLevels: new Map(),
         };
 
         // Pre-load tick counts so they're available synchronously in the trigger
@@ -1617,20 +1630,14 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
         void getKnowledgeEventsForCharacter(characterKey).then((events) => {
             if (!activeWiedzaTotalRun || activeWiedzaTotalRun.tag !== tag) return;
 
-            // Find the latest level_change timestamp per category
-            const lastLevelChangeTs = new Map<string, number>();
-            for (const e of events) {
-                if (e.type === 'level_change') {
-                    const prev = lastLevelChangeTs.get(e.category) ?? 0;
-                    if (e.timestamp > prev) {
-                        lastLevelChangeTs.set(e.category, e.timestamp);
-                    }
-                }
+            const lastLevelChanges = latestLevelChanges(events);
+            for (const [cat, {level}] of lastLevelChanges) {
+                activeWiedzaTotalRun.lastLevels.set(cat, level);
             }
 
             for (const config of KNOWLEDGE_CATEGORY_CONFIG) {
                 const cat = config.base;
-                const sinceTs = lastLevelChangeTs.get(cat) ?? 0;
+                const sinceTs = lastLevelChanges.get(cat)?.timestamp ?? 0;
                 let count = 0;
                 for (const e of events) {
                     if (e.type === 'tick' && e.category === cat && e.timestamp > sinceTs) {
@@ -1710,7 +1717,9 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
 
                 if (percent < 100) {
                     line.insert(line.text.length, ` ${percent}%`, createColorFormat('#94a3b8'));
-                    const ticks = activeWiedzaTotalRun.tickCounts.get(category) ?? 0;
+                    // A new level counts from zero: the stored ticks are the ones that led up to it
+                    const levelChanged = activeWiedzaTotalRun.lastLevels.get(category) !== sanitizedLevel;
+                    const ticks = levelChanged ? 0 : activeWiedzaTotalRun.tickCounts.get(category) ?? 0;
                     line.insert(line.text.length, ` + ${ticks}`, createColorFormat(ticks > 0 ? '#fbbf24' : '#94a3b8'));
                     line.insert(line.text.length, ' ticks', createColorFormat('#94a3b8'));
                 } else {
