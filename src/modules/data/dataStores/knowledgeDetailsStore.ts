@@ -1,4 +1,5 @@
 import {createDataStoreSingleton, DataStore} from '@modules/data/dataStore/DataStore';
+import eventBus from '@modules/core/eventBus';
 import {
   LoaderContext,
   LoaderResult,
@@ -866,5 +867,6 @@ export const getKnowledgeDetailsStore = createDataStoreSingleton(
       loader: new KnowledgeDetailsLoader(),
       storage: new KnowledgeDetailsIndexedDbStrategy<RefreshMetadata>(),
       ttlMs: TTL,
+      onLocalChange: () => eventBus.emit('sync.localDataChanged', { category: 'knowledge' }),
     }),
 );

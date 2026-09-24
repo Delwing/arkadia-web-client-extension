@@ -20,6 +20,8 @@ export interface DataStoreOptions<TSnapshot, TMeta extends RefreshMetadata> {
   storage: StorageStrategy<TSnapshot, TMeta>;
   ttlMs?: number;
   clock?: Clock;
+  /** Called after every applyLocalChange (user data changed, not a loader refresh). */
+  onLocalChange?: () => void;
 }
 
 export class DataStore<TSnapshot, TMeta extends RefreshMetadata = RefreshMetadata> {
@@ -27,6 +29,7 @@ export class DataStore<TSnapshot, TMeta extends RefreshMetadata = RefreshMetadat
   private readonly storage: StorageStrategy<TSnapshot, TMeta>;
   private readonly ttlMs?: number;
   private readonly clock: Clock;
+  private readonly onLocalChange?: () => void;
   private readonly emitter = new SnapshotEventEmitter<TSnapshot>();
 
   private currentSnapshot: TSnapshot | undefined;
@@ -49,6 +52,7 @@ export class DataStore<TSnapshot, TMeta extends RefreshMetadata = RefreshMetadat
     this.storage = options.storage;
     this.ttlMs = options.ttlMs;
     this.clock = options.clock ?? (() => Date.now());
+    this.onLocalChange = options.onLocalChange;
   }
 
   subscribe(listener: SnapshotListener<TSnapshot>, options: SubscriptionOptions = {}): () => void {
@@ -111,6 +115,7 @@ export class DataStore<TSnapshot, TMeta extends RefreshMetadata = RefreshMetadat
     this.snapshotVersion++;
     await this.storage.writeSnapshot(this.currentSnapshot);
     this.emitter.emit(this.currentSnapshot);
+    this.onLocalChange?.();
     return nextSnapshot;
   }
 

@@ -3,6 +3,7 @@ import {
   KnowledgeCategoryBaseName,
 } from '@client/knowledgeCategories';
 import { stripPolishCharacters } from '@client/stripPolishCharacters';
+import eventBus from '@modules/core/eventBus';
 
 export interface KnowledgeEvent {
   category: KnowledgeCategoryBaseName;
@@ -105,6 +106,7 @@ export async function saveKnowledgeEvents(
   } catch (error) {
     console.warn('Failed to save knowledge events:', error);
   }
+  eventBus.emit('sync.localDataChanged', { category: 'knowledge' });
 }
 
 export async function addKnowledgeEvent(
