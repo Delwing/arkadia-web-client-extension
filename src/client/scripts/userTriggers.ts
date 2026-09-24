@@ -177,6 +177,17 @@ export const SUPPORTED_EVENTS: SupportedEvent[] = [
     { id: 'enemy.paralyzed.end', label: 'Wrog - koniec ogluszenia', category: 'Walka' },
     { id: 'enemy.broken_defense', label: 'Wrog - zlamana obrona', category: 'Walka' },
     {
+        id: 'attack',
+        label: 'Atak na mnie (kazdy)',
+        category: 'Walka',
+        description:
+            'Gdy ktokolwiek cie zaatakuje, niezaleznie od gildii. Argument {enemy} mowi, czy atakujacy jest z gildii oznaczonej jako wroga.',
+        args: [
+            { name: 'attacker', label: 'Nazwa atakujacego', type: 'string' },
+            { name: 'enemy', label: 'Czy z wrogiej gildii', type: 'boolean' },
+        ],
+    },
+    {
         id: 'enemy.attack',
         label: 'Atak wroga (ten z beepem)',
         category: 'Walka',

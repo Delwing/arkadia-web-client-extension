@@ -67,8 +67,13 @@ export default function initAttackBeep(client: Client) {
 
     const beep = (line: AnsiAwareBuffer, matches: RegExpMatchArray): AnsiAwareBuffer => {
         const attackerName = matches?.groups?.name
+        const isEnemy = !!attackerName && shouldBeep(attackerName);
 
-        if (attackerName && shouldBeep(attackerName)) {
+        // Fires for every attack line, whoever the attacker is — the
+        // unconditional counterpart of "enemy.attack" below.
+        client.sendEvent("attack", { attacker: attackerName ?? "", enemy: isEnemy });
+
+        if (attackerName && isEnemy) {
             client.sendEvent("sound:category", "attack");
             // Fires under exactly the same condition as the beep — an attacker
             // whose guild the player marked hostile — so binding this event in
