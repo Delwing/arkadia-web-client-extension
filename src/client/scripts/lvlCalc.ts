@@ -212,8 +212,9 @@ const CECHA_MAX_LINE = new RegExp(
 );
 
 /**
- * `Twoje cechy sa oslabione po ostatniej smierci.` — printed after the read-out
- * when death has temporarily lowered every trait.
+ * `Twoje cechy sa oslabione po ostatniej smierci.` — printed alongside the
+ * read-out when death has temporarily lowered every trait. It may come before or
+ * after the closing line, so neither order is relied on.
  */
 const WEAKENED_LINE = /^Twoje cechy sa oslabione po ostatniej smierci\./;
 
@@ -305,6 +306,8 @@ export default function initLvlCalc(client: Client, aliases?: { pattern: RegExp;
     let currentSteps: number[] = [];
     let currentReadings: CechaReading[] = [];
     let pendingSnapshot: CechySnapshot | null = null;
+    /** Whether the weakened notice has shown up during the current read-out. */
+    let sawWeakened = false;
     let publishTimer: ReturnType<typeof setTimeout> | undefined;
     let isRunning = false;
     const tag = "lvlCalc";
@@ -397,14 +400,14 @@ export default function initLvlCalc(client: Client, aliases?: { pattern: RegExp;
             readings: currentReadings,
             total: full,
             level,
-            weakened: false,
+            weakened: sawWeakened,
         };
     }
 
     /**
-     * The `Twoje cechy sa oslabione` notice arrives *after* the summary line that
-     * ends the read-out, so the snapshot cannot be published until we have given
-     * that notice a chance to land.
+     * The `Twoje cechy sa oslabione` notice can arrive *after* the summary line
+     * that ends the read-out, so the snapshot cannot be published until we have
+     * given that notice a chance to land.
      */
     function publish() {
         if (publishTimer !== undefined) {
@@ -425,6 +428,7 @@ export default function initLvlCalc(client: Client, aliases?: { pattern: RegExp;
         currentSteps = [];
         currentReadings = [];
         pendingSnapshot = null;
+        sawWeakened = false;
         client.Triggers.removeByTag(tag);
         client.Triggers.removeByTag(weakenedTag);
         client.Triggers.registerTrigger(CECHA_LINE, (line, matches) => {
@@ -434,6 +438,8 @@ export default function initLvlCalc(client: Client, aliases?: { pattern: RegExp;
             return formatLine(line, matches.groups as unknown as CechaMatch);
         }, tag);
         client.Triggers.registerTrigger(WEAKENED_LINE, (line) => {
+            // Seen before the closing line: calculateLvl picks the flag up.
+            sawWeakened = true;
             if (pendingSnapshot) {
                 pendingSnapshot.weakened = true;
                 publish();

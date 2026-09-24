@@ -1,5 +1,9 @@
-import initLvlCalc from "@client/scripts/lvlCalc";
-import initCechyHistory, { getCechyHistory } from "@client/scripts/cechyHistory";
+import initLvlCalc, { calcStatSum } from "@client/scripts/lvlCalc";
+import initCechyHistory, {
+    CechyHistoryEntry,
+    getCechyHistory,
+    sanitizeCechyHistory,
+} from "@client/scripts/cechyHistory";
 import Triggers from "@client/Triggers";
 import { AnsiAwareBuffer } from "@client/ansi/FormatState";
 import { characterStorage } from "@modules/core/storage";
@@ -121,6 +125,67 @@ describe("cechy history", () => {
         readCechy(LINES, [WEAKENED_LINE]);
 
         expect(getCechyHistory()).toHaveLength(0);
+    });
+
+    test("ignores a read-out whose death notice comes before the closing line", () => {
+        runCechy();
+        LINES.forEach(parse);
+        parse(WEAKENED_LINE);
+        parse(CLOSING_LINE);
+        jest.advanceTimersByTime(600);
+
+        expect(getCechyHistory()).toHaveLength(0);
+    });
+
+    test("does not carry the death notice over into the next read-out", () => {
+        readCechy(LINES, [WEAKENED_LINE]);
+        readCechy();
+
+        expect(getCechyHistory()).toHaveLength(1);
+    });
+
+    test("skips a read-out with a trait below its last known value", () => {
+        readCechy();
+        // Weakened by death, but the notice never made it through.
+        readCechy([...LINES.slice(0, 4), "Jestes odwazny i troche ci brakuje, zebys mogl wyzej ocenic swa odwage."]);
+
+        expect(getCechyHistory()).toHaveLength(1);
+    });
+
+    test("cleans stored read-outs taken while weakened when loading", () => {
+        const stat = (value: number, step: number) => ({ value, step, sum: calcStatSum(value, step) });
+        const real = { sila: stat(8, 2), zrecznosc: stat(6, 4), wytrzymalosc: stat(8, 3), inteligencja: stat(6, 0), odwaga: stat(6, 2) };
+        const stored: CechyHistoryEntry[] = [
+            { time: 1, stats: real, total: 156, estimated: false, postepy: 100 },
+            // Weakened: everything lower.
+            { time: 2, stats: { ...real, sila: stat(7, 0), odwaga: stat(5, 0) }, total: 140, estimated: false, postepy: 101 },
+            // Part-way back: still below the pre-death sila.
+            { time: 3, stats: { ...real, sila: stat(8, 0) }, total: 154, estimated: false, postepy: 110 },
+            // Fully recovered: equal to the first entry, so no real change.
+            { time: 4, stats: real, total: 156, estimated: false, postepy: 120 },
+            // A real gain, with sila modified at the time.
+            { time: 5, stats: { ...real, sila: null, odwaga: stat(6, 3) }, total: 0, estimated: true, postepy: 130 },
+        ];
+        characterStorage.setCharacter("Other");
+        localStorage.setItem("TestChar:cechy_history", JSON.stringify(stored));
+        characterStorage.setCharacter("TestChar");
+
+        const history = getCechyHistory();
+        expect(history.map((e) => e.time)).toEqual([1, 5]);
+        // sila falls back to the pre-death reading, not a weakened one.
+        expect(history[1].total).toBe(157);
+        expect(history[1].estimated).toBe(true);
+        expect(history[1].postepy).toBe(130);
+        expect(characterStorage.get("cechy_history")).toEqual(history);
+    });
+
+    test("leaves a clean history untouched", () => {
+        const entries = [
+            { time: 1, stats: { sila: { value: 8, step: 2, sum: 37 } }, total: 37, estimated: true },
+            { time: 2, stats: { sila: { value: 8, step: 3, sum: 38 } }, total: 38, estimated: true },
+        ];
+
+        expect(sanitizeCechyHistory(entries)).toBe(entries);
     });
 
     test("records nothing, and stays quiet, when state_modifiers is off", () => {

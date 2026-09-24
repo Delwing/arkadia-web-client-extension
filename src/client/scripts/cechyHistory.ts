@@ -88,14 +88,79 @@ export function getLastKnownStat(key: CechaKey, before?: number): CechyStat | un
     return findLastKnownStat(history, key, before);
 }
 
+/**
+ * Traits only ever go down after a death, and such read-outs are not real, so a
+ * fresh reading below the last known one marks a read-out taken while weakened.
+ */
+function isLowered(
+    stats: Partial<Record<CechaKey, CechyStat | null>>,
+    known: Partial<Record<CechaKey, CechyStat>>,
+): boolean {
+    return CECHA_ORDER.some((key) => {
+        const fresh = stats[key];
+        const last = known[key];
+        return !!fresh && !!last && fresh.sum < last.sum;
+    });
+}
+
+/**
+ * Drops entries recorded while traits were weakened by death — any entry with a
+ * trait below its last known reading — and then the entries that no longer hold a
+ * real change (e.g. the read-out after recovery, now equal to the pre-death one).
+ * Totals of the remaining entries are recomputed; postepy stay as recorded.
+ * Returns the same array when nothing had to go.
+ */
+export function sanitizeCechyHistory(entries: CechyHistoryEntry[]): CechyHistoryEntry[] {
+    const known: Partial<Record<CechaKey, CechyStat>> = {};
+    const kept: CechyHistoryEntry[] = [];
+    let dirty = false;
+
+    for (const entry of entries) {
+        if (isLowered(entry.stats, known)) {
+            dirty = true;
+            continue;
+        }
+        const changed = kept.length === 0 || CECHA_ORDER.some((key) => {
+            const fresh = entry.stats[key];
+            return !!fresh && fresh.sum !== known[key]?.sum;
+        });
+        if (!changed) {
+            dirty = true;
+            continue;
+        }
+
+        let total = 0;
+        let estimated = false;
+        for (const key of CECHA_ORDER) {
+            const fresh = entry.stats[key];
+            if (fresh) known[key] = fresh;
+            else estimated = true;
+            total += known[key]?.sum ?? 0;
+        }
+        if (total !== entry.total || estimated !== entry.estimated) {
+            dirty = true;
+            kept.push({ ...entry, total, estimated });
+        } else {
+            kept.push(entry);
+        }
+    }
+
+    return dirty ? kept : entries;
+}
+
 function persist() {
     characterStorage.set(STORAGE_KEY, history);
     eventBus.emit("cechy.history.updated");
 }
 
 function load() {
-    history = characterStorage.get(STORAGE_KEY) ?? [];
-    eventBus.emit("cechy.history.updated");
+    const stored: CechyHistoryEntry[] = characterStorage.get(STORAGE_KEY) ?? [];
+    history = sanitizeCechyHistory(stored);
+    if (history !== stored) {
+        persist();
+    } else {
+        eventBus.emit("cechy.history.updated");
+    }
 }
 
 export function clearCechyHistory() {
@@ -119,6 +184,14 @@ function record(snapshot: CechySnapshot): CechyHistoryEntry | null {
 
     // Every trait was modified (or nothing parsed) — there is nothing to learn.
     if (CECHA_ORDER.every((key) => !stats[key])) return null;
+
+    // A lowered trait means the death notice was missed; the read-out is not real.
+    const known: Partial<Record<CechaKey, CechyStat>> = {};
+    for (const key of CECHA_ORDER) {
+        const last = getLastKnownStat(key);
+        if (last) known[key] = last;
+    }
+    if (isLowered(stats, known)) return null;
 
     let total = 0;
     let estimated = false;
@@ -161,7 +234,8 @@ export default function initCechyHistory(
     load();
     const unsubscribes = [
         characterStorage.onChange(STORAGE_KEY, (value) => {
-            history = value ?? [];
+            // Another tab running this code persists its own clean-up; memory is enough here.
+            history = sanitizeCechyHistory(value ?? []);
             eventBus.emit("cechy.history.updated");
         }),
         characterStorage.onCharacterChange(() => load()),

@@ -30,7 +30,9 @@ Liczniki zabitych, postepow, stazu i zlecen.
 > &mdash; okno `/cechyw` pokazuje wtedy ostrzezenie z przyciskiem, ktory wlacza ta opcje.
 > Cechy z dopiskiem `( +cos )` sa pomijane, a odczyt po smierci
 > (`Twoje cechy sa oslabione`) nie jest zapisywany wcale. Do historii trafiaja tylko
-> odczyty, ktore faktycznie sie zmienily.
+> odczyty, ktore faktycznie sie zmienily. Odczyt, w ktorym ktoras cecha jest nizsza niz
+> ostatnio zapisana, tez jest pomijany (cechy spadaja tylko po smierci), a takie wpisy
+> zapisane wczesniej sa usuwane z historii przy jej wczytaniu.
 >
 > Kazdy zapisany odczyt zapamietuje tez stan globalnego licznika postepow, wiec okno
 > pokazuje, ile postepow zdobyto miedzy kolejnymi zmianami. Wymaga to prowadzonego
