@@ -3,16 +3,7 @@ import type { RecordedEvent } from "@web/recordingStorage.ts";
 import { exportNotes, importNotes, type LocationNote } from "./locationNotesStorage";
 import { exportAllKillRecords, importAllKillRecords, type KillRecord } from "@client/scripts/killLifetimeStorage.ts";
 import { mergeProfessionStates } from "@client/scripts/profession";
-import {
-    getKnowledgeStore,
-    type KnowledgeBookCategoryProgress,
-    type KnowledgeBookProgress,
-    type KnowledgeBookProgressByCharacter,
-    type KnowledgeCategoryStatus,
-    type KnowledgeLibraryProgress,
-    type KnowledgeProgress,
-    type KnowledgeProgressByCharacter,
-} from "@modules/data/dataStores/knowledgeStore";
+import { getKnowledgeStore, type KnowledgeProgressByCharacter, type KnowledgeBookProgressByCharacter } from "@modules/data/dataStores/knowledgeStore";
 import { getKnowledgeDetailsStore, type KnowledgeProgressByCharacter as KnowledgeDetailsProgressByCharacter, type KnowledgeCharacterMetadataMap } from "@modules/data/dataStores/knowledgeDetailsStore";
 import { loadKnowledgeEvents, mergeKnowledgeEvents, type KnowledgeEventsByCharacter } from "@modules/data/dataStores/knowledgeEventsStore";
 import eventBus from '@modules/core/eventBus';
@@ -438,65 +429,19 @@ async function exportKnowledgeData(selectedCharacters: string[]): Promise<Export
     return { libraryProgress, bookProgress, events, detailsProgress, detailsCharacters };
 }
 
-const LIBRARY_STATUS_RANK: Record<KnowledgeCategoryStatus, number> = { not_started: 0, in_progress: 1, completed: 2 };
-
-/** Union of two per-character progress maps: the more advanced status wins per category. */
-function mergeLibraryProgress(local: KnowledgeProgress = {}, incoming: KnowledgeProgress): KnowledgeProgress {
-    const result: KnowledgeProgress = { ...local };
-    for (const [libraryId, categories] of Object.entries(incoming)) {
-        const merged: KnowledgeLibraryProgress = { ...(result[libraryId] ?? {}) };
-        for (const [category, status] of Object.entries(categories)) {
-            const current = merged[category];
-            if (!current || LIBRARY_STATUS_RANK[status] > LIBRARY_STATUS_RANK[current]) {
-                merged[category] = status;
-            }
-        }
-        result[libraryId] = merged;
-    }
-    return result;
-}
-
-/** Union of book progress: a read book (true) beats one in progress. */
-function mergeBookProgress(local: KnowledgeBookProgress = {}, incoming: KnowledgeBookProgress): KnowledgeBookProgress {
-    const result: KnowledgeBookProgress = { ...local };
-    for (const [category, books] of Object.entries(incoming)) {
-        const merged: KnowledgeBookCategoryProgress = { ...(result[category] ?? {}) };
-        for (const [book, state] of Object.entries(books)) {
-            if (merged[book] !== true) merged[book] = state;
-        }
-        result[category] = merged;
-    }
-    return result;
-}
-
-/**
- * Snapshot of a knowledge store to merge imported progress into. A device that
- * has not loaded the knowledge definitions yet has no snapshot — load them
- * first; throwing (instead of skipping) keeps the cloud payload unapplied, so
- * the next sync retries it rather than recording it as applied.
- */
-async function ensureKnowledgeSnapshot(store: { getSnapshot(): Promise<unknown>; refresh(): Promise<unknown> }): Promise<void> {
-    if (await store.getSnapshot()) return;
-    await store.refresh();
-    if (!(await store.getSnapshot())) {
-        throw new Error("Knowledge definitions are not available yet");
-    }
-}
-
 async function importKnowledgeData(data: ExportedKnowledgeData): Promise<void> {
     // Import library progress and book progress into the knowledge store
     if (Object.keys(data.libraryProgress).length > 0 || Object.keys(data.bookProgress).length > 0) {
         const store = getKnowledgeStore();
-        await ensureKnowledgeSnapshot(store);
         await store.applyLocalChange((current) => {
             if (!current) return current!;
             const nextProgress = { ...current.data.progress };
             for (const [char, progress] of Object.entries(data.libraryProgress)) {
-                nextProgress[char] = mergeLibraryProgress(nextProgress[char], progress);
+                nextProgress[char] = { ...(nextProgress[char] ?? {}), ...progress };
             }
             const nextBookProgress = { ...current.data.bookProgress };
             for (const [char, progress] of Object.entries(data.bookProgress)) {
-                nextBookProgress[char] = mergeBookProgress(nextBookProgress[char], progress);
+                nextBookProgress[char] = { ...(nextBookProgress[char] ?? {}), ...progress };
             }
             return {
                 ...current,
@@ -515,7 +460,6 @@ async function importKnowledgeData(data: ExportedKnowledgeData): Promise<void> {
     // Import details progress and characters (preserving definitions)
     if (Object.keys(data.detailsProgress).length > 0 || Object.keys(data.detailsCharacters).length > 0) {
         const detailsStore = getKnowledgeDetailsStore();
-        await ensureKnowledgeSnapshot(detailsStore);
         await detailsStore.applyLocalChange((current) => {
             if (!current) return current!;
             const nextProgress = { ...current.data.progress };

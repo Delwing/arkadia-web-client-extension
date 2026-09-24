@@ -512,12 +512,6 @@ export interface KnownEvents {
     "firebase.sync.error": { message: string };
     "firebase.sync.uploaded": { categories: SyncCategory[]; timestamps: CategorySyncTimes; encrypted: boolean; auto: boolean };
     "firebase.autosync.pending": { pending: boolean };
-    /**
-     * Synced data kept outside localStorage (IndexedDB) changed locally. The
-     * sync engine only watches localStorage, so such writers announce their
-     * changes here to schedule an auto-sync.
-     */
-    "sync.localDataChanged": { category: SyncCategory };
     "firebase.listener.status": { active: boolean };
     "flushLines": [groups: { text: string; type: string }[], options?: { timestamp?: number }];
     "socket.incoming": string;

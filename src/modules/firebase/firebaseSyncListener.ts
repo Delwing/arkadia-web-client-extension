@@ -12,7 +12,7 @@
 
 import type { Unsubscribe } from 'firebase/firestore';
 import type { SyncCategory, CategoryPayload, CategoryConflictInfo } from './firebaseTypes';
-import { getCategoryDefinition, getDeviceId, loadFirebaseSettings, SYNC_CATEGORIES } from './firebaseTypes';
+import { getDeviceId, loadFirebaseSettings, SYNC_CATEGORIES } from './firebaseTypes';
 import { ensureFirebaseInitialized } from './firebaseConfig';
 import { calculateChecksum, decrypt, isEncryptedData } from './firebaseCrypto';
 import { updateCache, recordCategorySyncState } from './firebaseUnifiedSync';
@@ -382,24 +382,12 @@ class FirebaseSyncListener {
             // The persisted sync base survives restarts; the in-memory
             // checksums are a fallback for pre-upgrade state without a base.
             const base = loadFirebaseSettings().categorySyncChecksums[category];
-            let localChanged: boolean;
             if (base !== undefined) {
-                localChanged = localChecksum !== base;
+                if (localChecksum !== base) return 'conflict';
             } else {
                 const key = this.checksumKey(category, payload.deviceId);
                 const lastKnown = this.lastKnownChecksums[key] ?? this.lastKnownChecksums[category];
-                localChanged = !!lastKnown && localChecksum !== lastKnown;
-            }
-            if (localChanged) {
-                // Append-only data (knowledge, visited rooms, kills) changes on
-                // every device during play, so "both sides moved" is the normal
-                // case. Importing is a lossless union — merge instead of
-                // raising a conflict that would stall the category until the
-                // user resolves it by hand.
-                if (getCategoryDefinition(category).merge === 'append') {
-                    return await this.mergeAppend(category, decryptedData, payload);
-                }
-                return 'conflict';
+                if (lastKnown && localChecksum !== lastKnown) return 'conflict';
             }
         }
 
@@ -421,24 +409,6 @@ class FirebaseSyncListener {
         }
 
         return 'skipped';
-    }
-
-    /**
-     * Union cloud data into local data for an append-only category. The cloud
-     * state becomes the sync base, so the merged local state (a superset of
-     * it) is uploaded by the next auto-sync, which is scheduled right away.
-     */
-    private async mergeAppend(
-        category: SyncCategory,
-        decryptedData: string,
-        payload: CategoryPayload,
-    ): Promise<'applied' | 'skipped'> {
-        const { importCategory } = await import('@web/options/exportUtils');
-        const result = await importCategory(category, decryptedData);
-        if (!result.success) return 'skipped';
-        recordCategorySyncState({ [category]: payload.checksum } as Partial<Record<SyncCategory, string>>);
-        eventBus.emit('sync.localDataChanged', { category });
-        return 'applied';
     }
 
     private async retryPendingPayloads(): Promise<void> {

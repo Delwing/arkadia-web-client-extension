@@ -133,19 +133,6 @@ class SyncDebounceManager {
     }
 
     /**
-     * Handle a change announced for a whole category (data kept outside
-     * localStorage, see the 'sync.localDataChanged' event).
-     */
-    handleCategoryChange(category: SyncCategory): 'hot' | 'cold' {
-        if (this.isColdCategory(category)) {
-            this.scheduleColdSync();
-            return 'cold';
-        }
-        this.scheduleHotSync();
-        return 'hot';
-    }
-
-    /**
      * Schedule a hot sync (short debounce)
      */
     private scheduleHotSync(): void {

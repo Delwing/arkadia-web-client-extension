@@ -154,7 +154,6 @@ class FirebaseSyncEngine {
         this.storageUnsubs = [
             characterStorage.onAnyChange(onChange),
             globalStorage.onAnyChange(onChange),
-            eventBus.on('sync.localDataChanged', ({ category }) => this.handleCategoryChange(category)),
         ];
 
         this.pushPassphraseToListener();
@@ -410,25 +409,8 @@ class FirebaseSyncEngine {
                 eventBus.emit('firebase.sync.pendingPassphrase', { categories: plan.pendingPassphrase });
             }
 
-            // Append-only categories changed on both sides are merged (union)
-            // instead of surfaced — they change on every device during play,
-            // and a pending conflict would block them in both directions.
-            const appendConflicts = conflicts
-                .filter(c => getCategoryDefinition(c.category).merge === 'append')
-                .map(c => c.category);
-            if (appendConflicts.length > 0) {
-                const merged = await this.resolveConflicts('keep-local', appendConflicts);
-                if (merged.success) {
-                    applied.push(...appendConflicts);
-                    uploadedCategories.push(...appendConflicts);
-                } else {
-                    console.error('[SyncEngine] Merging append-only categories failed', merged.error);
-                }
-            }
-            const openConflicts = conflicts.filter(c => !appendConflicts.includes(c.category));
-
-            if (openConflicts.length > 0) {
-                eventBus.emit('firebase.sync.conflict', { conflicts: openConflicts });
+            if (conflicts.length > 0) {
+                eventBus.emit('firebase.sync.conflict', { conflicts });
                 return { status: 'conflict' };
             }
 
@@ -609,13 +591,6 @@ class FirebaseSyncEngine {
     private pushPassphraseToListener(): void {
         const settings = loadFirebaseSettings();
         syncListener.setPassphrase(settings.encryptionEnabled ? this.passphrase : null);
-    }
-
-    private handleCategoryChange(category: SyncCategory): void {
-        if (!this.canAutoSync()) return;
-        if (!loadFirebaseSettings().syncOptions[category]) return;
-        syncDebounceManager.handleCategoryChange(category);
-        eventBus.emit('firebase.autosync.pending', { pending: true });
     }
 
     private handleStorageChange(key: string): void {

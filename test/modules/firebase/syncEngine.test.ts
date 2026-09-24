@@ -31,7 +31,7 @@ import { syncEngine } from '@modules/firebase/syncEngine';
 import { planSync, downloadCategories, recordCategorySyncState, uploadCategories } from '@modules/firebase/firebaseUnifiedSync';
 import { syncListener } from '@modules/firebase/firebaseSyncListener';
 import { exportCategories, importCategories, mergePerCharacterEnvelopes } from '@web/options/exportUtils';
-import { loadFirebaseSettings, saveFirebaseSettings, FIREBASE_SETTINGS_KEY } from '@modules/firebase/firebaseTypes';
+import { saveFirebaseSettings, FIREBASE_SETTINGS_KEY } from '@modules/firebase/firebaseTypes';
 import { globalStorage } from '@modules/core/storage';
 import eventBus from '@modules/core/eventBus';
 
@@ -143,37 +143,6 @@ describe('FirebaseSyncEngine', () => {
 
             expect(mockedUpload).toHaveBeenCalledTimes(2);
             expect(syncListener.notifyLocalUpload).toHaveBeenCalledWith({ triggers: 'abc' });
-        });
-
-        it('schedules a sync when IndexedDB-backed data announces a change', async () => {
-            givenCleanUploadPath({ knowledge: '{}' });
-            syncEngine.start();
-            await flushAsync();
-            expect(mockedUpload).toHaveBeenCalledTimes(1); // startup reconcile
-
-            eventBus.emit('sync.localDataChanged', { category: 'knowledge' });
-            await jest.advanceTimersByTimeAsync(HOT_SYNC_MS);
-            await flushAsync();
-
-            expect(mockedUpload).toHaveBeenCalledTimes(2);
-        });
-
-        it('ignores announced changes of a category excluded from sync', async () => {
-            givenCleanUploadPath({ knowledge: '{}' });
-            saveFirebaseSettings({
-                autoSyncEnabled: true,
-                encryptionEnabled: false,
-                syncOptions: { ...loadFirebaseSettings().syncOptions, knowledge: false },
-            });
-            syncEngine.start();
-            await flushAsync();
-            mockedUpload.mockClear();
-
-            eventBus.emit('sync.localDataChanged', { category: 'knowledge' });
-            await jest.advanceTimersByTimeAsync(HOT_SYNC_MS);
-            await flushAsync();
-
-            expect(mockedUpload).not.toHaveBeenCalled();
         });
 
         it('emits pending=true on change and pending=false when the sync fires', async () => {
@@ -444,41 +413,6 @@ describe('FirebaseSyncEngine', () => {
             expect(result).toEqual({ status: 'conflict' });
             expect(conflictEvents).toEqual([{ conflicts: [conflict] }]);
             expect(mockedUpload).not.toHaveBeenCalled();
-        });
-
-        it('merges append-only categories changed on both sides instead of raising a conflict', async () => {
-            givenCleanUploadPath({ knowledge: '{"local":true}' });
-            const conflict = { category: 'knowledge', localTimestamp: 1, cloudTimestamp: 2 };
-            mockedPlan.mockResolvedValue(emptyPlan({ conflicts: [conflict as never] }));
-            mockedDownload.mockResolvedValue({
-                success: true, data: { knowledge: '{"cloud":true}' }, payloads: {}, errors: {},
-            });
-            const conflictEvents = onEvent<{ conflicts: unknown[] }>('firebase.sync.conflict');
-
-            const result = await syncEngine.syncNow(true);
-
-            expect(conflictEvents).toEqual([]);
-            expect(mockedImport).toHaveBeenCalledWith({ knowledge: '{"cloud":true}' });
-            expect(mockedUpload).toHaveBeenCalledWith(
-                { knowledge: '{"local":true}' },
-                expect.objectContaining({ force: true }),
-            );
-            expect(result).toMatchObject({ status: 'uploaded' });
-            expect(syncEngine.getPendingConflicts()).toEqual([]);
-        });
-
-        it('still surfaces conflicts of whole-value categories next to merged append ones', async () => {
-            givenCleanUploadPath({ knowledge: '{}', triggers: '[]' });
-            const knowledge = { category: 'knowledge', localTimestamp: 1, cloudTimestamp: 2 };
-            const triggers = { category: 'triggers', localTimestamp: 1, cloudTimestamp: 2 };
-            mockedPlan.mockResolvedValue(emptyPlan({ conflicts: [knowledge, triggers] as never }));
-            mockedDownload.mockResolvedValue({ success: true, data: { knowledge: '{}' }, payloads: {}, errors: {} });
-            const conflictEvents = onEvent<{ conflicts: unknown[] }>('firebase.sync.conflict');
-
-            const result = await syncEngine.syncNow(false);
-
-            expect(result).toEqual({ status: 'conflict' });
-            expect(conflictEvents).toEqual([{ conflicts: [triggers] }]);
         });
 
         it('reports conflicts detected by the upload transaction', async () => {
