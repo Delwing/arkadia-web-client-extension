@@ -191,6 +191,8 @@ export interface KnownEvents {
     "leadTo": number;
     /** Lead somewhere, boarding ships and coaches on the way (/prowadzt). */
     "leadToWithTransport": { roomId: number; aggressive?: boolean };
+    /** Lead on to the current target, switching between /prowadz and /prowadzt. */
+    "switchLeadMode": { transport: boolean; aggressive?: boolean };
     /** A route worth explaining has been drawn: which ship to board, where to get off. */
     "routePlanned": { segments: RouteSegment[]; viaFallback: boolean; aggressive: boolean; driving: boolean };
     "clearLeadTo": void;
