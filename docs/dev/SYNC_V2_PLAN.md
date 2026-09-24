@@ -92,7 +92,7 @@ device's local data (section 10), so nothing is lost in the meantime.
 | `locationNotes` | `ArkadiaLocationNotesDB` | `locationNotes`, per room id |
 | `multibinds` | `ArkadiaMultibindsDB` | `multibinds`, per room + index |
 | `knowledge` | `ArkadiaKnowledgeDB` (library/book progress), `ArkadiaKnowledgeDetailsDBv*` (entries, levels, character metadata), `ArkadiaKnowledgeEventsDB` (ticks, level changes) | `knowledgeLibraries`, `knowledgeBooks`, `knowledgeDetails`, `knowledgeEvents` — split so each field gets its own rule |
-| oswajanie (new) | `oswajanie` DB: `feeding`, `animals`, `foodGroups` | `taming`: feeding entries per stable id, animal level per character/animal, food group per food |
+| oswajanie (new) | `oswajanie` DB: `feeding`, `animals`, `foodGroups` | `taming`: feeding entries per stable id, level-ups per character/animal/level, food group per food |
 | enemy resistances (new) | `ArkadiaEnemyResistances` | `enemyResistances`, per enemy name + area |
 | złom (new) | `ArkadiaZlom` (one snapshot) | `zlom`, per kind + item `short` |
 | transport stats (new) | `ArkadiaTransportStatsDB` | `transportSegments`, per `segmentKey` |
@@ -116,11 +116,11 @@ Each type declares a rule per field. Timestamps are HLC stamps (section 6.2).
 | Rule | Meaning | Use for | Examples |
 |---|---|---|---|
 | **newest** | Highest stamp wins | Things the user writes or edits: the latest version is the truth | aliases, triggers, binds, settings fields, notes, multibinds, food groups, device UI settings |
-| **newest-observation** | Highest observation stamp wins | A snapshot of state the game reported | wiedza entry lists per category, deposits, containers, enemy resistances, złom items, animal level, `expectedDuration` of a transport segment |
-| **earliest** | Lowest stamp wins | An observed transition: the first device that saw it saw it happen, later devices only noticed | `level_change` ("reached level X" per character/category), "first visited at" |
+| **newest-observation** | Highest observation stamp wins | A snapshot of state the game reported | wiedza entry lists per category, deposits, containers, enemy resistances, złom items, `expectedDuration` of a transport segment |
+| **earliest** | Lowest stamp wins | An observed transition: the first device that saw it saw it happen, later devices only noticed | knowledge `level_change` (per character/category/level), oswajanie level-up (per character/animal/level), "first visited at" |
 | **union** | Set union by id; the same fact from two devices is one element | Facts that are either observed or not | visited rooms, ticks, profession events, people edits, deliveries, feeding entries |
 | **sum** | Sum of increments, each folded exactly once | Counts | kills, improve counts |
-| **max** / **min** | Extreme value in a declared order | Progress that only moves forward; records | library status (`not_started` < `in_progress` < `completed`), book (`in_progress` < `read`), transport `longestDuration` (max) and `shortestDuration` (min) |
+| **max** / **min** | Extreme value in a declared order | Progress that only moves forward; records | library status (`not_started` < `in_progress` < `completed`), book (`in_progress` < `read`), transport `longestDuration` (max) and `shortestDuration` (min) — only the current extremes, no history |
 
 Deletions: a delete is a tombstone `{deleted: true, stamp}` under the **newest** rule. A delete that is
 newer than an edit wins, and vice versa. Only user-edited types (newest) can be deleted; accumulated types
@@ -139,6 +139,16 @@ Knowledge, concretely:
 - `knowledgeEvents`: level changes are **earliest** per (character, category, level): a device that missed
   the level-up records it later from `wiedza` output, and that later record must not move the point from
   which ticks are counted. Ticks are **union** by id and only matter until the next level-up (section 8.3).
+
+Oswajanie follows the same stream shape — `feed feed feed level-up feed feed level-up` — and the point is
+knowing how many feedings it took between level-ups:
+
+- Level-ups are **earliest** per (character, animal, level): the first observation is the real level-up;
+  a device that only saw the new level later must not move it, or feedings in between would be counted
+  toward the wrong level.
+- Feedings are **union** by id. They are kept (they are the statistic), and a delivered feeding can't be
+  observed twice on two devices, so no deduplication beyond the id is needed. Same for deliveries.
+- The `active` flag of a feeding entry and food groups are **newest**.
 
 ## 6. Local storage model
 
@@ -230,11 +240,12 @@ users/{uid}/syncV2/base/{shard}                         { records[], folded: { [
 
 - **Segments.** A device appends batches to its current segment document (`arrayUnion`, so only the new
   batch is sent). When a segment reaches ~64 KiB it starts the next one. Segments are small on purpose:
-  every update delivers the whole segment to listening devices (section 9.2).
-- **Batching.** Pending records are uploaded at most once a minute while playing, and immediately on
-  `visibilitychange` (hidden) and `pagehide`. User edits in the options UI (a new alias, a bind) flush
-  after a short debounce (~5 s) so the other device sees them quickly. The outbox is persisted, so a phone
-  killing a background tab loses nothing.
+  every update delivers the whole segment to listening devices (section 9.3).
+- **Batching.** Pending records are uploaded immediately on `visibilitychange` (hidden) and `pagehide`,
+  otherwise at most every 5 minutes while playing. Switching devices is exactly when the tab you leave
+  goes hidden, so the device you pick up already has everything — the long interval only matters when
+  both are actively used at once. User edits in the options UI (a new alias, a bind) flush after a short
+  debounce (~5 s). The outbox is persisted, so a phone killing a background tab loses nothing.
 - **Base shards.** Few and coarse, to keep startup reads low: `global` (all small global types),
   `char__{name}` per character, and separate shards only for types that can grow large (`visitedRooms`,
   `kills`, `zlom`) — split further only if a shard nears 512 KiB.
@@ -276,31 +287,38 @@ Firestore: 50,000 document reads, 20,000 writes, 20,000 deletes, 1 GiB stored, 1
 transfer. These are counted per document operation, not per byte or per event, and they are **totals for
 the whole project**, so every figure below must be multiplied by the number of active players.
 
-### 9.2 Is "write each change once" enough?
+### 9.2 Current load (Firebase console, ~50 syncing users, some irregular)
+
+| Period | Reads | Writes |
+|---|---|---|
+| Last week (console figure, −38.5 % / −52.4 % vs. the week before) | 808 | 303 |
+| Today | ~1,100 | ~400 |
+
+That's about 2 % of the daily read quota and 2 % of the write quota — lots of headroom, but also a baseline
+v2 must not blow up.
+
+### 9.3 Is "write each change once" enough?
 
 Mostly yes, with three corrections:
 
 1. **Writes count per document write, not per change.** Writing each tick or kill as its own document
-   would exhaust 20,000 writes/day quickly. Batching many changes into one segment update is what keeps it
-   cheap. At one batch per minute, a 2-hour session is ~120 writes plus a few for options edits.
+   would multiply writes by the number of events. Batching many changes into one segment update is what
+   keeps it cheap.
 2. **Every write is also a read on each other listening device.** With a PC and a phone both open, each
-   batch costs 1 write + 1 read. Reads are the larger quota, so this is fine for 2–3 devices.
+   batch costs 1 write + 1 read.
 3. **Listeners re-download the whole updated document.** That's why segments are capped at ~64 KiB instead
-   of one growing log per device. Outbound transfer is ~120 × ≤64 KiB ≈ ≤8 MiB per session per other
-   device in the worst case; typically much less since segments start empty.
+   of one growing log per device.
 
-Startup costs one read per base shard plus one per open segment (≈ 5–15 reads per device start).
+Per active player-session of ~2 hours with the batching in 8.1: ~24 interval batches + a few flushes on
+hide/close + options edits ≈ 30 writes, similar reads on the other device, and 5–15 reads per device
+start. For 50 users that's roughly 1,500 writes and 2,000–3,000 reads on a busy day: a few times today's
+load (today, knowledge and other IndexedDB data barely sync, and most syncs are skipped as unchanged),
+still under 10 % of the free tier. Stage 3 adds counters (writes, reads, bytes per session) to confirm it
+before rollout; the 5-minute interval is the knob if it's higher than expected.
 
-### 9.3 Comparison with today
-
-Today any localStorage write (including `mapperRoomId` on every move) schedules a sync 30 s later, and each
-sync reads the sync document and writes it in a transaction, re-sending every changed category as a whole
-blob. v2 is expected to be at or below today's operation count, and much lower in bytes, because only
-synced types produce records and only changes are sent.
-
-Rough budget: with ~150 writes and ~200 reads per active player per day, the free tier covers about 130
-daily active players (writes are the limit). Stage 3 adds counters (writes, reads, bytes per session) to
-verify this before rollout.
+Today, by comparison, any localStorage write (including `mapperRoomId` on every move) schedules a sync
+30 s later, and each sync that finds changes writes whole category blobs in a transaction. v2 sends only
+changed records of synced types, so bytes per sync drop a lot even where operation counts rise.
 
 ### 9.4 If we outgrow the free tier
 
@@ -329,8 +347,8 @@ records are keyed, so a rerun overwrites with identical values.
    ever). The merge combines it with the base, so data that never reached v1 (e.g. knowledge stuck in
    conflict) propagates. This is why the current knowledge problem fixes itself.
 3. **Old app versions.** There's no central server, but tabs keep running the old code until reloaded
-   (a PC tab can stay open for days), and they keep writing the v1 document. For a short window
-   (~2 weeks) v2 clients also merge later v1 updates in (one direction), and the old code sees a
+   (a PC tab can stay open for days), and they keep writing the v1 document. For a grace period of
+   **one month** v2 clients also merge later v1 updates in (one direction), and the old code sees a
    `schemaVersion` flag in the v1 document and shows "reload to update". After the window, Firestore
    security rules deny writes to the v1 document — that's the central enforcement point we do have.
 4. Then v1 reading, `planSync`, `categorySyncChecksums`, the conflict UI and the v1 document are removed.
@@ -379,16 +397,17 @@ Settled:
 - No reset of accumulated data.
 - Backup is separate from sync; restore publishes to all devices (section 11).
 - Ticks only matter until the next level-up; older ticks are dropped at compaction.
-- Newly synced: oswajanie, enemy resistances, złom, transport stats, delivery stats.
+- Newly synced: oswajanie (level-ups earliest, feedings union), enemy resistances (newest observation),
+  złom (newest observation), transport stats (current min/max only), delivery stats (union).
+- Old-version grace period: one month.
+- Batch interval during play: 5 minutes, immediate flush when the tab is hidden or closed.
 - Not synced: sun tracker, plugins (possible separate API later).
 - Device UI settings stay one whole value per device.
 - Stay on the Firebase free tier; transport kept replaceable.
 
 Open:
 
-1. Old-version bridge window length (suggested ~2 weeks) and the wording of the "reload to update" notice.
-2. Batch interval during play (suggested 60 s) — trade-off between freshness on the other device and write
-   count. Can be tuned from stage 3 counters.
+1. Wording of the "reload to update" notice for old versions.
 
 ## 15. Testing
 
@@ -415,6 +434,6 @@ Open:
 - **Missed in-memory caches** showing stale data in open tabs. Mitigation: the cache audit in stage 2 and a
   store-level subscription used by every feature store.
 - **Free-tier quotas are shared by all users.** Mitigation: batching, small segments, coarse base shards,
-  usage counters in stage 3, and the replaceable transport.
+  usage counters in stage 3 compared against the section 9.2 baseline, and the replaceable transport.
 - **Clock skew** handled by HLC; a device with a wildly wrong clock can still win **newest** ties for a
   while. Mitigation: clamp stamps that are far in the future relative to the server timestamp of the upload.
