@@ -3155,6 +3155,28 @@ body.layout-manager-enabled #notification-center {
   word-break: break-word;
 }
 
+.room-preview-tooltip {
+  position: fixed;
+  max-width: none;
+  padding: 0.3rem;
+}
+
+.room-preview-tooltip__title {
+  padding: 0 0.2rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 260px;
+}
+
+.room-preview-tooltip__map {
+  position: relative;
+  width: 260px;
+  height: 170px;
+  overflow: hidden;
+  border-radius: 0.25rem;
+}
+
 /* ANSI blink animations */
 /* Slow blink: < 150 per minute (1 blink per second) */
 @keyframes ansi-slow-blink {

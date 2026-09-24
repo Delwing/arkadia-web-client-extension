@@ -4,6 +4,7 @@ import Client from "./Client";
 import {Trigger} from "./Triggers";
 import toTitleCase from "./utils/toTitleCase";
 import {AnsiAwareBuffer} from "@client/ansi/FormatState.ts";
+import { getUiPort } from "@client/ports";
 import {containerAction} from "@client/scripts/bagManager";
 import { characterStorage } from "@modules/core/storage";
 import { defaultSettings } from "@modules/core/defaultSettings";
@@ -163,20 +164,29 @@ export default function initPackageHelper(client: Client) {
                 line.color([nameIndex, nameIndex + info.name.length], colorCode)
 
                 // Make the name clickable
-                line.createLink([nameIndex, nameIndex + info.name.length], {
-                    onClick: (ev) => {
-                        ev.preventDefault();
-                        client.sendCommand(`${pickCommand} ${info.index}`);
-                    },
-                    onContextMenu: (ev) => {
-                        ev.preventDefault();
-                        // Right click shows the command in chat
-                        client.println(`Komenda: ${pickCommand} ${info.index}`);
-                    },
-                    title: `Kliknij, aby wybrać paczkę #${info.index} dla ${info.name}`
-                });
+                line.createLink([nameIndex, nameIndex + info.name.length], pickLinkOptions(info));
             }
             return line
+        };
+    }
+
+    function pickLinkOptions(info: PackageLineInfo) {
+        const location = findNpcLocation(info.name);
+        return {
+            onClick: (ev: MouseEvent) => {
+                ev.preventDefault();
+                getUiPort().hideRoomPreview();
+                client.sendCommand(`${pickCommand} ${info.index}`);
+            },
+            onContextMenu: (ev: MouseEvent) => {
+                ev.preventDefault();
+                // Right click shows the command in chat
+                client.println(`Komenda: ${pickCommand} ${info.index}`);
+            },
+            // Known recipient: hovering previews where the package goes.
+            onMouseEnter: location ? (ev: MouseEvent) => getUiPort().showRoomPreview(location, ev.clientX, ev.clientY) : undefined,
+            onMouseLeave: location ? () => getUiPort().hideRoomPreview() : undefined,
+            title: location ? undefined : `Kliknij, aby wybrać paczkę #${info.index} dla ${info.name}`,
         };
     }
 
@@ -219,18 +229,7 @@ export default function initPackageHelper(client: Client) {
                         firstLine.color([nameIndex, nameIndex + info.name.length], colorCode);
 
                         // Make the name clickable
-                        firstLine.createLink([nameIndex, nameIndex + info.name.length], {
-                            onClick: (ev) => {
-                                ev.preventDefault();
-                                client.sendCommand(`${pickCommand} ${info.index}`);
-                            },
-                            onContextMenu: (ev) => {
-                                ev.preventDefault();
-                                // Right click shows the command in chat
-                                client.println(`Komenda: ${pickCommand} ${info.index}`);
-                            },
-                            title: `Kliknij, aby wybrać paczkę #${info.index} dla ${info.name}`
-                        });
+                        firstLine.createLink([nameIndex, nameIndex + info.name.length], pickLinkOptions(info));
                     }
                     const time = info.time ? info.time + ' godz.' : 'nieogr.';
                     const distanceText = info.distance !== undefined ? ` dystans: ${info.distance}` : ' dystans: --';

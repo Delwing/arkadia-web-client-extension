@@ -439,3 +439,43 @@ test('Package helper records new NPC location after delivery when unknown in dat
         'Nowy adresat: Georg Blaskovitz | 1'
     );
 });
+
+test('Package helper previews the recipient location on hover', async ({page}) => {
+    await page.goto('/');
+    await waitForCommandInput(page);
+    await ensureGameSocket(page);
+    await primeCharInfo(page);
+    await waitForMapReady(page);
+
+    await pushGmcp(page, GMCP_PATHS.ROOM_INFO, {
+        num: 1,
+        id: 1,
+        name: 'Poczta',
+        zone: 'Miasteczko Poslan',
+        exits: { east: 2 },
+        map: { x: 0, y: 0, name: 'Miasteczko Poslan' },
+    });
+
+    await pushText(page, BOARD_TEXT);
+
+    const boardMessage = page
+        .locator('#main_text_output_msg_wrapper .output_msg')
+        .filter({hasText: 'Borgaf Kriegmann'})
+        .last();
+    const knownNpc = boardMessage.locator('span[data-output-clickable="true"]', {hasText: 'Borgaf Kriegmann'});
+    const unknownNpc = boardMessage.locator('span[data-output-clickable="true"]', {hasText: 'Georg Blaskovitz'});
+    const preview = page.locator('#room-preview-tooltip');
+
+    await knownNpc.hover();
+    await expect(preview, 'should preview the known recipient location').toBeVisible();
+    await expect(preview.locator('.room-preview-tooltip__map canvas').first(), 'should draw the map preview').toBeVisible();
+    if (process.env.PREVIEW_SHOT) {
+        await page.screenshot({path: process.env.PREVIEW_SHOT});
+    }
+
+    await page.mouse.move(0, 0);
+    await expect(preview, 'should hide the preview on mouse leave').toBeHidden();
+
+    await unknownNpc.hover();
+    await expect(preview, 'should not preview an unknown recipient').toBeHidden();
+});

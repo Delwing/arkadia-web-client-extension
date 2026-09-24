@@ -34,6 +34,9 @@ export interface UiPort {
     hideHerbTooltip(): void;
     showBookTooltip(categories: string[], x: number, y: number): void;
     hideBookTooltip(): void;
+    /** A small map preview around `roomId`, e.g. for links that point at a location. */
+    showRoomPreview(roomId: number, x: number, y: number): void;
+    hideRoomPreview(): void;
     showContextMenu(items: ContextMenuEntry[], x: number, y: number, options?: ContextMenuOptions): void;
     /**
      * Optional: whether global keybinds (e.g. direction/movement keys) should be
@@ -49,6 +52,8 @@ const noopUiPort: UiPort = {
     hideHerbTooltip() {},
     showBookTooltip() {},
     hideBookTooltip() {},
+    showRoomPreview() {},
+    hideRoomPreview() {},
     showContextMenu() {},
 };
 

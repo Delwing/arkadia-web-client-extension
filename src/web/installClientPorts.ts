@@ -9,6 +9,7 @@
 import { setUiPort, setPluginHostPort } from '@client/ports';
 import { showHerbTooltip, hideHerbTooltip } from './herbTooltip';
 import { showBookTooltip, hideBookTooltip } from './bookTooltip';
+import { showRoomPreview, hideRoomPreview } from './roomPreviewTooltip';
 import { showContextMenu } from './contextMenu';
 import { isAnyModalOpen } from './modals/appModal';
 import { defaultUiSettings } from './defaultUiSettings';
@@ -28,6 +29,8 @@ export function installClientPorts(): void {
         hideHerbTooltip,
         showBookTooltip,
         hideBookTooltip,
+        showRoomPreview,
+        hideRoomPreview,
         showContextMenu,
         // Suppress global (direction) keybinds while a page-level window is open.
         shouldSuppressKeys: () => isAnyModalOpen(),
