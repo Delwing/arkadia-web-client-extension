@@ -30,22 +30,24 @@ export default class MovementManager {
         } else {
             direction = command;
         }
-        // The game takes "przemknij na polnoc" but rejects "przemknij na sw" - "na" only goes with
-        // a full Polish direction word, so only then is it stripped for the mapper.
-        let withNa = false;
-        if (movePrefix && direction.startsWith('na ') && isPolishDirection(direction.substring(3))) {
-            withNa = true;
-            direction = direction.substring(3);
+        // The game takes "przemknij na polnoc" and "przemknij sie na polnoc" but rejects
+        // "przemknij na sw" - "na" only goes with a full Polish direction word, so only then is
+        // the connector stripped for the mapper.
+        let connector = '';
+        const connectorMatch = movePrefix ? direction.match(/^((?:sie )?na )(.*)$/) : null;
+        if (connectorMatch && isPolishDirection(connectorMatch[2])) {
+            connector = connectorMatch[1];
+            direction = connectorMatch[2];
         }
         // Map.move re-sends a remapped direction ("w" recorded as "nw") as a bare command, which
         // would drop the sneak prefix - resolve it here so move() takes it as-is.
         if (movePrefix && !this.carriageMode) {
             const resolved = this.client.Map.resolveDirection(direction);
             // A remap yields a short code or a special exit, neither of which takes "na".
-            if (resolved !== direction) withNa = false;
+            if (resolved !== direction) connector = '';
             direction = resolved;
         }
-        if (withNa) movePrefix += 'na ';
+        movePrefix += connector;
 
         const isOriginalDirection = isDirection(direction);
 

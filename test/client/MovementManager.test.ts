@@ -315,6 +315,14 @@ describe('MovementManager', () => {
     expect(clientAdapterMock.send).toHaveBeenCalledWith('przemknij z druzyna na poludnie', false, undefined);
   });
 
+  test('przemknij sie na <direction> moves the map and keeps "sie na"', () => {
+    const client = new Client(clientAdapterMock);
+    moveFn.mockClear();
+    client.movementManager.sendMovement('przemknij sie na poludnie', true);
+    expect(moveFn).toHaveBeenCalledWith('poludnie');
+    expect(clientAdapterMock.send).toHaveBeenCalledWith('przemknij sie na poludnie', false, undefined);
+  });
+
   test('przemknij na <short code> is left alone - the game rejects it', () => {
     const client = new Client(clientAdapterMock);
     moveFn.mockClear();
