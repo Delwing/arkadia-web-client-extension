@@ -449,9 +449,15 @@ Settled:
 - Device UI settings stay one whole value per device.
 - Stay on the Firebase free tier; transport kept replaceable.
 
-Open:
+Old-version notice (Polish, no diacritics, like the other sync strings in `@modules/firebase`):
 
-1. Wording of the "reload to update" notice for old versions.
+- During the grace period, shown once per page load as a toast that stays until dismissed, with an
+  "Odswiez" button that reloads the page:
+  **"Synchronizacja zostala zaktualizowana. Odswiez strone, aby dalej synchronizowac dane z innymi urzadzeniami."**
+- After the grace period, when a v1 write is denied by the security rules:
+  **"Ta wersja klienta nie synchronizuje juz danych. Odswiez strone, aby wczytac nowa wersje."**
+
+Nothing left open.
 
 ## 15. Testing
 
