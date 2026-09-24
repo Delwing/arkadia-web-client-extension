@@ -106,6 +106,10 @@ function shouldExport(node) {
         name === 'EventKey' ||
         name === 'EventParams' ||
         name === 'EventListener' ||
+        // Map overlay types
+        name === 'MapOverlayLayer' ||
+        name === 'MapOverlayPaint' ||
+        name === 'MapOverlayShape' ||
         // Object list filter types
         name === 'ObjectListEntryFilter' ||
         name === 'EntryContext' ||

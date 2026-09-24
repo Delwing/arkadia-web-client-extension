@@ -23,6 +23,7 @@ import { TransportHopsOverlay, type TransportHopMarker } from "./transportHopsOv
 import { ParkedCarriagesOverlay, type ParkedCarriageMarker } from "./parkedCarriagesOverlay";
 import { CarriageBlocksOverlay } from "./carriageBlocksOverlay";
 import { buildTransportWaypoints } from "./transportWaypoints";
+import { getMapOverlays, onMapOverlaysChange } from "@modules/core/mapOverlayRegistry";
 
 const LOST_ROOMS_OVERLAY_ID = "lost-rooms";
 const TRANSPORT_HOPS_OVERLAY_ID = "transport-hops";
@@ -256,6 +257,16 @@ export class EmbeddedMap {
         this.setExplorationMode(explorationMode);
         this.setInstantMove(instantMove);
         this.setHighlightCurrentRoom(highlightCurrentRoom);
+
+        // Plugin overlays live in a registry so they can be added before the map exists
+        this.attachRegisteredOverlays();
+        onMapOverlaysChange(({ type, id, overlay }) => {
+            if (type === 'add') {
+                this.renderer.addSceneOverlay(id, overlay);
+            } else {
+                this.renderer.removeSceneOverlay(id);
+            }
+        });
 
         eventBus.on('enterLocation', async (ev) => {
             const id = ev.id;
@@ -758,6 +769,7 @@ export class EmbeddedMap {
         this.lostRoomsOverlay = null;
 
         this.renderer = new MapRenderer(this.reader, this.settings, this.map);
+        this.attachRegisteredOverlays();
 
         if (this.explorationMode) {
             this.renderer.setLens(this.explorationLens);
@@ -765,6 +777,12 @@ export class EmbeddedMap {
 
         if (typeof this.currentRoom === 'number') {
             this.renderRoom(this.currentRoom);
+        }
+    }
+
+    private attachRegisteredOverlays() {
+        for (const [id, overlay] of getMapOverlays()) {
+            this.renderer.addSceneOverlay(id, overlay);
         }
     }
 

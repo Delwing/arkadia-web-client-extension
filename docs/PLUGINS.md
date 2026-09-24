@@ -478,6 +478,56 @@ api.map.setLocation(roomId);
 api.map.stepBack();
 ```
 
+##### Własne rysowanie na mapie (`addOverlay`)
+
+`api.map.addOverlay(id, { render })` pozwala narysować na mapie dowolne kształty:
+koła, prostokąty, linie, wielokąty i tekst. Współrzędne są w jednostkach mapy
+(jeden krok siatki = 1, pozycje pokojów bierzesz z `state.getRoom(id)`), więc
+kształty skalują się i przesuwają razem z mapą.
+
+`render(state)` jest wywoływane przy każdym przerysowaniu mapy, przy ruchu
+gracza, przy zmianie wyświetlanego obszaru i po `handle.invalidate()`. Zwraca
+kształt, tablicę kształtów albo nic.
+
+```typescript
+// Strzałki od aktualnego pokoju do sąsiadów
+const radar = api.map.addOverlay("radar", {
+  render(state) {
+    if (state.currentRoomId === undefined) return;
+    const room = state.getRoom(state.currentRoomId);
+    if (!room || room.area !== state.areaId || room.z !== state.z) return;
+
+    return Object.values(room.exits).flatMap((id) => {
+      const next = state.getRoom(id);
+      if (!next || next.area !== room.area || next.z !== room.z) return [];
+      return [{
+        type: "line",
+        points: [room.x, room.y, next.x, next.y],
+        paint: { stroke: "#00ff00", strokeWidth: 0.1 },
+        lineCap: "round",
+      }];
+    });
+  },
+});
+
+radar.invalidate(); // przerysuj po zmianie własnych danych
+radar.remove();     // usuń z mapy
+```
+
+- `state` zawiera `currentRoomId`, `areaId`, `z` (wyświetlany obszar i poziom)
+  oraz `getRoom(id)`. Pomijanie pokojów z innego obszaru/poziomu należy do overlaya.
+- Rodzaje kształtów: `circle` (`cx`, `cy`, `radius`), `rect` (`x`, `y`, `width`,
+  `height`), `line` (`points: [x0, y0, x1, y1, ...]`), `polygon`
+  (`vertices: [...]`), `text` (`x`, `y`, `text`, `fontSize`). Wygląd w
+  `paint: { fill, stroke, strokeWidth, dash, alpha }` (tekst: `fill`/`stroke`
+  bezpośrednio w kształcie).
+- `layer`: `"room"` (między pokojami), `"overlay"` (nad pokojami, domyślnie),
+  `"top"` (nad wszystkim, także nad znacznikiem gracza). `noScale: true` utrzymuje
+  stały rozmiar na ekranie niezależnie od zoomu.
+- Ponowne `addOverlay` z tym samym `id` zastępuje poprzedni overlay. Overlaye
+  pluginu są usuwane automatycznie przy jego wyłączeniu.
+- Błąd w `render` nie psuje mapy - jest logowany raz w konsoli, a overlay nic nie rysuje.
+
 #### `api.team` - Drużyna
 
 ```typescript

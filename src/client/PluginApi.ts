@@ -47,6 +47,8 @@ import {
   unregisterFooterButton,
   type FooterButtonTone,
 } from "@modules/core/footerButtonRegistry";
+import { getMapOverlays, registerMapOverlay, unregisterMapOverlay } from "@modules/core/mapOverlayRegistry";
+import { PluginMapOverlay } from "./pluginMapOverlay";
 import {
   registerFooterComponent,
   unregisterFooterComponent,
@@ -465,6 +467,107 @@ export interface LocationHighlighter {
 }
 
 /**
+ * Drawing layer for map overlay shapes. "room" draws among the rooms,
+ * "overlay" above them (default), "top" above everything including the
+ * player marker.
+ */
+export type MapOverlayLayer = "room" | "overlay" | "top";
+
+/**
+ * Fill/stroke of a map overlay shape. Sizes are in map units (one grid step
+ * is 1) unless the shape sets `noScale`.
+ */
+export interface MapOverlayPaint {
+  /** Fill color (CSS color string) */
+  fill?: string;
+  /** Stroke color (CSS color string) */
+  stroke?: string;
+  /** Stroke width in map units */
+  strokeWidth?: number;
+  /** Dash pattern, e.g. [0.2, 0.1] */
+  dash?: number[];
+  /** Opacity 0..1 */
+  alpha?: number;
+}
+
+/**
+ * A shape drawn by a map overlay, in map coordinates.
+ */
+export type MapOverlayShape = (
+  | { type: "circle"; cx: number; cy: number; radius: number; paint: MapOverlayPaint }
+  | { type: "rect"; x: number; y: number; width: number; height: number; cornerRadius?: number; paint: MapOverlayPaint }
+  | {
+      type: "line";
+      /** Flat list of [x0, y0, x1, y1, ...] */
+      points: number[];
+      paint: MapOverlayPaint;
+      lineCap?: "butt" | "round" | "square";
+      lineJoin?: "miter" | "round" | "bevel";
+    }
+  | {
+      type: "polygon";
+      /** Flat list of [x0, y0, x1, y1, ...] */
+      vertices: number[];
+      paint: MapOverlayPaint;
+    }
+  | {
+      type: "text";
+      x: number;
+      y: number;
+      text: string;
+      fontSize: number;
+      fontFamily?: string;
+      fill?: string;
+      stroke?: string;
+      strokeWidth?: number;
+      align?: "left" | "center" | "right";
+      verticalAlign?: "top" | "middle" | "bottom";
+    }
+) & {
+  /** Drawing layer, defaults to "overlay" */
+  layer?: MapOverlayLayer;
+  /** Keep a fixed on-screen size regardless of zoom */
+  noScale?: boolean;
+};
+
+/**
+ * What a map overlay sees when it renders.
+ */
+export interface MapOverlayRenderState {
+  /** Room the player marker is on, if any */
+  currentRoomId?: number;
+  /** Area currently displayed on the map */
+  areaId?: number;
+  /** Z-level currently displayed on the map */
+  z?: number;
+  /** Look up a room of the loaded map */
+  getRoom(roomId: number): MapData.Room | undefined;
+}
+
+/**
+ * Definition of a custom map overlay, see {@link MapApi.addOverlay}.
+ */
+export interface MapOverlayDefinition {
+  /**
+   * Return the shapes to draw (or nothing). Shapes of rooms outside the
+   * displayed area/z-level are the overlay's own responsibility to skip.
+   */
+  render(state: MapOverlayRenderState): MapOverlayShape | MapOverlayShape[] | void;
+}
+
+/**
+ * Handle returned by {@link MapApi.addOverlay}.
+ */
+export interface MapOverlayHandle {
+  /** Overlay id as passed to addOverlay */
+  readonly id: string;
+  /** Request a redraw, e.g. after the overlay's own data changed */
+  invalidate(): void;
+  /** Remove the overlay from the map */
+  remove(): void;
+}
+
+/**
  * Area information exposed via Map API
  */
 export interface AreaInfo {
@@ -578,6 +681,36 @@ export interface MapApi {
    * questHighlighter.destroy();
    */
   createHighlighter(options?: LocationHighlighterOptions): LocationHighlighter;
+
+  /**
+   * Draw custom shapes on the map. The overlay's `render` is called whenever
+   * the map redraws, when the player moves or the displayed area changes, and
+   * whenever you call `handle.invalidate()`. Coordinates are map (room)
+   * coordinates - read them from `state.getRoom(id)`; one grid step is 1.
+   *
+   * Registering again with the same id replaces the previous overlay. Overlays
+   * are removed automatically when the plugin unloads.
+   *
+   * @param id - Overlay id, unique within this plugin
+   * @param overlay - Overlay definition with a `render` function
+   * @returns Handle to redraw or remove the overlay
+   *
+   * @example
+   * // Ring around every room next to the player
+   * const radar = api.map.addOverlay("radar", {
+   *   render(state) {
+   *     const room = state.currentRoomId !== undefined ? state.getRoom(state.currentRoomId) : undefined;
+   *     if (!room) return;
+   *     return Object.values(room.exits).map((id) => state.getRoom(id)).filter(Boolean).map((next) => ({
+   *       type: "circle", cx: next!.x, cy: next!.y, radius: 0.6,
+   *       paint: { stroke: "#00ff00", strokeWidth: 0.1 },
+   *     }));
+   *   },
+   * });
+   * radar.invalidate(); // redraw after your own data changed
+   * radar.remove();
+   */
+  addOverlay(id: string, overlay: MapOverlayDefinition): MapOverlayHandle;
 
   /**
    * Apply live edits to the loaded map for the current session.
@@ -2766,6 +2899,7 @@ export class PluginApiImpl implements PluginApi {
   private commandHookIds: Set<string> = new Set();
   private footerComponentIds: Set<string> = new Set();
   private footerButtonIds: Set<string> = new Set();
+  private mapOverlayIds: Set<string> = new Set();
   private commandLineSuggestions: Set<string> = new Set();
   private temporaryMultibindHandles: Set<TemporaryMultibindHandle> = new Set();
   private stateChangeUnsubscribers: (() => void)[] = [];
@@ -2980,6 +3114,25 @@ export class PluginApiImpl implements PluginApi {
 
       stepBack: () => {
         this.client.Map.moveBack();
+      },
+
+      addOverlay: (id: string, overlay: MapOverlayDefinition): MapOverlayHandle => {
+        // Namespaced per plugin so plugins can't clash with each other or with built-in overlays
+        const registryId = `plugin:${this.pluginId}:${id}`;
+        const sceneOverlay = new PluginMapOverlay(`${this.pluginId}/${id}`, overlay);
+        registerMapOverlay(registryId, sceneOverlay);
+        this.mapOverlayIds.add(registryId);
+        return {
+          id,
+          invalidate: () => sceneOverlay.invalidate(),
+          remove: () => {
+            // Only remove if this overlay was not replaced by a later addOverlay with the same id
+            if (getMapOverlays().get(registryId) === sceneOverlay) {
+              unregisterMapOverlay(registryId);
+              this.mapOverlayIds.delete(registryId);
+            }
+          },
+        };
       },
 
       createHighlighter: (options?: LocationHighlighterOptions): LocationHighlighter => {
@@ -3696,6 +3849,12 @@ export class PluginApiImpl implements PluginApi {
       unregisterFooterButton(id);
     }
     this.footerButtonIds.clear();
+
+    // Remove all map overlays registered by this plugin
+    for (const id of Array.from(this.mapOverlayIds)) {
+      unregisterMapOverlay(id);
+    }
+    this.mapOverlayIds.clear();
 
     // Remove all button macros registered by this plugin
     for (const id of Array.from(this.buttonMacroIds)) {
