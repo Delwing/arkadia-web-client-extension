@@ -48,6 +48,373 @@ export interface Plugin {
 
 
 // ============================================================================
+// Map Renderer Types (copied from mudlet-map-renderer)
+// ============================================================================
+
+export declare namespace MapRenderer {
+  export type LabelRenderMode = "image" | "data" | "none";
+  export type CullingMode = "none" | "basic" | "indexed";
+  export type RoomShape = "rectangle" | "circle" | "roundedRectangle";
+  /**
+   * How to render rooms Mudlet has marked hidden (see {@link isRoomHidden}):
+   * - `"hide"` — omit them from the scene entirely (Mudlet's default).
+   * - `"show"` — draw them exactly like any other room.
+   * - `"faded"` — draw them at reduced opacity so they read as de-emphasised.
+   * - `"dashed"` — draw them at full opacity but with a dashed border, a more
+   *   distinct "hidden" marker than a fade (which can read as just another shade).
+   */
+  export type HiddenRoomMode = "hide" | "show" | "faded" | "dashed";
+  export type RoomContextMenuEventDetail = {
+      roomId: number;
+      position: {
+          x: number;
+          y: number;
+      };
+  };
+  export type RoomClickEventDetail = {
+      roomId: number;
+      position: {
+          x: number;
+          y: number;
+      };
+  };
+  export type ZoomChangeEventDetail = {
+      zoom: number;
+  };
+  export type AreaExitClickEventDetail = {
+      targetRoomId: number;
+      position: {
+          x: number;
+          y: number;
+      };
+  };
+  export type ViewportBounds = {
+      minX: number;
+      maxX: number;
+      minY: number;
+      maxY: number;
+  };
+  export type PanEventDetail = ViewportBounds;
+  /** Emitted after every LOD mode decision (see {@link Settings.lodEnabled}). */
+  export type LodEventDetail = {
+      /**
+       * "vector": rooms + exit lines, full detail. "roomsOnly": exit lines
+       * dropped, rooms still real vector shapes (bridge tier — see
+       * {@link Settings.lodExitBudget}). "raster": pixel overview.
+       */
+      mode: "vector" | "roomsOnly" | "raster";
+      /** Total rooms on the displayed (area, z) plane. */
+      planeRoomCount: number;
+      /** Cheap upper bound of the rooms inside the applied viewport. */
+      visibleEstimate: number;
+      /**
+       * Whether clicks/hover currently resolve to a room. Always false in
+       * raster mode; false in vector/roomsOnly mode once the room count exceeds
+       * {@link Settings.lodHitTestBudget}.
+       */
+      hitTestActive: boolean;
+  };
+  export type RendererEventMap = {
+      roomclick: RoomClickEventDetail;
+      roomcontextmenu: RoomContextMenuEventDetail;
+      areaexitclick: AreaExitClickEventDetail;
+      mapclick: undefined;
+      pan: PanEventDetail;
+      zoom: ZoomChangeEventDetail;
+      lod: LodEventDetail;
+  };
+  /**
+   * Style configuration for the player position marker.
+   * The player marker is a circle that indicates the current player position on the map.
+   */
+  export type PlayerMarkerStyle = {
+      /**
+       * Hex color for the marker's stroke/border (e.g., "#00e5b2" for cyan-green).
+       */
+      strokeColor: string;
+      /**
+       * Opacity for the stroke/border (0.0 = fully transparent, 1.0 = fully opaque).
+       */
+      strokeAlpha: number;
+      /**
+       * Hex color for the marker's fill (e.g., "#00e5b2" for cyan-green).
+       */
+      fillColor: string;
+      /**
+       * Opacity for the fill (0.0 = fully transparent, 1.0 = fully opaque).
+       * Setting this to 0 creates a hollow circle effect.
+       */
+      fillAlpha: number;
+      /**
+       * Width of the marker's stroke/border in map units (typically 0.01-0.3).
+       */
+      strokeWidth: number;
+      /**
+       * Size multiplier relative to the room size.
+       * - 1.0 = marker radius equals room radius (matches room size)
+       * - Values > 1.0 make the marker larger than rooms
+       * - Values < 1.0 make the marker smaller than rooms
+       *
+       * Note: Room circles have radius = roomSize / 2, so sizeFactor is applied to that radius.
+       */
+      sizeFactor: number;
+      /**
+       * Dash pattern for the stroke as an array of [dash length, gap length].
+       * Example: [0.05, 0.05] creates evenly spaced dashes.
+       * Only applied when dashEnabled is true.
+       */
+      dash?: number[];
+      /**
+       * Whether to apply the dash pattern to the stroke.
+       * When false, the stroke is solid regardless of the dash property.
+       */
+      dashEnabled: boolean;
+      /**
+       * When true, the marker shape matches the current roomShape setting
+       * (rectangle, circle, or roundedRectangle) instead of always being a circle.
+       */
+      matchRoomShape: boolean;
+  };
+  /**
+   * Style configuration for room highlights.
+   * Highlights are rings drawn around rooms registered via {@link MapRenderer.renderHighlight}.
+   * The highlight's color is supplied per-call; this style controls everything else.
+   */
+  export type HighlightStyle = {
+      /**
+       * Opacity for the highlight's stroke/ring (0.0 = fully transparent, 1.0 = fully opaque).
+       */
+      strokeAlpha: number;
+      /**
+       * Opacity for the fill (0.0 = fully transparent / hollow, 1.0 = fully opaque).
+       * The fill uses the per-highlight color. Defaults to 0 to preserve the hollow ring look.
+       */
+      fillAlpha: number;
+      /**
+       * Width of the highlight stroke in map units (typically 0.01-0.3).
+       */
+      strokeWidth: number;
+      /**
+       * Size multiplier relative to the room size.
+       * - 1.0 = highlight matches room size
+       * - Values > 1.0 produce a ring outside the room
+       * - Values < 1.0 produce a smaller marker inside the room
+       */
+      sizeFactor: number;
+      /**
+       * Dash pattern for the stroke as an array of [dash length, gap length].
+       * Only applied when dashEnabled is true.
+       */
+      dash?: number[];
+      /**
+       * Whether to apply the dash pattern to the stroke.
+       * When false, the stroke is solid regardless of the dash property.
+       */
+      dashEnabled: boolean;
+      /**
+       * @deprecated Use {@link shape} instead. Only consulted when `shape` is
+       * `'match'` (or omitted): when true (the default) the highlight follows the
+       * current roomShape (rectangle / roundedRectangle / circle); when false it
+       * is always a circle.
+       */
+      matchRoomShape?: boolean;
+      /**
+       * Outline shape of the highlight. `'match'` (the default when omitted)
+       * follows the current roomShape; the other values force that specific shape
+       * regardless of the room's shape.
+       */
+      shape?: 'match' | 'rectangle' | 'roundedRectangle' | 'circle';
+  };
+  /**
+   * Ghost ("silhouette") rendering of the z-levels below and/or above the
+   * current one, drawn faded underneath the current level so the vertical
+   * structure of an area stays readable. Rooms are drawn as flat, borderless
+   * shapes in a single colour, optionally with their connecting exits.
+   *
+   * Levels are shifted by the offset per step: level `z - k` moves by
+   * `(+offsetX·k, +offsetY·k)`, level `z + k` by `(-offsetX·k, -offsetY·k)`, so
+   * lower floors read as a drop shadow and upper floors lift away from it.
+   * Silhouettes are pure decoration: never clickable, and included in exports.
+   */
+  export type LevelSilhouetteStyle = {
+      /** Draw silhouettes of the levels below the current one. Default: false */
+      below: boolean;
+      /** Draw silhouettes of the levels above the current one. Default: false */
+      above: boolean;
+      /** How many levels in each direction to draw (1 = only the adjacent level). Default: 1 */
+      depth: number;
+      /** Horizontal shift per level step, in map units. Default: 0.2 */
+      offsetX: number;
+      /** Vertical shift per level step, in map units (positive = down on screen). Default: 0.2 */
+      offsetY: number;
+      /** Colour of lower-level silhouettes. Default: '#5a78b4' */
+      belowColor: string;
+      /** Colour of upper-level silhouettes. Default: '#b48c5a' */
+      aboveColor: string;
+      /**
+       * Keep each room's own environment colour (and {@link Settings.lineColor}
+       * for exits) instead of {@link belowColor} / {@link aboveColor}. Opacity,
+       * falloff and offset still apply. Default: false
+       */
+      useRoomColors: boolean;
+      /** Opacity of the adjacent level's silhouette (0..1). Default: 0.35 */
+      alpha: number;
+      /** Opacity multiplier applied per additional level of distance (0..1). Default: 0.6 */
+      falloff: number;
+      /** Also draw the exit lines between silhouette rooms. Default: true */
+      exits: boolean;
+  };
+  /**
+   * Settings for map rendering.
+   * All properties can be modified at runtime to change the map's appearance and behavior.
+   * Create with {@link createSettings} and pass to the renderer constructor.
+   */
+  export type Settings = {
+      /** Size of each room in map units (width/height for rectangles, diameter for circles). Default: 0.6 */
+      roomSize: number;
+      /** Width of lines (exit connections, room borders) in map units. Default: 0.025 */
+      lineWidth: number;
+      /** Color of exit connection lines. Default: 'rgb(225, 225, 225)' */
+      lineColor: string;
+      /** Background color of the map container. Default: '#000000' */
+      backgroundColor: string;
+      /**
+       * Rasterize the canvas at this fraction of its normal resolution and
+       * upscale it with nearest-neighbour, so the map is drawn out of real
+       * hard-edged pixels. `1` (the default) renders at full resolution;
+       * `0.2` gives chunky 5x pixels. Pairs with the `PixelArt` style, which
+       * snaps geometry to a matching grid. Interactive canvas only — exports and
+       * the OffscreenCanvas backend ignore it, and hit-testing is unaffected
+       * (Konva's hit canvas keeps full resolution).
+       * Default: 1
+       */
+      pixelate: number;
+      /** When true, map instantly jumps to new position on room change. Default: false */
+      instantMapMove: boolean;
+      /** When true, highlights the current room and its exits with an overlay. Default: true */
+      highlightCurrentRoom: boolean;
+      /** Colour of the current room's outline and exits when {@link Settings.highlightCurrentRoom} is on. Default: '#784800' */
+      currentRoomColor: string;
+      /** Legacy flag for enabling/disabling culling (prefer cullingMode). Default: true */
+      cullingEnabled: boolean;
+      /** How off-screen elements are culled: "none" | "basic" | "indexed". Default: "indexed" */
+      cullingMode: CullingMode;
+      /** Custom culling bounds in map coordinates, or null for viewport bounds. Default: null */
+      cullingBounds: {
+          x: number;
+          y: number;
+          width: number;
+          height: number;
+      } | null;
+      /**
+       * When true, room bodies that share the same fill/stroke/shape are drawn in
+       * a single batched path (one `fill()` + one `stroke()` per style) instead of
+       * one draw per room. Big win on large areas with few environment colours;
+       * see {@link DrawCommandLayerNode}. Rooms with symbols, emboss, gradient
+       * fills, or coloured multi-rings fall back to per-room replay automatically.
+       *
+       * Off by default: coalescing reorders same-style rooms, which can shift
+       * sub-pixel border overlaps where rooms touch. Default: false
+       */
+      coalesceRooms: boolean;
+      /** How to render room labels: "image" | "data". Default: "image" */
+      labelRenderMode: LabelRenderMode;
+      /** When true, room labels have transparent backgrounds. Default: false */
+      transparentLabels: boolean;
+      /** Shape used to render rooms: "rectangle" | "circle" | "roundedRectangle". Default: "rectangle" */
+      roomShape: RoomShape;
+      /** How to render rooms Mudlet has marked hidden: "hide" | "show" | "faded". Default: "hide" */
+      hiddenRooms: HiddenRoomMode;
+      /** Style configuration for the player position marker. */
+      playerMarker: PlayerMarkerStyle;
+      /** Style configuration for room highlights (added via {@link MapRenderer.renderHighlight}). */
+      highlight: HighlightStyle;
+      /** Whether to render a background grid. Default: false */
+      gridEnabled: boolean;
+      /** Grid line spacing in map units. Default: 1 */
+      gridSize: number;
+      /** Color of grid lines as CSS color string. Default: 'rgba(255, 255, 255, 0.07)' */
+      gridColor: string;
+      /** Width of grid lines in map units. Default: 0.02 */
+      gridLineWidth: number;
+      /** Whether to draw borders (strokes) on rooms. Default: true */
+      borders: boolean;
+      /** When true, rooms use frame rendering: fill=backgroundColor, stroke=envColor. Default: false */
+      frameMode: boolean;
+      /** When true, rooms use colored rendering: fill=envColor darkened 30%, stroke=envColor. Default: false */
+      coloredMode: boolean;
+      /** When true, rooms display a 3D emboss effect (rectangle/roundedRectangle only). Default: false */
+      emboss: boolean;
+      /** When true, displays the area name as a header text on the map. Default: false */
+      areaName: boolean;
+      /** Font family for the area name header. Default: 'sans-serif' */
+      fontFamily: string;
+      /** When true, uses bounds from all z-levels for viewport sizing, not just the current level. Default: false */
+      uniformLevelSize: boolean;
+      /** When true, renders a small text label next to area-exit arrows showing the target area name.
+       *  Exits leading to the same target area are grouped — one label per area at the cluster centroid. Default: false */
+      areaExitLabels: boolean;
+      /** Font size (in map units) for area-exit labels. Padding, corner radius, and stroke
+       *  scale proportionally. Default: 0.3 */
+      areaExitLabelFontSize: number;
+      /** When true, rooms from neighbouring areas reachable within {@link neighborSpillDistance}
+       *  steps of the player are drawn (faded) across the boundary, projected into the current
+       *  area's coordinate space. Requires a known player position. Default: false */
+      neighborSpill: boolean;
+      /** Max number of steps from the player's room to spill neighbouring-area rooms across a
+       *  boundary (BFS depth over planar exits). Default: 20 */
+      neighborSpillDistance: number;
+      /** Faded silhouettes of the levels below/above the current one. See {@link LevelSilhouetteStyle}. */
+      levelSilhouettes: LevelSilhouetteStyle;
+      /**
+       * Level-of-detail for very dense planes: when the current plane holds more
+       * rooms than {@link lodRoomBudget} and the zoom is far enough out that a
+       * viewport could exceed that budget, the vector scene is replaced by a
+       * raster pixel overview (one filled box per room) painted on an underlay.
+       * Zooming in switches back to full vector detail. The mode is reported via
+       * the renderer's `lod` event. Interactive Konva backend only. Default: false
+       */
+      lodEnabled: boolean;
+      /**
+       * Max rooms the vector scene may hold before zoomed-out views switch to the
+       * raster overview; also the per-viewport budget the zoom threshold is
+       * derived from. Each rebuild at this density touches shape building, hit
+       * testing, and draw for the whole visible set, so lower this if rebuilds
+       * near the flip feel slow. Default: 16000
+       */
+      lodRoomBudget: number;
+      /**
+       * Above this many rooms in the current plane build (same unit as
+       * {@link lodRoomBudget}), the hit-test index is skipped instead of
+       * rebuilt — the scene still renders at full vector detail, but
+       * clicks/hover won't resolve to a room until you zoom in below this
+       * density. Rebuilding the hit index is a meaningful fraction of a large
+       * rebuild, and precise pointer interaction is rarely needed at very high
+       * densities anyway. Only takes effect while `lodEnabled` is true, and only
+       * below `lodRoomBudget` (above it the plane is raster and has no hit
+       * shapes at all). Default: 10000
+       */
+      lodHitTestBudget: number;
+      /**
+       * Above this many rooms in the current plane build (same unit as
+       * {@link lodRoomBudget}) and below `lodRoomBudget`, exit lines are
+       * dropped but rooms still render as full vector shapes — a bridge tier
+       * between full vector detail and the raster overview. Exit pairing and
+       * exit-line shape building are typically the single largest share of a
+       * dense rebuild's cost (exit count often runs ~2x room count in a
+       * well-connected area), so this buys back most of that cost while still
+       * showing real room shapes instead of raster pixels. Only takes effect
+       * while `lodEnabled` is true. Set above `lodRoomBudget` (or to `Infinity`)
+       * to disable this tier and jump straight from full vector to raster.
+       * Default: 12000
+       */
+      lodExitBudget: number;
+  };
+  /** Creates a new Settings object with default values. */
+}
+
+
+// ============================================================================
 // Color Types
 // ============================================================================
 
@@ -1318,10 +1685,12 @@ export interface MapOverlayRenderState {
     areaId?: number;
     /** Z-level currently displayed on the map */
     z?: number;
-    /** Width of the map's exit lines in map units (user setting) - match it to blend in */
-    lineWidth: number;
-    /** Room size in map units (user setting) */
-    roomSize: number;
+    /**
+     * The map renderer's live settings (user map appearance: `lineWidth`,
+     * `roomSize`, `lineColor`, `roomShape`, ...). Sizes are in map units - use
+     * them so the overlay matches the map. Read-only.
+     */
+    settings: Readonly<MapRenderer.Settings>;
     /** Look up a room of the loaded map */
     getRoom(roomId: number): MapData.Room | undefined;
 }

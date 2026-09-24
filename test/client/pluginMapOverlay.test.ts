@@ -13,7 +13,7 @@ function makeState(rooms: Record<number, { id: number; x: number; y: number }>) 
     positionRoomId: 1,
     currentArea: 7,
     currentZIndex: 0,
-    settings: { lineWidth: 0.05, roomSize: 0.8 },
+    settings: { lineWidth: 0.05, roomSize: 0.8 } as never,
     mapReader: { getRoom: (id: number) => rooms[id] },
     events: {
       on: (event: string, cb: () => void) => (handlers[event] ??= []).push(cb),
@@ -33,7 +33,7 @@ describe("PluginMapOverlay", () => {
         const room = view.getRoom(view.currentRoomId!)!;
         expect(view.areaId).toBe(7);
         expect(view.z).toBe(0);
-        expect([view.lineWidth, view.roomSize]).toEqual([0.05, 0.8]);
+        expect([view.settings.lineWidth, view.settings.roomSize]).toEqual([0.05, 0.8]);
         return [
           { type: "circle", cx: room.x, cy: room.y, radius: 1, paint: { fill: "red" } },
           { type: "circle", cx: 0, cy: 0, radius: 1, paint: {}, layer: "top" },

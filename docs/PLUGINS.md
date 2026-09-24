@@ -503,7 +503,7 @@ const radar = api.map.addOverlay("radar", {
       return [{
         type: "line",
         points: [room.x, room.y, next.x, next.y],
-        paint: { stroke: "#00ff00", strokeWidth: state.lineWidth * 2 },
+        paint: { stroke: "#00ff00", strokeWidth: state.settings.lineWidth * 2 },
         lineCap: "round",
       }];
     });
@@ -515,9 +515,11 @@ radar.remove();     // usuń z mapy
 ```
 
 - `state` zawiera `currentRoomId`, `areaId`, `z` (wyświetlany obszar i poziom),
-  `getRoom(id)` oraz ustawienia wyglądu mapy: `lineWidth` (grubość linii wyjść)
-  i `roomSize` (rozmiar pokoju), oba w jednostkach mapy - użyj ich, żeby rysunek
-  pasował do mapy. Pomijanie pokojów z innego obszaru/poziomu należy do overlaya.
+  `getRoom(id)` oraz `settings` - bieżące ustawienia renderera mapy
+  (`MapRenderer.Settings`, tylko do odczytu), np. `lineWidth` (grubość linii
+  wyjść), `roomSize`, `lineColor`, `roomShape`. Rozmiary są w jednostkach mapy -
+  użyj ich, żeby rysunek pasował do mapy. Pomijanie pokojów z innego
+  obszaru/poziomu należy do overlaya.
 - Rodzaje kształtów: `circle` (`cx`, `cy`, `radius`), `rect` (`x`, `y`, `width`,
   `height`), `line` (`points: [x0, y0, x1, y1, ...]`), `polygon`
   (`vertices: [...]`), `text` (`x`, `y`, `text`, `fontSize`). Wygląd w

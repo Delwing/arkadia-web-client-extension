@@ -225,6 +225,35 @@ export interface Plugin {
 }
 `);
 
+// Map renderer settings (MapRenderer.Settings, used by map overlays). The
+// renderer's Settings.d.ts is self-contained, so it is copied verbatim into a
+// namespace instead of making plugin-types depend on mudlet-map-renderer.
+const rendererSettingsPath = path.join(
+  PROJECT_ROOT, 'node_modules', 'mudlet-map-renderer', 'dist', 'types', 'Settings.d.ts'
+);
+const rendererSettings = fs.readFileSync(rendererSettingsPath, 'utf-8');
+if (/^import /m.test(rendererSettings)) {
+  console.error('❌ mudlet-map-renderer Settings.d.ts now has imports - update the MapRenderer namespace inlining');
+  process.exit(1);
+}
+const rendererSettingsBody = rendererSettings
+  // Runtime functions have no place in a types-only namespace
+  .replace(/^export declare function[^\n]*\n?/gm, '')
+  .replace(/^\/\/# sourceMappingURL=.*$/gm, '')
+  .trimEnd()
+  .split('\n')
+  .map((line) => (line ? '  ' + line : line))
+  .join('\n');
+output.push(`
+// ============================================================================
+// Map Renderer Types (copied from mudlet-map-renderer)
+// ============================================================================
+
+export declare namespace MapRenderer {
+${rendererSettingsBody}
+}
+`);
+
 // We need to manually add types from dependencies that are referenced
 // Add FormatState types
 output.push(`

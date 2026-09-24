@@ -18,6 +18,8 @@
  * - Makes it easier to maintain backward compatibility
  */
 import type React from 'react';
+// Re-emitted into plugin-types as the `MapRenderer` namespace by generate-types.cjs
+import type * as MapRenderer from "mudlet-map-renderer";
 import type Client from "./Client";
 import type { CommandHookCallback } from "./Client";
 import type {ClientEvents} from "@shared/events";
@@ -540,10 +542,12 @@ export interface MapOverlayRenderState {
   areaId?: number;
   /** Z-level currently displayed on the map */
   z?: number;
-  /** Width of the map's exit lines in map units (user setting) - match it to blend in */
-  lineWidth: number;
-  /** Room size in map units (user setting) */
-  roomSize: number;
+  /**
+   * The map renderer's live settings (user map appearance: `lineWidth`,
+   * `roomSize`, `lineColor`, `roomShape`, ...). Sizes are in map units - use
+   * them so the overlay matches the map. Read-only.
+   */
+  settings: Readonly<MapRenderer.Settings>;
   /** Look up a room of the loaded map */
   getRoom(roomId: number): MapData.Room | undefined;
 }
