@@ -17,6 +17,7 @@ import {
 } from "@modules/core/settingsMigrations";
 import { bridgeSendCommand, bridgeNpcStore } from "./clientBootstrapBridges";
 import { registerEnemyStatusFilter } from "./filters/enemyStatusFilter";
+import { installAltCodeGuard } from "@shared/dom/altCodeGuard.ts";
 
 export interface GameClientBootstrap {
     client: Client;
@@ -55,6 +56,8 @@ export function bootstrapGameClient(opts: { installPorts: () => void }): GameCli
 
     const client = new Client(mudClient);
     registerScripts(client);
+    // Alt+numpad binds would otherwise leave a Windows Alt-code symbol in the input.
+    installAltCodeGuard();
 
     // Ogluch / przelamana obrona highlighting. It only listens to client events and
     // writes to the UI-neutral objectListFilters registry, so it belongs here rather
