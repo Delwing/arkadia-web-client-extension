@@ -12,6 +12,7 @@ import {
     objectEntriesType,
     peopleEditsType,
 } from '@web/userData/localStorageTypes';
+import { restoreBackup, type ExportPayload } from '@web/options/exportUtils';
 import { createUserDataTypes } from '@web/userData/registry';
 
 function tracker(deviceId: string, now: () => number = Date.now) {
@@ -282,5 +283,96 @@ describe('all localStorage types together', () => {
 
         // a is not in b's sync group
         expect(localStorage.getItem('uiSettings')).toBe(JSON.stringify({ theme: 'light' }));
+    });
+});
+
+/** A device with its own localStorage, swapped in for each of its steps. */
+class Device {
+    storage: Record<string, string>;
+    now = Date.now();
+    readonly tracker: UserDataTracker;
+
+    constructor(id: string, storage: Record<string, string>) {
+        this.storage = { ...storage };
+        let saved: string | null = null;
+        this.tracker = new UserDataTracker({
+            deviceId: id,
+            types: createUserDataTypes(() => id, { settleMs: 0, reload: async () => undefined }),
+            store: new MemoryRecordStore(),
+            clock: new HybridLogicalClock(id, { load: () => saved, save: s => { saved = s; } }, () => this.now),
+        });
+    }
+
+    async run<T>(step: () => Promise<T>): Promise<T> {
+        localStorage.clear();
+        for (const [key, value] of Object.entries(this.storage)) localStorage.setItem(key, value);
+        const result = await step();
+        this.storage = snapshotLocalStorage();
+        return result;
+    }
+
+    upload(): Promise<UserRecord[]> {
+        return this.run(async () => {
+            await this.tracker.capture();
+            const outbox = await this.tracker.outbox();
+            if (outbox.length > 0) await this.tracker.acknowledge(outbox[outbox.length - 1].seq);
+            return outbox;
+        });
+    }
+
+    apply(records: UserRecord[]): Promise<void> {
+        return this.run(() => this.tracker.apply(records));
+    }
+
+    lifetime(): Record<string, number> {
+        const data = JSON.parse(this.storage['Alice:improve_counter_lifetime']);
+        return Object.fromEntries(data.entries.map((e: { date: string; count: number }) => [e.date, e.count]));
+    }
+}
+
+const lifetime = (counts: Record<string, number>) => JSON.stringify({
+    entries: Object.entries(counts).map(([date, count]) => ({ date, count })),
+    enabled: true,
+});
+
+describe('two devices moving from sync v1', () => {
+    it('keeps improvement counts both already had instead of doubling them', async () => {
+        const synced = { 'Alice:improve_counter_lifetime': lifetime({ '2026/9/1': 10, '2026/9/2': 5 }) };
+        const chrome = new Device('chrome', synced);
+        const firefox = new Device('firefox', { 'Alice:improve_counter_lifetime': lifetime({ '2026/9/1': 10, '2026/9/2': 6 }) });
+
+        await firefox.apply(await chrome.upload());
+        await chrome.apply(await firefox.upload());
+
+        expect(chrome.lifetime()).toEqual({ '2026/9/1': 10, '2026/9/2': 6 });
+        expect(firefox.lifetime()).toEqual({ '2026/9/1': 10, '2026/9/2': 6 });
+    });
+
+    it('sends a backup restored on one device to the other', async () => {
+        const synced = { 'Alice:improve_counter_lifetime': lifetime({ '2026/9/1': 10, '2026/9/2': 5 }) };
+        const chrome = new Device('chrome', synced);
+        const firefox = new Device('firefox', synced);
+        await firefox.apply(await chrome.upload());
+        await chrome.apply(await firefox.upload());
+
+        chrome.now += 60_000;
+        const backup: ExportPayload = {
+            version: 1,
+            createdAt: '2026-08-01T00:00:00Z',
+            characters: ['Alice'],
+            localStorage: {
+                global: {},
+                characters: { Alice: { 'Alice:improve_counter_lifetime': lifetime({ '2026/9/1': 3, '2026/9/3': 7 }) } },
+            },
+            indexedDB: { multibinds: [], visitedRooms: [] },
+        };
+        await chrome.run(async () => { await restoreBackup(backup); });
+        await firefox.apply(await chrome.upload());
+
+        // Counts restored lower go out as a correction; a day missing from the
+        // backup is kept (progress has no reset)
+        const expected = { '2026/9/1': 3, '2026/9/2': 5, '2026/9/3': 7 };
+        expect(chrome.lifetime()).toEqual(expected);
+        expect(firefox.lifetime()).toEqual(expected);
     });
 });

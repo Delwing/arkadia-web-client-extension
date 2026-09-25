@@ -277,6 +277,19 @@ describe('SyncEngineV2', () => {
         expect(phone.aliases.data.get('a')).toBe('from pc');
     });
 
+    it('fails a download that can\'t be applied instead of waiting forever', async () => {
+        const transport = new MemoryTransport();
+        const pc = makeDevice('pc', transport, { passphrase: () => 'secret' });
+        start(pc);
+        pc.aliases.data.set('a', 'from pc');
+        await pc.engine.flush();
+
+        const phone = makeDevice('phone', transport, { passphrase: () => 'wrong' });
+        start(phone);
+        await expect(phone.engine.redownload()).rejects.toBeDefined();
+        expect(phone.aliases.data.get('a')).toBeUndefined();
+    });
+
     it('encrypts records in the cloud and decrypts them on the other device', async () => {
         const transport = new MemoryTransport();
         const pc = makeDevice('pc', transport, { passphrase: () => 'secret' });

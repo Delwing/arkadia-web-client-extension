@@ -41,6 +41,8 @@ export interface TrackerOptions {
      * they get normal stamps instead of the lowest ones.
      */
     firstCaptureIsEdit?: (typeId: string) => boolean;
+    /** A type failed to capture or apply; the other types went on. Logged by default. */
+    onError?: (typeId: string, stage: 'capture' | 'apply', error: unknown) => void;
 }
 
 type Draft = Omit<UserRecord, 'seq'>;
@@ -52,6 +54,12 @@ function nonZero(values: Record<string, number> | undefined): Record<string, num
         if (n !== 0) result[field] = n;
     }
     return result;
+}
+
+function fieldMax(a: Record<string, number>, b: Record<string, number>): Record<string, number> {
+    const result: Record<string, number> = { ...a };
+    for (const [field, n] of Object.entries(b)) result[field] = Math.max(result[field] ?? 0, n);
+    return nonZero(result);
 }
 
 function subtract(total: Record<string, number>, others: Record<string, number>): Record<string, number> {
@@ -75,7 +83,11 @@ export class UserDataTracker {
         return this.serial(async () => {
             const records: UserRecord[] = [];
             for (const type of this.selectTypes(typeIds)) {
-                records.push(...await this.captureType(type));
+                try {
+                    records.push(...await this.captureType(type));
+                } catch (error) {
+                    this.reportError(type, 'capture', error);
+                }
             }
             return records;
         });
@@ -91,22 +103,38 @@ export class UserDataTracker {
                 list.push(record);
                 byType.set(record.type, list);
             }
+            // Each type is applied even when another fails; then the failure
+            // is reported so the records are delivered again (merging is
+            // idempotent) and the failed type is retried.
+            const failed: string[] = [];
             for (const [typeId, typeRecords] of byType) {
                 const type = this.types.get(typeId);
                 // Types this version doesn't know are skipped; a newer client
                 // will pick them up from the cloud.
                 if (!type) continue;
                 // Capture first so an uncaptured local edit isn't overwritten by
-                // an older remote version. Except for newest-wins data never
-                // captured on this device: that predates sync, so the remote
-                // version wins, and what only this device has is captured right
-                // after. Other rules merge, so capturing first loses nothing
-                // (and counters need this device's own count captured first).
-                const firstContact = type.rule.kind === 'newest' && !(await this.options.store.isSeeded(type.id));
-                if (!firstContact) await this.captureType(type);
-                await this.applyType(type, typeRecords);
-                if (firstContact) await this.captureType(type);
+                // an older remote version. Except on first contact with data
+                // never captured on this device, which predates sync:
+                // - newest: the remote version wins, and what only this device
+                //   has is captured right after;
+                // - counter: local counts are mostly the same counts the other
+                //   devices already hold (copied by the previous sync), so
+                //   they merge by maximum and only the excess becomes this
+                //   device's own count. Captured first, they would be added
+                //   on top and every count would double.
+                // Other rules merge, so capturing first loses nothing.
+                try {
+                    const firstContact = (type.rule.kind === 'newest' || type.rule.kind === 'counter')
+                        && !(await this.options.store.isSeeded(type.id));
+                    if (!firstContact) await this.captureType(type);
+                    await this.applyType(type, typeRecords, firstContact);
+                    if (firstContact) await this.captureType(type);
+                } catch (error) {
+                    this.reportError(type, 'apply', error);
+                    failed.push(type.id);
+                }
             }
+            if (failed.length > 0) throw new Error(`Failed to apply ${failed.join(', ')}`);
         });
     }
 
@@ -160,6 +188,12 @@ export class UserDataTracker {
     /** Records up to and including `seq` were uploaded. */
     acknowledge(uptoSeq: number): Promise<void> {
         return this.serial(() => this.options.store.removeOutbox(uptoSeq));
+    }
+
+    /** One type failing (bad local data, storage errors) doesn't stop the others from syncing. */
+    private reportError(type: UserDataType, stage: 'capture' | 'apply', error: unknown): void {
+        if (this.options.onError) this.options.onError(type.id, stage, error);
+        else console.error(`[UserData] ${stage} of ${type.id} failed:`, error);
     }
 
     private serial<T>(task: () => Promise<T>): Promise<T> {
@@ -270,7 +304,7 @@ export class UserDataTracker {
         return accepted;
     }
 
-    private async applyType(type: UserDataType, incoming: UserRecord[]): Promise<void> {
+    private async applyType(type: UserDataType, incoming: UserRecord[], firstContact = false): Promise<void> {
         const { store } = this.options;
         const tracked = new Map((await store.getRecords(type.id)).map(r => [recordId(r), r]));
         const changed: UserRecord[] = [];
@@ -288,7 +322,7 @@ export class UserDataTracker {
         const sources = new Map<string, UserRecord>();
         const writes = type.scope === 'device'
             ? this.deviceWrites(tracked, changed, local, sources)
-            : this.sharedWrites(type, changed, local);
+            : this.sharedWrites(type, changed, local, firstContact);
 
         // Local data first: if writing fails, the tracking copy keeps the old
         // record and nothing claims the new value is applied.
@@ -325,13 +359,19 @@ export class UserDataTracker {
         await this.options.store.putRecords(adopted);
     }
 
-    private sharedWrites(type: UserDataType, changed: UserRecord[], local: Map<string, LocalItem>): ItemChange[] {
+    private sharedWrites(
+        type: UserDataType,
+        changed: UserRecord[],
+        local: Map<string, LocalItem>,
+        firstContact: boolean,
+    ): ItemChange[] {
         const writes: ItemChange[] = [];
         for (const record of changed) {
             const item = local.get(recordId(record));
             if (type.rule.kind === 'counter') {
-                const total = counterTotal(record.value as CounterSlots);
                 const previous = nonZero(item?.value as Record<string, number>);
+                const remote = counterTotal(record.value as CounterSlots);
+                const total = firstContact ? fieldMax(remote, previous) : remote;
                 if (!valuesEqual(nonZero(total), previous)) {
                     writes.push({ scope: record.scope, key: record.key, value: total, previous });
                 }

@@ -123,6 +123,7 @@ export function startSyncV2(userId: string, passphrase: () => string | null): vo
             },
             usage: createUsageCounter(),
             onError: error => console.error('[SyncV2]', error),
+            log: message => console.info(`[SyncV2] ${message}`),
         });
         engine.start();
         console.log('[SyncV2] Started');

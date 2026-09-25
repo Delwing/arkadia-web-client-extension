@@ -245,9 +245,37 @@ describe('UserDataTracker', () => {
         expect(a.types.rooms.get('12')).toBe(true);
     });
 
+    it('merges counts from before sync by maximum: the previous sync copied them to every device', async () => {
+        const a = makeDevice('a', 1_000);
+        const b = makeDevice('b', 1_000);
+        a.types.kills.set('goblin', { count: 5 });
+        a.types.kills.set('orc', { count: 2 });
+        b.types.kills.set('goblin', { count: 5 });
+        b.types.kills.set('orc', { count: 4 });
+        b.types.kills.set('troll', { count: 1 });
+
+        await sync(a, b);
+        await sync(b, a);
+
+        for (const device of [a, b]) {
+            expect(device.types.kills.get('goblin')).toEqual({ count: 5 });
+            expect(device.types.kills.get('orc')).toEqual({ count: 4 });
+            expect(device.types.kills.get('troll')).toEqual({ count: 1 });
+        }
+
+        // Counted from here on, kills add up
+        a.types.kills.set('goblin', { count: 6 });
+        b.types.kills.set('goblin', { count: 7 });
+        await sync(a, b);
+        await sync(b, a);
+        expect(a.types.kills.get('goblin')).toEqual({ count: 8 });
+        expect(b.types.kills.get('goblin')).toEqual({ count: 8 });
+    });
+
     it('sums counters across devices and lets a device lower its own count', async () => {
         const a = makeDevice('a', 1_000);
         const b = makeDevice('b', 1_000);
+        await b.tracker.capture();
         a.types.kills.set('goblin', { count: 5 });
         b.types.kills.set('goblin', { count: 3 });
 
@@ -387,6 +415,25 @@ describe('UserDataTracker', () => {
         expect(c.types.layout.get('bundle', deviceScope('c'))).toBe('phone');
 
         expect(await c.tracker.applyDeviceValues(['unknown'])).toBe(false);
+    });
+
+    it('keeps syncing the other types when one fails', async () => {
+        const a = makeDevice('a', 1_000);
+        const b = makeDevice('b', 1_000);
+        const errors: string[] = [];
+        (b.tracker as unknown as { options: { onError: unknown } }).options.onError =
+            (type: string, stage: string) => errors.push(`${stage}:${type}`);
+        a.types.aliases.set('x', 'look');
+        a.types.rooms.set('12', true);
+        b.types.rooms.read = () => { throw new Error('corrupt'); };
+
+        await expect(sync(a, b)).rejects.toThrow('rooms');
+
+        expect(b.types.aliases.get('x')).toBe('look');
+        expect(errors).toEqual(['apply:rooms']);
+        b.types.aliases.set('y', 'wear');
+        expect((await b.tracker.capture()).map(r => r.key)).toEqual(['y']);
+        expect(errors).toEqual(['apply:rooms', 'capture:rooms']);
     });
 
     it('keeps records in the outbox until they are acknowledged', async () => {

@@ -176,6 +176,8 @@ export default class ImproveCounter extends BaseCounter {
                 }
                 this.pendingLifetime = [];
             }
+            // Written from outside (sync, restore): refresh an open postepy2 window
+            eventBus.emit("postepy2.updated");
         });
 
         window.addEventListener("beforeunload", this.persist);

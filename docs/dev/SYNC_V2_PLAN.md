@@ -424,7 +424,10 @@ As built (differs from the first draft, which imported the v1 document into the 
    to the v1 document into local data. v1 categories where the device still differs from the v1 cloud
    (never uploaded, or in an unresolved conflict) hold real edits: their v2 types record the first capture
    with normal stamps. Everything else seeds with the lowest stamps, so on first contact other devices'
-   versions win and data only this device has is added. The v1 document gets `syncV2Since`.
+   versions win and data only this device has is added. Counters on first contact merge by maximum per
+   item and field, and only the excess becomes this device's own count: the counts were copied between
+   devices by v1, so adding them would double every count (concurrent first starts, before either device
+   uploaded, still add up). The v1 document gets `syncV2Since`.
 2. **Old versions.** Deployed versions before this one have no notice code and keep writing the v1
    document; v2 ignores it. Their data isn't lost: it joins v2 when the tab reloads and migrates. Versions
    with this code running v1 (the fallback flag) show the notice when they see `syncV2Since`

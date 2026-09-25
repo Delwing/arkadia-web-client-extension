@@ -77,6 +77,15 @@ export interface SyncEngineOptions {
     timings?: Partial<SyncEngineTimings>;
     now?: () => number;
     onError?: (error: unknown) => void;
+    /** What was uploaded and applied, for the console. */
+    log?: (message: string) => void;
+}
+
+/** "aliases×2, kills×5": record counts per type. */
+function describe(records: UserRecord[]): string {
+    const counts = new Map<string, number>();
+    for (const r of records) counts.set(r.type, (counts.get(r.type) ?? 0) + 1);
+    return [...counts].map(([type, n]) => `${type}×${n}`).join(', ');
 }
 
 export class SyncEngineV2 {
@@ -91,7 +100,7 @@ export class SyncEngineV2 {
     private watchedByOthers = false;
     private lastLogBytes = 0;
     private received = false;
-    private receiveWaiters: Array<() => void> = [];
+    private receiveWaiters: Array<{ resolve: () => void; reject: (error: unknown) => void }> = [];
     private queue: Promise<unknown> = Promise.resolve();
 
     constructor(private readonly options: SyncEngineOptions) {
@@ -181,9 +190,17 @@ export class SyncEngineV2 {
     private attach(): void {
         if (this.unsubscribeLog || !this.running) return;
         this.unsubscribeLog = this.options.transport.subscribeLog(
-            log => { void this.serial(() => this.receive(log)); },
-            error => this.options.onError?.(error),
+            log => { void this.serial(() => this.receive(log)).catch(error => this.failWaiters(error)); },
+            error => {
+                this.options.onError?.(error);
+                this.failWaiters(error);
+            },
         );
+    }
+
+    /** A redownload waiting for data that can't be applied fails instead of hanging. */
+    private failWaiters(error: unknown): void {
+        this.receiveWaiters.splice(0).forEach(waiter => waiter.reject(error));
     }
 
     private detach(): void {
@@ -204,7 +221,10 @@ export class SyncEngineV2 {
             this.schedule();
         }
 
-        if (locked()) return;
+        if (locked()) {
+            this.failWaiters(new Error('Sync is locked: no passphrase'));
+            return;
+        }
         const key = decryptionKey();
 
         // Batches this device never saw were folded into the base: read it first.
@@ -214,7 +234,9 @@ export class SyncEngineV2 {
             const base = await this.options.transport.readBase();
             usage?.read(1, base?.data.length ?? 0);
             if (base) {
-                await tracker.apply(await decodeRecords(base.data, base.encrypted, key));
+                const records = await decodeRecords(base.data, base.encrypted, key);
+                await tracker.apply(records);
+                this.options.log?.(`Applied the base: ${records.length} records (${describe(records)})`);
                 for (const [device, seq] of Object.entries(base.folded)) {
                     this.cursors[device] = Math.max(this.cursors[device] ?? 0, seq);
                 }
@@ -228,6 +250,8 @@ export class SyncEngineV2 {
             const records: UserRecord[] = [];
             for (const batch of fresh) records.push(...await decodeRecords(batch.data, batch.encrypted, key));
             await tracker.apply(records);
+            const devices = [...new Set(fresh.map(b => b.device))].join(', ');
+            this.options.log?.(`Applied ${records.length} records from ${devices}: ${describe(records)}`);
             for (const batch of fresh) {
                 this.cursors[batch.device] = Math.max(this.cursors[batch.device] ?? 0, batch.toSeq);
             }
@@ -240,7 +264,7 @@ export class SyncEngineV2 {
             this.received = true;
             await this.upload();
         }
-        this.receiveWaiters.splice(0).forEach(resolve => resolve());
+        this.receiveWaiters.splice(0).forEach(waiter => waiter.resolve());
     }
 
     /**
@@ -260,7 +284,7 @@ export class SyncEngineV2 {
      */
     async redownload(): Promise<void> {
         if (!this.running) return;
-        const applied = new Promise<void>(resolve => this.receiveWaiters.push(resolve));
+        const applied = new Promise<void>((resolve, reject) => this.receiveWaiters.push({ resolve, reject }));
         await this.serial(async () => {
             this.cursors = {};
             this.options.cursors.save(this.cursors);
@@ -295,6 +319,7 @@ export class SyncEngineV2 {
             this.lastLogBytes += encoded.data.length;
         }
         await tracker.acknowledge(toSeq);
+        this.options.log?.(`Uploaded ${outbox.length} records: ${describe(outbox)}`);
 
         if (this.lastLogBytes > this.timings.foldLogBytes) await this.fold([]);
     }
