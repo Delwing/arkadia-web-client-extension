@@ -12,6 +12,15 @@ describe('expandFillLine', () => {
         expect(expandFillLine('{ }|{=}', 2)).toBe('  |==');
     });
 
+    it('repeats a multi-character pattern, cut to the exact width', () => {
+        expect(expandFillLine('+{-=}+', 5)).toBe('+-=-=-+');
+        expect(expandFillLine('<{~*~}>', 6)).toBe('<~*~~*~>');
+    });
+
+    it('leaves empty braces alone', () => {
+        expect(expandFillLine('a{}b', 4)).toBe('a{}b');
+    });
+
     it('leaves lines without fill tokens as they are', () => {
         expect(expandFillLine('  ~~~  ', 10)).toBe('  ~~~  ');
     });

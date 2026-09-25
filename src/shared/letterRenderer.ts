@@ -128,7 +128,8 @@ function formatContent(content: string, width: number): string[] {
 
 /**
  * How a letter is framed. Header and footer lines are written as-is, except
- * that `{x}` (any single character in braces) is repeated to the body width,
+ * that `{...}` repeats the text in braces to exactly the body width (cut
+ * mid-pattern when it does not divide evenly),
  * so the frame grows with the line width. Body lines go between the prefix
  * and the suffix.
  */
@@ -141,10 +142,11 @@ export interface LetterLayout {
     raw?: boolean;
 }
 
-const FILL_PATTERN = /\{(.)\}/g;
+const FILL_PATTERN = /\{([^{}]+)\}/g;
 
 export function expandFillLine(line: string, width: number): string {
-    return line.replace(FILL_PATTERN, (_match, char: string) => char.repeat(width));
+    return line.replace(FILL_PATTERN, (_match, pattern: string) =>
+        pattern.repeat(Math.ceil(width / pattern.length)).slice(0, width));
 }
 
 /** Body width left inside the frame for a total line width. */

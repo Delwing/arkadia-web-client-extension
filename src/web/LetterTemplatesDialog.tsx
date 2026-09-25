@@ -123,7 +123,7 @@ const LetterTemplatesDialog: React.FC<LetterTemplatesDialogProps> = ({ lineWidth
                             <Field
                                 label="Naglowek"
                                 htmlFor="letter-template-header"
-                                hint="{x} - znak x powtorzony na szerokosc tresci, np. +--{-}--+"
+                                hint="{...} - tekst w klamrach powtorzony na szerokosc tresci, np. +--{-}--+ albo +{-=}+"
                             >
                                 <TextArea
                                     id="letter-template-header"

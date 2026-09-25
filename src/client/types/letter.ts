@@ -69,7 +69,7 @@ export type LetterTemplateId = LetterTemplate | `${typeof CUSTOM_LETTER_TEMPLATE
 
 /**
  * A letter template made by the user. Header and footer are multi-line text
- * where `{x}` repeats the character x to the body width.
+ * where `{...}` repeats the text in braces to the body width.
  */
 export interface CustomLetterTemplate {
     id: string;
