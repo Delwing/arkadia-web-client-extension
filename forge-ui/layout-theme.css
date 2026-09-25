@@ -5,7 +5,7 @@
    Pages) didn't, and forge panels lost their background/map fill/title layout.
    `@import` inlines it here, ahead of the overrides, matching dev. Must stay the
    first rule in this file (CSS requires @import before other rules) and forge's
-   main.tsx must NOT also JS-import layout.css. */
+   start.tsx must NOT also JS-import layout.css. */
 @import '../src/web/layout/layout.css';
 
 /* ============================================================

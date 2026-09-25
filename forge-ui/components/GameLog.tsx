@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 import eventBus from '@modules/core/eventBus';
+import { getDeviceViewSettings } from '@modules/core/settings';
 import mudClient from '@web/MudClient';
 import { setupOutputContextMenu } from '@web/outputContextMenu';
 import {
@@ -101,7 +102,8 @@ export default function GameLog() {
             splitHandle,
             stickyArea,
             stickyLines: STICKY_LINES,
-            maxElements: 500,
+            // The same line cap as the stock output (Ustawienia → Okna).
+            maxElements: () => getDeviceViewSettings().outputMaxElements,
             buildMessageNode: (message, type, timestamp) => {
                 if (message === undefined || message === null) return null;
 

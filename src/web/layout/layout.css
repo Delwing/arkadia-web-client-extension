@@ -34,7 +34,9 @@ body.layout-manager-enabled #content-area {
    become full-height tracks of the #main-container grid. The central column
    then stacks the content (top dock + main), the input bar and the bottom dock
    between the rails. Only active when the shell opts in (adds
-   .layout-rails-vertical + provides the host divs — currently forge-ui). */
+   .layout-rails-vertical + provides the host divs). The stock skeleton has
+   more rows between the output and the input; stockRails.css reshapes this
+   grid for it. */
 body.layout-manager-enabled.layout-rails-vertical #main-container {
   display: grid;
   grid-template-columns:

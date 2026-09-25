@@ -854,50 +854,10 @@ export class AnsiAwareBuffer {
             const element = document.createElement('span');
             element.textContent = segment.text;
 
-            const styles: string[] = [];
-
-            // Handle inverse first (swaps foreground and background)
-            const fg = state.inverse ? state.background : state.foreground;
-            const bg = state.inverse ? state.foreground : state.background;
-
-            // Foreground color
-            if (fg) {
-                styles.push(`color: ${this.colorToHex(fg)}`);
-            }
-
-            // Background color
-            if (bg) {
-                styles.push(`background-color: ${this.colorToHex(bg)}`);
-            }
-
-            // Font styles
-            if (state.bold) {
-                styles.push("font-weight: bold");
-            }
-
-            if (state.italic) {
-                styles.push("font-style: italic");
-            }
-
-            // Text decorations
-            const decorations: string[] = [];
-            if (state.underline) {
-                decorations.push("underline");
-            }
-            if (state.strikethrough) {
-                decorations.push("line-through");
-            }
-            if (decorations.length > 0) {
-                styles.push(`text-decoration: ${decorations.join(" ")}`);
-            }
+            const {cssText, className} = this.presentState(state);
 
             // Handle hyperlinks
             if (state.hyperlink) {
-                styles.push("cursor: pointer");
-                styles.push("text-decoration: underline");
-                styles.push("text-decoration-style: dotted");
-                styles.push("text-decoration-skip-ink: auto");
-
                 // Mark as clickable to prevent input focus
                 element.dataset.outputClickable = "true";
 
@@ -934,40 +894,93 @@ export class AnsiAwareBuffer {
                 }
             }
 
-            // Apply dim effect CSS custom properties
-            if (state.dim) {
-                styles.push(`--dim-start: ${state.dim.startOpacity}`);
-                styles.push(`--dim-end: ${state.dim.endOpacity}`);
-                styles.push(`--dim-duration: ${state.dim.duration}ms`);
-                styles.push(`--dim-easing: ${state.dim.easing || 'ease-in-out'}`);
+            if (cssText) {
+                element.style.cssText = cssText;
             }
-
-            if (styles.length > 0) {
-                element.style.cssText = styles.join("; ");
-            }
-
-            // Apply blink, dim, and custom CSS classes
-            const classes: string[] = [];
-            if (state.cssClass) {
-                classes.push(state.cssClass);
-            }
-            if (state.slowBlink) {
-                classes.push('ansi-slow-blink');
-            }
-            if (state.rapidBlink) {
-                classes.push('ansi-rapid-blink');
-            }
-            if (state.dim) {
-                classes.push('ansi-dim');
-            }
-            if (classes.length > 0) {
-                element.className = classes.join(' ');
+            if (className) {
+                element.className = className;
             }
 
             fragment.appendChild(element);
         }
 
         return fragment;
+    }
+
+    /**
+     * The inline style and classes a formatted segment renders with — what
+     * {@link toDom} puts on its span. Public so other renderers (a React
+     * output) paint a segment exactly the same way.
+     */
+    presentState(state: FormatStateSnapshot): { cssText: string; className: string } {
+        const styles: string[] = [];
+
+        // Handle inverse first (swaps foreground and background)
+        const fg = state.inverse ? state.background : state.foreground;
+        const bg = state.inverse ? state.foreground : state.background;
+
+        // Foreground color
+        if (fg) {
+            styles.push(`color: ${this.colorToHex(fg)}`);
+        }
+
+        // Background color
+        if (bg) {
+            styles.push(`background-color: ${this.colorToHex(bg)}`);
+        }
+
+        // Font styles
+        if (state.bold) {
+            styles.push("font-weight: bold");
+        }
+
+        if (state.italic) {
+            styles.push("font-style: italic");
+        }
+
+        // Text decorations
+        const decorations: string[] = [];
+        if (state.underline) {
+            decorations.push("underline");
+        }
+        if (state.strikethrough) {
+            decorations.push("line-through");
+        }
+        if (decorations.length > 0) {
+            styles.push(`text-decoration: ${decorations.join(" ")}`);
+        }
+
+        if (state.hyperlink) {
+            styles.push("cursor: pointer");
+            styles.push("text-decoration: underline");
+            styles.push("text-decoration-style: dotted");
+            styles.push("text-decoration-skip-ink: auto");
+        }
+
+        // Apply dim effect CSS custom properties
+        if (state.dim) {
+            styles.push(`--dim-start: ${state.dim.startOpacity}`);
+            styles.push(`--dim-end: ${state.dim.endOpacity}`);
+            styles.push(`--dim-duration: ${state.dim.duration}ms`);
+            styles.push(`--dim-easing: ${state.dim.easing || 'ease-in-out'}`);
+        }
+
+        // Apply blink, dim, and custom CSS classes
+        const classes: string[] = [];
+        if (state.cssClass) {
+            classes.push(state.cssClass);
+        }
+        if (state.slowBlink) {
+            classes.push('ansi-slow-blink');
+        }
+        if (state.rapidBlink) {
+            classes.push('ansi-rapid-blink');
+        }
+        if (state.dim) {
+            classes.push('ansi-dim');
+        }
+
+        return { cssText: styles.join("; "), className: classes.join(' ') };
     }
 
     private escapeHtml(text: string): string {

@@ -5,7 +5,7 @@
    <style> tags, source order) would work, prod would not (same class of bug
    layout-theme.css's header documents for layout.css). `@import` inlines them
    here, ahead of the overrides, matching dev. Must stay the first rules in
-   this file (CSS requires @import before other rules) and forge's main.tsx
+   this file (CSS requires @import before other rules) and forge's start.tsx
    must JS-import only this file, not the three below. */
 @import '../src/ui/web/buttons/desktopButtons.css';
 @import '../src/ui/web/buttons/mobileCommandRadial.css';

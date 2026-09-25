@@ -212,7 +212,8 @@ export interface BuiltInPanelState {
  *   - 'leftRight': left/right rails span the full height, top/bottom (and the
  *     input bar) sit between them in the central column.
  * Only honoured by shells that opt in via setRailSpanSupported(true) and provide
- * #layout-left/right-dock-host elements (currently forge-ui).
+ * #layout-left/right-dock-host elements (both the stock shell and forge-ui; the
+ * player picks per shell — see utils/dockArrangement.ts).
  */
 export type SpanningDocks = 'topBottom' | 'leftRight';
 

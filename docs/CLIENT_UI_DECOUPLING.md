@@ -146,14 +146,14 @@ chrome (buttons, footer, layout, split view, bar order, …) also lives in the
 
 The layout manager (`layoutManagerState`) is one persisted key that *is* shared
 between UIs. A shell whose chrome only works one way — forge is the dock grid,
-so it needs `enabled`, the `objectList` slot and `spanningDocks: 'leftRight'` —
+so it needs `enabled` and the `objectList` slot —
 must not persist that: writing it would flip the stock UI's "Menedzer Okien" on
 just because forge was opened once. Declare it process-locally instead, before
 the first `LayoutProvider` mount:
 
 ```ts
 import { setLayoutOverrides } from '@web/layout/utils/layoutStorage';
-setLayoutOverrides({ enabled: true, enabledPanels: { objectList: true }, spanningDocks: 'leftRight' });
+setLayoutOverrides({ enabled: true, enabledPanels: { objectList: true } });
 ```
 
 `loadLayoutState()` then reports the forced fields as set for this page, while
@@ -165,10 +165,32 @@ panel hide toggles that would be inert (see `GeneralTab.tsx`). Capability flags
 `setDockingSupported()` / `setRailSpanSupported()` work the same way: process-
 local, never persisted.
 
+Which docks span the screen (`spanningDocks`: top/bottom across the width, or
+the side rails down the full height) is the player's choice, kept **per shell**
+so the two shells' different defaults never fight. A shell that provides the
+`#layout-left/right-dock-host` elements calls
+`initDockArrangement(shellId, default)` (`@web/layout/utils/dockArrangement`)
+after its other overrides: it opts into rail span and applies the stored choice
+as one more override. Ustawienia → Okna then offers the switch.
+
+## One page, two shells
+
+The main page (`index.html`) hosts both the stock chrome and the forge HUD.
+`src/web/main.ts` is only a router: it reads the device's choice
+(`@web/shell/uiShell` — a plain localStorage key, or `?ui=forge|stock` for one
+load) and dynamically imports either `stockMain.ts` or
+`shell/forgeShell.ts`. Each shell's global stylesheets ride in its own chunk,
+so only the chosen one ever loads; the page stays hidden until it is in. The
+forge shell takes the stock skeleton out of `index.html` before mounting (the
+two share ids) and then starts exactly what `forge-ui/index.html` starts
+(`startForge` in `forge-ui/start.tsx`). Switching (Ustawienia → Okna, the stock
+menu's "Interfejs Kuźnia", forge's "Klasyczny wygląd") stores the choice and
+reloads.
+
 ## Building a UI
 
 A UI is an HTML entry + a bootstrap module. The minimal recipe (see the React
-`forge-ui/` app — `main.tsx` + `client/bootstrap.ts` — for a full example):
+`forge-ui/` app — `start.tsx` + `client/bootstrap.ts` — for a full example):
 
 ```ts
 import mudClient from '@web/MudClient';        // transport (WebSocket/telnet-proxy)
