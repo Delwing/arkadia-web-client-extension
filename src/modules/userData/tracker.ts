@@ -93,8 +93,13 @@ export class UserDataTracker {
         });
     }
 
-    /** Merge records from other devices and write the results to local data. */
-    apply(records: UserRecord[]): Promise<void> {
+    /**
+     * Merge records from other devices and write the results to local data.
+     * `fromCloud`: the records are the cloud state this device starts from
+     * (after another device replaced the cloud data): on first contact,
+     * counters take the cloud count instead of the higher of the two.
+     */
+    apply(records: UserRecord[], options: { fromCloud?: boolean } = {}): Promise<void> {
         return this.serial(async () => {
             const byType = new Map<string, UserRecord[]>();
             for (const record of records) {
@@ -127,7 +132,7 @@ export class UserDataTracker {
                     const firstContact = (type.rule.kind === 'newest' || type.rule.kind === 'counter')
                         && !(await this.options.store.isSeeded(type.id));
                     if (!firstContact) await this.captureType(type);
-                    await this.applyType(type, typeRecords, firstContact);
+                    await this.applyType(type, typeRecords, firstContact && !options.fromCloud);
                     if (firstContact) await this.captureType(type);
                 } catch (error) {
                     this.reportError(type, 'apply', error);

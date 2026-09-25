@@ -52,6 +52,12 @@ export interface CursorStore {
     save(cursors: Record<string, number>): void;
 }
 
+/** The cloud epoch this device's tracking copy belongs to (see LogDoc.epoch). */
+export interface EpochStore {
+    load(): string | null;
+    save(epoch: string): void;
+}
+
 export interface UsageCounter {
     read(count: number, bytes?: number): void;
     write(count: number, bytes?: number): void;
@@ -73,6 +79,7 @@ export interface SyncEngineOptions {
     locked: () => boolean;
     visibility: VisibilitySource;
     cursors: CursorStore;
+    epoch?: EpochStore;
     usage?: UsageCounter;
     timings?: Partial<SyncEngineTimings>;
     now?: () => number;
@@ -93,6 +100,7 @@ export class SyncEngineV2 {
     private readonly now: () => number;
     private readonly rules: Map<string, UserDataType['rule']>;
     private cursors: Record<string, number>;
+    private epoch: string | null;
     private unsubscribeLog: (() => void) | null = null;
     private cleanups: Array<() => void> = [];
     private timer: ReturnType<typeof setTimeout> | null = null;
@@ -108,6 +116,7 @@ export class SyncEngineV2 {
         this.now = options.now ?? Date.now;
         this.rules = new Map(options.types.map(t => [t.id, t.rule]));
         this.cursors = options.cursors.load();
+        this.epoch = options.epoch?.load() ?? null;
     }
 
     start(): void {
@@ -140,13 +149,22 @@ export class SyncEngineV2 {
      */
     resetCloud(): Promise<void> {
         return this.serial(async () => {
-            await this.options.transport.clear();
+            // Saved first: this device's own listener must not take the new
+            // epoch for another device's reset.
+            const epoch = `${this.options.deviceId}:${this.now()}`;
+            this.saveEpoch(epoch);
+            await this.options.transport.clear(epoch);
             await this.options.tracker.reset();
             this.cursors = {};
             this.options.cursors.save(this.cursors);
             this.lastLogBytes = 0;
             await this.upload();
         });
+    }
+
+    private saveEpoch(epoch: string): void {
+        this.epoch = epoch;
+        this.options.epoch?.save(epoch);
     }
 
     /** Capture local changes and upload them now. */
@@ -227,6 +245,18 @@ export class SyncEngineV2 {
         }
         const key = decryptionKey();
 
+        // Another device deleted the cloud data and uploaded its own: what
+        // this device tracked belongs to the old cloud. Drop it and take the
+        // cloud state, keeping only what exists here alone (the next upload).
+        const reset = !!log.epoch && log.epoch !== this.epoch;
+        if (reset) {
+            await tracker.reset();
+            this.cursors = {};
+            this.saveEpoch(log.epoch!);
+            this.options.log?.('The cloud data was replaced by another device: taking it');
+        }
+        const applyOptions = { fromCloud: reset };
+
         // Batches this device never saw were folded into the base: read it first.
         const behind = Object.entries(log.folded ?? {})
             .some(([device, seq]) => device !== deviceId && seq > (this.cursors[device] ?? 0));
@@ -235,7 +265,7 @@ export class SyncEngineV2 {
             usage?.read(1, base?.data.length ?? 0);
             if (base) {
                 const records = await decodeRecords(base.data, base.encrypted, key);
-                await tracker.apply(records);
+                await tracker.apply(records, applyOptions);
                 this.options.log?.(`Applied the base: ${records.length} records (${describe(records)})`);
                 for (const [device, seq] of Object.entries(base.folded)) {
                     this.cursors[device] = Math.max(this.cursors[device] ?? 0, seq);
@@ -249,7 +279,7 @@ export class SyncEngineV2 {
         if (fresh.length > 0) {
             const records: UserRecord[] = [];
             for (const batch of fresh) records.push(...await decodeRecords(batch.data, batch.encrypted, key));
-            await tracker.apply(records);
+            await tracker.apply(records, applyOptions);
             const devices = [...new Set(fresh.map(b => b.device))].join(', ');
             this.options.log?.(`Applied ${records.length} records from ${devices}: ${describe(records)}`);
             for (const batch of fresh) {
@@ -260,7 +290,7 @@ export class SyncEngineV2 {
 
         // Upload right after the first snapshot: this device merges what the
         // cloud has before its own data goes up, and doesn't wait a full interval.
-        if (!this.received) {
+        if (!this.received || reset) {
             this.received = true;
             await this.upload();
         }

@@ -224,7 +224,7 @@ Jesli chcesz usunac wszystkie swoje dane z chmury:
 3. Kliknij "Usun wszystkie dane"
 4. Potwierdz usuniecie
 
-**Uwaga**: Ta operacja jest nieodwracalna i usuwa z chmury takze dane powiazane z pozostalymi urzadzeniami (uklady interfejsu, przyciski). Lokalne dane na Twoim urzadzeniu nie zostana usuniete - zaraz potem to urzadzenie wysle je ponownie, wiec chmura zaczyna od jego danych. Pozostale urzadzenia dalej maja swoje dane lokalnie.
+**Uwaga**: Ta operacja jest nieodwracalna i usuwa z chmury takze dane powiazane z pozostalymi urzadzeniami (uklady interfejsu, przyciski). Lokalne dane na Twoim urzadzeniu nie zostana usuniete - zaraz potem to urzadzenie wysle je ponownie, wiec chmura zaczyna od jego danych. Pozostale urzadzenia przy najblizszej synchronizacji przejmuja dane z chmury (czyli z tego urzadzenia); dodaja do nich tylko to, czego w chmurze nie ma, np. lokacje odwiedzone tylko na nich.
 
 ---
 

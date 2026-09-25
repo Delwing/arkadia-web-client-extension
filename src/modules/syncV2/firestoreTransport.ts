@@ -27,6 +27,7 @@ function toLog(data: Record<string, unknown> | undefined): LogDoc {
         batches: Array.isArray(data.batches) ? data.batches as SyncBatch[] : [],
         folded: (data.folded as Record<string, number> | undefined) ?? {},
         watching: (data.watching as Record<string, number> | undefined) ?? {},
+        ...(typeof data.epoch === 'string' ? { epoch: data.epoch } : {}),
     };
 }
 
@@ -86,15 +87,15 @@ export class FirestoreTransport implements SyncTransport {
         };
     }
 
-    async clear(): Promise<void> {
-        const { deleteDoc, getDoc } = await import('firebase/firestore');
+    async clear(epoch: string): Promise<void> {
+        const { deleteDoc, getDoc, setDoc } = await import('firebase/firestore');
         const baseRef = await this.ref('base');
         const chunks = (await getDoc(baseRef)).data()?.chunks;
         for (let i = 1; i < (typeof chunks === 'number' ? chunks : 1); i += 1) {
             await deleteDoc(await this.ref(`base__${i}`));
         }
         await deleteDoc(baseRef);
-        await deleteDoc(await this.ref('log'));
+        await setDoc(await this.ref('log'), { batches: [], folded: {}, watching: {}, epoch });
     }
 
     async fold(update: (base: BaseDoc | null, log: LogDoc) => Promise<FoldResult>): Promise<void> {

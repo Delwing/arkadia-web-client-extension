@@ -22,6 +22,12 @@ export interface LogDoc {
     folded: Record<string, number>;
     /** Devices currently visible and listening, with when they said so (ms). */
     watching: Record<string, number>;
+    /**
+     * Set when a device deleted the cloud data and uploaded its own again.
+     * A device seeing a new epoch drops its tracking copy and takes the cloud
+     * state (see SyncEngineV2.receive).
+     */
+    epoch?: string;
 }
 
 export interface BaseDoc {
@@ -48,8 +54,8 @@ export interface SyncTransport {
     readBase(): Promise<BaseDoc | null>;
     /** Atomically replace the base and the log's batches (a transaction; `update` may run more than once). */
     fold(update: (base: BaseDoc | null, log: LogDoc) => Promise<FoldResult>): Promise<void>;
-    /** Delete the log and the base. */
-    clear(): Promise<void>;
+    /** Delete the base and empty the log, which then carries `epoch`. */
+    clear(epoch: string): Promise<void>;
 }
 
 export function emptyLog(): LogDoc {
@@ -112,8 +118,8 @@ export class MemoryTransport implements SyncTransport {
         }
     }
 
-    async clear(): Promise<void> {
-        this.log = emptyLog();
+    async clear(epoch: string): Promise<void> {
+        this.log = { ...emptyLog(), epoch };
         this.base = null;
         this.ops.writes += 2;
         this.emit();

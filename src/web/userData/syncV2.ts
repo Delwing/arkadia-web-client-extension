@@ -22,6 +22,7 @@ export const SYNC_V2_FLAG_KEY = 'arkadia.syncV2';
 const LOCK_NAME = 'arkadia-sync-v2';
 const MIGRATION_RETRY_MS = 60 * 1000;
 const cursorKey = (userId: string) => `arkadia.syncV2.cursors:${userId}`;
+const epochKey = (userId: string) => `arkadia.syncV2.epoch:${userId}`;
 
 export function isSyncV2Enabled(): boolean {
     try {
@@ -120,6 +121,10 @@ export function startSyncV2(userId: string, passphrase: () => string | null): vo
                     }
                 },
                 save: cursors => localStorage.setItem(cursorKey(userId), JSON.stringify(cursors)),
+            },
+            epoch: {
+                load: () => localStorage.getItem(epochKey(userId)),
+                save: epoch => localStorage.setItem(epochKey(userId), epoch),
             },
             usage: createUsageCounter(),
             onError: error => console.error('[SyncV2]', error),

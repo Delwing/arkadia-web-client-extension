@@ -152,6 +152,11 @@ trip routes along. `radial` is one shared (global) value.
   what local data now holds under the source's stamp, not uploaded. The window manager re-saves an
   applied layout in its own form; captured as an edit, that copy would carry a fresh stamp, win over
   the next change on the other device, and bounce between devices that normalize differently.
+- **Deleting the cloud data** ("Usun wszystkie dane") empties the log with a new `epoch` and uploads this
+  device's data again. Its tracking copy starts over, so the upload is a seed (lowest stamps); a device
+  still holding older records would keep them. So a device that sees an epoch it doesn't know drops its
+  tracking copy and cursors and takes the cloud state: newest types take the remote value, counters the
+  cloud count (not the maximum); what exists only on that device goes up again.
 - The device registry (Devices page) is `users/{uid}/syncV2/devices`, not the v1 document, so it keeps
   working once v1 writes are locked. Each device registers once per session with a merge write (no read);
   listing devices is one read of that small document. Devices of older versions, which listed themselves
