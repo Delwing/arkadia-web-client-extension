@@ -1,27 +1,42 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { PencilRuler } from 'lucide-react';
 import eventBus from '@modules/core/eventBus';
 import { useDraggablePopup } from './hooks/useDraggablePopup';
 import {
+    CUSTOM_LETTER_TEMPLATE_PREFIX,
     LETTER_TEMPLATE_CHOICES,
     LETTER_TEMPLATE_DEFINITIONS,
-    LETTER_TEMPLATE_PREVIEW_LABELS,
-    isLetterTemplate,
-    type LetterTemplate,
+    type CustomLetterTemplate,
+    type LetterTemplateId,
 } from "@client/types/letter";
-import { renderLetter } from "@shared/letterRenderer";
+import { MAX_LINE_WIDTH, MIN_LINE_WIDTH, clampLineWidth, renderLetterLayout } from "@shared/letterRenderer";
+import {
+    listLetterTemplateChoices,
+    loadCustomLetterTemplates,
+    onCustomLetterTemplatesChange,
+    resolveLetterTemplate,
+} from "@modules/core/letterTemplates";
+import { characterStorage } from "@modules/core/storage";
+import { defaultSettings } from "@modules/core/defaultSettings";
+import LetterTemplatesDialog from "./LetterTemplatesDialog";
 
 const TEMPLATE_STORAGE_KEY = "letter-composer-template";
-const DEFAULT_LINE_WIDTH = 60;
 const WIDE_SCREEN_THRESHOLD = 900;
 
-function isSelectableTemplate(value: unknown): value is LetterTemplate {
-    return isLetterTemplate(value) && Boolean(LETTER_TEMPLATE_DEFINITIONS[value]?.supportsJustification);
+function isSelectableTemplate(value: unknown, customTemplates: readonly CustomLetterTemplate[]): value is LetterTemplateId {
+    const resolved = resolveLetterTemplate(value, customTemplates);
+    if (!resolved) {
+        return false;
+    }
+    const builtin = LETTER_TEMPLATE_DEFINITIONS[resolved.value as keyof typeof LETTER_TEMPLATE_DEFINITIONS];
+    return !builtin || builtin.supportsJustification;
 }
 
-function loadTemplateSelection(): LetterTemplate {
+function loadTemplateSelection(customTemplates: readonly CustomLetterTemplate[] = loadCustomLetterTemplates()): LetterTemplateId {
     try {
         const stored = localStorage.getItem(TEMPLATE_STORAGE_KEY);
-        if (isSelectableTemplate(stored)) {
+        if (isSelectableTemplate(stored, customTemplates)) {
             return stored;
         }
     } catch {
@@ -30,7 +45,13 @@ function loadTemplateSelection(): LetterTemplate {
     return LETTER_TEMPLATE_CHOICES[0]?.value ?? "plain";
 }
 
-function saveTemplateSelection(value: LetterTemplate) {
+/** The default line width from settings; each letter can override it. */
+function loadLineWidth(): number {
+    const width = characterStorage.get("settings")?.letterLineWidth;
+    return clampLineWidth(typeof width === "number" && Number.isFinite(width) ? width : defaultSettings.letterLineWidth);
+}
+
+function saveTemplateSelection(value: LetterTemplateId) {
     try {
         localStorage.setItem(TEMPLATE_STORAGE_KEY, value);
     } catch {
@@ -41,7 +62,14 @@ function saveTemplateSelection(value: LetterTemplate) {
 const LetterComposer: React.FC = () => {
     const [isOpen, setIsOpen] = useState(false);
     const [isPinned, setIsPinned] = useState(false);
-    const [templateSelection, setTemplateSelection] = useState<LetterTemplate>(loadTemplateSelection);
+    const [customTemplates, setCustomTemplates] = useState<CustomLetterTemplate[]>(loadCustomLetterTemplates);
+    const [templateSelection, setTemplateSelection] = useState<LetterTemplateId>(() => loadTemplateSelection());
+    const [lineWidthInput, setLineWidthInput] = useState(() => String(loadLineWidth()));
+    const lineWidth = useMemo(() => {
+        const parsed = parseInt(lineWidthInput, 10);
+        return Number.isFinite(parsed) ? clampLineWidth(parsed) : loadLineWidth();
+    }, [lineWidthInput]);
+    const [templatesDialogOpen, setTemplatesDialogOpen] = useState(false);
     const [contentText, setContentText] = useState("");
     const [isWideScreen, setIsWideScreen] = useState(false);
 
@@ -63,7 +91,8 @@ const LetterComposer: React.FC = () => {
 
     const { panelRef, position, size, handlePointerDown, handleResizePointerDown } = useDraggablePopup({
         isOpen,
-        isPinned,
+        // The templates dialog lives outside the panel: clicks and Escape there must not close the composer
+        isPinned: isPinned || templatesDialogOpen,
         onClose: close,
         minWidth: 400,
         minHeight: 300,
@@ -94,7 +123,7 @@ const LetterComposer: React.FC = () => {
     }, [isOpen, size, panelRef]);
 
     const getPayload = useCallback(() => {
-        const template = templateSelectRef.current && isSelectableTemplate(templateSelectRef.current.value)
+        const template = templateSelectRef.current && isSelectableTemplate(templateSelectRef.current.value, customTemplates)
             ? templateSelectRef.current.value
             : templateSelection;
         setTemplateSelection(template);
@@ -106,8 +135,9 @@ const LetterComposer: React.FC = () => {
             subject: subjectInputRef.current?.value ?? "",
             content: contentInputRef.current?.value ?? "",
             template,
+            lineWidth,
         };
-    }, [templateSelection]);
+    }, [templateSelection, customTemplates, lineWidth]);
 
     const resetForm = useCallback(() => {
         if (toInputRef.current) toInputRef.current.value = "";
@@ -132,13 +162,22 @@ const LetterComposer: React.FC = () => {
         eventBus.emit("letterComposer.preview", payload);
     }, [getPayload]);
 
-    const handleTemplateChange = useCallback(() => {
-        if (templateSelectRef.current && isSelectableTemplate(templateSelectRef.current.value)) {
-            const newTemplate = templateSelectRef.current.value;
-            setTemplateSelection(newTemplate);
-            saveTemplateSelection(newTemplate);
-        }
+    const selectTemplate = useCallback((value: LetterTemplateId) => {
+        setTemplateSelection(value);
+        saveTemplateSelection(value);
     }, []);
+
+    const handleTemplateChange = useCallback(() => {
+        if (templateSelectRef.current && isSelectableTemplate(templateSelectRef.current.value, customTemplates)) {
+            selectTemplate(templateSelectRef.current.value);
+        }
+    }, [customTemplates, selectTemplate]);
+
+    // Keep the template list in step with edits (also from other tabs and sync)
+    useEffect(() => onCustomLetterTemplatesChange((templates) => {
+        setCustomTemplates(templates);
+        setTemplateSelection((current) => (isSelectableTemplate(current, templates) ? current : loadTemplateSelection(templates)));
+    }), []);
 
     const handleContentChange = useCallback((ev: React.ChangeEvent<HTMLTextAreaElement>) => {
         setContentText(ev.target.value);
@@ -158,8 +197,11 @@ const LetterComposer: React.FC = () => {
     // Listen for open event
     useEffect(() => {
         const handleOpen = (payload?: { to?: string; cc?: string; udw?: string; subject?: string; content?: string }) => {
-            const savedTemplate = loadTemplateSelection();
-            setTemplateSelection(savedTemplate);
+            const templates = loadCustomLetterTemplates();
+            setCustomTemplates(templates);
+            setTemplateSelection(loadTemplateSelection(templates));
+            setLineWidthInput(String(loadLineWidth()));
+            setTemplatesDialogOpen(false);
             resetForm();
             setIsOpen(true);
             requestAnimationFrame(() => {
@@ -191,21 +233,27 @@ const LetterComposer: React.FC = () => {
 
     // Apply template selection when it changes
     useEffect(() => {
-        if (templateSelectRef.current && isSelectableTemplate(templateSelection)) {
+        if (templateSelectRef.current && isSelectableTemplate(templateSelection, customTemplates)) {
             templateSelectRef.current.value = templateSelection;
         }
-    }, [templateSelection, isOpen]);
+    }, [templateSelection, isOpen, customTemplates]);
+
+    const resolvedTemplate = useMemo(
+        () => resolveLetterTemplate(templateSelection, customTemplates) ?? resolveLetterTemplate("plain")!,
+        [templateSelection, customTemplates],
+    );
+    const templateChoices = useMemo(() => listLetterTemplateChoices(customTemplates), [customTemplates]);
 
     // Compute rendered preview
     const previewLines = useMemo(() => {
         if (!isWideScreen || !contentText.trim()) {
             return null;
         }
-        const result = renderLetter(contentText, templateSelection, DEFAULT_LINE_WIDTH);
+        const result = renderLetterLayout(contentText, resolvedTemplate.layout, lineWidth);
         return result.lines;
-    }, [contentText, templateSelection, isWideScreen]);
+    }, [contentText, resolvedTemplate, lineWidth, isWideScreen]);
 
-    const templateLabel = LETTER_TEMPLATE_PREVIEW_LABELS[templateSelection] ?? templateSelection;
+    const templateLabel = resolvedTemplate.label;
 
     if (!isOpen) {
         return null;
@@ -300,33 +348,69 @@ const LetterComposer: React.FC = () => {
                             />
                         </div>
                         <div className="letter-composer-actions">
-                            <div className="letter-template-group">
-                                <label htmlFor="letter-template" className="popup-field__label letter-template-label">Szablon:</label>
-                                <select
-                                    ref={templateSelectRef}
-                                    id="letter-template"
-                                    name="letter-template"
-                                    className="popup-input popup-input--control letter-template-select"
-                                    defaultValue={templateSelection}
-                                    onChange={handleTemplateChange}
-                                >
-                                    {LETTER_TEMPLATE_CHOICES.map((choice) => (
-                                        <option key={choice.value} value={choice.value}>
-                                            {choice.displayLabel}
-                                        </option>
-                                    ))}
-                                </select>
+                            <div className="letter-composer-options">
+                                <div className="letter-template-group">
+                                    <label htmlFor="letter-template" className="popup-field__label letter-template-label">Szablon:</label>
+                                    <select
+                                        ref={templateSelectRef}
+                                        id="letter-template"
+                                        name="letter-template"
+                                        className="popup-input popup-input--control letter-template-select"
+                                        defaultValue={templateSelection}
+                                        onChange={handleTemplateChange}
+                                    >
+                                        {templateChoices.filter((choice) => !choice.custom).map((choice) => (
+                                            <option key={choice.value} value={choice.value}>
+                                                {choice.label}
+                                            </option>
+                                        ))}
+                                        {customTemplates.length > 0 && (
+                                            <optgroup label="Wlasne">
+                                                {templateChoices.filter((choice) => choice.custom).map((choice) => (
+                                                    <option key={choice.value} value={choice.value}>
+                                                        {choice.label}
+                                                    </option>
+                                                ))}
+                                            </optgroup>
+                                        )}
+                                    </select>
+                                    <button
+                                        type="button"
+                                        className="popup-btn popup-btn--control popup-btn--icon letter-templates-open"
+                                        onClick={() => setTemplatesDialogOpen(true)}
+                                        title="Wlasne szablony listow"
+                                    >
+                                        <PencilRuler size={16} strokeWidth={1.75} />
+                                    </button>
+                                </div>
+                                <div className="letter-template-group letter-width-group">
+                                    <label htmlFor="letter-width" className="popup-field__label letter-template-label">Szerokosc:</label>
+                                    <input
+                                        id="letter-width"
+                                        name="letter-width"
+                                        type="number"
+                                        min={MIN_LINE_WIDTH}
+                                        max={MAX_LINE_WIDTH}
+                                        className="popup-input popup-input--control letter-width-input"
+                                        value={lineWidthInput}
+                                        onChange={(ev) => setLineWidthInput(ev.target.value)}
+                                        onBlur={() => setLineWidthInput(String(lineWidth))}
+                                        title="Szerokosc linii tego listu (domyslna w ustawieniach)"
+                                    />
+                                </div>
                             </div>
-                            <button type="button" className="popup-btn popup-btn--control popup-btn--sm" onClick={handlePreview}>
-                                Podglad
-                            </button>
-                            <button type="submit" className="popup-btn popup-btn--control popup-btn--sm popup-btn--solid">Wyslij</button>
+                            <div className="letter-composer-buttons">
+                                <button type="button" className="popup-btn popup-btn--control popup-btn--sm" onClick={handlePreview}>
+                                    Podglad
+                                </button>
+                                <button type="submit" className="popup-btn popup-btn--control popup-btn--sm popup-btn--solid">Wyslij</button>
+                            </div>
                         </div>
                     </form>
                     {isWideScreen && (
                         <div className="letter-composer-preview">
                             <div className="letter-composer-preview-header">
-                                Podglad ({templateLabel})
+                                Podglad ({templateLabel}, szerokosc {lineWidth})
                             </div>
                             <div className="letter-composer-preview-content">
                                 {previewLines ? (
@@ -342,6 +426,20 @@ const LetterComposer: React.FC = () => {
                         </div>
                     )}
                 </div>
+                {templatesDialogOpen && createPortal(
+                    // Portaled: the composer's transform would pin the fixed backdrop to the panel
+                    <div className="letter-templates-layer">
+                        <LetterTemplatesDialog
+                            lineWidth={lineWidth}
+                            initialId={templateSelection.startsWith(CUSTOM_LETTER_TEMPLATE_PREFIX)
+                                ? templateSelection.slice(CUSTOM_LETTER_TEMPLATE_PREFIX.length)
+                                : undefined}
+                            onAdded={selectTemplate}
+                            onClose={() => setTemplatesDialogOpen(false)}
+                        />
+                    </div>,
+                    document.body,
+                )}
                 <div
                     className="resize-handle letter-composer-resize-handle"
                     onPointerDown={handleResizePointerDown}

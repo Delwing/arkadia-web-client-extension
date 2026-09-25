@@ -254,7 +254,7 @@ export function OtherOptionsSection({settings, onChangeSetting}: GeneralSettings
                         onChange={e => onChangeSetting(s => s.carriageTeamTickets = e.target.checked)}
                     />
                 </div>
-                <Field label="Szerokosc linii listu" htmlFor="letterLineWidth">
+                <Field label="Domyslna szerokosc linii listu" htmlFor="letterLineWidth" hint="Mozna ja zmienic dla pojedynczego listu w edytorze (/list)">
                     <Input
                         type="number"
                         min={LETTER_LINE_WIDTH_MIN}

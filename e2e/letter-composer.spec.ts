@@ -1,6 +1,6 @@
 import {expect, test} from './support/fixtures';
 import type {Page} from '@playwright/test';
-import {ensureGameSocket, getLastOutgoingCommand, submitCommand, waitForCommandInput} from './support/mocks';
+import {ensureGameSocket, getLastOutgoingCommand, submitCommand, waitForCommandInput, waitForOutputContaining} from './support/mocks';
 
 async function openLetterComposer(page: Page) {
     // Use the /list alias to open the letter composer
@@ -226,5 +226,66 @@ test.describe('Letter composer', () => {
         await expect(composer.locator('#letter-dw'), 'should reset "DW" field').toHaveValue('');
         await expect(composer.locator('#letter-subject'), 'should reset "Subject" field').toHaveValue('');
         await expect(composer.locator('#letter-content'), 'should reset "Content" field').toHaveValue('');
+    });
+
+    test('adds a custom template and previews a letter with it', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+
+        const composer = await openLetterComposer(page);
+        await composer.locator('.letter-templates-open').click();
+
+        const dialog = page.locator('.letter-templates-dialog');
+        await expect(dialog, 'should open the templates dialog').toBeVisible();
+
+        await dialog.locator('#letter-template-base').selectOption('plain');
+        await dialog.locator('button:has-text("Dodaj szablon")').click();
+        await dialog.locator('#letter-template-name').fill('Gwiazdki');
+        await dialog.locator('#letter-template-header').fill('*{*}*');
+        await dialog.locator('#letter-template-footer').fill('*{*}*');
+        await dialog.locator('#letter-template-prefix').fill('* ');
+        await dialog.locator('#letter-template-suffix').fill(' *');
+        await expect(dialog.locator('.letter-templates__preview-text'), 'should preview the template').toContainText('* Drogi przyjacielu,');
+
+        await dialog.locator('.popup-dialog__footer button:has-text("Zamknij")').click();
+        await expect(dialog, 'should close the templates dialog').not.toBeVisible();
+        await expect(composer, 'composer should stay open').toBeVisible();
+
+        const templateSelect = composer.locator('#letter-template');
+        await expect(templateSelect.locator('option', {hasText: 'Gwiazdki'}), 'should list the new template').toHaveCount(1);
+        await expect(templateSelect, 'should select the new template').toHaveValue(/^custom:/);
+
+        await composer.locator('#letter-content').fill('Tresc w gwiazdkach');
+        await composer.locator('button:has-text("Podglad")').click();
+        await waitForOutputContaining(page, 'szablon Gwiazdki');
+        await waitForOutputContaining(page, '* Tresc w gwiazdkach');
+
+        // Survives a reload
+        await page.reload();
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+        const reopened = await openLetterComposer(page);
+        await expect(reopened.locator('#letter-template'), 'should keep the custom template selected').toHaveValue(/^custom:/);
+    });
+
+    test('overrides the line width for a single letter', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+
+        const composer = await openLetterComposer(page);
+        const widthInput = composer.locator('#letter-width');
+        await expect(widthInput, 'should start from the default width in settings').toHaveValue('72');
+
+        await widthInput.fill('40');
+        await composer.locator('#letter-content').fill('Waski list');
+        await composer.locator('button:has-text("Podglad")').click();
+        await waitForOutputContaining(page, 'Podglad listu (szerokosc 40');
+
+        // The override lasts for one letter only
+        await composer.locator('.panel-button--close').click();
+        const reopened = await openLetterComposer(page);
+        await expect(reopened.locator('#letter-width'), 'should reset to the default width').toHaveValue('72');
     });
 });

@@ -37,6 +37,7 @@ export function createUserDataTypes(
         listType('aliases', 'aliases'),
         listType('automationGroups', 'automationGroups'),
         listType('automationScripts', 'automationScripts'),
+        listType('letterTemplates', 'letter_templates'),
         objectEntriesType('shortcuts', 'shortcuts', true),
         keymapsType,
         objectEntriesType('shellSettings', 'shellSettings', false),

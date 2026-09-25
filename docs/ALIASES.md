@@ -52,6 +52,8 @@ Zakresy dzialaja rosnaco (`1-7`) i malejaco (`7-1`). Maksymalnie 50 iteracji.
 | `/list` | Otworz edytor pisania listow w kliencie |
 | `/poczta` | Otworz okno poczty z lista listow |
 
+> **Wlasne szablony listow:** w edytorze listow przycisk z ikona obok wyboru szablonu ("Wlasne szablony listow") otwiera edytor wlasnych ramek. Nowy szablon powstaje jako kopia wybranego (wbudowanego lub wlasnego) i sklada sie z naglowka, poczatku i konca kazdej linii tresci oraz stopki. W naglowku i stopce tekst w klamrach jest powtarzany na szerokosc tresci (i przycinany, jesli sie nie miesci w calosci), np. ` +--{-}--+ ` albo ` +{-=}+ `, dzieki czemu ramka dopasowuje sie do szerokosci linii z ustawien. Wlasne szablony sa wspolne dla wszystkich postaci i synchronizuja sie miedzy urzadzeniami.
+
 > **Wskazowka:** W oknie czatu przycisk "Druzyna" filtruje wiadomosci od czlonkow druzyny. Przewiniecie historii w gore dzieli okno na dwie czesci — na dole zostaje przyklejony podglad najnowszych wiadomosci, tak samo jak w oknie glownym i w oknie walki.
 
 ## Czas
