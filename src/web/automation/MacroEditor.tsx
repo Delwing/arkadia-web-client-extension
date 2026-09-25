@@ -10,6 +10,7 @@ import type { DimEasing } from '@client/ansi/FormatState';
 import type { UserScript } from '@client/scripts/userScripts';
 import { getAutomationGroups } from '@modules/core/automation';
 import { globalStorage } from '@modules/core/storage';
+import { ColorSlot } from './ColorSlot';
 
 function storedScripts(): UserScript[] {
     const value = globalStorage.get('automationScripts');
@@ -292,20 +293,6 @@ export function MacroEditor({
                         </div>
                     </>
                 )}
-                {macro.type === 'color' && (
-                    <div className="trigger-action__pair">
-                        <Check
-                            label="Tekst"
-                            checked={macro.color !== undefined}
-                            onChange={e => onChange({ ...macro, color: e.target.checked ? '#ffff00' : undefined })}
-                        />
-                        <Check
-                            label="Tlo"
-                            checked={macro.background !== undefined}
-                            onChange={e => onChange({ ...macro, background: e.target.checked ? '#800000' : undefined })}
-                        />
-                    </div>
-                )}
                 {macro.type === 'echo' && (
                     <>
                         <Input
@@ -317,11 +304,6 @@ export function MacroEditor({
                         <PlaceholderChips
                             placeholders={placeholders}
                             onInsert={(token) => onChange({ ...macro, message: (macro.message ?? '') + token })}
-                        />
-                        <Check
-                            label="Wlasny kolor"
-                            checked={!!macro.color}
-                            onChange={e => onChange({ ...macro, color: e.target.checked ? '#ffff00' : undefined })}
                         />
                         <div className="popup-field__hint">
                             Wypisywane w oknie gry jako osobna linia, widoczna tylko dla ciebie.
@@ -494,23 +476,23 @@ export function MacroEditor({
                     ));
                 })()}
             </div>
-            {(macro.type === 'color' || macro.type === 'echo') && macro.color !== undefined && (
-                <input
-                    type="color"
-                    className="trigger-action__color"
-                    value={macro.color || '#ffffff'}
-                    onChange={e => onChange({ ...macro, color: e.target.value })}
-                    title="Kolor tekstu"
-                />
-            )}
-            {macro.type === 'color' && macro.background !== undefined && (
-                <input
-                    type="color"
-                    className="trigger-action__color"
-                    value={macro.background || '#000000'}
-                    onChange={e => onChange({ ...macro, background: e.target.value })}
-                    title="Kolor tla"
-                />
+            {(macro.type === 'color' || macro.type === 'echo') && (
+                <div className="trigger-action__colors">
+                    <ColorSlot
+                        label={macro.type === 'color' ? 'Tekst' : 'Kolor'}
+                        value={macro.color || undefined}
+                        fallback="#ffff00"
+                        onChange={color => onChange({ ...macro, color })}
+                    />
+                    {macro.type === 'color' && (
+                        <ColorSlot
+                            label="Tlo"
+                            value={macro.background || undefined}
+                            fallback="#800000"
+                            onChange={background => onChange({ ...macro, background })}
+                        />
+                    )}
+                </div>
             )}
             {macro.type === 'replace' && (
                 <Input
