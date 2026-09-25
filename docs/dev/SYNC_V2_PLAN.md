@@ -416,16 +416,39 @@ As built (differs from the first draft, which imported the v1 document into the 
    with this code running v1 (the fallback flag) show the notice when they see `syncV2Since`
    (a long-lived toast; toasts have no buttons).
 3. **After one month** the security rules deny writes to the v1 document; v1 clients with this code show
-   the "no longer syncs" notice on `permission-denied`. Rules for v2 and the lock:
+   the "no longer syncs" notice on `permission-denied`. Full rules (deploy before v2 goes live; they only
+   add access to the user's own data). `syncGroups` is used by the Devices page and was missing from the
+   rules before v2:
 
    ```
-   match /users/{uid}/syncV2/{doc} {
-     allow read, write: if request.auth != null && request.auth.uid == uid;
-   }
-   // after the transition:
-   match /users/{uid}/sync/{doc} {
-     allow read: if request.auth != null && request.auth.uid == uid;
-     allow write: if false;
+   rules_version = '2';
+
+   service cloud.firestore {
+     match /databases/{database}/documents {
+       match /users/{userId} {
+         allow read, write: if request.auth != null && request.auth.uid == userId;
+
+         // Sync v1: users/{uid}/sync/syncData.
+         // After the transition: allow read as below, and `allow write: if false;`
+         match /sync/{docId} {
+           allow read, write: if request.auth != null && request.auth.uid == userId;
+         }
+
+         // Sync v2: log, base, base__N
+         match /syncV2/{docId} {
+           allow read, write: if request.auth != null && request.auth.uid == userId;
+         }
+
+         // Sync groups (Devices page)
+         match /syncGroups/{groupId} {
+           allow read, write: if request.auth != null && request.auth.uid == userId;
+         }
+       }
+
+       match /{document=**} {
+         allow read, write: if false;
+       }
+     }
    }
    ```
 4. Then stage 5b removes v1.
