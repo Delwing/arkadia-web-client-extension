@@ -862,7 +862,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (active && active !== document.body && active.closest?.(interactiveSelector)) {
                         return;
                     }
-                    messageInput.focus();
+                    // Keep the scrollback where it is: a link clicked in the
+                    // history view must not close the split view.
+                    messageInput.setAttribute('data-keep-scroll', '');
+                    messageInput.focus({preventScroll: true});
+                    messageInput.removeAttribute('data-keep-scroll');
                 }, 0);
                 return;
             }
