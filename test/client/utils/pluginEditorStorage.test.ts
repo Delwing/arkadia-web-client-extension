@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest'
-import { createEditorPluginFromSource } from '@client/utils/pluginEditorStorage'
+import {
+  createEditorPluginFromSource,
+  getAllEditorPlugins,
+  getEditorPlugin,
+  storeEditorPlugin,
+} from '@client/utils/pluginEditorStorage'
 
 describe('createEditorPluginFromSource', () => {
   const source = `export async function init() { return {name: 'X'} }`
@@ -36,5 +41,20 @@ describe('createEditorPluginFromSource', () => {
     const plugin = createEditorPluginFromSource('stored_abc_1', 'Wklejony', source, metadata)
 
     expect(plugin.metadata).toEqual(metadata)
+  })
+})
+
+describe('first save on a fresh profile', () => {
+  const settle = <T>(promise: Promise<T>) =>
+    Promise.race([promise, new Promise<'stuck'>(resolve => setTimeout(() => resolve('stuck'), 1000))])
+
+  it('is not blocked by the connection that listed the (still empty) database', async () => {
+    // The editor lists plugins on start. With no store yet, the first save has
+    // to upgrade the database - which waits for every open connection to close.
+    expect(await getAllEditorPlugins()).toEqual([])
+
+    const plugin = createEditorPluginFromSource('editor_first_1', 'First', 'export async function init() {}')
+    expect(await settle(storeEditorPlugin(plugin))).not.toBe('stuck')
+    expect((await getEditorPlugin('editor_first_1'))?.name).toBe('First')
   })
 })

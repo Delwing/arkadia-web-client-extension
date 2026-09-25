@@ -87,7 +87,11 @@ export async function getAllEditorPluginIds(): Promise<string[]> {
     request.onsuccess = () => {
       const db = request.result
 
+      // Close every connection opened here: an open one blocks the version
+      // upgrade the first save needs to create the store, and that save
+      // then waits forever.
       if (!db.objectStoreNames.contains(storeName)) {
+        db.close()
         resolve([])
         return
       }
@@ -103,6 +107,9 @@ export async function getAllEditorPluginIds(): Promise<string[]> {
       getAllRequest.onerror = () => {
         reject(new Error('Failed to get all editor plugin IDs'))
       }
+
+      transaction.oncomplete = () => db.close()
+      transaction.onabort = () => db.close()
     }
 
     request.onerror = () => {
@@ -125,6 +132,7 @@ export async function getAllEditorPlugins(): Promise<EditorPluginData[]> {
       const db = request.result
 
       if (!db.objectStoreNames.contains(storeName)) {
+        db.close()
         resolve([])
         return
       }
@@ -141,6 +149,9 @@ export async function getAllEditorPlugins(): Promise<EditorPluginData[]> {
       getAllRequest.onerror = () => {
         reject(new Error('Failed to get all editor plugins'))
       }
+
+      transaction.oncomplete = () => db.close()
+      transaction.onabort = () => db.close()
     }
 
     request.onerror = () => {
