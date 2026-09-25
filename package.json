@@ -18,7 +18,8 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
-    "serve:examples": "node examples/server.cjs"
+    "serve:examples": "node examples/server.cjs",
+    "bench:output": "playwright test -c playwright.bench.config.ts e2e/output-flood.bench.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
