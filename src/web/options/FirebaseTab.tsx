@@ -35,7 +35,23 @@ import {
 import eventBus from "@modules/core/eventBus";
 import { importCategories } from "./exportUtils";
 import ConflictResolutionModal from "./ConflictResolutionModal";
-import { flushSyncV2, isSyncV2Enabled, isSyncV2Running, redownloadSyncV2, resetSyncV2Cloud, startSyncV2 } from "@web/userData/syncV2";
+import {
+    flushSyncV2,
+    isSyncV2Enabled,
+    nudgeSyncV2,
+    redownloadSyncV2,
+    resetSyncV2Cloud,
+    startSyncV2,
+    waitForSyncV2,
+} from "@web/userData/syncV2";
+
+/** Why sync v2 isn't running in this tab, for the send / download buttons. */
+function syncV2NotRunningMessage(): string {
+    const settings = loadFirebaseSettings();
+    if (!settings.autoSyncEnabled) return 'Wlacz automatyczna synchronizacje, aby wysylac i pobierac dane.';
+    if (settings.encryptionEnabled && !syncEngine.getPassphrase()) return 'Podaj haslo szyfrowania.';
+    return 'Synchronizacja dziala w innej karcie tej przegladarki albo nie mogla sie uruchomic (sprawdz polaczenie).';
+}
 
 const GoogleLogo = ({ size = 18 }: { size?: number }) => (
     <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 48 48">
@@ -271,14 +287,18 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
     // Forward the passphrase to the sync engine (which feeds the realtime listener)
     useEffect(() => {
         syncEngine.setPassphrase(passphrase || null);
-    }, [passphrase]);
+        // A passphrase entered may be what sync v2 was waiting for.
+        if (syncV2 && passphrase) nudgeSyncV2();
+    }, [passphrase, syncV2]);
 
     // Save sync settings when they change and let the engine re-evaluate them.
     // The engine itself watches storage and uploads — see @modules/firebase/syncEngine.
     useEffect(() => {
         saveFirebaseSettings({ encryptionEnabled, autoSyncEnabled });
         syncEngine.settingsChanged();
-    }, [encryptionEnabled, autoSyncEnabled]);
+        // Auto-sync just switched on (or encryption changed): start v2 now.
+        if (syncV2) nudgeSyncV2();
+    }, [encryptionEnabled, autoSyncEnabled, syncV2]);
 
     const handleEmailAuth = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -376,9 +396,9 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
 
         try {
             if (syncV2) {
-                // Sync v2 runs in one tab per browser.
-                if (!isSyncV2Running()) {
-                    setSyncError('Synchronizacja dziala w innej karcie albo nie jest jeszcze gotowa.');
+                // Sync v2 runs in one tab per browser, and may still be starting.
+                if (!(await waitForSyncV2(10_000))) {
+                    setSyncError(syncV2NotRunningMessage());
                 } else {
                     await flushSyncV2();
                     setSyncStatus('Zmiany zostaly wyslane.');
@@ -414,9 +434,9 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
 
         try {
             if (syncV2) {
-                // Sync v2 runs in one tab per browser.
-                if (!isSyncV2Running()) {
-                    setSyncError('Synchronizacja dziala w innej karcie albo nie jest jeszcze gotowa.');
+                // Sync v2 runs in one tab per browser, and may still be starting.
+                if (!(await waitForSyncV2(10_000))) {
+                    setSyncError(syncV2NotRunningMessage());
                 } else {
                     await redownloadSyncV2();
                     setSyncStatus('Dane z chmury zostaly pobrane.');

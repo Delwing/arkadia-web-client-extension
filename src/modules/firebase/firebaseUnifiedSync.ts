@@ -919,10 +919,12 @@ export async function registerDevice(): Promise<{ success: boolean; error?: stri
 /**
  * Get all registered devices (from cache if available)
  */
-export async function getRegisteredDevices(): Promise<{
+export async function getRegisteredDevices(options: { fresh?: boolean } = {}): Promise<{
     devices: DeviceInfo[];
     error?: string;
 }> {
+    // Sync v2 doesn't run the v1 listener that kept the cache current.
+    if (options.fresh) invalidateCache();
     const { data: syncData, error } = await getFullSyncData();
     if (error || !syncData) {
         return { devices: [], error };

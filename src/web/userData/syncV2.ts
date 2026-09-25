@@ -48,6 +48,8 @@ let releaseLock: (() => void) | null = null;
 let retryTimer: ReturnType<typeof setTimeout> | null = null;
 let startToken = 0;
 let startedFor: string | null = null;
+let pendingRun: (() => void) | null = null;
+let readyWaiters: Array<() => void> = [];
 
 /**
  * Start for the signed-in user. `passphrase` returns the encryption
@@ -97,6 +99,7 @@ export function startSyncV2(userId: string, passphrase: () => string | null): vo
         });
         engine.start();
         console.log('[SyncV2] Started');
+        readyWaiters.splice(0).forEach(resolve => resolve());
         // List this device for the others (Devices page), whether or not that
         // page was ever opened here.
         void registerDevice().catch(error => console.warn('[SyncV2] Could not register the device:', error));
@@ -105,7 +108,12 @@ export function startSyncV2(userId: string, passphrase: () => string | null): vo
     // Auto-sync off, offline, or the passphrase not entered yet: try again later.
     const retryLater = (): void => {
         if (retryTimer) clearTimeout(retryTimer);
-        retryTimer = setTimeout(() => { void run(); }, MIGRATION_RETRY_MS);
+        pendingRun = () => { void run(); };
+        retryTimer = setTimeout(() => {
+            retryTimer = null;
+            pendingRun = null;
+            void run();
+        }, MIGRATION_RETRY_MS);
     };
 
     const locks = typeof navigator !== 'undefined'
@@ -128,6 +136,7 @@ export async function stopSyncV2(): Promise<void> {
     startedFor = null;
     if (retryTimer) clearTimeout(retryTimer);
     retryTimer = null;
+    pendingRun = null;
     const running = engine;
     engine = null;
     await running?.stop();
@@ -135,9 +144,37 @@ export async function stopSyncV2(): Promise<void> {
     releaseLock = null;
 }
 
-/** Whether sync v2 is running in this tab (it runs in one tab per browser). */
-export function isSyncV2Running(): boolean {
-    return engine !== null;
+/**
+ * Retry a start that is waiting (auto-sync was off, the passphrase missing,
+ * or offline) now instead of at the next retry — e.g. right after auto-sync
+ * is switched on.
+ */
+export function nudgeSyncV2(): void {
+    const run = pendingRun;
+    if (!run) return;
+    if (retryTimer) clearTimeout(retryTimer);
+    retryTimer = null;
+    pendingRun = null;
+    run();
+}
+
+/**
+ * Resolves true once sync v2 runs in this tab, false after `timeoutMs` (it
+ * can't start yet, or another tab of this browser runs it).
+ */
+export function waitForSyncV2(timeoutMs: number): Promise<boolean> {
+    if (engine) return Promise.resolve(true);
+    nudgeSyncV2();
+    return new Promise(resolve => {
+        const done = (ready: boolean) => {
+            clearTimeout(timer);
+            readyWaiters = readyWaiters.filter(waiter => waiter !== onReady);
+            resolve(ready);
+        };
+        const onReady = () => done(true);
+        const timer = setTimeout(() => done(false), timeoutMs);
+        readyWaiters.push(onReady);
+    });
 }
 
 /** Upload local changes now (the "send" button, after a restore). */

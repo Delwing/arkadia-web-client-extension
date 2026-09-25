@@ -26,8 +26,10 @@ import {
     registerDevice,
     copySettingsFromCloudDevice,
     deleteEmptySyncGroup,
+    onAuthStateChanged,
     syncEngine,
 } from "@modules/firebase";
+import { SHOW_SETTINGS_EVENT } from "@web/settings/categories.ts";
 
 function DeviceManagementTab() {
     const [deviceInfo, setDeviceInfo] = useState<DeviceInfo | null>(null);
@@ -50,6 +52,18 @@ function DeviceManagementTab() {
     const [isLoadingCloudDevices, setIsLoadingCloudDevices] = useState(false);
     const [copyingFromDeviceId, setCopyingFromDeviceId] = useState<string | null>(null);
     const [deletingGroupId, setDeletingGroupId] = useState<string | null>(null);
+    // Bumped when the settings dialog is shown: it stays mounted, so the cloud
+    // lists would otherwise only load once.
+    const [reloadToken, setReloadToken] = useState(0);
+
+    // The dialog can mount before sign-in: follow the auth state, not just its value at mount.
+    useEffect(() => onAuthStateChanged(state => setIsLoggedIn(state.isAuthenticated)), []);
+
+    useEffect(() => {
+        const reload = () => setReloadToken(token => token + 1);
+        window.addEventListener(SHOW_SETTINGS_EVENT, reload);
+        return () => window.removeEventListener(SHOW_SETTINGS_EVENT, reload);
+    }, []);
 
     // Load device info and imported devices
     const refreshData = useCallback(() => {
@@ -103,7 +117,7 @@ function DeviceManagementTab() {
             // Load cloud devices
             setIsLoadingCloudDevices(true);
             try {
-                const result = await getRegisteredDevices();
+                const result = await getRegisteredDevices({ fresh: true });
                 // Filter out current device
                 const otherDevices = result.devices.filter(d => d.id !== deviceInfo?.id);
                 setCloudDevices(otherDevices);
@@ -115,7 +129,7 @@ function DeviceManagementTab() {
             }
         };
         loadCloudData();
-    }, [isLoggedIn, syncGroup, deviceInfo?.id]);
+    }, [isLoggedIn, syncGroup, deviceInfo?.id, reloadToken]);
 
     // Handle custom name save
     const handleSaveName = () => {
