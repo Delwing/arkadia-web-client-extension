@@ -1034,6 +1034,8 @@ function toggleJsPreview() {
   const panel = document.getElementById('js-preview-panel')!
   jsPreviewVisible = !jsPreviewVisible
 
+  document.getElementById('toggle-js-preview-btn')!.classList.toggle('active', jsPreviewVisible)
+
   if (jsPreviewVisible) {
     panel.style.display = 'flex'
     if (!jsPreviewEditor) {
@@ -1098,15 +1100,6 @@ function renderFilePickerList(filter: string) {
   filteredFiles.forEach((filePath, index) => {
     const item = document.createElement('div')
     item.className = 'file-picker-item'
-    item.style.cssText = `
-      padding: 8px 12px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      border-radius: 3px;
-      font-size: 13px;
-    `
 
     const iconClass = FileIcons.getClassWithColor(filePath)
     const icon = document.createElement('span')
@@ -1117,27 +1110,20 @@ function renderFilePickerList(filter: string) {
     text.textContent = filePath
     item.appendChild(text)
 
-    item.addEventListener('mouseenter', () => {
-      item.style.background = '#2a2d2e'
-    })
-    item.addEventListener('mouseleave', () => {
-      item.style.background = ''
-    })
-
     item.addEventListener('click', () => {
       switchToFile(filePath)
       closeFilePicker()
     })
 
     if (index === 0) {
-      item.style.background = '#2a2d2e'
+      item.classList.add('selected')
     }
 
     list.appendChild(item)
   })
 
   if (filteredFiles.length === 0) {
-    list.innerHTML = '<div style="padding: 12px; color: #999; text-align: center;">No files found</div>'
+    list.innerHTML = '<div class="file-picker-empty">No files found</div>'
   }
 }
 
@@ -1501,6 +1487,7 @@ function setupEventListeners() {
   jsPreviewCloseBtn.addEventListener('click', () => {
     jsPreviewVisible = false
     document.getElementById('js-preview-panel')!.style.display = 'none'
+    toggleJsPreviewBtn.classList.remove('active')
   })
 
   const jsPreviewRefreshBtn = document.getElementById('js-preview-refresh-btn')!

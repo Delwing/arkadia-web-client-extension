@@ -149,6 +149,7 @@ export class CodingAgentPanel {
 
   public show(): void {
     this.panel.style.display = 'flex';
+    document.getElementById('toggle-agent-btn')?.classList.add('active');
 
     // Load conversation history for current plugin
     const context = this.getEditorContext();
@@ -170,6 +171,7 @@ export class CodingAgentPanel {
 
   public hide(): void {
     this.panel.style.display = 'none';
+    document.getElementById('toggle-agent-btn')?.classList.remove('active');
   }
 
   public toggle(): void {
@@ -609,19 +611,14 @@ export class CodingAgentPanel {
 
       if (op.type === 'create') {
         iconSpan.textContent = '+';
-        iconSpan.style.color = '#4ade80'; // green
       } else if (op.type === 'modify') {
         iconSpan.textContent = '~';
-        iconSpan.style.color = '#60a5fa'; // blue
       } else if (op.type === 'delete') {
         iconSpan.textContent = '-';
-        iconSpan.style.color = '#f87171'; // red
       } else if (op.type === 'createDir') {
         iconSpan.textContent = '📁+';
-        iconSpan.style.color = '#4ade80'; // green
       } else if (op.type === 'deleteDir') {
         iconSpan.textContent = '📁-';
-        iconSpan.style.color = '#f87171'; // red
       }
 
       const pathSpan = document.createElement('span');

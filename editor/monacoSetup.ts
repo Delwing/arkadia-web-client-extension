@@ -158,11 +158,19 @@ export function applyInitialThemeFromCache(): void {
 }
 
 /**
+ * Six-digit hex without '#': expands short hex (#fff, #fffa) and drops alpha
+ */
+function toHex6(hexColor: string): string {
+  let hex = hexColor.replace('#', '')
+  if (hex.length === 3 || hex.length === 4) hex = hex.slice(0, 3).split('').map(c => c + c).join('')
+  return hex.slice(0, 6)
+}
+
+/**
  * Helper to determine if a color is light or dark
  */
 function isLightColor(hexColor: string): boolean {
-  // Remove # if present
-  const hex = hexColor.replace('#', '')
+  const hex = toHex6(hexColor)
   // Convert to RGB
   const r = parseInt(hex.substr(0, 2), 16)
   const g = parseInt(hex.substr(2, 2), 16)
@@ -176,7 +184,7 @@ function isLightColor(hexColor: string): boolean {
  * Darken a color by a percentage
  */
 function darkenColor(hexColor: string, percent: number): string {
-  const hex = hexColor.replace('#', '')
+  const hex = toHex6(hexColor)
   const r = Math.max(0, parseInt(hex.substr(0, 2), 16) * (1 - percent))
   const g = Math.max(0, parseInt(hex.substr(2, 2), 16) * (1 - percent))
   const b = Math.max(0, parseInt(hex.substr(4, 2), 16) * (1 - percent))
@@ -189,7 +197,7 @@ function darkenColor(hexColor: string, percent: number): string {
  * Lighten a color by a percentage
  */
 function lightenColor(hexColor: string, percent: number): string {
-  const hex = hexColor.replace('#', '')
+  const hex = toHex6(hexColor)
   const r = Math.min(255, parseInt(hex.substr(0, 2), 16) + (255 - parseInt(hex.substr(0, 2), 16)) * percent)
   const g = Math.min(255, parseInt(hex.substr(2, 2), 16) + (255 - parseInt(hex.substr(2, 2), 16)) * percent)
   const b = Math.min(255, parseInt(hex.substr(4, 2), 16) + (255 - parseInt(hex.substr(4, 2), 16)) * percent)
@@ -244,6 +252,9 @@ function applyThemeToUI(themeName: string) {
                           (isLight ? '#c72e0f' : '#f48771')
     const errorButtonFg = isLightColor(errorButtonBg) ? '#000000' : '#ffffff'
     const inputFg = colors['input.foreground'] || editorFg
+    // Recessed field ground for the chrome: darker than the editor on dark
+    // themes, near-white on light ones.
+    const inputGround = isLight ? lightenColor(editorBg, 0.7) : darkenColor(editorBg, 0.25)
 
     // Build the color map
     const colorMap: Record<string, string> = {
@@ -263,6 +274,7 @@ function applyThemeToUI(themeName: string) {
       '--error-button-bg': errorButtonBg,
       '--error-button-fg': errorButtonFg,
       '--input-fg': inputFg,
+      '--input-ground': inputGround,
     }
 
     // Apply CSS variables

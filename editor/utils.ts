@@ -12,5 +12,5 @@ export function updateStatus(message: string, type: StatusType = 'normal') {
 
 export function updateLanguageUI(language: 'javascript' | 'typescript') {
   const compileBtn = document.getElementById('compile-btn')!
-  compileBtn.style.display = language === 'typescript' ? 'block' : 'none'
+  compileBtn.style.display = language === 'typescript' ? '' : 'none'
 }
