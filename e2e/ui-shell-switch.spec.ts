@@ -12,9 +12,8 @@ import type { Page } from '@playwright/test';
 
 async function openStock(page: Page, url = '/'): Promise<void> {
     await page.goto(url);
+    // Also dismisses the login screen that covers the page while disconnected.
     await waitForCommandInput(page);
-    // Disconnected, the login screen covers the page; dismiss it.
-    await page.locator('#auth-close').click();
 }
 
 async function dismissForgeGate(page: Page): Promise<void> {

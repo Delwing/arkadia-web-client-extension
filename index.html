@@ -34,8 +34,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
     <title>Arkadia</title>
     <!-- src/web/main.ts loads the chosen shell (stock or forge) with its styles and
-         then sets data-shell-ready; until then the unstyled stock markup stays hidden. -->
-    <style>html:not([data-shell-ready]) body{visibility:hidden}html:not([data-shell-ready]){background:#000}</style>
+         then removes this; until then the unstyled stock markup stays hidden.
+         Removed rather than left inert, as popped-out windows copy the page's styles. -->
+    <style id="shell-boot-style">html:not([data-shell-ready]) body{visibility:hidden}html:not([data-shell-ready]){background:#000}</style>
 </head>
 <!-- data-mobile-footer / data-footer-expand default to the compact phone footer
      with its expander, so both are there from the first paint;

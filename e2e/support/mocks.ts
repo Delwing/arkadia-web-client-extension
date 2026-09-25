@@ -493,6 +493,12 @@ async function withContext<T>(what: string, run: () => Promise<T>): Promise<T> {
 }
 
 export async function waitForCommandInput(page: Page): Promise<void> {
+    // main.ts loads the shell asynchronously and keeps the page hidden until it
+    // is in; before that the login overlay reads as invisible and would be
+    // left up, covering the page.
+    await withContext('the UI shell never finished loading', () =>
+        page.waitForSelector('html[data-shell-ready]', {state: 'attached', timeout: BOOT_STEP_TIMEOUT})
+    );
     const overlay = page.locator('#auth-overlay');
     if ((await overlay.count()) > 0 && (await overlay.isVisible())) {
         await page.keyboard.press('Escape');

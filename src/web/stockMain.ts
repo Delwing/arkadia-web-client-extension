@@ -1120,7 +1120,7 @@ whenDocumentReady(() => {
     });
     // The forge HUD is the other shell this page can boot (see main.ts).
     registerMainMenuItem({
-        id: 'shell-button', label: 'Interfejs Kuźnia', shortLabel: 'Kuźnia', group: 'ustawienia', icon: 'layout', order: 15,
+        id: 'shell-button', label: 'Interfejs Kuźnia', shortLabel: 'Kuźnia', group: 'narzedzia', icon: 'layout', order: 190,
         onSelect: () => switchShell('forge'), source: 'builtin', keywords: ['forge', 'wygląd', 'hud'],
     });
     // Logi (170) registers itself in Narzędzia.

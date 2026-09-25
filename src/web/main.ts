@@ -18,6 +18,8 @@ document.documentElement.dataset.shell = shell;
 
 const markReady = () => {
     document.documentElement.dataset.shellReady = '';
+    // Popped-out windows copy the opener's styles; the boot gate must not go along.
+    document.getElementById('shell-boot-style')?.remove();
 };
 
 const load = shell === 'forge'
