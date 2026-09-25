@@ -109,3 +109,16 @@ describe('footerUrgentChipsFirst', () => {
         expect(load().footerUrgentChipsFirst).toBe(true);
     });
 });
+
+describe('footer row scales', () => {
+    test('default to 1', () => {
+        expect(load().footerBindsScale).toBe(1);
+        expect(load().footerStatusScale).toBe(1);
+    });
+
+    test('survive save() -> load() and are clamped to 0.8-2', () => {
+        save({ ...load(), footerBindsScale: 1.4, footerStatusScale: 5 });
+        expect(load().footerBindsScale).toBe(1.4);
+        expect(load().footerStatusScale).toBe(2);
+    });
+});

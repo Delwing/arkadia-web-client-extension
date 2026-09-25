@@ -167,6 +167,13 @@ export interface ChromeSettings extends DeviceViewSettings {
      */
     footerUrgentChipsFirst: boolean;
     /**
+     * Zoom factors for the two footer rows (1 = stock size): the location-bind
+     * pills and the status line (vitals and chips). Applied as CSS `zoom`, so
+     * text, heights, icons and padding grow together (footer.css).
+     */
+    footerBindsScale: number;
+    footerStatusScale: number;
+    /**
      * The phone footer: two fixed-height scrolling rails plus compact stat
      * meters, instead of the desktop footer's one wrapping row. On by default;
      * off restores the old layout on narrow screens. Desktop is unaffected

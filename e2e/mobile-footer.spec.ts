@@ -250,8 +250,8 @@ test.describe('Bind shortcut hints without a keyboard', () => {
         await expect(hint).toHaveCount(0);
 
         // The bind-row settings live beside "Zawsze pokazuj pasek multibindów"
-        // on the Komendy page.
-        const modal = await openSettings(page, 'ui-commands');
+        // on the Stopka page.
+        const modal = await openSettings(page, 'ui-footer');
         await modal.locator('#ui-multibind-key-hints').selectOption('always');
         await saveSettings(page);
 

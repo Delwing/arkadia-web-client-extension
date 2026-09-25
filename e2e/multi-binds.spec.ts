@@ -51,7 +51,7 @@ test.describe('Multi-binds kept visible', () => {
         await waitForCommandInput(page);
         await ensureGameSocket(page);
 
-        const modal = await openSettings(page, 'ui-commands');
+        const modal = await openSettings(page, 'ui-footer');
         await modal.locator('#ui-keep-multibinds-visible').check();
         await saveSettings(page);
 

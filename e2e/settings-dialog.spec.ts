@@ -293,7 +293,7 @@ test.describe('Settings dialog on a phone', () => {
         await expect(modal.locator('.settings-phone__caption')).toHaveText(['Postać', 'Interfejs', 'Dane']);
         await expect(modal.locator('[data-settings-group="ui"] .settings-scope-chip')).toHaveText('wszystkie postacie');
         await expect(modal.locator('[data-settings-group="data"] .settings-scope-chip'), 'Dane carry no chip').toHaveCount(0);
-        await expect(phoneRow(page, 'ui-commands').locator('.settings-phone__row-summary'), 'a summary of the page').toContainText('Pasek multibindów');
+        await expect(phoneRow(page, 'ui-commands').locator('.settings-phone__row-summary'), 'a summary of the page').toContainText('Uzupełnianie');
         await expect(modal.locator('.app-modal__footer'), 'no Save until something changes').toBeHidden();
 
         await phoneRow(page, 'ui-map').click();
@@ -368,7 +368,7 @@ test.describe('Settings dialog on a phone', () => {
         await expect(modal.locator('.settings-phone__caption--pages'), 'a setting is not a page').toHaveCount(0);
 
         await result.click();
-        await expect(settingsPage(page, 'ui-commands')).toBeVisible();
+        await expect(settingsPage(page, 'ui-footer')).toBeVisible();
         await expect(modal.locator('#ui-multibind-key-hints')).toBeInViewport();
 
         await modal.locator('#settings-phone-back').click();

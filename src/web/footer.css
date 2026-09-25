@@ -25,6 +25,9 @@
   background-color: var(--footer-bg);
   color: var(--footer-text);
   font-family: var(--font-ui);
+  /* The player's row scale (footerBindsScale): everything here is in px, so
+     zoom grows text, pills and padding together. */
+  zoom: var(--footer-binds-scale, 1);
   -webkit-user-select: none;
   user-select: none;
 }
@@ -162,6 +165,8 @@
   color: var(--footer-text);
   font-family: var(--font-ui);
   font-size: var(--ui-fs, 14px);
+  /* footerStatusScale, as the bind row above. */
+  zoom: var(--footer-status-scale, 1);
   -webkit-user-select: none;
   user-select: none;
 }

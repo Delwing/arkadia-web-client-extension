@@ -295,6 +295,9 @@ export function apply(settings: UiSettings) {
         document.body.dataset.footerExpand = settings.mobileFooterExpand;
         // Opt-in: warn/danger chips jump ahead of the configured order (footer.css).
         document.body.dataset.urgentChipsFirst = settings.footerUrgentChipsFirst ? '1' : '0';
+        // Per-row footer zoom (footer.css).
+        document.body.style.setProperty('--footer-binds-scale', String(settings.footerBindsScale ?? 1));
+        document.body.style.setProperty('--footer-status-scale', String(settings.footerStatusScale ?? 1));
     }
     const objectsList = document.getElementById('objects-list');
     if (objectsList) {
@@ -539,6 +542,10 @@ export function load(): UiSettings {
             const footerUrgentChipsFirst = typeof parsed.footerUrgentChipsFirst === 'boolean'
                 ? parsed.footerUrgentChipsFirst
                 : defaultUiSettings.footerUrgentChipsFirst;
+            const footerScale = (value: unknown, fallback: number) =>
+                typeof value === 'number' && Number.isFinite(value) ? Math.min(2, Math.max(0.8, value)) : fallback;
+            const footerBindsScale = footerScale(parsed.footerBindsScale, defaultUiSettings.footerBindsScale);
+            const footerStatusScale = footerScale(parsed.footerStatusScale, defaultUiSettings.footerStatusScale);
             const mobileFooterCompact = typeof parsed.mobileFooterCompact === 'boolean'
                 ? parsed.mobileFooterCompact
                 : defaultUiSettings.mobileFooterCompact;
@@ -634,6 +641,8 @@ export function load(): UiSettings {
                 footerButtons,
                 keepMultibindsVisible,
                 footerUrgentChipsFirst,
+                footerBindsScale,
+                footerStatusScale,
                 mobileFooterCompact,
                 mobileFooterExpand,
                 multibindKeyHints,
