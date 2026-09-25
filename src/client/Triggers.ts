@@ -123,19 +123,26 @@ export class Trigger {
         if (plainLine === undefined) {
             plainLine = (originalText ?? line.text).replace(/\s$/g, "");
         }
-        this.openInstances = this.openInstances.map(v => v - 1).filter(v => v > 0);
+        // This runs for every trigger on every line, so the common case (nothing held
+        // open, a single pattern) must not allocate.
+        if (this.openInstances.length > 0) {
+            this.openInstances = this.openInstances.map(v => v - 1).filter(v => v > 0);
+        }
         let matches: RegExpMatchArray | undefined;
-        const patterns = Array.isArray(this.pattern) ? this.pattern : [this.pattern];
-        for (const pattern of patterns) {
+        const patternList = Array.isArray(this.pattern) ? this.pattern : undefined;
+        const patternCount = patternList ? patternList.length : 1;
+        let loweredLine: string | undefined;
+        for (let i = 0; i < patternCount; i++) {
+            const pattern = patternList ? patternList[i] : this.pattern as TriggerSubPattern;
             if (pattern instanceof RegExp) {
                 matches = plainLine.match(pattern);
             } else if (typeof pattern === "string") {
-                const patternStr = pattern.toString();
-                const haystack = !this.options.caseInsensitive ? plainLine : plainLine.toLowerCase();
-                const needle = !this.options.caseInsensitive ? patternStr : patternStr.toLowerCase();
+                const caseInsensitive = this.options.caseInsensitive;
+                const haystack = !caseInsensitive ? plainLine : (loweredLine ??= plainLine.toLowerCase());
+                const needle = !caseInsensitive ? pattern : pattern.toLowerCase();
                 const index = haystack.indexOf(needle);
                 if (index > -1) {
-                    const end = index + patternStr.length;
+                    const end = index + pattern.length;
                     const matchedText = plainLine.substring(index, end);
                     matches = [matchedText] as RegExpMatchArray;
                     matches.index = index;
@@ -155,7 +162,7 @@ export class Trigger {
                 break;
             }
         }
-        let matched = patterns.length == 0;
+        let matched = patternCount == 0;
         if (matches) {
             matched = true;
             if (this.options.stayOpenLines && this.options.stayOpenLines > 0) {

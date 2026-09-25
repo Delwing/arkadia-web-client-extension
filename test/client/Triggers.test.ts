@@ -161,6 +161,32 @@ describe('Triggers', () => {
     expect(cb).toHaveBeenCalledTimes(1);
   });
 
+  test('a pattern array matches on the first pattern that hits, in order', () => {
+    const triggers = new Triggers({} as any);
+    const cb = jest.fn((buffer: AnsiAwareBuffer) => buffer);
+    triggers.registerTrigger(['NOPE', 'WORLD', /hello/], cb, undefined, { caseInsensitive: true });
+
+    triggers.parseLine(new AnsiAwareBuffer('Hello World'), '');
+
+    expect(cb).toHaveBeenCalledTimes(1);
+    const matches = cb.mock.calls[0][1] as RegExpMatchArray;
+    expect(matches[0]).toBe('World');
+    expect(matches.index).toBe(6);
+  });
+
+  test('a trigger with no patterns runs its children on every line', () => {
+    const triggers = new Triggers({} as any);
+    const child = jest.fn((buffer: AnsiAwareBuffer) => buffer);
+    const group = triggers.registerTrigger([]);
+    group.registerChild(/line/, child);
+
+    triggers.parseLine(new AnsiAwareBuffer('line one'), '');
+    triggers.parseLine(new AnsiAwareBuffer('line two'), '');
+    triggers.parseLine(new AnsiAwareBuffer('other'), '');
+
+    expect(child).toHaveBeenCalledTimes(2);
+  });
+
   test('caseInsensitive option preserves original matched text in callback', () => {
     const triggers = new Triggers({} as any);
     const cb = jest.fn((_buffer: AnsiAwareBuffer, _matches: RegExpMatchArray) => {
