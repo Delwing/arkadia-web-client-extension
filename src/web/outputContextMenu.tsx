@@ -38,7 +38,6 @@ import {
     setOutputTimestampVisibility,
 } from '@shared/dom/outputMessageHandler';
 import { copyOutputAsImage, saveOutputAsHtml } from './copyOutputAsImage';
-import { isMobileLikeViewport } from '@shared/dom/pointerEnvironment.ts';
 import { hasPopup } from './layout/popupRegistry';
 import { canSearchLogs, requestLogSearch } from './logSearchRequest';
 import { showContextMenu, type ContextMenuEntry, type ContextMenuIcon } from './contextMenu';
@@ -201,13 +200,24 @@ export function buildOutputContextMenuItems(
     return items;
 }
 
+/**
+ * A phone-narrow viewport or a touch long-press leaves the native menu (text
+ * selection) alone. Touch is read from the event itself, not the device-level
+ * guess, which reports a mouse on a touch-capable laptop as touch (Firefox
+ * especially) and silently killed the menu there.
+ */
+function isTouchContextMenu(event: MouseEvent): boolean {
+    if (window.innerWidth < 768) return true;
+    return (event as Partial<PointerEvent>).pointerType === 'touch';
+}
+
 export function setupOutputContextMenu(
     outputWrapper: HTMLElement,
     options: OutputContextMenuOptions = {},
 ): () => void {
     const handler = (event: MouseEvent) => {
         if (event.defaultPrevented) return;
-        if (isMobileLikeViewport()) return;
+        if (isTouchContextMenu(event)) return;
         const target = event.target as HTMLElement | null;
         if (target && target.closest('a, [data-output-clickable]')) return;
         event.preventDefault();

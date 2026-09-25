@@ -3,7 +3,8 @@ import { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Puzzle } from 'lucide-react';
 import { registerContextMenuEntry, unregisterContextMenuEntry } from '@modules/core/pluginUiRegistry';
-import { buildOutputContextMenuItems } from '@web/outputContextMenu.tsx';
+import { buildOutputContextMenuItems, setupOutputContextMenu } from '@web/outputContextMenu.tsx';
+import { getContextMenuSnapshot, hideContextMenu } from '@web/contextMenu/contextMenuStore.ts';
 
 /** The output's right-click menu: plugin entries under Wtyczki. */
 
@@ -53,5 +54,37 @@ describe('buildOutputContextMenuItems: plugin entries', () => {
         const EmojiIcon = emoji.icon!;
         expect(draw(<EmojiIcon size={15} />).textContent).toBe('⛭');
         expect(emoji.label).toBe('Zegar');
+    });
+});
+
+describe('setupOutputContextMenu: touch gate', () => {
+    function rightClick(init: { pointerType?: string }): { prevented: boolean; visible: boolean } {
+        const wrapper = document.createElement('div');
+        document.body.appendChild(wrapper);
+        const teardown = setupOutputContextMenu(wrapper, { messageMetadataToggles: false });
+        const event = new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 5, clientY: 5 });
+        if (init.pointerType !== undefined) Object.defineProperty(event, 'pointerType', { value: init.pointerType });
+        wrapper.dispatchEvent(event);
+        const visible = getContextMenuSnapshot().visible;
+        teardown();
+        hideContextMenu();
+        wrapper.remove();
+        return { prevented: event.defaultPrevented, visible };
+    }
+
+    test('a mouse right-click opens the menu even when the device reports touch support', () => {
+        const touchPoints = Object.getOwnPropertyDescriptor(navigator, 'maxTouchPoints');
+        Object.defineProperty(navigator, 'maxTouchPoints', { value: 5, configurable: true });
+        try {
+            expect(rightClick({ pointerType: 'mouse' })).toEqual({ prevented: true, visible: true });
+            expect(rightClick({})).toEqual({ prevented: true, visible: true });
+        } finally {
+            if (touchPoints) Object.defineProperty(navigator, 'maxTouchPoints', touchPoints);
+            else delete (navigator as { maxTouchPoints?: number }).maxTouchPoints;
+        }
+    });
+
+    test('a touch long-press keeps the native menu', () => {
+        expect(rightClick({ pointerType: 'touch' })).toEqual({ prevented: false, visible: false });
     });
 });
