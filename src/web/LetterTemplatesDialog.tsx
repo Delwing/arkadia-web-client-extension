@@ -14,7 +14,7 @@ import {
 } from '@modules/core/letterTemplates.ts';
 import { renderLetterLayout } from '@shared/letterRenderer.ts';
 
-const SAMPLE_CONTENT = 'Drogi przyjacielu,\n\nto jest przykladowa tresc listu, ktora pokazuje, jak szablon otacza tekst i zawija dluzsze linie.\n>Twoj druh';
+const SAMPLE_CONTENT = 'Drogi przyjacielu,\n\nto jest przykladowa tresc listu, ktora pokazuje, jak szablon otacza tekst i zawija dluzsze linie. Kazda linia tresci dostaje kolejny poczatek i koniec.\n\n>Twoj druh';
 
 interface LetterTemplatesDialogProps {
     lineWidth: number;
@@ -134,19 +134,26 @@ const LetterTemplatesDialog: React.FC<LetterTemplatesDialogProps> = ({ lineWidth
                                     onChange={(e) => update({ header: e.target.value })}
                                 />
                             </Field>
+                            <div className="popup-field__hint">
+                                Poczatek i koniec linii tresci moga miec kilka linii - kolejne linie tresci uzywaja ich po kolei, w kolko.
+                            </div>
                             <div className="letter-templates__row">
                                 <Field label="Poczatek linii tresci" htmlFor="letter-template-prefix" className="letter-templates__grow">
-                                    <Input
+                                    <TextArea
                                         id="letter-template-prefix"
                                         mono
+                                        rows={2}
+                                        wrap="off"
                                         value={selected.bodyPrefix}
                                         onChange={(e) => update({ bodyPrefix: e.target.value })}
                                     />
                                 </Field>
                                 <Field label="Koniec linii tresci" htmlFor="letter-template-suffix" className="letter-templates__grow">
-                                    <Input
+                                    <TextArea
                                         id="letter-template-suffix"
                                         mono
+                                        rows={2}
+                                        wrap="off"
                                         value={selected.bodySuffix}
                                         onChange={(e) => update({ bodySuffix: e.target.value })}
                                     />

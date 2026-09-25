@@ -1,8 +1,10 @@
 import {
     BUILTIN_LETTER_LAYOUTS,
     expandFillLine,
+    getLayoutBodyWidth,
     renderLetter,
     renderLetterLayout,
+    setLineAlignment,
     type LetterLayout,
 } from '@shared/letterRenderer';
 
@@ -94,5 +96,69 @@ describe('renderLetterLayout (custom layouts)', () => {
         const content = 'Pierwsza linia\n\nDruga, dluzsza linia tekstu';
         expect(renderLetterLayout(content, BUILTIN_LETTER_LAYOUTS.plain, 30))
             .toEqual(renderLetter(content, 'plain', 30));
+    });
+});
+
+describe('body alignment', () => {
+    const text = 'aaa bbb ccc ddd eee';
+
+    it('justifies lines without a marker, except the last one', () => {
+        expect(renderLetter(text, 'none', 13).lines).toEqual(['aaa  bbb  ccc', 'ddd eee']);
+    });
+
+    it('aligns every wrapped line of a marked line', () => {
+        expect(renderLetter(`<${text}`, 'none', 13).lines).toEqual(['aaa bbb ccc', 'ddd eee']);
+        expect(renderLetter(`>${text}`, 'none', 13).lines).toEqual(['  aaa bbb ccc', '      ddd eee']);
+        expect(renderLetter(`^${text}`, 'none', 13).lines).toEqual([' aaa bbb ccc', '   ddd eee']);
+    });
+
+    it('mixes alignments line by line inside a frame', () => {
+        const layout: LetterLayout = { header: [], footer: [], bodyPrefix: '|', bodySuffix: '|' };
+        expect(renderLetterLayout('^Tytul\n= a b\n>Ja', layout, 10).lines).toEqual([
+            '| Tytul  |',
+            '|a b     |',
+            '|      Ja|',
+        ]);
+    });
+
+    it('keeps an escaped marker as text', () => {
+        expect(renderLetter('\\>> strzalka', 'none', 20).lines).toEqual(['>> strzalka']);
+    });
+
+    it('treats a line with only a marker as blank', () => {
+        expect(renderLetter('a\n>\nb', 'none', 10).lines).toEqual(['a', '', 'b']);
+    });
+});
+
+describe('setLineAlignment', () => {
+    it('adds, replaces and removes the marker', () => {
+        expect(setLineAlignment('Ala', 'right')).toBe('>Ala');
+        expect(setLineAlignment('>Ala', 'center')).toBe('^Ala');
+        expect(setLineAlignment('  < Ala', 'justify')).toBe('  Ala');
+        expect(setLineAlignment('Ala', 'justify')).toBe('Ala');
+    });
+});
+
+describe('multi-line body prefix and suffix', () => {
+    const layout: LetterLayout = {
+        header: ['{-}'],
+        footer: [],
+        bodyPrefix: '(\n )\n',
+        bodySuffix: ')\n(\n )',
+    };
+
+    it('repeats the pattern lines over the body lines', () => {
+        const { lines } = renderLetterLayout('a\nb\nc\nd', layout, 7);
+        expect(lines).toEqual([
+            '---',
+            '( a  )',
+            ' )b  (',
+            '( c   )',
+            ' )d  )',
+        ]);
+    });
+
+    it('fits the body into the widest prefix and suffix', () => {
+        expect(getLayoutBodyWidth(layout, 10)).toBe(6);
     });
 });

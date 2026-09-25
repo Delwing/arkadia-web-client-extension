@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { PencilRuler } from 'lucide-react';
+import { AlignCenter, AlignJustify, AlignLeft, AlignRight, PencilRuler, type LucideIcon } from 'lucide-react';
 import eventBus from '@modules/core/eventBus';
 import { useDraggablePopup } from './hooks/useDraggablePopup';
 import {
@@ -10,7 +10,14 @@ import {
     type CustomLetterTemplate,
     type LetterTemplateId,
 } from "@client/types/letter";
-import { MAX_LINE_WIDTH, MIN_LINE_WIDTH, clampLineWidth, renderLetterLayout } from "@shared/letterRenderer";
+import {
+    MAX_LINE_WIDTH,
+    MIN_LINE_WIDTH,
+    clampLineWidth,
+    renderLetterLayout,
+    setLineAlignment,
+    type LetterAlignment,
+} from "@shared/letterRenderer";
 import {
     listLetterTemplateChoices,
     loadCustomLetterTemplates,
@@ -23,6 +30,13 @@ import LetterTemplatesDialog from "./LetterTemplatesDialog";
 
 const TEMPLATE_STORAGE_KEY = "letter-composer-template";
 const WIDE_SCREEN_THRESHOLD = 900;
+
+const ALIGNMENT_BUTTONS: readonly { alignment: LetterAlignment; icon: LucideIcon; title: string }[] = [
+    { alignment: "justify", icon: AlignJustify, title: "Wyjustuj (domyslnie)" },
+    { alignment: "left", icon: AlignLeft, title: "Do lewej (znacznik <)" },
+    { alignment: "center", icon: AlignCenter, title: "Wysrodkuj (znacznik ^)" },
+    { alignment: "right", icon: AlignRight, title: "Do prawej (znacznik >)" },
+];
 
 function isSelectableTemplate(value: unknown, customTemplates: readonly CustomLetterTemplate[]): value is LetterTemplateId {
     const resolved = resolveLetterTemplate(value, customTemplates);
@@ -183,6 +197,27 @@ const LetterComposer: React.FC = () => {
         setContentText(ev.target.value);
     }, []);
 
+    // Sets the alignment marker of every line the caret or selection touches
+    const applyAlignment = useCallback((alignment: LetterAlignment) => {
+        const textarea = contentInputRef.current;
+        if (!textarea) return;
+        const { value, selectionStart, selectionEnd } = textarea;
+        const start = value.lastIndexOf("\n", selectionStart - 1) + 1;
+        const endIndex = value.indexOf("\n", Math.max(selectionStart, selectionEnd - (selectionEnd > selectionStart ? 1 : 0)));
+        const end = endIndex === -1 ? value.length : endIndex;
+        const replaced = value.slice(start, end).split("\n").map(line => setLineAlignment(line, alignment)).join("\n");
+        const next = value.slice(0, start) + replaced + value.slice(end);
+        textarea.value = next;
+        setContentText(next);
+        textarea.focus();
+        if (selectionStart === selectionEnd) {
+            const caret = Math.max(start, Math.min(selectionStart + next.length - value.length, start + replaced.length));
+            textarea.setSelectionRange(caret, caret);
+        } else {
+            textarea.setSelectionRange(start, start + replaced.length);
+        }
+    }, []);
+
     const handleKeyDown = useCallback((ev: React.KeyboardEvent) => {
         if (ev.key === 'Enter' && ev.ctrlKey) {
             ev.preventDefault();
@@ -337,7 +372,23 @@ const LetterComposer: React.FC = () => {
                             />
                         </div>
                         <div className="letter-composer-field letter-composer-field--grow">
-                            <label htmlFor="letter-content" className="popup-field__label">Tresc:</label>
+                            <div className="letter-content-toolbar">
+                                <label htmlFor="letter-content" className="popup-field__label">Tresc:</label>
+                                <div className="letter-align-buttons">
+                                    {ALIGNMENT_BUTTONS.map(({ alignment, icon: Icon, title }) => (
+                                        <button
+                                            key={alignment}
+                                            type="button"
+                                            className={`popup-btn popup-btn--control popup-btn--sm popup-btn--icon letter-align-button letter-align-button--${alignment}`}
+                                            onMouseDown={(ev) => ev.preventDefault()}
+                                            onClick={() => applyAlignment(alignment)}
+                                            title={title}
+                                        >
+                                            <Icon size={14} strokeWidth={1.75} />
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
                             <textarea
                                 ref={contentInputRef}
                                 id="letter-content"

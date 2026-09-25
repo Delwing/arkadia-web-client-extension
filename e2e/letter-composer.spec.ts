@@ -288,4 +288,43 @@ test.describe('Letter composer', () => {
         const reopened = await openLetterComposer(page);
         await expect(reopened.locator('#letter-width'), 'should reset to the default width').toHaveValue('72');
     });
+
+    test('alignment buttons mark the lines under the caret', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+
+        const composer = await openLetterComposer(page);
+        const content = composer.locator('#letter-content');
+        await content.fill('Tytul\nTresc\nPodpis');
+
+        // Caret on the first line
+        await content.evaluate((el: HTMLTextAreaElement) => el.setSelectionRange(2, 2));
+        await composer.locator('.letter-align-button--center').click();
+        // Caret on the last line
+        await content.evaluate((el: HTMLTextAreaElement) => el.setSelectionRange(el.value.length, el.value.length));
+        await composer.locator('.letter-align-button--right').click();
+        await expect(content, 'should mark the aligned lines').toHaveValue('^Tytul\nTresc\n>Podpis');
+
+        await composer.locator('.letter-align-button--justify').click();
+        await expect(content, 'justify should drop the marker').toHaveValue('^Tytul\nTresc\nPodpis');
+    });
+
+    test('custom template repeats a multi-line body prefix', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+
+        const composer = await openLetterComposer(page);
+        await composer.locator('.letter-templates-open').click();
+        const dialog = page.locator('.letter-templates-dialog');
+        await dialog.locator('button:has-text("Dodaj szablon")').click();
+        await dialog.locator('#letter-template-header').fill('');
+        await dialog.locator('#letter-template-footer').fill('');
+        await dialog.locator('#letter-template-prefix').fill('( \n ) ');
+        await dialog.locator('#letter-template-suffix').fill('');
+        const preview = dialog.locator('.letter-templates__preview-text');
+        await expect(preview, 'first body line uses the first prefix line').toContainText('( Drogi przyjacielu,');
+        await expect(preview, 'following lines alternate the prefix').toContainText(' ) ');
+    });
 });
