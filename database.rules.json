@@ -1,0 +1,13 @@
+{
+  "rules": {
+    "sessionHandoff": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid",
+        "$character": {
+          ".validate": "newData.hasChildren(['session', 'device', 'claimedAt'])"
+        }
+      }
+    }
+  }
+}

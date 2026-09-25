@@ -18,6 +18,7 @@ import {
 import { bridgeSendCommand, bridgeNpcStore } from "./clientBootstrapBridges";
 import { registerEnemyStatusFilter } from "./filters/enemyStatusFilter";
 import { installAltCodeGuard } from "@shared/dom/altCodeGuard.ts";
+import { installSessionHandoff, setSessionHandoffUser } from "./sessionHandoff";
 
 export interface GameClientBootstrap {
     client: Client;
@@ -56,6 +57,7 @@ export function bootstrapGameClient(opts: { installPorts: () => void }): GameCli
 
     const client = new Client(mudClient);
     registerScripts(client);
+    installSessionHandoff(client);
     // Alt+numpad binds would otherwise leave a Windows Alt-code symbol in the input.
     installAltCodeGuard();
 
@@ -129,6 +131,7 @@ export function bootstrapGameClient(opts: { installPorts: () => void }): GameCli
                 onAuthStateChanged((authState) => {
                     if (authState.isAuthenticated && authState.userId) {
                         const userId = authState.userId;
+                        setSessionHandoffUser(userId);
                         if (syncV2) {
                             void syncV2.then(({ startSyncV2 }) => startSyncV2(userId, () => syncEngine.getPassphrase()));
                         } else {
@@ -136,6 +139,7 @@ export function bootstrapGameClient(opts: { installPorts: () => void }): GameCli
                             syncEngine.start();
                         }
                     } else {
+                        setSessionHandoffUser(null);
                         syncListener.stop();
                         syncEngine.stop();
                         void syncV2?.then(({ stopSyncV2 }) => stopSyncV2());

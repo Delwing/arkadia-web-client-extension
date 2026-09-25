@@ -12,6 +12,7 @@ Rozszerzenie umozliwia synchronizacje ustawien miedzy urzadzeniami za pomoca Fir
 - [Laczenie zmian z wielu urzadzen](#laczenie-zmian-z-wielu-urzadzen)
 - [Zarzadzanie urzadzeniami](#zarzadzanie-urzadzeniami)
 - [Grupy synchronizacji](#grupy-synchronizacji)
+- [Przejecie sesji na innym urzadzeniu](#przejecie-sesji-na-innym-urzadzeniu)
 - [Usuwanie danych z chmury](#usuwanie-danych-z-chmury)
 - [Rozwiazywanie problemow](#rozwiazywanie-problemow)
 
@@ -231,6 +232,14 @@ Jesli chcesz usunac wszystkie swoje dane z chmury:
 **Uwaga**: Ta operacja jest nieodwracalna i usuwa z chmury takze dane powiazane z pozostalymi urzadzeniami (uklady interfejsu, przyciski). Lokalne dane na Twoim urzadzeniu nie zostana usuniete - zaraz potem to urzadzenie wysle je ponownie, wiec chmura zaczyna od jego danych. Pozostale urzadzenia przy najblizszej synchronizacji przejmuja dane z chmury (czyli z tego urzadzenia); dodaja do nich tylko to, czego w chmurze nie ma, np. lokacje odwiedzone tylko na nich.
 
 ---
+
+## Przejecie sesji na innym urzadzeniu
+
+Gdy zalogujesz sie postacia na drugim urzadzeniu, gra rozlacza pierwsze. Jesli na obu jestes zalogowany do tego samego konta Firebase, nowe urzadzenie od razu ustawi mape w lokacji, w ktorej postac zostala na poprzednim - bez czekania na synchronizacje.
+
+- Lokacje zapisuje urzadzenie, ktore **widzi** koniec swojej sesji: przejecie przez inne urzadzenie albo rozlaczenie przez ciebie. Po rozlaczeniu mozna wrocic na innym urzadzeniu do 30 minut pozniej.
+- Nic nie jest zapisywane, gdy karta byla w tle (np. telefon w kieszeni) albo mapa zgubila pozycje - klient nie wie wtedy na pewno, gdzie jest postac, wiec lepiej nie zgadywac.
+- Lokacja nie zostanie ustawiona, jesli na nowym urzadzeniu zdazysz sie juz ruszyc.
 
 ## Rozwiazywanie problemow
 
