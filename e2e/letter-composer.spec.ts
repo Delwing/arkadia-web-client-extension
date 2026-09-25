@@ -234,7 +234,7 @@ test.describe('Letter composer', () => {
         await ensureGameSocket(page);
 
         const composer = await openLetterComposer(page);
-        await composer.locator('button:has-text("Szablony")').click();
+        await composer.locator('.letter-templates-open').click();
 
         const dialog = page.locator('.letter-templates-dialog');
         await expect(dialog, 'should open the templates dialog').toBeVisible();

@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { PencilRuler } from 'lucide-react';
 import eventBus from '@modules/core/eventBus';
 import { useDraggablePopup } from './hooks/useDraggablePopup';
 import {
@@ -347,59 +348,63 @@ const LetterComposer: React.FC = () => {
                             />
                         </div>
                         <div className="letter-composer-actions">
-                            <div className="letter-template-group">
-                                <label htmlFor="letter-template" className="popup-field__label letter-template-label">Szablon:</label>
-                                <select
-                                    ref={templateSelectRef}
-                                    id="letter-template"
-                                    name="letter-template"
-                                    className="popup-input popup-input--control letter-template-select"
-                                    defaultValue={templateSelection}
-                                    onChange={handleTemplateChange}
-                                >
-                                    {templateChoices.filter((choice) => !choice.custom).map((choice) => (
-                                        <option key={choice.value} value={choice.value}>
-                                            {choice.label}
-                                        </option>
-                                    ))}
-                                    {customTemplates.length > 0 && (
-                                        <optgroup label="Wlasne">
-                                            {templateChoices.filter((choice) => choice.custom).map((choice) => (
-                                                <option key={choice.value} value={choice.value}>
-                                                    {choice.label}
-                                                </option>
-                                            ))}
-                                        </optgroup>
-                                    )}
-                                </select>
-                                <button
-                                    type="button"
-                                    className="popup-btn popup-btn--control popup-btn--sm popup-btn--ghost letter-templates-open"
-                                    onClick={() => setTemplatesDialogOpen(true)}
-                                    title="Wlasne szablony listow"
-                                >
-                                    Szablony...
+                            <div className="letter-composer-options">
+                                <div className="letter-template-group">
+                                    <label htmlFor="letter-template" className="popup-field__label letter-template-label">Szablon:</label>
+                                    <select
+                                        ref={templateSelectRef}
+                                        id="letter-template"
+                                        name="letter-template"
+                                        className="popup-input popup-input--control letter-template-select"
+                                        defaultValue={templateSelection}
+                                        onChange={handleTemplateChange}
+                                    >
+                                        {templateChoices.filter((choice) => !choice.custom).map((choice) => (
+                                            <option key={choice.value} value={choice.value}>
+                                                {choice.label}
+                                            </option>
+                                        ))}
+                                        {customTemplates.length > 0 && (
+                                            <optgroup label="Wlasne">
+                                                {templateChoices.filter((choice) => choice.custom).map((choice) => (
+                                                    <option key={choice.value} value={choice.value}>
+                                                        {choice.label}
+                                                    </option>
+                                                ))}
+                                            </optgroup>
+                                        )}
+                                    </select>
+                                    <button
+                                        type="button"
+                                        className="popup-btn popup-btn--control popup-btn--icon letter-templates-open"
+                                        onClick={() => setTemplatesDialogOpen(true)}
+                                        title="Wlasne szablony listow"
+                                    >
+                                        <PencilRuler size={16} strokeWidth={1.75} />
+                                    </button>
+                                </div>
+                                <div className="letter-template-group letter-width-group">
+                                    <label htmlFor="letter-width" className="popup-field__label letter-template-label">Szerokosc:</label>
+                                    <input
+                                        id="letter-width"
+                                        name="letter-width"
+                                        type="number"
+                                        min={MIN_LINE_WIDTH}
+                                        max={MAX_LINE_WIDTH}
+                                        className="popup-input popup-input--control letter-width-input"
+                                        value={lineWidthInput}
+                                        onChange={(ev) => setLineWidthInput(ev.target.value)}
+                                        onBlur={() => setLineWidthInput(String(lineWidth))}
+                                        title="Szerokosc linii tego listu (domyslna w ustawieniach)"
+                                    />
+                                </div>
+                            </div>
+                            <div className="letter-composer-buttons">
+                                <button type="button" className="popup-btn popup-btn--control popup-btn--sm" onClick={handlePreview}>
+                                    Podglad
                                 </button>
+                                <button type="submit" className="popup-btn popup-btn--control popup-btn--sm popup-btn--solid">Wyslij</button>
                             </div>
-                            <div className="letter-template-group letter-width-group">
-                                <label htmlFor="letter-width" className="popup-field__label letter-template-label">Szerokosc:</label>
-                                <input
-                                    id="letter-width"
-                                    name="letter-width"
-                                    type="number"
-                                    min={MIN_LINE_WIDTH}
-                                    max={MAX_LINE_WIDTH}
-                                    className="popup-input popup-input--control letter-width-input"
-                                    value={lineWidthInput}
-                                    onChange={(ev) => setLineWidthInput(ev.target.value)}
-                                    onBlur={() => setLineWidthInput(String(lineWidth))}
-                                    title="Szerokosc linii tego listu (domyslna w ustawieniach)"
-                                />
-                            </div>
-                            <button type="button" className="popup-btn popup-btn--control popup-btn--sm" onClick={handlePreview}>
-                                Podglad
-                            </button>
-                            <button type="submit" className="popup-btn popup-btn--control popup-btn--sm popup-btn--solid">Wyslij</button>
                         </div>
                     </form>
                     {isWideScreen && (

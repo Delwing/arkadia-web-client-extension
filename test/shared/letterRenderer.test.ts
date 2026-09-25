@@ -40,6 +40,13 @@ describe('renderLetter (built-in templates)', () => {
         expect(renderLetter(content, 'raw', 20).lines).toEqual(['  a   b', '', '   c']);
     });
 
+    it('keeps the right border of Pergamin III in one column', () => {
+        const { lines } = renderLetter('Ala ma kota', 'parchment3', 40);
+        const borderColumns = lines.slice(2, 11).map(line => line.trimEnd().length - 1);
+        expect(new Set(borderColumns).size).toBe(1);
+        expect(lines.join('\n')).not.toMatch(/\\['`]/);
+    });
+
     it('produces lines of the full width for framed templates', () => {
         for (const template of ['plain', 'parchment', 'parchment2'] as const) {
             const { lines } = renderLetter('Tresc listu, ktora zawija sie na kilka linii w ramce.', template, 40);
