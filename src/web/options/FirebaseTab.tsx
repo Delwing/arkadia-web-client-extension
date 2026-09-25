@@ -538,7 +538,13 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
         setSyncStatus(null);
 
         try {
-            if (syncV2) await resetSyncV2Cloud();
+            if (syncV2) {
+                // The v1 document stays until v1 is removed: it is the way
+                // back if sync v2 has to be switched off.
+                await resetSyncV2Cloud();
+                setSyncStatus('Dane zostaly usuniete z chmury. To urzadzenie wyslalo ponownie swoje dane.');
+                return;
+            }
             const result = await deleteAllCategories();
 
             if (!result.success) {
@@ -547,9 +553,7 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                 return;
             }
 
-            setSyncStatus(syncV2
-                ? 'Dane zostaly usuniete z chmury. To urzadzenie wyslalo ponownie swoje dane.'
-                : 'Dane zostaly usuniete z chmury.');
+            setSyncStatus('Dane zostaly usuniete z chmury.');
             setCloudMetadata({});
         } catch (err) {
             console.error('Delete failed', err);

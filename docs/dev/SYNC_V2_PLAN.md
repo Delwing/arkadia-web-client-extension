@@ -493,6 +493,13 @@ still holds newer-stamped records and the next sync silently undoes the restore.
 - Accumulated data (knowledge, kills, visited rooms, …) is **merged**, not replaced: there's no reset
   (section 2), so no restore epoch was built.
 - No "merge import": a merge is what sync already does.
+- **Backup from before sync v2** (`@web/userData/preSyncBackup`): right before a device migrates (before
+  the v1 reconcile touches local data) it stores a full backup in IndexedDB (`ArkadiaPreSyncV2Backup`),
+  once per device. The backup page offers to restore or download it. A failed save doesn't stop the
+  migration. Removed with v1 in stage 5b.
+- **The v1 document stays intact** during the transition: in v2 mode "Usun wszystkie dane" clears only the
+  v2 data. With `arkadia.syncV2 = '0'` (or a reverted deploy) v1 resumes from the document as each device
+  left it.
 
 ## 12. What gets removed from the UI
 

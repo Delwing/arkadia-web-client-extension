@@ -96,6 +96,8 @@ Mozesz miec otwartych kilka kart klienta jednoczesnie - synchronizacja dziala ty
 
 Przy pierwszym uruchomieniu nowej synchronizacji urzadzenie pobiera dane zapisane przez poprzednia wersje i dopiero potem wysyla swoje. Ustawienia, ktore juz sa w chmurze, maja pierwszenstwo przed domyslnymi ustawieniami nowego urzadzenia; dane, ktore ma tylko to urzadzenie, sa dodawane.
 
+Zanim nowa synchronizacja cokolwiek zmieni, urzadzenie zapisuje u siebie pelna kopie danych. Znajdziesz ja w zakladce kopii zapasowej: mozesz ja przywrocic ("Przywroc stan sprzed aktualizacji") albo pobrac jako plik.
+
 ### Wlaczanie automatycznej synchronizacji
 
 1. Przejdz do **Ustawienia > Firebase**

@@ -2,6 +2,9 @@ const downloadCategories = vi.fn();
 const markSyncV2Started = vi.fn();
 const exportCategories = vi.fn();
 const importCategories = vi.fn();
+const savePreSyncBackup = vi.fn();
+
+vi.mock('@web/userData/preSyncBackup', () => ({ savePreSyncBackup: () => savePreSyncBackup() }));
 
 vi.mock('@modules/firebase/firebaseUnifiedSync', () => ({
     downloadCategories: (...args: unknown[]) => downloadCategories(...args),
@@ -106,6 +109,25 @@ describe('migrateFromV1', () => {
 
         await migrateFromV1('user-1', null);
         expect(downloadCategories).toHaveBeenCalledTimes(1);
+    });
+
+    it('saves a backup before changing any local data', async () => {
+        const order: string[] = [];
+        savePreSyncBackup.mockImplementation(async () => { order.push('backup'); });
+        importCategories.mockImplementation(async () => { order.push('import'); return { success: true, errors: {} }; });
+        exportCategories.mockResolvedValue({});
+        downloadCategories.mockResolvedValue(await cloud({ aliases: '[cloud]' }));
+
+        await migrateFromV1('user-1', null);
+
+        expect(order).toEqual(['backup', 'import']);
+    });
+
+    it('migrates even when the backup can\'t be saved', async () => {
+        savePreSyncBackup.mockRejectedValue(new Error('quota'));
+        exportCategories.mockResolvedValue({});
+        downloadCategories.mockResolvedValue(await cloud({}));
+        expect(await migrateFromV1('user-1', null)).not.toBeNull();
     });
 
     it('returns null and remembers nothing when it can\'t run', async () => {

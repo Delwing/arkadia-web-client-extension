@@ -23,6 +23,7 @@ import {
     importCategories,
     mergePerCharacterEnvelopes,
 } from '@web/options/exportUtils';
+import { savePreSyncBackup } from './preSyncBackup';
 
 /** The v1 category each v2 type's data used to sync in. Types not listed never synced in v1. */
 export const V1_CATEGORY_OF_TYPE: Readonly<Record<string, SyncCategory>> = {
@@ -137,6 +138,12 @@ export async function migrateFromV1(userId: string, passphrase: string | null): 
     if (done) return new Set(done.editTypes);
 
     let edits: Set<SyncCategory>;
+    // Before anything local changes: the way back if sync v2 goes wrong.
+    try {
+        await savePreSyncBackup();
+    } catch (error) {
+        console.warn('[SyncV2] Could not save the backup from before sync v2:', error);
+    }
     try {
         edits = await reconcileWithV1(passphrase);
     } catch (error) {
