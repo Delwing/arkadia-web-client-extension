@@ -135,6 +135,31 @@ export function getSavedTheme(): string {
   return localStorage.getItem('editor-theme') || 'dark-plus'
 }
 
+export interface EditorPrefs {
+  fontSize: number
+  minimap: boolean
+}
+
+const PREFS_KEY = 'editor-prefs'
+const DEFAULT_PREFS: EditorPrefs = { fontSize: 14, minimap: true }
+
+/** Font size and minimap, set in the settings popover and kept across sessions. */
+export function getEditorPrefs(): EditorPrefs {
+  try {
+    return { ...DEFAULT_PREFS, ...JSON.parse(localStorage.getItem(PREFS_KEY) || '{}') }
+  } catch {
+    return { ...DEFAULT_PREFS }
+  }
+}
+
+export function saveEditorPrefs(patch: Partial<EditorPrefs>) {
+  try {
+    localStorage.setItem(PREFS_KEY, JSON.stringify({ ...getEditorPrefs(), ...patch }))
+  } catch {
+    // Storage full or blocked: the change still applies for this session.
+  }
+}
+
 /**
  * Apply cached theme colors immediately on page load (before Shiki initializes)
  * This prevents the flash of wrong colors when the page loads
@@ -417,8 +442,8 @@ export async function initializeEditor(
     model: model,
     theme: savedTheme,
     automaticLayout: true,
-    minimap: { enabled: true },
-    fontSize: 14,
+    minimap: { enabled: getEditorPrefs().minimap },
+    fontSize: getEditorPrefs().fontSize,
     tabSize: 2,
     fontLigatures: true,
     inlayHints: {

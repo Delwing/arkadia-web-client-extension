@@ -18,7 +18,17 @@ import {
 import type { StatusType } from './types'
 import JSZip from 'jszip'
 
-export async function refreshPluginList(_currentPluginId: string | null): Promise<void> {
+/** What the plugin switcher and the welcome screen show for one plugin. */
+export interface PluginSummary {
+  id: string
+  name: string
+  language: 'typescript' | 'javascript'
+  fileCount: number
+  updatedAt: number
+}
+
+/** Every plugin the editor can open, most recently edited first. */
+export async function refreshPluginList(): Promise<PluginSummary[]> {
   const editorPlugins = await getAllEditorPlugins()
   const known = new Set(editorPlugins.map(p => p.id))
 
@@ -38,34 +48,15 @@ export async function refreshPluginList(_currentPluginId: string | null): Promis
       updatedAt: stored.updatedAt,
     }))
 
-  const plugins = [...editorPlugins, ...storedOnly]
-  const select = document.getElementById('plugin-select') as HTMLSelectElement
-
-  // Save current selection
-  const currentValue = select.value
-
-  // Clear and rebuild
-  select.innerHTML = '<option value="">Select Plugin...</option>'
-
-  plugins
+  return [...editorPlugins, ...storedOnly]
     .sort((a, b) => b.updatedAt - a.updatedAt)
-    .forEach(plugin => {
-      const option = document.createElement('option')
-      option.value = plugin.id
-
-      // Display file count if multi-file plugin
-      const fileCount = plugin.files ? Object.keys(plugin.files).length : 1
-      const fileInfo = fileCount > 1 ? ` [${fileCount} files]` : ''
-      const lang = plugin.entryPoint?.endsWith('.ts') ? 'TS' : 'JS'
-
-      option.textContent = `${plugin.name} (${lang})${fileInfo}`
-      select.appendChild(option)
-    })
-
-  // Restore selection if still valid
-  if (currentValue && plugins.some(p => p.id === currentValue)) {
-    select.value = currentValue
-  }
+    .map(plugin => ({
+      id: plugin.id,
+      name: plugin.name,
+      language: plugin.entryPoint?.endsWith('.ts') ? 'typescript' : 'javascript',
+      fileCount: plugin.files ? Object.keys(plugin.files).length : 1,
+      updatedAt: plugin.updatedAt,
+    }))
 }
 
 /**
@@ -131,8 +122,7 @@ export async function savePlugin(
   bundlePluginFunc: (files: Record<string, PluginFile>, entryPoint: string) => Promise<string>,
   updateStatus: (message: string, type: StatusType) => void
 ): Promise<{ id: string; isNewPlugin: boolean }> {
-  const nameInput = document.getElementById('plugin-name') as HTMLInputElement
-  const name = nameInput.value.trim()
+  const name = plugin.name.trim()
 
   if (!name) {
     updateStatus('Please enter a plugin name', 'error')
@@ -149,9 +139,6 @@ export async function savePlugin(
     try {
       updateStatus('Bundling plugin...', 'normal')
       compiled = await bundlePluginFunc(plugin.files, plugin.entryPoint)
-      const compileStatus = document.getElementById('compile-status')!
-      compileStatus.textContent = '✓ Bundled'
-      setTimeout(() => compileStatus.textContent = '', 3000)
     } catch (error) {
       updateStatus('Bundling failed: ' + (error as Error).message, 'error')
       console.error(error)
@@ -220,11 +207,7 @@ export async function deletePlugin(
   pluginId: string,
   updateStatus: (message: string, type: StatusType) => void
 ): Promise<void> {
-  const plugin = await getEditorPlugin(pluginId)
-  if (!plugin) return
-
-  if (!confirm(`Delete plugin "${plugin.name}"?`)) return
-
+  // Asking first is the caller's job (the editor shows its own dialog).
   // Delete from editor storage
   await deleteEditorPlugin(pluginId)
 
@@ -244,14 +227,14 @@ export async function createNewPlugin(
   bundlePluginFunc: (files: Record<string, PluginFile>, entryPoint: string) => Promise<string>
 ): Promise<EditorPluginData> {
   const nameInput = document.getElementById('new-plugin-name') as HTMLInputElement
-  const langSelect = document.getElementById('new-plugin-language') as HTMLSelectElement
+  const langInput = document.querySelector<HTMLInputElement>('input[name="new-plugin-language"]:checked')
 
   const name = nameInput.value.trim()
   if (!name) {
     throw new Error('Please enter a plugin name')
   }
 
-  const language = langSelect.value as 'javascript' | 'typescript'
+  const language = (langInput?.value ?? 'typescript') as 'javascript' | 'typescript'
 
   // Template code
   const jsTemplate = `export async function init(api) {

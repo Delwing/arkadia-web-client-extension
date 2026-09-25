@@ -31,95 +31,24 @@
 <body>
     <div id="app">
         <div id="toolbar">
-            <div class="toolbar-group">
-                <select id="plugin-select" title="Plugin">
-                    <option value="">Select Plugin...</option>
-                </select>
-                <input type="text" id="plugin-name" placeholder="Plugin name" />
-                <select id="language-select" title="Language">
-                    <option value="javascript">JavaScript</option>
-                    <option value="typescript" selected>TypeScript</option>
-                </select>
-            </div>
-            <div class="toolbar-sep"></div>
-            <div class="toolbar-group">
-                <button id="save-btn" class="primary" title="Save plugin"><svg class="icon" viewBox="0 0 24 24"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/></svg><span>Save</span></button>
-                <button id="new-btn" class="collapsible" title="New plugin"><svg class="icon" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></svg><span>New</span></button>
-                <button id="download-btn" class="collapsible" title="Download plugin as ZIP"><svg class="icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg><span>Download</span></button>
-                <button id="upload-btn" class="collapsible" title="Upload plugin from ZIP"><svg class="icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/></svg><span>Upload</span></button>
-                <button id="publish-btn" class="collapsible" title="Opublikuj plugin w katalogu"><svg class="icon" viewBox="0 0 24 24"><path d="M14.5 21.7a.5.5 0 0 0 .9-.1l6.5-19a.5.5 0 0 0-.6-.6l-19 6.5a.5.5 0 0 0-.1.9l7.9 3.2a2 2 0 0 1 1.1 1.1z"/><path d="m21.9 2.1-10.9 10.9"/></svg><span>Publish</span></button>
-                <button id="delete-btn" class="danger collapsible" title="Delete plugin"><svg class="icon" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg><span>Delete</span></button>
-            </div>
+            <button id="plugin-switcher-btn" title="Switch plugin (Ctrl+O)">
+                <span class="switcher-mark"><svg class="icon" viewBox="0 0 24 24"><path d="M12 3 3 7.5l9 4.5 9-4.5z"/><path d="m3 12 9 4.5 9-4.5"/><path d="m3 16.5 9 4.5 9-4.5"/></svg></span>
+                <span id="switcher-name">Open a plugin…</span>
+                <span id="switcher-lang" class="lang-badge" hidden></span>
+                <span id="switcher-dirty" class="dirty-dot" hidden></span>
+                <svg class="icon icon--chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+            <div id="breadcrumb"><svg class="icon icon--sm" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg><span id="breadcrumb-path"></span></div>
             <div class="spacer"></div>
-            <button id="compile-btn" class="collapsible" style="display: none;" title="Compile TypeScript"><svg class="icon" viewBox="0 0 24 24"><path d="m15 12-8.4 8.4a2.1 2.1 0 1 1-3-3L12 9"/><path d="M17.6 15 22 10.6"/><path d="m20.9 11.7-1.3-1.3c-.4-.4-.6-.9-.6-1.4v-.9l-2.5-2.5a5.3 5.3 0 0 0-3.8-1.6H9l.9.8A6.2 6.2 0 0 1 12 9.2V10l2 2h.9c.5 0 1 .2 1.4.6l1.3 1.3"/></svg><span>Compile</span></button>
-            <span id="compile-status"></span>
-            <div class="toolbar-group toolbar-toggles">
-                <button id="toggle-js-preview-btn" class="toggle collapsible" title="Toggle JavaScript Preview"><svg class="icon" viewBox="0 0 24 24"><path d="m16 18 6-6-6-6"/><path d="m8 6-6 6 6 6"/></svg><span>JS Preview</span></button>
-                <button id="toggle-agent-btn" class="toggle collapsible" title="Toggle AI Agent Panel"><svg class="icon" viewBox="0 0 24 24"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg><span>AI Agent</span></button>
-            </div>
+            <span id="save-state"></span>
+            <button id="save-btn" title="Save plugin (Ctrl+S)"><svg class="icon" viewBox="0 0 24 24"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/></svg><span>Save</span><kbd>Ctrl S</kbd></button>
+            <button id="actions-btn" class="icon-btn" title="More actions"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></button>
             <div class="toolbar-sep"></div>
-                <select id="theme-select" title="Editor Theme">
-                    <option value="andromeeda">Andromeeda</option>
-                    <option value="aurora-x">Aurora X</option>
-                    <option value="ayu-dark">Ayu Dark</option>
-                    <option value="catppuccin-frappe">Catppuccin Frappé</option>
-                    <option value="catppuccin-latte">Catppuccin Latte</option>
-                    <option value="catppuccin-macchiato">Catppuccin Macchiato</option>
-                    <option value="catppuccin-mocha">Catppuccin Mocha</option>
-                    <option value="dark-plus">Dark+</option>
-                    <option value="dracula">Dracula</option>
-                    <option value="dracula-soft">Dracula Soft</option>
-                    <option value="everforest-dark">Everforest Dark</option>
-                    <option value="everforest-light">Everforest Light</option>
-                    <option value="github-dark">GitHub Dark</option>
-                    <option value="github-dark-default">GitHub Dark Default</option>
-                    <option value="github-dark-dimmed">GitHub Dark Dimmed</option>
-                    <option value="github-dark-high-contrast">GitHub Dark High Contrast</option>
-                    <option value="github-light">GitHub Light</option>
-                    <option value="github-light-default">GitHub Light Default</option>
-                    <option value="github-light-high-contrast">GitHub Light High Contrast</option>
-                    <option value="gruvbox-dark-hard">Gruvbox Dark Hard</option>
-                    <option value="gruvbox-dark-medium">Gruvbox Dark Medium</option>
-                    <option value="gruvbox-dark-soft">Gruvbox Dark Soft</option>
-                    <option value="gruvbox-light-hard">Gruvbox Light Hard</option>
-                    <option value="gruvbox-light-medium">Gruvbox Light Medium</option>
-                    <option value="gruvbox-light-soft">Gruvbox Light Soft</option>
-                    <option value="houston">Houston</option>
-                    <option value="kanagawa-dragon">Kanagawa Dragon</option>
-                    <option value="kanagawa-lotus">Kanagawa Lotus</option>
-                    <option value="kanagawa-wave">Kanagawa Wave</option>
-                    <option value="laserwave">Laserwave</option>
-                    <option value="light-plus">Light+</option>
-                    <option value="material-theme">Material Theme</option>
-                    <option value="material-theme-darker">Material Theme Darker</option>
-                    <option value="material-theme-lighter">Material Theme Lighter</option>
-                    <option value="material-theme-ocean">Material Theme Ocean</option>
-                    <option value="material-theme-palenight">Material Theme Palenight</option>
-                    <option value="min-dark">Min Dark</option>
-                    <option value="min-light">Min Light</option>
-                    <option value="monokai">Monokai</option>
-                    <option value="night-owl">Night Owl</option>
-                    <option value="nord">Nord</option>
-                    <option value="one-dark-pro">One Dark Pro</option>
-                    <option value="one-light">One Light</option>
-                    <option value="plastic">Plastic</option>
-                    <option value="poimandres">Poimandres</option>
-                    <option value="red">Red</option>
-                    <option value="rose-pine">Rosé Pine</option>
-                    <option value="rose-pine-dawn">Rosé Pine Dawn</option>
-                    <option value="rose-pine-moon">Rosé Pine Moon</option>
-                    <option value="slack-dark">Slack Dark</option>
-                    <option value="slack-ochin">Slack Ochin</option>
-                    <option value="snazzy-light">Snazzy Light</option>
-                    <option value="solarized-dark">Solarized Dark</option>
-                    <option value="solarized-light">Solarized Light</option>
-                    <option value="synthwave-84">Synthwave '84</option>
-                    <option value="tokyo-night">Tokyo Night</option>
-                    <option value="vesper">Vesper</option>
-                    <option value="vitesse-black">Vitesse Black</option>
-                    <option value="vitesse-dark">Vitesse Dark</option>
-                    <option value="vitesse-light">Vitesse Light</option>
-                </select>
+            <div class="toolbar-segment">
+                <button id="toggle-js-preview-btn" class="toggle" title="Compiled JavaScript preview"><svg class="icon" viewBox="0 0 24 24"><path d="m16 18 6-6-6-6"/><path d="m8 6-6 6 6 6"/></svg><span>JS</span></button>
+                <button id="toggle-agent-btn" class="toggle" title="AI agent"><svg class="icon" viewBox="0 0 24 24"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg><span>AI</span></button>
+            </div>
+            <button id="settings-btn" class="icon-btn" title="Editor settings"><svg class="icon" viewBox="0 0 24 24"><path d="M12.2 2h-.4a2 2 0 0 0-2 2v.2a2 2 0 0 1-1 1.7l-.4.3a2 2 0 0 1-2 0l-.2-.1a2 2 0 0 0-2.7.7l-.2.4a2 2 0 0 0 .7 2.7l.2.1a2 2 0 0 1 1 1.7v.5a2 2 0 0 1-1 1.7l-.2.1a2 2 0 0 0-.7 2.7l.2.4a2 2 0 0 0 2.7.7l.2-.1a2 2 0 0 1 2 0l.4.3a2 2 0 0 1 1 1.7V20a2 2 0 0 0 2 2h.4a2 2 0 0 0 2-2v-.2a2 2 0 0 1 1-1.7l.4-.3a2 2 0 0 1 2 0l.2.1a2 2 0 0 0 2.7-.7l.2-.4a2 2 0 0 0-.7-2.7l-.2-.1a2 2 0 0 1-1-1.7v-.5a2 2 0 0 1 1-1.7l.2-.1a2 2 0 0 0 .7-2.7l-.2-.4a2 2 0 0 0-2.7-.7l-.2.1a2 2 0 0 1-2 0l-.4-.3a2 2 0 0 1-1-1.7V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></button>
         </div>
         <div id="main-content">
             <div id="file-tree">
@@ -133,6 +62,35 @@
                 <div id="file-tree-resizer"></div>
             </div>
             <div id="editor-container"></div>
+            <div id="welcome" hidden>
+                <div class="welcome-inner">
+                    <div class="welcome-intro">
+                        <h1>Plugin editor</h1>
+                        <p>Write plugins for the Arkadia client in TypeScript or JavaScript. Saving bundles the plugin and reloads it in the game.</p>
+                    </div>
+                    <div class="welcome-actions">
+                        <button id="welcome-new-btn" class="welcome-action welcome-action--primary">
+                            <span class="welcome-action__icon"><svg class="icon" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></svg></span>
+                            <span class="welcome-action__text"><strong>New plugin</strong><small>Start from a template</small></span>
+                        </button>
+                        <button id="welcome-import-btn" class="welcome-action">
+                            <span class="welcome-action__icon"><svg class="icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/></svg></span>
+                            <span class="welcome-action__text"><strong>Import ZIP</strong><small>A plugin downloaded from here</small></span>
+                        </button>
+                        <a class="welcome-action" href="https://github.com/Delwing/arkadia-web-client-extension/blob/master/docs/PLUGINS.md" target="_blank" rel="noopener">
+                            <span class="welcome-action__icon"><svg class="icon" viewBox="0 0 24 24"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg></span>
+                            <span class="welcome-action__text"><strong>Plugin API docs</strong><small>Triggers, commands, UI</small></span>
+                        </a>
+                    </div>
+                    <div id="welcome-recent-section">
+                        <div class="welcome-recent-head">
+                            <span class="panel-title">Recent</span>
+                            <button id="welcome-all-btn" class="link-btn">All plugins <kbd>Ctrl O</kbd></button>
+                        </div>
+                        <div id="welcome-recent"></div>
+                    </div>
+                </div>
+            </div>
             <div id="js-preview-panel" style="display: none;">
                 <div id="js-preview-header" class="panel-header">
                     <span class="panel-title">Compiled JavaScript</span>
@@ -178,7 +136,13 @@
         <div id="status-bar">
             <span id="status-dot"></span>
             <span id="status-text">Ready</span>
+            <button id="problems-btn" title="Go to the first problem" hidden>
+                <span class="problems-count problems-count--error"><svg class="icon icon--xs" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg><span id="problems-errors">0</span></span>
+                <span class="problems-count problems-count--warning"><svg class="icon icon--xs" viewBox="0 0 24 24"><path d="m21.7 18-8-14a2 2 0 0 0-3.5 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg><span id="problems-warnings">0</span></span>
+            </button>
             <div class="spacer"></div>
+            <span id="cursor-position"></span>
+            <span id="file-language"></span>
             <div id="dev-server-status" title="Click to configure dev server connection">
                 <span id="dev-server-indicator" class="disconnected"></span>
                 <span id="dev-server-text">IDE: Disconnected</span>
@@ -187,24 +151,33 @@
     </div>
 
     <div id="new-plugin-modal" class="modal-overlay">
-        <div class="modal modal--sm">
+        <div class="modal modal--md">
             <div class="modal-header"><h2>New Plugin</h2></div>
             <div class="modal-body">
                 <div class="field">
-                    <label for="new-plugin-name">Plugin Name</label>
+                    <label for="new-plugin-name">Name</label>
                     <input type="text" id="new-plugin-name" placeholder="My Plugin" />
                 </div>
                 <div class="field">
-                    <label for="new-plugin-language">Language</label>
-                    <select id="new-plugin-language">
-                        <option value="javascript">JavaScript</option>
-                        <option value="typescript" selected>TypeScript</option>
-                    </select>
+                    <span class="field-label">Language</span>
+                    <div class="lang-choices">
+                        <label class="lang-choice">
+                            <input type="radio" name="new-plugin-language" value="typescript" checked />
+                            <span class="lang-choice__head"><span class="lang-badge lang-badge--ts">TS</span><strong>TypeScript</strong></span>
+                            <small>Autocomplete and type checks against the plugin API. Recommended.</small>
+                        </label>
+                        <label class="lang-choice">
+                            <input type="radio" name="new-plugin-language" value="javascript" />
+                            <span class="lang-choice__head"><span class="lang-badge lang-badge--js">JS</span><strong>JavaScript</strong></span>
+                            <small>Plain JavaScript, no types. Good for small scripts.</small>
+                        </label>
+                    </div>
+                    <span class="field-hint">Fixed for the plugin. Each file's language follows its extension.</span>
                 </div>
             </div>
             <div class="modal-buttons">
                 <button id="new-plugin-cancel">Cancel</button>
-                <button id="new-plugin-create" class="primary">Create</button>
+                <button id="new-plugin-create" class="primary">Create plugin</button>
             </div>
         </div>
     </div>
@@ -222,6 +195,138 @@
                 <button id="new-file-cancel">Cancel</button>
                 <button id="new-file-create" class="primary">Create</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Plugin switcher (Ctrl+O) -->
+    <div id="plugin-switcher" class="popover popover--switcher" hidden>
+        <div class="switcher-search">
+            <label class="search-field">
+                <svg class="icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                <input type="text" id="plugin-search" placeholder="Search plugins…" autocomplete="off" />
+                <kbd>Ctrl O</kbd>
+            </label>
+        </div>
+        <div id="plugin-list" class="switcher-list"></div>
+        <div class="switcher-footer">
+            <button id="switcher-new-btn" class="primary"><svg class="icon" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></svg><span>New plugin</span></button>
+            <button id="switcher-import-btn"><svg class="icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/></svg><span>Import ZIP…</span></button>
+            <div class="spacer"></div>
+            <span class="switcher-hint">↑↓ to move · Enter to open</span>
+        </div>
+    </div>
+
+    <!-- Plugin actions -->
+    <div id="actions-menu" class="popover menu" hidden>
+        <button class="menu-item" data-action="rename"><svg class="icon" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.4 3.6a2.1 2.1 0 1 1 3 3L7 19l-4 1 1-4Z"/></svg><span>Rename…</span></button>
+        <button class="menu-item" data-action="download"><svg class="icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg><span>Download ZIP</span></button>
+        <button class="menu-item" data-action="publish"><svg class="icon" viewBox="0 0 24 24"><path d="M14.5 21.7a.5.5 0 0 0 .9-.1l6.5-19a.5.5 0 0 0-.6-.6l-19 6.5a.5.5 0 0 0-.1.9l7.9 3.2a2 2 0 0 1 1.1 1.1z"/><path d="m21.9 2.1-10.9 10.9"/></svg><span>Publish to catalog…</span></button>
+        <div class="menu-separator"></div>
+        <button class="menu-item menu-item--danger" data-action="delete"><svg class="icon" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg><span>Delete plugin…</span></button>
+    </div>
+
+    <!-- Editor settings -->
+    <div id="settings-popover" class="popover popover--settings" hidden>
+        <div class="settings-section">
+            <label class="settings-label" for="theme-select">Editor theme</label>
+                        <select id="theme-select">
+                            <optgroup label="Dark">
+                                <option value="andromeeda">Andromeeda</option>
+                                <option value="aurora-x">Aurora X</option>
+                                <option value="ayu-dark">Ayu Dark</option>
+                                <option value="catppuccin-frappe">Catppuccin Frappé</option>
+                                <option value="catppuccin-macchiato">Catppuccin Macchiato</option>
+                                <option value="catppuccin-mocha">Catppuccin Mocha</option>
+                                <option value="dark-plus">Dark+</option>
+                                <option value="dracula">Dracula</option>
+                                <option value="dracula-soft">Dracula Soft</option>
+                                <option value="everforest-dark">Everforest Dark</option>
+                                <option value="github-dark">GitHub Dark</option>
+                                <option value="github-dark-default">GitHub Dark Default</option>
+                                <option value="github-dark-dimmed">GitHub Dark Dimmed</option>
+                                <option value="github-dark-high-contrast">GitHub Dark High Contrast</option>
+                                <option value="gruvbox-dark-hard">Gruvbox Dark Hard</option>
+                                <option value="gruvbox-dark-medium">Gruvbox Dark Medium</option>
+                                <option value="gruvbox-dark-soft">Gruvbox Dark Soft</option>
+                                <option value="houston">Houston</option>
+                                <option value="kanagawa-dragon">Kanagawa Dragon</option>
+                                <option value="kanagawa-wave">Kanagawa Wave</option>
+                                <option value="laserwave">Laserwave</option>
+                                <option value="material-theme">Material Theme</option>
+                                <option value="material-theme-darker">Material Theme Darker</option>
+                                <option value="material-theme-ocean">Material Theme Ocean</option>
+                                <option value="material-theme-palenight">Material Theme Palenight</option>
+                                <option value="min-dark">Min Dark</option>
+                                <option value="monokai">Monokai</option>
+                                <option value="night-owl">Night Owl</option>
+                                <option value="nord">Nord</option>
+                                <option value="one-dark-pro">One Dark Pro</option>
+                                <option value="plastic">Plastic</option>
+                                <option value="poimandres">Poimandres</option>
+                                <option value="red">Red</option>
+                                <option value="rose-pine">Rosé Pine</option>
+                                <option value="rose-pine-moon">Rosé Pine Moon</option>
+                                <option value="slack-dark">Slack Dark</option>
+                                <option value="solarized-dark">Solarized Dark</option>
+                                <option value="synthwave-84">Synthwave '84</option>
+                                <option value="tokyo-night">Tokyo Night</option>
+                                <option value="vesper">Vesper</option>
+                                <option value="vitesse-black">Vitesse Black</option>
+                                <option value="vitesse-dark">Vitesse Dark</option>
+                            </optgroup>
+                            <optgroup label="Light">
+                                <option value="catppuccin-latte">Catppuccin Latte</option>
+                                <option value="everforest-light">Everforest Light</option>
+                                <option value="github-light">GitHub Light</option>
+                                <option value="github-light-default">GitHub Light Default</option>
+                                <option value="github-light-high-contrast">GitHub Light High Contrast</option>
+                                <option value="gruvbox-light-hard">Gruvbox Light Hard</option>
+                                <option value="gruvbox-light-medium">Gruvbox Light Medium</option>
+                                <option value="gruvbox-light-soft">Gruvbox Light Soft</option>
+                                <option value="kanagawa-lotus">Kanagawa Lotus</option>
+                                <option value="light-plus">Light+</option>
+                                <option value="material-theme-lighter">Material Theme Lighter</option>
+                                <option value="min-light">Min Light</option>
+                                <option value="one-light">One Light</option>
+                                <option value="rose-pine-dawn">Rosé Pine Dawn</option>
+                                <option value="slack-ochin">Slack Ochin</option>
+                                <option value="snazzy-light">Snazzy Light</option>
+                                <option value="solarized-light">Solarized Light</option>
+                                <option value="vitesse-light">Vitesse Light</option>
+                            </optgroup>
+                        </select>
+        </div>
+        <div class="settings-section settings-row">
+            <span>Font size</span>
+            <div class="stepper">
+                <button id="font-smaller-btn" title="Smaller">−</button>
+                <span id="font-size-value">14</span>
+                <button id="font-larger-btn" title="Larger">+</button>
+            </div>
+        </div>
+        <label class="settings-section settings-row">
+            <span>Minimap</span>
+            <input type="checkbox" id="minimap-toggle" class="switch" />
+        </label>
+        <div class="settings-section">
+            <span class="settings-label">IDE connection</span>
+            <div class="settings-row">
+                <span id="settings-ide-dot" class="status-dot"></span>
+                <span id="settings-ide-text" class="settings-ide-text">Not connected</span>
+                <button id="settings-ide-btn">Configure…</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Generic confirm / prompt dialog -->
+    <div id="app-dialog" class="modal-overlay">
+        <div class="modal modal--sm">
+            <div class="modal-header"><h2 id="app-dialog-title"></h2></div>
+            <div class="modal-body">
+                <p id="app-dialog-message" class="dialog-message"></p>
+                <input type="text" id="app-dialog-input" hidden />
+            </div>
+            <div class="modal-buttons" id="app-dialog-buttons"></div>
         </div>
     </div>
 

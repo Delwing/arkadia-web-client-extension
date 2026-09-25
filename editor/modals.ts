@@ -15,8 +15,8 @@ export function showNewPluginModal() {
   const nameInput = document.getElementById('new-plugin-name') as HTMLInputElement
   nameInput.value = ''
 
-  const langSelect = document.getElementById('new-plugin-language') as HTMLSelectElement
-  langSelect.value = 'typescript'
+  const typescript = document.querySelector<HTMLInputElement>('input[name="new-plugin-language"][value="typescript"]')
+  if (typescript) typescript.checked = true
 
   nameInput.focus()
 }
