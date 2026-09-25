@@ -32,6 +32,14 @@ test.describe('Logowanie', () => {
         await expect(overlay(page)).toBeHidden();
     });
 
+    test('closing the card without connecting focuses the command line', async ({ page }) => {
+        await page.goto('/');
+        await expect(overlay(page)).toBeVisible();
+        await page.locator('#auth-close').click();
+        await expect(overlay(page)).toBeHidden();
+        await expect(page.locator('#message-input')).toBeFocused();
+    });
+
     test('each mode has its settings; Escape closes them, not the screen', async ({ page }) => {
         await page.goto('/');
         await page.locator('#proxy-mode-proxy').click();

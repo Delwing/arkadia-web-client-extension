@@ -1275,6 +1275,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const closeAuthOverlay = () => {
             authClosed = true;
             updateConnectButtons();
+            // Dismissing the login screen without connecting leaves the command
+            // line as the place to type, same as after a connect.
+            focusCommandInputOnConnect();
         };
         authClose.addEventListener('click', closeAuthOverlay);
         document.addEventListener('keydown', (e) => {
