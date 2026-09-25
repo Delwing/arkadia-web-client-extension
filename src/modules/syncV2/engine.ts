@@ -308,6 +308,15 @@ export class SyncEngineV2 {
     }
 
     /**
+     * Resolves once the first cloud snapshot is applied and this device's
+     * changes uploaded after it (at once when that already happened).
+     */
+    ready(): Promise<void> {
+        if (this.received) return Promise.resolve();
+        return new Promise((resolve, reject) => this.receiveWaiters.push({ resolve, reject }));
+    }
+
+    /**
      * Read everything in the cloud again (the base and every batch) and apply
      * it. Merging is idempotent, so this only fills in what this device lacks.
      * Resolves once the data is applied.

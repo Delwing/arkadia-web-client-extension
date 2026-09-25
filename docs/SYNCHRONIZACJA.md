@@ -106,7 +106,9 @@ Zanim nowa synchronizacja cokolwiek zmieni, urzadzenie zapisuje u siebie pelna k
 
 ### Reczne wysylanie
 
-Przycisk **"Wyslij do chmury"** wysyla oczekujace zmiany od razu, bez czekania na kolejna synchronizacje.
+Przycisk **"Wyslij do chmury"** wysyla oczekujace zmiany od razu, bez czekania na kolejna synchronizacje. **"Pobierz z chmury"** pobiera wszystko, co jest w chmurze, i laczy to z danymi na urzadzeniu.
+
+Oba przyciski dzialaja takze przy wylaczonej automatycznej synchronizacji: wykonuja wtedy jednorazowa synchronizacje (najpierw pobieraja zmiany z chmury, potem wysylaja swoje) i synchronizacja znow sie zatrzymuje.
 
 ---
 
