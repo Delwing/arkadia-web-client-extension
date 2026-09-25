@@ -55,6 +55,14 @@ export interface SessionHandoffDeps {
     setTimer(fn: () => void, ms: number): () => void;
 }
 
+/**
+ * Every decision goes to the console. The handoff happens on two devices at once
+ * and fails quietly by design, so this is the only way to see why it did not.
+ */
+function log(message: string, ...details: unknown[]): void {
+    console.info(`[SessionHandoff] ${message}`, ...details);
+}
+
 export class SessionHandoff {
     private store: HandoffStore | null = null;
     private gameConnected = false;
@@ -165,12 +173,17 @@ export class SessionHandoff {
         const character = this.character;
         const roomId = this.room;
         const objectNum = this.body;
-        if (!store || !session || !character || roomId === null || objectNum === null) return;
-        if (this.endedSession === session) return;
-        if (this.lost || !this.deps.isTrusted()) return;
+        if (!session || !character || this.endedSession === session) return;
+        if (!store) return log('session ended, not handing over: not signed in to Firebase');
+        if (roomId === null) return log('session ended, not handing over: no room known');
+        if (objectNum === null) return log('session ended, not handing over: game object unknown');
+        if (this.lost) return log('session ended, not handing over: map position lost');
+        if (!this.deps.isTrusted()) return log('session ended, not handing over: tab was in the background');
         this.endedSession = session;
         const handoff = {from: session, device: this.deps.deviceId, roomId, objectNum, at: store.now()};
-        await this.run(store, () => store.transact(character, current => withHandoff(current, handoff, store.now())));
+        const written = await this.run(store, () => store.transact(character, current => withHandoff(current, handoff, store.now())));
+        if (written?.handoff?.from === session) log(`handed over room ${roomId} (object ${objectNum})`);
+        else log('session ended, handoff refused: another login claimed the character too long ago');
     }
 
     private claim(): void {
@@ -189,13 +202,16 @@ export class SessionHandoff {
             this.prevSession = committed.prevSession;
             const inherited = inheritedRoom(previous, store.now());
             if (inherited) {
+                log(`claimed ${character}; found room ${inherited.roomId} left by the previous session`);
                 this.offer(inherited);
             } else if (this.offerOpen && this.prevSession) {
+                log(`claimed ${character}; waiting ${TAKEOVER_WINDOW_MS / 1000} s for the previous session to hand over`);
                 this.stopOfferTimer = this.deps.setTimer(() => {
                     this.stopOfferTimer = null;
                     this.closeOffer();
                 }, TAKEOVER_WINDOW_MS);
             } else {
+                log(`claimed ${character}; no previous session to take over from`);
                 this.closeOffer();
             }
             this.stopWatch = store.watch(character, value => this.onRecord(value));
@@ -212,6 +228,7 @@ export class SessionHandoff {
         }
         // Someone logged in over us: the socket may not have told us yet.
         if (value && value.session !== session && value.prevSession === session) {
+            log('another device logged in as this character');
             void this.sessionEnded();
         }
     }
@@ -226,11 +243,14 @@ export class SessionHandoff {
      * means anything.
      */
     private offer(handoff: HandoffRoom): void {
-        if (!this.offerOpen || this.moved) return;
+        if (this.moved) return log(`not applying room ${handoff.roomId}: the map was placed since login`);
+        if (!this.offerOpen) return log(`not applying room ${handoff.roomId}: arrived too late`);
         if (this.loginBody === null || handoff.objectNum !== this.loginBody) {
+            log(`not applying room ${handoff.roomId}: game object ${handoff.objectNum} left, logged in as ${this.loginBody}`);
             this.closeOffer();
             return;
         }
+        log(`applying room ${handoff.roomId}`);
         this.closeOffer();
         this.applying = true;
         try {

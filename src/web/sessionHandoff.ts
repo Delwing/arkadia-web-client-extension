@@ -114,6 +114,7 @@ export function setSessionHandoffUser(userId: string | null): void {
             if (!database || token !== storeToken) return;
             store = new RtdbHandoffStore(database.api, database.db, userId);
             handoff?.setStore(store);
+            console.info('[SessionHandoff] ready, Realtime Database', database.url ?? '(SDK default URL)');
         })
         .catch(error => console.warn('[SessionHandoff] Realtime Database unavailable:', error));
 }

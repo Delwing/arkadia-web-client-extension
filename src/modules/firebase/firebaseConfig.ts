@@ -91,19 +91,30 @@ export async function initializeFirebase(config?: FirebaseUserConfig): Promise<F
 }
 
 /**
+ * Realtime Database URLs of the projects this client ships with. Saved configs
+ * predate the `databaseURL` field, so the project id is what finds it.
+ */
+const KNOWN_DATABASE_URLS: Record<string, string> = {
+    'dargoth-client': 'https://dargoth-client-default-rtdb.europe-west1.firebasedatabase.app',
+};
+
+/**
  * The Realtime Database, loaded on first use: only the session handoff needs it.
  *
  * The URL comes from the saved config, then `VITE_FIREBASE_DATABASE_URL`, then the
- * SDK's default for the project (`{projectId}-default-rtdb.firebaseio.com`), which
- * is right only for a database created in us-central1.
+ * known URL for the project, and only then the SDK's own guess
+ * (`{projectId}-default-rtdb.firebaseio.com`). That guess is right only for a
+ * database in us-central1; for any other region the SDK refuses to connect.
  */
-export async function getRealtimeDatabase(): Promise<{ api: typeof import('firebase/database'); db: Database } | null> {
+export async function getRealtimeDatabase(): Promise<{ api: typeof import('firebase/database'); db: Database; url: string | undefined } | null> {
     const app = firebaseApp;
     if (!app) return null;
     const api = await import('firebase/database');
-    const url = loadFirebaseConfig()?.databaseURL
-        ?? (import.meta.env.VITE_FIREBASE_DATABASE_URL as string | undefined);
-    return { api, db: url ? api.getDatabase(app, url) : api.getDatabase(app) };
+    const config = loadFirebaseConfig();
+    const url = config?.databaseURL
+        ?? (import.meta.env.VITE_FIREBASE_DATABASE_URL as string | undefined)
+        ?? (config ? KNOWN_DATABASE_URLS[config.projectId] : undefined);
+    return { api, db: url ? api.getDatabase(app, url) : api.getDatabase(app), url };
 }
 
 // Cleanup Firebase (for testing or config change)
