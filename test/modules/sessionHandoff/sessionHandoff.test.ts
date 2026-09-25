@@ -62,12 +62,15 @@ function device(db: FakeDatabase, name: string) {
     return {handoff, applied, state, store};
 }
 
+/** The game object the character is while it stays in the world. */
+const BODY = 7;
+
 /** Log in: the map restores this device's own last room in the same turn. */
-async function login(d: ReturnType<typeof device>, ownRoom: number | null = null) {
+async function login(d: ReturnType<typeof device>, ownRoom: number | null = null, body: number | null = BODY) {
     d.handoff.connected();
     d.handoff.sessionStarted('Alice');
     if (ownRoom !== null) d.handoff.roomChanged(ownRoom);
-    d.handoff.loginSettled();
+    d.handoff.charInfoHandled(body);
     await vi.advanceTimersByTimeAsync(0);
 }
 
@@ -218,7 +221,7 @@ describe('SessionHandoff', () => {
         b.handoff.connected();
         b.handoff.sessionStarted('Alice');
         b.handoff.roomChanged(500);
-        b.handoff.loginSettled();
+        b.handoff.charInfoHandled(BODY);
         // The game's room.info in the same frame places the map on the same room.
         b.handoff.roomChanged(500);
         await vi.advanceTimersByTimeAsync(0);
@@ -243,10 +246,68 @@ describe('SessionHandoff', () => {
         b.handoff.sessionStarted('Alice');
         // MapHelper's Char.Info restore, before the login settles.
         b.handoff.roomChanged(500);
-        b.handoff.loginSettled();
+        b.handoff.charInfoHandled(BODY);
         await vi.advanceTimersByTimeAsync(0);
 
         expect(b.applied).toEqual([10]);
+    });
+
+    it('ignores a handoff once the character has left the world and come back as a new object', async () => {
+        const db = new FakeDatabase();
+        const a = device(db, 'phone');
+        const b = device(db, 'desktop');
+
+        await login(a, 10);
+        await a.handoff.sessionEnded();
+        a.handoff.disconnected();
+
+        // Quit or idled out: the next login makes a new object somewhere else.
+        await login(b, 500, BODY + 1);
+
+        expect(b.applied).toEqual([]);
+    });
+
+    it('hands over the object the character is in now, not the one it logged in as', async () => {
+        const db = new FakeDatabase();
+        const a = device(db, 'phone');
+        const b = device(db, 'desktop');
+
+        await login(a, 10);
+        // Died and respawned mid-session: a new object, and the game says so.
+        a.handoff.charInfoHandled(BODY + 5);
+        a.store.frozen = true;
+        await login(b, 500, BODY + 5);
+
+        a.store.frozen = false;
+        a.handoff.disconnected();
+        await a.handoff.sessionEnded();
+        await vi.advanceTimersByTimeAsync(0);
+
+        expect(b.applied).toEqual([10]);
+    });
+
+    it('applies nothing when the login did not say which object we are', async () => {
+        const db = new FakeDatabase();
+        const a = device(db, 'phone');
+        const b = device(db, 'desktop');
+
+        await login(a, 10);
+        await a.handoff.sessionEnded();
+        a.handoff.disconnected();
+
+        await login(b, 500, null);
+
+        expect(b.applied).toEqual([]);
+    });
+
+    it('writes nothing without knowing which object it was', async () => {
+        const db = new FakeDatabase();
+        const a = device(db, 'phone');
+
+        await login(a, 10, null);
+        await a.handoff.sessionEnded();
+
+        expect(db.records.get('Alice')?.handoff).toBeNull();
     });
 
     it('does not carry an old handoff past the session that followed it', async () => {

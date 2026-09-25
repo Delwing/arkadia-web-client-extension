@@ -77,7 +77,10 @@ export function installSessionHandoff(client: Client): void {
     // Registered after the client's own scripts, so this runs once the map has
     // restored its stored room for the login - and before a GMCP fix arriving in
     // the same frame, which must count as the map being placed.
-    client.on('gmcp.char.info', () => instance.loginSettled());
+    client.on('gmcp.char.info', info => {
+        const num = Number(info?.object_num);
+        instance.charInfoHandled(Number.isInteger(num) && num > 0 ? num : null);
+    });
     client.on('enterLocation', location => instance.roomChanged(location.id));
     client.on('mapPositionLost', state => instance.lostChanged(state.lost));
     client.on('client.disconnect', () => {

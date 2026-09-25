@@ -240,6 +240,7 @@ Gdy zalogujesz sie postacia na drugim urzadzeniu, gra rozlacza pierwsze. Jesli n
 - Lokacje zapisuje urzadzenie, ktore **widzi** koniec swojej sesji: przejecie przez inne urzadzenie albo rozlaczenie przez ciebie. Po rozlaczeniu mozna wrocic na innym urzadzeniu do 30 minut pozniej.
 - Nic nie jest zapisywane, gdy karta byla w tle (np. telefon w kieszeni) albo mapa zgubila pozycje - klient nie wie wtedy na pewno, gdzie jest postac, wiec lepiej nie zgadywac.
 - Lokacja nie zostanie ustawiona, jesli na nowym urzadzeniu zdazysz sie juz ruszyc.
+- Lokacja jest ustawiana tylko wtedy, gdy postac wciaz byla w swiecie gry (przejecie albo powrot przed rozlaczeniem przez gre). Po wyjsciu z gry, rozlaczeniu za bezczynnosc lub restarcie gry postac pojawia sie w innym miejscu i zapisana lokacja jest pomijana.
 
 ## Rozwiazywanie problemow
 
