@@ -21,12 +21,20 @@ function splitLongWord(word: string, width: number): string[] {
     return parts;
 }
 
-function justifyWords(words: string[], lettersLength: number, width: number, isLastLine: boolean): string {
-    if (words.length === 0) {
-        return "";
-    }
-    if (words.length === 1 || isLastLine) {
-        return words.join(" ");
+/** How the body text sits inside the template. */
+export const LETTER_ALIGNMENTS = ["justify", "left", "center", "right"] as const;
+
+export type LetterAlignment = (typeof LETTER_ALIGNMENTS)[number];
+
+export const DEFAULT_LETTER_ALIGNMENT: LetterAlignment = "justify";
+
+export function isLetterAlignment(value: unknown): value is LetterAlignment {
+    return typeof value === "string" && (LETTER_ALIGNMENTS as readonly string[]).includes(value);
+}
+
+function justifyWords(words: string[], lettersLength: number, width: number): string {
+    if (words.length === 1) {
+        return words[0];
     }
     const gaps = words.length - 1;
     const totalSpaces = width - lettersLength;
@@ -44,36 +52,43 @@ function justifyWords(words: string[], lettersLength: number, width: number, isL
     return line;
 }
 
-function wrapLine(normalizedLine: string, width: number): string[] {
+function alignWords(words: string[], width: number, alignment: LetterAlignment, isLastLine: boolean): string {
+    if (alignment === "justify" && !isLastLine) {
+        return justifyWords(words, words.reduce((sum, word) => sum + word.length, 0), width);
+    }
+    const text = words.join(" ");
+    if (alignment === "right") {
+        return text.padStart(width, " ");
+    }
+    if (alignment === "center") {
+        return " ".repeat(Math.max(0, Math.floor((width - text.length) / 2))) + text;
+    }
+    return text;
+}
+
+/** Words of a line grouped into lines of at most `width` characters. */
+function wrapWords(normalizedLine: string, width: number): string[][] {
     if (!normalizedLine) {
         return [];
     }
-    const words = normalizedLine.split(" ");
-    const lines: string[] = [];
+    const groups: string[][] = [];
     let currentWords: string[] = [];
     let lettersLength = 0;
 
-    const flush = (isLastLine: boolean) => {
-        if (!currentWords.length) {
-            return;
+    const flush = () => {
+        if (currentWords.length) {
+            groups.push(currentWords);
         }
-        lines.push(justifyWords(currentWords, lettersLength, width, isLastLine));
         currentWords = [];
         lettersLength = 0;
     };
 
-    words.forEach(word => {
+    normalizedLine.split(" ").forEach(word => {
         if (word.length > width) {
-            if (currentWords.length) {
-                flush(false);
-                currentWords = [];
-                lettersLength = 0;
-            }
+            flush();
             const parts = splitLongWord(word, width);
             const lastPart = parts.pop();
-            if (parts.length) {
-                lines.push(...parts);
-            }
+            parts.forEach(part => groups.push([part]));
             if (lastPart) {
                 currentWords = [lastPart];
                 lettersLength = lastPart.length;
@@ -83,30 +98,35 @@ function wrapLine(normalizedLine: string, width: number): string[] {
 
         const minimalSpaces = currentWords.length;
         if (lettersLength + word.length + minimalSpaces > width && currentWords.length) {
-            flush(false);
-            currentWords = [word];
-            lettersLength = word.length;
-            return;
+            flush();
         }
 
         currentWords.push(word);
         lettersLength += word.length;
     });
 
-    flush(true);
+    flush();
 
-    return lines;
+    return groups;
 }
 
-function formatContent(content: string, width: number): string[] {
+function wrapLine(line: string, width: number, letterAlignment: LetterAlignment): string[] {
+    // A line starting with `>` is right-aligned whatever the letter alignment
+    const alignRight = line.startsWith(">");
+    const alignment = alignRight ? "right" : letterAlignment;
+    const groups = wrapWords(normalizeLine(alignRight ? line.slice(1) : line), width);
+    return groups.map((words, index) => alignWords(words, width, alignment, index === groups.length - 1));
+}
+
+function formatContent(content: string, width: number, alignment: LetterAlignment): string[] {
     const rawLines = content.split(/\r?\n/);
     const result: string[] = [];
     let pendingBlankLine = false;
     let hasContent = false;
 
     rawLines.forEach(line => {
-        const normalized = normalizeLine(line);
-        if (!normalized) {
+        const wrapped = wrapLine(normalizeLine(line), width, alignment);
+        if (!wrapped.length) {
             if (hasContent) {
                 pendingBlankLine = true;
             }
@@ -118,7 +138,6 @@ function formatContent(content: string, width: number): string[] {
             pendingBlankLine = false;
         }
 
-        const wrapped = wrapLine(normalized, width);
         result.push(...wrapped);
         hasContent = true;
     });
@@ -131,7 +150,8 @@ function formatContent(content: string, width: number): string[] {
  * that `{...}` repeats the text in braces to exactly the body width (cut
  * mid-pattern when it does not divide evenly),
  * so the frame grows with the line width. Body lines go between the prefix
- * and the suffix.
+ * and the suffix; a prefix or suffix of several lines (separated by `\n`)
+ * is used line by line, starting over after the last one.
  */
 export interface LetterLayout {
     header: readonly string[];
@@ -149,29 +169,47 @@ export function expandFillLine(line: string, width: number): string {
         pattern.repeat(Math.ceil(width / pattern.length)).slice(0, width));
 }
 
+/** The lines of a body prefix or suffix, without trailing empty ones. */
+export function splitBodyPattern(pattern: string): string[] {
+    const lines = pattern.split(/\r?\n/);
+    while (lines.length > 1 && lines[lines.length - 1] === "") {
+        lines.pop();
+    }
+    return lines;
+}
+
+function longestLength(lines: readonly string[]): number {
+    return lines.reduce((max, line) => Math.max(max, line.length), 0);
+}
+
 /** Body width left inside the frame for a total line width. */
 export function getLayoutBodyWidth(layout: LetterLayout, totalWidth: number): number {
     if (layout.raw) {
         return Infinity;
     }
-    return Math.max(1, totalWidth - layout.bodyPrefix.length - layout.bodySuffix.length);
+    const prefixWidth = longestLength(splitBodyPattern(layout.bodyPrefix));
+    const suffixWidth = longestLength(splitBodyPattern(layout.bodySuffix));
+    return Math.max(1, totalWidth - prefixWidth - suffixWidth);
 }
 
-function formatBodyLine(layout: LetterLayout, line: string, width: number): string {
+function formatBody(layout: LetterLayout, lines: readonly string[], width: number): string[] {
     if (layout.raw) {
-        return line;
+        return [...lines];
     }
-    const alignRight = line.startsWith(">");
-    const content = alignRight ? line.slice(1) : line;
-    const trimmed = content.length > width ? content.slice(0, width) : content;
-    if (!layout.bodyPrefix && !layout.bodySuffix) {
-        if (!line) {
-            return "";
+    const prefixes = splitBodyPattern(layout.bodyPrefix);
+    const suffixes = splitBodyPattern(layout.bodySuffix);
+    // Shorter prefixes are padded so the text keeps one column
+    const prefixWidth = longestLength(prefixes);
+    const framed = prefixWidth > 0 || longestLength(suffixes) > 0;
+    return lines.map((line, index) => {
+        const trimmed = line.length > width ? line.slice(0, width) : line;
+        if (!framed) {
+            return trimmed.trimEnd();
         }
-        return alignRight ? trimmed.padStart(width, " ") : trimmed;
-    }
-    const padded = alignRight ? trimmed.padStart(width, " ") : trimmed.padEnd(width, " ");
-    return `${layout.bodyPrefix}${padded}${layout.bodySuffix}`;
+        const prefix = prefixes[index % prefixes.length].padEnd(prefixWidth, " ");
+        const suffix = suffixes[index % suffixes.length];
+        return `${prefix}${trimmed.padEnd(width, " ")}${suffix}`;
+    });
 }
 
 export const BUILTIN_LETTER_LAYOUTS: Readonly<Record<LetterTemplate, LetterLayout>> = {
@@ -266,22 +304,32 @@ export interface LetterRenderResult {
     hasContent: boolean;
 }
 
-export function renderLetterLayout(content: string, layout: LetterLayout, lineWidth: number = DEFAULT_LINE_WIDTH): LetterRenderResult {
+export function renderLetterLayout(
+    content: string,
+    layout: LetterLayout,
+    lineWidth: number = DEFAULT_LINE_WIDTH,
+    alignment: LetterAlignment = DEFAULT_LETTER_ALIGNMENT,
+): LetterRenderResult {
     const bodyWidth = getLayoutBodyWidth(layout, lineWidth);
     // A raw layout keeps whitespace exactly as typed
     const baseLines = layout.raw
         ? content.split(/\r?\n/)
-        : formatContent(content, bodyWidth);
+        : formatContent(content, bodyWidth, alignment);
     const bodySource = baseLines.length ? baseLines : [""];
     const lines = [
         ...layout.header.map(line => expandFillLine(line, bodyWidth)),
-        ...bodySource.map(line => formatBodyLine(layout, line, bodyWidth)),
+        ...formatBody(layout, bodySource, bodyWidth),
         ...layout.footer.map(line => expandFillLine(line, bodyWidth)),
     ];
     const hasContent = baseLines.some(line => line.length > 0);
     return { lines, hasContent };
 }
 
-export function renderLetter(content: string, template: LetterTemplate, lineWidth: number = DEFAULT_LINE_WIDTH): LetterRenderResult {
-    return renderLetterLayout(content, BUILTIN_LETTER_LAYOUTS[template], lineWidth);
+export function renderLetter(
+    content: string,
+    template: LetterTemplate,
+    lineWidth: number = DEFAULT_LINE_WIDTH,
+    alignment: LetterAlignment = DEFAULT_LETTER_ALIGNMENT,
+): LetterRenderResult {
+    return renderLetterLayout(content, BUILTIN_LETTER_LAYOUTS[template], lineWidth, alignment);
 }

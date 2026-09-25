@@ -1,6 +1,7 @@
 import {
     BUILTIN_LETTER_LAYOUTS,
     expandFillLine,
+    getLayoutBodyWidth,
     renderLetter,
     renderLetterLayout,
     type LetterLayout,
@@ -94,5 +95,62 @@ describe('renderLetterLayout (custom layouts)', () => {
         const content = 'Pierwsza linia\n\nDruga, dluzsza linia tekstu';
         expect(renderLetterLayout(content, BUILTIN_LETTER_LAYOUTS.plain, 30))
             .toEqual(renderLetter(content, 'plain', 30));
+    });
+});
+
+describe('body alignment', () => {
+    const text = 'aaa bbb ccc ddd eee';
+
+    it('justifies the body by default, except the last line', () => {
+        expect(renderLetter(text, 'none', 13).lines).toEqual(['aaa  bbb  ccc', 'ddd eee']);
+    });
+
+    it('aligns the whole body the chosen way', () => {
+        expect(renderLetter(text, 'none', 13, 'left').lines).toEqual(['aaa bbb ccc', 'ddd eee']);
+        expect(renderLetter(text, 'none', 13, 'right').lines).toEqual(['  aaa bbb ccc', '      ddd eee']);
+        expect(renderLetter(text, 'none', 13, 'center').lines).toEqual([' aaa bbb ccc', '   ddd eee']);
+    });
+
+    it('aligns the text inside the frame', () => {
+        const layout: LetterLayout = { header: ['+{-}+'], footer: ['+{-}+'], bodyPrefix: '|', bodySuffix: '|' };
+        expect(renderLetterLayout('Tytul\n\nab', layout, 10, 'center').lines).toEqual([
+            '+--------+',
+            '| Tytul  |',
+            '|        |',
+            '|   ab   |',
+            '+--------+',
+        ]);
+    });
+
+    it('still right-aligns a line starting with >, including its wrapped part', () => {
+        expect(renderLetter(`>${text}`, 'none', 13, 'left').lines).toEqual(['  aaa bbb ccc', '      ddd eee']);
+    });
+
+    it('leaves raw letters untouched', () => {
+        expect(renderLetter(' a  b', 'raw', 20, 'center').lines).toEqual([' a  b']);
+    });
+});
+
+describe('multi-line body prefix and suffix', () => {
+    const layout: LetterLayout = {
+        header: ['{-}'],
+        footer: [],
+        bodyPrefix: '(\n )\n',
+        bodySuffix: ')\n(\n )',
+    };
+
+    it('repeats the pattern lines over the body lines', () => {
+        const { lines } = renderLetterLayout('a\nb\nc\nd', layout, 7);
+        expect(lines).toEqual([
+            '---',
+            '( a  )',
+            ' )b  (',
+            '( c   )',
+            ' )d  )',
+        ]);
+    });
+
+    it('fits the body into the widest prefix and suffix', () => {
+        expect(getLayoutBodyWidth(layout, 10)).toBe(6);
     });
 });

@@ -89,6 +89,8 @@ export interface LetterSubmitPayload {
     template: LetterTemplateId;
     /** Line width for this letter; the letterLineWidth setting when absent. */
     lineWidth?: number;
+    /** How the body sits inside the template; justified when absent. */
+    alignment?: "justify" | "left" | "center" | "right";
 }
 
 export function isLetterTemplate(value: unknown): value is LetterTemplate {

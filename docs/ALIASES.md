@@ -52,7 +52,9 @@ Zakresy dzialaja rosnaco (`1-7`) i malejaco (`7-1`). Maksymalnie 50 iteracji.
 | `/list` | Otworz edytor pisania listow w kliencie |
 | `/poczta` | Otworz okno poczty z lista listow |
 
-> **Wlasne szablony listow:** w edytorze listow przycisk z ikona obok wyboru szablonu ("Wlasne szablony listow") otwiera edytor wlasnych ramek. Nowy szablon powstaje jako kopia wybranego (wbudowanego lub wlasnego) i sklada sie z naglowka, poczatku i konca kazdej linii tresci oraz stopki. W naglowku i stopce tekst w klamrach jest powtarzany na szerokosc tresci (i przycinany, jesli sie nie miesci w calosci), np. ` +--{-}--+ ` albo ` +{-=}+ `, dzieki czemu ramka dopasowuje sie do szerokosci linii z ustawien. Wlasne szablony sa wspolne dla wszystkich postaci i synchronizuja sie miedzy urzadzeniami.
+> **Wlasne szablony listow:** w edytorze listow przycisk z ikona obok wyboru szablonu ("Wlasne szablony listow") otwiera edytor wlasnych ramek. Nowy szablon powstaje jako kopia wybranego (wbudowanego lub wlasnego) i sklada sie z naglowka, poczatku i konca kazdej linii tresci oraz stopki. W naglowku i stopce tekst w klamrach jest powtarzany na szerokosc tresci (i przycinany, jesli sie nie miesci w calosci), np. ` +--{-}--+ ` albo ` +{-=}+ `, dzieki czemu ramka dopasowuje sie do szerokosci linii z ustawien. Wlasne szablony sa wspolne dla wszystkich postaci i synchronizuja sie miedzy urzadzeniami. Poczatek i koniec linii tresci tez moga miec kilka linii — kolejne linie tresci dostaja je po kolei, w kolko (np. falujacy brzeg ramki).
+
+> **Wyrownanie tekstu:** przyciski nad polem tresci wybieraja, jak tekst listu jest ulozony w szablonie: justowany (domyslnie), do lewej, wysrodkowany albo do prawej. Wybor dotyczy calej tresci, od razu widac go w podgladzie i jest zapamietywany dla kolejnych listow. Linia zaczynajaca sie od `>` jest zawsze wyrownana do prawej (np. podpis).
 
 > **Wskazowka:** W oknie czatu przycisk "Druzyna" filtruje wiadomosci od czlonkow druzyny. Przewiniecie historii w gore dzieli okno na dwie czesci — na dole zostaje przyklejony podglad najnowszych wiadomosci, tak samo jak w oknie glownym i w oknie walki.
 

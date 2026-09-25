@@ -288,4 +288,46 @@ test.describe('Letter composer', () => {
         const reopened = await openLetterComposer(page);
         await expect(reopened.locator('#letter-width'), 'should reset to the default width').toHaveValue('72');
     });
+
+    test('alignment buttons align the letter text', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+
+        const composer = await openLetterComposer(page);
+        await expect(composer.locator('.letter-align-button--justify'), 'should justify by default').toHaveClass(/is-active/);
+
+        await composer.locator('#letter-template').selectOption('none');
+        await composer.locator('#letter-width').fill('30');
+        await composer.locator('#letter-content').fill('Srodek');
+        await composer.locator('.letter-align-button--center').click();
+        await expect(composer.locator('.letter-align-button--center'), 'should mark the chosen alignment').toHaveClass(/is-active/);
+        await expect(composer.locator('#letter-content'), 'should not change the typed text').toHaveValue('Srodek');
+
+        await composer.locator('button:has-text("Podglad")').click();
+        await waitForOutputContaining(page, `${' '.repeat(12)}Srodek`);
+
+        // Remembered for the next letter
+        await composer.locator('.panel-button--close').click();
+        const reopened = await openLetterComposer(page);
+        await expect(reopened.locator('.letter-align-button--center'), 'should keep the alignment').toHaveClass(/is-active/);
+    });
+
+    test('custom template repeats a multi-line body prefix', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+
+        const composer = await openLetterComposer(page);
+        await composer.locator('.letter-templates-open').click();
+        const dialog = page.locator('.letter-templates-dialog');
+        await dialog.locator('button:has-text("Dodaj szablon")').click();
+        await dialog.locator('#letter-template-header').fill('');
+        await dialog.locator('#letter-template-footer').fill('');
+        await dialog.locator('#letter-template-prefix').fill('( \n ) ');
+        await dialog.locator('#letter-template-suffix').fill('');
+        const preview = dialog.locator('.letter-templates__preview-text');
+        await expect(preview, 'first body line uses the first prefix line').toContainText('( Drogi przyjacielu,');
+        await expect(preview, 'following lines alternate the prefix').toContainText(' ) ');
+    });
 });

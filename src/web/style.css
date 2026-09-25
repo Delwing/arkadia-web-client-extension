@@ -1826,6 +1826,23 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
   min-height: 8rem;
 }
 
+.letter-content-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.letter-align-buttons {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.popup-btn.popup-btn--control.letter-align-button.is-active {
+  background-color: var(--popup-control-active-bg);
+  color: var(--popup-text-strong);
+}
+
 .letter-composer-actions {
   display: flex;
   align-items: center;

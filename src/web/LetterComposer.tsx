@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { PencilRuler } from 'lucide-react';
+import { AlignCenter, AlignJustify, AlignLeft, AlignRight, PencilRuler, type LucideIcon } from 'lucide-react';
 import eventBus from '@modules/core/eventBus';
 import { useDraggablePopup } from './hooks/useDraggablePopup';
 import {
@@ -10,7 +10,15 @@ import {
     type CustomLetterTemplate,
     type LetterTemplateId,
 } from "@client/types/letter";
-import { MAX_LINE_WIDTH, MIN_LINE_WIDTH, clampLineWidth, renderLetterLayout } from "@shared/letterRenderer";
+import {
+    MAX_LINE_WIDTH,
+    MIN_LINE_WIDTH,
+    clampLineWidth,
+    renderLetterLayout,
+    DEFAULT_LETTER_ALIGNMENT,
+    isLetterAlignment,
+    type LetterAlignment,
+} from "@shared/letterRenderer";
 import {
     listLetterTemplateChoices,
     loadCustomLetterTemplates,
@@ -22,7 +30,35 @@ import { defaultSettings } from "@modules/core/defaultSettings";
 import LetterTemplatesDialog from "./LetterTemplatesDialog";
 
 const TEMPLATE_STORAGE_KEY = "letter-composer-template";
+const ALIGNMENT_STORAGE_KEY = "letter-composer-alignment";
 const WIDE_SCREEN_THRESHOLD = 900;
+
+const ALIGNMENT_BUTTONS: readonly { alignment: LetterAlignment; icon: LucideIcon; title: string }[] = [
+    { alignment: "justify", icon: AlignJustify, title: "Wyjustuj tekst" },
+    { alignment: "left", icon: AlignLeft, title: "Wyrownaj tekst do lewej" },
+    { alignment: "center", icon: AlignCenter, title: "Wysrodkuj tekst" },
+    { alignment: "right", icon: AlignRight, title: "Wyrownaj tekst do prawej" },
+];
+
+function loadAlignment(): LetterAlignment {
+    try {
+        const stored = localStorage.getItem(ALIGNMENT_STORAGE_KEY);
+        if (isLetterAlignment(stored)) {
+            return stored;
+        }
+    } catch {
+        // ignore storage errors
+    }
+    return DEFAULT_LETTER_ALIGNMENT;
+}
+
+function saveAlignment(value: LetterAlignment) {
+    try {
+        localStorage.setItem(ALIGNMENT_STORAGE_KEY, value);
+    } catch {
+        // ignore storage errors
+    }
+}
 
 function isSelectableTemplate(value: unknown, customTemplates: readonly CustomLetterTemplate[]): value is LetterTemplateId {
     const resolved = resolveLetterTemplate(value, customTemplates);
@@ -69,6 +105,7 @@ const LetterComposer: React.FC = () => {
         const parsed = parseInt(lineWidthInput, 10);
         return Number.isFinite(parsed) ? clampLineWidth(parsed) : loadLineWidth();
     }, [lineWidthInput]);
+    const [alignment, setAlignment] = useState<LetterAlignment>(loadAlignment);
     const [templatesDialogOpen, setTemplatesDialogOpen] = useState(false);
     const [contentText, setContentText] = useState("");
     const [isWideScreen, setIsWideScreen] = useState(false);
@@ -136,8 +173,9 @@ const LetterComposer: React.FC = () => {
             content: contentInputRef.current?.value ?? "",
             template,
             lineWidth,
+            alignment,
         };
-    }, [templateSelection, customTemplates, lineWidth]);
+    }, [templateSelection, customTemplates, lineWidth, alignment]);
 
     const resetForm = useCallback(() => {
         if (toInputRef.current) toInputRef.current.value = "";
@@ -181,6 +219,12 @@ const LetterComposer: React.FC = () => {
 
     const handleContentChange = useCallback((ev: React.ChangeEvent<HTMLTextAreaElement>) => {
         setContentText(ev.target.value);
+    }, []);
+
+    const selectAlignment = useCallback((value: LetterAlignment) => {
+        setAlignment(value);
+        saveAlignment(value);
+        contentInputRef.current?.focus();
     }, []);
 
     const handleKeyDown = useCallback((ev: React.KeyboardEvent) => {
@@ -249,9 +293,9 @@ const LetterComposer: React.FC = () => {
         if (!isWideScreen || !contentText.trim()) {
             return null;
         }
-        const result = renderLetterLayout(contentText, resolvedTemplate.layout, lineWidth);
+        const result = renderLetterLayout(contentText, resolvedTemplate.layout, lineWidth, alignment);
         return result.lines;
-    }, [contentText, resolvedTemplate, lineWidth, isWideScreen]);
+    }, [contentText, resolvedTemplate, lineWidth, alignment, isWideScreen]);
 
     const templateLabel = resolvedTemplate.label;
 
@@ -337,7 +381,23 @@ const LetterComposer: React.FC = () => {
                             />
                         </div>
                         <div className="letter-composer-field letter-composer-field--grow">
-                            <label htmlFor="letter-content" className="popup-field__label">Tresc:</label>
+                            <div className="letter-content-toolbar">
+                                <label htmlFor="letter-content" className="popup-field__label">Tresc:</label>
+                                <div className="letter-align-buttons">
+                                    {ALIGNMENT_BUTTONS.map(({ alignment: value, icon: Icon, title }) => (
+                                        <button
+                                            key={value}
+                                            type="button"
+                                            className={`popup-btn popup-btn--control popup-btn--sm popup-btn--icon letter-align-button letter-align-button--${value}${value === alignment ? ' is-active' : ''}`}
+                                            onMouseDown={(ev) => ev.preventDefault()}
+                                            onClick={() => selectAlignment(value)}
+                                            title={title}
+                                        >
+                                            <Icon size={14} strokeWidth={1.75} />
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
                             <textarea
                                 ref={contentInputRef}
                                 id="letter-content"
@@ -431,6 +491,7 @@ const LetterComposer: React.FC = () => {
                     <div className="letter-templates-layer">
                         <LetterTemplatesDialog
                             lineWidth={lineWidth}
+                            alignment={alignment}
                             initialId={templateSelection.startsWith(CUSTOM_LETTER_TEMPLATE_PREFIX)
                                 ? templateSelection.slice(CUSTOM_LETTER_TEMPLATE_PREFIX.length)
                                 : undefined}
