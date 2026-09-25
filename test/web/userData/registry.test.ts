@@ -11,7 +11,7 @@ describe('createUserDataTypes', () => {
         for (const id of [
             'triggers', 'aliases', 'automationGroups', 'automationScripts', 'shortcuts', 'keymaps',
             'characterKeys', 'profession', 'deposits', 'containers', 'improveCounts', 'peopleEdits',
-            'deviceInterface', 'deviceButtons', 'radial',
+            'interfaceSettings', 'buttonSettings', 'radial',
             'knowledgeLibraries', 'knowledgeBooks', 'knowledgeDetails', 'knowledgeTicks', 'knowledgeLevels',
             'kills', 'visitedRooms', 'locationNotes', 'multibinds',
             'tamingFeedings', 'tamingLevels', 'tamingFoodGroups', 'enemyResistances', 'zlom',

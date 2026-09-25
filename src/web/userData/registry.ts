@@ -12,6 +12,7 @@ import type { UserDataType } from '@modules/userData/types';
 import {
     characterKeysType,
     characterValueType,
+    type DeviceTypeOptions,
     improveCountsEnabledType,
     improveCountsType,
     interfaceTypes,
@@ -27,7 +28,10 @@ import { createPlayerDataTypes } from './playerDataTypes';
 
 const HLC_STORAGE_KEY = 'arkadia.userData.hlc';
 
-export function createUserDataTypes(deviceId: () => string = getDeviceId): UserDataType[] {
+export function createUserDataTypes(
+    deviceId: () => string = getDeviceId,
+    deviceOptions?: DeviceTypeOptions,
+): UserDataType[] {
     return [
         listType('triggers', 'triggers'),
         listType('aliases', 'aliases'),
@@ -46,16 +50,22 @@ export function createUserDataTypes(deviceId: () => string = getDeviceId): UserD
         improveCountsType,
         improveCountsEnabledType,
         peopleEditsType,
-        ...interfaceTypes(deviceId),
+        ...interfaceTypes(deviceId, deviceOptions),
         ...createKnowledgeTypes(),
         ...createMapCombatTypes(),
         ...createPlayerDataTypes(),
     ];
 }
 
+/**
+ * `onDeviceOutsideGroup` is called for another device whose interface
+ * settings arrive while this device is in a sync group that doesn't list it
+ * (it may have joined since this device last read the group).
+ */
 export function createUserDataTracker(
     store: RecordStore = new IndexedDbRecordStore(),
     firstCaptureIsEdit?: (typeId: string) => boolean,
+    onDeviceOutsideGroup?: (deviceId: string) => void,
 ): UserDataTracker {
     const deviceId = getDeviceId();
     const clock = new HybridLogicalClock(deviceId, {
@@ -67,7 +77,13 @@ export function createUserDataTracker(
         types: createUserDataTypes(() => deviceId),
         store,
         clock,
-        appliesFromDevice: other => !!getSyncGroup()?.devices.includes(other),
+        appliesFromDevice: other => {
+            const group = getSyncGroup();
+            if (!group) return false;
+            if (group.devices.includes(other)) return true;
+            onDeviceOutsideGroup?.(other);
+            return false;
+        },
         firstCaptureIsEdit,
     });
 }

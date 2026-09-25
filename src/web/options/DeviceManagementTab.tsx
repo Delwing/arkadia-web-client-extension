@@ -23,6 +23,7 @@ import {
     getFirebaseAuth,
     getCloudSyncGroups,
     getRegisteredDevices,
+    updateLocalSyncGroup,
     registerDevice,
     copySettingsFromCloudDevice,
     deleteEmptySyncGroup,
@@ -102,6 +103,12 @@ function DeviceManagementTab() {
             setIsLoadingCloudGroups(true);
             try {
                 const result = await getCloudSyncGroups();
+                // The group may have gained devices since this device last looked
+                const updated = updateLocalSyncGroup(result.groups);
+                if (updated) {
+                    setSyncGroupState(updated);
+                    if (isSyncV2Enabled()) void applyDeviceSettingsFrom(updated.devices);
+                }
                 // Filter out the group we're already in
                 const otherGroups = syncGroup
                     ? result.groups.filter(g => g.id !== syncGroup.id)

@@ -332,6 +332,40 @@ describe('UserDataTracker', () => {
         expect(c.types.layout.get('bundle', deviceScope('c'))).toBe('phone');
     });
 
+    it('adopts what the UI makes of an applied device value, so the next edit elsewhere still wins', async () => {
+        const a = makeDevice('a', 1_000, ['b']);
+        const b = makeDevice('b', 1_000, ['a']);
+        a.types.layout.set('bundle', 'narrow', deviceScope('a'));
+        b.types.layout.set('bundle', 'narrow', deviceScope('b'));
+        await sync(a, b);
+        await sync(b, a);
+
+        // b's UI normalizes every value it is given (the window manager re-saving the layout)
+        const write = b.types.layout.write.bind(b.types.layout);
+        b.types.layout.write = changes => write(changes.map(c => ({ ...c, value: `${c.value} (b)` })));
+
+        a.advance(5_000);
+        a.types.layout.set('bundle', 'wide', deviceScope('a'));
+        await sync(a, b);
+        expect(b.types.layout.get('bundle', deviceScope('b'))).toBe('wide (b)');
+
+        // Not a new edit: nothing to upload, even with b's clock ahead of a's next edit
+        b.advance(60_000);
+        expect(await sync(b, a)).toEqual([]);
+        expect(a.types.layout.get('bundle', deviceScope('a'))).toBe('wide');
+
+        a.advance(10_000);
+        a.types.layout.set('bundle', 'wider', deviceScope('a'));
+        await sync(a, b);
+        expect(b.types.layout.get('bundle', deviceScope('b'))).toBe('wider (b)');
+
+        // A real edit on b still goes out and wins on a
+        b.advance(60_000);
+        b.types.layout.set('bundle', 'custom', deviceScope('b'));
+        await sync(b, a);
+        expect(a.types.layout.get('bundle', deviceScope('a'))).toBe('custom');
+    });
+
     it('copies device-scoped values from chosen devices, the newest among them', async () => {
         const a = makeDevice('a', 1_000);
         const b = makeDevice('b', 2_000);

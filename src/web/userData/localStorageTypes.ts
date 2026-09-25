@@ -6,6 +6,7 @@
  */
 
 import { characterStorage, globalStorage } from '@modules/core/storage';
+import { triggerSettingsReload } from '@modules/device/deviceStorage';
 import { getKeymapStore, getActiveKeymapId, saveKeymapStore } from '@modules/core/keymapStorage';
 import type { Keymap, KeymapStore } from '@modules/core/keymapTypes';
 import { mergeProfessionStates, type ProfessionState } from '@client/scripts/profession';
@@ -392,43 +393,89 @@ export const peopleEditsType: UserDataType<PersonEditEvent> = {
 };
 
 // ---------------------------------------------------------------------------
-// Interface: device-scoped bundles and the shared radial menu
+// Interface: device-scoped settings and the shared radial menu
 // ---------------------------------------------------------------------------
 
+/** Time for the UI to settle after device settings are applied (layout re-saved by the window manager). */
+export const DEVICE_SETTLE_MS = 1000;
+
+export interface DeviceTypeOptions {
+    /** How long a write waits for the UI to settle; 0 in tests. */
+    settleMs?: number;
+    /** Reload the UI after a write. */
+    reload?: () => Promise<void>;
+}
+
 /**
- * A category of the backup/v1 format as one whole value. Reuses the category's
- * export/import, which already handles layout migration, keymap switching,
- * listener notification and the radial part of mobileButtonSettings.
+ * Device-scoped settings of one backup category (interface, buttons), one
+ * item per field (layout, trip routes, active keymap...): a change to one field
+ * on another device of the sync group doesn't carry the others along.
+ *
+ * Written through the category import (layout migration, keymap switch, radial
+ * kept), then the UI reloads. A write resolves once the UI has settled, so the
+ * tracker adopts what this device made of the value (e.g. the layout
+ * normalized and re-saved by the window manager) instead of taking it for a
+ * new local edit.
  */
-function categoryValueType(
+function deviceFieldsType(
     id: string,
-    category: 'uiSettings' | 'buttons' | 'radial',
-    scope: 'device' | 'global',
+    category: 'uiSettings' | 'buttons',
     deviceId: () => string,
+    options: DeviceTypeOptions,
 ): UserDataType<string> {
-    const localScope = () => (scope === 'device' ? deviceScope(deviceId()) : GLOBAL_SCOPE);
+    const settleMs = options.settleMs ?? DEVICE_SETTLE_MS;
+    const reload = options.reload ?? triggerSettingsReload;
     return {
         id,
-        scope,
+        scope: 'device',
         rule: { kind: 'newest' },
         async read() {
-            const raw = await exportCategory(category, []);
-            return raw ? [{ scope: localScope(), key: category, value: raw }] : [];
+            const fields = parse(await exportCategory(category, []));
+            if (!fields || typeof fields !== 'object') return [];
+            const scope = deviceScope(deviceId());
+            return Object.entries(fields as Record<string, unknown>)
+                .filter((entry): entry is [string, string] => typeof entry[1] === 'string')
+                .map(([key, value]) => ({ scope, key, value }));
         },
         async write(changes) {
+            const fields: Record<string, string> = {};
             for (const change of changes) {
-                if (change.deleted || change.value === undefined) continue;
-                const result = await importCategory(category, change.value);
-                if (!result.success) throw new Error(result.error ?? `Failed to apply ${category}`);
+                if (!change.deleted && typeof change.value === 'string') fields[change.key] = change.value;
             }
+            if (Object.keys(fields).length === 0) return;
+            const result = await importCategory(category, JSON.stringify(fields));
+            if (!result.success) throw new Error(result.error ?? `Failed to apply ${category}`);
+            await reload();
+            if (settleMs > 0) await new Promise(resolve => setTimeout(resolve, settleMs));
         },
     };
 }
 
-export function interfaceTypes(deviceId: () => string): UserDataType[] {
+/**
+ * The radial menu, shared by all devices, as one value. Reuses the category's
+ * export/import, which keeps the rest of mobileButtonSettings.
+ */
+const radialType: UserDataType<string> = {
+    id: 'radial',
+    scope: 'global',
+    rule: { kind: 'newest' },
+    async read() {
+        const raw = await exportCategory('radial', []);
+        return raw ? [{ scope: GLOBAL_SCOPE, key: 'radial', value: raw }] : [];
+    },
+    async write(changes) {
+        for (const change of changes) {
+            if (change.deleted || change.value === undefined) continue;
+            const result = await importCategory('radial', change.value);
+            if (!result.success) throw new Error(result.error ?? 'Failed to apply radial');
+        }
+    },
+};
+
+export function interfaceTypes(deviceId: () => string, options: DeviceTypeOptions = {}): UserDataType[] {
     return [
-        categoryValueType('deviceInterface', 'uiSettings', 'device', deviceId),
-        categoryValueType('deviceButtons', 'buttons', 'device', deviceId),
-        categoryValueType('radial', 'radial', 'global', deviceId),
+        deviceFieldsType('interfaceSettings', 'uiSettings', deviceId, options),
+        deviceFieldsType('buttonSettings', 'buttons', deviceId, options),
+        radialType,
     ];
 }

@@ -102,6 +102,8 @@ export {
     joinSyncGroup,
     leaveSyncGroupCloud,
     getCloudSyncGroups,
+    refreshSyncGroup,
+    updateLocalSyncGroup,
     copySettingsFromCloudDevice,
     deleteEmptySyncGroup,
 } from './firebaseUnifiedSync';

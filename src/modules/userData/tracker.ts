@@ -137,11 +137,16 @@ export class UserDataTracker {
                 found = true;
                 const local = new Map((await type.read()).map(item => [recordId(item), item]));
                 const writes: ItemChange[] = [];
+                const sources = new Map<string, UserRecord>();
                 for (const [key, record] of newest) {
                     const item = local.get(recordId({ scope: ownScope, key }));
-                    if (!item || !valuesEqual(item.value, record.value)) writes.push({ scope: ownScope, key, value: record.value });
+                    if (!item || !valuesEqual(item.value, record.value)) {
+                        writes.push({ scope: ownScope, key, value: record.value });
+                        sources.set(key, record);
+                    }
                 }
                 if (writes.length > 0) await type.write(writes);
+                await this.adopt(type, sources);
             }
             return found;
         });
@@ -280,14 +285,44 @@ export class UserDataTracker {
         if (changed.length === 0) return;
 
         const local = new Map((await type.read()).map(item => [recordId(item), item]));
+        const sources = new Map<string, UserRecord>();
         const writes = type.scope === 'device'
-            ? this.deviceWrites(tracked, changed, local)
+            ? this.deviceWrites(tracked, changed, local, sources)
             : this.sharedWrites(type, changed, local);
 
         // Local data first: if writing fails, the tracking copy keeps the old
         // record and nothing claims the new value is applied.
         if (writes.length > 0) await type.write(writes);
         await store.putRecords(changed);
+        await this.adopt(type, sources);
+    }
+
+    /**
+     * After another device's value was written here (`sources`, by key), take
+     * what local data now holds as this device's value, under the source's
+     * stamp: the UI may normalize an applied value (the layout re-saved by the
+     * window manager), and that is not a new edit. With a fresh stamp it would
+     * win over the next change made on the other device, and bounce back and
+     * forth between devices that normalize differently. Not uploaded.
+     */
+    private async adopt(type: UserDataType, sources: Map<string, UserRecord>): Promise<void> {
+        if (sources.size === 0) return;
+        const ownScope = deviceScope(this.options.deviceId);
+        const local = new Map((await type.read()).map(item => [recordId(item), item]));
+        const adopted: UserRecord[] = [];
+        for (const [key, source] of sources) {
+            const item = local.get(recordId({ scope: ownScope, key }));
+            adopted.push({
+                type: type.id,
+                scope: ownScope,
+                key,
+                value: item ? item.value : source.value,
+                stamp: source.stamp,
+                origin: source.origin,
+                seq: 0,
+            });
+        }
+        await this.options.store.putRecords(adopted);
     }
 
     private sharedWrites(type: UserDataType, changed: UserRecord[], local: Map<string, LocalItem>): ItemChange[] {
@@ -313,7 +348,12 @@ export class UserDataTracker {
      * Device-scoped values: the newest value among this device and the devices
      * of its sync group is the one used here.
      */
-    private deviceWrites(tracked: Map<string, UserRecord>, changed: UserRecord[], local: Map<string, LocalItem>): ItemChange[] {
+    private deviceWrites(
+        tracked: Map<string, UserRecord>,
+        changed: UserRecord[],
+        local: Map<string, LocalItem>,
+        sources: Map<string, UserRecord>,
+    ): ItemChange[] {
         const { deviceId, appliesFromDevice } = this.options;
         const applies = (scope: string): boolean => {
             const device = deviceFromScope(scope);
@@ -326,12 +366,15 @@ export class UserDataTracker {
             let effective: UserRecord | undefined;
             for (const record of tracked.values()) {
                 if (record.key !== key || record.deleted || !applies(record.scope)) continue;
-                if (!effective || record.stamp > effective.stamp) effective = record;
+                // An adopted value shares its source's stamp: this device's copy wins the tie.
+                if (!effective || record.stamp > effective.stamp
+                    || (record.stamp === effective.stamp && record.scope === ownScope)) effective = record;
             }
-            if (!effective) continue;
+            if (!effective || effective.scope === ownScope) continue;
             const item = local.get(recordId({ scope: ownScope, key }));
             if (!item || !valuesEqual(item.value, effective.value)) {
                 writes.push({ scope: ownScope, key, value: effective.value });
+                sources.set(key, effective);
             }
         }
         return writes;

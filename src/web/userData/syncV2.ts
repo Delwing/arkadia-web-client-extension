@@ -10,7 +10,8 @@
 
 import { getFirestore } from '@modules/firebase/firebaseConfig';
 import { getDeviceId, loadFirebaseSettings } from '@modules/firebase/firebaseTypes';
-import { registerDevice } from '@modules/firebase/firebaseUnifiedSync';
+import { getSyncGroup } from '@modules/device/syncGroup';
+import { refreshSyncGroup, registerDevice } from '@modules/firebase/firebaseUnifiedSync';
 import { SyncEngineV2, type VisibilitySource } from '@modules/syncV2/engine';
 import { FirestoreTransport } from '@modules/syncV2/firestoreTransport';
 import { createUsageCounter } from '@modules/syncV2/usage';
@@ -51,6 +52,32 @@ let startedFor: string | null = null;
 let pendingRun: (() => void) | null = null;
 let readyWaiters: Array<() => void> = [];
 
+let groupRefresh: Promise<void> | null = null;
+const devicesChecked = new Set<string>();
+
+/**
+ * Read the sync group again; when devices joined or left, apply the newest
+ * interface settings among the members (including this device, so its own
+ * newer settings stay). The device that created a group learns who joined
+ * only this way.
+ */
+function refreshGroup(): void {
+    if (groupRefresh) return;
+    groupRefresh = (async () => {
+        const group = await refreshSyncGroup();
+        if (group) await engine?.applyDeviceValues(group.devices);
+    })()
+        .catch(error => console.warn('[SyncV2] Could not refresh the sync group:', error))
+        .finally(() => { groupRefresh = null; });
+}
+
+/** Settings arrived from a device not in this device's group: read the group once per device and session. */
+function checkDeviceOutsideGroup(deviceId: string): void {
+    if (devicesChecked.has(deviceId)) return;
+    devicesChecked.add(deviceId);
+    refreshGroup();
+}
+
 /**
  * Start for the signed-in user. `passphrase` returns the encryption
  * passphrase known to this tab (null when none).
@@ -74,7 +101,7 @@ export function startSyncV2(userId: string, passphrase: () => string | null): vo
 
         engine = new SyncEngineV2({
             deviceId: getDeviceId(),
-            tracker: createUserDataTracker(undefined, type => editTypes.has(type)),
+            tracker: createUserDataTracker(undefined, type => editTypes.has(type), checkDeviceOutsideGroup),
             types: createUserDataTypes(),
             transport: new FirestoreTransport(db, userId),
             encryptionKey: () => (loadFirebaseSettings().encryptionEnabled ? passphrase() : null),
@@ -103,6 +130,7 @@ export function startSyncV2(userId: string, passphrase: () => string | null): vo
         // List this device for the others (Devices page), whether or not that
         // page was ever opened here.
         void registerDevice().catch(error => console.warn('[SyncV2] Could not register the device:', error));
+        if (getSyncGroup()) refreshGroup();
     };
 
     // Auto-sync off, offline, or the passphrase not entered yet: try again later.
@@ -134,6 +162,7 @@ export function startSyncV2(userId: string, passphrase: () => string | null): vo
 export async function stopSyncV2(): Promise<void> {
     startToken += 1;
     startedFor = null;
+    devicesChecked.clear();
     if (retryTimer) clearTimeout(retryTimer);
     retryTimer = null;
     pendingRun = null;

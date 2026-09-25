@@ -142,9 +142,20 @@ Deletions: a delete is a tombstone `{deleted: true, stamp}` under the **newest**
 newer than an edit wins, and vice versa. Only user-edited types (newest) can be deleted; accumulated types
 have no reset (section 2). Toggles such as the oswajanie `active` flag are a **newest** field on the item.
 
-Device scope: `uiSettings`, `buttons` and `radial` are one whole value per device (no field split),
-**newest**, stored per origin device and applied only from devices in the same sync group (existing
-`getSyncGroup` behavior).
+Device scope: `interfaceSettings` (the `uiSettings` backup category) and `buttonSettings` (`buttons`)
+hold one item per stored key (`uiSettings`, `layoutManagerState`, `tripRoutes`, `activeKeymap`,
+`loggingEnabled`; `mobileButtonSettings`, `desktopButtonSettings`), **newest**, stored per origin
+device and applied only from devices in the same sync group: a dock resize elsewhere doesn't carry the
+trip routes along. `radial` is one shared (global) value.
+
+- Applying a value from another device reloads the UI, waits for it to settle (~1 s) and then *adopts*
+  what local data now holds under the source's stamp, not uploaded. The window manager re-saves an
+  applied layout in its own form; captured as an edit, that copy would carry a fresh stamp, win over
+  the next change on the other device, and bounce between devices that normalize differently.
+- The device that created a group only learns who joined from the group document: sync re-reads it at
+  start and when settings arrive from a device the local group doesn't list (once per device per
+  session); the Devices page updates it too. When the membership changed, the newest settings among
+  the members (this device included) are applied.
 
 Knowledge, concretely:
 

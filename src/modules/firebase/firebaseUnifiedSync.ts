@@ -1174,6 +1174,34 @@ export async function leaveSyncGroupCloud(): Promise<{ success: boolean; error?:
 }
 
 /**
+ * Take this device's group membership from the cloud copy among `groups`: the
+ * device that created a group only learns who joined it from there. Returns
+ * the group when its device list changed, otherwise null.
+ */
+export function updateLocalSyncGroup(groups: SyncGroup[]): SyncGroup | null {
+    const current = getSyncGroup();
+    const cloud = current ? groups.find(g => g.id === current.id) : undefined;
+    if (!current || !cloud || !Array.isArray(cloud.devices)) return null;
+    // Removed from the group elsewhere: keep the local membership until this device leaves.
+    if (!cloud.devices.includes(getDeviceInfo().id)) return null;
+    const same = cloud.devices.length === current.devices.length
+        && cloud.devices.every(id => current.devices.includes(id));
+    if (same && cloud.name === current.name) return null;
+    const group = { ...current, ...cloud };
+    setSyncGroup(group);
+    return same ? null : group;
+}
+
+/** Read this device's sync group from the cloud and update the local membership (see updateLocalSyncGroup). */
+export async function refreshSyncGroup(): Promise<SyncGroup | null> {
+    const current = getSyncGroup();
+    const userId = getFirebaseAuth()?.currentUser?.uid;
+    if (!current || !userId) return null;
+    const { group } = await readSyncGroupDoc(userId, current.id);
+    return group ? updateLocalSyncGroup([group]) : null;
+}
+
+/**
  * Get all sync groups from cloud
  */
 export async function getCloudSyncGroups(): Promise<{

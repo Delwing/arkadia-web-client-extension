@@ -1,5 +1,5 @@
 import { characterStorage, globalStorage } from '@modules/core/storage';
-import { HybridLogicalClock } from '@modules/userData/hlc';
+import { formatStamp, HybridLogicalClock } from '@modules/userData/hlc';
 import { MemoryRecordStore } from '@modules/userData/recordStore';
 import type { UserRecord } from '@modules/userData/records';
 import { UserDataTracker } from '@modules/userData/tracker';
@@ -18,7 +18,7 @@ function tracker(deviceId: string, now: () => number = Date.now) {
     let saved: string | null = null;
     return new UserDataTracker({
         deviceId,
-        types: createUserDataTypes(() => deviceId),
+        types: createUserDataTypes(() => deviceId, { settleMs: 0, reload: async () => undefined }),
         store: new MemoryRecordStore(),
         clock: new HybridLogicalClock(deviceId, { load: () => saved, save: s => { saved = s; } }, now),
     });
@@ -235,11 +235,45 @@ describe('all localStorage types together', () => {
         expect(JSON.parse(localStorage.getItem('Alice:profession')!).plus_events).toEqual([5, 7]);
     });
 
+    it('applies a group member\'s layout change without touching its other interface settings', async () => {
+        localStorage.setItem('layoutManagerState', JSON.stringify({ enabled: true, windows: {}, dockExtents: { left: 300 } }));
+        localStorage.setItem('tripRoutes', JSON.stringify(['a-route']));
+        const a = tracker('a');
+        await a.capture();
+        const first = await a.outbox();
+        await a.acknowledge(first[first.length - 1].seq);
+
+        localStorage.clear();
+        localStorage.setItem('layoutManagerState', JSON.stringify({ enabled: true, windows: {}, dockExtents: { left: 200 } }));
+        localStorage.setItem('tripRoutes', JSON.stringify(['b-route']));
+        const b = new UserDataTracker({
+            deviceId: 'b',
+            types: createUserDataTypes(() => 'b', { settleMs: 0, reload: async () => undefined }),
+            store: new MemoryRecordStore(),
+            clock: new HybridLogicalClock('b', { load: () => null, save: () => undefined }, () => Date.now() - 60_000),
+            appliesFromDevice: other => other === 'a',
+        });
+        await b.capture();
+
+        // a changes only the dock size
+        const layout = JSON.parse(first.find(r => r.key === 'layoutManagerState')!.value as string);
+        const edited: UserRecord = {
+            ...first.find(r => r.key === 'layoutManagerState')!,
+            value: JSON.stringify({ ...layout, dockExtents: { left: 420 } }),
+            stamp: formatStamp({ wall: Date.now() + 1_000, counter: 0, device: 'a' }),
+        };
+        await b.apply([edited]);
+
+        expect(JSON.parse(localStorage.getItem('layoutManagerState')!).dockExtents).toEqual({ left: 420 });
+        expect(localStorage.getItem('tripRoutes')).toBe(JSON.stringify(['b-route']));
+    });
+
     it('keeps device interface settings per device', async () => {
         localStorage.setItem('uiSettings', JSON.stringify({ theme: 'dark' }));
         const records = await captureAll('a');
-        const ui = records.find(r => r.type === 'deviceInterface');
+        const ui = records.find(r => r.type === 'interfaceSettings' && r.key === 'uiSettings');
         expect(ui?.scope).toBe(deviceScope('a'));
+        expect(ui?.value).toBe(JSON.stringify({ theme: 'dark' }));
 
         localStorage.clear();
         localStorage.setItem('uiSettings', JSON.stringify({ theme: 'light' }));
