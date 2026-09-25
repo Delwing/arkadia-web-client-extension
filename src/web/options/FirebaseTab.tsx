@@ -85,6 +85,7 @@ const DEFAULT_FIREBASE_CONFIG = {
     authDomain: "dargoth-client.firebaseapp.com",
     projectId: "dargoth-client",
     storageBucket: "dargoth-client.firebasestorage.app",
+    databaseURL: "https://dargoth-client-default-rtdb.europe-west1.firebasedatabase.app",
     messagingSenderId: "297724157458",
     appId: "1:297724157458:web:02a8c5258caedbad4642cb",
     measurementId: "G-0WGG26XZB2"

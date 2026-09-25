@@ -21,6 +21,7 @@ import {
     takeoverRoom,
     TAKEOVER_WINDOW_MS,
     withHandoff,
+    type HandoffRoom,
     type SessionRecord,
 } from './handoffRecord';
 
@@ -54,6 +55,14 @@ export interface SessionHandoffDeps {
     setTimer(fn: () => void, ms: number): () => void;
 }
 
+/**
+ * Every decision goes to the console. The handoff happens on two devices at once
+ * and fails quietly by design, so this is the only way to see why it did not.
+ */
+function log(message: string, ...details: unknown[]): void {
+    console.info(`[SessionHandoff] ${message}`, ...details);
+}
+
 export class SessionHandoff {
     private store: HandoffStore | null = null;
     private gameConnected = false;
@@ -67,6 +76,10 @@ export class SessionHandoff {
 
     private room: number | null = null;
     private lost = false;
+    /** The game object we are, from the latest Char.Info. */
+    private body: number | null = null;
+    /** The game object this login put us in. */
+    private loginBody: number | null = null;
 
     /**
      * Whether the map has been placed since this login settled: a step, a GMCP
@@ -115,20 +128,26 @@ export class SessionHandoff {
         this.claimed = false;
         this.endedSession = null;
         this.moved = false;
+        this.loginBody = null;
         this.offerOpen = true;
         // The map restores this device's own last room from storage while the
-        // login's Char.Info is handled; that is not a placement. loginSettled()
+        // login's Char.Info is handled; that is not a placement. charInfoHandled()
         // starts counting once it is done.
         this.trackingMoves = false;
         this.claim();
     }
 
     /**
-     * The login's Char.Info has been handled in full, the map's restore of this
-     * device's own last room included. Every placement from here on is news.
+     * A Char.Info has been handled in full. For a login's, that includes the map's
+     * restore of this device's own last room, and every placement from here on is
+     * news. Later ones only keep track of which game object we are.
      */
-    loginSettled(): void {
-        this.trackingMoves = true;
+    charInfoHandled(objectNum: number | null): void {
+        this.body = objectNum;
+        if (!this.trackingMoves) {
+            this.loginBody = objectNum;
+            this.trackingMoves = true;
+        }
     }
 
     roomChanged(roomId: number): void {
@@ -153,12 +172,18 @@ export class SessionHandoff {
         const session = this.session;
         const character = this.character;
         const roomId = this.room;
-        if (!store || !session || !character || roomId === null) return;
-        if (this.endedSession === session) return;
-        if (this.lost || !this.deps.isTrusted()) return;
+        const objectNum = this.body;
+        if (!session || !character || this.endedSession === session) return;
+        if (!store) return log('session ended, not handing over: not signed in to Firebase');
+        if (roomId === null) return log('session ended, not handing over: no room known');
+        if (objectNum === null) return log('session ended, not handing over: game object unknown');
+        if (this.lost) return log('session ended, not handing over: map position lost');
+        if (!this.deps.isTrusted()) return log('session ended, not handing over: tab was in the background');
         this.endedSession = session;
-        const handoff = {from: session, device: this.deps.deviceId, roomId, at: store.now()};
-        await this.run(store, () => store.transact(character, current => withHandoff(current, handoff, store.now())));
+        const handoff = {from: session, device: this.deps.deviceId, roomId, objectNum, at: store.now()};
+        const written = await this.run(store, () => store.transact(character, current => withHandoff(current, handoff, store.now())));
+        if (written?.handoff?.from === session) log(`handed over room ${roomId} (object ${objectNum})`);
+        else log('session ended, handoff refused: another login claimed the character too long ago');
     }
 
     private claim(): void {
@@ -176,14 +201,17 @@ export class SessionHandoff {
             if (store !== this.store || session !== this.session || !committed) return;
             this.prevSession = committed.prevSession;
             const inherited = inheritedRoom(previous, store.now());
-            if (inherited !== null) {
+            if (inherited) {
+                log(`claimed ${character}; found room ${inherited.roomId} left by the previous session`);
                 this.offer(inherited);
             } else if (this.offerOpen && this.prevSession) {
+                log(`claimed ${character}; waiting ${TAKEOVER_WINDOW_MS / 1000} s for the previous session to hand over`);
                 this.stopOfferTimer = this.deps.setTimer(() => {
                     this.stopOfferTimer = null;
                     this.closeOffer();
                 }, TAKEOVER_WINDOW_MS);
             } else {
+                log(`claimed ${character}; no previous session to take over from`);
                 this.closeOffer();
             }
             this.stopWatch = store.watch(character, value => this.onRecord(value));
@@ -193,23 +221,40 @@ export class SessionHandoff {
     private onRecord(value: SessionRecord | null): void {
         const session = this.session;
         if (!session) return;
-        const room = takeoverRoom(value, session, this.prevSession);
-        if (room !== null) {
-            this.offer(room);
+        const handoff = takeoverRoom(value, session, this.prevSession);
+        if (handoff) {
+            this.offer(handoff);
             return;
         }
         // Someone logged in over us: the socket may not have told us yet.
         if (value && value.session !== session && value.prevSession === session) {
+            log('another device logged in as this character');
             void this.sessionEnded();
         }
     }
 
-    private offer(roomId: number): void {
-        if (!this.offerOpen || this.moved) return;
+    /**
+     * Apply a handoff, if it is still news and about the character we are now.
+     *
+     * The game object is what tells the two apart. Taking over a session, or
+     * coming back to one left standing in the world, puts us back in the same
+     * object; a login after the character left the world - quit, idled out, a
+     * reboot - makes a new one somewhere else, and the room it was in no longer
+     * means anything.
+     */
+    private offer(handoff: HandoffRoom): void {
+        if (this.moved) return log(`not applying room ${handoff.roomId}: the map was placed since login`);
+        if (!this.offerOpen) return log(`not applying room ${handoff.roomId}: arrived too late`);
+        if (this.loginBody === null || handoff.objectNum !== this.loginBody) {
+            log(`not applying room ${handoff.roomId}: game object ${handoff.objectNum} left, logged in as ${this.loginBody}`);
+            this.closeOffer();
+            return;
+        }
+        log(`applying room ${handoff.roomId}`);
         this.closeOffer();
         this.applying = true;
         try {
-            this.deps.apply(roomId);
+            this.deps.apply(handoff.roomId);
         } finally {
             this.applying = false;
         }

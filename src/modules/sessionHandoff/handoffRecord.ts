@@ -8,7 +8,10 @@
  *   session      the game session that holds the character now (one per login)
  *   prevSession  the one it took the character from
  *   claimedAt    when it did, in server time
- *   handoff      the room a session was in when it saw itself end
+ *   handoff      the room a session was in when it saw itself end, and the game
+ *                object the character was; applied only to a login that finds
+ *                itself in that same object (a takeover, or a return to a
+ *                character still standing in the world)
  *
  * The handoff is written only by a device that sees its session end — the game
  * dropping it for a login elsewhere, or the player disconnecting — and only while
@@ -26,6 +29,8 @@ export interface HandoffRoom {
     from: string;
     device: string;
     roomId: number;
+    /** The game object the character was; a new login elsewhere gets a new one. */
+    objectNum: number | null;
     /** Server time. */
     at: number;
 }
@@ -73,12 +78,12 @@ export function claimRecord(
  * previous session's takeover window, and the previous session may have walked
  * anywhere since.
  */
-export function inheritedRoom(previous: SessionRecord | null, now: number): number | null {
+export function inheritedRoom(previous: SessionRecord | null, now: number): HandoffRoom | null {
     const handoff = previous?.handoff;
     if (!previous || !handoff) return null;
     if (handoff.from !== previous.session) return null;
     if (now - handoff.at > HANDOFF_TTL_MS) return null;
-    return handoff.roomId;
+    return handoff;
 }
 
 /**
@@ -114,10 +119,10 @@ export function takeoverRoom(
     value: SessionRecord | null,
     mySession: string,
     prevSession: string | null,
-): number | null {
+): HandoffRoom | null {
     if (!value || !prevSession || value.session !== mySession) return null;
     const handoff = value.handoff;
-    return handoff && handoff.from === prevSession ? handoff.roomId : null;
+    return handoff && handoff.from === prevSession ? handoff : null;
 }
 
 /** A record as read back from the database, which drops null fields. */
@@ -139,6 +144,7 @@ export function normalizeRecord(raw: unknown): SessionRecord | null {
                 from: handoff.from,
                 device: typeof handoff.device === 'string' ? handoff.device : '',
                 roomId: handoff.roomId,
+                objectNum: typeof handoff.objectNum === 'number' ? handoff.objectNum : null,
                 at: handoff.at,
             }
             : null,
