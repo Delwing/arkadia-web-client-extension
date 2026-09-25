@@ -106,7 +106,7 @@ test.describe('Line processing pipeline', () => {
         const modal = await openAutomation(page);
         await addPatternTrigger(page, modal, MATCH_TEXT, async action => {
             await action.locator('select').first().selectOption('color');
-            await action.locator('input[type="color"]').fill(HIGHLIGHT_COLOR);
+            await action.getByTitle(/^Tekst/).fill(HIGHLIGHT_COLOR);
         });
         await expect(row(modal, MATCH_TEXT), 'should list the color trigger pattern').toBeVisible();
         await closeAutomation(modal);
