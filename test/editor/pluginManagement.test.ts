@@ -25,20 +25,11 @@ function editorPlugin(overrides: Partial<EditorPluginData> = {}): EditorPluginDa
     };
 }
 
-/** savePlugin reads the name from the page and reports compilation there. */
-function mountEditorChrome(name: string) {
-    document.body.innerHTML = `
-        <input id="plugin-name" value="${name}" />
-        <div id="compile-status"></div>
-    `;
-}
-
 const bundle = vi.fn(async () => 'export async function init() { return {} }');
 const status = vi.fn();
 
 describe('savePlugin', () => {
     beforeEach(() => {
-        mountEditorChrome('Combat Alert');
         bundle.mockClear();
         status.mockClear();
     });

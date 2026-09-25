@@ -19,8 +19,8 @@ import {
 
 // Import our refactored modules
 import type {EditorState} from './types'
-import {updateLanguageUI, updateStatus} from './utils'
-import {bundlePlugin, compileTypeScript, initEsbuild} from './bundler'
+import {updateStatus} from './utils'
+import {bundlePlugin, initEsbuild} from './bundler'
 import {
   initializeEditor,
   registerAutoImportCompletion,
@@ -28,6 +28,7 @@ import {
   updateMonacoFileSystem,
   changeTheme,
   getSavedTheme,
+  getEditorPrefs,
   applyInitialThemeFromCache
 } from './monacoSetup'
 import {renderFileTree} from './fileTree'
@@ -55,12 +56,33 @@ import {
   showNewFileModal,
   showNewPluginModal,
 } from './modals'
-import {adoptStoredPlugin, createNewPlugin, deletePlugin, downloadPlugin, refreshPluginList, savePlugin, uploadPlugin,} from './pluginManagement'
+import {
+  adoptStoredPlugin,
+  createNewPlugin,
+  deletePlugin,
+  downloadPlugin,
+  refreshPluginList,
+  savePlugin,
+  uploadPlugin,
+  type PluginSummary,
+} from './pluginManagement'
 import {publishToRegistry} from './registryPublish'
 import { getDevServer, type DevServerStatus } from './devServer'
 import pluginApiTypes from '../plugin-types/index.d.ts?raw'
 import {IPosition, IRange} from "monaco-editor";
 import {CodingAgentPanel} from './codingAgentPanel';
+import {openDialog} from './dialogs'
+import {createPopover, type Popover} from './popover'
+import {setupPluginSwitcher} from './pluginSwitcher'
+import {renderWelcome, setWelcomeVisible} from './welcome'
+import {
+  setBreadcrumb,
+  setHeaderPlugin,
+  setSaveState,
+  setSettingsIdeStatus,
+  setupSettings,
+  setupStatusBar,
+} from './chrome'
 
 // Apply cached theme colors immediately to prevent flash of wrong colors
 applyInitialThemeFromCache()
@@ -126,6 +148,100 @@ let agentPanel: CodingAgentPanel | null = null
 let jsPreviewEditor: monaco.editor.IStandaloneCodeEditor | null = null
 let jsPreviewVisible = false
 
+// Every plugin the editor can open, for the switcher and the welcome screen
+let pluginList: PluginSummary[] = []
+let pluginSwitcher: Popover | null = null
+let refreshStatusBar: () => void = () => {}
+
+async function reloadPluginList() {
+  pluginList = await refreshPluginList()
+  renderWelcome(pluginList, requestOpenPlugin)
+}
+
+function currentPluginLanguage(): 'typescript' | 'javascript' {
+  return state.currentPlugin?.entryPoint.endsWith('.ts') ? 'typescript' : 'javascript'
+}
+
+/** Header and save state follow the open plugin and its modified files. */
+function updateDirtyUI() {
+  if (!state.currentPlugin) return
+  const count = state.modifiedFiles.size
+  setSaveState(count > 0 ? 'dirty' : 'clean', count)
+}
+
+/**
+ * Open a plugin from the switcher, the welcome screen or the IDE, asking
+ * first when the open one has unsaved changes. Resolves false when the user
+ * cancelled.
+ */
+async function requestOpenPlugin(pluginId: string, source: 'user' | 'ide' = 'user'): Promise<boolean> {
+  if (pluginId === state.currentPluginId) return true
+
+  if (state.modifiedFiles.size > 0 && state.currentPlugin) {
+    const target = pluginList.find(p => p.id === pluginId)?.name ?? pluginId
+    const files = state.modifiedFiles.size === 1 ? '1 file' : `${state.modifiedFiles.size} files`
+    const { button } = await openDialog({
+      title: 'Unsaved changes',
+      message: source === 'ide'
+        ? `Your IDE switched to ${target}, but ${state.currentPlugin.name} has unsaved changes in ${files}. Save them first?`
+        : `${state.currentPlugin.name} has unsaved changes in ${files}. Save them before opening ${target}?`,
+      buttons: [
+        { id: 'discard', label: 'Discard', kind: 'danger', start: true },
+        { id: 'cancel', label: 'Cancel' },
+        { id: 'save', label: 'Save and open', kind: 'primary' },
+      ],
+    })
+    if (button === 'save') {
+      await saveCurrentPlugin()
+      if (state.modifiedFiles.size > 0) return false // save failed; stay put
+    } else if (button !== 'discard') {
+      return false
+    }
+  }
+
+  await loadPlugin(pluginId)
+
+  if (source === 'user') {
+    const devServer = getDevServer()
+    if (devServer.getStatus() === 'connected') {
+      devServer.sendPluginSelected(pluginId)
+    }
+  }
+  return true
+}
+
+/** Keep ?plugin= in the address bar, so a reload reopens the same plugin. */
+function syncUrl(pluginId: string | null) {
+  const url = new URL(window.location.href)
+  if (pluginId) url.searchParams.set('plugin', pluginId)
+  else url.searchParams.delete('plugin')
+  window.history.replaceState(null, '', url)
+}
+
+/** Back to the welcome screen with nothing open. */
+function closePlugin() {
+  state.editorModels.forEach(model => model.dispose())
+  state.editorModels.clear()
+  monaco.editor.getModels().forEach(model => {
+    const uriString = model.uri.toString()
+    if (uriString.startsWith('file:///') && !uriString.includes('plugin-api')) {
+      model.dispose()
+    }
+  })
+
+  state.currentPluginId = null
+  state.currentPlugin = null
+  state.currentFilePath = null
+  state.modifiedFiles.clear()
+  state.editor?.setValue('')
+
+  showDisabledFileTree()
+  setHeaderPlugin(null)
+  setWelcomeVisible(true)
+  syncUrl(null)
+  refreshStatusBar()
+}
+
 // File tree render wrapper
 function showDisabledFileTree() {
   const fileList = document.getElementById('file-list')!
@@ -138,6 +254,7 @@ function renderCurrentFileTree() {
     return
   }
 
+  updateDirtyUI()
   renderFileTree(state.currentPlugin, state.currentFilePath, state.modifiedFiles, {
     onFileClick: switchToFile,
     onFileDelete: (path) => {
@@ -309,6 +426,7 @@ export default value;`
   }
 
   renderCurrentFileTree()
+  setBreadcrumb(filePath)
   updateStatus(`Editing: ${filePath}`, 'normal')
 }
 
@@ -321,7 +439,7 @@ async function loadPlugin(pluginId: string) {
     // edited like any other plugin.
     plugin = await adoptStoredPlugin(pluginId)
     if (plugin) {
-      await refreshPluginList(pluginId)
+      await reloadPluginList()
     }
   }
   if (!plugin) {
@@ -352,11 +470,9 @@ async function loadPlugin(pluginId: string) {
   // Notify dev server about current plugin
   getDevServer().setCurrentPluginId(pluginId)
 
-  const nameInput = document.getElementById('plugin-name') as HTMLInputElement
-  nameInput.value = plugin.name
-
-  const langSelect = document.getElementById('language-select') as HTMLSelectElement
-  langSelect.value = getLanguageFromPath(state.currentFilePath!)
+  setHeaderPlugin({ name: plugin.name, language: currentPluginLanguage() })
+  setWelcomeVisible(false)
+  syncUrl(pluginId)
 
   // Update Monaco's virtual file system
   updateMonacoFileSystem(pluginId, plugin.files)
@@ -428,12 +544,7 @@ export default value;`
 
   // Load the entry point file
   switchToFile(state.currentFilePath!)
-
-  const language = getLanguageFromPath(state.currentFilePath!)
-  // Only update language UI for JS/TS files
-  if (language === 'javascript' || language === 'typescript') {
-    updateLanguageUI(language)
-  }
+  refreshStatusBar()
   updateStatus(`Loaded: ${plugin.name}`, 'success')
 
   // Notify agent panel of plugin change
@@ -870,6 +981,7 @@ async function saveCurrentPlugin() {
     state.currentPlugin.files[state.currentFilePath].content = state.editor.getValue()
   }
 
+  setSaveState('saving')
   try {
     const result = await savePlugin(
       state.currentPlugin,
@@ -881,56 +993,63 @@ async function saveCurrentPlugin() {
     )
 
     state.currentPluginId = result.id
-
-    // Refresh plugin list
-    await refreshPluginList(state.currentPluginId)
-
-    // Select the saved plugin
-    const pluginSelect = document.getElementById('plugin-select') as HTMLSelectElement
-    pluginSelect.value = result.id
-
+    setHeaderPlugin({ name: state.currentPlugin.name, language: currentPluginLanguage() })
+    await reloadPluginList()
     renderCurrentFileTree()
   } catch {
-    // Error already handled by savePlugin
+    // Error already reported by savePlugin; keep the Save button asking.
+    setSaveState('failed', state.modifiedFiles.size)
   }
 }
 
 // Delete plugin wrapper
 async function deleteCurrentPlugin() {
-  if (!state.currentPluginId || !state.editor) {
+  if (!state.currentPluginId || !state.currentPlugin) {
     updateStatus('No plugin selected', 'error')
     return
   }
 
-  await deletePlugin(state.currentPluginId, updateStatus)
-
-  // Clear all editor models
-  state.editorModels.forEach(model => model.dispose())
-  state.editorModels.clear()
-
-  // Dispose Monaco models
-  monaco.editor.getModels().forEach(model => {
-    const uriString = model.uri.toString()
-    if (uriString.startsWith('file:///') && !uriString.includes('plugin-api')) {
-      model.dispose()
-    }
+  const files = Object.keys(state.currentPlugin.files).length
+  const { button } = await openDialog({
+    title: 'Delete plugin',
+    message: `Delete ${state.currentPlugin.name} and its ${files === 1 ? 'file' : `${files} files`}? ` +
+      'It is also removed from the game client. Download a ZIP first if you might want it back.',
+    buttons: [
+      { id: 'cancel', label: 'Cancel' },
+      { id: 'delete', label: 'Delete', kind: 'danger' },
+    ],
   })
+  if (button !== 'delete') return
 
-  // Clear state
-  state.currentPluginId = null
-  state.currentPlugin = null
-  state.currentFilePath = null
-  state.modifiedFiles.clear()
+  await deletePlugin(state.currentPluginId, updateStatus)
+  closePlugin()
+  await reloadPluginList()
+}
 
-  state.editor.setValue('')
+// Rename plugin: the name lives in the plugin record, so renaming saves it
+async function renameCurrentPlugin() {
+  if (!state.currentPlugin) return
 
-  const nameInput = document.getElementById('plugin-name') as HTMLInputElement
-  nameInput.value = ''
+  const { button, value } = await openDialog({
+    title: 'Rename plugin',
+    message: '',
+    input: { value: state.currentPlugin.name, placeholder: 'Plugin name' },
+    buttons: [
+      { id: 'cancel', label: 'Cancel' },
+      { id: 'rename', label: 'Rename', kind: 'primary' },
+    ],
+  })
+  const name = value.trim()
+  if (button !== 'rename' || !name || name === state.currentPlugin.name) return
 
-  // Show disabled file tree
-  showDisabledFileTree()
-
-  await refreshPluginList(null)
+  const previous = state.currentPlugin.name
+  state.currentPlugin.name = name
+  await saveCurrentPlugin()
+  if (state.modifiedFiles.size > 0 && state.currentPlugin.name === name) {
+    // Save failed: put the old name back so the header does not lie.
+    state.currentPlugin.name = previous
+    setHeaderPlugin({ name: previous, language: currentPluginLanguage() })
+  }
 }
 
 // Create new plugin wrapper
@@ -939,13 +1058,11 @@ async function createNewPluginHandler() {
     const pluginData = await createNewPlugin(bundlePlugin)
 
     hideNewPluginModal()
-    await refreshPluginList(pluginData.id)
+    await reloadPluginList()
     await loadPlugin(pluginData.id)
-
-    const pluginSelect = document.getElementById('plugin-select') as HTMLSelectElement
-    pluginSelect.value = pluginData.id
   } catch (error) {
-    alert((error as Error).message)
+    updateStatus((error as Error).message, 'error')
+    ;(document.getElementById('new-plugin-name') as HTMLInputElement).focus()
   }
 }
 
@@ -981,33 +1098,12 @@ async function uploadPluginFromFile() {
 
     const pluginData = await uploadPlugin(file, bundlePlugin, updateStatus)
     if (pluginData) {
-      await refreshPluginList(pluginData.id)
+      await reloadPluginList()
       await loadPlugin(pluginData.id)
-
-      const pluginSelect = document.getElementById('plugin-select') as HTMLSelectElement
-      pluginSelect.value = pluginData.id
     }
   }
 
   input.click()
-}
-
-// Manual compile button
-async function manualCompile() {
-  if (!state.editor) return
-
-  const source = state.editor.getValue()
-  try {
-    updateStatus('Compiling TypeScript...', 'normal')
-    const compiled = await compileTypeScript(source)
-    const compileStatus = document.getElementById('compile-status')!
-    compileStatus.textContent = '✓ Compiled successfully'
-    setTimeout(() => compileStatus.textContent = '', 3000)
-    updateStatus('TypeScript compiled successfully', 'success')
-    console.log('Compiled JavaScript:', compiled)
-  } catch (error) {
-    updateStatus('Compilation failed: ' + (error as Error).message, 'error')
-  }
 }
 
 // JS Preview panel functions
@@ -1024,7 +1120,7 @@ function initJsPreviewEditor() {
     automaticLayout: true,
     wordWrap: 'on',
     theme: getSavedTheme(),
-    fontSize: 13,
+    fontSize: getEditorPrefs().fontSize,
     lineNumbers: 'on',
     folding: true,
   })
@@ -1033,6 +1129,8 @@ function initJsPreviewEditor() {
 function toggleJsPreview() {
   const panel = document.getElementById('js-preview-panel')!
   jsPreviewVisible = !jsPreviewVisible
+
+  document.getElementById('toggle-js-preview-btn')!.classList.toggle('active', jsPreviewVisible)
 
   if (jsPreviewVisible) {
     panel.style.display = 'flex'
@@ -1098,15 +1196,6 @@ function renderFilePickerList(filter: string) {
   filteredFiles.forEach((filePath, index) => {
     const item = document.createElement('div')
     item.className = 'file-picker-item'
-    item.style.cssText = `
-      padding: 8px 12px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      border-radius: 3px;
-      font-size: 13px;
-    `
 
     const iconClass = FileIcons.getClassWithColor(filePath)
     const icon = document.createElement('span')
@@ -1117,27 +1206,20 @@ function renderFilePickerList(filter: string) {
     text.textContent = filePath
     item.appendChild(text)
 
-    item.addEventListener('mouseenter', () => {
-      item.style.background = '#2a2d2e'
-    })
-    item.addEventListener('mouseleave', () => {
-      item.style.background = ''
-    })
-
     item.addEventListener('click', () => {
       switchToFile(filePath)
       closeFilePicker()
     })
 
     if (index === 0) {
-      item.style.background = '#2a2d2e'
+      item.classList.add('selected')
     }
 
     list.appendChild(item)
   })
 
   if (filteredFiles.length === 0) {
-    list.innerHTML = '<div style="padding: 12px; color: #999; text-align: center;">No files found</div>'
+    list.innerHTML = '<div class="file-picker-empty">No files found</div>'
   }
 }
 
@@ -1178,6 +1260,12 @@ function updateDevServerUI(status: DevServerStatus, message?: string) {
   const connectionStatus = document.getElementById('dev-server-connection-status')!
 
   indicator.className = status
+  setSettingsIdeStatus(status, {
+    connected: 'Connected',
+    connecting: 'Connecting…',
+    error: 'Connection error',
+    disconnected: 'Not connected',
+  }[status] ?? 'Not connected')
 
   switch (status) {
     case 'connected':
@@ -1297,7 +1385,7 @@ function setupDevServer() {
     }
 
     // Refresh plugin list in case a new plugin was added
-    await refreshPluginList(state.currentPluginId)
+    await reloadPluginList()
   })
 
   // Set up reload request callback
@@ -1317,22 +1405,7 @@ function setupDevServer() {
       return
     }
 
-    // Warn if there are unsaved changes
-    if (state.modifiedFiles.size > 0) {
-      const confirmed = confirm(
-        'IDE wants to switch plugins. You have unsaved changes. Continue? All unsaved changes will be lost.'
-      )
-      if (!confirmed) {
-        return
-      }
-    }
-
-    // Load the plugin
-    await loadPlugin(pluginId)
-
-    // Update the dropdown
-    const pluginSelect = document.getElementById('plugin-select') as HTMLSelectElement
-    pluginSelect.value = pluginId
+    if (!(await requestOpenPlugin(pluginId, 'ide'))) return
 
     updateStatus(`Switched to plugin from IDE: ${pluginId}`, 'success')
   })
@@ -1408,82 +1481,50 @@ function setupDevServer() {
 
 // Event listeners setup
 function setupEventListeners() {
-  const pluginSelect = document.getElementById('plugin-select') as HTMLSelectElement
-  pluginSelect.addEventListener('change', (e) => {
-    const target = e.target as HTMLSelectElement
-    if (target.value) {
-      // Warn if there are unsaved changes
-      if (state.modifiedFiles.size > 0) {
-        const confirmed = confirm(
-          'You have unsaved changes. Are you sure you want to switch plugins? All unsaved changes will be lost.'
-        )
-        if (!confirmed) {
-          // Revert the dropdown selection
-          target.value = state.currentPluginId || ''
-          return
-        }
-      }
-      loadPlugin(target.value)
-
-      // Notify IDE about plugin selection
-      const devServer = getDevServer()
-      if (devServer.getStatus() === 'connected') {
-        devServer.sendPluginSelected(target.value)
-      }
-    }
+  pluginSwitcher = setupPluginSwitcher({
+    getPlugins: () => pluginList,
+    getCurrentId: () => state.currentPluginId,
+    onPick: (id) => { requestOpenPlugin(id) },
+    onNew: showNewPluginModal,
+    onImport: uploadPluginFromFile,
   })
 
   const saveBtn = document.getElementById('save-btn')!
   saveBtn.addEventListener('click', saveCurrentPlugin)
 
-  const newBtn = document.getElementById('new-btn')!
-  newBtn.addEventListener('click', showNewPluginModal)
-
-  const deleteBtn = document.getElementById('delete-btn')!
-  deleteBtn.addEventListener('click', deleteCurrentPlugin)
-
-  const downloadBtn = document.getElementById('download-btn')!
-  downloadBtn.addEventListener('click', downloadCurrentPlugin)
-
-  const publishBtn = document.getElementById('publish-btn')!
-  publishBtn.addEventListener('click', publishCurrentPlugin)
-
-  const uploadBtn = document.getElementById('upload-btn')!
-  uploadBtn.addEventListener('click', uploadPluginFromFile)
-
-  const compileBtn = document.getElementById('compile-btn')!
-  compileBtn.addEventListener('click', manualCompile)
-
-  const langSelect = document.getElementById('language-select') as HTMLSelectElement
-  langSelect.addEventListener('change', (e) => {
-    const target = e.target as HTMLSelectElement
-    const language = target.value as 'javascript' | 'typescript'
-    const currentModel = state.editor!.getModel()
-
-    if (currentModel) {
-      const currentValue = currentModel.getValue()
-      currentModel.dispose()
-
-      const extension = language === 'typescript' ? 'ts' : 'js'
-      const uri = monaco.Uri.parse(`file:///plugin.${extension}`)
-      const newModel = monaco.editor.createModel(currentValue, language, uri)
-
-      state.editor!.setModel(newModel)
-    }
-
-    updateLanguageUI(language)
+  // Plugin actions (⋯)
+  const actionsMenu = createPopover(
+    document.getElementById('actions-btn')!,
+    document.getElementById('actions-menu')!,
+    { align: 'right' }
+  )
+  const actions: Record<string, () => void> = {
+    rename: renameCurrentPlugin,
+    download: downloadCurrentPlugin,
+    publish: publishCurrentPlugin,
+    delete: deleteCurrentPlugin,
+  }
+  document.getElementById('actions-menu')!.addEventListener('click', (e) => {
+    const item = (e.target as HTMLElement).closest<HTMLElement>('.menu-item')
+    const action = item?.dataset.action
+    if (!action) return
+    actionsMenu.close()
+    actions[action]?.()
   })
 
+  // Welcome screen
+  document.getElementById('welcome-new-btn')!.addEventListener('click', showNewPluginModal)
+  document.getElementById('welcome-import-btn')!.addEventListener('click', uploadPluginFromFile)
+  document.getElementById('welcome-all-btn')!.addEventListener('click', () => pluginSwitcher?.open())
+
+  // Settings (theme, font size, minimap, IDE)
   const themeSelect = document.getElementById('theme-select') as HTMLSelectElement
   themeSelect.value = getSavedTheme()
-  themeSelect.addEventListener('change', (e) => {
-    const target = e.target as HTMLSelectElement
-    changeTheme(target.value)
-    // Also update JS preview editor theme
-    if (jsPreviewEditor) {
-      monaco.editor.setTheme(target.value)
-    }
-  })
+  setupSettings(
+    () => [state.editor, jsPreviewEditor].filter((e): e is monaco.editor.IStandaloneCodeEditor => !!e),
+    (theme) => changeTheme(theme),
+    showDevServerModal
+  )
 
   // Toggle agent panel
   const toggleAgentBtn = document.getElementById('toggle-agent-btn')!
@@ -1501,6 +1542,7 @@ function setupEventListeners() {
   jsPreviewCloseBtn.addEventListener('click', () => {
     jsPreviewVisible = false
     document.getElementById('js-preview-panel')!.style.display = 'none'
+    toggleJsPreviewBtn.classList.remove('active')
   })
 
   const jsPreviewRefreshBtn = document.getElementById('js-preview-refresh-btn')!
@@ -1627,6 +1669,16 @@ function setupEventListeners() {
       saveCurrentPlugin()
     }
   })
+
+  // Ctrl+O: switch plugin. Capture phase, so it wins over Monaco and the
+  // browser's own "open file".
+  window.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'o') {
+      e.preventDefault()
+      e.stopPropagation()
+      pluginSwitcher?.open()
+    }
+  }, true)
 
   // Warn before closing window/tab with unsaved changes
   window.addEventListener('beforeunload', (e) => {
@@ -1833,23 +1885,25 @@ async function init() {
     switchToFile
   }))
 
+  refreshStatusBar = setupStatusBar(
+    state.editor,
+    () => state.currentPluginId,
+    (filePath, position) => switchToFile(filePath, position)
+  )
+
   await initEsbuild(updateStatus)
-  await refreshPluginList(null)
+  await reloadPluginList()
   setupEventListeners()
   setupDevServer()
 
-  // Check if there's a plugin parameter in the URL
+  // ?plugin=<id> opens that plugin; without it the welcome screen shows.
   const urlParams = new URLSearchParams(window.location.search)
   const pluginIdFromUrl = urlParams.get('plugin')
 
-  if (pluginIdFromUrl) {
-    // Auto-load the plugin from URL parameter
+  if (pluginIdFromUrl && pluginList.some(p => p.id === pluginIdFromUrl)) {
     await loadPlugin(pluginIdFromUrl)
-    const pluginSelect = document.getElementById('plugin-select') as HTMLSelectElement
-    pluginSelect.value = pluginIdFromUrl
   } else {
-    // Show disabled state if no plugin is loaded
-    showDisabledFileTree()
+    closePlugin()
   }
 
   updateStatus('Ready', 'success')

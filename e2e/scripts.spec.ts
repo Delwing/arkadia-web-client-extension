@@ -60,9 +60,9 @@ test('Pasted plugin code can be opened and edited in the plugin editor', async (
     await editorPage.waitForLoadState('domcontentloaded');
 
     await expect(
-        editorPage.locator('#plugin-name'),
+        editorPage.locator('#switcher-name'),
         'editor should open the pasted plugin, not report it as missing',
-    ).toHaveValue('Wklejony Test', {timeout: 30000});
+    ).toHaveText('Wklejony Test', {timeout: 30000});
     await expect(
         editorPage.locator('#editor-container .view-lines'),
         'editor should show the pasted source',

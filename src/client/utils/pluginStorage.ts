@@ -98,7 +98,11 @@ export async function getAllStoredPluginIds(): Promise<string[]> {
     request.onsuccess = () => {
       const db = request.result
 
+      // Close every connection opened here: an open one blocks the version
+      // upgrade the first save needs to create the store, and that save
+      // then waits forever.
       if (!db.objectStoreNames.contains(storeName)) {
+        db.close()
         resolve([])
         return
       }
@@ -114,6 +118,9 @@ export async function getAllStoredPluginIds(): Promise<string[]> {
       getAllRequest.onerror = () => {
         reject(new Error('Failed to get all plugin IDs'))
       }
+
+      transaction.oncomplete = () => db.close()
+      transaction.onabort = () => db.close()
     }
 
     request.onerror = () => {
@@ -136,6 +143,7 @@ export async function getAllStoredPlugins(): Promise<StoredPluginData[]> {
       const db = request.result
 
       if (!db.objectStoreNames.contains(storeName)) {
+        db.close()
         resolve([])
         return
       }
@@ -152,6 +160,9 @@ export async function getAllStoredPlugins(): Promise<StoredPluginData[]> {
       getAllRequest.onerror = () => {
         reject(new Error('Failed to get all plugins'))
       }
+
+      transaction.oncomplete = () => db.close()
+      transaction.onabort = () => db.close()
     }
 
     request.onerror = () => {

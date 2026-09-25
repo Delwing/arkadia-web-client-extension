@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vitest'
+import { afterEach, describe, it, expect, vi } from 'vitest'
+import { IDBFactory } from 'fake-indexeddb'
 import { createEditorPluginFromSource } from '@client/utils/pluginEditorStorage'
 
 describe('createEditorPluginFromSource', () => {
@@ -36,5 +37,33 @@ describe('createEditorPluginFromSource', () => {
     const plugin = createEditorPluginFromSource('stored_abc_1', 'Wklejony', source, metadata)
 
     expect(plugin.metadata).toEqual(metadata)
+  })
+})
+
+describe('first save on a fresh profile', () => {
+  const sharedIndexedDB = globalThis.indexedDB
+
+  afterEach(() => {
+    globalThis.indexedDB = sharedIndexedDB
+    vi.resetModules()
+  })
+
+  const settle = <T>(promise: Promise<T>) =>
+    Promise.race([promise, new Promise<'stuck'>(resolve => setTimeout(() => resolve('stuck'), 1000))])
+
+  it('is not blocked by the connection that listed the (still empty) database', async () => {
+    // A profile of its own: an empty IndexedDB, and storage modules (with their
+    // connection cache) loaded fresh against it, whatever other tests stored.
+    globalThis.indexedDB = new IDBFactory()
+    vi.resetModules()
+    const storage = await import('@client/utils/pluginEditorStorage')
+
+    // The editor lists plugins on start. With no store yet, the first save has
+    // to upgrade the database - which waits for every open connection to close.
+    expect(await storage.getAllEditorPlugins()).toEqual([])
+
+    const plugin = storage.createEditorPluginFromSource('editor_first_1', 'First', 'export async function init() {}')
+    expect(await settle(storage.storeEditorPlugin(plugin))).not.toBe('stuck')
+    expect((await storage.getEditorPlugin('editor_first_1'))?.name).toBe('First')
   })
 })

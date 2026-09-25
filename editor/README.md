@@ -31,30 +31,42 @@ The editor uses a separate IndexedDB database to avoid conflicts with the main a
 
 Open `editor/index.html` in your browser (or navigate to `/editor/` in the deployed app).
 
+Opened without a plugin (no `?plugin=<id>` in the URL), the editor shows a
+welcome screen with your recent plugins. The open plugin's id is kept in the
+URL, so a reload reopens it.
+
 ### Creating a New Plugin
 
-1. Click the **"New"** button
+1. Click **New plugin** on the welcome screen, or in the plugin switcher
 2. Enter a plugin name
-3. Select language (JavaScript or TypeScript)
-4. Click **"Create"**
+3. Pick the language (TypeScript or JavaScript); it is fixed for the plugin,
+   and each file's language follows its extension
+4. Click **Create plugin**
 
 The editor will create a plugin with a template structure.
 
 ### Editing a Plugin
 
-1. Select a plugin from the dropdown
+1. Open the plugin switcher (the plugin name at the top left, or **Ctrl+O**),
+   type to filter and press Enter
 2. Edit the code in the Monaco editor
-3. Click **"Save"** (or press Ctrl+S / Cmd+S)
+3. Click **Save** (or press Ctrl+S / Cmd+S)
 
-For TypeScript files, the code will be automatically compiled and synced to the main plugin storage.
+Saving bundles the plugin and syncs it to the main plugin storage. The header
+shows whether there are unsaved changes; the status bar counts errors and
+warnings (click it to jump to the first one). Switching plugins with unsaved
+changes asks whether to save or discard them.
 
-### Deleting a Plugin
+### Rename, Download, Publish, Delete
 
-1. Select the plugin to delete
-2. Click the **"Delete"** button
-3. Confirm the deletion
+These live in the **⋯** menu next to Save. Renaming saves the plugin.
+Deleting asks for confirmation and removes the plugin from both the editor
+storage and main plugin storage.
 
-This will remove the plugin from both the editor storage and main plugin storage.
+### Editor Settings
+
+The gear at the top right holds the editor theme, font size, minimap and the
+IDE connection.
 
 ### Plugin Template (JavaScript)
 
