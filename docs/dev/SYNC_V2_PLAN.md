@@ -152,6 +152,10 @@ trip routes along. `radial` is one shared (global) value.
   what local data now holds under the source's stamp, not uploaded. The window manager re-saves an
   applied layout in its own form; captured as an edit, that copy would carry a fresh stamp, win over
   the next change on the other device, and bounce between devices that normalize differently.
+- The device registry (Devices page) is `users/{uid}/syncV2/devices`, not the v1 document, so it keeps
+  working once v1 writes are locked. Each device registers once per session with a merge write (no read);
+  listing devices is one read of that small document. Devices of older versions, which listed themselves
+  in the v1 document, appear once they run this version.
 - The device that created a group only learns who joined from the group document: sync re-reads it at
   start and when settings arrive from a device the local group doesn't list (once per device per
   session); the Devices page updates it too. When the membership changed, the newest settings among
@@ -451,7 +455,7 @@ As built (differs from the first draft, which imported the v1 document into the 
            allow read, write: if request.auth != null && request.auth.uid == userId;
          }
 
-         // Sync v2: log, base, base__N
+         // Sync v2: log, base, base__N, and the device registry (devices)
          match /syncV2/{docId} {
            allow read, write: if request.auth != null && request.auth.uid == userId;
          }

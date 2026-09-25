@@ -4,10 +4,11 @@
  * SINGLE DOCUMENT approach for all user data to minimize reads:
  * - Shared categories (triggers, aliases, characterSettings, ...)
  * - Per-device categories (uiSettings, buttons) under deviceCategories.{deviceId}
- * - Device registry
  *
  * Structure: users/{userId}/sync/syncData (one document), plus
- * users/{userId}/syncGroups/{groupId} for sync group membership.
+ * users/{userId}/syncGroups/{groupId} for sync group membership and
+ * users/{userId}/syncV2/devices for the device registry (used by v1 and v2;
+ * older versions listed devices in syncData).
  */
 
 import type {DeviceInfo, SyncGroup} from '@modules/device';
@@ -867,48 +868,47 @@ export function updateCategorySyncTime(category: SyncCategory, timestamp?: numbe
 // ============================================================================
 
 /**
- * Register current device in the device registry. Device-scoped settings are
- * uploaded separately by the regular category sync (deviceCategories).
+ * The device registry: users/{uid}/syncV2/devices, `{ devices: { [id]: DeviceInfo & { lastSeen } } }`.
+ * A small document of its own, so listing and registering devices don't read
+ * the large v1 sync document (whose writes are locked after the move to sync v2).
  */
-export async function registerDevice(): Promise<{ success: boolean; error?: string }> {
+async function deviceRegistryRef(userId: string) {
+    const { db } = await ensureFirebaseInitialized();
+    const { doc } = await import('firebase/firestore');
+    return doc(db, USERS_COLLECTION, userId, 'syncV2', 'devices');
+}
+
+/** The user this device was registered for in this session. */
+let registeredFor: Promise<void> | null = null;
+let registeredUser: string | null = null;
+
+/**
+ * List this device in the device registry, once per session (sync start and
+ * the Devices page both ask). `force` writes again, e.g. after a rename.
+ * A merge write: no read first.
+ */
+export async function registerDevice(options: { force?: boolean } = {}): Promise<{ success: boolean; error?: string }> {
+    const userId = getFirebaseAuth()?.currentUser?.uid;
+    if (!userId) {
+        return { success: false, error: FIREBASE_ERRORS.AUTH_FAILED };
+    }
+    if (options.force || registeredUser !== userId || !registeredFor) {
+        registeredUser = userId;
+        registeredFor = (async () => {
+            const { setDoc } = await import('firebase/firestore');
+            const deviceInfo = getDeviceInfo();
+            console.log(`[Firebase WRITE] registerDevice: ${deviceInfo.id}`);
+            await setDoc(await deviceRegistryRef(userId), {
+                devices: { [deviceInfo.id]: { ...deviceInfo, lastSeen: new Date().toISOString() } },
+            }, { merge: true });
+        })();
+        // A failed registration is tried again next time.
+        registeredFor.catch(() => {
+            if (registeredUser === userId) registeredFor = null;
+        });
+    }
     try {
-        const auth = getFirebaseAuth();
-        const userId = auth?.currentUser?.uid;
-        if (!userId) {
-            return { success: false, error: FIREBASE_ERRORS.AUTH_FAILED };
-        }
-
-        const deviceInfo = getDeviceInfo();
-        const { db } = await ensureFirebaseInitialized();
-        const { doc, setDoc, updateDoc, getDoc, serverTimestamp } = await import('firebase/firestore');
-
-        const docRef = doc(db, USERS_COLLECTION, userId, 'sync', SYNC_DATA_DOC);
-
-        // Check if document exists
-        const snapshot = await getDoc(docRef);
-
-        const deviceData = {
-            ...deviceInfo,
-            lastSeen: new Date().toISOString(),
-        };
-
-        if (snapshot.exists()) {
-            // Use updateDoc with dot notation for nested field update
-            console.log(`[Firebase WRITE] registerDevice (updateDoc): ${deviceInfo.id}`);
-            await updateDoc(docRef, {
-                [`devices.${deviceInfo.id}`]: deviceData,
-                updatedAt: serverTimestamp(),
-            });
-        } else {
-            // Document doesn't exist, create it with setDoc
-            console.log(`[Firebase WRITE] registerDevice (setDoc): ${deviceInfo.id}`);
-            await setDoc(docRef, {
-                devices: { [deviceInfo.id]: deviceData },
-                updatedAt: serverTimestamp(),
-            });
-        }
-
-        invalidateCache();
+        await registeredFor;
         return { success: true };
     } catch (err) {
         console.error('Failed to register device', err);
@@ -916,30 +916,31 @@ export async function registerDevice(): Promise<{ success: boolean; error?: stri
     }
 }
 
-/**
- * Get all registered devices (from cache if available)
- */
-export async function getRegisteredDevices(options: { fresh?: boolean } = {}): Promise<{
+/** All devices in the registry (one small read). */
+export async function getRegisteredDevices(): Promise<{
     devices: DeviceInfo[];
     error?: string;
 }> {
-    // Sync v2 doesn't run the v1 listener that kept the cache current.
-    if (options.fresh) invalidateCache();
-    const { data: syncData, error } = await getFullSyncData();
-    if (error || !syncData) {
-        return { devices: [], error };
+    const userId = getFirebaseAuth()?.currentUser?.uid;
+    if (!userId) {
+        return { devices: [], error: FIREBASE_ERRORS.AUTH_FAILED };
     }
-
-    const devices: DeviceInfo[] = [];
-    if (syncData.devices && typeof syncData.devices === 'object') {
-        Object.values(syncData.devices).forEach((device: unknown) => {
-            if (device && typeof device === 'object' && 'id' in device) {
-                devices.push(device as DeviceInfo);
+    try {
+        const { getDoc } = await import('firebase/firestore');
+        console.log('[Firebase READ] getRegisteredDevices');
+        const snapshot = await getDoc(await deviceRegistryRef(userId));
+        const registry = snapshot.data()?.devices;
+        const devices: DeviceInfo[] = [];
+        if (registry && typeof registry === 'object') {
+            for (const device of Object.values(registry as Record<string, unknown>)) {
+                if (device && typeof device === 'object' && 'id' in device) devices.push(device as DeviceInfo);
             }
-        });
+        }
+        return { devices };
+    } catch (err) {
+        console.error('Failed to load registered devices', err);
+        return { devices: [], error: FIREBASE_ERRORS.SYNC_FAILED };
     }
-
-    return { devices };
 }
 
 /**
@@ -953,16 +954,12 @@ export async function unregisterDevice(deviceId: string): Promise<{ success: boo
             return { success: false, error: FIREBASE_ERRORS.AUTH_FAILED };
         }
 
-        const { db } = await ensureFirebaseInitialized();
-        const { doc, updateDoc, deleteField } = await import('firebase/firestore');
-
-        const docRef = doc(db, USERS_COLLECTION, userId, 'sync', SYNC_DATA_DOC);
+        const { updateDoc, deleteField } = await import('firebase/firestore');
         console.log(`[Firebase WRITE] unregisterDevice: ${deviceId}`);
-        await updateDoc(docRef, {
+        await updateDoc(await deviceRegistryRef(userId), {
             [`devices.${deviceId}`]: deleteField(),
         });
-
-        invalidateCache();
+        if (deviceId === getDeviceInfo().id) registeredFor = null;
         return { success: true };
     } catch (err) {
         console.error('Failed to unregister device', err);

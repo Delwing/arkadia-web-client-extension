@@ -124,7 +124,7 @@ function DeviceManagementTab() {
             // Load cloud devices
             setIsLoadingCloudDevices(true);
             try {
-                const result = await getRegisteredDevices({ fresh: true });
+                const result = await getRegisteredDevices();
                 // Filter out current device
                 const otherDevices = result.devices.filter(d => d.id !== deviceInfo?.id);
                 setCloudDevices(otherDevices);
@@ -143,6 +143,8 @@ function DeviceManagementTab() {
         const trimmed = customName.trim();
         setDeviceCustomName(trimmed || undefined);
         refreshData();
+        // Other devices list this device under its new name
+        if (isLoggedIn) void registerDevice({ force: true });
         setIsEditing(false);
         setStatus("Nazwa urzadzenia zostala zapisana.");
     };
