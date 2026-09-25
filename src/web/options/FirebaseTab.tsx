@@ -769,6 +769,20 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                         <div>
                             <span className="popup-muted popup-small">Zalogowany jako: </span>
                             <span className="popup-strong">{authState.email ?? authState.displayName ?? 'Nieznany'}</span>
+                            {authState.userId && (
+                                <div className="popup-muted popup-small">
+                                    {/* The account's documents in Firebase: users/{ID} */}
+                                    ID konta: <span className="firebase-sync__user-id">{authState.userId}</span>
+                                    {' '}
+                                    <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() => void navigator.clipboard?.writeText(authState.userId!)}
+                                    >
+                                        Kopiuj
+                                    </Button>
+                                </div>
+                            )}
                         </div>
                         <Button
                             size="sm"

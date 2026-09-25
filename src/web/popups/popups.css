@@ -7887,6 +7887,11 @@ select.popup-input.popup-input--control {
   justify-content: space-between;
   gap: 8px;
 }
+.firebase-sync__user-id {
+  font-family: monospace;
+  user-select: all;
+  word-break: break-all;
+}
 .firebase-sync__actions {
   flex-shrink: 0;
   padding-top: 8px;
