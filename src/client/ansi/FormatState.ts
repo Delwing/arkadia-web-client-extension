@@ -394,6 +394,7 @@ export class AnsiAwareBuffer {
     private _deleted = false;
     private _onRender?: (container: HTMLElement) => void;
     private _textCache: string | null = null;
+    private _lengthCache: number | null = null;
     originalText?: string;
     /**
      * Category marker for a decorated message block (e.g. 'ekwipunek', 'lup').
@@ -464,12 +465,17 @@ export class AnsiAwareBuffer {
     }
 
     get length(): number {
-        return this.segments.reduce((sum, segment) => sum + segment.text.length, 0);
+        if (this._lengthCache === null) {
+            let length = 0;
+            for (const segment of this.segments) length += segment.text.length;
+            this._lengthCache = length;
+        }
+        return this._lengthCache;
     }
 
     clear(): this {
         this.segments = [];
-        this._textCache = null;
+        this.invalidateCaches();
         return this;
     }
 
@@ -507,17 +513,9 @@ export class AnsiAwareBuffer {
         const sourceSegments = buffer.getSegments();
         if (sourceSegments.length === 0) return this;
 
-        if (this.segments.length === 0) {
-            this.segments = sourceSegments;
-            this._textCache = null;
-            return this;
-        }
-
+        // getSegments() already handed us private copies, so their states need no second clone.
         if (index === this.length) {
-            for (const segment of sourceSegments) {
-                this.appendSegmentAtEnd(segment);
-            }
-            this.normalizeSegments();
+            this.appendNormalized(sourceSegments, false);
             return this;
         }
 
@@ -551,19 +549,8 @@ export class AnsiAwareBuffer {
         if (text.length === 0) return;
         const insertionSegments = this.createSegmentsFromText(text, explicitState, baseState);
         if (insertionSegments.length === 0) return;
-        if (this.segments.length === 0) {
-            this.segments = insertionSegments.map(segment => ({
-                text: segment.text,
-                state: cloneState(segment.state),
-            }));
-            this._textCache = null;
-            return;
-        }
         if (index === this.length) {
-            for (const segment of insertionSegments) {
-                this.appendSegmentAtEnd(segment);
-            }
-            this.normalizeSegments();
+            this.appendNormalized(insertionSegments, true);
             return;
         }
         const position = this.resolveIndex(index, true);
@@ -1009,12 +996,38 @@ export class AnsiAwareBuffer {
         };
     }
 
-    private appendSegmentAtEnd(segment: BufferSegment): void {
-        const last = this.segments[this.segments.length - 1];
-        if (last && statesEqual(last.state, segment.state)) {
-            last.text += segment.text;
-        } else {
-            this.segments.push({text: segment.text, state: cloneState(segment.state)});
+    /**
+     * Appends segments at the end, normalizing only the seam and the new tail.
+     *
+     * Normalizing is a left fold (drop empty text, merge a segment into the last kept
+     * one when their states are equal), and the existing segments are already
+     * normalized, so folding the new segments onto the current tail gives exactly what
+     * `normalizeSegments()` over the whole buffer would. That keeps an append O(new
+     * segments) instead of O(whole buffer) — merging N lines one append at a time
+     * (Client.processLine) is otherwise quadratic.
+     *
+     * `cloneStates` is false only when the caller owns the incoming segments and their
+     * states (e.g. fresh from `getSegments()`), so they can be adopted as they are.
+     */
+    private appendNormalized(incoming: BufferSegment[], cloneStates: boolean): void {
+        let added = 0;
+        for (const segment of incoming) {
+            if (!segment.text) continue;
+            const state = isDefaultState(segment.state)
+                ? undefined
+                : cloneStates ? cloneState(segment.state) : segment.state;
+            const last = this.segments[this.segments.length - 1];
+            if (last && statesEqual(last.state, state)) {
+                last.text += segment.text;
+            } else {
+                this.segments.push({text: segment.text, state});
+            }
+            added += segment.text.length;
+        }
+        if (added === 0) return;
+        this._textCache = null;
+        if (this._lengthCache !== null) {
+            this._lengthCache += added;
         }
     }
 
@@ -1100,7 +1113,12 @@ export class AnsiAwareBuffer {
             }
         }
         this.segments = normalized;
+        this.invalidateCaches();
+    }
+
+    private invalidateCaches(): void {
         this._textCache = null;
+        this._lengthCache = null;
     }
 
     private assertRange(start: number, end: number): void {
