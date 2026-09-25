@@ -74,6 +74,42 @@ test('pattern trigger fills $1 from the match and previews it on a test line', a
         .toBe('zabij Ork');
 });
 
+test('colour action sets a background with an empty text swatch', async ({page}) => {
+    await page.goto('/');
+    await waitForCommandInput(page);
+    await ensureGameSocket(page);
+    await primeCharInfo(page);
+
+    const modal = await openAutomation(page);
+    await startNew(page, modal, 'trigger');
+    await modal.getByTitle('Wzorzec', {exact: true}).fill('ognisty smok');
+    await modal.getByRole('button', {name: 'Dodaj akcję'}).click();
+    const action = modal.locator('.automation-act').last();
+    await action.locator('select').first().selectOption('color');
+
+    const [text, background] = [action.locator('.color-slot').nth(0), action.locator('.color-slot').nth(1)];
+    await expect(text, 'text colour starts set').not.toHaveClass(/is-empty/);
+    await expect(background, 'background starts empty').toHaveClass(/is-empty/);
+
+    await background.locator('input[type="color"]').fill('#004080');
+    await expect(background, 'picking a colour fills the swatch').not.toHaveClass(/is-empty/);
+    const colors = action.locator('.trigger-action__colors');
+    const before = await colors.boundingBox();
+    await text.getByTitle('Bez koloru').click();
+    await expect(text, 'x clears the text colour').toHaveClass(/is-empty/);
+    expect(await colors.boundingBox(), 'clearing a colour does not shift the row').toEqual(before);
+
+    await modal.getByTitle('Linia do testu').fill('Widzisz ognisty smok.');
+    await expect(modal.locator('.automation-out__match'), 'preview shows the background')
+        .toHaveCSS('background-color', 'rgb(0, 64, 128)');
+    await saveEditor(modal);
+    await closeAutomation(modal);
+
+    await pushText(page, 'Nad toba leci ognisty smok!');
+    const match = page.locator('#main_text_output_msg_wrapper span', {hasText: /^ognisty smok$/}).last();
+    await expect(match, 'game line gets the background').toHaveCSS('background-color', 'rgb(0, 64, 128)');
+});
+
 test('GMCP event trigger lets the user pick a known GMCP package', async ({page}) => {
     await page.goto('/');
     await waitForCommandInput(page);

@@ -963,16 +963,40 @@ select.popup-input.popup-input--control {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
-.trigger-action__color {
+.trigger-action__colors {
   flex-shrink: 0;
-  width: 36px;
-  height: var(--ui-ctrl, 28px);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: var(--ui-ctrl, 28px);
+}
+.color-slot {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--ui-fs-sm, 12px);
+  color: var(--popup-text-dim);
+}
+.color-slot__label {
+  margin-right: 2px;
+}
+/* Unset: hide the colour, draw a dashed box struck through. */
+.color-slot.is-empty > .popup-color {
+  border-style: dashed;
+  background-image: linear-gradient(to top right, transparent calc(50% - 1px), var(--popup-border-control) calc(50% - 1px), var(--popup-border-control) calc(50% + 1px), transparent calc(50% + 1px));
+}
+.color-slot.is-empty > .popup-color::-webkit-color-swatch {
+  visibility: hidden;
+}
+.color-slot.is-empty > .popup-color::-moz-color-swatch {
+  visibility: hidden;
+}
+/* The x, or the empty slot keeping its place: both at small-button size. */
+.color-slot > .color-slot__clear {
+  flex-shrink: 0;
   box-sizing: border-box;
-  padding: 2px;
-  border: 1px solid var(--popup-border-control);
-  border-radius: var(--ui-radius, 6px);
-  background-color: var(--popup-input-bg);
-  cursor: pointer;
+  width: var(--ui-ctrl-sm, 24px);
+  height: var(--ui-ctrl-sm, 24px);
 }
 .trigger-action__replace.popup-input.popup-input--control {
   flex: 0 0 9rem;
