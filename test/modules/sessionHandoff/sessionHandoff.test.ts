@@ -67,6 +67,7 @@ async function login(d: ReturnType<typeof device>, ownRoom: number | null = null
     d.handoff.connected();
     d.handoff.sessionStarted('Alice');
     if (ownRoom !== null) d.handoff.roomChanged(ownRoom);
+    d.handoff.loginSettled();
     await vi.advanceTimersByTimeAsync(0);
 }
 
@@ -205,6 +206,47 @@ describe('SessionHandoff', () => {
 
         expect(db.records.get('Alice')?.handoff?.roomId).toBe(10);
         expect(b.applied).toEqual([]);
+    });
+
+    it('does not override a GMCP fix that confirmed the stored room', async () => {
+        const db = new FakeDatabase();
+        const a = device(db, 'phone');
+        const b = device(db, 'desktop');
+
+        await login(a, 10);
+        a.store.frozen = true;
+        b.handoff.connected();
+        b.handoff.sessionStarted('Alice');
+        b.handoff.roomChanged(500);
+        b.handoff.loginSettled();
+        // The game's room.info in the same frame places the map on the same room.
+        b.handoff.roomChanged(500);
+        await vi.advanceTimersByTimeAsync(0);
+
+        a.store.frozen = false;
+        a.handoff.disconnected();
+        await a.handoff.sessionEnded();
+
+        expect(b.applied).toEqual([]);
+    });
+
+    it('does not count the map restoring its own stored room as a move', async () => {
+        const db = new FakeDatabase();
+        const a = device(db, 'phone');
+        const b = device(db, 'desktop');
+
+        await login(a, 10);
+        await a.handoff.sessionEnded();
+        a.handoff.disconnected();
+
+        b.handoff.connected();
+        b.handoff.sessionStarted('Alice');
+        // MapHelper's Char.Info restore, before the login settles.
+        b.handoff.roomChanged(500);
+        b.handoff.loginSettled();
+        await vi.advanceTimersByTimeAsync(0);
+
+        expect(b.applied).toEqual([10]);
     });
 
     it('does not carry an old handoff past the session that followed it', async () => {

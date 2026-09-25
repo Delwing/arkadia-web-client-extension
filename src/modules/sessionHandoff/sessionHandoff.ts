@@ -68,7 +68,11 @@ export class SessionHandoff {
     private room: number | null = null;
     private lost = false;
 
-    /** Whether the map has moved on its own since this login; a handoff then comes too late. */
+    /**
+     * Whether the map has been placed since this login settled: a step, a GMCP
+     * fix, the GPS, /ustaw, a plugin. Any of them knows better than a handoff
+     * that arrives after it, even one that only confirmed the room already shown.
+     */
     private moved = false;
     private trackingMoves = false;
     private applying = false;
@@ -76,7 +80,6 @@ export class SessionHandoff {
 
     private stopWatch: (() => void) | null = null;
     private stopOfferTimer: (() => void) | null = null;
-    private stopTrackingTimer: (() => void) | null = null;
 
     constructor(private readonly deps: SessionHandoffDeps) {}
 
@@ -113,15 +116,19 @@ export class SessionHandoff {
         this.endedSession = null;
         this.moved = false;
         this.offerOpen = true;
-        // The map restores this device's own last room in the same turn as the
-        // login; that is not the player moving.
+        // The map restores this device's own last room from storage while the
+        // login's Char.Info is handled; that is not a placement. loginSettled()
+        // starts counting once it is done.
         this.trackingMoves = false;
-        this.stopTrackingTimer?.();
-        this.stopTrackingTimer = this.deps.setTimer(() => {
-            this.stopTrackingTimer = null;
-            this.trackingMoves = true;
-        }, 0);
         this.claim();
+    }
+
+    /**
+     * The login's Char.Info has been handled in full, the map's restore of this
+     * device's own last room included. Every placement from here on is news.
+     */
+    loginSettled(): void {
+        this.trackingMoves = true;
     }
 
     roomChanged(roomId: number): void {
