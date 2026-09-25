@@ -11,6 +11,9 @@ const DB_NAME = 'ArkadiaPreSyncV2Backup';
 const STORE = 'backup';
 const KEY = 'beforeSyncV2';
 
+/** Dispatched on window once the backup is saved (the backup page shows it). */
+export const PRE_SYNC_BACKUP_SAVED_EVENT = 'arkadia:preSyncBackupSaved';
+
 function openDb(): Promise<IDBDatabase> {
     return new Promise((resolve, reject) => {
         const request = indexedDB.open(DB_NAME, 1);
@@ -51,4 +54,5 @@ export async function savePreSyncBackup(): Promise<void> {
     if (existing !== undefined) return;
     const payload = await buildBackup();
     await run('readwrite', store => store.put(JSON.stringify(payload), KEY));
+    window.dispatchEvent(new Event(PRE_SYNC_BACKUP_SAVED_EVENT));
 }

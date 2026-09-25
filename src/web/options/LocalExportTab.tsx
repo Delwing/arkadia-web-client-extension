@@ -1,6 +1,7 @@
 import { ChangeEvent, useEffect, useRef, useState } from "react";
 import { Button } from "@web-ui/primitives/index.ts";
-import { loadPreSyncBackup } from "@web/userData/preSyncBackup.ts";
+import { SHOW_SETTINGS_EVENT } from "@web/settings/categories.ts";
+import { loadPreSyncBackup, PRE_SYNC_BACKUP_SAVED_EVENT } from "@web/userData/preSyncBackup.ts";
 import { buildBackup, isRestorableBackup, restoreBackup, type BackupPayload } from "./exportUtils";
 import { confirmRestore, publishRestore } from "./restoreFlow";
 
@@ -23,10 +24,21 @@ function LocalExportTab() {
     // Taken automatically right before this device moved to the new sync
     const [preSyncBackup, setPreSyncBackup] = useState<BackupPayload | null>(null);
 
+    // The settings dialog stays mounted, and the backup is taken when sync is
+    // first switched on: look again when it is saved and when settings open.
     useEffect(() => {
-        loadPreSyncBackup()
-            .then(setPreSyncBackup)
-            .catch(err => console.warn("Failed to read the backup from before the sync update", err));
+        const load = () => {
+            loadPreSyncBackup()
+                .then(setPreSyncBackup)
+                .catch(err => console.warn("Failed to read the backup from before the sync update", err));
+        };
+        load();
+        window.addEventListener(PRE_SYNC_BACKUP_SAVED_EVENT, load);
+        window.addEventListener(SHOW_SETTINGS_EVENT, load);
+        return () => {
+            window.removeEventListener(PRE_SYNC_BACKUP_SAVED_EVENT, load);
+            window.removeEventListener(SHOW_SETTINGS_EVENT, load);
+        };
     }, []);
 
     const handleExport = async () => {
