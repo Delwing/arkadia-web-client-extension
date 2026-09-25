@@ -10,6 +10,7 @@
 
 import { getFirestore } from '@modules/firebase/firebaseConfig';
 import { getDeviceId, loadFirebaseSettings } from '@modules/firebase/firebaseTypes';
+import { registerDevice } from '@modules/firebase/firebaseUnifiedSync';
 import { SyncEngineV2, type VisibilitySource } from '@modules/syncV2/engine';
 import { FirestoreTransport } from '@modules/syncV2/firestoreTransport';
 import { createUsageCounter } from '@modules/syncV2/usage';
@@ -46,12 +47,16 @@ let engine: SyncEngineV2 | null = null;
 let releaseLock: (() => void) | null = null;
 let retryTimer: ReturnType<typeof setTimeout> | null = null;
 let startToken = 0;
+let startedFor: string | null = null;
 
 /**
  * Start for the signed-in user. `passphrase` returns the encryption
  * passphrase known to this tab (null when none).
  */
 export function startSyncV2(userId: string, passphrase: () => string | null): void {
+    // Startup and the settings tab both start sync on sign-in: once per user.
+    if (startedFor === userId) return;
+    startedFor = userId;
     const token = ++startToken;
 
     const run = async (): Promise<void> => {
@@ -92,6 +97,9 @@ export function startSyncV2(userId: string, passphrase: () => string | null): vo
         });
         engine.start();
         console.log('[SyncV2] Started');
+        // List this device for the others (Devices page), whether or not that
+        // page was ever opened here.
+        void registerDevice().catch(error => console.warn('[SyncV2] Could not register the device:', error));
     };
 
     // Auto-sync off, offline, or the passphrase not entered yet: try again later.
@@ -117,6 +125,7 @@ export function startSyncV2(userId: string, passphrase: () => string | null): vo
 
 export async function stopSyncV2(): Promise<void> {
     startToken += 1;
+    startedFor = null;
     if (retryTimer) clearTimeout(retryTimer);
     retryTimer = null;
     const running = engine;
@@ -134,6 +143,20 @@ export function isSyncV2Running(): boolean {
 /** Upload local changes now (the "send" button, after a restore). */
 export async function flushSyncV2(): Promise<void> {
     await engine?.flush();
+}
+
+/** Read everything in the cloud again and apply it (the "download" button). */
+export async function redownloadSyncV2(): Promise<void> {
+    await engine?.redownload();
+}
+
+/**
+ * Copy the interface and button settings of other devices here: one device
+ * ("copy from device"), or the members of a sync group just joined (the newest
+ * among them). Returns whether any settings were found for them.
+ */
+export async function applyDeviceSettingsFrom(devices: string[]): Promise<boolean> {
+    return (await engine?.applyDeviceValues(devices)) ?? false;
 }
 
 /** Delete all sync data in the cloud; this device uploads everything again. */

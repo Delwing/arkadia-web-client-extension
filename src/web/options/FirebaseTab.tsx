@@ -35,7 +35,7 @@ import {
 import eventBus from "@modules/core/eventBus";
 import { importCategories } from "./exportUtils";
 import ConflictResolutionModal from "./ConflictResolutionModal";
-import { flushSyncV2, isSyncV2Enabled, isSyncV2Running, resetSyncV2Cloud } from "@web/userData/syncV2";
+import { flushSyncV2, isSyncV2Enabled, isSyncV2Running, redownloadSyncV2, resetSyncV2Cloud, startSyncV2 } from "@web/userData/syncV2";
 
 const GoogleLogo = ({ size = 18 }: { size?: number }) => (
     <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 48 48">
@@ -166,16 +166,17 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
         // Subscribe to future changes
         const unsubscribe = onAuthStateChanged((state) => {
             setAuthState(state);
-            // Ensure the headless engine runs even when the startup wiring in
-            // web/main.ts did not (e.g. first session before a config was saved).
-            // start() is idempotent; stopping is handled by main.ts / sign-out.
-            if (state.isAuthenticated) {
-                syncEngine.start();
+            // Ensure sync runs even when the startup wiring in clientBootstrap
+            // did not (e.g. first session before a config was saved). Both
+            // starts are idempotent; stopping is handled there on sign-out.
+            if (state.isAuthenticated && state.userId) {
+                if (syncV2) startSyncV2(state.userId, () => syncEngine.getPassphrase());
+                else syncEngine.start();
             }
         });
 
         return () => unsubscribe();
-    }, [isConfigured]);
+    }, [isConfigured, syncV2]);
 
     // Subscribe to real-time sync listener events
     useEffect(() => {
@@ -412,6 +413,16 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
         setSyncStatus(null);
 
         try {
+            if (syncV2) {
+                // Sync v2 runs in one tab per browser.
+                if (!isSyncV2Running()) {
+                    setSyncError('Synchronizacja dziala w innej karcie albo nie jest jeszcze gotowa.');
+                } else {
+                    await redownloadSyncV2();
+                    setSyncStatus('Dane z chmury zostaly pobrane.');
+                }
+                return;
+            }
             // Get categories to download
             const categoriesToDownload = specificCategories ?? SYNC_CATEGORIES;
 
@@ -456,7 +467,7 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
         } finally {
             setIsSyncing(false);
         }
-    }, [authState.isAuthenticated, encryptionEnabled, passphrase, onImportComplete]);
+    }, [authState.isAuthenticated, encryptionEnabled, passphrase, onImportComplete, syncV2]);
 
     const handleConflictResolution = useCallback(async (resolution: 'keep-local' | 'use-cloud' | 'cancel', categories: SyncCategory[]) => {
         setShowConflictModal(false);
@@ -954,22 +965,19 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                         'Wyslij do chmury'
                     )}
                 </Button>
-                {/* Sync v2 applies cloud changes as they arrive. */}
-                {!syncV2 && (
-                    <Button
-                        onClick={() => handleDownload()}
-                        disabled={isSyncing || (encryptionEnabled && !passphrase)}
-                    >
-                        {isSyncing ? (
-                            <span className="popup-inline">
-                                <span className="popup-spinner" />
-                                <span>Pobieranie...</span>
-                            </span>
-                        ) : (
-                            'Pobierz z chmury'
-                        )}
-                    </Button>
-                )}
+                <Button
+                    onClick={() => handleDownload()}
+                    disabled={isSyncing || (encryptionEnabled && !passphrase)}
+                >
+                    {isSyncing ? (
+                        <span className="popup-inline">
+                            <span className="popup-spinner" />
+                            <span>Pobieranie...</span>
+                        </span>
+                    ) : (
+                        'Pobierz z chmury'
+                    )}
+                </Button>
             </div>
 
             {/* Conflict resolution modal */}

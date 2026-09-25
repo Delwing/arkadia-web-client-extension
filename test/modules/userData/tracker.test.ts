@@ -332,6 +332,29 @@ describe('UserDataTracker', () => {
         expect(c.types.layout.get('bundle', deviceScope('c'))).toBe('phone');
     });
 
+    it('copies device-scoped values from chosen devices, the newest among them', async () => {
+        const a = makeDevice('a', 1_000);
+        const b = makeDevice('b', 2_000);
+        const c = makeDevice('c', 3_000);
+        a.types.layout.set('bundle', 'wide', deviceScope('a'));
+        b.types.layout.set('bundle', 'phone', deviceScope('b'));
+        c.types.layout.set('bundle', 'tablet', deviceScope('c'));
+        await a.tracker.capture();
+        b.advance(1);
+        await b.tracker.capture();
+        // c knows both other devices' values, but isn't in a group with them
+        await c.tracker.apply([...await a.tracker.outbox(), ...await b.tracker.outbox()]);
+        expect(c.types.layout.get('bundle', deviceScope('c'))).toBe('tablet');
+
+        expect(await c.tracker.applyDeviceValues(['a'])).toBe(true);
+        expect(c.types.layout.get('bundle', deviceScope('c'))).toBe('wide');
+
+        expect(await c.tracker.applyDeviceValues(['a', 'b'])).toBe(true);
+        expect(c.types.layout.get('bundle', deviceScope('c'))).toBe('phone');
+
+        expect(await c.tracker.applyDeviceValues(['unknown'])).toBe(false);
+    });
+
     it('keeps records in the outbox until they are acknowledged', async () => {
         const a = makeDevice('a', 1_000);
         a.types.aliases.set('x', 'look');

@@ -49,6 +49,7 @@ function makeDevice(id: string, transport: MemoryTransport, options: {
     passphrase?: () => string | null;
     /** Encryption switched off, the passphrase still known. */
     encrypt?: () => boolean;
+    cursors?: Record<string, number>;
 } = {}): Device {
     const aliases = new MapType<string>('aliases', { kind: 'newest' }, true);
     const kills = new MapType<Record<string, number>>('kills', { kind: 'counter' });
@@ -62,7 +63,7 @@ function makeDevice(id: string, transport: MemoryTransport, options: {
     });
     const visibility = new FakeVisibility();
     visibility.visible = options.visible ?? true;
-    let cursors: Record<string, number> = {};
+    let cursors: Record<string, number> = { ...options.cursors };
     const errors: unknown[] = [];
     const passphrase = options.passphrase ?? (() => null);
     const engine = new SyncEngineV2({
@@ -256,6 +257,24 @@ describe('SyncEngineV2', () => {
 
         expect(transport.log.batches.map(b => b.device)).toEqual(['pc']);
         expect(transport.log.batches[0].data).toContain('kondycja');
+    });
+
+    it('downloads everything again on request and fills in what the device skipped', async () => {
+        const transport = new MemoryTransport();
+        const pc = makeDevice('pc', transport);
+        start(pc);
+        pc.aliases.data.set('a', 'from pc');
+        await pc.engine.flush();
+
+        // The phone believes it already applied everything from the pc (e.g. an apply that failed)
+        const phone = makeDevice('phone', transport, { cursors: { pc: 1_000 } });
+        start(phone);
+        await vi.waitFor(() => expect(transport.listenerCount()).toBe(2));
+        expect(phone.aliases.data.get('a')).toBeUndefined();
+
+        await phone.engine.redownload();
+
+        expect(phone.aliases.data.get('a')).toBe('from pc');
     });
 
     it('encrypts records in the cloud and decrypts them on the other device', async () => {

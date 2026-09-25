@@ -115,6 +115,38 @@ export class UserDataTracker {
         return this.options.store.getOutbox();
     }
 
+    /**
+     * Apply device-scoped values (interface, buttons) of the given devices here:
+     * per item, the newest among them. For copying another device's settings
+     * and for joining a sync group. Returns whether any value was found.
+     */
+    applyDeviceValues(devices: string[]): Promise<boolean> {
+        return this.serial(async () => {
+            const scopes = new Set(devices.map(deviceScope));
+            const ownScope = deviceScope(this.options.deviceId);
+            let found = false;
+            for (const type of this.types.values()) {
+                if (type.scope !== 'device') continue;
+                const newest = new Map<string, UserRecord>();
+                for (const record of await this.options.store.getRecords(type.id)) {
+                    if (record.deleted || !scopes.has(record.scope)) continue;
+                    const current = newest.get(record.key);
+                    if (!current || record.stamp > current.stamp) newest.set(record.key, record);
+                }
+                if (newest.size === 0) continue;
+                found = true;
+                const local = new Map((await type.read()).map(item => [recordId(item), item]));
+                const writes: ItemChange[] = [];
+                for (const [key, record] of newest) {
+                    const item = local.get(recordId({ scope: ownScope, key }));
+                    if (!item || !valuesEqual(item.value, record.value)) writes.push({ scope: ownScope, key, value: record.value });
+                }
+                if (writes.length > 0) await type.write(writes);
+            }
+            return found;
+        });
+    }
+
     /** Forget the tracking copy and the outbox; the next capture seeds from local data again. */
     reset(): Promise<void> {
         return this.serial(() => this.options.store.clear());

@@ -91,6 +91,7 @@ export class SyncEngineV2 {
     private watchedByOthers = false;
     private lastLogBytes = 0;
     private received = false;
+    private receiveWaiters: Array<() => void> = [];
     private queue: Promise<unknown> = Promise.resolve();
 
     constructor(private readonly options: SyncEngineOptions) {
@@ -239,6 +240,35 @@ export class SyncEngineV2 {
             this.received = true;
             await this.upload();
         }
+        this.receiveWaiters.splice(0).forEach(resolve => resolve());
+    }
+
+    /**
+     * Apply other devices' interface and button settings here (copy from a
+     * device, join a group) and upload the result as this device's own.
+     */
+    async applyDeviceValues(devices: string[]): Promise<boolean> {
+        const found = await this.options.tracker.applyDeviceValues(devices);
+        if (found) await this.flush();
+        return found;
+    }
+
+    /**
+     * Read everything in the cloud again (the base and every batch) and apply
+     * it. Merging is idempotent, so this only fills in what this device lacks.
+     * Resolves once the data is applied.
+     */
+    async redownload(): Promise<void> {
+        if (!this.running) return;
+        const applied = new Promise<void>(resolve => this.receiveWaiters.push(resolve));
+        await this.serial(async () => {
+            this.cursors = {};
+            this.options.cursors.save(this.cursors);
+        });
+        // A fresh subscription delivers the current log, now read from the start.
+        this.detach();
+        this.attach();
+        await applied;
     }
 
     private async upload(): Promise<void> {

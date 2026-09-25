@@ -1,3 +1,4 @@
+import { applyDeviceSettingsFrom, flushSyncV2, isSyncV2Enabled } from "@web/userData/syncV2";
 import { useCallback, useEffect, useState } from "react";
 import { Button, DeleteButton, Input, Notice } from "@web-ui/primitives/index.ts";
 import {
@@ -170,7 +171,8 @@ function DeviceManagementTab() {
                     // Push this device's interface/button settings so devices that
                     // join the group have something to apply (the group doc only
                     // holds membership; settings travel as device-scoped categories).
-                    void syncEngine.syncNow();
+                    if (isSyncV2Enabled()) void flushSyncV2();
+                    else void syncEngine.syncNow();
                     setStatus(`Grupa synchronizacji "${result.group.name}" zostala utworzona.`);
                 } else {
                     setError(result.error || "Nie udalo sie utworzyc grupy synchronizacji.");
@@ -223,6 +225,13 @@ function DeviceManagementTab() {
         }
     };
 
+    // Sync v2: take the interface and button settings of the group's other devices
+    const applyGroupSettings = async (group: SyncGroup) => {
+        if (!isSyncV2Enabled()) return;
+        const others = group.devices.filter(id => id !== deviceInfo?.id);
+        if (others.length > 0) await applyDeviceSettingsFrom(others);
+    };
+
     // Handle join sync group from imported device
     const handleJoinSyncGroup = async (entry: ImportedDeviceEntry) => {
         if (!entry.syncGroup) return;
@@ -257,6 +266,7 @@ function DeviceManagementTab() {
                 });
                 if (result.success && result.group) {
                     setSyncGroupState(result.group);
+                    await applyGroupSettings(result.group);
                     setStatus(`Dolaczono do grupy synchronizacji "${result.group.name}" i skopiowano ustawienia.`);
                 } else {
                     // If Firebase join fails (group doesn't exist in cloud), join locally
@@ -295,6 +305,7 @@ function DeviceManagementTab() {
             });
             if (result.success && result.group) {
                 setSyncGroupState(result.group);
+                await applyGroupSettings(result.group);
                 // Remove joined group from cloud groups list
                 setCloudSyncGroups(prev => prev.filter(g => g.id !== result.group!.id));
                 setStatus(`Dolaczono do grupy synchronizacji "${result.group.name}".`);
@@ -321,7 +332,12 @@ function DeviceManagementTab() {
         setStatus(null);
 
         try {
-            const result = await copySettingsFromCloudDevice(deviceId, syncEngine.getPassphrase() ?? undefined);
+            // Sync v2 keeps other devices' settings in its own data, not in the v1 document.
+            const result = isSyncV2Enabled()
+                ? await applyDeviceSettingsFrom([deviceId]).then(found => found
+                    ? { success: true }
+                    : { success: false, error: "Brak ustawien tego urzadzenia w chmurze - otworz na nim klienta, aby je wyslal." })
+                : await copySettingsFromCloudDevice(deviceId, syncEngine.getPassphrase() ?? undefined);
             if (result.success) {
                 setStatus(`Ustawienia zostaly skopiowane z urzadzenia "${deviceName}".`);
             } else {
