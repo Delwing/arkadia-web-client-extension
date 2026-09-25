@@ -1,6 +1,6 @@
 import type { UiSettings } from "../../uiSettingsCore";
 import { ChoiceList, Field } from "@web-ui/primitives/index.ts";
-import { CheckboxRow, SelectField, SettingsSection } from "../fields";
+import { CheckboxRow, SettingsSection } from "../fields";
 
 const TAB_MODES: { value: UiSettings['tabCompletionMode']; label: string; description: string }[] = [
     { value: 'cycle', label: 'Cała komenda', description: 'Tab wstawia najlepszą podpowiedź w całości, kolejne Tab przełączają na następne.' },
@@ -33,16 +33,6 @@ function CommandsSection({ draft, update }: CommandsSectionProps) {
                     />
                 </Field>
                 <CheckboxRow id="ui-tab-completion-hint" label="Podpowiedź uzupełniania (Tab) za kursorem" checked={draft.tabCompletionHint} onChange={(v) => update({ tabCompletionHint: v })} />
-            </SettingsSection>
-            <SettingsSection title="Pasek multibindów">
-                <CheckboxRow id="ui-keep-multibinds-visible" label="Zawsze pokazuj pasek multibindów" checked={draft.keepMultibindsVisible} onChange={(v) => update({ keepMultibindsVisible: v })} />
-                <SelectField id="ui-multibind-key-hints" label="Skróty klawiszowe na pasku bindów" value={draft.multibindKeyHints} onChange={(v) => update({ multibindKeyHints: v as UiSettings['multibindKeyHints'] })}>
-                    <option value="auto">Automatycznie (na telefonie po Alt, Ctrl lub Tab)</option>
-                    <option value="always">Zawsze</option>
-                    <option value="never">Nigdy</option>
-                </SelectField>
-                <CheckboxRow id="ui-drinkable-as-functional-bind" label="Bind picia na bind funkcyjny" checked={draft.drinkableAsFunctionalBind} onChange={(v) => update({ drinkableAsFunctionalBind: v })} />
-                <CheckboxRow id="ui-gate-as-functional-bind" label="Bind bramy na bind funkcyjny" checked={draft.gateAsFunctionalBind} onChange={(v) => update({ gateAsFunctionalBind: v })} />
             </SettingsSection>
             <SettingsSection title="Podróż wozem">
                 <CheckboxRow id="ui-carriage-route-binds" label="Bindy trasy wozu (następny krok, zsiadanie)" checked={draft.carriageRouteBinds} onChange={(v) => update({ carriageRouteBinds: v })} />

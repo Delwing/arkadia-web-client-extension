@@ -231,8 +231,17 @@
 }
 
 .settings-page__layout > section.ui-settings-section,
-.settings-page__layout > section.character-settings-section {
+.settings-page__layout > section.character-settings-section,
+.settings-page__stack > section.ui-settings-section {
   margin: 0;
+}
+
+/* Several short cards stacked in one grid cell, beside a long one. */
+.settings-page__stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
 }
 
 .settings-page__layout > section.ui-settings-section--full,
@@ -565,12 +574,14 @@
   font-size: 14px;
 }
 
-.settings-dialog--phone .settings-page__layout {
+.settings-dialog--phone .settings-page__layout,
+.settings-dialog--phone .settings-page__stack {
   gap: 16px;
 }
 
 .settings-dialog--phone .settings-page__layout > section.ui-settings-section,
-.settings-dialog--phone .settings-page__layout > section.character-settings-section {
+.settings-dialog--phone .settings-page__layout > section.character-settings-section,
+.settings-dialog--phone .settings-page__stack > section.ui-settings-section {
   padding: 12px;
   border-radius: 12px;
 }

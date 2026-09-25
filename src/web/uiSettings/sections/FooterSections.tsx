@@ -34,73 +34,6 @@ function FooterSections({ draft, update }: FooterSectionsProps) {
                 </div>
             </SettingsSection>
 
-            <SettingsSection title="Rozmiar stopki">
-                <p className="popup-field__hint">
-                    Powiekszenie kazdego paska stopki osobno - rosnie tekst, ikony i wysokosc
-                    razem. 1 to rozmiar domyslny.
-                </p>
-                <RangeField
-                    id="ui-footer-binds-scale"
-                    label="Pasek bindow"
-                    value={draft.footerBindsScale}
-                    min={0.8}
-                    max={2}
-                    step={0.05}
-                    onChange={(n) => update({ footerBindsScale: n })}
-                />
-                <RangeField
-                    id="ui-footer-status-scale"
-                    label="Pasek stanu i plakietki"
-                    value={draft.footerStatusScale}
-                    min={0.8}
-                    max={2}
-                    step={0.05}
-                    onChange={(n) => update({ footerStatusScale: n })}
-                />
-            </SettingsSection>
-
-            <SettingsSection title="Stopka na telefonie">
-                <p className="popup-field__hint">
-                    Na waskim ekranie stopka zajmuje jedna linie o stalej wysokosci: dwa
-                    pierwsze paski stanu i najpilniejsze plakietki. Przycisk po prawej rozwija
-                    ja w panel ze wszystkimi paskami i plakietkami - a jesli stopka ma byc
-                    zawsze rozwinieta albo zawsze zwinieta, przycisku nie ma wcale.
-                </p>
-                <CheckboxRow
-                    id="ui-mobile-footer-compact"
-                   
-                    label="Kompaktowa stopka na telefonie"
-                    checked={draft.mobileFooterCompact}
-                    onChange={(v) => update({ mobileFooterCompact: v })}
-                />
-                <SelectField
-                    id="ui-mobile-footer-expand"
-                   
-                    label="Rozwijanie stopki na telefonie"
-                    value={draft.mobileFooterExpand}
-                    disabled={!draft.mobileFooterCompact}
-                    onChange={(v) => update({ mobileFooterExpand: v as UiSettings['mobileFooterExpand'] })}
-                >
-                    <option value="toggle">Zwinieta, z przyciskiem</option>
-                    <option value="expanded">Zawsze rozwinieta</option>
-                    <option value="collapsed">Zawsze zwinieta</option>
-                </SelectField>
-            </SettingsSection>
-
-            <SettingsSection title="Przyciski przy linii komend" full>
-                <p className="popup-field__hint">
-                    Wlasne przyciski obok pola komend - na komputerze miedzy "Wyslij" a menu
-                    (co sie nie miesci, chowa sie pod wlasne "..."), na telefonie w rozwinietej
-                    stopce jako siatka duzych kafelkow.
-                </p>
-                <div id="ui-footer-buttons-settings">
-                    <FooterButtonSettings
-                        buttons={draft.footerButtons}
-                        onChange={(footerButtons) => update({ footerButtons })}
-                    />
-                </div>
-            </SettingsSection>
-
             <SettingsSection title="Elementy stopki">
                 <CheckboxRow
                     id="ui-footer-urgent-chips-first"
@@ -112,6 +45,87 @@ function FooterSections({ draft, update }: FooterSectionsProps) {
                     <FooterComponentSettings
                         components={draft.footerComponents}
                         onChange={(footerComponents) => update({ footerComponents })}
+                    />
+                </div>
+            </SettingsSection>
+
+            {/* The small cards share one column beside the two long ones. */}
+            <div className="settings-page__stack">
+                <SettingsSection title="Pasek multibindów">
+                    <CheckboxRow id="ui-keep-multibinds-visible" label="Zawsze pokazuj pasek multibindów" checked={draft.keepMultibindsVisible} onChange={(v) => update({ keepMultibindsVisible: v })} />
+                    <SelectField id="ui-multibind-key-hints" label="Skróty klawiszowe na pasku bindów" value={draft.multibindKeyHints} onChange={(v) => update({ multibindKeyHints: v as UiSettings['multibindKeyHints'] })}>
+                        <option value="auto">Automatycznie (na telefonie po Alt, Ctrl lub Tab)</option>
+                        <option value="always">Zawsze</option>
+                        <option value="never">Nigdy</option>
+                    </SelectField>
+                    <CheckboxRow id="ui-drinkable-as-functional-bind" label="Bind picia na bind funkcyjny" checked={draft.drinkableAsFunctionalBind} onChange={(v) => update({ drinkableAsFunctionalBind: v })} />
+                    <CheckboxRow id="ui-gate-as-functional-bind" label="Bind bramy na bind funkcyjny" checked={draft.gateAsFunctionalBind} onChange={(v) => update({ gateAsFunctionalBind: v })} />
+                </SettingsSection>
+
+                <SettingsSection title="Rozmiar stopki">
+                    <p className="popup-field__hint">
+                        Powiekszenie kazdego paska stopki osobno - rosnie tekst, ikony i wysokosc
+                        razem. 1 to rozmiar domyslny.
+                    </p>
+                    <RangeField
+                        id="ui-footer-binds-scale"
+                        label="Pasek bindow"
+                        value={draft.footerBindsScale}
+                        min={0.8}
+                        max={2}
+                        step={0.05}
+                        onChange={(n) => update({ footerBindsScale: n })}
+                    />
+                    <RangeField
+                        id="ui-footer-status-scale"
+                        label="Pasek stanu i plakietki"
+                        value={draft.footerStatusScale}
+                        min={0.8}
+                        max={2}
+                        step={0.05}
+                        onChange={(n) => update({ footerStatusScale: n })}
+                    />
+                </SettingsSection>
+
+                <SettingsSection title="Stopka na telefonie">
+                    <p className="popup-field__hint">
+                        Na waskim ekranie stopka zajmuje jedna linie o stalej wysokosci: dwa
+                        pierwsze paski stanu i najpilniejsze plakietki. Przycisk po prawej rozwija
+                        ja w panel ze wszystkimi paskami i plakietkami - a jesli stopka ma byc
+                        zawsze rozwinieta albo zawsze zwinieta, przycisku nie ma wcale.
+                    </p>
+                    <CheckboxRow
+                        id="ui-mobile-footer-compact"
+                   
+                        label="Kompaktowa stopka na telefonie"
+                        checked={draft.mobileFooterCompact}
+                        onChange={(v) => update({ mobileFooterCompact: v })}
+                    />
+                    <SelectField
+                        id="ui-mobile-footer-expand"
+                   
+                        label="Rozwijanie stopki na telefonie"
+                        value={draft.mobileFooterExpand}
+                        disabled={!draft.mobileFooterCompact}
+                        onChange={(v) => update({ mobileFooterExpand: v as UiSettings['mobileFooterExpand'] })}
+                    >
+                        <option value="toggle">Zwinieta, z przyciskiem</option>
+                        <option value="expanded">Zawsze rozwinieta</option>
+                        <option value="collapsed">Zawsze zwinieta</option>
+                    </SelectField>
+                </SettingsSection>
+            </div>
+
+            <SettingsSection title="Przyciski przy linii komend" full>
+                <p className="popup-field__hint">
+                    Wlasne przyciski obok pola komend - na komputerze miedzy "Wyslij" a menu
+                    (co sie nie miesci, chowa sie pod wlasne "..."), na telefonie w rozwinietej
+                    stopce jako siatka duzych kafelkow.
+                </p>
+                <div id="ui-footer-buttons-settings">
+                    <FooterButtonSettings
+                        buttons={draft.footerButtons}
+                        onChange={(footerButtons) => update({ footerButtons })}
                     />
                 </div>
             </SettingsSection>
