@@ -991,10 +991,12 @@ select.popup-input.popup-input--control {
 .color-slot.is-empty > .popup-color::-moz-color-swatch {
   visibility: hidden;
 }
-.color-slot__clear {
+/* The x, or the empty slot keeping its place: both at small-button size. */
+.color-slot > .color-slot__clear {
   flex-shrink: 0;
-  width: var(--ui-ctrl, 28px);
-  height: var(--ui-ctrl, 28px);
+  box-sizing: border-box;
+  width: var(--ui-ctrl-sm, 24px);
+  height: var(--ui-ctrl-sm, 24px);
 }
 .trigger-action__replace.popup-input.popup-input--control {
   flex: 0 0 9rem;
