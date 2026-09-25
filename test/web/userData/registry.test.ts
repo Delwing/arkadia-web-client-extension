@@ -9,7 +9,7 @@ describe('createUserDataTypes', () => {
     it('covers every data store listed in the plan', () => {
         const ids = new Set(createUserDataTypes(() => 'dev').map(t => t.id));
         for (const id of [
-            'triggers', 'aliases', 'automationGroups', 'automationScripts', 'shortcuts', 'keymaps',
+            'triggers', 'aliases', 'automationGroups', 'automationScripts', 'letterTemplates', 'shortcuts', 'keymaps',
             'characterKeys', 'profession', 'deposits', 'containers', 'improveCounts', 'peopleEdits',
             'interfaceSettings', 'buttonSettings', 'radial',
             'knowledgeLibraries', 'knowledgeBooks', 'knowledgeDetails', 'knowledgeTicks', 'knowledgeLevels',

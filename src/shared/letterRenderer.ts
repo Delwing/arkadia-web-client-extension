@@ -1,8 +1,8 @@
 import type { LetterTemplate } from "@client/types/letter";
 
-const MIN_LINE_WIDTH = 20;
-const MAX_LINE_WIDTH = 120;
-const DEFAULT_LINE_WIDTH = 60;
+export const MIN_LINE_WIDTH = 20;
+export const MAX_LINE_WIDTH = 120;
+export const DEFAULT_LINE_WIDTH = 60;
 
 export function clampLineWidth(width: number): number {
     const rounded = Math.round(width);
@@ -126,233 +126,160 @@ function formatContent(content: string, width: number): string[] {
     return result;
 }
 
-interface LetterTemplateRenderer {
-    createHeader(width: number): string[];
-    createFooter(width: number): string[];
-    formatLine(line: string, width: number): string;
-    getBodyWidth(totalWidth: number): number;
+/**
+ * How a letter is framed. Header and footer lines are written as-is, except
+ * that `{x}` (any single character in braces) is repeated to the body width,
+ * so the frame grows with the line width. Body lines go between the prefix
+ * and the suffix.
+ */
+export interface LetterLayout {
+    header: readonly string[];
+    footer: readonly string[];
+    bodyPrefix: string;
+    bodySuffix: string;
+    /** Send the content exactly as typed: no wrapping, no frame. */
+    raw?: boolean;
 }
 
-class NoneTemplate implements LetterTemplateRenderer {
-    createHeader(): string[] {
-        return [];
-    }
+const FILL_PATTERN = /\{(.)\}/g;
 
-    createFooter(): string[] {
-        return [];
-    }
+export function expandFillLine(line: string, width: number): string {
+    return line.replace(FILL_PATTERN, (_match, char: string) => char.repeat(width));
+}
 
-    getBodyWidth(totalWidth: number): number {
-        return totalWidth;
+/** Body width left inside the frame for a total line width. */
+export function getLayoutBodyWidth(layout: LetterLayout, totalWidth: number): number {
+    if (layout.raw) {
+        return Infinity;
     }
+    return Math.max(1, totalWidth - layout.bodyPrefix.length - layout.bodySuffix.length);
+}
 
-    formatLine(line: string, width: number): string {
+function formatBodyLine(layout: LetterLayout, line: string, width: number): string {
+    if (layout.raw) {
+        return line;
+    }
+    const alignRight = line.startsWith(">");
+    const content = alignRight ? line.slice(1) : line;
+    const trimmed = content.length > width ? content.slice(0, width) : content;
+    if (!layout.bodyPrefix && !layout.bodySuffix) {
         if (!line) {
             return "";
         }
-        if (line.startsWith(">")) {
-            const content = line.slice(1);
-            const trimmed = content.length > width ? content.slice(0, width) : content;
-            return trimmed.padStart(width, " ");
-        }
-        return line.length > width ? line.slice(0, width) : line;
+        return alignRight ? trimmed.padStart(width, " ") : trimmed;
     }
+    const padded = alignRight ? trimmed.padStart(width, " ") : trimmed.padEnd(width, " ");
+    return `${layout.bodyPrefix}${padded}${layout.bodySuffix}`;
 }
 
-abstract class BaseLetterTemplate implements LetterTemplateRenderer {
-    private readonly prefixLength: number;
-    private readonly suffixLength: number;
-
-    protected constructor(private readonly bodyPrefix: string, private readonly bodySuffix: string) {
-        this.prefixLength = bodyPrefix.length;
-        this.suffixLength = bodySuffix.length;
-    }
-
-    abstract createHeader(width: number): string[];
-    abstract createFooter(width: number): string[];
-
-    getBodyWidth(totalWidth: number): number {
-        const decorationWidth = this.prefixLength + this.suffixLength;
-        const bodyWidth = totalWidth - decorationWidth;
-        return Math.max(1, bodyWidth);
-    }
-
-    formatLine(line: string, width: number): string {
-        const alignRight = line.startsWith(">");
-        const content = alignRight ? line.slice(1) : line;
-        const trimmed = content.length > width ? content.slice(0, width) : content;
-        const padded = alignRight ? trimmed.padStart(width, " ") : trimmed.padEnd(width, " ");
-        return `${this.bodyPrefix}${padded}${this.bodySuffix}`;
-    }
-}
-
-class PlainTemplate extends BaseLetterTemplate {
-    constructor() {
-        super(" |  ", "  | ");
-    }
-
-    createHeader(width: number): string[] {
-        const dashes = "-".repeat(width);
-        const spaces = " ".repeat(width);
-        return [
-            ` +--${dashes}--+ `,
-            ` |  ${spaces}  | `,
-            ` |  ${spaces}  | `,
-        ];
-    }
-
-    createFooter(width: number): string[] {
-        const dashes = "-".repeat(width);
-        const spaces = " ".repeat(width);
-        return [
-            ` |  ${spaces}  | `,
-            ` |  ${spaces}  | `,
-            ` +--${dashes}--+ `,
-        ];
-    }
-}
-
-class ParchmentTemplate extends BaseLetterTemplate {
-    constructor() {
-        super("   |   ", "  |.");
-    }
-
-    createHeader(width: number): string[] {
-        const underscores = "_".repeat(width);
-        const spaces = " ".repeat(width);
-        return [
-            `  ____${underscores}___  `,
-            `/ \\   ${spaces}   \\.`,
-            `|  |  ${spaces}   |.`,
-            `\\_ |  ${spaces}   |.`,
-            `   |  ${spaces}   |.`,
-        ];
-    }
-
-    createFooter(width: number): string[] {
-        const underscores = "_".repeat(width);
-        const spaces = " ".repeat(width);
-        return [
-            `   |  ${spaces}   |.   `,
-            `   |   ${underscores}__|___ `,
-            `   |  /${spaces}     /.`,
-            `   \\_/_${underscores}____/. `,
-        ];
-    }
-}
-
-class Parchment2Template extends BaseLetterTemplate {
-    constructor() {
-        super(" |     ", "   |   ");
-    }
-
-    createHeader(width: number): string[] {
-        const underscores = "_".repeat(width);
-        const spaces = " ".repeat(width);
-        return [
-            ` ______${underscores}_____  `,
-            String.raw` / _\  ${spaces}     \ `,
-            `|/ >|  ${spaces}     | `,
-            String.raw` |\_/__${underscores}______/`,
-            String.raw` \.    ${spaces}   ./  `,
-            ` |     ${spaces}   |   `,
-        ];
-    }
-
-    createFooter(width: number): string[] {
-        const underscores = "_".repeat(width);
-        const spaces = " ".repeat(width);
-        return [
-            ` |  ___${underscores}___|   `,
-            String.raw` |/\   ${spaces}     \ `,
-            String.raw` \_|   ${spaces}      |`,
-            String.raw`  \_/_ ${underscores}_____/ `,
-        ];
-    }
-}
-
-class Parchment3Template extends BaseLetterTemplate {
-    constructor() {
-        super(" |       |   ", "        | ");
-    }
-
-    createHeader(width: number): string[] {
-        const spaces = " ".repeat(width);
-        const dashes = "-".repeat(width);
-        return [
-            `             ${spaces}  .---.   `,
-            `             ${spaces} /  .  \\ `,
-            `             ${spaces}|\\_/|   |`,
-            `             ${spaces}|   |  /| `,
-            String.raw`   .---------${dashes}------\'|`,
-            `  /  .-.     ${spaces}        | `,
-            ` |  /   \\   ${spaces}         |`,
-            ` | |\\_.  |  ${spaces}         |`,
-            ` |\\|  | /|  ${spaces}         |`,
-            String.raw` | \`---\'|  ${spaces}        | `,
-        ];
-    }
-
-    createFooter(width: number): string[] {
-        const spaces = " ".repeat(width);
-        const dashes = "-".repeat(width);
-        return [
-            ` |       |   ${spaces}        /   `,
-            String.raw` |       |---${dashes}--------\' `,
-            ` \\       |  ${spaces}            `,
-            ` \\.___./    ${spaces}            `,
-        ];
-    }
-}
-
-class RawTemplate implements LetterTemplateRenderer {
-    createHeader(): string[] {
-        return [];
-    }
-
-    createFooter(): string[] {
-        return [];
-    }
-
-    getBodyWidth(): number {
-        return Infinity;
-    }
-
-    formatLine(line: string): string {
-        return line;
-    }
-}
-
-const TEMPLATE_RENDERERS: Record<LetterTemplate, LetterTemplateRenderer> = {
-    none: new NoneTemplate(),
-    plain: new PlainTemplate(),
-    parchment: new ParchmentTemplate(),
-    parchment2: new Parchment2Template(),
-    parchment3: new Parchment3Template(),
-    raw: new RawTemplate(),
+export const BUILTIN_LETTER_LAYOUTS: Readonly<Record<LetterTemplate, LetterLayout>> = {
+    none: {
+        header: [],
+        footer: [],
+        bodyPrefix: "",
+        bodySuffix: "",
+    },
+    plain: {
+        header: [
+            " +--{-}--+ ",
+            " |  { }  | ",
+            " |  { }  | ",
+        ],
+        footer: [
+            " |  { }  | ",
+            " |  { }  | ",
+            " +--{-}--+ ",
+        ],
+        bodyPrefix: " |  ",
+        bodySuffix: "  | ",
+    },
+    parchment: {
+        header: [
+            "  ____{_}___  ",
+            "/ \\   { }   \\.",
+            "|  |  { }   |.",
+            "\\_ |  { }   |.",
+            "   |  { }   |.",
+        ],
+        footer: [
+            "   |  { }   |.   ",
+            "   |   {_}__|___ ",
+            "   |  /{ }     /.",
+            "   \\_/_{_}____/. ",
+        ],
+        bodyPrefix: "   |   ",
+        bodySuffix: "  |.",
+    },
+    parchment2: {
+        header: [
+            " ______{_}_____  ",
+            " / _\\  { }     \\ ",
+            "|/ >|  { }     | ",
+            " |\\_/__{_}______/",
+            " \\.    { }   ./  ",
+            " |     { }   |   ",
+        ],
+        footer: [
+            " |  ___{_}___|   ",
+            " |/\\   { }     \\ ",
+            " \\_|   { }      |",
+            "  \\_/_ {_}_____/ ",
+        ],
+        bodyPrefix: " |     ",
+        bodySuffix: "   |   ",
+    },
+    parchment3: {
+        header: [
+            "             { }  .---.   ",
+            "             { } /  .  \\ ",
+            "             { }|\\_/|   |",
+            "             { }|   |  /| ",
+            "   .---------{-}------\\' |",
+            "  /  .-.     { }        | ",
+            " |  /   \\   { }         |",
+            " | |\\_.  |  { }         |",
+            " |\\|  | /|  { }         |",
+            " | \\`---\\' |  { }        | ",
+        ],
+        footer: [
+            " |       |   { }        /   ",
+            " |       |---{-}--------\\' ",
+            " \\       |  { }            ",
+            " \\.___./    { }            ",
+        ],
+        bodyPrefix: " |       |   ",
+        bodySuffix: "        | ",
+    },
+    raw: {
+        header: [],
+        footer: [],
+        bodyPrefix: "",
+        bodySuffix: "",
+        raw: true,
+    },
 };
-
-function applyTemplate(lines: string[], width: number, renderer: LetterTemplateRenderer): string[] {
-    const header = renderer.createHeader(width);
-    const footer = renderer.createFooter(width);
-    const bodySource = lines.length ? lines : [""];
-    const body = bodySource.map(line => renderer.formatLine(line, width));
-    return [...header, ...body, ...footer];
-}
 
 export interface LetterRenderResult {
     lines: string[];
     hasContent: boolean;
 }
 
-export function renderLetter(content: string, template: LetterTemplate, lineWidth: number = DEFAULT_LINE_WIDTH): LetterRenderResult {
-    const renderer = TEMPLATE_RENDERERS[template];
-    const bodyWidth = renderer.getBodyWidth(lineWidth);
-    // For "raw" template, preserve whitespace exactly as-is
-    const baseLines = template === "raw"
+export function renderLetterLayout(content: string, layout: LetterLayout, lineWidth: number = DEFAULT_LINE_WIDTH): LetterRenderResult {
+    const bodyWidth = getLayoutBodyWidth(layout, lineWidth);
+    // A raw layout keeps whitespace exactly as typed
+    const baseLines = layout.raw
         ? content.split(/\r?\n/)
         : formatContent(content, bodyWidth);
-    const lines = applyTemplate(baseLines, bodyWidth, renderer);
+    const bodySource = baseLines.length ? baseLines : [""];
+    const lines = [
+        ...layout.header.map(line => expandFillLine(line, bodyWidth)),
+        ...bodySource.map(line => formatBodyLine(layout, line, bodyWidth)),
+        ...layout.footer.map(line => expandFillLine(line, bodyWidth)),
+    ];
     const hasContent = baseLines.some(line => line.length > 0);
     return { lines, hasContent };
+}
+
+export function renderLetter(content: string, template: LetterTemplate, lineWidth: number = DEFAULT_LINE_WIDTH): LetterRenderResult {
+    return renderLetterLayout(content, BUILTIN_LETTER_LAYOUTS[template], lineWidth);
 }

@@ -1854,6 +1854,125 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
   min-width: 9rem;
 }
 
+.letter-width-group {
+  margin-right: 0;
+}
+
+.letter-width-input {
+  width: 4.5rem;
+}
+
+/* Above the composer (--fw-z-index: 1100) */
+.letter-templates-layer {
+  position: relative;
+  z-index: 1200;
+}
+
+.letter-templates {
+  display: flex;
+  gap: 1rem;
+  min-height: 24rem;
+}
+
+.letter-templates__sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 12rem;
+  flex-shrink: 0;
+}
+
+.letter-templates__list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.letter-templates__item {
+  padding: 0.35rem 0.5rem;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.letter-templates__item:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.letter-templates__item.is-active {
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.letter-templates__editor {
+  display: flex;
+  gap: 1rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.letter-templates__fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 16rem;
+}
+
+.letter-templates__row {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+.letter-templates__grow {
+  flex: 1;
+  min-width: 0;
+}
+
+.letter-templates__preview {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 65%;
+  overflow: auto;
+}
+
+.letter-templates__preview-text {
+  padding: 0.5rem;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.letter-templates__empty {
+  flex: 1;
+  align-self: center;
+  text-align: center;
+}
+
+@media (max-width: 900px) {
+  .letter-templates,
+  .letter-templates__editor {
+    flex-direction: column;
+  }
+
+  .letter-templates__sidebar {
+    width: auto;
+  }
+
+  .letter-templates__fields {
+    min-width: 0;
+  }
+
+  .letter-templates__preview {
+    max-width: none;
+  }
+}
+
 .letter-composer-resize-handle {
   position: absolute;
   bottom: 0;

@@ -23,6 +23,7 @@ import type { AttackMode } from '@client/utils/attackController';
 import type { CharGender } from '@shared/events/gmcpTypes';
 import type { CechyHistoryEntry } from '@client/scripts/cechyHistory';
 import type { CarriageRecord } from '@client/scripts/carriage';
+import type { CustomLetterTemplate } from '@client/types/letter';
 
 /**
  * Character-scoped storage keys.
@@ -97,6 +98,8 @@ export interface GlobalStorageSchema {
     settingsMigrationsVersion: number;
     contracts: ContractsSnapshot;
     custom_sounds: CustomSound[];
+    /** Letter templates made by the user. See @modules/core/letterTemplates. */
+    letter_templates: CustomLetterTemplate[];
     last_world_rebirth: number;
     /** Rooms a carriage cannot enter, gathered by the player. Shared across characters. */
     carriage_blocked_rooms: number[];
@@ -206,6 +209,7 @@ export const globalStorageKeys = [
     'mobileButtonsPosition',
     'settingsMigrationsVersion',
     'custom_sounds',
+    'letter_templates',
     'last_world_rebirth',
     'carriage_blocked_rooms',
     'pushCredentials',

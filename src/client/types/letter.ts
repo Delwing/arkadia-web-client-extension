@@ -62,13 +62,33 @@ export const LETTER_TEMPLATE_PREVIEW_LABELS: Readonly<Record<LetterTemplate, str
         return accumulator;
     }, {} as Record<LetterTemplate, string>);
 
+/** Selection value of a user template: this prefix followed by its id. */
+export const CUSTOM_LETTER_TEMPLATE_PREFIX = "custom:";
+
+export type LetterTemplateId = LetterTemplate | `${typeof CUSTOM_LETTER_TEMPLATE_PREFIX}${string}`;
+
+/**
+ * A letter template made by the user. Header and footer are multi-line text
+ * where `{x}` repeats the character x to the body width.
+ */
+export interface CustomLetterTemplate {
+    id: string;
+    name: string;
+    header: string;
+    footer: string;
+    bodyPrefix: string;
+    bodySuffix: string;
+}
+
 export interface LetterSubmitPayload {
     to: string;
     cc: string;
     udw: string;
     subject: string;
     content: string;
-    template: LetterTemplate;
+    template: LetterTemplateId;
+    /** Line width for this letter; the letterLineWidth setting when absent. */
+    lineWidth?: number;
 }
 
 export function isLetterTemplate(value: unknown): value is LetterTemplate {
