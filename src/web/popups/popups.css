@@ -6,7 +6,7 @@
  * `src/web/style.css`, which only the stock UI imports. Alternative UIs (forge)
  * therefore rendered popup bodies unstyled. This file is the single home for
  * those rules and is imported by BOTH entry points (stock `src/web/main.ts` and
- * `forge-ui/main.tsx`), so a popup is styled identically wherever it is mounted.
+ * `forge-ui/start.tsx`), so a popup is styled identically wherever it is mounted.
  *
  * HOW THEMING WORKS — DO NOT hardcode chrome colors here.
  * Every rule reads the `--popup-*` semantic variables (defined at `:root` in

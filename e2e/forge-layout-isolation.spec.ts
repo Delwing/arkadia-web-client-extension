@@ -3,10 +3,10 @@ import { waitForCommandInput, waitForLayoutSaved } from './support/mocks';
 import type { Page } from '@playwright/test';
 
 /**
- * forge-ui needs layout mode on, the objectList slot enabled and the rail-span
+ * forge-ui needs layout mode on, the objectList slot enabled and its own dock
  * arrangement — but it shares the persisted `layoutManagerState` key with the
  * stock UI. Those three fields are therefore process-local overrides
- * (`setLayoutOverrides` in forge-ui/main.tsx), never writes: merely opening
+ * (`setLayoutOverrides` / `initDockArrangement` in forge-ui/start.tsx), never writes: merely opening
  * forge must not flip the stock UI's "Menedzer Okien" on, nor overwrite the
  * choice of a user who already made one.
  */

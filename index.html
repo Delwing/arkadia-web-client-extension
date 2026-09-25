@@ -33,12 +33,19 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
     <title>Arkadia</title>
+    <!-- src/web/main.ts loads the chosen shell (stock or forge) with its styles and
+         then sets data-shell-ready; until then the unstyled stock markup stays hidden. -->
+    <style>html:not([data-shell-ready]) body{visibility:hidden}html:not([data-shell-ready]){background:#000}</style>
 </head>
 <!-- data-mobile-footer / data-footer-expand default to the compact phone footer
      with its expander, so both are there from the first paint;
      uiSettingsCore.apply() rewrites them from the player's settings. -->
 <body data-map-position="top-overlay" data-mobile-footer="1" data-footer-expand="toggle">
 <div id="main-container">
+    <!-- Rail hosts: with the side docks spanning the full height, the left/right
+         dock areas portal in here (src/web/layout, stockRails.css). -->
+    <div id="layout-left-dock-host"></div>
+    <div id="layout-right-dock-host"></div>
     <div id="content-area">
         <div id="layout-manager-root"></div>
         <div id="iframe-container">
@@ -275,6 +282,5 @@
 <div id="map-note-tooltip" class="map-note-tooltip"></div>
 <div id="hover-tooltip" class="hover-tooltip"></div>
 <script type="module" src="/src/web/main.ts"></script>
-<script type="module" src="/src/web/logBrowserMount.tsx"></script>
 </body>
 </html>

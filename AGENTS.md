@@ -151,8 +151,9 @@ yarn test:e2e -- --shard=1/12              # Run one CI shard
 
 ## Entry Points
 
-There are four Vite build entries (see `vite.config.ts`):
-- **Client**: `index.html` → `src/web/main.ts` - Main web application
+The main Vite build entries (see `vite.config.ts`):
+- **Client**: `index.html` → `src/web/main.ts` - Main web application. `main.ts` only picks the shell: the stock chrome (`src/web/stockMain.ts`) or the forge HUD (`src/web/shell/forgeShell.ts` → `forge-ui/start.tsx`), per device (`src/web/shell/uiShell.ts`, `?ui=forge|stock`)
+- **Forge UI**: `forge-ui/index.html` → `forge-ui/main.tsx` - The forge HUD on its own page (same `startForge` as the main page's forge shell)
 - **Editor**: `editor/index.html` → `editor/main.ts` - Plugin editor
 - **Viewer**: `viewer/index.html` → `viewer/main.tsx` - Session log viewer
 - **Log Viewer**: `log-viewer/index.html` → `log-viewer/main.tsx` - Standalone log viewer

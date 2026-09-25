@@ -56,7 +56,7 @@ export const SETTINGS_CATEGORIES: readonly SettingsCategory[] = [
     { key: "character-guilds", group: "character", label: "Gildie", keywords: "wrogowie sojusznicy" },
     { key: "character-magics", group: "character", label: "Magiki" },
     { key: "ui-appearance", group: "ui", label: "Wygląd", keywords: "motyw czcionka kolory paleta" },
-    { key: "ui-windows", group: "ui", label: "Okna", keywords: "uklad bufor lista obiektow" },
+    { key: "ui-windows", group: "ui", label: "Okna", keywords: "uklad bufor lista obiektow interfejs kuznia forge doki" },
     { key: "ui-commands", group: "ui", label: "Komendy", keywords: "multibindy bindy wpisywanie" },
     { key: "ui-buttons", group: "ui", label: "Przyciski", keywords: "makra" },
     { key: "ui-mobile-buttons", group: "ui", label: "Przyciski mobilne", keywords: "makra kierunki telefon druzyna" },

@@ -8,7 +8,9 @@ import { apply, load, normalizeMapScale, save, type UiSettings as UiSettingsType
 import { getEmbeddedMap } from "../embedRegistry";
 import { defaultUiSettings } from "../defaultUiSettings";
 import AppearanceSection from "./sections/AppearanceSection";
-import { LayoutManagerSection, OutputSection } from "./sections/WindowsSections";
+import { LayoutManagerSection, OutputSection, ShellSection } from "./sections/WindowsSections";
+import { getDockArrangement, setDockArrangement } from "@web/layout/utils/dockArrangement";
+import type { SpanningDocks } from "@web/layout/types";
 import CommandsSection from "./sections/CommandsSection";
 import FooterSections from "./sections/FooterSections";
 import MapSections from "./sections/MapSections";
@@ -78,6 +80,7 @@ export function useUiSettingsPages({ soundManager, onEnableNotifications }: UiSe
     const [customSounds, setCustomSounds] = useState<CustomSound[]>([]);
     const [layoutEnabled, setLayoutEnabled] = useState(() => loadLayoutState().enabled);
     const [layoutObjectList, setLayoutObjectList] = useState(() => loadLayoutState().enabledPanels.objectList);
+    const [dockArrangement, setDockArrangementState] = useState<SpanningDocks>(() => getDockArrangement());
     const [mapVersion, setMapVersion] = useState("");
     const [refreshing, setRefreshing] = useState(false);
     const [explorationStats, setExplorationStats] = useState("");
@@ -235,6 +238,11 @@ export function useUiSettingsPages({ soundManager, onEnableNotifications }: UiSe
         setLayoutObjectList(v);
         eventBus.emit("layoutManagerStateChanged");
     };
+    const onDockArrangementChange = (v: SpanningDocks) => {
+        setDockArrangement(v);
+        setDockArrangementState(v);
+        eventBus.emit("layoutManagerStateChanged");
+    };
     const onLayoutReset = () => {
         const ls = resetLayoutState();
         setLayoutEnabled(ls.enabled);
@@ -261,10 +269,13 @@ export function useUiSettingsPages({ soundManager, onEnableNotifications }: UiSe
         "ui-appearance": <AppearanceSection draft={draft} update={update} commitCustomDark={commitCustomDark} />,
         "ui-windows": (
             <>
+                <ShellSection />
                 <LayoutManagerSection
                     layoutEnabled={layoutEnabled} layoutObjectList={layoutObjectList}
+                    dockArrangement={dockArrangement}
                     onLayoutEnabledChange={onLayoutEnabledChange}
                     onLayoutObjectListChange={onLayoutObjectListChange}
+                    onDockArrangementChange={onDockArrangementChange}
                     onLayoutReset={onLayoutReset}
                 />
                 <OutputSection draft={draft} update={update} />

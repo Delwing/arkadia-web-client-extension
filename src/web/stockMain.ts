@@ -70,6 +70,11 @@ import {installClientPorts} from "./installClientPorts";
 import {installContentWidthMeasurer} from "./contentWidthMeasurer";
 import {bootstrapGameClient} from "./clientBootstrap";
 import {initTextToSpeech} from "./voice/textToSpeech.ts";
+import {whenDocumentReady} from "./shell/documentReady";
+import {switchShell} from "./shell/uiShell";
+import {initDockArrangement} from "./layout/utils/dockArrangement";
+// The Logi window: mounts itself into #logs-modal and registers its menu entry.
+import "./logBrowserMount";
 
 // The client seeds `binds` from the active keymap itself (KeyBindingManager),
 // so any UI — including this one — picks up keybinds without a UI-side step.
@@ -79,6 +84,11 @@ import {initTextToSpeech} from "./voice/textToSpeech.ts";
 // through the shared bootstrap. Port implementations are the one UI-specific
 // piece, injected here before scripts run.
 const { client, helperConnection } = bootstrapGameClient({ installPorts: installClientPorts });
+
+// index.html provides the rail hosts, so the stock shell renders both dock
+// arrangements; the player picks one in Ustawienia → Okna. Must run before the
+// layout manager mounts.
+initDockArrangement('stock', 'topBottom');
 
 // The client core is DOM-free; the web UI measures terminal column width from
 // the DOM and pushes it in.
@@ -684,7 +694,9 @@ document.addEventListener('visibilitychange', () => {
 // UI gets them identically. This UI only supplies the modal-open suppression
 // via UiPort.shouldSuppressKeys (see installClientPorts).
 
-document.addEventListener('DOMContentLoaded', () => {
+// This module is loaded by the shell router (main.ts) through a dynamic import,
+// which usually resolves after DOMContentLoaded has already fired.
+whenDocumentReady(() => {
     // Desktop gets the window manager by default (one-time flip). Must run
     // before anything reads the layout state — panels and popups decide
     // whether to auto-open from it.
@@ -1105,6 +1117,11 @@ document.addEventListener('DOMContentLoaded', () => {
     registerMainMenuItem({
         id: 'settings-button', label: 'Ustawienia', group: 'ustawienia', icon: 'settings', order: 5, onSelect: () => { requestSettingsResume(); settingsModal?.show(); }, source: 'builtin',
         keywords: ['opcje', 'postać', 'interfejs', 'przyciski', 'menu kołowe', 'eksport', 'import', 'synchronizacja', 'kopia'],
+    });
+    // The forge HUD is the other shell this page can boot (see main.ts).
+    registerMainMenuItem({
+        id: 'shell-button', label: 'Interfejs Kuźnia', shortLabel: 'Kuźnia', group: 'ustawienia', icon: 'layout', order: 15,
+        onSelect: () => switchShell('forge'), source: 'builtin', keywords: ['forge', 'wygląd', 'hud'],
     });
     // Logi (170) registers itself in Narzędzia.
     registerMainMenuItem({id: 'docs-button', label: 'Dokumentacja', shortLabel: 'Pomoc', group: 'narzedzia', icon: 'book', order: 180, onSelect: () => eventBus.emit('docs.popup.open'), source: 'builtin'});

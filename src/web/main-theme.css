@@ -32,6 +32,8 @@
 @import './themes/light-parchment.css';
 @import './themes/light-silver.css';
 @import './layout/layout.css';
+/* The rail-span grid for the stock skeleton, over layout.css's forge-shaped one. */
+@import './layout/stockRails.css';
 /* Phone footer — last, so its narrow-viewport block wins over the stock
    footer rules it reshapes. */
 @import './footerMobile.css';

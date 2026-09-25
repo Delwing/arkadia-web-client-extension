@@ -1,0 +1,39 @@
+/* ── Stock shell: side rails spanning the full height ──────────────────────
+   layout.css lays the rail-span grid out by named areas (content / input /
+   bottom), which is all forge's #main-container holds. The stock one also
+   stacks the bind row, the status line, the object list and a few mount
+   points between the output and the command line, so here the centre column
+   takes every child in document order, one row each, and the rails span all
+   rows. The explicit auto rows are empty (zero height) past the last child;
+   they only exist so `grid-row: 1 / -1` reaches the bottom. */
+body.layout-manager-enabled.layout-rails-vertical #main-container {
+  grid-template-areas: none;
+  grid-template-rows: minmax(0, 1fr) repeat(40, auto);
+  gap: 0;
+}
+
+body.layout-manager-enabled.layout-rails-vertical #main-container > * {
+  grid-column: 2;
+}
+
+body.layout-manager-enabled.layout-rails-vertical #main-container > #content-area {
+  grid-row: 1;
+}
+
+body.layout-manager-enabled.layout-rails-vertical #main-container > #input-area,
+body.layout-manager-enabled.layout-rails-vertical #command-line-root > #input-area {
+  grid-area: auto / 2;
+  margin-top: 0;
+}
+
+body.layout-manager-enabled.layout-rails-vertical .dock-zone--bottom {
+  grid-area: auto / 2;
+}
+
+body.layout-manager-enabled.layout-rails-vertical .dock-zone--left {
+  grid-area: 1 / 1 / -1 / 2;
+}
+
+body.layout-manager-enabled.layout-rails-vertical .dock-zone--right {
+  grid-area: 1 / 3 / -1 / 4;
+}

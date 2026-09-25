@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import eventBus from '@modules/core/eventBus';
 import mudClient from '@web/MudClient';
+import { switchShell } from '@web/shell/uiShell';
 import { useClient } from '../client/ClientContext';
 import MenuModalHost, { prefetchAllModals, type ModalKey } from './menu/MenuModalHost';
 import MenuModal from './menu/MenuModal';
@@ -19,8 +20,10 @@ import MenuModal from './menu/MenuModal';
 type Item =
     | { kind: 'modal'; label: string; modal: ModalKey }
     | { kind: 'event'; label: string; event: 'packageReceiver.popup.open' | 'peopleBrowser.popup.open' | 'dataSources.popup.open' }
-    | { kind: 'action'; label: string; action: 'qr' | 'disconnect' | 'fullscreen' }
+    | { kind: 'action'; label: string; action: Action }
     | { kind: 'divider' };
+
+type Action = 'qr' | 'disconnect' | 'fullscreen' | 'classic';
 
 const ITEMS: Item[] = [
     { kind: 'modal', label: 'Ustawienia', modal: 'options' },
@@ -46,6 +49,7 @@ const ITEMS: Item[] = [
     { kind: 'modal', label: 'Helper', modal: 'helper' },
     { kind: 'action', label: 'Rozłącz', action: 'disconnect' },
     { kind: 'action', label: 'Pełny ekran', action: 'fullscreen' },
+    { kind: 'action', label: 'Klasyczny wygląd', action: 'classic' },
 ];
 
 export default function Menu() {
@@ -114,7 +118,7 @@ export default function Menu() {
     }, [client]);
 
     const runAction = useCallback(
-        (action: 'qr' | 'disconnect' | 'fullscreen') => {
+        (action: Action) => {
             switch (action) {
                 case 'qr':
                     showQr();
@@ -132,6 +136,9 @@ export default function Menu() {
                     } else {
                         void document.exitFullscreen().catch(() => {});
                     }
+                    break;
+                case 'classic':
+                    switchShell('stock');
                     break;
             }
         },

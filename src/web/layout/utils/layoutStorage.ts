@@ -517,9 +517,10 @@ export function isDockingSupported(): boolean {
 
 // ─── UI capability: can this shell render "left/right rails span everything"? ──
 // The vertical span mode needs the shell to provide #layout-left/right-dock-host
-// elements (children of #main-container) to portal the rails into. Only the
-// forge shell does; the stock shell never opts in, so the shared `spanningDocks`
-// flag is a no-op there even though it lives in the shared persisted state.
+// elements (children of #main-container) to portal the rails into. Both shells
+// do, and opt in through initDockArrangement (./dockArrangement), which also
+// applies the player's per-shell choice; a shell without the hosts leaves this
+// off and the `spanningDocks` flag is a no-op there.
 let railSpanSupported = false;
 
 export function setRailSpanSupported(supported: boolean): void {
