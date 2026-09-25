@@ -10,16 +10,17 @@
  */
 
 /**
- * Device-level guess: a coarse pointer or a touch digitizer. This is only a
- * guess — a touch-screen laptop driven with a mouse answers `true` here — so
- * prefer {@link isTouchPointerType} whenever an actual `PointerEvent` is in
- * hand and fall back to this only when it isn't.
+ * Device-level guess: a coarse pointer or a touch digitizer, and no fine
+ * pointer (mouse, trackpad) anywhere. A touch-screen laptop has both, and
+ * Firefox reports its touch side (`maxTouchPoints`, even `pointer: coarse`)
+ * readily, so without the fine-pointer check such a laptop got the phone
+ * layout. Still only a guess: prefer {@link isTouchPointerType} whenever an
+ * actual `PointerEvent` is in hand and fall back to this only when it isn't.
  */
 export function isLikelyTouchDevice(): boolean {
-    return (
-        (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) ||
-        navigator.maxTouchPoints > 0
-    );
+    const matches = (query: string) => typeof window.matchMedia === 'function' && window.matchMedia(query).matches;
+    if (matches('(any-pointer: fine)')) return false;
+    return matches('(pointer: coarse)') || navigator.maxTouchPoints > 0;
 }
 
 /** Phone-shaped: either a narrow viewport or a touch device. */
