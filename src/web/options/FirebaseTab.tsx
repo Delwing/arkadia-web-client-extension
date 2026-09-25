@@ -42,6 +42,27 @@ import {
     startSyncV2,
 } from "@web/userData/syncV2";
 
+/** How long the download button waits before leaving a large download to finish in the background. */
+const DOWNLOAD_WAIT_MS = 60_000;
+
+/**
+ * `work`'s result, or 'background' once `ms` pass: the work goes on and its
+ * outcome is only logged, so a long apply doesn't hold the button.
+ */
+function inBackgroundAfter<T>(work: Promise<T>, ms: number): Promise<T | 'background'> {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const late = new Promise<'background'>(resolve => {
+        timer = setTimeout(() => {
+            work.then(
+                () => console.info('[SyncV2] Download finished in the background'),
+                error => console.error('[SyncV2] Download failed in the background', error),
+            );
+            resolve('background');
+        }, ms);
+    });
+    return Promise.race([work, late]).finally(() => clearTimeout(timer));
+}
+
 /** Why sync v2 isn't running in this tab, for the send / download buttons. */
 function syncV2NotRunningMessage(): string {
     const settings = loadFirebaseSettings();
@@ -429,7 +450,13 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
 
         try {
             if (syncV2) {
-                if (!(await runSyncV2Action(engine => engine.redownload()))) {
+                const outcome = await inBackgroundAfter(
+                    runSyncV2Action(engine => engine.redownload()),
+                    DOWNLOAD_WAIT_MS,
+                );
+                if (outcome === 'background') {
+                    setSyncStatus('Pobieranie trwa dluzej niz zwykle - dane zostana zastosowane w tle.');
+                } else if (!outcome) {
                     setSyncError(syncV2NotRunningMessage());
                 } else {
                     setSyncStatus('Dane z chmury zostaly pobrane.');

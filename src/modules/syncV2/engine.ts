@@ -265,6 +265,7 @@ export class SyncEngineV2 {
             usage?.read(1, base?.data.length ?? 0);
             if (base) {
                 const records = await decodeRecords(base.data, base.encrypted, key);
+                this.options.log?.(`Applying the base: ${records.length} records...`);
                 await tracker.apply(records, applyOptions);
                 this.options.log?.(`Applied the base: ${records.length} records (${describe(records)})`);
                 for (const [device, seq] of Object.entries(base.folded)) {
