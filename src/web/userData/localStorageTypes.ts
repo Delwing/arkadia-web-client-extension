@@ -199,6 +199,11 @@ const CHARACTER_KEYS_WITH_OWN_TYPE = new Set([
     'kill_counter',
 ]);
 
+/** Logs stay on the device: they are large, change with every message and aren't settings. */
+const CHARACTER_KEYS_NOT_SYNCED = new Set([
+    'chat_history',
+]);
+
 /** Every other character-scoped setting: one item per character and key, newest wins. */
 export const characterKeysType: UserDataType = {
     id: 'characterKeys',
@@ -212,7 +217,9 @@ export const characterKeysType: UserDataType = {
             if (!storageKey) continue;
             const parsed = parseCharacterStorageKey(storageKey);
             if (!parsed) continue;
-            if (isExcludedLocalStorageKey(parsed.baseKey) || CHARACTER_KEYS_WITH_OWN_TYPE.has(parsed.baseKey)) continue;
+            if (isExcludedLocalStorageKey(parsed.baseKey)
+                || CHARACTER_KEYS_WITH_OWN_TYPE.has(parsed.baseKey)
+                || CHARACTER_KEYS_NOT_SYNCED.has(parsed.baseKey)) continue;
             items.push({
                 scope: characterScope(parsed.name),
                 key: parsed.baseKey,

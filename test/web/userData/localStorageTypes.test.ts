@@ -108,6 +108,7 @@ describe('characterKeysType', () => {
         localStorage.setItem('Alice:mapperRoomId', '5');
         localStorage.setItem('Alice:profession', JSON.stringify({ start_time: 1, plus_events: [] }));
         localStorage.setItem('Alice:deposits', JSON.stringify({}));
+        localStorage.setItem('Alice:chat_history', JSON.stringify([{ text: 'a chat log line' }]));
 
         const items = (characterKeysType.read() as { scope: string; key: string }[])
             .map(i => `${i.scope}/${i.key}`).sort();

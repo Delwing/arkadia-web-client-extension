@@ -113,6 +113,9 @@ migration assigns stable ids (`${deviceId}:${n}`) and new entries use the record
 
 ### 4.2 Never synced
 
+Logs: session logs and log files (`ArkadiaMessagesDB`, `ArkadiaLogsMetaDB`) and the per-character chat
+history (`character:chat_history`, kept in backups only).
+
 Reference caches (`ArkadiaMapDB`, `ArkadiaNpcDB`, `ArkadiaPeopleDB`, `ArkadiaHerbsDB`, `ArkadiaMagicsDB`,
 `ArkadiaMagicKeysDB`, `ArkadiaWiedzaDB`, knowledge definitions), logs (`ArkadiaMessagesDB`,
 `ArkadiaLogsMetaDB`), `ArkadiaRecordingsDB`, `ArkadiaCustomSounds`, `arkadia-sun-tracker`,
