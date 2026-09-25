@@ -289,25 +289,28 @@ test.describe('Letter composer', () => {
         await expect(reopened.locator('#letter-width'), 'should reset to the default width').toHaveValue('72');
     });
 
-    test('alignment buttons mark the lines under the caret', async ({page}) => {
+    test('alignment buttons align the letter text', async ({page}) => {
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
 
         const composer = await openLetterComposer(page);
-        const content = composer.locator('#letter-content');
-        await content.fill('Tytul\nTresc\nPodpis');
+        await expect(composer.locator('.letter-align-button--justify'), 'should justify by default').toHaveClass(/is-active/);
 
-        // Caret on the first line
-        await content.evaluate((el: HTMLTextAreaElement) => el.setSelectionRange(2, 2));
+        await composer.locator('#letter-template').selectOption('none');
+        await composer.locator('#letter-width').fill('30');
+        await composer.locator('#letter-content').fill('Srodek');
         await composer.locator('.letter-align-button--center').click();
-        // Caret on the last line
-        await content.evaluate((el: HTMLTextAreaElement) => el.setSelectionRange(el.value.length, el.value.length));
-        await composer.locator('.letter-align-button--right').click();
-        await expect(content, 'should mark the aligned lines').toHaveValue('^Tytul\nTresc\n>Podpis');
+        await expect(composer.locator('.letter-align-button--center'), 'should mark the chosen alignment').toHaveClass(/is-active/);
+        await expect(composer.locator('#letter-content'), 'should not change the typed text').toHaveValue('Srodek');
 
-        await composer.locator('.letter-align-button--justify').click();
-        await expect(content, 'justify should drop the marker').toHaveValue('^Tytul\nTresc\nPodpis');
+        await composer.locator('button:has-text("Podglad")').click();
+        await waitForOutputContaining(page, `${' '.repeat(12)}Srodek`);
+
+        // Remembered for the next letter
+        await composer.locator('.panel-button--close').click();
+        const reopened = await openLetterComposer(page);
+        await expect(reopened.locator('.letter-align-button--center'), 'should keep the alignment').toHaveClass(/is-active/);
     });
 
     test('custom template repeats a multi-line body prefix', async ({page}) => {

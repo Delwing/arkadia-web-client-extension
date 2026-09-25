@@ -3,7 +3,7 @@ import {defaultSettings} from "@modules/core/defaultSettings";
 import type {LetterTemplate} from "../types/letter";
 import {characterStorage} from "@modules/core/storage";
 import {resolveLetterTemplate, type ResolvedLetterTemplate} from "@modules/core/letterTemplates";
-import {clampLineWidth, renderLetterLayout} from "@shared/letterRenderer";
+import {DEFAULT_LETTER_ALIGNMENT, clampLineWidth, isLetterAlignment, renderLetterLayout} from "@shared/letterRenderer";
 
 const PROMPT_PATTERN = /Wpisz ~\?, zeby uzyskac pomoc, lub \*\*, by zakonczyc edycje\./;
 const TRIGGER_TAG = "letter-composer";
@@ -27,6 +27,10 @@ function updateLineWidth(value: unknown) {
 /** The width a letter asks for, or the configured default. */
 function widthFor(value: unknown): number {
     return typeof value === "number" && Number.isFinite(value) ? clampLineWidth(value) : lineWidth;
+}
+
+function alignmentFor(value: unknown) {
+    return isLetterAlignment(value) ? value : DEFAULT_LETTER_ALIGNMENT;
 }
 
 function resolveTemplate(value: unknown): ResolvedLetterTemplate {
@@ -69,7 +73,7 @@ export default function initLetter(client: Client, aliases?: { pattern: RegExp; 
         const blindCopy = udw.trim();
         const subjectLine = subject.trim();
         const template = resolveTemplate(rawTemplate);
-        const {lines} = renderLetterLayout(content, template.layout, widthFor(payload?.lineWidth));
+        const {lines} = renderLetterLayout(content, template.layout, widthFor(payload?.lineWidth), alignmentFor(payload?.alignment));
 
         client.Triggers.removeByTag(TRIGGER_TAG);
         client.Triggers.registerOneTimeTrigger(
@@ -99,7 +103,7 @@ export default function initLetter(client: Client, aliases?: { pattern: RegExp; 
     client.on("letterComposer.preview", (payload) => {
         const template = resolveTemplate(payload?.template);
         const width = widthFor(payload?.lineWidth);
-        const {lines, hasContent} = renderLetterLayout(payload?.content ?? "", template.layout, width);
+        const {lines, hasContent} = renderLetterLayout(payload?.content ?? "", template.layout, width, alignmentFor(payload?.alignment));
         printPreview(client, lines, template, width, hasContent);
     });
 }

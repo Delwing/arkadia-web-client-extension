@@ -4,7 +4,6 @@ import {
     getLayoutBodyWidth,
     renderLetter,
     renderLetterLayout,
-    setLineAlignment,
     type LetterLayout,
 } from '@shared/letterRenderer';
 
@@ -102,40 +101,33 @@ describe('renderLetterLayout (custom layouts)', () => {
 describe('body alignment', () => {
     const text = 'aaa bbb ccc ddd eee';
 
-    it('justifies lines without a marker, except the last one', () => {
+    it('justifies the body by default, except the last line', () => {
         expect(renderLetter(text, 'none', 13).lines).toEqual(['aaa  bbb  ccc', 'ddd eee']);
     });
 
-    it('aligns every wrapped line of a marked line', () => {
-        expect(renderLetter(`<${text}`, 'none', 13).lines).toEqual(['aaa bbb ccc', 'ddd eee']);
-        expect(renderLetter(`>${text}`, 'none', 13).lines).toEqual(['  aaa bbb ccc', '      ddd eee']);
-        expect(renderLetter(`^${text}`, 'none', 13).lines).toEqual([' aaa bbb ccc', '   ddd eee']);
+    it('aligns the whole body the chosen way', () => {
+        expect(renderLetter(text, 'none', 13, 'left').lines).toEqual(['aaa bbb ccc', 'ddd eee']);
+        expect(renderLetter(text, 'none', 13, 'right').lines).toEqual(['  aaa bbb ccc', '      ddd eee']);
+        expect(renderLetter(text, 'none', 13, 'center').lines).toEqual([' aaa bbb ccc', '   ddd eee']);
     });
 
-    it('mixes alignments line by line inside a frame', () => {
-        const layout: LetterLayout = { header: [], footer: [], bodyPrefix: '|', bodySuffix: '|' };
-        expect(renderLetterLayout('^Tytul\n= a b\n>Ja', layout, 10).lines).toEqual([
+    it('aligns the text inside the frame', () => {
+        const layout: LetterLayout = { header: ['+{-}+'], footer: ['+{-}+'], bodyPrefix: '|', bodySuffix: '|' };
+        expect(renderLetterLayout('Tytul\n\nab', layout, 10, 'center').lines).toEqual([
+            '+--------+',
             '| Tytul  |',
-            '|a b     |',
-            '|      Ja|',
+            '|        |',
+            '|   ab   |',
+            '+--------+',
         ]);
     });
 
-    it('keeps an escaped marker as text', () => {
-        expect(renderLetter('\\>> strzalka', 'none', 20).lines).toEqual(['>> strzalka']);
+    it('still right-aligns a line starting with >, including its wrapped part', () => {
+        expect(renderLetter(`>${text}`, 'none', 13, 'left').lines).toEqual(['  aaa bbb ccc', '      ddd eee']);
     });
 
-    it('treats a line with only a marker as blank', () => {
-        expect(renderLetter('a\n>\nb', 'none', 10).lines).toEqual(['a', '', 'b']);
-    });
-});
-
-describe('setLineAlignment', () => {
-    it('adds, replaces and removes the marker', () => {
-        expect(setLineAlignment('Ala', 'right')).toBe('>Ala');
-        expect(setLineAlignment('>Ala', 'center')).toBe('^Ala');
-        expect(setLineAlignment('  < Ala', 'justify')).toBe('  Ala');
-        expect(setLineAlignment('Ala', 'justify')).toBe('Ala');
+    it('leaves raw letters untouched', () => {
+        expect(renderLetter(' a  b', 'raw', 20, 'center').lines).toEqual([' a  b']);
     });
 });
 

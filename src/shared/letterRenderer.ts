@@ -21,48 +21,15 @@ function splitLongWord(word: string, width: number): string[] {
     return parts;
 }
 
-export type LetterAlignment = "justify" | "left" | "center" | "right";
+/** How the body text sits inside the template. */
+export const LETTER_ALIGNMENTS = ["justify", "left", "center", "right"] as const;
 
-/**
- * A body line starting with one of these characters is aligned that way
- * (the character itself is not sent); lines without a marker are justified.
- * A backslash before the marker keeps it as text.
- */
-export const LETTER_ALIGNMENT_MARKERS: Readonly<Record<LetterAlignment, string>> = {
-    justify: "=",
-    left: "<",
-    center: "^",
-    right: ">",
-};
+export type LetterAlignment = (typeof LETTER_ALIGNMENTS)[number];
 
-const MARKER_ALIGNMENTS: Readonly<Record<string, LetterAlignment>> = {
-    "=": "justify",
-    "<": "left",
-    "^": "center",
-    ">": "right",
-};
+export const DEFAULT_LETTER_ALIGNMENT: LetterAlignment = "justify";
 
-const DEFAULT_ALIGNMENT: LetterAlignment = "justify";
-
-/** The alignment a line asks for and its text without the marker. */
-export function parseAlignedLine(line: string): { alignment: LetterAlignment; text: string } {
-    const marker = line.charAt(0);
-    const alignment = MARKER_ALIGNMENTS[marker];
-    if (alignment) {
-        return { alignment, text: line.slice(1).trim() };
-    }
-    if (marker === "\\" && MARKER_ALIGNMENTS[line.charAt(1)]) {
-        return { alignment: DEFAULT_ALIGNMENT, text: line.slice(1) };
-    }
-    return { alignment: DEFAULT_ALIGNMENT, text: line };
-}
-
-/** `line` with its alignment marker set to `alignment` (none for the default). */
-export function setLineAlignment(line: string, alignment: LetterAlignment): string {
-    const leading = line.match(/^\s*/)?.[0] ?? "";
-    const rest = line.slice(leading.length);
-    const text = MARKER_ALIGNMENTS[rest.charAt(0)] ? rest.slice(1).replace(/^\s+/, "") : rest;
-    return alignment === DEFAULT_ALIGNMENT ? `${leading}${text}` : `${leading}${LETTER_ALIGNMENT_MARKERS[alignment]}${text}`;
+export function isLetterAlignment(value: unknown): value is LetterAlignment {
+    return typeof value === "string" && (LETTER_ALIGNMENTS as readonly string[]).includes(value);
 }
 
 function justifyWords(words: string[], lettersLength: number, width: number): string {
@@ -143,20 +110,22 @@ function wrapWords(normalizedLine: string, width: number): string[][] {
     return groups;
 }
 
-function wrapLine(line: string, width: number): string[] {
-    const { alignment, text } = parseAlignedLine(line);
-    const groups = wrapWords(normalizeLine(text), width);
+function wrapLine(line: string, width: number, letterAlignment: LetterAlignment): string[] {
+    // A line starting with `>` is right-aligned whatever the letter alignment
+    const alignRight = line.startsWith(">");
+    const alignment = alignRight ? "right" : letterAlignment;
+    const groups = wrapWords(normalizeLine(alignRight ? line.slice(1) : line), width);
     return groups.map((words, index) => alignWords(words, width, alignment, index === groups.length - 1));
 }
 
-function formatContent(content: string, width: number): string[] {
+function formatContent(content: string, width: number, alignment: LetterAlignment): string[] {
     const rawLines = content.split(/\r?\n/);
     const result: string[] = [];
     let pendingBlankLine = false;
     let hasContent = false;
 
     rawLines.forEach(line => {
-        const wrapped = wrapLine(normalizeLine(line), width);
+        const wrapped = wrapLine(normalizeLine(line), width, alignment);
         if (!wrapped.length) {
             if (hasContent) {
                 pendingBlankLine = true;
@@ -335,12 +304,17 @@ export interface LetterRenderResult {
     hasContent: boolean;
 }
 
-export function renderLetterLayout(content: string, layout: LetterLayout, lineWidth: number = DEFAULT_LINE_WIDTH): LetterRenderResult {
+export function renderLetterLayout(
+    content: string,
+    layout: LetterLayout,
+    lineWidth: number = DEFAULT_LINE_WIDTH,
+    alignment: LetterAlignment = DEFAULT_LETTER_ALIGNMENT,
+): LetterRenderResult {
     const bodyWidth = getLayoutBodyWidth(layout, lineWidth);
     // A raw layout keeps whitespace exactly as typed
     const baseLines = layout.raw
         ? content.split(/\r?\n/)
-        : formatContent(content, bodyWidth);
+        : formatContent(content, bodyWidth, alignment);
     const bodySource = baseLines.length ? baseLines : [""];
     const lines = [
         ...layout.header.map(line => expandFillLine(line, bodyWidth)),
@@ -351,6 +325,11 @@ export function renderLetterLayout(content: string, layout: LetterLayout, lineWi
     return { lines, hasContent };
 }
 
-export function renderLetter(content: string, template: LetterTemplate, lineWidth: number = DEFAULT_LINE_WIDTH): LetterRenderResult {
-    return renderLetterLayout(content, BUILTIN_LETTER_LAYOUTS[template], lineWidth);
+export function renderLetter(
+    content: string,
+    template: LetterTemplate,
+    lineWidth: number = DEFAULT_LINE_WIDTH,
+    alignment: LetterAlignment = DEFAULT_LETTER_ALIGNMENT,
+): LetterRenderResult {
+    return renderLetterLayout(content, BUILTIN_LETTER_LAYOUTS[template], lineWidth, alignment);
 }

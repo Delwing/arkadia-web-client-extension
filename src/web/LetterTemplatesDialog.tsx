@@ -12,12 +12,14 @@ import {
     resolveLetterTemplate,
     saveCustomLetterTemplates,
 } from '@modules/core/letterTemplates.ts';
-import { renderLetterLayout } from '@shared/letterRenderer.ts';
+import { renderLetterLayout, type LetterAlignment } from '@shared/letterRenderer.ts';
 
 const SAMPLE_CONTENT = 'Drogi przyjacielu,\n\nto jest przykladowa tresc listu, ktora pokazuje, jak szablon otacza tekst i zawija dluzsze linie. Kazda linia tresci dostaje kolejny poczatek i koniec.\n\n>Twoj druh';
 
 interface LetterTemplatesDialogProps {
     lineWidth: number;
+    /** Alignment chosen in the composer, used by the preview. */
+    alignment?: LetterAlignment;
     /** Template to open for editing. */
     initialId?: string;
     onClose: () => void;
@@ -25,7 +27,7 @@ interface LetterTemplatesDialogProps {
     onAdded?: (value: LetterTemplateId) => void;
 }
 
-const LetterTemplatesDialog: React.FC<LetterTemplatesDialogProps> = ({ lineWidth, initialId, onClose, onAdded }) => {
+const LetterTemplatesDialog: React.FC<LetterTemplatesDialogProps> = ({ lineWidth, alignment, initialId, onClose, onAdded }) => {
     const [templates, setTemplates] = useState<CustomLetterTemplate[]>(loadCustomLetterTemplates);
     const [selectedId, setSelectedId] = useState<string | null>(() => {
         const list = loadCustomLetterTemplates();
@@ -69,8 +71,8 @@ const LetterTemplatesDialog: React.FC<LetterTemplatesDialogProps> = ({ lineWidth
     };
 
     const preview = useMemo(
-        () => (selected ? renderLetterLayout(SAMPLE_CONTENT, customTemplateLayout(selected), lineWidth).lines.join('\n') : ''),
-        [selected, lineWidth],
+        () => (selected ? renderLetterLayout(SAMPLE_CONTENT, customTemplateLayout(selected), lineWidth, alignment).lines.join('\n') : ''),
+        [selected, lineWidth, alignment],
     );
 
     return (
