@@ -127,7 +127,7 @@ export const deviceViewSettingsKeys = [
 export const chromeSettingsKeys = [
     'contentFontSize', 'mapScale', 'outputMaxElements',
     'objectsFontSize', 'buttonSize', 'showButtons', 'showVoiceButton', 'tabCompletionHint', 'tabCompletionMode', 'mapHeight', 'mapPosition',
-    'footerMode', 'footerComponents', 'footerButtons', 'footerUrgentChipsFirst', 'mobileFooterCompact', 'mobileFooterExpand', 'keepMultibindsVisible', 'multibindKeyHints', 'splitViewHeight',
+    'footerMode', 'footerComponents', 'footerButtons', 'footerUrgentChipsFirst', 'footerBindsScale', 'footerStatusScale', 'mobileFooterCompact', 'mobileFooterExpand', 'keepMultibindsVisible', 'multibindKeyHints', 'splitViewHeight',
     'showCombatTimer', 'showTransportLabel', 'objectListBackgroundColor',
     'objectListBackgroundAlpha', 'alwaysVisibleBars', 'barOrder',
     'ttsEnabled', 'ttsVoice', 'ttsRate', 'ttsPitch', 'ttsVolume', 'ttsInterrupt',

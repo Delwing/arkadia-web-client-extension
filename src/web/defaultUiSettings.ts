@@ -58,6 +58,8 @@ export const defaultChromeSettings: ChromeSettings = {
     footerComponents: defaultFooterComponents,
     footerButtons: [],
     footerUrgentChipsFirst: false,
+    footerBindsScale: 1,
+    footerStatusScale: 1,
     mobileFooterCompact: true,
     mobileFooterExpand: 'toggle',
     keepMultibindsVisible: false,

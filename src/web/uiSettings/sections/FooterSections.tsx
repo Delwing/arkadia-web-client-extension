@@ -3,7 +3,7 @@ import { defaultUiSettings } from "../../defaultUiSettings";
 import BarOrderSettings from "../../options/BarOrderSettings";
 import FooterButtonSettings from "../../options/FooterButtonSettings";
 import FooterComponentSettings from "../../options/FooterComponentSettings";
-import { CheckboxRow, SelectField, SettingsSection } from "../fields";
+import { CheckboxRow, RangeField, SelectField, SettingsSection } from "../fields";
 
 interface FooterSectionsProps {
     draft: UiSettings;
@@ -32,6 +32,31 @@ function FooterSections({ draft, update }: FooterSectionsProps) {
                         />
                     </div>
                 </div>
+            </SettingsSection>
+
+            <SettingsSection title="Rozmiar stopki">
+                <p className="popup-field__hint">
+                    Powiekszenie kazdego paska stopki osobno - rosnie tekst, ikony i wysokosc
+                    razem. 1 to rozmiar domyslny.
+                </p>
+                <RangeField
+                    id="ui-footer-binds-scale"
+                    label="Pasek bindow"
+                    value={draft.footerBindsScale}
+                    min={0.8}
+                    max={2}
+                    step={0.05}
+                    onChange={(n) => update({ footerBindsScale: n })}
+                />
+                <RangeField
+                    id="ui-footer-status-scale"
+                    label="Pasek stanu i plakietki"
+                    value={draft.footerStatusScale}
+                    min={0.8}
+                    max={2}
+                    step={0.05}
+                    onChange={(n) => update({ footerStatusScale: n })}
+                />
             </SettingsSection>
 
             <SettingsSection title="Stopka na telefonie">

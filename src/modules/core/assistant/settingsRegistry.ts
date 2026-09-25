@@ -166,6 +166,8 @@ const CHROME_FIELDS: Record<string, Constraint & { optional?: boolean }> = {
     footerMode: { type: 'number', min: 0, max: 4, integer: true },
     footerComponents: { type: 'complex' },
     footerUrgentChipsFirst: { type: 'boolean', label: 'Pilne plakietki na poczatku stopki' },
+    footerBindsScale: { type: 'number', min: 0.8, max: 2, label: 'Skala paska bindow' },
+    footerStatusScale: { type: 'number', min: 0.8, max: 2, label: 'Skala paska stanu i plakietek' },
     mobileFooterCompact: { type: 'boolean', label: 'Kompaktowa stopka na telefonie' },
     mobileFooterExpand: {
         type: 'enum',
