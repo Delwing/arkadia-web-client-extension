@@ -16,7 +16,19 @@ import { mkdirSync, writeFileSync } from 'node:fs';
  * Set BENCH_CPU=4 to also run under 4x CPU throttling.
  */
 
-type Shell = 'stock' | 'forge';
+/**
+ * What renders the output: the stock page's imperative output (`dom`), the
+ * React prototypes on the same page (`react`, `react-dom`: see
+ * src/web/output/experimental/ReactOutput.tsx), or forge's GameLog.
+ */
+type Variant = 'dom' | 'react' | 'react-dom' | 'forge';
+const VARIANTS: Variant[] = ['dom', 'react', 'react-dom', 'forge'];
+const VARIANT_URL: Record<Variant, string> = {
+    dom: '/',
+    react: '/?output=react',
+    'react-dom': '/?output=react-dom',
+    forge: '/?ui=forge',
+};
 
 interface FloodResult {
     lines: number;
@@ -70,14 +82,23 @@ const stripAnsi = (line: string) => line.replace(/\x1b\[[0-9;]*m/g, '');
  */
 type FloodMode = 'socket' | 'render';
 
-async function openShell(page: Page, shell: Shell): Promise<void> {
+async function openVariant(page: Page, variant: Variant, cap: number): Promise<void> {
     await page.setViewportSize({ width: 1400, height: 850 });
-    if (shell === 'stock') {
-        await page.goto('/');
+    // Every variant keeps the same number of lines: the shared device setting.
+    await page.addInitScript((cap) => {
+        try {
+            const raw = localStorage.getItem('uiSettings');
+            const settings = raw ? JSON.parse(raw) : {};
+            settings.outputMaxElements = cap;
+            localStorage.setItem('uiSettings', JSON.stringify(settings));
+        } catch { /* first load seeds the rest */ }
+    }, cap);
+    if (variant !== 'forge') {
+        await page.goto(VARIANT_URL[variant]);
         await ensureGameSocket(page);
         await waitForCommandInput(page);
     } else {
-        await page.goto('/?ui=forge');
+        await page.goto(VARIANT_URL.forge);
         await page.waitForSelector('html[data-shell-ready]', { state: 'attached' });
         await page.locator('.gate__quiet').click();
         await page.waitForFunction(() =>
@@ -151,7 +172,7 @@ async function flood(page: Page, cdp: CDPSession, perChunk: number, chunks: numb
             maxFrameMs: sorted[sorted.length - 1] ?? 0,
             jankFrames: sorted.filter((f) => f > 50).length,
             longTaskMs,
-            outputChildren: output.childElementCount,
+            outputChildren: output.querySelectorAll('.output_msg, :scope > p').length,
             domNodes: document.getElementsByTagName('*').length,
             heapMB: ((performance as any).memory?.usedJSHeapSize ?? 0) / 1048576,
         };
@@ -169,11 +190,16 @@ async function flood(page: Page, cdp: CDPSession, perChunk: number, chunks: numb
     };
 }
 
-async function scrollIntoHistory(page: Page): Promise<void> {
+async function scrollIntoHistory(page: Page, variant: Variant): Promise<void> {
     const output = page.locator('#main_text_output_msg_wrapper');
     const box = await output.boundingBox();
     await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
     for (let i = 0; i < 5; i++) await page.mouse.wheel(0, -600);
+    // The React prototype has no split view: it just stops following the bottom.
+    if (variant === 'react' || variant === 'react-dom') {
+        await page.waitForTimeout(200);
+        return;
+    }
     await page.waitForFunction(() => !document.getElementById('split-bottom')?.classList.contains('split-hidden'));
 }
 
@@ -191,46 +217,48 @@ const SCENARIOS: { name: string; perChunk: number; chunks: number; intervalMs: n
 ];
 
 const CPU_RATES = process.env.BENCH_CPU ? [1, Number(process.env.BENCH_CPU)] : [1];
+const CAPS = process.env.BENCH_CAPS ? process.env.BENCH_CAPS.split(',').map(Number) : [1000, 5000];
 const results: Record<string, Record<string, FloodResult>> = {};
 
 for (const cpu of CPU_RATES) {
-    for (const shell of ['stock', 'forge'] as Shell[]) {
-        test(`output flood — ${shell}, cpu x${cpu}`, async ({ page }) => {
-            await openShell(page, shell);
-            const cdp = await page.context().newCDPSession(page);
-            await cdp.send('Performance.enable');
-            if (cpu > 1) await cdp.send('Emulation.setCPUThrottlingRate', { rate: cpu });
+    for (const cap of CAPS) {
+        for (const variant of VARIANTS) {
+            test(`output flood — ${variant}, cap ${cap}, cpu x${cpu}`, async ({ page }) => {
+                await openVariant(page, variant, cap);
+                const cdp = await page.context().newCDPSession(page);
+                await cdp.send('Performance.enable');
+                if (cpu > 1) await cdp.send('Emulation.setCPUThrottlingRate', { rate: cpu });
 
-            // Warm up: fill the buffer to its cap so every scenario also pays for trimming.
-            await flood(page, cdp, 100, 12, 0, 0);
+                // Warm up: fill the output to its cap (one socket frame per line, so
+                // one output line each) so every scenario also pays for trimming.
+                await flood(page, cdp, 1, cap + 50, 0, 0);
 
-            let offset = 10_000;
-            for (const s of SCENARIOS) {
-                // Render-only emits on the transport, reached through the `window.client`
-                // global — which only the stock shell sets.
-                if (s.mode === 'render' && !(await page.evaluate(() => Boolean((window as any).client)))) continue;
-                if (s.split) await scrollIntoHistory(page);
-                const r = await flood(page, cdp, s.perChunk, s.chunks, s.intervalMs, offset, s.mode);
-                offset += r.lines;
-                const key = `${s.name} | cpu x${cpu}`;
-                (results[key] ??= {})[shell] = r;
-                if (s.split) {
-                    await page.keyboard.press('End').catch(() => undefined);
-                    await page.evaluate(() => {
-                        const o = document.getElementById('main_text_output_msg_wrapper')!;
-                        o.scrollTop = o.scrollHeight;
-                    });
+                let offset = 10_000;
+                for (const s of SCENARIOS) {
+                    // Render-only emits on the transport, reached through the `window.client`
+                    // global — which only the stock shell sets.
+                    if (s.mode === 'render' && !(await page.evaluate(() => Boolean((window as any).client)))) continue;
+                    if (s.split) await scrollIntoHistory(page, variant);
+                    const r = await flood(page, cdp, s.perChunk, s.chunks, s.intervalMs, offset, s.mode);
+                    offset += r.lines;
+                    (results[`${s.name} | cap ${cap} | cpu x${cpu}`] ??= {})[variant] = r;
+                    if (s.split) {
+                        await page.evaluate(() => {
+                            const o = document.getElementById('main_text_output_msg_wrapper')!;
+                            o.scrollTop = o.scrollHeight;
+                        });
+                    }
+                    await page.waitForTimeout(300);
                 }
-                await page.waitForTimeout(300);
-            }
-        });
+            });
+        }
     }
 }
 
 // How handling one socket frame scales with its line count (stock shell; the
 // client pipeline is shared). Linear would keep ms/line flat.
 test('client pipeline scaling', async ({ page }) => {
-    await openShell(page, 'stock');
+    await openVariant(page, 'dom', 1000);
     const cdp = await page.context().newCDPSession(page);
     await cdp.send('Performance.enable');
     const rows: Record<string, number> = {};
@@ -253,10 +281,10 @@ test.afterAll(() => {
     for (const [scenario, byShell] of Object.entries(results)) {
         if (scenario === 'client pipeline scaling') continue;
         console.log(`\n${scenario}`);
-        console.log(['metric'.padEnd(15), 'stock'.padStart(10), 'forge'.padStart(10)].join(' '));
+        console.log(['metric'.padEnd(15), ...VARIANTS.map((v) => v.padStart(10))].join(' '));
         for (const c of cols) {
             const f = (v?: number) => (v === undefined ? '-' : v.toFixed(c.endsWith('Count') || c === 'jankFrames' || c === 'outputChildren' || c === 'domNodes' ? 0 : 1)).padStart(10);
-            console.log([c.padEnd(15), f(byShell.stock?.[c]), f(byShell.forge?.[c])].join(' '));
+            console.log([c.padEnd(15), ...VARIANTS.map((v) => f(byShell[v]?.[c]))].join(' '));
         }
     }
 });

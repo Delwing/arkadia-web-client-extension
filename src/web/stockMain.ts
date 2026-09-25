@@ -71,6 +71,7 @@ import {installContentWidthMeasurer} from "./contentWidthMeasurer";
 import {bootstrapGameClient} from "./clientBootstrap";
 import {initTextToSpeech} from "./voice/textToSpeech.ts";
 import {whenDocumentReady} from "./shell/documentReady";
+import {mountReactOutput} from "./output/experimental/ReactOutput";
 import {switchShell} from "./shell/uiShell";
 import {initDockArrangement} from "./layout/utils/dockArrangement";
 // The Logi window: mounts itself into #logs-modal and registers its menu entry.
@@ -217,7 +218,17 @@ onRenderSettingsChange((render) => {
 
 // Scroll/wheel/resize/drag split-view detection, trimming, and sticky-mirror
 // live in the shared engine (also used by forge-ui).
-const outputMessageHandler = setupOutputMessageHandler(mudClient, {
+// EXPERIMENT: `?output=react|react-dom` renders the output as a React component
+// instead (see output/experimental/ReactOutput.tsx and e2e/output-flood.bench.ts).
+const experimentalOutput = new URLSearchParams(window.location.search).get('output');
+const outputMessageHandler = experimentalOutput === 'react' || experimentalOutput === 'react-dom'
+    ? mountReactOutput(mudClient, {
+        outputWrapper,
+        before: splitBottom,
+        mode: experimentalOutput,
+        maxElements: () => getDeviceViewSettings().outputMaxElements,
+    })
+    : setupOutputMessageHandler(mudClient, {
     outputWrapper,
     splitBottom,
     splitHandle,
