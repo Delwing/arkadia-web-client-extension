@@ -1,6 +1,7 @@
 import type { FirebaseApp } from 'firebase/app';
 import type { Auth } from 'firebase/auth';
 import type { Firestore } from 'firebase/firestore';
+import type { Database } from 'firebase/database';
 import type { FirebaseUserConfig } from './firebaseTypes';
 import { loadFirebaseConfig, FIREBASE_ERRORS } from './firebaseTypes';
 
@@ -87,6 +88,22 @@ export async function initializeFirebase(config?: FirebaseUserConfig): Promise<F
     })();
 
     return initPromise;
+}
+
+/**
+ * The Realtime Database, loaded on first use: only the session handoff needs it.
+ *
+ * The URL comes from the saved config, then `VITE_FIREBASE_DATABASE_URL`, then the
+ * SDK's default for the project (`{projectId}-default-rtdb.firebaseio.com`), which
+ * is right only for a database created in us-central1.
+ */
+export async function getRealtimeDatabase(): Promise<{ api: typeof import('firebase/database'); db: Database } | null> {
+    const app = firebaseApp;
+    if (!app) return null;
+    const api = await import('firebase/database');
+    const url = loadFirebaseConfig()?.databaseURL
+        ?? (import.meta.env.VITE_FIREBASE_DATABASE_URL as string | undefined);
+    return { api, db: url ? api.getDatabase(app, url) : api.getDatabase(app) };
 }
 
 // Cleanup Firebase (for testing or config change)

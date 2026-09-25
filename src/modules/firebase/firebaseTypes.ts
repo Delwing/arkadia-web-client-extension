@@ -7,6 +7,8 @@ export interface FirebaseUserConfig {
     messagingSenderId?: string;
     appId: string;
     measurementId?: string;
+    /** Realtime Database URL; the SDK's `{projectId}-default-rtdb` guess when absent. */
+    databaseURL?: string;
 }
 
 // Categories, their display names, defaults and storage mappings all derive
