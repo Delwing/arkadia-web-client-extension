@@ -200,4 +200,29 @@ test.describe('Split view', () => {
         // Split view should still be active since we're scrolled up
         expect(await hasSplitHidden(page)).toBe(false);
     });
+
+    test('clicking an output link in the history view keeps split view open', async ({page}) => {
+        await pushManyLines(page, 80);
+        await page.locator('#message-input').focus();
+
+        // A clickable output span, like the ones hyperlinks render into.
+        await page.evaluate((sel) => {
+            const wrapper = document.querySelector(sel) as HTMLElement;
+            const link = document.createElement('span');
+            link.id = 'e2e-history-link';
+            link.textContent = 'history link';
+            link.setAttribute('data-output-clickable', 'true');
+            wrapper.insertBefore(link, wrapper.firstChild);
+        }, OUTPUT_SELECTOR);
+
+        await scrollOutputToTop(page);
+        await page.waitForTimeout(200);
+        await page.locator('#e2e-history-link').click();
+        await page.waitForTimeout(400);
+
+        expect(await hasSplitHidden(page)).toBe(false);
+        const scrollTop = await page.evaluate((sel) => (document.querySelector(sel) as HTMLElement).scrollTop, OUTPUT_SELECTOR);
+        expect(scrollTop).toBeLessThan(50);
+        await expect(page.locator('#message-input')).toBeFocused();
+    });
 });

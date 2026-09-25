@@ -157,8 +157,13 @@ export class CommandInputController {
         if (this.deps.historyDownButton) this.bindHistoryButton(this.deps.historyDownButton, 'down', o);
 
         // Focus handler: scroll to bottom and select text
+        // Focus given back after an output link click (see `main.ts`) is marked
+        // with `data-keep-scroll`: the user is reading the scrollback, so leave
+        // the split view open instead of jumping to the bottom.
         this.input.addEventListener('focus', () => {
-            this.deps.outputWrapper.scrollTop = this.deps.outputWrapper.scrollHeight;
+            if (!this.input.hasAttribute('data-keep-scroll')) {
+                this.deps.outputWrapper.scrollTop = this.deps.outputWrapper.scrollHeight;
+            }
             if (this.suppressFocusSelectAll) return;
             // select() focuses too: if focus has moved on meanwhile (a window
             // opening focuses its own field), leave it there.
