@@ -93,9 +93,11 @@ test('colour action sets a background with an empty text swatch', async ({page})
 
     await background.locator('input[type="color"]').fill('#004080');
     await expect(background, 'picking a colour fills the swatch').not.toHaveClass(/is-empty/);
-    await text.hover();
+    const bgSwatch = background.locator('input[type="color"]');
+    const before = await bgSwatch.boundingBox();
     await text.getByTitle('Bez koloru').click();
     await expect(text, 'x clears the text colour').toHaveClass(/is-empty/);
+    expect((await bgSwatch.boundingBox())?.x, 'clearing a colour does not shift the row').toBe(before?.x);
 
     await modal.getByTitle('Linia do testu').fill('Widzisz ognisty smok.');
     await expect(modal.locator('.automation-out__match'), 'preview shows the background')

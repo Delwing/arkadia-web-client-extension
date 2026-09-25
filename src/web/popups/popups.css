@@ -991,7 +991,8 @@ select.popup-input.popup-input--control {
 .color-slot.is-empty > .popup-color::-moz-color-swatch {
   visibility: hidden;
 }
-.color-slot__clear.popup-btn {
+.color-slot__clear {
+  flex-shrink: 0;
   width: var(--ui-ctrl, 28px);
   height: var(--ui-ctrl, 28px);
 }
