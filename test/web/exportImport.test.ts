@@ -1219,3 +1219,25 @@ describe('killCounts import', () => {
         expect(order).toEqual(['migrate:Alice', 'migrate:Bob', 'import']);
     });
 });
+
+describe('legacy backup restore', () => {
+    it('migrates each character\'s pre-IndexedDB kill totals before the file replaces them', async () => {
+        const order: string[] = [];
+        jest.mocked(migrateFromLocalStorage).mockImplementation(async (character: string) => {
+            order.push(`migrate:${character}:${localStorage.getItem(`${character}:kill_counter`)}`);
+        });
+        localStorage.setItem('Alice:kill_counter', JSON.stringify({ orka: 3 }));
+
+        await restoreBackup({
+            version: 1,
+            createdAt: '2025-01-01T00:00:00.000Z',
+            characters: ['Alice'],
+            localStorage: { global: {}, characters: { Alice: { 'Alice:kill_counter': JSON.stringify({ orka: 9 }) } } },
+            indexedDB: { multibinds: [], visitedRooms: [], killRecords: [{ id: '1', character: 'Bob', mob: 'elfa', date: '2026/9/1', count: 1 }] },
+        });
+
+        // Alice migrated while her local totals were still there; Bob too
+        expect(order).toEqual(['migrate:Alice:{"orka":3}', 'migrate:Bob:null']);
+        expect(localStorage.getItem('Alice:kill_counter')).toBe(JSON.stringify({ orka: 9 }));
+    });
+});

@@ -458,6 +458,15 @@ export interface ImportResult {
 
 /** Restores a legacy (version 1) backup file. */
 export async function applyImportedData(payload: ExportPayload): Promise<ImportResult> {
+    // Move pre-IndexedDB kill totals in first: the file's kill_counter aggregate
+    // replaces them below, and a later migration would count it a second time.
+    const killCharacters = new Set([
+        ...Object.keys(payload.localStorage?.characters ?? {}),
+        ...(payload.indexedDB.killRecords ?? []).map(r => r.character),
+    ]);
+    for (const character of killCharacters) {
+        await migrateFromLocalStorage(character);
+    }
     applyLocalStorageImport(payload.localStorage);
     await replaceMultibinds(payload.indexedDB.multibinds ?? []);
     await importRecordings(payload.indexedDB.recordings ?? []);

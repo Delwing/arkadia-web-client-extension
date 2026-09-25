@@ -464,7 +464,7 @@ Each stage is shippable on its own and keeps the app working.
 | 3 | Sync engine v2 | `SyncTransport` on Firestore: `log` + `base`, outbox, batching, one listener with cursors and detach on hide, watching mode, compaction, encryption, usage counters — behind a flag | Two-device e2e (section 15) converges with the flag on; measured ops per session fit section 9.3 |
 | 4 | Types on v2 | Done within stages 2 and 3: every type has an adapter and runs on v2 | Each type round-trips through v2 with its rule tests |
 | 5a | Switch to v2 | v2 on by default, per-device v1 migration, `syncV2Since` marker and notices, restore through sync, settings tab on v2 | Done |
-| 5b | Remove v1 (after one month) | Lock v1 writes in the rules, delete v1 engine, listener, checksums, conflict UI and the migration step | v1 code deleted |
+| 5b | Remove v1 (after one month) | Lock v1 writes in the rules, delete v1 engine, listener, checksums, conflict UI and the migration step. **Keep** reading backup files of both formats (`restoreBackup`, `applyImportedData` for version 1) and the category export/import they use | v1 sync code deleted; old backups still restore |
 
 ## 14. Decisions
 
