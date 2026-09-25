@@ -21,12 +21,16 @@ import { mkdirSync, writeFileSync } from 'node:fs';
  * React prototypes on the same page (`react`, `react-dom`: see
  * src/web/output/experimental/ReactOutput.tsx), or forge's GameLog.
  */
-type Variant = 'dom' | 'react' | 'react-dom' | 'forge';
-const VARIANTS: Variant[] = ['dom', 'react', 'react-dom', 'forge'];
+type Variant = 'dom' | 'react' | 'react-dom' | 'xterm' | 'xterm-webgl' | 'forge';
+const VARIANTS: Variant[] = process.env.BENCH_VARIANTS
+    ? process.env.BENCH_VARIANTS.split(',') as Variant[]
+    : ['dom', 'react', 'react-dom', 'xterm', 'xterm-webgl', 'forge'];
 const VARIANT_URL: Record<Variant, string> = {
     dom: '/',
     react: '/?output=react',
     'react-dom': '/?output=react-dom',
+    xterm: '/?output=xterm',
+    'xterm-webgl': '/?output=xterm-webgl',
     forge: '/?ui=forge',
 };
 
@@ -152,6 +156,8 @@ async function flood(page: Page, cdp: CDPSession, perChunk: number, chunks: numb
             handleMs += performance.now() - t0;
             if (intervalMs > 0) await new Promise((r) => setTimeout(r, intervalMs));
         }
+        // xterm parses writes asynchronously: wait until it has taken them all.
+        if (typeof w.__outputFlushed === 'function') await w.__outputFlushed();
         // The frame after the last push has painted it.
         await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
         const toPaintMs = performance.now() - start;
@@ -172,7 +178,9 @@ async function flood(page: Page, cdp: CDPSession, perChunk: number, chunks: numb
             maxFrameMs: sorted[sorted.length - 1] ?? 0,
             jankFrames: sorted.filter((f) => f > 50).length,
             longTaskMs,
-            outputChildren: output.querySelectorAll('.output_msg, :scope > p').length,
+            outputChildren: typeof w.__outputLineCount === 'function'
+                ? w.__outputLineCount()
+                : output.querySelectorAll('.output_msg, :scope > p').length,
             domNodes: document.getElementsByTagName('*').length,
             heapMB: ((performance as any).memory?.usedJSHeapSize ?? 0) / 1048576,
         };
@@ -195,8 +203,8 @@ async function scrollIntoHistory(page: Page, variant: Variant): Promise<void> {
     const box = await output.boundingBox();
     await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
     for (let i = 0; i < 5; i++) await page.mouse.wheel(0, -600);
-    // The React prototype has no split view: it just stops following the bottom.
-    if (variant === 'react' || variant === 'react-dom') {
+    // The React and xterm prototypes have no split view: they just stop following the bottom.
+    if (variant !== 'dom' && variant !== 'forge') {
         await page.waitForTimeout(200);
         return;
     }
@@ -229,9 +237,14 @@ for (const cpu of CPU_RATES) {
                 await cdp.send('Performance.enable');
                 if (cpu > 1) await cdp.send('Emulation.setCPUThrottlingRate', { rate: cpu });
 
-                // Warm up: fill the output to its cap (one socket frame per line, so
-                // one output line each) so every scenario also pays for trimming.
-                await flood(page, cdp, 1, cap + 50, 0, 0);
+                // Warm up: fill the output to its cap so every scenario also pays for
+                // trimming — one line per message, straight to the output where the
+                // page exposes the transport, else one socket frame per line.
+                if (await page.evaluate(() => Boolean((window as any).client))) {
+                    await flood(page, cdp, 500, Math.ceil(cap / 500) + 1, 0, 0, 'render');
+                } else {
+                    await flood(page, cdp, 1, cap + 50, 0, 0);
+                }
 
                 let offset = 10_000;
                 for (const s of SCENARIOS) {

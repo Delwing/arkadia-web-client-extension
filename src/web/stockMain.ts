@@ -72,6 +72,7 @@ import {bootstrapGameClient} from "./clientBootstrap";
 import {initTextToSpeech} from "./voice/textToSpeech.ts";
 import {whenDocumentReady} from "./shell/documentReady";
 import {mountReactOutput} from "./output/experimental/ReactOutput";
+import {lazyOutputHandler} from "./output/experimental/lazyOutputHandler";
 import {switchShell} from "./shell/uiShell";
 import {initDockArrangement} from "./layout/utils/dockArrangement";
 // The Logi window: mounts itself into #logs-modal and registers its menu entry.
@@ -218,8 +219,9 @@ onRenderSettingsChange((render) => {
 
 // Scroll/wheel/resize/drag split-view detection, trimming, and sticky-mirror
 // live in the shared engine (also used by forge-ui).
-// EXPERIMENT: `?output=react|react-dom` renders the output as a React component
-// instead (see output/experimental/ReactOutput.tsx and e2e/output-flood.bench.ts).
+// EXPERIMENT: `?output=react|react-dom` renders the output as a React component,
+// `?output=xterm|xterm-webgl` with xterm.js (see output/experimental/ and
+// e2e/output-flood.bench.ts).
 const experimentalOutput = new URLSearchParams(window.location.search).get('output');
 const outputMessageHandler = experimentalOutput === 'react' || experimentalOutput === 'react-dom'
     ? mountReactOutput(mudClient, {
@@ -228,6 +230,12 @@ const outputMessageHandler = experimentalOutput === 'react' || experimentalOutpu
         mode: experimentalOutput,
         maxElements: () => getDeviceViewSettings().outputMaxElements,
     })
+    : experimentalOutput === 'xterm' || experimentalOutput === 'xterm-webgl'
+    ? lazyOutputHandler(import('./output/experimental/XtermOutput').then(({mountXtermOutput}) => mountXtermOutput(mudClient, {
+        outputWrapper,
+        mode: experimentalOutput,
+        maxElements: () => getDeviceViewSettings().outputMaxElements,
+    })))
     : setupOutputMessageHandler(mudClient, {
     outputWrapper,
     splitBottom,
