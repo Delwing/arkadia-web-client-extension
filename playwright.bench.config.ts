@@ -13,5 +13,7 @@ export default defineConfig({
     workers: 1,
     retries: 0,
     timeout: 5 * 60 * 1000,
+    // A full run (every variant × cap × CPU rate) takes well over the e2e suite's 20 min.
+    globalTimeout: 90 * 60 * 1000,
     reporter: [['list']],
 });
