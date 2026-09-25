@@ -73,6 +73,7 @@ export interface LineSegment {
     /** Part of a match. */
     match?: boolean;
     color?: string;
+    background?: string;
     /** Blinks or pulses in the game window. */
     effect?: boolean;
 }
@@ -128,7 +129,7 @@ export function previewTrigger(text: string, matches: RegExpMatchArray[], macros
             switch (macro.type) {
                 case "uppercase": seg = { ...seg, text: seg.text.toUpperCase() }; break;
                 case "replace": seg = { ...seg, text: macro.to ?? "" }; break;
-                case "color": seg = { ...seg, color: macro.color }; break;
+                case "color": seg = { ...seg, color: macro.color ?? seg.color, background: macro.background ?? seg.background }; break;
                 case "slowBlink":
                 case "rapidBlink":
                 case "dim": seg = { ...seg, effect: true }; break;

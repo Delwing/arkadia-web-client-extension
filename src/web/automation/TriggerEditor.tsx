@@ -167,7 +167,7 @@ export function TriggerEditor({ trigger, onChange, sounds, onRequestSoundUpload,
                                 <span
                                     key={i}
                                     className={`${s.match ? "automation-out__match" : ""}${s.effect ? " is-effect" : ""}`}
-                                    style={s.color ? { color: s.color } : undefined}
+                                    style={s.color || s.background ? { color: s.color, backgroundColor: s.background } : undefined}
                                 >
                                     {s.text}
                                 </span>

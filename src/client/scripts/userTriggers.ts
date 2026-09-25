@@ -13,6 +13,7 @@ export type BuiltInMacroType = 'uppercase' | 'color' | 'replace' | 'beep' | 'mut
 export interface UserMacro {
     type: BuiltInMacroType | string;  // string allows plugin macros like "plugin:..."
     color?: string;  // color: the match's colour; echo: the printed line's, absent = default
+    background?: string;  // color only: the match's background, absent = unchanged
     to?: string;
     command?: string;
     soundKey?: string;
@@ -451,8 +452,10 @@ function applyMacrosToMatch(
                 break;
             case 'color':
                 if (macro.color) {
-                    const color = createColorFormat(macro.color);
-                    line.applyFormat(matchRange, color);
+                    line.applyFormat(matchRange, createColorFormat(macro.color));
+                }
+                if (macro.background) {
+                    line.applyFormat(matchRange, { background: createColorFormat(macro.background).foreground });
                 }
                 break;
             case 'replace':

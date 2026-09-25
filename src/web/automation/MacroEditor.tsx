@@ -122,6 +122,8 @@ export function MacroEditor({
                             ...macro,
                             type: nextType,
                             soundKey: nextType === 'beep' ? macro.soundKey || 'beep' : undefined,
+                            color: nextType === 'color' && macro.color === undefined && macro.background === undefined ? '#ffff00' : macro.color,
+                            background: nextType === 'color' ? macro.background : undefined,
                             scriptId: nextType === 'script' ? macro.scriptId ?? storedScripts()[0]?.id : undefined,
                             groupId: nextType === 'group' ? macro.groupId ?? getAutomationGroups()[0]?.id : undefined,
                             groupState: nextType === 'group' ? macro.groupState ?? 'toggle' : undefined,
@@ -289,6 +291,20 @@ export function MacroEditor({
                             {' '}Glos, tempo i glosnosc ustawisz w Ustawieniach interfejsu → Dzwiek i powiadomienia.
                         </div>
                     </>
+                )}
+                {macro.type === 'color' && (
+                    <div className="trigger-action__pair">
+                        <Check
+                            label="Tekst"
+                            checked={macro.color !== undefined}
+                            onChange={e => onChange({ ...macro, color: e.target.checked ? '#ffff00' : undefined })}
+                        />
+                        <Check
+                            label="Tlo"
+                            checked={macro.background !== undefined}
+                            onChange={e => onChange({ ...macro, background: e.target.checked ? '#800000' : undefined })}
+                        />
+                    </div>
                 )}
                 {macro.type === 'echo' && (
                     <>
@@ -478,13 +494,22 @@ export function MacroEditor({
                     ));
                 })()}
             </div>
-            {(macro.type === 'color' || (macro.type === 'echo' && macro.color)) && (
+            {(macro.type === 'color' || macro.type === 'echo') && macro.color !== undefined && (
                 <input
                     type="color"
                     className="trigger-action__color"
                     value={macro.color || '#ffffff'}
                     onChange={e => onChange({ ...macro, color: e.target.value })}
-                    title="Kolor"
+                    title="Kolor tekstu"
+                />
+            )}
+            {macro.type === 'color' && macro.background !== undefined && (
+                <input
+                    type="color"
+                    className="trigger-action__color"
+                    value={macro.background || '#000000'}
+                    onChange={e => onChange({ ...macro, background: e.target.value })}
+                    title="Kolor tla"
                 />
             )}
             {macro.type === 'replace' && (

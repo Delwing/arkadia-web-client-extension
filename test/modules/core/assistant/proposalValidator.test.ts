@@ -531,6 +531,20 @@ describe('trigger proposals - pattern', () => {
         }))).toEqual(['invalidColor']);
     });
 
+    it('accepts a background colour for the color macro, with or without a text colour', () => {
+        const bgOnly = validateProposal({
+            kind: 'trigger', pattern: 'abc', macros: [{ type: 'color', background: '#800000' }],
+        });
+        expect(errorCodes(bgOnly)).toEqual([]);
+        const both = validateProposal({
+            kind: 'trigger', pattern: 'abc', macros: [{ type: 'color', color: '#ffff00', background: '#800000' }],
+        });
+        expect(errorCodes(both)).toEqual([]);
+        expect(errorCodes(validateProposal({
+            kind: 'trigger', pattern: 'abc', macros: [{ type: 'color', background: 'czerwony' }],
+        }))).toEqual(['invalidColor']);
+    });
+
     it('allows an empty replacement for the replace macro', () => {
         expect(validateProposal({
             kind: 'trigger', pattern: 'spam', macros: [{ type: 'replace', to: '' }],

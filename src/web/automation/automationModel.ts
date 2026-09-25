@@ -411,7 +411,7 @@ export function actionShort(m: UserMacro, pluginLabel?: (type: string) => string
     switch (m.type) {
         case "command": return m.command?.trim() || "komenda";
         case "uppercase": return "wielkie litery";
-        case "color": return "koloruj";
+        case "color": return m.background ? (m.color ? "koloruj tekst i tlo" : "koloruj tlo") : "koloruj";
         case "replace": return m.to ? `zamien na "${m.to}"` : "usun tekst";
         case "wrap": return "otocz";
         case "beep": return "dzwiek";

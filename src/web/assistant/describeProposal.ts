@@ -77,9 +77,10 @@ const MACRO_LABELS: Record<string, string> = {
     echo: 'wypisz tekst',
 };
 
-function describeMacro(macro: { type: string; command?: string; color?: string; to?: string; message?: string; soundKey?: string }): string {
+function describeMacro(macro: { type: string; command?: string; color?: string; background?: string; to?: string; message?: string; soundKey?: string }): string {
     const label = MACRO_LABELS[macro.type] ?? macro.type;
-    const detail = macro.command ?? macro.color ?? macro.to ?? macro.message ?? macro.soundKey;
+    const colors = [macro.color, macro.background && `tlo ${macro.background}`].filter(Boolean).join(', ');
+    const detail = macro.command ?? (colors || undefined) ?? macro.to ?? macro.message ?? macro.soundKey;
     return detail ? `${label}: ${detail}` : label;
 }
 

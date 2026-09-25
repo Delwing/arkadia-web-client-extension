@@ -899,12 +899,17 @@ function validateMacro(raw: unknown, index: number, triggerType: 'pattern' | 'ev
 
     switch (type) {
         case 'color': {
-            const color = requireString('color', 'missingMacroColor', 'Makro "color" wymaga pola "color".');
-            if (color !== undefined) {
-                if (!HEX_COLOR.test(color)) {
-                    issues.push(err('invalidColor', `${path}.color`, `Kolor "${color}" nie jest w formacie "#rrggbb".`));
+            if (raw.color === undefined && raw.background === undefined) {
+                issues.push(err('missingMacroColor', `${path}.color`, 'Makro "color" wymaga pola "color" (kolor tekstu) lub "background" (kolor tla).'));
+                break;
+            }
+            for (const field of ['color', 'background'] as const) {
+                const value = raw[field];
+                if (value === undefined) continue;
+                if (typeof value !== 'string' || !HEX_COLOR.test(value)) {
+                    issues.push(err('invalidColor', `${path}.${field}`, `Kolor "${String(value)}" nie jest w formacie "#rrggbb".`));
                 } else {
-                    macro.color = color;
+                    macro[field] = value;
                 }
             }
             break;

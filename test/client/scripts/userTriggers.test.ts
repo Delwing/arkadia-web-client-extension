@@ -70,6 +70,26 @@ describe('userTriggers', () => {
     expect(fooSegment?.state?.foreground).toBeDefined();
   });
 
+  test('color applies background alone or together with foreground', () => {
+    const client = new FakeClient();
+    initUserTriggers((client as unknown) as any);
+    const list: UserTrigger[] = [
+      { pattern: 'foo', macros: [{ type: 'color', background: '#800000' }] },
+      { pattern: 'baz', macros: [{ type: 'color', color: '#ffff00', background: '#000080' }] },
+    ];
+    globalStorage.set('triggers', list);
+    const result = client.Triggers.parseLine(new AnsiAwareBuffer('bar foo baz'), '');
+    const segments = result?.getSegments() ?? [];
+
+    const foo = segments.find(seg => seg.text === 'foo');
+    expect(foo?.state?.background).toEqual({ space: 'hex', color: '#800000' });
+    expect(foo?.state?.foreground).toBeUndefined();
+
+    const baz = segments.find(seg => seg.text === 'baz');
+    expect(baz?.state?.background).toEqual({ space: 'hex', color: '#000080' });
+    expect(baz?.state?.foreground).toEqual({ space: 'hex', color: '#ffff00' });
+  });
+
   test('replace uses pattern match', () => {
     const client = new FakeClient();
     initUserTriggers((client as unknown) as any);
