@@ -2,8 +2,8 @@
  * Unit tests for core export/import logic in src/web/options/exportUtils.ts
  *
  * Covers: parseCharacterStorageKey, isExcludedLocalStorageKey, collectCharacters,
- * exportLocalStorage, applyLocalStorageImport, validatePayload,
- * exportCategory, importCategory round-trips.
+ * applyLocalStorageImport, validatePayload, exportCategory, importCategory
+ * round-trips, and backup files (buildBackup / restoreBackup).
  */
 
 // Mock IndexedDB-dependent and external modules before importing exportUtils
@@ -21,6 +21,7 @@ vi.mock('@web/options/locationNotesStorage', () => ({
 vi.mock('@client/scripts/killLifetimeStorage.ts', () => ({
     exportAllKillRecords: jest.fn().mockResolvedValue([]),
     importAllKillRecords: jest.fn().mockResolvedValue(undefined),
+    migrateFromLocalStorage: jest.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('@client/scripts/profession', () => ({
@@ -51,41 +52,25 @@ import {
     parseCharacterStorageKey,
     isExcludedLocalStorageKey,
     collectCharacters,
-    exportLocalStorage,
     applyLocalStorageImport,
     validatePayload,
     exportCategory,
     importCategory,
     mergePerCharacterEnvelopes,
-    DEFAULT_EXPORT_OPTIONS,
-    type ExportOptions,
+    buildBackup,
+    isBackupPayload,
+    isRestorableBackup,
+    restoreBackup,
+    type BackupPayload,
 } from '@web/options/exportUtils';
 import { characterStorage, globalStorage } from '@modules/core/storage';
 import { SYNC_CATEGORIES } from '@modules/firebase/categoryRegistry';
+import { saveImportedDevice, shouldApplyDeviceSettings, triggerSettingsReload } from '@modules/device';
+import { importAllKillRecords, migrateFromLocalStorage } from '@client/scripts/killLifetimeStorage.ts';
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-function allOptionsOff(): ExportOptions {
-    return {
-        uiSettings: false,
-        binds: false,
-        shortcuts: false,
-        characterSettings: false,
-        triggers: false,
-        aliases: false,
-        buttons: false,
-        radial: false,
-        scripts: false,
-        multibinds: false,
-        recordings: false,
-        visitedRooms: false,
-        locationNotes: false,
-        peopleEdits: false,
-        knowledge: false,
-    };
-}
 
 // ---------------------------------------------------------------------------
 // parseCharacterStorageKey
@@ -266,142 +251,138 @@ describe('collectCharacters', () => {
 });
 
 // ---------------------------------------------------------------------------
-// exportLocalStorage
+// Backup files
 // ---------------------------------------------------------------------------
 
-describe('exportLocalStorage', () => {
+describe('backup files', () => {
     beforeEach(() => {
+        localStorage.clear();
+        jest.mocked(shouldApplyDeviceSettings).mockReturnValue(false);
+        jest.mocked(saveImportedDevice).mockClear();
+        jest.mocked(triggerSettingsReload).mockClear();
+    });
+
+    afterEach(() => {
         localStorage.clear();
     });
 
-    it('should export known global keys to the global property', () => {
+    it('contains every category that has data, for all characters, with no selection', async () => {
         localStorage.setItem('triggers', JSON.stringify([{ pattern: 'test' }]));
-        const result = exportLocalStorage([], { ...allOptionsOff(), triggers: true });
-        expect(result.global).toHaveProperty('triggers');
-        expect(result.global.triggers).toBe(JSON.stringify([{ pattern: 'test' }]));
+        localStorage.setItem('binds', JSON.stringify({ F1: 'kondycja' }));
+        localStorage.setItem('scripts', JSON.stringify(['https://example.com/plugin.js']));
+        localStorage.setItem('Alice:settings', JSON.stringify({ shortenExits: true }));
+        localStorage.setItem('Bob:settings', JSON.stringify({ shortenExits: false }));
+        localStorage.setItem('Bob:peopleLocalEvents', JSON.stringify([{ id: 1 }]));
+
+        const backup = await buildBackup();
+
+        expect(backup.version).toBe(2);
+        expect(backup.device.sourceDevice.id).toBe('test-device');
+        expect(Object.keys(backup.categories)).toEqual(
+            expect.arrayContaining(['triggers', 'binds', 'scripts', 'characterSettings', 'peopleEdits']),
+        );
+        const characters = JSON.parse(backup.categories.characterSettings!);
+        expect(Object.keys(characters)).toEqual(['Alice', 'Bob']);
+        expect(JSON.parse(backup.categories.scripts!)).toEqual({
+            scripts: JSON.stringify(['https://example.com/plugin.js']),
+        });
     });
 
-    it('should not export unknown/arbitrary global keys', () => {
+    it('never contains excluded or unknown keys', async () => {
+        localStorage.setItem('cachedMapData', 'big');
+        localStorage.setItem('mapperRoomId', '123');
         localStorage.setItem('myArbitraryKey', 'value');
-        const result = exportLocalStorage([], DEFAULT_EXPORT_OPTIONS);
-        expect(result.global).not.toHaveProperty('myArbitraryKey');
+        localStorage.setItem('Alice:herbs_data', 'cached');
+        localStorage.setItem('Alice:settings', JSON.stringify({ shortenExits: true }));
+
+        const json = JSON.stringify(await buildBackup());
+
+        expect(json).not.toContain('cachedMapData');
+        expect(json).not.toContain('mapperRoomId');
+        expect(json).not.toContain('myArbitraryKey');
+        expect(json).not.toContain('herbs_data');
     });
 
-    it('should not export excluded global keys (cachedMapData)', () => {
-        localStorage.setItem('cachedMapData', 'bigdata');
-        const result = exportLocalStorage([], DEFAULT_EXPORT_OPTIONS);
-        expect(result.global).not.toHaveProperty('cachedMapData');
+    it('recognizes current and legacy backup files', async () => {
+        const backup = await buildBackup();
+        expect(isBackupPayload(backup)).toBe(true);
+        expect(isRestorableBackup(backup)).toBe(true);
+
+        const legacy = { version: 1, createdAt: 'x', localStorage: {}, indexedDB: {} };
+        expect(isBackupPayload(legacy)).toBe(false);
+        expect(isRestorableBackup(legacy)).toBe(true);
+
+        expect(isRestorableBackup({ version: 2, createdAt: 'x', categories: {} })).toBe(false);
+        expect(isRestorableBackup({ version: 3, createdAt: 'x', categories: {}, device: { sourceDevice: {} } })).toBe(false);
+        expect(isRestorableBackup(null)).toBe(false);
     });
 
-    it('should export character-scoped keys for selected characters', () => {
-        localStorage.setItem('Alice:settings', JSON.stringify({ theme: 'dark' }));
-        const result = exportLocalStorage(['Alice'], DEFAULT_EXPORT_OPTIONS);
-        expect(result.characters).toHaveProperty('Alice');
-        expect(result.characters.Alice).toHaveProperty('Alice:settings');
+    it('round-trips shared data through a backup', async () => {
+        localStorage.setItem('triggers', JSON.stringify([{ pattern: 'test' }]));
+        localStorage.setItem('Alice:settings', JSON.stringify({ shortenExits: true }));
+        const backup = JSON.parse(JSON.stringify(await buildBackup())) as BackupPayload;
+
+        localStorage.clear();
+        const result = await restoreBackup(backup);
+
+        expect(result.deviceSettingsSavedToImportedList).toBe(false);
+        expect(localStorage.getItem('triggers')).toBe(JSON.stringify([{ pattern: 'test' }]));
+        expect(localStorage.getItem('Alice:settings')).toBe(JSON.stringify({ shortenExits: true }));
     });
 
-    it('should not export character-scoped keys for non-selected characters', () => {
-        localStorage.setItem('Alice:settings', JSON.stringify({}));
-        localStorage.setItem('Bob:settings', JSON.stringify({}));
-        const result = exportLocalStorage(['Alice'], DEFAULT_EXPORT_OPTIONS);
-        expect(result.characters).toHaveProperty('Alice');
-        expect(result.characters).not.toHaveProperty('Bob');
-    });
-
-    it('should exclude excluded character-scoped keys (herbs_data)', () => {
-        localStorage.setItem('Alice:herbs_data', JSON.stringify({}));
-        const result = exportLocalStorage(['Alice'], DEFAULT_EXPORT_OPTIONS);
-        // herbs_data is excluded
-        const aliceEntries = result.characters.Alice ?? {};
-        expect(Object.keys(aliceEntries).some(k => k.includes('herbs_data'))).toBe(false);
-    });
-
-    it('should include peopleLocalEvents when peopleEdits option is true', () => {
-        localStorage.setItem('Alice:peopleLocalEvents', JSON.stringify([]));
-        const result = exportLocalStorage(['Alice'], { ...DEFAULT_EXPORT_OPTIONS, peopleEdits: true });
-        const aliceEntries = result.characters.Alice ?? {};
-        expect(Object.keys(aliceEntries).some(k => k.includes('peopleLocalEvents'))).toBe(true);
-    });
-
-    it('should exclude peopleLocalEvents when peopleEdits option is false', () => {
-        localStorage.setItem('Alice:peopleLocalEvents', JSON.stringify([]));
-        const result = exportLocalStorage(['Alice'], { ...DEFAULT_EXPORT_OPTIONS, peopleEdits: false });
-        const aliceEntries = result.characters.Alice ?? {};
-        expect(Object.keys(aliceEntries).some(k => k.includes('peopleLocalEvents'))).toBe(false);
-    });
-
-    it('should exclude uiSettings when the uiSettings option is false', () => {
+    it('saves device settings from another device to the imported list instead of applying them', async () => {
         localStorage.setItem('uiSettings', JSON.stringify({ theme: 'dark' }));
-        const result = exportLocalStorage([], { ...allOptionsOff(), uiSettings: false });
-        expect(result.global).not.toHaveProperty('uiSettings');
+        localStorage.setItem('desktopButtonSettings', JSON.stringify({ visible: true }));
+        localStorage.setItem('mobileButtonSettings', JSON.stringify({ size: 2, radial: { items: [1] } }));
+        const backup = await buildBackup();
+
+        localStorage.clear();
+        localStorage.setItem('uiSettings', JSON.stringify({ theme: 'light' }));
+        const result = await restoreBackup(backup);
+
+        expect(result.deviceSettingsSavedToImportedList).toBe(true);
+        expect(localStorage.getItem('uiSettings')).toBe(JSON.stringify({ theme: 'light' }));
+        const entry = jest.mocked(saveImportedDevice).mock.calls[0][0];
+        expect(entry.deviceInfo.id).toBe('test-device');
+        expect(entry.settings.uiSettings).toBe(JSON.stringify({ theme: 'dark' }));
+        expect(entry.settings.desktopButtonSettings).toBe(JSON.stringify({ visible: true }));
+        // The radial menu is a shared category but part of mobileButtonSettings locally
+        expect(JSON.parse(entry.settings.mobileButtonSettings!)).toEqual({ size: 2, radial: { items: [1] } });
+        // ...and as a shared category it is still restored here
+        expect(JSON.parse(localStorage.getItem('mobileButtonSettings')!)).toEqual({ radial: { items: [1] } });
+        expect(triggerSettingsReload).not.toHaveBeenCalled();
     });
 
-    it('should include uiSettings when the uiSettings option is true', () => {
+    it('applies device settings from the same device or its sync group', async () => {
+        jest.mocked(shouldApplyDeviceSettings).mockReturnValue(true);
         localStorage.setItem('uiSettings', JSON.stringify({ theme: 'dark' }));
-        const result = exportLocalStorage([], { ...allOptionsOff(), uiSettings: true });
-        expect(result.global).toHaveProperty('uiSettings');
+        const backup = await buildBackup();
+
+        localStorage.clear();
+        const result = await restoreBackup(backup);
+
+        expect(result.deviceSettingsSavedToImportedList).toBe(false);
+        expect(localStorage.getItem('uiSettings')).toBe(JSON.stringify({ theme: 'dark' }));
+        expect(saveImportedDevice).not.toHaveBeenCalled();
+        expect(triggerSettingsReload).toHaveBeenCalled();
     });
 
-    it('should include loggingEnabled only when uiSettings option is true', () => {
-        localStorage.setItem('loggingEnabled', 'true');
-        const withUi = exportLocalStorage([], { ...allOptionsOff(), uiSettings: true });
-        expect(withUi.global).toHaveProperty('loggingEnabled');
-        const withoutUi = exportLocalStorage([], { ...allOptionsOff(), uiSettings: false });
-        expect(withoutUi.global).not.toHaveProperty('loggingEnabled');
-    });
+    it('restores a legacy (version 1) backup file', async () => {
+        const legacy = {
+            version: 1 as const,
+            createdAt: '2025-01-01T00:00:00.000Z',
+            characters: ['Alice'],
+            localStorage: {
+                global: { triggers: JSON.stringify([{ pattern: 'old' }]) },
+                characters: { Alice: { 'Alice:settings': JSON.stringify({ shortenExits: true }) } },
+            },
+            indexedDB: { multibinds: [], visitedRooms: [] },
+        };
 
-    it('should export binds when binds option is true', () => {
-        localStorage.setItem('binds', JSON.stringify({}));
-        const result = exportLocalStorage([], { ...allOptionsOff(), binds: true });
-        expect(result.global).toHaveProperty('binds');
-    });
+        await restoreBackup(legacy);
 
-    it('should export mobileButtonSettings fully when both buttons and radial are true', () => {
-        const mobile = { buttons: ['a', 'b'], radial: { slots: [] } };
-        localStorage.setItem('mobileButtonSettings', JSON.stringify(mobile));
-        const result = exportLocalStorage([], { ...allOptionsOff(), buttons: true, radial: true });
-        expect(result.global).toHaveProperty('mobileButtonSettings');
-        const parsed = JSON.parse(result.global.mobileButtonSettings!);
-        expect(parsed).toHaveProperty('radial');
-        expect(parsed).toHaveProperty('buttons');
-    });
-
-    it('should strip radial from mobileButtonSettings when buttons=true and radial=false', () => {
-        const mobile = { buttons: ['a'], radial: { slots: [] } };
-        localStorage.setItem('mobileButtonSettings', JSON.stringify(mobile));
-        const result = exportLocalStorage([], { ...allOptionsOff(), buttons: true, radial: false });
-        expect(result.global).toHaveProperty('mobileButtonSettings');
-        const parsed = JSON.parse(result.global.mobileButtonSettings!);
-        expect(parsed).not.toHaveProperty('radial');
-        expect(parsed).toHaveProperty('buttons');
-    });
-
-    it('should include only radial from mobileButtonSettings when buttons=false and radial=true', () => {
-        const mobile = { buttons: ['a'], radial: { slots: [1, 2] } };
-        localStorage.setItem('mobileButtonSettings', JSON.stringify(mobile));
-        const result = exportLocalStorage([], { ...allOptionsOff(), buttons: false, radial: true });
-        expect(result.global).toHaveProperty('mobileButtonSettings');
-        const parsed = JSON.parse(result.global.mobileButtonSettings!);
-        expect(parsed).toHaveProperty('radial');
-        expect(parsed).not.toHaveProperty('buttons');
-    });
-
-    it('should not include mobileButtonSettings when both buttons and radial are false', () => {
-        localStorage.setItem('mobileButtonSettings', JSON.stringify({ buttons: [] }));
-        const result = exportLocalStorage([], { ...allOptionsOff(), buttons: false, radial: false });
-        expect(result.global).not.toHaveProperty('mobileButtonSettings');
-    });
-
-    it('should skip URL-like keys in localStorage', () => {
-        localStorage.setItem('https://cdn.example.com/data', 'cached');
-        const result = exportLocalStorage([], DEFAULT_EXPORT_OPTIONS);
-        expect(Object.keys(result.global).some(k => k.startsWith('https://'))).toBe(false);
-    });
-
-    it('should return empty characters object when selectedCharacters is empty', () => {
-        localStorage.setItem('Alice:settings', JSON.stringify({}));
-        const result = exportLocalStorage([], DEFAULT_EXPORT_OPTIONS);
-        expect(result.characters).toEqual({});
+        expect(localStorage.getItem('triggers')).toBe(JSON.stringify([{ pattern: 'old' }]));
+        expect(localStorage.getItem('Alice:settings')).toBe(JSON.stringify({ shortenExits: true }));
     });
 });
 
@@ -1180,14 +1161,13 @@ describe('assistant BYOK key', () => {
         localStorage.clear();
     });
 
-    it('is absent from the file export payload', () => {
+    it('is absent from the backup file', async () => {
         localStorage.setItem('arkadia.assistantApiKey', SENTINEL);
         localStorage.setItem('triggers', JSON.stringify([{ pattern: 'x' }]));
 
-        const result = exportLocalStorage(['Alice'], DEFAULT_EXPORT_OPTIONS);
+        const backup = await buildBackup();
 
-        expect(JSON.stringify(result)).not.toContain(SENTINEL);
-        expect(result.global).not.toHaveProperty('arkadia.assistantApiKey');
+        expect(JSON.stringify(backup)).not.toContain(SENTINEL);
     });
 
     it('is absent from every cloud sync category', async () => {
@@ -1216,5 +1196,48 @@ describe('assistant BYOK key', () => {
         const exported = await exportCategory('characterSettings', ['Alice']);
 
         expect(exported ?? '').not.toContain(SENTINEL);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Kill records
+// ---------------------------------------------------------------------------
+
+describe('killCounts import', () => {
+    it('migrates legacy totals of each character before importing records', async () => {
+        const order: string[] = [];
+        jest.mocked(migrateFromLocalStorage).mockImplementation(async (character: string) => { order.push(`migrate:${character}`); });
+        jest.mocked(importAllKillRecords).mockImplementation(async () => { order.push('import'); });
+        const records = [
+            { id: '1', character: 'Alice', mob: 'orka', date: '2026/9/1', count: 2 },
+            { id: '2', character: 'Bob', mob: 'elfa', date: '2026/9/1', count: 1 },
+        ];
+
+        const result = await importCategory('killCounts', JSON.stringify({ _v: 2, records }));
+
+        expect(result.success).toBe(true);
+        expect(order).toEqual(['migrate:Alice', 'migrate:Bob', 'import']);
+    });
+});
+
+describe('legacy backup restore', () => {
+    it('migrates each character\'s pre-IndexedDB kill totals before the file replaces them', async () => {
+        const order: string[] = [];
+        jest.mocked(migrateFromLocalStorage).mockImplementation(async (character: string) => {
+            order.push(`migrate:${character}:${localStorage.getItem(`${character}:kill_counter`)}`);
+        });
+        localStorage.setItem('Alice:kill_counter', JSON.stringify({ orka: 3 }));
+
+        await restoreBackup({
+            version: 1,
+            createdAt: '2025-01-01T00:00:00.000Z',
+            characters: ['Alice'],
+            localStorage: { global: {}, characters: { Alice: { 'Alice:kill_counter': JSON.stringify({ orka: 9 }) } } },
+            indexedDB: { multibinds: [], visitedRooms: [], killRecords: [{ id: '1', character: 'Bob', mob: 'elfa', date: '2026/9/1', count: 1 }] },
+        });
+
+        // Alice migrated while her local totals were still there; Bob too
+        expect(order).toEqual(['migrate:Alice:{"orka":3}', 'migrate:Bob:null']);
+        expect(localStorage.getItem('Alice:kill_counter')).toBe(JSON.stringify({ orka: 9 }));
     });
 });

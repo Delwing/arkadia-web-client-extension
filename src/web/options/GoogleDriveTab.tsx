@@ -1,13 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { SHOW_SETTINGS_EVENT } from "@web/settings/categories.ts";
 import { Button } from "@web-ui/primitives/index.ts";
-import {
-    buildExport,
-    validatePayload,
-    applyImportedData,
-    type ExportOptions,
-    type ExportPayload,
-} from "./exportUtils";
+import { buildBackup, isRestorableBackup, restoreBackup } from "./exportUtils";
+import { confirmRestore, publishRestore } from "./restoreFlow";
 
 const GOOGLE_CLIENT_ID = "717498712073-50tjdorsa6vk4mq0fj774u0rhqr5jkd4.apps.googleusercontent.com";
 const DRIVE_SCOPES = ["https://www.googleapis.com/auth/drive.appdata"];
@@ -117,12 +112,10 @@ function formatDriveSize(size?: string) {
 }
 
 interface GoogleDriveTabProps {
-    selectedCharacters: string[];
-    exportOptions: ExportOptions;
     onImportComplete?: () => void;
 }
 
-function GoogleDriveTab({ selectedCharacters, exportOptions, onImportComplete }: GoogleDriveTabProps) {
+function GoogleDriveTab({ onImportComplete }: GoogleDriveTabProps = {}) {
     const [isDriveScriptReady, setIsDriveScriptReady] = useState(false);
     const [isDriveBusy, setIsDriveBusy] = useState(false);
     const [isDriveLoading, setIsDriveLoading] = useState(false);
@@ -405,7 +398,7 @@ function GoogleDriveTab({ selectedCharacters, exportOptions, onImportComplete }:
         setDriveAction("upload");
         setIsDriveBusy(true);
         try {
-            const payload = await buildExport(selectedCharacters, exportOptions);
+            const payload = await buildBackup();
             const json = JSON.stringify(payload, null, 2);
             const timestamp = new Date().toISOString().replace(/[:T]/g, "-").split(".")[0];
             const metadata = {
@@ -461,10 +454,12 @@ function GoogleDriveTab({ selectedCharacters, exportOptions, onImportComplete }:
             }
             const text = await response.text();
             const parsed = JSON.parse(text);
-            if (!validatePayload(parsed)) {
+            if (!isRestorableBackup(parsed)) {
                 throw new Error("invalid");
             }
-            const result = await applyImportedData(parsed as ExportPayload);
+            if (!confirmRestore()) return;
+            const result = await restoreBackup(parsed);
+            await publishRestore();
             onImportComplete?.();
             let msg = `Zaimportowano plik "${fileSummary.name}" z Google Drive. Niektore ustawienia moga wymagac odswiezenia strony.`;
             if (result.deviceSettingsSavedToImportedList) {

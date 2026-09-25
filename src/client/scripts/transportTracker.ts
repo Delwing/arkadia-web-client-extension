@@ -13,6 +13,7 @@ import {scheduleFromEvent} from "@shared/eventClock";
 import {
     deleteTransportSegment,
     getAllTransportSegments,
+    onTransportSegmentsChanged,
     recordTransportSegment,
     type StoredTransportSegmentRecord,
 } from "../utils/transportStats";
@@ -209,6 +210,8 @@ class Tracker {
         this.exitCmds = new Set(this.defs.flatMap(d => d.exitCommand ? [d.exitCommand, carriageCommand(d.exitCommand)] : []));
         this.registerTriggers();
         void this.loadOverrides().then(() => this.emitTimesDebug());
+        // Segments synced from another device: re-read the learned durations.
+        onTransportSegmentsChanged(() => void this.reloadOverrides());
         this.emit();
         this.emitDebug();
     }
@@ -833,6 +836,17 @@ class Tracker {
         } catch (e) {
             console.warn(`${LOG} Failed to load duration overrides`, e);
         }
+    }
+
+    private async reloadOverrides(): Promise<void> {
+        for (const def of this.defs) {
+            def.stops.forEach((stop, i) => {
+                if (this.durationOverrides.delete(segKey(def, i))) stop.time = stop.originalTime ?? undefined;
+            });
+        }
+        await this.loadOverrides();
+        this.emit();
+        await this.emitTimesDebug();
     }
 
     // ── times debug snapshot ──────────────────────────────────────────────────

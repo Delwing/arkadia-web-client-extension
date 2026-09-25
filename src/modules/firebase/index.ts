@@ -3,10 +3,10 @@
 // Types
 export type {
     FirebaseUserConfig,
-    SyncOptions,
     SyncCategory,
+    BackupCategory,
+    BackupOnlyCategory,
     CategoryDefinition,
-    CategoryGroup,
     EncryptedData,
     CategoryPayload,
     CategorySyncStatus,
@@ -20,11 +20,10 @@ export type {
 
 export {
     CATEGORY_REGISTRY,
+    BACKUP_ONLY_REGISTRY,
     getCategoryDefinition,
-    CATEGORY_GROUPS,
-    getCategoriesByGroup,
-    DEFAULT_SYNC_OPTIONS,
     SYNC_CATEGORIES,
+    BACKUP_CATEGORIES,
     SYNC_CATEGORY_NAMES,
     COLD_SYNC_CATEGORIES,
     COLD_STORAGE_KEYS,
@@ -103,6 +102,8 @@ export {
     joinSyncGroup,
     leaveSyncGroupCloud,
     getCloudSyncGroups,
+    refreshSyncGroup,
+    updateLocalSyncGroup,
     copySettingsFromCloudDevice,
     deleteEmptySyncGroup,
 } from './firebaseUnifiedSync';

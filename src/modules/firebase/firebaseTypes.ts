@@ -11,22 +11,20 @@ export interface FirebaseUserConfig {
 
 // Categories, their display names, defaults and storage mappings all derive
 // from the category registry — see ./categoryRegistry.
-import { DEFAULT_SYNC_OPTIONS } from './categoryRegistry';
-import type { SyncCategory, SyncOptions } from './categoryRegistry';
+import type { SyncCategory } from './categoryRegistry';
 
 export {
     CATEGORY_REGISTRY,
+    BACKUP_ONLY_REGISTRY,
     getCategoryDefinition,
-    CATEGORY_GROUPS,
-    getCategoriesByGroup,
     SYNC_CATEGORIES,
+    BACKUP_CATEGORIES,
     SYNC_CATEGORY_NAMES,
-    DEFAULT_SYNC_OPTIONS,
     COLD_SYNC_CATEGORIES,
     COLD_STORAGE_KEYS,
     DEVICE_SCOPED_SYNC_CATEGORIES,
 } from './categoryRegistry';
-export type { SyncCategory, SyncOptions, CategoryDefinition, CategoryGroup } from './categoryRegistry';
+export type { SyncCategory, BackupCategory, BackupOnlyCategory, CategoryDefinition } from './categoryRegistry';
 
 // Encrypted data structure
 export interface EncryptedData {
@@ -77,8 +75,9 @@ export type CategorySyncTimes = Partial<Record<SyncCategory, number>>;
 export type CategorySyncChecksums = Partial<Record<SyncCategory, string>>;
 
 // Firebase settings stored in localStorage
+// Every category syncs; there is no per-category selection (a `syncOptions`
+// field left in older stored settings is ignored).
 export interface FirebaseSettings {
-    syncOptions: SyncOptions;
     encryptionEnabled: boolean;
     autoSyncEnabled: boolean;
     categorySyncTimes: CategorySyncTimes;
@@ -151,10 +150,14 @@ export function getDeviceId(): string {
     return deviceId;
 }
 
+/** Shown by v1 sync when a device of this account has moved to sync v2. */
+export const SYNC_V2_STARTED_NOTICE = 'Synchronizacja zostala zaktualizowana. Odswiez strone, aby dalej synchronizowac dane z innymi urzadzeniami.';
+/** Shown by v1 sync when its writes are refused (v1 locked by the security rules after the transition). */
+export const SYNC_V1_LOCKED_NOTICE = 'Ta wersja klienta nie synchronizuje juz danych. Odswiez strone, aby wczytac nowa wersje.';
+
 // Load Firebase settings from localStorage
 export function loadFirebaseSettings(): FirebaseSettings {
     const defaults: FirebaseSettings = {
-        syncOptions: { ...DEFAULT_SYNC_OPTIONS },
         encryptionEnabled: false,
         autoSyncEnabled: false,
         categorySyncTimes: {},
@@ -167,7 +170,6 @@ export function loadFirebaseSettings(): FirebaseSettings {
         if (!raw) return defaults;
         const parsed = JSON.parse(raw);
         return {
-            syncOptions: { ...defaults.syncOptions, ...parsed.syncOptions },
             encryptionEnabled: typeof parsed.encryptionEnabled === 'boolean' ? parsed.encryptionEnabled : false,
             autoSyncEnabled: typeof parsed.autoSyncEnabled === 'boolean' ? parsed.autoSyncEnabled : false,
             categorySyncTimes: parsed.categorySyncTimes && typeof parsed.categorySyncTimes === 'object'

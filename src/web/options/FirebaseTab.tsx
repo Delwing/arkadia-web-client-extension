@@ -2,14 +2,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Button, Check, Input, Notice } from "@web-ui/primitives/index.ts";
 import {
     type FirebaseAuthState,
-    type SyncOptions,
     type SyncCategory,
     type CategoryConflictInfo,
     INITIAL_AUTH_STATE,
     SYNC_CATEGORIES,
-    SYNC_CATEGORY_NAMES,
-    CATEGORY_GROUPS,
-    getCategoriesByGroup,
     FIREBASE_ERRORS,
     loadFirebaseConfig,
     saveFirebaseConfig,
@@ -39,6 +35,23 @@ import {
 import eventBus from "@modules/core/eventBus";
 import { importCategories } from "./exportUtils";
 import ConflictResolutionModal from "./ConflictResolutionModal";
+import {
+    flushSyncV2,
+    isSyncV2Enabled,
+    nudgeSyncV2,
+    redownloadSyncV2,
+    resetSyncV2Cloud,
+    startSyncV2,
+    waitForSyncV2,
+} from "@web/userData/syncV2";
+
+/** Why sync v2 isn't running in this tab, for the send / download buttons. */
+function syncV2NotRunningMessage(): string {
+    const settings = loadFirebaseSettings();
+    if (!settings.autoSyncEnabled) return 'Wlacz automatyczna synchronizacje, aby wysylac i pobierac dane.';
+    if (settings.encryptionEnabled && !syncEngine.getPassphrase()) return 'Podaj haslo szyfrowania.';
+    return 'Synchronizacja dziala w innej karcie tej przegladarki albo nie mogla sie uruchomic (sprawdz polaczenie).';
+}
 
 const GoogleLogo = ({ size = 18 }: { size?: number }) => (
     <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 48 48">
@@ -81,7 +94,7 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
     const [resetSuccess, setResetSuccess] = useState<string | null>(null);
 
     // Sync state
-    const [syncOptions, setSyncOptions] = useState<SyncOptions>(() => loadFirebaseSettings().syncOptions);
+    const [syncV2] = useState(isSyncV2Enabled);
     const [encryptionEnabled, setEncryptionEnabled] = useState(() => loadFirebaseSettings().encryptionEnabled);
     const [autoSyncEnabled, setAutoSyncEnabled] = useState(() => loadFirebaseSettings().autoSyncEnabled);
     const [passphrase, setPassphrase] = useState(() => syncEngine.getPassphrase() ?? '');
@@ -169,16 +182,17 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
         // Subscribe to future changes
         const unsubscribe = onAuthStateChanged((state) => {
             setAuthState(state);
-            // Ensure the headless engine runs even when the startup wiring in
-            // web/main.ts did not (e.g. first session before a config was saved).
-            // start() is idempotent; stopping is handled by main.ts / sign-out.
-            if (state.isAuthenticated) {
-                syncEngine.start();
+            // Ensure sync runs even when the startup wiring in clientBootstrap
+            // did not (e.g. first session before a config was saved). Both
+            // starts are idempotent; stopping is handled there on sign-out.
+            if (state.isAuthenticated && state.userId) {
+                if (syncV2) startSyncV2(state.userId, () => syncEngine.getPassphrase());
+                else syncEngine.start();
             }
         });
 
         return () => unsubscribe();
-    }, [isConfigured]);
+    }, [isConfigured, syncV2]);
 
     // Subscribe to real-time sync listener events
     useEffect(() => {
@@ -273,14 +287,18 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
     // Forward the passphrase to the sync engine (which feeds the realtime listener)
     useEffect(() => {
         syncEngine.setPassphrase(passphrase || null);
-    }, [passphrase]);
+        // A passphrase entered may be what sync v2 was waiting for.
+        if (syncV2 && passphrase) nudgeSyncV2();
+    }, [passphrase, syncV2]);
 
-    // Save sync options when they change and let the engine re-evaluate them.
+    // Save sync settings when they change and let the engine re-evaluate them.
     // The engine itself watches storage and uploads — see @modules/firebase/syncEngine.
     useEffect(() => {
-        saveFirebaseSettings({ syncOptions, encryptionEnabled, autoSyncEnabled });
+        saveFirebaseSettings({ encryptionEnabled, autoSyncEnabled });
         syncEngine.settingsChanged();
-    }, [syncOptions, encryptionEnabled, autoSyncEnabled]);
+        // Auto-sync just switched on (or encryption changed): start v2 now.
+        if (syncV2) nudgeSyncV2();
+    }, [encryptionEnabled, autoSyncEnabled, syncV2]);
 
     const handleEmailAuth = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -377,12 +395,20 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
         setSyncStatus(null);
 
         try {
+            if (syncV2) {
+                // Sync v2 runs in one tab per browser, and may still be starting.
+                if (!(await waitForSyncV2(10_000))) {
+                    setSyncError(syncV2NotRunningMessage());
+                } else {
+                    await flushSyncV2();
+                    setSyncStatus('Zmiany zostaly wyslane.');
+                }
+                return;
+            }
             const result = await syncEngine.syncNow(false);
             if (result.status === 'skipped') {
                 if (result.reason === 'needs-passphrase') {
                     setSyncError('Podaj haslo szyfrowania.');
-                } else if (result.reason === 'no-categories') {
-                    setSyncError('Nie wybrano zadnych kategorii do synchronizacji.');
                 } else if (result.reason === 'no-data') {
                     setSyncStatus('Brak danych do wyslania.');
                 }
@@ -393,7 +419,7 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
             isSyncingRef.current = false;
             setIsSyncing(false);
         }
-    }, [authState.isAuthenticated]);
+    }, [authState.isAuthenticated, syncV2]);
 
     const handleDownload = useCallback(async (specificCategories?: SyncCategory[]) => {
         if (!authState.isAuthenticated) return;
@@ -407,12 +433,18 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
         setSyncStatus(null);
 
         try {
-            // Get categories to download
-            const categoriesToDownload = specificCategories ?? SYNC_CATEGORIES.filter(cat => syncOptions[cat]);
-            if (categoriesToDownload.length === 0) {
-                setSyncError('Nie wybrano zadnych kategorii do pobrania.');
+            if (syncV2) {
+                // Sync v2 runs in one tab per browser, and may still be starting.
+                if (!(await waitForSyncV2(10_000))) {
+                    setSyncError(syncV2NotRunningMessage());
+                } else {
+                    await redownloadSyncV2();
+                    setSyncStatus('Dane z chmury zostaly pobrane.');
+                }
                 return;
             }
+            // Get categories to download
+            const categoriesToDownload = specificCategories ?? SYNC_CATEGORIES;
 
             const result = await downloadCategories(
                 categoriesToDownload,
@@ -426,7 +458,7 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
             }
 
             if (Object.keys(result.data).length === 0) {
-                setSyncStatus('Brak danych w chmurze dla wybranych kategorii.');
+                setSyncStatus('Brak danych w chmurze.');
                 return;
             }
 
@@ -455,7 +487,7 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
         } finally {
             setIsSyncing(false);
         }
-    }, [authState.isAuthenticated, encryptionEnabled, passphrase, syncOptions, onImportComplete]);
+    }, [authState.isAuthenticated, encryptionEnabled, passphrase, onImportComplete, syncV2]);
 
     const handleConflictResolution = useCallback(async (resolution: 'keep-local' | 'use-cloud' | 'cancel', categories: SyncCategory[]) => {
         setShowConflictModal(false);
@@ -506,6 +538,13 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
         setSyncStatus(null);
 
         try {
+            if (syncV2) {
+                // The v1 document stays until v1 is removed: it is the way
+                // back if sync v2 has to be switched off.
+                await resetSyncV2Cloud();
+                setSyncStatus('Dane zostaly usuniete z chmury. To urzadzenie wyslalo ponownie swoje dane.');
+                return;
+            }
             const result = await deleteAllCategories();
 
             if (!result.success) {
@@ -523,7 +562,7 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
             setIsDeleting(false);
             setShowDeleteConfirm(false);
         }
-    }, [authState.isAuthenticated]);
+    }, [authState.isAuthenticated, syncV2]);
 
     // Render loading state
     if (isInitializing) {
@@ -730,6 +769,20 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                         <div>
                             <span className="popup-muted popup-small">Zalogowany jako: </span>
                             <span className="popup-strong">{authState.email ?? authState.displayName ?? 'Nieznany'}</span>
+                            {authState.userId && (
+                                <div className="popup-muted popup-small">
+                                    {/* The account's documents in Firebase: users/{ID} */}
+                                    ID konta: <span className="firebase-sync__user-id">{authState.userId}</span>
+                                    {' '}
+                                    <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() => void navigator.clipboard?.writeText(authState.userId!)}
+                                    >
+                                        Kopiuj
+                                    </Button>
+                                </div>
+                            )}
                         </div>
                         <Button
                             size="sm"
@@ -740,54 +793,10 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                         </Button>
                     </div>
 
-                    {/* Sync options, grouped by category group (registry-driven) */}
-                    <section className="character-settings-section">
-                        <div className="firebase-sync__bar">
-                            <h5 className="character-settings-section-title">Dane do synchronizacji</h5>
-                            <div className="popup-inline">
-                                <Button variant="ghost"
-                                    size="sm"
-                                    className="popup-muted"
-                                    onClick={() => setSyncOptions(Object.fromEntries(SYNC_CATEGORIES.map(c => [c, true])) as SyncOptions)}
-                                >
-                                    Zaznacz wszystko
-                                </Button>
-                                <span className="popup-muted">·</span>
-                                <Button variant="ghost"
-                                    size="sm"
-                                    className="popup-muted"
-                                    onClick={() => setSyncOptions(Object.fromEntries(SYNC_CATEGORIES.map(c => [c, false])) as SyncOptions)}
-                                >
-                                    Odznacz wszystko
-                                </Button>
-                            </div>
-                        </div>
-                        <div className="firebase-sync__groups">
-                            {CATEGORY_GROUPS.map(group => (
-                                <div key={group.id}>
-                                    <div className="popup-muted popup-small popup-strong firebase-sync__group-name">{group.name}</div>
-                                    {getCategoriesByGroup(group.id).map(cat => (
-                                        <div key={cat} className="firebase-sync__category">
-                                            <Check
-                                                id={`sync-${cat}`}
-                                                label={SYNC_CATEGORY_NAMES[cat]}
-                                                checked={syncOptions[cat]}
-                                                onChange={e => setSyncOptions(prev => ({ ...prev, [cat]: e.target.checked }))}
-                                            />
-                                            {cloudMetadata[cat]?.exists && (
-                                                <span
-                                                    title={`W chmurze${cloudMetadata[cat]?.encrypted ? ' (zaszyfrowane)' : ''}${cloudMetadata[cat]?.syncedAt ? ` - ${new Date(cloudMetadata[cat]!.syncedAt!).toLocaleString()}` : ''}`}
-                                                    style={{ fontSize: '0.75rem', cursor: 'help' }}
-                                                >
-                                                    {cloudMetadata[cat]?.encrypted ? '🔒' : '☁️'}
-                                                </span>
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
-                            ))}
-                        </div>
-                    </section>
+                    <p className="popup-field__hint">
+                        Synchronizowane sa wszystkie Twoje dane: ustawienia, sterowanie, automatyzacja, dane postaci
+                        i mapy. Ustawienia interfejsu i przyciskow sa zapisywane osobno dla kazdego urzadzenia.
+                    </p>
 
                     {/* Encryption */}
                     <section className="character-settings-section">
@@ -921,7 +930,7 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                     </section>
 
                     {/* Delete cloud data */}
-                    {Object.values(cloudMetadata).some(m => m?.exists) && (
+                    {(syncV2 || Object.values(cloudMetadata).some(m => m?.exists)) && (
                         <section className="character-settings-section cloud-delete">
                             <div className="cloud-delete__row">
                                 <div className="cloud-delete__text">

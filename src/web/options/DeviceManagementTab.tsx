@@ -1,3 +1,4 @@
+import { applyDeviceSettingsFrom, flushSyncV2, isSyncV2Enabled } from "@web/userData/syncV2";
 import { useCallback, useEffect, useState } from "react";
 import { Button, DeleteButton, Input, Notice } from "@web-ui/primitives/index.ts";
 import {
@@ -22,11 +23,14 @@ import {
     getFirebaseAuth,
     getCloudSyncGroups,
     getRegisteredDevices,
+    updateLocalSyncGroup,
     registerDevice,
     copySettingsFromCloudDevice,
     deleteEmptySyncGroup,
+    onAuthStateChanged,
     syncEngine,
 } from "@modules/firebase";
+import { SHOW_SETTINGS_EVENT } from "@web/settings/categories.ts";
 
 function DeviceManagementTab() {
     const [deviceInfo, setDeviceInfo] = useState<DeviceInfo | null>(null);
@@ -49,6 +53,18 @@ function DeviceManagementTab() {
     const [isLoadingCloudDevices, setIsLoadingCloudDevices] = useState(false);
     const [copyingFromDeviceId, setCopyingFromDeviceId] = useState<string | null>(null);
     const [deletingGroupId, setDeletingGroupId] = useState<string | null>(null);
+    // Bumped when the settings dialog is shown: it stays mounted, so the cloud
+    // lists would otherwise only load once.
+    const [reloadToken, setReloadToken] = useState(0);
+
+    // The dialog can mount before sign-in: follow the auth state, not just its value at mount.
+    useEffect(() => onAuthStateChanged(state => setIsLoggedIn(state.isAuthenticated)), []);
+
+    useEffect(() => {
+        const reload = () => setReloadToken(token => token + 1);
+        window.addEventListener(SHOW_SETTINGS_EVENT, reload);
+        return () => window.removeEventListener(SHOW_SETTINGS_EVENT, reload);
+    }, []);
 
     // Load device info and imported devices
     const refreshData = useCallback(() => {
@@ -87,6 +103,12 @@ function DeviceManagementTab() {
             setIsLoadingCloudGroups(true);
             try {
                 const result = await getCloudSyncGroups();
+                // The group may have gained devices since this device last looked
+                const updated = updateLocalSyncGroup(result.groups);
+                if (updated) {
+                    setSyncGroupState(updated);
+                    if (isSyncV2Enabled()) void applyDeviceSettingsFrom(updated.devices);
+                }
                 // Filter out the group we're already in
                 const otherGroups = syncGroup
                     ? result.groups.filter(g => g.id !== syncGroup.id)
@@ -114,13 +136,15 @@ function DeviceManagementTab() {
             }
         };
         loadCloudData();
-    }, [isLoggedIn, syncGroup, deviceInfo?.id]);
+    }, [isLoggedIn, syncGroup, deviceInfo?.id, reloadToken]);
 
     // Handle custom name save
     const handleSaveName = () => {
         const trimmed = customName.trim();
         setDeviceCustomName(trimmed || undefined);
         refreshData();
+        // Other devices list this device under its new name
+        if (isLoggedIn) void registerDevice({ force: true });
         setIsEditing(false);
         setStatus("Nazwa urzadzenia zostala zapisana.");
     };
@@ -170,7 +194,8 @@ function DeviceManagementTab() {
                     // Push this device's interface/button settings so devices that
                     // join the group have something to apply (the group doc only
                     // holds membership; settings travel as device-scoped categories).
-                    void syncEngine.syncNow();
+                    if (isSyncV2Enabled()) void flushSyncV2();
+                    else void syncEngine.syncNow();
                     setStatus(`Grupa synchronizacji "${result.group.name}" zostala utworzona.`);
                 } else {
                     setError(result.error || "Nie udalo sie utworzyc grupy synchronizacji.");
@@ -223,6 +248,13 @@ function DeviceManagementTab() {
         }
     };
 
+    // Sync v2: take the interface and button settings of the group's other devices
+    const applyGroupSettings = async (group: SyncGroup) => {
+        if (!isSyncV2Enabled()) return;
+        const others = group.devices.filter(id => id !== deviceInfo?.id);
+        if (others.length > 0) await applyDeviceSettingsFrom(others);
+    };
+
     // Handle join sync group from imported device
     const handleJoinSyncGroup = async (entry: ImportedDeviceEntry) => {
         if (!entry.syncGroup) return;
@@ -257,6 +289,7 @@ function DeviceManagementTab() {
                 });
                 if (result.success && result.group) {
                     setSyncGroupState(result.group);
+                    await applyGroupSettings(result.group);
                     setStatus(`Dolaczono do grupy synchronizacji "${result.group.name}" i skopiowano ustawienia.`);
                 } else {
                     // If Firebase join fails (group doesn't exist in cloud), join locally
@@ -295,6 +328,7 @@ function DeviceManagementTab() {
             });
             if (result.success && result.group) {
                 setSyncGroupState(result.group);
+                await applyGroupSettings(result.group);
                 // Remove joined group from cloud groups list
                 setCloudSyncGroups(prev => prev.filter(g => g.id !== result.group!.id));
                 setStatus(`Dolaczono do grupy synchronizacji "${result.group.name}".`);
@@ -321,7 +355,12 @@ function DeviceManagementTab() {
         setStatus(null);
 
         try {
-            const result = await copySettingsFromCloudDevice(deviceId, syncEngine.getPassphrase() ?? undefined);
+            // Sync v2 keeps other devices' settings in its own data, not in the v1 document.
+            const result = isSyncV2Enabled()
+                ? await applyDeviceSettingsFrom([deviceId]).then(found => found
+                    ? { success: true }
+                    : { success: false, error: "Brak ustawien tego urzadzenia w chmurze - otworz na nim klienta, aby je wyslal." })
+                : await copySettingsFromCloudDevice(deviceId, syncEngine.getPassphrase() ?? undefined);
             if (result.success) {
                 setStatus(`Ustawienia zostaly skopiowane z urzadzenia "${deviceName}".`);
             } else {

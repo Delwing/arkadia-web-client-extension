@@ -1,7 +1,7 @@
 import { getSnapshot as getMultibindsSnapshot, replaceAll as replaceMultibinds, type StoredMultibindRecord } from "../dataStores/multibindStore";
 import type { RecordedEvent } from "@web/recordingStorage.ts";
 import { exportNotes, importNotes, type LocationNote } from "./locationNotesStorage";
-import { exportAllKillRecords, importAllKillRecords, type KillRecord } from "@client/scripts/killLifetimeStorage.ts";
+import { exportAllKillRecords, importAllKillRecords, migrateFromLocalStorage, type KillRecord } from "@client/scripts/killLifetimeStorage.ts";
 import { mergeProfessionStates } from "@client/scripts/profession";
 import { getKnowledgeStore, type KnowledgeProgressByCharacter, type KnowledgeBookProgressByCharacter } from "@modules/data/dataStores/knowledgeStore";
 import { getKnowledgeDetailsStore, type KnowledgeProgressByCharacter as KnowledgeDetailsProgressByCharacter, type KnowledgeCharacterMetadataMap } from "@modules/data/dataStores/knowledgeDetailsStore";
@@ -44,69 +44,6 @@ export interface ExportedKnowledgeData {
     detailsCharacters: KnowledgeCharacterMetadataMap;
 }
 
-export interface ExportOptions {
-    uiSettings: boolean;       // Interface settings (colors, themes, layout)
-    binds: boolean;            // Key bindings
-    shortcuts: boolean;        // Shortcuts
-    characterSettings: boolean; // Character gameplay settings
-    triggers: boolean;
-    aliases: boolean;
-    automationGroups: boolean;
-    automationScripts: boolean;
-    buttons: boolean;
-    radial: boolean;
-    scripts: boolean;
-    multibinds: boolean;
-    recordings: boolean;
-    visitedRooms: boolean;
-    locationNotes: boolean;
-    peopleEdits: boolean;      // Local edits to people database
-    knowledge: boolean;        // Knowledge progress (libraries, books, events, details)
-}
-
-export const DEFAULT_EXPORT_OPTIONS: ExportOptions = {
-    uiSettings: true,
-    binds: true,
-    shortcuts: true,
-    characterSettings: true,
-    triggers: true,
-    aliases: true,
-    automationGroups: true,
-    automationScripts: true,
-    buttons: true,
-    radial: true,
-    scripts: true,
-    multibinds: true,
-    recordings: true,
-    visitedRooms: true,
-    locationNotes: true,
-    peopleEdits: true,
-    knowledge: true,
-};
-
-// Map specific global keys to their export options
-export const EXPORT_SPECIFIC_GLOBAL_KEYS: Record<string, keyof ExportOptions> = {
-    uiSettings: "uiSettings",
-    // Slices split out of uiSettings ride the same "interface settings" flag.
-    shellSettings: "uiSettings",
-    renderSettings: "uiSettings",
-    mapSettings: "uiSettings",
-    behaviorSettings: "uiSettings",
-    binds: "binds",
-    shortcuts: "shortcuts",
-    triggers: "triggers",
-    aliases: "aliases",
-    automationGroups: "automationGroups",
-    automationScripts: "automationScripts",
-    mobileButtonSettings: "buttons",
-    desktopButtonSettings: "buttons",
-    scripts: "scripts",
-    stored_scripts: "scripts",
-};
-
-// All known global keys derived from the storage schema
-const KNOWN_GLOBAL_KEYS: ReadonlySet<string> = new Set(globalStorageKeys);
-
 export interface ExportedDeviceInfo {
     sourceDevice: DeviceInfo;
     settings: {
@@ -118,6 +55,11 @@ export interface ExportedDeviceInfo {
     syncGroup?: SyncGroup;
 }
 
+/**
+ * Legacy (version 1) backup file, written before backups were built from the
+ * category registry. Still accepted on import; see BackupPayload for the
+ * current format.
+ */
 export interface ExportPayload {
     version: 1;
     createdAt: string;
@@ -180,73 +122,6 @@ export function collectCharacters(): string[] {
         }
     }
     return Array.from(names).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
-}
-
-export function exportLocalStorage(selectedCharacters: string[], options: ExportOptions): ExportedLocalStorage {
-    const global: Record<string, string> = {};
-    const characters: Record<string, Record<string, string>> = {};
-    const selectedSet = new Set(selectedCharacters);
-
-    for (let i = 0; i < localStorage.length; i += 1) {
-        const key = localStorage.key(i);
-        if (!key) continue;
-        if (key.includes("://")) continue;
-        const raw = localStorage.getItem(key);
-        if (raw === null) continue;
-
-        const parsed = parseCharacterStorageKey(key);
-        if (parsed?.name) {
-            if (!selectedSet.has(parsed.name)) continue;
-            if (parsed.baseKey && isExcludedLocalStorageKey(parsed.baseKey)) {
-                continue;
-            }
-            // Handle peopleLocalEvents separately based on peopleEdits option
-            if (parsed.baseKey === 'peopleLocalEvents') {
-                if (!options.peopleEdits) continue;
-            }
-            if (!characters[parsed.name]) {
-                characters[parsed.name] = {};
-            }
-            characters[parsed.name][key] = raw;
-            continue;
-        }
-        if (isExcludedLocalStorageKey(key)) continue;
-
-        // Only include known global keys
-        if (!KNOWN_GLOBAL_KEYS.has(key)) continue;
-
-        // Handle specific global keys based on export options
-        const specificOption = EXPORT_SPECIFIC_GLOBAL_KEYS[key];
-        if (specificOption) {
-            if (key === "mobileButtonSettings") {
-                // Handle mobileButtonSettings specially for radial
-                if (!options.buttons && !options.radial) continue;
-                try {
-                    const parsedSettings = JSON.parse(raw);
-                    if (options.buttons && options.radial) {
-                        global[key] = raw;
-                    } else if (options.buttons && !options.radial) {
-                        const { radial: _radial, ...rest } = parsedSettings;
-                        global[key] = JSON.stringify(rest);
-                    } else if (!options.buttons && options.radial && parsedSettings.radial) {
-                        global[key] = JSON.stringify({ radial: parsedSettings.radial });
-                    }
-                } catch {
-                    if (options.buttons) global[key] = raw;
-                }
-            } else if (options[specificOption]) {
-                global[key] = raw;
-            }
-            continue;
-        }
-
-        // Include loggingEnabled only if uiSettings is enabled (it's a UI preference)
-        if (key === "loggingEnabled" && options.uiSettings) {
-            global[key] = raw;
-        }
-    }
-
-    return { global, characters };
 }
 
 async function openRecordingsDb(): Promise<IDBDatabase> {
@@ -486,81 +361,6 @@ async function importKnowledgeData(data: ExportedKnowledgeData): Promise<void> {
     }
 }
 
-export async function buildExport(selectedCharacters: string[], options: ExportOptions = DEFAULT_EXPORT_OPTIONS): Promise<ExportPayload> {
-    const [multibinds, recordings, visitedRooms, locationNotes, killRecords, knowledge] = await Promise.all([
-        options.multibinds
-            ? getMultibindsSnapshot().catch(err => {
-                console.error("Failed to export multibinds", err);
-                return [] as StoredMultibindRecord[];
-            })
-            : Promise.resolve([] as StoredMultibindRecord[]),
-        options.recordings
-            ? exportRecordings()
-            : Promise.resolve([] as ExportedRecording[]),
-        options.visitedRooms
-            ? exportVisitedRooms(selectedCharacters)
-            : Promise.resolve([] as ExportedVisitedRoomsEntry[]),
-        options.locationNotes
-            ? exportNotes().catch(err => {
-                console.error("Failed to export location notes", err);
-                return [] as LocationNote[];
-            })
-            : Promise.resolve([] as LocationNote[]),
-        exportAllKillRecords().then(records => {
-            const selectedSet = new Set(selectedCharacters);
-            return records.filter(r => selectedSet.has(r.character));
-        }).catch(err => {
-            console.error("Failed to export kill records", err);
-            return [] as KillRecord[];
-        }),
-        options.knowledge
-            ? exportKnowledgeData(selectedCharacters).catch(err => {
-                console.error("Failed to export knowledge data", err);
-                return undefined;
-            })
-            : Promise.resolve(undefined),
-    ]);
-
-    const localStorageData = exportLocalStorage(selectedCharacters, options);
-    // Check if any global option is enabled
-    const anyGlobalEnabled = options.uiSettings || options.binds || options.shortcuts ||
-        options.triggers || options.aliases || options.buttons || options.radial || options.scripts;
-    const filteredLocalStorage: ExportedLocalStorage = {
-        global: anyGlobalEnabled ? localStorageData.global : {},
-        characters: options.characterSettings ? localStorageData.characters : {},
-    };
-
-    // Build device info with settings
-    const deviceInfo = getDeviceInfo();
-    const syncGroup = getSyncGroup();
-    const device: ExportedDeviceInfo = {
-        sourceDevice: deviceInfo,
-        settings: {
-            layoutManagerState: localStorage.getItem('layoutManagerState') || undefined,
-            uiSettings: localStorage.getItem('uiSettings') || undefined,
-            desktopButtonSettings: localStorage.getItem('desktopButtonSettings') || undefined,
-            mobileButtonSettings: localStorage.getItem('mobileButtonSettings') || undefined,
-        },
-        syncGroup: syncGroup || undefined,
-    };
-
-    return {
-        version: 1,
-        createdAt: new Date().toISOString(),
-        characters: selectedCharacters,
-        localStorage: filteredLocalStorage,
-        indexedDB: {
-            multibinds,
-            recordings,
-            visitedRooms,
-            locationNotes,
-            killRecords,
-            knowledge,
-        },
-        device,
-    };
-}
-
 export function applyLocalStorageImport(data: ExportedLocalStorage) {
     if (!data) return;
 
@@ -641,6 +441,7 @@ export function applyLocalStorageImport(data: ExportedLocalStorage) {
     }
 }
 
+/** Validates a legacy (version 1) backup file. */
 export function validatePayload(input: unknown): input is ExportPayload {
     if (!input || typeof input !== "object") return false;
     const payload = input as Record<string, unknown>;
@@ -655,7 +456,17 @@ export interface ImportResult {
     deviceSettingsSavedToImportedList: boolean;
 }
 
+/** Restores a legacy (version 1) backup file. */
 export async function applyImportedData(payload: ExportPayload): Promise<ImportResult> {
+    // Move pre-IndexedDB kill totals in first: the file's kill_counter aggregate
+    // replaces them below, and a later migration would count it a second time.
+    const killCharacters = new Set([
+        ...Object.keys(payload.localStorage?.characters ?? {}),
+        ...(payload.indexedDB.killRecords ?? []).map(r => r.character),
+    ]);
+    for (const character of killCharacters) {
+        await migrateFromLocalStorage(character);
+    }
     applyLocalStorageImport(payload.localStorage);
     await replaceMultibinds(payload.indexedDB.multibinds ?? []);
     await importRecordings(payload.indexedDB.recordings ?? []);
@@ -715,8 +526,12 @@ export async function applyImportedData(payload: ExportPayload): Promise<ImportR
 
 // Import from the registry module directly (not the @modules/firebase index)
 // so this web-side module doesn't pull in the sync engine and its side effects.
-import type { SyncCategory, CategoryDefinition } from '@modules/firebase/categoryRegistry';
-import { CATEGORY_REGISTRY } from '@modules/firebase/categoryRegistry';
+import type { BackupCategory } from '@modules/firebase/categoryRegistry';
+import {
+    BACKUP_CATEGORIES,
+    DEVICE_SCOPED_SYNC_CATEGORIES,
+    getCategoryDefinition,
+} from '@modules/firebase/categoryRegistry';
 
 export interface CategoryData {
     // Device-scoped settings bundle: interface settings + layout + trip routes
@@ -737,7 +552,7 @@ export interface CategoryData {
     scripts?: { scripts?: string; stored_scripts?: string };
     buttons?: { mobileButtonSettings?: string; desktopButtonSettings?: string };
     radial?: { radial?: unknown };
-    recordings?: ExportedRecording[];
+    recordings?: ExportedRecording[];      // backup only, never synced
     visitedRooms?: ExportedVisitedRoomsEntry[];
     locationNotes?: LocationNote[];
     killCounts?: Record<string, string> | {_v: 2; records: KillRecord[]};  // v1: CharacterName -> kill_counter JSON, v2: IndexedDB records
@@ -795,11 +610,11 @@ function exportCharacterScopedKey(baseKey: string, selectedCharacters: string[])
 // Categories without customSync in the registry are exported generically from
 // their declared storage keys; only the custom ones appear in the switch below.
 export async function exportCategory(
-    category: SyncCategory,
+    category: BackupCategory,
     selectedCharacters: string[]
 ): Promise<string | null> {
     try {
-        const def = CATEGORY_REGISTRY[category] as CategoryDefinition | undefined;
+        const def = getCategoryDefinition(category);
         if (!def) return null;
 
         if (!def.customSync) {
@@ -912,6 +727,10 @@ export async function exportCategory(
                 const knowledgeData = await exportKnowledgeData(selectedCharacters);
                 return knowledgeData ? JSON.stringify(knowledgeData) : null;
             }
+            case 'recordings': {
+                const recordings = await exportRecordings();
+                return recordings.length > 0 ? JSON.stringify(recordings) : null;
+            }
             default:
                 return null;
         }
@@ -942,7 +761,7 @@ async function migrateImportedLayoutState(raw: string): Promise<string> {
 
 // Import a single category from JSON string
 export async function importCategory(
-    category: SyncCategory,
+    category: BackupCategory,
     jsonData: string,
     options?: { skipDeviceScoped?: boolean }
 ): Promise<{ success: boolean; error?: string }> {
@@ -968,7 +787,7 @@ export async function importCategory(
             }
         };
 
-        const def = CATEGORY_REGISTRY[category] as CategoryDefinition | undefined;
+        const def = getCategoryDefinition(category);
         if (!def) {
             return { success: false, error: `Unknown category: ${category}` };
         }
@@ -1112,6 +931,12 @@ export async function importCategory(
                     // New format: IndexedDB records with date info
                     const records = (data as {_v: number; records: KillRecord[]}).records;
                     if (Array.isArray(records) && records.length > 0) {
+                        // Move each character's pre-IndexedDB totals in first: the
+                        // aggregate written below would otherwise replace them, and a
+                        // later migration would count that aggregate a second time.
+                        for (const character of new Set(records.map(r => r.character))) {
+                            await migrateFromLocalStorage(character);
+                        }
                         await importAllKillRecords(records);
                         // Also update localStorage for backward compat. Recompute from
                         // the store after the merge — importAllKillRecords keeps the
@@ -1139,6 +964,10 @@ export async function importCategory(
             }
             case 'knowledge': {
                 await importKnowledgeData(data as ExportedKnowledgeData);
+                break;
+            }
+            case 'recordings': {
+                await importRecordings(Array.isArray(data) ? data : []);
                 break;
             }
             default:
@@ -1242,11 +1071,11 @@ export function mergeCloudProfessionData(cloudCharacterSettingsJson: string): vo
 }
 
 // Export multiple categories
-export async function exportCategories(
-    categories: SyncCategory[],
+export async function exportCategories<C extends BackupCategory>(
+    categories: readonly C[],
     selectedCharacters: string[]
-): Promise<Partial<Record<SyncCategory, string>>> {
-    const result: Partial<Record<SyncCategory, string>> = {};
+): Promise<Partial<Record<C, string>>> {
+    const result: Partial<Record<C, string>> = {};
 
     await Promise.all(
         categories.map(async (category) => {
@@ -1261,14 +1090,14 @@ export async function exportCategories(
 }
 
 // Import multiple categories
-export async function importCategories(
-    categoryData: Partial<Record<SyncCategory, string>>,
+export async function importCategories<C extends BackupCategory>(
+    categoryData: Partial<Record<C, string>>,
     options?: { skipDeviceScoped?: boolean }
-): Promise<{ success: boolean; errors: Partial<Record<SyncCategory, string>> }> {
-    const errors: Partial<Record<SyncCategory, string>> = {};
+): Promise<{ success: boolean; errors: Partial<Record<C, string>> }> {
+    const errors: Partial<Record<C, string>> = {};
 
     await Promise.all(
-        (Object.entries(categoryData) as [SyncCategory, string][]).map(async ([category, data]) => {
+        (Object.entries(categoryData) as [C, string][]).map(async ([category, data]) => {
             if (!data) return;
             const result = await importCategory(category, data, options);
             if (!result.success && result.error) {
@@ -1278,4 +1107,123 @@ export async function importCategories(
     );
 
     return { success: Object.keys(errors).length === 0, errors };
+}
+
+// ============================================================================
+// Backup files (file export and Google Drive)
+// ============================================================================
+
+/**
+ * A backup file: every category of the registry (all synced data plus the
+ * backup-only categories), serialized exactly as sync serializes it. There is
+ * no per-category or per-character selection.
+ */
+export interface BackupPayload {
+    version: 2;
+    createdAt: string;
+    /** The exporting device; decides whether its device-scoped settings apply on restore. */
+    device: { sourceDevice: DeviceInfo; syncGroup?: SyncGroup };
+    categories: Partial<Record<BackupCategory, string>>;
+}
+
+export async function buildBackup(): Promise<BackupPayload> {
+    const syncGroup = getSyncGroup();
+    return {
+        version: 2,
+        createdAt: new Date().toISOString(),
+        device: { sourceDevice: getDeviceInfo(), ...(syncGroup ? { syncGroup } : {}) },
+        categories: await exportCategories(BACKUP_CATEGORIES, collectCharacters()),
+    };
+}
+
+export function isBackupPayload(input: unknown): input is BackupPayload {
+    if (!input || typeof input !== "object") return false;
+    const payload = input as Record<string, unknown>;
+    if (payload.version !== 2) return false;
+    if (typeof payload.createdAt !== "string") return false;
+    if (!payload.categories || typeof payload.categories !== "object") return false;
+    const device = payload.device as Record<string, unknown> | undefined;
+    return !!device && typeof device === "object" && !!device.sourceDevice && typeof device.sourceDevice === "object";
+}
+
+/** True for any backup file this version can restore (current or legacy format). */
+export function isRestorableBackup(input: unknown): input is BackupPayload | ExportPayload {
+    return isBackupPayload(input) || validatePayload(input);
+}
+
+/**
+ * Device-scoped settings of a backup from another device, in the shape of the
+ * imported-devices list (raw localStorage values), so the user can apply them
+ * later from the devices page. The radial menu lives in mobileButtonSettings
+ * locally but is a shared category, so it's folded back in here.
+ */
+function importedDeviceSettings(categories: Partial<Record<BackupCategory, string>>): ImportedDeviceEntry["settings"] {
+    const settings: ImportedDeviceEntry["settings"] = {};
+    const parse = (raw: string | undefined): Record<string, unknown> => {
+        if (!raw) return {};
+        try {
+            const parsed = JSON.parse(raw);
+            return parsed && typeof parsed === "object" ? parsed : {};
+        } catch {
+            return {};
+        }
+    };
+    const ui = parse(categories.uiSettings);
+    if (typeof ui.uiSettings === "string") settings.uiSettings = ui.uiSettings;
+    if (typeof ui.layoutManagerState === "string") settings.layoutManagerState = ui.layoutManagerState;
+    const buttons = parse(categories.buttons);
+    if (typeof buttons.desktopButtonSettings === "string") settings.desktopButtonSettings = buttons.desktopButtonSettings;
+    if (typeof buttons.mobileButtonSettings === "string") {
+        const mobile = parse(buttons.mobileButtonSettings);
+        const radial = parse(categories.radial).radial;
+        settings.mobileButtonSettings = JSON.stringify(radial ? { ...mobile, radial } : mobile);
+    }
+    return settings;
+}
+
+/**
+ * Restore a backup file. Device-scoped categories (interface layout, buttons)
+ * apply only when the backup comes from this device or a member of its sync
+ * group; otherwise they are saved to the imported-devices list instead.
+ */
+export async function restoreBackup(payload: BackupPayload | ExportPayload): Promise<ImportResult> {
+    if (payload.version === 1) {
+        return applyImportedData(payload);
+    }
+
+    const categories: Partial<Record<BackupCategory, string>> = { ...payload.categories };
+    const applyDeviceSettings = shouldApplyDeviceSettings({
+        sourceDeviceId: payload.device.sourceDevice.id,
+        currentDeviceId: getDeviceInfo().id,
+        currentSyncGroup: getSyncGroup(),
+    });
+
+    let deviceSettingsSavedToImportedList = false;
+    const hasDeviceData = [...DEVICE_SCOPED_SYNC_CATEGORIES].some(cat => categories[cat]);
+    if (!applyDeviceSettings && hasDeviceData) {
+        const settings = importedDeviceSettings(categories);
+        for (const cat of DEVICE_SCOPED_SYNC_CATEGORIES) {
+            delete categories[cat];
+        }
+        if (Object.keys(settings).length > 0) {
+            saveImportedDevice({
+                deviceInfo: payload.device.sourceDevice,
+                settings,
+                importedAt: new Date().toISOString(),
+                syncGroup: payload.device.syncGroup,
+            });
+            deviceSettingsSavedToImportedList = true;
+        }
+    }
+
+    const result = await importCategories(categories);
+    if (!result.success) {
+        const [category, error] = Object.entries(result.errors)[0] ?? [];
+        throw new Error(`Failed to restore ${category}: ${error}`);
+    }
+
+    if (applyDeviceSettings && hasDeviceData) {
+        await triggerSettingsReload();
+    }
+    return { deviceSettingsSavedToImportedList };
 }

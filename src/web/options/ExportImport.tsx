@@ -1,9 +1,8 @@
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import LocalExportTab from "./LocalExportTab";
 import GoogleDriveTab from "./GoogleDriveTab";
 import FirebaseTab from "./FirebaseTab";
 import DeviceManagementTab from "./DeviceManagementTab";
-import { collectCharacters, DEFAULT_EXPORT_OPTIONS, type ExportOptions } from "./exportUtils";
 
 type Tab = 'local' | 'google-drive' | 'firebase' | 'devices';
 
@@ -16,19 +15,6 @@ const TABS: { key: Tab; label: string }[] = [
 
 function ExportImport() {
     const [activeTab, setActiveTab] = useState<Tab>('firebase');
-    const [selectedCharacters, setSelectedCharacters] = useState<string[]>(() => collectCharacters());
-    const [exportOptions, setExportOptions] = useState<ExportOptions>({ ...DEFAULT_EXPORT_OPTIONS });
-
-    const handleSelectionChange = useCallback((characters: string[], options: ExportOptions) => {
-        setSelectedCharacters(characters);
-        setExportOptions(options);
-    }, []);
-
-    const handleImportComplete = useCallback(() => {
-        // Refresh characters after import
-        setSelectedCharacters(collectCharacters());
-    }, []);
-
     return (
         <div className="export-import">
             {/* Tab navigation */}
@@ -48,22 +34,16 @@ function ExportImport() {
             {/* Tab content */}
             <div className="export-import__body">
                 {activeTab === 'firebase' && (
-                    <FirebaseTab
-                        onImportComplete={handleImportComplete}
-                    />
+                    <FirebaseTab />
                 )}
                 {activeTab === 'local' && (
                     <div className="export-import__scroll">
-                        <LocalExportTab onSelectionChange={handleSelectionChange} />
+                        <LocalExportTab />
                     </div>
                 )}
                 {activeTab === 'google-drive' && (
                     <div className="export-import__scroll">
-                        <GoogleDriveTab
-                            selectedCharacters={selectedCharacters}
-                            exportOptions={exportOptions}
-                            onImportComplete={handleImportComplete}
-                        />
+                        <GoogleDriveTab />
                     </div>
                 )}
                 {activeTab === 'devices' && (

@@ -68,7 +68,7 @@ export type SyncRunResult =
     | { status: 'in-sync' }
     | { status: 'conflict' }
     | { status: 'error'; error: string }
-    | { status: 'skipped'; reason: 'busy' | 'no-categories' | 'needs-passphrase' | 'no-data' };
+    | { status: 'skipped'; reason: 'busy' | 'needs-passphrase' | 'no-data' };
 
 class FirebaseSyncEngine {
     private storageUnsubs: Array<() => void> = [];
@@ -262,7 +262,7 @@ class FirebaseSyncEngine {
         }
     }
 
-    /** Re-evaluate after sync settings change (auto-sync toggle, encryption, categories). */
+    /** Re-evaluate after sync settings change (auto-sync toggle, encryption). */
     settingsChanged(): void {
         this.pushPassphraseToListener();
         this.reconcileAutoSyncReadiness();
@@ -304,10 +304,6 @@ class FirebaseSyncEngine {
         if (settings.encryptionEnabled && !this.passphrase) {
             return { status: 'skipped', reason: 'needs-passphrase' };
         }
-        const enabledCategories = SYNC_CATEGORIES.filter(cat => settings.syncOptions[cat]);
-        if (enabledCategories.length === 0) {
-            return { status: 'skipped', reason: 'no-categories' };
-        }
 
         this.syncing = true;
         try {
@@ -320,19 +316,17 @@ class FirebaseSyncEngine {
 
             // Pre-merge CRDT data (profession) from cloud before exporting, so we
             // don't overwrite +staz events that were added on another device.
-            if (enabledCategories.includes('characterSettings')) {
-                try {
-                    const cloudResult = await downloadCategories(['characterSettings'], decryptPassphrase);
-                    if (cloudResult.success && cloudResult.data.characterSettings) {
-                        mergeCloudProfessionData(cloudResult.data.characterSettings);
-                    }
-                } catch {
-                    // Non-critical: proceed with upload even if pre-merge fails
+            try {
+                const cloudResult = await downloadCategories(['characterSettings'], decryptPassphrase);
+                if (cloudResult.success && cloudResult.data.characterSettings) {
+                    mergeCloudProfessionData(cloudResult.data.characterSettings);
                 }
+            } catch {
+                // Non-critical: proceed with upload even if pre-merge fails
             }
 
-            const categoryData = await exportCategories(enabledCategories, collectCharacters());
-            const plan = await planSync(categoryData, enabledCategories, decryptPassphrase);
+            const categoryData = await exportCategories(SYNC_CATEGORIES, collectCharacters());
+            const plan = await planSync(categoryData, SYNC_CATEGORIES, decryptPassphrase);
 
             if (Object.keys(plan.errors).length > 0) {
                 const error = Object.values(plan.errors)[0] ?? FIREBASE_ERRORS.SYNC_FAILED;

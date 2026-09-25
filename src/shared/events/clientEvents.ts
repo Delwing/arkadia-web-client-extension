@@ -230,6 +230,8 @@ export interface KnownEvents {
     "attackMode": "A" | "AW" | "AWR";
     "contentWidth": number;
     "enterLocation": { id: number; room: unknown; direction: string | null };
+    /** Visited rooms added to a character's stored set from outside the map (sync). */
+    "visitedRooms.added": { character: string; rooms: number[] };
     "highlights": [number[]];
     "multibinds": MultibindList;
     "letterComposer": { to?: string; cc?: string; udw?: string; subject?: string; content?: string };
@@ -302,6 +304,8 @@ export interface KnownEvents {
     "requestKnowledgeDetailsReport": void;
     "knowledgeHints": { enabled: boolean; hideCompleted: boolean };
     "knowledgeTickEvent": { category: string; dative: string };
+    /** Knowledge events (ticks, level changes) written from outside the knowledge script (sync). */
+    "knowledgeEvents.changed": { characters: string[] };
     "knowledgeBookReport": unknown | null;
     "knowledgeBookReportAction": { type: string; bookKey: string; category: string };
     "requestKnowledgeBookReport": void | { character?: string };

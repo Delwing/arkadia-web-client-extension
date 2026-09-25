@@ -85,6 +85,16 @@ export async function getFromIndexedDB<T = any>(config: IndexedDBConfig, ttl?: n
     }
 }
 
+/** Keys of every record in the store (`config.key` is ignored). */
+export async function getIndexedDBKeys(config: IndexedDBConfig): Promise<string[]> {
+    const store = await getStore(config, 'readonly');
+    return new Promise<string[]>((resolve, reject) => {
+        const req = store.getAllKeys();
+        req.onsuccess = () => resolve(req.result.map(String));
+        req.onerror = () => reject(new Error('Failed to list IndexedDB keys'));
+    });
+}
+
 export async function clearIndexedDB(config: IndexedDBConfig): Promise<void> {
     try {
         const store = await getStore(config, 'readwrite');

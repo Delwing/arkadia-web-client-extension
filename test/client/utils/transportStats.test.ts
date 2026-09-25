@@ -1,4 +1,10 @@
-import { clearTransportStats, getAllTransportSegments, recordTransportSegment } from '@client/utils/transportStats';
+import {
+  clearTransportStats,
+  deleteTransportSegment,
+  getAllTransportSegments,
+  getAllTransportSegmentValues,
+  recordTransportSegment,
+} from '@client/utils/transportStats';
 
 describe('transport stats storage', () => {
   beforeEach(async () => {
@@ -73,5 +79,26 @@ describe('transport stats storage', () => {
     const [record] = segments;
     expect(record.shortestDuration.duration).toBe(1);
     expect(record.longestDuration.duration).toBe(4);
+  });
+
+  test('a reset leg keeps a marker without durations and starts over', async () => {
+    const run = (duration: number) => recordTransportSegment({
+      transport: 'Test Route', fromId: 1, toId: 2, fromLabel: 'Start', toLabel: 'End',
+      startedAt: Date.now(), endedAt: Date.now() + duration * 1000, duration, expectedDuration: null,
+    });
+    await run(3);
+
+    await deleteTransportSegment('Test Route', 1, 2);
+
+    expect(await getAllTransportSegments()).toEqual([]);
+    const [marker] = await getAllTransportSegmentValues();
+    expect(marker.resetAt).toEqual(expect.any(Number));
+    expect(marker.shortestDuration).toBeUndefined();
+
+    await run(5);
+    const [record] = await getAllTransportSegments();
+    expect(record.shortestDuration.duration).toBe(5);
+    expect(record.longestDuration.duration).toBe(5);
+    expect(record.resetAt).toBe(marker.resetAt);
   });
 });

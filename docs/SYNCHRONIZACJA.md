@@ -9,7 +9,7 @@ Rozszerzenie umozliwia synchronizacje ustawien miedzy urzadzeniami za pomoca Fir
 - [Automatyczna synchronizacja](#automatyczna-synchronizacja)
 - [Reczna synchronizacja](#reczna-synchronizacja)
 - [Szyfrowanie](#szyfrowanie)
-- [Konflikty](#konflikty)
+- [Laczenie zmian z wielu urzadzen](#laczenie-zmian-z-wielu-urzadzen)
 - [Zarzadzanie urzadzeniami](#zarzadzanie-urzadzeniami)
 - [Grupy synchronizacji](#grupy-synchronizacji)
 - [Usuwanie danych z chmury](#usuwanie-danych-z-chmury)
@@ -38,7 +38,7 @@ Po zalogowaniu zobaczysz informacje o koncie (email, metoda logowania). Kliknij 
 
 ## Synchronizowane kategorie
 
-Mozesz wybrac, ktore kategorie danych maja byc synchronizowane. Kazda kategorie mozna wlaczyc lub wylaczyc niezaleznie.
+Synchronizowane sa zawsze wszystkie ponizsze kategorie - nie trzeba (i nie da sie) wybierac, co ma byc wysylane. Dotyczy to tez wszystkich postaci.
 
 | Kategoria | Opis |
 |-----------|------|
@@ -60,6 +60,14 @@ Mozesz wybrac, ktore kategorie danych maja byc synchronizowane. Kazda kategorie 
 | **Depozyty** | Dane o depozytach |
 | **Pojemniki** | Konfiguracja pojemnikow |
 | **Edycje bazy postaci** | Lokalne edycje bazy postaci |
+| **Wiedza** | Postepy w bibliotekach i ksiazkach, wiedza, ticki i poziomy |
+| **Oswajanie** | Karmienia, poziomy zwierzat i grupy pokarmow |
+| **Odpornosci przeciwnikow** | Zapisane odpornosci i wrazliwosci |
+| **Zlom** | Baza ocenionych przedmiotow |
+| **Czasy transportu** | Najkrotsze i najdluzsze czasy przejazdow |
+| **Dostawy** | Historia dostarczonych paczek |
+
+Kopia zapasowa (plik lub Google Drive, w **Ustawienia > Kopia zapasowa**) zawiera zawsze wszystkie te dane, a dodatkowo nagrania sesji i zainstalowane skrypty. Przywrocenie kopii (po potwierdzeniu) zastepuje ustawienia na wszystkich Twoich urzadzeniach; dane postepow (wiedza, licznik zabitych, odwiedzone lokacje itp.) sa laczone, a nie zastepowane.
 
 ### Kategorie powiazane z urzadzeniem
 
@@ -71,46 +79,34 @@ Kategoria **Ustawienia interfejsu** obejmuje takze uklad okien, trasy podrozy (t
 
 ## Automatyczna synchronizacja
 
-Po wlaczeniu automatycznej synchronizacji, zmiany w ustawieniach sa automatycznie wysylane do chmury.
+Po wlaczeniu automatycznej synchronizacji zmiany sa wysylane do chmury i odbierane na innych urzadzeniach bez Twojego udzialu.
 
 ### Jak to dziala
 
-1. **Szybka synchronizacja** - Wiekszossc kategorii (triggery, aliasy, bindy, skroty, itp.) jest synchronizowana z opoznieniem **30 sekund** od ostatniej zmiany. Dzieki temu wiele szybkich zmian jest laczonych w jedna operacje.
-
-2. **Wolna synchronizacja** - Kategorie, ktore zmieniaja sie czesto podczas gry (odwiedzone lokacje, licznik zabitych), sa synchronizowane z opoznieniem **10 minut**. Zapobiega to nadmiernemu obciazeniu serwera.
-
-3. **Synchronizacja przy zamykaniu** - Przy zamykaniu strony wszystkie oczekujace zmiany sa wysylane natychmiast. Przy samym ukryciu zakladki (np. przelaczenie okna) wysylane sa tylko zmiany z "wolnych" kategorii.
-
-4. **Synchronizacja przy starcie** - Po uruchomieniu klienta stan lokalny jest porownywany z chmura: zmiany, ktore nie zdazyly sie wyslac w poprzedniej sesji, sa wysylane, a zmiany wykonane w miedzyczasie na innym urzadzeniu - pobierane i stosowane.
-
-### Odbieranie zmian z chmury
-
-Gdy inne urzadzenie wysle zmiany do chmury, Twoje urzadzenie odbiera je **w czasie rzeczywistym** dzieki nasluchiwaniu Firebase. Zmiany sa automatycznie stosowane lokalnie bez potrzeby odswiezania strony.
+1. **Wysylanie w trakcie gry** - zmiany sa zbierane i wysylane razem co **5 minut**. Kazda zmiana trafia do chmury tylko raz, wiec synchronizacja nie obciaza serwera.
+2. **Wysylanie przy przelaczaniu** - gdy ukrywasz karte klienta (przelaczasz okno, blokujesz telefon) albo zamykasz strone, oczekujace zmiany sa wysylane natychmiast. Urzadzenie, na ktore sie przesiadasz, ma juz wszystko.
+3. **Podglad na drugim urzadzeniu** - gdy klient jest otwarty i widoczny na innym Twoim urzadzeniu, zmiany sa wysylane co kilkanascie sekund, zeby bylo je widac na biezaco (np. postepy na telefonie w trakcie gry na komputerze).
+4. **Odbieranie zmian** - widoczna karta klienta odbiera zmiany z innych urzadzen na biezaco i stosuje je bez odswiezania strony. Ukryta karta nie nasluchuje; po powrocie do niej od razu pobiera to, co sie zmienilo.
 
 ### Wiele kart przegladarki
 
-Mozesz miec otwartych kilka kart klienta jednoczesnie - wysylaniem zmian zajmuje sie tylko jedna z nich (pozostale przejmuja te role automatycznie po jej zamknieciu), wiec dane nie sa wysylane wielokrotnie.
+Mozesz miec otwartych kilka kart klienta jednoczesnie - synchronizacja dziala tylko w jednej z nich (pozostale przejmuja te role automatycznie po jej zamknieciu), wiec dane nie sa wysylane wielokrotnie.
+
+### Pierwsze uruchomienie na urzadzeniu
+
+Przy pierwszym uruchomieniu nowej synchronizacji urzadzenie pobiera dane zapisane przez poprzednia wersje i dopiero potem wysyla swoje. Ustawienia, ktore juz sa w chmurze, maja pierwszenstwo przed domyslnymi ustawieniami nowego urzadzenia; dane, ktore ma tylko to urzadzenie, sa dodawane.
+
+Zanim nowa synchronizacja cokolwiek zmieni, urzadzenie zapisuje u siebie pelna kopie danych. Znajdziesz ja w zakladce kopii zapasowej: mozesz ja przywrocic ("Przywroc stan sprzed aktualizacji") albo pobrac jako plik.
 
 ### Wlaczanie automatycznej synchronizacji
 
 1. Przejdz do **Ustawienia > Firebase**
 2. Zaloguj sie na konto
 3. Zaznacz "Automatyczna synchronizacja"
-4. Wybierz kategorie, ktore chcesz synchronizowac
 
----
+### Reczne wysylanie
 
-## Reczna synchronizacja
-
-Jesli nie chcesz korzystac z automatycznej synchronizacji, mozesz synchronizowac dane recznie.
-
-### Wysylanie do chmury
-
-Kliknij przycisk **"Synchronizuj teraz"** w zakladce Firebase. Wyslane zostana wszystkie wlaczone kategorie.
-
-### Pobieranie z chmury
-
-Mozesz pobrac konkretne kategorie z chmury. W sekcji metadanych chmury przy kazdej kategorii znajdziesz informacje o tym, czy dane istnieja w chmurze, kiedy zostaly ostatnio zsynchronizowane i z jakiego urzadzenia.
+Przycisk **"Wyslij do chmury"** wysyla oczekujace zmiany od razu, bez czekania na kolejna synchronizacje.
 
 ---
 
@@ -135,34 +131,15 @@ Mozesz zabezpieczyc swoje dane w chmurze szyfrujac je haslem.
 
 ---
 
-## Konflikty
+## Laczenie zmian z wielu urzadzen
 
-Konflikt wystepuje, gdy dane zostaly zmienione zarowno lokalnie, jak i w chmurze od ostatniej synchronizacji (np. edytowales ustawienia na dwoch urzadzeniach jednoczesnie).
+Nie ma konfliktow do rozwiazywania - zmiany z roznych urzadzen sa laczone automatycznie, osobno dla kazdego elementu (kazdego aliasu, triggera, lokacji, wpisu wiedzy itd.):
 
-### Rozwiazywanie konfliktow
-
-Gdy wykryty zostanie konflikt, pojawi sie okno z lista kategorii, w ktorych wystepuja roznice (wraz z podgladem roznic). Jesli okno ustawien jest zamkniete, w rogu ekranu pojawi sie powiadomienie - konflikt czeka na rozwiazanie do momentu otwarcia zakladki synchronizacji.
-
-Masz trzy opcje:
-
-| Opcja | Dzialanie |
-|-------|-----------|
-| **Zachowaj lokalne** | Twoje lokalne dane zostana wyslane do chmury, nadpisujac dane z innego urzadzenia |
-| **Uzyj chmury** | Dane z chmury zostana zastosowane lokalnie, zastepujac Twoje zmiany |
-| **Anuluj** | Synchronizacja zostanie przerwana, nic sie nie zmieni |
-
-### Automatyczne laczenie danych
-
-Dla czesci kategorii wybor "lokalne czy chmura" nie powoduje utraty danych z drugiej strony:
-
-- **Odwiedzone lokacje, licznik zabitych, wiedza** - dane sa laczone (suma zbiorow); niezaleznie od wyboru nic nie ginie.
-- **Depozyty, pojemniki, liczniki postepow, ustawienia postaci, edycje bazy postaci** - dane sa laczone per postac: wybrana strona wygrywa tylko dla postaci wystepujacych po obu stronach, a postacie znane tylko jednej stronie sa zawsze zachowywane. Dzieki temu gra na roznych postaciach na roznych urzadzeniach nie kasuje danych zadnej z nich.
-
-### Unikanie konfliktow
-
-- Korzystaj z automatycznej synchronizacji - minimalizuje ryzyko konfliktow
-- Poczekaj, az synchronizacja sie zakonczy, zanim zaczniesz edytowac ustawienia na innym urzadzeniu
-- Jesli czesto przelaczasz sie miedzy urzadzeniami, ustaw krotszy czas synchronizacji
+- **Ustawienia, aliasy, triggery, bindy, notatki** - wygrywa najnowsza zmiana danego elementu. Edycja aliasu na telefonie nie nadpisuje innego aliasu zmienionego na komputerze.
+- **Odwiedzone lokacje, ticki wiedzy, karmienia, dostawy** - dane z obu urzadzen sa sumowane, nic nie ginie.
+- **Licznik zabitych, licznik postepow** - liczby z urzadzen sa dodawane.
+- **Postepy w bibliotekach i ksiazkach** - postep tylko rosnie.
+- **Awans poziomu wiedzy lub zwierzecia** - liczy sie pierwsza obserwacja; urzadzenie, ktore zobaczylo nowy poziom pozniej, nie przesuwa momentu awansu (ticki i karmienia od awansu licza sie poprawnie).
 
 ---
 
@@ -232,8 +209,7 @@ Po dolaczeniu ustawienia grupy zostana zastosowane na tym urzadzeniu.
 
 Gdy urzadzenia sa w tej samej grupie:
 - Zmiany w ukladzie interfejsu i przyciskach sa synchronizowane miedzy urzadzeniami w grupie automatycznie, razem z pozostalymi kategoriami (zakladka **Synchronizacja konfiguracji**)
-- Konflikty sa wykrywane i rozwiazywane tak samo jak dla zwyklych kategorii
-- Reczna synchronizacja odbywa sie przyciskami "Wyslij do chmury" / "Pobierz z chmury" w zakladce Synchronizacja konfiguracji
+- Wygrywa najnowszy uklad sposrod urzadzen grupy
 
 ### Opuszczanie grupy
 
@@ -250,7 +226,7 @@ Jesli chcesz usunac wszystkie swoje dane z chmury:
 3. Kliknij "Usun wszystkie dane"
 4. Potwierdz usuniecie
 
-**Uwaga**: Ta operacja jest nieodwracalna i usuwa z chmury takze dane powiazane z pozostalymi urzadzeniami (uklady interfejsu, przyciski). Lokalne dane na Twoim urzadzeniu nie zostana usuniete.
+**Uwaga**: Ta operacja jest nieodwracalna i usuwa z chmury takze dane powiazane z pozostalymi urzadzeniami (uklady interfejsu, przyciski). Lokalne dane na Twoim urzadzeniu nie zostana usuniete - zaraz potem to urzadzenie wysle je ponownie, wiec chmura zaczyna od jego danych. Pozostale urzadzenia przy najblizszej synchronizacji przejmuja dane z chmury (czyli z tego urzadzenia); dodaja do nich tylko to, czego w chmurze nie ma, np. lokacje odwiedzone tylko na nich.
 
 ---
 
@@ -267,7 +243,6 @@ Jesli chcesz usunac wszystkie swoje dane z chmury:
 
 - Sprawdz, czy jestes zalogowany
 - Sprawdz, czy automatyczna synchronizacja jest wlaczona
-- Sprawdz, czy wybrane kategorie sa zaznaczone do synchronizacji
 - Sprawdz polaczenie internetowe
 
 ### Nie moge odszyfrowac danych
@@ -278,12 +253,8 @@ Jesli chcesz usunac wszystkie swoje dane z chmury:
 
 ### Dane nie pojawiaja sie na drugim urzadzeniu
 
-- Poczekaj do 30 sekund (szybka synchronizacja) lub 10 minut (wolna synchronizacja)
+- Ukryj karte klienta na pierwszym urzadzeniu (albo poczekaj do 5 minut) - zmiany wysylaja sie przy ukryciu karty
 - Sprawdz, czy na obu urzadzeniach jestes zalogowany na to samo konto
-- Sprawdz, czy kategoria jest wlaczona na obu urzadzeniach
 - Dla ustawien interfejsu i przyciskow - sprawdz, czy urzadzenia sa w tej samej [grupie synchronizacji](#grupy-synchronizacji)
-- Sprobuj recznie zsynchronizowac przyciskiem "Synchronizuj teraz"
-
-### Widzialem komunikat o konflikcie, ale go zignorowalem
-
-Jesli zamkniesz okno konfliktu przyciskiem "Anuluj", synchronizacja zostanie wstrzymana. Przy nastepnej probie synchronizacji konflikt pojawi sie ponownie. Aby go rozwiazac, musisz wybrac "Zachowaj lokalne" lub "Uzyj chmury".
+- Sprobuj wyslac zmiany recznie przyciskiem "Wyslij do chmury"
+- Synchronizacja dziala w jednej karcie przegladarki - jesli masz kilka kart, zmiany wysyla pierwsza otwarta

@@ -121,13 +121,24 @@ export function bootstrapGameClient(opts: { installPorts: () => void }): GameCli
             const config = loadFirebaseConfig();
             if (!config) return;
             initializeFirebase(config).then(() => {
+                // Sync v2 (see @web/userData/syncV2) replaces the v1 listener and
+                // engine; `arkadia.syncV2 = '0'` falls back to v1 until v1 is removed.
+                const syncV2 = localStorage.getItem('arkadia.syncV2') !== '0'
+                    ? import('@web/userData/syncV2')
+                    : null;
                 onAuthStateChanged((authState) => {
                     if (authState.isAuthenticated && authState.userId) {
-                        syncListener.start(authState.userId);
-                        syncEngine.start();
+                        const userId = authState.userId;
+                        if (syncV2) {
+                            void syncV2.then(({ startSyncV2 }) => startSyncV2(userId, () => syncEngine.getPassphrase()));
+                        } else {
+                            syncListener.start(userId);
+                            syncEngine.start();
+                        }
                     } else {
                         syncListener.stop();
                         syncEngine.stop();
+                        void syncV2?.then(({ stopSyncV2 }) => stopSyncV2());
                     }
                 });
             }).catch(err => {
