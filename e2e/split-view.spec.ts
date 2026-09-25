@@ -202,27 +202,50 @@ test.describe('Split view', () => {
     });
 
     test('clicking an output link in the history view keeps split view open', async ({page}) => {
-        await pushManyLines(page, 80);
-        await page.locator('#message-input').focus();
+        await pushManyLines(page, 60);
 
-        // A clickable output span, like the ones hyperlinks render into.
-        await page.evaluate((sel) => {
+        // A clickable output span, like the ones hyperlinks render into, with
+        // plenty of scrollback both above and below it.
+        await page.evaluate(({sel, splitSel}) => {
             const wrapper = document.querySelector(sel) as HTMLElement;
             const link = document.createElement('span');
             link.id = 'e2e-history-link';
             link.textContent = 'history link';
             link.setAttribute('data-output-clickable', 'true');
-            wrapper.insertBefore(link, wrapper.firstChild);
-        }, OUTPUT_SELECTOR);
+            link.style.display = 'block';
+            wrapper.insertBefore(link, document.querySelector(splitSel));
+        }, {sel: OUTPUT_SELECTOR, splitSel: SPLIT_BOTTOM_SELECTOR});
+        await pushText(page, Array.from({length: 60}, (_, i) => `More ${i + 1}`).join('\n') + '\n');
+        await waitForOutputContaining(page, 'More 60');
+        await page.locator('#message-input').focus();
 
+        // Scroll the link to the middle of the view: the output's edges can sit
+        // under overlays (objects list, direction buttons) that swallow clicks.
         await scrollOutputToTop(page);
-        await page.waitForTimeout(200);
-        await page.locator('#e2e-history-link').click();
+        await page.evaluate((sel) => {
+            const wrapper = document.querySelector(sel) as HTMLElement;
+            const link = document.getElementById('e2e-history-link') as HTMLElement;
+            wrapper.scrollTop += link.getBoundingClientRect().top - wrapper.getBoundingClientRect().top - wrapper.clientHeight / 2;
+        }, OUTPUT_SELECTOR);
+        await page.waitForTimeout(300);
+        expect(await hasSplitHidden(page)).toBe(false);
+        const readScrollTop = () => page.evaluate((sel) => (document.querySelector(sel) as HTMLElement).scrollTop, OUTPUT_SELECTOR);
+        const scrollTopBefore = await readScrollTop();
+
+        // Click by coordinates: locator.click() would scroll the element into
+        // view itself, which is exactly what must not be disturbed here.
+        const outputBox = await page.locator(OUTPUT_SELECTOR).boundingBox();
+        const box = await page.locator('#e2e-history-link').boundingBox();
+        expect(outputBox).not.toBeNull();
+        expect(box).not.toBeNull();
+        const x = outputBox!.x + outputBox!.width / 2;
+        const y = box!.y + box!.height / 2;
+        expect(await page.evaluate(([px, py]) => document.elementFromPoint(px, py)?.id, [x, y])).toBe('e2e-history-link');
+        await page.mouse.click(x, y);
         await page.waitForTimeout(400);
 
         expect(await hasSplitHidden(page)).toBe(false);
-        const scrollTop = await page.evaluate((sel) => (document.querySelector(sel) as HTMLElement).scrollTop, OUTPUT_SELECTOR);
-        expect(scrollTop).toBeLessThan(50);
+        expect(Math.abs(await readScrollTop() - scrollTopBefore)).toBeLessThan(5);
         await expect(page.locator('#message-input')).toBeFocused();
     });
 });
