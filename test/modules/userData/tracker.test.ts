@@ -417,6 +417,31 @@ describe('UserDataTracker', () => {
         expect(await c.tracker.applyDeviceValues(['unknown'])).toBe(false);
     });
 
+    it('names a type whose capture takes unusually long', async () => {
+        vi.useFakeTimers();
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+        try {
+            const a = makeDevice('a', 1_000);
+            let finish!: () => void;
+            const slow = new Promise<void>(resolve => { finish = resolve; });
+            const read = a.types.rooms.read.bind(a.types.rooms);
+            a.types.rooms.read = async () => { await slow; return read(); };
+
+            const capture = a.tracker.capture();
+            await vi.advanceTimersByTimeAsync(16_000);
+            expect(warn).toHaveBeenCalledWith(expect.stringContaining('capture of rooms still running after 15 s'));
+
+            finish();
+            await capture;
+            warn.mockClear();
+            await vi.advanceTimersByTimeAsync(30_000);
+            expect(warn).not.toHaveBeenCalled();
+        } finally {
+            warn.mockRestore();
+            vi.useRealTimers();
+        }
+    });
+
     it('keeps syncing the other types when one fails', async () => {
         const a = makeDevice('a', 1_000);
         const b = makeDevice('b', 1_000);

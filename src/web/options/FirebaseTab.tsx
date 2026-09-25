@@ -36,19 +36,36 @@ import eventBus from "@modules/core/eventBus";
 import { importCategories } from "./exportUtils";
 import ConflictResolutionModal from "./ConflictResolutionModal";
 import {
-    flushSyncV2,
     isSyncV2Enabled,
     nudgeSyncV2,
-    redownloadSyncV2,
-    resetSyncV2Cloud,
+    runSyncV2Action,
     startSyncV2,
-    waitForSyncV2,
 } from "@web/userData/syncV2";
+
+/** How long the download button waits before leaving a large download to finish in the background. */
+const DOWNLOAD_WAIT_MS = 60_000;
+
+/**
+ * `work`'s result, or 'background' once `ms` pass: the work goes on and its
+ * outcome is only logged, so a long apply doesn't hold the button.
+ */
+function inBackgroundAfter<T>(work: Promise<T>, ms: number): Promise<T | 'background'> {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const late = new Promise<'background'>(resolve => {
+        timer = setTimeout(() => {
+            work.then(
+                () => console.info('[SyncV2] Download finished in the background'),
+                error => console.error('[SyncV2] Download failed in the background', error),
+            );
+            resolve('background');
+        }, ms);
+    });
+    return Promise.race([work, late]).finally(() => clearTimeout(timer));
+}
 
 /** Why sync v2 isn't running in this tab, for the send / download buttons. */
 function syncV2NotRunningMessage(): string {
     const settings = loadFirebaseSettings();
-    if (!settings.autoSyncEnabled) return 'Wlacz automatyczna synchronizacje, aby wysylac i pobierac dane.';
     if (settings.encryptionEnabled && !syncEngine.getPassphrase()) return 'Podaj haslo szyfrowania.';
     return 'Synchronizacja dziala w innej karcie tej przegladarki albo nie mogla sie uruchomic (sprawdz polaczenie).';
 }
@@ -296,7 +313,7 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
     useEffect(() => {
         saveFirebaseSettings({ encryptionEnabled, autoSyncEnabled });
         syncEngine.settingsChanged();
-        // Auto-sync just switched on (or encryption changed): start v2 now.
+        // Auto-sync switched on (start v2 now) or off (stop it), or encryption changed.
         if (syncV2) nudgeSyncV2();
     }, [encryptionEnabled, autoSyncEnabled, syncV2]);
 
@@ -396,11 +413,10 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
 
         try {
             if (syncV2) {
-                // Sync v2 runs in one tab per browser, and may still be starting.
-                if (!(await waitForSyncV2(10_000))) {
+                // Runs even with auto-sync off: a one-off sync.
+                if (!(await runSyncV2Action(engine => engine.flush()))) {
                     setSyncError(syncV2NotRunningMessage());
                 } else {
-                    await flushSyncV2();
                     setSyncStatus('Zmiany zostaly wyslane.');
                 }
                 return;
@@ -434,11 +450,15 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
 
         try {
             if (syncV2) {
-                // Sync v2 runs in one tab per browser, and may still be starting.
-                if (!(await waitForSyncV2(10_000))) {
+                const outcome = await inBackgroundAfter(
+                    runSyncV2Action(engine => engine.redownload()),
+                    DOWNLOAD_WAIT_MS,
+                );
+                if (outcome === 'background') {
+                    setSyncStatus('Pobieranie trwa dluzej niz zwykle - dane zostana zastosowane w tle.');
+                } else if (!outcome) {
                     setSyncError(syncV2NotRunningMessage());
                 } else {
-                    await redownloadSyncV2();
                     setSyncStatus('Dane z chmury zostaly pobrane.');
                 }
                 return;
@@ -541,8 +561,11 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
             if (syncV2) {
                 // The v1 document stays until v1 is removed: it is the way
                 // back if sync v2 has to be switched off.
-                await resetSyncV2Cloud();
-                setSyncStatus('Dane zostaly usuniete z chmury. To urzadzenie wyslalo ponownie swoje dane.');
+                if (!(await runSyncV2Action(engine => engine.resetCloud()))) {
+                    setSyncError(syncV2NotRunningMessage());
+                } else {
+                    setSyncStatus('Dane zostaly usuniete z chmury. To urzadzenie wyslalo ponownie swoje dane.');
+                }
                 return;
             }
             const result = await deleteAllCategories();

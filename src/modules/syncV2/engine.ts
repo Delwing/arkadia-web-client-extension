@@ -265,6 +265,7 @@ export class SyncEngineV2 {
             usage?.read(1, base?.data.length ?? 0);
             if (base) {
                 const records = await decodeRecords(base.data, base.encrypted, key);
+                this.options.log?.(`Applying the base: ${records.length} records...`);
                 await tracker.apply(records, applyOptions);
                 this.options.log?.(`Applied the base: ${records.length} records (${describe(records)})`);
                 for (const [device, seq] of Object.entries(base.folded)) {
@@ -305,6 +306,15 @@ export class SyncEngineV2 {
         const found = await this.options.tracker.applyDeviceValues(devices);
         if (found) await this.flush();
         return found;
+    }
+
+    /**
+     * Resolves once the first cloud snapshot is applied and this device's
+     * changes uploaded after it (at once when that already happened).
+     */
+    ready(): Promise<void> {
+        if (this.received) return Promise.resolve();
+        return new Promise((resolve, reject) => this.receiveWaiters.push({ resolve, reject }));
     }
 
     /**

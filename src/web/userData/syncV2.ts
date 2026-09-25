@@ -53,6 +53,15 @@ let startedFor: string | null = null;
 let pendingRun: (() => void) | null = null;
 let readyWaiters: Array<() => void> = [];
 
+/** Manual send / download actions in progress: they run sync even with auto-sync off. */
+let manualActions = 0;
+/** Wait for the next start attempt (set while sync is started for a user). */
+let rearm: (() => void) | null = null;
+
+const autoSyncOn = (): boolean => loadFirebaseSettings().autoSyncEnabled;
+/** Sync may run: auto-sync is on, or the user asked for a send / download. */
+const syncAllowed = (): boolean => autoSyncOn() || manualActions > 0;
+
 let groupRefresh: Promise<void> | null = null;
 const devicesChecked = new Set<string>();
 
@@ -92,7 +101,7 @@ export function startSyncV2(userId: string, passphrase: () => string | null): vo
     const run = async (): Promise<void> => {
         if (token !== startToken) return;
         const db = getFirestore();
-        if (!db || !loadFirebaseSettings().autoSyncEnabled) return retryLater();
+        if (!db || !syncAllowed()) return retryLater();
         const editTypes = await migrateFromV1(userId, passphrase()).catch(error => {
             console.warn('[SyncV2] v1 migration failed:', error);
             return null;
@@ -109,7 +118,7 @@ export function startSyncV2(userId: string, passphrase: () => string | null): vo
             decryptionKey: passphrase,
             locked: () => {
                 const settings = loadFirebaseSettings();
-                return !settings.autoSyncEnabled || (settings.encryptionEnabled && !passphrase());
+                return !syncAllowed() || (settings.encryptionEnabled && !passphrase());
             },
             visibility: browserVisibility,
             cursors: {
@@ -141,6 +150,7 @@ export function startSyncV2(userId: string, passphrase: () => string | null): vo
 
     // Auto-sync off, offline, or the passphrase not entered yet: try again later.
     const retryLater = (): void => {
+        if (token !== startToken) return;
         if (retryTimer) clearTimeout(retryTimer);
         pendingRun = () => { void run(); };
         retryTimer = setTimeout(() => {
@@ -149,6 +159,8 @@ export function startSyncV2(userId: string, passphrase: () => string | null): vo
             void run();
         }, MIGRATION_RETRY_MS);
     };
+
+    rearm = retryLater;
 
     const locks = typeof navigator !== 'undefined'
         ? (navigator as Navigator & { locks?: LockManager }).locks
@@ -168,6 +180,7 @@ export function startSyncV2(userId: string, passphrase: () => string | null): vo
 export async function stopSyncV2(): Promise<void> {
     startToken += 1;
     startedFor = null;
+    rearm = null;
     devicesChecked.clear();
     if (retryTimer) clearTimeout(retryTimer);
     retryTimer = null;
@@ -185,6 +198,11 @@ export async function stopSyncV2(): Promise<void> {
  * is switched on.
  */
 export function nudgeSyncV2(): void {
+    // Auto-sync switched off: stop listening and uploading until it is back.
+    if (engine && !syncAllowed()) {
+        void pauseSyncV2();
+        return;
+    }
     const run = pendingRun;
     if (!run) return;
     if (retryTimer) clearTimeout(retryTimer);
@@ -212,14 +230,41 @@ export function waitForSyncV2(timeoutMs: number): Promise<boolean> {
     });
 }
 
+/** Stop the engine (auto-sync is off) and wait for the next start. */
+async function pauseSyncV2(): Promise<void> {
+    const running = engine;
+    engine = null;
+    await running?.stop();
+    console.log('[SyncV2] Paused: auto-sync is off');
+    rearm?.();
+}
+
+/**
+ * Run a manual send / download: sync starts for it even with auto-sync off,
+ * first applies what the cloud has, then runs `action`; with auto-sync off it
+ * stops again afterwards. Resolves false when sync can't run in this tab
+ * (another tab runs it, offline, passphrase missing).
+ */
+export async function runSyncV2Action(
+    action: (engine: SyncEngineV2) => Promise<void>,
+    timeoutMs = 10_000,
+): Promise<boolean> {
+    manualActions += 1;
+    try {
+        if (!(await waitForSyncV2(timeoutMs)) || !engine) return false;
+        const running = engine;
+        await running.ready();
+        await action(running);
+        return true;
+    } finally {
+        manualActions -= 1;
+        if (manualActions === 0 && engine && !autoSyncOn()) await pauseSyncV2();
+    }
+}
+
 /** Upload local changes now (the "send" button, after a restore). */
 export async function flushSyncV2(): Promise<void> {
     await engine?.flush();
-}
-
-/** Read everything in the cloud again and apply it (the "download" button). */
-export async function redownloadSyncV2(): Promise<void> {
-    await engine?.redownload();
 }
 
 /**
@@ -229,9 +274,4 @@ export async function redownloadSyncV2(): Promise<void> {
  */
 export async function applyDeviceSettingsFrom(devices: string[]): Promise<boolean> {
     return (await engine?.applyDeviceValues(devices)) ?? false;
-}
-
-/** Delete all sync data in the cloud; this device uploads everything again. */
-export async function resetSyncV2Cloud(): Promise<void> {
-    await engine?.resetCloud();
 }

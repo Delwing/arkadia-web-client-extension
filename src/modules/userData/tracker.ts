@@ -47,6 +47,9 @@ export interface TrackerOptions {
 
 type Draft = Omit<UserRecord, 'seq'>;
 
+/** A type's capture or apply taking longer than this is reported in the console. */
+const SLOW_TYPE_MS = 15_000;
+
 /** Counter values without zero fields, so `{a: 0}` equals `{}`. */
 function nonZero(values: Record<string, number> | undefined): Record<string, number> {
     const result: Record<string, number> = {};
@@ -84,7 +87,7 @@ export class UserDataTracker {
             const records: UserRecord[] = [];
             for (const type of this.selectTypes(typeIds)) {
                 try {
-                    records.push(...await this.captureType(type));
+                    records.push(...await this.watch(type, 'capture', () => this.captureType(type)));
                 } catch (error) {
                     this.reportError(type, 'capture', error);
                 }
@@ -129,11 +132,13 @@ export class UserDataTracker {
                 //   on top and every count would double.
                 // Other rules merge, so capturing first loses nothing.
                 try {
-                    const firstContact = (type.rule.kind === 'newest' || type.rule.kind === 'counter')
-                        && !(await this.options.store.isSeeded(type.id));
-                    if (!firstContact) await this.captureType(type);
-                    await this.applyType(type, typeRecords, firstContact && !options.fromCloud);
-                    if (firstContact) await this.captureType(type);
+                    await this.watch(type, 'apply', async () => {
+                        const firstContact = (type.rule.kind === 'newest' || type.rule.kind === 'counter')
+                            && !(await this.options.store.isSeeded(type.id));
+                        if (!firstContact) await this.captureType(type);
+                        await this.applyType(type, typeRecords, firstContact && !options.fromCloud);
+                        if (firstContact) await this.captureType(type);
+                    });
                 } catch (error) {
                     this.reportError(type, 'apply', error);
                     failed.push(type.id);
@@ -193,6 +198,22 @@ export class UserDataTracker {
     /** Records up to and including `seq` were uploaded. */
     acknowledge(uptoSeq: number): Promise<void> {
         return this.serial(() => this.options.store.removeOutbox(uptoSeq));
+    }
+
+    /**
+     * Run one type's capture or apply, warning while it takes unusually long:
+     * everything after it waits, so a stuck type is worth naming.
+     */
+    private async watch<T>(type: UserDataType, stage: 'capture' | 'apply', work: () => Promise<T>): Promise<T> {
+        const started = Date.now();
+        const timer = setInterval(() => {
+            console.warn(`[UserData] ${stage} of ${type.id} still running after ${Math.round((Date.now() - started) / 1000)} s`);
+        }, SLOW_TYPE_MS);
+        try {
+            return await work();
+        } finally {
+            clearInterval(timer);
+        }
     }
 
     /** One type failing (bad local data, storage errors) doesn't stop the others from syncing. */
