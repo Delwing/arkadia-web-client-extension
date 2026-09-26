@@ -70,6 +70,7 @@ import {installClientPorts} from "./installClientPorts";
 import {installContentWidthMeasurer} from "./contentWidthMeasurer";
 import {bootstrapGameClient} from "./clientBootstrap";
 import {initTextToSpeech} from "./voice/textToSpeech.ts";
+import {reloadToLatest, watchForNewVersion} from "./versionCheck";
 
 // The client seeds `binds` from the active keymap itself (KeyBindingManager),
 // so any UI — including this one — picks up keybinds without a UI-side step.
@@ -737,35 +738,27 @@ document.addEventListener('DOMContentLoaded', () => {
         commitInfo.textContent = '';
         commitInfo.append(line);
 
-        // Check for latest version from GitHub deployments API
-        fetch('https://api.github.com/repos/Delwing/arkadia-web-client-extension/deployments?environment=github-pages')
-            .then(response => {
-                if (!response.ok) {
-                    if (response.status === 403 || response.status === 429) {
-                        console.warn('GitHub API rate limit exceeded, skipping version check');
-                        return null;
-                    }
-                    throw new Error(`Failed to fetch latest deployment: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (!data) return;
-                // First deployment in the list is the most recent
-                if (Array.isArray(data) && data.length > 0) {
-                    const latestDeployment = data[0];
-                    const latestSha = latestDeployment.sha?.substring(0, __COMMIT_SHA__.length);
-                    if (latestSha && latestSha !== __COMMIT_SHA__) {
-                        const warningDiv = document.createElement('div');
-                        warningDiv.className = 'commit-info-update';
-                        warningDiv.textContent = 'Nowa wersja dostępna - odśwież stronę';
-                        commitInfo.appendChild(warningDiv);
-                    }
-                }
-            })
-            .catch(err => {
-                console.warn('Could not check for updates:', err);
-            });
+        // Only ever reported here, on the login screen: an open PWA notices the
+        // new build when it returns to the foreground, and the player sees it the
+        // next time they are not in the middle of a game.
+        watchForNewVersion({
+            currentSha: __COMMIT_SHA__,
+            onUpdate: () => {
+                const warningDiv = document.createElement('div');
+                warningDiv.className = 'commit-info-update';
+                warningDiv.append('Nowa wersja dostępna');
+                const reloadButton = document.createElement('button');
+                reloadButton.type = 'button';
+                reloadButton.className = 'auth-btn auth-btn--sm commit-info-reload';
+                reloadButton.textContent = 'Odśwież';
+                reloadButton.addEventListener('click', () => {
+                    reloadButton.disabled = true;
+                    void reloadToLatest();
+                });
+                warningDiv.append(reloadButton);
+                commitInfo.appendChild(warningDiv);
+            },
+        });
     }
 
     let clearInputOnSend = getRenderSettings().clearInputOnSend;

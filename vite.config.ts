@@ -18,6 +18,19 @@ const commitDate = resolveGitInfo('git log -1 --format=%cI', 'unknown');
 export default defineConfig({
     plugins: [
         react(),
+        {
+            // What is live, for src/web/versionCheck.ts: an open page compares it
+            // with the build it was loaded from.
+            name: 'version-json',
+            apply: 'build',
+            generateBundle() {
+                this.emitFile({
+                    type: 'asset',
+                    fileName: 'version.json',
+                    source: JSON.stringify({sha: commitSha, date: commitDate}),
+                });
+            },
+        },
     ],
     resolve: {
         tsconfigPaths: true,

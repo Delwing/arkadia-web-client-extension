@@ -8,7 +8,6 @@
 import { test as base, expect } from '@playwright/test';
 import {
     installMockWebSocket,
-    mockGithubDeployments,
     mockHerbsDownload,
     mockKnowledgeDownload,
     mockMagicKeysDownload,
@@ -159,7 +158,6 @@ const test = base.extend({
         await mockKnowledgeDownload(context);
         await mockHerbsDownload(context);
         await mockWiedzaDownload(context);
-        await mockGithubDeployments(context);
         await installMockWebSocket(context);
 
         await use(context);
