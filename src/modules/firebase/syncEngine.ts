@@ -207,9 +207,9 @@ class FirebaseSyncEngine {
         return this.watching;
     }
 
-    /** When the scheduled auto-sync runs (epoch ms), or null when none is pending. */
-    getNextAutoSyncAt(): number | null {
-        return syncDebounceManager.getNextSyncAt();
+    /** When the scheduled hot / cold auto-syncs run (epoch ms), null when not pending. */
+    getScheduledAutoSyncs(): { hot: number | null; cold: number | null } {
+        return syncDebounceManager.getScheduledSyncs();
     }
 
     /** True while a debounced auto-sync is scheduled but has not fired yet. */

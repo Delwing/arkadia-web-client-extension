@@ -188,6 +188,11 @@ export class SyncEngineV2 {
         return this.nextUploadAt;
     }
 
+    /** The current upload interval: shorter while another device watches. */
+    getUploadIntervalMs(): number {
+        return this.watchedByOthers ? this.timings.watchingMs : this.timings.idleMs;
+    }
+
     /** Whether another of the user's devices is watching (uploads run more often). */
     isWatchedByOthers(): boolean {
         return this.watchedByOthers;
@@ -204,7 +209,7 @@ export class SyncEngineV2 {
         this.timer = null;
         this.nextUploadAt = null;
         if (!this.running) return;
-        const interval = this.watchedByOthers ? this.timings.watchingMs : this.timings.idleMs;
+        const interval = this.getUploadIntervalMs();
         this.nextUploadAt = this.now() + interval;
         this.timer = setTimeout(() => {
             this.timer = null;

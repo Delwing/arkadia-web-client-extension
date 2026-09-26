@@ -7921,22 +7921,57 @@ select.popup-input.popup-input--control {
   padding-top: 8px;
   border-top: 1px solid var(--popup-border);
 }
-/* Activity log (SyncActivityPanel.tsx): newest first, capped height. */
-.sync-activity__list {
-  max-height: 180px;
+/* Sync countdowns and activity log (SyncActivity.tsx). The log sits under the
+   action buttons: a few monospace lines, the rest scrolls. */
+.sync-timers {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   margin: 0;
   padding: 0;
-  overflow-y: auto;
   list-style: none;
 }
-.sync-activity__entry {
+.sync-timers__row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+.sync-timers__value {
+  flex-shrink: 0;
+  font-family: monospace;
+  font-variant-numeric: tabular-nums;
+}
+.sync-log {
+  flex-shrink: 0;
+  margin-top: 8px;
+}
+.sync-log__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 24px;
+}
+.sync-log__list {
+  /* Five lines, plus padding and border */
+  box-sizing: border-box;
+  height: calc(5 * 1.4em + 14px);
+  margin: 0;
+  padding: 6px 8px;
+  overflow-y: auto;
+  border: 1px solid var(--popup-border);
+  border-radius: var(--ui-radius, 6px);
+  background-color: var(--popup-subtle-bg);
+  font-family: monospace;
+  font-size: var(--ui-fs-sm, 12px);
+  line-height: 1.4;
+  list-style: none;
+}
+.sync-log__entry {
   display: flex;
   gap: 8px;
-  padding: 2px 0;
 }
-.sync-activity__time {
+.sync-log__entry > :first-child {
   flex-shrink: 0;
-  font-variant-numeric: tabular-nums;
 }
 
 /* ── Devices page (DeviceManagementTab.tsx) ──────────────────────────────── */

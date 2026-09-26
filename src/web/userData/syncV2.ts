@@ -74,6 +74,8 @@ export interface SyncV2Status {
     state: 'running' | 'waiting' | 'other-tab' | 'stopped';
     /** Next scheduled upload (epoch ms) while running. */
     nextUploadAt: number | null;
+    /** Time between scheduled uploads while running. */
+    uploadIntervalMs: number | null;
     /** Next start attempt (epoch ms) while waiting. */
     retryAt: number | null;
     /** Another device is watching: uploads run every few seconds. */
@@ -85,12 +87,13 @@ export function getSyncV2Status(): SyncV2Status {
         return {
             state: 'running',
             nextUploadAt: engine.getNextUploadAt(),
+            uploadIntervalMs: engine.getUploadIntervalMs(),
             retryAt: null,
             watchedByOthers: engine.isWatchedByOthers(),
         };
     }
     const state = !startedFor ? 'stopped' : lockHeld ? 'waiting' : 'other-tab';
-    return { state, nextUploadAt: null, retryAt: state === 'waiting' ? retryAt : null, watchedByOthers: false };
+    return { state, nextUploadAt: null, uploadIntervalMs: null, retryAt: state === 'waiting' ? retryAt : null, watchedByOthers: false };
 }
 
 function describeActivity(event: SyncEngineActivity): void {
