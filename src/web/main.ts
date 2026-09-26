@@ -291,21 +291,15 @@ outputWrapper.addEventListener('click', (event) => {
 // MobileCommandRadial component itself (src/ui/web/buttons) — it wires its
 // own mousedown listener onto the content area.
 
-function updateProgress(p: number, loaded?: number, total?: number) {
+function updateProgress(p: number, loaded?: number) {
     progressContainer.style.display = 'block';
     if (p < 0) {
-        // Indeterminate progress (version check in progress)
+        // Indeterminate progress: version check, or download of unknown total size
         progressBar.style.width = '100%';
-        progressBar.textContent = '';
+        progressBar.textContent = loaded !== undefined ? `${Math.floor(loaded / 1024)} KB` : '';
     } else {
         progressBar.style.width = `${p}%`;
-        if (loaded !== undefined && total !== undefined && total > 0) {
-            const loadedKb = Math.floor(loaded / 1024);
-            const totalKb = Math.ceil(total / 1024);
-            progressBar.textContent = `${loadedKb} / ${totalKb} KB`;
-        } else {
-            progressBar.textContent = `${Math.floor(p)}%`;
-        }
+        progressBar.textContent = `${Math.floor(p)}%`;
     }
 }
 

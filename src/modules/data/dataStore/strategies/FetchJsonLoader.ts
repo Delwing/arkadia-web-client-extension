@@ -25,10 +25,7 @@ export class FetchJsonLoader<TData, TMeta extends RefreshMetadata = RefreshMetad
     context: LoaderContext<JsonDatasetSnapshot<TData>, TMeta>,
   ): Promise<LoaderResult<JsonDatasetSnapshot<TData>, TMeta>> {
     const response = await this.fetchImpl(this.url);
-    const totalHeader = (response as any).headers?.get?.('Content-Length');
-    const total = Number.parseInt(totalHeader ?? '0', 10);
-
-    const data = await this.readJson(response, total, context);
+    const data = await this.readJson(response, context);
 
     return {
       snapshot: {
@@ -40,10 +37,12 @@ export class FetchJsonLoader<TData, TMeta extends RefreshMetadata = RefreshMetad
 
   private async readJson(
     response: Response,
-    total: number,
     context: LoaderContext<JsonDatasetSnapshot<TData>, TMeta>,
   ): Promise<TData> {
-    if (response.body && Number.isFinite(total) && total > 0) {
+    // Content-Length is not a usable total: when the response is compressed it
+    // is the on-the-wire size, while the stream yields decompressed bytes. So
+    // report indeterminate progress (-1) with the bytes received so far.
+    if (response.body) {
       const reader = response.body.getReader();
       const chunks: Uint8Array[] = [];
       let received = 0;
@@ -54,11 +53,7 @@ export class FetchJsonLoader<TData, TMeta extends RefreshMetadata = RefreshMetad
         if (value) {
           chunks.push(value);
           received += value.length;
-          context.onProgress?.(
-            Math.min(100, (received / total) * 100),
-            received,
-            total,
-          );
+          context.onProgress?.(-1, received);
         }
       }
 
@@ -69,7 +64,7 @@ export class FetchJsonLoader<TData, TMeta extends RefreshMetadata = RefreshMetad
         offset += chunk.length;
       }
 
-      context.onProgress?.(100, received, total);
+      context.onProgress?.(100, received);
 
       return JSON.parse(new TextDecoder().decode(all));
     }
