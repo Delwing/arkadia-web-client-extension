@@ -136,7 +136,7 @@ function HelperSettings({ helperConnection }: HelperSettingsProps) {
                                         <pre className="helper-settings__pre">
 {`cd ~/Downloads
 chmod +x ${fileName}
-xattr -d com.apple.quarantine ${fileName}
+xattr -c ${fileName}
 ./${fileName}`}
                                         </pre>
                                         <div>
