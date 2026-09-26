@@ -1,4 +1,5 @@
 import { useEffect, useRef, type ReactNode } from 'react';
+import { useBackLayer } from '../backNavigation';
 
 export interface DialogProps {
     title: ReactNode;
@@ -26,7 +27,7 @@ export interface DialogProps {
  * The backdrop is position: fixed, so it still covers the viewport.
  *
  * Escape is caught in the capture phase and stopped, so it closes this dialog
- * rather than the window underneath.
+ * rather than the window underneath. On a phone, Back closes it too.
  */
 export function Dialog({
     title,
@@ -40,6 +41,8 @@ export function Dialog({
 }: DialogProps) {
     const onCloseRef = useRef(onClose);
     onCloseRef.current = onClose;
+
+    useBackLayer(dismissible, () => onCloseRef.current());
 
     useEffect(() => {
         const onKeyDown = (event: KeyboardEvent) => {

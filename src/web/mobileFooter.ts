@@ -1,4 +1,5 @@
 import { globalStorage } from "@modules/core/storage";
+import { pushBackLayer } from "@web-ui/backNavigation.ts";
 
 /**
  * The phone footer: one predictable-height dock instead of a block that grows
@@ -61,6 +62,8 @@ const COLLAPSE_TITLE = 'Zwin stopke';
  * would eat half the screen on the next connect. Someone who wants it open every
  * time says so with the setting instead, which is also the only thing that
  * survives a reload.
+ *
+ * Unfolded by the expander, the footer is one more thing Back folds away.
  */
 export function setupMobileFooter(): () => void {
     const button = document.getElementById('footer-expand');
@@ -69,9 +72,18 @@ export function setupMobileFooter(): () => void {
     // The flag rides on <body>, not on the footer: the location-bind row unfolds
     // with it and is the footer's sibling, which no CSS selector can reach from
     // inside it.
+    let releaseBack: (() => void) | null = null;
     const setExpanded = (expanded: boolean) => {
         document.body.dataset.footerExpanded = expanded ? '1' : '0';
         button.setAttribute('title', expanded ? COLLAPSE_TITLE : EXPAND_TITLE);
+        // Only the player's own unfolding: a footer pinned open is not a layer.
+        const layered = expanded && getFooterExpandMode() === 'toggle';
+        if (layered && !releaseBack) {
+            releaseBack = pushBackLayer(() => setExpanded(false));
+        } else if (!layered && releaseBack) {
+            releaseBack();
+            releaseBack = null;
+        }
     };
 
     // A pinned mode owns the flag outright, so a leftover expansion cannot
@@ -107,5 +119,7 @@ export function setupMobileFooter(): () => void {
         button.removeEventListener('click', onClick);
         media?.removeEventListener('change', onMediaChange);
         unsubscribeSettings();
+        releaseBack?.();
+        releaseBack = null;
     };
 }

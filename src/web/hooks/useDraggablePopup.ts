@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useBackLayer } from '@web-ui/backNavigation.ts';
 
 type PointerDragState = {
     pointerId: number;
@@ -56,7 +57,7 @@ function clamp(value: number, min: number, max: number): number {
  * Features:
  * - Drag window by header
  * - Resize window from corner handle
- * - Close on Escape key (unless pinned)
+ * - Close on Escape key, or a phone's Back (unless pinned)
  * - Close on outside click (unless pinned)
  * - Keep window within viewport bounds
  * - Auto-adjust position on window resize
@@ -173,6 +174,8 @@ export function useDraggablePopup({
             window.removeEventListener('resize', handleResize);
         };
     }, [ensureVisiblePosition]);
+
+    useBackLayer(isOpen && !isPinned, onClose);
 
     // Handle Escape key to close (unless pinned)
     useEffect(() => {

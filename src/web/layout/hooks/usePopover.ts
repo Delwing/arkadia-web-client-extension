@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
+import { useBackLayer } from '@web-ui/backNavigation.ts';
 
 interface UsePopoverOptions {
   /** Fixed panel width; when set the panel's right edge lines up with the button's
@@ -20,7 +21,8 @@ interface UsePopoverOptions {
  * The panel is position: fixed, placed from the button's rect, so a small docked
  * window can't clip it. Everything — the viewport it fits into, the document
  * click-away and Escape are heard on — is the button's own document, so it keeps
- * working after the window is popped out into another browser window.
+ * working after the window is popped out into another browser window. On a
+ * phone, Back closes it too.
  */
 export function usePopover({ width, maxHeight = 360, placement = 'below', onClose }: UsePopoverOptions = {}) {
   const [open, setOpen] = useState(false);
@@ -41,6 +43,8 @@ export function usePopover({ width, maxHeight = 360, placement = 'below', onClos
       return !o;
     });
   }, []);
+
+  useBackLayer(open, close);
 
   useLayoutEffect(() => {
     if (!open || !anchorRef.current) return;

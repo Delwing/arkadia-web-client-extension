@@ -1,4 +1,5 @@
 import type { ComponentType, ReactNode } from 'react';
+import { pushBackLayer } from '@web-ui/backNavigation.ts';
 
 /** A lucide icon (or anything drawn the same way), passed as the component. */
 export type ContextMenuIcon = ComponentType<{ size?: number; strokeWidth?: number }>;
@@ -69,6 +70,8 @@ const INITIAL_STATE: ContextMenuState = {
 };
 
 let state: ContextMenuState = INITIAL_STATE;
+/** Gives back the menu's Back entry (see backNavigation); null while hidden. */
+let releaseBack: (() => void) | null = null;
 const subscribers = new Set<() => void>();
 
 function notify() {
@@ -93,11 +96,15 @@ export function showContextMenu(
     options?: ContextMenuOptions,
 ): void {
     state = { visible: true, items, x, y, options };
+    // A menu opened over another replaces it: still one Back to dismiss.
+    releaseBack ??= pushBackLayer(hideContextMenu);
     notify();
 }
 
 export function hideContextMenu(): void {
     if (!state.visible) return;
     state = { ...state, visible: false };
+    releaseBack?.();
+    releaseBack = null;
     notify();
 }
