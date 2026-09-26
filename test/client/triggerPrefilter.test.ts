@@ -1,6 +1,6 @@
 import Triggers from '@client/Triggers';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
-import { mayMatch, requiredLiteral } from '@client/triggerPrefilter';
+import { mayMatch, prefilterMisses, prefilterVerifyStats, requiredLiteral } from '@client/triggerPrefilter';
 import gagsData from '@client/scripts/gags_lua.json';
 
 describe('requiredLiteral', () => {
@@ -128,5 +128,86 @@ describe('Triggers literal prefilter', () => {
     re.lastIndex = 5;
     triggers.parseLine(new AnsiAwareBuffer('Nic tu nie ma.'), '');
     expect(re.lastIndex).toBe(0);
+  });
+});
+
+describe('Triggers literal prefilter verify mode', () => {
+  // Matches every line, so it "matches" lines without its literal: a stand-in for an
+  // extractor bug, driven through the real Trigger.execute path.
+  class MatchesAnything extends RegExp {
+    [Symbol.match](line: string): RegExpMatchArray {
+      const matches = [line] as unknown as RegExpMatchArray;
+      matches.index = 0;
+      matches.input = line;
+      return matches;
+    }
+  }
+
+  let errorSpy: ReturnType<typeof vi.spyOn>;
+  beforeEach(() => { errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {}); });
+  afterEach(() => errorSpy.mockRestore());
+
+  const verifying = () => {
+    const triggers = new Triggers({} as any);
+    triggers.literalPrefilterVerify = true;
+    return triggers;
+  };
+
+  test('runs every regex and stays quiet when the prefilter agrees', () => {
+    const triggers = verifying();
+    const cb = vi.fn((b: AnsiAwareBuffer) => b);
+    triggers.registerTrigger(/(?<name>.*) atakuje cie!/, cb);
+    triggers.registerTrigger(/srebrn(a|e|ych)/i, cb);
+    const checkedBefore = prefilterVerifyStats.checked;
+
+    triggers.parseLine(new AnsiAwareBuffer('Rudy ork atakuje cie!'), '');
+    triggers.parseLine(new AnsiAwareBuffer('Znajdujesz SREBRNE monety.'), '');
+    triggers.parseLine(new AnsiAwareBuffer('Nic tu nie ma.'), '');
+
+    expect(cb).toHaveBeenCalledTimes(2);
+    expect(prefilterVerifyStats.checked - checkedBefore).toBe(2);
+    expect(errorSpy).not.toHaveBeenCalled();
+  });
+
+  test('reports a match the prefilter would have skipped, loudly and with the line', () => {
+    const triggers = verifying();
+    const cb = vi.fn((b: AnsiAwareBuffer) => b);
+    triggers.registerTrigger(new MatchesAnything('needle text'), cb, 'broken-tag');
+    const missesBefore = prefilterVerifyStats.misses;
+    const keptBefore = prefilterMisses.length;
+
+    triggers.parseLine(new AnsiAwareBuffer('a line without it'), '');
+
+    // Verify never skips: the trigger still fired.
+    expect(cb).toHaveBeenCalledTimes(1);
+    expect(prefilterVerifyStats.misses - missesBefore).toBe(1);
+    expect(prefilterMisses.slice(keptBefore)).toEqual([{
+      trigger: 'broken-tag (needle text)',
+      source: 'needle text',
+      flags: '',
+      literal: 'needle text',
+      line: 'a line without it',
+    }]);
+    expect(errorSpy).toHaveBeenCalledTimes(1);
+    const message = String(errorSpy.mock.calls[0][0]);
+    expect(message).toContain('PREFILTER MISS');
+    expect(message).toContain('broken-tag');
+    expect(message).toContain('a line without it');
+  });
+
+  test('reports a regex three times, then says once that the rest are suppressed', () => {
+    const triggers = verifying();
+    triggers.registerTrigger(new MatchesAnything('needle text'), (b) => b);
+    for (let i = 0; i < 6; i++) triggers.parseLine(new AnsiAwareBuffer(`line ${i}`), '');
+
+    expect(errorSpy).toHaveBeenCalledTimes(4);
+    expect(String(errorSpy.mock.calls[3][0])).toContain('suppressing further reports');
+  });
+
+  test('is silent when off', () => {
+    const triggers = new Triggers({} as any);
+    triggers.registerTrigger(new MatchesAnything('needle text'), (b) => b);
+    triggers.parseLine(new AnsiAwareBuffer('a line without it'), '');
+    expect(errorSpy).not.toHaveBeenCalled();
   });
 });

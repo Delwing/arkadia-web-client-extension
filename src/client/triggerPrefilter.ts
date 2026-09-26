@@ -15,9 +15,24 @@
  */
 
 interface Prefilter {
+    /** As extracted from the source, for reports. */
+    raw: string;
+    /** What is searched for: lowercased when the regex is case-insensitive. */
     literal: string;
     caseInsensitive: boolean;
 }
+
+/** A line a regex matched although its prefilter would have skipped it: an extractor bug. */
+export interface PrefilterMiss {
+    trigger: string;
+    source: string;
+    flags: string;
+    literal: string;
+    line: string;
+}
+
+/** Keeps the first misses for inspection; enough to spot a pattern without growing forever. */
+const MAX_KEPT_MISSES = 200;
 
 /** Shortest literal worth checking; shorter ones rule out too few lines to pay for the check. */
 const MIN_LITERAL_LENGTH = 3;
@@ -138,7 +153,7 @@ function prefilterFor(pattern: RegExp): Prefilter | null {
         const caseInsensitive = pattern.flags.includes("i");
         entry = literal === null
             ? null
-            : {literal: caseInsensitive ? literal.toLowerCase() : literal, caseInsensitive};
+            : {raw: literal, literal: caseInsensitive ? literal.toLowerCase() : literal, caseInsensitive};
         cache.set(pattern, entry);
     }
     return entry;
@@ -163,4 +178,43 @@ export function mayMatch(pattern: RegExp, line: string): boolean {
     if (prefilter === null) return true;
     const haystack = prefilter.caseInsensitive ? lowered(line) : line;
     return haystack.includes(prefilter.literal);
+}
+
+/**
+ * Verify mode (`?triggerPrefilter=verify`): the prefilter never skips anything, but
+ * every regex match is checked against it, so an extractor bug shows up as a loud
+ * console error with the regex and the line instead of as a silently missed trigger.
+ */
+export const prefilterVerifyStats = {checked: 0, misses: 0};
+export const prefilterMisses: PrefilterMiss[] = [];
+const reportedPerRegex = new WeakMap<RegExp, number>();
+const MAX_REPORTS_PER_REGEX = 3;
+
+/** Called after `pattern` matched `line`; reports when the prefilter would have skipped it. */
+export function verifyMatch(pattern: RegExp, line: string, describeTrigger: () => string): void {
+    prefilterVerifyStats.checked++;
+    if (mayMatch(pattern, line)) return;
+    prefilterVerifyStats.misses++;
+    const trigger = describeTrigger();
+    const miss: PrefilterMiss = {
+        trigger,
+        source: pattern.source,
+        flags: pattern.flags,
+        literal: prefilterFor(pattern)!.raw,
+        line,
+    };
+    if (prefilterMisses.length < MAX_KEPT_MISSES) prefilterMisses.push(miss);
+
+    const reported = (reportedPerRegex.get(pattern) ?? 0) + 1;
+    reportedPerRegex.set(pattern, reported);
+    if (reported <= MAX_REPORTS_PER_REGEX) {
+        console.error(
+            `[triggers] PREFILTER MISS: /${miss.source}/${miss.flags} matched a line without its literal ` +
+            `${JSON.stringify(miss.literal)} — with the prefilter on this trigger would not fire.\n` +
+            `  trigger: ${trigger}\n  line: ${JSON.stringify(line)}`,
+            miss,
+        );
+    } else if (reported === MAX_REPORTS_PER_REGEX + 1) {
+        console.error(`[triggers] PREFILTER MISS: suppressing further reports for /${miss.source}/${miss.flags}`);
+    }
 }

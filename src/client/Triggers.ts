@@ -1,6 +1,6 @@
 import Client from "./Client";
 import {AnsiAwareBuffer} from "@client/ansi/FormatState.ts";
-import {mayMatch} from "@client/triggerPrefilter.ts";
+import {mayMatch, verifyMatch} from "@client/triggerPrefilter.ts";
 
 export type TriggerCallback = (
     line: AnsiAwareBuffer,
@@ -141,6 +141,9 @@ export class Trigger {
                     if (pattern.global) pattern.lastIndex = 0;
                 } else {
                     matches = plainLine.match(pattern);
+                    if (matches && this.manager.literalPrefilterVerify) {
+                        verifyMatch(pattern, plainLine, () => this.describe());
+                    }
                 }
             } else if (typeof pattern === "string") {
                 const caseInsensitive = this.options.caseInsensitive;
@@ -223,6 +226,13 @@ export default class Triggers {
      * (`?triggerPrefilter=1`).
      */
     literalPrefilter = false;
+
+    /**
+     * Debug aid for the prefilter: never skip, but check every regex match against it
+     * and report loudly when it would have skipped a line that matched
+     * (`?triggerPrefilter=verify`).
+     */
+    literalPrefilterVerify = false;
 
     constructor(client: Client) {
         this.client = client;
