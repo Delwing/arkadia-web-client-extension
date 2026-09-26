@@ -1777,7 +1777,8 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
 /* Letter Composer - size overrides */
 .letter-composer {
   --fw-width: 900px;
-  --fw-min-width: 400px;
+  /* Never wider than the screen: phones are narrower than 400px */
+  --fw-min-width: min(400px, calc(100vw - 2rem));
   --fw-min-height: 300px;
   --fw-max-height: 90vh;
   --fw-z-index: 1100;
@@ -1812,7 +1813,9 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
 
 .letter-composer-field--grow {
   flex: 1;
-  min-height: 0;
+  /* Keep room for the toolbar + textarea: collapsing lets the textarea spill
+     under the actions row when the form has to scroll (small screens) */
+  min-height: min-content;
 }
 
 .letter-composer-field--grow textarea.popup-input.popup-input--control {
@@ -1858,7 +1861,8 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
 .letter-composer-options {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.5rem 0.75rem;
+  flex-wrap: wrap;
   flex: 1 1 100%;
   min-width: 0;
 }
