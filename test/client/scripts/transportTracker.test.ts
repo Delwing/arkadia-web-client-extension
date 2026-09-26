@@ -296,4 +296,18 @@ describe('stagecoach direction at a mid-route village', () => {
     boardAndDepart();
     expect(lastTimerLabel()).toBeNull();
   });
+
+  test('without the announcement the next stop settles the direction (Parravon)', () => {
+    waitAtMerceaux();
+    boardAndDepart();
+    parse('Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, plac przed zajazdem.');
+    expect(lastTimerLabel()).toBe('Parravon → Merceaux-Descloux');
+  });
+
+  test('without the announcement the next stop settles the direction (Montlac)', () => {
+    waitAtMerceaux();
+    boardAndDepart();
+    parse('Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, centrum wioski Montlac.');
+    expect(lastTimerLabel()).toBe('Montlac → Quenelles');
+  });
 });
