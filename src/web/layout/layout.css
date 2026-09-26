@@ -229,6 +229,54 @@ body.layout-locked .tab-group-tab--closable {
   margin-left: auto;
 }
 
+/* The two groups inside the header actions - the popup's own actions and the
+   window buttons - take no part in the one-row layout. */
+.managed-panel__custom-actions,
+.managed-panel__window-buttons {
+  display: contents;
+}
+
+/* Too narrow for one row (see useStackedHeader): title and window buttons on
+   top, the popup's own actions on a row of their own below. */
+.managed-panel__header--stacked {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'title buttons'
+    'custom custom';
+  column-gap: 6px;
+  row-gap: 4px;
+  height: auto;
+  min-height: var(--ui-header-h, 28px);
+  padding-bottom: 4px;
+}
+
+.managed-panel__header--stacked > .managed-panel__title {
+  grid-area: title;
+  align-self: center;
+  line-height: var(--ui-header-h, 28px);
+}
+
+.managed-panel__header--stacked .managed-panel__header-actions {
+  display: contents;
+}
+
+.managed-panel__header--stacked .managed-panel__window-buttons {
+  grid-area: buttons;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.managed-panel__header--stacked .managed-panel__custom-actions {
+  grid-area: custom;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
 /* Panel content base */
 .managed-panel__content {
   flex: 1;
@@ -336,6 +384,7 @@ body.layout-dragging * {
   touch-action: none;
 }
 
+
 .floating-panel__content {
   /* Extends managed-panel__content */
   display: flex;
@@ -421,7 +470,9 @@ body.layout-manager-enabled .compass-rose-box {
 }
 
 /* Ensure all children in header actions fit within header */
-.docked-panel__header-actions > * {
+.docked-panel__header-actions > :not(.managed-panel__custom-actions, .managed-panel__window-buttons),
+.docked-panel__header-actions > .managed-panel__custom-actions > *,
+.docked-panel__header-actions > .managed-panel__window-buttons > * {
   max-height: 22px;
   box-sizing: border-box;
   display: inline-flex;
