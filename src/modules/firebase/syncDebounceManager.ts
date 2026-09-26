@@ -222,13 +222,15 @@ class SyncDebounceManager {
         return this.coldDirty || this.hotDirty;
     }
 
-    /** When the pending sync runs (epoch ms), or null when none is scheduled. */
-    getNextSyncAt(): number | null {
-        const hot = this.hotTimer ? this.hotDueAt : null;
-        const cold = this.coldTimer ? this.coldDueAt : null;
-        if (hot === null) return cold;
-        if (cold === null) return hot;
-        return Math.min(hot, cold);
+    /**
+     * When the pending hot and cold syncs run (epoch ms), null for one that is
+     * not scheduled. A hot sync also sends pending cold data.
+     */
+    getScheduledSyncs(): { hot: number | null; cold: number | null } {
+        return {
+            hot: this.hotTimer ? this.hotDueAt : null,
+            cold: this.coldTimer ? this.coldDueAt : null,
+        };
     }
 
     /**

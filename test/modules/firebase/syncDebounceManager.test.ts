@@ -615,27 +615,35 @@ describe('SyncDebounceManager', () => {
         });
     });
 
-    describe('getNextSyncAt', () => {
-        it('is null when nothing is pending', () => {
-            expect(syncDebounceManager.getNextSyncAt()).toBeNull();
+    describe('getScheduledSyncs', () => {
+        it('is empty when nothing is pending', () => {
+            expect(syncDebounceManager.getScheduledSyncs()).toEqual({ hot: null, cold: null });
         });
 
-        it('returns when the hot sync fires, and null after it fired', () => {
+        it('returns when the hot sync fires, and clears it after it fired', () => {
             const now = Date.now();
             syncDebounceManager.handleStorageChange(['triggers']);
-            expect(syncDebounceManager.getNextSyncAt()).toBe(now + HOT_SYNC_MS);
+            expect(syncDebounceManager.getScheduledSyncs()).toEqual({ hot: now + HOT_SYNC_MS, cold: null });
 
             jest.advanceTimersByTime(HOT_SYNC_MS);
-            expect(syncDebounceManager.getNextSyncAt()).toBeNull();
+            expect(syncDebounceManager.getScheduledSyncs()).toEqual({ hot: null, cold: null });
         });
 
-        it('returns when the cold sync fires', () => {
+        it('returns both timers when cold data changes after hot data', () => {
             const now = Date.now();
+            syncDebounceManager.handleStorageChange(['triggers']);
             syncDebounceManager.handleStorageChange(['kill_counter']);
-            expect(syncDebounceManager.getNextSyncAt()).toBe(now + COLD_SYNC_MS);
+            expect(syncDebounceManager.getScheduledSyncs()).toEqual({ hot: now + HOT_SYNC_MS, cold: now + COLD_SYNC_MS });
 
             syncDebounceManager.cancelAll();
-            expect(syncDebounceManager.getNextSyncAt()).toBeNull();
+            expect(syncDebounceManager.getScheduledSyncs()).toEqual({ hot: null, cold: null });
+        });
+
+        it('drops the cold timer when hot data changes, since the hot sync sends it too', () => {
+            const now = Date.now();
+            syncDebounceManager.handleStorageChange(['kill_counter']);
+            syncDebounceManager.handleStorageChange(['triggers']);
+            expect(syncDebounceManager.getScheduledSyncs()).toEqual({ hot: now + HOT_SYNC_MS, cold: null });
         });
     });
 });

@@ -166,6 +166,7 @@ describe('SyncEngineV2', () => {
         const next = pc.engine.getNextUploadAt();
         expect(next).toBeGreaterThanOrEqual(before + 60_000);
         expect(next).toBeLessThanOrEqual(Date.now() + 60_000);
+        expect(pc.engine.getUploadIntervalMs()).toBe(60_000);
 
         pc.aliases.data.set('k', 'kondycja');
         await pc.engine.flush();

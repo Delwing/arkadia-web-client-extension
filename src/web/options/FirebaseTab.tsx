@@ -35,7 +35,7 @@ import {
 import eventBus from "@modules/core/eventBus";
 import { importCategories } from "./exportUtils";
 import ConflictResolutionModal from "./ConflictResolutionModal";
-import SyncActivityPanel from "./SyncActivityPanel";
+import { SyncActivityLog, SyncTimers } from "./SyncActivity";
 import {
     isSyncV2Enabled,
     nudgeSyncV2,
@@ -942,10 +942,20 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                                 </span>
                             )}
                         </div>
+                        {autoSyncEnabled && <SyncTimers syncV2={syncV2} />}
                         <div className="popup-muted popup-small">
-                            Automatycznie wysyla zmiany do chmury po 30 sekundach od ostatniej zmiany
-                            (rzadziej dla danych zmieniajacych sie czesto, np. licznika zabitych).
-                            Dziala w tle takze po zamknieciu tego okna.
+                            {syncV2 ? (
+                                <>
+                                    Wysyla zmiany do chmury co 5 minut (co 15 sekund, gdy inne Twoje urzadzenie
+                                    jest aktywne) oraz od razu po ukryciu lub zamknieciu karty.
+                                </>
+                            ) : (
+                                <>
+                                    Automatycznie wysyla zmiany do chmury po 30 sekundach od ostatniej zmiany
+                                    (rzadziej dla danych zmieniajacych sie czesto, np. licznika zabitych).
+                                </>
+                            )}
+                            {' '}Dziala w tle takze po zamknieciu tego okna.
                             {encryptionEnabled && !passphrase && autoSyncEnabled && (
                                 <div className="popup-text-warning">
                                     Podaj haslo szyfrowania aby wlaczyc auto-sync.
@@ -1009,8 +1019,6 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                             )}
                         </section>
                     )}
-
-                    <SyncActivityPanel syncV2={syncV2} />
                     </div>
                 </div>
             </div>
@@ -1044,6 +1052,8 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                     )}
                 </Button>
             </div>
+
+            <SyncActivityLog />
 
             {/* Conflict resolution modal */}
             <ConflictResolutionModal
