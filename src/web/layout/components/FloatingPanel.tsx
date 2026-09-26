@@ -1,9 +1,11 @@
-import { useLayoutEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { isMobileLikeViewport } from '@shared/dom/pointerEnvironment.ts';
 import { clampFloatingTop } from '../types';
 import type { DragState, WindowRecord } from '../types';
 import type { WindowManager } from '../WindowManager';
 import { PanelHeader, usePanelChrome } from './PanelHeader';
 import { startFloatingDrag } from '../utils/dragHandlers';
+import { FIT_MARGIN, fitToViewport, readViewport } from '../utils/fitToViewport';
 
 interface FloatingPanelProps {
   window: WindowRecord;
@@ -18,6 +20,23 @@ type ResizeDirection = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw';
 
 const ALL_DIRECTIONS: ResizeDirection[] = ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw'];
 
+/** Tracks the screen size. The page opts into interactive-widget=resizes-content,
+ *  so a phone's on-screen keyboard shrinks it too. */
+function useViewport() {
+  const [viewport, setViewport] = useState(readViewport);
+  useEffect(() => {
+    const update = () => {
+      const next = readViewport();
+      setViewport(prev =>
+        prev.width === next.width && prev.height === next.height ? prev : next
+      );
+    };
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
+  return viewport;
+}
+
 export function FloatingPanel({
   window: w,
   manager,
@@ -28,6 +47,29 @@ export function FloatingPanel({
   const windowRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const chrome = usePanelChrome(w);
+  const viewport = useViewport();
+  // On a phone the whole window is kept on screen, so its titlebar (drag
+  // handle and close button) can always be reached.
+  const keepOnScreen = isMobileLikeViewport();
+  const autoHeight = w.height === undefined;
+  const [measuredHeight, setMeasuredHeight] = useState<number | undefined>(undefined);
+
+  useLayoutEffect(() => {
+    const el = windowRef.current;
+    if (!el || !keepOnScreen || !autoHeight) return;
+    const measure = () => setMeasuredHeight(el.offsetHeight);
+    measure();
+    if (typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [keepOnScreen, autoHeight]);
+
+  const fitted = fitToViewport(
+    { x: w.x, y: w.y, width: w.width, height: w.height },
+    viewport,
+    { keepOnScreen, measuredHeight }
+  );
 
   useLayoutEffect(() => {
     const slot = contentRef.current;
@@ -153,10 +195,11 @@ export function FloatingPanel({
       data-window-id={w.id}
       data-panel-id={w.id}
       style={{
-        left: w.x,
-        top: w.y,
-        width: w.width,
-        ...(w.height !== undefined && { height: w.height }),
+        left: fitted.x,
+        top: fitted.y,
+        width: fitted.width,
+        ...(fitted.height !== undefined && { height: fitted.height }),
+        ...(keepOnScreen && { maxHeight: viewport.height - 2 * FIT_MARGIN }),
         zIndex: w.zIndex,
         display: w.visible ? 'flex' : 'none',
       }}

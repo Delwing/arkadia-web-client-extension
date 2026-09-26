@@ -336,6 +336,22 @@ body.layout-dragging * {
   touch-action: none;
 }
 
+/* A narrow floating window (a phone) can't fit the title and every header
+   button on one line. Let the buttons wrap onto extra rows instead of pushing
+   the close button past the window edge; a wide window stays one row. */
+.floating-panel__header {
+  flex-wrap: wrap;
+  height: auto;
+  min-height: var(--ui-header-h, 28px);
+}
+
+.floating-panel__header-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  min-width: 0;
+  max-width: 100%;
+}
+
 .floating-panel__content {
   /* Extends managed-panel__content */
   display: flex;
