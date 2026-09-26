@@ -193,6 +193,11 @@ export class SyncEngineV2 {
         return this.watchedByOthers ? this.timings.watchingMs : this.timings.idleMs;
     }
 
+    /** Whether other devices' changes arrive live (the log listener is attached while the tab is visible). */
+    isListening(): boolean {
+        return this.unsubscribeLog !== null;
+    }
+
     /** Whether another of the user's devices is watching (uploads run more often). */
     isWatchedByOthers(): boolean {
         return this.watchedByOthers;

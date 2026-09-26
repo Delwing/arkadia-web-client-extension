@@ -80,6 +80,8 @@ export interface SyncV2Status {
     retryAt: number | null;
     /** Another device is watching: uploads run every few seconds. */
     watchedByOthers: boolean;
+    /** Other devices' changes arrive live (only while the tab is visible). */
+    listening: boolean;
 }
 
 export function getSyncV2Status(): SyncV2Status {
@@ -90,10 +92,18 @@ export function getSyncV2Status(): SyncV2Status {
             uploadIntervalMs: engine.getUploadIntervalMs(),
             retryAt: null,
             watchedByOthers: engine.isWatchedByOthers(),
+            listening: engine.isListening(),
         };
     }
     const state = !startedFor ? 'stopped' : lockHeld ? 'waiting' : 'other-tab';
-    return { state, nextUploadAt: null, uploadIntervalMs: null, retryAt: state === 'waiting' ? retryAt : null, watchedByOthers: false };
+    return {
+        state,
+        nextUploadAt: null,
+        uploadIntervalMs: null,
+        retryAt: state === 'waiting' ? retryAt : null,
+        watchedByOthers: false,
+        listening: false,
+    };
 }
 
 function describeActivity(event: SyncEngineActivity): void {

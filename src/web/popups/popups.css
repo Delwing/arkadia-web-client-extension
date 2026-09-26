@@ -7924,22 +7924,69 @@ select.popup-input.popup-input--control {
 /* Sync countdowns and activity log (SyncActivity.tsx). The log sits under the
    action buttons: a few monospace lines, the rest scrolls. */
 .sync-timers {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--popup-border);
+}
+.sync-timer {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--popup-border);
+  border-radius: var(--ui-radius, 6px);
+  background-color: var(--popup-subtle-bg);
 }
-.sync-timers__row {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
+.sync-timer__label {
+  overflow: hidden;
+  color: var(--popup-text-subtle);
+  font-size: var(--ui-fs-xs, 11px);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
-.sync-timers__value {
-  flex-shrink: 0;
+.sync-timer__value {
+  color: var(--popup-text);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 26px;
+}
+.sync-timer__value.is-countdown {
   font-family: monospace;
+  font-size: 20px;
   font-variant-numeric: tabular-nums;
+}
+.sync-timer__hint {
+  color: var(--popup-text-subtle);
+  font-size: var(--ui-fs-xs, 11px);
+}
+.sync-timer__bar {
+  height: 3px;
+  margin-top: 6px;
+  overflow: hidden;
+  border-radius: 2px;
+  background-color: var(--popup-border);
+}
+.sync-timer__bar > span {
+  display: block;
+  height: 100%;
+  background-color: var(--popup-accent);
+  transition: width 1s linear;
+}
+.sync-timer.is-idle .sync-timer__value {
+  color: var(--popup-text-subtle);
+  font-weight: 400;
+}
+.sync-timer.is-live .sync-timer__value {
+  color: var(--popup-success);
+}
+.sync-timer.is-live .sync-timer__bar > span {
+  background-color: var(--popup-success);
 }
 .sync-log {
   flex-shrink: 0;
