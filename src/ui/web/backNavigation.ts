@@ -17,6 +17,11 @@ import { useEffect, useRef } from 'react';
  *
  * Only on touch screens. A desktop's Back is a page-level action people expect
  * to leave the page with, and they have Escape for the rest.
+ *
+ * While the on-screen keyboard is up, Back hides the keyboard and leaves the
+ * layers alone. Android sometimes hands that Back to the page instead of the
+ * keyboard (e.g. after an alias opened a popup from the command line), so we
+ * put the entry back and drop the focus that holds the keyboard open.
  */
 
 const STATE_KEY = '__arkadiaBackLayer';
@@ -35,6 +40,50 @@ let syncing = false;
 let syncTimer: ReturnType<typeof setTimeout> | null = null;
 let installed = false;
 let forced: boolean | null = null;
+/** Keyboards are taller than this; smaller shrinks are browser bars coming and going. */
+const KEYBOARD_MIN_HEIGHT = 120;
+/** The tallest viewport seen at the current width: the height without a keyboard. */
+let fullHeight = 0;
+let fullHeightWidth = 0;
+
+function trackViewport(): void {
+    const viewport = typeof window !== 'undefined' ? window.visualViewport : null;
+    if (!viewport) return;
+    const measure = () => {
+        const width = Math.round(viewport.width);
+        if (width !== fullHeightWidth) {
+            // Rotated or resized: the old height says nothing about this one.
+            fullHeightWidth = width;
+            fullHeight = 0;
+        }
+        fullHeight = Math.max(fullHeight, viewport.height);
+    };
+    measure();
+    viewport.addEventListener('resize', measure);
+}
+
+// From the start, so the height without a keyboard is known before any layer opens.
+trackViewport();
+
+function isEditable(element: Element | null): element is HTMLElement {
+    if (!element) return false;
+    if (element instanceof HTMLTextAreaElement) return !element.readOnly && !element.disabled;
+    if (element instanceof HTMLInputElement) {
+        const nonText = ['button', 'checkbox', 'color', 'file', 'hidden', 'image', 'radio', 'range', 'reset', 'submit'];
+        return !nonText.includes(element.type) && !element.readOnly && !element.disabled;
+    }
+    return element instanceof HTMLElement && element.isContentEditable;
+}
+
+/** The focused field whose on-screen keyboard is up, if any. */
+function keyboardField(): HTMLElement | null {
+    const active = document.activeElement;
+    if (!isEditable(active)) return null;
+    const viewport = window.visualViewport;
+    // Without a measured viewport, a focused field on a touch screen is the best sign.
+    if (!viewport || !fullHeight) return active;
+    return fullHeight - viewport.height > KEYBOARD_MIN_HEIGHT ? active : null;
+}
 
 function entryDepth(state: unknown): number {
     const value = (state as Record<string, unknown> | null)?.[STATE_KEY];
@@ -73,6 +122,13 @@ function onPopState(event: PopStateEvent): void {
     depth = entryDepth(event.state);
     if (syncing) {
         finishSync();
+        sync();
+        return;
+    }
+    // Back meant for the keyboard: hide it and keep the layers and their entries.
+    const field = layers.length > depth ? keyboardField() : null;
+    if (field) {
+        field.blur();
         sync();
         return;
     }

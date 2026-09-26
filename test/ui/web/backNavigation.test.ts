@@ -104,4 +104,40 @@ describe("back navigation", () => {
         expect(backLayerCount()).toBe(0);
         expect(ourDepth()).toBe(depthBefore);
     });
+
+    it("hides the keyboard on Back instead of closing the layer under it", async () => {
+        const closed: string[] = [];
+        const input = document.createElement("input");
+        document.body.appendChild(input);
+        try {
+            push(() => closed.push("popup"));
+            input.focus();
+
+            await back();
+            expect(closed).toEqual([]);
+            expect(document.activeElement).not.toBe(input);
+            expect(backLayerCount()).toBe(1);
+            expect(ourDepth()).toBe(1);
+
+            await back();
+            expect(closed).toEqual(["popup"]);
+        } finally {
+            input.remove();
+        }
+    });
+
+    it("closes the layer when the focused element takes no typing", async () => {
+        const closed: string[] = [];
+        const button = document.createElement("button");
+        document.body.appendChild(button);
+        try {
+            push(() => closed.push("popup"));
+            button.focus();
+
+            await back();
+            expect(closed).toEqual(["popup"]);
+        } finally {
+            button.remove();
+        }
+    });
 });
