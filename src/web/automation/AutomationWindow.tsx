@@ -536,7 +536,7 @@ export default function AutomationWindow() {
     function importMenu(e: MouseEvent<HTMLElement>) {
         openMenuAt(e, [
             { label: "Plik automatyzacji (.json)", action: () => fileRef.current?.click() },
-            { label: "Aliasy z klienta Arkadii (.json)", action: () => openSettingsPage("data-import", "import-aliases-arkadia") },
+            { label: "Aliasy i przekształcenia z klienta Arkadii (.json)", action: () => openSettingsPage("data-import", "import-arkadia") },
             { label: "Aliasy z Blowtorch (.xml)", action: () => openSettingsPage("data-import", "import-aliases-blowtorch") },
         ]);
     }

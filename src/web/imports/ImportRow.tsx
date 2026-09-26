@@ -50,11 +50,11 @@ export function ImportRow({ id, title, file, accept, busy, onFile, result, onDis
     );
 }
 
-/** The confirm/cancel pair under a preview. */
-export function ImportActions({ onImport, onCancel, busy }: { onImport: () => void; onCancel: () => void; busy?: boolean }) {
+/** The confirm/cancel pair under a preview; `disabled` holds back only "Importuj" (nothing picked). */
+export function ImportActions({ onImport, onCancel, busy, disabled }: { onImport: () => void; onCancel: () => void; busy?: boolean; disabled?: boolean }) {
     return (
         <div className="popup-inline">
-            <Button size="sm" variant="solid" disabled={busy} onClick={onImport}>
+            <Button size="sm" variant="solid" disabled={busy || disabled} onClick={onImport}>
                 {busy ? <><span className="popup-spinner" /> Importowanie…</> : "Importuj"}
             </Button>
             <Button size="sm" variant="ghost" disabled={busy} onClick={onCancel}>Anuluj</Button>
