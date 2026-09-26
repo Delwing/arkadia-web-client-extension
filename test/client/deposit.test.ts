@@ -175,4 +175,24 @@ describe('deposits', () => {
       items: [{ count: 1, name: 'miecz' }],
     });
   });
+  test('fits deposit cards to a narrow console by wrapping long names', () => {
+    client.dispatch('contentWidth', 30);
+    parse('Twoj depozyt zawiera dlugi stalowy miecz z rekojescia owinieta czarna skora, tarcza.');
+    client.Map.currentRoom = { id: 2, name: 'Bardzo dlugo nazwany bank w wielkim miescie', userData: { bind: '/depozyt' } };
+    parse('Twoj depozyt jest pusty.');
+    show();
+    const text: string = client.println.mock.calls[0][0].text;
+    const lines = text.split('\n').filter(Boolean);
+    lines.forEach(line => expect(line.length).toBeLessThanOrEqual(30));
+    expect(text).toMatch(/\|\s+1 \| dlugi stalowy miecz\s+\|/);
+    expect(text).toMatch(/\|\s+\| z rekojescia\s+\|/);
+    expect(text).toMatch(/Bardzo dlugo nazwany bank…/);
+  });
+
+  test('keeps natural card width on a wide console', () => {
+    parse('Twoj depozyt zawiera dlugi stalowy miecz z rekojescia owinieta czarna skora, tarcza.');
+    show();
+    const text: string = client.println.mock.calls[0][0].text;
+    expect(text).toMatch(/1 \| dlugi stalowy miecz z rekojescia owinieta czarna skora \|/);
+  });
 });

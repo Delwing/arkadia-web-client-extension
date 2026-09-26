@@ -6,6 +6,7 @@ import { AnsiAwareBuffer } from "../ansi/FormatState";
 import eventBus from "@modules/core/eventBus";
 import { characterStorage } from "@modules/core/storage";
 import { defaultSettings } from "@modules/core/defaultSettings";
+import { wrapItemLine } from "./counterTableUtils";
 
 const BANK_NAME_COLOR = createColorFormat('#ff6347');
 
@@ -194,7 +195,18 @@ export default function initDeposits(client: Client, aliases?: { pattern: RegExp
         // Calculate total coin wealth across all deposits
         const totalCopper = getTotalCopper(deposits);
 
-        const colContentWidth = Math.max(...cards.map(c => c.contentWidth));
+        // On a narrow console a single card must still fit: cap its width and
+        // wrap long item names instead of overflowing the line.
+        const MIN_CARD_CONTENT = 16;
+        const naturalContentWidth = Math.max(...cards.map(c => c.contentWidth));
+        const colContentWidth = width > 0
+            ? Math.min(naturalContentWidth, Math.max(MIN_CARD_CONTENT, width - pad * 2 - 2))
+            : naturalContentWidth;
+        if (colContentWidth < naturalContentWidth) {
+            for (const card of cards) {
+                card.lines = card.lines.flatMap(line => wrapItemLine(line, colContentWidth));
+            }
+        }
         const colWidth = colContentWidth + pad * 2 + 2;
         const gap = 2;
 
@@ -211,10 +223,14 @@ export default function initDeposits(client: Client, aliases?: { pattern: RegExp
         function renderTitleLine(card: Card): AnsiAwareBuffer {
             const titleLine = new AnsiAwareBuffer();
             titleLine.append(`|${padStr}`);
-            const titleBuf = new AnsiAwareBuffer(card.title);
+            const maxTitle = colContentWidth - (card.countLabel ? card.countLabel.length + 1 : 0);
+            const title = card.title.length > maxTitle
+                ? card.title.slice(0, Math.max(0, maxTitle - 1)) + '…'
+                : card.title;
+            const titleBuf = new AnsiAwareBuffer(title);
             titleBuf.color([0, titleBuf.length], BANK_NAME_COLOR);
             titleLine.appendBuffer(titleBuf);
-            const spaceBetween = colContentWidth - card.title.length - card.countLabel.length;
+            const spaceBetween = colContentWidth - title.length - card.countLabel.length;
             titleLine.append(' '.repeat(spaceBetween) + card.countLabel + `${padStr}|`, {});
             return titleLine;
         }

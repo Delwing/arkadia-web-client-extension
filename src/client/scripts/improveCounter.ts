@@ -5,7 +5,7 @@ import {AnsiAwareBuffer} from "@client/ansi/FormatState";
 import eventBus from "@modules/core/eventBus";
 import {getKillData} from "./kill";
 import {BaseCounter} from "./BaseCounter";
-import {createPad, createHeader} from "./counterTableUtils";
+import {createPad, createHeader, wrapPieces} from "./counterTableUtils";
 
 const HEADER_COLOR = createColorFormat("#90ee90");
 const SECTION_COLOR = createColorFormat("#ffa500");
@@ -16,6 +16,19 @@ const TIME_COLOR = createColorFormat("#ffff00");
 const NAME_COLOR = createColorFormat("#ffff00");
 const DATE_COLOR = createColorFormat("#ffd700");
 const TOTAL_LABEL_COLOR = createColorFormat("#ffb6c1");
+
+const TABLE_WIDTH = 74;
+const LIFETIME_TABLE_WIDTH = 57;
+const MIN_TABLE_WIDTH = 30;
+
+/**
+ * Width a table should be drawn at: its natural width, shrunk to fit the
+ * console when that is narrower (e.g. on a phone). 0/unknown keeps natural.
+ */
+function fitWidth(natural: number, available?: number): number {
+    if (!available || available <= 0 || available >= natural) return natural;
+    return Math.max(MIN_TABLE_WIDTH, Math.floor(available));
+}
 
 export const IMPROVE_STATES = [
     "minimalne",
@@ -589,11 +602,14 @@ export default class ImproveCounter extends BaseCounter {
         this.client.println(colorString(msg, SECTION_COLOR));
     }
 
-    getFormattedTable(): AnsiAwareBuffer {
-        const WIDTH = 74;
+    getFormattedTable(availableWidth?: number): AnsiAwareBuffer {
+        const WIDTH = fitWidth(TABLE_WIDTH, availableWidth);
+        const narrow = WIDTH < TABLE_WIDTH;
         const INNER = WIDTH - 2;
+        const CONTENT = INNER - 2;
         const pad = createPad(INNER, 1, 1);
         const header = createHeader(INNER, 2, HEADER_COLOR);
+        const duration = (ms: number) => narrow ? formatDuration(ms).trimStart() : formatDuration(ms);
 
         const now = new Date();
         const avg = this.entries.length
@@ -607,16 +623,34 @@ export default class ImproveCounter extends BaseCounter {
         const todayEntry = this.lifetime.find(e => e.date === todayStr);
         const todayCount = (todayEntry?.count ?? 0) + (todayEntry?.noFormCount ?? 0);
 
-        const currentLine = new AnsiAwareBuffer();
-        currentLine.appendBuffer(colorString(`Aktualny czas   : ${formatDate(now)}`, TIME_COLOR));
-        currentLine.append(`    : sred ${formatDuration(avg)}       Dzisiaj: ${todayCount}`);
-        lines.push(pad(currentLine));
+        if (narrow) {
+            wrapPieces([
+                colorString(`Aktualny czas: ${formatDate(now)}`, TIME_COLOR),
+                new AnsiAwareBuffer(`sred ${duration(avg)}`),
+                new AnsiAwareBuffer(`Dzisiaj: ${todayCount}`),
+            ], "  ", CONTENT).forEach(l => lines.push(pad(l)));
+        } else {
+            const currentLine = new AnsiAwareBuffer();
+            currentLine.appendBuffer(colorString(`Aktualny czas   : ${formatDate(now)}`, TIME_COLOR));
+            currentLine.append(`    : sred ${formatDuration(avg)}       Dzisiaj: ${todayCount}`);
+            lines.push(pad(currentLine));
+        }
 
         lines.push(pad());
 
         this.entries.forEach((e, idx) => {
+            const num = `${(idx + 1).toString().padStart(2, " ")}.`;
+            if (narrow) {
+                wrapPieces([
+                    new AnsiAwareBuffer(`${num} ${e.state}`),
+                    new AnsiAwareBuffer(formatDate(new Date(e.time))),
+                    new AnsiAwareBuffer(`czas ${duration(e.delta)}`),
+                    new AnsiAwareBuffer(`zabici ${e.killsMy}/${e.killsMy + e.killsTeam}`),
+                ], " : ", CONTENT, num.length + 1).forEach(l => lines.push(pad(l)));
+                return;
+            }
             const entryLine = new AnsiAwareBuffer();
-            entryLine.append(`${(idx + 1).toString().padStart(2, " ")}. ${e.state.padEnd(15)} : ${formatDate(new Date(e.time))} : czas ${formatDuration(e.delta)} : zabici ${e.killsMy}/${e.killsMy + e.killsTeam}`);
+            entryLine.append(`${num} ${e.state.padEnd(15)} : ${formatDate(new Date(e.time))} : czas ${formatDuration(e.delta)} : zabici ${e.killsMy}/${e.killsMy + e.killsTeam}`);
             lines.push(pad(entryLine));
         });
 
@@ -644,11 +678,18 @@ export default class ImproveCounter extends BaseCounter {
         const since = Date.now() - effectiveLastTime;
         const myDelta = totals.my - effectiveLastKills.my;
         const teamDelta = totals.team - effectiveLastKills.team;
-        const sinceLine = colorString(
-            `Od ostatniego postepu: ${formatDuration(since)} : zabici: ${myDelta}/${myDelta + teamDelta}`,
-            POSTEP_COLOR
-        );
-        lines.push(pad(sinceLine));
+        if (narrow) {
+            wrapPieces([
+                colorString(`Od ostatniego postepu: ${duration(since)}`, POSTEP_COLOR),
+                colorString(`zabici: ${myDelta}/${myDelta + teamDelta}`, POSTEP_COLOR),
+            ], " : ", CONTENT, 2).forEach(l => lines.push(pad(l)));
+        } else {
+            const sinceLine = colorString(
+                `Od ostatniego postepu: ${formatDuration(since)} : zabici: ${myDelta}/${myDelta + teamDelta}`,
+                POSTEP_COLOR
+            );
+            lines.push(pad(sinceLine));
+        }
 
         lines.push(pad());
         lines.push(new AnsiAwareBuffer(`+${"-".repeat(INNER)}+`));
@@ -664,14 +705,16 @@ export default class ImproveCounter extends BaseCounter {
 
     show() {
         const output = new AnsiAwareBuffer("\n\n");
-        output.appendBuffer(this.getFormattedTable());
+        output.appendBuffer(this.getFormattedTable(this.client.contentWidth));
         output.append("\n\n");
         this.client.print(output);
     }
 
-    private formatLifetimeTable(): AnsiAwareBuffer {
-        const WIDTH = 57;
+    private formatLifetimeTable(availableWidth?: number): AnsiAwareBuffer {
+        const WIDTH = fitWidth(LIFETIME_TABLE_WIDTH, availableWidth);
+        const narrow = WIDTH < LIFETIME_TABLE_WIDTH;
         const INNER = WIDTH - 2;
+        const CONTENT = INNER - 2;
         const pad = createPad(INNER, 1, 1);
         const lines: AnsiAwareBuffer[] = [];
         lines.push(new AnsiAwareBuffer(`+${"-".repeat(INNER)}+`));
@@ -685,6 +728,14 @@ export default class ImproveCounter extends BaseCounter {
         lines.push(pad());
 
         this.lifetime.forEach((e, idx) => {
+            if (narrow) {
+                const id = `[${String(idx + 1).padStart(4, " ")}] `;
+                const dateLine = new AnsiAwareBuffer(id);
+                dateLine.appendBuffer(colorString(e.date, DATE_COLOR));
+                wrapPieces([dateLine, new AnsiAwareBuffer(`- ${formatCount(e.count)}`)], " ", CONTENT, id.length)
+                    .forEach(l => lines.push(pad(l)));
+                return;
+            }
             const entryLine = new AnsiAwareBuffer();
             entryLine.append(`[${String(idx + 1).padStart(4, " ")}] `);
             entryLine.appendBuffer(colorString(e.date, DATE_COLOR));
@@ -693,19 +744,20 @@ export default class ImproveCounter extends BaseCounter {
         });
 
         lines.push(pad());
-        lines.push(pad(new AnsiAwareBuffer("      ------------------------------------")));
+        lines.push(pad(new AnsiAwareBuffer(
+            narrow ? "-".repeat(CONTENT) : "      ------------------------------------"
+        )));
         lines.push(pad());
 
         const total = this.lifetime.reduce((sum, e) => sum + e.count, 0);
         const approx = (total / 15).toFixed(2);
 
-        const totalLine = new AnsiAwareBuffer();
-        totalLine.appendBuffer(colorString("WSZYSTKICH DO TEJ PORY:", TOTAL_LABEL_COLOR));
-        totalLine.append(" ");
-        totalLine.appendBuffer(colorString(`${total} postepow`, HEADER_COLOR));
-        lines.push(pad(totalLine));
+        wrapPieces([
+            colorString("WSZYSTKICH DO TEJ PORY:", TOTAL_LABEL_COLOR),
+            colorString(`${total} postepow`, HEADER_COLOR),
+        ], " ", CONTENT, 2).forEach(l => lines.push(pad(l)));
 
-        const approxLine = new AnsiAwareBuffer("                         ");
+        const approxLine = new AnsiAwareBuffer(" ".repeat(narrow ? 2 : 25));
         approxLine.appendBuffer(colorString(`~${approx} niebotycznych`, HEADER_COLOR));
         lines.push(pad(approxLine));
 
@@ -723,7 +775,7 @@ export default class ImproveCounter extends BaseCounter {
 
     showLifetime() {
         const output = new AnsiAwareBuffer("\n");
-        output.appendBuffer(this.formatLifetimeTable());
+        output.appendBuffer(this.formatLifetimeTable(this.client.contentWidth));
         output.append("\n");
         this.client.print(output);
     }
