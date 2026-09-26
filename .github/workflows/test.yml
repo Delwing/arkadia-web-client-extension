@@ -124,6 +124,10 @@ jobs:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
           CGO_ENABLED: ${{ matrix.cgo }}
+          # Without this, cgo links against the runner's SDK and stamps its
+          # version as the minimum macOS (e.g. 26.0); older systems then
+          # refuse to launch the helper's app bundle via arkadia:// links.
+          MACOSX_DEPLOYMENT_TARGET: '11.0'
         run: |
           COMMIT=$(git rev-parse --short HEAD)
           LDFLAGS="-s -w -X main.Version=$COMMIT"
@@ -131,6 +135,10 @@ jobs:
             LDFLAGS="$LDFLAGS -H windowsgui"
           fi
           go build -ldflags="$LDFLAGS" -o ../arkadia-helper-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.suffix }} .
+          if [ "${{ matrix.goos }}" = "darwin" ]; then
+            otool -l ../arkadia-helper-darwin-${{ matrix.goarch }} | grep -A4 LC_BUILD_VERSION | grep -q 'minos 11.0' \
+              || { echo "helper minimum macOS is not 11.0"; otool -l ../arkadia-helper-darwin-${{ matrix.goarch }} | grep -A4 LC_BUILD_VERSION; exit 1; }
+          fi
       - name: Attest helper binary
         if: github.ref == 'refs/heads/master' && github.event_name != 'pull_request'
         uses: actions/attest-build-provenance@v4
