@@ -48,6 +48,7 @@ import {
     SYNC_CATEGORIES,
 } from './firebaseTypes';
 import { syncDebounceManager } from './syncDebounceManager';
+import { logSyncActivity } from './syncActivityLog';
 import { syncListener } from './firebaseSyncListener';
 import {
     downloadCategories,
@@ -99,6 +100,16 @@ class FirebaseSyncEngine {
         // listener) so they survive until a UI is around to show them.
         eventBus.on('firebase.sync.conflict', ({ conflicts }) => {
             this.trackConflicts(conflicts);
+            logSyncActivity('warning', `Konflikt: ${conflicts.map(c => c.category).join(', ')}`);
+        });
+        eventBus.on('firebase.sync.uploaded', ({ categories, auto }) => {
+            logSyncActivity('success', `${auto ? 'Automatycznie wyslano' : 'Wyslano'}: ${categories.join(', ')}`);
+        });
+        eventBus.on('firebase.sync.applied', ({ categories }) => {
+            logSyncActivity('success', `Pobrano z chmury: ${categories.join(', ')}`);
+        });
+        eventBus.on('firebase.sync.error', ({ message }) => {
+            logSyncActivity('error', `Blad synchronizacji: ${message}`);
         });
     }
 
@@ -142,6 +153,7 @@ class FirebaseSyncEngine {
     private doStart(): void {
         if (this.watching) return;
         this.watching = true;
+        logSyncActivity('info', 'Synchronizacja uruchomiona.');
 
         syncDebounceManager.initialize({
             onSyncNeeded: () => {
@@ -188,10 +200,16 @@ class FirebaseSyncEngine {
         this.pendingConflicts.clear();
         this.setPassphrase(null);
         console.log('[SyncEngine] Stopped');
+        logSyncActivity('info', 'Synchronizacja zatrzymana.');
     }
 
     isWatching(): boolean {
         return this.watching;
+    }
+
+    /** When the scheduled auto-sync runs (epoch ms), or null when none is pending. */
+    getNextAutoSyncAt(): number | null {
+        return syncDebounceManager.getNextSyncAt();
     }
 
     /** True while a debounced auto-sync is scheduled but has not fired yet. */

@@ -614,4 +614,28 @@ describe('SyncDebounceManager', () => {
             });
         });
     });
+
+    describe('getNextSyncAt', () => {
+        it('is null when nothing is pending', () => {
+            expect(syncDebounceManager.getNextSyncAt()).toBeNull();
+        });
+
+        it('returns when the hot sync fires, and null after it fired', () => {
+            const now = Date.now();
+            syncDebounceManager.handleStorageChange(['triggers']);
+            expect(syncDebounceManager.getNextSyncAt()).toBe(now + HOT_SYNC_MS);
+
+            jest.advanceTimersByTime(HOT_SYNC_MS);
+            expect(syncDebounceManager.getNextSyncAt()).toBeNull();
+        });
+
+        it('returns when the cold sync fires', () => {
+            const now = Date.now();
+            syncDebounceManager.handleStorageChange(['kill_counter']);
+            expect(syncDebounceManager.getNextSyncAt()).toBe(now + COLD_SYNC_MS);
+
+            syncDebounceManager.cancelAll();
+            expect(syncDebounceManager.getNextSyncAt()).toBeNull();
+        });
+    });
 });

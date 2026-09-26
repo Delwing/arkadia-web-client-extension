@@ -14,11 +14,19 @@ vi.mock('@web/userData/registry', () => ({ createUserDataTracker: () => ({}), cr
 vi.mock('@modules/syncV2/firestoreTransport', () => ({ FirestoreTransport: function FirestoreTransport() {} }));
 vi.mock('@modules/syncV2/engine', () => ({
     SyncEngineV2: function SyncEngineV2() {
-        return { start: engineStart, stop: engineStop, flush: () => Promise.resolve(), ready: () => Promise.resolve() };
+        return {
+            start: engineStart,
+            stop: engineStop,
+            flush: () => Promise.resolve(),
+            ready: () => Promise.resolve(),
+            getNextUploadAt: () => 12_345,
+            isWatchedByOthers: () => false,
+        };
     },
 }));
 
-import { nudgeSyncV2, runSyncV2Action, startSyncV2, stopSyncV2, waitForSyncV2 } from '@web/userData/syncV2';
+import { clearSyncActivity, getSyncActivity } from '@modules/firebase/syncActivityLog';
+import { getSyncV2Status, nudgeSyncV2, runSyncV2Action, startSyncV2, stopSyncV2, waitForSyncV2 } from '@web/userData/syncV2';
 
 describe('startSyncV2', () => {
     afterEach(async () => {
@@ -37,6 +45,25 @@ describe('startSyncV2', () => {
         expect(await waitForSyncV2(1_000)).toBe(true);
         expect(engineStart).toHaveBeenCalledTimes(1);
         await vi.waitFor(() => expect(registerDevice).toHaveBeenCalled());
+    });
+
+    it('reports its state and logs starts and waits', async () => {
+        clearSyncActivity();
+        expect(getSyncV2Status().state).toBe('stopped');
+
+        startSyncV2('user-1', () => null);
+        await vi.waitFor(() => expect(getSyncV2Status().state).toBe('waiting'));
+        expect(getSyncV2Status().retryAt).toBeGreaterThan(Date.now());
+        expect(getSyncActivity().map(e => e.text)).toEqual(['Oczekiwanie: automatyczna synchronizacja jest wylaczona.']);
+
+        settings.autoSyncEnabled = true;
+        expect(await waitForSyncV2(1_000)).toBe(true);
+        expect(getSyncV2Status()).toEqual({ state: 'running', nextUploadAt: 12_345, retryAt: null, watchedByOthers: false });
+        expect(getSyncActivity().at(-1)?.text).toBe('Synchronizacja uruchomiona.');
+
+        await stopSyncV2();
+        expect(getSyncV2Status().state).toBe('stopped');
+        expect(getSyncActivity().at(-1)?.text).toBe('Synchronizacja zatrzymana.');
     });
 
     it('starts once per user however often it is asked', async () => {
