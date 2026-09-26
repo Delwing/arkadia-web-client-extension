@@ -58,9 +58,10 @@ var (
 	// Empty disables it: this puts gameplay on disk, which is a deliberate choice.
 	archiveDir = flag.String("archive-dir", "", "directory for unclaimed session buffers; empty disables archiving")
 	archiveTTL = flag.Duration("archive-ttl", 7*24*time.Hour, "how long an unclaimed archive is kept")
-	// Long enough for one more client ping (they arrive every 3s), so a clean logout
-	// ends with its last messages confirmed rather than held as still-owed.
-	closeGrace    = flag.Duration("close-grace", 4*time.Second, "how long a closed session waits for a final acknowledgement before hanging up")
+	// Long enough for two more client pings (they arrive every 3s; a ping confirms only
+	// what the one before it covered), so a clean logout ends with its last messages
+	// confirmed rather than held as still-owed.
+	closeGrace    = flag.Duration("close-grace", 7*time.Second, "how long a closed session waits for a final acknowledgement before hanging up")
 	clientSilence = flag.Duration("client-silence", 20*time.Second, "how long an attached client may go silent before its output is buffered")
 )
 

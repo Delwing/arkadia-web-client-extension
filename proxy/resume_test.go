@@ -172,8 +172,8 @@ func TestDoesNotReplayWhatTheClientAlreadyHas(t *testing.T) {
 	}
 }
 
-// A ping is proof the page is running, so anything written before it has been read and
-// need not be held.
+// A ping is proof the page is running, so anything written before the ping ahead of it
+// has been read and need not be held.
 func TestAPingReleasesEarlierWrites(t *testing.T) {
 	s, game := newTestSession(t, 4096)
 	go func() { _, _ = io.ReadAll(game) }()
@@ -181,6 +181,7 @@ func TestAPingReleasesEarlierWrites(t *testing.T) {
 	s.attach(client, false, -1)
 
 	s.deliver(chunk{at: time.Now(), bytes: []byte("stare wiadomosci\r\n")})
+	_ = s.write([]byte("core.ping"))
 	_ = s.write([]byte("core.ping"))
 
 	s.mu.Lock()
@@ -349,6 +350,7 @@ func TestAFinalPingDuringTheGraceConfirmsTheLastMessages(t *testing.T) {
 
 	// The client is still there and still pinging, as it would be for a few more seconds.
 	_ = s.write([]byte("core.ping"))
+	_ = s.write([]byte("core.ping"))
 
 	if s.hasUnreadOutput() {
 		t.Fatal("still owes output the client acknowledged during the grace")
@@ -368,5 +370,84 @@ func TestWithoutAGraceTheLastMessagesStayOwed(t *testing.T) {
 
 	if !s.hasUnreadOutput() {
 		t.Fatal("dropped output that was never acknowledged")
+	}
+}
+
+/*
+The race behind "czesc tekstu z czasu nieobecnosci przepadla" after even a brief screen
+lock.
+
+The page sends its ping, the proxy writes a prompt, the ping arrives — and the prompt is
+still on the wire when the tab freezes and its socket dies. The ping proves the page was
+running when it sent it, not that it read what was written after. Releasing the prompt on
+that ping left the returning client with a gap exactly its size.
+*/
+func TestAPingDoesNotReleaseWhatWasWrittenAfterItWasSent(t *testing.T) {
+	s, game := newTestSession(t, 4096)
+	go func() { _, _ = io.ReadAll(game) }()
+	client := &fakeClient{pings: true}
+	s.attach(client, false, -1)
+
+	seen := []byte("Stoisz na rynku.\r\n")
+	s.deliver(chunk{at: time.Now(), bytes: seen})
+	_ = s.write([]byte("core.ping"))
+	_ = s.write([]byte("core.ping")) // the first line is now certainly read
+
+	// Written while the next ping was already on its way.
+	s.deliver(chunk{at: time.Now(), bytes: []byte("[ HP: 100% ] > ")})
+	_ = s.write([]byte("core.ping"))
+
+	// ...and the tab froze, its socket died, and it returns having processed only the
+	// first line.
+	returning := &fakeClient{pings: true}
+	s.attach(returning, true, int64(len(seen)))
+
+	var replayed string
+	for _, c := range returning.chunks {
+		replayed += c.payload
+	}
+	if !strings.Contains(replayed, "[ HP: 100% ]") {
+		t.Fatalf("the in-flight prompt was not handed back:\n%q", replayed)
+	}
+	if strings.Contains(replayed, "Stoisz na rynku") {
+		t.Fatalf("replayed a line the client already had:\n%q", replayed)
+	}
+	if got := returning.control(t).DroppedBytes; got != 0 {
+		t.Fatalf("reported %d B lost when nothing was", got)
+	}
+}
+
+/*
+A replay is a write like any other. A phone on a flaky signal can resume, lose the fresh
+socket before reading the replay, and resume again: the replay has to still be there.
+*/
+func TestAReplayIsHeldUntilConfirmed(t *testing.T) {
+	s, _ := newTestSession(t, 4096)
+	s.silenceLimit = 50 * time.Millisecond
+	client := &fakeClient{pings: true}
+	s.attach(client, false, -1)
+
+	time.Sleep(60 * time.Millisecond)
+	s.deliver(chunk{at: time.Now(), bytes: []byte("Goblin cie atakuje!\r\n")}) // buffered
+
+	first := &fakeClient{pings: true}
+	s.attach(first, true, 0)
+	if len(first.chunks) == 0 {
+		t.Fatal("nothing was replayed")
+	}
+
+	// That socket died before the replay was read.
+	second := &fakeClient{pings: true}
+	s.attach(second, true, 0)
+
+	var replayed string
+	for _, c := range second.chunks {
+		replayed += c.payload
+	}
+	if !strings.Contains(replayed, "Goblin cie atakuje!") {
+		t.Fatalf("the replay was lost with the socket it went out on:\n%q", replayed)
+	}
+	if got := second.control(t).DroppedBytes; got != 0 {
+		t.Fatalf("reported %d B lost when nothing was", got)
 	}
 }
