@@ -35,6 +35,7 @@ import {
 import eventBus from "@modules/core/eventBus";
 import { importCategories } from "./exportUtils";
 import ConflictResolutionModal from "./ConflictResolutionModal";
+import SyncActivityPanel from "./SyncActivityPanel";
 import {
     isSyncV2Enabled,
     nudgeSyncV2,
@@ -1008,6 +1009,8 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                             )}
                         </section>
                     )}
+
+                    <SyncActivityPanel syncV2={syncV2} />
                     </div>
                 </div>
             </div>

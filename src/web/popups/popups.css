@@ -7921,6 +7921,23 @@ select.popup-input.popup-input--control {
   padding-top: 8px;
   border-top: 1px solid var(--popup-border);
 }
+/* Activity log (SyncActivityPanel.tsx): newest first, capped height. */
+.sync-activity__list {
+  max-height: 180px;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+.sync-activity__entry {
+  display: flex;
+  gap: 8px;
+  padding: 2px 0;
+}
+.sync-activity__time {
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
 
 /* ── Devices page (DeviceManagementTab.tsx) ──────────────────────────────── */
 .device-card__lead {

@@ -3,7 +3,7 @@ import { MemoryRecordStore } from '@modules/userData/recordStore';
 import type { MergeRule } from '@modules/userData/records';
 import { UserDataTracker } from '@modules/userData/tracker';
 import { applyCounterChange, type ItemChange, type LocalItem, type UserDataType } from '@modules/userData/types';
-import { SyncEngineV2, type EpochStore, type SyncEngineTimings, type VisibilitySource } from '@modules/syncV2/engine';
+import { SyncEngineV2, type EpochStore, type SyncEngineActivity, type SyncEngineTimings, type VisibilitySource } from '@modules/syncV2/engine';
 import { MemoryTransport, type BaseDoc, type FoldResult, type LogDoc } from '@modules/syncV2/transport';
 
 class MapType<V> implements UserDataType<V> {
@@ -41,6 +41,7 @@ interface Device {
     kills: MapType<Record<string, number>>;
     visibility: FakeVisibility;
     errors: unknown[];
+    activities: SyncEngineActivity[];
 }
 
 function makeDevice(id: string, transport: MemoryTransport, options: {
@@ -66,6 +67,7 @@ function makeDevice(id: string, transport: MemoryTransport, options: {
     visibility.visible = options.visible ?? true;
     let cursors: Record<string, number> = { ...options.cursors };
     const errors: unknown[] = [];
+    const activities: SyncEngineActivity[] = [];
     const passphrase = options.passphrase ?? (() => null);
     const engine = new SyncEngineV2({
         deviceId: id,
@@ -80,8 +82,9 @@ function makeDevice(id: string, transport: MemoryTransport, options: {
         epoch: options.epoch,
         timings: { ...FAST, ...options.timings },
         onError: error => errors.push(error),
+        activity: event => activities.push(event),
     });
-    return { engine, aliases, kills, visibility, errors };
+    return { engine, aliases, kills, visibility, errors, activities };
 }
 
 const running: SyncEngineV2[] = [];
@@ -150,6 +153,31 @@ describe('SyncEngineV2', () => {
         pc.aliases.data.set('k', 'kondycja');
         // Well before the 60 s idle interval
         await vi.waitFor(() => expect(phone.aliases.data.get('k')).toBe('kondycja'), { timeout: 3000 });
+    });
+
+    it('reports the next scheduled upload and what it uploaded and applied', async () => {
+        const transport = new MemoryTransport();
+        const pc = makeDevice('pc', transport, { timings: { idleMs: 60_000, watchingMs: 60_000 } });
+        const phone = makeDevice('phone', transport, { timings: { idleMs: 60_000, watchingMs: 60_000 } });
+        expect(pc.engine.getNextUploadAt()).toBeNull();
+
+        const before = Date.now();
+        start(pc);
+        const next = pc.engine.getNextUploadAt();
+        expect(next).toBeGreaterThanOrEqual(before + 60_000);
+        expect(next).toBeLessThanOrEqual(Date.now() + 60_000);
+
+        pc.aliases.data.set('k', 'kondycja');
+        await pc.engine.flush();
+        expect(pc.activities).toContainEqual({ kind: 'uploaded', count: 1, summary: 'aliases×1' });
+
+        start(phone);
+        await vi.waitFor(() => expect(phone.activities).toContainEqual(
+            { kind: 'applied', count: 1, summary: 'aliases×1', devices: ['pc'] },
+        ));
+
+        await pc.engine.stop();
+        expect(pc.engine.getNextUploadAt()).toBeNull();
     });
 
     it('sums counts made on both devices and converges', async () => {

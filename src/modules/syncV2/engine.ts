@@ -63,6 +63,14 @@ export interface UsageCounter {
     write(count: number, bytes?: number): void;
 }
 
+/** What the engine did, for the activity log on the sync page. */
+export type SyncEngineActivity =
+    | { kind: 'uploaded'; count: number; summary: string }
+    | { kind: 'applied'; count: number; summary: string; devices: string[] }
+    | { kind: 'appliedBase'; count: number; summary: string }
+    | { kind: 'cloudReplaced' }
+    | { kind: 'interval'; watchedByOthers: boolean; intervalMs: number };
+
 export interface SyncEngineOptions {
     deviceId: string;
     tracker: UserDataTracker;
@@ -86,6 +94,7 @@ export interface SyncEngineOptions {
     onError?: (error: unknown) => void;
     /** What was uploaded and applied, for the console. */
     log?: (message: string) => void;
+    activity?: (event: SyncEngineActivity) => void;
 }
 
 /** "aliases×2, kills×5": record counts per type. */
@@ -104,6 +113,7 @@ export class SyncEngineV2 {
     private unsubscribeLog: (() => void) | null = null;
     private cleanups: Array<() => void> = [];
     private timer: ReturnType<typeof setTimeout> | null = null;
+    private nextUploadAt: number | null = null;
     private running = false;
     private watchedByOthers = false;
     private lastLogBytes = 0;
@@ -138,6 +148,7 @@ export class SyncEngineV2 {
         this.cleanups = [];
         if (this.timer) clearTimeout(this.timer);
         this.timer = null;
+        this.nextUploadAt = null;
         this.detach();
         await this.serial(() => this.options.transport.setWatching(this.options.deviceId, null)).catch(() => undefined);
     }
@@ -172,6 +183,16 @@ export class SyncEngineV2 {
         return this.serial(() => this.upload());
     }
 
+    /** When the next scheduled upload runs (epoch ms), or null when stopped. */
+    getNextUploadAt(): number | null {
+        return this.nextUploadAt;
+    }
+
+    /** Whether another of the user's devices is watching (uploads run more often). */
+    isWatchedByOthers(): boolean {
+        return this.watchedByOthers;
+    }
+
     private serial<T>(task: () => Promise<T>): Promise<T> {
         const run = this.queue.then(task, task);
         this.queue = run.catch(error => this.options.onError?.(error));
@@ -180,9 +201,14 @@ export class SyncEngineV2 {
 
     private schedule(): void {
         if (this.timer) clearTimeout(this.timer);
+        this.timer = null;
+        this.nextUploadAt = null;
         if (!this.running) return;
         const interval = this.watchedByOthers ? this.timings.watchingMs : this.timings.idleMs;
+        this.nextUploadAt = this.now() + interval;
         this.timer = setTimeout(() => {
+            this.timer = null;
+            this.nextUploadAt = null;
             void this.flush().finally(() => this.schedule());
         }, interval);
     }
@@ -237,6 +263,11 @@ export class SyncEngineV2 {
         if (watched !== this.watchedByOthers) {
             this.watchedByOthers = watched;
             this.schedule();
+            this.options.activity?.({
+                kind: 'interval',
+                watchedByOthers: watched,
+                intervalMs: watched ? this.timings.watchingMs : this.timings.idleMs,
+            });
         }
 
         if (locked()) {
@@ -254,6 +285,7 @@ export class SyncEngineV2 {
             this.cursors = {};
             this.saveEpoch(log.epoch!);
             this.options.log?.('The cloud data was replaced by another device: taking it');
+            this.options.activity?.({ kind: 'cloudReplaced' });
         }
         const applyOptions = { fromCloud: reset };
 
@@ -268,6 +300,7 @@ export class SyncEngineV2 {
                 this.options.log?.(`Applying the base: ${records.length} records...`);
                 await tracker.apply(records, applyOptions);
                 this.options.log?.(`Applied the base: ${records.length} records (${describe(records)})`);
+                this.options.activity?.({ kind: 'appliedBase', count: records.length, summary: describe(records) });
                 for (const [device, seq] of Object.entries(base.folded)) {
                     this.cursors[device] = Math.max(this.cursors[device] ?? 0, seq);
                 }
@@ -281,8 +314,9 @@ export class SyncEngineV2 {
             const records: UserRecord[] = [];
             for (const batch of fresh) records.push(...await decodeRecords(batch.data, batch.encrypted, key));
             await tracker.apply(records, applyOptions);
-            const devices = [...new Set(fresh.map(b => b.device))].join(', ');
-            this.options.log?.(`Applied ${records.length} records from ${devices}: ${describe(records)}`);
+            const devices = [...new Set(fresh.map(b => b.device))];
+            this.options.log?.(`Applied ${records.length} records from ${devices.join(', ')}: ${describe(records)}`);
+            this.options.activity?.({ kind: 'applied', count: records.length, summary: describe(records), devices });
             for (const batch of fresh) {
                 this.cursors[batch.device] = Math.max(this.cursors[batch.device] ?? 0, batch.toSeq);
             }
@@ -360,6 +394,7 @@ export class SyncEngineV2 {
         }
         await tracker.acknowledge(toSeq);
         this.options.log?.(`Uploaded ${outbox.length} records: ${describe(outbox)}`);
+        this.options.activity?.({ kind: 'uploaded', count: outbox.length, summary: describe(outbox) });
 
         if (this.lastLogBytes > this.timings.foldLogBytes) await this.fold([]);
     }

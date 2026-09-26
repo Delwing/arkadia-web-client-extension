@@ -12,7 +12,8 @@ import { getFirestore } from '@modules/firebase/firebaseConfig';
 import { getDeviceId, loadFirebaseSettings } from '@modules/firebase/firebaseTypes';
 import { getSyncGroup } from '@modules/device/syncGroup';
 import { refreshSyncGroup, registerDevice } from '@modules/firebase/firebaseUnifiedSync';
-import { SyncEngineV2, type VisibilitySource } from '@modules/syncV2/engine';
+import { logSyncActivity } from '@modules/firebase/syncActivityLog';
+import { SyncEngineV2, type SyncEngineActivity, type VisibilitySource } from '@modules/syncV2/engine';
 import { FirestoreTransport } from '@modules/syncV2/firestoreTransport';
 import { createUsageCounter } from '@modules/syncV2/usage';
 import { migrateFromV1 } from './migrateFromV1';
@@ -48,6 +49,12 @@ const browserVisibility: VisibilitySource = {
 let engine: SyncEngineV2 | null = null;
 let releaseLock: (() => void) | null = null;
 let retryTimer: ReturnType<typeof setTimeout> | null = null;
+/** When the waiting start is retried (epoch ms). */
+let retryAt: number | null = null;
+/** Why the start is waiting, logged once per reason. */
+let waitReason: string | null = null;
+/** This tab holds the sync lock (or the browser has no Web Locks). */
+let lockHeld = false;
 let startToken = 0;
 let startedFor: string | null = null;
 let pendingRun: (() => void) | null = null;
@@ -57,6 +64,62 @@ let readyWaiters: Array<() => void> = [];
 let manualActions = 0;
 /** Wait for the next start attempt (set while sync is started for a user). */
 let rearm: (() => void) | null = null;
+
+/** Where sync v2 stands in this tab, for the sync page. */
+export interface SyncV2Status {
+    /**
+     * running: syncing here; waiting: will retry the start (see retryAt);
+     * other-tab: another tab of this browser syncs; stopped: signed out.
+     */
+    state: 'running' | 'waiting' | 'other-tab' | 'stopped';
+    /** Next scheduled upload (epoch ms) while running. */
+    nextUploadAt: number | null;
+    /** Next start attempt (epoch ms) while waiting. */
+    retryAt: number | null;
+    /** Another device is watching: uploads run every few seconds. */
+    watchedByOthers: boolean;
+}
+
+export function getSyncV2Status(): SyncV2Status {
+    if (engine) {
+        return {
+            state: 'running',
+            nextUploadAt: engine.getNextUploadAt(),
+            retryAt: null,
+            watchedByOthers: engine.isWatchedByOthers(),
+        };
+    }
+    const state = !startedFor ? 'stopped' : lockHeld ? 'waiting' : 'other-tab';
+    return { state, nextUploadAt: null, retryAt: state === 'waiting' ? retryAt : null, watchedByOthers: false };
+}
+
+function describeActivity(event: SyncEngineActivity): void {
+    switch (event.kind) {
+        case 'uploaded':
+            logSyncActivity('success', `Wyslano zmiany: ${event.count} (${event.summary})`);
+            break;
+        case 'applied': {
+            const from = event.devices.length === 1 ? 'innego urzadzenia' : `${event.devices.length} urzadzen`;
+            logSyncActivity('success', `Pobrano zmiany z ${from}: ${event.count} (${event.summary})`);
+            break;
+        }
+        case 'appliedBase':
+            logSyncActivity('success', `Zastosowano dane z chmury: ${event.count} (${event.summary})`);
+            break;
+        case 'cloudReplaced':
+            logSyncActivity('warning', 'Dane w chmurze zostaly zastapione przez inne urzadzenie - przyjeto je.');
+            break;
+        case 'interval':
+            logSyncActivity('info', event.watchedByOthers
+                ? `Inne urzadzenie jest aktywne - wysylanie co ${Math.round(event.intervalMs / 1000)} s.`
+                : `Wysylanie co ${Math.round(event.intervalMs / 60_000)} min.`);
+            break;
+    }
+}
+
+function errorText(error: unknown): string {
+    return error instanceof Error ? error.message : String(error);
+}
 
 const autoSyncOn = (): boolean => loadFirebaseSettings().autoSyncEnabled;
 /** Sync may run: auto-sync is on, or the user asked for a send / download. */
@@ -101,13 +164,16 @@ export function startSyncV2(userId: string, passphrase: () => string | null): vo
     const run = async (): Promise<void> => {
         if (token !== startToken) return;
         const db = getFirestore();
-        if (!db || !syncAllowed()) return retryLater();
+        if (!db) return retryLater('brak polaczenia z Firebase');
+        if (!syncAllowed()) return retryLater('automatyczna synchronizacja jest wylaczona');
         const editTypes = await migrateFromV1(userId, passphrase()).catch(error => {
             console.warn('[SyncV2] v1 migration failed:', error);
             return null;
         });
         if (token !== startToken) return;
-        if (!editTypes) return retryLater();
+        if (!editTypes) return retryLater('przygotowanie danych nie powiodlo sie');
+        waitReason = null;
+        retryAt = null;
 
         engine = new SyncEngineV2({
             deviceId: getDeviceId(),
@@ -136,11 +202,16 @@ export function startSyncV2(userId: string, passphrase: () => string | null): vo
                 save: epoch => localStorage.setItem(epochKey(userId), epoch),
             },
             usage: createUsageCounter(),
-            onError: error => console.error('[SyncV2]', error),
+            onError: error => {
+                console.error('[SyncV2]', error);
+                logSyncActivity('error', `Blad synchronizacji: ${errorText(error)}`);
+            },
             log: message => console.info(`[SyncV2] ${message}`),
+            activity: describeActivity,
         });
         engine.start();
         console.log('[SyncV2] Started');
+        logSyncActivity('info', 'Synchronizacja uruchomiona.');
         readyWaiters.splice(0).forEach(resolve => resolve());
         // List this device for the others (Devices page), whether or not that
         // page was ever opened here.
@@ -149,28 +220,36 @@ export function startSyncV2(userId: string, passphrase: () => string | null): vo
     };
 
     // Auto-sync off, offline, or the passphrase not entered yet: try again later.
-    const retryLater = (): void => {
+    const retryLater = (reason?: string): void => {
         if (token !== startToken) return;
+        if (reason && reason !== waitReason) {
+            waitReason = reason;
+            logSyncActivity('warning', `Oczekiwanie: ${reason}.`);
+        }
         if (retryTimer) clearTimeout(retryTimer);
         pendingRun = () => { void run(); };
+        retryAt = Date.now() + MIGRATION_RETRY_MS;
         retryTimer = setTimeout(() => {
             retryTimer = null;
+            retryAt = null;
             pendingRun = null;
             void run();
         }, MIGRATION_RETRY_MS);
     };
 
-    rearm = retryLater;
+    rearm = () => retryLater('automatyczna synchronizacja jest wylaczona');
 
     const locks = typeof navigator !== 'undefined'
         ? (navigator as Navigator & { locks?: LockManager }).locks
         : undefined;
     if (!locks?.request) {
+        lockHeld = true;
         void run();
         return;
     }
     void locks.request(LOCK_NAME, { mode: 'exclusive' }, () => {
         if (token !== startToken) return undefined;
+        lockHeld = true;
         void run();
         // Hold the lock until stop() or the tab closes.
         return new Promise<void>(resolve => { releaseLock = resolve; });
@@ -184,12 +263,16 @@ export async function stopSyncV2(): Promise<void> {
     devicesChecked.clear();
     if (retryTimer) clearTimeout(retryTimer);
     retryTimer = null;
+    retryAt = null;
+    waitReason = null;
     pendingRun = null;
+    lockHeld = false;
     const running = engine;
     engine = null;
     await running?.stop();
     releaseLock?.();
     releaseLock = null;
+    if (running) logSyncActivity('info', 'Synchronizacja zatrzymana.');
 }
 
 /**
@@ -207,6 +290,7 @@ export function nudgeSyncV2(): void {
     if (!run) return;
     if (retryTimer) clearTimeout(retryTimer);
     retryTimer = null;
+    retryAt = null;
     pendingRun = null;
     run();
 }

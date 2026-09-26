@@ -19,6 +19,9 @@ export interface SyncDebounceCallbacks {
 class SyncDebounceManager {
     private coldTimer: ReturnType<typeof setTimeout> | null = null;
     private hotTimer: ReturnType<typeof setTimeout> | null = null;
+    /** When the running timers fire (epoch ms). */
+    private coldDueAt: number | null = null;
+    private hotDueAt: number | null = null;
     private coldDirty = false;
     private hotDirty = false;
     private callbacks: SyncDebounceCallbacks | null = null;
@@ -150,8 +153,10 @@ class SyncDebounceManager {
             clearTimeout(this.hotTimer);
         }
 
+        this.hotDueAt = Date.now() + HOT_SYNC_INTERVAL_MS;
         this.hotTimer = setTimeout(() => {
             this.hotTimer = null;
+            this.hotDueAt = null;
             this.hotDirty = false;
             this.callbacks?.onSyncNeeded();
         }, HOT_SYNC_INTERVAL_MS);
@@ -166,8 +171,10 @@ class SyncDebounceManager {
         // Don't reschedule if timer already running
         if (this.coldTimer) return;
 
+        this.coldDueAt = Date.now() + COLD_SYNC_INTERVAL_MS;
         this.coldTimer = setTimeout(() => {
             this.coldTimer = null;
+            this.coldDueAt = null;
             this.flushCold();
         }, COLD_SYNC_INTERVAL_MS);
     }
@@ -213,6 +220,15 @@ class SyncDebounceManager {
      */
     hasPendingSync(): boolean {
         return this.coldDirty || this.hotDirty;
+    }
+
+    /** When the pending sync runs (epoch ms), or null when none is scheduled. */
+    getNextSyncAt(): number | null {
+        const hot = this.hotTimer ? this.hotDueAt : null;
+        const cold = this.coldTimer ? this.coldDueAt : null;
+        if (hot === null) return cold;
+        if (cold === null) return hot;
+        return Math.min(hot, cold);
     }
 
     /**
