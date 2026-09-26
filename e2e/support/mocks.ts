@@ -2,7 +2,6 @@ import type {BrowserContext, Page} from '@playwright/test';
 import * as fs from 'fs';
 import * as path from 'path';
 import {fileURLToPath} from 'url';
-import {execSync} from 'child_process';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -223,18 +222,6 @@ const HERBS_DATA_ROUTE = '**/herbs_data.json';
 const WIEDZA_API_ROUTE = '**/admin-ajax.php?action=wiedza_data';
 const MAGICS_DATA_ROUTE = '**/magics_data_v3.json';
 const MAGIC_KEYS_DATA_ROUTE = '**/magic_keys.json';
-const GITHUB_DEPLOYMENTS_ROUTE = 'https://api.github.com/repos/Delwing/arkadia-web-client-extension/deployments?environment=github-pages';
-
-// Get the current commit SHA dynamically
-function getCurrentCommitSha(): string {
-    try {
-        const sha = execSync('git rev-parse --short HEAD').toString().trim();
-        // Pad to 40 chars to match GitHub API format
-        return sha + '1234567890123456789012345678901234'.substring(0, 40 - sha.length);
-    } catch {
-        return 'unknown1234567890123456789012345678901';
-    }
-}
 
 const DEFAULT_MAP_DATA: MockMapData = JSON.parse(
     fs.readFileSync(path.join(__dirname, 'mock-data', 'map-data.json'), 'utf-8')
@@ -436,37 +423,24 @@ export async function mockMagicKeysDownload(
     });
 }
 
-// Export for use in tests
-export {getCurrentCommitSha};
-
-export async function mockGithubDeployments(
+/**
+ * Serves `version.json` as if another build had been deployed since the page
+ * loaded. Without it, the preview serves the file of the build under test, which
+ * always matches the page.
+ */
+export async function mockDeployedVersion(
     context: BrowserContext,
-    options: {sha?: string; returnCurrent?: boolean; simulateRateLimit?: boolean} = {},
+    options: {sha?: string; status?: number} = {},
 ): Promise<void> {
-    await context.route(GITHUB_DEPLOYMENTS_ROUTE, async (route) => {
-        if (options.simulateRateLimit) {
-            // Simulate rate limiting
-            await route.fulfill({
-                status: 403,
-                contentType: 'application/json',
-                body: JSON.stringify({
-                    message: 'API rate limit exceeded',
-                }),
-            });
+    await context.route('**/version.json', async (route) => {
+        if (options.status && options.status !== 200) {
+            await route.fulfill({status: options.status, body: ''});
             return;
         }
-
-        // Return the specified SHA or the current commit SHA so tests don't show false warnings
-        // The first deployment in the array is the most recent
         await route.fulfill({
             status: 200,
             contentType: 'application/json',
-            body: JSON.stringify([
-                {
-                    sha: options.sha || getCurrentCommitSha(),
-                    environment: 'github-pages',
-                },
-            ]),
+            body: JSON.stringify({sha: options.sha ?? 'zzzzzzz', date: '2026-01-01T00:00:00Z'}),
         });
     });
 }
