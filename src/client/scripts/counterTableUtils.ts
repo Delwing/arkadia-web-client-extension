@@ -52,3 +52,30 @@ export function createHeader(width: number, offset: number, color: FormatStateSn
         return line;
     };
 }
+
+/**
+ * Greedily packs pieces into lines no wider than `width`, joining pieces on a
+ * line with `separator`. Continuation lines are indented by `indent` spaces.
+ * Lets a table row flow onto several lines when the console is narrow.
+ */
+export function wrapPieces(pieces: AnsiAwareBuffer[], separator: string, width: number, indent = 0): AnsiAwareBuffer[] {
+    const lines: AnsiAwareBuffer[] = [];
+    let current: AnsiAwareBuffer | null = null;
+    for (const piece of pieces) {
+        if (current && current.length + separator.length + piece.length <= width) {
+            current.append(separator, {});
+            current.appendBuffer(piece);
+            continue;
+        }
+        if (current) {
+            lines.push(current);
+            current = new AnsiAwareBuffer();
+            current.append(" ".repeat(indent), {});
+        } else {
+            current = new AnsiAwareBuffer();
+        }
+        current.appendBuffer(piece);
+    }
+    if (current) lines.push(current);
+    return lines;
+}

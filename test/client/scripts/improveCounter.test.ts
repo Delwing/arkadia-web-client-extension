@@ -288,4 +288,53 @@ describe('improve counter', () => {
     const printed = c.print.mock.calls[0][0]?.text;
     expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 2 postepow/);
   });
+  describe('narrow console', () => {
+    const recordSome = () => {
+      client.dispatch('gmcp.char.state', { improve: 2 });
+      parse('Zabiles smoka chaosu.');
+      jest.advanceTimersByTime(30000);
+      client.dispatch('gmcp.char.state', { improve: 3 });
+    };
+    const lineWidths = (text: string) => text.split('\n').filter(Boolean).map((l) => l.length);
+
+    test('keeps the full 74-column /postepy table on a wide console', () => {
+      (client as any).contentWidth = 120;
+      recordSome();
+      show();
+      const printed: string = client.print.mock.calls[0][0]?.text;
+      expect(new Set(lineWidths(printed))).toEqual(new Set([74]));
+      expect(printed).toMatch(/2\. male {12}: \d{2}\/\d{2} [\d:]{8} : czas   0:30 : zabici 1\/1/);
+    });
+
+    test('fits /postepy to the console width and wraps rows instead of truncating', () => {
+      (client as any).contentWidth = 40;
+      recordSome();
+      show();
+      const printed: string = client.print.mock.calls[0][0]?.text;
+      expect(new Set(lineWidths(printed))).toEqual(new Set([40]));
+      expect(printed).toMatch(/2\. male : \d{2}\/\d{2} [\d:]{8}/);
+      expect(printed).toMatch(/czas 0:30 : zabici 1\/1/);
+      expect(printed).toMatch(/Dzisiaj: 3/);
+      expect(printed).toMatch(/Od ostatniego postepu: 0:00/);
+      expect(printed).toMatch(/zabici: 0\/0/);
+    });
+
+    test('fits /postepy2 to the console width', () => {
+      (client as any).contentWidth = 36;
+      recordSome();
+      showLifetime();
+      const printed: string = client.print.mock.calls[0][0]?.text;
+      expect(new Set(lineWidths(printed))).toEqual(new Set([36]));
+      expect(printed).toMatch(/- male/);
+      expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY:/);
+      expect(printed).toMatch(/\| {3}3 postepow/);
+    });
+
+    test('never draws narrower than the minimum width', () => {
+      (client as any).contentWidth = 10;
+      show();
+      const printed: string = client.print.mock.calls[0][0]?.text;
+      expect(new Set(lineWidths(printed))).toEqual(new Set([30]));
+    });
+  });
 });
