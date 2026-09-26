@@ -431,9 +431,7 @@ class Tracker {
                     this.emitStopEvent('transport.arrived', def, stopIdx);
                 }
                 // else: another transport docks here and its pattern matched — skip to prevent double-bind
-                // Stage the next leg — stop pattern already tells us which direction is next
-                const nextIdx = (stopIdx + 1) % def.stops.length;
-                this.stagedSet.set(def, nextIdx);
+                this.stageNextFromStop(def, stopIdx, locId);
                 return;
             }
             // On board with no map — adopt this definition
@@ -481,6 +479,21 @@ class Tracker {
         this.client.sendEvent('transportArrival', stopIdx);
         this.emitOnBoardStop(def, stopIdx);
         console.log(`${LOG} Arrived at stop ${stopIdx} on ${def.name}`);
+    }
+
+    /**
+     * A vehicle pulling in tells us the leg it is about to run — the one after the stop it reached.
+     * Stops sharing the arrival line (a mid-route village reached from either end) are all fired
+     * for the same line, so decide from the whole group: stage only when it names a single next
+     * leg, otherwise forget any guess rather than let whichever trigger ran last pick a direction.
+     */
+    private stageNextFromStop(def: Def, stopIdx: number, locId: number | null): void {
+        const n = def.stops.length;
+        const siblings = def.stopGroups.get(def.stops[stopIdx].patternKey) ?? [stopIdx];
+        const here = siblings.filter(i => def.stops[i].destination === locId);
+        const nexts = new Set((here.length > 0 ? here : siblings).map(i => (i + 1) % n));
+        if (nexts.size === 1) this.stagedSet.set(def, [...nexts][0]);
+        else this.stagedSet.delete(def);
     }
 
     // ── trigger events ────────────────────────────────────────────────────────
