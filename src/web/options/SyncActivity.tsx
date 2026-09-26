@@ -7,6 +7,7 @@ import {
     onSyncActivity,
     type SyncActivityEntry,
 } from "@modules/firebase/syncActivityLog";
+import { COLD_SYNC_INTERVAL_MS, HOT_SYNC_INTERVAL_MS } from "@modules/firebase/syncDebounceManager";
 import { getSyncV2Status } from "@web/userData/syncV2";
 
 const LEVEL_CLASS: Record<SyncActivityEntry['level'], string> = {
@@ -41,35 +42,66 @@ function useNow(): number {
     return now;
 }
 
-interface TimerRow {
+interface TimerTile {
     label: string;
+    /** How often it runs, under the label. */
+    hint: string;
+    /** The countdown, or a short state ("na zywo", "brak zmian"). */
     value: string;
+    /** Share of the interval still to wait (0..1) — drawn as a draining bar; null for no bar. */
+    remaining: number | null;
+    /** Nothing scheduled: the tile is dimmed. */
+    idle?: boolean;
+    /** Runs continuously: full bar in the success colour. */
+    live?: boolean;
+    /** The value is a running countdown (digits in monospace). */
+    countdown?: boolean;
 }
 
-/** The scheduled syncs, one row per pending timer. */
-function timerRows(syncV2: boolean, now: number): TimerRow[] {
+function countdownTile(label: string, hint: string, at: number | null, intervalMs: number, now: number): TimerTile {
+    if (at === null) return { label, hint, value: 'brak zmian', remaining: null, idle: true };
+    const left = Math.max(0, at - now);
+    return { label, hint, value: formatCountdown(left), remaining: Math.min(1, left / intervalMs), countdown: true };
+}
+
+/** The sync timers as tiles; a single tile when sync isn't running here. */
+function timerTiles(syncV2: boolean, now: number): TimerTile[] {
     if (!syncV2) {
         const { hot, cold } = syncEngine.getScheduledAutoSyncs();
-        const rows: TimerRow[] = [];
-        if (hot !== null) rows.push({ label: 'Ustawienia i dane', value: `za ${formatCountdown(hot - now)}` });
-        if (cold !== null) rows.push({ label: 'Licznik zabitych, odwiedzone lokacje', value: `za ${formatCountdown(cold - now)}` });
-        return rows;
+        return [
+            countdownTile('Ustawienia i dane', `${formatInterval(HOT_SYNC_INTERVAL_MS)} po zmianie`, hot, HOT_SYNC_INTERVAL_MS, now),
+            countdownTile('Licznik zabitych, lokacje', `${formatInterval(COLD_SYNC_INTERVAL_MS)} po zmianie`, cold, COLD_SYNC_INTERVAL_MS, now),
+        ];
     }
     const status = getSyncV2Status();
     switch (status.state) {
-        case 'running':
-            if (status.nextUploadAt === null) return [];
-            return [{
-                label: status.watchedByOthers ? 'Wysylanie (inne urzadzenie jest aktywne)' : 'Wysylanie',
-                value: `za ${formatCountdown(status.nextUploadAt - now)}`
-                    + (status.uploadIntervalMs ? ` (co ${formatInterval(status.uploadIntervalMs)})` : ''),
-            }];
+        case 'running': {
+            const interval = status.uploadIntervalMs ?? 0;
+            const upload = interval > 0
+                ? countdownTile(
+                    'Wysylanie',
+                    `co ${formatInterval(interval)}${status.watchedByOthers ? ' · inne urzadzenie aktywne' : ''}`,
+                    status.nextUploadAt,
+                    interval,
+                    now,
+                )
+                : { label: 'Wysylanie', hint: '', value: 'brak', remaining: null, idle: true };
+            return [
+                upload,
+                {
+                    label: 'Odbieranie',
+                    hint: 'gdy karta jest widoczna',
+                    value: status.listening ? 'na zywo' : 'wstrzymane',
+                    remaining: status.listening ? 1 : null,
+                    idle: !status.listening,
+                    live: status.listening,
+                },
+            ];
+        }
         case 'waiting':
-            return status.retryAt === null
-                ? []
-                : [{ label: 'Ponowna proba uruchomienia', value: `za ${formatCountdown(status.retryAt - now)}` }];
+            return [countdownTile('Ponowna proba uruchomienia', `co ${formatInterval(60_000)}`, status.retryAt, 60_000, now)];
         case 'other-tab':
-            return [{ label: 'Synchronizacja dziala w innej karcie tej przegladarki', value: '' }];
+            return [{ label: 'Synchronizacja', hint: 'jedna karta synchronizuje za wszystkie', value: 'w innej karcie', remaining: null }];
         default:
             return [];
     }
@@ -79,19 +111,25 @@ interface SyncTimersProps {
     syncV2: boolean;
 }
 
-/** Countdowns to the scheduled syncs, for the auto-sync box. Renders nothing when none is pending. */
+/** The scheduled syncs as a row of tiles, for the auto-sync box. */
 export function SyncTimers({ syncV2 }: SyncTimersProps) {
-    const rows = timerRows(syncV2, useNow());
-    if (rows.length === 0) return null;
+    const tiles = timerTiles(syncV2, useNow());
+    if (tiles.length === 0) return null;
     return (
-        <ul className="sync-timers popup-small">
-            {rows.map(row => (
-                <li key={row.label} className="sync-timers__row">
-                    <span className="popup-muted">{row.label}</span>
-                    {row.value && <span className="sync-timers__value">{row.value}</span>}
-                </li>
+        <div className="sync-timers">
+            {tiles.map(tile => (
+                <div key={tile.label} className={`sync-timer${tile.idle ? ' is-idle' : ''}${tile.live ? ' is-live' : ''}`}>
+                    <div className="sync-timer__label">{tile.label}</div>
+                    <div className={`sync-timer__value${tile.countdown ? ' is-countdown' : ''}`}>{tile.value}</div>
+                    {tile.hint && <div className="sync-timer__hint">{tile.hint}</div>}
+                    <div className="sync-timer__bar">
+                        {tile.remaining !== null && (
+                            <span style={{ width: `${Math.round(tile.remaining * 100)}%` }} />
+                        )}
+                    </div>
+                </div>
             ))}
-        </ul>
+        </div>
     );
 }
 

@@ -134,8 +134,10 @@ describe('SyncEngineV2', () => {
         const pc = makeDevice('pc', transport);
         start(pc);
         await vi.waitFor(() => expect(transport.listenerCount()).toBe(1));
+        expect(pc.engine.isListening()).toBe(true);
         pc.visibility.set(false);
         await vi.waitFor(() => expect(transport.listenerCount()).toBe(0));
+        expect(pc.engine.isListening()).toBe(false);
         expect(transport.log.watching.pc).toBeUndefined();
         pc.visibility.set(true);
         await vi.waitFor(() => expect(transport.listenerCount()).toBe(1));

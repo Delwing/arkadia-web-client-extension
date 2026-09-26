@@ -942,7 +942,6 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                                 </span>
                             )}
                         </div>
-                        {autoSyncEnabled && <SyncTimers syncV2={syncV2} />}
                         <div className="popup-muted popup-small">
                             {syncV2 ? (
                                 <>
@@ -962,6 +961,7 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                                 </div>
                             )}
                         </div>
+                        {autoSyncEnabled && <SyncTimers syncV2={syncV2} />}
                     </section>
 
                     {/* Delete cloud data */}

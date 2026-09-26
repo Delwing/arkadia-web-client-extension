@@ -9,8 +9,8 @@
 import type { SyncCategory } from './firebaseTypes';
 import { COLD_STORAGE_KEYS, COLD_SYNC_CATEGORIES } from './categoryRegistry';
 
-const COLD_SYNC_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes
-const HOT_SYNC_INTERVAL_MS = 30 * 1000; // 30 seconds (existing behavior)
+export const COLD_SYNC_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes
+export const HOT_SYNC_INTERVAL_MS = 30 * 1000; // 30 seconds (existing behavior)
 
 export interface SyncDebounceCallbacks {
     onSyncNeeded: () => void;

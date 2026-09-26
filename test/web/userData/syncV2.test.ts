@@ -22,6 +22,7 @@ vi.mock('@modules/syncV2/engine', () => ({
             getNextUploadAt: () => 12_345,
             getUploadIntervalMs: () => 300_000,
             isWatchedByOthers: () => false,
+            isListening: () => true,
         };
     },
 }));
@@ -59,7 +60,7 @@ describe('startSyncV2', () => {
 
         settings.autoSyncEnabled = true;
         expect(await waitForSyncV2(1_000)).toBe(true);
-        expect(getSyncV2Status()).toEqual({ state: 'running', nextUploadAt: 12_345, uploadIntervalMs: 300_000, retryAt: null, watchedByOthers: false });
+        expect(getSyncV2Status()).toEqual({ state: 'running', nextUploadAt: 12_345, uploadIntervalMs: 300_000, retryAt: null, watchedByOthers: false, listening: true });
         expect(getSyncActivity().at(-1)?.text).toBe('Synchronizacja uruchomiona.');
 
         await stopSyncV2();
