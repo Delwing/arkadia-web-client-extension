@@ -70,7 +70,7 @@ function makeContext(overrides: Partial<LoaderContext<any, Meta>> = {}): LoaderC
 }
 
 describe('FetchJsonLoader', () => {
-  describe('when Content-Length is absent (fallback path)', () => {
+  describe('when there is no response body (fallback path)', () => {
     it('loads JSON data from the configured URL', async () => {
       const payload = { items: [1, 2, 3] };
       const mockFetch = jest.fn(async () => makeJsonResponse(payload));
@@ -116,25 +116,61 @@ describe('FetchJsonLoader', () => {
     });
   });
 
-  describe('when Content-Length is present (streaming path)', () => {
-    it('reads the body incrementally and reports progress', async () => {
+  describe('when a response body is present (streaming path)', () => {
+    it('reports indeterminate progress with bytes received, then 100', async () => {
       const payload = { streaming: true, items: [1, 2, 3, 4, 5] };
       const mockFetch = jest.fn(async () => makeStreamingResponse(payload, 4));
       const loader = new FetchJsonLoader({ url: 'https://example.com/data.json', fetchImpl: mockFetch as any });
 
-      const progressValues: number[] = [];
-      const result = await loader.load(makeContext({ onProgress: (p) => progressValues.push(p) }));
+      const calls: Array<[number, number | undefined, number | undefined]> = [];
+      const result = await loader.load(
+        makeContext({ onProgress: (p, loaded, total) => calls.push([p, loaded, total]) }),
+      );
 
-      // Progress should have been called multiple times (one per chunk + final 100)
-      expect(progressValues.length).toBeGreaterThan(1);
-      // Final value should be 100
-      expect(progressValues[progressValues.length - 1]).toBe(100);
-      // All intermediate values should be in [0, 100]
-      for (const p of progressValues) {
-        expect(p).toBeGreaterThanOrEqual(0);
-        expect(p).toBeLessThanOrEqual(100);
+      const byteLength = Buffer.byteLength(JSON.stringify(payload), 'utf-8');
+      const intermediate = calls.slice(0, -1);
+      expect(intermediate.length).toBeGreaterThan(1);
+      // No total is ever reported, and loaded bytes grow monotonically
+      let previous = 0;
+      for (const [p, loaded, total] of intermediate) {
+        expect(p).toBe(-1);
+        expect(total).toBeUndefined();
+        expect(loaded!).toBeGreaterThan(previous);
+        previous = loaded!;
       }
-      // Parsed data should match original payload
+      expect(calls[calls.length - 1]).toEqual([100, byteLength, undefined]);
+      expect(result.snapshot.data).toEqual(payload);
+    });
+
+    it('ignores Content-Length, which is the compressed size for encoded responses', async () => {
+      const payload = { compressed: 'x'.repeat(100) };
+      const response = makeStreamingResponse(payload, 16);
+      (response as any).headers = { get: (name: string) => (name === 'Content-Length' ? '10' : null) };
+      const mockFetch = jest.fn(async () => response);
+      const loader = new FetchJsonLoader({ url: 'https://example.com/data.json', fetchImpl: mockFetch as any });
+
+      const calls: Array<[number, number | undefined, number | undefined]> = [];
+      const result = await loader.load(
+        makeContext({ onProgress: (p, loaded, total) => calls.push([p, loaded, total]) }),
+      );
+
+      for (const [p, , total] of calls) {
+        expect(p === -1 || p === 100).toBe(true);
+        expect(total).toBeUndefined();
+      }
+      expect(result.snapshot.data).toEqual(payload);
+    });
+
+    it('streams even when Content-Length is missing', async () => {
+      const payload = { noLength: true };
+      const response = makeStreamingResponse(payload);
+      (response as any).headers = { get: () => null };
+      const mockFetch = jest.fn(async () => response);
+      const loader = new FetchJsonLoader({ url: 'https://example.com/data.json', fetchImpl: mockFetch as any });
+
+      const result = await loader.load(makeContext());
+
+      expect(response.json).not.toHaveBeenCalled();
       expect(result.snapshot.data).toEqual(payload);
     });
 
@@ -149,37 +185,6 @@ describe('FetchJsonLoader', () => {
 
       expect(result.snapshot.timestamp).toBeGreaterThanOrEqual(before);
       expect(result.snapshot.timestamp).toBeLessThanOrEqual(after);
-    });
-  });
-
-  describe('when Content-Length is zero or non-numeric (fallback path)', () => {
-    it('falls back to response.json() when Content-Length is 0', async () => {
-      const payload = { fallback: true };
-      const response = {
-        ok: true,
-        body: { getReader: jest.fn() },
-        headers: { get: () => '0' },
-        json: jest.fn(async () => payload),
-      } as unknown as Response;
-
-      const mockFetch = jest.fn(async () => response);
-      const loader = new FetchJsonLoader({ url: 'https://example.com/data.json', fetchImpl: mockFetch as any });
-
-      const result = await loader.load(makeContext());
-
-      // body.getReader should NOT be called — we fell back to json()
-      expect(response.body!.getReader).not.toHaveBeenCalled();
-      expect(result.snapshot.data).toEqual(payload);
-    });
-
-    it('falls back to response.json() when body is null', async () => {
-      const payload = { noBody: true };
-      const mockFetch = jest.fn(async () => makeJsonResponse(payload));
-      const loader = new FetchJsonLoader({ url: 'https://example.com/data.json', fetchImpl: mockFetch as any });
-
-      const result = await loader.load(makeContext());
-
-      expect(result.snapshot.data).toEqual(payload);
     });
   });
 });
