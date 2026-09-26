@@ -242,3 +242,58 @@ describe('transport trigger events', () => {
     expect(events('transport.stop')).toEqual([]);
   });
 });
+
+describe('stagecoach direction at a mid-route village', () => {
+  let client: FakeClient;
+  let parse: (line: string, type?: string) => AnsiAwareBuffer | null;
+  const lastTimerLabel = () => {
+    const timers = client.sendEvent.mock.calls.filter(c => c[0] === 'transportTimer');
+    return timers[timers.length - 1]?.[1]?.label ?? null;
+  };
+
+  // Merceaux-Descloux (7744) is passed in both directions of the Quenelles - Parravon run,
+  // and the coach pulls in with the same line whichever end it came from.
+  const waitAtMerceaux = () => {
+    setGmcp('room.info', { map: {} });
+    client.sendEvent('enterLocation', { id: 7744 });
+    parse('Woznica oznajmia gromkim glosem: Postoj, w wiosce Merceaux-Descloux.');
+  };
+  const boardAndDepart = () => {
+    client.sendEvent('command', 'wsiadz do dylizansu');
+    parse('Oplacasz podroz u woznicy i wsiadasz do blekitnego stojacego dylizansu.');
+    setGmcp('room.info', {});
+    parse('Drzwiczki sie zamykaja, drzenie przebiega przez caly pojazd, ktory powoli rusza.');
+  };
+
+  beforeEach(() => {
+    jest.useFakeTimers();
+    localStorage.clear();
+    characterStorage.setCharacter('TestChar');
+    client = new FakeClient();
+    initTransportTracker((client as unknown) as any);
+    parse = (line: string, type = '') =>
+      Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), type);
+  });
+
+  afterEach(() => {
+    jest.clearAllTimers();
+    jest.useRealTimers();
+  });
+
+  test('the driver announcing the next stop picks the leg', () => {
+    waitAtMerceaux();
+    parse('Woznica dylizansu glosno wola: Nastepny postoj - most pod Parravon!');
+    boardAndDepart();
+    expect(lastTimerLabel()).toBe('Merceaux-Descloux → Parravon');
+
+    parse('Z zewnatrz dochodzi stlumiony glos woznicy: Postoj, plac przed zajazdem.');
+    parse('Woznica wola: Nastepny postoj - Merceaux-Descloux!');
+    expect(lastTimerLabel()).toBe('Parravon → Merceaux-Descloux');
+  });
+
+  test('without the announcement the arrival line does not guess a direction', () => {
+    waitAtMerceaux();
+    boardAndDepart();
+    expect(lastTimerLabel()).toBeNull();
+  });
+});

@@ -19,7 +19,7 @@
             "destination": 7786,
             "time": 44,
             "stop_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica oznajmia gromkim glosem): Postoj, centrum wioski Montlac\\.$",
-            "set_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica.*wola): Nastepny postoj - Merceaux-Descloux!$",
+            "set_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica.*wola): Nastepny postoj - Montlac!$",
             "label": "Montlac"
         },
         {
@@ -27,7 +27,7 @@
             "destination": 7744,
             "time": 7,
             "stop_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica oznajmia gromkim glosem): Postoj, w wiosce Merceaux-Descloux\\.$",
-            "set_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica.*wola): Nastepny postoj - most pod Parravon!$",
+            "set_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica.*wola): Nastepny postoj - Merceaux-Descloux!$",
             "label": "Merceaux-Descloux"
         },
         {
@@ -35,7 +35,7 @@
             "destination": 26659,
             "time": 7,
             "stop_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica oznajmia gromkim glosem): Postoj, plac przed zajazdem\\.$",
-            "set_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica.*wola): Nastepny postoj - Merceaux-Descloux!$",
+            "set_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica.*wola): Nastepny postoj - most pod Parravon!$",
             "label": "Parravon"
         },
         {
@@ -43,7 +43,7 @@
             "destination": 7744,
             "time": 7,
             "stop_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica oznajmia gromkim glosem): Postoj, w wiosce Merceaux-Descloux\\.$",
-            "set_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica.*wola): Nastepny postoj - Montlac!$",
+            "set_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica.*wola): Nastepny postoj - Merceaux-Descloux!$",
             "label": "Merceaux-Descloux"
         },
         {
@@ -51,7 +51,7 @@
             "destination": 7786,
             "time": 16,
             "stop_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica oznajmia gromkim glosem): Postoj, centrum wioski Montlac\\.$",
-            "set_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica.*wola): Nastepny postoj - Quenelles!$",
+            "set_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica.*wola): Nastepny postoj - Montlac!$",
             "label": "Montlac"
         },
         {
@@ -59,7 +59,7 @@
             "destination": 4659,
             "time": 44,
             "stop_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica oznajmia gromkim glosem): Postoj, plac Gillesa le Breton\\.$",
-            "set_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica.*wola): Nastepny postoj - Montlac!$",
+            "set_pattern": "^(?:Z zewnatrz dochodzi stlumiony glos woznicy|Woznica.*wola): Nastepny postoj - Quenelles!$",
             "label": "Quenelles"
         }
     ]
