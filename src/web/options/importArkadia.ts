@@ -1,4 +1,5 @@
 import { Alias } from "./importBlowtorch";
+import type { UserMacro, UserTrigger } from "@client/scripts/userTriggers.ts";
 
 function escapeRegex(str: string): string {
     return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -43,3 +44,66 @@ export function parseArkadia(text: string): ParseResult {
     return { imported, skipped };
 }
 
+
+/** One "Przekształcanie tekstu" rule as the Arkadia client stores it in `patterns`. */
+interface ArkadiaPattern {
+    Regexp?: unknown;
+    Replacement?: unknown;
+    Color?: unknown;
+    Sound?: unknown;
+}
+
+export interface PatternParseResult {
+    imported: UserTrigger[];
+    skipped: string[];
+}
+
+/**
+ * The Arkadia client's text transformations (`patterns`) as pattern triggers.
+ * A rule rewrites every match in the line, then colours it, and may play one
+ * of its six sounds; here that is a global trigger with replace, color and
+ * beep actions in that order. The client's sounds have no counterpart, so
+ * each becomes the default beep. Replacements with `%`/`$` variables are
+ * skipped: the replace action takes its text literally.
+ */
+export function parseArkadiaPatterns(text: string): PatternParseResult {
+    let data: any;
+    try {
+        data = JSON.parse(text);
+    } catch {
+        return { imported: [], skipped: [] };
+    }
+    const patterns: unknown = data?.patterns;
+    if (!Array.isArray(patterns)) {
+        return { imported: [], skipped: [] };
+    }
+    const imported: UserTrigger[] = [];
+    const skipped: string[] = [];
+    for (const entry of patterns as ArkadiaPattern[]) {
+        if (!entry || typeof entry.Regexp !== "string" || !entry.Regexp) continue;
+        const pattern = entry.Regexp;
+        try {
+            new RegExp(pattern);
+        } catch {
+            skipped.push(pattern);
+            continue;
+        }
+        const macros: UserMacro[] = [];
+        if (typeof entry.Replacement === "string") {
+            if (/%(%|-?\d+)|\$(\$|\d+)/.test(entry.Replacement)) {
+                skipped.push(pattern);
+                continue;
+            }
+            macros.push({ type: "replace", to: entry.Replacement });
+        }
+        if (typeof entry.Color === "string" && /^#(?:[A-Fa-f0-9]{3}){1,2}$/.test(entry.Color)) {
+            macros.push({ type: "color", color: entry.Color });
+        }
+        if (entry.Sound !== undefined) {
+            macros.push({ type: "beep", soundKey: "beep" });
+        }
+        if (!macros.length) continue;
+        imported.push({ type: "pattern", pattern, flags: "g", macros });
+    }
+    return { imported, skipped };
+}

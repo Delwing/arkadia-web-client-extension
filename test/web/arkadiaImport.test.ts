@@ -1,4 +1,4 @@
-import {parseArkadia} from "../../src/web/options/importArkadia";
+import {parseArkadia, parseArkadiaPatterns} from "../../src/web/options/importArkadia";
 
 describe("parseArkadia", () => {
     it("parses aliases and reports skipped ones", () => {
@@ -24,3 +24,41 @@ describe("parseArkadia", () => {
     });
 });
 
+
+describe("parseArkadiaPatterns", () => {
+    it("turns text transformations into global pattern triggers", () => {
+        const json = JSON.stringify({
+            patterns: [
+                { Regexp: "wilk", Replacement: "WILK", Color: "#ff0000", Sound: 3 },
+                { Regexp: "^Ktos", Color: "#0f0" },
+                { Regexp: "brzeczy", Sound: 1 },
+                { Regexp: "spam", Replacement: "" },
+                { Regexp: "zwierz (\\w+)", Replacement: "potwor $0" },
+                { Regexp: "cel", Replacement: "%%!" },
+                { Regexp: "(" , Color: "#fff" },
+                { Regexp: "nic" },
+            ],
+        });
+        expect(parseArkadiaPatterns(json)).toEqual({
+            imported: [
+                {
+                    type: "pattern", pattern: "wilk", flags: "g",
+                    macros: [
+                        { type: "replace", to: "WILK" },
+                        { type: "color", color: "#ff0000" },
+                        { type: "beep", soundKey: "beep" },
+                    ],
+                },
+                { type: "pattern", pattern: "^Ktos", flags: "g", macros: [{ type: "color", color: "#0f0" }] },
+                { type: "pattern", pattern: "brzeczy", flags: "g", macros: [{ type: "beep", soundKey: "beep" }] },
+                { type: "pattern", pattern: "spam", flags: "g", macros: [{ type: "replace", to: "" }] },
+            ],
+            skipped: ["zwierz (\\w+)", "cel", "("],
+        });
+    });
+
+    it("returns nothing for a file without patterns", () => {
+        expect(parseArkadiaPatterns("{}")).toEqual({ imported: [], skipped: [] });
+        expect(parseArkadiaPatterns("not json")).toEqual({ imported: [], skipped: [] });
+    });
+});

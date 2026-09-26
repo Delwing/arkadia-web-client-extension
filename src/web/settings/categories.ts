@@ -68,7 +68,7 @@ export const SETTINGS_CATEGORIES: readonly SettingsCategory[] = [
     { key: "data-sync", group: "data", label: "Synchronizacja", keywords: "firebase konto logowanie chmura eksport import" },
     { key: "data-backup", group: "data", label: "Kopia zapasowa", keywords: "eksport import plik google drive backup" },
     { key: "data-devices", group: "data", label: "Urządzenia", keywords: "urzadzenie grupa synchronizacji" },
-    { key: "data-import", group: "data", label: "Import z innych klientów", keywords: "mudlet blowtorch klient arkadii wiedza zlom postepy multibindy aliasy baza db" },
+    { key: "data-import", group: "data", label: "Import z innych klientów", keywords: "mudlet blowtorch klient arkadii wiedza zlom postepy multibindy aliasy przeksztalcenia tekstu baza db" },
 ];
 
 export const DEFAULT_SETTINGS_CATEGORY: Record<SettingsGroup, SettingsCategoryKey> = {

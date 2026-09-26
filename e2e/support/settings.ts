@@ -30,7 +30,8 @@ export type SettingsCategory =
     | 'ui-other'
     | 'data-sync'
     | 'data-backup'
-    | 'data-devices';
+    | 'data-devices'
+    | 'data-import';
 
 /** Waits until a previous hide animation of the settings modal has finished. */
 export async function waitForSettingsModalClosed(page: Page) {

@@ -3,6 +3,7 @@ import ZlomImport from "./ZlomImport";
 import PostepyImport from "./PostepyImport";
 import MultibindImport from "./MultibindImport";
 import AliasImport from "./AliasImport";
+import PatternImport from "./PatternImport";
 import mudletIcon from "./icons/mudlet.png";
 import blowtorchIcon from "./icons/blowtorch.png";
 // Inlined, not <img>: the dragon is drawn in currentColor so it follows the theme.
@@ -18,7 +19,7 @@ export default function ImportPage() {
     return (
         <div className="ui-settings-stack">
             <p className="popup-field__hint">
-                Przenieś dane z innego klienta. Importy z Mudleta najpierw pokazują, co znalazły w pliku, i nic nie zmieniają, dopóki nie klikniesz „Importuj”. Aliasy są dodawane od razu — istniejące o tym samym wzorcu zostają bez zmian.
+                Przenieś dane z innego klienta. Importy z Mudleta najpierw pokazują, co znalazły w pliku, i nic nie zmieniają, dopóki nie klikniesz „Importuj”. Aliasy i przekształcenia tekstu są dodawane od razu — istniejące o tym samym wzorcu zostają bez zmian.
             </p>
             <section className="character-settings-section">
                 <h5 className="character-settings-section-title import-source">
@@ -39,6 +40,7 @@ export default function ImportPage() {
                 </h5>
                 <div className="import-list">
                     <AliasImport source="arkadia" />
+                    <PatternImport />
                 </div>
             </section>
             <section className="character-settings-section">
