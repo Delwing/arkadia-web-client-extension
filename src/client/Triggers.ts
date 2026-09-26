@@ -1,5 +1,6 @@
 import Client from "./Client";
 import {AnsiAwareBuffer} from "@client/ansi/FormatState.ts";
+import {mayMatch, verifyMatch} from "@client/triggerPrefilter.ts";
 
 export type TriggerCallback = (
     line: AnsiAwareBuffer,
@@ -135,7 +136,15 @@ export class Trigger {
         for (let i = 0; i < patternCount; i++) {
             const pattern = patternList ? patternList[i] : this.pattern as TriggerSubPattern;
             if (pattern instanceof RegExp) {
-                matches = plainLine.match(pattern);
+                if (this.manager.literalPrefilter && !mayMatch(pattern, plainLine)) {
+                    // Cannot match. A global regex is left as String.match leaves it.
+                    if (pattern.global) pattern.lastIndex = 0;
+                } else {
+                    matches = plainLine.match(pattern);
+                    if (matches && this.manager.literalPrefilterVerify) {
+                        verifyMatch(pattern, plainLine, () => this.describe());
+                    }
+                }
             } else if (typeof pattern === "string") {
                 const caseInsensitive = this.options.caseInsensitive;
                 const haystack = !caseInsensitive ? plainLine : (loweredLine ??= plainLine.toLowerCase());
@@ -210,6 +219,20 @@ export default class Triggers {
     private static readonly ZERO_LENGTH_BUCKET_KEY = Symbol("zero-length-token-trigger");
 
     private tokenTriggers: Map<string | symbol, { words: string[]; trigger: Trigger }[]> = new Map();
+
+    /**
+     * Skip a regex when the line lacks literal text every match must contain
+     * (see triggerPrefilter.ts). Proof of concept: off unless the UI turns it on
+     * (`?triggerPrefilter=1`).
+     */
+    literalPrefilter = false;
+
+    /**
+     * Debug aid for the prefilter: never skip, but check every regex match against it
+     * and report loudly when it would have skipped a line that matched
+     * (`?triggerPrefilter=verify`).
+     */
+    literalPrefilterVerify = false;
 
     constructor(client: Client) {
         this.client = client;
