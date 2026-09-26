@@ -21,7 +21,10 @@ import { useEffect, useRef } from 'react';
  * While the on-screen keyboard is up, Back hides the keyboard and leaves the
  * layers alone. Android sometimes hands that Back to the page instead of the
  * keyboard (e.g. after an alias opened a popup from the command line), so we
- * put the entry back and drop the focus that holds the keyboard open.
+ * drop the focus that holds the keyboard open and step forward into the entry
+ * Back just left. Pushing a fresh one instead would not do: Chrome skips
+ * entries pushed without a tap or key press, and the next Back would leave the
+ * page.
  */
 
 const STATE_KEY = '__arkadiaBackLayer';
@@ -96,19 +99,24 @@ function finishSync(): void {
     syncTimer = null;
 }
 
+/** Move through the history ourselves; the popstate that follows syncs again. */
+function go(delta: number): void {
+    syncing = true;
+    // history.go() is asynchronous and says nothing when it cannot move;
+    // should its popstate never come, stop waiting rather than stop syncing.
+    syncTimer = setTimeout(() => {
+        finishSync();
+        depth = entryDepth(history.state);
+        sync();
+    }, 1000);
+    history.go(delta);
+}
+
 /** Bring the history in line with the open layers: one entry per layer. */
 function sync(): void {
     if (syncing) return;
     if (depth > layers.length) {
-        syncing = true;
-        // history.go() is asynchronous and says nothing when it cannot move;
-        // should its popstate never come, stop waiting rather than stop syncing.
-        syncTimer = setTimeout(() => {
-            finishSync();
-            depth = entryDepth(history.state);
-            sync();
-        }, 1000);
-        history.go(layers.length - depth);
+        go(layers.length - depth);
         return;
     }
     while (depth < layers.length) {
@@ -129,7 +137,8 @@ function onPopState(event: PopStateEvent): void {
     const field = layers.length > depth ? keyboardField() : null;
     if (field) {
         field.blur();
-        sync();
+        // Back to the entries Back just left, rather than new ones Chrome would skip.
+        go(layers.length - depth);
         return;
     }
     // The user walked back past these layers: close them, top first.

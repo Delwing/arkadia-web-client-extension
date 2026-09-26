@@ -112,8 +112,12 @@ describe("back navigation", () => {
         try {
             push(() => closed.push("popup"));
             input.focus();
+            const pushState = vi.spyOn(history, "pushState");
 
             await back();
+            // Forward into the entry it left: Chrome skips entries pushed without a gesture.
+            expect(pushState).not.toHaveBeenCalled();
+            pushState.mockRestore();
             expect(closed).toEqual([]);
             expect(document.activeElement).not.toBe(input);
             expect(backLayerCount()).toBe(1);
