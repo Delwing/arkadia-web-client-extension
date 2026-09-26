@@ -330,4 +330,26 @@ test.describe('Letter composer', () => {
         await expect(preview, 'first body line uses the first prefix line').toContainText('( Drogi przyjacielu,');
         await expect(preview, 'following lines alternate the prefix').toContainText(' ) ');
     });
+
+    test.describe('on a small screen', () => {
+        test.use({viewport: {width: 390, height: 500}, hasTouch: true, isMobile: true});
+
+        test('fits the screen and keeps the content above the actions when scrolled', async ({page}) => {
+            await page.goto('/');
+            await waitForCommandInput(page);
+            await ensureGameSocket(page);
+
+            const composer = await openLetterComposer(page);
+            await composer.locator('#letter-content').fill(Array.from({length: 40}, (_, i) => `linia ${i}`).join('\n'));
+            await composer.locator('.letter-composer-form').evaluate((el) => { el.scrollTop = el.scrollHeight; });
+
+            const box = await composer.boundingBox();
+            expect(box!.x, 'should not overflow the left edge').toBeGreaterThanOrEqual(0);
+            expect(box!.x + box!.width, 'should not overflow the right edge').toBeLessThanOrEqual(390);
+
+            const content = await composer.locator('#letter-content').boundingBox();
+            const actions = await composer.locator('.letter-composer-actions').boundingBox();
+            expect(content!.y + content!.height, 'content should end above the actions row').toBeLessThanOrEqual(actions!.y);
+        });
+    });
 });
