@@ -22,6 +22,9 @@ import { useClientEvent } from '../hooks';
 const HOLD_DURATION = 500;
 const DRAG_ACTIVATION_DURATION = 1000;
 const DRAG_MOVE_THRESHOLD = 10;
+// Pulses shorter than ~30ms are often dropped by Android vibration motors
+// (they never spin up), so taps randomly felt "dead" at the old 20ms.
+const TAP_VIBRATION_MS = 40;
 const CONTENT_AREA_ID = 'main_text_output_msg_wrapper';
 
 const ORIENTATIONS = ['portrait', 'landscape'] as const;
@@ -631,7 +634,7 @@ export default function MobileDirectionButtons({ client, messageInputId = 'messa
     }), [client, requestToggleVisibility]);
 
     const handleButtonTap = useCallback((cfg: MobileButtonSetting, e: React.MouseEvent<HTMLButtonElement>) => {
-        if (hapticEnabledRef.current) navigator.vibrate?.(20);
+        if (hapticEnabledRef.current) navigator.vibrate?.(TAP_VIBRATION_MS);
         executeMacro(client, cfg.macroType, cfg, getCallbacks(), e.currentTarget);
     }, [client, getCallbacks]);
 
@@ -691,7 +694,7 @@ export default function MobileDirectionButtons({ client, messageInputId = 'messa
             };
             executeMacro(client, hold.macroType, holdCfg, getCallbacks(), pressStart.btn);
         } else {
-            if (hapticEnabledRef.current) navigator.vibrate?.(20);
+            if (hapticEnabledRef.current) navigator.vibrate?.(TAP_VIBRATION_MS);
             executeMacro(client, cfg.macroType, cfg, getCallbacks(), pressStart.btn);
         }
     }, [client, clearButtonGlow, getCallbacks]);
