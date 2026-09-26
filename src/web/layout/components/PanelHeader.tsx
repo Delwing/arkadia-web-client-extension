@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { PANEL_CONFIGS, WindowRecord } from '../types';
 import { getObjectListChrome } from '../builtInChrome';
 import { getPopup, RegisteredPopup, subscribeToRegistry } from '../popupRegistry';
@@ -140,6 +140,63 @@ export function usePanelChrome(window: WindowRecord): PanelChrome {
   };
 }
 
+/** Title width still kept readable before the header gives up on one row. */
+const MIN_TITLE_WIDTH = 120;
+
+/**
+ * Whether the header needs two rows: the title and window buttons on top, the
+ * popup's own header actions below. That happens when all of it can't share
+ * one row without squeezing the title below {@link MIN_TITLE_WIDTH} - on a
+ * phone, say. The one-row width is measured while on one row and remembered,
+ * so the header goes back as soon as the window is wide enough again.
+ */
+function useStackedHeader(
+  headerRef: React.RefObject<HTMLDivElement | null>,
+  actionsRef: React.RefObject<HTMLDivElement | null>,
+  enabled: boolean
+): boolean {
+  const [stacked, setStacked] = useState(false);
+  const stackedRef = useRef(false);
+  const oneRowWidthRef = useRef(0);
+  const enabledRef = useRef(enabled);
+  enabledRef.current = enabled;
+
+  const checkRef = useRef(() => {});
+  checkRef.current = () => {
+    const header = headerRef.current;
+    let next = false;
+    if (header && enabledRef.current) {
+      if (!stackedRef.current) {
+        const title = header.querySelector<HTMLElement>('.managed-panel__title');
+        const titleWidth = title?.clientWidth ?? 0;
+        const titleWanted = Math.min(title?.scrollWidth ?? 0, MIN_TITLE_WIDTH);
+        oneRowWidthRef.current =
+          header.scrollWidth + Math.max(0, titleWanted - titleWidth);
+      }
+      next = header.clientWidth < oneRowWidthRef.current;
+    }
+    if (next !== stackedRef.current) {
+      stackedRef.current = next;
+      setStacked(next);
+    }
+  };
+
+  // The title and actions change without resizing anything observed, so
+  // measure again after every render too.
+  useLayoutEffect(() => checkRef.current());
+
+  useLayoutEffect(() => {
+    const header = headerRef.current;
+    if (!header || typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(() => checkRef.current());
+    observer.observe(header);
+    if (actionsRef.current) observer.observe(actionsRef.current);
+    return () => observer.disconnect();
+  }, [headerRef, actionsRef, enabled]);
+
+  return stacked;
+}
+
 interface PanelHeaderProps {
   chrome: PanelChrome;
   variant: 'docked' | 'floating';
@@ -162,6 +219,10 @@ export function PanelHeader({ chrome, variant, onPointerDown, onContextMenu }: P
     ? 'managed-panel__header-actions docked-panel__header-actions'
     : 'managed-panel__header-actions floating-panel__header-actions';
 
+  const headerRef = useRef<HTMLDivElement>(null);
+  const actionsRef = useRef<HTMLDivElement>(null);
+  const stacked = useStackedHeader(headerRef, actionsRef, !!chrome.headerActions);
+
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (chrome.isLocked) return;
     onPointerDown(e);
@@ -169,7 +230,8 @@ export function PanelHeader({ chrome, variant, onPointerDown, onContextMenu }: P
 
   return (
     <div
-      className={headerClass}
+      ref={headerRef}
+      className={`${headerClass}${stacked ? ' managed-panel__header--stacked' : ''}`}
       onPointerDown={handlePointerDown}
       onContextMenu={onContextMenu}
     >
@@ -181,49 +243,53 @@ export function PanelHeader({ chrome, variant, onPointerDown, onContextMenu }: P
         chrome.onPin ||
         chrome.onPopout ||
         (chrome.closable && chrome.onClose)) && (
-        <div className={actionsClass} onPointerDown={e => e.stopPropagation()}>
-          {chrome.headerActions}
-          <PanelSettingsButton chrome={chrome} />
-          {chrome.onReset && (
-            <button
-              type="button"
-              className="panel-button panel-button--reset"
-              onClick={chrome.onReset}
-              title="Przywroc domyslna pozycje i rozmiar"
-            />
+        <div className={actionsClass} ref={actionsRef} onPointerDown={e => e.stopPropagation()}>
+          {chrome.headerActions && (
+            <div className="managed-panel__custom-actions">{chrome.headerActions}</div>
           )}
-          {chrome.onLock && (
-            <button
-              type="button"
-              className={`panel-button panel-button--lock${chrome.isLocked ? ' is-active' : ''}`}
-              onClick={chrome.onLock}
-              title={chrome.isLocked ? 'Odblokuj okno' : 'Zablokuj okno'}
-            />
-          )}
-          {chrome.onPin && (
-            <button
-              type="button"
-              className={`panel-button panel-button--pin${chrome.isPinned ? ' is-active' : ''}`}
-              onClick={chrome.onPin}
-              title={chrome.isPinned ? 'Odepnij okno' : 'Przypnij okno'}
-            />
-          )}
-          {chrome.onPopout && (
-            <button
-              type="button"
-              className="panel-button panel-button--popout"
-              onClick={chrome.onPopout}
-              title="Otworz w osobnym oknie"
-            />
-          )}
-          {chrome.closable && chrome.onClose && (
-            <button
-              type="button"
-              className="panel-button panel-button--close"
-              onClick={chrome.onClose}
-              title="Zamknij"
-            />
-          )}
+          <div className="managed-panel__window-buttons">
+            <PanelSettingsButton chrome={chrome} />
+            {chrome.onReset && (
+              <button
+                type="button"
+                className="panel-button panel-button--reset"
+                onClick={chrome.onReset}
+                title="Przywroc domyslna pozycje i rozmiar"
+              />
+            )}
+            {chrome.onLock && (
+              <button
+                type="button"
+                className={`panel-button panel-button--lock${chrome.isLocked ? ' is-active' : ''}`}
+                onClick={chrome.onLock}
+                title={chrome.isLocked ? 'Odblokuj okno' : 'Zablokuj okno'}
+              />
+            )}
+            {chrome.onPin && (
+              <button
+                type="button"
+                className={`panel-button panel-button--pin${chrome.isPinned ? ' is-active' : ''}`}
+                onClick={chrome.onPin}
+                title={chrome.isPinned ? 'Odepnij okno' : 'Przypnij okno'}
+              />
+            )}
+            {chrome.onPopout && (
+              <button
+                type="button"
+                className="panel-button panel-button--popout"
+                onClick={chrome.onPopout}
+                title="Otworz w osobnym oknie"
+              />
+            )}
+            {chrome.closable && chrome.onClose && (
+              <button
+                type="button"
+                className="panel-button panel-button--close"
+                onClick={chrome.onClose}
+                title="Zamknij"
+              />
+            )}
+          </div>
         </div>
       )}
     </div>
