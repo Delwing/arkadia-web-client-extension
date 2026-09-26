@@ -79,3 +79,50 @@ export function wrapPieces(pieces: AnsiAwareBuffer[], separator: string, width: 
     if (current) lines.push(current);
     return lines;
 }
+
+function sliceBuffer(buffer: AnsiAwareBuffer, start: number, end: number): AnsiAwareBuffer {
+    const slice = buffer.clone();
+    if (end < slice.length) slice.remove([end, slice.length]);
+    if (start > 0) slice.remove([0, start]);
+    return slice;
+}
+
+/**
+ * Word-wraps a buffer into lines of at most `width` characters, keeping its
+ * formatting. Words longer than `width` are hard-broken.
+ */
+export function wrapBuffer(buffer: AnsiAwareBuffer, width: number): AnsiAwareBuffer[] {
+    const text = buffer.text;
+    if (width <= 0 || text.length <= width) return [buffer];
+    const lines: AnsiAwareBuffer[] = [];
+    let start = 0;
+    while (text.length - start > width) {
+        let end = text.lastIndexOf(" ", start + width);
+        let next = end + 1;
+        if (end <= start) {
+            end = start + width;
+            next = end;
+        }
+        lines.push(sliceBuffer(buffer, start, end));
+        start = next;
+    }
+    lines.push(sliceBuffer(buffer, start, text.length));
+    return lines;
+}
+
+/**
+ * Wraps a "count | name" item line so continuation lines stay aligned under
+ * the name ("    | rest of name"). Lines without the separator wrap plainly.
+ */
+export function wrapItemLine(buffer: AnsiAwareBuffer, width: number): AnsiAwareBuffer[] {
+    if (buffer.text.length <= width) return [buffer];
+    const sepIndex = buffer.text.indexOf(" | ");
+    if (sepIndex < 0 || sepIndex + 3 >= width) return wrapBuffer(buffer, width);
+    const prefixLength = sepIndex + 3;
+    const continuation = `${" ".repeat(sepIndex)} | `;
+    return wrapBuffer(sliceBuffer(buffer, prefixLength, buffer.length), width - prefixLength)
+        .map((part, i) => {
+            const line = i === 0 ? sliceBuffer(buffer, 0, prefixLength) : new AnsiAwareBuffer(continuation);
+            return line.appendBuffer(part);
+        });
+}

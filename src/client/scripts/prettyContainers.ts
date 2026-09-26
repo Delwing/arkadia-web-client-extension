@@ -19,6 +19,7 @@ import { matchFishHint } from "./fishing";
 import { characterStorage } from "@modules/core/storage";
 import { defaultSettings } from "@modules/core/defaultSettings";
 import { getZlomFormatting } from "./zlom";
+import { wrapItemLine } from "./counterTableUtils";
 
 const GROUP_NAME_COLOR = createColorFormat('#557C99');
 
@@ -202,37 +203,30 @@ export function formatTable(title: string, groups: Record<string, ContainerItem[
     const padLeft = ' '.repeat(leftPadding);
     const padRight = ' '.repeat(rightPadding);
 
-    const truncateBuffer = (buffer: AnsiAwareBuffer, len: number): AnsiAwareBuffer => {
-        if (buffer.text.length <= len) return buffer;
-        const truncated = buffer.clone();
-        const cutLen = Math.max(0, len - 1);
-        truncated.remove([cutLen, truncated.length]);
-        truncated.append('…');
-        return truncated;
-    };
-
     const cell = (content: AnsiAwareBuffer | string): AnsiAwareBuffer => {
         const buffer = typeof content === 'string' ? new AnsiAwareBuffer(content) : content;
-        const maxLen = colWidth - leftPadding - rightPadding;
-
-        if (buffer.text.length > maxLen) {
-            const split = buffer.text.split(' | ');
-            if (split.length === 2) {
-                const prefix = split[0] + ' | ';
-                const available = maxLen - prefix.length;
-                const prefixBuffer = new AnsiAwareBuffer(prefix);
-                const matchIndex = buffer.text.indexOf(' | ') + 3;
-                const suffixBuffer = new AnsiAwareBuffer(buffer.getSegments());
-                suffixBuffer.remove([0, matchIndex]);
-                const truncatedSuffix = truncateBuffer(suffixBuffer, available);
-                prefixBuffer.appendBuffer(truncatedSuffix);
-                return padBuffer(new AnsiAwareBuffer(padLeft).appendBuffer(prefixBuffer).append(padRight, {}), colWidth);
-            } else {
-                const truncated = truncateBuffer(buffer, maxLen);
-                return padBuffer(new AnsiAwareBuffer(padLeft).appendBuffer(truncated).append(padRight, {}), colWidth);
-            }
-        }
         return padBuffer(new AnsiAwareBuffer(padLeft).appendBuffer(buffer).append(padRight, {}), colWidth);
+    };
+
+    // Content wider than the column (narrow console) wraps onto extra lines
+    // instead of being cut off.
+    const cellLines = (buffer: AnsiAwareBuffer): AnsiAwareBuffer[] =>
+        wrapItemLine(buffer, colWidth - leftPadding - rightPadding).map(cell);
+
+    const appendRow = (cells: AnsiAwareBuffer[][]) => {
+        const height = Math.max(1, ...cells.map(c => c.length));
+        for (let i = 0; i < height; i++) {
+            const rowLine = new AnsiAwareBuffer('|');
+            for (let c = 0; c < columns; c++) {
+                rowLine.appendBuffer(cells[c]?.[i] ?? cell(''));
+                if (c !== columns - 1) {
+                    rowLine.append(' | ');
+                }
+            }
+            rowLine.append('|');
+            output.appendBuffer(rowLine);
+            output.append('\n');
+        }
     };
 
     const width = calcWidth(colWidth);
@@ -248,7 +242,7 @@ export function formatTable(title: string, groups: Record<string, ContainerItem[
         const pair = bufferedEntries.slice(row, row + columns);
 
         // group names
-        const gLine = new AnsiAwareBuffer('|');
+        const groupCells: AnsiAwareBuffer[][] = [];
         for (let c = 0; c < columns; c++) {
             const grp = pair[c];
             const groupName = grp ? grp[0] : '';
@@ -256,36 +250,26 @@ export function formatTable(title: string, groups: Record<string, ContainerItem[
             if (groupName) {
                 groupBuffer.color([0, groupBuffer.length], GROUP_NAME_COLOR);
             }
-            gLine.appendBuffer(cell(groupBuffer));
-            if (c !== columns - 1) {
-                gLine.append(' | ');
-            }
+            groupCells.push(cellLines(groupBuffer));
         }
-        gLine.append('|');
-        output.appendBuffer(gLine);
-        output.append('\n');
+        appendRow(groupCells);
         output.append(`+${horiz}+\n`);
 
         const maxItems = Math.max(...pair.map(([, _items]) => _items.length));
         for (let i = 0; i < maxItems; i++) {
-            const rowLine = new AnsiAwareBuffer('|');
+            const itemCells: AnsiAwareBuffer[][] = [];
             for (let c = 0; c < columns; c++) {
                 const grp = pair[c];
                 const bufferedItem = grp && grp[1][i];
                 if (bufferedItem) {
                     const itemBuffer = new AnsiAwareBuffer(`${String(bufferedItem.count).padStart(3, ' ')} | `);
                     itemBuffer.appendBuffer(bufferedItem.buffer);
-                    rowLine.appendBuffer(cell(itemBuffer));
+                    itemCells.push(cellLines(itemBuffer));
                 } else {
-                    rowLine.appendBuffer(cell(''));
-                }
-                if (c !== columns - 1) {
-                    rowLine.append(' | ');
+                    itemCells.push([cell('')]);
                 }
             }
-            rowLine.append('|');
-            output.appendBuffer(rowLine);
-            output.append('\n');
+            appendRow(itemCells);
         }
         output.append(`+${horiz}+\n`);
     }

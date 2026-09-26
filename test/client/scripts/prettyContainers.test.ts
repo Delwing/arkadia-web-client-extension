@@ -506,6 +506,23 @@ describe('prettyContainers with real Client', () => {
         expect(plainLine.length).toBeLessThanOrEqual(40);
       });
     });
+
+    test('wraps long item names instead of truncating them', () => {
+      client.contentWidth = 40;
+      client.sendEvent('contentWidth', 40);
+
+      const input = 'Otwarty skorzany plecak zawiera bardzo dlugi przedmiot o niesamowicie skomplikowanej nazwie, inny przedmiot.';
+      client.onLine(input, '');
+      client.sendEvent('output-sent', 1);
+
+      const outputCall = mockAdapter.output.mock.calls[0]?.[0];
+      const tableText: string = typeof outputCall === 'string' ? outputCall : outputCall?.text;
+      expect(tableText).not.toContain('…');
+      const joined = tableText.split('\n')
+        .map(line => line.replace(/^\|\s*(\d+\s)?\s*\|\s?/, '').replace(/\s*\|$/, ''))
+        .join(' ');
+      expect(joined).toMatch(/bardzo dlugi przedmiot\s+o niesamowicie\s+skomplikowanej\s+nazwie/);
+    });
   });
 
   describe('items containing " i " in name', () => {
