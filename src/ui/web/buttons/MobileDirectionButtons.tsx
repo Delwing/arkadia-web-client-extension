@@ -22,8 +22,6 @@ import { useClientEvent } from '../hooks';
 const HOLD_DURATION = 500;
 const DRAG_ACTIVATION_DURATION = 1000;
 const DRAG_MOVE_THRESHOLD = 10;
-// Pulses shorter than ~30ms are often dropped by Android vibration motors
-// (they never spin up), so taps randomly felt "dead" at the old 20ms.
 const TAP_VIBRATION_MS = 40;
 const CONTENT_AREA_ID = 'main_text_output_msg_wrapper';
 
@@ -633,8 +631,15 @@ export default function MobileDirectionButtons({ client, messageInputId = 'messa
         updateMoveModeButton: (btn) => updateMoveModeLabel(btn, client.moveMode),
     }), [client, requestToggleVisibility]);
 
-    const handleButtonTap = useCallback((cfg: MobileButtonSetting, e: React.MouseEvent<HTMLButtonElement>) => {
+    // Buzz on touch-down, not on release: on Android phones a vibration requested as
+    // the finger lifts (pointerup/click) was observed to be dropped, while ones fired
+    // with the finger still down (hold glow, footer chips) come through.
+    const handleButtonPressFeedback = useCallback((e: React.PointerEvent<HTMLButtonElement>) => {
+        if (e.button !== 0) return;
         if (hapticEnabledRef.current) navigator.vibrate?.(TAP_VIBRATION_MS);
+    }, []);
+
+    const handleButtonTap = useCallback((cfg: MobileButtonSetting, e: React.MouseEvent<HTMLButtonElement>) => {
         executeMacro(client, cfg.macroType, cfg, getCallbacks(), e.currentTarget);
     }, [client, getCallbacks]);
 
@@ -694,7 +699,6 @@ export default function MobileDirectionButtons({ client, messageInputId = 'messa
             };
             executeMacro(client, hold.macroType, holdCfg, getCallbacks(), pressStart.btn);
         } else {
-            if (hapticEnabledRef.current) navigator.vibrate?.(TAP_VIBRATION_MS);
             executeMacro(client, cfg.macroType, cfg, getCallbacks(), pressStart.btn);
         }
     }, [client, clearButtonGlow, getCallbacks]);
@@ -823,7 +827,10 @@ export default function MobileDirectionButtons({ client, messageInputId = 'messa
                         }}
                         onContextMenu={(e) => e.preventDefault()}
                         onClick={!hasHold ? (e) => handleButtonTap(cfg, e) : undefined}
-                        onPointerDown={hasHold ? (e) => handleButtonPointerDown(id, e, cfg) : undefined}
+                        onPointerDown={(e) => {
+                            handleButtonPressFeedback(e);
+                            if (hasHold) handleButtonPointerDown(id, e, cfg);
+                        }}
                         onPointerMove={hasHold ? (e) => handleButtonPointerMove(id, e) : undefined}
                         onPointerUp={hasHold ? () => handleButtonPointerUp(id) : undefined}
                         onPointerCancel={hasHold ? () => handleButtonPointerCancel(id) : undefined}
