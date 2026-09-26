@@ -14,7 +14,11 @@
  *
  * Panels living in a modal follow it through the events in {@link MODAL_EVENT},
  * dispatched on the modal element (they do not bubble).
+ *
+ * On a phone, Back closes the top one (see backNavigation).
  */
+
+import { pushBackLayer } from "@web-ui/backNavigation.ts";
 
 export const MODAL_EVENT = {
     /** About to open; the content is still hidden. */
@@ -37,6 +41,7 @@ const stack: AppModal[] = [];
 
 export class AppModal {
     private returnFocus: HTMLElement | null = null;
+    private releaseBack: (() => void) | null = null;
 
     private constructor(readonly element: HTMLElement) {
         element.addEventListener("mousedown", (event) => {
@@ -83,6 +88,7 @@ export class AppModal {
         this.element.style.zIndex = String(BASE_Z + stack.length * Z_STEP);
         this.element.hidden = false;
         document.body.classList.add("app-modal-open");
+        this.releaseBack = pushBackLayer(() => this.hide());
         requestAnimationFrame(() => {
             if (!this.isOpen) return;
             if (!this.element.contains(document.activeElement)) {
@@ -97,6 +103,8 @@ export class AppModal {
         if (at < 0) return;
         this.element.dispatchEvent(new Event(MODAL_EVENT.hide));
         stack.splice(at, 1);
+        this.releaseBack?.();
+        this.releaseBack = null;
         const hadFocus = this.element.contains(document.activeElement);
         this.element.hidden = true;
         this.element.style.zIndex = "";

@@ -10,6 +10,7 @@ import {
 import { windowManager } from '../WindowManager';
 import { clearClosedPopupState } from '../utils/layoutStorage';
 import type { WindowSettingField } from '../windowSettings';
+import { pushBackLayer } from '@web-ui/backNavigation.ts';
 
 interface UseDockablePopupOptions {
   popupId: string;
@@ -305,6 +306,32 @@ export function useDockablePopup({
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [isOpen, isManagedByLayout, popupId]);
+
+  // ── Back closes it (phones), under the same terms as Escape ─────────────
+  // Only while it floats in the main window unpinned: a docked or pinned
+  // window is part of the layout, not something open over it. It can dock,
+  // undock or pop out while open, so this follows the WindowManager.
+  useEffect(() => {
+    if (!isOpen) return;
+    let release: (() => void) | null = null;
+    const update = () => {
+      const w = isManagedByLayout ? windowManager.get(popupId) : undefined;
+      const dismissible =
+        !isPinned && !w?.poppedOut && !(isManagedByLayout && windowManager.findPanelDock(popupId));
+      if (dismissible && !release) {
+        release = pushBackLayer(() => onCloseRef.current());
+      } else if (!dismissible && release) {
+        release();
+        release = null;
+      }
+    };
+    update();
+    const unsubscribe = isManagedByLayout ? windowManager.subscribe(update) : undefined;
+    return () => {
+      unsubscribe?.();
+      release?.();
+    };
+  }, [isOpen, isPinned, isManagedByLayout, popupId]);
 
   return { isLayoutMode, isManagedByLayout };
 }

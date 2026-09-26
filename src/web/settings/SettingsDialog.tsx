@@ -23,7 +23,8 @@ import { indexPage, matchSettings, pageMatches, pageSections } from "./settingsI
 import { PhonePageHeader, PhoneSaveBar, PhoneSectionChips, PhoneStart, type PhoneResults, type ScopeChip } from "./PhoneSettings";
 import { pageSignature } from "./settingsDirty";
 import { NavIcon } from "./categoryIcons";
-import { MODAL_EVENT } from "@web/modals/appModal.ts";
+import { AppModal, MODAL_EVENT } from "@web/modals/appModal.ts";
+import { useBackLayer } from "@web-ui/backNavigation.ts";
 import "./settingsDialog.css";
 
 const GROUPS: readonly SettingsGroup[] = ["character", "ui", "data"];
@@ -118,6 +119,10 @@ function SettingsDialog({ soundManager, onEnableNotifications, initialCategory }
     // On a phone the dialog is a list of pages to drill into.
     // A general first opening starts on the list; one asked for a page, on that page.
     const [phoneView, setPhoneView] = useState<"list" | "page">(initialCategory ? "page" : "list");
+    // The pages stay mounted while the window is closed; Back may step from a
+    // page to the list only while it shows.
+    const [modalOpen, setModalOpen] = useState(() => !!AppModal.byId(SETTINGS_MODAL_ID)?.isOpen);
+    useBackLayer(modalOpen && narrow && phoneView === "page", () => setPhoneView("list"));
     // Bumped when the pages' DOM changes while on a phone: the list summaries,
     // the search index and the section chips are read from it.
     const [domVersion, setDomVersion] = useState(0);
@@ -346,6 +351,7 @@ function SettingsDialog({ soundManager, onEnableNotifications, initialCategory }
          * when another character is playing now - they were for the old one.
          */
         const onModalShow = () => {
+            setModalOpen(true);
             const kept = held.current;
             held.current = null;
             const keepCharacter = !!kept?.groups.has("character") && kept.character === latest.current.character.character;
@@ -369,7 +375,10 @@ function SettingsDialog({ soundManager, onEnableNotifications, initialCategory }
             held.current = { groups, character: latest.current.character.character };
         };
         // Undo the live preview of unsaved UI settings while the dialog is closed.
-        const onModalHidden = () => latest.current.ui.revert();
+        const onModalHidden = () => {
+            setModalOpen(false);
+            latest.current.ui.revert();
+        };
 
         window.addEventListener(SHOW_SETTINGS_EVENT, onShowCategory);
         window.addEventListener(OPEN_SETTINGS_EVENT, onAssistantOpen);
