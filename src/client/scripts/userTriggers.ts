@@ -437,8 +437,10 @@ function applyMacrosToMatch(
     macros: UserMacro[],
     label = ''
 ): void {
+    // The match is an offset into the line as the MUD sent it; earlier triggers
+    // may have prefixed or rewritten it since, so find those characters now.
     const matchStart = match.index ?? 0;
-    let matchRange: TextRange = [matchStart, matchStart + match[0].length];
+    let matchRange: TextRange = line.mapOriginalRange([matchStart, matchStart + match[0].length]);
 
     macros?.forEach(macro => {
         const call: ScriptCall = {
@@ -786,7 +788,10 @@ export default function initUserTriggers(client: Client) {
                         let match: RegExpExecArray | null;
                         const allMatches: RegExpExecArray[] = [];
 
-                        while ((match = globalRegexp.exec(line.text)) !== null) {
+                        // Search the text the trigger matched, not the rewritten
+                        // line: the offsets are mapped per match when applied.
+                        const source = line.trackedOriginal ?? line.text;
+                        while ((match = globalRegexp.exec(source)) !== null) {
                             allMatches.push(match);
                             if (match[0].length === 0) {
                                 globalRegexp.lastIndex++;

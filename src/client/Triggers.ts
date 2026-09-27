@@ -362,6 +362,9 @@ export default class Triggers {
         // that never went through it.
         const originalText = line.originalText ?? line.text;
         const plain = originalText.replace(/\s$/g, "");
+        // Matches are offsets into originalText; recording edits from here lets a
+        // callback find them in the line as earlier triggers left it.
+        line.trackEditsFrom(originalText);
         let tokens: string[] | undefined;
         const getTokens = () => {
             if (!tokens) {
@@ -450,6 +453,7 @@ export default class Triggers {
         // Preserve original text for pattern matching
         const originalText = line.text;
         const plain = originalText.replace(/\s$/g, "");
+        line.trackEditsFrom(originalText);
         for (const trigger of this.multilineTriggers.values()) {
             const result = trigger.execute(line, type, originalText, plain);
             if (result === null) {
