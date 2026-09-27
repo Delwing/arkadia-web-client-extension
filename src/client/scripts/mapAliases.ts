@@ -1,5 +1,4 @@
 import Client from "../Client";
-import { longToShort } from "@shared/map/directions";
 import {getShortcut} from "./shortcuts";
 import {AnsiAwareBuffer} from "@client/ansi/FormatState";
 import eventBus from "@modules/core/eventBus";
@@ -111,18 +110,9 @@ export default function initMapAliases(client: Client, aliases: { pattern: RegEx
         {
             pattern: /^\/go$/,
             callback: () => {
-                const room = client.Map.currentRoom as SearchableRoom | undefined;
-                const destinations = client.Map.destinations;
-                if (!destinations?.length || !room) return;
-                const target = destinations[0];
-                const path = client.Map.findPath(room.id, target);
-                if (!path || path.length < 2) return;
-                const next = path[1];
-                const allExits = Object.assign({}, room.exits ?? {}, room.specialExits ?? {});
-                const entry = Object.entries(allExits).find(([_, id]) => id === next);
-                if (!entry) return;
-                const dir = entry[0];
-                client.sendCommand(longToShort[dir] ?? dir);
+                // Step along the route on screen, whichever way /prowadz or /prowadzt drew it.
+                const command = client.Map.nextLeadCommand();
+                if (command) client.sendCommand(command);
             }
         },
         {

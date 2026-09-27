@@ -217,3 +217,36 @@ describe('MapHelper switching lead mode', () => {
     expect(client.events.some((e) => e.type === 'mapPath')).toBe(false);
   });
 });
+
+describe('MapHelper next lead step (/go)', () => {
+  test('steps along the plain walking path on an ordinary lead', () => {
+    const { map } = newMap({ walkingPath: [1, 2, 3] });
+    map.leadTo(3);
+
+    expect(map.nextLeadCommand()).toBe('e');
+  });
+
+  test('follows the transport route on screen, not the walking path', () => {
+    // Walking would head west; the route drawn by /prowadzt goes east to the ferry.
+    const { map } = newMap({ walkingPath: [2, 1] });
+    map.currentRoom = rooms[2];
+    map.leadTo(8, { transport: true });
+
+    expect(map.nextLeadCommand()).toBe('e');
+  });
+
+  test('has nothing to walk while waiting at the quay', () => {
+    const { map, client } = newMap();
+    map.leadTo(8, { transport: true });
+    map.currentRoom = rooms[3];
+    client.sendEvent('enterLocation', { room: rooms[3] });
+
+    expect(map.nextLeadCommand()).toBeNull();
+  });
+
+  test('has nothing to do when not leading anywhere', () => {
+    const { map } = newMap({ walkingPath: [1, 2, 3] });
+
+    expect(map.nextLeadCommand()).toBeNull();
+  });
+});
