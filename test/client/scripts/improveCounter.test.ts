@@ -1,4 +1,4 @@
-import { initImproveCounter } from '@client/scripts/improveCounter';
+import { editLifetimeEntry, getLifetimeData, initImproveCounter, mergeLifetimeData } from '@client/scripts/improveCounter';
 import { initKillCounter } from '@client/scripts/kill';
 import Triggers from '@client/Triggers';
 import { colorString, createColorFormat } from '@modules/core/Colors';
@@ -288,6 +288,72 @@ describe('improve counter', () => {
     const printed = c.print.mock.calls[0][0]?.text;
     expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 2 postepow/);
   });
+  describe('tied to the life (object number)', () => {
+    const today = '2026/1/15';
+    const lifetime = () => characterStorage.get('improve_counter_lifetime') as any;
+
+    test('counts improvements under the current life', () => {
+      client.dispatch('gmcp.char.state', { improve: 2 });
+      expect(lifetime().entries).toEqual([{ date: today, count: 0, lives: { 1: { count: 2 } } }]);
+    });
+
+    test('does not count again a life another device already counted', () => {
+      // Synced from the device that played life 7 up to level 3
+      characterStorage.set('improve_counter_lifetime', { entries: [{ date: today, count: 0, lives: { 7: { count: 3 } } }] });
+      // This device resumes that session with stale state of an older life
+      characterStorage.set('improve_counter', { level: 2, lastObjNum: 1, obj: 1, entries: [] });
+      client.dispatch('reset', undefined);
+      characterStorage.set('object_num', '7');
+      client.dispatch('gmcp.char.state', { improve: 3 });
+      showLifetime();
+      expect(client.print.mock.calls[0][0]?.text).toMatch(/WSZYSTKICH DO TEJ PORY: 3 postepow/);
+
+      client.print.mockClear();
+      client.dispatch('gmcp.char.state', { improve: 4 });
+      showLifetime();
+      expect(client.print.mock.calls[0][0]?.text).toMatch(/WSZYSTKICH DO TEJ PORY: 4 postepow/);
+      expect(lifetime().entries[0].lives).toEqual({ 7: { count: 4 } });
+    });
+
+    test('a new life after relog counts from zero and starts a new list', () => {
+      client.dispatch('gmcp.char.state', { improve: 1 });
+      jest.advanceTimersByTime(10000);
+      client.dispatch('gmcp.char.state', { improve: 2 });
+      expect((characterStorage.get('improve_counter') as any).entries).toHaveLength(2);
+
+      client.dispatch('reset', undefined);
+      characterStorage.set('object_num', '2');
+      client.dispatch('gmcp.char.state', { improve: 2 });
+
+      const stored = characterStorage.get('improve_counter') as any;
+      expect(stored.entries).toEqual([]);
+      expect(stored.obj).toBe(2);
+      expect(lifetime().entries[0].lives).toEqual({ 1: { count: 2 }, 2: { count: 2 } });
+      showLifetime();
+      expect(client.print.mock.calls[0][0]?.text).toMatch(/WSZYSTKICH DO TEJ PORY: 4 postepow/);
+    });
+
+    test('manual reset of /postepy keeps the life and marks the entries cleared', () => {
+      client.dispatch('gmcp.char.state', { improve: 1 });
+      client.dispatch('gmcp.char.state', { improve: 2 });
+      reset();
+      const stored = characterStorage.get('improve_counter') as any;
+      expect(stored.entries).toEqual([]);
+      expect(stored.obj).toBe(1);
+      expect(stored.clearedAt).toBe(Date.now());
+    });
+
+    test('edits of a day keep its lives and correct the manual part', () => {
+      characterStorage.set('improve_counter_lifetime', { entries: [{ date: today, count: 1, lives: { 7: { count: 3 } } }] });
+      expect(getLifetimeData()).toEqual([{ date: today, count: 4 }]);
+      editLifetimeEntry(0, 2);
+      expect(lifetime().entries).toEqual([{ date: today, count: -1, lives: { 7: { count: 3 } } }]);
+      expect(getLifetimeData()).toEqual([{ date: today, count: 2 }]);
+      mergeLifetimeData([{ date: today, count: 5 }], 'max');
+      expect(getLifetimeData()).toEqual([{ date: today, count: 5 }]);
+    });
+  });
+
   describe('narrow console', () => {
     const recordSome = () => {
       client.dispatch('gmcp.char.state', { improve: 2 });

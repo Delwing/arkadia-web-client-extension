@@ -282,6 +282,7 @@ export class UserDataTracker {
         const writes: ItemChange[] = [];
         for (const [id, current] of tracked) {
             if (local.has(id) || current.deleted || !this.ownScope(type, current.scope)) continue;
+            if (type.retired?.(current)) continue;
             if (type.scope === 'device') continue;
             if (type.deletable) {
                 draft(current, { deleted: true });
@@ -335,6 +336,7 @@ export class UserDataTracker {
         const tracked = new Map((await store.getRecords(type.id)).map(r => [recordId(r), r]));
         const changed: UserRecord[] = [];
         for (const record of incoming) {
+            if (type.retired?.(record)) continue;
             const id = recordId(record);
             const current = tracked.get(id);
             const resolved = current ? resolve(type.rule, current, record) : record;

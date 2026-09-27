@@ -140,7 +140,8 @@ Nie ma konfliktow do rozwiazywania - zmiany z roznych urzadzen sa laczone automa
 
 - **Ustawienia, aliasy, triggery, bindy, notatki** - wygrywa najnowsza zmiana danego elementu. Edycja aliasu na telefonie nie nadpisuje innego aliasu zmienionego na komputerze.
 - **Odwiedzone lokacje, ticki wiedzy, karmienia, dostawy** - dane z obu urzadzen sa sumowane, nic nie ginie.
-- **Licznik zabitych, licznik postepow** - liczby z urzadzen sa dodawane.
+- **Licznik zabitych, reczne zmiany licznika postepow** - liczby z urzadzen sa dodawane.
+- **Postepy zliczone w grze (`/postepy`, `/postepy2`)** - przypisane do sesji w grze (numeru obiektu postaci). Gdy przejmiesz te sama sesje na innym urzadzeniu, lista `/postepy` (z czasami) jest kontynuowana, a postepy tej sesji nie sa liczone w `/postepy2` drugi raz. Nowe zalogowanie (nowy numer obiektu) zaczyna nowa liste.
 - **Postepy w bibliotekach i ksiazkach** - postep tylko rosnie.
 - **Awans poziomu wiedzy lub zwierzecia** - liczy sie pierwsza obserwacja; urzadzenie, ktore zobaczylo nowy poziom pozniej, nie przesuwa momentu awansu (ticki i karmienia od awansu licza sie poprawnie).
 
