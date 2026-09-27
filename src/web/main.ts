@@ -24,6 +24,7 @@ import {mountMigratedComponents} from "@web-ui/mountComponents.tsx";
 import {setupMobileFooter} from "./mobileFooter.ts";
 import FightTitle, {suppressTitleUpdates} from "./FightTitle";
 import HpTitle from "./HpTitle";
+import MediaSessionStatus from "./MediaSessionStatus";
 import BossKeyOverlay from "@web-ui/bossKey/BossKeyOverlay";
 import MobileDirectionButtons from "@web-ui/buttons/MobileDirectionButtons";
 import DesktopButtons from "@web-ui/buttons/DesktopButtons";
@@ -1289,6 +1290,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupMobileFooter();
     const fightTitle = new FightTitle();
     new HpTitle(fightTitle);
+    new MediaSessionStatus(client);
     new ObjectList(client);
 
     // Mobile direction buttons, desktop buttons & mobile command radial —

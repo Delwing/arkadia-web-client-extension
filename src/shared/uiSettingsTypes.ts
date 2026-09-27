@@ -54,6 +54,7 @@ export interface ShellSettings {
     wakeLock: boolean;
     fightTitleIcon: boolean;
     hapticFeedback: boolean;
+    mediaSession: boolean;
 }
 
 /** Terminal output + input rendering — portable across UIs. */

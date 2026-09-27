@@ -15,6 +15,7 @@ export type UiSettingsEventPayload = {
     dismountOnRefusedRide?: boolean;
     carriageRouteBinds?: boolean;
     wakeLock?: boolean;
+    mediaSession?: boolean;
     commandEcho?: boolean;
 } & Record<string, unknown>;
 
