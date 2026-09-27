@@ -87,6 +87,13 @@ test.describe('Wiedza window', () => {
 
         await win.locator('#knowledge-search').fill('orka');
         await expect(win.locator('.kn-report-sec .kn-entry__name')).toHaveText([GOBLINS_ENTRY]);
+
+        // Only the .kn-search wrapper draws a border - not the focused input inside it.
+        const inner = await win.locator('#knowledge-search').evaluate((el) => {
+            const s = getComputedStyle(el);
+            return {border: s.borderTopWidth, shadow: s.boxShadow};
+        });
+        expect(inner).toEqual({border: '0px', shadow: 'none'});
     });
 
     test('/biblioteki opens the same window on Biblioteki', async ({page}) => {

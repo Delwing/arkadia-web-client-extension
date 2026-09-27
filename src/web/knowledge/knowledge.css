@@ -267,11 +267,16 @@
   color: var(--popup-text-dim);
 }
 .kn-search:focus-within { border-color: var(--popup-accent); box-shadow: 0 0 0 3px var(--popup-accent-border); }
-.kn-search input {
+/* The wrapper draws the border; the stock input[type="search"] rules
+   (and their :focus variant, which outranks a single class) must not. */
+.kn-search input[type="search"],
+.kn-search input[type="search"]:focus {
   flex: 1;
   min-width: 0;
   border: 0;
+  border-radius: 0;
   outline: none;
+  box-shadow: none;
   background: transparent;
   color: var(--popup-text);
 }
