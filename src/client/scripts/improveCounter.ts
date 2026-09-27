@@ -6,6 +6,16 @@ import eventBus from "@modules/core/eventBus";
 import {getKillData} from "./kill";
 import {BaseCounter} from "./BaseCounter";
 import {createPad, createHeader, wrapPieces} from "./counterTableUtils";
+import {
+    dayTotals,
+    lifeTotal,
+    lifetimeDateOrder,
+    mergeLifeCounts,
+    type ImproveEntry,
+    type LifetimeDay,
+} from "@shared/improveProgress.ts";
+
+export type {ImproveEntry} from "@shared/improveProgress.ts";
 
 const HEADER_COLOR = createColorFormat("#90ee90");
 const SECTION_COLOR = createColorFormat("#ffa500");
@@ -71,6 +81,11 @@ export function formatCount(count: number): string {
     return parts.join(" + ");
 }
 
+function dateKey(time: number): string {
+    const d = new Date(time);
+    return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
+}
+
 function formatDate(date: Date): string {
     const d = String(date.getDate()).padStart(2, "0");
     const m = String(date.getMonth() + 1).padStart(2, "0");
@@ -87,14 +102,6 @@ export function formatDuration(ms: number): string {
     return `${m.toString().padStart(3, " ")}:${s.toString().padStart(2, "0")}`;
 }
 
-
-export type ImproveEntry = {
-    state: string;
-    time: number;
-    delta: number;
-    killsMy: number;
-    killsTeam: number;
-};
 
 export type ImproveData = {
     entries: ImproveEntry[];
@@ -144,14 +151,20 @@ export function getFormattedPostepyTable(): AnsiAwareBuffer | null {
 
 export default class ImproveCounter extends BaseCounter {
     private entries: ImproveEntry[] = [];
-    private lifetime: { date: string; count: number; noFormCount?: number }[] = [];
+    private lifetime: LifetimeDay[] = [];
     private lifetimeEnabled = true;
     private lifetimeLoaded = false;
-    private pendingLifetime: { count: number; time: number; noForm?: boolean }[] = [];
+    private pendingLifetime: { count: number; time: number; noForm?: boolean; obj?: number }[] = [];
     private lastTime: number = 0;
     private lastKills = {my: 0, team: 0};
     private level: number = -1;
     private lastObjNum?: number;
+    /** Life (object number) the entries belong to; null until known after a reset. */
+    private obj: number | null = null;
+    /** When this device started on that life; the newer life wins a sync merge. */
+    private since = 0;
+    /** Last /postepy_reset: entries up to then are dropped when merged from other devices. */
+    private clearedAt?: number;
     private loaded = false;
     private pendingLevel?: number;
     private initialized = false;
@@ -185,7 +198,7 @@ export default class ImproveCounter extends BaseCounter {
             this.lifetimeLoaded = true;
             if (this.pendingLifetime.length) {
                 for (const p of this.pendingLifetime) {
-                    this.addToLifetime(p.count, p.time, p.noForm);
+                    this.addToLifetime(p.count, p.time, p.noForm, p.obj);
                 }
                 this.pendingLifetime = [];
             }
@@ -236,15 +249,34 @@ export default class ImproveCounter extends BaseCounter {
     }
 
     getLifetimeData(): LifetimeEntry[] {
-        return [...this.lifetime];
+        return this.lifetime.map((day) => {
+            const totals = dayTotals(day);
+            return totals.noFormCount
+                ? {date: day.date, count: totals.count, noFormCount: totals.noFormCount}
+                : {date: day.date, count: totals.count};
+        });
+    }
+
+    private lifetimeTotal(): number {
+        return this.lifetime.reduce((sum, e) => sum + dayTotals(e).count, 0);
     }
 
     private emitUpdate() {
         eventBus.emit("postepy.updated", this.getData());
     }
 
-    reset() {
+    /**
+     * `newLife`: the game started a new life (login, death); the entries wait
+     * for its object number. Otherwise the user cleared the current list.
+     */
+    reset(newLife = false) {
         this.entries = [];
+        if (newLife) {
+            this.obj = null;
+            this.since = Date.now();
+        } else {
+            this.clearedAt = Date.now();
+        }
         this.level = -1;
         this.lastTime = Date.now();
         this.lastKills = this.getKills();
@@ -270,6 +302,12 @@ export default class ImproveCounter extends BaseCounter {
             this.lastObjNum !== undefined &&
             objNum !== this.lastObjNum;
         const isFreshLogin = this.lastObjNum === undefined || objNum !== this.lastObjNum;
+        if (objNum !== undefined && this.obj !== objNum) {
+            // Entries of another life don't belong to this one
+            if (this.obj !== null) this.entries = [];
+            this.obj = objNum;
+            this.since = Date.now();
+        }
 
         if (!this.initialized || newObj) {
             if (newObj) {
@@ -277,8 +315,7 @@ export default class ImproveCounter extends BaseCounter {
                 if (level > 0) {
                     this.waitingForFirstCombat = false;
                     for (let l = 1; l <= level; l++) {
-                        const s = STATES[l] ?? String(l);
-                        this.recordInitial(s);
+                        this.recordInitial(l);
                     }
                 } else {
                     this.waitingForFirstCombat = true;
@@ -289,11 +326,9 @@ export default class ImproveCounter extends BaseCounter {
                 if (level > 0) {
                     this.waitingForFirstCombat = false;
                     for (let l = 1; l < level; l++) {
-                        const s = STATES[l] ?? String(l);
-                        this.recordInitial(s);
+                        this.recordInitial(l);
                     }
-                    const state = STATES[level] ?? String(level);
-                    this.record(state);
+                    this.record(level);
                 } else if (isFreshLogin) {
                     // Level is 0 and fresh login - wait for first combat
                     this.waitingForFirstCombat = true;
@@ -304,14 +339,12 @@ export default class ImproveCounter extends BaseCounter {
                     // Same session (same obj_num), reconnected after page reload
                     // Track as real improvements
                     for (let l = this.level + 1; l <= level; l++) {
-                        const state = STATES[l] ?? String(l);
-                        this.record(state);
+                        this.record(l);
                     }
                 } else {
                     // Different session - silently catch up
                     for (let l = this.level + 1; l <= level; l++) {
-                        const state = STATES[l] ?? String(l);
-                        this.recordInitial(state);
+                        this.recordInitial(l);
                     }
                 }
                 this.level = level;
@@ -329,8 +362,7 @@ export default class ImproveCounter extends BaseCounter {
         }
         if (level > this.level) {
             for (let l = this.level + 1; l <= level; l++) {
-                const state = STATES[l] ?? String(l);
-                this.record(state);
+                this.record(l);
             }
             this.level = level;
             if (objNum !== undefined) {
@@ -349,29 +381,52 @@ export default class ImproveCounter extends BaseCounter {
         return this.optionsForm === 1 && this.stateForm < 3;
     }
 
-    private addToLifetime(count: number, time: number, noForm?: boolean) {
+    private lifetimeDay(date: string): LifetimeDay {
+        let day = this.lifetime.find((e) => e.date === date);
+        if (!day) {
+            day = {date, count: 0};
+            this.lifetime.push(day);
+            this.lifetime.sort((a, b) => lifetimeDateOrder(a.date) - lifetimeDateOrder(b.date));
+        }
+        return day;
+    }
+
+    /**
+     * Count improvements for the given day. With a life (object number) they
+     * are counted under it, so a device resuming the same session on another
+     * device's heels doesn't count that session's levels a second time.
+     */
+    private addToLifetime(count: number, time: number, noForm?: boolean, obj?: number) {
         if (!this.lifetimeEnabled) return;
         const isNoFormEntry = noForm ?? this.isNoForm();
         if (!this.lifetimeLoaded) {
-            this.pendingLifetime.push({count, time, noForm: isNoFormEntry});
+            this.pendingLifetime.push({count, time, noForm: isNoFormEntry, obj});
             return;
         }
-        const d = new Date(time);
-        const date = `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
-        let day = this.lifetime[this.lifetime.length - 1];
-        if (!day || day.date !== date) {
-            day = {date, count: 0, noFormCount: 0};
-            this.lifetime.push(day);
-        }
+        const day = this.lifetimeDay(dateKey(time));
+        const target: { count: number; noFormCount?: number } = obj === undefined
+            ? day
+            : ((day.lives ??= {})[String(obj)] ??= {count: 0});
         if (isNoFormEntry) {
-            day.noFormCount = (day.noFormCount || 0) + count;
+            target.noFormCount = (target.noFormCount || 0) + count;
         } else {
-            day.count += count;
+            target.count += count;
         }
         this.persistLifetime();
     }
 
-    private record(state: string) {
+    /** Count reaching `level` in the current life, unless this life already counted it. */
+    private countLevel(level: number, time: number) {
+        if (this.obj === null) {
+            this.addToLifetime(1, time);
+            return;
+        }
+        if (lifeTotal(this.lifetime, this.obj) >= level) return;
+        this.addToLifetime(1, time, undefined, this.obj);
+    }
+
+    private record(level: number) {
+        const state = STATES[level] ?? String(level);
         const now = Date.now();
         const kills = this.getKills();
         const entry: ImproveEntry = {
@@ -382,7 +437,7 @@ export default class ImproveCounter extends BaseCounter {
             killsTeam: kills.team - this.lastKills.team,
         };
         this.entries.push(entry);
-        this.addToLifetime(1, now);
+        this.countLevel(level, now);
         this.lastTime = now;
         this.lastKills = kills;
         this.persist();
@@ -396,9 +451,9 @@ export default class ImproveCounter extends BaseCounter {
         this.client.println(msg);
     }
 
-    private recordInitial(_state: string) {
+    private recordInitial(level: number) {
         const now = Date.now();
-        this.addToLifetime(1, now);
+        this.countLevel(level, now);
         this.lastTime = now;
         this.lastKills = this.getKills();
         this.persist();
@@ -410,6 +465,12 @@ export default class ImproveCounter extends BaseCounter {
         this.lastKills = data.lastKills || this.getKills();
         this.level = typeof data.level === "number" ? data.level : -1;
         this.lastObjNum = typeof data.lastObjNum === "number" ? data.lastObjNum : undefined;
+        // Stored before entries were tied to a life: they belong to the last one seen
+        this.obj = typeof data.obj === "number"
+            ? data.obj
+            : data.obj === null ? null : this.lastObjNum ?? null;
+        this.since = typeof data.since === "number" ? data.since : this.lastTime;
+        this.clearedAt = typeof data.clearedAt === "number" ? data.clearedAt : undefined;
         this.waitingForFirstCombat = data.waitingForFirstCombat === true;
         this.emitUpdate();
     }
@@ -441,14 +502,14 @@ export default class ImproveCounter extends BaseCounter {
             } else if (entries.length && (entries[0] as any).states !== undefined) {
                 this.lifetime = convertStates(entries);
             } else {
-                this.lifetime = entries as { date: string; count: number }[];
+                this.lifetime = entries as LifetimeDay[];
             }
             this.lifetimeEnabled = data.enabled !== false;
         }
     }
 
     protected onReset(): void {
-        this.reset();
+        this.reset(true);
     }
 
     private persist = () => {
@@ -459,6 +520,9 @@ export default class ImproveCounter extends BaseCounter {
             level: this.level,
             lastObjNum: this.lastObjNum,
             waitingForFirstCombat: this.waitingForFirstCombat,
+            obj: this.obj,
+            since: this.since,
+            ...(this.clearedAt !== undefined ? {clearedAt: this.clearedAt} : {}),
         });
     };
 
@@ -474,17 +538,10 @@ export default class ImproveCounter extends BaseCounter {
             if (idx < 0 || idx >= this.lifetime.length) return;
             this.lifetime[idx].count += toAdd;
         } else {
-            const d = new Date();
-            const date = `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
-            let day = this.lifetime[this.lifetime.length - 1];
-            if (!day || day.date !== date) {
-                day = {date, count: 0};
-                this.lifetime.push(day);
-            }
-            day.count += toAdd;
+            this.lifetimeDay(dateKey(Date.now())).count += toAdd;
         }
         this.persistLifetime();
-        const total = this.lifetime.reduce((sum, e) => sum + e.count, 0);
+        const total = this.lifetimeTotal();
         this.client.println(
             colorString(`Dodano ${toAdd} postepow (lacznie: ${total})`, SECTION_COLOR)
         );
@@ -496,18 +553,21 @@ export default class ImproveCounter extends BaseCounter {
         let removed: number;
         if (typeof count === "number") {
             const day = this.lifetime[idx];
-            const n = Math.min(Math.max(1, count), day.count);
+            const totals = dayTotals(day);
+            const n = Math.min(Math.max(1, count), totals.count);
+            // Counted lives are kept as they are (they sync by maximum); the
+            // manual part of the day takes the correction.
             day.count -= n;
             removed = n;
-            if (day.count === 0) {
+            if (totals.count - n === 0 && totals.noFormCount === 0) {
                 this.lifetime.splice(idx, 1);
             }
         } else {
-            removed = this.lifetime[idx].count;
+            removed = dayTotals(this.lifetime[idx]).count;
             this.lifetime.splice(idx, 1);
         }
         this.persistLifetime();
-        const total = this.lifetime.reduce((sum, e) => sum + e.count, 0);
+        const total = this.lifetimeTotal();
         this.client.println(
             colorString(`Usunieto ${removed} postepow (lacznie: ${total})`, SECTION_COLOR)
         );
@@ -544,31 +604,33 @@ export default class ImproveCounter extends BaseCounter {
     }
 
     mergeLifetimeData(entries: { date: string; count: number }[], mode: MergeMode = 'max') {
-        const dateMap = new Map<string, { count: number; noFormCount?: number }>();
+        const dateMap = new Map<string, LifetimeDay>();
         for (const e of this.lifetime) {
             const existing = dateMap.get(e.date);
             if (existing) {
                 existing.count = Math.max(existing.count, e.count);
                 if (e.noFormCount) existing.noFormCount = Math.max(existing.noFormCount || 0, e.noFormCount);
+                for (const [obj, life] of Object.entries(e.lives ?? {})) {
+                    const lives = (existing.lives ??= {});
+                    lives[obj] = lives[obj] ? mergeLifeCounts(lives[obj], life) : life;
+                }
             } else {
-                dateMap.set(e.date, { count: e.count, noFormCount: e.noFormCount });
+                dateMap.set(e.date, { ...e });
             }
         }
         for (const e of entries) {
             const existing = dateMap.get(e.date);
             if (existing) {
-                existing.count = mode === 'add' ? existing.count + e.count : Math.max(existing.count, e.count);
+                // The imported count stands for the whole day: raise the manual
+                // part so the day's total reaches it ('max'), or add it ('add').
+                const total = dayTotals(existing).count;
+                existing.count += mode === 'add' ? e.count : Math.max(0, e.count - total);
             } else {
-                dateMap.set(e.date, { count: e.count });
+                dateMap.set(e.date, { date: e.date, count: e.count });
             }
         }
-        this.lifetime = Array.from(dateMap.entries())
-            .map(([date, v]) => ({ date, count: v.count, noFormCount: v.noFormCount }))
-            .sort((a, b) => {
-                const [ay, am, ad] = a.date.split('/').map(Number);
-                const [by, bm, bd] = b.date.split('/').map(Number);
-                return ay - by || am - bm || ad - bd;
-            });
+        this.lifetime = Array.from(dateMap.values())
+            .sort((a, b) => lifetimeDateOrder(a.date) - lifetimeDateOrder(b.date));
         this.persistLifetime();
         eventBus.emit("postepy2.updated");
     }
@@ -578,7 +640,8 @@ export default class ImproveCounter extends BaseCounter {
         if (count <= 0) {
             this.lifetime.splice(index, 1);
         } else {
-            this.lifetime[index].count = count;
+            const day = this.lifetime[index];
+            day.count += count - dayTotals(day).count;
         }
         this.persistLifetime();
         eventBus.emit("postepy2.updated");
@@ -621,7 +684,8 @@ export default class ImproveCounter extends BaseCounter {
 
         const todayStr = `${now.getFullYear()}/${now.getMonth() + 1}/${now.getDate()}`;
         const todayEntry = this.lifetime.find(e => e.date === todayStr);
-        const todayCount = (todayEntry?.count ?? 0) + (todayEntry?.noFormCount ?? 0);
+        const todayTotals = todayEntry ? dayTotals(todayEntry) : {count: 0, noFormCount: 0};
+        const todayCount = todayTotals.count + todayTotals.noFormCount;
 
         if (narrow) {
             wrapPieces([
@@ -727,7 +791,8 @@ export default class ImproveCounter extends BaseCounter {
 
         lines.push(pad());
 
-        this.lifetime.forEach((e, idx) => {
+        this.lifetime.forEach((day, idx) => {
+            const e = {date: day.date, count: dayTotals(day).count};
             if (narrow) {
                 const id = `[${String(idx + 1).padStart(4, " ")}] `;
                 const dateLine = new AnsiAwareBuffer(id);
@@ -749,7 +814,7 @@ export default class ImproveCounter extends BaseCounter {
         )));
         lines.push(pad());
 
-        const total = this.lifetime.reduce((sum, e) => sum + e.count, 0);
+        const total = this.lifetimeTotal();
         const approx = (total / 15).toFixed(2);
 
         wrapPieces([

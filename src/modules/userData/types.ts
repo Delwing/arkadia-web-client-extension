@@ -55,6 +55,12 @@ export interface UserDataType<V = any> {
     rule: MergeRule<V>;
     /** User-edited data: an item missing locally was deleted. Otherwise it is restored. */
     deletable?: boolean;
+    /**
+     * Items this type no longer carries (moved to a type of their own). Their
+     * records, tracked here or still sent by older clients, are left alone:
+     * neither deleted nor written to local data.
+     */
+    retired?: (item: { scope: string; key: string }) => boolean;
     read(): LocalItem<V>[] | Promise<LocalItem<V>[]>;
     write(changes: ItemChange<V>[]): void | Promise<void>;
 }

@@ -12,6 +12,14 @@ import type { Keymap, KeymapStore } from '@modules/core/keymapTypes';
 import { mergeProfessionStates, type ProfessionState } from '@client/scripts/profession';
 import type { PersonEditEvent, PeopleLocalEventsSnapshot } from '@client/types/people';
 import {
+    lifetimeDateOrder,
+    mergeImproveSessions,
+    mergeLifeCounts,
+    type ImproveSessionData,
+    type LifeCount,
+    type LifetimeDay,
+} from '@shared/improveProgress.ts';
+import {
     applyCounterChange,
     characterFromScope,
     characterScope,
@@ -193,6 +201,7 @@ export const keymapsType: UserDataType<Keymap> = {
 /** Character keys synced by their own types, with their own rules. */
 const CHARACTER_KEYS_WITH_OWN_TYPE = new Set([
     'profession',
+    'improve_counter',
     'improve_counter_lifetime',
     'deposits',
     'containers',
@@ -211,6 +220,8 @@ export const characterKeysType: UserDataType = {
     scope: 'character',
     rule: { kind: 'newest' },
     deletable: true,
+    // improve_counter used to be synced here, whole and newest-wins
+    retired: item => CHARACTER_KEYS_WITH_OWN_TYPE.has(item.key),
     read() {
         const items: LocalItem[] = [];
         for (let i = 0; i < localStorage.length; i += 1) {
@@ -271,12 +282,6 @@ export const professionType: UserDataType<ProfessionState> = {
 // Improvement counters (improve_counter_lifetime): per character and day
 // ---------------------------------------------------------------------------
 
-interface LifetimeDay {
-    date: string;
-    count: number;
-    noFormCount?: number;
-}
-
 interface LifetimeData {
     entries: LifetimeDay[];
     enabled?: boolean;
@@ -290,10 +295,7 @@ function readLifetime(character: string): LifetimeData | null {
     return data;
 }
 
-function dateOrder(date: string): number {
-    const [y, m, d] = date.split('/').map(Number);
-    return (y || 0) * 10_000 + (m || 0) * 100 + (d || 0);
-}
+const dateOrder = lifetimeDateOrder;
 
 export const improveCountsType: UserDataType<Record<string, number>> = {
     id: 'improveCounts',
@@ -322,12 +324,80 @@ export const improveCountsType: UserDataType<Record<string, number>> = {
                     stored ? { count: stored.count, noFormCount: stored.noFormCount ?? 0 } : undefined,
                     change,
                 );
-                const day: LifetimeDay = { date: change.key, count: value.count ?? 0 };
+                // Lives are synced by improveLivesType; keep them.
+                const day: LifetimeDay = { ...stored, date: change.key, count: value.count ?? 0 };
                 if (value.noFormCount) day.noFormCount = value.noFormCount;
+                else delete day.noFormCount;
                 days.set(change.key, day);
             }
             const entries = [...days.values()].sort((a, b) => dateOrder(a.date) - dateOrder(b.date));
             writeCharacterKey(character, 'improve_counter_lifetime', { ...data, entries });
+        }
+    },
+};
+
+const LIFE_KEY_SEPARATOR = '#';
+
+/**
+ * Improvements counted per life (object number) and day, inside the same
+ * key's days. Two devices counting the same life count the same levels, so
+ * the higher count is the true one: resuming a session on another device
+ * doesn't add its improvements twice.
+ */
+export const improveLivesType: UserDataType<LifeCount> = {
+    id: 'improveLives',
+    scope: 'character',
+    rule: { kind: 'custom', merge: mergeLifeCounts },
+    read() {
+        const items: LocalItem<LifeCount>[] = [];
+        for (const name of collectCharacters()) {
+            for (const day of readLifetime(name)?.entries ?? []) {
+                for (const [obj, life] of Object.entries(day.lives ?? {})) {
+                    items.push({ scope: characterScope(name), key: `${day.date}${LIFE_KEY_SEPARATOR}${obj}`, value: life });
+                }
+            }
+        }
+        return items;
+    },
+    write(changes) {
+        for (const [character, list] of byCharacter(changes)) {
+            const data = readLifetime(character) ?? { entries: [] };
+            const days = new Map(data.entries.map(e => [e.date, e]));
+            for (const change of list) {
+                if (change.deleted || !change.value) continue;
+                const at = change.key.lastIndexOf(LIFE_KEY_SEPARATOR);
+                if (at <= 0) continue;
+                const date = change.key.slice(0, at);
+                const obj = change.key.slice(at + 1);
+                const day: LifetimeDay = { ...(days.get(date) ?? { date, count: 0 }) };
+                day.lives = { ...day.lives, [obj]: change.value };
+                days.set(date, day);
+            }
+            const entries = [...days.values()].sort((a, b) => dateOrder(a.date) - dateOrder(b.date));
+            writeCharacterKey(character, 'improve_counter_lifetime', { ...data, entries });
+        }
+    },
+};
+
+/**
+ * The /postepy session (improve_counter), one item per character. Merged
+ * rather than newest-wins: a device resuming the same life keeps the
+ * entries and times recorded on the other one; a new life replaces the old.
+ */
+export const improveSessionType: UserDataType<ImproveSessionData> = {
+    id: 'improveSession',
+    scope: 'character',
+    rule: { kind: 'custom', merge: mergeImproveSessions },
+    read() {
+        return collectCharacters()
+            .map(name => ({ name, value: readCharacterKey<ImproveSessionData>(name, 'improve_counter') }))
+            .filter(({ value }) => !!value && typeof value === 'object' && !Array.isArray(value))
+            .map(({ name, value }) => ({ scope: characterScope(name), key: 'session', value: value! }));
+    },
+    write(changes) {
+        for (const change of changes) {
+            const character = characterOf(change);
+            if (character && !change.deleted && change.value) writeCharacterKey(character, 'improve_counter', change.value);
         }
     },
 };

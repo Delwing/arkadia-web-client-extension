@@ -376,3 +376,99 @@ describe('two devices moving from sync v1', () => {
         expect(firefox.lifetime()).toEqual(expected);
     });
 });
+
+describe('improvements tied to a life (object number)', () => {
+    const lifetime = () => JSON.parse(localStorage.getItem('Alice:improve_counter_lifetime')!);
+    const session = () => JSON.parse(localStorage.getItem('Alice:improve_counter')!);
+
+    it('counts a life resumed on another device once', async () => {
+        // Both devices counted the same three levels of life 7
+        localStorage.setItem('Alice:improve_counter_lifetime', JSON.stringify({
+            entries: [{ date: '2026/9/27', count: 0, lives: { 7: { count: 3 } } }],
+        }));
+        const b = tracker('b');
+        await b.capture();
+        const records = await captureAll('a');
+
+        await b.apply(records);
+
+        expect(lifetime().entries).toEqual([{ date: '2026/9/27', count: 0, lives: { 7: { count: 3 } } }]);
+    });
+
+    it('takes the higher count of a life and keeps lives when counts change', async () => {
+        localStorage.setItem('Alice:improve_counter_lifetime', JSON.stringify({
+            entries: [{ date: '2026/9/27', count: 1, lives: { 7: { count: 5 }, 8: { count: 1 } } }],
+        }));
+        const records = await captureAll('a');
+        localStorage.setItem('Alice:improve_counter_lifetime', JSON.stringify({
+            entries: [{ date: '2026/9/27', count: 1, lives: { 7: { count: 3 } } }],
+        }));
+
+        await tracker('b').apply(records);
+
+        expect(lifetime().entries).toEqual([{ date: '2026/9/27', count: 1, lives: { 7: { count: 5 }, 8: { count: 1 } } }]);
+    });
+
+    it('keeps the entries and times of the same life recorded on another device', async () => {
+        const entry = { state: 'nieznaczne', time: 1_000, delta: 500, killsMy: 1, killsTeam: 0 };
+        localStorage.setItem('Alice:improve_counter', JSON.stringify({
+            entries: [entry], lastTime: 1_000, level: 1, lastObjNum: 7, obj: 7, since: 100,
+        }));
+        const records = await captureAll('a');
+        // Device b resumed the session: it reset and caught up silently
+        localStorage.setItem('Alice:improve_counter', JSON.stringify({
+            entries: [], lastTime: 5_000, level: 1, lastObjNum: 7, obj: 7, since: 4_000,
+        }));
+        const b = tracker('b');
+        await b.capture();
+
+        await b.apply(records);
+
+        expect(session()).toMatchObject({ entries: [entry], lastTime: 1_000, level: 1, obj: 7, since: 100 });
+    });
+
+    it('lets a new life replace the old one', async () => {
+        localStorage.setItem('Alice:improve_counter', JSON.stringify({
+            entries: [{ state: 'nieznaczne', time: 1_000, delta: 500, killsMy: 1, killsTeam: 0 }],
+            lastTime: 1_000, level: 1, obj: 7, since: 100,
+        }));
+        const b = tracker('b');
+        await b.capture();
+        localStorage.setItem('Alice:improve_counter', JSON.stringify({ entries: [], lastTime: 9_000, level: 0, obj: 8, since: 9_000 }));
+        const records = await captureAll('a');
+
+        await b.apply(records);
+
+        expect(session()).toMatchObject({ entries: [], obj: 8 });
+    });
+
+    it('leaves improve_counter records of older clients alone', async () => {
+        // Before improve_counter had a type of its own
+        const old = {
+            ...characterKeysType,
+            retired: undefined,
+            read: () => [{ scope: 'char:Alice', key: 'improve_counter', value: JSON.parse(localStorage.getItem('Alice:improve_counter')!) }],
+        };
+        let saved: string | null = null;
+        const oldClient = new UserDataTracker({
+            deviceId: 'old',
+            types: [old],
+            store: new MemoryRecordStore(),
+            clock: new HybridLogicalClock('old', { load: () => saved, save: s => { saved = s; } }),
+        });
+        localStorage.setItem('Alice:improve_counter', JSON.stringify({ entries: [], level: 0 }));
+        await oldClient.capture();
+        const records = (await oldClient.outbox()).filter(r => r.key === 'improve_counter');
+        expect(records).toHaveLength(1);
+
+        const mine = { entries: [], level: 3, obj: 7, since: 1 };
+        localStorage.setItem('Alice:improve_counter', JSON.stringify(mine));
+        const b = tracker('b');
+        await b.apply(records);
+        expect(session()).toEqual(mine);
+
+        // Nor is the tracked old record deleted on the next capture
+        await b.capture();
+        expect((await b.outbox()).some(r => r.type === 'characterKeys' && r.key === 'improve_counter')).toBe(false);
+    });
+});
