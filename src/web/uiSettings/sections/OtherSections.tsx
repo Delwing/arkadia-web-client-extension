@@ -20,7 +20,7 @@ export function OtherSection({ draft, update }: OtherSectionsProps) {
         <SettingsSection title="Inne">
             <CheckboxRow id="ui-fight-title-icon" label="Ikona walki w tytule" checked={draft.fightTitleIcon} onChange={(v) => update({ fightTitleIcon: v })} />
             <CheckboxRow id="ui-wake-lock" label="Blokada usypiania ekranu (Wake Lock)" checked={draft.wakeLock} onChange={(v) => update({ wakeLock: v })} />
-            <CheckboxRow id="ui-media-session" label="Karta odtwarzacza (HP, postać, mapa; następny utwór = wesprzyj)" checked={draft.mediaSession} onChange={(v) => update({ mediaSession: v })} />
+            <CheckboxRow id="ui-media-session" label="Karta odtwarzacza (HP, postać, ostatnie linie, mapa; następny utwór = wesprzyj)" checked={draft.mediaSession} onChange={(v) => update({ mediaSession: v })} />
         </SettingsSection>
     );
 }

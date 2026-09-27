@@ -56,6 +56,22 @@ describe("MediaSessionStatus", () => {
         expect(session.metadata).toBeNull();
     });
 
+    it("shows the last two output lines as artist and album", () => {
+        setShellSettings({mediaSession: true});
+        new MediaSessionStatus({support: vi.fn()});
+        eventBus.emit("client.connect");
+        eventBus.emit("message", "Pierwsza linia.\n  Druga   linia.\n\n");
+        expect(session.metadata?.init.artist).toBe("Druga linia.");
+        expect(session.metadata?.init.album).toBe("Pierwsza linia.");
+
+        eventBus.emit("message", "polnoc", "command");
+        expect(session.metadata?.init.artist).toBe("Druga linia.");
+
+        eventBus.emit("message", "Trzecia &lt;linia&gt;.");
+        expect(session.metadata?.init.artist).toBe("Trzecia <linia>.");
+        expect(session.metadata?.init.album).toBe("Druga linia.");
+    });
+
     it("shows HP and character, and next track sends support", () => {
         setShellSettings({mediaSession: true});
         const support = vi.fn();
@@ -65,8 +81,7 @@ describe("MediaSessionStatus", () => {
         eventBus.emit("gmcp.char.state", {hp: 4} as never);
 
         expect(play).toHaveBeenCalled();
-        expect(session.metadata?.init.title).toBe("Arkadia [5/7]");
-        expect(session.metadata?.init.artist).toBe("Gerwazy");
+        expect(session.metadata?.init.title).toBe("[5/7] Gerwazy");
 
         handlers.nexttrack?.();
         expect(support).toHaveBeenCalledTimes(1);

@@ -2,6 +2,7 @@ import eventBus from "@modules/core/eventBus";
 import {getShellSettings, onShellSettingsChange} from "@modules/core/settings";
 import {CanvasExporter} from "mudlet-map-renderer";
 import {getEmbeddedMap} from "./embedRegistry";
+import {readableTextOf} from "@shared/dom/outputText";
 import type {GmcpCharInfo, GmcpCharState} from "@shared/events";
 
 const HP_MAX = 7;
@@ -45,9 +46,13 @@ interface SupportTarget {
 
 /**
  * Pretends the client is playing media so the OS media controls show the
- * character: "Arkadia [5/7]" as the title, the character's name as the artist,
- * a snapshot of the map around the player as the cover, and the "next track"
- * button sends the support command ("wesprzyj").
+ * character: "[5/7] Name" as the title, the last two lines of game output as
+ * the artist (newest) and album (the one before), a snapshot of the map around
+ * the player as the cover, and the "next track" button sends the support
+ * command ("wesprzyj").
+ *
+ * Every output line updates the card - deliberately unthrottled, so what the
+ * OS shows is always the latest line.
  *
  * Opt-in (shell setting `mediaSession`): the looping silent clip takes the
  * audio focus, which on phones pauses whatever else the player was listening to.
@@ -60,6 +65,8 @@ export default class MediaSessionStatus {
     private connected = false;
     private hp: number | null = null;
     private character = "";
+    private lastLine = "";
+    private previousLine = "";
     private artwork: string | null = null;
     private roomId: number | null = null;
     private thumbTimer: ReturnType<typeof setTimeout> | undefined;
@@ -79,6 +86,11 @@ export default class MediaSessionStatus {
             this.character = info.name;
             this.updateMetadata();
         });
+        eventBus.on("message", (message, type) => {
+            // The player's own echoed commands aren't game output.
+            if (message === undefined || message === null || type === "command") return;
+            this.pushLines(readableTextOf(message));
+        });
         eventBus.on("enterLocation", (ev) => {
             this.roomId = ev.id;
             this.scheduleThumbnail();
@@ -90,6 +102,8 @@ export default class MediaSessionStatus {
         eventBus.on("client.disconnect", () => {
             this.connected = false;
             this.hp = null;
+            this.lastLine = "";
+            this.previousLine = "";
             this.sync();
         });
 
@@ -188,16 +202,29 @@ export default class MediaSessionStatus {
         session.playbackState = "none";
     }
 
+    private pushLines(text: string) {
+        let changed = false;
+        for (const raw of text.split("\n")) {
+            const line = raw.replace(/\s+/g, " ").trim();
+            if (!line) continue;
+            this.previousLine = this.lastLine;
+            this.lastLine = line;
+            changed = true;
+        }
+        if (changed) this.updateMetadata();
+    }
+
     private updateMetadata() {
         if (!this.active || typeof MediaMetadata === "undefined") return;
-        const title = this.hp !== null ? `Arkadia [${this.hp}/${HP_MAX}]` : "Arkadia";
+        const hp = this.hp !== null ? `[${this.hp}/${HP_MAX}]` : "";
+        const title = [hp, this.character || "Arkadia"].filter(Boolean).join(" ");
         const artwork = this.artwork
             ? [{src: this.artwork, sizes: `${THUMB_SIZE}x${THUMB_SIZE}`, type: "image/png"}]
             : [{src: FALLBACK_ARTWORK, sizes: "512x512", type: "image/png"}];
         navigator.mediaSession.metadata = new MediaMetadata({
             title,
-            artist: this.character,
-            album: "Arkadia",
+            artist: this.lastLine,
+            album: this.previousLine,
             artwork,
         });
     }
