@@ -128,7 +128,16 @@ export interface BehaviorSettings {
      * not hide the tab.
      */
     pushOnlyWhenHidden: boolean;
+    /**
+     * Literal prefilter for regex triggers (src/client/triggerPrefilter.ts): 'on'
+     * skips a regex when the line lacks text every match must contain, 'off' runs
+     * every regex, 'verify' runs every regex and reports loudly when the prefilter
+     * would have skipped one that matched.
+     */
+    triggerPrefilter: TriggerPrefilterMode;
 }
+
+export type TriggerPrefilterMode = 'on' | 'off' | 'verify';
 
 /**
  * Device-scoped view preferences. Physically stored in the device-scoped

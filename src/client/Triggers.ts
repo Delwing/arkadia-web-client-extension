@@ -222,15 +222,14 @@ export default class Triggers {
 
     /**
      * Skip a regex when the line lacks literal text every match must contain
-     * (see triggerPrefilter.ts). Proof of concept: off unless the UI turns it on
-     * (`?triggerPrefilter=1`).
+     * (see triggerPrefilter.ts). Client sets both flags from the `triggerPrefilter`
+     * behaviour setting (on by default); a bare Triggers starts with them off.
      */
     literalPrefilter = false;
 
     /**
      * Debug aid for the prefilter: never skip, but check every regex match against it
-     * and report loudly when it would have skipped a line that matched
-     * (`?triggerPrefilter=verify`).
+     * and report loudly when it would have skipped a line that matched.
      */
     literalPrefilterVerify = false;
 

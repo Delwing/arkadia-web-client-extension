@@ -1,5 +1,6 @@
 /**
- * Literal prefilter for regex triggers (proof of concept, off by default).
+ * Literal prefilter for regex triggers. On by default; the `triggerPrefilter`
+ * behaviour setting (Ustawienia > Inne > Filtr wyzwalaczy) switches it off or to verify.
  *
  * Every line runs every regex trigger, and most of those regexes (~95% of what the
  * stock scripts and the Mudlet-synced gags register) contain a run of plain text that
@@ -181,7 +182,7 @@ export function mayMatch(pattern: RegExp, line: string): boolean {
 }
 
 /**
- * Verify mode (`?triggerPrefilter=verify`): the prefilter never skips anything, but
+ * Verify mode (`triggerPrefilter: 'verify'`): the prefilter never skips anything, but
  * every regex match is checked against it, so an extractor bug shows up as a loud
  * console error with the regex and the line instead of as a silently missed trigger.
  */
