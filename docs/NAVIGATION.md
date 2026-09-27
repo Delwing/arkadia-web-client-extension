@@ -46,7 +46,7 @@ Komendy do poruszania sie, mapy i automatycznego chodzenia.
 | `/prowadzt! id` | Jak `/prowadzt`, ale agresywnie minimalizuje chodzenie pieszo (zero kary za przesiadki, transport ~10x tanszy) |
 | `/prowadzt` / `/prowadzt!` | Bez celu: przelacz biezace prowadzenie na trase z transportem (do tego samego celu) |
 | `/prowadz` | Bez celu: przelacz biezace prowadzenie z powrotem na trase pieszo |
-| `/go` | Wybierz wyjscie zgodnie z wyznaczona trasa (gdy aktywne prowadzenie) |
+| `/go` | Wybierz wyjscie zgodnie z wyznaczona trasa (gdy aktywne prowadzenie, takze trasa `/prowadzt` ze statkami i dylizansami) |
 
 > **Wskazowka:** `/prowadzt` rysuje pieszej odcinki na mapie tak jak `/prowadz`, a punkty wsiadania/wysiadania znaczy pierscieniami w kolorze odcinka. Pelna instrukcja (na ktora lodz wsiasc, jaka komenda, gdzie wysiasc) trafia do okna wyjscia.
 

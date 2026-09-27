@@ -1471,6 +1471,32 @@ export default class MapHelper {
         this.carriageLead = false;
     }
 
+    /**
+     * The command for the next step along the route on screen, or null when there is none to take.
+     *
+     * Follows whatever is drawn: a route planned with ships and coaches (/prowadzt) or around a
+     * wagon's barred rooms, rather than the plain walking path, which may go somewhere else
+     * entirely. Standing where a ride is boarded there is nothing to walk, so null.
+     */
+    nextLeadCommand(): string | null {
+        const currentId = this.currentRoom?.id;
+        if (typeof currentId !== 'number') return null;
+        if (this._transportRoute) {
+            for (const segment of this._transportRoute.walkSegments) {
+                const index = segment.path.indexOf(currentId);
+                if (index > -1 && index < segment.path.length - 1) {
+                    return this.exitCommandTo(segment.path[index + 1]);
+                }
+            }
+            return null;
+        }
+        const target = this._destinations[0];
+        if (target === undefined) return null;
+        const path = this.pathFinder?.findPath(currentId, target);
+        if (!path || path.length < 2) return null;
+        return this.exitCommandTo(path[1]);
+    }
+
     /** The command that leaves the current room for `targetId`, or null when there is no such exit. */
     private exitCommandTo(targetId: number): string | null {
         const room = this.currentRoom;
