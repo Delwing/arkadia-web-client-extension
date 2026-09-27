@@ -100,6 +100,26 @@ const BOOK_STATUS_COLORS = {
     in_progress: createColorFormat('#b8a960'),
     completed: createColorFormat('#7aab7a'),
 };
+
+/**
+ * Recolours a token trigger's match. A match index is an offset into the line as
+ * the MUD sent it, which earlier triggers may have prefixed since; the fallback
+ * `indexOf` already searched the current text.
+ */
+function recolorToken(
+    line: AnsiAwareBuffer,
+    matches: RegExpMatchArray,
+    startIndex: number,
+    tokenText: string,
+    color: FormatStateSnapshot,
+): void {
+    const fromMatch = typeof matches.index === 'number' && matches.index >= 0;
+    const range = fromMatch
+        ? line.mapOriginalRange([startIndex, startIndex + tokenText.length])
+        : [startIndex, startIndex + tokenText.length] as [number, number];
+    line.replace(range, line.text.slice(range[0], range[1]), color);
+}
+
 const KNOWLEDGE_ENTRY_TRIGGER_TAG = 'knowledge-entry-triggers';
 const BOOK_TRIGGER_TAG = 'book-triggers';
 
@@ -1046,8 +1066,7 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
                             : line.text.indexOf(tokenText);
 
                     if (!suppressEntryHighlighting && startIndex >= 0) {
-                        const endIndex = startIndex + tokenText.length;
-                        line.replace([startIndex, endIndex], tokenText, KNOWLEDGE_ENTRY_HIGHLIGHT_COLOR);
+                        recolorToken(line, matches, startIndex, tokenText, KNOWLEDGE_ENTRY_HIGHLIGHT_COLOR);
                     }
 
                     for (const target of targets) {
@@ -1159,7 +1178,7 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
                                 ? matches.index
                                 : line.text.indexOf(tokenText);
                         if (startIndex >= 0) {
-                            line.replace([startIndex, startIndex + tokenText.length], tokenText, bookColor);
+                            recolorToken(line, matches, startIndex, tokenText, bookColor);
                         }
                     }
 

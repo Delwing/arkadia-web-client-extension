@@ -386,6 +386,29 @@ function parseAnsiSegments(text: string, baseState?: FormatStateSnapshot): Buffe
     return segments;
 }
 
+/** One recorded mutation: `removed` characters at `start` became `inserted` ones. */
+interface BufferEdit {
+    start: number;
+    removed: number;
+    inserted: number;
+}
+
+/**
+ * Moves a position across one edit. `isStart` decides which side of text
+ * inserted exactly at the position it lands on: a range start moves past it, a
+ * range end stays before it, so insertions around a range stay outside it.
+ */
+function mapEditPosition(position: number, edit: BufferEdit, isStart: boolean): number {
+    const {start, removed, inserted} = edit;
+    if (position < start) return position;
+    if (removed === 0) {
+        if (position === start && !isStart) return position;
+        return position + inserted;
+    }
+    if (position >= start + removed) return position + inserted - removed;
+    return start + Math.min(position - start, inserted);
+}
+
 /**
  * Buffer of text aware of ANSI formatting codes and hyperlink metadata.
  */
@@ -405,6 +428,14 @@ export class AnsiAwareBuffer {
      * the same buffer) unlike `onRender`, which is cleared after firing once.
      */
     flair?: string;
+    /**
+     * Edits made since `trackEditsFrom` anchored the buffer, so a range found in
+     * the text as the MUD sent it can be located in the text as earlier triggers
+     * left it (see `mapOriginalRange`). `_editBase` is null while untracked.
+     */
+    private _editBase: string | null = null;
+    private _edits: BufferEdit[] = [];
+    private _editDepth = 0;
 
     constructor(initial?: string | BufferSegment[], state?: FormatStateSnapshot) {
         if (typeof initial === "string") {
@@ -474,49 +505,132 @@ export class AnsiAwareBuffer {
     }
 
     clear(): this {
-        this.segments = [];
-        this.invalidateCaches();
+        this.recordEdit(0, this.length, () => {
+            this.segments = [];
+            this.invalidateCaches();
+        });
         return this;
+    }
+
+    /**
+     * Starts (or keeps) recording edits relative to `original`, the text a
+     * trigger pass matches against. Recording starts afresh when the buffer
+     * still reads `original`, carries on when it was already anchored to it, and
+     * stops otherwise — the buffer was rewritten in a way nothing recorded, so
+     * `mapOriginalRange` can no longer place original offsets.
+     */
+    trackEditsFrom(original: string): this {
+        if (this.text === original) {
+            this._editBase = original;
+            this._edits = [];
+        } else if (this._editBase !== original) {
+            this._editBase = null;
+            this._edits = [];
+        }
+        return this;
+    }
+
+    /** The text `trackEditsFrom` anchored to, or null while edits are untracked. */
+    get trackedOriginal(): string | null {
+        return this._editBase;
+    }
+
+    /**
+     * Where a range of the anchored original text (see `trackEditsFrom`) sits in
+     * the current text. Trigger matches are offsets into the line as the MUD sent
+     * it, while earlier triggers may already have prefixed or rewritten it; this
+     * follows every recorded edit so the range still covers the same characters.
+     *
+     * Text inserted right at the range's start or end stays outside it. Where the
+     * range starts or ends inside rewritten text, it keeps the same offset into
+     * the rewrite, clamped to its length, so recolouring (same text replaced)
+     * keeps the range exact. An untracked buffer returns the range unchanged.
+     */
+    mapOriginalRange(range: TextRange): TextRange {
+        if (this._editBase === null || this._edits.length === 0) return range;
+        let [start, end] = range;
+        for (const edit of this._edits) {
+            start = mapEditPosition(start, edit, true);
+            end = mapEditPosition(end, edit, false);
+        }
+        const length = this.length;
+        start = Math.min(Math.max(start, 0), length);
+        end = Math.min(Math.max(end, start), length);
+        return [start, end];
+    }
+
+    /**
+     * Runs a mutation of `[start, start + removed)` and records it as one edit,
+     * however many primitive steps it takes (a replace is a remove plus an
+     * insert, but recording it as two would collapse ranges inside it).
+     */
+    private recordEdit(start: number, removed: number, mutate: () => void): void {
+        if (this._editBase === null || this._editDepth > 0) {
+            mutate();
+            return;
+        }
+        const before = this.length;
+        this._editDepth++;
+        try {
+            mutate();
+        } finally {
+            this._editDepth--;
+        }
+        const inserted = this.length - (before - removed);
+        if (removed !== 0 || inserted !== 0) {
+            this._edits.push({start, removed, inserted});
+        }
     }
 
     replace(range: [number, number], text: string, state?: FormatStateSnapshot): this {
         const [start, end] = range;
         this.assertRange(start, end);
-        const fallback = state ? undefined : this.inferState(start);
-        this.remove(range);
-        if (text.length === 0) return this;
-        this.insertInternal(start, text, state, fallback);
+        this.recordEdit(start, end - start, () => {
+            const fallback = state ? undefined : this.inferState(start);
+            this.remove(range);
+            if (text.length === 0) return;
+            this.insertInternal(start, text, state, fallback);
+        });
         return this;
     }
 
     replaceBuffer(range: [number, number], buffer: AnsiAwareBuffer): this {
         const [start, end] = range;
         this.assertRange(start, end);
-        this.remove(range);
-        if (buffer.length === 0) return this;
-        this.insertBuffer(start, buffer);
+        this.recordEdit(start, end - start, () => {
+            this.remove(range);
+            if (buffer.length === 0) return;
+            this.insertBuffer(start, buffer);
+        });
         return this;
     }
 
     insert(index: number, text: string, state?: FormatStateSnapshot): this {
         if (text.length === 0) return this;
         this.assertIndex(index, true);
-        const inferredState = state ? undefined : this.inferState(index);
-        this.insertInternal(index, text, state, inferredState);
+        this.recordEdit(index, 0, () => {
+            const inferredState = state ? undefined : this.inferState(index);
+            this.insertInternal(index, text, state, inferredState);
+        });
         return this;
     }
 
     insertBuffer(index: number, buffer: AnsiAwareBuffer): this {
         if (buffer.length === 0) return this;
         this.assertIndex(index, true);
+        this.recordEdit(index, 0, () => this.insertBufferInternal(index, buffer));
+        return this;
+    }
+
+    private insertBufferInternal(index: number, buffer: AnsiAwareBuffer): void {
 
         const sourceSegments = buffer.getSegments();
-        if (sourceSegments.length === 0) return this;
+        if (sourceSegments.length === 0) return;
 
         // getSegments() already handed us private copies, so their states need no second clone.
         if (index === this.length) {
             this.appendNormalized(sourceSegments, false);
-            return this;
+            return;
         }
 
         const position = this.resolveIndex(index, true);
@@ -527,7 +641,6 @@ export class AnsiAwareBuffer {
         const insertionPoint = this.resolveBoundaryIndex(index);
         this.segments.splice(insertionPoint, 0, ...sourceSegments);
         this.normalizeSegments();
-        return this;
     }
 
     prefix(text: string, state?: FormatStateSnapshot): this {
@@ -589,6 +702,11 @@ export class AnsiAwareBuffer {
         const [start, end] = range;
         this.assertRange(start, end);
         if (start === end) return this;
+        this.recordEdit(start, end - start, () => this.removeInternal(start, end));
+        return this;
+    }
+
+    private removeInternal(start: number, end: number): void {
         const startPos = this.resolveIndex(start, true);
         if (startPos.segmentIndex < this.segments.length) {
             this.splitSegment(startPos.segmentIndex, startPos.offset);
@@ -601,7 +719,6 @@ export class AnsiAwareBuffer {
         const endIndex = this.resolveBoundaryIndex(end);
         this.segments.splice(startIndex, endIndex - startIndex);
         this.normalizeSegments();
-        return this;
     }
 
     /** @internal */

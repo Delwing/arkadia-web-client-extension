@@ -601,3 +601,41 @@ describe('userTriggers', () => {
     });
   });
 });
+
+describe('userTriggers on a line earlier triggers rewrote', () => {
+  afterEach(() => {
+    localStorage.clear();
+  });
+
+  const setup = (list: UserTrigger[]) => {
+    const client = new FakeClient();
+    // Registered first, so it runs first: prefixes the line, as the combat counters do.
+    client.Triggers.registerTrigger(/atakuje/, line => line.prefix('[1/6] '));
+    initUserTriggers((client as unknown) as any);
+    globalStorage.set('triggers', list);
+    return client;
+  };
+
+  test('colors the matched text, not the same offsets of the prefixed line', () => {
+    const client = setup([{ pattern: 'troll', macros: [{ type: 'color', color: '#ff0000' }] }]);
+    const result = client.Triggers.parseLine(new AnsiAwareBuffer('Ogromny troll atakuje cie'), '');
+    expect(result?.text).toBe('[1/6] Ogromny troll atakuje cie');
+    const colored = result?.getSegments().filter(seg => seg.state?.foreground).map(seg => seg.text);
+    expect(colored).toEqual(['troll']);
+  });
+
+  test('global flag colors every match in place', () => {
+    const client = setup([{ pattern: 'troll', flags: 'g', macros: [{ type: 'uppercase' }] }]);
+    const result = client.Triggers.parseLine(new AnsiAwareBuffer('troll atakuje trolla'), '');
+    expect(result?.text).toBe('[1/6] TROLL atakuje TROLLa');
+  });
+
+  test('replace and wrap act on the matched text', () => {
+    const client = setup([{ pattern: 'troll', macros: [
+      { type: 'replace', to: 'ork' },
+      { type: 'wrap', wrapPrefix: '<', wrapSuffix: '>' },
+    ] }]);
+    const result = client.Triggers.parseLine(new AnsiAwareBuffer('troll atakuje'), '');
+    expect(result?.text).toBe('[1/6] <ork> atakuje');
+  });
+});
