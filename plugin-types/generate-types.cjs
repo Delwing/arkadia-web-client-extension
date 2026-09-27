@@ -72,100 +72,60 @@ function getJsDocComments(node) {
   return matches ? matches[matches.length - 1] : null;
 }
 
-// Helper to check if a type should be exported
+// Helper to check if a type should be exported: every interface and type
+// alias PluginApi.ts exports is part of the public API (anything a signature
+// references must be importable by plugins), except implementation details.
 function shouldExport(node) {
-  // Export interfaces and type aliases
-  if (ts.isInterfaceDeclaration(node) || ts.isTypeAliasDeclaration(node)) {
-    const name = node.name?.text;
-
-    // Skip internal implementation details
-    if (name?.includes('Impl') || name?.includes('Internal')) {
-      return false;
-    }
-
-    // Export API-related types
-    if (name?.endsWith('Api') ||
-        name?.endsWith('Handle') ||
-        name?.endsWith('Event') ||
-        name?.endsWith('Payload') ||
-        name?.endsWith('Options') ||
-        name?.endsWith('Definition') ||
-        name?.endsWith('State') ||
-        name === 'PluginApi' ||
-        name === 'PluginInfo' ||
-        name === 'Plugin' ||
-        name === 'PopupContent' ||
-        name === 'PopupSize' ||
-        name === 'PersistentPopupConfig' ||
-        name === 'TriggerCallback' ||
-        name === 'TriggerMatchFunction' ||
-        name === 'TriggerPattern' ||
-        name === 'TriggerSubPattern' ||
-        name === 'Trigger' ||
-        name === 'LocationObject' ||
-        name === 'EventKey' ||
-        name === 'EventParams' ||
-        name === 'EventListener' ||
-        // Map overlay types
-        name === 'MapOverlayLayer' ||
-        name === 'MapOverlayPaint' ||
-        name === 'MapOverlayShape' ||
-        // Object list filter types
-        name === 'ObjectListEntryFilter' ||
-        name === 'EntryContext' ||
-        name === 'FilterResult' ||
-        name === 'EntryStyle' ||
-        name === 'EntryContent' ||
-        name === 'ObjectData' ||
-        // Herb database types
-        name === 'HerbsData' ||
-        name === 'HerbForms' ||
-        name === 'HerbUse' ||
-        // Container types
-        name === 'ContainerType' ||
-        name === 'ContainerForms' ||
-        // Magics data types
-        name === 'MagicCase' ||
-        name === 'MagicForms' ||
-        name === 'MagicEntry' ||
-        name === 'MagicsFile' ||
-        name === 'MagicKeysData') {
-      return true;
-    }
+  if (!ts.isInterfaceDeclaration(node) && !ts.isTypeAliasDeclaration(node)) {
+    return false;
   }
-
-  return false;
+  const isExported = node.modifiers?.some((m) => m.kind === ts.SyntaxKind.ExportKeyword);
+  const name = node.name?.text;
+  return Boolean(isExported && name && !name.includes('Impl') && !name.includes('Internal'));
 }
 
 // Helper to get JSDoc comments (only the leading JSDoc before the node)
-function getLeadingJsDoc(node) {
-  const fullText = node.getFullText(sourceFile);
-  const nodeText = node.getText(sourceFile);
+function getLeadingJsDoc(node, file = sourceFile) {
+  const fullText = node.getFullText(file);
+  const nodeText = node.getText(file);
   const leading = fullText.substring(0, fullText.indexOf(nodeText));
 
-  // Extract JSDoc comment (/** ... */)
-  const jsDocMatch = leading.match(/\/\*\*[\s\S]*?\*\//);
-  return jsDocMatch ? jsDocMatch[0] : null;
+  // Extract the JSDoc comment (/** ... */) closest to the declaration
+  const jsDocMatches = leading.match(/\/\*\*[\s\S]*?\*\//g);
+  return jsDocMatches ? jsDocMatches[jsDocMatches.length - 1] : null;
 }
 
 // Helper to convert node to string
-function nodeToString(node) {
+function nodeToString(node, file = sourceFile) {
   const printer = ts.createPrinter({
     newLine: ts.NewLineKind.LineFeed,
     removeComments: false  // Keep comments for interface members
   });
 
-  let result = printer.printNode(ts.EmitHint.Unspecified, node, sourceFile);
+  let result = printer.printNode(ts.EmitHint.Unspecified, node, file);
 
-  // Remove leading JSDoc from the result (we'll add it separately to avoid export duplication)
-  // This regex removes JSDoc comments that appear before the first non-comment token
-  result = result.replace(/^(\s*)\/\*\*[\s\S]*?\*\/\s*/, '$1');
+  // Remove all leading comments (JSDoc is added separately, and a stray line
+  // comment left in front would end up between 'export' and the declaration)
+  result = result.replace(/^(?:\s*(?:\/\/[^\n]*(?:\n|$)|\/\*[\s\S]*?\*\/))+\s*/, '');
 
-  // Remove 'export ' keyword if present (TypeScript printer adds it)
-  result = result.replace(/^export\s+/, '');
+  // Remove 'export ' / 'declare ' keywords if present (TypeScript printer adds them)
+  result = result.replace(/^export\s+/, '').replace(/^declare\s+/, '');
 
   return result;
 }
+
+// Emit a single interface / type alias declaration with its JSDoc
+function emitDeclaration(node, file = sourceFile) {
+  const jsDoc = getLeadingJsDoc(node, file);
+  if (jsDoc) {
+    output.push('\n' + jsDoc);
+  }
+  output.push('\nexport ' + nodeToString(node, file));
+  emittedNodes.push(node);
+}
+
+// Declarations emitted from source (scanned later for external references)
+const emittedNodes = [];
 
 // Process the source file
 function processNode(node) {
@@ -173,14 +133,7 @@ function processNode(node) {
     const name = node.name?.text;
     if (name && !exportedTypes.has(name)) {
       exportedTypes.add(name);
-
-      const jsDoc = getLeadingJsDoc(node);
-      const declaration = nodeToString(node);
-
-      if (jsDoc) {
-        output.push('\n' + jsDoc);
-      }
-      output.push('\nexport ' + declaration);
+      emitDeclaration(node);
     }
   }
 
@@ -1271,6 +1224,140 @@ output.push(`
 
 // Process source file for API interfaces
 processNode(sourceFile);
+
+// ============================================================================
+// Supporting types
+// ============================================================================
+// Public signatures reference types declared outside PluginApi.ts (settings,
+// macro contexts, people entries, ...). Follow every type reference in the
+// emitted declarations and inline what it points at, transitively, so the
+// generated file is self-contained.
+
+// react types are imported rather than inlined; plugins using React
+// footers/popups already depend on @types/react.
+const EXTERNAL_IMPORTS = {
+  react: (name) => (name === 'React'
+    ? 'import type * as React from "react";'
+    : `import type { ${name} } from "react";`),
+};
+
+// Ambient namespaces that are not imported (so the checker cannot resolve them
+// from PluginApi.ts alone); inlined verbatim like MapRenderer above.
+const AMBIENT_NAMESPACES = {
+  MapData: path.join(PROJECT_ROOT, 'src', 'client', 'types', 'MapData.d.ts'),
+};
+
+const declaredNames = new Set(exportedTypes);
+for (const match of output.join('\n').matchAll(
+  /^export (?:declare )?(?:interface|type|class|namespace|function) (\w+)/gm
+)) {
+  declaredNames.add(match[1]);
+}
+
+const externalImports = new Set();
+let supportingHeaderAdded = false;
+function pushSupportingHeader() {
+  if (supportingHeaderAdded) return;
+  supportingHeaderAdded = true;
+  output.push(`
+// ============================================================================
+// Supporting Types (inlined from the modules PluginApi.ts depends on)
+// ============================================================================
+`);
+}
+
+function leftmostIdentifier(name) {
+  while (ts.isQualifiedName(name)) name = name.left;
+  while (ts.isPropertyAccessExpression(name)) name = name.expression;
+  return ts.isIdentifier(name) ? name : null;
+}
+
+function packageOf(fileName) {
+  const match = fileName.replace(/\\/g, '/').match(/\/node_modules\/(?:@types\/)?((?:@[^/]+\/)?[^/]+)\//);
+  return match ? match[1] : null;
+}
+
+function resolveReference(identifier) {
+  const name = identifier.text;
+  if (declaredNames.has(name)) return;
+
+  let symbol = checker.getSymbolAtLocation(identifier);
+  if (symbol && symbol.flags & ts.SymbolFlags.TypeParameter) return;
+  if (symbol && symbol.flags & ts.SymbolFlags.Alias) symbol = checker.getAliasedSymbol(symbol);
+
+  const declarations = symbol?.declarations ?? [];
+  if (declarations.length === 0) {
+    if (AMBIENT_NAMESPACES[name]) {
+      const body = fs.readFileSync(AMBIENT_NAMESPACES[name], 'utf-8')
+        .trim()
+        .replace(/^declare namespace/, 'export declare namespace');
+      pushSupportingHeader();
+      output.push('\n' + body);
+      declaredNames.add(name);
+      return;
+    }
+    console.error(`❌ Cannot resolve type '${name}' referenced by the plugin API`);
+    process.exit(1);
+  }
+  const declFile = declarations[0].getSourceFile();
+
+  // Built-in lib types (Record, Promise, HTMLElement, ...)
+  if (program.isSourceFileDefaultLibrary(declFile)) return;
+
+  const pkg = packageOf(declFile.fileName);
+  if (pkg) {
+    const makeImport = EXTERNAL_IMPORTS[pkg];
+    if (!makeImport) {
+      console.error(`❌ Type '${name}' comes from '${pkg}' - add it to EXTERNAL_IMPORTS or inline it`);
+      process.exit(1);
+    }
+    externalImports.add(makeImport(name));
+    declaredNames.add(name);
+    return;
+  }
+
+  declaredNames.add(name);
+  pushSupportingHeader();
+  for (const decl of declarations) {
+    const declName = decl.name?.text;
+    if (ts.isClassDeclaration(decl)) {
+      // Runtime classes (e.g. Client) are not part of the stable API surface;
+      // expose them opaquely instead of dragging in their whole implementation.
+      output.push(`\n/** Internal ${name} instance (not part of the stable plugin API) */\nexport type ${name} = any;`);
+      return;
+    }
+    if (declName !== name) {
+      console.error(`❌ Type '${name}' is imported under another name ('${declName}') - not supported`);
+      process.exit(1);
+    }
+    if (ts.isInterfaceDeclaration(decl) || ts.isTypeAliasDeclaration(decl)) {
+      emitDeclaration(decl, decl.getSourceFile());
+    } else if (ts.isEnumDeclaration(decl)) {
+      emitDeclaration(decl, decl.getSourceFile());
+      output[output.length - 1] = output[output.length - 1].replace(/^\nexport /, '\nexport declare ');
+    } else {
+      console.error(`❌ Don't know how to inline '${name}' (${ts.SyntaxKind[decl.kind]})`);
+      process.exit(1);
+    }
+  }
+}
+
+function collectReferences(node) {
+  let identifier = null;
+  if (ts.isTypeReferenceNode(node)) identifier = leftmostIdentifier(node.typeName);
+  else if (ts.isExpressionWithTypeArguments(node)) identifier = leftmostIdentifier(node.expression);
+  else if (ts.isTypeQueryNode(node)) identifier = leftmostIdentifier(node.exprName);
+  if (identifier) resolveReference(identifier);
+  ts.forEachChild(node, collectReferences);
+}
+
+for (let i = 0; i < emittedNodes.length; i++) {
+  collectReferences(emittedNodes[i]);
+}
+
+if (externalImports.size > 0) {
+  output.splice(1, 0, [...externalImports].sort().join('\n') + '\n');
+}
 
 // Add final exports
 output.push(`

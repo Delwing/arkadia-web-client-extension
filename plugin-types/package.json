@@ -12,5 +12,13 @@
     "typescript"
   ],
   "author": "Dargoth",
-  "license": "MIT"
+  "license": "MIT",
+  "peerDependencies": {
+    "@types/react": "*"
+  },
+  "peerDependenciesMeta": {
+    "@types/react": {
+      "optional": true
+    }
+  }
 }

@@ -10,6 +10,9 @@
  * @packageDocumentation
  */
 
+import type * as React from "react";
+import type { ReactElement } from "react";
+
 
 // ============================================================================
 // Plugin Interface
@@ -1421,10 +1424,6 @@ export interface ClientEvents {
  * Valid event names from ClientEvents
  */
 
-export // Event system types
-/**
- * Valid event names from ClientEvents
- */
 export type EventKey = keyof ClientEvents;
 
 /**
@@ -1449,6 +1448,16 @@ export type EventParams<K extends EventKey> = [
  */
 
 export type EventListener<K extends EventKey> = (...args: EventParams<K>) => void;
+
+/**
+ * Alias definition for command aliases
+ */
+
+export interface PluginAlias {
+    id: string;
+    pattern: RegExp;
+    callback: (matches?: RegExpMatchArray) => boolean;
+}
 
 /**
  * Triggers API - Manage pattern-based triggers
@@ -1600,6 +1609,85 @@ export interface LocationHighlighterOptions {
 }
 
 /**
+ * A location highlighter that can highlight rooms on the map.
+ * Multiple highlighters can be active simultaneously with different colors.
+ */
+
+export interface LocationHighlighter {
+    /**
+     * Add room(s) to the highlight set
+     * @param roomIds - Single room ID or array of room IDs to highlight
+     *
+     * @example
+     * highlighter.add(12345);
+     * highlighter.add([100, 200, 300]);
+     */
+    add(roomIds: number | number[]): void;
+    /**
+     * Remove room(s) from the highlight set
+     * @param roomIds - Single room ID or array of room IDs to remove
+     *
+     * @example
+     * highlighter.remove(12345);
+     * highlighter.remove([100, 200]);
+     */
+    remove(roomIds: number | number[]): void;
+    /**
+     * Clear all rooms from the highlight set
+     *
+     * @example
+     * highlighter.clear();
+     */
+    clear(): void;
+    /**
+     * Enable this highlighter (shows highlights on map)
+     *
+     * @example
+     * highlighter.enable();
+     */
+    enable(): void;
+    /**
+     * Disable this highlighter (hides highlights without removing them)
+     *
+     * @example
+     * highlighter.disable();
+     */
+    disable(): void;
+    /**
+     * Check if the highlighter is currently enabled
+     * @returns true if enabled, false if disabled
+     */
+    isEnabled(): boolean;
+    /**
+     * Set the highlight color
+     * @param color - CSS color string (e.g., "red", "#FF0000", "rgb(255,0,0)")
+     *
+     * @example
+     * highlighter.setColor("#FF5500");
+     * highlighter.setColor("cyan");
+     */
+    setColor(color: string): void;
+    /**
+     * Get the current highlight color
+     * @returns The current CSS color string
+     */
+    getColor(): string;
+    /**
+     * Get all room IDs currently in the highlight set
+     * @returns Array of room IDs
+     */
+    getRoomIds(): number[];
+    /**
+     * Destroy this highlighter and remove all its highlights from the map.
+     * After calling destroy(), the highlighter should not be used.
+     *
+     * @example
+     * highlighter.destroy();
+     */
+    destroy(): void;
+}
+
+/**
  * Drawing layer for map overlay shapes. "room" draws among the rooms,
  * "overlay" above them (default), "top" above everything including the
  * player marker.
@@ -1718,6 +1806,19 @@ export interface MapOverlayHandle {
     invalidate(): void;
     /** Remove the overlay from the map */
     remove(): void;
+}
+
+/**
+ * Area information exposed via Map API
+ */
+
+export interface AreaInfo {
+    /** Numeric area ID */
+    areaId: number;
+    /** Area display name */
+    areaName: string;
+    /** Array of rooms in this area */
+    rooms: MapData.Room[];
 }
 
 /**
@@ -4039,6 +4140,536 @@ export interface PluginApi {
      */
     AnsiAwareBuffer: typeof AnsiAwareBuffer;
 }
+
+// ============================================================================
+// Supporting Types (inlined from the modules PluginApi.ts depends on)
+// ============================================================================
+
+
+export declare namespace MapData {
+
+    export type direction =
+        "north"
+        | "south"
+        | "east"
+        | "west"
+        | "northwest"
+        | "northeast"
+        | "southeast"
+        | "southwest"
+        | "up"
+        | "down"
+        | "in"
+        | "out"
+
+    export interface Color {
+        alpha: number;
+        r: number;
+        g: number;
+        b: number;
+    }
+
+    export interface Line {
+        points: Point[];
+        attributes: LineAttribute;
+    }
+
+    export interface Point {
+        x: number;
+        y: number;
+    }
+
+    export interface LineAttribute {
+        color: Color;
+        style: string;
+        arrow: boolean;
+    }
+
+    export interface Room {
+        id: number;
+        area: number;
+        x: number;
+        y: number;
+        z: number;
+        weight: number;
+        roomChar: string;
+        name: string;
+        userData: Record<string, string>;
+        customLines: Record<string, Line>;
+        stubs: number[];
+        hash: string;
+        env: number;
+        exits: Record<direction, number>;
+        doors: Record<direction, 1 | 2 | 3>;
+        specialExits: Record<string, number>;
+        exitLocks?: number[];
+        exitWeights?: Record<string, number>;
+        mSpecialExitLocks?: number[];
+    }
+
+    export interface Label {
+        labelId: number;
+        areaId: number;
+        pixMap: string;
+        X: number;
+        Y: number;
+        Z: number;
+        Width: number;
+        Height: number;
+        Text: string;
+        FgColor: Color;
+        BgColor: Color;
+    }
+
+    export interface Area {
+        areaName: string;
+        areaId: string;
+        rooms: Room[];
+        labels: Label[];
+    }
+
+    export type Map = Area[]
+
+    export interface Env {
+        envId: string;
+        colors: number[];
+    }
+
+}
+
+export type FooterButtonTone = "neutral" | "accent" | "danger";
+
+export type CommandHookCallback = (command: string, echo: boolean, options?: CommandOptions) => string | null | undefined;
+
+/**
+ * Combined context for onClick handler
+ */
+
+export interface ButtonMacroClickContext {
+    button: AnyButtonSetting;
+    client: Client;
+    config: Record<string, any>;
+    /** State context - only present for stateful macros */
+    stateCtx?: MacroStateContext;
+}
+
+export interface MobileButtonSetting extends BaseButtonSetting {
+    activeColor?: string;
+    syncWithDirections?: boolean;
+}
+
+/** Internal Client instance (not part of the stable plugin API) */
+export type Client = any;
+
+export interface MacroConfigField {
+    name: string;
+    type: 'text' | 'textarea' | 'number' | 'select' | 'checkbox';
+    label: string;
+    options?: {
+        value: string;
+        label: string;
+    }[];
+    defaultValue?: string | number | boolean;
+}
+
+/**
+ * Defines a state for stateful macros (toggle/mode buttons)
+ */
+
+export interface MacroState {
+    id: string;
+    label: string;
+    color?: string;
+}
+
+export interface TriggerMacroContext {
+    client: Client;
+    line: AnsiAwareBuffer;
+    match: RegExpMatchArray;
+    matchRange: TextRange;
+    config: Record<string, any>;
+}
+
+export interface Settings {
+    packageHelper: boolean;
+    packageInContainer: boolean;
+    inlineCompassRose: number;
+    compassBackExits: boolean;
+    shortenExits: boolean;
+    shortExitsPrefix?: string;
+    shortExitsColor?: string;
+    shortExitsSeparator?: string;
+    shortExitsBackgroundColor?: string;
+    prettyContainers: boolean;
+    containerColumns: number;
+    containerOpen: boolean;
+    containerClose: boolean;
+    collectMode: number;
+    collectTiming: number;
+    collectCopper: boolean;
+    collectSilver: boolean;
+    collectGold: boolean;
+    collectGems: boolean;
+    collectExtra: string[];
+    collectOverrides: CollectOverride[];
+    language: string;
+    languageAdjective: string;
+    languageAliases: {
+        alias: string;
+        adjective: string;
+        language: string;
+    }[];
+    herbPreUseCommand: string;
+    herbPostUseCommand: string;
+    herbWieleCount: number;
+    attackCommand: string;
+    supportCommand: string;
+    drawWeaponCommand: string;
+    fullHpMessage: boolean;
+    lowHpAlert: number;
+    letterLineWidth: number;
+    guilds?: string[];
+    enemyGuilds?: string[];
+    allyGuilds?: string[];
+    guildColors?: Record<string, string | undefined>;
+    enemyBindsKeepUnchanged: boolean;
+    enemyBindsShowMode: 'always' | 'whenBound' | 'never';
+    enemyBindsEnabledSlots: [
+        boolean,
+        boolean,
+        boolean
+    ];
+    /** Command F1-F3 send instead of the usual attack; `{wrog}` is the enemy, `{atak}`/`{blok}` the built-ins, `;` separates steps. */
+    enemyBindsAttackCommand: string;
+    /** Command the block binds send instead of `zablokuj {wrog}`; same placeholders. */
+    enemyBindsBlockCommand: string;
+    favoriteMagicTypes?: string[];
+    favoriteMagicKeys?: string[];
+    magicsColor?: string;
+    magicKeysColor?: string;
+    cuttingPreAction?: string;
+    cuttingPostAction?: string;
+    sunTracker: boolean;
+    carriageTeamTickets: boolean;
+    zlomSilver?: {
+        color: string;
+        off?: boolean;
+    };
+    dobCommand1: string;
+    dobCommand2: string;
+    dobCommand3: string;
+    opCommand1: string;
+    opCommand2: string;
+    opCommand3: string;
+}
+
+export type UiSettings = ShellSettings & RenderSettings & MapSettings & BehaviorSettings & ChromeSettings;
+
+export interface PluginLocationNote {
+    pluginId: string;
+    pluginName: string;
+    roomId: number;
+    note: string;
+    /** Set by the client itself (e.g. the Wiedza hints), not by an installed plugin. */
+    builtin?: boolean;
+}
+
+export interface PersonListEntry extends PersonEntry {
+    source: 'remote' | 'local' | 'edited';
+    ignored: boolean;
+    isEnemy: boolean;
+    isAlly: boolean;
+    color?: string; // Individual color override (hex value)
+    originalEntry?: PersonEntry;
+    eventId?: string;
+}
+
+export interface CommandOptions {
+    preserveCase?: boolean;
+}
+
+export interface CommandOptions {
+    preserveCase?: boolean;
+    autoLowercaseCommands?: boolean;
+}
+
+export type AnyButtonSetting = MobileButtonSetting | DesktopButtonSetting;
+
+/**
+ * Context passed to stateful macro onClick handlers
+ */
+
+export interface MacroStateContext {
+    /** Current state ID */
+    state: string;
+    /** Set a new state by ID */
+    setState: (stateId: string) => void;
+    /** Cycle to the next state (wraps around) */
+    cycleState: () => void;
+    /** Get the index of current state */
+    stateIndex: number;
+}
+
+export interface BaseButtonSetting extends ButtonMacroConfig {
+    label: string;
+    color: string;
+    fontColor?: string;
+    holdEnabled?: boolean;
+    hold?: ButtonMacroConfig;
+}
+
+export interface CollectOverride {
+    enemy: string;
+    collectCopper: boolean;
+    collectSilver: boolean;
+    collectGold: boolean;
+    collectGems: boolean;
+    collectExtra: string[];
+}
+
+/** Document/browser-shell flags — relevant to any UI's outer frame. */
+
+export interface ShellSettings {
+    wakeLock: boolean;
+    fightTitleIcon: boolean;
+    hapticFeedback: boolean;
+}
+
+/** Terminal output + input rendering — portable across UIs. */
+
+export interface RenderSettings {
+    fontFamily: UiFontSelection;
+    customFontUrl: string;
+    customFontFamily: string;
+    xtermPalette: 'arkadia' | 'proper';
+    colorTheme: ColorTheme;
+    customThemeColor?: string;
+    outputBackground: string;
+    outputBottomPadding: number;
+    showTimestamps: boolean;
+    /** Set apart whole reply blocks (inventory, loot, descriptions, …). */
+    highlightMessageBlocks: boolean;
+    commandEcho: boolean;
+    clearInputOnSend: boolean;
+    autoLowercaseCommands: boolean;
+    soundCategories?: SoundCategories;
+    customBeepSoundKey?: string;
+}
+
+/** Map rendering — portable across UIs that draw a map. */
+
+export interface MapSettings {
+    mapRoomSize: number;
+    mapLineWidth: number;
+    mapPlayerMarkerStrokeColor: string;
+    mapPlayerMarkerStrokeAlpha: number;
+    mapPlayerMarkerFillColor: string;
+    mapPlayerMarkerFillAlpha: number;
+    mapPlayerMarkerStrokeWidth: number;
+    mapPlayerMarkerSizeFactor: number;
+    mapPlayerMarkerDashEnabled: boolean;
+    mapHighlightStrokeAlpha: number;
+    mapHighlightFillAlpha: number;
+    mapHighlightStrokeWidth: number;
+    mapHighlightSizeFactor: number;
+    mapHighlightDashEnabled: boolean;
+    mapHighlightShape: MapHighlightShape;
+    mapRoomShape: MapRoomShape;
+    mapBackgroundColor: string;
+    mapLineColor: string;
+    mapCurrentRoomColor: string;
+    pathFindingAlgorithm: PathFindingAlgorithm;
+    highlightCurrentRoom: boolean;
+    labelRenderMode: 'image' | 'data' | 'none';
+    transparentLabels: boolean;
+    emojiLabels: boolean;
+}
+
+/** Movement / command / team behaviour the client and scripts act on. */
+
+export interface BehaviorSettings {
+    explorationMode: boolean;
+    instantMove: boolean;
+    drinkableAsFunctionalBind: boolean;
+    gateAsFunctionalBind: boolean;
+    /** Repeat a refused ride to get off and walk it instead, as two commands. */
+    dismountOnRefusedRide: boolean;
+    /** Offer the next step, or the way out, on the functional bind while leading by carriage. */
+    carriageRouteBinds: boolean;
+    teamNumberingMode: 'letters' | 'numbers';
+    objectContextMenuCommands: string[];
+    /**
+     * Hold back push notifications while the client tab is on screen.
+     *
+     * Off by default: someone who paired a phone generally wants the alert
+     * whether or not a tab happens to be focused — walking to the kitchen does
+     * not hide the tab.
+     */
+    pushOnlyWhenHidden: boolean;
+}
+
+/** Stock-UI chrome — layout/panels specific to the bundled web UI. */
+
+export interface ChromeSettings extends DeviceViewSettings {
+    objectsFontSize: number;
+    /** @deprecated Migrated to mobileButtonSettings.buttonSize */
+    buttonSize?: number;
+    showButtons: boolean;
+    /** Mic button in the command bar. Off leaves the bar without dictation. */
+    showVoiceButton: boolean;
+    /** Dimmed hint after the caret of what Tab would complete. */
+    tabCompletionHint: boolean;
+    /** How Tab and the right arrow take a completion (see CommandLineEngine's TabCompletionMode). */
+    tabCompletionMode: 'cycle' | 'word' | 'whole';
+    mapHeight: number;
+    mapPosition: MapPosition;
+    footerMode: number;
+    footerComponents: FooterComponentConfig[];
+    /** The player's own buttons beside the command line; empty out of the box. */
+    footerButtons: FooterButtonConfig[];
+    /**
+     * Pull warn/danger chips to the front of the footer (danger first), each
+     * group in the configured order. Off by default: chips keep their
+     * configured slot whatever their tone, so they do not jump around.
+     */
+    footerUrgentChipsFirst: boolean;
+    /**
+     * Zoom factors for the two footer rows (1 = stock size): the location-bind
+     * pills and the status line (vitals and chips). Applied as CSS `zoom`, so
+     * text, heights, icons and padding grow together (footer.css).
+     */
+    footerBindsScale: number;
+    footerStatusScale: number;
+    /**
+     * The phone footer: two fixed-height scrolling rails plus compact stat
+     * meters, instead of the desktop footer's one wrapping row. On by default;
+     * off restores the old layout on narrow screens. Desktop is unaffected
+     * either way. See src/web/mobileFooter.ts.
+     */
+    mobileFooterCompact: boolean;
+    /**
+     * How that footer folds: 'toggle' rests folded with the expander offered,
+     * 'expanded' / 'collapsed' pin it open or shut and drop the expander.
+     */
+    mobileFooterExpand: MobileFooterExpandSetting;
+    keepMultibindsVisible: boolean;
+    /**
+     * Whether the location-bind pills lead with their keyboard shortcut.
+     * 'auto' shows them only where a physical keyboard can be found (see
+     * @shared/dom/hardwareKeyboard); 'always' / 'never' settle it by hand.
+     */
+    multibindKeyHints: MultibindKeyHints;
+    splitViewHeight?: number;
+    showCombatTimer?: boolean;
+    showTransportLabel?: boolean;
+    objectListBackgroundColor: string;
+    objectListBackgroundAlpha: number;
+    alwaysVisibleBars: string[];
+    barOrder: string[];
+    /**
+     * Speech synthesis for `speak` trigger macros (and `tts:speak` from plugins).
+     * Device-scoped on purpose: the installed voices differ per device, so a
+     * voice picked on the desktop means nothing on the phone.
+     */
+    ttsEnabled: boolean;
+    /** `voiceURI` of the chosen voice; empty picks a Polish voice, else the browser default. */
+    ttsVoice: string;
+    ttsRate: number;
+    ttsPitch: number;
+    ttsVolume: number;
+    /** A new message cuts off the one being read instead of queueing after it. */
+    ttsInterrupt: boolean;
+}
+
+export interface PersonEntry {
+    name: string;
+    description: string;
+    guild: string;
+}
+
+export interface DesktopButtonSetting extends BaseButtonSetting {
+    id: string;
+    command: string; // required for main action
+    fontColor: string; // required (not optional)
+    fontSize: number;
+    width: number;
+    height: number;
+    x: number;
+    y: number;
+    backgroundOpacity: number;
+    listPosition?: ListPosition;
+    listGrowDirection?: ListGrowDirection;
+    listCloseOnlyByButton?: boolean;
+}
+
+export interface ButtonMacroConfig {
+    macroType: MacroType | string; // string allows plugin macros like "plugin:..."
+    command?: string;
+    direction?: string;
+    enemySlot?: number; // For attackEnemy and blockEnemy macros (0-2)
+    pluginConfig?: Record<string, any>;
+    steps?: ButtonMacroConfig[]; // For compound macro: sequential steps to execute
+}
+
+export type UiFontSelection = 'default' | 'fira-code' | 'jetbrains-mono' | 'cascadia-mono' | 'vera-sans-mono' | 'custom';
+
+export type ColorTheme = 'default' | 'fantasy' | 'forest' | 'icy' | 'gray' | 'dark-neutral' | 'light-parchment' | 'light-silver' | 'custom-dark';
+
+export type SoundCategories = Partial<Record<SoundCategory, string | null>>;
+
+export type MapHighlightShape = 'match' | 'rectangle' | 'roundedRectangle' | 'circle';
+
+export type MapRoomShape = 'rectangle' | 'circle' | 'roundedRectangle';
+
+export type PathFindingAlgorithm = 'dijkstra' | 'astar';
+
+/**
+ * Device-scoped view preferences. Physically stored in the device-scoped
+ * `uiSettings` blob (they are part of `ChromeSettings`), so font size, map zoom,
+ * and output-buffer size stay tuned per physical device instead of syncing
+ * across all of a user's devices like the portable render/map slices do.
+ */
+
+export interface DeviceViewSettings {
+    contentFontSize: number;
+    mapScale: number;
+    outputMaxElements: number;
+}
+
+export type MapPosition = 'top-overlay' | 'bottom-overlay' | 'right-overlay' | 'left-overlay' | 'top' | 'bottom' | 'right' | 'left';
+
+export interface FooterComponentConfig {
+    id: string;
+    visible: boolean;
+    order: number;
+}
+
+/** A button the player put next to the command line (see footerButtonRegistry). */
+
+export interface FooterButtonConfig {
+    id: string;
+    label: string;
+    /** Sent on click: a command, an alias, anything the command line accepts. */
+    command: string;
+    tone?: 'neutral' | 'accent' | 'danger';
+    /** Flag this button lights up from, flipped by a trigger, script or plugin. */
+    state?: string;
+    /** Kept in the settings list but left out of the footer. */
+    hidden?: boolean;
+    order?: number;
+}
+
+export type MobileFooterExpandSetting = 'toggle' | 'expanded' | 'collapsed';
+
+export type MultibindKeyHints = 'auto' | 'always' | 'never';
+
+export type ListPosition = 'top' | 'bottom' | 'left' | 'right';
+
+export type ListGrowDirection = 'horizontal' | 'vertical';
+
+export type MacroType = 'functional' | 'zList' | 'zaList' | 'wList' | 'przeList' | 'idzList' | 'command' | 'specialExit' | 'kierunek' | 'zerknij' | 'wesprzyj' | 'moveMode' | 'toggleButtons' | 'attackEnemy' | 'blockEnemy' | 'attackAllEnemies' | 'mute' | 'unmute' | 'empty' | 'compound';
+
+export type SoundCategory = 'attack' | 'hp' | 'fishing' | 'lamp' | 'gear' | 'transport' | 'spell' | 'block' | 'weapon' | 'stun';
 
 // ============================================================================
 // Exports
