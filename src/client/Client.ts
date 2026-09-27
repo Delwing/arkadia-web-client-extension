@@ -13,7 +13,7 @@ import TeamManager from "./TeamManager";
 import ObjectManager from "./ObjectManager";
 import {attachGmcpListener, gmcp} from "./gmcp";
 import {characterStorage} from "@modules/core/storage";
-import {getBehaviorSettings, getRenderSettings, onRenderSettingsChange} from "@modules/core/settings";
+import {getBehaviorSettings, getRenderSettings, onBehaviorSettingsChange, onRenderSettingsChange} from "@modules/core/settings";
 import {defaultSettings} from "@modules/core/defaultSettings";
 import eventBus from "@modules/core/eventBus";
 import {eventNow, runWithEventTime} from "@shared/eventClock";
@@ -180,6 +180,9 @@ export default class Client {
             }
         });
 
+        this.applyTriggerPrefilter(getBehaviorSettings().triggerPrefilter);
+        onBehaviorSettingsChange((behavior) => this.applyTriggerPrefilter(behavior.triggerPrefilter));
+
         this.on('gmcp.char.colors', (data) => {
             this.defaultColor = data?.text ?? 255;
         });
@@ -216,6 +219,15 @@ export default class Client {
         if (initialRender.xtermPalette === 'arkadia' || initialRender.xtermPalette === 'proper') {
             setXtermPalette(initialRender.xtermPalette);
         }
+    }
+
+    /**
+     * 'off' runs every regex trigger, 'verify' runs every one and reports when the
+     * prefilter would have skipped a match; anything else (the default) is 'on'.
+     */
+    private applyTriggerPrefilter(mode: string | undefined): void {
+        this.Triggers.literalPrefilter = mode !== 'off' && mode !== 'verify';
+        this.Triggers.literalPrefilterVerify = mode === 'verify';
     }
 
     on<K extends EventKey>(event: K, listener: ClientEventListener<K>, options?: ListenerOptions): () => void {

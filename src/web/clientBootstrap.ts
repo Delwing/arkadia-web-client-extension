@@ -19,7 +19,7 @@ import { bridgeSendCommand, bridgeNpcStore } from "./clientBootstrapBridges";
 import { registerEnemyStatusFilter } from "./filters/enemyStatusFilter";
 import { installAltCodeGuard } from "@shared/dom/altCodeGuard.ts";
 import { installSessionHandoff, setSessionHandoffUser } from "./sessionHandoff";
-import { installTriggerPrefilterFlag } from "./triggerPrefilterFlag";
+import { installTriggerPrefilterDebug } from "./triggerPrefilterDebug";
 
 export interface GameClientBootstrap {
     client: Client;
@@ -58,7 +58,7 @@ export function bootstrapGameClient(opts: { installPorts: () => void }): GameCli
 
     const client = new Client(mudClient);
     registerScripts(client);
-    installTriggerPrefilterFlag(client);
+    installTriggerPrefilterDebug();
     installSessionHandoff(client);
     // Alt+numpad binds would otherwise leave a Windows Alt-code symbol in the input.
     installAltCodeGuard();
