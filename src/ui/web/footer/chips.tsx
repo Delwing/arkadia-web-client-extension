@@ -311,7 +311,7 @@ export function WeaponChip() {
   useClientEvent("client.disconnect", () => setInCombat(false));
   if (drawn === null) return null;
   const tone: ChipTone | undefined = inCombat && !drawn ? "danger" : undefined;
-  return <Chip icon={<ChipIcon name="sword" />} label="Bron" value={drawn ? "dobyta" : "schowana"} sizeTo={WEAPON_SIZES} tone={tone} />;
+  return <Chip icon={<ChipIcon name="sword" />} label="Bron" value={drawn ? "dobyta" : "schowana"} sizeTo={WEAPON_SIZES} sizeCenter tone={tone} />;
 }
 
 /** Cover cooldown + guard-release toggle (the /puszczaj alias). Click toggles guard. */
