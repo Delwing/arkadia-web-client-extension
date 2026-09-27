@@ -238,6 +238,26 @@ export class EmbeddedMap {
                 if (typeof parsed.mapPlayerMarkerDashEnabled === 'boolean') {
                     settings.playerMarker.dashEnabled = parsed.mapPlayerMarkerDashEnabled;
                 }
+                if (settings.highlight) {
+                    if (typeof parsed.mapHighlightStrokeAlpha === 'number') {
+                        settings.highlight.strokeAlpha = parsed.mapHighlightStrokeAlpha;
+                    }
+                    if (typeof parsed.mapHighlightFillAlpha === 'number') {
+                        settings.highlight.fillAlpha = parsed.mapHighlightFillAlpha;
+                    }
+                    if (typeof parsed.mapHighlightStrokeWidth === 'number') {
+                        settings.highlight.strokeWidth = parsed.mapHighlightStrokeWidth;
+                    }
+                    if (typeof parsed.mapHighlightSizeFactor === 'number') {
+                        settings.highlight.sizeFactor = parsed.mapHighlightSizeFactor;
+                    }
+                    if (typeof parsed.mapHighlightDashEnabled === 'boolean') {
+                        settings.highlight.dashEnabled = parsed.mapHighlightDashEnabled;
+                    }
+                    if (parsed.mapHighlightShape === 'match' || parsed.mapHighlightShape === 'rectangle' || parsed.mapHighlightShape === 'circle' || parsed.mapHighlightShape === 'roundedRectangle') {
+                        settings.highlight.shape = parsed.mapHighlightShape;
+                    }
+                }
                 if (parsed.mapRoomShape === 'rectangle' || parsed.mapRoomShape === 'circle' || parsed.mapRoomShape === 'roundedRectangle') {
                     settings.roomShape = parsed.mapRoomShape;
                 }
