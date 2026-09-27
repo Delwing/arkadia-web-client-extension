@@ -17,6 +17,7 @@ export const defaultShellSettings: ShellSettings = {
     wakeLock: true,
     fightTitleIcon: true,
     hapticFeedback: true,
+    mediaSession: false,
 };
 
 export const defaultRenderSettings: RenderSettings = {
@@ -88,7 +89,7 @@ export const defaultBehaviorSettings: BehaviorSettings = {
 // Explicit key lists (include optional fields, so accessors pick them out of a
 // stored blob even when the default omits them).
 export const shellSettingsKeys = [
-    'wakeLock', 'fightTitleIcon', 'hapticFeedback',
+    'wakeLock', 'fightTitleIcon', 'hapticFeedback', 'mediaSession',
 ] as const satisfies readonly (keyof ShellSettings)[];
 
 export const renderSettingsKeys = [

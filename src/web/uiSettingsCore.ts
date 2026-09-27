@@ -573,6 +573,9 @@ export function load(): UiSettings {
             const wakeLock = typeof parsed.wakeLock === 'boolean'
                 ? parsed.wakeLock
                 : defaultUiSettings.wakeLock;
+            const mediaSession = typeof parsed.mediaSession === 'boolean'
+                ? parsed.mediaSession
+                : defaultUiSettings.mediaSession;
             const commandEcho = typeof parsed.commandEcho === 'boolean'
                 ? parsed.commandEcho
                 : defaultUiSettings.commandEcho;
@@ -652,6 +655,7 @@ export function load(): UiSettings {
                 carriageRouteBinds,
                 pushOnlyWhenHidden,
                 wakeLock,
+                mediaSession,
                 commandEcho,
                 showTimestamps,
                 outputBottomPadding,
