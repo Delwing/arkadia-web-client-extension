@@ -1,14 +1,73 @@
 import Client from "../Client";
 import { createColorFormat } from "@modules/core/Colors";
-import { AnsiAwareBuffer } from "@client/ansi/FormatState";
+import { AnsiAwareBuffer, FormatStateSnapshot } from "@client/ansi/FormatState";
+import { characterStorage } from "@modules/core/storage";
+import {
+    LUA_GAGS_COLORS_STORAGE_KEY,
+    LUA_GAGS_STORAGE_KEY,
+    normalizeLuaGagsColors,
+    normalizeLuaGagsDeleteLines,
+} from "@client/luaGagsSettings";
 
-// Spell colors
-const COLOR_ME = createColorFormat("#ff0000"); // red
-const COLOR_OTHERS = createColorFormat("#ff00ff"); // magenta
 const COLOR_WHITE = createColorFormat("#ffffff");
 const COLOR_GREEN = createColorFormat("#00ff00");
 const COLOR_TOMATO = createColorFormat("#ff6347");
 const COLOR_WARNING_BG = createColorFormat("#b22222"); // firebrick
+// Stun and blindness alerts: states you are in, so they keep their colour whatever the spell settings say.
+const COLOR_ALERT = createColorFormat("#ff0000");
+const WARNING_FORMAT = { foreground: COLOR_WHITE.foreground, background: COLOR_WARNING_BG.foreground };
+
+// Spell lines follow the combat gag settings (keep / delete / prefix, plus the
+// prefix colour) under these two line types.
+type SpellLineType = "czary_we_mnie" | "czary_innych";
+
+interface SpellFormatOptions {
+    target?: string;
+    /** The line carries a warning, so it is never deleted - only left without a prefix. */
+    important?: boolean;
+}
+
+function spellColor(type: SpellLineType): FormatStateSnapshot {
+    return createColorFormat(normalizeLuaGagsColors(characterStorage.get(LUA_GAGS_COLORS_STORAGE_KEY))[type]);
+}
+
+function formatSpell(line: AnsiAwareBuffer, type: SpellLineType, label: string, options: SpellFormatOptions = {}): AnsiAwareBuffer {
+    const mode = normalizeLuaGagsDeleteLines(characterStorage.get(LUA_GAGS_STORAGE_KEY))[type];
+    if (mode === 1 && !options.important) {
+        return line.markAsDeleted();
+    }
+    if (mode !== 2) {
+        return line;
+    }
+
+    const color = spellColor(type);
+    const result = new AnsiAwareBuffer();
+    result.append("\n[", COLOR_WHITE);
+    result.append(` ${label} `, color);
+    result.append("]", COLOR_WHITE);
+    result.append(" ");
+    result.appendBuffer(line);
+    result.append("\n\n");
+
+    const target = options.target;
+    if (target) {
+        const targetIndex = result.text.indexOf(target);
+        if (targetIndex !== -1) {
+            result.color([targetIndex, targetIndex + target.length], color);
+        }
+    }
+    return result;
+}
+
+/** Appends a warning on its own line, whether or not the spell line got a prefix. */
+function appendWarning(result: AnsiAwareBuffer, indent: string, text: string, format: FormatStateSnapshot): AnsiAwareBuffer {
+    if (!result.text.endsWith("\n")) {
+        result.append("\n");
+    }
+    result.append(indent);
+    result.append(text, format);
+    return result;
+}
 
 // Damage level mappings
 const DAMAGE_LEVELS: Record<string, number> = {
@@ -38,83 +97,24 @@ const DAMAGE_LEVELS_PLURAL: Record<string, number> = {
     "makabrycznymi": 6,
 };
 
-function formatSpellOnMe(line: AnsiAwareBuffer, spellName: string): AnsiAwareBuffer {
-    const prefix = new AnsiAwareBuffer();
-    prefix.append("\n", COLOR_WHITE);
-    prefix.append("[", COLOR_WHITE);
-    prefix.append(` ${spellName} `, COLOR_ME);
-    prefix.append("]", COLOR_WHITE);
-    prefix.append(" ");
-
-    const result = new AnsiAwareBuffer();
-    result.appendBuffer(prefix);
-    result.appendBuffer(line);
-    result.append("\n\n");
-    return result;
+function formatSpellOnMe(line: AnsiAwareBuffer, spellName: string, options: SpellFormatOptions = {}): AnsiAwareBuffer {
+    return formatSpell(line, "czary_we_mnie", spellName, options);
 }
 
-function formatSpellOnOthers(line: AnsiAwareBuffer, spellName: string, target?: string): AnsiAwareBuffer {
-    const prefix = new AnsiAwareBuffer();
-    prefix.append("\n[", COLOR_WHITE);
-    prefix.append(` ${spellName} `, COLOR_OTHERS);
-    prefix.append("]", COLOR_WHITE);
-    prefix.append(" ");
+function formatSpellOnOthers(line: AnsiAwareBuffer, spellName: string, target?: string, options: SpellFormatOptions = {}): AnsiAwareBuffer {
+    return formatSpell(line, "czary_innych", spellName, { ...options, target });
+}
 
-    const result = new AnsiAwareBuffer();
-    result.appendBuffer(prefix);
-    result.appendBuffer(line);
-    result.append("\n\n");
-
-    // Highlight target if provided
-    if (target) {
-        const text = result.text;
-        const targetIndex = text.indexOf(target);
-        if (targetIndex !== -1) {
-            result.color([targetIndex, targetIndex + target.length], COLOR_OTHERS);
-        }
-    }
-    return result;
+function damageLevel(dmgText: string): number {
+    return DAMAGE_LEVELS[dmgText] ?? DAMAGE_LEVELS_ADJECTIVE[dmgText] ?? DAMAGE_LEVELS_PLURAL[dmgText] ?? -1;
 }
 
 function formatDamageSpellOnMe(line: AnsiAwareBuffer, spellName: string, dmgText: string): AnsiAwareBuffer {
-    const dmg = DAMAGE_LEVELS[dmgText] ?? DAMAGE_LEVELS_ADJECTIVE[dmgText] ?? DAMAGE_LEVELS_PLURAL[dmgText] ?? -1;
-
-    const prefix = new AnsiAwareBuffer();
-    prefix.append("\n", COLOR_WHITE);
-    prefix.append("[", COLOR_WHITE);
-    prefix.append(` ${spellName} ${dmg}/6 `, COLOR_ME);
-    prefix.append("]", COLOR_WHITE);
-    prefix.append(" ");
-
-    const result = new AnsiAwareBuffer();
-    result.appendBuffer(prefix);
-    result.appendBuffer(line);
-    result.append("\n\n");
-    return result;
+    return formatSpellOnMe(line, `${spellName} ${damageLevel(dmgText)}/6`);
 }
 
 function formatDamageSpellOnOthers(line: AnsiAwareBuffer, spellName: string, dmgText: string, target?: string): AnsiAwareBuffer {
-    const dmg = DAMAGE_LEVELS[dmgText] ?? DAMAGE_LEVELS_ADJECTIVE[dmgText] ?? DAMAGE_LEVELS_PLURAL[dmgText] ?? -1;
-
-    const prefix = new AnsiAwareBuffer();
-    prefix.append("\n[", COLOR_WHITE);
-    prefix.append(` ${spellName} ${dmg}/6 `, COLOR_OTHERS);
-    prefix.append("]", COLOR_WHITE);
-    prefix.append(" ");
-
-    const result = new AnsiAwareBuffer();
-    result.appendBuffer(prefix);
-    result.appendBuffer(line);
-    result.append("\n\n");
-
-    if (target) {
-        const text = result.text;
-        const targetIndex = text.indexOf(target);
-        if (targetIndex !== -1) {
-            result.color([targetIndex, targetIndex + target.length], COLOR_OTHERS);
-        }
-    }
-    return result;
+    return formatSpellOnOthers(line, `${spellName} ${damageLevel(dmgText)}/6`, target);
 }
 
 export default function initSpells(client: Client) {
@@ -291,16 +291,9 @@ export default function initSpells(client: Client) {
         (line) => {
             client.sendEvent("stunStart" as any);
 
-            const result = new AnsiAwareBuffer();
-            result.append("\n", COLOR_WHITE);
-            result.append("[", COLOR_WHITE);
-            result.append(" WICHURA OGL ", COLOR_ME);
-            result.append("]", COLOR_WHITE);
-            result.append(" ");
-            result.appendBuffer(line);
+            const result = formatSpellOnMe(line, "WICHURA OGL", { important: true });
+            appendWarning(result, "", "[   OGLUCH   ] ----- JESTES OGLUSZONY -----", COLOR_ALERT);
             result.append("\n\n");
-            result.append("[   OGLUCH   ] ----- JESTES OGLUSZONY -----\n\n", COLOR_ME);
-
             return result;
         },
         tag
@@ -321,14 +314,9 @@ export default function initSpells(client: Client) {
         (line) => {
             client.sendEvent("stunStart" as any);
 
-            const result = new AnsiAwareBuffer();
-            result.append("\n[");
-            result.append(" OSLEPIENIE ", COLOR_ME);
-            result.append("] ");
-            result.appendBuffer(line);
+            const result = formatSpellOnMe(line, "OSLEPIENIE", { important: true });
+            appendWarning(result, "", "[   OSLEPIENIE   ] ----- JESTES OSLEPIONY -----", COLOR_ALERT);
             result.append("\n\n");
-            result.append("[   OSLEPIENIE   ] ----- JESTES OSLEPIONY -----\n\n", COLOR_ME);
-
             return result;
         },
         tag
@@ -595,10 +583,8 @@ export default function initSpells(client: Client) {
         (line) => {
             client.sendEvent("sound:category", "spell");
 
-            const result = formatSpellOnMe(line, "AURA BOLU");
-            result.append("\t\t\t");
-            result.append(" <><> UWAGA NA SWOJE HP <><> ", { foreground: COLOR_WHITE.foreground, background: COLOR_WARNING_BG.foreground });
-            return result;
+            const result = formatSpellOnMe(line, "AURA BOLU", { important: true });
+            return appendWarning(result, "\t\t\t", " <><> UWAGA NA SWOJE HP <><> ", WARNING_FORMAT);
         },
         tag
     );
@@ -609,10 +595,8 @@ export default function initSpells(client: Client) {
         (line) => {
             client.sendEvent("sound:category", "spell");
 
-            const result = formatSpellOnMe(line, "AURA BOLU");
-            result.append("\t\t\t");
-            result.append(" <><> UWAGA NA SWOJE HP <><> ", { foreground: COLOR_WHITE.foreground, background: COLOR_WARNING_BG.foreground });
-            return result;
+            const result = formatSpellOnMe(line, "AURA BOLU", { important: true });
+            return appendWarning(result, "\t\t\t", " <><> UWAGA NA SWOJE HP <><> ", WARNING_FORMAT);
         },
         tag
     );
@@ -623,10 +607,8 @@ export default function initSpells(client: Client) {
         (line) => {
             client.sendEvent("sound:category", "spell");
 
-            const result = formatSpellOnMe(line, "AURA BOLU");
-            result.append("\t\t\t");
-            result.append(" <><> UWAGA NA SWOJE HP <><> ", { foreground: COLOR_WHITE.foreground, background: COLOR_WARNING_BG.foreground });
-            return result;
+            const result = formatSpellOnMe(line, "AURA BOLU", { important: true });
+            return appendWarning(result, "\t\t\t", " <><> UWAGA NA SWOJE HP <><> ", WARNING_FORMAT);
         },
         tag
     );
@@ -663,10 +645,8 @@ export default function initSpells(client: Client) {
     client.Triggers.registerTrigger(
         /^Otaczajaca (?<mag>.+?) krwawa poswiata znika\.$/,
         (line, matches) => {
-            const result = formatSpellOnOthers(line, "AURA BOLU KONIEC", matches.groups?.mag);
-            result.append("\t\t\t");
-            result.append(" <><> KONIEC AURY BOLU <><> ", COLOR_OTHERS);
-            return result;
+            const result = formatSpellOnOthers(line, "AURA BOLU KONIEC", matches.groups?.mag, { important: true });
+            return appendWarning(result, "\t\t\t", " <><> KONIEC AURY BOLU <><> ", spellColor("czary_innych"));
         },
         tag
     );
@@ -679,10 +659,8 @@ export default function initSpells(client: Client) {
         (line) => {
             client.sendEvent("sound:category", "spell");
 
-            const result = formatSpellOnMe(line, "PROMIEN MROZU");
-            result.append("\t\t\t");
-            result.append(" <><> WYCOFAJ SIE <><> ", { foreground: COLOR_WHITE.foreground, background: COLOR_WARNING_BG.foreground });
-            return result;
+            const result = formatSpellOnMe(line, "PROMIEN MROZU", { important: true });
+            return appendWarning(result, "\t\t\t", " <><> WYCOFAJ SIE <><> ", WARNING_FORMAT);
         },
         tag
     );
@@ -691,10 +669,8 @@ export default function initSpells(client: Client) {
     client.Triggers.registerTrigger(
         /^Struga trupiobladego swiatla wydobywajacego sie z palcow .+? rozplywa sie po twoim ciele,/,
         (line) => {
-            const result = formatSpellOnMe(line, "PROMIEN MROZU");
-            result.append("\t\t\t");
-            result.append(" <><> WYCOFAJ SIE <><> ", { foreground: COLOR_WHITE.foreground, background: COLOR_WARNING_BG.foreground });
-            return result;
+            const result = formatSpellOnMe(line, "PROMIEN MROZU", { important: true });
+            return appendWarning(result, "\t\t\t", " <><> WYCOFAJ SIE <><> ", WARNING_FORMAT);
         },
         tag
     );
@@ -723,10 +699,8 @@ export default function initSpells(client: Client) {
         (line) => {
             client.sendEvent("sound:category", "spell");
 
-            const result = formatSpellOnMe(line, "CZAR");
-            result.append("\n\t\t\t");
-            result.append(" <><> CZARUJE Z KOSTURA <><> ", { foreground: COLOR_WHITE.foreground, background: COLOR_WARNING_BG.foreground });
-            return result;
+            const result = formatSpellOnMe(line, "CZAR", { important: true });
+            return appendWarning(result, "\n\t\t\t", " <><> CZARUJE Z KOSTURA <><> ", WARNING_FORMAT);
         },
         tag
     );
@@ -735,10 +709,8 @@ export default function initSpells(client: Client) {
     client.Triggers.registerTrigger(
         /^.+? kieruje w strone (?<cel>.+?) (?:swoj|swoja|swoje) .+?, wokol (?:ktorego|ktorej) zaczyna gromadzic sie magiczna energia\.\.\.$/,
         (line, matches) => {
-            const result = formatSpellOnOthers(line, "CZAR", matches.groups?.cel);
-            result.append("\n\t\t\t");
-            result.append(" <><> CZARUJE Z KOSTURA <><> ", { foreground: COLOR_WHITE.foreground, background: COLOR_WARNING_BG.foreground });
-            return result;
+            const result = formatSpellOnOthers(line, "CZAR", matches.groups?.cel, { important: true });
+            return appendWarning(result, "\n\t\t\t", " <><> CZARUJE Z KOSTURA <><> ", WARNING_FORMAT);
         },
         tag
     );
@@ -749,10 +721,8 @@ export default function initSpells(client: Client) {
     client.Triggers.registerTrigger(
         "zaczyna czytac pozolkly zwoj.",
         (line) => {
-            const result = formatSpellOnOthers(line, "CZAR");
-            result.append("\n\t\t\t");
-            result.append(" <><> CZARUJE ZE ZWOJU <><> ", { foreground: COLOR_WHITE.foreground, background: COLOR_WARNING_BG.foreground });
-            return result;
+            const result = formatSpellOnOthers(line, "CZAR", undefined, { important: true });
+            return appendWarning(result, "\n\t\t\t", " <><> CZARUJE ZE ZWOJU <><> ", WARNING_FORMAT);
         },
         tag
     );

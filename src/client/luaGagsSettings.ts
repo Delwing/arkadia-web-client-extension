@@ -17,6 +17,8 @@ export const LUA_GAG_LINE_TYPES = [
     "bron",
     "npc",
     "npc_spece",
+    "czary_we_mnie",
+    "czary_innych",
 ] as const;
 
 export type LuaGagLineType = typeof LUA_GAG_LINE_TYPES[number];
@@ -42,6 +44,8 @@ export const DEFAULT_LUA_GAGS_DELETE_LINES: LuaGagsDeleteLinesSettings = {
     bron: 2,
     npc: 2,
     npc_spece: 2,
+    czary_we_mnie: 2,
+    czary_innych: 2,
 };
 
 export const DEFAULT_LUA_GAGS_COLORS: LuaGagsColorsSettings = {
@@ -59,6 +63,8 @@ export const DEFAULT_LUA_GAGS_COLORS: LuaGagsColorsSettings = {
     bron: "#ffd700",
     npc: "#fffaf0",
     npc_spece: "#fffaf0",
+    czary_we_mnie: "#ff0000",
+    czary_innych: "#ff00ff",
 };
 
 export function normalizeLuaGagsDeleteLines(
