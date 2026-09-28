@@ -13,7 +13,8 @@ import type {GmcpCharInfo} from "@shared/events";
  *    different one - and so does dying and respawning. Either way the old session
  *    is over, which is what the `reset` event is for, and that stays the default
  *    reading of an id we have not seen before.
- * 2. **A new body, same life.** `przeobrazenie` and the appearance scrolls rebuild
+ * 2. **A new body, same life.** `przeobrazenie`, the appearance scrolls and the face
+ *    ointment (`posmaruj twarz mascia`) rebuild
  *    the character in place, handing out a fresh id and giving the old one back
  *    when the effect lapses, some twenty minutes later. Nothing about the session
  *    changed, so `reset` there would wipe the chat history, combat stats, the clock
@@ -37,12 +38,13 @@ import type {GmcpCharInfo} from "@shared/events";
  */
 
 /**
- * The tail of the line a change of appearance ends with - the scrolls and the
- * spell share it - and the line that announces przeobrazenie wearing off. Matched
- * on a fragment rather than whole, since the server wraps at the screen width.
+ * The tail of the line a change of appearance ends with - the scrolls, the face
+ * ointment and the spell share it - and the lines that announce przeobrazenie and
+ * the ointment wearing off. Matched on a fragment rather than whole, since the
+ * server wraps at the screen width.
  */
 const TRANSFORM_START = /Czujesz jednak, ze cos sie zmienilo\.\.\.$/;
-const TRANSFORM_END = /efekt dzialania czaru 'przeobrazenie' konczy sie/;
+const TRANSFORM_END = /efekt dzialania czaru 'przeobrazenie' konczy sie|warstewka masci na twojej twarzy zupelnie sie juz starla/;
 
 /**
  * How long after a Char.Info that moved the id we assume the server is telling

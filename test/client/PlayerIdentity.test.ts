@@ -4,6 +4,8 @@ import { characterStorage } from '@modules/core/storage';
 
 const TRANSFORM_LINE = 'Twoja twarz oblewa wpierw fala goraca, a pozniej niezwyklego chlodu. Wszystko to po chwili jednak mija. Czujesz jednak, ze cos sie zmienilo...';
 const RESTORE_LINE = "Czujesz, ze efekt dzialania czaru 'przeobrazenie' konczy sie, a twoj wyglad powraca do normy.";
+const OINTMENT_LINE = 'Bol na twarzy nagle ustaje, opuszczasz wiec dlonie. Czujesz jednak, ze cos sie zmienilo...';
+const OINTMENT_RESTORE_LINE = 'Czujesz, ze warstewka masci na twojej twarzy zupelnie sie juz starla.';
 
 class FakeClient {
   private emitter = new EventEmitter();
@@ -194,6 +196,20 @@ describe('PlayerIdentity', () => {
       client.sendEvent('gmcp.objects.nums', [101, 204, 307]);
       client.line(RESTORE_LINE);
       expect(identity.num).toBe(101);
+    });
+
+    test('handles the face ointment the same way', () => {
+      login(101);
+      client.sendEvent('gmcp.objects.nums', [101, 204, 307]);
+      client.line(OINTMENT_LINE);
+      client.sendEvent('gmcp.objects.nums', [512, 204, 307]);
+      expect(identity.num).toBe(512);
+
+      client.sendEvent('gmcp.objects.nums', [101, 204, 307]);
+      client.line(OINTMENT_RESTORE_LINE);
+      expect(identity.num).toBe(101);
+      expect(identity.sessionNum).toBe(101);
+      expect(resets).toBe(0);
     });
 
     test('stays unknown rather than guess when the room moved too', () => {
