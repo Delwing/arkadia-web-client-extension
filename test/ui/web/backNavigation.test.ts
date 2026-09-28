@@ -1,7 +1,25 @@
 import { backLayerCount, pushBackLayer, setBackNavigationEnabled } from "@web-ui/backNavigation.ts";
 
-/** history.go() and Back land as a popstate on a later task. */
-const settle = () => new Promise(resolve => setTimeout(resolve, 30));
+/**
+ * history.go() and Back land as a popstate on a later task, and one Back can
+ * chain another traversal (the keyboard case steps forward again). Each hop
+ * costs a few timer ticks — ~15 ms apiece on Windows — so wait until the
+ * history has been quiet for a while rather than for a fixed time.
+ */
+const QUIET_MS = 60;
+const settle = () =>
+    new Promise<void>(resolve => {
+        let timer = setTimeout(done, QUIET_MS);
+        function onPop() {
+            clearTimeout(timer);
+            timer = setTimeout(done, QUIET_MS);
+        }
+        function done() {
+            window.removeEventListener("popstate", onPop);
+            resolve();
+        }
+        window.addEventListener("popstate", onPop);
+    });
 
 const ourDepth = () => (history.state as Record<string, unknown> | null)?.__arkadiaBackLayer ?? 0;
 
