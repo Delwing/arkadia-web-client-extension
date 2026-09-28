@@ -64,6 +64,15 @@ describe('weapon state', () => {
     expect(weaponEvents()).toEqual([['weapon_state', false]]);
   });
 
+  test('lowering a weapon disarms, leaving an area does not', () => {
+    const line = (text: string) =>
+      Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(text), 'main');
+    line('Opuszczasz obszar ogarniety burza piaskowa.');
+    expect(weaponEvents()).toHaveLength(0);
+    line('Opuszczasz waski kunsztowny sihill.');
+    expect(weaponEvents()).toEqual([['weapon_state', false]]);
+  });
+
   test('disconnect makes the state unknown again', () => {
     client.sendEvent('weapon_state', false);
     client.sendEvent('client.disconnect');

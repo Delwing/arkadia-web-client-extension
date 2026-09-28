@@ -12,7 +12,7 @@
         "type": 3
       },
       {
-        "pattern": "^[ >]*Opuszczasz (.*)\\.$",
+        "pattern": "^[ >]*Opuszczasz (?!obszar )(.*)\\.$",
         "type": 1
       },
       {
