@@ -28,6 +28,7 @@ import type { UserAlias } from "@client/scripts/userAliases";
 import type { UserTrigger } from "@client/scripts/userTriggers";
 import type { UserScript } from "@client/scripts/userScripts";
 import { openSettingsPage } from "@web/settings/categories.ts";
+import { foldText } from "@web/settings/settingsSearch.ts";
 import { MODAL_EVENT } from "@web/modals/appModal.ts";
 import { showContextMenu, type ContextMenuEntry } from "@web/contextMenu";
 import { AliasEditor } from "./AliasEditor";
@@ -253,7 +254,7 @@ export default function AutomationWindow() {
     const newDrafts = Object.values(drafts).filter(d => d.isNew);
 
     const visible = useMemo(() => {
-        const q = query.trim().toLowerCase();
+        const q = foldText(query.trim());
         return items.filter(item => {
             if (kindFilter !== "all" && item.kind !== kindFilter) return false;
             if (!showDisabled && item.data.enabled === false) return false;

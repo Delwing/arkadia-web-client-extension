@@ -8079,27 +8079,6 @@ select.popup-input.popup-input--control {
   font-size: var(--ui-fs-sm, 12px);
 }
 
-/* ── Documentation in forge (docs.ts) ────────────────────────────────────── */
-.docs-root {
-  height: 100%;
-  min-height: 0;
-}
-.docs-nav {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-.docs-toolbar .docs-search {
-  width: auto;
-  max-width: 200px;
-  margin-left: auto;
-}
-.docs-content--fill {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow: auto;
-}
-
 /* The danger zone of the cloud sync page: what it does on the left, the red
    action on the right; confirming swaps in a tinted strip with the final say. */
 .cloud-delete {

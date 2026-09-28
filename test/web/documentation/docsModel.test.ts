@@ -130,6 +130,11 @@ describe('searchDocs', () => {
         expect(hits[0]).toMatchObject({ kind: 'command', row: { head: '/zas' } });
     });
 
+    it('finds text written with Polish letters from a query typed without them', () => {
+        const result = searchDocs(buildDocPages(DOC_PAGES), 'zaslanianie');
+        expect(result.groups.map((g) => g.section.title)).toContain('Zasłanianie');
+    });
+
     it('needs every word', () => {
         expect(searchDocs(pages, 'zabij obiekt').total).toBe(1);
         expect(searchDocs(pages, 'zabij smoka').total).toBe(0);

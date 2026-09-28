@@ -5,6 +5,7 @@ import PluginCard, { SourceChip, type CardStatus } from "./PluginCard";
 import type { InstalledPlugin, PluginSource } from "./useInstalledPlugins";
 import { registryPageUrl } from "@shared/marketplace/registryClient.ts";
 import { editorUrl } from "../appUrls";
+import { foldText } from "@web/settings/settingsSearch.ts";
 
 type Filter = "all" | PluginSource | "problems";
 
@@ -94,7 +95,7 @@ function ScriptsInstalled({
     const updatable = useMemo(() => plugins.filter((plugin) => plugin.updateVersion), [plugins]);
 
     const visible = useMemo(() => {
-        const needle = search.trim().toLowerCase();
+        const needle = foldText(search.trim());
         return plugins.filter((plugin) => {
             const matchesFilter =
                 filter === "all" ||
@@ -103,7 +104,7 @@ function ScriptsInstalled({
             if (!needle) return true;
             return [plugin.name, plugin.description, plugin.author, plugin.detail]
                 .filter(Boolean)
-                .some((field) => field!.toLowerCase().includes(needle));
+                .some((field) => foldText(field!).includes(needle));
         });
     }, [plugins, filter, search]);
 

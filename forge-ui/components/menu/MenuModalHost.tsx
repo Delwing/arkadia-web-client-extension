@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef, type ReactNode } from 'react';
+import { lazy, Suspense, useEffect, useState, type ReactNode } from 'react';
 import type Client from '@client/Client';
 import MenuModal from './MenuModal';
 import { getHelperConnection } from '../../client/bootstrap';
@@ -41,7 +41,7 @@ const load = {
     radial: () => import('@web/settings/SettingsDialog'),
     helper: () => import('@web/options/HelperSettings'),
     logs: () => import('@web/LogBrowser'),
-    docs: () => import('@web/docs'),
+    docs: () => import('@web/documentation/DocsView'),
 } satisfies Record<string, () => Promise<unknown>>;
 
 const SettingsDialog = lazy(load.options);
@@ -55,6 +55,7 @@ const Shortcuts = lazy(load.shortcuts);
 const LocationNotes = lazy(load['location-notes']);
 const HelperSettings = lazy(load.helper);
 const LogBrowser = lazy(() => load.logs().then((m) => ({ default: m.LogBrowser })));
+const DocsView = lazy(load.docs);
 
 /**
  * The keys the forge menu can open as a modal. Kept in sync with the menu items
@@ -139,7 +140,7 @@ const TITLES: Record<ModalKey, string> = {
  * dialogs these components were authored against, which carry `h-100`). Flowing
  * panels stay content-sized so short ones don't stretch into a tall empty box.
  */
-const FILL_MODALS: ReadonlySet<ModalKey> = new Set(['options', 'ui', 'buttons', 'export-import', 'radial', 'scripts']);
+const FILL_MODALS: ReadonlySet<ModalKey> = new Set(['options', 'ui', 'buttons', 'export-import', 'radial', 'scripts', 'docs']);
 
 const SIZE: Partial<Record<ModalKey, 'md' | 'lg' | 'xl'>> = {
     // The settings dialog puts a sidebar next to a 2–3 column masonry of
@@ -199,20 +200,15 @@ const SETTINGS_START: Partial<Record<ModalKey, () => SettingsCategoryKey>> = {
     radial: () => 'ui-radial',
 };
 
-/** Docs render imperatively (plain DOM) into a container; loaded on demand so
- *  the heavy markdown bundle stays out of forge's initial chunk. */
+/** The stock docs view; the page and query last while the modal is open. */
 function DocsBody() {
-    const ref = useRef<HTMLDivElement>(null);
-    useEffect(() => {
-        let cancelled = false;
-        void load.docs().then(({ mountDocs }) => {
-            if (!cancelled && ref.current) mountDocs(ref.current);
-        });
-        return () => {
-            cancelled = true;
-        };
-    }, []);
-    return <div ref={ref} className="forge-docs-host" style={{ minHeight: 0, flex: '1 1 auto', display: 'flex', flexDirection: 'column' }} />;
+    const [pageKey, setPageKey] = useState('overview');
+    const [query, setQuery] = useState('');
+    return (
+        <div className="forge-docs-host">
+            <DocsView pageKey={pageKey} onPageKey={setPageKey} query={query} onQuery={setQuery} />
+        </div>
+    );
 }
 
 interface MenuModalEntryProps {

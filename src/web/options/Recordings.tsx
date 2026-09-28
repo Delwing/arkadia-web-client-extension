@@ -5,6 +5,7 @@ import {deleteRecording, getRecordingSummaries, saveRecording, type RecordedEven
 import eventBus from "@modules/core/eventBus";
 import recordingManager from "../RecordingManager";
 import { MODAL_EVENT } from "@web/modals/appModal.ts";
+import { foldText } from "@web/settings/settingsSearch.ts";
 
 const BLACK_BOX_RECENT_MS = 3 * 60 * 1000;
 
@@ -146,9 +147,9 @@ function Recordings() {
     }, [load]);
 
     const visible = useMemo(() => {
-        const q = query.trim().toLowerCase();
+        const q = foldText(query.trim());
         const sorted = [...recordings].sort((a, b) => (b.start ?? 0) - (a.start ?? 0));
-        return q ? sorted.filter(r => r.name.toLowerCase().includes(q)) : sorted;
+        return q ? sorted.filter(r => foldText(r.name).includes(q)) : sorted;
     }, [recordings, query]);
 
     function start() {

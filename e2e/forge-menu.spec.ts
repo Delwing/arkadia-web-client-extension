@@ -95,7 +95,12 @@ test.describe('forge menu', () => {
         const modal = page.locator('.forge-menu-modal');
         await expect(modal).toBeVisible();
         await expect(modal.locator('.panel__title')).toHaveText('Dokumentacja');
-        await expect(modal.locator('.docs-content')).not.toBeEmpty();
+        await expect(modal.locator('.doc-page')).not.toBeEmpty();
+        // The page scrolls inside the modal instead of stretching it.
+        expect(await modal.locator('.doc-main').evaluate((el) => el.scrollHeight > el.clientHeight)).toBe(true);
+        await modal.locator('#docs-search').fill('zaslanianie');
+        await expect(modal.locator('.doc-hits__head', { hasText: 'Zasłanianie' }).first()).toBeVisible();
+        await page.screenshot({ path: 'test-results/forge-docs.png' });
     });
 
     test('opens the log browser without stock-mount errors', async ({ page }) => {

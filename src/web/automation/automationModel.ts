@@ -28,6 +28,7 @@ import {
 } from "@client/scripts/userTriggers";
 import { normalizeTriggerList } from "@web/options/userTriggerNormalize.ts";
 import { normalizeMacro } from "./MacroEditor";
+import { foldText } from "@web/settings/settingsSearch.ts";
 
 export type AutomationKind = "alias" | "trigger" | "script";
 
@@ -501,7 +502,7 @@ export function itemSearchText(item: AutomationItem, groups: AutomationGroup[]):
         ...itemActions(item).flatMap(m => [m.command ?? "", m.message ?? "", m.label ?? "", m.to ?? ""]),
         ...(item.kind === "alias" ? Object.entries(item.data.overrides ?? {}).flat() : []),
     ];
-    return parts.join("\n").toLowerCase();
+    return foldText(parts.join("\n"));
 }
 
 // ── Packs: export and import ─────────────────────────────────────────────────

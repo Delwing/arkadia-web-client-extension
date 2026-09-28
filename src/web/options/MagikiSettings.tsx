@@ -4,6 +4,7 @@ import { characterStorage } from "@modules/core/storage";
 import { defaultSettings } from "./defaultSettings";
 import type { Settings as BaseSettings } from "./defaultSettings";
 import { subscribeToMagicTypes, subscribeToMagicKeys } from "@client/scripts/magicsLoader";
+import { foldText } from "@web/settings/settingsSearch.ts";
 
 interface MagikiSettingsProps {
     registerSave: (fn: (settings: any) => void) => void;
@@ -85,7 +86,7 @@ function MagikiSettings({ registerSave }: MagikiSettingsProps) {
     }, []);
 
     const filteredSuggestions = allMagics.filter((magic) =>
-        magic.toLowerCase().includes(searchInput.toLowerCase()) &&
+        foldText(magic).includes(foldText(searchInput)) &&
         !favoriteMagics.includes(magic)
     ).slice(0, 10);
 

@@ -16,6 +16,7 @@ import {
     ensureStoredIds,
     importPack,
     itemFromDraft,
+    itemSearchText,
     itemSummary,
     itemTitle,
     loadItems,
@@ -303,5 +304,12 @@ describe('automationModel', () => {
         it('refuses a file that is not a pack', () => {
             expect(() => parsePack('{"aliases": []}')).toThrow(/automatyzacji/);
         });
+    });
+});
+
+describe("itemSearchText", () => {
+    it("folds diacritics so a plain query finds them", () => {
+        const item: AutomationItem = { kind: 'alias', id: 'a', data: { id: 'a', name: 'Zasłoń Łucję', pattern: 'zz', command: 'zaslon lucje' } };
+        expect(itemSearchText(item, [])).toContain('zaslon lucje');
     });
 });

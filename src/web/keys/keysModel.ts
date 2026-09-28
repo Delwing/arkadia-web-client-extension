@@ -12,6 +12,7 @@ import type { StoredBind } from "@modules/helper/helperBinds";
 import type { BindMode } from "@modules/helper/helperProtocol";
 import { KEYBOARD, keyDistance } from "./keyboardLayout";
 import { IS_MAC } from "./platform";
+import { foldText } from "@web/settings/settingsSearch.ts";
 
 // ── Keystrokes ──────────────────────────────────────────────────────────
 
@@ -515,11 +516,10 @@ export function conflicts(byCombo: Map<string, KeyEntry[]>, helperConnected: boo
 
 
 export function matchesSearch(entry: KeyEntry, query: string): boolean {
-    const q = query.trim().toLowerCase();
+    const q = foldText(query.trim());
     if (!q) return true;
-    const hay = [entry.label, entry.short, entry.command ?? "", entry.combo ? comboLabel(entry.combo) : ""]
-        .join(" ").toLowerCase();
-    return hay.includes(q);
+    const hay = [entry.label, entry.short, entry.command ?? "", entry.combo ? comboLabel(entry.combo) : ""].join(" ");
+    return foldText(hay).includes(q);
 }
 
 // ── Free keys ───────────────────────────────────────────────────────────

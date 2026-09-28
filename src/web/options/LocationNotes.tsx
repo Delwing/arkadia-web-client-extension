@@ -3,6 +3,7 @@ import { Pencil } from 'lucide-react';
 import { Button, DeleteButton, Input } from "@web-ui/primitives/index.ts";
 import eventBus from "@modules/core/eventBus";
 import { getAllNotes, deleteNote, type LocationNote } from "./locationNotesStorage";
+import { foldText } from "@web/settings/settingsSearch.ts";
 
 function LocationNotes() {
     const [notes, setNotes] = useState<LocationNote[]>([]);
@@ -36,11 +37,11 @@ function LocationNotes() {
             return;
         }
 
-        const query = searchQuery.toLowerCase();
+        const query = foldText(searchQuery);
         const filtered = notes.filter(note =>
-            note.note.toLowerCase().includes(query) ||
-            (note.roomName?.toLowerCase().includes(query)) ||
-            (note.areaName?.toLowerCase().includes(query)) ||
+            foldText(note.note).includes(query) ||
+            (note.roomName && foldText(note.roomName).includes(query)) ||
+            (note.areaName && foldText(note.areaName).includes(query)) ||
             String(note.id).includes(query)
         );
         setFilteredNotes(filtered);

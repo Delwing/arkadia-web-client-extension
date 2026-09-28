@@ -602,61 +602,15 @@
     box-shadow: none;
 }
 
-/* The docs body rendered by mountDocs. Its heading/table sizing normally comes
-   from stock's global .docs-content rules; forge doesn't load those, so the
-   markdown fell back to oversized default h1/h2 and unstyled tables.
-   Reinstate stock's compact doc scale (h1 1.4 / h2 1.2 / h3 1rem, tight margins),
-   forge-toned, and give the tables + quotes real chrome. */
-.forge-docs-host .docs-content { font-size: .9375rem; line-height: 1.55; }
-.forge-docs-host .docs-content h1,
-.forge-docs-host .docs-content h2,
-.forge-docs-host .docs-content h3 { font-family: "Cinzel", serif; color: var(--bronze); }
-.forge-docs-host .docs-content h1 { font-size: 1.4rem; margin: 1rem 0 .5rem; }
-.forge-docs-host .docs-content h2 { font-size: 1.2rem; margin: .75rem 0 .4rem; }
-.forge-docs-host .docs-content h3 { font-size: 1rem; margin: .5rem 0 .3rem; }
-.forge-docs-host .docs-content p { margin: 0 0 .6rem; }
-.forge-docs-host .docs-content a { color: var(--bronze); }
-.forge-docs-host .docs-content code {
-    font-family: "JetBrains Mono", ui-monospace, monospace;
-    font-size: .85em;
-    background: rgba(0, 0, 0, .35);
-    padding: 1px 4px;
-    border-radius: 3px;
+/* The stock docs view (DocsView) fills the modal body. */
+.forge-docs-host {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
 }
-.forge-docs-host .docs-content ul,
-.forge-docs-host .docs-content ol { margin: .5rem 0; padding-left: 1.5rem; }
-.forge-docs-host .docs-content li { margin: .25rem 0; }
-.forge-docs-host .docs-content blockquote {
-    margin: .75rem 0;
-    padding: .4rem .8rem;
-    border-left: 3px solid var(--bronze-dim);
-    background: rgba(184, 150, 90, .06);
-    font-style: italic;
-}
-.forge-docs-host .docs-content table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: .75rem 0;
-    font-size: .9rem;
-    border: 1px solid var(--iron-hi);
-    border-radius: .4rem;
-    overflow: hidden;
-}
-.forge-docs-host .docs-content th,
-.forge-docs-host .docs-content td {
-    padding: .4rem .6rem;
-    text-align: left;
-    border-bottom: 1px solid rgba(184, 150, 90, .1);
-}
-.forge-docs-host .docs-content thead th {
-    background: rgba(28, 26, 23, .9);
-    border-bottom: 1px solid var(--bronze-dim);
-    color: var(--parchment-dim);
-    font-weight: 600;
-    font-size: .82rem;
-}
-.forge-docs-host .docs-content tbody tr:last-child > * { border-bottom: 0; }
-.forge-docs-host .docs-content tbody tr:nth-of-type(even) { background: rgba(255, 255, 255, .022); }
+/* The modal base makes every label inline-block; the search box is a flex row. */
+.forge-docs-host .doc-search { display: flex; }
 
 /* A footer action that belongs to the left edge (Bindowanie → Dodaj skrót). */
 .forge-menu-modal__footer-start {

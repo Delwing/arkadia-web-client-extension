@@ -11,6 +11,7 @@ import {
     entriesByCombo,
     entryWorks,
     freeKeysNear,
+    matchesSearch,
     mergeEntries,
     fromHelperKey,
     isBrowserReserved,
@@ -21,6 +22,7 @@ import {
     walkModeClashes,
     writeSlot,
     type Combo,
+    type KeyEntry,
 } from "@web/keys/keysModel.ts";
 
 const combo = (code: string, mods: Partial<Omit<Combo, "code">> = {}): Combo =>
@@ -244,5 +246,14 @@ describe("walk mode clashes", () => {
         expect(walkModeClashes(ctrl, [], b, byCombo, true)).toEqual(["macOS (Ctrl+strzałki zajmuje Mission Control)"]);
         expect(walkModeClashes(ctrl, [], b, byCombo, false)).toEqual([]);
         expect(walkModeClashes(mode("sneak", { alt: true }), [], b, byCombo, true)).toEqual([]);
+    });
+});
+
+describe("matchesSearch", () => {
+    it("matches with or without diacritics", () => {
+        const entry = { label: "Zasłona", short: "zasłoń", combo: null } as unknown as KeyEntry;
+        expect(matchesSearch(entry, "zaslona")).toBe(true);
+        expect(matchesSearch(entry, "ZASŁOŃ")).toBe(true);
+        expect(matchesSearch(entry, "atak")).toBe(false);
     });
 });
