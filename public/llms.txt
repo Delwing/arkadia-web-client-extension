@@ -60,7 +60,7 @@ One window for both: a place is a map room with an optional shortcut name and an
 optional note. `Tutaj` adds the room the user is standing in; the shortcut field
 shows the matching `/prowadz nazwa` command; the note saves itself. The search
 box finds rooms by name, area or number, so a place can be added without walking
-there. Commands: `/dodaj_skrot id nazwa`, `/pokaz_skroty`, `/usun_skrot nazwa`,
+there. Commands: `/dodaj_skrot [id] nazwa` (no id = current room), `/pokaz_skroty`, `/usun_skrot nazwa`,
 `/prowadz nazwa`, `/note`.
 
 ## Change character settings (combat, herbs, collecting, language, ...)

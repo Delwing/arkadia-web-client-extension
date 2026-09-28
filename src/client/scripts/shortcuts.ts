@@ -89,6 +89,15 @@ export default function initShortcuts(client: Client, aliases?: { pattern: RegEx
         persist();
     }
 
+    function addHere(key: string, label: string = '') {
+        const id = client.Map.currentRoom?.id;
+        if (id === undefined) {
+            client.println("Nieznana biezaca lokacja - podaj id: /dodaj_skrot id nazwa [opis]");
+            return;
+        }
+        add(id, key, label);
+    }
+
     function remove(key: string) {
         if (shortcuts[key]) {
             delete shortcuts[key];
@@ -106,6 +115,9 @@ export default function initShortcuts(client: Client, aliases?: { pattern: RegEx
         // Support both quoted and unquoted names: /dodaj_skrot 123 "nazwa ze spacjami" opis OR /dodaj_skrot 123 nazwa opis
         aliases.push({ pattern: /^\/dodaj_skrot ([0-9]+) "([^"]+)"(?:\s+(.*))?$/, callback: (m: RegExpMatchArray) => add(parseInt(m[1]), m[2], m[3] ?? '') });
         aliases.push({ pattern: /^\/dodaj_skrot ([0-9]+) ([a-zA-Z_0-9]+)(?:\s+(.*))?$/, callback: (m: RegExpMatchArray) => add(parseInt(m[1]), m[2], m[3] ?? '') });
+        // Without an id the shortcut points at the current location: /dodaj_skrot nazwa opis
+        aliases.push({ pattern: /^\/dodaj_skrot "([^"]+)"(?:\s+(.*))?$/, callback: (m: RegExpMatchArray) => addHere(m[1], m[2] ?? '') });
+        aliases.push({ pattern: /^\/dodaj_skrot ([a-zA-Z_0-9]+)(?:\s+(.*))?$/, callback: (m: RegExpMatchArray) => addHere(m[1], m[2] ?? '') });
         // Support both quoted and unquoted names: /usun_skrot "nazwa ze spacjami" OR /usun_skrot nazwa
         aliases.push({ pattern: /^\/usun_skrot "([^"]+)"$/, callback: (m: RegExpMatchArray) => remove(m[1]) });
         aliases.push({ pattern: /^\/usun_skrot ([a-zA-Z_0-9]+)$/, callback: (m: RegExpMatchArray) => remove(m[1]) });

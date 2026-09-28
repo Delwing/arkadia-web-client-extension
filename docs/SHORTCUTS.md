@@ -25,6 +25,7 @@ lokacji sa w tym jednym oknie — osobnego okna "Skroty" juz nie ma.
 |---------|------|
 | `/dodaj_skrot id nazwa [opis]` | Zapisz skrot do lokacji (opis opcjonalny) |
 | `/dodaj_skrot id "nazwa ze spacjami" [opis]` | Zapisz skrot z nazwa zawierajaca spacje |
+| `/dodaj_skrot nazwa [opis]` | Zapisz skrot do lokacji, w ktorej stoisz (dziala tez z `"nazwa ze spacjami"`) |
 | `/pokaz_skroty` | Wypisz liste zapisanych skrotow w oknie gry |
 | `/usun_skrot nazwa` | Usun wskazany skrot |
 | `/usun_skrot "nazwa ze spacjami"` | Usun skrot z nazwa zawierajaca spacje |
