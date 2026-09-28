@@ -47,6 +47,7 @@ class EmptyMatches extends Array<string> implements RegExpMatchArray {
     }
 
     function gagPrefix(buffer: AnsiAwareBuffer, prefix: string, type: string) {
+        client.sendEvent("combat.gag", { type, prefix, text: buffer.text });
         const mode = getDeleteMode(type);
         if (mode === 1) {
             return buffer.markAsDeleted();

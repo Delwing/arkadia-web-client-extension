@@ -1,12 +1,14 @@
 import Client from "../Client";
 import { AnsiAwareBuffer } from "../ansi/FormatState";
 
+export const UNARMED_ATTACK_PATTERNS = [
+    /(Nie udaje ci sie trafic|Probujesz trafic|Ledwo muskasz|Lekko ranisz|Ranisz|Powaznie ranisz|Bardzo ciezko ranisz|Masakrujesz) (?<target>.+?) (lew\w+|praw\w+) (piescia|kolanem|stopa|lokciem|rekawica|butem)/,
+    /^Wykonujesz zamach ((lewym|prawym) butem) mierzac w (?<target>.+?), lecz t(a|en) paruje go .*\.$/
+];
+
 export default function initNoWeaponAlert(client: Client) {
     const tag = 'no-weapon-alert';
-    const patterns = [
-        /(Nie udaje ci sie trafic|Probujesz trafic|Ledwo muskasz|Lekko ranisz|Ranisz|Powaznie ranisz|Bardzo ciezko ranisz|Masakrujesz) (?<target>.+?) (lew\w+|praw\w+) (piescia|kolanem|stopa|lokciem|rekawica|butem)/,
-        /^Wykonujesz zamach ((lewym|prawym) butem) mierzac w (?<target>.+?), lecz t(a|en) paruje go .*\.$/
-    ];
+    const patterns = UNARMED_ATTACK_PATTERNS;
 
     let timer: number | null = null;
 

@@ -490,6 +490,8 @@ export interface KnownEvents {
     "weaponKnockedOff": void;
     "weaponKnockedOffNekroTilea": void;
     "weapon_state": boolean;
+    // Every combat gag (Lua and TS) as it is applied: gag type (moje_ciosy, ...), prefix, raw line
+    "combat.gag": { type: string; prefix: string; text: string };
     // Lua gag events - stun
     "stunStart": void;
     "stunEnd": void;
