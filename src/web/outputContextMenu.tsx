@@ -31,6 +31,7 @@ import {
 import eventBus from '@modules/core/eventBus';
 import { getContextMenuEntries as getPluginContextMenuEntries } from '@modules/core/pluginUiRegistry';
 import { setRenderSettings } from '@modules/core/settings';
+import { isTouchContextMenuEvent } from '@shared/dom/touchContextMenu.ts';
 import {
     areOutputMessageTypesVisible,
     areOutputTimestampsVisible,
@@ -204,9 +205,11 @@ export function buildOutputContextMenuItems(
  * A phone-narrow viewport or a touch long-press leaves the native menu (text
  * selection) alone. Touch is read from the event itself, not the device-level
  * guess, which reports a mouse on a touch-capable laptop as touch (Firefox
- * especially) and silently killed the menu there.
+ * especially) and silently killed the menu there. The radial's own request
+ * (releasing in its center) is the one touch path that does open the menu.
  */
 function isTouchContextMenu(event: MouseEvent): boolean {
+    if (isTouchContextMenuEvent(event)) return false;
     if (window.innerWidth < 768) return true;
     return (event as Partial<PointerEvent>).pointerType === 'touch';
 }

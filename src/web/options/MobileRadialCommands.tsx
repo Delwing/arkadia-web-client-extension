@@ -208,6 +208,19 @@ function MobileRadialCommands({ registerSave }: { registerSave: (save: () => voi
             {!radialEnabled && (
                 <p className="popup-field__hint">Menu kołowe jest wyłączone. Włącz je, aby edytować komendy.</p>
             )}
+            <Check
+                id="mobile-radial-link-menus"
+                label="Przytrzymanie linku otwiera jego menu kontekstowe"
+                checked={radial.linkMenus !== false}
+                onChange={event => setRadial(prev => ({ ...prev, linkMenus: event.target.checked }))}
+            />
+            <Check
+                id="mobile-radial-center-menu"
+                label="Puszczenie w środku menu kołowego otwiera menu kontekstowe"
+                checked={radial.centerMenu !== false}
+                disabled={!radialEnabled}
+                onChange={event => setRadial(prev => ({ ...prev, centerMenu: event.target.checked }))}
+            />
             <div className="radial-editor">
                 <div className="popup-field radial-editor__list">
                     <span className="popup-field__label">Komendy menu kołowego</span>

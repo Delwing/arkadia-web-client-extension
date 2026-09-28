@@ -1018,6 +1018,8 @@ export class AnsiAwareBuffer {
                 }
 
                 if (state.hyperlink.onContextMenu) {
+                    // Lets a touch long-press open this menu (see MobileCommandRadial).
+                    element.dataset.outputContextMenu = "true";
                     element.addEventListener('contextmenu', (e) => {
                         e.preventDefault();
                         e.stopPropagation();

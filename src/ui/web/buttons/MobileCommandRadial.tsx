@@ -4,6 +4,11 @@ import type Client from '@client/Client';
 import eventBus from '@modules/core/eventBus';
 import { loadSettings, type Settings, type LayoutSettings, type RadialCommandSetting } from '@web/mobileButtonSettings';
 import type { MobileButtonSetting } from '@web/buttonSettings';
+import {
+    OUTPUT_CONTEXT_MENU_ATTR,
+    dispatchTouchContextMenu,
+    isTouchContextMenuEvent,
+} from '@shared/dom/touchContextMenu.ts';
 
 type ActiveLayoutKey = 'solo' | 'team' | 'leader';
 
@@ -63,12 +68,24 @@ export default function MobileCommandRadial({ client }: { client: Client }) {
         let touchIdentifier: number | null = null;
         let longPressTimer: number | null = null;
         let isMenuActive = false;
+        // A long-press that opened a link's own context menu instead of the radial.
+        let contextMenuOpened = false;
+        // What the finger first landed on; the center-release menu opens for it.
+        let pressTarget: Element | null = null;
         let startX = 0;
         let startY = 0;
         let centerX = 0;
         let centerY = 0;
 
         const isRadialEnabled = () => !settings || settings.radial?.enabled !== false;
+        const areLinkMenusEnabled = () => !settings || settings.radial?.linkMenus !== false;
+        const isCenterMenuEnabled = () => !settings || settings.radial?.centerMenu !== false;
+
+        function findLinkMenuTarget(x: number, y: number): Element | null {
+            if (!areLinkMenusEnabled()) return null;
+            const link = document.elementFromPoint(x, y)?.closest(`[${OUTPUT_CONTEXT_MENU_ATTR}]`) ?? null;
+            return link && contentArea?.contains(link) ? link : null;
+        }
 
         function resolveActiveLayoutKey(): ActiveLayoutKey {
             const manager = (client as any).TeamManager;
@@ -181,6 +198,7 @@ export default function MobileCommandRadial({ client }: { client: Client }) {
                 longPressTimer = null;
             }
             touchIdentifier = null;
+            contextMenuOpened = false;
         }
 
         function hideMenu() {
@@ -295,12 +313,11 @@ export default function MobileCommandRadial({ client }: { client: Client }) {
             updateActiveLayout();
         }
 
+        // One long-press, one owner: a link with its own menu gets that menu,
+        // anything else gets the radial. Deciding here, on a single timer,
+        // replaces the race against the browser's native touch `contextmenu`.
         const handleTouchStart = (event: TouchEvent) => {
             if (overlay!.classList.contains('mobile-command-radial--visible')) return;
-            if (!isRadialEnabled()) {
-                cancelLongPress();
-                return;
-            }
             if (event.touches.length !== 1) {
                 cancelLongPress();
                 return;
@@ -310,19 +327,43 @@ export default function MobileCommandRadial({ client }: { client: Client }) {
                 cancelLongPress();
                 return;
             }
-            if (!commands.length) {
+            const linkTarget = findLinkMenuTarget(touch.clientX, touch.clientY);
+            if (!linkTarget && (!isRadialEnabled() || !commands.length)) {
                 cancelLongPress();
                 return;
             }
+            cancelLongPress();
             touchIdentifier = touch.identifier;
             startX = touch.clientX;
             startY = touch.clientY;
-            longPressTimer = window.setTimeout(() => activateMenu(startX, startY), LONG_PRESS_DELAY);
+            pressTarget = document.elementFromPoint(startX, startY);
+            longPressTimer = window.setTimeout(() => {
+                longPressTimer = null;
+                if (linkTarget) {
+                    contextMenuOpened = true;
+                    dispatchTouchContextMenu(linkTarget, startX, startY);
+                } else {
+                    activateMenu(startX, startY);
+                }
+            }, LONG_PRESS_DELAY);
+        };
+
+        // While this component owns a long-press, the browser's own touch
+        // `contextmenu` (Android fires one at ~500ms) would open a second menu
+        // or close the one just opened, so it is swallowed.
+        const handleNativeContextMenu = (event: MouseEvent) => {
+            if (isTouchContextMenuEvent(event)) return;
+            if (!areLinkMenusEnabled()) return;
+            if (touchIdentifier === null && !isMenuActive) return;
+            if (!(event.target instanceof Node) || !contentArea?.contains(event.target)) return;
+            event.preventDefault();
+            event.stopImmediatePropagation();
         };
 
         const handleTouchMove = (event: TouchEvent) => {
             const touch = getTrackedTouch(event.changedTouches);
             if (!touch) return;
+            if (contextMenuOpened) return;
             if (longPressTimer !== null && !isMenuActive) {
                 const dx = touch.clientX - startX;
                 const dy = touch.clientY - startY;
@@ -351,6 +392,12 @@ export default function MobileCommandRadial({ client }: { client: Client }) {
                 if (!isMenuActive) cancelLongPress();
                 return;
             }
+            if (contextMenuOpened) {
+                // Keeps the lifted finger's click off the menu that just opened under it.
+                event.preventDefault();
+                cancelLongPress();
+                return;
+            }
             if (longPressTimer !== null && !isMenuActive) {
                 cancelLongPress();
                 return;
@@ -359,11 +406,18 @@ export default function MobileCommandRadial({ client }: { client: Client }) {
             if (!isMenuActive) return;
             const dx = touch.clientX - centerX;
             const dy = touch.clientY - centerY;
-            if (Math.hypot(dx, dy) >= ACTIVATION_RADIUS && highlightedCommandId) {
-                const command = commands.find((c) => c.id === highlightedCommandId);
-                if (command) client.sendCommand(command.command);
+            let openContextMenu = false;
+            if (Math.hypot(dx, dy) >= ACTIVATION_RADIUS) {
+                if (highlightedCommandId) {
+                    const command = commands.find((c) => c.id === highlightedCommandId);
+                    if (command) client.sendCommand(command.command);
+                }
+            } else {
+                openContextMenu = event.type === 'touchend' && isCenterMenuEnabled();
             }
+            const target = pressTarget;
             hideMenu();
+            if (openContextMenu && target?.isConnected) dispatchTouchContextMenu(target, centerX, centerY);
         };
 
         const handleMouseMove = (event: MouseEvent) => {
@@ -429,6 +483,7 @@ export default function MobileCommandRadial({ client }: { client: Client }) {
             contentArea.addEventListener('touchmove', handleTouchMove, { passive: false });
             contentArea.addEventListener('touchend', handleTouchEnd, { passive: false });
             contentArea.addEventListener('touchcancel', handleTouchEnd, { passive: false });
+            window.addEventListener('contextmenu', handleNativeContextMenu, true);
         }
         contentArea?.addEventListener('mousedown', handleContentAreaMouseDown);
 
@@ -445,6 +500,7 @@ export default function MobileCommandRadial({ client }: { client: Client }) {
             contentArea?.removeEventListener('touchmove', handleTouchMove);
             contentArea?.removeEventListener('touchend', handleTouchEnd);
             contentArea?.removeEventListener('touchcancel', handleTouchEnd);
+            window.removeEventListener('contextmenu', handleNativeContextMenu, true);
             contentArea?.removeEventListener('mousedown', handleContentAreaMouseDown);
             removeMouseListeners();
             offSettings();

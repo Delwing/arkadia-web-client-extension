@@ -14,6 +14,10 @@ export interface RadialCommandSetting {
 export interface RadialSettings {
     enabled: boolean;
     commands: RadialCommandSetting[];
+    /** Long-press on an output link that has its own menu opens that menu instead of the radial. */
+    linkMenus: boolean;
+    /** Releasing inside the radial's center opens the output context menu instead of just closing. */
+    centerMenu: boolean;
 }
 
 export const defaultBackground = 'rgba(135, 206, 235, 0.7)';
@@ -178,6 +182,8 @@ const emptyButton: MobileButtonSetting = { macroType: 'empty', label: '', color:
 
 const defaultRadialSettings: RadialSettings = {
     enabled: true,
+    linkMenus: true,
+    centerMenu: true,
     commands: [
         { id: 'radial-1', label: 'dobadz broni', command: 'dobadz wszystkich broni' },
         { id: 'radial-2', label: 'buduj zioła', command: '/ziola_buduj' },
@@ -190,6 +196,10 @@ const defaultRadialSettings: RadialSettings = {
 
 function cloneDefaultRadialCommands(): RadialCommandSetting[] {
     return defaultRadialSettings.commands.map(cmd => ({ ...cmd }));
+}
+
+function createDefaultRadialSettings(): RadialSettings {
+    return { ...defaultRadialSettings, commands: cloneDefaultRadialCommands() };
 }
 
 function parseSteps(raw: unknown): ButtonMacroConfig[] | undefined {
@@ -266,9 +276,11 @@ function parseLayout(set: any, fallback: LayoutSettings = createDefaultLayout())
 
 function parseRadialSettings(raw: any): RadialSettings {
     if (!raw || typeof raw !== 'object') {
-        return { enabled: true, commands: cloneDefaultRadialCommands() };
+        return createDefaultRadialSettings();
     }
     const enabled = raw.enabled !== false;
+    const linkMenus = raw.linkMenus !== false;
+    const centerMenu = raw.centerMenu !== false;
     const list = Array.isArray(raw.commands) ? raw.commands : [];
     const commands: RadialCommandSetting[] = [];
     const usedIds = new Set<string>();
@@ -293,9 +305,9 @@ function parseRadialSettings(raw: any): RadialSettings {
         commands.push({ id, label, command, color, activeColor, fontColor });
     });
     if (!commands.length) {
-        return { enabled, commands: cloneDefaultRadialCommands() };
+        return { enabled, linkMenus, centerMenu, commands: cloneDefaultRadialCommands() };
     }
-    return { enabled, commands };
+    return { enabled, linkMenus, centerMenu, commands };
 }
 
 export function loadSettings(): Settings {
@@ -364,7 +376,7 @@ export function loadSettings(): Settings {
         team: createDefaultLayout(),
         leader: createDefaultLayout(),
         locked: false,
-        radial: { enabled: true, commands: cloneDefaultRadialCommands() },
+        radial: createDefaultRadialSettings(),
         buttonSize: defaultButtonSize,
         buttonGap: defaultButtonGap,
     };
