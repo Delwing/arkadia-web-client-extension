@@ -18,6 +18,8 @@ export interface CommandInputDeps {
     isPasswordMode: () => boolean;
     getCommandLineSuggestions: () => string[];
     getClearInputOnSend: () => boolean;
+    /** Ctrl+R in the command line: the host opens its history search. */
+    onHistorySearch?: () => void;
 }
 
 /**
@@ -112,6 +114,16 @@ export class CommandInputController {
         }, o);
 
         document.addEventListener('keydown', (e) => this.handleGlobalKeyDown(e), o);
+        // On window, and added after the client's own keybind listeners (the
+        // client is built before the command line mounts), so a player's bind on
+        // Ctrl+R runs first and wins by cancelling the event.
+        window.addEventListener('keydown', (e) => {
+            if (e.defaultPrevented || !this.deps.onHistorySearch) return;
+            if (e.code !== 'KeyR' || !e.ctrlKey || e.altKey || e.shiftKey || e.metaKey) return;
+            if (document.activeElement !== this.input || this.deps.isPasswordMode()) return;
+            e.preventDefault();
+            this.deps.onHistorySearch();
+        }, o);
         this.input.addEventListener('keydown', (e) => this.handleKeyDown(e), o);
         this.input.addEventListener('input', () => this.engine.onInput(), o);
 
@@ -271,7 +283,9 @@ export class CommandInputController {
 
     private handleGlobalKeyDown(e: KeyboardEvent): void {
         if (e.key === 'Enter') {
-            if (e.shiftKey) return;
+            // Already handled where it was pressed (e.g. picking in the history
+            // search, which moves focus here before the key reaches the document).
+            if (e.shiftKey || e.defaultPrevented) return;
             const active = document.activeElement as HTMLElement | null;
             const modalOpen = isAnyModalOpen();
             if (modalOpen && (!active || active.id !== 'message-input')) return;
@@ -334,6 +348,26 @@ export class CommandInputController {
     acceptTabCompletion(): void {
         if (this.engine.tabMode() === 'cycle') this.engine.handleTabCompletion(true);
         else this.engine.acceptHint('all');
+    }
+
+    /** History entries holding every word of `query`, newest first (see the engine). */
+    searchHistory(query: string): string[] {
+        return this.engine.searchHistory(query);
+    }
+
+    /**
+     * Put a picked history entry on the line with the caret at its end. Focus
+     * comes back from the search box here, and the focus handlers' select-all
+     * (this one's, and the phone footer's, which reads `data-keep-selection`)
+     * would otherwise take the caret away again.
+     */
+    loadHistoryEntry(entry: string): void {
+        this.suppressFocusSelectAll = true;
+        this.input.setAttribute('data-keep-selection', '');
+        this.input.focus();
+        this.input.removeAttribute('data-keep-selection');
+        this.suppressFocusSelectAll = false;
+        this.engine.loadHistoryEntry(entry);
     }
 
     /** What the next Tab would append to the current line (see the engine). */

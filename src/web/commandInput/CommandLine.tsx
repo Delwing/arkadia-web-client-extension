@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import { ChevronDown, ChevronUp, Lock, Mic, ArrowRight } from "lucide-react";
 import eventBus from "@modules/core/eventBus";
 import { globalStorage } from "@modules/core/storage";
@@ -7,6 +7,7 @@ import { CommandInputController, type CommandInputDeps } from "./CommandInputCon
 import type { TabCompletionMode } from "./CommandLineEngine";
 import { getConnectionView, requestReconnect, subscribeConnectionView } from "./connectionView";
 import MainMenu from "./MainMenu";
+import HistorySearch from "./HistorySearch";
 import { useHardwareKeyboard, useMediaQuery } from "@web-ui/hooks";
 import FooterButtons from "@web-ui/footer/FooterButtons.tsx";
 
@@ -59,6 +60,8 @@ export default function CommandLine({ deps }: { deps: CommandLineDeps }) {
   const [showVoice, setShowVoice] = useState(showVoiceSetting);
   const connection = useSyncExternalStore(subscribeConnectionView, getConnectionView);
   const [menuOpen, setMenuOpen] = useState(false);
+  // Ctrl+R: the history search, opened on what the line held.
+  const [historySearch, setHistorySearch] = useState<string | null>(null);
 
   useEffect(() => {
     const controller = new CommandInputController({
@@ -72,6 +75,7 @@ export default function CommandLine({ deps }: { deps: CommandLineDeps }) {
       isPasswordMode: () => depsRef.current.isPasswordMode(),
       getCommandLineSuggestions: () => depsRef.current.getCommandLineSuggestions(),
       getClearInputOnSend: () => depsRef.current.getClearInputOnSend(),
+      onHistorySearch: () => setHistorySearch(inputRef.current?.value ?? ""),
     });
     controller.attach();
     controllerRef.current = controller;
@@ -181,6 +185,8 @@ export default function CommandLine({ deps }: { deps: CommandLineDeps }) {
     voiceHandleRef.current?.setEnabled(!passwordMode);
   }, [passwordMode, showVoice]);
 
+  const searchHistory = useCallback((query: string) => controllerRef.current?.searchHistory(query) ?? [], []);
+
   const offline = connection.offline;
   const placeholder = offline && connection.offlineSince
     ? `Połączenie zamknięte · ${formatTime(connection.offlineSince)}`
@@ -188,6 +194,20 @@ export default function CommandLine({ deps }: { deps: CommandLineDeps }) {
 
   return (
     <div id="input-area" className={menuOpen ? "menu-open" : undefined} data-offline={offline ? "1" : "0"}>
+      {historySearch !== null && (
+        <HistorySearch
+          initialQuery={historySearch}
+          search={searchHistory}
+          onPick={(entry) => {
+            setHistorySearch(null);
+            controllerRef.current?.loadHistoryEntry(entry);
+          }}
+          onCancel={(refocus) => {
+            setHistorySearch(null);
+            if (refocus) inputRef.current?.focus();
+          }}
+        />
+      )}
       <div id="history-buttons">
         <button id="history-up-button" ref={upRef} type="button" title="Poprzednia komenda">
           <ChevronUp size={14} strokeWidth={2.2} />

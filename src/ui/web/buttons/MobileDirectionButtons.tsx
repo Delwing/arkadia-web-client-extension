@@ -530,9 +530,12 @@ export default function MobileDirectionButtons({ client, messageInputId = 'messa
         const messageInput = document.getElementById(messageInputId) as HTMLInputElement | HTMLTextAreaElement | null;
         const handleFocusIn = () => {
             scrollToBottom();
+            // Focus given back with a caret already placed (a pick from the
+            // history search) is marked, and keeps it.
+            const keepSelection = messageInput?.hasAttribute('data-keep-selection');
             // select() focuses too: leave focus alone if it has moved on meanwhile.
             setTimeout(() => {
-                if (messageInput && document.activeElement === messageInput) messageInput.select();
+                if (!keepSelection && messageInput && document.activeElement === messageInput) messageInput.select();
             });
             setTimeout(() => scrollToBottom(), 300);
         };

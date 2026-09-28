@@ -322,6 +322,40 @@ describe('CommandLineEngine', () => {
             expect(h.field.value).toBe('stare polecenie');
         });
     });
+
+    describe('searchHistory (Ctrl+R)', () => {
+        it('finds entries holding every word, newest first', () => {
+            const h = makeEngine({ history: ['zabij goblina', 'kup chleb', 'zabij orka', 'polnoc'] });
+            expect(h.engine.searchHistory('zabij')).toEqual(['zabij goblina', 'zabij orka']);
+            expect(h.engine.searchHistory('orka zab')).toEqual(['zabij orka']);
+            expect(h.engine.searchHistory('smok')).toEqual([]);
+        });
+
+        it('ignores case and Polish letters', () => {
+            const h = makeEngine({ history: ['Powiedz Żółw się zgubił'] });
+            expect(h.engine.searchHistory('zolw ZGUBIL')).toEqual(['Powiedz Żółw się zgubił']);
+        });
+
+        it('lists the newest entries for an empty query, up to the limit', () => {
+            const h = makeEngine({ history: ['a', 'b', 'c'] });
+            expect(h.engine.searchHistory('')).toEqual(['a', 'b', 'c']);
+            expect(h.engine.searchHistory('', 2)).toEqual(['a', 'b']);
+        });
+
+        it('puts a picked entry on the line without sending it, and Up starts over', () => {
+            const h = makeEngine({ history: ['wschod', 'kup chleb'] });
+            h.engine.loadHistoryEntry('kup chleb');
+
+            expect(h.field.value).toBe('kup chleb');
+            expect(h.field.selectionStart).toBe(9);
+            expect(h.field.selectionEnd).toBe(9);
+            expect(h.sent).toEqual([]);
+
+            h.field.value = '';
+            h.engine.historyMove('up');
+            expect(h.field.value).toBe('wschod');
+        });
+    });
 });
 
 describe('localStorageHistoryStore', () => {

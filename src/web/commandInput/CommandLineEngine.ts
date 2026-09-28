@@ -1,6 +1,7 @@
 import type {CommandOptions} from "@client/scripts/commandPreserveCaseMode";
 import type {EditableField} from "./editableField";
 import type {CommandHistoryStore} from "./commandHistoryStore";
+import {foldText} from "@shared/foldText.ts";
 
 export interface CommandLineEngineDeps {
     /** The main (visible) command field. */
@@ -379,6 +380,37 @@ export class CommandLineEngine {
         const newValue = completions[this.tabCompletionCount];
         this.tabCompletionOld = newValue;
         this.field.value = newValue;
+        this.moveCursorToEnd();
+    }
+
+    // ── History Search (Ctrl+R) ────────────────────────────────────────
+
+    /**
+     * Commands from the history that hold every word of `query` anywhere in them,
+     * newest first. Case and Polish letters don't matter ("zolw" finds "żółw").
+     * An empty query lists the newest entries.
+     */
+    searchHistory(query: string, limit = 50): string[] {
+        const terms = foldText(query).split(/\s+/).filter(Boolean);
+        const found: string[] = [];
+        for (const entry of this.historyList) {
+            if (!entry) continue;
+            const folded = foldText(entry);
+            if (!terms.every(term => folded.includes(term))) continue;
+            found.push(entry);
+            if (found.length >= limit) break;
+        }
+        return found;
+    }
+
+    /**
+     * Put a history entry picked from a search on the line, caret at its end, as
+     * if the player had typed it: nothing is sent, and Up/Down start over.
+     */
+    loadHistoryEntry(entry: string): void {
+        this.field.value = entry;
+        this.resetHistoryBrowsing();
+        if (!this.field.isFocused()) this.field.focus();
         this.moveCursorToEnd();
     }
 

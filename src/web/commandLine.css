@@ -688,3 +688,101 @@
   border-color: color-mix(in srgb, var(--popup-danger) 50%, transparent);
   background-color: color-mix(in srgb, var(--popup-danger) 10%, transparent);
 }
+
+/* Ctrl+R history search (HistorySearch.tsx): a panel over the command line, the
+   newest match at its bottom, right above the field it will land in. */
+.history-search {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 12px;
+  z-index: 10500;
+  display: flex;
+  flex-direction: column;
+  width: min(640px, calc(100% - 24px));
+  overflow: hidden;
+  border: 1px solid var(--popup-border-strong);
+  border-radius: 10px;
+  background-color: var(--popup-bg);
+  color: var(--popup-text);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.6);
+}
+.history-search__list {
+  max-height: min(50vh, 22rem);
+  margin: 0;
+  padding: 4px;
+  overflow-y: auto;
+  list-style: none;
+  font-family: var(--output-font-family);
+  font-size: var(--ui-fs-sm, 13px);
+}
+.history-search__list li {
+  padding: 3px 8px;
+  border-radius: 5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.history-search__list li.is-selected {
+  background-color: var(--popup-accent-bg);
+  color: var(--popup-text);
+}
+.history-search__list mark {
+  background: transparent;
+  color: var(--popup-accent);
+  font-weight: 700;
+}
+.history-search__empty {
+  padding: 10px 12px;
+  color: var(--popup-text-dim);
+  font-size: var(--ui-fs-sm, 13px);
+}
+.history-search__field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  margin: 0;
+  padding: 0 10px;
+  border-top: 1px solid var(--popup-border);
+  background-color: var(--popup-input-bg);
+  color: var(--popup-text-dim);
+  cursor: text;
+}
+.history-search__field input,
+.history-search__field input:focus {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  outline: none;
+  box-shadow: none;
+  background: transparent;
+  color: var(--popup-text);
+  font: inherit;
+  font-family: var(--output-font-family);
+}
+.history-search__keys {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  color: var(--popup-text-subtle);
+  font-size: var(--ui-fs-xs, 12px);
+  white-space: nowrap;
+}
+.history-search__keys kbd {
+  padding: 0 4px;
+  border: 1px solid var(--popup-border-control);
+  border-radius: 4px;
+  box-shadow: 0 1px 0 var(--popup-border-control);
+  background: transparent;
+  color: var(--popup-text-subtle);
+  font-family: var(--output-font-family);
+  font-size: 10.5px;
+}
+@media (max-width: 560px) {
+  .history-search__keys {
+    display: none;
+  }
+}
