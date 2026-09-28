@@ -67,18 +67,27 @@ export function Menu({ trigger, align = "end", disabled, className, children }: 
             event.stopPropagation();
             close();
         };
+        // Only a scroll that moves the trigger strands the fixed panel. Scrolls
+        // elsewhere must not close it: in the client the game output behind
+        // the dialog scrolls on every incoming line.
+        const onScroll = (event: Event) => {
+            const target = event.target;
+            const anchor = anchorRef.current;
+            if (!anchor) return;
+            if (target instanceof Document || (target instanceof Node && target.contains(anchor))) close();
+        };
         // Attached on the next tick: the click that opened the menu is still
         // propagating and would close it in the same gesture.
         const armed = window.setTimeout(() => {
             window.addEventListener("mousedown", onPointerDown);
-            window.addEventListener("scroll", close, true);
+            window.addEventListener("scroll", onScroll, true);
             window.addEventListener("resize", close);
         }, 0);
         window.addEventListener("keydown", onKey, true);
         return () => {
             window.clearTimeout(armed);
             window.removeEventListener("mousedown", onPointerDown);
-            window.removeEventListener("scroll", close, true);
+            window.removeEventListener("scroll", onScroll, true);
             window.removeEventListener("resize", close);
             window.removeEventListener("keydown", onKey, true);
         };
