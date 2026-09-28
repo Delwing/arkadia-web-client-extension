@@ -42,6 +42,15 @@ Zakresy działają rosnąco (`1-7`) i malejąco (`7-1`). Maksymalnie 50 iteracji
 
 > **Wskazówka:** Asystent odpowiada po polsku i zna ustawienia, komendy i zdarzenia tego klienta. Jeśli w odpowiedzi jest konkretna zmiana (ustawienie, alias, trigger, bind), pojawi się karta z przyciskami **Zastosuj** / **Odrzuć** - nic nie zostanie zapisane, dopóki sam nie klikniesz "Zastosuj". Panel jest zwykłym oknem: można go zadokować, przypiąć i odłączyć do osobnego okna. Własny klucz API (opcjonalny) ustawisz przyciskiem "Ustawienia" w nagłówku panelu; jest zapisywany tylko na tym urządzeniu i nie trafia do synchronizacji w chmurze.
 
+## Wyszukiwanie
+
+| Skrót | Opis |
+|-------|------|
+| `Ctrl+F` | Szukaj w tekście gry. Trafienia są podświetlone, Enter przechodzi do starszego, Shift+Enter do nowszego, Esc zamyka |
+| `Ctrl+R` (w polu komend) | Szukaj w historii komend. Wpisz fragmenty (w dowolnej kolejności), strzałkami wybierz, Enter wstawia komendę do pola bez wysyłania |
+
+> **Wskazówka:** Oba wyszukiwania pomijają wielkość liter i polskie znaki — `zolw` znajdzie „żółw". Ctrl+F przeszukuje to, co jest jeszcze w oknie gry; starsze wpisy znajdziesz przyciskiem z ikoną zwoju, który przenosi zapytanie do okna **Logi**. Na telefonie wyszukiwanie w tekście otworzysz z menu (☰) -> **Szukaj w tekście**. Jeśli masz własny bind na Ctrl+F albo Ctrl+R, bind ma pierwszeństwo.
+
 ## Komunikacja
 
 | Komenda | Opis |

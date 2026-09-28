@@ -31,6 +31,7 @@ const ICONS: Record<string, ComponentType<LucideProps>> = {
   book: Book,
   fullscreen: Maximize,
   power: Power,
+  search: Search,
 };
 
 const GROUP_TITLES: Record<Exclude<MainMenuGroup, "sesja">, string> = {

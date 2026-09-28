@@ -95,6 +95,7 @@ act at once, outside `Zapisz`.
 - `Skrypty (wtyczki)` — user scripts / plugins
 - `Źródła danych` — downloaded game data
 - `Helper` — the companion app (global hotkeys, window management)
+- `Szukaj w tekście` — search the game output (also `Ctrl+F`); `Ctrl+R` in the command line searches the command history
 - `Logi` — session logs
 - `Dokumentacja` — built-in docs
 

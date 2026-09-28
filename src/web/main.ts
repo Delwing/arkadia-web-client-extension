@@ -63,6 +63,7 @@ import {globalStorage} from "@modules/core/storage"
 import {setOutputTimestampVisibility, setupOutputMessageHandler} from "@shared/dom/outputMessageHandler";
 import {isLikelyTouchDevice, isMobileLikeViewport, isTouchPointerType} from "@shared/dom/pointerEnvironment.ts";
 import CommandLine from "./commandInput/CommandLine";
+import {installOutputSearch} from "./outputSearch/installOutputSearch";
 import {setConnectionOffline, setConnectionStatus, setReconnectHandler} from "./commandInput/connectionView";
 import {registerMainMenuItem, updateMainMenuItem, type MainMenuGroup} from "@modules/core/mainMenuRegistry";
 import {harvestOutputLines} from "./commandInput/outputWords";
@@ -775,6 +776,12 @@ document.addEventListener('DOMContentLoaded', () => {
         })));
     }
     const messageInput = document.getElementById('message-input') as HTMLTextAreaElement;
+    installOutputSearch({
+        outputWrapper,
+        splitBottom,
+        skip: [document.getElementById('notification-center')].filter((el): el is HTMLElement => !!el),
+        commandInput: () => document.getElementById('message-input'),
+    });
     onShellSettingsChange((shell) => {
         if (shell.wakeLock && isConnected) {
             preventTabSleep();

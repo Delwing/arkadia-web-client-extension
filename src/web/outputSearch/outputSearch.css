@@ -1,0 +1,74 @@
+/* Ctrl+F over the game output (OutputSearchBar.tsx). Fixed, placed from the
+   output's rect: the output is the scroll container, and its children are the
+   game lines that get trimmed. */
+.output-search {
+  position: fixed;
+  z-index: 1105;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 34px;
+  padding: 0 4px 0 10px;
+  border: 1px solid var(--popup-border-strong);
+  border-radius: 8px;
+  background-color: var(--popup-bg);
+  color: var(--popup-text);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  font-size: var(--ui-fs-sm, 13px);
+}
+.output-search:focus-within {
+  border-color: var(--popup-accent);
+}
+.output-search__icon {
+  flex-shrink: 0;
+  color: var(--popup-text-dim);
+}
+.output-search input,
+.output-search input:focus {
+  width: min(16rem, 40vw);
+  height: 100%;
+  padding: 0 4px;
+  border: 0;
+  outline: none;
+  box-shadow: none;
+  background: transparent;
+  color: var(--popup-text);
+  font: inherit;
+  font-family: var(--output-font-family);
+}
+.output-search__count {
+  min-width: 4.5em;
+  color: var(--popup-text-subtle);
+  font-size: var(--ui-fs-xs, 12px);
+  text-align: right;
+  white-space: nowrap;
+}
+.output-search button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--popup-text-dim);
+  cursor: pointer;
+}
+.output-search button:hover:not(:disabled) {
+  background-color: var(--popup-hover-bg);
+  color: var(--popup-text);
+}
+.output-search button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+::highlight(output-search) {
+  background-color: rgba(255, 196, 0, 0.35);
+}
+::highlight(output-search-current) {
+  background-color: rgba(255, 140, 0, 0.85);
+  color: #000;
+}
