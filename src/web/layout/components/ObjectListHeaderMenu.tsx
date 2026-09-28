@@ -27,7 +27,7 @@ export function ObjectListHeaderMenu() {
     return (
         <HeaderMenu menu={menu} title="Ustawienia listy">
             <MenuCheckItem checked={showWeaponState} onClick={toggle(setShowWeaponState)}>Stan broni</MenuCheckItem>
-            <MenuCheckItem checked={showCoverTimer} onClick={toggle(setShowCoverTimer)}>Timer zaslony</MenuCheckItem>
+            <MenuCheckItem checked={showCoverTimer} onClick={toggle(setShowCoverTimer)}>Timer zasłony</MenuCheckItem>
             <MenuCheckItem checked={showOrderTimer} onClick={toggle(setShowOrderTimer)}>Timer rozkazu</MenuCheckItem>
             <MenuCheckItem checked={showZaskTimer} onClick={toggle(setShowZaskTimer)}>Timer zaskoku</MenuCheckItem>
         </HeaderMenu>

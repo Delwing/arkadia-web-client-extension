@@ -51,7 +51,7 @@ async function loadPlugin(page, body: string): Promise<void> {
 async function removePlugin(page): Promise<void> {
     const modal = await openScriptsModal(page);
     const pluginItem = modal.locator('.plugin-card', {hasText: 'Hook Test'});
-    await pluginItem.getByTitle('Usun').click();
+    await pluginItem.getByTitle('Usuń').click();
     await expect(pluginItem, 'plugin entry should be removed').toHaveCount(0);
 
     await modal.locator('.app-modal__close').first().click();

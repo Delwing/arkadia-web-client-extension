@@ -1,95 +1,95 @@
-# Postepy
+# Postępy
 
-Liczniki zabitych, postepow, stazu i zlecen.
+Liczniki zabitych, postępów, stażu i zleceń.
 
 ## Zabici
 
 | Komenda | Opis |
 |---------|------|
-| `/zabici` | Pokaz tabele z liczba zabitych istot w biezacej sesji |
-| `/zabiciw` | Otworz okno z liczba zabitych istot |
-| `/zabici2` | Wyswietl podsumowanie liczby zabitych istot |
-| `/zabici2 data` | Wyswietl zabitych z danego dnia (np. `/zabici2 2017/1/22`) |
-| `/zabici2w` | Otworz okno z globalnym licznikiem zabitych (zakladki: wszystkie, wg dnia, statystyki) |
-| `/zabici2!` | Wyswietl globalne statystyki zabitych z uwzglednieniem zabitych/dzien |
+| `/zabici` | Pokaż tabelę z liczbą zabitych istot w bieżącej sesji |
+| `/zabiciw` | Otwórz okno z liczbą zabitych istot |
+| `/zabici2` | Wyświetl podsumowanie liczby zabitych istot |
+| `/zabici2 data` | Wyświetl zabitych z danego dnia (np. `/zabici2 2017/1/22`) |
+| `/zabici2w` | Otwórz okno z globalnym licznikiem zabitych (zakładki: wszystkie, wg dnia, statystyki) |
+| `/zabici2!` | Wyświetl globalne statystyki zabitych z uwzględnieniem zabitych/dzień |
 | `/zabici_reset` | Zeruj licznik zabitych istot |
 
-## Postepy i cechy
+## Postępy i cechy
 
 | Komenda | Opis |
 |---------|------|
-| `cechy` | Uruchom licznik poziomowania i wyswietl postepy |
-| `/cechyw` | Otworz okno z historia zmian cech (postep sumy podcech, zmiany kazdej cechy i koszt w postepach) |
-| `/postepy` | Wyswietl postepy |
-| `/postepyw` | Otworz okno z postepami |
-| `/postepy_reset` | Zeruj licznik postepow |
+| `cechy` | Uruchom licznik poziomowania i wyświetl postępy |
+| `/cechyw` | Otwórz okno z historią zmian cech (postęp sumy podcech, zmiany każdej cechy i koszt w postępach) |
+| `/postepy` | Wyświetl postępy |
+| `/postepyw` | Otwórz okno z postępami |
+| `/postepy_reset` | Zeruj licznik postępów |
 
-> **Wskazowka:** historia cech zapisuje sie tylko przy wlaczonej opcji
+> **Wskazówka:** historia cech zapisuje się tylko przy włączonej opcji
 > `MODYFIKATORY stanu postaci` (`opcje modyfikatory wlacz`). Bez niej gra nie oznacza
-> wzmocnionych cech i nie da sie odroznic prawdziwego wzrostu od chwilowego bonusu
-> &mdash; okno `/cechyw` pokazuje wtedy ostrzezenie z przyciskiem, ktory wlacza ta opcje.
-> Cechy z dopiskiem `( +cos )` sa pomijane, a odczyt po smierci
-> (`Twoje cechy sa oslabione`) nie jest zapisywany wcale. Do historii trafiaja tylko
-> odczyty, ktore faktycznie sie zmienily. Odczyt, w ktorym ktoras cecha jest nizsza niz
-> ostatnio zapisana, tez jest pomijany (cechy spadaja tylko po smierci), a takie wpisy
-> zapisane wczesniej sa usuwane z historii przy jej wczytaniu.
+> wzmocnionych cech i nie da się odróżnić prawdziwego wzrostu od chwilowego bonusu
+> &mdash; okno `/cechyw` pokazuje wtedy ostrzeżenie z przyciskiem, który włącza tę opcję.
+> Cechy z dopiskiem `( +cos )` są pomijane, a odczyt po śmierci
+> (`Twoje cechy sa oslabione`) nie jest zapisywany wcale. Do historii trafiają tylko
+> odczyty, które faktycznie się zmieniły. Odczyt, w którym któraś cecha jest niższa niż
+> ostatnio zapisana, też jest pomijany (cechy spadają tylko po śmierci), a takie wpisy
+> zapisane wcześniej są usuwane z historii przy jej wczytaniu.
 >
-> Kazdy zapisany odczyt zapamietuje tez stan globalnego licznika postepow, wiec okno
-> pokazuje, ile postepow zdobyto miedzy kolejnymi zmianami. Wymaga to prowadzonego
-> licznika `/postepy2` &mdash; bez niego przy zmianach nie ma liczby postepow. Koszt
-> podcechy rosnie z poziomem cechy, wiec sa to konkretne pomiary, a nie srednia.
+> Każdy zapisany odczyt zapamiętuje też stan globalnego licznika postępów, więc okno
+> pokazuje, ile postępów zdobyto między kolejnymi zmianami. Wymaga to prowadzonego
+> licznika `/postepy2` &mdash; bez niego przy zmianach nie ma liczby postępów. Koszt
+> podcechy rośnie z poziomem cechy, więc są to konkretne pomiary, a nie średnia.
 
-## Globalny licznik postepow
-
-| Komenda | Opis |
-|---------|------|
-| `/postepy2` | Wyswietl globalny licznik postepow |
-| `/postepy2w` | Otworz okno z globalnym licznikiem postepow (zakladki: dni, miesiace, lata, wykresy) |
-| `/postepy2+` | Dodaj jeden postep do globalnego licznika |
-| `/postepy2+ ile` | Dodaj *ile* postepow (maksymalnie 15) |
-| `/postepy2+ id ile` | Kopiuj *ile* postepow z wpisu o numerze *id* |
-| `/postepy2- id` | Usun wpis o numerze *id* z globalnego licznika |
-| `/postepy2- id ile` | Usun *ile* wpisow zaczynajac od *id* |
-| `/postepy2_reset` | Resetuj globalny licznik postepow |
-| `/postepy2_off` | Wylacz automatyczne dodawanie do globalnego licznika |
-| `/postepy2_on` | Wlacz automatyczne dodawanie do globalnego licznika |
-
-## Staz zawodowy
+## Globalny licznik postępów
 
 | Komenda | Opis |
 |---------|------|
-| `/staz` | Wyswietl aktualny postep treningu zawodu (procent ukonczenia) |
-| `/staz liczba` | Rozpocznij zliczanie stazu od podanej wartosci punktow |
+| `/postepy2` | Wyświetl globalny licznik postępów |
+| `/postepy2w` | Otwórz okno z globalnym licznikiem postępów (zakładki: dni, miesiące, lata, wykresy) |
+| `/postepy2+` | Dodaj jeden postęp do globalnego licznika |
+| `/postepy2+ ile` | Dodaj *ile* postępów (maksymalnie 15) |
+| `/postepy2+ id ile` | Kopiuj *ile* postępów z wpisu o numerze *id* |
+| `/postepy2- id` | Usuń wpis o numerze *id* z globalnego licznika |
+| `/postepy2- id ile` | Usuń *ile* wpisów, zaczynając od *id* |
+| `/postepy2_reset` | Resetuj globalny licznik postępów |
+| `/postepy2_off` | Wyłącz automatyczne dodawanie do globalnego licznika |
+| `/postepy2_on` | Włącz automatyczne dodawanie do globalnego licznika |
 
-> **Wskazowka:** 240 = pelny staz, 10 punktow tygodniowo, 3 punkty za +staz.
-
-## Umiejetnosci
+## Staż zawodowy
 
 | Komenda | Opis |
 |---------|------|
-| `um` | Wyswietl zestawienie umiejetnosci w tabeli z kolorowymi poziomami i modyfikatorami (np. `(-teren)`) |
-| `jezyki` | Wyswietl umiejetnosci jezykowe w tabeli z kolorowymi poziomami |
-| `jezyki maksymalne` | Wyswietl umiejetnosci jezykowe z maksymalnymi wartosciami |
+| `/staz` | Wyświetl aktualny postęp treningu zawodu (procent ukończenia) |
+| `/staz liczba` | Rozpocznij zliczanie stażu od podanej wartości punktów |
+
+> **Wskazówka:** 240 = pełny staż, 10 punktów tygodniowo, 3 punkty za +staż.
+
+## Umiejętności
+
+| Komenda | Opis |
+|---------|------|
+| `um` | Wyświetl zestawienie umiejętności w tabeli z kolorowymi poziomami i modyfikatorami (np. `(-teren)`) |
+| `jezyki` | Wyświetl umiejętności językowe w tabeli z kolorowymi poziomami |
+| `jezyki maksymalne` | Wyświetl umiejętności językowe z maksymalnymi wartościami |
 
 ## Wiedza i biblioteki
 
 | Komenda | Opis |
 |---------|------|
-| `/zglebiaj` | Wyswietl kategorie wiedzy w aktualnej bibliotece |
-| `/biblioteki` | Wyswietl raport z bibliotek |
-| `/wiedza` | Otworz okno raportu wiedzy |
-| `/wiedza_buduj` | Wykonaj komendy `wiedza o ...` i aktualizuj raport dla biezacej postaci |
+| `/zglebiaj` | Wyświetl kategorie wiedzy w aktualnej bibliotece |
+| `/biblioteki` | Wyświetl raport z bibliotek |
+| `/wiedza` | Otwórz okno raportu wiedzy |
+| `/wiedza_buduj` | Wykonaj komendy `wiedza o ...` i aktualizuj raport dla bieżącej postaci |
 
 ## Paczki
 
 | Komenda | Opis |
 |---------|------|
-| `/paczki` | Wyswietl statystyki dostarczonych paczek (dzis, tydzien, miesiac, lacznie) |
+| `/paczki` | Wyświetl statystyki dostarczonych paczek (dziś, tydzień, miesiąc, łącznie) |
 
-> **Wskazowka:** Statystyki zapisuja sie automatycznie po kazdym dostarczeniu paczki. Spoznione dostawy sa oznaczane osobno.
+> **Wskazówka:** Statystyki zapisują się automatycznie po każdym dostarczeniu paczki. Spóźnione dostawy są oznaczane osobno.
 
 ## Zlecenia
 
 | Komenda | Opis |
 |---------|------|
-| `/zlecenia` | Otworz okno z lista aktywnych zlecen od rzemieslnikow |
+| `/zlecenia` | Otwórz okno z listą aktywnych zleceń od rzemieślników |

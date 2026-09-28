@@ -219,9 +219,9 @@ const PeopleBrowser: React.FC = () => {
             className={`people-browser__refresh${isRefreshing ? ' people-browser__refresh--active' : ''}`}
             onClick={refreshData}
             disabled={isRefreshing}
-            title="Odswiez baze postaci"
+            title="Odśwież bazę postaci"
         >
-            {isRefreshing ? 'Odswiezanie...' : 'Odswiez'}
+            {isRefreshing ? 'Odświeżanie...' : 'Odśwież'}
         </button>
     );
 
@@ -243,7 +243,7 @@ const PeopleBrowser: React.FC = () => {
                     type="button"
                     className="popup-btn popup-btn--success"
                     onClick={handleAddClick}
-                    title="Dodaj nowa postac"
+                    title="Dodaj nową postać"
                 >
                     + Dodaj
                 </button>
@@ -313,7 +313,7 @@ const PeopleBrowser: React.FC = () => {
                     >
                         {PAGE_SIZE_OPTIONS.map((size) => (
                             <option key={size} value={size}>
-                                {size} na strone
+                                {size} na stronę
                             </option>
                         ))}
                     </select>
@@ -322,11 +322,11 @@ const PeopleBrowser: React.FC = () => {
 
             <div className="people-browser__content">
                 {isLoading ? (
-                    <div className="people-browser__loading">Ladowanie...</div>
+                    <div className="people-browser__loading">Ładowanie...</div>
                 ) : !result || result.items.length === 0 ? (
                     <div className="people-browser__empty">
                         {searchTerm || guildFilter || statusFilter
-                            ? 'Brak wynikow pasujacych do filtrow.'
+                            ? 'Brak wyników pasujących do filtrów.'
                             : 'Brak danych o ludziach.'}
                     </div>
                 ) : (
@@ -349,7 +349,7 @@ const PeopleBrowser: React.FC = () => {
                                         {isMarkedEnemy && (
                                             <span
                                                 className="people-browser__badge people-browser__badge--enemy"
-                                                title="Oznaczony jako wrog"
+                                                title="Oznaczony jako wróg"
                                             >
                                                 !
                                             </span>
@@ -395,7 +395,7 @@ const PeopleBrowser: React.FC = () => {
                                             type="button"
                                             className="people-browser__item-edit"
                                             onClick={() => handleEditClick(person)}
-                                            title={isIgnored ? 'Przywroc/Edytuj' : 'Edytuj'}
+                                            title={isIgnored ? 'Przywróć/Edytuj' : 'Edytuj'}
                                         >
                                             {isIgnored ? '↩' : '✎'}
                                         </button>
@@ -435,7 +435,7 @@ const PeopleBrowser: React.FC = () => {
                         className="people-browser__page-btn"
                         onClick={goToNextPage}
                         disabled={page >= result.totalPages - 1}
-                        title="Nastepna strona"
+                        title="Następna strona"
                     >
                         &rsaquo;
                     </button>

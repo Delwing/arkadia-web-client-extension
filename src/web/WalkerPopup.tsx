@@ -112,15 +112,15 @@ const WalkerPopup: React.FC = () => {
                     {state.active && (
                         <>
                             <div className="walker-popup__status-row">
-                                <span className="walker-popup__label">Postep:</span>
+                                <span className="walker-popup__label">Postęp:</span>
                                 <span className="walker-popup__value">
                                     {state.currentIndex} / {state.path.length - 1}
                                 </span>
                             </div>
                             <div className="walker-popup__status-row">
-                                <span className="walker-popup__label">Pozostalo:</span>
+                                <span className="walker-popup__label">Pozostało:</span>
                                 <span className="walker-popup__value">
-                                    {locationsLeft} krokow
+                                    {locationsLeft} kroków
                                 </span>
                             </div>
                         </>
@@ -130,7 +130,7 @@ const WalkerPopup: React.FC = () => {
                 {/* Delay Controls */}
                 <div className="walker-popup__section">
                     <div className="walker-popup__delay-row">
-                        <span className="walker-popup__label">Opoznienie:</span>
+                        <span className="walker-popup__label">Opóźnienie:</span>
                         <div className="walker-popup__delay-controls">
                             <button
                                 type="button"
@@ -172,7 +172,7 @@ const WalkerPopup: React.FC = () => {
                                 className="walker-popup__btn walker-popup__btn--success"
                                 onClick={handleResume}
                             >
-                                Wznow
+                                Wznów
                             </button>
                         ) : (
                             <button

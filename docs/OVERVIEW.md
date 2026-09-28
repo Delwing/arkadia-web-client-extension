@@ -1,25 +1,25 @@
 # Rozszerzenie Arkadia
 
-Rozszerzenie dodaje wiele przydatnych funkcji do klienta webowego Arkadii, w tym aliasy, bindy, zarzadzanie pojemnikami i automatyzacje.
+Rozszerzenie dodaje wiele przydatnych funkcji do klienta webowego Arkadii, w tym aliasy, bindy, zarządzanie pojemnikami i automatyzację.
 
 ## Kategorie dokumentacji
 
 | Dokument | Opis |
 |----------|------|
-| **Walka** | Atakowanie, zaslanianie, kolejka celow |
+| **Walka** | Atakowanie, zasłanianie, kolejka celów |
 | **Mapa i nawigacja** | Chodzenie, mapa, prowadzenie |
-| **Ekwipunek** | Pojemniki, zbieranie lupow, depozyty |
-| **Postepy** | Postepy, zabici, zlecenia, staz |
-| **Ziola** | Licznik i zarzadzanie ziolami |
+| **Ekwipunek** | Pojemniki, zbieranie łupów, depozyty |
+| **Postępy** | Postępy, zabici, zlecenia, staż |
+| **Zioła** | Licznik i zarządzanie ziołami |
 | **Bindowanie** | Bindy — okno **Klawisze** |
-| **Miejsca** | Zapisane lokacje na mapie: skroty i notatki |
-| **Synchronizacja** | Synchronizacja ustawien przez Firebase |
-| **Skrypty i automatyzacja** | Aliasy, triggery, bindy, edytor i pluginy — przeglad mozliwosci |
-| **Inne** | Pozostale aliasy i funkcje |
+| **Miejsca** | Zapisane lokacje na mapie: skróty i notatki |
+| **Synchronizacja** | Synchronizacja ustawień przez Firebase |
+| **Skrypty i automatyzacja** | Aliasy, triggery, bindy, edytor i pluginy — przegląd możliwości |
+| **Inne** | Pozostałe aliasy i funkcje |
 
-## Wlasne aliasy
+## Własne aliasy
 
-Mozesz tworzyc wlasne aliasy w ustawieniach klienta:
-- **Wzorzec** - wyrazenie regularne dopasowujace komende
-- **Akcje** - komenda wysylana do serwera (moze uzywac `$1`, `$2` itp. dla grup z dopasowania), dzwiek, powiadomienie, czytanie na glos, funkcyjny bind
-- **Skroty obiektow** - `@1`, `@A`, `@@` zostana zamienione na identyfikatory obiektow
+Możesz tworzyć własne aliasy w ustawieniach klienta:
+- **Wzorzec** - wyrażenie regularne dopasowujące komendę
+- **Akcje** - komenda wysyłana do serwera (może używać `$1`, `$2` itp. dla grup z dopasowania), dźwięk, powiadomienie, czytanie na głos, funkcyjny bind
+- **Skróty obiektów** - `@1`, `@A`, `@@` zostaną zamienione na identyfikatory obiektów

@@ -356,7 +356,7 @@ function DesktopButtons({ registerSave }: { registerSave: (save: () => void) => 
 
                                 <Field
                                     label="Makro"
-                                    error={isButtonMacroAvailable(selectedBtn.macroType) ? undefined : "Ta wtyczka nie jest zaladowana. Makro nie bedzie dzialac."}
+                                    error={isButtonMacroAvailable(selectedBtn.macroType) ? undefined : "Ta wtyczka nie jest załadowana. Makro nie będzie działać."}
                                 >
                                     <MacroSelect
                                         value={selectedBtn.macroType}
@@ -427,7 +427,7 @@ function DesktopButtons({ registerSave }: { registerSave: (save: () => void) => 
 
                                 <div className="settings-subsection ui-settings-stack">
                                     <div className="settings-fields-row">
-                                        {colorField("Kolor tla", "color", defaultButtonColor)}
+                                        {colorField("Kolor tła", "color", defaultButtonColor)}
                                         {colorField("Kolor czcionki", "fontColor", defaultFontColor)}
                                     </div>
                                     <Field label={`Przezroczystość tła: ${Math.round(selectedBtn.backgroundOpacity * 100)}%`}>

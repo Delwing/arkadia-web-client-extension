@@ -164,27 +164,27 @@ const TRANSPORT_EVENT_ARGS: EventArg[] = [
 
 const TRANSPORT_APPROACHING_ARGS: EventArg[] = [
     ...TRANSPORT_EVENT_ARGS,
-    { name: 'remaining', label: 'Pozostale sekundy', type: 'number' },
+    { name: 'remaining', label: 'Pozostałe sekundy', type: 'number' },
 ];
 
 export const SUPPORTED_EVENTS: SupportedEvent[] = [
     // Combat
-    { id: 'kill', label: 'Zabicie (ja/druzyna)', category: 'Walka' },
-    { id: 'enemyKilled', label: 'Wrog zabity', category: 'Walka' },
+    { id: 'kill', label: 'Zabicie (ja/drużyna)', category: 'Walka' },
+    { id: 'enemyKilled', label: 'Wróg zabity', category: 'Walka' },
     { id: 'allEnemiesKilled', label: 'Wszyscy wrogowie zabici', category: 'Walka' },
     { id: 'combatState:true', label: 'Walka - start', category: 'Walka' },
     { id: 'combatState:false', label: 'Walka - koniec', category: 'Walka' },
-    { id: 'enemy.paralyzed', label: 'Wrog ogluszony', category: 'Walka' },
-    { id: 'enemy.paralyzed.end', label: 'Wrog - koniec ogluszenia', category: 'Walka' },
-    { id: 'enemy.broken_defense', label: 'Wrog - zlamana obrona', category: 'Walka' },
+    { id: 'enemy.paralyzed', label: 'Wróg ogłuszony', category: 'Walka' },
+    { id: 'enemy.paralyzed.end', label: 'Wróg - koniec ogłuszenia', category: 'Walka' },
+    { id: 'enemy.broken_defense', label: 'Wróg - złamana obrona', category: 'Walka' },
     {
         id: 'attack',
-        label: 'Atak na mnie (kazdy)',
+        label: 'Atak na mnie (każdy)',
         category: 'Walka',
         description:
-            'Gdy ktokolwiek cie zaatakuje, niezaleznie od gildii. Argument {enemy} mowi, czy atakujacy jest z gildii oznaczonej jako wroga.',
+            'Gdy ktokolwiek cię zaatakuje, niezależnie od gildii. Argument {enemy} mówi, czy atakujący jest z gildii oznaczonej jako wroga.',
         args: [
-            { name: 'attacker', label: 'Nazwa atakujacego', type: 'string' },
+            { name: 'attacker', label: 'Nazwa atakującego', type: 'string' },
             { name: 'enemy', label: 'Czy z wrogiej gildii', type: 'boolean' },
         ],
     },
@@ -193,103 +193,103 @@ export const SUPPORTED_EVENTS: SupportedEvent[] = [
         label: 'Atak wroga (ten z beepem)',
         category: 'Walka',
         description:
-            'Gdy atakuje cie ktos z gildii oznaczonej jako wroga — dokladnie w tym samym momencie, w ktorym odzywa sie beep.',
-        args: [{ name: 'attacker', label: 'Nazwa atakujacego', type: 'string' }],
+            'Gdy atakuje cię ktoś z gildii oznaczonej jako wroga — dokładnie w tym samym momencie, w którym odzywa się beep.',
+        args: [{ name: 'attacker', label: 'Nazwa atakującego', type: 'string' }],
     },
 
     // Character condition. These exist so the built-in alerts can be bound to a
     // `push` macro deliberately — nothing reaches a paired device on its own.
     {
         id: 'hp.low',
-        label: 'Niskie zycie',
-        category: 'Postac',
+        label: 'Niskie życie',
+        category: 'Postać',
         description:
             'Gdy kondycja spadnie do progu ustawionego w "Alarm niskiego zdrowia" (Opcje → Ustawienia).',
         args: [
             { name: 'text', label: 'Opis kondycji', type: 'string' },
-            { name: 'hp', label: 'Poziom zycia (GMCP)', type: 'number' },
+            { name: 'hp', label: 'Poziom życia (GMCP)', type: 'number' },
         ],
     },
     {
         id: 'hp.full',
-        label: 'Pelne zycie (3 min bez walki)',
-        category: 'Postac',
+        label: 'Pełne życie (3 min bez walki)',
+        category: 'Postać',
         description:
-            '3 minuty po odzyskaniu pelnego zycia, o ile w tym czasie zycie nie spadlo i nie atakowales. '
-            + 'Wymaga wlaczonej opcji "Informacja o pelnym zdrowiu" — bez niej nie zadziala wcale.',
-        args: [{ name: 'text', label: 'Tresc alertu', type: 'string' }],
+            '3 minuty po odzyskaniu pełnego życia, o ile w tym czasie życie nie spadło i nie atakowałeś. '
+            + 'Wymaga włączonej opcji "Informacja o pełnym zdrowiu" — bez niej nie zadziała wcale.',
+        args: [{ name: 'text', label: 'Treść alertu', type: 'string' }],
     },
     {
         id: 'hp.idleFull',
-        label: 'Pelne zycie po bezczynnosci',
-        category: 'Postac',
+        label: 'Pełne życie po bezczynności',
+        category: 'Postać',
         description:
-            'W chwili odzyskania pelnego zycia, jesli przez ostatnie 2 minuty nie wyslales zadnej komendy. '
-            + 'To zdarzenie do powiadomien "wrocilem, jestem wyleczony".',
-        args: [{ name: 'text', label: 'Tresc alertu', type: 'string' }],
+            'W chwili odzyskania pełnego życia, jeśli przez ostatnie 2 minuty nie wysłałeś żadnej komendy. '
+            + 'To zdarzenie do powiadomień "wróciłem, jestem wyleczony".',
+        args: [{ name: 'text', label: 'Treść alertu', type: 'string' }],
     },
 
     // Connection
-    { id: 'client.connect', label: 'Polaczenie', category: 'Polaczenie' },
-    { id: 'client.disconnect', label: 'Rozlaczenie', category: 'Polaczenie' },
+    { id: 'client.connect', label: 'Połączenie', category: 'Połączenie' },
+    { id: 'client.disconnect', label: 'Rozłączenie', category: 'Połączenie' },
 
     // Timers. Each fires once per countdown; the per-tick events that drive
     // the on-screen timers are deliberately not offered.
     {
         id: 'zask.ready',
-        label: 'Zaskoczenie - mozna zaskoczyc',
+        label: 'Zaskoczenie - można zaskoczyć',
         category: 'Timery',
-        description: 'Gdy od przemkniecia na lokacje (tryb przemykania lub komenda przemknij) albo od schowania sie minie 30 sekund i licznik zaskoczenia zmieni kolor na zielony.',
+        description: 'Gdy od przemknięcia na lokację (tryb przemykania lub komenda przemknij) albo od schowania się minie 30 sekund i licznik zaskoczenia zmieni kolor na zielony.',
         args: [{ name: 'seconds', label: 'Sekundy od startu', type: 'number' }],
     },
     {
         id: 'cover.start',
-        label: 'Oslona - start odliczania',
+        label: 'Osłona - start odliczania',
         category: 'Timery',
-        description: 'W chwili proby zaslony, zastawienia sie lub wycofania — rusza 5-sekundowe odliczanie.',
+        description: 'W chwili próby zasłony, zastawienia się lub wycofania — rusza 5-sekundowe odliczanie.',
     },
     {
         id: 'cover.ready',
-        label: 'Oslona - koniec odliczania',
+        label: 'Osłona - koniec odliczania',
         category: 'Timery',
-        description: 'Gdy 5-sekundowe odliczanie po probie zaslony dobiegnie konca.',
+        description: 'Gdy 5-sekundowe odliczanie po próbie zasłony dobiegnie końca.',
     },
 
     // Transport
     {
         id: 'transport.stop',
-        label: 'Postoj (na pokladzie)',
+        label: 'Postój (na pokładzie)',
         category: 'Transport',
-        description: 'Gdy pojazd, ktorym jedziesz, zatrzyma sie na dowolnym przystanku.',
+        description: 'Gdy pojazd, którym jedziesz, zatrzyma się na dowolnym przystanku.',
         args: TRANSPORT_EVENT_ARGS,
     },
     {
         id: 'transport.arrived',
-        label: 'Przyjazd (czekajac na przystanku)',
+        label: 'Przyjazd (czekając na przystanku)',
         category: 'Transport',
-        description: 'Gdy czekasz na przystanku i podjedzie pojazd, do ktorego mozna wsiasc (ten sam moment, w ktorym pojawia sie bind wsiadania).',
+        description: 'Gdy czekasz na przystanku i podjedzie pojazd, do którego można wsiąść (ten sam moment, w którym pojawia się bind wsiadania).',
         args: TRANSPORT_EVENT_ARGS,
     },
     {
         id: 'transport.destination',
-        label: 'Postoj w celu podrozy (dzwonek)',
+        label: 'Postój w celu podróży (dzwonek)',
         category: 'Transport',
-        description: 'Gdy pojazd zatrzyma sie na przystanku oznaczonym dzwonkiem w oknie trasy transportu.',
+        description: 'Gdy pojazd zatrzyma się na przystanku oznaczonym dzwonkiem w oknie trasy transportu.',
         args: TRANSPORT_EVENT_ARGS,
     },
     {
         id: 'transport.approaching',
-        label: 'Zbliza sie przystanek',
+        label: 'Zbliża się przystanek',
         category: 'Transport',
-        description: 'Raz na odcinek, gdy do najblizszego przystanku zostanie mniej niz 10 sekund (licznik transportu robi sie czerwony). '
-            + 'Tylko dla odcinkow ze znanym czasem przejazdu.',
+        description: 'Raz na odcinek, gdy do najbliższego przystanku zostanie mniej niż 10 sekund (licznik transportu robi się czerwony). '
+            + 'Tylko dla odcinków ze znanym czasem przejazdu.',
         args: TRANSPORT_APPROACHING_ARGS,
     },
     {
         id: 'transport.approachingDestination',
-        label: 'Zbliza sie cel podrozy (dzwonek)',
+        label: 'Zbliża się cel podróży (dzwonek)',
         category: 'Transport',
-        description: 'Jak "Zbliza sie przystanek", ale tylko przed przystankiem oznaczonym dzwonkiem w oknie trasy transportu.',
+        description: 'Jak "Zbliża się przystanek", ale tylko przed przystankiem oznaczonym dzwonkiem w oknie trasy transportu.',
         args: TRANSPORT_APPROACHING_ARGS,
     },
 
@@ -300,18 +300,18 @@ export const SUPPORTED_EVENTS: SupportedEvent[] = [
         id: 'gmcp.char.state',
         label: 'Char.State — stan postaci',
         category: 'GMCP',
-        description: 'Przy kazdej zmianie stanu postaci (zycie, zmeczenie, mana, obciazenie...). Przychodzi bardzo czesto.',
+        description: 'Przy każdej zmianie stanu postaci (życie, zmęczenie, mana, obciążenie...). Przychodzi bardzo często.',
         args: [
-            { name: 'hp', label: 'Zycie', type: 'number' },
+            { name: 'hp', label: 'Życie', type: 'number' },
             { name: 'mana', label: 'Mana', type: 'number' },
-            { name: 'fatigue', label: 'Zmeczenie', type: 'number' },
-            { name: 'improve', label: 'Postepy', type: 'number' },
+            { name: 'fatigue', label: 'Zmęczenie', type: 'number' },
+            { name: 'improve', label: 'Postępy', type: 'number' },
             { name: 'form', label: 'Forma', type: 'number' },
             { name: 'intox', label: 'Upojenie', type: 'number' },
             { name: 'headache', label: 'Kac', type: 'number' },
             { name: 'stuffed', label: 'Najedzenie', type: 'number' },
             { name: 'soaked', label: 'Napojenie', type: 'number' },
-            { name: 'encumbrance', label: 'Obciazenie', type: 'number' },
+            { name: 'encumbrance', label: 'Obciążenie', type: 'number' },
             { name: 'panic', label: 'Panika', type: 'number' },
             { name: 'state', label: 'Stan', type: 'string' },
         ],
@@ -322,9 +322,9 @@ export const SUPPORTED_EVENTS: SupportedEvent[] = [
         category: 'GMCP',
         description: 'Po zalogowaniu i przy zmianie danych postaci.',
         args: [
-            { name: 'name', label: 'Imie', type: 'string' },
+            { name: 'name', label: 'Imię', type: 'string' },
             { name: 'race', label: 'Rasa', type: 'string' },
-            { name: 'gender', label: 'Plec', type: 'string' },
+            { name: 'gender', label: 'Płeć', type: 'string' },
             { name: 'guild_occ', label: 'Gildia zawodowa', type: 'string' },
             { name: 'guild_lay', label: 'Gildia laicka', type: 'string' },
             { name: 'guild_race', label: 'Gildia rasowa', type: 'string' },
@@ -335,20 +335,20 @@ export const SUPPORTED_EVENTS: SupportedEvent[] = [
         id: 'gmcp.char.options',
         label: 'Char.Options — opcje postaci',
         category: 'GMCP',
-        description: 'Po zalogowaniu i przy zmianie opcji. Serwer moze wyslac tylko zmieniona opcje.',
+        description: 'Po zalogowaniu i przy zmianie opcji. Serwer może wysłać tylko zmienioną opcję.',
     },
-    { id: 'gmcp.char.options.info', label: 'Char.Options.Info — dozwolone wartosci opcji', category: 'GMCP' },
+    { id: 'gmcp.char.options.info', label: 'Char.Options.Info — dozwolone wartości opcji', category: 'GMCP' },
     { id: 'gmcp.char.colors', label: 'Char.Colors — kolory', category: 'GMCP' },
     {
         id: 'gmcp.room.info',
         label: 'Room.Info — lokacja',
         category: 'GMCP',
-        description: 'Przy kazdym wejsciu na lokacje.',
+        description: 'Przy każdym wejściu na lokację.',
         args: [
             { name: 'num', label: 'Numer lokacji', type: 'number' },
             { name: 'id', label: 'Identyfikator lokacji', type: 'number' },
             { name: 'hash', label: 'Hash lokacji', type: 'string' },
-            { name: 'exits', label: 'Wyjscia', type: 'string' },
+            { name: 'exits', label: 'Wyjścia', type: 'string' },
         ],
     },
     {
@@ -356,7 +356,7 @@ export const SUPPORTED_EVENTS: SupportedEvent[] = [
         label: 'Room.Time — pora dnia',
         category: 'GMCP',
         args: [
-            { name: 'daylight', label: 'Dzien', type: 'boolean' },
+            { name: 'daylight', label: 'Dzień', type: 'boolean' },
             { name: 'season', label: 'Pora roku', type: 'number' },
         ],
     },
@@ -367,22 +367,22 @@ export const SUPPORTED_EVENTS: SupportedEvent[] = [
         args: [
             { name: 'unread', label: 'Nieprzeczytane', type: 'boolean' },
             { name: 'unreceived', label: 'Nieodebrane', type: 'boolean' },
-            { name: 'unsent', label: 'Niewyslane', type: 'boolean' },
+            { name: 'unsent', label: 'Niewysłane', type: 'boolean' },
         ],
     },
     {
         id: 'gmcp.objects.nums',
-        label: 'Objects.Nums — obiekty wokol',
+        label: 'Objects.Nums — obiekty wokół',
         category: 'GMCP',
-        description: 'Przy kazdej zmianie listy obiektow na lokacji.',
+        description: 'Przy każdej zmianie listy obiektów na lokacji.',
     },
     {
         id: 'gmcp.objects.data',
-        label: 'Objects.Data — dane obiektow',
+        label: 'Objects.Data — dane obiektów',
         category: 'GMCP',
-        description: 'Przy kazdej zmianie stanu obiektow wokol (np. w trakcie walki). Przychodzi bardzo czesto.',
+        description: 'Przy każdej zmianie stanu obiektów wokół (np. w trakcie walki). Przychodzi bardzo często.',
     },
-    { id: 'gmcp.core.ping', label: 'Core.Ping — odpowiedz na ping', category: 'GMCP' },
+    { id: 'gmcp.core.ping', label: 'Core.Ping — odpowiedź na ping', category: 'GMCP' },
 ];
 
 /** Category of the raw GMCP entries in `SUPPORTED_EVENTS`. */

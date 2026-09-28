@@ -216,7 +216,7 @@ describe('askAssistant over the Worker', () => {
         expect(events).toEqual([expect.objectContaining({
             type: 'error',
             status: 'internal_error',
-            message: expect.stringContaining('bez zadnej odpowiedzi'),
+            message: expect.stringContaining('bez żadnej odpowiedzi'),
         })]);
     });
 

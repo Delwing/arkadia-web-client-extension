@@ -50,7 +50,7 @@ export interface CategoryDefinition {
 export const CATEGORY_REGISTRY = {
     uiSettings: { name: 'Ustawienia interfejsu', scope: 'device', speed: 'hot', customSync: true },
     binds: { name: 'Bindy klawiszy', scope: 'shared', speed: 'hot', globalKeys: ['binds', 'keymaps'] },
-    shortcuts: { name: 'Skroty', scope: 'shared', speed: 'hot', globalKeys: ['shortcuts'] },
+    shortcuts: { name: 'Skróty', scope: 'shared', speed: 'hot', globalKeys: ['shortcuts'] },
     characterSettings: { name: 'Ustawienia postaci', scope: 'shared', speed: 'hot', merge: 'perCharacter', customSync: true },
     triggers: { name: 'Triggery', scope: 'shared', speed: 'hot', globalKeys: ['triggers'] },
     aliases: { name: 'Aliasy', scope: 'shared', speed: 'hot', globalKeys: ['aliases'] },
@@ -60,7 +60,7 @@ export const CATEGORY_REGISTRY = {
     visitedRooms: { name: 'Odwiedzone lokacje', scope: 'shared', speed: 'cold', merge: 'append', customSync: true },
     locationNotes: { name: 'Notatki lokacji', scope: 'shared', speed: 'hot', customSync: true },
     killCounts: { name: 'Licznik zabitych', scope: 'shared', speed: 'cold', merge: 'append', characterKey: 'kill_counter', customSync: true },
-    improveCounts: { name: 'Licznik postepow', scope: 'shared', speed: 'hot', merge: 'perCharacter', characterKey: 'improve_counter_lifetime' },
+    improveCounts: { name: 'Licznik postępów', scope: 'shared', speed: 'hot', merge: 'perCharacter', characterKey: 'improve_counter_lifetime' },
     deposits: { name: 'Depozyty', scope: 'shared', speed: 'hot', merge: 'perCharacter', characterKey: 'deposits' },
     containers: { name: 'Pojemniki', scope: 'shared', speed: 'hot', merge: 'perCharacter', characterKey: 'containers' },
     peopleEdits: { name: 'Edycje bazy postaci', scope: 'shared', speed: 'hot', merge: 'perCharacter', characterKey: 'peopleLocalEvents' },
@@ -70,8 +70,8 @@ export const CATEGORY_REGISTRY = {
     // Appended at the end to preserve historical category order (cloud payload
     // compatibility).
     shellSettings: { name: 'Ustawienia okna', scope: 'shared', speed: 'hot', globalKeys: ['shellSettings'] },
-    renderSettings: { name: 'Wyglad tekstu', scope: 'shared', speed: 'hot', globalKeys: ['renderSettings'] },
-    mapSettings: { name: 'Wyglad mapy', scope: 'shared', speed: 'hot', globalKeys: ['mapSettings'] },
+    renderSettings: { name: 'Wygląd tekstu', scope: 'shared', speed: 'hot', globalKeys: ['renderSettings'] },
+    mapSettings: { name: 'Wygląd mapy', scope: 'shared', speed: 'hot', globalKeys: ['mapSettings'] },
     behaviorSettings: { name: 'Zachowanie interfejsu', scope: 'shared', speed: 'hot', globalKeys: ['behaviorSettings'] },
     automationGroups: { name: 'Grupy automatyzacji', scope: 'shared', speed: 'hot', globalKeys: ['automationGroups'] },
     automationScripts: { name: 'Skrypty automatyzacji', scope: 'shared', speed: 'hot', globalKeys: ['automationScripts'] },

@@ -42,9 +42,9 @@ interface AssistantMessage {
 let nextId = 1;
 
 const WELCOME = [
-    'Zapytaj o cokolwiek zwiazanego z klientem Arkadii - ustawienia, aliasy, triggery, bindy.',
-    'Jesli odpowiedz zawiera konkretna zmiane, dostaniesz karte z przyciskiem "Zastosuj".',
-    'Nic nie zostanie zapisane, dopoki sam tego nie klikniesz.',
+    'Zapytaj o cokolwiek związanego z klientem Arkadii - ustawienia, aliasy, triggery, bindy.',
+    'Jeśli odpowiedź zawiera konkretną zmianę, dostaniesz kartę z przyciskiem "Zastosuj".',
+    'Nic nie zostanie zapisane, dopóki sam tego nie klikniesz.',
 ].join(' ');
 
 export default function AssistantPopup() {
@@ -67,7 +67,7 @@ export default function AssistantPopup() {
         }
         if (data.seedTriggerText) {
             const lines = data.seedTriggerText.split('\n').map(line => line.trim()).filter(Boolean);
-            setInput(`Zrob trigger na taka linie z gry:\n${lines.join('\n')}`);
+            setInput(`Zrób trigger na taką linię z gry:\n${lines.join('\n')}`);
         }
     }, []);
 
@@ -148,7 +148,7 @@ export default function AssistantPopup() {
 
         askAssistant({ question: trimmed, signal: controller.signal, onEvent })
             .catch((err: unknown) => {
-                console.error('Blad asystenta', err);
+                console.error('Błąd asystenta', err);
                 patch(message => ({
                     ...message,
                     failed: true,
@@ -190,10 +190,10 @@ export default function AssistantPopup() {
             <button
                 type="button"
                 className="assistant-header-btn"
-                title="Wyczysc rozmowe"
+                title="Wyczyść rozmowę"
                 onClick={() => setMessages([])}
             >
-                Wyczysc
+                Wyczyść
             </button>
             <button
                 type="button"
@@ -230,7 +230,7 @@ export default function AssistantPopup() {
                     >
                         {message.text && <div className="assistant-msg__text">{message.text}</div>}
                         {message.streaming && !message.text && (
-                            <div className="assistant-msg__pending">Mysle...</div>
+                            <div className="assistant-msg__pending">Myślę...</div>
                         )}
                         {message.results?.map((result, index) => {
                             // A setting the assistant is not allowed to change is not a
@@ -295,7 +295,7 @@ export default function AssistantPopup() {
             {/* The placeholder disappears as soon as the user types, which is precisely
                 when a follow-up gets written. This line stays put. */}
             <p className="assistant-popup__hint">
-                Asystent nie pamieta poprzednich pytan - kazde musi byc samodzielne.
+                Asystent nie pamięta poprzednich pytań - każde musi być samodzielne.
             </p>
 
             {showSettings && <AssistantSettingsDialog onClose={() => setShowSettings(false)} />}
@@ -331,7 +331,7 @@ function hasHintFor(message: AssistantMessage, settingKey: string): boolean {
 }
 
 function errorMessage(result: ValidationResult): string {
-    return result.issues.find(issue => issue.severity === 'error')?.message ?? 'nieznany blad';
+    return result.issues.find(issue => issue.severity === 'error')?.message ?? 'nieznany błąd';
 }
 
 /**

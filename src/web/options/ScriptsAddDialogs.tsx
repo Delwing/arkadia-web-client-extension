@@ -51,7 +51,7 @@ const ROUTES: { key: AddRoute; icon: ReactNode; title: string; text: string; pri
     {
         key: "editor",
         icon: <PenSquare size={20} />,
-        title: "Otworz edytor",
+        title: "Otwórz edytor",
         text: "Napisz plugin od zera w edytorze z podpowiedziami.",
     },
 ];
@@ -103,7 +103,7 @@ export function AddUrlDialog({ onAdd, onClose }: { onAdd: (url: string) => void;
         >
             <Field
                 label="Adres skryptu"
-                hint="Skrypt jest wczytywany z tego adresu przy kazdym starcie klienta — dodawaj tylko zrodla, ktorym ufasz."
+                hint="Skrypt jest wczytywany z tego adresu przy każdym starcie klienta — dodawaj tylko źródła, którym ufasz."
             >
                 <Input
                     mono
@@ -214,7 +214,7 @@ export function AiPromptDialog({ onHaveCode, onClose }: { onHaveCode: () => void
                     rows={4}
                     value={description}
                     onChange={(event: ChangeEvent<HTMLTextAreaElement>) => setDescription(event.target.value)}
-                    placeholder="Np. podswietl na czerwono linie zawierajace moje imie"
+                    placeholder="Np. podświetl na czerwono linie zawierające moje imię"
                     autoComplete="off"
                 />
             </Field>

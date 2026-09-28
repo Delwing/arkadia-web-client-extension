@@ -149,10 +149,10 @@ test('Scripts tab manages URLs, reflects plugin lifecycle, and cleans up storage
     await expect(scriptsModal.locator('.plugin-card'), 'should isolate the failing script').toHaveCount(1);
     await scriptsModal.locator('.plugin-filter', {hasText: 'Wszystkie'}).click();
 
-    await primaryItem.getByTitle('Usun').click();
+    await primaryItem.getByTitle('Usuń').click();
     await expect(primaryItem, 'should remove primary script entry').toHaveCount(0);
 
-    await secondaryItem.getByTitle('Usun').click();
+    await secondaryItem.getByTitle('Usuń').click();
     await expect(secondaryItem, 'should remove secondary script entry').toHaveCount(0);
     await expect(scriptsModal.locator('.plugin-card'), 'should clear scripts list after removals').toHaveCount(0);
 
@@ -243,7 +243,7 @@ test('Catalogue tab installs a plugin and then offers its update', async ({page}
 
     const followed = page.locator(SCRIPTS_MODAL).locator('.plugin-card', {hasText: 'Katalogowy'});
     await expect(followed.getByText('v1.1.0'), 'should pick up the new release by itself').toBeVisible();
-    await expect(followed.getByText('Dostepna wersja'), 'should not offer an update').toHaveCount(0);
+    await expect(followed.getByText('Dostępna wersja'), 'should not offer an update').toHaveCount(0);
 
     // An older install pinned to an exact version still gets offered the update,
     // and taking it moves it onto `latest` in place rather than adding a copy.
@@ -253,7 +253,7 @@ test('Catalogue tab installs a plugin and then offers its update', async ({page}
     await openScriptsModal(page);
 
     const updated = page.locator(SCRIPTS_MODAL).locator('.plugin-card', {hasText: 'Katalogowy'});
-    await expect(updated.getByText('Dostepna wersja'), 'should offer the newer release').toBeVisible();
+    await expect(updated.getByText('Dostępna wersja'), 'should offer the newer release').toBeVisible();
     await updated.getByRole('button', {name: 'Aktualizuj', exact: true}).click();
 
     await expect(updated.getByText('v1.1.0'), 'should run the new version').toBeVisible();

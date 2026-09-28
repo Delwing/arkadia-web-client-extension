@@ -36,7 +36,7 @@ export function usePluginZipImport(onImported: () => Promise<void> | void) {
             try {
                 buffer = await file.arrayBuffer();
             } catch {
-                flash({ message: "Nie udalo sie odczytac pliku.", type: "error" }, 5000);
+                flash({ message: "Nie udało się odczytać pliku.", type: "error" }, 5000);
                 return;
             }
 
@@ -88,14 +88,14 @@ export function usePluginZipImport(onImported: () => Promise<void> | void) {
                     flash({ message: `Zaimportowano: ${name}`, type: "success" }, 3000);
                 } catch (error) {
                     console.error("Failed to store plugin:", error);
-                    flash({ message: "Blad podczas zapisywania pluginu.", type: "error" }, 5000);
+                    flash({ message: "Błąd podczas zapisywania pluginu.", type: "error" }, 5000);
                 }
             };
 
             worker.onerror = (error) => {
                 console.error("Worker error:", error);
                 worker.terminate();
-                flash({ message: "Blad podczas importu.", type: "error" }, 5000);
+                flash({ message: "Błąd podczas importu.", type: "error" }, 5000);
             };
 
             worker.postMessage({ type: "import", file: buffer });

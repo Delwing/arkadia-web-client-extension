@@ -14,7 +14,7 @@ import {
 } from '@modules/core/letterTemplates.ts';
 import { renderLetterLayout, type LetterAlignment } from '@shared/letterRenderer.ts';
 
-const SAMPLE_CONTENT = 'Drogi przyjacielu,\n\nto jest przykladowa tresc listu, ktora pokazuje, jak szablon otacza tekst i zawija dluzsze linie. Kazda linia tresci dostaje kolejny poczatek i koniec.\n\n>Twoj druh';
+const SAMPLE_CONTENT = 'Drogi przyjacielu,\n\nto jest przykładowa treść listu, która pokazuje, jak szablon otacza tekst i zawija dłuższe linie. Każda linia treści dostaje kolejny początek i koniec.\n\n>Twój druh';
 
 interface LetterTemplatesDialogProps {
     lineWidth: number;
@@ -76,14 +76,14 @@ const LetterTemplatesDialog: React.FC<LetterTemplatesDialogProps> = ({ lineWidth
     );
 
     return (
-        <Dialog title="Szablony listow" onClose={onClose} size="xl" className="letter-templates-dialog" footer={
+        <Dialog title="Szablony listów" onClose={onClose} size="xl" className="letter-templates-dialog" footer={
             <Button variant="solid" onClick={onClose}>Zamknij</Button>
         }>
             <div className="letter-templates">
                 <div className="letter-templates__sidebar">
                     <div className="letter-templates__list">
                         {templates.length === 0 && (
-                            <div className="popup-field__hint">Brak wlasnych szablonow.</div>
+                            <div className="popup-field__hint">Brak własnych szablonów.</div>
                         )}
                         {templates.map(t => (
                             <button
@@ -120,12 +120,12 @@ const LetterTemplatesDialog: React.FC<LetterTemplatesDialogProps> = ({ lineWidth
                                         onChange={(e) => update({ name: e.target.value })}
                                     />
                                 </Field>
-                                <DeleteButton title="Usun szablon" onClick={remove} />
+                                <DeleteButton title="Usuń szablon" onClick={remove} />
                             </div>
                             <Field
-                                label="Naglowek"
+                                label="Nagłówek"
                                 htmlFor="letter-template-header"
-                                hint="{...} - tekst w klamrach powtorzony na szerokosc tresci, np. +--{-}--+ albo +{-=}+"
+                                hint="{...} - tekst w klamrach powtórzony na szerokość treści, np. +--{-}--+ albo +{-=}+"
                             >
                                 <TextArea
                                     id="letter-template-header"
@@ -137,10 +137,10 @@ const LetterTemplatesDialog: React.FC<LetterTemplatesDialogProps> = ({ lineWidth
                                 />
                             </Field>
                             <div className="popup-field__hint">
-                                Poczatek i koniec linii tresci moga miec kilka linii - kolejne linie tresci uzywaja ich po kolei, w kolko.
+                                Początek i koniec linii treści mogą mieć kilka linii - kolejne linie treści używają ich po kolei, w kółko.
                             </div>
                             <div className="letter-templates__row">
-                                <Field label="Poczatek linii tresci" htmlFor="letter-template-prefix" className="letter-templates__grow">
+                                <Field label="Początek linii treści" htmlFor="letter-template-prefix" className="letter-templates__grow">
                                     <TextArea
                                         id="letter-template-prefix"
                                         mono
@@ -150,7 +150,7 @@ const LetterTemplatesDialog: React.FC<LetterTemplatesDialogProps> = ({ lineWidth
                                         onChange={(e) => update({ bodyPrefix: e.target.value })}
                                     />
                                 </Field>
-                                <Field label="Koniec linii tresci" htmlFor="letter-template-suffix" className="letter-templates__grow">
+                                <Field label="Koniec linii treści" htmlFor="letter-template-suffix" className="letter-templates__grow">
                                     <TextArea
                                         id="letter-template-suffix"
                                         mono
@@ -173,13 +173,13 @@ const LetterTemplatesDialog: React.FC<LetterTemplatesDialogProps> = ({ lineWidth
                             </Field>
                         </div>
                         <div className="letter-templates__preview">
-                            <div className="popup-field__label">Podglad (szerokosc {lineWidth})</div>
+                            <div className="popup-field__label">Podgląd (szerokość {lineWidth})</div>
                             <pre className="letter-composer-preview-text letter-templates__preview-text">{preview}</pre>
                         </div>
                     </div>
                 ) : (
                     <div className="letter-templates__empty popup-field__hint">
-                        Wybierz szablon bazowy i kliknij "Dodaj szablon", aby stworzyc wlasny.
+                        Wybierz szablon bazowy i kliknij "Dodaj szablon", aby stworzyć własny.
                     </div>
                 )}
             </div>

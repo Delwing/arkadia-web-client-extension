@@ -70,7 +70,7 @@ function LocalExportTab() {
         await publishRestore();
         let msg = "Import zakończony sukcesem. Niektóre ustawienia mogą wymagać odświeżenia strony.";
         if (result.deviceSettingsSavedToImportedList) {
-            msg += " Ustawienia interfejsu z innego urzadzenia zostaly zapisane - mozesz je zastosowac w zakladce Urzadzenia.";
+            msg += " Ustawienia interfejsu z innego urządzenia zostały zapisane - możesz je zastosować w zakładce Urządzenia.";
         }
         setStatus(msg);
     };
@@ -116,7 +116,7 @@ function LocalExportTab() {
         <div className="ui-settings-stack">
             <p className="popup-field__hint">
                 Kopia zawiera wszystkie Twoje dane i ustawienia wszystkich postaci. Dane pobierane z internetu (mapy,
-                ziola, magiki itp.) nie sa dolaczane.
+                zioła, magiki itp.) nie są dołączane.
             </p>
             <div className="popup-inline settings-wrap">
                 <Button variant="solid" onClick={handleExport} disabled={isProcessing}>
@@ -139,17 +139,17 @@ function LocalExportTab() {
                     <p className="popup-field__hint">
                         Kopia sprzed aktualizacji synchronizacji
                         ({new Date(preSyncBackup.createdAt).toLocaleString()}) - zapisana automatycznie na tym
-                        urzadzeniu, zanim nowa synchronizacja zmienila jakiekolwiek dane.
+                        urządzeniu, zanim nowa synchronizacja zmieniła jakiekolwiek dane.
                     </p>
                     <div className="popup-inline settings-wrap">
                         <Button onClick={handleRestorePreSync} disabled={isProcessing}>
-                            Przywroc stan sprzed aktualizacji
+                            Przywróć stan sprzed aktualizacji
                         </Button>
                         <Button
                             onClick={() => downloadBackup(preSyncBackup, "arkadia-backup-przed-aktualizacja-synchronizacji.json")}
                             disabled={isProcessing}
                         >
-                            Pobierz te kopie
+                            Pobierz tę kopię
                         </Button>
                     </div>
                 </>

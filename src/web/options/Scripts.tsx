@@ -147,14 +147,14 @@ function Scripts() {
                         type="search"
                         value={search}
                         onChange={(event: ChangeEvent<HTMLInputElement>) => setSearch(event.target.value)}
-                        placeholder={tab === "installed" ? "Szukaj wsrod zainstalowanych" : "Szukaj w katalogu"}
+                        placeholder={tab === "installed" ? "Szukaj wśród zainstalowanych" : "Szukaj w katalogu"}
                     />
                     {search && (
                         <button
                             type="button"
                             className="plugin-search__clear"
                             onClick={() => setSearch("")}
-                            title="Wyczysc"
+                            title="Wyczyść"
                         >
                             <X size={14} />
                         </button>

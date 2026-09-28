@@ -78,21 +78,21 @@ export interface AskOptions {
 
 /** Polish, ASCII-only copy for each terminal status. */
 const STATUS_MESSAGES: Record<AssistantErrorStatus, string> = {
-    pool_exhausted: 'Wspolna pula kluczy jest chwilowo wyczerpana. Sprobuj pozniej albo dodaj wlasny klucz API w ustawieniach panelu.',
-    quota_exceeded: 'Wyczerpano dzienny limit pytan dla tego urzadzenia. Limit odnawia sie o polnocy UTC.',
-    challenge_required: 'Serwer wymaga weryfikacji antybotowej, ktorej ten panel jeszcze nie obsluguje. Uzyj wlasnego klucza API.',
-    challenge_failed: 'Weryfikacja antybotowa nie powiodla sie.',
-    bad_request: 'Serwer odrzucil zapytanie.',
-    forbidden_origin: 'Ten adres nie jest na liscie dozwolonych domen serwera asystenta.',
-    too_large: 'Pytanie jest za dlugie. Skroc je i sprobuj ponownie.',
-    internal_error: 'Blad po stronie serwera asystenta.',
-    network_error: 'Nie udalo sie polaczyc z serwerem asystenta. Sprawdz adres w ustawieniach panelu.',
-    not_configured: 'Asystent nie jest skonfigurowany: brak adresu serwera i brak wlasnego klucza API. Uzupelnij ustawienia panelu.',
+    pool_exhausted: 'Wspólna pula kluczy jest chwilowo wyczerpana. Spróbuj później albo dodaj własny klucz API w ustawieniach panelu.',
+    quota_exceeded: 'Wyczerpano dzienny limit pytań dla tego urządzenia. Limit odnawia się o północy UTC.',
+    challenge_required: 'Serwer wymaga weryfikacji antybotowej, której ten panel jeszcze nie obsługuje. Użyj własnego klucza API.',
+    challenge_failed: 'Weryfikacja antybotowa nie powiodła się.',
+    bad_request: 'Serwer odrzucił zapytanie.',
+    forbidden_origin: 'Ten adres nie jest na liście dozwolonych domen serwera asystenta.',
+    too_large: 'Pytanie jest za długie. Skróć je i spróbuj ponownie.',
+    internal_error: 'Błąd po stronie serwera asystenta.',
+    network_error: 'Nie udało się połączyć z serwerem asystenta. Sprawdź adres w ustawieniach panelu.',
+    not_configured: 'Asystent nie jest skonfigurowany: brak adresu serwera i brak własnego klucza API. Uzupełnij ustawienia panelu.',
 };
 
 /** How long the Worker may go without writing a frame before we give up. */
 const IDLE_TIMEOUT_MS = 60_000;
-const TIMEOUT_MESSAGE = 'Serwer asystenta nie odpowiada. Sprobuj ponownie za chwile.';
+const TIMEOUT_MESSAGE = 'Serwer asystenta nie odpowiada. Spróbuj ponownie za chwilę.';
 
 export function statusMessage(status: AssistantErrorStatus): string {
     return STATUS_MESSAGES[status] ?? STATUS_MESSAGES.internal_error;
@@ -189,7 +189,7 @@ export async function askAssistant(options: AskOptions): Promise<void> {
     // one could". Everything else is terminal and was already reported.
     const canFallBack = outcome.status === 'pool_exhausted' || outcome.status === 'network_error';
     if (canFallBack && apiKey && !options.signal?.aborted) {
-        onEvent({ type: 'notice', message: 'Wspolna pula jest niedostepna - pytam przez Twoj klucz API.' });
+        onEvent({ type: 'notice', message: 'Wspólna pula jest niedostępna - pytam przez Twój klucz API.' });
         await askByok(options, apiKey);
         return;
     }
@@ -334,7 +334,7 @@ async function askWorker(options: AskOptions, workerUrl: string): Promise<Worker
         return {
             ok: false,
             status: 'internal_error',
-            message: 'Serwer asystenta zamknal polaczenie bez zadnej odpowiedzi. Sprobuj ponownie.',
+            message: 'Serwer asystenta zamknął połączenie bez żadnej odpowiedzi. Spróbuj ponownie.',
         };
     }
     return { ok: true, status: 'internal_error' };
@@ -389,7 +389,7 @@ async function askByok(options: AskOptions, apiKey: string): Promise<void> {
         onEvent({
             type: 'error',
             status: 'internal_error',
-            message: 'Nie udalo sie wczytac bazy wiedzy klienta (assistant-kb.json).',
+            message: 'Nie udało się wczytać bazy wiedzy klienta (assistant-kb.json).',
         });
         return;
     }
@@ -423,7 +423,7 @@ async function askByok(options: AskOptions, apiKey: string): Promise<void> {
         onEvent({
             type: 'error',
             status: response.status === 401 || response.status === 403 ? 'forbidden_origin' : 'internal_error',
-            message: `Dostawca odrzucil zapytanie (HTTP ${response.status}). ${detail.slice(0, 200)}`.trim(),
+            message: `Dostawca odrzucił zapytanie (HTTP ${response.status}). ${detail.slice(0, 200)}`.trim(),
         });
         return;
     }

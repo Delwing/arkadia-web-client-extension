@@ -163,7 +163,7 @@ export function renderListLines(ctx: RenderContext): string[] {
         const isTeammateStr = isTeammate ? "true" : "false";
         const desc = isPlayer
             ? `${displayDesc}${padding}`
-            : `<span class="object-desc" data-object-id="${obj.num}" data-object-num="${num}" data-object-desc="${rawDesc}" data-teammate="${isTeammateStr}" title="Zaslon">${coloredDesc}</span>${padding}`;
+            : `<span class="object-desc" data-object-id="${obj.num}" data-object-num="${num}" data-object-desc="${rawDesc}" data-teammate="${isTeammateStr}" title="Zasłoń">${coloredDesc}</span>${padding}`;
 
         // Build HP bar with filter override
         let bar = "";
@@ -184,9 +184,9 @@ export function renderListLines(ctx: RenderContext): string[] {
             const hpBarContent = `[<span style="color:${color}">${filled}${empty}</span>]`;
             // Make HP bar clickable for enemies and teammates (not player)
             if (!isPlayer && !isTeammate) {
-                bar = `<span class="object-hp-bar" data-object-num="${num}" data-object-id="${obj.num}" title="Przelam">${hpBarContent}</span>`;
+                bar = `<span class="object-hp-bar" data-object-num="${num}" data-object-id="${obj.num}" title="Przełam">${hpBarContent}</span>`;
             } else if (isTeammate) {
-                bar = `<span class="object-hp-bar-teammate" data-object-num="${num}" data-object-id="${obj.num}" title="Wycofaj sie">${hpBarContent}</span>`;
+                bar = `<span class="object-hp-bar-teammate" data-object-num="${num}" data-object-id="${obj.num}" title="Wycofaj się">${hpBarContent}</span>`;
             } else {
                 bar = hpBarContent;
             }
@@ -318,15 +318,15 @@ const cardStrategy: ObjectListStrategy = {
                 const markAttackIcon = isLeader ? `<span class="object-card__icon object-card__icon--mark-attack ${markAttackClass}" data-action="mark-attack" data-object-num="${num}" data-object-id="${obj.num}" title="Wyznacz cel ataku"></span>` : '';
                 iconsHtml = `
                     <span class="object-card__icon object-card__icon--attack" data-action="attack" data-object-num="${num}" data-object-id="${obj.num}" title="Zaatakuj"></span>
-                    <span class="object-card__icon object-card__icon--guard" data-action="guard" data-object-num="${num}" data-object-id="${obj.num}" title="Zaslon"></span>
-                    <span class="object-card__icon object-card__icon--przelam" data-action="przelam" data-object-num="${num}" data-object-id="${obj.num}" title="Przelam"></span>
+                    <span class="object-card__icon object-card__icon--guard" data-action="guard" data-object-num="${num}" data-object-id="${obj.num}" title="Zasłoń"></span>
+                    <span class="object-card__icon object-card__icon--przelam" data-action="przelam" data-object-num="${num}" data-object-id="${obj.num}" title="Przełam"></span>
                     ${markAttackIcon}
                 `;
             } else if (isTeammate && !isPlayer) {
                 const markDefenseClass = obj.defense_target ? 'object-card__icon--mark-defense--active' : '';
                 const markDefenseIcon = isLeader ? `<span class="object-card__icon object-card__icon--mark-defense ${markDefenseClass}" data-action="mark-defense" data-object-num="${num}" data-object-id="${obj.num}" title="Wyznacz cel obrony"></span>` : '';
                 iconsHtml = `
-                    <span class="object-card__icon object-card__icon--guard" data-action="guard" data-object-num="${num}" data-object-id="${obj.num}" title="Zaslon"></span>
+                    <span class="object-card__icon object-card__icon--guard" data-action="guard" data-object-num="${num}" data-object-id="${obj.num}" title="Zasłoń"></span>
                     ${markDefenseIcon}
                 `;
             }
@@ -344,13 +344,13 @@ const cardStrategy: ObjectListStrategy = {
             return `<div class="${cardClasses.join(' ')}" data-object-id="${obj.num}" data-object-num="${num}">
                 <div class="object-card__row1">
                     <span class="${numberClasses.join(' ')}" data-object-num="${num}" data-object-id="${obj.num}" title="Zaatakuj">${num}</span>
-                    <span class="${nameClasses.join(' ')}" data-object-num="${num}" data-object-id="${obj.num}" title="Zaslon"${nameStyleAttr}>${finalDesc}</span>
+                    <span class="${nameClasses.join(' ')}" data-object-num="${num}" data-object-id="${obj.num}" title="Zasłoń"${nameStyleAttr}>${finalDesc}</span>
                     <span class="object-card__icons">${iconsHtml}</span>
                 </div>
                 <div class="object-card__row2">
                     <span class="object-card__attackers">${attackers}</span>
                 </div>
-                <div class="${isTeammate && !isPlayer ? 'object-card__hp-bar--teammate' : 'object-card__hp-bar'}" data-object-num="${num}" data-object-id="${obj.num}" title="${isTeammate && !isPlayer ? 'Wycofaj sie' : 'Przelam'}">${hpBarFill}</div>
+                <div class="${isTeammate && !isPlayer ? 'object-card__hp-bar--teammate' : 'object-card__hp-bar'}" data-object-num="${num}" data-object-id="${obj.num}" title="${isTeammate && !isPlayer ? 'Wycofaj się' : 'Przełam'}">${hpBarFill}</div>
             </div>`;
         });
 
@@ -453,7 +453,7 @@ const compactStrategy: ObjectListStrategy = {
                 }
 
                 const hpBarVerticalClass = isTeammate && !isPlayer ? 'object-card__hp-bar-vertical--teammate' : 'object-card__hp-bar-vertical';
-                const hpBarVerticalTitle = isTeammate && !isPlayer ? 'Wycofaj sie' : 'Przelam';
+                const hpBarVerticalTitle = isTeammate && !isPlayer ? 'Wycofaj się' : 'Przełam';
                 hpBarHtml = `<div class="${hpBarVerticalClass}" data-object-num="${num}" data-object-id="${obj.num}" title="${hpBarVerticalTitle}">
                     <div class="object-card__hp-fill-vertical" style="height: ${hpPercent}%; background-color: ${hpColor}"></div>
                 </div>`;
@@ -490,7 +490,7 @@ const compactStrategy: ObjectListStrategy = {
                 <div class="object-card__compact-content">
                     ${targetDotHtml}
                     <span class="${numberClasses.join(' ')}" data-object-num="${num}" data-object-id="${obj.num}" title="Zaatakuj">${num}</span>
-                    <span class="${nameClasses.join(' ')}" data-object-num="${num}" data-object-id="${obj.num}" title="Zaslon"${nameStyleAttr}>${finalDesc}</span>
+                    <span class="${nameClasses.join(' ')}" data-object-num="${num}" data-object-id="${obj.num}" title="Zasłoń"${nameStyleAttr}>${finalDesc}</span>
                     ${attackersHtml}
                 </div>
             </div>`;
@@ -604,7 +604,7 @@ const compactDotsStrategy: ObjectListStrategy = {
                 }
 
                 const hpDotsClass = isTeammate && !isPlayer ? 'object-card__hp-dots--teammate' : 'object-card__hp-dots';
-                const hpDotsTitle = isTeammate && !isPlayer ? 'Wycofaj sie' : 'Przelam';
+                const hpDotsTitle = isTeammate && !isPlayer ? 'Wycofaj się' : 'Przełam';
                 hpDotsHtml = `<div class="${hpDotsClass}" data-object-num="${num}" data-object-id="${obj.num}" title="${hpDotsTitle}">${dots.join('')}</div>`;
             }
 
@@ -639,7 +639,7 @@ const compactDotsStrategy: ObjectListStrategy = {
                     ${targetDotHtml}
                     <span class="${numberClasses.join(' ')}" data-object-num="${num}" data-object-id="${obj.num}" title="Zaatakuj">${num}</span>
                     ${hpDotsHtml}
-                    <span class="${nameClasses.join(' ')}" data-object-num="${num}" data-object-id="${obj.num}" title="Zaslon"${nameStyleAttr}>${finalDesc}</span>
+                    <span class="${nameClasses.join(' ')}" data-object-num="${num}" data-object-id="${obj.num}" title="Zasłoń"${nameStyleAttr}>${finalDesc}</span>
                     ${attackersHtml}
                 </div>
             </div>`;
@@ -720,7 +720,7 @@ const raidStrategy: ObjectListStrategy = {
 
             let hpBarHtml = '';
             const hpBarClass = isTeammate && !isPlayer ? 'object-card__hp-bar--teammate' : 'object-card__hp-bar';
-            const hpBarTitle = isTeammate && !isPlayer ? 'Wycofaj sie' : 'Przelam';
+            const hpBarTitle = isTeammate && !isPlayer ? 'Wycofaj się' : 'Przełam';
             if (filterResult.content?.hpBar !== undefined) {
                 hpBarHtml = `<div class="${hpBarClass} object-card__hp-bar--raid" data-object-num="${num}" data-object-id="${obj.num}" title="${hpBarTitle}">${filterResult.content.hpBar}</div>`;
             } else if (typeof obj.hp === 'number') {
@@ -741,15 +741,15 @@ const raidStrategy: ObjectListStrategy = {
                 const markAttackIcon = isLeader ? `<span class="object-card__icon object-card__icon--mark-attack ${markAttackClass}" data-action="mark-attack" data-object-num="${num}" data-object-id="${obj.num}" title="Wyznacz cel ataku"></span>` : '';
                 iconsHtml = `
                     <span class="object-card__icon object-card__icon--attack" data-action="attack" data-object-num="${num}" data-object-id="${obj.num}" title="Zaatakuj"></span>
-                    <span class="object-card__icon object-card__icon--guard" data-action="guard" data-object-num="${num}" data-object-id="${obj.num}" title="Zaslon"></span>
-                    <span class="object-card__icon object-card__icon--przelam" data-action="przelam" data-object-num="${num}" data-object-id="${obj.num}" title="Przelam"></span>
+                    <span class="object-card__icon object-card__icon--guard" data-action="guard" data-object-num="${num}" data-object-id="${obj.num}" title="Zasłoń"></span>
+                    <span class="object-card__icon object-card__icon--przelam" data-action="przelam" data-object-num="${num}" data-object-id="${obj.num}" title="Przełam"></span>
                     ${markAttackIcon}
                 `;
             } else if (isTeammate && !isPlayer) {
                 const markDefenseClass = obj.defense_target ? 'object-card__icon--mark-defense--active' : '';
                 const markDefenseIcon = isLeader ? `<span class="object-card__icon object-card__icon--mark-defense ${markDefenseClass}" data-action="mark-defense" data-object-num="${num}" data-object-id="${obj.num}" title="Wyznacz cel obrony"></span>` : '';
                 iconsHtml = `
-                    <span class="object-card__icon object-card__icon--guard" data-action="guard" data-object-num="${num}" data-object-id="${obj.num}" title="Zaslon"></span>
+                    <span class="object-card__icon object-card__icon--guard" data-action="guard" data-object-num="${num}" data-object-id="${obj.num}" title="Zasłoń"></span>
                     ${markDefenseIcon}
                 `;
             }
@@ -769,7 +769,7 @@ const raidStrategy: ObjectListStrategy = {
                 <div class="object-card__raid-content">
                     <div class="object-card__raid-row object-card__raid-row--main">
                         <span class="${numberClasses.join(' ')}" data-object-num="${num}" data-object-id="${obj.num}" title="Zaatakuj">${num}</span>
-                        <span class="${nameClasses.join(' ')}" data-object-num="${num}" data-object-id="${obj.num}" title="Zaslon"${nameStyleAttr}>${finalDesc}</span>
+                        <span class="${nameClasses.join(' ')}" data-object-num="${num}" data-object-id="${obj.num}" title="Zasłoń"${nameStyleAttr}>${finalDesc}</span>
                     </div>
                     <div class="object-card__raid-row object-card__raid-row--attackers">
                         ${attackersHtml}
@@ -910,7 +910,7 @@ const nearbyStrategy: ObjectListStrategy = {
                 (filterResult.style?.italic ? ' is-italic' : '') +
                 (nameClickable ? ' is-clickable' : '');
             const nameAttrs = nameClickable
-                ? ` data-object-num="${num}" data-object-id="${obj.num}" data-teammate="${isTeammate ? 'true' : 'false'}" title="Zaslon"`
+                ? ` data-object-num="${num}" data-object-id="${obj.num}" data-teammate="${isTeammate ? 'true' : 'false'}" title="Zasłoń"`
                 : '';
             const displayDesc = filterResult.content?.description !== undefined
                 ? filterResult.content.description
@@ -924,7 +924,7 @@ const nearbyStrategy: ObjectListStrategy = {
 
             let hpHtml = '';
             const hpAttrs = hpClickable
-                ? ` data-object-num="${num}" data-object-id="${obj.num}" data-teammate="${isTeammate ? 'true' : 'false'}" title="${isTeammate ? 'Wycofaj sie' : 'Przelam'}"`
+                ? ` data-object-num="${num}" data-object-id="${obj.num}" data-teammate="${isTeammate ? 'true' : 'false'}" title="${isTeammate ? 'Wycofaj się' : 'Przełam'}"`
                 : '';
             if (filterResult.content?.hpBar !== undefined) {
                 // Custom HP markup keeps the clickable wrapper; the modifier class

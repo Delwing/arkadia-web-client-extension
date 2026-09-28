@@ -178,7 +178,7 @@ const ProfessionPopup: React.FC = () => {
         <DockablePopupWrapper
             {...wrapperProps}
             popupType="profession"
-            title="Zawod"
+            title="Zawód"
             minWidth={280}
             minHeight={150}
             initialWidth={340}
@@ -197,7 +197,7 @@ const ProfessionPopup: React.FC = () => {
                         {/* Progress bar */}
                         <div>
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                                <span style={{ color: 'var(--popup-text-subtle)' }}>Postep</span>
+                                <span style={{ color: 'var(--popup-text-subtle)' }}>Postęp</span>
                                 <span style={{ color: percentage >= 100 ? '#4a4' : '#ffd700', fontWeight: 'bold' }}>
                                     {percentage.toFixed(1)}%
                                 </span>
@@ -219,7 +219,7 @@ const ProfessionPopup: React.FC = () => {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 11 }}>
                             {/* Start time */}
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <span style={{ color: 'var(--popup-text-dim)' }}>Rozpoczecie:</span>
+                                <span style={{ color: 'var(--popup-text-dim)' }}>Rozpoczęcie:</span>
                                 {editingStart ? (
                                     <span style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
                                         <input
@@ -235,7 +235,7 @@ const ProfessionPopup: React.FC = () => {
                                     <span
                                         style={{ color: 'var(--popup-text-bright)', cursor: 'pointer', borderBottom: '1px dashed var(--popup-border-control)' }}
                                         onClick={() => { setStartInput(formatDateInput(state.start_time)); setEditingStart(true); }}
-                                        title="Kliknij aby edytowac"
+                                        title="Kliknij aby edytować"
                                     >
                                         {formatDate(state.start_time)}
                                     </span>
@@ -251,14 +251,14 @@ const ProfessionPopup: React.FC = () => {
                             {/* Next breakpoint */}
                             {secondsToNext > 0 && (
                                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                    <span style={{ color: 'var(--popup-text-dim)' }}>Nastepne +{WEEKLY_POINTS}:</span>
+                                    <span style={{ color: 'var(--popup-text-dim)' }}>Następne +{WEEKLY_POINTS}:</span>
                                     <span style={{ color: 'var(--popup-data-blue)' }}>{formatTimeUntil(secondsToNext)}</span>
                                 </div>
                             )}
 
                             {/* Plus events */}
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <span style={{ color: 'var(--popup-text-dim)' }}>Bonusy (+staz):</span>
+                                <span style={{ color: 'var(--popup-text-dim)' }}>Bonusy (+staż):</span>
                                 {editingPlus ? (
                                     <span style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
                                         <input
@@ -275,7 +275,7 @@ const ProfessionPopup: React.FC = () => {
                                     <span
                                         style={{ color: 'var(--popup-text-bright)', cursor: 'pointer', borderBottom: '1px dashed var(--popup-border-control)' }}
                                         onClick={() => { setPlusInput(String(plusEventCount)); setEditingPlus(true); }}
-                                        title="Kliknij aby edytowac"
+                                        title="Kliknij aby edytować"
                                     >
                                         {plusEventCount}x ({plusPoints} pkt, {PLUS_POINT}/bonus)
                                     </span>

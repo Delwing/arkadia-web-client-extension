@@ -102,13 +102,13 @@ export function LineMenu({ menu, hasRange, boundary, onSetBound, onClearRange, o
                 className="lv-line-menu__item"
                 onClick={() => onSetBound("to", menu.timestamp)}
             >
-                Zakoncz na tej linii
+                Zakończ na tej linii
             </button>
             {hasRange ? (
                 <>
                     <div className="lv-line-menu__separator" />
                     <button type="button" className="lv-line-menu__item" onClick={onClearRange}>
-                        Wyczysc zakres
+                        Wyczyść zakres
                     </button>
                 </>
             ) : null}

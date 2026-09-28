@@ -13,7 +13,7 @@ test.describe('Cover timer', () => {
         const chip = page.locator('#release-guard-timer .chip');
         const value = chip.locator('.chip__val');
 
-        await expect(chip.locator('.chip__lab'), 'should be the cover chip').toHaveText('Zaslona');
+        await expect(chip.locator('.chip__lab'), 'should be the cover chip').toHaveText('Zasłona');
         await expect(value, 'should display OK initially').toHaveText('OK');
         await expect(chip, 'should be in the ready tone').toHaveClass(/chip--ok/);
 

@@ -142,7 +142,7 @@ test('GMCP event trigger lets the user pick a known GMCP package', async ({page}
     const condition = modal.locator('.trigger-condition');
     await expect(condition.locator('select').first(), 'should default to the first event arg').toHaveValue('hp');
     await condition.locator('select').nth(1).selectOption('lte');
-    await condition.getByPlaceholder('Wartosc').fill('2');
+    await condition.getByPlaceholder('Wartość').fill('2');
 
     await modal.getByRole('button', {name: 'Dodaj akcję'}).click();
     const action = modal.locator('.automation-act').last();
@@ -184,7 +184,7 @@ test('exports a group and imports it back as a pack', async ({page}) => {
 
     const downloadPromise = page.waitForEvent('download');
     await modal.locator('.automation-group', {hasText: 'Paczka'}).getByTitle('Opcje grupy').click();
-    await page.getByRole('button', {name: 'Eksportuj grupe'}).click();
+    await page.getByRole('button', {name: 'Eksportuj grupę'}).click();
     const download = await downloadPromise;
     const file = await download.path();
     expect(download.suggestedFilename(), 'should name the file after the group').toContain('paczka');
@@ -192,7 +192,7 @@ test('exports a group and imports it back as a pack', async ({page}) => {
     // Delete the trigger, then bring it back from the file.
     await row(modal, 'Pakiet test').locator('.automation-item__main').click();
     page.once('dialog', dialog => dialog.accept());
-    await modal.locator('.automation-editor__foot').getByRole('button', {name: 'Usun'}).click();
+    await modal.locator('.automation-editor__foot').getByRole('button', {name: 'Usuń'}).click();
     await expect(row(modal, 'Pakiet test'), 'should delete the trigger').toHaveCount(0);
 
     await modal.getByRole('button', {name: 'Importuj'}).click();

@@ -126,13 +126,13 @@ const CarriagesPopup: React.FC = () => {
                         type="button"
                         className="popup-btn popup-btn--primary popup-btn--sm"
                         onClick={() => handleProwadz(roomId)}
-                        title={`Prowadz do lokacji ${roomId}`}
+                        title={`Prowadź do lokacji ${roomId}`}
                     >
                         {roomLabel ?? roomId}
                     </button>
                     {distance !== null && (
                         <span className="carriage-room-distance">
-                            {distance} {distance === 1 ? 'pokoj' : 'pokoi'}
+                            {distance} {distance === 1 ? 'pokój' : 'pokoi'}
                         </span>
                     )}
                 </>
@@ -165,7 +165,7 @@ const CarriagesPopup: React.FC = () => {
             headerActions={headerActions}
         >
             {rows.length === 0 ? (
-                <div className="popup-empty">Brak wynajetych pojazdow.</div>
+                <div className="popup-empty">Brak wynajętych pojazdów.</div>
             ) : (
                 <div className="popup-list carriages-list">
                     {rows.map(({ carriage, leasedInDistance, parkedInDistance }) => {
@@ -187,7 +187,7 @@ const CarriagesPopup: React.FC = () => {
                                         type="button"
                                         className="carriage-remove-btn"
                                         onClick={() => handleRemove(carriage.key)}
-                                        title="Zapomnij o tym pojezdzie"
+                                        title="Zapomnij o tym pojeździe"
                                     >
                                         X
                                     </button>
@@ -196,7 +196,7 @@ const CarriagesPopup: React.FC = () => {
                                 {carriage.leasedAt > 0 && (
                                     <div className="carriage-details">
                                         <span className="carriage-detail-label">
-                                            {carriage.gender === 'f' ? 'Wynajeta' : 'Wynajety'}
+                                            {carriage.gender === 'f' ? 'Wynajęta' : 'Wynajęty'}
                                         </span>
                                         <span className="carriage-detail-value">{formatMoment(carriage.leasedAt)}</span>
                                     </div>
@@ -216,13 +216,13 @@ const CarriagesPopup: React.FC = () => {
 
                                 {renderRoom('Wozownia', carriage.leasedIn, carriage.leasedInLabel, leasedInDistance, 'nieznana')}
                                 {carriage.driven
-                                    ? renderRoom('Parkuje', null, null, null, 'w uzyciu')
+                                    ? renderRoom('Parkuje', null, null, null, 'w użyciu')
                                     : renderRoom('Parkuje', carriage.parkedIn, carriage.parkedInLabel, parkedInDistance, 'nieznane')}
 
                                 {left !== null && (
                                     <>
                                         <div className={`carriage-deadline${warn ? ' carriage-deadline--urgent' : ''}`}>
-                                            Kaucja w calosci do {formatMoment(carriage.depositExpiresAt)} ({formatLeft(left)})
+                                            Kaucja w całości do {formatMoment(carriage.depositExpiresAt)} ({formatLeft(left)})
                                         </div>
                                         <div className="carriage-deposit-bar">
                                             <div

@@ -63,9 +63,9 @@ const CarriageBlocksPopup: React.FC = () => {
             type="button"
             className={`popup-btn popup-btn--sm${confirmClear ? ' popup-btn--danger' : ''}`}
             onClick={handleClearAll}
-            title="Usun wszystkie blokady"
+            title="Usuń wszystkie blokady"
         >
-            {confirmClear ? 'Na pewno?' : 'Wyczysc'}
+            {confirmClear ? 'Na pewno?' : 'Wyczyść'}
         </button>
     ) : undefined;
 
@@ -84,7 +84,7 @@ const CarriageBlocksPopup: React.FC = () => {
         >
             {rooms.length === 0 ? (
                 <div className="popup-empty">
-                    Brak zablokowanych lokacji. Uzyj /wozblok stojac w takiej lokacji.
+                    Brak zablokowanych lokacji. Użyj /wozblok stojąc w takiej lokacji.
                 </div>
             ) : (
                 <div className="popup-list carriage-blocks-list">
@@ -97,7 +97,7 @@ const CarriageBlocksPopup: React.FC = () => {
                                 type="button"
                                 className="popup-btn popup-btn--sm"
                                 onClick={() => handlePreview(roomId)}
-                                title={`Pokaz lokacje ${roomId} na mapie`}
+                                title={`Pokaż lokację ${roomId} na mapie`}
                             >
                                 Mapa
                             </button>
@@ -105,7 +105,7 @@ const CarriageBlocksPopup: React.FC = () => {
                                 type="button"
                                 className="carriage-remove-btn"
                                 onClick={() => handleRemove(roomId)}
-                                title="Usun blokade"
+                                title="Usuń blokadę"
                             >
                                 X
                             </button>

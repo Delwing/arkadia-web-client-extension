@@ -67,8 +67,8 @@ function inBackgroundAfter<T>(work: Promise<T>, ms: number): Promise<T | 'backgr
 /** Why sync v2 isn't running in this tab, for the send / download buttons. */
 function syncV2NotRunningMessage(): string {
     const settings = loadFirebaseSettings();
-    if (settings.encryptionEnabled && !syncEngine.getPassphrase()) return 'Podaj haslo szyfrowania.';
-    return 'Synchronizacja dziala w innej karcie tej przegladarki albo nie mogla sie uruchomic (sprawdz polaczenie).';
+    if (settings.encryptionEnabled && !syncEngine.getPassphrase()) return 'Podaj hasło szyfrowania.';
+    return 'Synchronizacja działa w innej karcie tej przeglądarki albo nie mogła się uruchomić (sprawdź połączenie).';
 }
 
 const GoogleLogo = ({ size = 18 }: { size?: number }) => (
@@ -179,7 +179,7 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
         } catch (err) {
             console.error('Failed to initialize Firebase', err);
             setIsConfigured(false);
-            setInitError(err instanceof Error ? err.message : 'Nieznany blad');
+            setInitError(err instanceof Error ? err.message : 'Nieznany błąd');
         } finally {
             setIsInitializing(false);
         }
@@ -267,7 +267,7 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                 return updated;
             });
             if (!auto) {
-                setSyncStatus('Synchronizacja zakonczona sukcesem.');
+                setSyncStatus('Synchronizacja zakończona sukcesem.');
             }
         });
 
@@ -282,7 +282,7 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
 
         const unsubPending = eventBus.on('firebase.sync.pendingPassphrase', ({ categories }) => {
             if (categories.length > 0) {
-                setSyncError('Dane w chmurze sa zaszyfrowane. Podaj haslo szyfrowania, aby je zastosowac.');
+                setSyncError('Dane w chmurze są zaszyfrowane. Podaj hasło szyfrowania, aby je zastosować.');
             }
         });
 
@@ -354,7 +354,7 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
         try {
             const result = await sendPasswordReset(email);
             if (result.success) {
-                setResetSuccess('Link do resetowania hasla zostal wyslany na podany adres email.');
+                setResetSuccess('Link do resetowania hasła został wysłany na podany adres email.');
                 setEmail('');
             } else {
                 setAuthError(result.error ?? FIREBASE_ERRORS.AUTH_FAILED);
@@ -419,19 +419,19 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                 if (!(await runSyncV2Action(engine => engine.flush()))) {
                     setSyncError(syncV2NotRunningMessage());
                 } else {
-                    setSyncStatus('Zmiany zostaly wyslane.');
+                    setSyncStatus('Zmiany zostały wysłane.');
                 }
                 return;
             }
             const result = await syncEngine.syncNow(false);
             if (result.status === 'skipped') {
                 if (result.reason === 'needs-passphrase') {
-                    setSyncError('Podaj haslo szyfrowania.');
+                    setSyncError('Podaj hasło szyfrowania.');
                 } else if (result.reason === 'no-data') {
-                    setSyncStatus('Brak danych do wyslania.');
+                    setSyncStatus('Brak danych do wysłania.');
                 }
             } else if (result.status === 'in-sync') {
-                setSyncStatus('Wszystkie dane sa aktualne.');
+                setSyncStatus('Wszystkie dane są aktualne.');
             }
         } finally {
             isSyncingRef.current = false;
@@ -442,7 +442,7 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
     const handleDownload = useCallback(async (specificCategories?: SyncCategory[]) => {
         if (!authState.isAuthenticated) return;
         if (encryptionEnabled && !passphrase) {
-            setSyncError('Podaj haslo szyfrowania.');
+            setSyncError('Podaj hasło szyfrowania.');
             return;
         }
 
@@ -457,11 +457,11 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                     DOWNLOAD_WAIT_MS,
                 );
                 if (outcome === 'background') {
-                    setSyncStatus('Pobieranie trwa dluzej niz zwykle - dane zostana zastosowane w tle.');
+                    setSyncStatus('Pobieranie trwa dłużej niż zwykle - dane zostaną zastosowane w tle.');
                 } else if (!outcome) {
                     setSyncError(syncV2NotRunningMessage());
                 } else {
-                    setSyncStatus('Dane z chmury zostaly pobrane.');
+                    setSyncStatus('Dane z chmury zostały pobrane.');
                 }
                 return;
             }
@@ -489,7 +489,7 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
             const importResult = await importCategories(result.data);
             if (!importResult.success) {
                 const firstError = Object.values(importResult.errors)[0];
-                setSyncError(firstError ?? 'Import nie powiodl sie.');
+                setSyncError(firstError ?? 'Import nie powiódł się.');
                 return;
             }
 
@@ -502,7 +502,7 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
             recordCategorySyncState(baseChecksums);
 
             onImportComplete?.();
-            setSyncStatus('Dane zostaly pobrane z chmury. Niektore ustawienia moga wymagac odswiezenia strony.');
+            setSyncStatus('Dane zostały pobrane z chmury. Niektóre ustawienia mogą wymagać odświeżenia strony.');
         } catch (err) {
             console.error('Download failed', err);
             setSyncError(FIREBASE_ERRORS.SYNC_FAILED);
@@ -532,8 +532,8 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                 setSyncError(result.error ?? FIREBASE_ERRORS.SYNC_FAILED);
             } else {
                 setSyncStatus(resolution === 'keep-local'
-                    ? 'Dane lokalne zostaly wyslane do chmury.'
-                    : 'Dane zostaly pobrane z chmury. Niektore ustawienia moga wymagac odswiezenia strony.');
+                    ? 'Dane lokalne zostały wysłane do chmury.'
+                    : 'Dane zostały pobrane z chmury. Niektóre ustawienia mogą wymagać odświeżenia strony.');
                 onImportComplete?.();
 
                 // Refresh metadata
@@ -566,7 +566,7 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                 if (!(await runSyncV2Action(engine => engine.resetCloud()))) {
                     setSyncError(syncV2NotRunningMessage());
                 } else {
-                    setSyncStatus('Dane zostaly usuniete z chmury. To urzadzenie wyslalo ponownie swoje dane.');
+                    setSyncStatus('Dane zostały usunięte z chmury. To urządzenie wysłało ponownie swoje dane.');
                 }
                 return;
             }
@@ -578,7 +578,7 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                 return;
             }
 
-            setSyncStatus('Dane zostaly usuniete z chmury.');
+            setSyncStatus('Dane zostały usunięte z chmury.');
             setCloudMetadata({});
         } catch (err) {
             console.error('Delete failed', err);
@@ -604,7 +604,7 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
         return (
             <div className="popup-stack">
                 <div className="popup-notice popup-notice--danger">
-                    <div className="popup-strong">Nie udalo sie zainicjalizowac Firebase</div>
+                    <div className="popup-strong">Nie udało się zainicjalizować Firebase</div>
                     {initError && <div className="popup-small">{initError}</div>}
                 </div>
                 <Button variant="solid" className="ui-settings-self-start" onClick={initFirebase} disabled={isInitializing}>
@@ -614,7 +614,7 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                             <span>Ponawiam...</span>
                         </span>
                     ) : (
-                        'Sprobuj ponownie'
+                        'Spróbuj ponownie'
                     )}
                 </Button>
             </div>
@@ -626,7 +626,7 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
         return (
             <div className="popup-stack">
                 <p className="popup-muted firebase-sync__lead">
-                    Zaloguj sie, aby synchronizowac ustawienia miedzy urzadzeniami.
+                    Zaloguj się, aby synchronizować ustawienia między urządzeniami.
                 </p>
 
                 {authState.loading ? (
@@ -666,7 +666,7 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                                         autoComplete="username"
                                     />
                                     <span className="popup-field__hint">
-                                        Podaj adres email powiazany z kontem.
+                                        Podaj adres email powiązany z kontem.
                                     </span>
                                 </div>
                                 <div className="popup-row">
@@ -674,17 +674,17 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                                         {isAuthBusy ? (
                                             <span className="popup-inline">
                                                 <span className="popup-spinner" />
-                                                <span>Wysylanie...</span>
+                                                <span>Wysyłanie...</span>
                                             </span>
                                         ) : (
-                                            'Wyslij link resetujacy'
+                                            'Wyślij link resetujący'
                                         )}
                                     </Button>
                                     <Button variant="ghost"
                                         size="sm"
                                         onClick={() => { setAuthMode('login'); setAuthError(null); setResetSuccess(null); }}
                                     >
-                                        Powrot do logowania
+                                        Powrót do logowania
                                     </Button>
                                 </div>
                             </form>
@@ -702,7 +702,7 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                                     />
                                 </div>
                                 <div className="popup-field">
-                                    <label className="popup-field__label">Haslo</label>
+                                    <label className="popup-field__label">Hasło</label>
                                     <Input
                                         type="password"
                                         value={password}
@@ -715,7 +715,7 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                                 </div>
                                 {authMode === 'login' && (
                                     <button type="button" className="popup-link ui-settings-self-start" onClick={() => { setAuthMode('reset'); setAuthError(null); }}>
-                                        Nie pamietam hasla
+                                        Nie pamiętam hasła
                                     </button>
                                 )}
                                 <div className="popup-row">
@@ -726,7 +726,7 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                                                 <span>{authMode === 'login' ? 'Logowanie...' : 'Rejestracja...'}</span>
                                             </span>
                                         ) : (
-                                            authMode === 'login' ? 'Zaloguj sie' : 'Zarejestruj sie'
+                                            authMode === 'login' ? 'Zaloguj się' : 'Zarejestruj się'
                                         )}
                                     </Button>
                                     <Button onClick={handleGoogleSignIn} disabled={isAuthBusy}>
@@ -819,8 +819,8 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                     </div>
 
                     <p className="popup-field__hint">
-                        Synchronizowane sa wszystkie Twoje dane: ustawienia, sterowanie, automatyzacja, dane postaci
-                        i mapy. Ustawienia interfejsu i przyciskow sa zapisywane osobno dla kazdego urzadzenia.
+                        Synchronizowane są wszystkie Twoje dane: ustawienia, sterowanie, automatyzacja, dane postaci
+                        i mapy. Ustawienia interfejsu i przycisków są zapisywane osobno dla każdego urządzenia.
                     </p>
 
                     {/* Encryption */}
@@ -836,16 +836,16 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                             <div className="popup-stack">
                                 <div className="popup-notice popup-notice--warning">
                                     <small>
-                                        Niektore dane w chmurze sa zaszyfrowane. Podaj haslo aby pobrac i zapisac bez szyfrowania.
+                                        Niektóre dane w chmurze są zaszyfrowane. Podaj hasło aby pobrać i zapisać bez szyfrowania.
                                     </small>
                                 </div>
                                 <div className="popup-field">
-                                    <label className="popup-field__label">Aktualne haslo szyfrowania</label>
+                                    <label className="popup-field__label">Aktualne hasło szyfrowania</label>
                                     <Input
                                         type="password"
                                         value={passphrase}
                                         onChange={e => setPassphrase(e.target.value)}
-                                        placeholder="Wprowadz haslo do odszyfrowania..."
+                                        placeholder="Wprowadź hasło do odszyfrowania..."
                                     />
                                 </div>
                                 <Button variant="solid"
@@ -883,7 +883,7 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                                                 return;
                                             }
                                             setPassphrase('');
-                                            setSyncStatus('Szyfrowanie zostalo wylaczone. Dane zapisane bez szyfrowania.');
+                                            setSyncStatus('Szyfrowanie zostało wyłączone. Dane zapisane bez szyfrowania.');
                                             // Refresh metadata
                                             const metadata = await getAllCategoriesMetadata();
                                             if (!metadata.error) {
@@ -903,7 +903,7 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                                             <span>Odszyfrowanie...</span>
                                         </span>
                                     ) : (
-                                        'Wylacz szyfrowanie i zapisz'
+                                        'Wyłącz szyfrowanie i zapisz'
                                     )}
                                 </Button>
                             </div>
@@ -911,17 +911,17 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                         {encryptionEnabled && (
                             <div className="popup-stack">
                                 <div className="popup-field">
-                                    <label className="popup-field__label">Haslo szyfrowania</label>
+                                    <label className="popup-field__label">Hasło szyfrowania</label>
                                     <Input
                                         type="password"
                                         value={passphrase}
                                         onChange={e => setPassphrase(e.target.value)}
-                                        placeholder="Wprowadz haslo..."
+                                        placeholder="Wprowadź hasło..."
                                     />
                                 </div>
                                 <div className="popup-muted popup-small">
-                                    Haslo jest pamietane tylko do zamkniecia karty przegladarki i nigdy nie trafia
-                                    na serwer. Jesli je zapomnisz, dane w chmurze beda niedostepne.
+                                    Hasło jest pamiętane tylko do zamknięcia karty przeglądarki i nigdy nie trafia
+                                    na serwer. Jeśli je zapomnisz, dane w chmurze będą niedostępne.
                                 </div>
                             </div>
                         )}
@@ -945,19 +945,19 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                         <div className="popup-muted popup-small">
                             {syncV2 ? (
                                 <>
-                                    Wysyla zmiany do chmury co 5 minut (co 15 sekund, gdy inne Twoje urzadzenie
-                                    jest aktywne) oraz od razu po ukryciu lub zamknieciu karty.
+                                    Wysyła zmiany do chmury co 5 minut (co 15 sekund, gdy inne Twoje urządzenie
+                                    jest aktywne) oraz od razu po ukryciu lub zamknięciu karty.
                                 </>
                             ) : (
                                 <>
-                                    Automatycznie wysyla zmiany do chmury po 30 sekundach od ostatniej zmiany
-                                    (rzadziej dla danych zmieniajacych sie czesto, np. licznika zabitych).
+                                    Automatycznie wysyła zmiany do chmury po 30 sekundach od ostatniej zmiany
+                                    (rzadziej dla danych zmieniających się często, np. licznika zabitych).
                                 </>
                             )}
-                            {' '}Dziala w tle takze po zamknieciu tego okna.
+                            {' '}Działa w tle także po zamknięciu tego okna.
                             {encryptionEnabled && !passphrase && autoSyncEnabled && (
                                 <div className="popup-text-warning">
-                                    Podaj haslo szyfrowania aby wlaczyc auto-sync.
+                                    Podaj hasło szyfrowania aby włączyć auto-sync.
                                 </div>
                             )}
                         </div>
@@ -971,8 +971,8 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                                 <div className="cloud-delete__text">
                                     <h5 className="character-settings-section-title">Usuwanie danych z chmury</h5>
                                     <div className="popup-muted popup-small">
-                                        Usuwa wszystkie zsynchronizowane dane z chmury (niezaleznie od szyfrowania).
-                                        Dane lokalne pozostana nienaruszone.
+                                        Usuwa wszystkie zsynchronizowane dane z chmury (niezależnie od szyfrowania).
+                                        Dane lokalne pozostaną nienaruszone.
                                     </div>
                                 </div>
                                 {!showDeleteConfirm && (
@@ -982,14 +982,14 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                                         onClick={() => setShowDeleteConfirm(true)}
                                         disabled={isSyncing || isDeleting}
                                     >
-                                        Usun dane z chmury
+                                        Usuń dane z chmury
                                     </Button>
                                 )}
                             </div>
                             {showDeleteConfirm && (
                                 <div className="cloud-delete__confirm">
                                     <span className="popup-small">
-                                        Na pewno usunac wszystkie dane z chmury? Tej operacji nie mozna cofnac.
+                                        Na pewno usunąć wszystkie dane z chmury? Tej operacji nie można cofnąć.
                                     </span>
                                     <div className="popup-inline">
                                         <Button
@@ -1011,7 +1011,7 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                                                     <span>Usuwanie...</span>
                                                 </span>
                                             ) : (
-                                                'Tak, usun'
+                                                'Tak, usuń'
                                             )}
                                         </Button>
                                     </div>
@@ -1035,7 +1035,7 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                             <span>Synchronizacja...</span>
                         </span>
                     ) : (
-                        'Wyslij do chmury'
+                        'Wyślij do chmury'
                     )}
                 </Button>
                 <Button

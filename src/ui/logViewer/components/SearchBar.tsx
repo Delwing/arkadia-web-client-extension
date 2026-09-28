@@ -88,7 +88,7 @@ export const SearchBar = forwardRef<HTMLInputElement, SearchBarProps>(function S
                             pressed={caseSensitive}
                             onPressedChange={onCaseSensitiveChange}
                             shape="square"
-                            title="Rozroznianie wielkosci liter"
+                            title="Rozróżnianie wielkości liter"
                         >
                             Aa
                         </Toggle>
@@ -97,7 +97,7 @@ export const SearchBar = forwardRef<HTMLInputElement, SearchBarProps>(function S
                             onPressedChange={onRegexChange}
                             shape="square"
                             mono
-                            title="Wyrazenie regularne"
+                            title="Wyrażenie regularne"
                         >
                             .*
                         </Toggle>
@@ -124,7 +124,7 @@ export const SearchBar = forwardRef<HTMLInputElement, SearchBarProps>(function S
                 <IconButton title="Poprzednie trafienie  Shift+Enter" onClick={() => onStep(-1)}>
                     <Icon name="chevron-up" />
                 </IconButton>
-                <IconButton title="Nastepne trafienie  Enter" onClick={() => onStep(1)}>
+                <IconButton title="Następne trafienie  Enter" onClick={() => onStep(1)}>
                     <Icon name="chevron-down" />
                 </IconButton>
             </div>
@@ -171,7 +171,7 @@ export const SearchBar = forwardRef<HTMLInputElement, SearchBarProps>(function S
                         // Still selectable when it already is: the search then
                         // simply starts once the list is complete.
                         disabled: allScopePending && scope !== "all",
-                        title: allScopePending ? "Dostepne po wczytaniu listy logow" : SCOPE_TITLE.all,
+                        title: allScopePending ? "Dostępne po wczytaniu listy logów" : SCOPE_TITLE.all,
                     },
                     {
                         value: "range",

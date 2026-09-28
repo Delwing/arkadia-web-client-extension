@@ -56,7 +56,7 @@ describe('startSyncV2', () => {
         startSyncV2('user-1', () => null);
         await vi.waitFor(() => expect(getSyncV2Status().state).toBe('waiting'));
         expect(getSyncV2Status().retryAt).toBeGreaterThan(Date.now());
-        expect(getSyncActivity().map(e => e.text)).toEqual(['Oczekiwanie: automatyczna synchronizacja jest wylaczona.']);
+        expect(getSyncActivity().map(e => e.text)).toEqual(['Oczekiwanie: automatyczna synchronizacja jest wyłączona.']);
 
         settings.autoSyncEnabled = true;
         expect(await waitForSyncV2(1_000)).toBe(true);

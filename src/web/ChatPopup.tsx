@@ -86,9 +86,9 @@ const ChatPopup: React.FC = () => {
             type="button"
             className={`chat-popup__team-toggle${showTeamOnly ? ' chat-popup__team-toggle--active' : ''}`}
             onClick={() => setShowTeamOnly(!showTeamOnly)}
-            title={showTeamOnly ? 'Pokaz wszystkie wiadomosci' : 'Pokaz tylko wiadomosci druzyny'}
+            title={showTeamOnly ? 'Pokaż wszystkie wiadomości' : 'Pokaż tylko wiadomości drużyny'}
         >
-            Druzyna
+            Drużyna
         </button>
     );
 
@@ -96,7 +96,7 @@ const ChatPopup: React.FC = () => {
         <DockablePopupWrapper
             {...wrapperProps}
             popupType="chat"
-            title={showTeamOnly ? 'Czat druzyny' : 'Czat'}
+            title={showTeamOnly ? 'Czat drużyny' : 'Czat'}
             minWidth={300}
             minHeight={200}
             initialWidth={600}
@@ -113,8 +113,8 @@ const ChatPopup: React.FC = () => {
                 {displayedMessages.length === 0 ? (
                     <div className="chat-popup__empty">
                         {showTeamOnly
-                            ? 'Brak wiadomosci od druzyny.'
-                            : 'Brak zapisanych wiadomosci czatu.'}
+                            ? 'Brak wiadomości od drużyny.'
+                            : 'Brak zapisanych wiadomości czatu.'}
                     </div>
                 ) : (
                     displayedMessages.map(renderEntry)

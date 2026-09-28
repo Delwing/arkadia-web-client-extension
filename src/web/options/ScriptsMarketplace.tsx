@@ -134,9 +134,9 @@ function ScriptsMarketplace({ search, installedSlugs, onInstall, onUninstall }: 
             {error && (
                 <div className="plugin-banner plugin-banner--error">
                     <AlertTriangle size={16} />
-                    <span>Nie udalo sie pobrac katalogu: {error}</span>
+                    <span>Nie udało się pobrać katalogu: {error}</span>
                     <Button size="sm" className="plugin-push-end" onClick={() => setPage(1)}>
-                        Sprobuj ponownie
+                        Spróbuj ponownie
                     </Button>
                 </div>
             )}
@@ -144,8 +144,8 @@ function ScriptsMarketplace({ search, installedSlugs, onInstall, onUninstall }: 
             {items.length === 0 && !loading && !error && (
                 <div className="plugin-empty">
                     <SearchX size={32} />
-                    <p className="plugin-empty__title">Katalog nie ma nic pasujacego</p>
-                    <p className="plugin-empty__text">Sprobuj innej frazy albo wyczysc filtry.</p>
+                    <p className="plugin-empty__title">Katalog nie ma nic pasującego</p>
+                    <p className="plugin-empty__text">Spróbuj innej frazy albo wyczyść filtry.</p>
                 </div>
             )}
 
@@ -174,7 +174,7 @@ function ScriptsMarketplace({ search, installedSlugs, onInstall, onUninstall }: 
                                     {item.trustedPublisher && (
                                         <span
                                             className="plugin-chip plugin-chip--trusted"
-                                            title="Wydawany automatycznie z workflow GitHub Actions powiazanego z repozytorium autora"
+                                            title="Wydawany automatycznie z workflow GitHub Actions powiązanego z repozytorium autora"
                                         >
                                             <Github size={12} />
                                             Z repozytorium
@@ -187,7 +187,7 @@ function ScriptsMarketplace({ search, installedSlugs, onInstall, onUninstall }: 
                                     {item.rulesRisk && (
                                         <span
                                             className="plugin-chip plugin-chip--risk"
-                                            title={item.rulesRiskNote || "Autor oznaczyl ten plugin jako mogacy naruszac zasady Arkadii"}
+                                            title={item.rulesRiskNote || "Autor oznaczył ten plugin jako mogący naruszać zasady Arkadii"}
                                         >
                                             <AlertTriangle size={12} />
                                             Ryzyko zasad
@@ -263,7 +263,7 @@ function ScriptsMarketplace({ search, installedSlugs, onInstall, onUninstall }: 
             {hasMore && !loading && (
                 <div className="plugin-more">
                     <Button size="sm" onClick={() => setPage((current) => current + 1)}>
-                        Pokaz wiecej ({items.length} z {total})
+                        Pokaż więcej ({items.length} z {total})
                     </Button>
                 </div>
             )}

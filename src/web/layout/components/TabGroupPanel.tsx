@@ -157,7 +157,7 @@ function ActiveTabActions({ panel }: { panel: WindowRecord }) {
           type="button"
           className="panel-button panel-button--reset panel-button--sm"
           onClick={chrome.onReset}
-          title="Przywroc domyslna pozycje i rozmiar"
+          title="Przywróć domyślną pozycję i rozmiar"
         />
       )}
       {chrome.onPopout && (
@@ -165,7 +165,7 @@ function ActiveTabActions({ panel }: { panel: WindowRecord }) {
           type="button"
           className="panel-button panel-button--popout panel-button--sm"
           onClick={chrome.onPopout}
-          title="Otworz w osobnym oknie"
+          title="Otwórz w osobnym oknie"
         />
       )}
       {chrome.headerActions}

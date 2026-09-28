@@ -40,7 +40,7 @@ function ConflictResolutionModal({ show, conflicts, onResolve }: ConflictResolut
                         Zachowaj lokalne
                     </Button>
                     <Button variant="solid" onClick={() => onResolve('use-cloud', categories)}>
-                        Uzyj z chmury
+                        Użyj z chmury
                     </Button>
                 </>
             )}
@@ -48,10 +48,10 @@ function ConflictResolutionModal({ show, conflicts, onResolve }: ConflictResolut
             <div className="popup-stack">
                 <div className="popup-notice popup-notice--warning">
                     {conflicts.length === 1
-                        ? 'Dane lokalne roznia sie od danych zapisanych w chmurze dla nastepujacej kategorii.'
-                        : `Dane lokalne roznia sie od danych zapisanych w chmurze dla ${conflicts.length} kategorii.`
+                        ? 'Dane lokalne różnią się od danych zapisanych w chmurze dla następującej kategorii.'
+                        : `Dane lokalne różnią się od danych zapisanych w chmurze dla ${conflicts.length} kategorii.`
                     }
-                    {' '}Wybierz, ktora wersje chcesz zachowac.
+                    {' '}Wybierz, którą wersję chcesz zachować.
                 </div>
 
                 <div className="popup-stack popup-stack--sm conflict-list">
@@ -76,7 +76,7 @@ function ConflictResolutionModal({ show, conflicts, onResolve }: ConflictResolut
                 </div>
 
                 <div className="popup-muted popup-small">
-                    Uwaga: Wybrana wersja nadpisze druga dla wszystkich wymienionych kategorii. Ta operacja jest nieodwracalna.
+                    Uwaga: Wybrana wersja nadpisze drugą dla wszystkich wymienionych kategorii. Ta operacja jest nieodwracalna.
                 </div>
             </div>
         </SubDialog>

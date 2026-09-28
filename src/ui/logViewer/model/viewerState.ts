@@ -464,7 +464,7 @@ export function stepMatch(
                     sessionId: candidateId,
                     // -1 lands on the last match of the session we move back into.
                     matchIndex: direction > 0 ? 0 : -1,
-                    notice: `${direction > 0 ? "Dalej w" : "Powrot do"}: ${who ? `${who}, ` : ""}${candidate.dayLabel}`,
+                    notice: `${direction > 0 ? "Dalej w" : "Powrót do"}: ${who ? `${who}, ` : ""}${candidate.dayLabel}`,
                 };
             }
         }
@@ -473,7 +473,7 @@ export function stepMatch(
     if (totalMatches === 0) return null;
 
     let notice = "";
-    if (direction > 0 && currentMatch === totalMatches - 1) notice = "Przewinieto do pierwszego trafienia";
-    if (direction < 0 && currentMatch === 0) notice = "Przewinieto do ostatniego trafienia";
+    if (direction > 0 && currentMatch === totalMatches - 1) notice = "Przewinięto do pierwszego trafienia";
+    if (direction < 0 && currentMatch === 0) notice = "Przewinięto do ostatniego trafienia";
     return { matchIndex: currentMatch + direction, notice };
 }

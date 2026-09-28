@@ -1,8 +1,9 @@
 import Client from "../Client";
 import {bindMatches} from "@modules/core/keymapTypes";
+import {stripPolishCharacters} from "../stripPolishCharacters";
 
-const LABELS = ["zwykly", "prz", "prz dr"];
-const TITLES = ["zwykly", "przemknij", "przemknij z druzyna"];
+const LABELS = ["zwykły", "prz", "prz dr"];
+const TITLES = ["zwykły", "przemknij", "przemknij z drużyną"];
 
 function getAvailableModes(client: Client) {
     const total = LABELS.length;
@@ -68,7 +69,7 @@ export default function initMoveMode(client: Client) {
         update();
         emitChange();
         if (notify) {
-            client.println(`Tryb ruchu: ${TITLES[client.moveMode]}`);
+            client.println(`Tryb ruchu: ${stripPolishCharacters(TITLES[client.moveMode])}`);
         }
     }
 

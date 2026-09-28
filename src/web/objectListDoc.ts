@@ -318,25 +318,25 @@ function renderDotsView(): string {
 
 export const objectListDocHtml = `<div class="ol-doc">
 
-<h1>Lista Obiektow</h1>
+<h1>Lista Obiektów</h1>
 <p class="subtitle">
-  Panel wyswietlajacy obiekty w aktualnej lokacji: gracza, czlonkow druzyny i wrogow.<br>
-  Pokazuje HP, wskazniki celow i umozliwia akcje walki przez klikanie.
+  Panel wyświetlający obiekty w aktualnej lokacji: gracza, członków drużyny i wrogów.<br>
+  Pokazuje HP, wskaźniki celów i umożliwia akcje walki przez klikanie.
 </p>
 
-<h2>Scenariusz uzyty w przykladach</h2>
-<p>Wszystkie demonstracje ponizej pokazuja ten sam scenariusz walki z perspektywy <strong>lidera druzyny</strong>:</p>
+<h2>Scenariusz użyty w przykładach</h2>
+<p>Wszystkie demonstracje poniżej pokazują ten sam scenariusz walki z perspektywy <strong>lidera drużyny</strong>:</p>
 <ul>
-  <li><strong>@</strong> &ndash; Gracz "Gandalf" (pelne HP), atakowany przez goblina</li>
-  <li><strong>2</strong> &ndash; Sojusznik "Aragorn" (srednie HP), atakuje orka</li>
+  <li><strong>@</strong> &ndash; Gracz "Gandalf" (pełne HP), atakowany przez goblina</li>
+  <li><strong>2</strong> &ndash; Sojusznik "Aragorn" (średnie HP), atakuje orka</li>
   <li><strong>3</strong> &ndash; Sojusznik "Legolas" (dobre HP), <em>nie atakuje</em> (kursywa)</li>
-  <li><strong>4</strong> &ndash; Wrog "Duzy ork" (niskie HP), aktualny cel + oznaczony cel ataku, atakowany przez @ i 2</li>
-  <li><strong>5</strong> &ndash; Wrog "Maly goblin" (krytyczne HP), atakuje gracza</li>
-  <li><strong>6</strong> &ndash; Wrog "Zly troll" (dobre HP), nastepny w kolejce ataku (zloty)</li>
+  <li><strong>4</strong> &ndash; Wróg "Duzy ork" (niskie HP), aktualny cel + oznaczony cel ataku, atakowany przez @ i 2</li>
+  <li><strong>5</strong> &ndash; Wróg "Maly goblin" (krytyczne HP), atakuje gracza</li>
+  <li><strong>6</strong> &ndash; Wróg "Zly troll" (dobre HP), następny w kolejce ataku (złoty)</li>
 </ul>
 
 <h2>Tryby widoku</h2>
-<p>Przelaczaj przyciskiem: <strong>Lista</strong> &rarr; <strong>Karty</strong> &rarr; <strong>Kompakt</strong> &rarr; <strong>Kropki</strong> &rarr; Lista&hellip;</p>
+<p>Przełączaj przyciskiem: <strong>Lista</strong> &rarr; <strong>Karty</strong> &rarr; <strong>Kompakt</strong> &rarr; <strong>Kropki</strong> &rarr; Lista&hellip;</p>
 
 <div class="ol-tabs">
   <div class="ol-tab active" data-tab="list">Lista</div>
@@ -349,12 +349,12 @@ export const objectListDocHtml = `<div class="ol-doc">
 
   <!-- LIST -->
   <div class="ol-tab-panel active" data-panel="list">
-    <h3>Podglad</h3>
+    <h3>Podgląd</h3>
     <div class="demo-box-list">
       <div class="objects-list-content js-demo-list"></div>
     </div>
 
-    <h3>Anatomia linii (przyklad wroga)</h3>
+    <h3>Anatomia linii (przykład wroga)</h3>
     <div class="anatomy">
       <div class="anatomy-line">
         <span class="anatomy-seg seg-prefix" data-idx="1" style="color:orangered">&gt;&gt;</span>
@@ -368,34 +368,34 @@ export const objectListDocHtml = `<div class="ol-doc">
         <span><b>2</b> Numer</span>
         <span><b>3</b> Pasek HP</span>
         <span><b>4</b> Nazwa</span>
-        <span><b>5</b> Atakujacy</span>
+        <span><b>5</b> Atakujący</span>
       </div>
     </div>
-    <h3>Akcje klikniecia w widoku listy</h3>
+    <h3>Akcje kliknięcia w widoku listy</h3>
     <table class="action-table">
       <tr><th>Element</th><th>Na wrogu</th><th>Na sojuszniku</th><th>Na graczu</th></tr>
       <tr><td><span class="mn">1</span>Prefiks celu</td><td><span class="cmd">/wa N</span> oznacz cel ataku</td><td><span class="cmd">/wz N</span> oznacz cel obrony</td><td><span class="cmd">/wz @</span> oznacz cel obrony</td></tr>
       <tr><td><span class="mn">2</span>Numer</td><td><span class="cmd">/z N</span> atakuj</td><td>(zablokowane)</td><td>&ndash;</td></tr>
-      <tr><td><span class="mn">3</span>Pasek HP</td><td><span class="cmd">/prze N</span> przelam obrone</td><td><span class="cmd">/w N</span> wycofaj sie</td><td>&ndash;</td></tr>
-      <tr><td><span class="mn">4</span>Nazwa</td><td><span class="cmd">/za N</span> zaslon</td><td><span class="cmd">/za N</span> zaslon</td><td>&ndash;</td></tr>
+      <tr><td><span class="mn">3</span>Pasek HP</td><td><span class="cmd">/prze N</span> przełam obronę</td><td><span class="cmd">/w N</span> wycofaj się</td><td>&ndash;</td></tr>
+      <tr><td><span class="mn">4</span>Nazwa</td><td><span class="cmd">/za N</span> zasłoń</td><td><span class="cmd">/za N</span> zasłoń</td><td>&ndash;</td></tr>
     </table>
     <div class="note">
       <strong>Prefiks celu (tylko lider):</strong>
-      <code>&bull;</code> = nieaktywny, kliknij aby oznaczyc.
-      <code>&gt;&gt;</code> = aktywny, kliknij aby wylaczyc + wyslij rozkaz
-      (<span class="cmd">/ra N</span> atakuj, <span class="cmd">/rz N</span> bron).
-      Niebedacy liderami widza <code>&gt;&gt;</code> ale nie moga kliknac.
+      <code>&bull;</code> = nieaktywny, kliknij aby oznaczyć.
+      <code>&gt;&gt;</code> = aktywny, kliknij aby wyłączyć + wyślij rozkaz
+      (<span class="cmd">/ra N</span> atakuj, <span class="cmd">/rz N</span> broń).
+      Niebędący liderami widzą <code>&gt;&gt;</code> ale nie mogą kliknąć.
     </div>
   </div>
 
   <!-- CARDS -->
   <div class="ol-tab-panel" data-panel="card">
-    <h3>Podglad</h3>
+    <h3>Podgląd</h3>
     <div class="demo-box" style="max-width:380px">
       <div class="js-demo-card"></div>
     </div>
 
-    <h3>Anatomia karty (przyklad wroga)</h3>
+    <h3>Anatomia karty (przykład wroga)</h3>
     <div class="anatomy-real">
       <div class="objects-list-cards">
         <div class="object-card object-card--target object-card--attack-target" style="position:relative;overflow:visible">
@@ -428,42 +428,42 @@ export const objectListDocHtml = `<div class="ol-doc">
         <span><b>1</b> Numer</span>
         <span><b>2</b> Nazwa</span>
         <span><b>3</b> Ikony akcji</span>
-        <span><b>4</b> Atakujacy</span>
+        <span><b>4</b> Atakujący</span>
         <span><b>5</b> Pasek HP (dolny)</span>
-        <span><b>6</b> Obramowanie karty + wskaznik celu ataku</span>
+        <span><b>6</b> Obramowanie karty + wskaźnik celu ataku</span>
       </div>
     </div>
-    <h3>Akcje klikniecia w widoku kart</h3>
+    <h3>Akcje kliknięcia w widoku kart</h3>
     <table class="action-table">
       <tr><th>Element</th><th>Na wrogu</th><th>Na sojuszniku</th></tr>
       <tr><td><span class="mn">1</span>Numer</td><td><span class="cmd">/z N</span> atakuj</td><td>(zablokowane)</td></tr>
-      <tr><td><span class="mn">2</span>Nazwa</td><td><span class="cmd">/za N</span> zaslon</td><td><span class="cmd">/za N</span> zaslon</td></tr>
-      <tr><td><span class="mn">5</span>Pasek HP (dolny)</td><td><span class="cmd">/prze N</span> przelam obrone</td><td><span class="cmd">/w N</span> wycofaj sie</td></tr>
+      <tr><td><span class="mn">2</span>Nazwa</td><td><span class="cmd">/za N</span> zasłoń</td><td><span class="cmd">/za N</span> zasłoń</td></tr>
+      <tr><td><span class="mn">5</span>Pasek HP (dolny)</td><td><span class="cmd">/prze N</span> przełam obronę</td><td><span class="cmd">/w N</span> wycofaj się</td></tr>
       <tr><td><span class="mn">3</span>Ikona miecza</td><td><span class="cmd">/z N</span> atakuj</td><td>&ndash;</td></tr>
-      <tr><td><span class="mn">3</span>Ikona tarczy</td><td><span class="cmd">/za N</span> zaslon</td><td><span class="cmd">/za N</span> zaslon</td></tr>
-      <tr><td><span class="mn">3</span>Ikona zlamanej tarczy</td><td><span class="cmd">/prze N</span> przelam obrone</td><td>&ndash;</td></tr>
+      <tr><td><span class="mn">3</span>Ikona tarczy</td><td><span class="cmd">/za N</span> zasłoń</td><td><span class="cmd">/za N</span> zasłoń</td></tr>
+      <tr><td><span class="mn">3</span>Ikona złamanej tarczy</td><td><span class="cmd">/prze N</span> przełam obronę</td><td>&ndash;</td></tr>
       <tr><td><span class="mn">3</span>Ikona celownika (lider)</td><td><span class="cmd">/wa N</span> oznacz cel ataku</td><td>&ndash;</td></tr>
       <tr><td><span class="mn">3</span>Ikona tarczy+gwiazdy (lider)</td><td>&ndash;</td><td><span class="cmd">/wz N</span> oznacz cel obrony</td></tr>
     </table>
-    <h3>Kolory tla kart</h3>
+    <h3>Kolory tła kart</h3>
     <div class="color-grid">
       <div class="color-item"><span class="color-dot" style="background:rgba(96,165,250,0.25)"></span> Niebieski &ndash; Gracz</div>
       <div class="color-item"><span class="color-dot" style="background:rgba(34,197,94,0.2)"></span> Zielony &ndash; Sojusznik</div>
       <div class="color-item"><span class="color-dot" style="background:linear-gradient(135deg,rgba(255,100,100,0.3),rgba(255,170,170,0.1))"></span> Czerwony gradient &ndash; Aktualny cel</div>
-      <div class="color-item"><span class="color-dot" style="background:rgba(255,255,255,0.04);border:2px solid rgba(255,215,0,0.4)"></span> Zlote obramowanie &ndash; Nastepny cel z kolejki</div>
-      <div class="color-item"><span class="color-dot" style="background:rgba(255,255,255,0.04);box-shadow:inset 3px 0 0 orangered"></span> Pomaranczowy lewy pasek &ndash; Oznaczony cel ataku</div>
+      <div class="color-item"><span class="color-dot" style="background:rgba(255,255,255,0.04);border:2px solid rgba(255,215,0,0.4)"></span> Złote obramowanie &ndash; Następny cel z kolejki</div>
+      <div class="color-item"><span class="color-dot" style="background:rgba(255,255,255,0.04);box-shadow:inset 3px 0 0 orangered"></span> Pomarańczowy lewy pasek &ndash; Oznaczony cel ataku</div>
       <div class="color-item"><span class="color-dot" style="background:rgba(255,255,255,0.04);box-shadow:inset 3px 0 0 greenyellow"></span> Zielony lewy pasek &ndash; Oznaczony cel obrony</div>
     </div>
   </div>
 
   <!-- COMPACT -->
   <div class="ol-tab-panel" data-panel="compact">
-    <h3>Podglad</h3>
+    <h3>Podgląd</h3>
     <div class="demo-box" style="max-width:340px">
       <div class="js-demo-compact"></div>
     </div>
 
-    <h3>Anatomia wiersza kompaktowego (przyklad wroga)</h3>
+    <h3>Anatomia wiersza kompaktowego (przykład wroga)</h3>
     <div class="anatomy-real">
       <div class="objects-list-cards objects-list-cards--compact" style="max-width:280px">
         <div class="object-card object-card--compact object-card--target object-card--attack-target" style="position:relative;overflow:visible">
@@ -489,31 +489,31 @@ export const objectListDocHtml = `<div class="ol-doc">
         <span><b>2</b> Kropka celu</span>
         <span><b>3</b> Numer</span>
         <span><b>4</b> Nazwa</span>
-        <span><b>5</b> Atakujacy</span>
+        <span><b>5</b> Atakujący</span>
         <span><b>6</b> Prawe obramowanie = cel ataku</span>
       </div>
     </div>
-    <h3>Akcje klikniecia w widoku kompaktowym</h3>
+    <h3>Akcje kliknięcia w widoku kompaktowym</h3>
     <table class="action-table">
       <tr><th>Element</th><th>Na wrogu</th><th>Na sojuszniku</th></tr>
       <tr><td><span class="mn">2</span>Kropka celu (lider)</td><td><span class="cmd">/wa N</span> oznacz cel ataku</td><td><span class="cmd">/wz N</span> oznacz cel obrony</td></tr>
       <tr><td><span class="mn">3</span>Numer</td><td><span class="cmd">/z N</span> atakuj</td><td>(zablokowane)</td></tr>
-      <tr><td><span class="mn">1</span>Pionowy pasek HP</td><td><span class="cmd">/prze N</span> przelam obrone</td><td><span class="cmd">/w N</span> wycofaj sie</td></tr>
-      <tr><td><span class="mn">4</span>Nazwa</td><td><span class="cmd">/za N</span> zaslon</td><td><span class="cmd">/za N</span> zaslon</td></tr>
+      <tr><td><span class="mn">1</span>Pionowy pasek HP</td><td><span class="cmd">/prze N</span> przełam obronę</td><td><span class="cmd">/w N</span> wycofaj się</td></tr>
+      <tr><td><span class="mn">4</span>Nazwa</td><td><span class="cmd">/za N</span> zasłoń</td><td><span class="cmd">/za N</span> zasłoń</td></tr>
     </table>
     <div class="note">
-      Prawe obramowanie: <span style="color:orangered">pomaranczowo-czerwone</span> = cel ataku, <span style="color:greenyellow">zielono-zolte</span> = cel obrony.
+      Prawe obramowanie: <span style="color:orangered">pomarańczowo-czerwone</span> = cel ataku, <span style="color:greenyellow">zielono-żółte</span> = cel obrony.
     </div>
   </div>
 
   <!-- DOTS -->
   <div class="ol-tab-panel" data-panel="dots">
-    <h3>Podglad</h3>
+    <h3>Podgląd</h3>
     <div class="demo-box" style="max-width:340px">
       <div class="js-demo-dots"></div>
     </div>
 
-    <h3>Anatomia wiersza z kropkami (przyklad wroga)</h3>
+    <h3>Anatomia wiersza z kropkami (przykład wroga)</h3>
     <div class="anatomy-real">
       <div class="objects-list-cards objects-list-cards--compact" style="max-width:280px">
         <div class="object-card object-card--compact object-card--compact-dots object-card--target object-card--attack-target" style="position:relative;overflow:visible">
@@ -545,21 +545,21 @@ export const objectListDocHtml = `<div class="ol-doc">
         <span><b>2</b> Numer</span>
         <span><b>3</b> Kropki HP</span>
         <span><b>4</b> Nazwa</span>
-        <span><b>5</b> Atakujacy</span>
+        <span><b>5</b> Atakujący</span>
         <span><b>6</b> Prawe obramowanie = cel ataku</span>
       </div>
     </div>
-    <h3>Akcje klikniecia w widoku kropek</h3>
+    <h3>Akcje kliknięcia w widoku kropek</h3>
     <table class="action-table">
       <tr><th>Element</th><th>Na wrogu</th><th>Na sojuszniku</th></tr>
       <tr><td><span class="mn">1</span>Kropka celu (lider)</td><td><span class="cmd">/wa N</span> oznacz cel ataku</td><td><span class="cmd">/wz N</span> oznacz cel obrony</td></tr>
       <tr><td><span class="mn">2</span>Numer</td><td><span class="cmd">/z N</span> atakuj</td><td>(zablokowane)</td></tr>
-      <tr><td><span class="mn">3</span>Kropki HP</td><td><span class="cmd">/prze N</span> przelam obrone</td><td><span class="cmd">/w N</span> wycofaj sie</td></tr>
-      <tr><td><span class="mn">4</span>Nazwa</td><td><span class="cmd">/za N</span> zaslon</td><td><span class="cmd">/za N</span> zaslon</td></tr>
+      <tr><td><span class="mn">3</span>Kropki HP</td><td><span class="cmd">/prze N</span> przełam obronę</td><td><span class="cmd">/w N</span> wycofaj się</td></tr>
+      <tr><td><span class="mn">4</span>Nazwa</td><td><span class="cmd">/za N</span> zasłoń</td><td><span class="cmd">/za N</span> zasłoń</td></tr>
     </table>
     <div class="note">
-      Ten sam uklad co kompakt, ale z 7 kropkami zamiast pionowego paska.
-      Wypelnione = pozostale HP, szare puste = utracone HP.
+      Ten sam układ co kompakt, ale z 7 kropkami zamiast pionowego paska.
+      Wypełnione = pozostałe HP, szare puste = utracone HP.
     </div>
   </div>
 
@@ -567,30 +567,30 @@ export const objectListDocHtml = `<div class="ol-doc">
 
 <h2>Kolory tekstu</h2>
 <div class="color-grid">
-  <div class="color-item"><span class="color-dot" style="background:#ffaaaa"></span> <span style="color:#ffaaaa">Jasnoczerwony</span> &ndash; Twoj aktualny cel</div>
+  <div class="color-item"><span class="color-dot" style="background:#ffaaaa"></span> <span style="color:#ffaaaa">Jasnoczerwony</span> &ndash; Twój aktualny cel</div>
   <div class="color-item"><span class="color-dot" style="background:springgreen"></span> <span style="color:springgreen">Zielony</span> &ndash; Sojusznik</div>
-  <div class="color-item"><span class="color-dot" style="background:#b19cd9"></span> <span style="color:#b19cd9">Fioletowy</span> &ndash; Wrog atakujacy kogos</div>
-  <div class="color-item"><span class="color-dot" style="background:#ffd700"></span> <span style="color:#ffd700">Zloty numer</span> &ndash; Nastepny cel z kolejki</div>
-  <div class="color-item"><span class="color-dot" style="background:springgreen;opacity:0.5"></span> <em style="color:springgreen;display:inline-block;transform:skewX(-10deg)">Kursywa zielona</em> &ndash; Sojusznik nie atakujacy</div>
-  <div class="color-item"><span class="color-dot" style="background:orangered"></span> <span style="color:orangered">Pomaranczowo-czerwony</span> &ndash; Oznaczenie celu ataku (lider)</div>
-  <div class="color-item"><span class="color-dot" style="background:greenyellow"></span> <span style="color:greenyellow">Zielono-zolty</span> &ndash; Oznaczenie celu obrony (lider)</div>
+  <div class="color-item"><span class="color-dot" style="background:#b19cd9"></span> <span style="color:#b19cd9">Fioletowy</span> &ndash; Wróg atakujący kogoś</div>
+  <div class="color-item"><span class="color-dot" style="background:#ffd700"></span> <span style="color:#ffd700">Złoty numer</span> &ndash; Następny cel z kolejki</div>
+  <div class="color-item"><span class="color-dot" style="background:springgreen;opacity:0.5"></span> <em style="color:springgreen;display:inline-block;transform:skewX(-10deg)">Kursywa zielona</em> &ndash; Sojusznik nie atakujący</div>
+  <div class="color-item"><span class="color-dot" style="background:orangered"></span> <span style="color:orangered">Pomarańczowo-czerwony</span> &ndash; Oznaczenie celu ataku (lider)</div>
+  <div class="color-item"><span class="color-dot" style="background:greenyellow"></span> <span style="color:greenyellow">Zielono-żółty</span> &ndash; Oznaczenie celu obrony (lider)</div>
 </div>
 
 <h2>Menu kontekstowe (prawy przycisk)</h2>
 <p>
-  Klikniecie prawym przyciskiem na obiekt otwiera menu kontekstowe z konfigurowalnymi komendami.
-  Kazda komenda wysyla <code>{komenda} ob_{objectId}</code> do gry.
+  Kliknięcie prawym przyciskiem na obiekt otwiera menu kontekstowe z konfigurowalnymi komendami.
+  Każda komenda wysyła <code>{komenda} ob_{objectId}</code> do gry.
 </p>
 <p>
-  Domyslne komendy: <code>ob</code>, <code>ocen</code>, <code>zapros</code>, <code>wskaz</code>.
-  Konfigurowalne w Ustawieniach UI &rarr; <em>Komendy menu kontekstowego obiektow</em>.
+  Domyślne komendy: <code>ob</code>, <code>ocen</code>, <code>zapros</code>, <code>wskaz</code>.
+  Konfigurowalne w Ustawieniach UI &rarr; <em>Komendy menu kontekstowego obiektów</em>.
 </p>
 
-<h2>Notacja strzalek (&lt;-)</h2>
+<h2>Notacja strzałek (&lt;-)</h2>
 <p>
-  W widokach listy i kompakt, <code>&lt;- @ 2</code> oznacza ze obiekty
-  <strong>@</strong> (gracz) i <strong>2</strong> atakuja ta jednostke.
-  W widoku kart wyswietlane jest to jako okragle znaczniki atakujacych.
+  W widokach listy i kompakt, <code>&lt;- @ 2</code> oznacza, że obiekty
+  <strong>@</strong> (gracz) i <strong>2</strong> atakują tę jednostkę.
+  W widoku kart wyświetlane jest to jako okrągłe znaczniki atakujących.
 </p>
 
 </div>`;

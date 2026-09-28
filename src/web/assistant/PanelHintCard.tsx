@@ -78,7 +78,7 @@ export default function PanelHintCard({ settingKey, label, uiLocation, message }
                     className="assistant-btn assistant-btn--primary"
                     onClick={() => openSettingsFor(settingKey, resolved?.uiLocation)}
                 >
-                    Otworz ustawienia
+                    Otwórz ustawienia
                 </button>
             </div>
         </div>

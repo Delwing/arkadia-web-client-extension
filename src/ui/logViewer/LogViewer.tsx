@@ -512,7 +512,7 @@ export function LogViewer({
                 view.session.dateLabel,
                 view.range
                     ? `zakres ${formatClock(view.range.from)}\u2013${formatClock(view.range.to)}`
-                    : "caly log",
+                    : "cały log",
                 `${view.rows.length} z ${view.session.lines.length} linii`,
             ].join("  \u00b7  "),
             showTimestamps: state.showTimestamps,
@@ -562,7 +562,7 @@ export function LogViewer({
                 );
                 await deliver(blob);
             } catch (error) {
-                setExportError(error instanceof Error ? error.message : "Nie udalo sie utworzyc obrazu.");
+                setExportError(error instanceof Error ? error.message : "Nie udało się utworzyć obrazu.");
             } finally {
                 setBusy(false);
             }
@@ -646,9 +646,9 @@ export function LogViewer({
     /* --- derived copy ---------------------------------------------------- */
 
     const { counter, counterTone } = useMemo(() => {
-        if (view.invalidPattern) return { counter: "Bledny wzorzec", counterTone: "error" as const };
+        if (view.invalidPattern) return { counter: "Błędny wzorzec", counterTone: "error" as const };
         if (!activeQuery) return { counter: "", counterTone: "normal" as const };
-        if (view.totalMatches === 0) return { counter: "Brak trafien tutaj", counterTone: "muted" as const };
+        if (view.totalMatches === 0) return { counter: "Brak trafień tutaj", counterTone: "muted" as const };
         return {
             counter: `${view.currentMatch + 1} z ${view.totalMatches}`,
             counterTone: "normal" as const,
@@ -659,7 +659,7 @@ export function LogViewer({
         if (state.notice) return { subLine: state.notice, subIsNotice: true };
         if (!view.searching) return { subLine: "", subIsNotice: false };
         if (state.scope === "all") {
-            if (loading) return { subLine: "Szukanie ruszy po wczytaniu listy logow...", subIsNotice: false };
+            if (loading) return { subLine: "Szukanie ruszy po wczytaniu listy logów...", subIsNotice: false };
             const withHits = sessions.filter((session) => (view.hitsBySession[session.id] ?? 0) > 0).length;
             const total = sessions.reduce((sum, session) => sum + (view.hitsBySession[session.id] ?? 0), 0);
             const summary = `${total} w ${withHits} ${pluralLogs(withHits)}`;
@@ -672,13 +672,13 @@ export function LogViewer({
     const emptyMessage = useMemo(() => {
         if (view.rows.length > 0) return null;
         if (!view.sessionInfo) {
-            return loading ? "Wczytywanie listy logow..." : "Nie ma tu jeszcze zadnego zapisanego logu.";
+            return loading ? "Wczytywanie listy logów..." : "Nie ma tu jeszcze żadnego zapisanego logu.";
         }
         if (!view.session) {
-            return openFailed === view.sessionInfo.id ? "Nie udalo sie wczytac tego logu." : "Wczytywanie logu...";
+            return openFailed === view.sessionInfo.id ? "Nie udało się wczytać tego logu." : "Wczytywanie logu...";
         }
-        if (allChannelsOff(state.channels)) return "Wszystkie kanaly sa ukryte.";
-        if (state.onlyMatches && activeQuery) return `Zadna linia w tym logu nie pasuje do „${activeQuery}”.`;
+        if (allChannelsOff(state.channels)) return "Wszystkie kanały są ukryte.";
+        if (state.onlyMatches && activeQuery) return `Żadna linia w tym logu nie pasuje do „${activeQuery}”.`;
         if (anyChannelOff(state.channels)) return "Nic do pokazania przy obecnych filtrach.";
         return "Ta sesja nie ma zapisanych linii.";
     }, [view.rows.length, view.sessionInfo, view.session, openFailed, loading, state.channels, state.onlyMatches, activeQuery]);

@@ -91,7 +91,7 @@ const PersonEditModal: React.FC<PersonEditModalProps> = ({
             >
                 <div className="people-modal__header">
                     <h5 className="people-modal__title">
-                        {mode === 'add' ? 'Dodaj postac' : 'Edytuj postac'}
+                        {mode === 'add' ? 'Dodaj postać' : 'Edytuj postać'}
                     </h5>
                     <button
                         type="button"
@@ -106,7 +106,7 @@ const PersonEditModal: React.FC<PersonEditModalProps> = ({
                     {hasOriginal && person?.originalEntry && (
                         <div className="people-modal__original">
                             <div>
-                                <span className="people-modal__hint">Oryginalne wartosci:</span>
+                                <span className="people-modal__hint">Oryginalne wartości:</span>
                                 <div>
                                     <strong>Nazwa:</strong> {person.originalEntry.name}
                                 </div>
@@ -122,9 +122,9 @@ const PersonEditModal: React.FC<PersonEditModalProps> = ({
                                     type="button"
                                     className="popup-btn"
                                     onClick={onRestoreOriginal}
-                                    title="Przywroc oryginalne wartosci"
+                                    title="Przywróć oryginalne wartości"
                                 >
-                                    Przywroc
+                                    Przywróć
                                 </button>
                             )}
                         </div>
@@ -183,13 +183,13 @@ const PersonEditModal: React.FC<PersonEditModalProps> = ({
                                         type="button"
                                         className="popup-btn"
                                         onClick={onClearColor}
-                                        title="Usun indywidualny kolor"
+                                        title="Usuń indywidualny kolor"
                                     >
-                                        Wyczysc
+                                        Wyczyść
                                     </button>
                                 )}
                                 {!currentColor && (
-                                    <span className="people-modal__hint">Brak (uzyje koloru gildii)</span>
+                                    <span className="people-modal__hint">Brak (użyje koloru gildii)</span>
                                 )}
                             </div>
                         </div>
@@ -204,7 +204,7 @@ const PersonEditModal: React.FC<PersonEditModalProps> = ({
                                 onClick={onMarkEnemy}
                                 title="Oznacz jako wroga"
                             >
-                                Wrog
+                                Wróg
                             </button>
                         )}
                         {mode === 'edit' && !isIgnored && isMarkedEnemy && onUnmarkEnemy && (
@@ -214,7 +214,7 @@ const PersonEditModal: React.FC<PersonEditModalProps> = ({
                                 onClick={onUnmarkEnemy}
                                 title="Odznacz jako wroga"
                             >
-                                Wrog
+                                Wróg
                             </button>
                         )}
                         {mode === 'edit' && !isIgnored && !isMarkedAlly && onMarkAlly && (
@@ -242,7 +242,7 @@ const PersonEditModal: React.FC<PersonEditModalProps> = ({
                                 type="button"
                                 className="popup-btn popup-btn--md people-modal__btn--warning-outline"
                                 onClick={onIgnore}
-                                title="Ignoruj ta postac (nie tworz triggerow)"
+                                title="Ignoruj tę postać (nie twórz triggerów)"
                             >
                                 Ignoruj
                             </button>
@@ -252,9 +252,9 @@ const PersonEditModal: React.FC<PersonEditModalProps> = ({
                                 type="button"
                                 className="popup-btn popup-btn--md people-modal__btn--success-outline"
                                 onClick={onRestore}
-                                title="Przywroc ta postac"
+                                title="Przywróć tę postać"
                             >
-                                Przywroc
+                                Przywróć
                             </button>
                         )}
                         {mode === 'edit' && isLocallyAdded && onDelete && (
@@ -262,9 +262,9 @@ const PersonEditModal: React.FC<PersonEditModalProps> = ({
                                 type="button"
                                 className="popup-btn popup-btn--md people-modal__btn--danger-outline"
                                 onClick={onDelete}
-                                title="Usun ta postac"
+                                title="Usuń tę postać"
                             >
-                                Usun
+                                Usuń
                             </button>
                         )}
                     </div>

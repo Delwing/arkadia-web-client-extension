@@ -129,7 +129,7 @@ function errorLine(err: unknown, code: string): number | null {
 
 function errorText(err: unknown, code: string): string {
     const line = errorLine(err, code);
-    return `blad: ${describe(err)}${line ? ` (linia ${line})` : ""}`;
+    return `błąd: ${describe(err)}${line ? ` (linia ${line})` : ""}`;
 }
 
 async function compile(code: string): Promise<ScriptFn> {
@@ -137,7 +137,7 @@ async function compile(code: string): Promise<ScriptFn> {
     try {
         const module = await import(/* @vite-ignore */ url);
         if (typeof module.default !== "function") {
-            throw new Error("modul skryptu musi eksportowac funkcje: export default function (api, args, ctx) { ... }");
+            throw new Error("moduł skryptu musi eksportować funkcję: export default function (api, args, ctx) { ... }");
         }
         return module.default as ScriptFn;
     } finally {
@@ -217,11 +217,11 @@ export async function runUserScript(client: Client, id: string, args: string[], 
         return;
     }
     if (script && !options.force && !isAutomationActiveNow(script)) {
-        appendScriptLog(id, "run", `pominiety (wylaczony) - ${options.label ?? options.source}`);
+        appendScriptLog(id, "run", `pominięty (wyłączony) - ${options.label ?? options.source}`);
         return;
     }
     if (depth >= MAX_DEPTH) {
-        appendScriptLog(id, "error", "blad: za duzo skryptow uruchomionych jeden w drugim - przerwano");
+        appendScriptLog(id, "error", "błąd: za dużo skryptów uruchomionych jeden w drugim - przerwano");
         return;
     }
 

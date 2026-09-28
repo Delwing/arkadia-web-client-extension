@@ -9,8 +9,8 @@ import { flushSyncV2 } from "@web/userData/syncV2";
  */
 export function confirmRestore(): boolean {
     return window.confirm(
-        "Przywrocenie kopii zastapi ustawienia na wszystkich Twoich urzadzeniach (dane postepow, np. wiedza "
-        + "czy licznik zabitych, zostana polaczone). Kontynuowac?",
+        "Przywrócenie kopii zastąpi ustawienia na wszystkich Twoich urządzeniach (dane postępów, np. wiedza "
+        + "czy licznik zabitych, zostaną połączone). Kontynuować?",
     );
 }
 

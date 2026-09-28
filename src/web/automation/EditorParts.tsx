@@ -77,11 +77,11 @@ export function CharacterScope({ value, onChange }: {
                         ))}
                     </div>
                 ) : (
-                    <p className="automation-hint">Brak zapisanych postaci. Beda dostepne po zalogowaniu na postac.</p>
+                    <p className="automation-hint">Brak zapisanych postaci. Będą dostępne po zalogowaniu na postać.</p>
                 )
             )}
             {selected && value!.length === 0 && characters.length > 0 && (
-                <p className="automation-hint">Nie wybrano zadnej postaci - zapisze sie dla wszystkich.</p>
+                <p className="automation-hint">Nie wybrano żadnej postaci - zapisze się dla wszystkich.</p>
             )}
         </>
     );

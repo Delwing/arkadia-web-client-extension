@@ -45,9 +45,9 @@ test.describe('Window settings cog', () => {
         const chatBefore = await fontSizePx(page, chatMessages);
 
         const panel = await openChatSettings(page);
-        await expect(panel.locator('.window-settings__size-value')).toHaveText('Jak okno glowne');
+        await expect(panel.locator('.window-settings__size-value')).toHaveText('Jak okno główne');
         for (let i = 0; i < 4; i++) {
-            await panel.getByTitle('Wieksza czcionka').click();
+            await panel.getByTitle('Większa czcionka').click();
         }
 
         await expect.poll(() => fontSizePx(page, chatMessages)).toBeGreaterThan(chatBefore);
@@ -55,7 +55,7 @@ test.describe('Window settings cog', () => {
 
         await panel.locator('.window-settings__reset').click();
         await expect.poll(() => fontSizePx(page, chatMessages)).toBe(chatBefore);
-        await expect(panel.locator('.window-settings__size-value')).toHaveText('Jak okno glowne');
+        await expect(panel.locator('.window-settings__size-value')).toHaveText('Jak okno główne');
     });
 
     test('chat options moved into the cog still drive the window', async ({page}) => {
@@ -94,14 +94,14 @@ test.describe('Window settings cog', () => {
 
         await mapPanel.locator('.panel-button--settings').click();
         const panel = page.locator('.window-settings');
-        await expect(panel.getByText('Wyglad', {exact: true})).toHaveCount(0);
+        await expect(panel.getByText('Wygląd', {exact: true})).toHaveCount(0);
         await expect(panel.locator('.window-settings__toggle', {hasText: 'Siatka'})).toBeVisible();
 
         const locationBar = page.locator('#location-wrapper');
         await expect(locationBar).toBeVisible();
-        await panel.locator('.window-settings__toggle', {hasText: 'Etykieta w naglowku'}).click();
+        await panel.locator('.window-settings__toggle', {hasText: 'Etykieta w nagłówku'}).click();
         await expect(locationBar).toBeHidden();
-        await panel.locator('.window-settings__toggle', {hasText: 'Etykieta w naglowku'}).click();
+        await panel.locator('.window-settings__toggle', {hasText: 'Etykieta w nagłówku'}).click();
         await expect(locationBar).toBeVisible();
     });
 

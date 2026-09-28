@@ -238,7 +238,7 @@ export function LogManager({
             };
             worker.onerror = (error) => {
                 console.error("[LogsExport] Worker error:", error);
-                setStatus({ tone: "danger", text: "Nie udalo sie przygotowac archiwum." });
+                setStatus({ tone: "danger", text: "Nie udało się przygotować archiwum." });
                 finish();
             };
 
@@ -273,7 +273,7 @@ export function LogManager({
             );
         } catch (error) {
             console.error("[LogManager] JSON export failed:", error);
-            setStatus({ tone: "danger", text: "Nie udalo sie wyeksportowac sesji." });
+            setStatus({ tone: "danger", text: "Nie udało się wyeksportować sesji." });
         } finally {
             logsDb.release();
             setBusy("");
@@ -300,7 +300,7 @@ export function LogManager({
 
                 const names = Object.keys(data.sessions);
                 if (names.length === 0) {
-                    setStatus({ tone: "danger", text: "Plik nie zawiera zadnych sesji." });
+                    setStatus({ tone: "danger", text: "Plik nie zawiera żadnych sesji." });
                     return;
                 }
 
@@ -317,7 +317,7 @@ export function LogManager({
                 if (toImport.length === 0) {
                     setStatus({
                         tone: "neutral",
-                        text: `Pominieto ${skipped} duplikatow. Brak nowych sesji do zaimportowania.`,
+                        text: `Pominięto ${skipped} duplikatów. Brak nowych sesji do zaimportowania.`,
                     });
                     return;
                 }
@@ -344,12 +344,12 @@ export function LogManager({
 
                 setStatus({
                     tone: "neutral",
-                    text: `Zaimportowano ${toImport.length} sesji, pominieto ${skipped} duplikatow.`,
+                    text: `Zaimportowano ${toImport.length} sesji, pominięto ${skipped} duplikatów.`,
                 });
                 onSessionsChanged();
             } catch (error) {
                 console.error("[LogManager] Import failed:", error);
-                setStatus({ tone: "danger", text: "Nie udalo sie zaimportowac pliku." });
+                setStatus({ tone: "danger", text: "Nie udało się zaimportować pliku." });
             } finally {
                 logsDb.release();
                 setBusy("");
@@ -375,7 +375,7 @@ export function LogManager({
             onSessionsChanged();
         } catch (error) {
             console.error("[LogManager] Delete failed:", error);
-            setStatus({ tone: "danger", text: "Nie udalo sie usunac sesji." });
+            setStatus({ tone: "danger", text: "Nie udało się usunąć sesji." });
         } finally {
             // Held open, this connection would block the next tab's upgrade.
             logsDb.release();
@@ -429,7 +429,7 @@ export function LogManager({
                 className="popup-btn popup-btn--control popup-btn--sm"
                 disabled={working || selected.size === 0}
                 onClick={() => void exportJson()}
-                title="Eksport do pliku, ktory mozna zaimportowac z powrotem"
+                title="Eksport do pliku, który można zaimportować z powrotem"
             >
                 {busy === "json" ? "Eksportowanie..." : `Eksport JSON (${selected.size})`}
             </button>
@@ -457,7 +457,7 @@ export function LogManager({
                 disabled={working || selected.size === 0}
                 onClick={() => setConfirmDelete(true)}
             >
-                {busy === "delete" ? "Usuwanie..." : `Usun (${selected.size})`}
+                {busy === "delete" ? "Usuwanie..." : `Usuń (${selected.size})`}
             </button>
         </div>
     );
@@ -465,7 +465,7 @@ export function LogManager({
     return (
         <>
             <SubDialog
-                title="Zarzadzanie logami"
+                title="Zarządzanie logami"
                 size="lg"
                 onClose={() => onOpenChange(false)}
                 footer={actions}
@@ -480,7 +480,7 @@ export function LogManager({
 
                 {ordered.length === 0 ? (
                     <p className="popup-muted logs-manage__empty">
-                        Nie ma jeszcze zadnego logu. Uzyj „Importuj”, zeby wczytac je z pliku eksportu.
+                        Nie ma jeszcze żadnego logu. Użyj „Importuj”, żeby wczytać je z pliku eksportu.
                     </p>
                 ) : (
                     <div className="logs-manage__table-box">
@@ -555,7 +555,7 @@ export function LogManager({
 
             {confirmDelete ? (
                 <SubDialog
-                    title="Usunac zaznaczone logi?"
+                    title="Usunąć zaznaczone logi?"
                     size="sm"
                     onClose={() => setConfirmDelete(false)}
                     footer={
@@ -572,12 +572,12 @@ export function LogManager({
                                 className="popup-btn popup-btn--control popup-btn--sm popup-btn--danger popup-btn--ghost"
                                 onClick={() => void deleteSelected()}
                             >
-                                Usun
+                                Usuń
                             </button>
                         </>
                     }
                 >
-                    {`Zaznaczonych sesji: ${selected.size}. Tej operacji nie da sie cofnac.`}
+                    {`Zaznaczonych sesji: ${selected.size}. Tej operacji nie da się cofnąć.`}
                 </SubDialog>
             ) : null}
         </>

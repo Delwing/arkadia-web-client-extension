@@ -51,8 +51,8 @@ export function getFooterExpandMode(): MobileFooterExpand {
     return mode === 'expanded' || mode === 'collapsed' ? mode : 'toggle';
 }
 
-const EXPAND_TITLE = 'Rozwin stopke';
-const COLLAPSE_TITLE = 'Zwin stopke';
+const EXPAND_TITLE = 'Rozwiń stopkę';
+const COLLAPSE_TITLE = 'Zwiń stopkę';
 
 /**
  * Wires the footer expander. Returns a teardown function.

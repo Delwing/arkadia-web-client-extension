@@ -38,7 +38,7 @@ function formatDaysRemaining(days: number): string {
         return "Dzisiaj!";
     }
     if (days === 1) {
-        return "1 dzien";
+        return "1 dzień";
     }
     if (days >= 2 && days <= 4) {
         return `${days} dni`;
@@ -102,9 +102,9 @@ const ContractsPopup: React.FC = () => {
                 type="button"
                 className={`popup-btn${sortMode === 'distance' ? ' popup-btn--primary' : ''}`}
                 onClick={() => setSortMode('distance')}
-                title="Sortuj po odleglosci"
+                title="Sortuj po odległości"
             >
-                Odleglosc
+                Odległość
             </button>
             <button
                 type="button"
@@ -131,7 +131,7 @@ const ContractsPopup: React.FC = () => {
             headerActions={headerActions}
         >
             {sortedContracts.length === 0 ? (
-                <div className="popup-empty">Brak aktywnych zlecen.</div>
+                <div className="popup-empty">Brak aktywnych zleceń.</div>
             ) : (
                 <div className="popup-list contracts-list">
                     {sortedContracts.map(({ contract, distance }) => {
@@ -149,7 +149,7 @@ const ContractsPopup: React.FC = () => {
                                         type="button"
                                         className="contract-remove-btn"
                                         onClick={() => handleRemove(contract.id)}
-                                        title="Usun zlecenie"
+                                        title="Usuń zlecenie"
                                     >
                                         X
                                     </button>
@@ -158,7 +158,7 @@ const ContractsPopup: React.FC = () => {
                                     <span className="contract-type">{contract.type}</span>
                                     <span className="contract-count">
                                         {contract.count} {contract.unit || 'x'} {contract.item}
-                                        {contract.quality && ` (${contract.quality} jakosci)`}
+                                        {contract.quality && ` (${contract.quality} jakości)`}
                                     </span>
                                 </div>
                                 <div className="contract-footer">
@@ -167,9 +167,9 @@ const ContractsPopup: React.FC = () => {
                                             type="button"
                                             className="popup-btn popup-btn--primary"
                                             onClick={() => handleProwadz(contract.locationId!)}
-                                            title="Prowadz do lokacji"
+                                            title="Prowadź do lokacji"
                                         >
-                                            Prowadz{distance !== null && ` (${distance})`}
+                                            Prowadź{distance !== null && ` (${distance})`}
                                         </button>
                                     )}
                                     <div className={`contract-deadline ${isUrgent ? 'contract-deadline--urgent' : ''}`}>

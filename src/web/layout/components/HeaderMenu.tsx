@@ -70,7 +70,7 @@ export function MenuCheckItem({ checked, onClick, children }: { checked: boolean
 export function MenuBack({ onClick }: { onClick: () => void }) {
   return (
     <button type="button" className="popup-menu__item popup-menu__item--back" onClick={onClick}>
-      &larr; Powrot
+      &larr; Powrót
     </button>
   );
 }

@@ -160,7 +160,7 @@ function GoogleDriveTab({ onImportComplete }: GoogleDriveTabProps = {}) {
 
         const handleError = () => {
             if (!isMounted) return;
-            setDriveError("Nie udalo sie zaladowac integracji z Google Drive.");
+            setDriveError("Nie udało się załadować integracji z Google Drive.");
         };
 
         target.addEventListener("load", handleLoad);
@@ -187,7 +187,7 @@ function GoogleDriveTab({ onImportComplete }: GoogleDriveTabProps = {}) {
         if (!isDriveScriptReady) return;
         const oauth2 = window.google?.accounts?.oauth2;
         if (!oauth2) {
-            setDriveError("Nie udalo sie zainicjalizowac integracji z Google Drive.");
+            setDriveError("Nie udało się zainicjalizować integracji z Google Drive.");
             return;
         }
         tokenClientRef.current = oauth2.initTokenClient({
@@ -204,13 +204,13 @@ function GoogleDriveTab({ onImportComplete }: GoogleDriveTabProps = {}) {
                 client.callback = (response: GoogleTokenResponse) => {
                     if (response?.error) {
                         reject(new Error(response.error === "access_denied"
-                            ? "Dostep do Google Drive zostal odrzucony."
+                            ? "Dostęp do Google Drive został odrzucony."
                             : response.error));
                         return;
                     }
                     const token = response?.access_token;
                     if (!token) {
-                        reject(new Error("Nie udalo sie uzyskac tokenu Google Drive."));
+                        reject(new Error("Nie udało się uzyskać tokenu Google Drive."));
                         return;
                     }
                     const expiresRaw = response.expires_in;
@@ -228,7 +228,7 @@ function GoogleDriveTab({ onImportComplete }: GoogleDriveTabProps = {}) {
                 try {
                     client.requestAccessToken({ prompt: promptType as "" | "consent" });
                 } catch (err) {
-                    reject(err instanceof Error ? err : new Error("Nie udalo sie uzyskac tokenu Google Drive."));
+                    reject(err instanceof Error ? err : new Error("Nie udało się uzyskać tokenu Google Drive."));
                 }
             });
         },
@@ -239,7 +239,7 @@ function GoogleDriveTab({ onImportComplete }: GoogleDriveTabProps = {}) {
         async (forcePrompt = false): Promise<string> => {
             const client = tokenClientRef.current;
             if (!client) {
-                throw new Error("Integracja z Google Drive nie jest dostepna.");
+                throw new Error("Integracja z Google Drive nie jest dostępna.");
             }
             if (!forcePrompt) {
                 const existingToken = driveTokenRef.current;
@@ -347,7 +347,7 @@ function GoogleDriveTab({ onImportComplete }: GoogleDriveTabProps = {}) {
                 setDriveFiles(list);
             } catch (err) {
                 console.error("Failed to list Google Drive files", err);
-                setDriveError("Nie udalo sie pobrac listy plikow z Google Drive.");
+                setDriveError("Nie udało się pobrać listy plików z Google Drive.");
             } finally {
                 setIsDriveLoading(false);
                 if (options?.action === "list") {
@@ -380,11 +380,11 @@ function GoogleDriveTab({ onImportComplete }: GoogleDriveTabProps = {}) {
         setIsDriveBusy(true);
         try {
             await ensureDriveToken(true);
-            setDriveStatus("Polaczono z Google Drive.");
+            setDriveStatus("Połączono z Google Drive.");
             await refreshDriveFiles();
         } catch (err) {
             console.error("Failed to connect to Google Drive", err);
-            setDriveError("Nie udalo sie polaczyc z Google Drive.");
+            setDriveError("Nie udało się połączyć z Google Drive.");
         } finally {
             setIsDriveBusy(false);
             setDriveAction(null);
@@ -428,11 +428,11 @@ function GoogleDriveTab({ onImportComplete }: GoogleDriveTabProps = {}) {
             if (!response.ok) {
                 throw new Error(`Upload failed with status ${response.status}`);
             }
-            setDriveStatus("Kopia zostala zapisana na Google Drive.");
+            setDriveStatus("Kopia została zapisana na Google Drive.");
             await refreshDriveFiles();
         } catch (err) {
             console.error("Failed to upload backup to Google Drive", err);
-            setDriveError("Nie udalo sie wyslac kopii na Google Drive.");
+            setDriveError("Nie udało się wysłać kopii na Google Drive.");
         } finally {
             setIsDriveBusy(false);
             setDriveAction(null);
@@ -461,14 +461,14 @@ function GoogleDriveTab({ onImportComplete }: GoogleDriveTabProps = {}) {
             const result = await restoreBackup(parsed);
             await publishRestore();
             onImportComplete?.();
-            let msg = `Zaimportowano plik "${fileSummary.name}" z Google Drive. Niektore ustawienia moga wymagac odswiezenia strony.`;
+            let msg = `Zaimportowano plik "${fileSummary.name}" z Google Drive. Niektóre ustawienia mogą wymagać odświeżenia strony.`;
             if (result.deviceSettingsSavedToImportedList) {
-                msg += " Ustawienia interfejsu z innego urzadzenia zostaly zapisane - mozesz je zastosowac w zakladce Urzadzenia.";
+                msg += " Ustawienia interfejsu z innego urządzenia zostały zapisane - możesz je zastosować w zakładce Urządzenia.";
             }
             setDriveStatus(msg);
         } catch (err) {
             console.error("Failed to import backup from Google Drive", err);
-            setDriveError("Nie udalo sie pobrac danych z Google Drive.");
+            setDriveError("Nie udało się pobrać danych z Google Drive.");
         } finally {
             setIsDriveBusy(false);
             setDriveAction(null);
@@ -477,7 +477,7 @@ function GoogleDriveTab({ onImportComplete }: GoogleDriveTabProps = {}) {
 
     const handleDriveDelete = async (fileSummary: DriveFileSummary) => {
         if (!tokenClientRef.current) return;
-        const confirmed = window.confirm(`Czy na pewno chcesz usunac kopie "${fileSummary.name}" z Google Drive?`);
+        const confirmed = window.confirm(`Czy na pewno chcesz usunąć kopię "${fileSummary.name}" z Google Drive?`);
         if (!confirmed) {
             return;
         }
@@ -495,11 +495,11 @@ function GoogleDriveTab({ onImportComplete }: GoogleDriveTabProps = {}) {
             if (!response.ok) {
                 throw new Error(`Delete failed with status ${response.status}`);
             }
-            setDriveStatus(`Usunieto kopie "${fileSummary.name}" z Google Drive.`);
+            setDriveStatus(`Usunięto kopię "${fileSummary.name}" z Google Drive.`);
             await refreshDriveFiles();
         } catch (err) {
             console.error("Failed to delete backup from Google Drive", err);
-            setDriveError("Nie udalo sie usunac kopii z Google Drive.");
+            setDriveError("Nie udało się usunąć kopii z Google Drive.");
         } finally {
             setIsDriveBusy(false);
             setDriveAction(null);
@@ -526,7 +526,7 @@ function GoogleDriveTab({ onImportComplete }: GoogleDriveTabProps = {}) {
             setDriveToken(null);
             clearStoredDriveToken();
             setDriveFiles([]);
-            setDriveStatus("Polaczenie z Google Drive zostalo zakonczenie.");
+            setDriveStatus("Połączenie z Google Drive zostało zakończone.");
             setIsDriveBusy(false);
             setDriveAction(null);
         }
@@ -535,23 +535,23 @@ function GoogleDriveTab({ onImportComplete }: GoogleDriveTabProps = {}) {
     return (
         <div className="popup-stack">
             <div>
-                <p className="popup-muted drive-backups__lead">Polacz konto Google, aby zapisywac kopie zapasowe w chmurze.</p>
+                <p className="popup-muted drive-backups__lead">Połącz konto Google, aby zapisywać kopie zapasowe w chmurze.</p>
             </div>
             <div className="popup-row">
                 {!isDriveScriptReady ? (
                     <div className="popup-inline popup-muted">
                         <span className="popup-spinner" />
-                        <span>Ladowanie integracji z Google...</span>
+                        <span>Ładowanie integracji z Google...</span>
                     </div>
                 ) : !driveToken ? (
                     <Button variant="solid" onClick={handleDriveConnect} disabled={isDriveBusy}>
                         {driveAction === "connect" ? (
                             <span className="popup-inline">
                                 <span className="popup-spinner" />
-                                <span>Laczenie...</span>
+                                <span>Łączenie...</span>
                             </span>
                         ) : (
-                            "Polacz z Google Drive"
+                            "Połącz z Google Drive"
                         )}
                     </Button>
                 ) : (
@@ -563,10 +563,10 @@ function GoogleDriveTab({ onImportComplete }: GoogleDriveTabProps = {}) {
                             {driveAction === "upload" ? (
                                 <span className="popup-inline">
                                     <span className="popup-spinner" />
-                                    <span>Wysylanie...</span>
+                                    <span>Wysyłanie...</span>
                                 </span>
                             ) : (
-                                "Wyslij kopie na Google Drive"
+                                "Wyślij kopię na Google Drive"
                             )}
                         </Button>
                         <Button
@@ -576,10 +576,10 @@ function GoogleDriveTab({ onImportComplete }: GoogleDriveTabProps = {}) {
                             {driveAction === "list" ? (
                                 <span className="popup-inline">
                                     <span className="popup-spinner" />
-                                    <span>Odswiezanie...</span>
+                                    <span>Odświeżanie...</span>
                                 </span>
                             ) : (
-                                "Odswiez liste"
+                                "Odśwież listę"
                             )}
                         </Button>
                         <Button
@@ -589,10 +589,10 @@ function GoogleDriveTab({ onImportComplete }: GoogleDriveTabProps = {}) {
                             {driveAction === "disconnect" ? (
                                 <span className="popup-inline">
                                     <span className="popup-spinner" />
-                                    <span>Odlaczanie...</span>
+                                    <span>Odłączanie...</span>
                                 </span>
                             ) : (
-                                "Odlacz"
+                                "Odłącz"
                             )}
                         </Button>
                     </>
@@ -604,7 +604,7 @@ function GoogleDriveTab({ onImportComplete }: GoogleDriveTabProps = {}) {
                     {isDriveLoading ? (
                         <div className="popup-inline popup-muted">
                             <span className="popup-spinner" />
-                            <span>Ladowanie listy plikow...</span>
+                            <span>Ładowanie listy plików...</span>
                         </div>
                     ) : driveFiles.length > 0 ? (
                         <div className="popup-stack popup-stack--sm">
@@ -649,7 +649,7 @@ function GoogleDriveTab({ onImportComplete }: GoogleDriveTabProps = {}) {
                                                     <span>Usuwanie...</span>
                                                 </span>
                                             ) : (
-                                                "Usun"
+                                                "Usuń"
                                             )}
                                         </Button>
                                     </div>
@@ -658,7 +658,7 @@ function GoogleDriveTab({ onImportComplete }: GoogleDriveTabProps = {}) {
                         })}
                         </div>
                     ) : (
-                        <p className="popup-muted drive-backups__lead">Brak kopii zapisanych przez Arkadie na Google Drive.</p>
+                        <p className="popup-muted drive-backups__lead">Brak kopii zapisanych przez Arkadię na Google Drive.</p>
                     )}
                 </section>
             )}

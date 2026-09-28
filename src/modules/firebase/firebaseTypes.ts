@@ -117,22 +117,22 @@ export const FIREBASE_DEVICE_ID_KEY = 'arkadia.firebaseDeviceId';
 
 // Error messages (Polish)
 export const FIREBASE_ERRORS = {
-    INVALID_CONFIG: 'Nieprawidlowa konfiguracja Firebase.',
-    AUTH_FAILED: 'Logowanie nie powiodlo sie.',
-    REGISTER_FAILED: 'Rejestracja nie powiodla sie.',
-    WRONG_PASSPHRASE: 'Nieprawidlowe haslo szyfrowania.',
-    SYNC_FAILED: 'Synchronizacja nie powiodla sie.',
-    ENCRYPTION_FAILED: 'Szyfrowanie danych nie powiodlo sie.',
-    DECRYPTION_FAILED: 'Odszyfrowanie nie powiodlo sie. Sprawdz haslo.',
-    NETWORK_ERROR: 'Blad polaczenia z serwerem.',
-    NOT_INITIALIZED: 'Firebase nie zostal zainicjalizowany.',
-    EMAIL_IN_USE: 'Ten adres email jest juz uzywany.',
-    WEAK_PASSWORD: 'Haslo jest zbyt slabe. Uzyj co najmniej 6 znakow.',
-    INVALID_EMAIL: 'Nieprawidlowy adres email.',
-    USER_NOT_FOUND: 'Nie znaleziono uzytkownika z tym adresem email.',
-    WRONG_PASSWORD: 'Nieprawidlowe haslo.',
-    POPUP_BLOCKED: 'Popup zostal zablokowany. Odblokuj popupy dla tej strony.',
-    POPUP_CLOSED: 'Logowanie zostalo anulowane.',
+    INVALID_CONFIG: 'Nieprawidłowa konfiguracja Firebase.',
+    AUTH_FAILED: 'Logowanie nie powiodło się.',
+    REGISTER_FAILED: 'Rejestracja nie powiodła się.',
+    WRONG_PASSPHRASE: 'Nieprawidłowe hasło szyfrowania.',
+    SYNC_FAILED: 'Synchronizacja nie powiodła się.',
+    ENCRYPTION_FAILED: 'Szyfrowanie danych nie powiodło się.',
+    DECRYPTION_FAILED: 'Odszyfrowanie nie powiodło się. Sprawdź hasło.',
+    NETWORK_ERROR: 'Błąd połączenia z serwerem.',
+    NOT_INITIALIZED: 'Firebase nie został zainicjalizowany.',
+    EMAIL_IN_USE: 'Ten adres email jest już używany.',
+    WEAK_PASSWORD: 'Hasło jest zbyt słabe. Użyj co najmniej 6 znaków.',
+    INVALID_EMAIL: 'Nieprawidłowy adres email.',
+    USER_NOT_FOUND: 'Nie znaleziono użytkownika z tym adresem email.',
+    WRONG_PASSWORD: 'Nieprawidłowe hasło.',
+    POPUP_BLOCKED: 'Popup został zablokowany. Odblokuj popupy dla tej strony.',
+    POPUP_CLOSED: 'Logowanie zostało anulowane.',
 };
 
 // Helper to generate device ID
@@ -153,9 +153,9 @@ export function getDeviceId(): string {
 }
 
 /** Shown by v1 sync when a device of this account has moved to sync v2. */
-export const SYNC_V2_STARTED_NOTICE = 'Synchronizacja zostala zaktualizowana. Odswiez strone, aby dalej synchronizowac dane z innymi urzadzeniami.';
+export const SYNC_V2_STARTED_NOTICE = 'Synchronizacja została zaktualizowana. Odśwież stronę, aby dalej synchronizować dane z innymi urządzeniami.';
 /** Shown by v1 sync when its writes are refused (v1 locked by the security rules after the transition). */
-export const SYNC_V1_LOCKED_NOTICE = 'Ta wersja klienta nie synchronizuje juz danych. Odswiez strone, aby wczytac nowa wersje.';
+export const SYNC_V1_LOCKED_NOTICE = 'Ta wersja klienta nie synchronizuje już danych. Odśwież stronę, aby wczytać nową wersję.';
 
 // Load Firebase settings from localStorage
 export function loadFirebaseSettings(): FirebaseSettings {

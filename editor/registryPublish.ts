@@ -41,7 +41,7 @@ export async function publishToRegistry(
   try {
     archive = await (await buildPluginArchive(plugin)).arrayBuffer()
   } catch (error) {
-    updateStatus('Nie udalo sie spakowac pluginu: ' + (error as Error).message, 'error')
+    updateStatus('Nie udało się spakować pluginu: ' + (error as Error).message, 'error')
     return
   }
 
@@ -50,13 +50,13 @@ export async function publishToRegistry(
   const popup = window.open(handoffUrl(), 'arkadia-registry-publish', 'width=760,height=940')
   if (!popup) {
     updateStatus(
-      'Przegladarka zablokowala okno publikacji. Zezwol na wyskakujace okna i sprobuj ponownie.',
+      'Przeglądarka zablokowała okno publikacji. Zezwól na wyskakujące okna i spróbuj ponownie.',
       'error'
     )
     return
   }
 
-  updateStatus('Otwarto katalog - dokoncz publikacje w nowym oknie.', 'normal')
+  updateStatus('Otwarto katalog - dokończ publikację w nowym oknie.', 'normal')
 
   let done = false
   const cleanup = () => {

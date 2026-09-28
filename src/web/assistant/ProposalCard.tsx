@@ -72,7 +72,7 @@ export default function ProposalCard({ result, onApplied }: ProposalCardProps) {
 
             {result.commandFlags.length > 0 && (
                 <div className="assistant-card__flags">
-                    <div className="assistant-card__flags-title">Uwaga - sprawdz te komende:</div>
+                    <div className="assistant-card__flags-title">Uwaga - sprawdź tę komendę:</div>
                     <ul>
                         {result.commandFlags.map((flag, index) => (
                             <li key={`${flag.code}-${index}`}>
@@ -113,7 +113,7 @@ export default function ProposalCard({ result, onApplied }: ProposalCardProps) {
                         Zastosuj
                     </button>
                     <button type="button" className="assistant-btn" onClick={() => setState('rejected')}>
-                        Odrzuc
+                        Odrzuć
                     </button>
                 </div>
             ) : (

@@ -50,25 +50,25 @@ export const SETTINGS_GROUP_LABELS: Record<SettingsGroup, string> = {
 };
 
 export const SETTINGS_CATEGORIES: readonly SettingsCategory[] = [
-    { key: "character-general", group: "character", label: "Ogólne", keywords: "wyjscia roza wiatrow jezyk" },
-    { key: "character-items", group: "character", label: "Przedmioty", keywords: "pojemniki zbieranie monety ziola" },
-    { key: "character-combat", group: "character", label: "Walka", keywords: "bron atak gagi" },
+    { key: "character-general", group: "character", label: "Ogólne", keywords: "wyjścia róża wiatrów język" },
+    { key: "character-items", group: "character", label: "Przedmioty", keywords: "pojemniki zbieranie monety zioła" },
+    { key: "character-combat", group: "character", label: "Walka", keywords: "broń atak gagi" },
     { key: "character-guilds", group: "character", label: "Gildie", keywords: "wrogowie sojusznicy" },
     { key: "character-magics", group: "character", label: "Magiki" },
     { key: "ui-appearance", group: "ui", label: "Wygląd", keywords: "motyw czcionka kolory paleta" },
-    { key: "ui-windows", group: "ui", label: "Okna", keywords: "uklad bufor lista obiektow" },
+    { key: "ui-windows", group: "ui", label: "Okna", keywords: "układ bufor lista obiektów" },
     { key: "ui-commands", group: "ui", label: "Komendy", keywords: "multibindy bindy wpisywanie" },
     { key: "ui-buttons", group: "ui", label: "Przyciski", keywords: "makra" },
-    { key: "ui-mobile-buttons", group: "ui", label: "Przyciski mobilne", keywords: "makra kierunki telefon druzyna" },
+    { key: "ui-mobile-buttons", group: "ui", label: "Przyciski mobilne", keywords: "makra kierunki telefon drużyna" },
     { key: "ui-radial", group: "ui", label: "Menu kołowe", keywords: "radialne gest komendy telefon" },
     { key: "ui-footer", group: "ui", label: "Stopka", keywords: "paski kondycja" },
     { key: "ui-map", group: "ui", label: "Mapa" },
-    { key: "ui-sound", group: "ui", label: "Dźwięk i powiadomienia", keywords: "dzwieki beep powiadomienia push mowa tts glos czytanie lektor" },
+    { key: "ui-sound", group: "ui", label: "Dźwięk i powiadomienia", keywords: "dźwięki beep powiadomienia push mowa tts głos czytanie lektor" },
     { key: "ui-other", group: "ui", label: "Inne", keywords: "telefon logi dysk zapis" },
     { key: "data-sync", group: "data", label: "Synchronizacja", keywords: "firebase konto logowanie chmura eksport import" },
     { key: "data-backup", group: "data", label: "Kopia zapasowa", keywords: "eksport import plik google drive backup" },
-    { key: "data-devices", group: "data", label: "Urządzenia", keywords: "urzadzenie grupa synchronizacji" },
-    { key: "data-import", group: "data", label: "Import z innych klientów", keywords: "mudlet blowtorch klient arkadii wiedza zlom postepy multibindy aliasy baza db" },
+    { key: "data-devices", group: "data", label: "Urządzenia", keywords: "urządzenie grupa synchronizacji" },
+    { key: "data-import", group: "data", label: "Import z innych klientów", keywords: "mudlet blowtorch klient arkadii wiedza złom postępy multibindy aliasy baza db" },
 ];
 
 export const DEFAULT_SETTINGS_CATEGORY: Record<SettingsGroup, SettingsCategoryKey> = {

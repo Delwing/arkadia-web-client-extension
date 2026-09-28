@@ -15,14 +15,14 @@ import type {GeneralSettingsSectionProps} from "./useGeneralSettingsForm";
 const collectModeOptions = [
     "zawsze",
     "lider",
-    "wlasne",
+    "własne",
     "nic",
 ];
 
 const collectTimingOptions = [
     "na koniec (po zabiciu wszystkich)",
-    "po kazdym zabiciu",
-    "po kazdym zabiciu i na koniec",
+    "po każdym zabiciu",
+    "po każdym zabiciu i na koniec",
 ];
 
 const languageOptions = [
@@ -50,14 +50,14 @@ const languageOptions = [
 ]
 
 const lowHpAlertOptions = [
-    {value: 0, label: '0 - Wylaczony'},
-    {value: 1, label: '1 - Ledwo zywy'},
-    {value: 2, label: '2 - Ciezko ranny'},
-    {value: 3, label: '3 - W zlej kondycji'},
+    {value: 0, label: '0 - Wyłączony'},
+    {value: 1, label: '1 - Ledwo żywy'},
+    {value: 2, label: '2 - Ciężko ranny'},
+    {value: 3, label: '3 - W złej kondycji'},
     {value: 4, label: '4 - Ranny'},
     {value: 5, label: '5 - Lekko ranny'},
     {value: 6, label: '6 - W dobrym stanie'},
-    {value: 7, label: '7 - W swietnej kondycji'},
+    {value: 7, label: '7 - W świetnej kondycji'},
 ];
 
 const LETTER_LINE_WIDTH_MIN = 40;
@@ -75,20 +75,20 @@ export function ExitsSection({settings, onChangeSetting}: GeneralSettingsSection
         <section className="character-settings-section">
             <h5 className="character-settings-section-title">Wyjścia</h5>
             <div className="character-settings-stack">
-                <Field label="Roza wiatrow" htmlFor="inlineCompassRose">
+                <Field label="Róża wiatrów" htmlFor="inlineCompassRose">
                     <Select
                         id="inlineCompassRose"
                         className="settings-narrow"
                         value={settings.inlineCompassRose}
                         onChange={e => onChangeSetting(s => s.inlineCompassRose = Number(e.target.value))}
                     >
-                        <option value={0}>Wyl.</option>
+                        <option value={0}>Wył.</option>
                         <optgroup label="Inline">
-                            <option value={1}>Domyslna</option>
+                            <option value={1}>Domyślna</option>
                             <option value={3}>ASCII</option>
                         </optgroup>
                         <optgroup label="Ramka">
-                            <option value={2}>Domyslna</option>
+                            <option value={2}>Domyślna</option>
                             <option value={4}>ASCII</option>
                         </optgroup>
                     </Select>
@@ -237,24 +237,24 @@ export function OtherOptionsSection({settings, onChangeSetting}: GeneralSettings
                     />
                     <Check
                         id="fullHpMessage"
-                        label={<>Informacja o pelnym zdrowiu <HelpHint text="Gdy wlaczone, wyswietla komunikat gdy zdrowie postaci zostanie w pelni odnowione."/></>}
+                        label={<>Informacja o pełnym zdrowiu <HelpHint text="Gdy włączone, wyświetla komunikat gdy zdrowie postaci zostanie w pełni odnowione."/></>}
                         checked={settings.fullHpMessage}
                         onChange={e => onChangeSetting(s => s.fullHpMessage = e.target.checked)}
                     />
                     <Check
                         id="sunTracker"
-                        label={<>Ramki wschodu/zachodu <HelpHint text="Wyswietla kolorowe ramki przy wschodach/zachodach slonca. Obserwacje sa rejestrowane zawsze. Uzyj /slonce aby otworzyc kalendarz."/></>}
+                        label={<>Ramki wschodu/zachodu <HelpHint text="Wyświetla kolorowe ramki przy wschodach/zachodach słońca. Obserwacje są rejestrowane zawsze. Użyj /slonce, aby otworzyć kalendarz."/></>}
                         checked={settings.sunTracker}
                         onChange={e => onChangeSetting(s => s.sunTracker = e.target.checked)}
                     />
                     <Check
                         id="carriageTeamTickets"
-                        label={<>Bilety dla druzyny przy wjezdzie wozem <HelpHint text="Gdy wjezdzasz wozem na statek, bind wejscia kupuje bilety takze dla czlonkow druzyny na lokacji i wrecza im je (jak /bilety). Wylaczone: kupuje tylko twoj bilet."/></>}
+                        label={<>Bilety dla drużyny przy wjeździe wozem <HelpHint text="Gdy wjeżdżasz wozem na statek, bind wejścia kupuje bilety także dla członków drużyny na lokacji i wręcza im je (jak /bilety). Wyłączone: kupuje tylko twój bilet."/></>}
                         checked={settings.carriageTeamTickets}
                         onChange={e => onChangeSetting(s => s.carriageTeamTickets = e.target.checked)}
                     />
                 </div>
-                <Field label="Domyslna szerokosc linii listu" htmlFor="letterLineWidth" hint="Mozna ja zmienic dla pojedynczego listu w edytorze (/list)">
+                <Field label="Domyślna szerokość linii listu" htmlFor="letterLineWidth" hint="Można ją zmienić dla pojedynczego listu w edytorze (/list)">
                     <Input
                         type="number"
                         min={LETTER_LINE_WIDTH_MIN}
@@ -358,7 +358,7 @@ export function CollectSection({settings, onChangeSetting}: GeneralSettingsSecti
                         ))}
                     </Select>
                 </Field>
-                <Field label="Kiedy zbierac" htmlFor="collectTiming">
+                <Field label="Kiedy zbierać" htmlFor="collectTiming">
                     <Select
                         id="collectTiming"
                         value={settings.collectTiming}
@@ -369,7 +369,7 @@ export function CollectSection({settings, onChangeSetting}: GeneralSettingsSecti
                         ))}
                     </Select>
                 </Field>
-                <Field label="Co zbierac">
+                <Field label="Co zbierać">
                     <div className="settings-checks">
                         <Check
                             id="collectCopper"
@@ -385,7 +385,7 @@ export function CollectSection({settings, onChangeSetting}: GeneralSettingsSecti
                         />
                         <Check
                             id="collectGold"
-                            label="Zlote monety"
+                            label="Złote monety"
                             checked={settings.collectGold}
                             onChange={e => onChangeSetting(s => s.collectGold = e.target.checked)}
                         />
@@ -462,7 +462,7 @@ export function CombatCommandsSection({settings, onChangeSetting}: GeneralSettin
         <section className="character-settings-section">
             <h5 className="character-settings-section-title">Walka</h5>
             <div className="character-settings-stack">
-                <Field label="Komenda ataku" hint='Uzywana przy ataku na numery obiektow. Domyslnie "zabij".'>
+                <Field label="Komenda ataku" hint='Używana przy ataku na numery obiektów. Domyślnie "zabij".'>
                     <Input
                         mono
                         className="settings-command"
@@ -471,7 +471,7 @@ export function CombatCommandsSection({settings, onChangeSetting}: GeneralSettin
                         onChange={e => onChangeSetting(s => s.attackCommand = e.target.value)}
                     />
                 </Field>
-                <Field label="Komenda wsparcia" hint='Uzywana przy wspieraniu lidera druzyny. Domyslnie "wesprzyj".'>
+                <Field label="Komenda wsparcia" hint='Używana przy wspieraniu lidera drużyny. Domyślnie "wesprzyj".'>
                     <Input
                         mono
                         className="settings-command"
@@ -482,7 +482,7 @@ export function CombatCommandsSection({settings, onChangeSetting}: GeneralSettin
                 </Field>
                 <Field
                     label="Komenda dobycia broni"
-                    hint='Wysylana przy automatycznym dobywaniu wszystkich broni. "wszystkich broni" dodawane automatycznie.'
+                    hint='Wysyłana przy automatycznym dobywaniu wszystkich broni. "wszystkich broni" dodawane automatycznie.'
                 >
                     <Input
                         mono
@@ -518,7 +518,7 @@ export function HerbsSection({settings, onChangeSetting}: GeneralSettingsSection
                         onChange={e => onChangeSetting(s => s.herbPostUseCommand = e.target.value)}
                     />
                 </Field>
-                <Field label='Ilosc "wiele"' htmlFor="herbWieleCount">
+                <Field label='Ilość "wiele"' htmlFor="herbWieleCount">
                     <Input
                         type="number"
                         min={1}
@@ -589,8 +589,8 @@ export function DrawSheatheSection({settings, onChangeSetting}: GeneralSettingsS
             <h5 className="character-settings-section-title">Dobywanie/Opuszczanie</h5>
             <div className="character-settings-stack">
                 <p className="popup-field__hint">
-                    /dob bez argumentu wysyla komendy 1 i 2, /dob [1-3] wysyla wybrany slot. Analogicznie /op.
-                    Oddziel komendy srednikiem (;).
+                    /dob bez argumentu wysyła komendy 1 i 2, /dob [1-3] wysyła wybrany slot. Analogicznie /op.
+                    Oddziel komendy średnikiem (;).
                 </p>
                 <div className="settings-columns">
                     {column('dob')}
@@ -610,7 +610,7 @@ export function LanguageSection({settings, onChangeSetting}: GeneralSettingsSect
         <section className="character-settings-section character-settings-section--full">
             <h5 className="character-settings-section-title">Język</h5>
             <div className="settings-fields-row">
-                <Field label="Przyslowek">
+                <Field label="Przysłówek">
                     <Input
                         className="settings-narrow"
                         value={settings.languageAdjective}
@@ -633,7 +633,7 @@ export function LanguageSection({settings, onChangeSetting}: GeneralSettingsSect
                 <thead>
                 <tr>
                     <th>Alias</th>
-                    <th>Przyslowek</th>
+                    <th>Przysłówek</th>
                     <th>Język</th>
                     <th></th>
                 </tr>

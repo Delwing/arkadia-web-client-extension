@@ -109,7 +109,7 @@ const PostepyPopup: React.FC = () => {
         <DockablePopupWrapper
             {...wrapperProps}
             popupType="postepy"
-            title="Postepy"
+            title="Postępy"
             minWidth={200}
             minHeight={150}
             initialWidth={325}
@@ -121,7 +121,7 @@ const PostepyPopup: React.FC = () => {
             <div className="postepy-popup__content" ref={containerRef}>
                 {entries.length === 0 ? (
                     <div className="popup-empty">
-                        Brak postepow.
+                        Brak postępów.
                     </div>
                 ) : (
                     <div className="postepy-popup__entries">

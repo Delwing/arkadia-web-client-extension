@@ -1,86 +1,86 @@
 # Ekwipunek
 
-Zarzadzanie pojemnikami, zbieranie lupow i depozyty.
+Zarządzanie pojemnikami, zbieranie łupów i depozyty.
 
-## Menedzer pojemnikow
+## Menedżer pojemników
 
-Menedzer pojemnikow pozwala przypisac wybrane torby, plecaki i inne pojemniki do okreslonych typow przedmiotow. Dzieki temu mozesz szybko odkladac i wyjmowac rzeczy z odpowiedniego miejsca.
+Menedżer pojemników pozwala przypisać wybrane torby, plecaki i inne pojemniki do określonych typów przedmiotów. Dzięki temu możesz szybko odkładać i wyjmować rzeczy z odpowiedniego miejsca.
 
 ### Konfiguracja
 
-1. Wpisz `/pojemnik` aby przeszukac ekwipunek i wyswietlic liste pojemnikow
-2. Kliknij nazwe typu przy wybranym pojemniku, aby przypisac go do danego typu
-3. Wybierz `wszystkie` by uzywac pojemnika dla wszystkich kategorii
-4. Sprawdz aktualne przypisania komenda `/pojemniki`
+1. Wpisz `/pojemnik`, aby przeszukać ekwipunek i wyświetlić listę pojemników
+2. Kliknij nazwę typu przy wybranym pojemniku, aby przypisać go do danego typu
+3. Wybierz `wszystkie`, by używać pojemnika dla wszystkich kategorii
+4. Sprawdź aktualne przypisania komendą `/pojemniki`
 
-> Ustawienia sa zapisywane w pamieci przegladarki.
+> Ustawienia są zapisywane w pamięci przeglądarki.
 
-### Komendy pojemnikow
+### Komendy pojemników
 
 | Komenda | Opis |
 |---------|------|
-| `/pojemnik` | Uruchom konfiguracje menedzera pojemnikow |
-| `/pojemniki` | Wyswietl biezace ustawienia |
-| `/wdp przedmioty` | Wloz przedmioty do pojemnika typu **other** |
+| `/pojemnik` | Uruchom konfigurację menedżera pojemników |
+| `/pojemniki` | Wyświetl bieżące ustawienia |
+| `/wdp przedmioty` | Włóż przedmioty do pojemnika typu **other** |
 | `/wzp przedmioty` | Wyjmij przedmioty z pojemnika typu **other** |
 | `/wem` lub `wem` | Wyjmij monety z pojemnika typu **money** |
-| `/wlm` lub `wlm` | Wloz monety do pojemnika typu **money** |
-| `/wlp` | Wloz pocztowa paczke do pojemnika |
-| `/wep` | Wyjmij pocztowa paczke z pojemnika |
+| `/wlm` lub `wlm` | Włóż monety do pojemnika typu **money** |
+| `/wlp` | Włóż pocztową paczkę do pojemnika |
+| `/wep` | Wyjmij pocztową paczkę z pojemnika |
 
-## Zbieranie lupow
+## Zbieranie łupów
 
 | Komenda | Opis |
 |---------|------|
-| `/zbieraj_extra przedmiot` | Dodaj przedmiot do listy ekstra rzeczy zbieranych z cial |
-| `/nie_zbieraj_extra [przedmiot]` | Usun przedmiot z listy ekstra (bez parametru czyści cala liste) |
+| `/zbieraj_extra przedmiot` | Dodaj przedmiot do listy ekstra rzeczy zbieranych z ciał |
+| `/nie_zbieraj_extra [przedmiot]` | Usuń przedmiot z listy ekstra (bez parametru czyści całą listę) |
 
 ## Wycinanie i wyrywanie
 
 | Komenda | Opis |
 |---------|------|
-| `/wyc` lub `/wycinaj` | Wycinaj ze wszystkich cial w pomieszczeniu |
-| `/wyc numer` | Wycinaj z ciala o podanym numerze |
-| `/wyr` lub `/wyrywaj` | Wyrywaj ze wszystkich cial w pomieszczeniu |
-| `/wyr numer` | Wyrywaj z ciala o podanym numerze |
+| `/wyc` lub `/wycinaj` | Wycinaj ze wszystkich ciał w pomieszczeniu |
+| `/wyc numer` | Wycinaj z ciała o podanym numerze |
+| `/wyr` lub `/wyrywaj` | Wyrywaj ze wszystkich ciał w pomieszczeniu |
+| `/wyr numer` | Wyrywaj z ciała o podanym numerze |
 
 ## Depozyty
 
 | Komenda | Opis |
 |---------|------|
-| `/depozyt` | Sprawdz zawartosc depozytu w aktualnym banku |
-| `/depozyty` | Wyswietl liste zapisanych depozytow |
-| `/depozytyw` | Otworz okno depozytow |
-| `/depozytyw <filtr>` | Otworz okno depozytow z podanym filtrem |
-| `/depozyt_reset` | Usun wszystkie zapisane depozyty |
+| `/depozyt` | Sprawdź zawartość depozytu w aktualnym banku |
+| `/depozyty` | Wyświetl listę zapisanych depozytów |
+| `/depozytyw` | Otwórz okno depozytów |
+| `/depozytyw <filtr>` | Otwórz okno depozytów z podanym filtrem |
+| `/depozyt_reset` | Usuń wszystkie zapisane depozyty |
 
-> **Wskazowka:** Okno depozytow jest rowniez dostepne z menu kontekstowego (prawy przycisk myszy). Przedmioty sa kolorowane tak samo jak w `/depozyty` (monety, klucze magiczne, magie).
+> **Wskazówka:** Okno depozytów jest również dostępne z menu kontekstowego (prawy przycisk myszy). Przedmioty są kolorowane tak samo jak w `/depozyty` (monety, klucze magiczne, magie).
 
-## Przegladanie i ocena
+## Przeglądanie i ocena
 
 | Komenda                   | Opis |
 |---------------------------|------|
-| `/przejrzyj [co]`         | Pokaz zawartosc skrzyn z kluczami i magicznymi przedmiotami |
-| `/por [id]`               | Porownaj sile, zrecznosc i wytrzymalosc z obiektem |
-| `/odloz_magie [pojemnik]` | Skanuj inwentarz i ustaw bind odkładania magicznych przedmiotow |
-| `/ocen`                   | Ocen swoje bronie i zbroje, wypisujac ich stan |
+| `/przejrzyj [co]`         | Pokaż zawartość skrzyń z kluczami i magicznymi przedmiotami |
+| `/por [id]`               | Porównaj siłę, zręczność i wytrzymałość z obiektem |
+| `/odloz_magie [pojemnik]` | Skanuj inwentarz i ustaw bind odkładania magicznych przedmiotów |
+| `/ocen`                   | Oceń swoje bronie i zbroje, wypisując ich stan |
 | `/sprzet`                 | Alias do `/ocen` |
-| `/ubrania`                | Ocen stan ubran |
-| `/ocenkamienie`           | Oblicz laczna wartosc kamieni |
+| `/ubrania`                | Oceń stan ubrań |
+| `/ocenkamienie`           | Oblicz łączną wartość kamieni |
 
-> **Wskazowka:** Na liscie z `/przejrzyj` magiczne przedmioty i klucze sa klikalne - klikniecie wysyla `wybierz`. Przy magiach klient zamienia nazwe na forme pojedyncza w bierniku, wiec z kilku takich samych przedmiotow wyjmowany jest tylko jeden (np. klikniecie "trzy lsniace plomieniste tarcze" wysle `wybierz lsniaca plomienista tarcze`).
+> **Wskazówka:** Na liście z `/przejrzyj` magiczne przedmioty i klucze są klikalne - kliknięcie wysyła `wybierz`. Przy magiach klient zamienia nazwę na formę pojedynczą w bierniku, więc z kilku takich samych przedmiotów wyjmowany jest tylko jeden (np. kliknięcie "trzy lsniace plomieniste tarcze" wyśle `wybierz lsniaca plomienista tarcze`).
 
 ## Lampa
 
 | Komenda | Opis |
 |---------|------|
-| `/zap` | Zapal lampe |
-| `/zg` | Zgas lampe |
+| `/zap` | Zapal lampę |
+| `/zg` | Zgaś lampę |
 
 ## Naprawy
 
 | Komenda | Opis |
 |---------|------|
-| `/napraw` | Napraw sprzet u kowala |
+| `/napraw` | Napraw sprzęt u kowala |
 | `/naprawa` | Alias do `/napraw` |
 | `/napraw_ubrania` | Napraw ubrania u krawca |

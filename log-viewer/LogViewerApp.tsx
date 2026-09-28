@@ -86,7 +86,7 @@ export default function LogViewerApp() {
             onPreferencesChange={onPreferencesChange}
             noSessionsAction={
                 <span className="lv-app__hint">
-                    Logi sa zapisywane przez klienta. Zaimportowac je mozna w oknie „Logi” w kliencie.
+                    Logi są zapisywane przez klienta. Zaimportować je można w oknie „Logi” w kliencie.
                 </span>
             }
         />

@@ -82,7 +82,7 @@ ctx.addEventListener('message', (event: MessageEvent<ImproveDbWorkerRequest>) =>
         } catch (error) {
             const response: ImproveDbWorkerResponse = {
                 type: 'error',
-                message: error instanceof Error ? error.message : 'Nie udalo sie odczytac bazy danych.',
+                message: error instanceof Error ? error.message : 'Nie udało się odczytać bazy danych.',
             };
             ctx.postMessage(response);
         }

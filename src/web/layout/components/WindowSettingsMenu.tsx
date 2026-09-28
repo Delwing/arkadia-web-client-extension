@@ -85,7 +85,7 @@ function AppearanceSection({ windowId }: { windowId: string }) {
           value={family ?? INHERIT}
           onChange={e => setFamily(e.target.value === INHERIT ? null : (e.target.value as WindowFontFamily))}
         >
-          <option value={INHERIT} style={{ fontFamily: fontStack(null) }}>Jak okno glowne</option>
+          <option value={INHERIT} style={{ fontFamily: fontStack(null) }}>Jak okno główne</option>
           {WINDOW_FONT_FAMILY_OPTIONS.map(o => (
             <option key={o.value} value={o.value} style={{ fontFamily: fontStack(o.value) }}>
               {o.label}
@@ -100,9 +100,9 @@ function AppearanceSection({ windowId }: { windowId: string }) {
             −
           </button>
           <span className={`window-settings__size-value${sizeOverridden ? '' : ' window-settings__size-value--inherit'}`}>
-            {sizeOverridden ? formatSize(effectiveSize) : 'Jak okno glowne'}
+            {sizeOverridden ? formatSize(effectiveSize) : 'Jak okno główne'}
           </span>
-          <button type="button" className="popup-btn window-settings__step" onClick={() => step(1)} title="Wieksza czcionka">
+          <button type="button" className="popup-btn window-settings__step" onClick={() => step(1)} title="Większa czcionka">
             +
           </button>
           <button
@@ -110,7 +110,7 @@ function AppearanceSection({ windowId }: { windowId: string }) {
             className="popup-btn window-settings__step window-settings__reset"
             onClick={() => setSize(null)}
             disabled={!sizeOverridden}
-            title={`Przywroc rozmiar okna glownego (${formatSize(mainFontSize(windowId))})`}
+            title={`Przywróć rozmiar okna głównego (${formatSize(mainFontSize(windowId))})`}
           >
             ↺
           </button>
@@ -228,7 +228,7 @@ export function WindowSettingsMenu({ windowId, title, fields, appearance = true,
           <div className="window-settings__header">Ustawienia okna</div>
           {appearance && (
             <section className="window-settings__section">
-              <h3 className="window-settings__section-title">Wyglad</h3>
+              <h3 className="window-settings__section-title">Wygląd</h3>
               <AppearanceSection windowId={windowId} />
             </section>
           )}

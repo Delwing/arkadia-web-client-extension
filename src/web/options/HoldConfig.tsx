@@ -43,7 +43,7 @@ export default function HoldConfig({
             />
             {holdEnabled && !locked && (
                 <p className="popup-field__warning">
-                    Odblokowane przyciski moga kolidowac z przytrzymaniem (przeciaganie po 1s).
+                    Odblokowane przyciski mogą kolidować z przytrzymaniem (przeciąganie po 1s).
                 </p>
             )}
             {holdEnabled && (

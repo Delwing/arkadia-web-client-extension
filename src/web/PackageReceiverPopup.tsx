@@ -92,7 +92,7 @@ const PackageReceiverPopup: React.FC = () => {
                 type="button"
                 className="popup-btn"
                 onClick={handleRefreshNpcs}
-                title="Aktualizuj liste NPC"
+                title="Aktualizuj listę NPC"
             >
                 Aktualizuj
             </button>
@@ -100,7 +100,7 @@ const PackageReceiverPopup: React.FC = () => {
                 type="button"
                 className="popup-btn"
                 onClick={handleExportNpcs}
-                title="Eksportuj liste NPC"
+                title="Eksportuj listę NPC"
             >
                 Eksport
             </button>
@@ -108,9 +108,9 @@ const PackageReceiverPopup: React.FC = () => {
                 type="button"
                 className="popup-btn"
                 onClick={handleClearNpcs}
-                title="Wyczysc liste NPC"
+                title="Wyczyść listę NPC"
             >
-                Wyczysc
+                Wyczyść
             </button>
         </div>
     );
@@ -151,7 +151,7 @@ const PackageReceiverPopup: React.FC = () => {
             <div className="package-receiver__content">
                 {sortedNpcs.length === 0 ? (
                     <div className="package-receiver__empty">
-                        {npcs.length === 0 ? 'Brak odbiorcow.' : 'Brak wynikow.'}
+                        {npcs.length === 0 ? 'Brak odbiorców.' : 'Brak wyników.'}
                     </div>
                 ) : (
                     <div className="package-receiver__list">
@@ -167,7 +167,7 @@ const PackageReceiverPopup: React.FC = () => {
                                         type="button"
                                         className="package-receiver__npc-btn"
                                         onClick={() => handleShowOnMap(npc.loc)}
-                                        title="Pokaz na mapie"
+                                        title="Pokaż na mapie"
                                     >
                                         &#x1f50d;
                                     </button>
@@ -175,16 +175,16 @@ const PackageReceiverPopup: React.FC = () => {
                                         type="button"
                                         className="package-receiver__npc-btn"
                                         onClick={() => handleNavigate(npc.loc)}
-                                        title="Prowadz do lokacji"
+                                        title="Prowadź do lokacji"
                                     >
-                                        Idz
+                                        Idź
                                     </button>
                                     {npc.source === 'local' && (
                                         <button
                                             type="button"
                                             className="package-receiver__npc-btn package-receiver__npc-btn--delete"
                                             onClick={() => handleDeleteNpc(npc)}
-                                            title="Usun"
+                                            title="Usuń"
                                         >
                                             X
                                         </button>

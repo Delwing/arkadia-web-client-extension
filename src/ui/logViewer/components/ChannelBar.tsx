@@ -18,7 +18,7 @@ export interface ChannelBarProps {
 export function ChannelBar({ channels, counts, onToggle, onShowAll }: ChannelBarProps) {
     return (
         <div className="lv-channels">
-            <span className="lv-channels__label">Kanaly</span>
+            <span className="lv-channels__label">Kanały</span>
             {CHANNELS.map((channel) => (
                 <Chip
                     key={channel}
@@ -31,7 +31,7 @@ export function ChannelBar({ channels, counts, onToggle, onShowAll }: ChannelBar
             ))}
             {anyChannelOff(channels) ? (
                 <Button variant="link" size="sm" onClick={onShowAll}>
-                    Pokaz wszystkie
+                    Pokaż wszystkie
                 </Button>
             ) : null}
         </div>
@@ -58,9 +58,9 @@ export function ChannelMenu({ channels, counts, onToggle, onShowAll }: ChannelBa
                     size="sm"
                     variant={filtered ? "solid" : "soft"}
                     trailing={<Icon name="chevron-down" size={14} />}
-                    title="Ktore kanaly sa widoczne"
+                    title="Które kanały są widoczne"
                 >
-                    {filtered ? `Kanaly ${on}/${CHANNELS.length}` : "Kanaly"}
+                    {filtered ? `Kanały ${on}/${CHANNELS.length}` : "Kanały"}
                 </Button>
             }
         >
@@ -77,7 +77,7 @@ export function ChannelMenu({ channels, counts, onToggle, onShowAll }: ChannelBa
             {filtered ? (
                 <>
                     <MenuSeparator />
-                    <MenuItem onSelect={onShowAll}>Pokaz wszystkie</MenuItem>
+                    <MenuItem onSelect={onShowAll}>Pokaż wszystkie</MenuItem>
                 </>
             ) : null}
         </Menu>

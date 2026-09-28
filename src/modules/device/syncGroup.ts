@@ -117,7 +117,7 @@ export function createLocalSyncGroup(name: string): SyncGroup {
 
     const group: SyncGroup = {
         id: crypto.randomUUID(),
-        name: name.trim() || 'Moje urzadzenia',
+        name: name.trim() || 'Moje urządzenia',
         devices: [deviceInfo.id],
         createdAt: now,
         updatedAt: now,

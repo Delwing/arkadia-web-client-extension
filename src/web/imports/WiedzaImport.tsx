@@ -38,7 +38,7 @@ async function applyWiedzaImport(parsed: WiedzaDbResult, selected: string): Prom
         }
         if (charData.books.length > 0) {
             eventBus.emit("wiedzaImportBooks", { character: targetChar, books: charData.books });
-            results.push(`${sourceChar}: ksiegi ${charData.books.length}`);
+            results.push(`${sourceChar}: księgi ${charData.books.length}`);
         }
         if (charData.totalLevels.length > 0) {
             eventBus.emit("wiedzaImportTotalLevels", { character: targetChar, levels: charData.totalLevels });
@@ -77,10 +77,10 @@ export default function WiedzaImport() {
                 () => new Worker(new URL("@modules/data/wiedzaDbImport.worker.ts", import.meta.url), { type: "module" }),
                 await file.arrayBuffer(),
             );
-            if (parsed.characters.length === 0) setResult({ kind: "error", message: "Baza nie zawiera zadnych danych." });
+            if (parsed.characters.length === 0) setResult({ kind: "error", message: "Baza nie zawiera żadnych danych." });
             else setPreview({ parsed, selected: ALL });
         } catch (err) {
-            setResult({ kind: "error", message: err instanceof Error ? err.message : "Nieznany blad." });
+            setResult({ kind: "error", message: err instanceof Error ? err.message : "Nieznany błąd." });
         } finally {
             setBusy(false);
         }
@@ -91,10 +91,10 @@ export default function WiedzaImport() {
         setBusy(true);
         try {
             const lines = await applyWiedzaImport(preview.parsed, preview.selected);
-            setResult({ kind: "done", message: `Import zakonczony.\n${lines.join("\n")}` });
+            setResult({ kind: "done", message: `Import zakończony.\n${lines.join("\n")}` });
             setPreview(null);
         } catch (err) {
-            setResult({ kind: "error", message: err instanceof Error ? err.message : "Blad importu." });
+            setResult({ kind: "error", message: err instanceof Error ? err.message : "Błąd importu." });
         } finally {
             setBusy(false);
         }
@@ -118,7 +118,7 @@ export default function WiedzaImport() {
         <ImportRow
             id="import-wiedza"
             title="Wiedza"
-            file={<>Plik <code>Database_wiedza.db</code> z profilu Mudleta: biblioteki, ksiegi, poziomy i historia wiedzy.</>}
+            file={<>Plik <code>Database_wiedza.db</code> z profilu Mudleta: biblioteki, księgi, poziomy i historia wiedzy.</>}
             accept=".db"
             busy={busy && !preview}
             onFile={onFile}
@@ -127,7 +127,7 @@ export default function WiedzaImport() {
         >
             {preview && totals && (
                 <>
-                    <Field label="Postac">
+                    <Field label="Postać">
                         <Select
                             className="settings-narrow"
                             value={preview.selected}
@@ -139,7 +139,7 @@ export default function WiedzaImport() {
                     </Field>
                     <p className="popup-field__hint">
                         Zdarzenia: <strong>{totals.events}</strong> · Biblioteki: <strong>{totals.libraries}</strong> ·
-                        Ksiegi: <strong>{totals.books}</strong> · Poziomy: <strong>{totals.levels}</strong>
+                        Księgi: <strong>{totals.books}</strong> · Poziomy: <strong>{totals.levels}</strong>
                     </p>
                     <ImportActions onImport={onImport} onCancel={() => setPreview(null)} busy={busy} />
                 </>

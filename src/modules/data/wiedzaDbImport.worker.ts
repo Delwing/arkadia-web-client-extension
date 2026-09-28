@@ -211,7 +211,7 @@ ctx.addEventListener('message', (event: MessageEvent<WiedzaDbWorkerRequest>) => 
         } catch (error) {
             const response: WiedzaDbWorkerResponse = {
                 type: 'error',
-                message: error instanceof Error ? error.message : 'Nie udalo sie odczytac bazy danych.',
+                message: error instanceof Error ? error.message : 'Nie udało się odczytać bazy danych.',
             };
             ctx.postMessage(response);
         }

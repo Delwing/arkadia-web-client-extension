@@ -418,7 +418,7 @@ export const SEASON_BOUNDARIES: Record<Domain, [number, number, number, number]>
     Ishtar: [91, 181, 271, 1],
 };
 
-export const SEASON_NAMES = ["Wiosna", "Lato", "Jesien", "Zima"] as const;
+export const SEASON_NAMES = ["Wiosna", "Lato", "Jesień", "Zima"] as const;
 
 /** Season index for a day: 0 spring, 1 summer, 2 autumn, 3 winter. */
 export function seasonOf(domain: Domain, dayOfYear: number): number {

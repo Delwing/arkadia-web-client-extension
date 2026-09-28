@@ -324,7 +324,7 @@ test.describe('Clock System', () => {
         // day or night rides in the icon and the tooltip.
         const chip = clockDisplay.locator('.chip');
         await expect(chip.locator('.chip__lab')).toHaveText('wiosna');
-        await expect(chip).toHaveAttribute('title', /wiosna, dzien/);
+        await expect(chip).toHaveAttribute('title', /wiosna, dzień/);
 
         // Set time at sunset
         await pushText(page, 'Jest w przyblizeniu osma wieczorem, 10 dzien miesiaca Pflugzeit wedlug Kalendarza Imperialnego.');

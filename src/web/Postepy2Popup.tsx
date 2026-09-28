@@ -47,7 +47,7 @@ function formatDateLabel(dateStr: string): string {
 }
 
 function getMonthName(month: number): string {
-    const names = ['Sty', 'Lut', 'Mar', 'Kwi', 'Maj', 'Cze', 'Lip', 'Sie', 'Wrz', 'Paz', 'Lis', 'Gru'];
+    const names = ['Sty', 'Lut', 'Mar', 'Kwi', 'Maj', 'Cze', 'Lip', 'Sie', 'Wrz', 'Paź', 'Lis', 'Gru'];
     return names[month - 1] || String(month);
 }
 
@@ -237,7 +237,7 @@ const Postepy2Popup: React.FC = () => {
                                     autoFocus
                                 />
                                 <button type="button" className="postepy2-entry__edit-btn postepy2-entry__edit-btn--save" onClick={handleEditSave} title="Zapisz">ok</button>
-                                <button type="button" className="postepy2-entry__edit-btn postepy2-entry__edit-btn--delete" onClick={handleEditDelete} title="Usun">x</button>
+                                <button type="button" className="postepy2-entry__edit-btn postepy2-entry__edit-btn--delete" onClick={handleEditDelete} title="Usuń">x</button>
                                 <button type="button" className="postepy2-entry__edit-btn postepy2-entry__edit-btn--cancel" onClick={handleEditCancel}>Anuluj</button>
                             </span>
                         ) : (
@@ -302,7 +302,7 @@ const Postepy2Popup: React.FC = () => {
     const renderNoFormTab = () => (
         <div className="postepy2-entries">
             {noFormData.length === 0 ? (
-                <div className="popup-empty">Brak postepow bez formy.</div>
+                <div className="popup-empty">Brak postępów bez formy.</div>
             ) : (
                 <>
                     {noFormData.map((entry, index) => (
@@ -313,7 +313,7 @@ const Postepy2Popup: React.FC = () => {
                         </div>
                     ))}
                     <div className="postepy2-noform-total">
-                        Lacznie bez formy: {totalNoForm}
+                        Łącznie bez formy: {totalNoForm}
                     </div>
                 </>
             )}
@@ -344,7 +344,7 @@ const Postepy2Popup: React.FC = () => {
                     )}
                 </div>
                 <div className="postepy2-graph-section">
-                    <h4 className="postepy2-graph-title">Ostatnie 12 miesiecy</h4>
+                    <h4 className="postepy2-graph-title">Ostatnie 12 miesięcy</h4>
                     {monthlyChartData.length > 0 ? (
                         <SimpleBarChart data={monthlyChartData} maxBars={12} />
                     ) : (
@@ -359,7 +359,7 @@ const Postepy2Popup: React.FC = () => {
         <DockablePopupWrapper
             {...wrapperProps}
             popupType="postepy2"
-            title="Postepy 2"
+            title="Postępy 2"
             minWidth={280}
             minHeight={200}
             initialWidth={600}
@@ -370,7 +370,7 @@ const Postepy2Popup: React.FC = () => {
             <div className="postepy2-header">
                 {characterName && (
                     <span>
-                        <span className="postepy2-header__label">Postac:</span>
+                        <span className="postepy2-header__label">Postać:</span>
                         <span className="postepy2-header__name">{characterName}</span>
                     </span>
                 )}
@@ -397,7 +397,7 @@ const Postepy2Popup: React.FC = () => {
                     className={`popup-tab ${activeTab === 'monthly' ? 'popup-tab--active' : ''}`}
                     onClick={() => handleTabClick('monthly')}
                 >
-                    Miesiace
+                    Miesiące
                 </button>
                 <button
                     type="button"
@@ -431,8 +431,8 @@ const Postepy2Popup: React.FC = () => {
             </div>
 
             <div className="postepy2-footer">
-                <span className="postepy2-footer__label">Lacznie:</span>
-                <span className="postepy2-footer__total">{total} postepow</span>
+                <span className="postepy2-footer__label">Łącznie:</span>
+                <span className="postepy2-footer__total">{total} postępów</span>
                 {totalNoForm > 0 && (
                     <span className="postepy2-footer__noform">+ {totalNoForm} bez formy</span>
                 )}

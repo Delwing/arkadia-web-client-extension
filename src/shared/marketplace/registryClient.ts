@@ -188,7 +188,7 @@ async function getJson<T>(path: string, signal?: AbortSignal, registryUrl: strin
         response = await fetch(`${registryUrl}${path}`, { signal, headers: { Accept: 'application/json' } })
     } catch (error) {
         if ((error as Error)?.name === 'AbortError') throw error
-        throw new RegistryError('Nie udalo sie polaczyc z katalogiem pluginow')
+        throw new RegistryError('Nie udało się połączyć z katalogiem pluginów')
     }
 
     if (!response.ok) {
@@ -196,7 +196,7 @@ async function getJson<T>(path: string, signal?: AbortSignal, registryUrl: strin
             .json()
             .then((body: { error?: string }) => body?.error)
             .catch(() => undefined)
-        throw new RegistryError(message || `Katalog odpowiedzial bledem ${response.status}`, response.status)
+        throw new RegistryError(message || `Katalog odpowiedział błędem ${response.status}`, response.status)
     }
 
     return (await response.json()) as T

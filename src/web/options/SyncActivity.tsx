@@ -79,19 +79,19 @@ function timerTiles(syncV2: boolean, now: number): TimerTile[] {
             const interval = status.uploadIntervalMs ?? 0;
             const upload = interval > 0
                 ? countdownTile(
-                    'Wysylanie',
-                    `co ${formatInterval(interval)}${status.watchedByOthers ? ' · inne urzadzenie aktywne' : ''}`,
+                    'Wysyłanie',
+                    `co ${formatInterval(interval)}${status.watchedByOthers ? ' · inne urządzenie aktywne' : ''}`,
                     status.nextUploadAt,
                     interval,
                     now,
                 )
-                : { label: 'Wysylanie', hint: '', value: 'brak', remaining: null, idle: true };
+                : { label: 'Wysyłanie', hint: '', value: 'brak', remaining: null, idle: true };
             return [
                 upload,
                 {
                     label: 'Odbieranie',
                     hint: 'gdy karta jest widoczna',
-                    value: status.listening ? 'na zywo' : 'wstrzymane',
+                    value: status.listening ? 'na żywo' : 'wstrzymane',
                     remaining: status.listening ? 1 : null,
                     idle: !status.listening,
                     live: status.listening,
@@ -99,7 +99,7 @@ function timerTiles(syncV2: boolean, now: number): TimerTile[] {
             ];
         }
         case 'waiting':
-            return [countdownTile('Ponowna proba uruchomienia', `co ${formatInterval(60_000)}`, status.retryAt, 60_000, now)];
+            return [countdownTile('Ponowna próba uruchomienia', `co ${formatInterval(60_000)}`, status.retryAt, 60_000, now)];
         case 'other-tab':
             return [{ label: 'Synchronizacja', hint: 'jedna karta synchronizuje za wszystkie', value: 'w innej karcie', remaining: null }];
         default:
@@ -144,13 +144,13 @@ export function SyncActivityLog() {
                 <span className="popup-muted">Dziennik synchronizacji</span>
                 {entries.length > 0 && (
                     <Button size="sm" variant="ghost" onClick={clearSyncActivity}>
-                        Wyczysc
+                        Wyczyść
                     </Button>
                 )}
             </div>
             <ul className="sync-log__list">
                 {entries.length === 0 ? (
-                    <li className="popup-muted">Brak wpisow w tej sesji.</li>
+                    <li className="popup-muted">Brak wpisów w tej sesji.</li>
                 ) : (
                     [...entries].reverse().map(entry => (
                         <li key={entry.id} className="sync-log__entry">

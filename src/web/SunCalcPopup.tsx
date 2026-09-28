@@ -131,7 +131,7 @@ const SunCalcPopup: React.FC = () => {
         if (!anchor) {
             return (
                 <div style={{ ...labelStyle, padding: 4 }}>
-                    Czekam na odczyt zegara. Wpisz <strong>czas</strong> aby zsynchronizowac.
+                    Czekam na odczyt zegara. Wpisz <strong>czas</strong> aby zsynchronizować.
                 </div>
             );
         }
@@ -148,21 +148,21 @@ const SunCalcPopup: React.FC = () => {
                 <div style={sectionStyle}>
                     <div style={headingStyle}>Teraz</div>
                     <Row label="Data IG">
-                        {formatDay(activeTab, dayOfYear)} <span style={labelStyle}>(dzien {dayOfYear})</span>
+                        {formatDay(activeTab, dayOfYear)} <span style={labelStyle}>(dzień {dayOfYear})</span>
                     </Row>
                     <Row label="Godzina IG">{pad(anchor.hours)}:{pad(anchor.minutes)}</Row>
                     <Row label="Czas RL">{formatRealClock(now)}</Row>
                 </div>
 
                 <div style={sectionStyle}>
-                    <div style={headingStyle}>Dzis</div>
-                    <Row label="Wschod">
+                    <div style={headingStyle}>Dziś</div>
+                    <Row label="Wschód">
                         {pad(sunrise)}:00 <span style={labelStyle}>IG</span>
                     </Row>
-                    <Row label="Zachod">
+                    <Row label="Zachód">
                         {pad(sunset)}:00 <span style={labelStyle}>IG</span>
                     </Row>
-                    <Row label="Dzien">
+                    <Row label="Dzień">
                         {dayLengthHours(activeTab, dayOfYear)} h IG
                         <span style={labelStyle}> = {dayLengthHours(activeTab, dayOfYear) * 2} min RL</span>
                     </Row>
@@ -173,11 +173,11 @@ const SunCalcPopup: React.FC = () => {
                 </div>
 
                 <div style={sectionStyle}>
-                    <div style={headingStyle}>Nastepne</div>
+                    <div style={headingStyle}>Następne</div>
                     {upcoming.map(event => (
                         <Row
                             key={event.type}
-                            label={event.type === 'sunrise' ? 'Wschod' : 'Zachod'}
+                            label={event.type === 'sunrise' ? 'Wschód' : 'Zachód'}
                         >
                             {formatRealClock(event.realMs)}
                             <span style={labelStyle}> za {formatCountdown(event.realMs - now)}</span>
@@ -190,15 +190,15 @@ const SunCalcPopup: React.FC = () => {
                         <div style={headingStyle}>Geheimnisnacht</div>
                         <Pick label="Noc" night={forecast.night} />
                         <div style={{ ...labelStyle, marginTop: 2, fontSize: 11 }}>
-                            Noc = najblizej 21:00, zawsze przed - nigdy po.
-                            {forecast.yearOffset > 0 && ` W tym roku IG juz bylo - to rok +${forecast.yearOffset}.`}
+                            Noc = najbliżej 21:00, zawsze przed - nigdy po.
+                            {forecast.yearOffset > 0 && ` W tym roku IG już było - to rok +${forecast.yearOffset}.`}
                         </div>
                         <div style={{ marginTop: 6 }}>
                             <CandidateTable forecast={forecast} />
                         </div>
                         <div style={{ ...labelStyle, marginTop: 6, fontSize: 11 }}>
-                            Pelnia co 25 dni IG, noc zaczyna sie o zachodzie. Kolejny dzien IG
-                            przesuwa zachod o 48 min RL (46 na granicy bloku).
+                            Pełnia co 25 dni IG, noc zaczyna się o zachodzie. Kolejny dzień IG
+                            przesuwa zachód o 48 min RL (46 na granicy bloku).
                         </div>
                     </div>
                 )}
@@ -210,7 +210,7 @@ const SunCalcPopup: React.FC = () => {
         <DockablePopupWrapper
             {...wrapperProps}
             popupType="sunCalc"
-            title="Slonce - kalkulator"
+            title="Słońce - kalkulator"
             minWidth={320}
             minHeight={200}
             initialWidth={420}
@@ -266,8 +266,8 @@ const CandidateTable: React.FC<{ forecast: GeheimnisnachtForecast }> = ({ foreca
     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
         <thead>
             <tr style={labelStyle}>
-                <th style={{ textAlign: 'left', fontWeight: 'normal' }}>Pelnia</th>
-                <th style={{ textAlign: 'right', fontWeight: 'normal' }}>Zachod RL</th>
+                <th style={{ textAlign: 'left', fontWeight: 'normal' }}>Pełnia</th>
+                <th style={{ textAlign: 'right', fontWeight: 'normal' }}>Zachód RL</th>
                 <th style={{ textAlign: 'right', fontWeight: 'normal' }}>od 21:00</th>
                 <th style={{ textAlign: 'right', fontWeight: 'normal' }}>Noc</th>
             </tr>
@@ -277,7 +277,7 @@ const CandidateTable: React.FC<{ forecast: GeheimnisnachtForecast }> = ({ foreca
                 const fullMoon = cycle.nights.find(n => n.fromFullMoon === 0)!;
                 // how far the chosen night sits from the full moon, e.g. "pelnia +1"
                 const pick = cycle.night
-                    ? `pelnia ${cycle.night.fromFullMoon >= 0 ? '+' : ''}${cycle.night.fromFullMoon}`
+                    ? `pełnia ${cycle.night.fromFullMoon >= 0 ? '+' : ''}${cycle.night.fromFullMoon}`
                     : '-';
                 const isWinner = forecast.night?.cycle === cycle.cycle;
                 return (

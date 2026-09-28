@@ -224,7 +224,7 @@ const CalendarPopup: React.FC = () => {
                     <button
                         type="button"
                         className="popup-tab"
-                        title="Nastepny rok IG"
+                        title="Następny rok IG"
                         onClick={() => setYearOffset(y => y + 1)}
                         style={{ flex: 'none', padding: '0 8px' }}
                     >
@@ -234,7 +234,7 @@ const CalendarPopup: React.FC = () => {
 
                 {!anchor ? (
                     <div style={{ ...dimStyle, padding: 4 }}>
-                        Czekam na odczyt zegara. Wpisz <strong>czas</strong> aby zsynchronizowac.
+                        Czekam na odczyt zegara. Wpisz <strong>czas</strong> aby zsynchronizować.
                     </div>
                 ) : (
                     <>
@@ -330,7 +330,7 @@ const Day: React.FC<{
     cellRef?: React.RefObject<HTMLDivElement | null>;
     onHover: (day: DayCell | null) => void;
 }> = ({ day, domain, cellRef, onHover }) => {
-    const moonLabel = day.moon === 'full' ? ', pelnia' : day.moon === 'new' ? ', now' : '';
+    const moonLabel = day.moon === 'full' ? ', pełnia' : day.moon === 'new' ? ', now' : '';
     const title = `${formatDay(domain, day.dayOfYear)} - ${SUN} ${day.sunrise}:00, `
         + `${MOON} ${day.sunset}:00${moonLabel}`
         + (day.isGeheimnisnacht ? ', Geheimnisnacht' : '');
@@ -414,13 +414,13 @@ const Summary: React.FC<{
         <div style={{ fontSize: 11, lineHeight: '17px' }}>
             <div>
                 <span style={dimStyle}>
-                    {hovered ? 'Wybrany' : yearOffset === 0 ? 'Dzis' : 'Poczatek roku'}:{' '}
+                    {hovered ? 'Wybrany' : yearOffset === 0 ? 'Dziś' : 'Początek roku'}:{' '}
                 </span>
                 <strong>{formatDay(domain, day)}</strong>
-                <span style={dimStyle}> (dzien {day}/{YEAR_LENGTH[domain]}), </span>
+                <span style={dimStyle}> (dzień {day}/{YEAR_LENGTH[domain]}), </span>
                 <span style={{ color: SEASON_COLORS[season] }}>{SEASON_NAMES[season]}</span>
                 <span style={dimStyle}>
-                    , dzien {dayLengthHours(domain, day) * 2} min,
+                    , dzień {dayLengthHours(domain, day) * 2} min,
                     noc {nightLengthHours(domain, day) * 2} min
                 </span>
             </div>
@@ -433,7 +433,7 @@ const Summary: React.FC<{
                     {MOON} {formatRealShort(sunsetMs)}
                 </span>
                 <span style={dimStyle}>
-                    {' '}(caly dzien IG od {formatRealShort(dayStartMs)}, 48 min RL)
+                    {' '}(cały dzień IG od {formatRealShort(dayStartMs)}, 48 min RL)
                 </span>
             </div>
             {domain === 'Empire' && geheimnisnacht && (
@@ -443,7 +443,7 @@ const Summary: React.FC<{
                         {formatDay('Empire', geheimnisnacht.dayOfYear)}
                     </span>
                     <span style={dimStyle}>
-                        {' '}(pelnia {geheimnisnacht.fromFullMoon >= 0 ? '+' : ''}
+                        {' '}(pełnia {geheimnisnacht.fromFullMoon >= 0 ? '+' : ''}
                         {geheimnisnacht.fromFullMoon})
                         {' '}- {formatRealClock(geheimnisnacht.startMs)}-
                         {formatRealClock(geheimnisnacht.endMs).slice(-5)}
@@ -467,9 +467,9 @@ const Legend: React.FC<{ domain: Domain }> = ({ domain }) => (
         gap: 10,
         flexWrap: 'wrap',
     }}>
-        <span style={{ color: 'var(--popup-data-gold)' }}>{SUN} wschod</span>
-        <span style={{ color: 'var(--popup-data-blue)' }}>{MOON} zachod</span>
-        <span style={{ color: 'var(--popup-data-yellow)' }}>{FULL_MOON} pelnia</span>
+        <span style={{ color: 'var(--popup-data-gold)' }}>{SUN} wschód</span>
+        <span style={{ color: 'var(--popup-data-blue)' }}>{MOON} zachód</span>
+        <span style={{ color: 'var(--popup-data-yellow)' }}>{FULL_MOON} pełnia</span>
         {domain === 'Empire' && <span>{NEW_MOON} now</span>}
         {domain === 'Empire' && (
             <span style={{ color: 'var(--popup-data-tomato)' }}>Geheimnisnacht</span>

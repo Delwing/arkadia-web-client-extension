@@ -23,7 +23,7 @@ function FooterSections({ draft, update }: FooterSectionsProps) {
                 </SelectField>
                 <CheckboxRow id="ui-emoji-labels" label="Etykiety emoji" checked={draft.emojiLabels} onChange={(v) => update({ emojiLabels: v })} />
                 <div className="popup-field">
-                    <span className="popup-field__label">Kolejnosc i widocznosc paskow</span>
+                    <span className="popup-field__label">Kolejność i widoczność pasków</span>
                     <div id="ui-bar-order-settings" className="settings-sort-block">
                         <BarOrderSettings
                             barOrder={draft.barOrder || defaultUiSettings.barOrder}
@@ -37,7 +37,7 @@ function FooterSections({ draft, update }: FooterSectionsProps) {
             <SettingsSection title="Elementy stopki">
                 <CheckboxRow
                     id="ui-footer-urgent-chips-first"
-                    label="Pilne plakietki na poczatku"
+                    label="Pilne plakietki na początku"
                     checked={draft.footerUrgentChipsFirst}
                     onChange={(v) => update({ footerUrgentChipsFirst: v })}
                 />
@@ -64,12 +64,12 @@ function FooterSections({ draft, update }: FooterSectionsProps) {
 
                 <SettingsSection title="Rozmiar stopki">
                     <p className="popup-field__hint">
-                        Powiekszenie kazdego paska stopki osobno - rosnie tekst, ikony i wysokosc
-                        razem. 1 to rozmiar domyslny.
+                        Powiększenie każdego paska stopki osobno - rośnie tekst, ikony i wysokość
+                        razem. 1 to rozmiar domyślny.
                     </p>
                     <RangeField
                         id="ui-footer-binds-scale"
-                        label="Pasek bindow"
+                        label="Pasek bindów"
                         value={draft.footerBindsScale}
                         min={0.8}
                         max={2}
@@ -89,10 +89,10 @@ function FooterSections({ draft, update }: FooterSectionsProps) {
 
                 <SettingsSection title="Stopka na telefonie">
                     <p className="popup-field__hint">
-                        Na waskim ekranie stopka zajmuje jedna linie o stalej wysokosci: dwa
+                        Na wąskim ekranie stopka zajmuje jedną linię o stałej wysokości: dwa
                         pierwsze paski stanu i najpilniejsze plakietki. Przycisk po prawej rozwija
-                        ja w panel ze wszystkimi paskami i plakietkami - a jesli stopka ma byc
-                        zawsze rozwinieta albo zawsze zwinieta, przycisku nie ma wcale.
+                        ją w panel ze wszystkimi paskami i plakietkami - a jeśli stopka ma być
+                        zawsze rozwinięta albo zawsze zwinięta, przycisku nie ma wcale.
                     </p>
                     <CheckboxRow
                         id="ui-mobile-footer-compact"
@@ -109,18 +109,18 @@ function FooterSections({ draft, update }: FooterSectionsProps) {
                         disabled={!draft.mobileFooterCompact}
                         onChange={(v) => update({ mobileFooterExpand: v as UiSettings['mobileFooterExpand'] })}
                     >
-                        <option value="toggle">Zwinieta, z przyciskiem</option>
-                        <option value="expanded">Zawsze rozwinieta</option>
-                        <option value="collapsed">Zawsze zwinieta</option>
+                        <option value="toggle">Zwinięta, z przyciskiem</option>
+                        <option value="expanded">Zawsze rozwinięta</option>
+                        <option value="collapsed">Zawsze zwinięta</option>
                     </SelectField>
                 </SettingsSection>
             </div>
 
             <SettingsSection title="Przyciski przy linii komend" full>
                 <p className="popup-field__hint">
-                    Wlasne przyciski obok pola komend - na komputerze miedzy "Wyslij" a menu
-                    (co sie nie miesci, chowa sie pod wlasne "..."), na telefonie w rozwinietej
-                    stopce jako siatka duzych kafelkow.
+                    Własne przyciski obok pola komend - na komputerze między "Wyślij" a menu
+                    (co się nie mieści, chowa się pod własne "..."), na telefonie w rozwiniętej
+                    stopce jako siatka dużych kafelków.
                 </p>
                 <div id="ui-footer-buttons-settings">
                     <FooterButtonSettings

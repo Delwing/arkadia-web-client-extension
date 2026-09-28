@@ -57,7 +57,7 @@ export default function App() {
                     <LayoutManagerWrapper
                         mapElement={mapElement}
                         objectListElement={objectListElement}
-                        objectListTitle="W poblizu"
+                        objectListTitle="W pobliżu"
                     />
                 </div>
                 <div id="layout-right-dock-host" />

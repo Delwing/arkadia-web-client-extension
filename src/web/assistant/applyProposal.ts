@@ -60,8 +60,8 @@ export function applyProposal(proposal: AssistantProposal): ApplyResult {
             case 'bind': return applyBind(proposal);
         }
     } catch (err) {
-        console.error('Nie udalo sie zastosowac propozycji asystenta', err);
-        return { ok: false, message: 'Nie udalo sie zapisac zmiany. Szczegoly w konsoli.' };
+        console.error('Nie udało się zastosować propozycji asystenta', err);
+        return { ok: false, message: 'Nie udało się zapisać zmiany. Szczegóły w konsoli.' };
     }
 }
 
@@ -70,7 +70,7 @@ export function applyProposal(proposal: AssistantProposal): ApplyResult {
 function applySettingChange(proposal: SettingChangeProposal): ApplyResult {
     const lookup = lookupSetting(proposal.key);
     if (lookup.status !== 'found') {
-        return { ok: false, message: `Nie ma juz ustawienia "${proposal.key}".` };
+        return { ok: false, message: `Nie ma już ustawienia "${proposal.key}".` };
     }
     const descriptor = lookup.descriptor;
 
@@ -93,7 +93,7 @@ function applySettingChange(proposal: SettingChangeProposal): ApplyResult {
     } catch (err) {
         // Persisted either way; only the live preview failed (e.g. the map
         // renderer is not mounted yet). Never swallow it silently.
-        console.error('Ustawienie zapisano, ale nie udalo sie zastosowac na zywo', err);
+        console.error('Ustawienie zapisano, ale nie udało się zastosować na żywo', err);
     }
     return { ok: true, message: `Zmieniono ustawienie interfejsu: ${descriptor.label ?? descriptor.field}.` };
 }
@@ -114,7 +114,7 @@ function applyAlias(proposal: AliasProposal): ApplyResult {
         const { id, name, group, enabled, characters } = list[existing];
         updated[existing] = { id, name, group, enabled, characters, ...alias };
         globalStorage.set('aliases', updated);
-        return { ok: true, message: `Nadpisano istniejacy alias "${alias.pattern}".` };
+        return { ok: true, message: `Nadpisano istniejący alias "${alias.pattern}".` };
     }
     globalStorage.set('aliases', [...list, alias]);
     return { ok: true, message: `Dodano alias "${alias.pattern}".` };
@@ -160,5 +160,5 @@ function applyBind(proposal: BindProposal): ApplyResult {
     // saveKeymapBinds also writes the active `binds` key, which is what the
     // runtime consumers subscribe to.
     saveKeymapBinds(getActiveKeymapId(), merged);
-    return { ok: true, message: `Dodano bind wlasny na klawisz "${proposal.key}".` };
+    return { ok: true, message: `Dodano bind własny na klawisz "${proposal.key}".` };
 }

@@ -65,7 +65,7 @@ describe('userScripts', () => {
         setScripts([{ id: 's1', name: 'x', code: "throw new Error('brak mikstur')" }]);
 
         await expect(runUserScript(client as never, 's1', [], { source: 'manual' })).resolves.toBeUndefined();
-        expect(log('s1').at(-1)).toBe('error: blad: brak mikstur');
+        expect(log('s1').at(-1)).toBe('error: błąd: brak mikstur');
     });
 
     it('skips a switched off script unless forced from the editor', async () => {
@@ -73,7 +73,7 @@ describe('userScripts', () => {
         setScripts([{ id: 's1', name: 'x', enabled: false, code: "ctx.log('ran')" }]);
 
         await runUserScript(client as never, 's1', [], { source: 'alias', label: 'lecz' });
-        expect(log('s1')).toEqual(['run: pominiety (wylaczony) - lecz']);
+        expect(log('s1')).toEqual(['run: pominięty (wyłączony) - lecz']);
 
         await runUserScript(client as never, 's1', [], { source: 'manual', force: true, code: "ctx.log('draft')" });
         expect(log('s1').at(-1)).toBe('log: draft');

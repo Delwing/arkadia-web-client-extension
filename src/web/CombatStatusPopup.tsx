@@ -119,17 +119,17 @@ const CombatStatusPopup: React.FC = () => {
         >
             <div className="cs-row">
                 <span className="cs-ico"><IconSword /></span>
-                <span className="cs-label">Bron</span>
+                <span className="cs-label">Broń</span>
                 <StatToggle on={weapon} onWord="dobyta" offWord="schowana" />
             </div>
             <div className="cs-row">
                 <span className="cs-ico"><IconShield /></span>
-                <span className="cs-label">Zaslona</span>
+                <span className="cs-label">Zasłona</span>
                 <StatBar left={cover} max={COVER_MAX} />
             </div>
-            <button type="button" className="cs-row cs-row--btn" onClick={toggleGuard} title="Przelacz puszczanie zaslon">
+            <button type="button" className="cs-row cs-row--btn" onClick={toggleGuard} title="Przełącz puszczanie zasłon">
                 <span className="cs-ico"><IconRelease /></span>
-                <span className="cs-label">Puszczaj zaslony</span>
+                <span className="cs-label">Puszczaj zasłony</span>
                 <StatToggle on={releaseGuard} />
             </button>
             <div className={`cs-row${isLeader ? '' : ' cs-row--idle'}`}>

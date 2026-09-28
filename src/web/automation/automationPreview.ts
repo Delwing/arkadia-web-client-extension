@@ -97,9 +97,9 @@ function linelessOutput(m: UserMacro, fill: (t: string) => string, fallback: str
         case "push": return message("push");
         case "speak": return message("speak");
         case "echo": return m.message ? { kind: "echo", text: fill(m.message) } : null;
-        case "beep": return { kind: "sound", text: m.soundKey && m.soundKey !== "beep" ? m.soundKey : "domyslny beep" };
-        case "mute": return { kind: "sound", text: "wyciszenie dzwiekow" };
-        case "unmute": return { kind: "sound", text: "wlaczenie dzwiekow" };
+        case "beep": return { kind: "sound", text: m.soundKey && m.soundKey !== "beep" ? m.soundKey : "domyślny beep" };
+        case "mute": return { kind: "sound", text: "wyciszenie dźwięków" };
+        case "unmute": return { kind: "sound", text: "włączenie dźwięków" };
         case "functionalBind":
             return m.label && m.command ? { kind: "bind", text: `[${fill(m.label)}] ${fill(m.command)}` } : null;
         case "script":

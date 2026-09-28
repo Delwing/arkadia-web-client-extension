@@ -98,7 +98,7 @@ describe("footer chips", () => {
       emit("clock.update", { domain: "Empire", hours: 6, minutes: 5.7, precision: 60, daylight: true, dayLabel: "Pon" });
       const text = chip()!.querySelector(".chip__text")!;
       expect(text.children[0].textContent).toBe("06:05 ±60");
-      expect(text.children[1].textContent).toBe("dzien");
+      expect(text.children[1].textContent).toBe("dzień");
 
       const opened: unknown[] = [];
       const off = eventBus.on("clock.popup.open", (payload) => opened.push(payload));

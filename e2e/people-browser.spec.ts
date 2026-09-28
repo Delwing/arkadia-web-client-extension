@@ -166,7 +166,7 @@ test.describe('People browser popup', () => {
         await expect(modal, 'should open edit modal').toBeVisible();
 
         // Click "Wrog" (enemy) button
-        await modal.locator('button', {hasText: 'Wrog'}).click();
+        await modal.locator('button', {hasText: 'Wróg'}).click();
 
         // Close modal
         await modal.locator('button', {hasText: 'Anuluj'}).click();
@@ -198,7 +198,7 @@ test.describe('People browser popup', () => {
         await expect(modal, 'should open edit modal for local person').toBeVisible();
 
         // Click "Usun" (delete) button
-        await modal.locator('button', {hasText: 'Usun'}).click();
+        await modal.locator('button', {hasText: 'Usuń'}).click();
         await expect(modal, 'should close modal after deletion').not.toBeVisible();
 
         // Person should be removed
@@ -267,7 +267,7 @@ test.describe('People browser popup – extended', () => {
         await expect(modal, 'should open edit modal for ignored Aldous').toBeVisible();
 
         // Click "Przywroc" (restore) button
-        await modal.locator('button', {hasText: 'Przywroc'}).click();
+        await modal.locator('button', {hasText: 'Przywróć'}).click();
         await expect(modal, 'should close modal after restoring').not.toBeVisible();
 
         // Aldous should no longer be ignored
@@ -319,7 +319,7 @@ test.describe('People browser popup – extended', () => {
         const aldousItem = popup.locator('.people-browser__item').filter({hasText: 'Aldous'});
         await aldousItem.locator('button').click();
         let modal = page.locator('.people-modal');
-        await modal.locator('button', {hasText: 'Wrog'}).click();
+        await modal.locator('button', {hasText: 'Wróg'}).click();
         await modal.locator('button', {hasText: 'Anuluj'}).click();
         await expect(modal, 'should close modal after marking enemy').not.toBeVisible();
 
@@ -411,7 +411,7 @@ test.describe('People browser popup – extended', () => {
         await expect(popup.locator('.people-browser__item'), 'should show 10 items on first page').toHaveCount(10);
 
         // Navigate to next page
-        await pagination.locator('button[title="Nastepna strona"]').click();
+        await pagination.locator('button[title="Następna strona"]').click();
         await expect(
             popup.locator('.people-browser__pagination-info'),
             'should show page 2 of 2',

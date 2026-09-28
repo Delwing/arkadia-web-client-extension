@@ -83,7 +83,7 @@ const ZlomPopup: React.FC = () => {
             const msg = `Zaimportowano: ${counts.bronie} broni, ${counts.tarcze} tarcz, ${counts.zbroje} zbroi.`;
             setImportState({ phase: 'done', message: msg });
         } catch (err) {
-            setImportState({ phase: 'error', message: err instanceof Error ? err.message : 'Blad importu.' });
+            setImportState({ phase: 'error', message: err instanceof Error ? err.message : 'Błąd importu.' });
         }
     }, [importState]);
 
@@ -125,12 +125,12 @@ const ZlomPopup: React.FC = () => {
                 zbroje: Array.isArray(parsed?.zbroje) ? parsed.zbroje : [],
             };
             if (payload.bronie.length + payload.tarcze.length + payload.zbroje.length === 0) {
-                setImportState({ phase: 'error', message: 'Plik nie zawiera danych zlomu.' });
+                setImportState({ phase: 'error', message: 'Plik nie zawiera danych złomu.' });
                 return;
             }
             setImportState({ phase: 'preview', parsed: payload, mergeMode: 'replace' });
         } catch (err) {
-            setImportState({ phase: 'error', message: err instanceof Error ? err.message : 'Blad parsowania JSON.' });
+            setImportState({ phase: 'error', message: err instanceof Error ? err.message : 'Błąd parsowania JSON.' });
         }
     }, []);
 
@@ -203,7 +203,7 @@ const ZlomPopup: React.FC = () => {
                         type="button"
                         className={`zlom-note-btn${hasNote ? ' zlom-note-btn--has' : ''}`}
                         onClick={() => openNoteEditor(kind, entry)}
-                        title={hasNote ? entry.note : 'Dodaj notatke'}
+                        title={hasNote ? entry.note : 'Dodaj notatkę'}
                     >
                         {hasNote ? '●' : '+'}
                     </button>
@@ -249,7 +249,7 @@ const ZlomPopup: React.FC = () => {
                 type="button"
                 className="zlom-color-clear"
                 onClick={() => handleColorClear(kind, entry.opis)}
-                title="Usun kolor"
+                title="Usuń kolor"
                 style={entry.color ? undefined : { visibility: 'hidden' }}
             >
                 x
@@ -288,7 +288,7 @@ const ZlomPopup: React.FC = () => {
         return (
             <span
                 className="zlom-tag zlom-tag--warn"
-                title="Biernik nieznany - wpis nie pochodzi z oceny (import lub stary zapis). Ocen przedmiot ponownie."
+                title="Biernik nieznany - wpis nie pochodzi z oceny (import lub stary zapis). Oceń przedmiot ponownie."
             >
                 ⚠
             </span>
@@ -362,11 +362,11 @@ const ZlomPopup: React.FC = () => {
         </tr>
     ) : activeTab === 'tarcze' ? (
         <tr>
-            <th>Short</th><th>Oslona</th><th>K/O/C</th><th>Par.</th><th>Cena</th><th>Waga</th><th>Kolor</th><th>Notatka</th>
+            <th>Short</th><th>Osłona</th><th>K/O/C</th><th>Par.</th><th>Cena</th><th>Waga</th><th>Kolor</th><th>Notatka</th>
         </tr>
     ) : (
         <tr>
-            <th>Short</th><th>Typ</th><th>Oslona</th><th>K/O/C</th><th>Cena</th><th>Waga</th><th>Kolor</th><th>Notatka</th>
+            <th>Short</th><th>Typ</th><th>Osłona</th><th>K/O/C</th><th>Cena</th><th>Waga</th><th>Kolor</th><th>Notatka</th>
         </tr>
     );
 
@@ -376,7 +376,7 @@ const ZlomPopup: React.FC = () => {
                 type="button"
                 className="popup-btn"
                 onClick={handleExport}
-                title="Zapisz baze do pliku JSON"
+                title="Zapisz bazę do pliku JSON"
                 disabled={importState.phase === 'loading'}
             >
                 Export
@@ -385,7 +385,7 @@ const ZlomPopup: React.FC = () => {
                 type="button"
                 className="popup-btn"
                 onClick={handleJsonImportClick}
-                title="Wczytaj baze z pliku JSON"
+                title="Wczytaj bazę z pliku JSON"
                 disabled={importState.phase === 'loading'}
             >
                 Import
@@ -412,7 +412,7 @@ const ZlomPopup: React.FC = () => {
         <DockablePopupWrapper
             {...wrapperProps}
             popupType="zlom"
-            title="Zlom"
+            title="Złom"
             minWidth={480}
             minHeight={280}
             initialWidth={792}
@@ -423,7 +423,7 @@ const ZlomPopup: React.FC = () => {
         >
             <div className="postepy2-header">
                 <div className="zlom-header-actions">
-                    <label className="zlom-toggle" title="Kolor dla broni ze srebrem (x aby wylaczyc)">
+                    <label className="zlom-toggle" title="Kolor dla broni ze srebrem (x aby wyłączyć)">
                         <span>Srebro</span>
                         <span className="zlom-silver-swatch">
                             <input
@@ -471,8 +471,8 @@ const ZlomPopup: React.FC = () => {
                             value={importState.mergeMode}
                             onChange={(e) => setImportState({ ...importState, mergeMode: e.target.value as ZlomMergeMode })}
                         >
-                            <option value="replace">Nadpisz istniejace</option>
-                            <option value="keep">Zachowaj istniejace, dodaj nowe</option>
+                            <option value="replace">Nadpisz istniejące</option>
+                            <option value="keep">Zachowaj istniejące, dodaj nowe</option>
                             <option value="unique-short">Dodaj tylko nowe shorty</option>
                         </select>
                     </div>
@@ -561,7 +561,7 @@ const ZlomPopup: React.FC = () => {
                         type="button"
                         onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
                         disabled={currentPage >= totalPages - 1}
-                        title="Nastepna strona"
+                        title="Następna strona"
                     >
                         &rsaquo;
                     </button>

@@ -322,16 +322,16 @@ function StaticMapMenu({
                 </>
             ) : (
                 <>
-                    <MenuItem onClick={handleShowAreas}>Zmien obszar</MenuItem>
-                    <MenuItem onClick={handleShowLevels} disabled={state.viewedAreaId === null}>Zmien poziom</MenuItem>
+                    <MenuItem onClick={handleShowAreas}>Zmień obszar</MenuItem>
+                    <MenuItem onClick={handleShowLevels} disabled={state.viewedAreaId === null}>Zmień poziom</MenuItem>
                     <MenuRow>
-                        <MenuItem onClick={handleZoomIn}>Zbliz</MenuItem>
+                        <MenuItem onClick={handleZoomIn}>Zbliż</MenuItem>
                         <MenuItem onClick={handleZoomOut}>Oddal</MenuItem>
                     </MenuRow>
-                    <MenuItem onClick={handleCenterOnPlayer}>Idz do gracza</MenuItem>
-                    <MenuCheckItem checked={state.followPlayer} onClick={handleToggleFollow}>Sledz gracza</MenuCheckItem>
+                    <MenuItem onClick={handleCenterOnPlayer}>Idź do gracza</MenuItem>
+                    <MenuCheckItem checked={state.followPlayer} onClick={handleToggleFollow}>Śledź gracza</MenuCheckItem>
                     <MenuCheckItem checked={state.showGrid} onClick={handleToggleGrid}>Siatka</MenuCheckItem>
-                    <MenuCheckItem checked={state.showAreaExitLabels} onClick={handleToggleAreaExitLabels}>Etykiety wyjsc obszaru</MenuCheckItem>
+                    <MenuCheckItem checked={state.showAreaExitLabels} onClick={handleToggleAreaExitLabels}>Etykiety wyjść obszaru</MenuCheckItem>
                 </>
             )}
         </HeaderMenu>
@@ -708,7 +708,7 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
                     const viewportY = customEv.detail.position.y + rect.top;
                     openMapContextMenu(room, viewportX, viewportY, [
                         {
-                            label: 'Pokaz w tym oknie',
+                            label: 'Pokaż w tym oknie',
                             action: () => navigateToRoom(room),
                         },
                     ]);

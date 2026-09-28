@@ -384,7 +384,7 @@ function MobileButtons({ registerSave }: { registerSave: (save: () => void) => v
             <div onClick={close} className="mobile-buttons-editor" data-settings-ignore>
                 <div className="mobile-buttons-top-row">
                     <div className="dialog-tabs">
-                        {([['solo', 'Bez druzyny'], ['team', 'W druzynie'], ['leader', 'Prowadzacy']] as const).map(([mode, label]) => (
+                        {([['solo', 'Bez drużyny'], ['team', 'W drużynie'], ['leader', 'Prowadzący']] as const).map(([mode, label]) => (
                             <button
                                 key={mode}
                                 type="button"
@@ -432,7 +432,7 @@ function MobileButtons({ registerSave }: { registerSave: (save: () => void) => v
                         </Button>
                     </div>
                     <div className="mobile-buttons-slider-row">
-                        <span className="popup-field__label">Odstep</span>
+                        <span className="popup-field__label">Odstęp</span>
                         <input
                             type="range"
                             className="popup-range"
@@ -453,7 +453,7 @@ function MobileButtons({ registerSave }: { registerSave: (save: () => void) => v
                         </Button>
                     </div>
                     <div className="mobile-buttons-slider-row">
-                        <span className="popup-field__label">Kolor tla</span>
+                        <span className="popup-field__label">Kolor tła</span>
                         <div className="popup-inline">
                             <input
                                 type="color"
@@ -477,7 +477,7 @@ function MobileButtons({ registerSave }: { registerSave: (save: () => void) => v
                             <input
                                 type="range"
                                 className="popup-range"
-                                title="Krycie tla"
+                                title="Krycie tła"
                                 min={0}
                                 max={100}
                                 value={Math.round(backgroundAlpha * 100)}
@@ -518,12 +518,12 @@ function MobileButtons({ registerSave }: { registerSave: (save: () => void) => v
                 <div className="mobile-buttons-grid-editor">
                     <div className="mobile-buttons-grid-editor__edge">
                         {gridButton('+', 'Dodaj wiersz', () => addRow('top'))}
-                        {gridButton('-', 'Usun wiersz', () => removeRow('top'))}
+                        {gridButton('-', 'Usuń wiersz', () => removeRow('top'))}
                     </div>
                     <div className="mobile-buttons-grid-editor__middle">
                         <div className="mobile-buttons-grid-editor__edge mobile-buttons-grid-editor__edge--side">
-                            {gridButton('+', 'Dodaj kolumne', () => addCol('left'))}
-                            {gridButton('-', 'Usun kolumne', () => removeCol('left'))}
+                            {gridButton('+', 'Dodaj kolumnę', () => addCol('left'))}
+                            {gridButton('-', 'Usuń kolumnę', () => removeCol('left'))}
                         </div>
                         <div>
                             {modes.map(mode => (
@@ -541,13 +541,13 @@ function MobileButtons({ registerSave }: { registerSave: (save: () => void) => v
                             ))}
                         </div>
                         <div className="mobile-buttons-grid-editor__edge mobile-buttons-grid-editor__edge--side">
-                            {gridButton('+', 'Dodaj kolumne', () => addCol('right'))}
-                            {gridButton('-', 'Usun kolumne', () => removeCol('right'))}
+                            {gridButton('+', 'Dodaj kolumnę', () => addCol('right'))}
+                            {gridButton('-', 'Usuń kolumnę', () => removeCol('right'))}
                         </div>
                     </div>
                     <div className="mobile-buttons-grid-editor__edge">
                         {gridButton('+', 'Dodaj wiersz', () => addRow('bottom'))}
-                        {gridButton('-', 'Usun wiersz', () => removeRow('bottom'))}
+                        {gridButton('-', 'Usuń wiersz', () => removeRow('bottom'))}
                     </div>
                 </div>
 
@@ -574,7 +574,7 @@ function MobileButtons({ registerSave }: { registerSave: (save: () => void) => v
                                 <div className="mobile-button-config-section-title">Podstawowe</div>
                                 <Field
                                     label="Makro"
-                                    error={isButtonMacroAvailable(activeCfg.macroType) ? undefined : "Ta wtyczka nie jest zaladowana. Makro nie bedzie dzialac."}
+                                    error={isButtonMacroAvailable(activeCfg.macroType) ? undefined : "Ta wtyczka nie jest załadowana. Makro nie będzie działać."}
                                 >
                                     <MacroSelect
                                         value={activeCfg.macroType}
@@ -620,7 +620,7 @@ function MobileButtons({ registerSave }: { registerSave: (save: () => void) => v
 
                             {activeCfg.macroType !== 'empty' && (
                                 <div className="mobile-button-config-section">
-                                    <div className="mobile-button-config-section-title">Wyglad</div>
+                                    <div className="mobile-button-config-section-title">Wygląd</div>
                                     {colorRow("Kolor", activeCfg.color, val => {
                                         if (syncDirs && activeCfg.macroType === 'kierunek') {
                                             updateAllDirections('color', val);
@@ -644,7 +644,7 @@ function MobileButtons({ registerSave }: { registerSave: (save: () => void) => v
                                     }, () => resetActiveColor(active!.set, active!.id))}
                                     {activeCfg.macroType === 'kierunek' && (
                                         <Check
-                                            label="Synchronizuj kolory kierunkow"
+                                            label="Synchronizuj kolory kierunków"
                                             checked={syncDirs}
                                             onChange={e => setSyncDirs(e.target.checked)}
                                         />
@@ -685,17 +685,17 @@ function MobileButtons({ registerSave }: { registerSave: (save: () => void) => v
                 )}
                 <div className="popup-inline settings-wrap mobile-buttons-footer">
                     <Button size="sm" onClick={() => restoreDefaults(view)}>
-                        Domyslne
+                        Domyślne
                     </Button>
-                    <span className="settings-inline-note">Kopiuj uklad z</span>
+                    <span className="settings-inline-note">Kopiuj układ z</span>
                     <Select
                         className="settings-narrow"
                         value={copyFrom}
                         onChange={e => setCopyFrom(e.target.value as Mode)}
                     >
-                        <option value="solo">Bez druzyny</option>
-                        <option value="team">W druzynie</option>
-                        <option value="leader">Prowadzacy</option>
+                        <option value="solo">Bez drużyny</option>
+                        <option value="team">W drużynie</option>
+                        <option value="leader">Prowadzący</option>
                     </Select>
                     <Button size="sm" onClick={() => copyLayout(copyFrom)}>
                         Kopiuj

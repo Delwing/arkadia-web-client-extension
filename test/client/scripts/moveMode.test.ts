@@ -174,7 +174,7 @@ describe('move mode default bind', () => {
 
     client.dispatchEvent(new CustomEvent('gmcp.objects.data', { detail: { '5': { attack_num: true } } }));
     expect(client.moveMode).toBe(0);
-    expect(client.moveModeButton!.value).toBe('Ruch: zwykly');
+    expect(client.moveModeButton!.value).toBe('Ruch: zwykły');
     expect(client.sendEvent).toHaveBeenLastCalledWith('moveModeChanged', 0);
     expect(client.println).not.toHaveBeenCalled();
   });
@@ -194,8 +194,8 @@ describe('move mode default bind', () => {
     client.dispatchEvent(new CustomEvent('gmcp.objects.data', { detail: { '7': { attack_num: true } } }));
 
     expect(client.moveMode).toBe(0);
-    expect(mobileButton.textContent).toBe('Tryb ruchu zwykly');
-    expect(mobileButton.title).toBe('Tryb ruchu zwykly');
+    expect(mobileButton.textContent).toBe('Tryb ruchu zwykły');
+    expect(mobileButton.title).toBe('Tryb ruchu zwykły');
   });
 });
 

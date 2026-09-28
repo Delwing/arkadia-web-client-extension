@@ -60,7 +60,7 @@ export async function init(api: PluginApi): Promise<PluginInfo> {
     try {
       return JSON.stringify(value, null, 2);
     } catch (error) {
-      return `<nie udalo sie sformatowac: ${String(error)}>`;
+      return `<nie udało się sformatować: ${String(error)}>`;
     }
   }
 
@@ -113,7 +113,7 @@ export async function init(api: PluginApi): Promise<PluginInfo> {
     if (paused) return;
     const entry: GmcpEntry = {
       time: new Date().toLocaleTimeString(),
-      path: data.path ?? '(brak sciezki)',
+      path: data.path ?? '(brak ścieżki)',
       value: data.value,
     };
     entries.push(entry);
@@ -142,7 +142,7 @@ export async function init(api: PluginApi): Promise<PluginInfo> {
     const description = document.createElement('p');
     description.className = 'mb-0 small text-muted';
     description.textContent =
-      'Surowe zdarzenia GMCP z serwera. Najnowsze na koncu.';
+      'Surowe zdarzenia GMCP z serwera. Najnowsze na końcu.';
 
     const controls = document.createElement('div');
     controls.className = 'd-flex gap-2 align-items-center flex-wrap';
@@ -151,23 +151,23 @@ export async function init(api: PluginApi): Promise<PluginInfo> {
     filterInput.type = 'text';
     filterInput.className = 'form-control form-control-sm';
     filterInput.style.maxWidth = '180px';
-    filterInput.placeholder = 'Filtr sciezki...';
+    filterInput.placeholder = 'Filtr ścieżki...';
     filterInput.value = filter;
     filterInput.addEventListener('input', () => {
       filter = filterInput.value.trim();
       renderAll();
     });
 
-    const pauseButton = button(paused ? 'Wznow' : 'Pauza', () => {
+    const pauseButton = button(paused ? 'Wznów' : 'Pauza', () => {
       paused = !paused;
-      pauseButton.textContent = paused ? 'Wznow' : 'Pauza';
+      pauseButton.textContent = paused ? 'Wznów' : 'Pauza';
       pauseButton.classList.toggle('btn-warning', paused);
       pauseButton.classList.toggle('btn-secondary', !paused);
     });
     pauseButton.classList.toggle('btn-warning', paused);
     pauseButton.classList.toggle('btn-secondary', !paused);
 
-    const clearButton = button('Wyczysc', () => {
+    const clearButton = button('Wyczyść', () => {
       entries.length = 0;
       renderAll();
     });
@@ -180,7 +180,7 @@ export async function init(api: PluginApi): Promise<PluginInfo> {
           setTimeout(() => (copyButton.textContent = 'Kopiuj'), 1500);
         },
         () => {
-          copyButton.textContent = 'Blad kopiowania';
+          copyButton.textContent = 'Błąd kopiowania';
           setTimeout(() => (copyButton.textContent = 'Kopiuj'), 1500);
         },
       );
@@ -247,8 +247,8 @@ export async function init(api: PluginApi): Promise<PluginInfo> {
   return {
     name: 'Inspektor GMCP',
     version: '1.0.0',
-    author: 'Zespol Arkadia',
-    description: 'Podglad surowych zdarzen GMCP z filtrowaniem, pauza i kopiowaniem',
+    author: 'Zespół Arkadia',
+    description: 'Podgląd surowych zdarzeń GMCP z filtrowaniem, pauzą i kopiowaniem',
   };
 }
 

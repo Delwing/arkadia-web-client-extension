@@ -22,14 +22,14 @@ const TICK_MS = 500;
 const EMPTY_STATE: CoverStateSnapshot = { at: 0, edges: [], objects: [] };
 
 const KIND_LABEL: Record<CoverLogEntry['kind'], string> = {
-    'established': 'ZASLONA',
+    'established': 'ZASŁONA',
     'failed': 'NIEUDANE',
     'blocked': 'BLOKADA',
-    'break-failed': 'PRZELAM-NIE',
-    'break-ok': 'PRZELAM-OK',
+    'break-failed': 'PRZEŁAM-NIE',
+    'break-ok': 'PRZEŁAM-OK',
     'released': 'KONIEC',
     'retreat': 'WYCOFANIE',
-    'expired': 'WYGASLO',
+    'expired': 'WYGASŁO',
     'gmcp-suspect': 'GMCP',
     'ambiguous': 'NIEJASNE',
 };
@@ -39,12 +39,12 @@ const KIND_LABEL: Record<CoverLogEntry['kind'], string> = {
  * between the log answering "why did that go away" and merely restating that it did.
  */
 const REASON_LABEL: Record<CoverExpiryReason, string> = {
-    'gone': 'znikl z lokacji',
-    'death': 'smierc',
-    'stun': 'ogluszenie',
+    'gone': 'znikł z lokacji',
+    'death': 'śmierć',
+    'stun': 'ogłuszenie',
     'max-age': 'limit wieku',
-    'superseded': 'zastapiona nowa zaslona',
-    'now-covering': 'zaslaniany sam zaczal zaslaniac',
+    'superseded': 'zastąpiona nową zasłoną',
+    'now-covering': 'zasłaniany sam zaczął zasłaniać',
 };
 
 function seconds(ms: number): string {
@@ -124,9 +124,9 @@ const CoverDebugPopup: React.FC = () => {
                 type="button"
                 className="popup-btn popup-btn--sm"
                 onClick={() => { setLog([]); unknownBlocks.current = 0; }}
-                title="Wyczysc log zdarzen"
+                title="Wyczyść log zdarzeń"
             >
-                Wyczysc
+                Wyczyść
             </button>
         </>
     );
@@ -164,7 +164,7 @@ const CoverDebugPopup: React.FC = () => {
             return (
                 <span className={suspected ? 'cover-dbg-suspected' : undefined}>
                     <span className={blockedForMe ? 'cover-dbg-blocked' : 'cover-dbg-open'}>
-                        {blockedForMe ? 'ZASLONIETY' : 'zaslaniany'}
+                        {blockedForMe ? 'ZASŁONIĘTY' : 'zasłaniany'}
                     </span>
                     {' przez '}
                     <em>{coverers.map(nameOf).join(', ')}</em>
@@ -178,7 +178,7 @@ const CoverDebugPopup: React.FC = () => {
         }
         if (row.covering.length > 0) {
             const targets = [...new Set(row.covering.map(e => e.coveredId))];
-            return <>{'zaslania '}<em>{targets.map(nameOf).join(', ')}</em></>;
+            return <>{'zasłania '}<em>{targets.map(nameOf).join(', ')}</em></>;
         }
         return <span className="cover-dbg-none">&mdash;</span>;
     };
@@ -215,7 +215,7 @@ const CoverDebugPopup: React.FC = () => {
         <DockablePopupWrapper
             {...wrapperProps}
             popupType="coverDebug"
-            title={`Zaslony - debug (${state.edges.length})`}
+            title={`Zasłony - debug (${state.edges.length})`}
             minWidth={420}
             minHeight={260}
             initialWidth={900}
@@ -244,7 +244,7 @@ const CoverDebugPopup: React.FC = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        {renderGroup('Druzyna', team)}
+                        {renderGroup('Drużyna', team)}
                         {renderGroup('Wrogowie', enemies)}
                     </tbody>
                 </table>
@@ -252,7 +252,7 @@ const CoverDebugPopup: React.FC = () => {
 
             <div className="cover-dbg-log">
                 {visibleLog.length === 0 ? (
-                    <div className="popup-empty">Brak zdarzen.</div>
+                    <div className="popup-empty">Brak zdarzeń.</div>
                 ) : visibleLog.map((entry, i) => (
                     <div key={`${entry.at}-${i}`} className="cover-dbg-log-entry">
                         <div className="cover-dbg-log-head">

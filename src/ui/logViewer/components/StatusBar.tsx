@@ -67,12 +67,12 @@ export function StatusBar({
                     data-active={rangeActive}
                     title={
                         rangeActive
-                            ? "Zakres zaweza log, wyszukiwanie i eksport"
-                            : "Zakres jest zaznaczony, ale nie zaweza logu — wybierz zasieg „Zakres”"
+                            ? "Zakres zawęża log, wyszukiwanie i eksport"
+                            : "Zakres jest zaznaczony, ale nie zawęża logu — wybierz zasięg „Zakres”"
                     }
                 >
                     zakres {formatClock(range.from)} {"–"} {formatClock(range.to)}
-                    <Button variant="ghost" size="sm" onClick={onClearRange} title="Wyczysc zakres">
+                    <Button variant="ghost" size="sm" onClick={onClearRange} title="Wyczyść zakres">
                         <Icon name="close" size={12} />
                     </Button>
                 </span>
@@ -81,14 +81,14 @@ export function StatusBar({
 
             <div className="lv-spacer" />
 
-            <Toggle pressed={showTimestamps} onPressedChange={onShowTimestampsChange} title="Pokaz godziny">
+            <Toggle pressed={showTimestamps} onPressedChange={onShowTimestampsChange} title="Pokaż godziny">
                 <span className="lv-hide-narrow">Godziny</span>
                 <span className="lv-only-narrow">Czas</span>
             </Toggle>
             <Toggle
                 pressed={showMeta}
                 onPressedChange={onShowMetaChange}
-                title="Pokaz numer linii i typ wiadomosci"
+                title="Pokaż numer linii i typ wiadomości"
             >
                 <span className="lv-hide-narrow">Typ i numer</span>
                 <span className="lv-only-narrow">Typ</span>
@@ -97,13 +97,13 @@ export function StatusBar({
                 <Toggle
                     pressed={showColors}
                     onPressedChange={onShowColorsChange}
-                    title="Oryginalne kolory gry (wylacza podswietlanie trafien w linii)"
+                    title="Oryginalne kolory gry (wyłącza podświetlanie trafień w linii)"
                 >
                     <span className="lv-hide-narrow">Kolory gry</span>
                     <span className="lv-only-narrow">Kolory</span>
                 </Toggle>
             ) : null}
-            <Toggle pressed={wrap} onPressedChange={onWrapChange} title="Zawijaj dlugie linie">
+            <Toggle pressed={wrap} onPressedChange={onWrapChange} title="Zawijaj długie linie">
                 <span className="lv-hide-narrow">Zawijanie</span>
                 <span className="lv-only-narrow">Zawijaj</span>
             </Toggle>
@@ -114,9 +114,9 @@ export function StatusBar({
                     title="Przewijaj do nowych linii"
                 >
                     <span className="lv-hide-narrow">
-                        {follow ? "Sledzi na zywo" : "Sledz na zywo"}
+                        {follow ? "Śledzi na żywo" : "Śledź na żywo"}
                     </span>
-                    <span className="lv-only-narrow">Na zywo</span>
+                    <span className="lv-only-narrow">Na żywo</span>
                 </Toggle>
             ) : null}
         </div>

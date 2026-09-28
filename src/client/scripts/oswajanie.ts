@@ -933,7 +933,7 @@ function scheduleFeedAlert(): void {
     // who feeds and then backgrounds the tab would otherwise be told they can tame
     // again long after they actually could.
     feedAlertTimer = scheduleFromEvent(CONFIG.recoveryTime * 60 * 1000, () => {
-      client.notify("Mozesz oswajac zwierze.");
+      client.notify("Możesz oswajać zwierzę.");
     });
   }
 }

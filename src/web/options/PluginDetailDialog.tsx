@@ -47,7 +47,7 @@ function PluginDetailDialog({
                 // response missing `plugin` would throw during render and blank
                 // the whole Skrypty modal, not just this dialog.
                 if (data?.plugin) setDetail(data);
-                else setError("Katalog zwrocil nieoczekiwana odpowiedz");
+                else setError("Katalog zwrócił nieoczekiwaną odpowiedź");
             })
             .catch((err: Error) => {
                 if (err?.name !== "AbortError") setError(err.message);
@@ -139,7 +139,7 @@ function PluginDetailDialog({
                         {detail.plugin.trustedPublisher && (
                             <span
                                 className="plugin-chip plugin-chip--trusted"
-                                title="Wydawany automatycznie z workflow GitHub Actions powiazanego z repozytorium autora"
+                                title="Wydawany automatycznie z workflow GitHub Actions powiązanego z repozytorium autora"
                             >
                                 <Github size={12} />
                                 Wydawane z repozytorium
@@ -157,7 +157,7 @@ function PluginDetailDialog({
                         <div className="plugin-banner plugin-banner--warning">
                             <AlertTriangle size={16} />
                             <span>
-                                Autor oznaczyl ten plugin jako mogacy naruszac zasady Arkadii
+                                Autor oznaczył ten plugin jako mogący naruszać zasady Arkadii
                                 {detail.plugin.rulesRiskNote ? `: ${detail.plugin.rulesRiskNote}` : "."}
                             </span>
                         </div>
@@ -217,7 +217,7 @@ function PluginDetailDialog({
                     </ul>
                     {releases.length > visibleReleases.length && (
                         <button type="button" className="popup-link ui-settings-self-start" onClick={() => setShowAllVersions(true)}>
-                            Pokaz wszystkie ({releases.length})
+                            Pokaż wszystkie ({releases.length})
                         </button>
                     )}
                 </>

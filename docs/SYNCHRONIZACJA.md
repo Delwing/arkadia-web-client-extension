@@ -1,273 +1,273 @@
 # Synchronizacja Firebase
 
-Rozszerzenie umozliwia synchronizacje ustawien miedzy urzadzeniami za pomoca Firebase. Dzieki temu mozesz korzystac z tych samych ustawien na roznych komputerach, telefonach i przegladarkach.
+Rozszerzenie umożliwia synchronizację ustawień między urządzeniami za pomocą Firebase. Dzięki temu możesz korzystać z tych samych ustawień na różnych komputerach, telefonach i przeglądarkach.
 
-## Spis tresci
+## Spis treści
 
 - [Logowanie](#logowanie)
 - [Synchronizowane kategorie](#synchronizowane-kategorie)
 - [Automatyczna synchronizacja](#automatyczna-synchronizacja)
-- [Reczna synchronizacja](#reczna-synchronizacja)
+- [Ręczne wysyłanie](#ręczne-wysyłanie)
 - [Szyfrowanie](#szyfrowanie)
-- [Laczenie zmian z wielu urzadzen](#laczenie-zmian-z-wielu-urzadzen)
-- [Zarzadzanie urzadzeniami](#zarzadzanie-urzadzeniami)
+- [Łączenie zmian z wielu urządzeń](#łączenie-zmian-z-wielu-urządzeń)
+- [Zarządzanie urządzeniami](#zarządzanie-urządzeniami)
 - [Grupy synchronizacji](#grupy-synchronizacji)
-- [Przejecie sesji na innym urzadzeniu](#przejecie-sesji-na-innym-urzadzeniu)
+- [Przejęcie sesji na innym urządzeniu](#przejęcie-sesji-na-innym-urządzeniu)
 - [Usuwanie danych z chmury](#usuwanie-danych-z-chmury)
-- [Rozwiazywanie problemow](#rozwiazywanie-problemow)
+- [Rozwiązywanie problemów](#rozwiązywanie-problemów)
 
 ---
 
 ## Logowanie
 
-Aby korzystac z synchronizacji, musisz najpierw zalogowac sie na konto. Przejdz do **Ustawienia > Firebase**.
+Aby korzystać z synchronizacji, musisz najpierw zalogować się na konto. Przejdź do **Ustawienia > Firebase**.
 
 ### Metody logowania
 
-1. **Email i haslo** - Wpisz adres email i haslo. Jesli nie masz konta, uzyj formularza rejestracji.
-2. **Logowanie przez Google** - Kliknij przycisk "Zaloguj przez Google". Otworzy sie okno logowania Google.
+1. **Email i hasło** - Wpisz adres email i hasło. Jeśli nie masz konta, użyj formularza rejestracji.
+2. **Logowanie przez Google** - Kliknij przycisk "Zaloguj przez Google". Otworzy się okno logowania Google.
 
-### Resetowanie hasla
+### Resetowanie hasła
 
-Jesli zapomnialesz hasla, wpisz swoj adres email i kliknij "Resetuj haslo". Na podany adres zostanie wyslany link do zmiany hasla.
+Jeśli zapomniałeś hasła, wpisz swój adres email i kliknij "Resetuj hasło". Na podany adres zostanie wysłany link do zmiany hasła.
 
 ### Wylogowanie
 
-Po zalogowaniu zobaczysz informacje o koncie (email, metoda logowania). Kliknij "Wyloguj" aby zakonczyc sesje. Wylogowanie zatrzymuje automatyczna synchronizacje.
+Po zalogowaniu zobaczysz informacje o koncie (email, metoda logowania). Kliknij "Wyloguj", aby zakończyć sesję. Wylogowanie zatrzymuje automatyczną synchronizację.
 
 ---
 
 ## Synchronizowane kategorie
 
-Synchronizowane sa zawsze wszystkie ponizsze kategorie - nie trzeba (i nie da sie) wybierac, co ma byc wysylane. Dotyczy to tez wszystkich postaci.
+Synchronizowane są zawsze wszystkie poniższe kategorie - nie trzeba (i nie da się) wybierać, co ma być wysyłane. Dotyczy to też wszystkich postaci.
 
 | Kategoria | Opis |
 |-----------|------|
-| **Ustawienia interfejsu** | Kolory, czcionki, motyw, uklad okien |
+| **Ustawienia interfejsu** | Kolory, czcionki, motyw, układ okien |
 | **Bindy klawiszy** | Przypisania klawiszy do komend |
-| **Skroty** | Zapisane lokacje na mapie |
-| **Ustawienia postaci** | Ustawienia rozgrywki (profesja, staz, itp.) |
-| **Triggery** | Triggery reagujace na tekst z gry |
+| **Skróty** | Zapisane lokacje na mapie |
+| **Ustawienia postaci** | Ustawienia rozgrywki (profesja, staż itp.) |
+| **Triggery** | Triggery reagujące na tekst z gry |
 | **Aliasy** | Aliasy komend |
-| **Grupy automatyzacji** | Grupy aliasow i triggerow oraz to, czy sa wlaczone |
+| **Grupy automatyzacji** | Grupy aliasów i triggerów oraz to, czy są włączone |
 | **Skrypty automatyzacji** | Skrypty JavaScript z okna Automatyzacja |
 | **Multibindy** | Wielokrotne przypisania klawiszy |
-| **Przyciski** | Konfiguracja przyciskow na ekranie |
+| **Przyciski** | Konfiguracja przycisków na ekranie |
 | **Menu radialne** | Ustawienia menu radialnego |
 | **Odwiedzone lokacje** | Lista odwiedzonych lokacji na mapie |
 | **Notatki lokacji** | Notatki przypisane do lokacji |
-| **Licznik zabitych** | Statystyki zabitych przeciwnikow |
-| **Licznik postepow** | Statystyki postepow umiejetnosci |
+| **Licznik zabitych** | Statystyki zabitych przeciwników |
+| **Licznik postępów** | Statystyki postępów umiejętności |
 | **Depozyty** | Dane o depozytach |
-| **Pojemniki** | Konfiguracja pojemnikow |
+| **Pojemniki** | Konfiguracja pojemników |
 | **Edycje bazy postaci** | Lokalne edycje bazy postaci |
-| **Wiedza** | Postepy w bibliotekach i ksiazkach, wiedza, ticki i poziomy |
-| **Oswajanie** | Karmienia, poziomy zwierzat i grupy pokarmow |
-| **Odpornosci przeciwnikow** | Zapisane odpornosci i wrazliwosci |
-| **Zlom** | Baza ocenionych przedmiotow |
-| **Czasy transportu** | Najkrotsze i najdluzsze czasy przejazdow |
+| **Wiedza** | Postępy w bibliotekach i książkach, wiedza, ticki i poziomy |
+| **Oswajanie** | Karmienia, poziomy zwierząt i grupy pokarmów |
+| **Odporności przeciwników** | Zapisane odporności i wrażliwości |
+| **Złom** | Baza ocenionych przedmiotów |
+| **Czasy transportu** | Najkrótsze i najdłuższe czasy przejazdów |
 | **Dostawy** | Historia dostarczonych paczek |
 
-Kopia zapasowa (plik lub Google Drive, w **Ustawienia > Kopia zapasowa**) zawiera zawsze wszystkie te dane, a dodatkowo nagrania sesji i zainstalowane skrypty. Przywrocenie kopii (po potwierdzeniu) zastepuje ustawienia na wszystkich Twoich urzadzeniach; dane postepow (wiedza, licznik zabitych, odwiedzone lokacje itp.) sa laczone, a nie zastepowane.
+Kopia zapasowa (plik lub Google Drive, w **Ustawienia > Kopia zapasowa**) zawiera zawsze wszystkie te dane, a dodatkowo nagrania sesji i zainstalowane skrypty. Przywrócenie kopii (po potwierdzeniu) zastępuje ustawienia na wszystkich Twoich urządzeniach; dane postępów (wiedza, licznik zabitych, odwiedzone lokacje itp.) są łączone, a nie zastępowane.
 
-### Kategorie powiazane z urzadzeniem
+### Kategorie powiązane z urządzeniem
 
-Dwie kategorie sa traktowane specjalnie - **Ustawienia interfejsu** i **Przyciski**. Te ustawienia sa powiazane z konkretnym urzadzeniem, poniewaz rozne urzadzenia moga miec rozne rozmiary ekranu i ukady. Nie sa automatycznie stosowane na innych urzadzeniach, chyba ze naleza do tej samej [grupy synchronizacji](#grupy-synchronizacji).
+Dwie kategorie są traktowane specjalnie - **Ustawienia interfejsu** i **Przyciski**. Te ustawienia są powiązane z konkretnym urządzeniem, ponieważ różne urządzenia mogą mieć różne rozmiary ekranu i układy. Nie są automatycznie stosowane na innych urządzeniach, chyba że należą do tej samej [grupy synchronizacji](#grupy-synchronizacji).
 
-Kategoria **Ustawienia interfejsu** obejmuje takze uklad okien, trasy podrozy (trip planner) i aktywna mape klawiszy.
+Kategoria **Ustawienia interfejsu** obejmuje także układ okien, trasy podróży (trip planner) i aktywną mapę klawiszy.
 
 ---
 
 ## Automatyczna synchronizacja
 
-Po wlaczeniu automatycznej synchronizacji zmiany sa wysylane do chmury i odbierane na innych urzadzeniach bez Twojego udzialu.
+Po włączeniu automatycznej synchronizacji zmiany są wysyłane do chmury i odbierane na innych urządzeniach bez Twojego udziału.
 
-### Jak to dziala
+### Jak to działa
 
-1. **Wysylanie w trakcie gry** - zmiany sa zbierane i wysylane razem co **5 minut**. Kazda zmiana trafia do chmury tylko raz, wiec synchronizacja nie obciaza serwera.
-2. **Wysylanie przy przelaczaniu** - gdy ukrywasz karte klienta (przelaczasz okno, blokujesz telefon) albo zamykasz strone, oczekujace zmiany sa wysylane natychmiast. Urzadzenie, na ktore sie przesiadasz, ma juz wszystko.
-3. **Podglad na drugim urzadzeniu** - gdy klient jest otwarty i widoczny na innym Twoim urzadzeniu, zmiany sa wysylane co kilkanascie sekund, zeby bylo je widac na biezaco (np. postepy na telefonie w trakcie gry na komputerze).
-4. **Odbieranie zmian** - widoczna karta klienta odbiera zmiany z innych urzadzen na biezaco i stosuje je bez odswiezania strony. Ukryta karta nie nasluchuje; po powrocie do niej od razu pobiera to, co sie zmienilo.
+1. **Wysyłanie w trakcie gry** - zmiany są zbierane i wysyłane razem co **5 minut**. Każda zmiana trafia do chmury tylko raz, więc synchronizacja nie obciąża serwera.
+2. **Wysyłanie przy przełączaniu** - gdy ukrywasz kartę klienta (przełączasz okno, blokujesz telefon) albo zamykasz stronę, oczekujące zmiany są wysyłane natychmiast. Urządzenie, na które się przesiadasz, ma już wszystko.
+3. **Podgląd na drugim urządzeniu** - gdy klient jest otwarty i widoczny na innym Twoim urządzeniu, zmiany są wysyłane co kilkanaście sekund, żeby było je widać na bieżąco (np. postępy na telefonie w trakcie gry na komputerze).
+4. **Odbieranie zmian** - widoczna karta klienta odbiera zmiany z innych urządzeń na bieżąco i stosuje je bez odświeżania strony. Ukryta karta nie nasłuchuje; po powrocie do niej od razu pobiera to, co się zmieniło.
 
-### Wiele kart przegladarki
+### Wiele kart przeglądarki
 
-Mozesz miec otwartych kilka kart klienta jednoczesnie - synchronizacja dziala tylko w jednej z nich (pozostale przejmuja te role automatycznie po jej zamknieciu), wiec dane nie sa wysylane wielokrotnie.
+Możesz mieć otwartych kilka kart klienta jednocześnie - synchronizacja działa tylko w jednej z nich (pozostałe przejmują tę rolę automatycznie po jej zamknięciu), więc dane nie są wysyłane wielokrotnie.
 
-### Pierwsze uruchomienie na urzadzeniu
+### Pierwsze uruchomienie na urządzeniu
 
-Przy pierwszym uruchomieniu nowej synchronizacji urzadzenie pobiera dane zapisane przez poprzednia wersje i dopiero potem wysyla swoje. Ustawienia, ktore juz sa w chmurze, maja pierwszenstwo przed domyslnymi ustawieniami nowego urzadzenia; dane, ktore ma tylko to urzadzenie, sa dodawane.
+Przy pierwszym uruchomieniu nowej synchronizacji urządzenie pobiera dane zapisane przez poprzednią wersję i dopiero potem wysyła swoje. Ustawienia, które już są w chmurze, mają pierwszeństwo przed domyślnymi ustawieniami nowego urządzenia; dane, które ma tylko to urządzenie, są dodawane.
 
-Zanim nowa synchronizacja cokolwiek zmieni, urzadzenie zapisuje u siebie pelna kopie danych. Znajdziesz ja w zakladce kopii zapasowej: mozesz ja przywrocic ("Przywroc stan sprzed aktualizacji") albo pobrac jako plik.
+Zanim nowa synchronizacja cokolwiek zmieni, urządzenie zapisuje u siebie pełną kopię danych. Znajdziesz ją w zakładce kopii zapasowej: możesz ją przywrócić ("Przywróć stan sprzed aktualizacji") albo pobrać jako plik.
 
-### Wlaczanie automatycznej synchronizacji
+### Włączanie automatycznej synchronizacji
 
-1. Przejdz do **Ustawienia > Firebase**
-2. Zaloguj sie na konto
+1. Przejdź do **Ustawienia > Firebase**
+2. Zaloguj się na konto
 3. Zaznacz "Automatyczna synchronizacja"
 
-### Reczne wysylanie
+### Ręczne wysyłanie
 
-Przycisk **"Wyslij do chmury"** wysyla oczekujace zmiany od razu, bez czekania na kolejna synchronizacje. **"Pobierz z chmury"** pobiera wszystko, co jest w chmurze, i laczy to z danymi na urzadzeniu.
+Przycisk **"Wyślij do chmury"** wysyła oczekujące zmiany od razu, bez czekania na kolejną synchronizację. **"Pobierz z chmury"** pobiera wszystko, co jest w chmurze, i łączy to z danymi na urządzeniu.
 
-Oba przyciski dzialaja takze przy wylaczonej automatycznej synchronizacji: wykonuja wtedy jednorazowa synchronizacje (najpierw pobieraja zmiany z chmury, potem wysylaja swoje) i synchronizacja znow sie zatrzymuje.
+Oba przyciski działają także przy wyłączonej automatycznej synchronizacji: wykonują wtedy jednorazową synchronizację (najpierw pobierają zmiany z chmury, potem wysyłają swoje) i synchronizacja znów się zatrzymuje.
 
 ---
 
 ## Szyfrowanie
 
-Mozesz zabezpieczyc swoje dane w chmurze szyfrujac je haslem.
+Możesz zabezpieczyć swoje dane w chmurze, szyfrując je hasłem.
 
-### Jak wlaczyc szyfrowanie
+### Jak włączyć szyfrowanie
 
-1. Przejdz do **Ustawienia > Firebase**
+1. Przejdź do **Ustawienia > Firebase**
 2. Zaznacz "Szyfrowanie"
-3. Wpisz haslo szyfrowania
+3. Wpisz hasło szyfrowania
 
-### Wazne informacje
+### Ważne informacje
 
-- Dane sa szyfrowane algorytmem **AES-256-GCM** - jest to silne szyfrowanie stosowane w bankach i wojsku.
-- **Haslo nie jest nigdzie zapisywane** na serwerze. Jesli je zapomnisz, nie ma mozliwosci odzyskania zaszyfrowanych danych.
-- Haslo jest pamietane lokalnie tylko do zamkniecia karty przegladarki - po ponownym otwarciu klienta trzeba je podac ponownie.
-- Musisz uzyc **tego samego hasla** na wszystkich urzadzeniach, ktore chca odczytac zaszyfrowane dane. Klient weryfikuje haslo przed wyslaniem danych - urzadzenie z innym haslem dostanie blad zamiast po cichu nadpisac dane niemozliwym do odczytania wpisem.
-- Jesli inne urzadzenie odbierze zaszyfrowane dane bez podanego hasla, zostaniesz poproszony o wprowadzenie hasla. Dane zostana odszyfrowane po jego podaniu.
-- Aby zmienic haslo: wylacz szyfrowanie (dane zostana zapisane w chmurze bez szyfrowania), a nastepnie wlacz je ponownie z nowym haslem.
+- Dane są szyfrowane algorytmem **AES-256-GCM** - jest to silne szyfrowanie stosowane w bankach i wojsku.
+- **Hasło nie jest nigdzie zapisywane** na serwerze. Jeśli je zapomnisz, nie ma możliwości odzyskania zaszyfrowanych danych.
+- Hasło jest pamiętane lokalnie tylko do zamknięcia karty przeglądarki - po ponownym otwarciu klienta trzeba je podać ponownie.
+- Musisz użyć **tego samego hasła** na wszystkich urządzeniach, które chcą odczytać zaszyfrowane dane. Klient weryfikuje hasło przed wysłaniem danych - urządzenie z innym hasłem dostanie błąd, zamiast po cichu nadpisać dane niemożliwym do odczytania wpisem.
+- Jeśli inne urządzenie odbierze zaszyfrowane dane bez podanego hasła, zostaniesz poproszony o wprowadzenie hasła. Dane zostaną odszyfrowane po jego podaniu.
+- Aby zmienić hasło: wyłącz szyfrowanie (dane zostaną zapisane w chmurze bez szyfrowania), a następnie włącz je ponownie z nowym hasłem.
 
 ---
 
-## Laczenie zmian z wielu urzadzen
+## Łączenie zmian z wielu urządzeń
 
-Nie ma konfliktow do rozwiazywania - zmiany z roznych urzadzen sa laczone automatycznie, osobno dla kazdego elementu (kazdego aliasu, triggera, lokacji, wpisu wiedzy itd.):
+Nie ma konfliktów do rozwiązywania - zmiany z różnych urządzeń są łączone automatycznie, osobno dla każdego elementu (każdego aliasu, triggera, lokacji, wpisu wiedzy itd.):
 
 - **Ustawienia, aliasy, triggery, bindy, notatki** - wygrywa najnowsza zmiana danego elementu. Edycja aliasu na telefonie nie nadpisuje innego aliasu zmienionego na komputerze.
-- **Odwiedzone lokacje, ticki wiedzy, karmienia, dostawy** - dane z obu urzadzen sa sumowane, nic nie ginie.
-- **Licznik zabitych, reczne zmiany licznika postepow** - liczby z urzadzen sa dodawane.
-- **Postepy zliczone w grze (`/postepy`, `/postepy2`)** - przypisane do sesji w grze (numeru obiektu postaci). Gdy przejmiesz te sama sesje na innym urzadzeniu, lista `/postepy` (z czasami) jest kontynuowana, a postepy tej sesji nie sa liczone w `/postepy2` drugi raz. Nowe zalogowanie (nowy numer obiektu) zaczyna nowa liste.
-- **Postepy w bibliotekach i ksiazkach** - postep tylko rosnie.
-- **Awans poziomu wiedzy lub zwierzecia** - liczy sie pierwsza obserwacja; urzadzenie, ktore zobaczylo nowy poziom pozniej, nie przesuwa momentu awansu (ticki i karmienia od awansu licza sie poprawnie).
+- **Odwiedzone lokacje, ticki wiedzy, karmienia, dostawy** - dane z obu urządzeń są sumowane, nic nie ginie.
+- **Licznik zabitych, ręczne zmiany licznika postępów** - liczby z urządzeń są dodawane.
+- **Postępy zliczone w grze (`/postepy`, `/postepy2`)** - przypisane do sesji w grze (numeru obiektu postaci). Gdy przejmiesz tę samą sesję na innym urządzeniu, lista `/postepy` (z czasami) jest kontynuowana, a postępy tej sesji nie są liczone w `/postepy2` drugi raz. Nowe zalogowanie (nowy numer obiektu) zaczyna nową listę.
+- **Postępy w bibliotekach i książkach** - postęp tylko rośnie.
+- **Awans poziomu wiedzy lub zwierzęcia** - liczy się pierwsza obserwacja; urządzenie, które zobaczyło nowy poziom później, nie przesuwa momentu awansu (ticki i karmienia od awansu liczą się poprawnie).
 
 ---
 
-## Zarzadzanie urzadzeniami
+## Zarządzanie urządzeniami
 
-Przejdz do **Ustawienia > Zarzadzanie urzadzeniami** aby zarzadzac swoimi urzadzeniami.
+Przejdź do **Ustawienia > Zarządzanie urządzeniami**, aby zarządzać swoimi urządzeniami.
 
-### Informacje o urzadzeniu
+### Informacje o urządzeniu
 
-Kazde urzadzenie jest automatycznie identyfikowane na podstawie przegladarki i systemu operacyjnego (np. "Chrome on Windows"). Mozesz ustawic wlasna nazwe urzadzenia, aby latwiej je rozpoznac.
+Każde urządzenie jest automatycznie identyfikowane na podstawie przeglądarki i systemu operacyjnego (np. "Chrome on Windows"). Możesz ustawić własną nazwę urządzenia, aby łatwiej je rozpoznać.
 
-### Zmiana nazwy urzadzenia
+### Zmiana nazwy urządzenia
 
-1. Przejdz do **Ustawienia > Zarzadzanie urzadzeniami**
-2. Kliknij przycisk edycji obok nazwy urzadzenia
-3. Wpisz nowa nazwe
+1. Przejdź do **Ustawienia > Zarządzanie urządzeniami**
+2. Kliknij przycisk edycji obok nazwy urządzenia
+3. Wpisz nową nazwę
 4. Kliknij "Zapisz"
 
-### Rejestracja urzadzenia w chmurze
+### Rejestracja urządzenia w chmurze
 
-Po zalogowaniu, Twoje urzadzenie jest automatycznie rejestrowane w chmurze. Dzieki temu inne urzadzenia moga zobaczyc liste Twoich urzadzen i kopiowac z nich ustawienia.
+Po zalogowaniu Twoje urządzenie jest automatycznie rejestrowane w chmurze. Dzięki temu inne urządzenia mogą zobaczyć listę Twoich urządzeń i kopiować z nich ustawienia.
 
-### Kopiowanie ustawien z innego urzadzenia
+### Kopiowanie ustawień z innego urządzenia
 
-Jesli chcesz przeniesc ustawienia z jednego urzadzenia na drugie:
+Jeśli chcesz przenieść ustawienia z jednego urządzenia na drugie:
 
-1. Zaloguj sie na to samo konto na obu urzadzeniach
-2. Na urzadzeniu docelowym przejdz do **Zarzadzanie urzadzeniami**
-3. W sekcji "Urzadzenia w chmurze" znajdz urzadzenie zrodlowe
+1. Zaloguj się na to samo konto na obu urządzeniach
+2. Na urządzeniu docelowym przejdź do **Zarządzanie urządzeniami**
+3. W sekcji "Urządzenia w chmurze" znajdź urządzenie źródłowe
 4. Kliknij "Kopiuj ustawienia"
 
-### Importowane urzadzenia
+### Importowane urządzenia
 
-Jesli zaimportujesz ustawienia z pliku (np. backup), pojawia sie one w sekcji "Importowane urzadzenia". Mozesz:
-- **Skopiowac ustawienia** z zaimportowanego urzadzenia na biezace
-- **Usunac** zaimportowane urzadzenie z listy
+Jeśli zaimportujesz ustawienia z pliku (np. backup), pojawią się one w sekcji "Importowane urządzenia". Możesz:
+- **Skopiować ustawienia** z zaimportowanego urządzenia na bieżące
+- **Usunąć** zaimportowane urządzenie z listy
 
 ---
 
 ## Grupy synchronizacji
 
-Grupy synchronizacji pozwalaja na synchronizacje ustawien powiazanych z urzadzeniem (uklad interfejsu, przyciski) miedzy wybranymi urzadzeniami.
+Grupy synchronizacji pozwalają na synchronizację ustawień powiązanych z urządzeniem (układ interfejsu, przyciski) między wybranymi urządzeniami.
 
-### Po co sa grupy?
+### Po co są grupy?
 
-Domyslnie ustawienia interfejsu i przyciskow **nie sa automatycznie stosowane** na innych urzadzeniach, poniewaz rozne urzadzenia moga miec rozne rozmiary ekranow. Jesli jednak masz np. dwa komputery z podobnymi monitorami i chcesz miec identyczny uklad na obu, mozesz polaczyc je w grupe.
+Domyślnie ustawienia interfejsu i przycisków **nie są automatycznie stosowane** na innych urządzeniach, ponieważ różne urządzenia mogą mieć różne rozmiary ekranów. Jeśli jednak masz np. dwa komputery z podobnymi monitorami i chcesz mieć identyczny układ na obu, możesz połączyć je w grupę.
 
 ### Tworzenie grupy
 
-1. Przejdz do **Zarzadzanie urzadzeniami**
-2. W sekcji "Grupa synchronizacji" wpisz nazwe grupy
-3. Kliknij "Utworz grupe"
+1. Przejdź do **Zarządzanie urządzeniami**
+2. W sekcji "Grupa synchronizacji" wpisz nazwę grupy
+3. Kliknij "Utwórz grupę"
 
-Grupa zostanie utworzona i biezace urzadzenie automatycznie do niej dolaczy.
+Grupa zostanie utworzona i bieżące urządzenie automatycznie do niej dołączy.
 
-### Dolaczanie do grupy
+### Dołączanie do grupy
 
-Aby drugie urzadzenie dolaczilo do istniejace grupy:
+Aby drugie urządzenie dołączyło do istniejącej grupy:
 
-1. Na drugim urzadzeniu przejdz do **Zarzadzanie urzadzeniami**
-2. W sekcji "Grupy w chmurze" znajdz swoja grupe
-3. Kliknij "Dolacz"
+1. Na drugim urządzeniu przejdź do **Zarządzanie urządzeniami**
+2. W sekcji "Grupy w chmurze" znajdź swoją grupę
+3. Kliknij "Dołącz"
 
-Po dolaczeniu ustawienia grupy zostana zastosowane na tym urzadzeniu.
+Po dołączeniu ustawienia grupy zostaną zastosowane na tym urządzeniu.
 
 ### Synchronizacja w grupie
 
-Gdy urzadzenia sa w tej samej grupie:
-- Zmiany w ukladzie interfejsu i przyciskach sa synchronizowane miedzy urzadzeniami w grupie automatycznie, razem z pozostalymi kategoriami (zakladka **Synchronizacja konfiguracji**)
-- Wygrywa najnowszy uklad sposrod urzadzen grupy
+Gdy urządzenia są w tej samej grupie:
+- Zmiany w układzie interfejsu i przyciskach są synchronizowane między urządzeniami w grupie automatycznie, razem z pozostałymi kategoriami (zakładka **Synchronizacja konfiguracji**)
+- Wygrywa najnowszy układ spośród urządzeń grupy
 
 ### Opuszczanie grupy
 
-Kliknij "Opusc grupe" aby odlaczyc urzadzenie od grupy. Twoje lokalne ustawienia pozostana bez zmian, ale nie beda juz synchronizowane z innymi urzadzeniami w grupie. Jesli jestes ostatnim urzadzeniem w grupie, grupa zostanie automatycznie usunieta.
+Kliknij "Opuść grupę", aby odłączyć urządzenie od grupy. Twoje lokalne ustawienia pozostaną bez zmian, ale nie będą już synchronizowane z innymi urządzeniami w grupie. Jeśli jesteś ostatnim urządzeniem w grupie, grupa zostanie automatycznie usunięta.
 
 ---
 
 ## Usuwanie danych z chmury
 
-Jesli chcesz usunac wszystkie swoje dane z chmury:
+Jeśli chcesz usunąć wszystkie swoje dane z chmury:
 
-1. Przejdz do **Ustawienia > Firebase**
-2. Przewin do sekcji "Dane w chmurze"
-3. Kliknij "Usun wszystkie dane"
-4. Potwierdz usuniecie
+1. Przejdź do **Ustawienia > Firebase**
+2. Przewiń do sekcji "Dane w chmurze"
+3. Kliknij "Usuń wszystkie dane"
+4. Potwierdź usunięcie
 
-**Uwaga**: Ta operacja jest nieodwracalna i usuwa z chmury takze dane powiazane z pozostalymi urzadzeniami (uklady interfejsu, przyciski). Lokalne dane na Twoim urzadzeniu nie zostana usuniete - zaraz potem to urzadzenie wysle je ponownie, wiec chmura zaczyna od jego danych. Pozostale urzadzenia przy najblizszej synchronizacji przejmuja dane z chmury (czyli z tego urzadzenia); dodaja do nich tylko to, czego w chmurze nie ma, np. lokacje odwiedzone tylko na nich.
+**Uwaga**: Ta operacja jest nieodwracalna i usuwa z chmury także dane powiązane z pozostałymi urządzeniami (układy interfejsu, przyciski). Lokalne dane na Twoim urządzeniu nie zostaną usunięte - zaraz potem to urządzenie wyśle je ponownie, więc chmura zaczyna od jego danych. Pozostałe urządzenia przy najbliższej synchronizacji przejmują dane z chmury (czyli z tego urządzenia); dodają do nich tylko to, czego w chmurze nie ma, np. lokacje odwiedzone tylko na nich.
 
 ---
 
-## Przejecie sesji na innym urzadzeniu
+## Przejęcie sesji na innym urządzeniu
 
-Gdy zalogujesz sie postacia na drugim urzadzeniu, gra rozlacza pierwsze. Jesli na obu jestes zalogowany do tego samego konta Firebase, nowe urzadzenie od razu ustawi mape w lokacji, w ktorej postac zostala na poprzednim - bez czekania na synchronizacje.
+Gdy zalogujesz się postacią na drugim urządzeniu, gra rozłącza pierwsze. Jeśli na obu jesteś zalogowany do tego samego konta Firebase, nowe urządzenie od razu ustawi mapę w lokacji, w której postać została na poprzednim - bez czekania na synchronizację.
 
-- Lokacje zapisuje urzadzenie, ktore **widzi** koniec swojej sesji: przejecie przez inne urzadzenie albo rozlaczenie przez ciebie. Po rozlaczeniu mozna wrocic na innym urzadzeniu do 30 minut pozniej.
-- Nic nie jest zapisywane, gdy karta byla w tle (np. telefon w kieszeni) albo mapa zgubila pozycje - klient nie wie wtedy na pewno, gdzie jest postac, wiec lepiej nie zgadywac.
-- Lokacja nie zostanie ustawiona, jesli na nowym urzadzeniu zdazysz sie juz ruszyc.
-- Lokacja jest ustawiana tylko wtedy, gdy postac wciaz byla w swiecie gry (przejecie albo powrot przed rozlaczeniem przez gre). Po wyjsciu z gry, rozlaczeniu za bezczynnosc lub restarcie gry postac pojawia sie w innym miejscu i zapisana lokacja jest pomijana.
+- Lokację zapisuje urządzenie, które **widzi** koniec swojej sesji: przejęcie przez inne urządzenie albo rozłączenie przez ciebie. Po rozłączeniu można wrócić na innym urządzeniu do 30 minut później.
+- Nic nie jest zapisywane, gdy karta była w tle (np. telefon w kieszeni) albo mapa zgubiła pozycję - klient nie wie wtedy na pewno, gdzie jest postać, więc lepiej nie zgadywać.
+- Lokacja nie zostanie ustawiona, jeśli na nowym urządzeniu zdążysz się już ruszyć.
+- Lokacja jest ustawiana tylko wtedy, gdy postać wciąż była w świecie gry (przejęcie albo powrót przed rozłączeniem przez grę). Po wyjściu z gry, rozłączeniu za bezczynność lub restarcie gry postać pojawia się w innym miejscu i zapisana lokacja jest pomijana.
 
-## Rozwiazywanie problemow
+## Rozwiązywanie problemów
 
-### Nie moge sie zalogowac
+### Nie mogę się zalogować
 
-- **"Popup zostal zablokowany"** - Odblokuj wyskakujace okna (popupy) dla strony klienta w ustawieniach przegladarki.
-- **"Nieprawidlowe haslo"** - Sprawdz, czy wpisujesz poprawne haslo. Mozesz je zresetowac przez email.
-- **"Ten adres email jest juz uzywany"** - Masz juz konto. Uzyj logowania zamiast rejestracji.
-- **"Blad polaczenia z serwerem"** - Sprawdz polaczenie internetowe i sprobuj ponownie.
+- **"Popup został zablokowany"** - Odblokuj wyskakujące okna (popupy) dla strony klienta w ustawieniach przeglądarki.
+- **"Nieprawidłowe hasło"** - Sprawdź, czy wpisujesz poprawne hasło. Możesz je zresetować przez email.
+- **"Ten adres email jest już używany"** - Masz już konto. Użyj logowania zamiast rejestracji.
+- **"Błąd połączenia z serwerem"** - Sprawdź połączenie internetowe i spróbuj ponownie.
 
-### Synchronizacja nie dziala
+### Synchronizacja nie działa
 
-- Sprawdz, czy jestes zalogowany
-- Sprawdz, czy automatyczna synchronizacja jest wlaczona
-- Sprawdz polaczenie internetowe
+- Sprawdź, czy jesteś zalogowany
+- Sprawdź, czy automatyczna synchronizacja jest włączona
+- Sprawdź połączenie internetowe
 
-### Nie moge odszyfrowac danych
+### Nie mogę odszyfrować danych
 
-- Upewnij sie, ze wpisujesz **dokladnie to samo haslo**, ktore zostalo uzyte do szyfrowania
-- Haslo jest wrazliwe na wielkosc liter
-- Jesli zapomniales hasla, nie ma mozliwosci odzyskania zaszyfrowanych danych - musisz wyslac dane ponownie z urzadzenia, na ktorym sa zapisane lokalnie
+- Upewnij się, że wpisujesz **dokładnie to samo hasło**, które zostało użyte do szyfrowania
+- Hasło jest wrażliwe na wielkość liter
+- Jeśli zapomniałeś hasła, nie ma możliwości odzyskania zaszyfrowanych danych - musisz wysłać dane ponownie z urządzenia, na którym są zapisane lokalnie
 
-### Dane nie pojawiaja sie na drugim urzadzeniu
+### Dane nie pojawiają się na drugim urządzeniu
 
-- Ukryj karte klienta na pierwszym urzadzeniu (albo poczekaj do 5 minut) - zmiany wysylaja sie przy ukryciu karty
-- Sprawdz, czy na obu urzadzeniach jestes zalogowany na to samo konto
-- Dla ustawien interfejsu i przyciskow - sprawdz, czy urzadzenia sa w tej samej [grupie synchronizacji](#grupy-synchronizacji)
-- Sprobuj wyslac zmiany recznie przyciskiem "Wyslij do chmury"
-- Synchronizacja dziala w jednej karcie przegladarki - jesli masz kilka kart, zmiany wysyla pierwsza otwarta
+- Ukryj kartę klienta na pierwszym urządzeniu (albo poczekaj do 5 minut) - zmiany wysyłają się przy ukryciu karty
+- Sprawdź, czy na obu urządzeniach jesteś zalogowany na to samo konto
+- Dla ustawień interfejsu i przycisków - sprawdź, czy urządzenia są w tej samej [grupie synchronizacji](#grupy-synchronizacji)
+- Spróbuj wysłać zmiany ręcznie przyciskiem "Wyślij do chmury"
+- Synchronizacja działa w jednej karcie przeglądarki - jeśli masz kilka kart, zmiany wysyła pierwsza otwarta

@@ -146,13 +146,13 @@ function DeviceManagementTab() {
         // Other devices list this device under its new name
         if (isLoggedIn) void registerDevice({ force: true });
         setIsEditing(false);
-        setStatus("Nazwa urzadzenia zostala zapisana.");
+        setStatus("Nazwa urządzenia została zapisana.");
     };
 
     // Handle copy settings from imported device
     const handleCopyFromDevice = (entry: ImportedDeviceEntry) => {
         const deviceName = getDeviceDisplayName(entry.deviceInfo);
-        const confirmMessage = `Czy na pewno chcesz skopiowac ustawienia z urzadzenia "${deviceName}"? Aktualne ustawienia tego urzadzenia zostana nadpisane.`;
+        const confirmMessage = `Czy na pewno chcesz skopiować ustawienia z urządzenia "${deviceName}"? Aktualne ustawienia tego urządzenia zostaną nadpisane.`;
         if (!window.confirm(confirmMessage)) return;
 
         setError(null);
@@ -160,20 +160,20 @@ function DeviceManagementTab() {
 
         const success = applyImportedDeviceSettings(entry.deviceInfo.id);
         if (success) {
-            setStatus(`Ustawienia zostaly skopiowane z urzadzenia "${deviceName}".`);
+            setStatus(`Ustawienia zostały skopiowane z urządzenia "${deviceName}".`);
         } else {
-            setError("Nie udalo sie skopiowac ustawien.");
+            setError("Nie udało się skopiować ustawień.");
         }
     };
 
     // Handle delete imported device
     const handleDeleteImported = (entry: ImportedDeviceEntry) => {
         const deviceName = getDeviceDisplayName(entry.deviceInfo);
-        if (!window.confirm(`Czy na pewno chcesz usunac zaimportowane urzadzenie "${deviceName}"?`)) return;
+        if (!window.confirm(`Czy na pewno chcesz usunąć zaimportowane urządzenie "${deviceName}"?`)) return;
 
         deleteImportedDevice(entry.deviceInfo.id);
         refreshData();
-        setStatus(`Urzadzenie "${deviceName}" zostalo usuniete.`);
+        setStatus(`Urządzenie "${deviceName}" zostało usunięte.`);
     };
 
     // Handle create sync group
@@ -183,7 +183,7 @@ function DeviceManagementTab() {
         setStatus(null);
 
         try {
-            const name = syncGroupName || "Moje urzadzenia";
+            const name = syncGroupName || "Moje urządzenia";
 
             if (isLoggedIn) {
                 // Use Firebase when logged in
@@ -196,20 +196,20 @@ function DeviceManagementTab() {
                     // holds membership; settings travel as device-scoped categories).
                     if (isSyncV2Enabled()) void flushSyncV2();
                     else void syncEngine.syncNow();
-                    setStatus(`Grupa synchronizacji "${result.group.name}" zostala utworzona.`);
+                    setStatus(`Grupa synchronizacji "${result.group.name}" została utworzona.`);
                 } else {
-                    setError(result.error || "Nie udalo sie utworzyc grupy synchronizacji.");
+                    setError(result.error || "Nie udało się utworzyć grupy synchronizacji.");
                 }
             } else {
                 // Create local sync group when not logged in
                 const group = createLocalSyncGroup(name);
                 setSyncGroupState(group);
                 setSyncGroupName("");
-                setStatus(`Grupa synchronizacji "${group.name}" zostala utworzona. Zaloguj sie, aby synchronizowac automatycznie.`);
+                setStatus(`Grupa synchronizacji "${group.name}" została utworzona. Zaloguj się, aby synchronizować automatycznie.`);
             }
         } catch (err) {
             console.error("Failed to create sync group", err);
-            setError("Wystapil blad podczas tworzenia grupy synchronizacji.");
+            setError("Wystąpił błąd podczas tworzenia grupy synchronizacji.");
         } finally {
             setIsCreatingGroup(false);
         }
@@ -218,7 +218,7 @@ function DeviceManagementTab() {
     // Handle leave sync group
     const handleLeaveSyncGroup = async () => {
         if (!syncGroup) return;
-        if (!window.confirm(`Czy na pewno chcesz opuscic grupe synchronizacji "${syncGroup.name}"?`)) return;
+        if (!window.confirm(`Czy na pewno chcesz opuścić grupę synchronizacji "${syncGroup.name}"?`)) return;
 
         setIsLeavingGroup(true);
         setError(null);
@@ -230,19 +230,19 @@ function DeviceManagementTab() {
                 const result = await leaveSyncGroupCloud();
                 if (result.success) {
                     setSyncGroupState(null);
-                    setStatus("Opuscono grupe synchronizacji.");
+                    setStatus("Opuszczono grupę synchronizacji.");
                 } else {
-                    setError(result.error || "Nie udalo sie opuscic grupy synchronizacji.");
+                    setError(result.error || "Nie udało się opuścić grupy synchronizacji.");
                 }
             } else {
                 // Leave locally when not logged in
                 leaveSyncGroup();
                 setSyncGroupState(null);
-                setStatus("Opuscono grupe synchronizacji.");
+                setStatus("Opuszczono grupę synchronizacji.");
             }
         } catch (err) {
             console.error("Failed to leave sync group", err);
-            setError("Wystapil blad podczas opuszczania grupy synchronizacji.");
+            setError("Wystąpił błąd podczas opuszczania grupy synchronizacji.");
         } finally {
             setIsLeavingGroup(false);
         }
@@ -259,13 +259,13 @@ function DeviceManagementTab() {
     const handleJoinSyncGroup = async (entry: ImportedDeviceEntry) => {
         if (!entry.syncGroup) return;
         if (syncGroup) {
-            setError("Juz nalezysz do grupy synchronizacji. Opusc ja najpierw, aby dolaczyc do innej.");
+            setError("Już należysz do grupy synchronizacji. Opuść ją najpierw, aby dołączyć do innej.");
             return;
         }
 
         const groupName = entry.syncGroup.name;
         const deviceName = getDeviceDisplayName(entry.deviceInfo);
-        if (!window.confirm(`Czy na pewno chcesz dolaczyc do grupy synchronizacji "${groupName}" z urzadzenia "${deviceName}"? Ustawienia z tego urzadzenia zostana skopiowane.`)) {
+        if (!window.confirm(`Czy na pewno chcesz dołączyć do grupy synchronizacji "${groupName}" z urządzenia "${deviceName}"? Ustawienia z tego urządzenia zostaną skopiowane.`)) {
             return;
         }
 
@@ -277,7 +277,7 @@ function DeviceManagementTab() {
             // First, apply settings from the imported device
             const success = applyImportedDeviceSettings(entry.deviceInfo.id);
             if (!success) {
-                setError("Nie udalo sie skopiowac ustawien z urzadzenia.");
+                setError("Nie udało się skopiować ustawień z urządzenia.");
                 setJoiningGroupId(null);
                 return;
             }
@@ -290,22 +290,22 @@ function DeviceManagementTab() {
                 if (result.success && result.group) {
                     setSyncGroupState(result.group);
                     await applyGroupSettings(result.group);
-                    setStatus(`Dolaczono do grupy synchronizacji "${result.group.name}" i skopiowano ustawienia.`);
+                    setStatus(`Dołączono do grupy synchronizacji "${result.group.name}" i skopiowano ustawienia.`);
                 } else {
                     // If Firebase join fails (group doesn't exist in cloud), join locally
                     setSyncGroup(entry.syncGroup);
                     setSyncGroupState(entry.syncGroup);
-                    setStatus(`Dolaczono do grupy synchronizacji "${groupName}" (lokalnie) i skopiowano ustawienia.`);
+                    setStatus(`Dołączono do grupy synchronizacji "${groupName}" (lokalnie) i skopiowano ustawienia.`);
                 }
             } else {
                 // Join locally when not logged in
                 setSyncGroup(entry.syncGroup);
                 setSyncGroupState(entry.syncGroup);
-                setStatus(`Dolaczono do grupy synchronizacji "${groupName}" i skopiowano ustawienia. Zaloguj sie, aby synchronizowac automatycznie.`);
+                setStatus(`Dołączono do grupy synchronizacji "${groupName}" i skopiowano ustawienia. Zaloguj się, aby synchronizować automatycznie.`);
             }
         } catch (err) {
             console.error("Failed to join sync group", err);
-            setError("Wystapil blad podczas dolaczania do grupy synchronizacji.");
+            setError("Wystąpił błąd podczas dołączania do grupy synchronizacji.");
         } finally {
             setJoiningGroupId(null);
         }
@@ -314,7 +314,7 @@ function DeviceManagementTab() {
     // Handle join cloud sync group (when group exists in cloud but not locally)
     const handleJoinCloudSyncGroup = async (groupToJoin: SyncGroup) => {
         const groupName = groupToJoin.name;
-        if (!window.confirm(`Czy na pewno chcesz dolaczyc do grupy synchronizacji "${groupName}"? Ustawienia z chmury zostana pobrane.`)) {
+        if (!window.confirm(`Czy na pewno chcesz dołączyć do grupy synchronizacji "${groupName}"? Ustawienia z chmury zostaną pobrane.`)) {
             return;
         }
 
@@ -331,13 +331,13 @@ function DeviceManagementTab() {
                 await applyGroupSettings(result.group);
                 // Remove joined group from cloud groups list
                 setCloudSyncGroups(prev => prev.filter(g => g.id !== result.group!.id));
-                setStatus(`Dolaczono do grupy synchronizacji "${result.group.name}".`);
+                setStatus(`Dołączono do grupy synchronizacji "${result.group.name}".`);
             } else {
-                setError(result.error || "Nie udalo sie dolaczyc do grupy synchronizacji.");
+                setError(result.error || "Nie udało się dołączyć do grupy synchronizacji.");
             }
         } catch (err) {
             console.error("Failed to join cloud sync group", err);
-            setError("Wystapil blad podczas dolaczania do grupy synchronizacji.");
+            setError("Wystąpił błąd podczas dołączania do grupy synchronizacji.");
         } finally {
             setJoiningGroupId(null);
         }
@@ -346,8 +346,8 @@ function DeviceManagementTab() {
     // Handle copy settings from cloud device
     const handleCopyFromCloudDevice = async (deviceId: string, deviceName: string) => {
         const confirmMessage = syncGroup
-            ? `Czy na pewno chcesz skopiowac ustawienia z urzadzenia "${deviceName}"? Ustawienia zostana zastosowane na tym urzadzeniu i zsynchronizowane z Twoja grupa.`
-            : `Czy na pewno chcesz skopiowac ustawienia z urzadzenia "${deviceName}"? Aktualne ustawienia tego urzadzenia zostana nadpisane.`;
+            ? `Czy na pewno chcesz skopiować ustawienia z urządzenia "${deviceName}"? Ustawienia zostaną zastosowane na tym urządzeniu i zsynchronizowane z Twoją grupą.`
+            : `Czy na pewno chcesz skopiować ustawienia z urządzenia "${deviceName}"? Aktualne ustawienia tego urządzenia zostaną nadpisane.`;
         if (!window.confirm(confirmMessage)) return;
 
         setCopyingFromDeviceId(deviceId);
@@ -359,16 +359,16 @@ function DeviceManagementTab() {
             const result = isSyncV2Enabled()
                 ? await applyDeviceSettingsFrom([deviceId]).then(found => found
                     ? { success: true }
-                    : { success: false, error: "Brak ustawien tego urzadzenia w chmurze - otworz na nim klienta, aby je wyslal." })
+                    : { success: false, error: "Brak ustawień tego urządzenia w chmurze - otwórz na nim klienta, aby je wysłał." })
                 : await copySettingsFromCloudDevice(deviceId, syncEngine.getPassphrase() ?? undefined);
             if (result.success) {
-                setStatus(`Ustawienia zostaly skopiowane z urzadzenia "${deviceName}".`);
+                setStatus(`Ustawienia zostały skopiowane z urządzenia "${deviceName}".`);
             } else {
-                setError(result.error || "Nie udalo sie skopiowac ustawien.");
+                setError(result.error || "Nie udało się skopiować ustawień.");
             }
         } catch (err) {
             console.error("Failed to copy settings from cloud device", err);
-            setError("Wystapil blad podczas kopiowania ustawien.");
+            setError("Wystąpił błąd podczas kopiowania ustawień.");
         } finally {
             setCopyingFromDeviceId(null);
         }
@@ -376,7 +376,7 @@ function DeviceManagementTab() {
 
     // Handle delete empty sync group
     const handleDeleteEmptyGroup = async (group: SyncGroup) => {
-        if (!window.confirm(`Czy na pewno chcesz usunac pusta grupe "${group.name}"?`)) return;
+        if (!window.confirm(`Czy na pewno chcesz usunąć pustą grupę "${group.name}"?`)) return;
 
         setDeletingGroupId(group.id);
         setError(null);
@@ -386,13 +386,13 @@ function DeviceManagementTab() {
             const result = await deleteEmptySyncGroup(group.id);
             if (result.success) {
                 setCloudSyncGroups(prev => prev.filter(g => g.id !== group.id));
-                setStatus(`Grupa "${group.name}" zostala usunieta.`);
+                setStatus(`Grupa "${group.name}" została usunięta.`);
             } else {
-                setError(result.error || "Nie udalo sie usunac grupy.");
+                setError(result.error || "Nie udało się usunąć grupy.");
             }
         } catch (err) {
             console.error("Failed to delete empty sync group", err);
-            setError("Wystapil blad podczas usuwania grupy.");
+            setError("Wystąpił błąd podczas usuwania grupy.");
         } finally {
             setDeletingGroupId(null);
         }
@@ -410,13 +410,13 @@ function DeviceManagementTab() {
     return (
         <div className="popup-stack">
             <p className="popup-field__hint">
-                Informacje o tym urzadzeniu. Ustawienia urzadzenia (pozycje okien, konfiguracja przyciskow)
-                sa automatycznie synchronizowane razem z ustawieniami interfejsu.
+                Informacje o tym urządzeniu. Ustawienia urządzenia (pozycje okien, konfiguracja przycisków)
+                są automatycznie synchronizowane razem z ustawieniami interfejsu.
             </p>
 
             {/* Current Device Info */}
             <section className="character-settings-section">
-                <h5 className="character-settings-section-title">To urzadzenie</h5>
+                <h5 className="character-settings-section-title">To urządzenie</h5>
                 {deviceInfo && (
                     <div className="device-card">
                             <div className="popup-stack popup-stack--sm">
@@ -451,7 +451,7 @@ function DeviceManagementTab() {
                                                     className="popup-muted"
                                                     onClick={() => setIsEditing(true)}
                                                 >
-                                                    Zmien
+                                                    Zmień
                                                 </Button>
                                             </div>
                                         )}
@@ -475,7 +475,7 @@ function DeviceManagementTab() {
 
             {/* Sync Group Section */}
             <section className="character-settings-section">
-                <h5 className="character-settings-section-title">Synchronizacja urzadzen</h5>
+                <h5 className="character-settings-section-title">Synchronizacja urządzeń</h5>
                 {!syncGroup ? (
                     <div className="popup-stack">
                         {/* Cloud sync groups available to join */}
@@ -486,13 +486,13 @@ function DeviceManagementTab() {
                                             <div>
                                                 <strong>{group.name}</strong>
                                                 <div className="popup-muted popup-small">
-                                                    Grupa z chmury ({group.devices.length} {group.devices.length === 1 ? "urzadzenie" : "urzadzen"})
+                                                    Grupa z chmury ({group.devices.length} {group.devices.length === 1 ? "urządzenie" : "urządzeń"})
                                                 </div>
                                             </div>
                                             <span className="popup-chip popup-chip--success">W chmurze</span>
                                         </div>
                                         <div className="popup-muted popup-small">
-                                            Dolacz do tej grupy, aby zsynchronizowac ustawienia urzadzenia z innymi urzadzeniami.
+                                            Dołącz do tej grupy, aby zsynchronizować ustawienia urządzenia z innymi urządzeniami.
                                         </div>
                                         <div className="popup-inline">
                                             <Button variant="solid"
@@ -503,10 +503,10 @@ function DeviceManagementTab() {
                                                 {joiningGroupId === group.id ? (
                                                     <>
                                                         <span className="popup-spinner" />
-                                                        Dolaczanie...
+                                                        Dołączanie...
                                                     </>
                                                 ) : (
-                                                    "Dolacz do grupy"
+                                                    "Dołącz do grupy"
                                                 )}
                                             </Button>
                                             {group.devices.length === 0 && (
@@ -521,7 +521,7 @@ function DeviceManagementTab() {
                                                             Usuwanie...
                                                         </>
                                                     ) : (
-                                                        "Usun grupe"
+                                                        "Usuń grupę"
                                                     )}
                                                 </Button>
                                             )}
@@ -542,15 +542,15 @@ function DeviceManagementTab() {
                         <div className="device-card">
                                 <p className="popup-muted popup-small device-card__lead">
                                     {cloudSyncGroups.length > 0
-                                        ? "Mozesz tez utworzyc nowa grupe synchronizacji:"
-                                        : "Utworz grupe synchronizacji, aby synchronizowac ustawienia urzadzenia (pozycje okien, przyciski) miedzy wieloma urzadzeniami."
+                                        ? "Możesz też utworzyć nową grupę synchronizacji:"
+                                        : "Utwórz grupę synchronizacji, aby synchronizować ustawienia urządzenia (pozycje okien, przyciski) między wieloma urządzeniami."
                                     }
-                                    {!isLoggedIn && " Zaloguj sie, aby synchronizowac automatycznie, lub eksportuj/importuj reczne."}
+                                    {!isLoggedIn && " Zaloguj się, aby synchronizować automatycznie, lub eksportuj/importuj ręcznie."}
                                 </p>
                                 <form onSubmit={e => { e.preventDefault(); handleCreateSyncGroup(); }}>
                                     <div className="popup-inline device-card__form">
                                         <Input
-                                            placeholder="Nazwa grupy (np. Moje urzadzenia)"
+                                            placeholder="Nazwa grupy (np. Moje urządzenia)"
                                             value={syncGroupName}
                                             onChange={e => setSyncGroupName(e.target.value)}
                                             disabled={isCreatingGroup}
@@ -565,7 +565,7 @@ function DeviceManagementTab() {
                                                     Tworzenie...
                                                 </>
                                             ) : (
-                                                "Utworz grupe"
+                                                "Utwórz grupę"
                                             )}
                                         </Button>
                                     </div>
@@ -579,25 +579,25 @@ function DeviceManagementTab() {
                                     <div>
                                         <strong>{syncGroup.name}</strong>
                                         <div className="popup-muted popup-small">
-                                            {syncGroup.devices.length} {syncGroup.devices.length === 1 ? "urzadzenie" : "urzadzen"}
+                                            {syncGroup.devices.length} {syncGroup.devices.length === 1 ? "urządzenie" : "urządzeń"}
                                         </div>
                                     </div>
                                     <span className={`popup-chip${isLoggedIn ? " popup-chip--success" : ""}`}>
-                                        {isLoggedIn ? "Polaczone" : "Lokalna"}
+                                        {isLoggedIn ? "Połączone" : "Lokalna"}
                                     </span>
                                 </div>
 
                                 {!isLoggedIn && (
                                     <div className="popup-notice">
-                                        Zaloguj sie, aby automatycznie synchronizowac ustawienia.
-                                        Mozesz tez uzywac eksportu/importu recznego.
+                                        Zaloguj się, aby automatycznie synchronizować ustawienia.
+                                        Możesz też używać eksportu/importu ręcznego.
                                     </div>
                                 )}
 
                                 {isLoggedIn && (
                                     <div className="popup-muted popup-small">
-                                        Ustawienia interfejsu synchronizuja sie automatycznie z urzadzeniami w tej grupie
-                                        (razem z pozostalymi kategoriami w zakladce Synchronizacja).
+                                        Ustawienia interfejsu synchronizują się automatycznie z urządzeniami w tej grupie
+                                        (razem z pozostałymi kategoriami w zakładce Synchronizacja).
                                     </div>
                                 )}
 
@@ -619,7 +619,7 @@ function DeviceManagementTab() {
                                                 Opuszczanie...
                                             </>
                                         ) : (
-                                            "Opusc grupe"
+                                            "Opuść grupę"
                                         )}
                                     </Button>
                                 </div>
@@ -631,14 +631,14 @@ function DeviceManagementTab() {
             {/* Cloud Devices Section */}
             {isLoggedIn && (cloudDevices.length > 0 || isLoadingCloudDevices) && (
                 <section className="character-settings-section">
-                    <h5 className="character-settings-section-title">Urzadzenia w chmurze</h5>
+                    <h5 className="character-settings-section-title">Urządzenia w chmurze</h5>
                     <div className="popup-muted popup-small">
-                        Inne urzadzenia zarejestrowane na tym koncie. Mozesz dolaczyc do ich grupy synchronizacji.
+                        Inne urządzenia zarejestrowane na tym koncie. Możesz dołączyć do ich grupy synchronizacji.
                     </div>
                     {isLoadingCloudDevices ? (
                         <div className="device-card device-card--muted">
                                 <span className="popup-spinner" />
-                                <span>Ladowanie urzadzen z chmury...</span>
+                                <span>Ładowanie urządzeń z chmury...</span>
                             </div>
                     ) : (
                         <div className="dialog-list">
@@ -687,10 +687,10 @@ function DeviceManagementTab() {
                                                                 {joiningGroupId === group.id ? (
                                                                     <>
                                                                         <span className="popup-spinner" />
-                                                                        Dolaczanie...
+                                                                        Dołączanie...
                                                                     </>
                                                                 ) : (
-                                                                    `Dolacz do "${group.name}"`
+                                                                    `Dołącz do "${group.name}"`
                                                                 )}
                                                             </Button>
                                                         ))}
@@ -726,9 +726,9 @@ function DeviceManagementTab() {
             {/* Imported Devices Section */}
             {importedDevices.length > 0 && (
                 <section className="character-settings-section">
-                    <h5 className="character-settings-section-title">Zaimportowane urzadzenia</h5>
+                    <h5 className="character-settings-section-title">Zaimportowane urządzenia</h5>
                     <div className="popup-muted popup-small">
-                        Urzadzenia z zaimportowanych plikow. Mozesz skopiowac ich ustawienia na to urzadzenie.
+                        Urządzenia z zaimportowanych plików. Możesz skopiować ich ustawienia na to urządzenie.
                     </div>
                     <div className="dialog-list">
                         {importedDevices.map(entry => (
@@ -761,10 +761,10 @@ function DeviceManagementTab() {
                                                 {joiningGroupId === entry.syncGroup?.id ? (
                                                     <>
                                                         <span className="popup-spinner" />
-                                                        Dolaczanie...
+                                                        Dołączanie...
                                                     </>
                                                 ) : (
-                                                    "Dolacz do grupy"
+                                                    "Dołącz do grupy"
                                                 )}
                                             </Button>
                                         )}

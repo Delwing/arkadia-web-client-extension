@@ -67,7 +67,7 @@ function formatShortDate(time: number) {
 
 function formatRelative(time: number, now: number) {
     const seconds = Math.max(0, Math.round((now - time) / 1000));
-    if (seconds < 60) return 'przed chwila';
+    if (seconds < 60) return 'przed chwilą';
     const minutes = Math.round(seconds / 60);
     if (minutes < 60) return `${minutes} min temu`;
     const hours = Math.round(minutes / 60);
@@ -312,9 +312,9 @@ const CechyPopup: React.FC = () => {
                     type="button"
                     className={`popup-btn popup-btn--sm${confirmingClear ? ' popup-btn--danger' : ''}`}
                     onClick={handleClear}
-                    title="Wyczysc historie cech"
+                    title="Wyczyść historie cech"
                 >
-                    {confirmingClear ? 'Na pewno?' : 'Wyczysc'}
+                    {confirmingClear ? 'Na pewno?' : 'Wyczyść'}
                 </button>
             )}
         </>
@@ -343,22 +343,22 @@ const CechyPopup: React.FC = () => {
                     <div className="cechy-popup__warning-title">Historia nie jest zapisywana</div>
                     <p className="cechy-popup__warning-text">
                         Wymagana jest opcja <code>MODYFIKATORY stanu postaci</code> &mdash; bez niej
-                        nie da sie odroznic prawdziwej zmiany cechy od chwilowego wzmocnienia.
+                        nie da się odróżnić prawdziwej zmiany cechy od chwilowego wzmocnienia.
                     </p>
                     <button
                         type="button"
                         className="popup-btn popup-btn--md cechy-popup__warning-btn"
                         onClick={handleEnableModifiers}
-                        title="To samo co: opcje modyfikatory wlacz"
+                        title="To samo co: opcje modyfikatory włącz"
                     >
-                        Wlacz modyfikatory
+                        Włącz modyfikatory
                     </button>
                 </div>
             )}
 
             {!latest || !level ? (
                 <div className="popup-empty">
-                    Brak zapisanych cech. Wpisz <code>cechy</code>, zeby zrobic pierwszy pomiar.
+                    Brak zapisanych cech. Wpisz <code>cechy</code>, żeby zrobić pierwszy pomiar.
                 </div>
             ) : (
                 <>
@@ -375,7 +375,7 @@ const CechyPopup: React.FC = () => {
                             className={`popup-tab${tab === 'wykres' ? ' popup-tab--active' : ''}`}
                             onClick={() => setActiveTab('wykres')}
                             disabled={entries.length < 2}
-                            title={entries.length < 2 ? 'Wykres pojawi sie po drugiej zmianie' : undefined}
+                            title={entries.length < 2 ? 'Wykres pojawi się po drugiej zmianie' : undefined}
                         >
                             Wykres
                         </button>
@@ -385,7 +385,7 @@ const CechyPopup: React.FC = () => {
                         <section className="cechy-popup__chart-tab">
                             <TotalChart entries={entries} />
                             <div className="cechy-popup__chart-legend">
-                                Przerywane linie to progi poziomow doswiadczenia.
+                                Przerywane linie to progi poziomów doświadczenia.
                             </div>
                         </section>
                     ) : (
@@ -464,14 +464,14 @@ const CechyPopup: React.FC = () => {
                                     {postepy !== undefined && postepy > 0 && (
                                         <span
                                             className="cechy-popup__entry-postepy"
-                                            title="Postepy zdobyte od poprzedniej zmiany"
+                                            title="Postępy zdobyte od poprzedniej zmiany"
                                         >
-                                            {postepy} {plural(postepy, 'postep', 'postepy', 'postepow')}
+                                            {postepy} {plural(postepy, 'postęp', 'postępy', 'postępów')}
                                         </span>
                                     )}
                                     <span
                                         className="cechy-popup__entry-total"
-                                        title={entry.estimated ? 'Suma zawiera cechy przeniesione z wczesniejszego pomiaru' : undefined}
+                                        title={entry.estimated ? 'Suma zawiera cechy przeniesione z wcześniejszego pomiaru' : undefined}
                                     >
                                         {entry.estimated ? '~' : ''}{entry.total}
                                     </span>

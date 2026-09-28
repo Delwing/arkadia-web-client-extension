@@ -148,7 +148,7 @@ ctx.addEventListener('message', (event: MessageEvent<LogsExportWorkerRequest>) =
             if (!db) {
                 ctx.postMessage({
                     type: 'error',
-                    message: 'Nie udalo sie otworzyc bazy danych.',
+                    message: 'Nie udało się otworzyć bazy danych.',
                 });
                 return;
             }
@@ -157,7 +157,7 @@ ctx.addEventListener('message', (event: MessageEvent<LogsExportWorkerRequest>) =
             if (sessions.length === 0) {
                 ctx.postMessage({
                     type: 'error',
-                    message: 'Brak logow do eksportu.',
+                    message: 'Brak logów do eksportu.',
                 });
                 return;
             }
@@ -195,7 +195,7 @@ ctx.addEventListener('message', (event: MessageEvent<LogsExportWorkerRequest>) =
         } catch (error) {
             ctx.postMessage({
                 type: 'error',
-                message: error instanceof Error ? error.message : 'Nie udalo sie wyeksportowac logow.',
+                message: error instanceof Error ? error.message : 'Nie udało się wyeksportować logów.',
             });
         }
     })();

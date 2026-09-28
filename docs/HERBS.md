@@ -1,60 +1,60 @@
-# Ziola
+# Zioła
 
-Modul licznika ziol pozwala zliczyc zawartosc wszystkich noszonych woreczkow z ziolami i zapisac te dane w pamieci przegladarki.
+Moduł licznika ziół pozwala zliczyć zawartość wszystkich noszonych woreczków z ziołami i zapisać te dane w pamięci przeglądarki.
 
 ## Komendy
 
 | Komenda | Opis |
 |---------|------|
-| `/ziola_buduj` | Przegladaj woreczki i zapisz ich zawartosc |
-| `/woreczki_buduj` | Ocen stan wszystkich woreczkow i zapisz w liczniku |
-| `/ziola_pokaz` | Wyswietl ostatnie podsumowanie ziol (bez listy woreczkow) |
-| `/ziola` | Otworz okno zarzadzania woreczkami ziol |
-| `/ziola2` | Wyswietl alternatywne podsumowanie ziol |
+| `/ziola_buduj` | Przeglądaj woreczki i zapisz ich zawartość |
+| `/woreczki_buduj` | Oceń stan wszystkich woreczków i zapisz w liczniku |
+| `/ziola_pokaz` | Wyświetl ostatnie podsumowanie ziół (bez listy woreczków) |
+| `/ziola` | Otwórz okno zarządzania woreczkami ziół |
+| `/ziola2` | Wyświetl alternatywne podsumowanie ziół |
 
-## Wyjmowanie ziol
+## Wyjmowanie ziół
 
 | Komenda | Opis |
 |---------|------|
-| `/wezz ziolo` | Wyjmij jedna sztuke ziola z woreczkow |
-| `/wezz ziolo ilosc` | Wyjmij wskazana liczbe ziola |
-| `/zi akcja ziolo` | Wyjmij ziolo i od razu wykonaj akcje |
-| `/zi akcja ziolo ilosc` | Wyjmij wskazana liczbe ziola i wykonaj akcje |
+| `/wezz ziolo` | Wyjmij jedną sztukę zioła z woreczków |
+| `/wezz ziolo ilosc` | Wyjmij wskazaną liczbę zioła |
+| `/zi akcja ziolo` | Wyjmij zioło i od razu wykonaj akcję |
+| `/zi akcja ziolo ilosc` | Wyjmij wskazaną liczbę zioła i wykonaj akcję |
 | `/z_akcja ziolo` | Alternatywa dla `/zi` - np. `/z_zjedz deliona` |
-| `/z_akcja ziolo ilosc` | Alternatywa dla `/zi` z iloscia - np. `/z_przyloz lawenda 3` |
+| `/z_akcja ziolo ilosc` | Alternatywa dla `/zi` z ilością - np. `/z_przyloz lawenda 3` |
 
 ## Leczenie
 
-Przy komunikacie o chorobie lub zatruciu (np. `Cierpisz na chorobe pluc.`) klient wypisuje liste ziol, ktorymi mozna sie wyleczyc. Ziola, ktore masz w woreczkach, sa zielone i klikalne - klikniecie wysyla odpowiednia komende `/zi`.
+Przy komunikacie o chorobie lub zatruciu (np. `Cierpisz na chorobe pluc.`) klient wypisuje listę ziół, którymi można się wyleczyć. Zioła, które masz w woreczkach, są zielone i klikalne - kliknięcie wysyła odpowiednią komendę `/zi`.
 
 | Komenda | Opis |
 |---------|------|
-| `/leczenie` | Wyswietl liste wszystkich chorob i zapisanych na nie ziol |
+| `/leczenie` | Wyświetl listę wszystkich chorób i zapisanych na nie ziół |
 
-> **Wskazowka:** Dostepnosc ziol jest sprawdzana na podstawie licznika woreczkow, wiec warto najpierw uzyc `/ziola_buduj`.
+> **Wskazówka:** Dostępność ziół jest sprawdzana na podstawie licznika woreczków, więc warto najpierw użyć `/ziola_buduj`.
 
-## Zarzadzanie woreczkami
+## Zarządzanie woreczkami
 
 | Komenda | Opis |
 |---------|------|
-| `/ziola_przepakuj from to` | Przepakuj ziola z woreczka `from` do woreczka `to` |
-| `/ziola_daj cel ziolo` | Daj 1 sztuke ziola wskazanemu celowi |
-| `/ziola_daj cel ziolo ilosc` | Daj wskazana ilosc ziola wskazanemu celowi |
-| `/ziola_odloz_woreczek numer` | Odloz woreczek (odbezpiecz, odtrocz, odloz) |
+| `/ziola_przepakuj from to` | Przepakuj zioła z woreczka `from` do woreczka `to` |
+| `/ziola_daj cel ziolo` | Daj 1 sztukę zioła wskazanemu celowi |
+| `/ziola_daj cel ziolo ilosc` | Daj wskazaną ilość zioła wskazanemu celowi |
+| `/ziola_odloz_woreczek numer` | Odłóż woreczek (odbezpiecz, odtrocz, odłóż) |
 
-> **Wskazowka:** Cel mozna podac jako skrot (litera/numer z listy obiektow, jak w `/z`, `/zas`) albo jako imie czlonka druzyny.
+> **Wskazówka:** Cel można podać jako skrót (litera/numer z listy obiektów, jak w `/z`, `/zas`) albo jako imię członka drużyny.
 
-## Dawanie ziol z okna woreczkow
+## Dawanie ziół z okna woreczków
 
-W oknie `/ziola` przycisk **Daj** wlacza panel przekazywania ziol:
+W oknie `/ziola` przycisk **Daj** włącza panel przekazywania ziół:
 
-1. Wybierz cel z listy (wszystkie postacie obecne na lokacji; druzyna jest wyswietlana osobno, przycisk odswiezania obok).
-2. Przeciagnij ziola z woreczkow do panelu - shift+klik dzieli stos na pol, jesli chcesz dac tylko czesc.
-3. Klikniecie ziola w panelu odklada je z powrotem do woreczka.
-4. Przycisk **Daj** wyjmuje wszystkie zebrane ziola z woreczkow i przekazuje je jedna komenda `daj`.
+1. Wybierz cel z listy (wszystkie postacie obecne na lokacji; drużyna jest wyświetlana osobno, przycisk odświeżania obok).
+2. Przeciągnij zioła z woreczków do panelu - shift+klik dzieli stos na pół, jeśli chcesz dać tylko część.
+3. Kliknięcie zioła w panelu odkłada je z powrotem do woreczka.
+4. Przycisk **Daj** wyjmuje wszystkie zebrane zioła z woreczków i przekazuje je jedną komendą `daj`.
 
 ## Ustawienia
 
-W ustawieniach skryptow mozna zdefiniowac komendy wykonywane przed i po uzyciu ziol. Wiele komend nalezy oddzielic srednikiem (`;`).
+W ustawieniach skryptów można zdefiniować komendy wykonywane przed i po użyciu ziół. Wiele komend należy oddzielić średnikiem (`;`).
 
-> Informacje o zliczonych ziolach sa przechowywane w pamieci przegladarki osobno dla kazdej postaci.
+> Informacje o zliczonych ziołach są przechowywane w pamięci przeglądarki osobno dla każdej postaci.

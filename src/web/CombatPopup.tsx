@@ -30,7 +30,7 @@ type ToggleConfig = {
 
 const TOGGLES: ToggleConfig[] = [
     { label: "Swoja", type: "combat.avatar" },
-    { label: "Druzyny", type: "combat.team" },
+    { label: "Drużyny", type: "combat.team" },
     { label: "Innych", type: "combat.others" },
 ];
 
@@ -153,7 +153,7 @@ const CombatPopup: React.FC = () => {
                     type="button"
                     className={`combat-popup__toggle combat-popup__toggle--${toggle.type.replace('combat.', '')}${toggleStates[toggle.type] ? ' combat-popup__toggle--active' : ''}`}
                     onClick={() => toggleSetters[toggle.type](!toggleStates[toggle.type])}
-                    title={toggleStates[toggle.type] ? `Ukryj: ${toggle.label}` : `Pokaz: ${toggle.label}`}
+                    title={toggleStates[toggle.type] ? `Ukryj: ${toggle.label}` : `Pokaż: ${toggle.label}`}
                 >
                     {toggle.label}
                 </button>
@@ -177,7 +177,7 @@ const CombatPopup: React.FC = () => {
             <div className="combat-popup__messages" ref={containerRef}>
                 {displayedMessages.length === 0 ? (
                     <div className="popup-empty">
-                        Brak wiadomosci walki.
+                        Brak wiadomości walki.
                     </div>
                 ) : (
                     displayedMessages.map(renderEntry)

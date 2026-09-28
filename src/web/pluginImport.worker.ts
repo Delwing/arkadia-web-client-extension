@@ -182,7 +182,7 @@ ctx.addEventListener('message', (event: MessageEvent<PluginImportWorkerRequest>)
                 }
             }
 
-            ctx.postMessage({ type: 'progress', message: 'Wypakowywanie plikow...' });
+            ctx.postMessage({ type: 'progress', message: 'Wypakowywanie plików...' });
 
             // Extract all source files
             const files: Record<string, PluginFile> = {};
@@ -209,7 +209,7 @@ ctx.addEventListener('message', (event: MessageEvent<PluginImportWorkerRequest>)
             if (Object.keys(files).length === 0) {
                 ctx.postMessage({
                     type: 'error',
-                    message: 'Plik ZIP nie zawiera plikow zrodlowych.',
+                    message: 'Plik ZIP nie zawiera plików źródłowych.',
                 });
                 return;
             }
@@ -261,7 +261,7 @@ ctx.addEventListener('message', (event: MessageEvent<PluginImportWorkerRequest>)
         } catch (error) {
             ctx.postMessage({
                 type: 'error',
-                message: error instanceof Error ? error.message : 'Nie udalo sie zaimportowac pluginu.',
+                message: error instanceof Error ? error.message : 'Nie udało się zaimportować pluginu.',
             });
         }
     })();

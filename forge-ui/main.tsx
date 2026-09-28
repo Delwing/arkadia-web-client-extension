@@ -62,7 +62,7 @@ setRailSpanSupported(true);
 // actions (flavor cycle + timers) stay ON so users can switch flavors. The
 // default is process-local — the stock UI keeps titling it "Kondycje" and
 // defaulting to the "Lista" flavor.
-setObjectListChrome({ title: 'W poblizu', defaultViewMode: 'nearby' });
+setObjectListChrome({ title: 'W pobliżu', defaultViewMode: 'nearby' });
 
 // Forge is served from forge-ui/, but the popout entry lives at the deploy root.
 // It mirrors the opener's styles, so the same page serves both UIs.

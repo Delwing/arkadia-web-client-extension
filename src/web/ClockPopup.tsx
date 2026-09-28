@@ -19,7 +19,7 @@ type ClockData = {
 };
 
 // Season names and colors matching ClockDisplay
-const SEASON_NAMES = ['Wiosna', 'Lato', 'Jesien', 'Zima'];
+const SEASON_NAMES = ['Wiosna', 'Lato', 'Jesień', 'Zima'];
 const SEASON_COLORS = [
     'var(--popup-data-spring-green)', // wiosna (spring)
     'var(--popup-data-yellow)',       // lato (summer)
@@ -226,7 +226,7 @@ const ClockPopup: React.FC = () => {
                         <span className="clock-detail-value">{currentData?.dayLabel ?? '--'}</span>
                     </div>
                     <div className="clock-detail-row">
-                        <span className="clock-detail-label">Dzien roku:</span>
+                        <span className="clock-detail-label">Dzień roku:</span>
                         <span className="clock-detail-value">{currentData?.dayOfYear ?? '--'}</span>
                     </div>
                     <div className="clock-detail-row">
@@ -240,17 +240,17 @@ const ClockPopup: React.FC = () => {
                     </div>
                     <div className="clock-detail-separator"></div>
                     <div className="clock-detail-row">
-                        <span className="clock-detail-label">Wschod slonca:</span>
+                        <span className="clock-detail-label">Wschód słońca:</span>
                         <span className="clock-detail-value">{currentData ? formatSunTime(currentData.sunrise) : '--:--'}</span>
                     </div>
                     <div className="clock-detail-row">
-                        <span className="clock-detail-label">Zachod slonca:</span>
+                        <span className="clock-detail-label">Zachód słońca:</span>
                         <span className="clock-detail-value">{currentData ? formatSunTime(currentData.sunset) : '--:--'}</span>
                     </div>
                     <div className="clock-detail-row">
                         <span className="clock-detail-label">Pora dnia:</span>
                         <span className={`clock-detail-value ${currentData?.daylight ? 'clock-daylight' : 'clock-night'}`}>
-                            {currentData?.daylight !== undefined ? (currentData.daylight ? 'Dzien' : 'Noc') : '--'}
+                            {currentData?.daylight !== undefined ? (currentData.daylight ? 'Dzień' : 'Noc') : '--'}
                         </span>
                     </div>
                     {showEdit && (
@@ -291,21 +291,21 @@ const ClockPopup: React.FC = () => {
                                             className={`clock-set-time-toggle ${dateMode === 'month' ? 'clock-set-time-toggle--active' : ''}`}
                                             onClick={() => setDateMode('month')}
                                         >
-                                            Miesiac
+                                            Miesiąc
                                         </button>
                                         <button
                                             type="button"
                                             className={`clock-set-time-toggle ${dateMode === 'dayOfYear' ? 'clock-set-time-toggle--active' : ''}`}
                                             onClick={() => setDateMode('dayOfYear')}
                                         >
-                                            Dzien roku
+                                            Dzień roku
                                         </button>
                                     </div>
                                 </div>
                                 {dateMode === "month" ? (
                                     <>
                                         <div className="clock-set-time-row">
-                                            <span className="clock-detail-label">Miesiac:</span>
+                                            <span className="clock-detail-label">Miesiąc:</span>
                                             <select
                                                 className="popup-input clock-set-time-select"
                                                 value={selectedMonth}
@@ -322,7 +322,7 @@ const ClockPopup: React.FC = () => {
                                         </div>
                                         {selectedMonth && (
                                             <div className="clock-set-time-row">
-                                                <span className="clock-detail-label">Dzien:</span>
+                                                <span className="clock-detail-label">Dzień:</span>
                                                 <input
                                                     type="number"
                                                     className="popup-input clock-set-time-input"
@@ -338,7 +338,7 @@ const ClockPopup: React.FC = () => {
                                     </>
                                 ) : (
                                     <div className="clock-set-time-row">
-                                        <span className="clock-detail-label">Dzien roku:</span>
+                                        <span className="clock-detail-label">Dzień roku:</span>
                                         <input
                                             type="number"
                                             className="popup-input clock-set-time-input"

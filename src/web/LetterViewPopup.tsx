@@ -51,9 +51,9 @@ const LetterViewPopup: React.FC = () => {
                 type="button"
                 className="popup-btn"
                 onClick={handleForward}
-                title="Przekaz dalej"
+                title="Przekaż dalej"
             >
-                Przekaz
+                Przekaż
             </button>
         </div>
     ) : null;

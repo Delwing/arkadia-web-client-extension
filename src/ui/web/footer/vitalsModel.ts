@@ -57,12 +57,12 @@ export const VITAL_EMOJI: Record<VitalKey, string> = {
 /** Full names, for tooltips. */
 export const VITAL_NAMES: Record<VitalKey, string> = {
   hp: "Kondycja",
-  fatigue: "Zmeczenie",
-  stuffed: "Glod",
-  encumbrance: "Obciazenie",
+  fatigue: "Zmęczenie",
+  stuffed: "Głód",
+  encumbrance: "Obciążenie",
   soaked: "Pragnienie",
   mana: "Mana",
-  improve: "Postepy",
+  improve: "Postępy",
   form: "Forma",
   intox: "Upicie",
   headache: "Kac",

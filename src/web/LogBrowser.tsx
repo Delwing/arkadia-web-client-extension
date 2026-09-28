@@ -162,7 +162,7 @@ export function LogBrowser({ headerTrailing, initialQuery }: LogBrowserProps) {
                             <IconButton
                                 disabled={!openSessionId}
                                 onClick={() => openSessionId && openInNewTab(openSessionId)}
-                                title="Otworz ten log w nowej karcie"
+                                title="Otwórz ten log w nowej karcie"
                             >
                                 <Icon name="open-external" />
                             </IconButton>
@@ -173,8 +173,8 @@ export function LogBrowser({ headerTrailing, initialQuery }: LogBrowserProps) {
                                 onClick={() => openManager(false)}
                                 title={
                                     listing
-                                        ? "Zarzadzanie logami - dostepne po wczytaniu listy"
-                                        : "Zarzadzanie logami: usuwanie, archiwum, import"
+                                        ? "Zarządzanie logami - dostępne po wczytaniu listy"
+                                        : "Zarządzanie logami: usuwanie, archiwum, import"
                                 }
                             >
                                 <Icon name="archive" />

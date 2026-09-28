@@ -1,18 +1,18 @@
 # Walka
 
-Komendy do walki, zaslaniania i zarzadzania celami ataku.
+Komendy do walki, zasłaniania i zarządzania celami ataku.
 
 ## Tryb ataku
 
 | Komenda | Opis |
 |---------|------|
-| `/awr` | Przelacz tryb ataku: A (atak) → AW (atak + wskazanie) → AWR (atak + wskazanie + rozkaz) |
+| `/awr` | Przełącz tryb ataku: A (atak) → AW (atak + wskazanie) → AWR (atak + wskazanie + rozkaz) |
 
-> **Wskazowka:** Tryb ataku mozna tez przelaczac klikajac na wskaznik "Atk:" w stopce.
+> **Wskazówka:** Tryb ataku można też przełączać, klikając na wskaźnik "Atk:" w stopce.
 
 ## Wskazywanie celu
 
-Aliasy przyjmujace `id` (`/z`, `/x`, `/prze`, `/za`, `/zas`, `/za2`-`/za4`, `/w`, `/pro`, `/zap`, `/ra`, `/rz`, `/wa`, `/wz`) przyjmuja skrot obiektu z listy albo imie lub fragment opisu - bez wzgledu na wielkosc liter i ogonki, np. `/za gerw`, `/z zolty`. Wystarczy najkrotszy jednoznaczny fragment. Gdy pasuje kilka osob, aliasy wsparcia (`/za`, `/w`, `/pro`, `/rz`, `/wz`) wybieraja jedynego czlonka druzyny, a pozostale (atak, `/zap`) jedyna osobe spoza druzyny; w pozostalych przypadkach nic nie jest wysylane i wypisywana jest lista kandydatow ze skrotami.
+Aliasy przyjmujące `id` (`/z`, `/x`, `/prze`, `/za`, `/zas`, `/za2`-`/za4`, `/w`, `/pro`, `/zap`, `/ra`, `/rz`, `/wa`, `/wz`) przyjmują skrót obiektu z listy albo imię lub fragment opisu - bez względu na wielkość liter i ogonki, np. `/za gerw`, `/z zolty`. Wystarczy najkrótszy jednoznaczny fragment. Gdy pasuje kilka osób, aliasy wsparcia (`/za`, `/w`, `/pro`, `/rz`, `/wz`) wybierają jedynego członka drużyny, a pozostałe (atak, `/zap`) jedyną osobę spoza drużyny; w pozostałych przypadkach nic nie jest wysyłane i wypisywana jest lista kandydatów ze skrótami.
 
 ## Atakowanie
 
@@ -24,90 +24,90 @@ Aliasy przyjmujace `id` (`/z`, `/x`, `/prze`, `/za`, `/zas`, `/za2`-`/za4`, `/w`
 | `/zz cel` | Zaatakuj podany cel (bez ob_), np. `/zz rusalke` → `zabij rusalke` |
 | `/x id` | Zaskocz obiekt o podanym id |
 | `/x` | Zaskocz cel oznaczony jako cel ataku |
-| `/prze [id]` | Przelamuje obrone wskazanego obiektu, celu ataku, a gdy go brak - aktualnie atakowanego przeciwnika |
-| `/z_all` | Atakuj wrogow druzyny na lokacji: tych, ktorzy atakuja czlonka druzyny, oraz tych, ktorych druzyna juz atakuje (pomija sojusznikow, gwardie i postronnych) |
-| `/z_all!` | Atakuj wszystkich nie-druzynowych na lokacji, lacznie z postronnymi (pomija sojusznikow) |
+| `/prze [id]` | Przełamuje obronę wskazanego obiektu, celu ataku, a gdy go brak - aktualnie atakowanego przeciwnika |
+| `/z_all` | Atakuj wrogów drużyny na lokacji: tych, którzy atakują członka drużyny, oraz tych, których drużyna już atakuje (pomija sojuszników, gwardię i postronnych) |
+| `/z_all!` | Atakuj wszystkich nie-drużynowych na lokacji, łącznie z postronnymi (pomija sojuszników) |
 
 ## Kolejka ataku
 
 | Komenda | Opis |
 |---------|------|
 | `/q id` | Dodaj przeciwnika do kolejki ataku (przyjmuje id lub `ob_id`) |
-| `/cq` | Wyczysc kolejke ataku |
-| `/nn` | Atakuj nastepny cel z kolejki |
+| `/cq` | Wyczyść kolejkę ataku |
+| `/nn` | Atakuj następny cel z kolejki |
 
-## Zaslanianie
+## Zasłanianie
 
 | Komenda | Opis |
 |---------|------|
-| `/zas id` | Zaslon obiekt (uzywa `zaslon przed` gdy nie w druzynie) |
+| `/zas id` | Zasłoń obiekt (używa `zaslon przed`, gdy nie w drużynie) |
 | `/za id` | Alias do `/zas` |
-| `/zas` | Zaslon cel oznaczony jako cel obrony |
+| `/zas` | Zasłoń cel oznaczony jako cel obrony |
 | `/za` | Alias do `/zas` |
-| `/w id` | Wycofaj postac za wskazany obiekt |
-| `/puszczaj` | Przelacz automatyczne zwalnianie zaslony |
+| `/w id` | Wycofaj postać za wskazany obiekt |
+| `/puszczaj` | Przełącz automatyczne zwalnianie zasłony |
 
-## Zaslona grupowa
+## Zasłona grupowa
 
 | Komenda | Opis |
 |---------|------|
-| `/za2 id` | Zaslon z poziomem krycia 2 |
-| `/za3 id` | Zaslon z poziomem krycia 3 |
-| `/za4 id` | Zaslon z poziomem krycia 4 |
+| `/za2 id` | Zasłoń z poziomem krycia 2 |
+| `/za3 id` | Zasłoń z poziomem krycia 3 |
+| `/za4 id` | Zasłoń z poziomem krycia 4 |
 
-## Oznaczanie celow
+## Oznaczanie celów
 
 | Komenda | Opis |
 |---------|------|
 | `/wa id` | Oznacz obiekt jako cel ataku |
-| `/wz id` | Oznacz obiekt z druzyny jako cel obrony |
+| `/wz id` | Oznacz obiekt z drużyny jako cel obrony |
 
-## Rozkazy druzyny
+## Rozkazy drużyny
 
 | Komenda | Opis |
 |---------|------|
-| `/ra id` | Rozkaz druzynie atakowac osobe o podanym numerze |
-| `/ra` | Rozkaz druzynie atakowac aktualny cel ataku |
-| `/rz id` | Rozkaz druzynie zaslonic obiekt |
-| `/rz` | Rozkaz druzynie zaslonic aktualny cel obrony |
-| `/zap numer` | Zapros do druzyny obiekt o podanym numerze |
-| `/zap 0` | Zapros do druzyny wszystkich przedstawionych na lokacji (pomija wrogow i wrogie gildie) |
-| `/zap *` | Zapros do druzyny wszystkich sojusznikow (gildie sojusznicze + osoby oznaczone jako sojusznicy), niezaleznie czy walcza |
-| `/pro id` | Przekaz prowadzenie obiektowi |
+| `/ra id` | Rozkaż drużynie atakować osobę o podanym numerze |
+| `/ra` | Rozkaż drużynie atakować aktualny cel ataku |
+| `/rz id` | Rozkaż drużynie zasłonić obiekt |
+| `/rz` | Rozkaż drużynie zasłonić aktualny cel obrony |
+| `/zap numer` | Zaproś do drużyny obiekt o podanym numerze |
+| `/zap 0` | Zaproś do drużyny wszystkich przedstawionych na lokacji (pomija wrogów i wrogie gildie) |
+| `/zap *` | Zaproś do drużyny wszystkich sojuszników (gildie sojusznicze + osoby oznaczone jako sojusznicy), niezależnie czy walczą |
+| `/pro id` | Przekaż prowadzenie obiektowi |
 
 ## Wrogowie na bindach
 
 | Komenda | Opis |
 |---------|------|
-| `/nabindach` | Wyswietl aktualnie przypisanych wrogow na bindach |
-| `/nabindach--` | Wyczysc bindy wrogow (tymczasowo do zmiany lokacji) |
+| `/nabindach` | Wyświetl aktualnie przypisanych wrogów na bindach |
+| `/nabindach--` | Wyczyść bindy wrogów (tymczasowo do zmiany lokacji) |
 
-W Ustawieniach (Postac -> Walka, sekcja "Bindy wrogow") mozna podac wlasne
+W Ustawieniach (Postać -> Walka, sekcja "Bindy wrogów") można podać własne
 komendy dla bindu ataku (F1-F3) i bindu blokowania (CTRL+F1-F3). W komendzie
-`{wrog}` zastepuje wroga ze slotu (`ob_12345`), np. `wesprzyj {wrog}`. Kolejne
-komendy oddziela sie srednikiem, a `{atak}` i `{blok}` to domyslne zachowanie
-bindow (zwykly atak klienta razem ze wskazaniem celu druzynie, `zablokuj {wrog}`),
-np. `dobadz broni; {atak}` albo `{blok}; {atak}`. Puste pole zostawia domyslne
+`{wrog}` zastępuje wroga ze slotu (`ob_12345`), np. `wesprzyj {wrog}`. Kolejne
+komendy oddziela się średnikiem, a `{atak}` i `{blok}` to domyślne zachowanie
+bindów (zwykły atak klienta razem ze wskazaniem celu drużynie, `zablokuj {wrog}`),
+np. `dobadz broni; {atak}` albo `{blok}; {atak}`. Puste pole zostawia domyślne
 zachowanie.
 
-## Reset skrotow druzyny
+## Reset skrótów drużyny
 
 | Komenda | Opis |
 |---------|------|
-| `/walka_restart` | Resetuj skroty druzyny i przypisz je od nowa od A |
+| `/walka_restart` | Resetuj skróty drużyny i przypisz je od nowa od A |
 
 ## Loot
 
 | Komenda | Opis |
 |---------|------|
-| `/loot` | Przeszukaj wszystkie ciala na lokacji (ob 1. cialo, ob 2. cialo, ...) |
+| `/loot` | Przeszukaj wszystkie ciała na lokacji (ob 1. cialo, ob 2. cialo, ...) |
 
-> **Wskazowka:** `/loot` otwiera okno z przedmiotami ze wszystkich cial, w ktorym mozna kliknac przedmiot aby go podniesc. Samodzielne `ob cialo` koloruje i podlinkuje przedmioty bezposrednio w tekscie gry.
+> **Wskazówka:** `/loot` otwiera okno z przedmiotami ze wszystkich ciał, w którym można kliknąć przedmiot, aby go podnieść. Samodzielne `ob cialo` koloruje i podlinkowuje przedmioty bezpośrednio w tekście gry.
 
 ## Okno walki
 
 | Komenda | Opis |
 |---------|------|
-| `/walkaw` lub `/walka okno` | Otworz okno walki z logiem komunikatow walki |
+| `/walkaw` lub `/walka okno` | Otwórz okno walki z logiem komunikatów walki |
 
-> **Wskazowka:** przewiniecie loga w gore dzieli okno walki na dwie czesci — na dole zostaje przyklejony podglad najnowszych linii, wiec walka leci dalej, a przewijany log stoi w miejscu. Powrot na sam dol zamyka podglad. Wysokosc dolnej czesci zmienia sie przeciaganiem paska miedzy nimi. Tak samo dziala okno glowne.
+> **Wskazówka:** przewinięcie loga w górę dzieli okno walki na dwie części — na dole zostaje przyklejony podgląd najnowszych linii, więc walka leci dalej, a przewijany log stoi w miejscu. Powrót na sam dół zamyka podgląd. Wysokość dolnej części zmienia się przeciąganiem paska między nimi. Tak samo działa okno główne.

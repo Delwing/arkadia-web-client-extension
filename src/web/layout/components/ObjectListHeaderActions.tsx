@@ -21,7 +21,7 @@ const VIEW_MODE_LABELS: Record<ObjectListViewMode, string> = {
     compact: 'Kompakt',
     'compact-dots': 'Kropki',
     raid: 'Raid',
-    nearby: 'W poblizu'
+    nearby: 'W pobliżu'
 };
 
 const VIEW_MODE_TITLES: Record<ObjectListViewMode, string> = {
@@ -30,7 +30,7 @@ const VIEW_MODE_TITLES: Record<ObjectListViewMode, string> = {
     compact: 'Widok kompaktowy',
     'compact-dots': 'Widok kompaktowy z kropkami',
     raid: 'Widok raid (siatka z paskami HP)',
-    nearby: 'Widok W poblizu'
+    nearby: 'Widok W pobliżu'
 };
 
 export function ObjectListHeaderActions() {

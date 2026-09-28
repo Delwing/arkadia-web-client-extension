@@ -43,7 +43,7 @@ import {
 
 const POPUP_ID = 'popup:enemyResistances';
 const CONFIRM_MS = 4000;
-const UNKNOWN_AREA_HINT = 'Wpis bez obszaru - ocen przeciwnika ponownie, zeby przypisac go do obszaru.';
+const UNKNOWN_AREA_HINT = 'Wpis bez obszaru - oceń przeciwnika ponownie, żeby przypisać go do obszaru.';
 
 const DAMAGE_KEYS = DAMAGE_CATEGORIES.flatMap(c => c.types.map(t => t.key));
 
@@ -188,9 +188,9 @@ const EnemyResistancesPopup: React.FC = () => {
             type="button"
             className={`popup-btn popup-btn--sm${confirmClear ? ' popup-btn--danger' : ''}`}
             onClick={handleClearAll}
-            title="Usun wszystkie wpisy"
+            title="Usuń wszystkie wpisy"
         >
-            {confirmClear ? 'Na pewno?' : 'Wyczysc'}
+            {confirmClear ? 'Na pewno?' : 'Wyczyść'}
         </button>
     ) : undefined;
 
@@ -199,7 +199,7 @@ const EnemyResistancesPopup: React.FC = () => {
             type="button"
             className="carriage-remove-btn"
             onClick={() => void removeEnemyResistanceGroup(group)}
-            title="Usun wpis"
+            title="Usuń wpis"
         >
             X
         </button>
@@ -237,7 +237,7 @@ const EnemyResistancesPopup: React.FC = () => {
                             key={key}
                             className={`enemy-res-type${sortKey === key ? ' enemy-res-type--sorted' : ''}`}
                             onClick={() => setSortKey(k => (k === key ? null : key))}
-                            title={`Sortuj: najpierw wrazliwe na ${key}`}
+                            title={`Sortuj: najpierw wrażliwe na ${key}`}
                         >
                             <span>{key}</span>
                         </th>
@@ -295,7 +295,7 @@ const EnemyResistancesPopup: React.FC = () => {
         <DockablePopupWrapper
             {...wrapperProps}
             popupType="enemyResistances"
-            title={`Odpornosci przeciwnikow (${groups.length})`}
+            title={`Odporności przeciwników (${groups.length})`}
             minWidth={320}
             minHeight={220}
             initialWidth={900}
@@ -330,7 +330,7 @@ const EnemyResistancesPopup: React.FC = () => {
                 </span>
                 {view === 'table' && (
                     <span className="enemy-res-legend">
-                        <span className="enemy-res-mark enemy-res-mark--wrazliwy">W</span> wrazliwy
+                        <span className="enemy-res-mark enemy-res-mark--wrazliwy">W</span> wrażliwy
                         <span className="enemy-res-mark enemy-res-mark--odporny">O</span> odporny
                     </span>
                 )}
@@ -340,8 +340,8 @@ const EnemyResistancesPopup: React.FC = () => {
                 {rows.length === 0 ? (
                     <div className="popup-empty">
                         {entries.length === 0
-                            ? "Brak zapisanych odpornosci. Uzyj 'ocen' na przeciwniku, zeby je zebrac."
-                            : 'Brak wynikow dla filtra.'}
+                            ? "Brak zapisanych odporności. Użyj 'ocen' na przeciwniku, żeby je zebrać."
+                            : 'Brak wyników dla filtra.'}
                     </div>
                 ) : view === 'table' ? renderTable() : renderList()}
             </div>

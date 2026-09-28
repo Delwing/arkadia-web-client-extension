@@ -71,9 +71,9 @@ const FishingPopup: React.FC = () => {
     const getStatusText = () => {
         switch (fishingState) {
             case 'idle':
-                return 'Nie lowisz';
+                return 'Nie łowisz';
             case 'fishing':
-                return 'Lowisz...';
+                return 'Łowisz...';
             case 'biting':
                 return 'Bierze!';
             case 'pulling':
@@ -87,7 +87,7 @@ const FishingPopup: React.FC = () => {
         <DockablePopupWrapper
             {...wrapperProps}
             popupType="fishing"
-            title="Wedka"
+            title="Wędka"
             minWidth={200}
             minHeight={220}
             initialWidth={220}
@@ -128,7 +128,7 @@ const FishingPopup: React.FC = () => {
                             className="popup-btn popup-btn--lg fishing-btn--cast"
                             onClick={handleCast}
                         >
-                            Zarzuc wedke
+                            Zarzuć wędkę
                         </button>
                     )}
                     {(fishingState === 'fishing' || fishingState === 'biting') && (
@@ -138,14 +138,14 @@ const FishingPopup: React.FC = () => {
                                 className="popup-btn popup-btn--lg fishing-btn--pull"
                                 onClick={handlePull}
                             >
-                                Wyciagnij wedke
+                                Wyciągnij wędkę
                             </button>
                             <button
                                 type="button"
                                 className={`popup-btn popup-btn--lg fishing-btn--strike ${fishingState === 'biting' ? 'fishing-btn--biting' : ''}`}
                                 onClick={handleStrike}
                             >
-                                Zatnij rybe
+                                Zatnij rybę
                             </button>
                         </>
                     )}

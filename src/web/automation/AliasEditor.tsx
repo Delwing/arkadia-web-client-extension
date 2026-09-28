@@ -29,7 +29,7 @@ export function OutputLine({ output }: { output: PreviewOutput }) {
 }
 
 export function MatchStatus({ matched, error }: { matched: boolean; error?: string }) {
-    if (error) return <span className="automation-chip is-bad" title={error}><X size={13} />blad we wzorcu</span>;
+    if (error) return <span className="automation-chip is-bad" title={error}><X size={13} />błąd we wzorcu</span>;
     return matched
         ? <span className="automation-chip is-ok"><CheckIcon size={13} />pasuje</span>
         : <span className="automation-chip">nie pasuje</span>;
@@ -81,10 +81,10 @@ export function AliasEditor({ alias, onChange, sounds, onRequestSoundUpload }: {
                         className="automation-test__input"
                         autoComplete="off"
                         {...NO_PASSWORD_MANAGER}
-                        title="Przykladowa komenda"
+                        title="Przykładowa komenda"
                         spellCheck={false}
                         value={sample}
-                        placeholder="Wpisz przykladowa komende, np. zab goblina"
+                        placeholder="Wpisz przykładową komendę, np. zab goblina"
                         onChange={e => setSample(e.target.value)}
                     />
                     {(sample.trim() || test.error) && <MatchStatus matched={!!match} error={test.error} />}
@@ -94,7 +94,7 @@ export function AliasEditor({ alias, onChange, sounds, onRequestSoundUpload }: {
                 </div>
             </Section>
 
-            <Section step={2} title="Co zrobic" extra={<span className="popup-badge">{actions.length}</span>}>
+            <Section step={2} title="Co zrobić" extra={<span className="popup-badge">{actions.length}</span>}>
                 <ActionList
                     macros={actions}
                     onChange={setActions}
@@ -145,14 +145,14 @@ export function AliasEditor({ alias, onChange, sounds, onRequestSoundUpload }: {
                                 placeholder="Komenda dla tej postaci"
                                 onChange={e => setOverrides(overrides.map(([c, v]) => [c, c === char ? e.target.value : v]))}
                             />
-                            <DeleteButton title="Usun nadpisanie" onClick={() => setOverrides(overrides.filter(([c]) => c !== char))} />
+                            <DeleteButton title="Usuń nadpisanie" onClick={() => setOverrides(overrides.filter(([c]) => c !== char))} />
                         </div>
                     ))}
                     {available.length > 0 ? (
                         <div className="automation-override automation-override--add">
                             <Select
                                 className="automation-override__select"
-                                title="Postac"
+                                title="Postać"
                                 value={addChar || available[0]}
                                 onChange={e => setAddChar(e.target.value)}
                             >
@@ -163,10 +163,10 @@ export function AliasEditor({ alias, onChange, sounds, onRequestSoundUpload }: {
                             </Button>
                         </div>
                     ) : characters.length === 0 ? (
-                        <p className="automation-hint">Brak zapisanych postaci. Nadpisania beda dostepne po zalogowaniu na postac.</p>
+                        <p className="automation-hint">Brak zapisanych postaci. Nadpisania będą dostępne po zalogowaniu na postać.</p>
                     ) : null}
                 </div>
-                <p className="automation-hint">Zastepuje wszystkie komendy z punktu 2 dla tej postaci.</p>
+                <p className="automation-hint">Zastępuje wszystkie komendy z punktu 2 dla tej postaci.</p>
             </Section>
         </>
     );

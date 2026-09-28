@@ -36,7 +36,7 @@ test.describe('Mail status', () => {
         });
 
         await expect(mailStatus, 'should be visible with multiple flags').toBeVisible();
-        await expect(mailStatus.locator('.chip__val'), 'should show only unreceived and unsent').toHaveText('Nowa, Niewyslana');
+        await expect(mailStatus.locator('.chip__val'), 'should show only unreceived and unsent').toHaveText('Nowa, Niewysłana');
     });
 
     test('hides when all flags are false', async ({page}) => {
@@ -75,7 +75,7 @@ test.describe('Mail status', () => {
             unsent: true,
         });
 
-        await expect(mailStatus.locator('.chip__val'), 'should show initial state').toHaveText('Niewyslana');
+        await expect(mailStatus.locator('.chip__val'), 'should show initial state').toHaveText('Niewysłana');
 
         // Change to different state
         await pushGmcp(page, 'mail.state', {
@@ -110,7 +110,7 @@ test.describe('Mail status', () => {
             unsent: true,
         });
 
-        await expect(mailStatus.locator('.chip__val'), 'should display unsent status').toHaveText('Niewyslana');
+        await expect(mailStatus.locator('.chip__val'), 'should display unsent status').toHaveText('Niewysłana');
     });
 
     test('sends command when clicked', async ({page}) => {

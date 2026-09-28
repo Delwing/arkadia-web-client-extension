@@ -156,7 +156,7 @@ test.describe('Logi browser', () => {
 
         // End the range on a line before the second match.
         await pane.getByText('a 19', {exact: false}).first().click({button: 'right'});
-        await page.locator('.lv-line-menu').getByText('Zakoncz na tej linii').click();
+        await page.locator('.lv-line-menu').getByText('Zakończ na tej linii').click();
         await expect(pane).not.toContainText('pozny TRAF');
 
         // A range narrows the search to itself, without being asked twice.
@@ -208,7 +208,7 @@ test.describe('Logi browser', () => {
             ['Pobierz jako obraz', '.png'],
         ];
         for (const [label, suffix] of formats) {
-            await page.getByTitle('Zapisz caly log').click();
+            await page.getByTitle('Zapisz cały log').click();
             const waitDownload = page.waitForEvent('download');
             await page.locator('.lv-menu__item', {hasText: label}).click();
             const download = await waitDownload;
@@ -240,7 +240,7 @@ test.describe('Logi browser', () => {
         const importButton = page.getByRole('button', {name: 'Zaimportuj logi z pliku'});
         await expect(importButton).toBeVisible();
         await importButton.click();
-        await expect(page.getByText('Zarzadzanie logami')).toBeVisible();
+        await expect(page.getByText('Zarządzanie logami')).toBeVisible();
     });
 });
 
@@ -311,8 +311,8 @@ test.describe('Logi browser on a phone', () => {
         // four rows, scrolling they were cut off.
         await expect(page.locator('.lv-channels')).toBeHidden();
 
-        const button = page.getByTitle('Ktore kanaly sa widoczne');
-        await expect(button).toHaveText('Kanaly');
+        const button = page.getByTitle('Które kanały są widoczne');
+        await expect(button).toHaveText('Kanały');
         await button.click();
         const menu = page.locator('.lv-menu');
         await expect(menu.locator('.lv-menu__item--check')).toHaveCount(8);
@@ -323,7 +323,7 @@ test.describe('Logi browser on a phone', () => {
         await expect(menu).toBeVisible();
         await menu.locator('.lv-menu__item--check', {hasText: 'Komendy'}).click();
         await expect(menu).toBeVisible();
-        await expect(button).toHaveText('Kanaly 6/8');
+        await expect(button).toHaveText('Kanały 6/8');
     });
 
     test('the footer wraps rather than hiding switches behind a scroll', async ({page}) => {

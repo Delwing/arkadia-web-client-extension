@@ -82,13 +82,13 @@ interface Constraint {
 
 const CONSTRAINTS: Record<string, Constraint> = {
     // --- character settings -------------------------------------------------
-    inlineCompassRose: { type: 'number', min: 0, max: 2, integer: true, label: 'Roza wiatrow (0 wyl., 1 inline, 2 ramka)' },
+    inlineCompassRose: { type: 'number', min: 0, max: 2, integer: true, label: 'Róża wiatrów (0 wył., 1 inline, 2 ramka)' },
     containerColumns: { type: 'number', min: 1, max: 8, integer: true, label: 'Liczba kolumn w pojemnikach' },
-    collectMode: { type: 'number', min: 0, max: 3, integer: true, label: 'Tryb zbierania lupow' },
-    collectTiming: { type: 'number', min: 0, max: 3, integer: true, label: 'Moment zbierania lupow' },
-    herbWieleCount: { type: 'number', min: 1, max: 200, integer: true, label: 'Ile ziol oznacza "wiele"' },
-    lowHpAlert: { type: 'number', min: 0, max: 10, integer: true, label: 'Prog ostrzezenia o niskim HP' },
-    letterLineWidth: { type: 'number', min: 20, max: 200, integer: true, label: 'Szerokosc linii w listach' },
+    collectMode: { type: 'number', min: 0, max: 3, integer: true, label: 'Tryb zbierania łupów' },
+    collectTiming: { type: 'number', min: 0, max: 3, integer: true, label: 'Moment zbierania łupów' },
+    herbWieleCount: { type: 'number', min: 1, max: 200, integer: true, label: 'Ile ziół oznacza "wiele"' },
+    lowHpAlert: { type: 'number', min: 0, max: 10, integer: true, label: 'Próg ostrzeżenia o niskim HP' },
+    letterLineWidth: { type: 'number', min: 20, max: 200, integer: true, label: 'Szerokość linii w listach' },
     enemyBindsShowMode: { type: 'enum', enumValues: ['always', 'whenBound', 'never'] },
     enemyBindsEnabledSlots: { type: 'booleanArray', length: 3 },
     shortExitsColor: { type: 'color' },
@@ -148,15 +148,15 @@ const CONSTRAINTS: Record<string, Constraint> = {
  */
 const CHROME_FIELDS: Record<string, Constraint & { optional?: boolean }> = {
     contentFontSize: { type: 'number', min: 0.3, max: 3, label: 'Rozmiar czcionki okna gry' },
-    mapScale: { type: 'number', min: 0.05, max: 3, label: 'Powiekszenie mapy' },
-    outputMaxElements: { type: 'number', min: 100, max: 100000, integer: true, label: 'Rozmiar bufora wyjscia' },
+    mapScale: { type: 'number', min: 0.05, max: 3, label: 'Powiększenie mapy' },
+    outputMaxElements: { type: 'number', min: 100, max: 100000, integer: true, label: 'Rozmiar bufora wyjścia' },
     objectsFontSize: { type: 'number', min: 0.3, max: 3 },
     buttonSize: { type: 'number', min: 0.1, max: 10, optional: true },
     showButtons: { type: 'boolean' },
     showVoiceButton: { type: 'boolean', label: 'Przycisk mikrofonu' },
-    tabCompletionHint: { type: 'boolean', label: 'Podpowiedz uzupelniania Tab' },
-    tabCompletionMode: { type: 'enum', enumValues: ['cycle', 'word', 'whole'], label: 'Uzupelnianie Tab' },
-    mapHeight: { type: 'number', min: 0, max: 100, integer: true, label: 'Wysokosc mapy (%)' },
+    tabCompletionHint: { type: 'boolean', label: 'Podpowiedź uzupełniania Tab' },
+    tabCompletionMode: { type: 'enum', enumValues: ['cycle', 'word', 'whole'], label: 'Uzupełnianie Tab' },
+    mapHeight: { type: 'number', min: 0, max: 100, integer: true, label: 'Wysokość mapy (%)' },
     mapPosition: {
         type: 'enum',
         enumValues: [
@@ -166,8 +166,8 @@ const CHROME_FIELDS: Record<string, Constraint & { optional?: boolean }> = {
     },
     footerMode: { type: 'number', min: 0, max: 4, integer: true },
     footerComponents: { type: 'complex' },
-    footerUrgentChipsFirst: { type: 'boolean', label: 'Pilne plakietki na poczatku stopki' },
-    footerBindsScale: { type: 'number', min: 0.8, max: 2, label: 'Skala paska bindow' },
+    footerUrgentChipsFirst: { type: 'boolean', label: 'Pilne plakietki na początku stopki' },
+    footerBindsScale: { type: 'number', min: 0.8, max: 2, label: 'Skala paska bindów' },
     footerStatusScale: { type: 'number', min: 0.8, max: 2, label: 'Skala paska stanu i plakietek' },
     mobileFooterCompact: { type: 'boolean', label: 'Kompaktowa stopka na telefonie' },
     mobileFooterExpand: {
@@ -179,7 +179,7 @@ const CHROME_FIELDS: Record<string, Constraint & { optional?: boolean }> = {
     multibindKeyHints: {
         type: 'enum',
         enumValues: ['auto', 'always', 'never'],
-        label: 'Skroty na paskach bindow',
+        label: 'Skróty na paskach bindów',
     },
     splitViewHeight: { type: 'number', min: 0, max: 100, optional: true },
     showCombatTimer: { type: 'boolean', optional: true },
@@ -194,12 +194,12 @@ const CHROME_FIELDS: Record<string, Constraint & { optional?: boolean }> = {
     // classifications from drifting apart again.
     alwaysVisibleBars: { type: 'complex' },
     barOrder: { type: 'complex' },
-    ttsEnabled: { type: 'boolean', label: 'Czytanie na glos (TTS)' },
+    ttsEnabled: { type: 'boolean', label: 'Czytanie na głos (TTS)' },
     // A voiceURI only means something on the device it was picked on.
     ttsVoice: { type: 'complex' },
     ttsRate: { type: 'number', min: 0.5, max: 2, label: 'Tempo mowy' },
-    ttsPitch: { type: 'number', min: 0, max: 2, label: 'Wysokosc glosu' },
-    ttsVolume: { type: 'number', min: 0, max: 1, label: 'Glosnosc mowy' },
+    ttsPitch: { type: 'number', min: 0, max: 2, label: 'Wysokość głosu' },
+    ttsVolume: { type: 'number', min: 0, max: 1, label: 'Głośność mowy' },
     ttsInterrupt: { type: 'boolean', label: 'Nowy komunikat przerywa czytany' },
 };
 

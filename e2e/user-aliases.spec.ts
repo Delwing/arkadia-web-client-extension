@@ -121,7 +121,7 @@ test.describe('User aliases', () => {
         await modal.getByPlaceholder('np. zabij $1').nth(1).fill('zapal pochodnie');
 
         // The test line shows what the alias would send before it is saved.
-        await modal.getByTitle('Przykladowa komenda').fill('zabx goblina');
+        await modal.getByTitle('Przykładowa komenda').fill('zabx goblina');
         await expect(modal.locator('.automation-out'), 'should preview the commands').toContainText('zabij goblina');
         await expect(modal.locator('.automation-out'), 'should preview the commands').toContainText('zapal pochodnie');
         await saveEditor(modal);
@@ -137,7 +137,7 @@ test.describe('User aliases', () => {
             .toEqual(expect.arrayContaining(['zabij goblina', 'zapal pochodnie']));
 
         const reopened = await openAutomation(page);
-        await row(reopened, 'zabx').getByTitle('Wlaczony').click();
+        await row(reopened, 'zabx').getByTitle('Włączony').click();
         await expect(row(reopened, 'zabx'), 'should mark the alias as switched off').toHaveClass(/is-off/);
 
         await closeAutomation(reopened);
@@ -164,8 +164,8 @@ test.describe('User aliases', () => {
         const handel = modal.locator('.automation-section').filter({has: page.locator('.automation-group', {hasText: 'Handel'})});
         await expect(handel.locator('.automation-item'), 'should move the alias into the group').toContainText('grx');
 
-        await modal.locator('.automation-group', {hasText: 'Handel'}).getByTitle('Grupa wlaczona').click();
-        await expect(modal.locator('.automation-group', {hasText: 'Handel'}), 'should show the group as off').toContainText('wylaczona');
+        await modal.locator('.automation-group', {hasText: 'Handel'}).getByTitle('Grupa włączona').click();
+        await expect(modal.locator('.automation-group', {hasText: 'Handel'}), 'should show the group as off').toContainText('wyłączona');
         await closeAutomation(modal);
 
         await resetCommandLog(page);

@@ -187,7 +187,7 @@ function PopoutFrame({
             type="button"
             className="panel-button panel-button--popout-restore"
             onClick={handleRestore}
-            title="Przywroc do okna glownego"
+            title="Przywróć do okna głównego"
           />
         </div>
       </div>

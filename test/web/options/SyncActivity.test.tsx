@@ -46,7 +46,7 @@ describe("SyncActivity", () => {
 
     test("log shows new entries newest first", () => {
         act(() => root.render(<SyncActivityLog />));
-        expect(container.textContent).toContain("Brak wpisow");
+        expect(container.textContent).toContain("Brak wpisów");
 
         act(() => {
             logSyncActivity("info", "Synchronizacja uruchomiona.");
@@ -64,11 +64,11 @@ describe("SyncActivity", () => {
         });
         act(() => root.render(<SyncTimers syncV2 />));
         const [upload, receive] = tiles();
-        expect(upload.label).toBe("Wysylanie");
+        expect(upload.label).toBe("Wysyłanie");
         expect(upload.value).toMatch(/^3:4[45]$/);
         expect(upload.hint).toBe("co 5 min");
         expect(upload.bar).toMatch(/^7[45]%$/);
-        expect(receive).toMatchObject({ label: "Odbieranie", value: "na zywo", bar: "100%" });
+        expect(receive).toMatchObject({ label: "Odbieranie", value: "na żywo", bar: "100%" });
         expect(receive.className).toContain("is-live");
     });
 
@@ -77,7 +77,7 @@ describe("SyncActivity", () => {
             state: 'running', nextUploadAt: Date.now() + 9_000, uploadIntervalMs: 15_000, watchedByOthers: true,
         });
         act(() => root.render(<SyncTimers syncV2 />));
-        expect(tiles()[0].hint).toBe("co 15 s · inne urzadzenie aktywne");
+        expect(tiles()[0].hint).toBe("co 15 s · inne urządzenie aktywne");
         expect(tiles()[1]).toMatchObject({ value: "wstrzymane", bar: null });
     });
 

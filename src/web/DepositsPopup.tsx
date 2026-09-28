@@ -110,7 +110,7 @@ const DepositsPopup: React.FC = () => {
             <div className="deposits-popup__content">
                 {filteredCards.length === 0 ? (
                     <div className="popup-empty">
-                        {cards.length === 0 ? 'Brak zapisanych depozytow.' : 'Brak wynikow.'}
+                        {cards.length === 0 ? 'Brak zapisanych depozytów.' : 'Brak wyników.'}
                     </div>
                 ) : (
                     <div className="deposits-popup__grid">

@@ -69,7 +69,7 @@ describe('HeaderMenu', () => {
     act(() => root.render(<Menu />));
     click(toggle());
     click(item('Zmien obszar'));
-    expect(item('Powrot')).not.toBeNull();
+    expect(item('Powrót')).not.toBeNull();
 
     act(() => {
       document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
@@ -77,7 +77,7 @@ describe('HeaderMenu', () => {
     expect(menuEl()).toBeNull();
 
     click(toggle());
-    expect(item('Powrot')).toBeNull();
+    expect(item('Powrót')).toBeNull();
     expect(item('Zmien obszar')).not.toBeNull();
   });
 

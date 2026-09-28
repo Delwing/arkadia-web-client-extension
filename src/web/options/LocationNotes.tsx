@@ -80,8 +80,8 @@ function LocationNotes() {
             {filteredNotes.length === 0 ? (
                 <div className="popup-field__hint location-notes-panel__empty">
                     {notes.length === 0
-                        ? 'Brak notatek. Dodaj notatke klikajac prawym przyciskiem na lokacje na mapie.'
-                        : 'Nie znaleziono notatek pasujacych do wyszukiwania.'}
+                        ? 'Brak notatek. Dodaj notatkę klikając prawym przyciskiem na lokację na mapie.'
+                        : 'Nie znaleziono notatek pasujących do wyszukiwania.'}
                 </div>
             ) : (
                 <table className="popup-table">
@@ -108,13 +108,13 @@ function LocationNotes() {
                                 </td>
                                 <td>
                                     <div className="popup-inline">
-                                        <Button size="sm" onClick={() => handleNavigate(note.id)} title="Prowadz do lokacji">
-                                            Idz
+                                        <Button size="sm" onClick={() => handleNavigate(note.id)} title="Prowadź do lokacji">
+                                            Idź
                                         </Button>
-                                        <Button size="sm" variant="ghost" className="popup-btn--icon" onClick={() => handleEdit(note)} title="Edytuj notatke">
+                                        <Button size="sm" variant="ghost" className="popup-btn--icon" onClick={() => handleEdit(note)} title="Edytuj notatkę">
                                             <Pencil size={15} strokeWidth={1.75} />
                                         </Button>
-                                        <DeleteButton onClick={() => handleDelete(note.id)} title="Usun notatke" />
+                                        <DeleteButton onClick={() => handleDelete(note.id)} title="Usuń notatkę" />
                                     </div>
                                 </td>
                             </tr>

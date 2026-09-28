@@ -152,7 +152,7 @@ trip routes along. `radial` is one shared (global) value.
   what local data now holds under the source's stamp, not uploaded. The window manager re-saves an
   applied layout in its own form; captured as an edit, that copy would carry a fresh stamp, win over
   the next change on the other device, and bounce between devices that normalize differently.
-- **Deleting the cloud data** ("Usun wszystkie dane") empties the log with a new `epoch` and uploads this
+- **Deleting the cloud data** ("Usuń wszystkie dane") empties the log with a new `epoch` and uploads this
   device's data again. Its tracking copy starts over, so the upload is a seed (lowest stamps); a device
   still holding older records would keep them. So a device that sees an epoch it doesn't know drops its
   tracking copy and cursors and takes the cloud state: newest types take the remote value, counters the
@@ -497,7 +497,7 @@ still holds newer-stamped records and the next sync silently undoes the restore.
   the v1 reconcile touches local data) it stores a full backup in IndexedDB (`ArkadiaPreSyncV2Backup`),
   once per device. The backup page offers to restore or download it. A failed save doesn't stop the
   migration. Removed with v1 in stage 5b.
-- **The v1 document stays intact** during the transition: in v2 mode "Usun wszystkie dane" clears only the
+- **The v1 document stays intact** during the transition: in v2 mode "Usuń wszystkie dane" clears only the
   v2 data. With `arkadia.syncV2 = '0'` (or a reverted deploy) v1 resumes from the document as each device
   left it.
 
@@ -549,10 +549,10 @@ Settled:
 Old-version notice (Polish, no diacritics, like the other sync strings in `@modules/firebase`):
 
 - During the grace period, shown once per page load as a toast that stays until dismissed, with an
-  "Odswiez" button that reloads the page:
-  **"Synchronizacja zostala zaktualizowana. Odswiez strone, aby dalej synchronizowac dane z innymi urzadzeniami."**
+  "Odśwież" button that reloads the page:
+  **"Synchronizacja została zaktualizowana. Odśwież stronę, aby dalej synchronizować dane z innymi urządzeniami."**
 - After the grace period, when a v1 write is denied by the security rules:
-  **"Ta wersja klienta nie synchronizuje juz danych. Odswiez strone, aby wczytac nowa wersje."**
+  **"Ta wersja klienta nie synchronizuje już danych. Odśwież stronę, aby wczytać nową wersję."**
 
 Nothing left open.
 

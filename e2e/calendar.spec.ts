@@ -29,13 +29,13 @@ test.describe('Calendar popup', () => {
 
         // the summary names the synced day, its season and its real-world placing
         await expect(page.locator('text=18 Erntezeit').first()).toBeVisible();
-        await expect(page.locator('text=Jesien').first()).toBeVisible();
+        await expect(page.locator('text=Jesień').first()).toBeVisible();
         await expect(page.locator('text=Czas RL').first()).toBeVisible();
         await expect(page.locator('text=Geheimnisnacht').first()).toBeVisible();
 
         // the year switch previews the following in-game year
         await expect(page.locator('text=ten rok').first()).toBeVisible();
-        await page.locator('button[title="Nastepny rok IG"]').click();
+        await page.locator('button[title="Następny rok IG"]').click();
         await expect(page.locator('text=rok +1').first()).toBeVisible();
         await page.locator('button[title="Poprzedni rok IG"]').click();
         await expect(page.locator('text=ten rok').first()).toBeVisible();
@@ -63,6 +63,6 @@ test.describe('Calendar popup', () => {
 
         // ...and neither undocumented window is reachable from it
         await expect(page.locator('text=Kalendarz roku')).toHaveCount(0);
-        await expect(page.locator('button[title="Nastepny rok IG"]')).toHaveCount(0);
+        await expect(page.locator('button[title="Następny rok IG"]')).toHaveCount(0);
     });
 });

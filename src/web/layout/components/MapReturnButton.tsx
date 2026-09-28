@@ -35,9 +35,9 @@ export function MapReturnButton() {
       type="button"
       className="map-return-button"
       onClick={handleClick}
-      title="Wroc do aktualnej lokacji"
+      title="Wróć do aktualnej lokacji"
     >
-      Wroc do aktualnej lokacji
+      Wróć do aktualnej lokacji
     </button>
   );
 }

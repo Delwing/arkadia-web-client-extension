@@ -237,7 +237,7 @@ export default function initSunTracker(client: Client) {
         if (clickStart !== -1) {
             mid.createLink([clickStart, clickStart + 6], {
                 onClick: () => client.sendCommand("czas"),
-                title: "Kliknij aby potwierdzic obserwacje",
+                title: "Kliknij aby potwierdzić obserwację",
             });
         }
 

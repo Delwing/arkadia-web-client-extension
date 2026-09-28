@@ -4,11 +4,11 @@ import eventBus from "@modules/core/eventBus";
 import { useClientEvent } from "../../hooks";
 
 const REASONS: Record<MapLostReason, string> = {
-    follow: "Nie udalo sie odtworzyc ruchu za druzyna - pozycja na mapie jest nieaktualna.",
-    gmcp: "Gra podaje lokacje, ktorej nie ma na mapie - pozycja na mapie jest nieaktualna.",
+    follow: "Nie udało się odtworzyć ruchu za drużyną - pozycja na mapie jest nieaktualna.",
+    gmcp: "Gra podaje lokację, której nie ma na mapie - pozycja na mapie jest nieaktualna.",
 };
 
-const FALLBACK = "Mapper zgubil pozycje.";
+const FALLBACK = "Mapper zgubił pozycję.";
 
 /**
  * The mapper's own "I do not know where we are" warning. Sits next to the

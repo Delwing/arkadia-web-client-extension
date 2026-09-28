@@ -57,7 +57,7 @@ export function ObjectListTimersBar() {
         <div className="object-list-timers-bar">
             {showWeaponItem && (
                 <span className="object-list-timers-bar__item">
-                    Bron: <span className={hasWeapon === null ? 'object-list-timers-bar__value--off' : hasWeapon ? 'object-list-timers-bar__value--on' : 'object-list-timers-bar__value--off'}>{hasWeapon === null ? '--' : hasWeapon ? 'on' : 'off'}</span>
+                    Broń: <span className={hasWeapon === null ? 'object-list-timers-bar__value--off' : hasWeapon ? 'object-list-timers-bar__value--on' : 'object-list-timers-bar__value--off'}>{hasWeapon === null ? '--' : hasWeapon ? 'on' : 'off'}</span>
                 </span>
             )}
             {showCoverItem && (

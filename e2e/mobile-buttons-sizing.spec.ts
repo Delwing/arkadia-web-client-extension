@@ -43,7 +43,7 @@ test.describe('Mobile buttons sizing and gap', () => {
         await expect(page.locator('#mobile-buttons-preview-solo')).toBeVisible();
         await expect(previews.filter({ visible: true }), 'only the solo preview shows').toHaveCount(1);
 
-        await modal.locator('.dialog-tab', { hasText: 'W druzynie' }).click();
+        await modal.locator('.dialog-tab', { hasText: 'W drużynie' }).click();
         await expect(page.locator('#mobile-buttons-preview-team')).toBeVisible();
         await expect(page.locator('#mobile-buttons-preview-solo')).toBeHidden();
         await expect(previews.filter({ visible: true }), 'only the team preview shows').toHaveCount(1);

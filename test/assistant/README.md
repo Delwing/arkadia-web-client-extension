@@ -24,7 +24,7 @@ One JSON object per line:
     "kind": "settingChange",
     "keyOrPattern": "settings.inlineCompassRose",
     "expectedValue": 2,
-    "mustMentionDoc": "docs/NAVIGATION.md#Roza wiatrow"
+    "mustMentionDoc": "docs/NAVIGATION.md#Róża wiatrów"
   },
   "notes": "Tryb 2 to ramka. Model musi trafic w liczbe, nie w boolean."
 }

@@ -30,8 +30,8 @@ test.describe('Dokumentacja', () => {
         await expect(sub.first()).toHaveClass(/is-active/);
 
         // A section from the contents scrolls there and lights up.
-        await sub.filter({ hasText: 'Zaslanianie' }).click();
-        await expect(sub.filter({ hasText: 'Zaslanianie' })).toHaveClass(/is-active/);
+        await sub.filter({ hasText: 'Zasłanianie' }).click();
+        await expect(sub.filter({ hasText: 'Zasłanianie' })).toHaveClass(/is-active/);
 
         // Wstaw puts the command on the command line, ready for its argument.
         const row = win.locator('.doc-cmd', { has: page.locator('.doc-token', { hasText: /^\/zz cel$/ }) });
@@ -52,11 +52,11 @@ test.describe('Dokumentacja', () => {
         await expect(win.locator('.doc-results mark').first()).toBeVisible();
         await page.screenshot({ path: 'test-results/docs-search.png' });
 
-        const group = win.locator('.doc-hits', { has: page.locator('.doc-hits__head', { hasText: 'Zaslanianie' }) }).first();
+        const group = win.locator('.doc-hits', { has: page.locator('.doc-hits__head', { hasText: 'Zasłanianie' }) }).first();
         await group.locator('.doc-link').click();
         await expect(win.locator('#docs-search')).toHaveValue('');
         await expect(win.locator('.doc-crumb')).toHaveText('Gra / Walka');
-        await expect(win.locator('.doc-nav__sub button', { hasText: 'Zaslanianie' })).toHaveClass(/is-active/);
+        await expect(win.locator('.doc-nav__sub button', { hasText: 'Zasłanianie' })).toHaveClass(/is-active/);
 
         // "/" jumps to the search box from anywhere in the window.
         await win.locator('.doc-head h1').click();
@@ -80,7 +80,7 @@ test.describe('Dokumentacja', () => {
         const win = docsWindow(page);
         await win.locator('.doc-nav__page', { hasText: 'Lista obiektów' }).click();
         await expect(win.locator('.doc-custom .js-demo-list')).not.toBeEmpty();
-        await expect(win.locator('.doc-nav__sub button').first()).toHaveText('Scenariusz uzyty w przykladach');
+        await expect(win.locator('.doc-nav__sub button').first()).toHaveText('Scenariusz użyty w przykładach');
     });
 });
 

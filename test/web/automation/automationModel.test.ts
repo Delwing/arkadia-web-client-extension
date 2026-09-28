@@ -132,11 +132,11 @@ describe('automationModel', () => {
         it('checks a script name and command', () => {
             const items: AutomationItem[] = [{ kind: 'script', id: 'x', data: { id: 'x', name: 'a', code: 'c', command: 'lecz' } }];
             const draft = newDraft('script');
-            expect(draftError(draft, items)).toBe('Nadaj skryptowi nazwe.');
+            expect(draftError(draft, items)).toBe('Nadaj skryptowi nazwę.');
             draft.data = { ...draft.data, name: 'b', command: 'zly znak' } as never;
             expect(draftError(draft, items)).toMatch(/litery, cyfry/);
             draft.data = { ...draft.data, command: '/lecz' } as never;
-            expect(draftError(draft, items)).toBe('Inny skrypt ma juz te komende.');
+            expect(draftError(draft, items)).toBe('Inny skrypt ma już tę komendę.');
             draft.data = { ...draft.data, command: 'inna' } as never;
             expect(draftError(draft, items)).toBeNull();
         });
@@ -146,11 +146,11 @@ describe('automationModel', () => {
             const alias = newDraft('alias');
             expect(draftError(alias, items)).toBe('Wpisz wzorzec.');
             alias.data = { ...alias.data, pattern: 'zab' } as UserAlias;
-            expect(draftError(alias, items)).toBe('Alias o takim wzorcu juz istnieje.');
+            expect(draftError(alias, items)).toBe('Alias o takim wzorcu już istnieje.');
             alias.data = { ...alias.data, pattern: '(' } as UserAlias;
-            expect(draftError(alias, items)).toMatch(/wyrazeniem/);
+            expect(draftError(alias, items)).toContain('wyrażeniem');
             alias.data = { ...alias.data, pattern: 'nowy' } as UserAlias;
-            expect(draftError(alias, items)).toBe('Dodaj co najmniej jedna akcje.');
+            expect(draftError(alias, items)).toBe('Dodaj co najmniej jedną akcję.');
 
             const trigger = newDraft('trigger');
             trigger.data = { ...trigger.data, type: 'event' } as UserTrigger;

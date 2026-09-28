@@ -211,7 +211,7 @@ export async function renderLogImage(lines: ImageLine[], style: ImageStyle): Pro
         scale = 1;
     }
     if (height * scale > MAX_CANVAS_DIM || width * scale > MAX_CANVAS_DIM) {
-        throw new Error(`Log za dlugi do wygenerowania obrazu (${wrappedLines.length} linii po zawinieciu). Uzyj filtra zakresu.`);
+        throw new Error(`Log za długi do wygenerowania obrazu (${wrappedLines.length} linii po zawinięciu). Użyj filtra zakresu.`);
     }
 
     canvas.width = width * scale;
@@ -284,7 +284,7 @@ export function downloadBlob(blob: Blob, filename: string): void {
  */
 export async function copyBlobToClipboard(blob: Blob): Promise<void> {
     if (typeof ClipboardItem === 'undefined' || !navigator.clipboard?.write) {
-        throw new Error('Ta przegladarka nie pozwala kopiowac obrazow do schowka.');
+        throw new Error('Ta przeglądarka nie pozwala kopiować obrazów do schowka.');
     }
     await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
 }

@@ -133,22 +133,22 @@ export function MacroEditor({
                 >
                     {!lineless && <option value="uppercase">Wielkie litery</option>}
                     {!lineless && <option value="color">Koloruj</option>}
-                    {!lineless && <option value="replace">Zamien</option>}
+                    {!lineless && <option value="replace">Zamień</option>}
                     {!lineless && <option value="wrap">Otocz tekstem</option>}
-                    <option value="beep">Dzwiek</option>
-                    <option value="mute">Wycisz dzwieki</option>
-                    <option value="unmute">Wlacz dzwieki</option>
+                    <option value="beep">Dźwięk</option>
+                    <option value="mute">Wycisz dźwięki</option>
+                    <option value="unmute">Włącz dźwięki</option>
                     <option value="command">Komenda</option>
                     <option value="notify">Powiadomienie</option>
                     <option value="push">Powiadomienie na telefon</option>
-                    <option value="speak">Czytaj na glos</option>
+                    <option value="speak">Czytaj na głos</option>
                     <option value="echo">Wypisz tekst</option>
                     {!lineless && <option value="slowBlink">Wolne miganie</option>}
                     {!lineless && <option value="rapidBlink">Szybkie miganie</option>}
                     {!lineless && <option value="dim">Pulsowanie</option>}
                     <option value="functionalBind">Funkcyjny bind</option>
                     <option value="script">Uruchom skrypt</option>
-                    <option value="group">Wlacz / wylacz grupe</option>
+                    <option value="group">Włącz / wyłącz grupę</option>
                     {(() => {
                         const byPlugin = new Map<string, typeof pluginMacros>();
                         for (const pm of pluginMacros) {
@@ -166,13 +166,13 @@ export function MacroEditor({
                     })()}
                     {macro.type.startsWith('plugin:') && !available && (
                         <option value={macro.type} disabled>
-                            {macro.type} (wtyczka niedostepna)
+                            {macro.type} (wtyczka niedostępna)
                         </option>
                     )}
                 </Select>
                 {!available && (
                     <div className="popup-field__warning">
-                        Ta wtyczka nie jest zaladowana. Makro nie bedzie dzialac.
+                        Ta wtyczka nie jest załadowana. Makro nie będzie działać.
                     </div>
                 )}
                 {macro.type === 'script' && (() => {
@@ -188,7 +188,7 @@ export function MacroEditor({
                             </div>
                         </>
                     ) : (
-                        <div className="popup-field__warning">Nie ma jeszcze skryptow. Dodaj skrypt przyciskiem + w oknie Automatyzacja.</div>
+                        <div className="popup-field__warning">Nie ma jeszcze skryptów. Dodaj skrypt przyciskiem + w oknie Automatyzacja.</div>
                     );
                 })()}
                 {macro.type === 'group' && (() => {
@@ -196,13 +196,13 @@ export function MacroEditor({
                     return groups.length ? (
                         <div className="trigger-action__pair">
                             <Select
-                                title="Co zrobic z grupa"
+                                title="Co zrobić z grupą"
                                 value={macro.groupState ?? 'toggle'}
                                 onChange={e => onChange({ ...macro, groupState: e.target.value as UserMacro['groupState'] })}
                             >
-                                <option value="on">Wlacz</option>
-                                <option value="off">Wylacz</option>
-                                <option value="toggle">Przelacz</option>
+                                <option value="on">Włącz</option>
+                                <option value="off">Wyłącz</option>
+                                <option value="toggle">Przełącz</option>
                             </Select>
                             <Select title="Grupa" value={macro.groupId ?? ''} onChange={e => onChange({ ...macro, groupId: e.target.value })}>
                                 {!groups.some(g => g.id === macro.groupId) && <option value={macro.groupId ?? ''}>(brak grupy)</option>}
@@ -210,7 +210,7 @@ export function MacroEditor({
                             </Select>
                         </div>
                     ) : (
-                        <div className="popup-field__warning">Nie ma jeszcze grup. Utworz grupe przyciskiem z folderem nad lista.</div>
+                        <div className="popup-field__warning">Nie ma jeszcze grup. Utwórz grupę przyciskiem z folderem nad listą.</div>
                     );
                 })()}
                 {macro.type === 'beep' && (
@@ -228,11 +228,11 @@ export function MacroEditor({
                             onChange({ ...macro, soundKey: value });
                         }}
                     >
-                        <option value="beep">Domyslny beep</option>
+                        <option value="beep">Domyślny beep</option>
                         {sounds.map(sound => (
                             <option key={sound.key} value={sound.key}>{sound.name}</option>
                         ))}
-                        <option value="__upload__">Dodaj dzwiek...</option>
+                        <option value="__upload__">Dodaj dźwięk...</option>
                     </Select>
                 )}
                 {macro.type === 'command' && (
@@ -253,7 +253,7 @@ export function MacroEditor({
                     <>
                         <Input
                             mono
-                            placeholder={lineless ? 'Tresc powiadomienia' : 'Tresc powiadomienia (puste = dopasowany tekst)'}
+                            placeholder={lineless ? 'Treść powiadomienia' : 'Treść powiadomienia (puste = dopasowany tekst)'}
                             value={macro.message || ''}
                             onChange={e => onChange({ ...macro, message: e.target.value })}
                         />
@@ -262,14 +262,14 @@ export function MacroEditor({
                             onInsert={(token) => onChange({ ...macro, message: (macro.message ?? '') + token })}
                         />
                         <Check
-                            label="Wysylaj zawsze (pomin limit raz na minute)"
+                            label="Wysyłaj zawsze (pomiń limit raz na minutę)"
                             checked={!!macro.bypassCooldown}
                             onChange={e => onChange({ ...macro, bypassCooldown: e.target.checked })}
                         />
                         <div className="popup-field__hint">
-                            Wysylane na sparowane urzadzenia niezaleznie od tego, czy patrzysz na klienta.
-                            Domyslnie nie czesciej niz raz na minute — zaznacz powyzej dla alertow, ktorych
-                            nie chcesz stracic przez wczesniejsze powiadomienie. Wymaga sparowania
+                            Wysyłane na sparowane urządzenia niezależnie od tego, czy patrzysz na klienta.
+                            Domyślnie nie częściej niż raz na minutę — zaznacz powyżej dla alertów, których
+                            nie chcesz stracić przez wcześniejsze powiadomienie. Wymaga sparowania
                             w Ustawieniach interfejsu → Powiadomienia.
                         </div>
                     </>
@@ -287,9 +287,9 @@ export function MacroEditor({
                         />
                         <div className="popup-field__hint">
                             {lineless
-                                ? 'Czytane glosem syntezatora mowy.'
-                                : <>Czytane glosem syntezatora mowy. <code>{'{1}'}</code>, <code>{'{2}'}</code>… wstawiaja grupy z wzorca (np. <code>{'Atakuje cie (.+)!'}</code> → <code>{'Atak: {1}'}</code>).</>}
-                            {' '}Glos, tempo i glosnosc ustawisz w Ustawieniach interfejsu → Dzwiek i powiadomienia.
+                                ? 'Czytane głosem syntezatora mowy.'
+                                : <>Czytane głosem syntezatora mowy. <code>{'{1}'}</code>, <code>{'{2}'}</code>… wstawiają grupy z wzorca (np. <code>{'Atakuje cie (.+)!'}</code> → <code>{'Atak: {1}'}</code>).</>}
+                            {' '}Głos, tempo i głośność ustawisz w Ustawieniach interfejsu → Dźwięk i powiadomienia.
                         </div>
                     </>
                 )}
@@ -314,7 +314,7 @@ export function MacroEditor({
                     <>
                         <Input
                             mono
-                            placeholder={lineless ? 'Tresc powiadomienia' : 'Tresc powiadomienia (puste = dopasowany tekst)'}
+                            placeholder={lineless ? 'Treść powiadomienia' : 'Treść powiadomienia (puste = dopasowany tekst)'}
                             value={macro.message || ''}
                             onChange={e => onChange({ ...macro, message: e.target.value })}
                         />
@@ -325,14 +325,14 @@ export function MacroEditor({
                         {notifPermission !== 'granted' && (
                             <div className="popup-field__warning">
                                 {notifPermission === 'unsupported'
-                                    ? 'Powiadomienia systemowe nie sa obslugiwane w tej przegladarce. Powiadomienie pojawi sie tylko w kliencie.'
+                                    ? 'Powiadomienia systemowe nie są obsługiwane w tej przeglądarce. Powiadomienie pojawi się tylko w kliencie.'
                                     : notifPermission === 'denied'
-                                        ? 'Powiadomienia systemowe sa zablokowane w przegladarce. Powiadomienie pojawi sie tylko w kliencie.'
+                                        ? 'Powiadomienia systemowe są zablokowane w przeglądarce. Powiadomienie pojawi się tylko w kliencie.'
                                         : (
                                             <>
-                                                Powiadomienia systemowe sa wylaczone - powiadomienie pojawi sie tylko w kliencie.{' '}
+                                                Powiadomienia systemowe są wyłączone - powiadomienie pojawi się tylko w kliencie.{' '}
                                                 <button type="button" className="popup-link" onClick={requestNotificationPermission}>
-                                                    Wlacz powiadomienia systemowe
+                                                    Włącz powiadomienia systemowe
                                                 </button>
                                             </>
                                         )}
@@ -366,7 +366,7 @@ export function MacroEditor({
                 )}
                 {macro.type === 'dim' && (
                     <div className="trigger-action__grid">
-                        <Field label="Jasnosc poczatkowa">
+                        <Field label="Jasność początkowa">
                             <Input
                                 type="number"
                                 min={0}
@@ -376,7 +376,7 @@ export function MacroEditor({
                                 onChange={e => onChange({ ...macro, dimStartOpacity: parseFloat(e.target.value) })}
                             />
                         </Field>
-                        <Field label="Jasnosc koncowa">
+                        <Field label="Jasność końcowa">
                             <Input
                                 type="number"
                                 min={0}
@@ -395,7 +395,7 @@ export function MacroEditor({
                                 onChange={e => onChange({ ...macro, dimDuration: parseInt(e.target.value, 10) })}
                             />
                         </Field>
-                        <Field label="Przejscie">
+                        <Field label="Przejście">
                             <Select
                                 value={macro.dimEasing ?? 'ease-in-out'}
                                 onChange={e => onChange({ ...macro, dimEasing: e.target.value as DimEasing })}
@@ -428,7 +428,7 @@ export function MacroEditor({
                             onChange={e => onChange({ ...macro, wrapScope: e.target.value as 'match' | 'line' })}
                         >
                             <option value="match">Dopasowanie</option>
-                            <option value="line">Cala linia</option>
+                            <option value="line">Cała linia</option>
                         </Select>
                     </>
                 )}
@@ -486,7 +486,7 @@ export function MacroEditor({
                     />
                     {macro.type === 'color' && (
                         <ColorSlot
-                            label="Tlo"
+                            label="Tło"
                             value={macro.background || undefined}
                             fallback="#800000"
                             onChange={background => onChange({ ...macro, background })}
@@ -503,7 +503,7 @@ export function MacroEditor({
                     onChange={e => onChange({ ...macro, to: e.target.value })}
                 />
             )}
-            <DeleteButton onClick={onRemove} title="Usun akcje" />
+            <DeleteButton onClick={onRemove} title="Usuń akcję" />
         </div>
     );
 }

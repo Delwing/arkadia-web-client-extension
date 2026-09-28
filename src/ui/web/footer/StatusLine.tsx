@@ -92,7 +92,7 @@ export default function StatusLine() {
         <button
           type="button"
           className="status-more"
-          title={open ? "Zwin plakietki" : "Pokaz wszystkie plakietki"}
+          title={open ? "Zwiń plakietki" : "Pokaż wszystkie plakietki"}
           onClick={() => setOpen((value) => !value)}
         >
           {open ? <ChevronDown size={13} strokeWidth={2.2} /> : <>+{hidden}<ChevronUp size={13} strokeWidth={2.2} /></>}

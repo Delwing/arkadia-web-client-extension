@@ -1050,7 +1050,7 @@ export async function createSyncGroup(name: string): Promise<{
 
         const group: SyncGroup = {
             id: crypto.randomUUID(),
-            name: name.trim() || 'Moje urzadzenia',
+            name: name.trim() || 'Moje urządzenia',
             devices: [deviceInfo.id],
             createdAt: now,
             updatedAt: now,
@@ -1283,7 +1283,7 @@ export async function copySettingsFromCloudDevice(
                 applyLegacyDeviceSettings(legacy.settings);
                 return { success: true };
             }
-            return { success: false, error: 'Nie znaleziono ustawien dla tego urzadzenia.' };
+            return { success: false, error: 'Nie znaleziono ustawień dla tego urządzenia.' };
         }
 
         const { importCategories } = await import('@web/options/exportUtils');
@@ -1347,7 +1347,7 @@ export async function deleteEmptySyncGroup(groupId: string): Promise<{ success: 
         }
 
         if (group.devices.length > 0) {
-            return { success: false, error: 'Grupa nie jest pusta. Najpierw usun wszystkie urzadzenia.' };
+            return { success: false, error: 'Grupa nie jest pusta. Najpierw usuń wszystkie urządzenia.' };
         }
 
         const { db } = await ensureFirebaseInitialized();

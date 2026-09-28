@@ -92,7 +92,7 @@ export function buildHerbTextBuffer(
 
     if (summary.rows.length === 0) {
         const buffer = new AnsiAwareBuffer();
-        buffer.append('Brak ziol.', {});
+        buffer.append('Brak ziół.', {});
         buffer.color([0, buffer.length], WHITE);
         return buffer;
     }

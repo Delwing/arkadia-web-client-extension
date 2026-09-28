@@ -147,7 +147,7 @@ const HerbTextWindow = () => {
         <DockablePopupWrapper
             {...wrapperProps}
             popupType="herb"
-            title="Ziola"
+            title="Zioła"
             minWidth={300}
             minHeight={150}
             initialWidth={600}
@@ -157,7 +157,7 @@ const HerbTextWindow = () => {
         >
             {isEmpty ? (
                 <div className="herb-text-content herb-text-content--empty">
-                    Brak danych o woreczkach. Uzyj aliasu <code>/ziola_buduj</code>, aby odswiezyc zawartosc.
+                    Brak danych o woreczkach. Użyj aliasu <code>/ziola_buduj</code>, aby odświeżyć zawartość.
                 </div>
             ) : (
                 <div

@@ -148,9 +148,9 @@ export const CECHA_ORDER = ["sila", "zrecznosc", "wytrzymalosc", "inteligencja",
 export type CechaKey = typeof CECHA_ORDER[number];
 
 export const CECHA_LABELS: Record<CechaKey, string> = {
-    sila: "Sila",
-    zrecznosc: "Zrecznosc",
-    wytrzymalosc: "Wytrzymalosc",
+    sila: "Siła",
+    zrecznosc: "Zręczność",
+    wytrzymalosc: "Wytrzymałość",
     inteligencja: "Inteligencja",
     odwaga: "Odwaga",
 };

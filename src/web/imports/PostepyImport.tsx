@@ -22,14 +22,14 @@ export default function PostepyImport() {
                 await file.arrayBuffer(),
             );
             if (parsed.characters.length === 0) {
-                setResult({ kind: "error", message: "Baza nie zawiera zadnych danych." });
+                setResult({ kind: "error", message: "Baza nie zawiera żadnych danych." });
             } else {
                 const lower = current?.toLowerCase() ?? "";
                 const selected = parsed.characters.find(c => c.toLowerCase() === lower) ?? parsed.characters[0];
                 setPreview({ parsed, selected, mode: "max" });
             }
         } catch (err) {
-            setResult({ kind: "error", message: err instanceof Error ? err.message : "Nieznany blad." });
+            setResult({ kind: "error", message: err instanceof Error ? err.message : "Nieznany błąd." });
         } finally {
             setBusy(false);
         }
@@ -44,10 +44,10 @@ export default function PostepyImport() {
         }
         if (mergeLifetimeData(entries, preview.mode)) {
             const total = entries.reduce((s, e) => s + e.count, 0);
-            setResult({ kind: "done", message: `Zaimportowano ${entries.length} dni (${total} postepow).` });
+            setResult({ kind: "done", message: `Zaimportowano ${entries.length} dni (${total} postępów).` });
             setPreview(null);
         } else {
-            setResult({ kind: "error", message: "Licznik nie jest jeszcze zainicjalizowany — zaloguj sie postacia i sprobuj ponownie." });
+            setResult({ kind: "error", message: "Licznik nie jest jeszcze zainicjalizowany — zaloguj się postacią i spróbuj ponownie." });
         }
     };
 
@@ -68,7 +68,7 @@ export default function PostepyImport() {
                 <>
                     <div className="settings-fields-row">
                         {preview.parsed.characters.length > 1 && (
-                            <Field label="Postac z Mudleta">
+                            <Field label="Postać z Mudleta">
                                 <Select
                                     className="settings-narrow"
                                     value={preview.selected}
@@ -84,16 +84,16 @@ export default function PostepyImport() {
                                 value={preview.mode}
                                 onChange={(e) => setPreview({ ...preview, mode: e.target.value as MergeMode })}
                             >
-                                <option value="max">Wez maksimum</option>
+                                <option value="max">Weź maksimum</option>
                                 <option value="add">Dodaj wszystko</option>
                             </Select>
                         </Field>
                     </div>
                     <p className="popup-field__hint">
-                        {entries.length} dni, {entries.reduce((s, e) => s + e.count, 0)} postepow.{" "}
+                        {entries.length} dni, {entries.reduce((s, e) => s + e.count, 0)} postępów.{" "}
                         {preview.mode === "max"
-                            ? "Dla kazdego dnia zostanie wziety wyzszy wynik."
-                            : "Postepy z Mudleta zostana dodane do istniejacych."}
+                            ? "Dla każdego dnia zostanie wzięty wyższy wynik."
+                            : "Postępy z Mudleta zostaną dodane do istniejących."}
                     </p>
                     <ImportActions onImport={onImport} onCancel={() => setPreview(null)} />
                 </>

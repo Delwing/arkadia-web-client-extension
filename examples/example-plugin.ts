@@ -99,7 +99,7 @@ export async function init(api: PluginApi): Promise<PluginInfo> {
 
   // Przykład 5: Dodaj własny alias komendy
   api.aliases.register(/^\/przyklad$/, () => {
-    api.output.print("Plugin przykładowy działa!");
+    api.output.print("Plugin przykladowy dziala!");
     return true; // Zatrzymaj dalsze przetwarzanie
   });
 

@@ -54,11 +54,11 @@ function ConflictDiffView({ conflict }: ConflictDiffViewProps) {
         } catch (err) {
             const message = err instanceof Error ? err.message : 'unknown';
             if (message === 'needs-passphrase') {
-                setError('Dane sa zaszyfrowane. Podaj haslo szyfrowania, aby zobaczyc roznice.');
+                setError('Dane są zaszyfrowane. Podaj hasło szyfrowania, aby zobaczyć różnice.');
             } else if (message === 'decryption-failed') {
-                setError('Nie udalo sie odszyfrowac danych z chmury.');
+                setError('Nie udało się odszyfrować danych z chmury.');
             } else {
-                setError('Nie udalo sie przygotowac porownania.');
+                setError('Nie udało się przygotować porównania.');
             }
         } finally {
             setLoading(false);
@@ -83,7 +83,7 @@ function ConflictDiffView({ conflict }: ConflictDiffViewProps) {
                 size="sm"
                 onClick={handleToggle}
             >
-                {expanded ? '▾ Ukryj roznice' : '▸ Pokaz roznice'}
+                {expanded ? '▾ Ukryj różnice' : '▸ Pokaż różnice'}
                 {summary && (
                     <span className="popup-muted conflict-diff__summary">
                         (<span className="popup-text-success">+{summary.added}</span>{' '}
@@ -97,12 +97,12 @@ function ConflictDiffView({ conflict }: ConflictDiffViewProps) {
                     {loading && (
                         <div className="popup-inline popup-muted popup-small">
                             <span className="popup-spinner" />
-                            <span>Przygotowywanie porownania...</span>
+                            <span>Przygotowywanie porównania...</span>
                         </div>
                     )}
                     {error && <div className="popup-text-warning popup-small">{error}</div>}
                     {!loading && !error && lines && lines.length === 0 && (
-                        <div className="popup-muted popup-small">Brak roznic do wyswietlenia.</div>
+                        <div className="popup-muted popup-small">Brak różnic do wyświetlenia.</div>
                     )}
                     {!loading && !error && lines && lines.length > 0 && (
                         <>
@@ -138,7 +138,7 @@ function ConflictDiffView({ conflict }: ConflictDiffViewProps) {
                                 ))}
                                 {truncated > 0 && (
                                     <div className="popup-muted">
-                                        ... ({truncated} wierszy wiecej — skrocono)
+                                        ... ({truncated} wierszy więcej — skrócono)
                                     </div>
                                 )}
                             </pre>

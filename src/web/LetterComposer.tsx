@@ -35,9 +35,9 @@ const WIDE_SCREEN_THRESHOLD = 900;
 
 const ALIGNMENT_BUTTONS: readonly { alignment: LetterAlignment; icon: LucideIcon; title: string }[] = [
     { alignment: "justify", icon: AlignJustify, title: "Wyjustuj tekst" },
-    { alignment: "left", icon: AlignLeft, title: "Wyrownaj tekst do lewej" },
-    { alignment: "center", icon: AlignCenter, title: "Wysrodkuj tekst" },
-    { alignment: "right", icon: AlignRight, title: "Wyrownaj tekst do prawej" },
+    { alignment: "left", icon: AlignLeft, title: "Wyrównaj tekst do lewej" },
+    { alignment: "center", icon: AlignCenter, title: "Wyśrodkuj tekst" },
+    { alignment: "right", icon: AlignRight, title: "Wyrównaj tekst do prawej" },
 ];
 
 function loadAlignment(): LetterAlignment {
@@ -382,7 +382,7 @@ const LetterComposer: React.FC = () => {
                         </div>
                         <div className="letter-composer-field letter-composer-field--grow">
                             <div className="letter-content-toolbar">
-                                <label htmlFor="letter-content" className="popup-field__label">Tresc:</label>
+                                <label htmlFor="letter-content" className="popup-field__label">Treść:</label>
                                 <div className="letter-align-buttons">
                                     {ALIGNMENT_BUTTONS.map(({ alignment: value, icon: Icon, title }) => (
                                         <button
@@ -425,7 +425,7 @@ const LetterComposer: React.FC = () => {
                                             </option>
                                         ))}
                                         {customTemplates.length > 0 && (
-                                            <optgroup label="Wlasne">
+                                            <optgroup label="Własne">
                                                 {templateChoices.filter((choice) => choice.custom).map((choice) => (
                                                     <option key={choice.value} value={choice.value}>
                                                         {choice.label}
@@ -438,13 +438,13 @@ const LetterComposer: React.FC = () => {
                                         type="button"
                                         className="popup-btn popup-btn--control popup-btn--icon letter-templates-open"
                                         onClick={() => setTemplatesDialogOpen(true)}
-                                        title="Wlasne szablony listow"
+                                        title="Własne szablony listów"
                                     >
                                         <PencilRuler size={16} strokeWidth={1.75} />
                                     </button>
                                 </div>
                                 <div className="letter-template-group letter-width-group">
-                                    <label htmlFor="letter-width" className="popup-field__label letter-template-label">Szerokosc:</label>
+                                    <label htmlFor="letter-width" className="popup-field__label letter-template-label">Szerokość:</label>
                                     <input
                                         id="letter-width"
                                         name="letter-width"
@@ -455,22 +455,22 @@ const LetterComposer: React.FC = () => {
                                         value={lineWidthInput}
                                         onChange={(ev) => setLineWidthInput(ev.target.value)}
                                         onBlur={() => setLineWidthInput(String(lineWidth))}
-                                        title="Szerokosc linii tego listu (domyslna w ustawieniach)"
+                                        title="Szerokość linii tego listu (domyślna w ustawieniach)"
                                     />
                                 </div>
                             </div>
                             <div className="letter-composer-buttons">
                                 <button type="button" className="popup-btn popup-btn--control popup-btn--sm" onClick={handlePreview}>
-                                    Podglad
+                                    Podgląd
                                 </button>
-                                <button type="submit" className="popup-btn popup-btn--control popup-btn--sm popup-btn--solid">Wyslij</button>
+                                <button type="submit" className="popup-btn popup-btn--control popup-btn--sm popup-btn--solid">Wyślij</button>
                             </div>
                         </div>
                     </form>
                     {isWideScreen && (
                         <div className="letter-composer-preview">
                             <div className="letter-composer-preview-header">
-                                Podglad ({templateLabel}, szerokosc {lineWidth})
+                                Podgląd ({templateLabel}, szerokość {lineWidth})
                             </div>
                             <div className="letter-composer-preview-content">
                                 {previewLines ? (
@@ -479,7 +479,7 @@ const LetterComposer: React.FC = () => {
                                     </pre>
                                 ) : (
                                     <div className="letter-composer-preview-empty">
-                                        Wpisz tresc listu, aby zobaczyc podglad
+                                        Wpisz treść listu, aby zobaczyć podgląd
                                     </div>
                                 )}
                             </div>

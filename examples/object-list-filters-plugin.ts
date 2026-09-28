@@ -164,7 +164,7 @@ export async function init(api: PluginApi): Promise<PluginInfo> {
 
   // Wypisz załadowane filtry
   const filters = api.objectListFilters.getFilterNames();
-  api.output.print(`[Object List Filters] Załadowano ${filters.length} filtrów`);
+  api.output.print(`[Object List Filters] Zaladowano ${filters.length} filtrow`);
 
   return {
     name: "Object List Filters Example",

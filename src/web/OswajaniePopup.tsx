@@ -180,7 +180,7 @@ const LinkMenu: React.FC<{ state: LinkMenuState; onClose: () => void }> = ({ sta
             data-popup-overlay
             style={{ left: pos?.left ?? state.rect.left, top: pos?.top ?? state.rect.bottom + 4, visibility: pos ? 'visible' : 'hidden' }}
         >
-            <div className="oswajanie-linkmenu__title">Polacz z:</div>
+            <div className="oswajanie-linkmenu__title">Połącz z:</div>
             {state.options.map((opt, i) => (
                 <button
                     key={i}
@@ -231,7 +231,7 @@ const GroupRowView: React.FC<{
         <tr>
             <td
                 className={`oswajanie-td--center oswajanie-count${expandable ? ' oswajanie-count--toggle' : ''}`}
-                title={expandable ? 'Pokaz/ukryj poprzednie wpisy' : undefined}
+                title={expandable ? 'Pokaż/ukryj poprzednie wpisy' : undefined}
                 onClick={expandable ? () => setExpanded((v) => !v) : undefined}
             >
                 {expandable && (expanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />)} {group.entries.length}
@@ -273,7 +273,7 @@ const GroupRowView: React.FC<{
                         <button
                             type="button"
                             className="popup-btn popup-btn--icon"
-                            title="Polacz z innym pokarmem (wspolny licznik)"
+                            title="Połącz z innym pokarmem (wspólny licznik)"
                             onClick={openMenu}
                         >
                             <Link2 size={15} />
@@ -283,7 +283,7 @@ const GroupRowView: React.FC<{
                         <button
                             type="button"
                             className="popup-btn popup-btn--icon oswajanie-iconbtn--danger"
-                            title="Rozdziel polaczone pokarmy"
+                            title="Rozdziel połączone pokarmy"
                             onClick={() => void dissolveFoodGroup(group.repFood)}
                         >
                             <Unlink size={15} />
@@ -302,7 +302,7 @@ const GroupRowView: React.FC<{
 const AnimalsView: React.FC<{ data: AnimalsData | null; onSelect: (a: string) => void }> = ({ data, onSelect }) => {
     const [linkMenu, setLinkMenu] = useState<LinkMenuState | null>(null);
 
-    if (!data) return <p className="oswajanie-empty">Brak zwierzat w bazie.</p>;
+    if (!data) return <p className="oswajanie-empty">Brak zwierząt w bazie.</p>;
 
     const feed = (food: string) => void eventBus.emit('sendCommand', { command: `oswajaj zwierze ${food}` });
 
@@ -351,7 +351,7 @@ const AnimalsView: React.FC<{ data: AnimalsData | null; onSelect: (a: string) =>
                     <tr>
                         <th>ile</th>
                         <th className="oswajanie-col-when">ostatnio</th>
-                        <th className="oswajanie-col-next">nastepne</th>
+                        <th className="oswajanie-col-next">następne</th>
                         <th className="oswajanie-col-level">poziom</th>
                         <th className="oswajanie-col-food">pokarm</th>
                     </tr>
@@ -374,7 +374,7 @@ const AnimalsView: React.FC<{ data: AnimalsData | null; onSelect: (a: string) =>
 };
 
 const HistoryView: React.FC<{ rows: HistoryRow[] | null }> = ({ rows }) => {
-    if (!rows || rows.length === 0) return <p className="oswajanie-empty">Brak aktywnych zwierzat w bazie.</p>;
+    if (!rows || rows.length === 0) return <p className="oswajanie-empty">Brak aktywnych zwierząt w bazie.</p>;
     return (
         <div>
             <div className="oswajanie-popup__heading">Historia oswajania</div>
@@ -382,7 +382,7 @@ const HistoryView: React.FC<{ rows: HistoryRow[] | null }> = ({ rows }) => {
                 <thead>
                     <tr>
                         <th>nr</th>
-                        <th>zwierze</th>
+                        <th>zwierzę</th>
                         <th>data</th>
                         <th className="oswajanie-col-level">poziom</th>
                         <th>pokarm</th>
@@ -422,65 +422,65 @@ const HelpView: React.FC = () => {
     return (
         <div>
             <p className="oswajanie-popup__intro">
-                Baza oswajania buduje sie po pierwszym oswajaniu zwierzecia.
+                Baza oswajania buduje się po pierwszym oswajaniu zwierzęcia.
                 <br />
-                Po oswojeniu nalezy <Alias cmd="ocen zwierze" /> aby zapisal sie poziom oswojenia.
+                Po oswojeniu należy <Alias cmd="oceń zwierzę" /> aby zapisał się poziom oswojenia.
                 <br />
-                W widoku zwierzecia kliknij liczbe w kolumnie "ile" aby rozwinac poprzednie wpisy. Rozne nazwy tego samego
-                pokarmu mozesz polaczyc ikona <Link2 size={13} style={{ verticalAlign: 'middle' }} /> (wspolny licznik).
+                W widoku zwierzęcia kliknij liczbę w kolumnie "ile" aby rozwinąć poprzednie wpisy. Różne nazwy tego samego
+                pokarmu możesz połączyć ikona <Link2 size={13} style={{ verticalAlign: 'middle' }} /> (wspólny licznik).
             </p>
 
-            <div className="oswajanie-popup__subheading">Dostepne aliasy:</div>
+            <div className="oswajanie-popup__subheading">Dostępne aliasy:</div>
             <ul className="oswajanie-popup__list">
                 <li>
-                    <Alias cmd="/o_pomoc" /> - pokazuje ta pomoc
+                    <Alias cmd="/o_pomoc" /> - pokazuje tę pomoc
                 </li>
                 <li>
-                    <Alias cmd="/o_pokaz" /> - lista oswajanych zwierzat
+                    <Alias cmd="/o_pokaz" /> - lista oswajanych zwierząt
                 </li>
                 <li>
-                    <span className="oswajanie-muted">/o_pokaz &lt;zwierze&gt;</span> - historia karmienia zwierzecia
+                    <span className="oswajanie-muted">/o_pokaz &lt;zwierzę&gt;</span> - historia karmienia zwierzęcia
                 </li>
                 <li>
                     <Alias cmd="/o_ostatnio" /> - historia ostatnio oswajanego
                 </li>
                 <li>
-                    <Alias cmd="/o_historia" /> - historia aktywnych zwierzat
+                    <Alias cmd="/o_historia" /> - historia aktywnych zwierząt
                 </li>
             </ul>
 
-            <div className="oswajanie-popup__subheading">Zarzadzanie baza:</div>
+            <div className="oswajanie-popup__subheading">Zarządzanie baza:</div>
             <ul className="oswajanie-popup__list">
                 <li>
-                    <span className="oswajanie-muted">/o_wylacz &lt;zwierze&gt;</span> - deaktywuje zwierze
+                    <span className="oswajanie-muted">/o_wylacz &lt;zwierzę&gt;</span> - deaktywuje zwierzę
                 </li>
                 <li>
-                    <span className="oswajanie-muted">/o_wlacz &lt;zwierze&gt;</span> - aktywuje zwierze
+                    <span className="oswajanie-muted">/o_wlacz &lt;zwierzę&gt;</span> - aktywuje zwierzę
                 </li>
                 <li>
-                    <span className="oswajanie-muted">/o_przemianuj &lt;stare&gt; na &lt;nowe&gt;</span> - zmienia nazwe
+                    <span className="oswajanie-muted">/o_przemianuj &lt;stare&gt; na &lt;nowe&gt;</span> - zmienia nazwę
                 </li>
             </ul>
 
             <div className="oswajanie-popup__subheading">Kopia zapasowa:</div>
             <div className="oswajanie-controls">
                 <button type="button" className="popup-btn popup-btn--md popup-btn--success" onClick={() => void exportDatabase()}>
-                    Eksportuj baze (JSON)
+                    Eksportuj bazę (JSON)
                 </button>
                 <button
                     type="button"
                     className="popup-btn popup-btn--md popup-btn--danger"
                     onClick={() => {
-                        if (window.confirm('Import z pliku nadpisze baze oswajania tej postaci. Kontynuowac?')) {
+                        if (window.confirm('Import z pliku nadpisze bazę oswajania tej postaci. Kontynuować?')) {
                             void importDatabaseFromFile();
                         }
                     }}
                 >
-                    Importuj baze (nadpisze)
+                    Importuj bazę (nadpisze)
                 </button>
             </div>
             <div className="oswajanie-popup__hint">
-                Import z pliku NADPISZE baze tej postaci. Najpierw zrob eksport jako kopie zapasowa.
+                Import z pliku NADPISZE bazę tej postaci. Najpierw zrób eksport jako kopię zapasową.
             </div>
         </div>
     );
@@ -491,7 +491,7 @@ const HelpView: React.FC = () => {
 // ---------------------------------------------------------------------------
 
 const TABS: { view: View; label: string }[] = [
-    { view: 'animals', label: 'Zwierzeta' },
+    { view: 'animals', label: 'Zwierzęta' },
     { view: 'history', label: 'Historia' },
     { view: 'help', label: 'Pomoc' },
 ];

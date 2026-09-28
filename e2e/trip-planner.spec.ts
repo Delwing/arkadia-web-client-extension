@@ -55,7 +55,7 @@ test.describe('Trip Planner Popup', () => {
         const removeButton = popup.locator('.trip-planner-stop-remove');
         await removeButton.click();
 
-        await expect(popup).toContainText('Brak przystankow');
+        await expect(popup).toContainText('Brak przystanków');
     });
 
     test('adds a stop via context menu and displays it', async ({ page }) => {
@@ -145,10 +145,10 @@ test.describe('Trip Planner Popup', () => {
         await expect(popup.locator('.trip-planner-stop')).toHaveCount(2);
 
         // Click clear button
-        const clearButton = popup.locator('.trip-planner-action-btn--danger', { hasText: 'Wyczysc' });
+        const clearButton = popup.locator('.trip-planner-action-btn--danger', { hasText: 'Wyczyść' });
         await clearButton.click();
 
-        await expect(popup).toContainText('Brak przystankow');
+        await expect(popup).toContainText('Brak przystanków');
         await expect(popup).toContainText('Planer trasy (0)');
     });
 
@@ -160,7 +160,7 @@ test.describe('Trip Planner Popup', () => {
         // Remove the stop
         await popup.locator('.trip-planner-stop-remove').click();
 
-        const prowadzButton = popup.locator('.trip-planner-action-btn', { hasText: 'Prowadz' });
+        const prowadzButton = popup.locator('.trip-planner-action-btn', { hasText: 'Prowadź' });
         await expect(prowadzButton).toBeDisabled();
     });
 
@@ -169,7 +169,7 @@ test.describe('Trip Planner Popup', () => {
         const popup = page.locator(TRIP_PLANNER_SELECTOR);
         await expect(popup).toBeVisible();
 
-        const prowadzButton = popup.locator('.trip-planner-action-btn', { hasText: 'Prowadz' });
+        const prowadzButton = popup.locator('.trip-planner-action-btn', { hasText: 'Prowadź' });
         await expect(prowadzButton).toBeEnabled();
     });
 
@@ -224,7 +224,7 @@ test.describe('Trip Planner Popup', () => {
         await popup.locator('.popup-btn', { hasText: 'Dodaj' }).click();
 
         // Total distance should be shown (2 + 1 = 3)
-        await expect(popup.locator('.trip-planner-total')).toContainText('Laczna odleglosc: 3');
+        await expect(popup.locator('.trip-planner-total')).toContainText('Łączna odległość: 3');
     });
 
     test('saves and loads a route', async ({ page }) => {
@@ -244,9 +244,9 @@ test.describe('Trip Planner Popup', () => {
         await saveButton.click();
 
         // Clear stops
-        const clearButton = popup.locator('.trip-planner-action-btn--danger', { hasText: 'Wyczysc' });
+        const clearButton = popup.locator('.trip-planner-action-btn--danger', { hasText: 'Wyczyść' });
         await clearButton.click();
-        await expect(popup).toContainText('Brak przystankow');
+        await expect(popup).toContainText('Brak przystanków');
 
         // Load route
         const routeSelect = popup.locator('.trip-planner-select').first();
@@ -290,7 +290,7 @@ test.describe('Trip Planner Popup', () => {
         await expect(idTab).toHaveClass(/trip-planner-mode-tab--active/);
 
         // Switch to shortcut mode
-        const shortcutTab = popup.locator('.trip-planner-mode-tab', { hasText: 'Ze skrotu' });
+        const shortcutTab = popup.locator('.trip-planner-mode-tab', { hasText: 'Ze skrótu' });
         await shortcutTab.click();
         await expect(shortcutTab).toHaveClass(/trip-planner-mode-tab--active/);
         await expect(idTab).not.toHaveClass(/trip-planner-mode-tab--active/);
@@ -332,7 +332,7 @@ test.describe('Trip Planner Popup', () => {
         await popup.locator('.popup-btn', { hasText: 'Dodaj' }).click();
 
         // Should still show empty state
-        await expect(popup).toContainText('Brak przystankow');
+        await expect(popup).toContainText('Brak przystanków');
     });
 
     test('Prowadz button emits tripPlanner.leadTo event', async ({ page }) => {
@@ -341,7 +341,7 @@ test.describe('Trip Planner Popup', () => {
         await expect(popup).toBeVisible();
 
         // Click Prowadz - this should update the location label with path arrow
-        const prowadzButton = popup.locator('.trip-planner-action-btn', { hasText: 'Prowadz' });
+        const prowadzButton = popup.locator('.trip-planner-action-btn', { hasText: 'Prowadź' });
         await prowadzButton.click();
 
         // The location label should show a path to room 3

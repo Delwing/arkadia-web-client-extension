@@ -12,7 +12,7 @@ const POPUP_ID = 'popup:stat';
 
 const BODY_PARTS: BodyPart[] = ['glowa', 'ramiona', 'korpus', 'nogi'];
 const BODY_LABELS: Record<BodyPart, string> = {
-    glowa: 'glowa',
+    glowa: 'głowa',
     ramiona: 'ramiona',
     korpus: 'korpus',
     nogi: 'nogi',
@@ -124,25 +124,25 @@ const StatPopup: React.FC = () => {
                 </div>
 
                 <div className="stat-popup__section">
-                    <div className="stat-popup__heading">OGOLEM ciosy</div>
+                    <div className="stat-popup__heading">OGÓŁEM ciosy</div>
                     <div className="stat-popup__ogolem">
                         <div className="stat-popup__ogolem-lines">
                             <StatLine label="otrzymane" value={s.otrzymane.count} of={s.total} swatch={PIE_COLORS.otrzymane} />
                             <StatLine label="wyparowane" value={s.wyparowane.count} of={s.total} swatch={PIE_COLORS.wyparowane} />
-                            <StatLine label="unikniete" value={s.unikniete} of={s.total} swatch={PIE_COLORS.unikniete} />
+                            <StatLine label="uniknięte" value={s.unikniete} of={s.total} swatch={PIE_COLORS.unikniete} />
                         </div>
                         <OgolemPie
                             slices={[
                                 { label: 'otrzymane', value: s.otrzymane.count, color: PIE_COLORS.otrzymane },
                                 { label: 'wyparowane', value: s.wyparowane.count, color: PIE_COLORS.wyparowane },
-                                { label: 'unikniete', value: s.unikniete, color: PIE_COLORS.unikniete },
+                                { label: 'uniknięte', value: s.unikniete, color: PIE_COLORS.unikniete },
                             ]}
                         />
                     </div>
                 </div>
 
                 <div className="stat-popup__section">
-                    <div className="stat-popup__heading">OTRZYMANE ciosy na czesci ciala</div>
+                    <div className="stat-popup__heading">OTRZYMANE ciosy na części ciała</div>
                     {BODY_PARTS.map((p) => (
                         <StatLine
                             key={p}
@@ -155,7 +155,7 @@ const StatPopup: React.FC = () => {
 
                 <div className="stat-popup__section">
                     <div className="stat-popup__heading">WYPAROWANE ciosy przez</div>
-                    <StatLine label="bron" value={s.wyparowane.bron} of={s.wyparowane.count} />
+                    <StatLine label="broń" value={s.wyparowane.bron} of={s.wyparowane.count} />
                     <StatLine
                         label="zbroje"
                         value={s.wyparowane.zbroje.count}
@@ -182,7 +182,7 @@ const StatPopup: React.FC = () => {
 
                 <div className="stat-popup__section">
                     <div className="stat-popup__heading">
-                        OTRZYMANE na czesci ciala / WYPAROWANE przez zbroje
+                        OTRZYMANE na części ciała / WYPAROWANE przez zbroje
                     </div>
                     {BODY_PARTS.map((p) => {
                         const recv = s.otrzymane.parts[p];

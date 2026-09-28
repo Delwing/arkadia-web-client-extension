@@ -272,7 +272,7 @@ const ObjectListDemoPopup: React.FC = () => {
             type="button"
             className="demo-btn demo-btn--small"
             onClick={resetToDefault}
-            title="Resetuj do domyslnych"
+            title="Resetuj do domyślnych"
         >
             Reset
         </button>
@@ -282,7 +282,7 @@ const ObjectListDemoPopup: React.FC = () => {
         <DockablePopupWrapper
             {...wrapperProps}
             popupType="objectListDemo"
-            title="Demo listy obiektow"
+            title="Demo listy obiektów"
             minWidth={400}
             minHeight={300}
             initialWidth={500}
@@ -302,7 +302,7 @@ const ObjectListDemoPopup: React.FC = () => {
                             checked={isLeader}
                             onChange={(e) => setIsLeader(e.target.checked)}
                         />
-                        Jestes liderem druzyny
+                        Jesteś liderem drużyny
                     </label>
                     {player && (
                         <div className="demo-object-row">
@@ -321,7 +321,7 @@ const ObjectListDemoPopup: React.FC = () => {
 
                 <div className="demo-popup-section">
                     <div className="demo-popup-section__header">
-                        <span>Druzyna ({teammates.length})</span>
+                        <span>Drużyna ({teammates.length})</span>
                         <button type="button" className="demo-btn demo-btn--small" onClick={addTeammate}>+ Dodaj</button>
                     </div>
                     {teammates.map(obj => (
@@ -433,23 +433,23 @@ const ObjectListDemoPopup: React.FC = () => {
                                         checked={obj.isAvatarTarget}
                                         onChange={() => toggleAvatarTarget(obj.id)}
                                     />
-                                    Twoj cel
+                                    Twój cel
                                 </label>
-                                <label className="demo-checkbox demo-checkbox--small demo-checkbox--next" title="Pierwszy w kolejce atakow - zloty znacznik">
+                                <label className="demo-checkbox demo-checkbox--small demo-checkbox--next" title="Pierwszy w kolejce ataków - złoty znacznik">
                                     <input
                                         type="checkbox"
                                         checked={obj.isNextTarget}
                                         onChange={() => toggleNextTarget(obj.id)}
                                     />
-                                    Nastepny cel
+                                    Następny cel
                                 </label>
-                                <label className="demo-checkbox demo-checkbox--small demo-checkbox--ogluch" title="Ogluszony - odwrocone kolory opisu (filtr enemy-status)">
+                                <label className="demo-checkbox demo-checkbox--small demo-checkbox--ogluch" title="Ogłuszony - odwrócone kolory opisu (filtr enemy-status)">
                                     <input
                                         type="checkbox"
                                         checked={obj.isOgluch}
                                         onChange={() => toggleOgluch(obj.id)}
                                     />
-                                    Ogluch
+                                    Ogłuch
                                 </label>
                             </div>
                             {obj.isAttacking && (

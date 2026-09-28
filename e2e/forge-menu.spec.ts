@@ -176,7 +176,7 @@ test.describe('forge menu', () => {
         await modal.getByRole('button', { name: 'Dodaj plugin' }).click();
         const [editor] = await Promise.all([
             page.waitForEvent('popup'),
-            dialog.locator('.plugin-route', { hasText: 'Otworz edytor' }).click(),
+            dialog.locator('.plugin-route', { hasText: 'Otwórz edytor' }).click(),
         ]);
         expect(new URL(editor.url()).pathname).toBe('/editor/index.html');
         await editor.close();

@@ -54,7 +54,7 @@ describe('WindowSettingsMenu', () => {
     const panel = openMenu();
     expect(panel).not.toBeNull();
     const sections = [...panel!.querySelectorAll('.window-settings__section-title')].map(h => h.textContent);
-    expect(sections).toEqual(['Wyglad', 'Czat']);
+    expect(sections).toEqual(['Wygląd', 'Czat']);
     expect(panel!.textContent).toContain('Zawijaj wiersze');
   });
 
@@ -86,9 +86,9 @@ describe('WindowSettingsMenu', () => {
   it('starts a size override from the main window size and can go back to following it', () => {
     act(() => root.render(<WindowSettingsMenu windowId="popup:chat" title="Czat" />));
     const panel = openMenu();
-    expect(panel!.querySelector('.window-settings__size-value')!.textContent).toBe('Jak okno glowne');
+    expect(panel!.querySelector('.window-settings__size-value')!.textContent).toBe('Jak okno główne');
 
-    click(panel!.querySelector('.window-settings__step[title="Wieksza czcionka"]'));
+    click(panel!.querySelector('.window-settings__step[title="Większa czcionka"]'));
     // 0.875 snaps to the 0.05 grid: + gives 0.90, not 0.925.
     expect(getWindowSetting('popup:chat', WINDOW_FONT_SIZE_KEY, null)).toBe(0.9);
     click(panel!.querySelector('.window-settings__step[title="Mniejsza czcionka"]'));
@@ -111,7 +111,7 @@ describe('WindowSettingsMenu', () => {
     const select = panel.querySelector<HTMLSelectElement>('select')!;
     const options = [...select.options];
     expect(options.map(o => o.textContent)).toEqual([
-      'Jak okno glowne', 'Systemowa monospace', 'Fira Code', 'JetBrains Mono', 'Cascadia Mono', 'Bitstream Vera Sans Mono',
+      'Jak okno główne', 'Systemowa monospace', 'Fira Code', 'JetBrains Mono', 'Cascadia Mono', 'Bitstream Vera Sans Mono',
     ]);
     expect(options.find(o => o.value === 'fira-code')!.style.fontFamily).toContain('Fira Code');
 
@@ -129,7 +129,7 @@ describe('WindowSettingsMenu', () => {
     const panel = openMenu()!;
     const reset = () => panel.querySelector<HTMLButtonElement>('.window-settings__reset')!;
     expect(reset().disabled).toBe(true);
-    click(panel.querySelector('.window-settings__step[title="Wieksza czcionka"]'));
+    click(panel.querySelector('.window-settings__step[title="Większa czcionka"]'));
     expect(reset().disabled).toBe(false);
     click(reset());
     expect(reset().disabled).toBe(true);

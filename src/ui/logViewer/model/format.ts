@@ -26,8 +26,8 @@ export function formatDuration(milliseconds: number): string {
     return hours ? `${hours}h ${pad(minutes)}m` : `${minutes}m`;
 }
 
-const WEEKDAYS = ["niedz", "pon", "wt", "sr", "czw", "pt", "sob"];
-const MONTHS = ["sty", "lut", "mar", "kwi", "maj", "cze", "lip", "sie", "wrz", "paz", "lis", "gru"];
+const WEEKDAYS = ["niedz", "pon", "wt", "śr", "czw", "pt", "sob"];
+const MONTHS = ["sty", "lut", "mar", "kwi", "maj", "cze", "lip", "sie", "wrz", "paź", "lis", "gru"];
 
 /** `sob 19 wrz 2026`. ASCII-only, to match the rest of the client's Polish. */
 export function formatDateLong(timestamp: number): string {

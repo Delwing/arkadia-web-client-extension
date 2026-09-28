@@ -12,7 +12,7 @@ type Domain = 'Empire' | 'Ishtar';
 const SEASONS = [
     { name: 'Wiosna', color: '#8fbf94' }, // spring — muted sage
     { name: 'Lato', color: '#d6c06e' },   // summer — muted wheat gold
-    { name: 'Jesien', color: '#cc8a55' }, // autumn — muted amber
+    { name: 'Jesień', color: '#cc8a55' }, // autumn — muted amber
     { name: 'Zima', color: '#8fb2c9' },   // winter — muted slate blue
 ];
 
@@ -123,7 +123,7 @@ const WorldTimePopup: React.FC = () => {
                         {clock?.dayLabel && (
                             <span className="wt-date">
                                 {clock.dayLabel}
-                                {clock.dayOfYear ? <span className="wt-doy"> &middot; dzien {clock.dayOfYear}</span> : null}
+                                {clock.dayOfYear ? <span className="wt-doy"> &middot; dzień {clock.dayOfYear}</span> : null}
                             </span>
                         )}
                     </div>

@@ -578,7 +578,7 @@ export default class ObjectList {
 
         // Show placeholder if no objects
         if (objects.length === 0) {
-            this.content.innerHTML = '<span style="color: #888; font-style: italic;">Brak obiektow</span>';
+            this.content.innerHTML = '<span style="color: #888; font-style: italic;">Brak obiektów</span>';
             this.rebuildPictureInPictureHtml();
             return;
         }
@@ -995,7 +995,7 @@ html, body {
         const objects = manager.getObjectsOnLocation();
 
         if (objects.length === 0) {
-            return ['<span style="color: #888; font-style: italic;">Brak obiektow</span>'];
+            return ['<span style="color: #888; font-style: italic;">Brak obiektów</span>'];
         }
 
         const ctx = buildRenderContext(this.client, objects, this.attackController.getAttackCommand());

@@ -109,10 +109,10 @@ export function getSyncV2Status(): SyncV2Status {
 function describeActivity(event: SyncEngineActivity): void {
     switch (event.kind) {
         case 'uploaded':
-            logSyncActivity('success', `Wyslano zmiany: ${event.count} (${event.summary})`);
+            logSyncActivity('success', `Wysłano zmiany: ${event.count} (${event.summary})`);
             break;
         case 'applied': {
-            const from = event.devices.length === 1 ? 'innego urzadzenia' : `${event.devices.length} urzadzen`;
+            const from = event.devices.length === 1 ? 'innego urządzenia' : `${event.devices.length} urządzeń`;
             logSyncActivity('success', `Pobrano zmiany z ${from}: ${event.count} (${event.summary})`);
             break;
         }
@@ -120,12 +120,12 @@ function describeActivity(event: SyncEngineActivity): void {
             logSyncActivity('success', `Zastosowano dane z chmury: ${event.count} (${event.summary})`);
             break;
         case 'cloudReplaced':
-            logSyncActivity('warning', 'Dane w chmurze zostaly zastapione przez inne urzadzenie - przyjeto je.');
+            logSyncActivity('warning', 'Dane w chmurze zostały zastąpione przez inne urządzenie - przyjęto je.');
             break;
         case 'interval':
             logSyncActivity('info', event.watchedByOthers
-                ? `Inne urzadzenie jest aktywne - wysylanie co ${Math.round(event.intervalMs / 1000)} s.`
-                : `Wysylanie co ${Math.round(event.intervalMs / 60_000)} min.`);
+                ? `Inne urządzenie jest aktywne - wysyłanie co ${Math.round(event.intervalMs / 1000)} s.`
+                : `Wysyłanie co ${Math.round(event.intervalMs / 60_000)} min.`);
             break;
     }
 }
@@ -177,14 +177,14 @@ export function startSyncV2(userId: string, passphrase: () => string | null): vo
     const run = async (): Promise<void> => {
         if (token !== startToken) return;
         const db = getFirestore();
-        if (!db) return retryLater('brak polaczenia z Firebase');
-        if (!syncAllowed()) return retryLater('automatyczna synchronizacja jest wylaczona');
+        if (!db) return retryLater('brak połączenia z Firebase');
+        if (!syncAllowed()) return retryLater('automatyczna synchronizacja jest wyłączona');
         const editTypes = await migrateFromV1(userId, passphrase()).catch(error => {
             console.warn('[SyncV2] v1 migration failed:', error);
             return null;
         });
         if (token !== startToken) return;
-        if (!editTypes) return retryLater('przygotowanie danych nie powiodlo sie');
+        if (!editTypes) return retryLater('przygotowanie danych nie powiodło się');
         waitReason = null;
         retryAt = null;
 
@@ -217,7 +217,7 @@ export function startSyncV2(userId: string, passphrase: () => string | null): vo
             usage: createUsageCounter(),
             onError: error => {
                 console.error('[SyncV2]', error);
-                logSyncActivity('error', `Blad synchronizacji: ${errorText(error)}`);
+                logSyncActivity('error', `Błąd synchronizacji: ${errorText(error)}`);
             },
             log: message => console.info(`[SyncV2] ${message}`),
             activity: describeActivity,
@@ -250,7 +250,7 @@ export function startSyncV2(userId: string, passphrase: () => string | null): vo
         }, MIGRATION_RETRY_MS);
     };
 
-    rearm = () => retryLater('automatyczna synchronizacja jest wylaczona');
+    rearm = () => retryLater('automatyczna synchronizacja jest wyłączona');
 
     const locks = typeof navigator !== 'undefined'
         ? (navigator as Navigator & { locks?: LockManager }).locks

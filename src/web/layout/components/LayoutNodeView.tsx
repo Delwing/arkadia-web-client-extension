@@ -284,12 +284,12 @@ function PlaceholderCell({
 }) {
   return (
     <div className={`layout-placeholder${highlighted ? ' layout-placeholder--target' : ''}`}>
-      <span className="layout-placeholder__hint">Przeciagnij okno tutaj</span>
+      <span className="layout-placeholder__hint">Przeciągnij okno tutaj</span>
       {leaf.placeholder && (
         <button
           type="button"
           className="panel-button panel-button--close panel-button--sm layout-placeholder__close"
-          title="Usun"
+          title="Usuń"
           onClick={() => manager.removeNode(side, leaf.id)}
         />
       )}

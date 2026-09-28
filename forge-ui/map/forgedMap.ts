@@ -12,9 +12,9 @@ import { DarkModern } from 'mudlet-map-renderer';
 const FORGED_MAP_STYLE = DarkModern;
 
 const DIR_PL: Record<string, string> = {
-    north: 'Pln', south: 'Pld', east: 'Wsch', west: 'Zach',
+    north: 'Płn', south: 'Płd', east: 'Wsch', west: 'Zach',
     northeast: 'PnW', northwest: 'PnZ', southeast: 'PdW', southwest: 'PdZ',
-    up: 'Gora', down: 'Dol',
+    up: 'Góra', down: 'Dół',
 };
 
 /** Current room's exits, localized and joined for the map panel footer. */

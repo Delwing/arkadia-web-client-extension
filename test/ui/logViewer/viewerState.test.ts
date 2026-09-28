@@ -329,7 +329,7 @@ describe("stepMatch, all-logs scope", () => {
         expect(result.sessionId).toBe("a");
         // -1 is the agreed "last match" sentinel; deriveView normalises it.
         expect(result.matchIndex).toBe(-1);
-        expect(result.notice).toContain("Powrot");
+        expect(result.notice).toContain("Powrót");
     });
 
     it("names the character playing where the jump lands, not the whole list", () => {
@@ -353,7 +353,7 @@ describe("stepMatch, all-logs scope", () => {
         // Backwards the jump lands on that session's LAST match, so it is the
         // character playing there that gets named.
         const back = state({ sessionId: "a", query: "troll", scope: "all", matchIndex: 0 });
-        expect(stepMatch(-1, back, deriveView(order, back), order)!.notice).toBe("Powrot do: Kethra, Wczoraj");
+        expect(stepMatch(-1, back, deriveView(order, back), order)!.notice).toBe("Powrót do: Kethra, Wczoraj");
     });
 
     it("says only the day for a session whose character is not known", () => {

@@ -172,6 +172,6 @@ test.describe('Layout persistence', () => {
         await expect(depositsContent).toBeVisible({timeout: 3000});
 
         // Verify the popup shows correct empty state text
-        await expect(depositsContent).toContainText('Brak zapisanych depozytow');
+        await expect(depositsContent).toContainText('Brak zapisanych depozytów');
     });
 });

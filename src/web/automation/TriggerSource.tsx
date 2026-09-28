@@ -16,38 +16,38 @@ import {
 
 export const GMCP_MSG_TYPES: { id: string; label: string }[] = [
     { id: 'combat.avatar', label: 'Walka postaci gracza' },
-    { id: 'combat.team', label: 'Walka druzyny' },
+    { id: 'combat.team', label: 'Walka drużyny' },
     { id: 'combat.others', label: 'Walka innych' },
     { id: 'room.combat', label: 'Opis walki na lokacji' },
-    { id: 'comm', label: 'Mowienie/szeptanie/krzyczenie' },
+    { id: 'comm', label: 'Mówienie/szeptanie/krzyczenie' },
     { id: 'emotes', label: 'Emocje skierowane do gracza' },
-    { id: 'room.long', label: 'Dlugi opis lokacji' },
-    { id: 'room.short', label: 'Krotki opis lokacji' },
-    { id: 'room.item', label: 'Opisy przedmiotow na lokacji' },
-    { id: 'room.exits', label: 'Wyjscia z lokacji' },
-    { id: 'room.contents.living', label: 'Istoty zywe na lokacji' },
+    { id: 'room.long', label: 'Długi opis lokacji' },
+    { id: 'room.short', label: 'Krótki opis lokacji' },
+    { id: 'room.item', label: 'Opisy przedmiotów na lokacji' },
+    { id: 'room.exits', label: 'Wyjścia z lokacji' },
+    { id: 'room.contents.living', label: 'Istoty żywe na lokacji' },
     { id: 'room.contents.object', label: 'Obiekty na lokacji' },
-    { id: 'room.contents', label: 'Nieokreslone obiekty na lokacji' },
-    { id: 'living.long', label: 'Dlugi opis zywej istoty' },
-    { id: 'object.long', label: 'Dlugi opis obiektu' },
+    { id: 'room.contents', label: 'Nieokreślone obiekty na lokacji' },
+    { id: 'living.long', label: 'Długi opis żywej istoty' },
+    { id: 'object.long', label: 'Długi opis obiektu' },
     { id: 'system', label: 'Komunikaty systemowe' },
     { id: 'system.login', label: 'Logowanie i konto' },
     { id: 'mail', label: 'Poczta' },
-    { id: 'editor.mail', label: 'Edycja listow' },
-    { id: 'editor', label: 'Edycja tekstow' },
+    { id: 'editor.mail', label: 'Edycja listów' },
+    { id: 'editor', label: 'Edycja tekstów' },
     { id: 'notification.mail', label: 'Powiadomienia - poczta' },
-    { id: 'notification.common', label: 'Powiadomienia - Wiesci' },
+    { id: 'notification.common', label: 'Powiadomienia - Wieści' },
     { id: 'notification.knowledge', label: 'Powiadomienia - wiedza' },
     { id: 'notification.relations', label: 'Powiadomienia - relacje' },
     { id: 'notification.boards', label: 'Powiadomienia - tablice' },
-    { id: 'notification', label: 'Pozostale powiadomienia' },
-    { id: 'prompt', label: 'Znak zachety terminala' },
-    { id: 'other', label: 'Pozostale komunikaty' },
+    { id: 'notification', label: 'Pozostałe powiadomienia' },
+    { id: 'prompt', label: 'Znak zachęty terminala' },
+    { id: 'other', label: 'Pozostałe komunikaty' },
 ];
 
 const FLAGS = [
-    { flag: 'i', title: 'Ignoruj wielkosc liter' },
-    { flag: 'g', title: 'Wszystkie wystapienia' },
+    { flag: 'i', title: 'Ignoruj wielkość liter' },
+    { flag: 'g', title: 'Wszystkie wystąpienia' },
     { flag: 'm', title: 'Wieloliniowy' },
 ];
 
@@ -188,22 +188,22 @@ export function ConditionsEditor({
                             <Input
                                 mono
                                 type={arg?.type === 'number' ? 'number' : 'text'}
-                                placeholder="Wartosc"
+                                placeholder="Wartość"
                                 value={c.value}
                                 onChange={(e) => update(idx, { value: e.target.value })}
                             />
                         )}
                         <DeleteButton
                             onClick={() => onChange(conditions.filter((_, i) => i !== idx))}
-                            title="Usun warunek"
+                            title="Usuń warunek"
                         />
                     </div>
                 );
             })}
             {conditions.length > 0 && (
                 <div className="popup-field__hint">
-                    Wszystkie warunki musza byc spelnione. Jesli zdarzenie nie przyniesie danego pola
-                    (np. Char.State wysyla tylko to, co sie zmienilo), warunek nie jest spelniony.
+                    Wszystkie warunki muszą być spełnione. Jeśli zdarzenie nie przyniesie danego pola
+                    (np. Char.State wysyła tylko to, co się zmieniło), warunek nie jest spełniony.
                 </div>
             )}
         </div>

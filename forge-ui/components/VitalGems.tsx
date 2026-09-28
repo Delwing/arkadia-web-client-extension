@@ -17,12 +17,12 @@ interface VitalCfg {
 // Names match the stock UI's ASCII transliterations (BarOrderSettings DISPLAY_NAMES).
 const VITALS: VitalCfg[] = [
     { key: 'hp', name: 'HP', icon: 'i-hp', hue: '--blood', max: 6, transform: (v, m) => ({ value: v + 1, max: m + 1 }) },
-    { key: 'fatigue', name: 'Zmeczenie', icon: 'i-zm', hue: '--slate', max: 9, flip: true },
-    { key: 'stuffed', name: 'Glod', icon: 'i-hun', hue: '--amber', max: 3, default: 3 },
-    { key: 'encumbrance', name: 'Obciazenie', icon: 'i-obc', hue: '--rust', max: 6, default: 0 },
+    { key: 'fatigue', name: 'Zmęczenie', icon: 'i-zm', hue: '--slate', max: 9, flip: true },
+    { key: 'stuffed', name: 'Głód', icon: 'i-hun', hue: '--amber', max: 3, default: 3 },
+    { key: 'encumbrance', name: 'Obciążenie', icon: 'i-obc', hue: '--rust', max: 6, default: 0 },
     { key: 'soaked', name: 'Pragnienie', icon: 'i-thi', hue: '--steel', max: 3, default: 3 },
     { key: 'mana', name: 'Mana', icon: 'i-mana', hue: '--mana', max: 8, default: 8 },
-    { key: 'improve', name: 'Postep', icon: 'i-pos', hue: '--gold', max: 15, default: 0 },
+    { key: 'improve', name: 'Postęp', icon: 'i-pos', hue: '--gold', max: 15, default: 0 },
     { key: 'form', name: 'Forma', icon: 'i-for', hue: '--moss', max: 3, default: 3 },
     { key: 'intox', name: 'Upojenie', icon: 'i-upi', hue: '--wine', max: 9, default: 0 },
     { key: 'headache', name: 'Kac', icon: 'i-kac', hue: '--ash', max: 6, default: 0 },
@@ -109,7 +109,7 @@ export default function VitalGems() {
                 >
                     <span className="improve-label">
                         <svg viewBox="0 0 20 20"><use href={`#${improveCfg.icon}`} stroke="currentColor" /></svg>
-                        Postepy
+                        Postępy
                     </span>
                     <span className="improve-track">
                         {Array.from({ length: improveCfg.max }, (_, i) => (

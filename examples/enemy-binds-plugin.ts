@@ -66,7 +66,7 @@ export async function init(api: PluginApi): Promise<PluginInfo> {
     name: "Enemy Binds Example",
     version: "1.0.0",
     author: "Arkadia Team",
-    description: "Przykladowy plugin demonstrujacy resolvery bindow na wrogow"
+    description: "Przykładowy plugin demonstrujący resolvery bindów na wrogów"
   };
 }
 

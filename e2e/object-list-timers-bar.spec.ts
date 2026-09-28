@@ -95,7 +95,7 @@ test.describe('Object list timers bar', () => {
 
             const dropdown = page.locator('.popup-menu');
             await expect(dropdown.getByText('Stan broni'), 'should show "Stan broni" toggle').toBeVisible();
-            await expect(dropdown.getByText('Timer zaslony'), 'should show "Timer zaslony" toggle').toBeVisible();
+            await expect(dropdown.getByText('Timer zasłony'), 'should show "Timer zasłony" toggle').toBeVisible();
             await expect(dropdown.getByText('Timer rozkazu'), 'should show "Timer rozkazu" toggle').toBeVisible();
             await expect(dropdown.getByText('Timer zaskoku'), 'should show "Timer zaskoku" toggle').toBeVisible();
         });
@@ -139,9 +139,9 @@ test.describe('Object list timers bar', () => {
         test('each toggle persists its setting across a page reload', async ({page}) => {
             await gotoWithLayout(page);
 
-            // Enable "Timer zaslony"
+            // Enable "Timer zasłony"
             await openObjectListMenu(page);
-            await clickMenuToggle(page, 'Timer zaslony');
+            await clickMenuToggle(page, 'Timer zasłony');
 
             // Reload the page. The gotoWithLayout init script will NOT overwrite
             // layoutManagerState because the layout is already enabled (the guard condition
@@ -158,7 +158,7 @@ test.describe('Object list timers bar', () => {
             // The menu should still show cover timer as checked after reload.
             await openObjectListMenu(page);
             const dropdown = page.locator('.popup-menu');
-            const coverItem = dropdown.locator('.popup-menu__item', {hasText: 'Timer zaslony'});
+            const coverItem = dropdown.locator('.popup-menu__item', {hasText: 'Timer zasłony'});
             await expect(coverItem, 'cover timer toggle should be checked after reload').toHaveClass(/\bis-on\b/);
         });
     });
@@ -214,15 +214,15 @@ test.describe('Object list timers bar', () => {
     });
 
     test.describe('weapon state item', () => {
-        test('shows "Bron: --" with gray value when toggled on before any event', async ({page}) => {
+        test('shows "Broń: --" with gray value when toggled on before any event', async ({page}) => {
             await gotoWithLayout(page);
             await openObjectListMenu(page);
             await clickMenuToggle(page, 'Stan broni');
 
             const bar = await waitForTimersBar(page);
-            const weaponItem = bar.locator('.object-list-timers-bar__item', {hasText: 'Bron:'});
+            const weaponItem = bar.locator('.object-list-timers-bar__item', {hasText: 'Broń:'});
             await expect(weaponItem, 'weapon state item should be visible').toBeVisible();
-            await expect(weaponItem, 'should show "--" before any event').toContainText('Bron: --');
+            await expect(weaponItem, 'should show "--" before any event').toContainText('Broń: --');
 
             // The value span should have the --off (gray) class.
             const valueSpan = weaponItem.locator('span');
@@ -230,7 +230,7 @@ test.describe('Object list timers bar', () => {
             await expect(valueSpan, 'initial value color should be gray').toHaveCSS('color', 'rgb(136, 136, 136)');
         });
 
-        test('shows "Bron: on" in green after drawing weapon', async ({page}) => {
+        test('shows "Broń: on" in green after drawing weapon', async ({page}) => {
             await gotoWithLayout(page);
             await openObjectListMenu(page);
             await clickMenuToggle(page, 'Stan broni');
@@ -240,15 +240,15 @@ test.describe('Object list timers bar', () => {
             await pushText(page, 'Trzymasz oburacz miecz.');
 
             const bar = page.locator('#objects-list .object-list-timers-bar');
-            const weaponItem = bar.locator('.object-list-timers-bar__item', {hasText: 'Bron:'});
-            await expect(weaponItem, 'should show "on" after drawing weapon').toContainText('Bron: on');
+            const weaponItem = bar.locator('.object-list-timers-bar__item', {hasText: 'Broń:'});
+            await expect(weaponItem, 'should show "on" after drawing weapon').toContainText('Broń: on');
 
             const valueSpan = weaponItem.locator('span');
             await expect(valueSpan, 'value should have --on class').toHaveClass(/object-list-timers-bar__value--on/);
             await expect(valueSpan, 'value color should be springgreen').toHaveCSS('color', 'rgb(0, 255, 127)');
         });
 
-        test('shows "Bron: off" in gray after sheathing weapon', async ({page}) => {
+        test('shows "Broń: off" in gray after sheathing weapon', async ({page}) => {
             await gotoWithLayout(page);
             await openObjectListMenu(page);
             await clickMenuToggle(page, 'Stan broni');
@@ -260,8 +260,8 @@ test.describe('Object list timers bar', () => {
             await pushText(page, 'Opuszczasz miecz.');
 
             const bar = page.locator('#objects-list .object-list-timers-bar');
-            const weaponItem = bar.locator('.object-list-timers-bar__item', {hasText: 'Bron:'});
-            await expect(weaponItem, 'should show "off" after sheathing').toContainText('Bron: off');
+            const weaponItem = bar.locator('.object-list-timers-bar__item', {hasText: 'Broń:'});
+            await expect(weaponItem, 'should show "off" after sheathing').toContainText('Broń: off');
 
             const valueSpan = weaponItem.locator('span');
             await expect(valueSpan, 'value should have --off class').toHaveClass(/object-list-timers-bar__value--off/);
@@ -277,14 +277,14 @@ test.describe('Object list timers bar', () => {
 
             await pushText(page, 'Trzymasz oburacz miecz.');
             const bar = page.locator('#objects-list .object-list-timers-bar');
-            const weaponItem = bar.locator('.object-list-timers-bar__item', {hasText: 'Bron:'});
-            await expect(weaponItem, 'should show "on" first').toContainText('Bron: on');
+            const weaponItem = bar.locator('.object-list-timers-bar__item', {hasText: 'Broń:'});
+            await expect(weaponItem, 'should show "on" first').toContainText('Broń: on');
 
             await pushText(page, 'Opuszczasz miecz.');
-            await expect(weaponItem, 'should switch to "off"').toContainText('Bron: off');
+            await expect(weaponItem, 'should switch to "off"').toContainText('Broń: off');
 
             await pushText(page, 'Trzymasz oburacz miecz.');
-            await expect(weaponItem, 'should switch back to "on"').toContainText('Bron: on');
+            await expect(weaponItem, 'should switch back to "on"').toContainText('Broń: on');
         });
     });
 
@@ -293,7 +293,7 @@ test.describe('Object list timers bar', () => {
             await page.clock.install();
             await gotoWithLayout(page);
             await openObjectListMenu(page);
-            await clickMenuToggle(page, 'Timer zaslony');
+            await clickMenuToggle(page, 'Timer zasłony');
 
             await waitForTimersBar(page);
 
@@ -314,7 +314,7 @@ test.describe('Object list timers bar', () => {
         test('shows countdown in yellow after successful cover via game output', async ({page}) => {
             await gotoWithLayout(page);
             await openObjectListMenu(page);
-            await clickMenuToggle(page, 'Timer zaslony');
+            await clickMenuToggle(page, 'Timer zasłony');
 
             await waitForTimersBar(page);
 
@@ -336,7 +336,7 @@ test.describe('Object list timers bar', () => {
             await page.clock.install();
             await gotoWithLayout(page);
             await openObjectListMenu(page);
-            await clickMenuToggle(page, 'Timer zaslony');
+            await clickMenuToggle(page, 'Timer zasłony');
 
             await waitForTimersBar(page);
 
@@ -359,7 +359,7 @@ test.describe('Object list timers bar', () => {
             await page.clock.install();
             await gotoWithLayout(page);
             await openObjectListMenu(page);
-            await clickMenuToggle(page, 'Timer zaslony');
+            await clickMenuToggle(page, 'Timer zasłony');
 
             await waitForTimersBar(page);
 
@@ -662,7 +662,7 @@ test.describe('Object list timers bar', () => {
             await page.clock.install();
             await gotoWithLayout(page);
             await openObjectListMenu(page);
-            await clickMenuToggle(page, 'Timer zaslony');
+            await clickMenuToggle(page, 'Timer zasłony');
 
             await waitForTimersBar(page);
 
@@ -729,7 +729,7 @@ test.describe('Object list timers bar', () => {
             await openObjectListMenu(page);
             await clickMenuToggle(page, 'Stan broni');
             await openObjectListMenu(page);
-            await clickMenuToggle(page, 'Timer zaslony');
+            await clickMenuToggle(page, 'Timer zasłony');
             await openObjectListMenu(page);
             await clickMenuToggle(page, 'Timer rozkazu');
             await openObjectListMenu(page);
@@ -743,7 +743,7 @@ test.describe('Object list timers bar', () => {
 
             const bar = await waitForTimersBar(page);
 
-            await expect(bar.locator('.object-list-timers-bar__item', {hasText: 'Bron:'}), 'weapon item visible').toBeVisible();
+            await expect(bar.locator('.object-list-timers-bar__item', {hasText: 'Broń:'}), 'weapon item visible').toBeVisible();
             await expect(bar.locator('.object-list-timers-bar__item', {hasText: 'Zas:'}), 'cover item visible').toBeVisible();
             await expect(bar.locator('.object-list-timers-bar__item', {hasText: 'Rozkaz:'}), 'order item visible').toBeVisible();
             await expect(bar.locator('.object-list-timers-bar__item', {hasText: 'Zask:'}), 'zask item visible').toBeVisible();
@@ -758,7 +758,7 @@ test.describe('Object list timers bar', () => {
             await openObjectListMenu(page);
             await clickMenuToggle(page, 'Stan broni');
             await openObjectListMenu(page);
-            await clickMenuToggle(page, 'Timer zaslony');
+            await clickMenuToggle(page, 'Timer zasłony');
             await openObjectListMenu(page);
             await clickMenuToggle(page, 'Timer rozkazu');
             await openObjectListMenu(page);
@@ -768,7 +768,7 @@ test.describe('Object list timers bar', () => {
 
             const bar = await waitForTimersBar(page);
 
-            await expect(bar.locator('.object-list-timers-bar__item', {hasText: 'Bron:'}), 'weapon item visible').toBeVisible();
+            await expect(bar.locator('.object-list-timers-bar__item', {hasText: 'Broń:'}), 'weapon item visible').toBeVisible();
             await expect(bar.locator('.object-list-timers-bar__item', {hasText: 'Zas:'}), 'cover item visible').toBeVisible();
             await expect(bar.locator('.object-list-timers-bar__item', {hasText: 'Rozkaz:'}), 'order item NOT visible').not.toBeVisible();
             await expect(bar.locator('.object-list-timers-bar__item', {hasText: 'Zask:'}), 'zask item visible').toBeVisible();

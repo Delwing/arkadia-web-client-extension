@@ -70,7 +70,7 @@ test.describe('Enemy resistances popup', () => {
         await expect(rows).toHaveCount(1);
         await expect(rows.first()).toContainText('formit');
 
-        await rows.first().getByTitle('Usun wpis').click();
+        await rows.first().getByTitle('Usuń wpis').click();
         await expect(popup.locator('.popup-empty')).toBeVisible();
     });
 });

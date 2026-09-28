@@ -153,7 +153,7 @@ const TransportTimesDebugPopup: React.FC = () => {
                     fontSize: 10, color: 'var(--popup-text-dim)',
                     marginBottom: 6, display: 'flex', justifyContent: 'space-between',
                 }}>
-                    <span>{totals.transports} transportow, {totals.recorded}/{totals.legs} segmentow zapisanych</span>
+                    <span>{totals.transports} transportów, {totals.recorded}/{totals.legs} segmentów zapisanych</span>
                     <button
                         type="button"
                         onClick={() => eventBus.emit('transportTimesDebug.request')}
@@ -165,13 +165,13 @@ const TransportTimesDebugPopup: React.FC = () => {
                             cursor: 'pointer',
                         }}
                     >
-                        Odswiez
+                        Odśwież
                     </button>
                 </div>
                 <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, paddingRight: 4 }}>
-                    {!payload && <div style={{ color: 'var(--popup-text-dim)' }}>Ladowanie...</div>}
+                    {!payload && <div style={{ color: 'var(--popup-text-dim)' }}>Ładowanie...</div>}
                     {payload && transports.length === 0 && (
-                        <div style={{ color: 'var(--popup-text-dim)' }}>Brak wynikow.</div>
+                        <div style={{ color: 'var(--popup-text-dim)' }}>Brak wyników.</div>
                     )}
                     {transports.map(t => (
                         <TransportSection key={t.name} entry={t} />
@@ -258,7 +258,7 @@ const TransportSection: React.FC<TransportSectionProps> = ({ entry }) => {
                                     <td style={{ padding: '2px 4px', textAlign: 'right' }}>
                                         <button
                                             type="button"
-                                            title="Skasuj zapisany czas (przywroc oryginalny)"
+                                            title="Skasuj zapisany czas (przywróć oryginalny)"
                                             disabled={l.shortest === null}
                                             onClick={() => resetLeg(l.fromId, l.toId)}
                                             style={{

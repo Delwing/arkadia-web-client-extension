@@ -171,7 +171,7 @@ function SortableStop({ stop, index, isUnreachable, distance, color, onRemove }:
                 {...attributes}
                 {...listeners}
                 className="trip-planner-stop-handle"
-                title="Przeciagnij aby zmienic kolejnosc"
+                title="Przeciągnij aby zmienić kolejność"
             >
                 &#x2630;
             </span>
@@ -181,12 +181,12 @@ function SortableStop({ stop, index, isUnreachable, distance, color, onRemove }:
                 <span className="trip-planner-stop-name">{stop.name}</span>
             )}
             {distance !== null && (
-                <span className="trip-planner-stop-distance" title="Odleglosc od poprzedniego przystanku">
+                <span className="trip-planner-stop-distance" title="Odległość od poprzedniego przystanku">
                     {distance}
                 </span>
             )}
             {isUnreachable && (
-                <span className="trip-planner-stop-warning" title="Brak sciezki do tego przystanku">
+                <span className="trip-planner-stop-warning" title="Brak ścieżki do tego przystanku">
                     &#x26A0;
                 </span>
             )}
@@ -194,7 +194,7 @@ function SortableStop({ stop, index, isUnreachable, distance, color, onRemove }:
                 type="button"
                 className="trip-planner-stop-remove"
                 onClick={() => onRemove(stop.uid)}
-                title="Usun przystanek"
+                title="Usuń przystanek"
             >
                 &times;
             </button>
@@ -435,10 +435,10 @@ const TripPlannerPopup: React.FC = () => {
                                 value={selectedRoute}
                                 onChange={e => setSelectedRoute(e.target.value)}
                             >
-                                <option value="">-- Wybierz trase --</option>
+                                <option value="">-- Wybierz trasę --</option>
                                 {savedRoutes.map(r => (
                                     <option key={r.name} value={r.name}>
-                                        {r.name} ({r.stops.length} przystankow)
+                                        {r.name} ({r.stops.length} przystanków)
                                     </option>
                                 ))}
                             </select>
@@ -447,7 +447,7 @@ const TripPlannerPopup: React.FC = () => {
                                 className="popup-btn popup-btn--md"
                                 onClick={handleLoadRoute}
                                 disabled={!selectedRoute}
-                                title="Wczytaj trase"
+                                title="Wczytaj trasę"
                             >
                                 Wczytaj
                             </button>
@@ -456,7 +456,7 @@ const TripPlannerPopup: React.FC = () => {
                                 className="popup-btn popup-btn--md trip-planner-btn--danger"
                                 onClick={handleDeleteRoute}
                                 disabled={!selectedRoute}
-                                title="Usun zapisana trase"
+                                title="Usuń zapisaną trasę"
                             >
                                 &times;
                             </button>
@@ -468,7 +468,7 @@ const TripPlannerPopup: React.FC = () => {
                 <div className="trip-planner-section">
                     <div className="trip-planner-label">Przystanki:</div>
                     {stops.length === 0 ? (
-                        <div className="popup-empty trip-planner-empty">Brak przystankow. Dodaj lokacje ponizej.</div>
+                        <div className="popup-empty trip-planner-empty">Brak przystanków. Dodaj lokacje poniżej.</div>
                     ) : (
                         <DndContext
                             sensors={sensors}
@@ -495,7 +495,7 @@ const TripPlannerPopup: React.FC = () => {
                                 </div>
                                 {stops.length > 0 && totalDistance > 0 && (
                                     <div className="trip-planner-total">
-                                        Laczna odleglosc: {totalDistance}
+                                        Łączna odległość: {totalDistance}
                                     </div>
                                 )}
                             </SortableContext>
@@ -503,7 +503,7 @@ const TripPlannerPopup: React.FC = () => {
                     )}
                     {hasUnreachableStops && (
                         <div className="trip-planner-warning">
-                            Niektore przystanki sa nieosiagalne z poprzedniej lokacji.
+                            Niektóre przystanki są nieosiągalne z poprzedniej lokacji.
                         </div>
                     )}
                 </div>
@@ -524,7 +524,7 @@ const TripPlannerPopup: React.FC = () => {
                             className={`trip-planner-mode-tab${inputMode === 'shortcut' ? ' trip-planner-mode-tab--active' : ''}`}
                             onClick={() => setInputMode('shortcut')}
                         >
-                            Ze skrotu
+                            Ze skrótu
                         </button>
                     </div>
 
@@ -555,7 +555,7 @@ const TripPlannerPopup: React.FC = () => {
                                 onChange={e => setSelectedShortcut(e.target.value)}
                                 onKeyDown={handleKeyDown}
                             >
-                                <option value="">-- Wybierz skrot --</option>
+                                <option value="">-- Wybierz skrót --</option>
                                 {shortcuts.map(s => (
                                     <option key={s.key} value={s.key}>
                                         {s.key} ({s.id}) {s.label}
@@ -576,7 +576,7 @@ const TripPlannerPopup: React.FC = () => {
                 {/* Save route section */}
                 {stops.length > 0 && (
                     <div className="trip-planner-section">
-                        <div className="trip-planner-label">Zapisz trase:</div>
+                        <div className="trip-planner-label">Zapisz trasę:</div>
                         <div className="trip-planner-input-row">
                             <input
                                 type="text"
@@ -604,18 +604,18 @@ const TripPlannerPopup: React.FC = () => {
                         className="popup-btn popup-btn--md trip-planner-action-btn popup-btn--primary"
                         onClick={handleProwadz}
                         disabled={stops.length === 0}
-                        title="Pokaz sciezke na mapie"
+                        title="Pokaż ścieżkę na mapie"
                     >
-                        Prowadz
+                        Prowadź
                     </button>
                     <button
                         type="button"
                         className="popup-btn popup-btn--md trip-planner-action-btn trip-planner-action-btn--danger"
                         onClick={clearStops}
                         disabled={stops.length === 0}
-                        title="Wyczysc wszystkie przystanki"
+                        title="Wyczyść wszystkie przystanki"
                     >
-                        Wyczysc
+                        Wyczyść
                     </button>
                 </div>
             </div>

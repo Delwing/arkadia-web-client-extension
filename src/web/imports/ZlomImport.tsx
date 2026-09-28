@@ -20,12 +20,12 @@ export default function ZlomImport() {
                 await file.arrayBuffer(),
             );
             if (parsed.bronie.length + parsed.tarcze.length + parsed.zbroje.length === 0) {
-                setResult({ kind: "error", message: "Baza nie zawiera danych zlomu." });
+                setResult({ kind: "error", message: "Baza nie zawiera danych złomu." });
             } else {
                 setPreview({ parsed, mode: "replace" });
             }
         } catch (err) {
-            setResult({ kind: "error", message: err instanceof Error ? err.message : "Nieznany blad." });
+            setResult({ kind: "error", message: err instanceof Error ? err.message : "Nieznany błąd." });
         } finally {
             setBusy(false);
         }
@@ -39,7 +39,7 @@ export default function ZlomImport() {
             setResult({ kind: "done", message: `Zaimportowano: ${counts.bronie} broni, ${counts.tarcze} tarcz, ${counts.zbroje} zbroi.` });
             setPreview(null);
         } catch (err) {
-            setResult({ kind: "error", message: err instanceof Error ? err.message : "Blad importu." });
+            setResult({ kind: "error", message: err instanceof Error ? err.message : "Błąd importu." });
         } finally {
             setBusy(false);
         }
@@ -64,8 +64,8 @@ export default function ZlomImport() {
                             value={preview.mode}
                             onChange={(e) => setPreview({ ...preview, mode: e.target.value as ZlomMergeMode })}
                         >
-                            <option value="replace">Nadpisz istniejace</option>
-                            <option value="keep">Zachowaj istniejace, dodaj nowe</option>
+                            <option value="replace">Nadpisz istniejące</option>
+                            <option value="keep">Zachowaj istniejące, dodaj nowe</option>
                             <option value="unique-short">Dodaj tylko nowe shorty</option>
                         </Select>
                     </Field>

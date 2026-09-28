@@ -40,7 +40,7 @@ export interface DamageCategory {
 /** Canonical damage types, grouped as in the in-game resistance list. */
 export const DAMAGE_CATEGORIES: DamageCategory[] = [
     {
-        label: 'Obrazenia fizyczne',
+        label: 'Obrażenia fizyczne',
         types: [
             { key: 'ciete', match: /ciet/ },
             { key: 'klute', match: /klut/ },
@@ -49,7 +49,7 @@ export const DAMAGE_CATEGORIES: DamageCategory[] = [
         ],
     },
     {
-        label: 'Obrazenia od zywiolow',
+        label: 'Obrażenia od żywiołów',
         types: [
             { key: 'ogien', match: /ogien|ogn/ },
             { key: 'powietrze', match: /powietrz/ },
@@ -58,7 +58,7 @@ export const DAMAGE_CATEGORIES: DamageCategory[] = [
         ],
     },
     {
-        label: 'Obrazenia magiczne',
+        label: 'Obrażenia magiczne',
         types: [
             { key: 'czysta magia', match: /czyst/ },
             { key: 'magia umyslu', match: /umysl/ },

@@ -246,7 +246,7 @@ export function Timeline({
                 <div className="lv-legend">
                     <span className="lv-legend__item">
                         <span className="lv-legend__swatch" />
-                        Aktywnosc
+                        Aktywność
                     </span>
                     <span className="lv-legend__item">
                         <span className="lv-legend__swatch lv-legend__swatch--match" />
@@ -258,7 +258,7 @@ export function Timeline({
                     </span>
                     <span className="lv-legend__item">
                         <span className="lv-legend__swatch lv-legend__swatch--idle" />
-                        Bezczynnosc
+                        Bezczynność
                     </span>
                     {LOG_EVENT_KINDS.map((kind) => (
                         <span key={kind} className="lv-legend__item">
@@ -275,7 +275,7 @@ export function Timeline({
             </div>
 
             <div className="lv-timeline__row">
-                <IconButton title="Skocz na poczatek  Home" onClick={onJumpToStart}>
+                <IconButton title="Skocz na początek  Home" onClick={onJumpToStart}>
                     <Icon name="jump-start" />
                 </IconButton>
 
@@ -283,7 +283,7 @@ export function Timeline({
                     ref={trackRef}
                     className="lv-track"
                     data-selecting={selecting}
-                    title="Kliknij, aby przejsc do tego momentu. Przeciagnij, aby zaznaczyc zakres."
+                    title="Kliknij, aby przejść do tego momentu. Przeciągnij, aby zaznaczyć zakres."
                     onPointerDown={onTrackPointerDown}
                     onMouseMove={(event) => {
                         const fraction = fractionFromEvent(event);
@@ -298,7 +298,7 @@ export function Timeline({
                             key={`gap-${gap.left}`}
                             className="lv-track__gap"
                             style={{ left: `${gap.left}%`, width: `${gap.width}%` }}
-                            title={`Bezczynnosc przez ${formatDuration(gap.durationMs)}`}
+                            title={`Bezczynność przez ${formatDuration(gap.durationMs)}`}
                         />
                     ))}
 
@@ -354,7 +354,7 @@ export function Timeline({
                                 data-active={rangeActive}
                                 data-edge="from"
                                 style={{ left: `${percentOf(range.from, span)}%` }}
-                                title={`Poczatek zakresu: ${formatClock(range.from)}`}
+                                title={`Początek zakresu: ${formatClock(range.from)}`}
                                 onPointerDown={onHandlePointerDown("from")}
                             />
                             <button

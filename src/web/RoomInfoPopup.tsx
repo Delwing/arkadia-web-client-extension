@@ -40,18 +40,18 @@ interface RoomData {
 const POPUP_ID = 'popup:roomInfo';
 
 const DIRECTION_LABELS: Record<string, string> = {
-    north: 'polnoc',
-    south: 'poludnie',
-    east: 'wschod',
-    west: 'zachod',
-    northeast: 'polnocny-wschod',
-    northwest: 'polnocny-zachod',
-    southeast: 'poludniowy-wschod',
-    southwest: 'poludniowy-zachod',
-    up: 'gora',
-    down: 'dol',
-    in: 'do srodka',
-    out: 'na zewnatrz',
+    north: 'północ',
+    south: 'południe',
+    east: 'wschód',
+    west: 'zachód',
+    northeast: 'północny-wschód',
+    northwest: 'północny-zachód',
+    southeast: 'południowy-wschód',
+    southwest: 'południowy-zachód',
+    up: 'góra',
+    down: 'dół',
+    in: 'do środka',
+    out: 'na zewnątrz',
 };
 
 function formatDirection(dir: string): string {
@@ -60,7 +60,7 @@ function formatDirection(dir: string): string {
 
 const DOOR_LABELS: Record<number, string> = {
     1: 'otwarte',
-    2: 'zamkniete',
+    2: 'zamknięte',
     3: 'zablokowane',
 };
 
@@ -268,11 +268,11 @@ const RoomInfoPopup: React.FC = () => {
                         <span className="room-info-popup__value">{roomData.areaName}</span>
                     </div>
                     <div className="room-info-popup__row">
-                        <span className="room-info-popup__label">Wspolrzedne:</span>
+                        <span className="room-info-popup__label">Współrzędne:</span>
                         <span className="room-info-popup__value">{roomData.x}, {roomData.y}, {roomData.z}</span>
                     </div>
                     <div className="room-info-popup__row">
-                        <span className="room-info-popup__label">Srodowisko:</span>
+                        <span className="room-info-popup__label">Środowisko:</span>
                         <span className="room-info-popup__value">
                             {roomData.envColor && (
                                 <span
@@ -288,7 +288,7 @@ const RoomInfoPopup: React.FC = () => {
                 {/* Exits */}
                 {(exitEntries.length > 0 || specialExitEntries.length > 0) && (
                     <div className="room-info-popup__section">
-                        <div className="room-info-popup__section-title">Wyjscia</div>
+                        <div className="room-info-popup__section-title">Wyjścia</div>
                         {exitEntries.map(([dir, targetId]) => (
                             <div key={dir} className="room-info-popup__row">
                                 <span className="room-info-popup__label">{formatDirection(dir)}:</span>
@@ -344,7 +344,7 @@ const RoomInfoPopup: React.FC = () => {
                                             style={{ backgroundColor: colorHex }}
                                         />
                                         {line.attributes.style}
-                                        {line.attributes.arrow && ', strzalka'}
+                                        {line.attributes.arrow && ', strzałka'}
                                         {line.points.length > 0 && ` (${line.points.length} pkt)`}
                                     </span>
                                 </div>
@@ -365,7 +365,7 @@ const RoomInfoPopup: React.FC = () => {
                         )}
                         {locationNote && (
                             <div className="room-info-popup__note">
-                                <span className="room-info-popup__note-label">Notatka uzytkownika:</span>
+                                <span className="room-info-popup__note-label">Notatka użytkownika:</span>
                                 <span className="room-info-popup__note-text">{locationNote.note}</span>
                             </div>
                         )}
@@ -381,7 +381,7 @@ const RoomInfoPopup: React.FC = () => {
                 {/* Dir Binds */}
                 {dirBindEntries.length > 0 && (
                     <div className="room-info-popup__section">
-                        <div className="room-info-popup__section-title">Bindy kierunkow</div>
+                        <div className="room-info-popup__section-title">Bindy kierunków</div>
                         {dirBindEntries.map(([longDir, shortDir]) => (
                             <div key={longDir} className="room-info-popup__row">
                                 <span className="room-info-popup__label">{formatDirection(longDir)}:</span>
@@ -521,7 +521,7 @@ const RoomInfoPopup: React.FC = () => {
                 {/* Other User Data */}
                 {otherUserDataEntries.length > 0 && (
                     <div className="room-info-popup__section">
-                        <div className="room-info-popup__section-title">Dane uzytkownika</div>
+                        <div className="room-info-popup__section-title">Dane użytkownika</div>
                         {otherUserDataEntries.map(([key, value]) => (
                             <div key={key} className="room-info-popup__row">
                                 <span className="room-info-popup__label">{key}:</span>

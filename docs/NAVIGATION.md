@@ -1,115 +1,115 @@
 # Mapa i nawigacja
 
-Komendy do poruszania sie, mapy i automatycznego chodzenia.
+Komendy do poruszania się, mapy i automatycznego chodzenia.
 
 ## Podstawowy ruch
 
 | Komenda | Opis |
 |---------|------|
-| `/cofnij` | Cofnij postac do poprzedniego pomieszczenia na mapie |
-| `/move kierunek` | Przesun mape bez wysylania komendy do serwera |
-| `/ustaw id` | Ustaw biezaca pozycje na mapie na podany identyfikator |
-| `/zlok` | Wymus odswiezenie biezacej pozycji na mapie |
-| `/idz kierunek` | Wybierz przeciwne wyjscie w pomieszczeniu |
-| `n!` `s!` `e!` `w!` `ne!` `nw!` `se!` `sw!` `u!` `d!` | Wyslij czysty kierunek do serwera z pominieciem ruchu po mapie |
+| `/cofnij` | Cofnij postać do poprzedniego pomieszczenia na mapie |
+| `/move kierunek` | Przesuń mapę bez wysyłania komendy do serwera |
+| `/ustaw id` | Ustaw bieżącą pozycję na mapie na podany identyfikator |
+| `/zlok` | Wymuś odświeżenie bieżącej pozycji na mapie |
+| `/idz kierunek` | Wybierz przeciwne wyjście w pomieszczeniu |
+| `n!` `s!` `e!` `w!` `ne!` `nw!` `se!` `sw!` `u!` `d!` | Wyślij czysty kierunek do serwera z pominięciem ruchu po mapie |
 
-> **Wskazowka:** Kiedy mapper na pewno zgubi pozycje - nie udalo mu sie odtworzyc ruchu za druzyna albo gra podaje lokacje spoza mapy - w prawym gornym rogu mapy zapala sie czerwona plakietka **ZGUBIONY**. Znacznik zostaje na ostatnim pewnym pomieszczeniu; plakietka gasnie sama, gdy gra poda znane mapie polozenie, albo po recznym ustawieniu pozycji (`/ustaw id`, `/zlok`, GPS, menu mapy).
+> **Wskazówka:** Kiedy mapper na pewno zgubi pozycję - nie udało mu się odtworzyć ruchu za drużyną albo gra podaje lokację spoza mapy - w prawym górnym rogu mapy zapala się czerwona plakietka **ZGUBIONY**. Znacznik zostaje na ostatnim pewnym pomieszczeniu; plakietka gaśnie sama, gdy gra poda znane mapie położenie, albo po ręcznym ustawieniu pozycji (`/ustaw id`, `/zlok`, GPS, menu mapy).
 
 ## Automatyczne chodzenie
 
 | Komenda | Opis |
 |---------|------|
-| `/idz id [opoznienie]` | Automatycznie idz do wskazanej lokacji |
+| `/idz id [opoznienie]` | Automatycznie idź do wskazanej lokacji |
 | `/stop` | Zatrzymaj automatyczne chodzenie |
-| `/dalej [opoznienie]` | Wznow wedrowke z opcjonalnym opoznieniem |
-| `/opoz sekundy` | Ustaw domyslne opoznienie krokow |
-| `/szybciej` | Zmniejsz opoznienie o 0.5 s |
-| `/wolniej` | Zwieksz opoznienie o 0.5 s |
-| `/walkerw` | Otworz okno walkera |
+| `/dalej [opoznienie]` | Wznów wędrówkę z opcjonalnym opóźnieniem |
+| `/opoz sekundy` | Ustaw domyślne opóźnienie kroków |
+| `/szybciej` | Zmniejsz opóźnienie o 0.5 s |
+| `/wolniej` | Zwiększ opóźnienie o 0.5 s |
+| `/walkerw` | Otwórz okno walkera |
 
 ## Komendy przed/po kroku
 
 | Komenda | Opis |
 |---------|------|
-| `/pre_walk komendy` | Ustaw komendy wykonywane przed kazdym krokiem (rozdzielone `#`) |
-| `/pre_walk-` | Wyczysc komendy pre-walk |
-| `/post_walk komendy` | Ustaw komendy wykonywane po kazdym kroku (rozdzielone `#`) |
-| `/post_walk-` | Wyczysc komendy post-walk |
+| `/pre_walk komendy` | Ustaw komendy wykonywane przed każdym krokiem (rozdzielone `#`) |
+| `/pre_walk-` | Wyczyść komendy pre-walk |
+| `/post_walk komendy` | Ustaw komendy wykonywane po każdym kroku (rozdzielone `#`) |
+| `/post_walk-` | Wyczyść komendy post-walk |
 
 ## Prowadzenie
 
 | Komenda | Opis |
 |---------|------|
-| `/prowadz id` | Rozpocznij prowadzenie innej osoby do wskazanego pokoju (gdy pieszo nie da sie dojsc, trasa jest liczona z transportem) |
-| `/prowadz-` | Zakoncz prowadzenie (czysci tez trase z transportem) |
-| `/prowadzt id` | Prowadz z uwzglednieniem transportow (statki, dylizanse) - przesiadki widoczne jako kolorowe pierscienie na mapie |
-| `/prowadzt! id` | Jak `/prowadzt`, ale agresywnie minimalizuje chodzenie pieszo (zero kary za przesiadki, transport ~10x tanszy) |
-| `/prowadzt` / `/prowadzt!` | Bez celu: przelacz biezace prowadzenie na trase z transportem (do tego samego celu) |
-| `/prowadz` | Bez celu: przelacz biezace prowadzenie z powrotem na trase pieszo |
-| `/go` | Wybierz wyjscie zgodnie z wyznaczona trasa (gdy aktywne prowadzenie, takze trasa `/prowadzt` ze statkami i dylizansami) |
+| `/prowadz id` | Rozpocznij prowadzenie innej osoby do wskazanego pokoju (gdy pieszo nie da się dojść, trasa jest liczona z transportem) |
+| `/prowadz-` | Zakończ prowadzenie (czyści też trasę z transportem) |
+| `/prowadzt id` | Prowadź z uwzględnieniem transportów (statki, dyliżanse) - przesiadki widoczne jako kolorowe pierścienie na mapie |
+| `/prowadzt! id` | Jak `/prowadzt`, ale agresywnie minimalizuje chodzenie pieszo (zero kary za przesiadki, transport ~10x tańszy) |
+| `/prowadzt` / `/prowadzt!` | Bez celu: przełącz bieżące prowadzenie na trasę z transportem (do tego samego celu) |
+| `/prowadz` | Bez celu: przełącz bieżące prowadzenie z powrotem na trasę pieszo |
+| `/go` | Wybierz wyjście zgodnie z wyznaczoną trasą (gdy aktywne prowadzenie, także trasa `/prowadzt` ze statkami i dyliżansami) |
 
-> **Wskazowka:** `/prowadzt` rysuje pieszej odcinki na mapie tak jak `/prowadz`, a punkty wsiadania/wysiadania znaczy pierscieniami w kolorze odcinka. Pelna instrukcja (na ktora lodz wsiasc, jaka komenda, gdzie wysiasc) trafia do okna wyjscia.
+> **Wskazówka:** `/prowadzt` rysuje piesze odcinki na mapie tak jak `/prowadz`, a punkty wsiadania/wysiadania znaczy pierścieniami w kolorze odcinka. Pełna instrukcja (na którą łódź wsiąść, jaka komenda, gdzie wysiąść) trafia do okna wyjścia.
 
-> **Wskazowka:** Kiedy `/prowadz` nie znajduje drogi pieszo, klient sam szuka trasy z transportem i wypisuje ja tak, jak zrobilby to `/prowadzt`. Jesli w tym czasie jedziesz wozem, dojazd i rejs sa liczone razem. Woz mozna zabrac na statek, wiec zostaje on dopiero tam, gdzie naprawde nie wjedzie — instrukcja pokazuje to jako `Jedz wozem`, `Wsiadz z wozem` i `zostaw woz na`.
+> **Wskazówka:** Kiedy `/prowadz` nie znajduje drogi pieszo, klient sam szuka trasy z transportem i wypisuje ją tak, jak zrobiłby to `/prowadzt`. Jeśli w tym czasie jedziesz wozem, dojazd i rejs są liczone razem. Wóz można zabrać na statek, więc zostaje on dopiero tam, gdzie naprawdę nie wjedzie — instrukcja pokazuje to jako `Jedz wozem`, `Wsiadz z wozem` i `zostaw woz na`.
 
-> **Wskazowka:** Przy wjezdzie wozem na statek bind wejscia kupuje bilety takze dla czlonkow druzyny obecnych na lokacji i wrecza im je (tak jak `/bilety`), bez podwajania `wem`/`wlm`. Mozna to wylaczyc w ustawieniach postaci (opcja "Bilety dla druzyny przy wjezdzie wozem") — wtedy kupowany jest tylko wlasny bilet.
+> **Wskazówka:** Przy wjeździe wozem na statek bind wejścia kupuje bilety także dla członków drużyny obecnych na lokacji i wręcza im je (tak jak `/bilety`), bez podwajania `wem`/`wlm`. Można to wyłączyć w ustawieniach postaci (opcja "Bilety dla drużyny przy wjeździe wozem") — wtedy kupowany jest tylko własny bilet.
 
 ## Wyszukiwanie na mapie
 
 | Komenda | Opis |
 |---------|------|
-| `/przeszukaj tekst` | Wyszukaj pokoje z nazwami zawierajacymi tekst (do 10 najblizszych) |
+| `/przeszukaj tekst` | Wyszukaj pokoje z nazwami zawierającymi tekst (do 10 najbliższych) |
 
-## Roza wiatrow
+## Róża wiatrów
 
 | Komenda | Opis |
 |---------|------|
-| `/roza` | Przelacz roze wiatrow (wl./wyl.) |
-| `/roza 0` | Wylacz roze wiatrow |
-| `/roza 1` | Wlacz tryb 1 - inline (wyswietlana w tekscie) |
-| `/roza 2` | Wlacz tryb 2 - ramka (staly element w rogu obszaru gry) |
+| `/roza` | Przełącz różę wiatrów (wł./wył.) |
+| `/roza 0` | Wyłącz różę wiatrów |
+| `/roza 1` | Włącz tryb 1 - inline (wyświetlana w tekście) |
+| `/roza 2` | Włącz tryb 2 - ramka (stały element w rogu obszaru gry) |
 
-> **Wskazowka:** Przelaczanie trybu (`/roza 1`, `/roza 2`) wlacza roze jesli byla wylaczona. Tryb mozna rowniez zmienic w ustawieniach postaci (opcja "Roza wiatrow").
+> **Wskazówka:** Przełączanie trybu (`/roza 1`, `/roza 2`) włącza różę, jeśli była wyłączona. Tryb można również zmienić w ustawieniach postaci (opcja "Róża wiatrów").
 
 ## Zaznaczanie lokacji
 
 | Komenda | Opis |
 |---------|------|
-| `/zaznaczaj` | Wlacz zaznaczanie odwiedzanych lokacji na mapie |
-| `/zaznaczaj-` | Wylacz zaznaczanie i usun dotychczasowe zaznaczenia |
+| `/zaznaczaj` | Włącz zaznaczanie odwiedzanych lokacji na mapie |
+| `/zaznaczaj-` | Wyłącz zaznaczanie i usuń dotychczasowe zaznaczenia |
 
 ## Informacje o lokacji
 
 | Komenda | Opis |
 |---------|------|
-| `/info` | Wyswietl informacje o biezacej lokacji w oknie wyjscia |
-| `/info id` | Wyswietl informacje o lokacji o podanym id |
+| `/info` | Wyświetl informacje o bieżącej lokacji w oknie wyjścia |
+| `/info id` | Wyświetl informacje o lokacji o podanym id |
 
 ## Notatki lokacji
 
 | Komenda | Opis |
 |---------|------|
-| `/note` | Otworz okno Miejsca na biezacej lokacji, z kursorem w notatce |
+| `/note` | Otwórz okno Miejsca na bieżącej lokacji, z kursorem w notatce |
 
-> **Wskazowka:** Skroty (`/idz`, `/prowadz`) i notatki lokacji sa w jednym oknie **Miejsca** (menu). Kazde miejsce to lokacja z opcjonalnym skrotem i notatka; przycisk "Tutaj" dodaje biezaca lokacje, a notatka zapisuje sie sama.
+> **Wskazówka:** Skróty (`/idz`, `/prowadz`) i notatki lokacji są w jednym oknie **Miejsca** (menu). Każde miejsce to lokacja z opcjonalnym skrótem i notatką; przycisk "Tutaj" dodaje bieżącą lokację, a notatka zapisuje się sama.
 
 ## Okno mapy
 
 | Komenda | Opis |
 |---------|------|
-| `/mapa` | Otworz nowe okno mapy na biezacej lokacji |
-| `/mapa id` | Otworz nowe okno mapy na lokacji o podanym id |
-| `/mapa nazwa` | Otworz nowe okno mapy wycentrowane na obszarze o podanej nazwie |
+| `/mapa` | Otwórz nowe okno mapy na bieżącej lokacji |
+| `/mapa id` | Otwórz nowe okno mapy na lokacji o podanym id |
+| `/mapa nazwa` | Otwórz nowe okno mapy wycentrowane na obszarze o podanej nazwie |
 
-> **Wskazowka:** Okna mapy sa niezalezne od glownej mapy - nie sledza ruchu gracza. Mozna otworzyc wiele okien jednoczesnie. Kliknij prawym przyciskiem na lokacje i wybierz "Otworz okno mapy" aby otworzyc okno na wybranej lokacji.
+> **Wskazówka:** Okna mapy są niezależne od głównej mapy - nie śledzą ruchu gracza. Można otworzyć wiele okien jednocześnie. Kliknij prawym przyciskiem na lokację i wybierz "Otwórz okno mapy", aby otworzyć okno na wybranej lokacji.
 
 ## Multibindy lokacji
 
 | Komenda | Opis |
 |---------|------|
-| `/mbind numer akcja` | Ustaw multibind 1-4 dla biezacej lokacji |
-| `/mbind+ akcja` | Dodaj akcje do pierwszego wolnego multibinda |
-| `/mbind-` | Usun wszystkie multibindy z biezacej lokacji |
-| `/mbind- numer` | Usun wskazany multibind |
-| `/mbind` | Wyswietl multibindy biezacej lokacji |
-| `/mbind id` | Wyswietl multibindy dla lokacji o podanym id |
+| `/mbind numer akcja` | Ustaw multibind 1-4 dla bieżącej lokacji |
+| `/mbind+ akcja` | Dodaj akcję do pierwszego wolnego multibinda |
+| `/mbind-` | Usuń wszystkie multibindy z bieżącej lokacji |
+| `/mbind- numer` | Usuń wskazany multibind |
+| `/mbind` | Wyświetl multibindy bieżącej lokacji |
+| `/mbind id` | Wyświetl multibindy dla lokacji o podanym id |

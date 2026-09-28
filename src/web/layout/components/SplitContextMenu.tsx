@@ -18,8 +18,8 @@ interface SplitContextMenuProps {
 const ITEMS: Array<{ label: string; dir: SplitDir; before: boolean; Icon: LucideIcon }> = [
   { label: 'Podziel w lewo', dir: 'row', before: true, Icon: PanelLeft },
   { label: 'Podziel w prawo', dir: 'row', before: false, Icon: PanelRight },
-  { label: 'Podziel w gore', dir: 'col', before: true, Icon: PanelTop },
-  { label: 'Podziel w dol', dir: 'col', before: false, Icon: PanelBottom },
+  { label: 'Podziel w górę', dir: 'col', before: true, Icon: PanelTop },
+  { label: 'Podziel w dół', dir: 'col', before: false, Icon: PanelBottom },
 ];
 
 /** Small context menu offering to split a docked panel, inserting an empty

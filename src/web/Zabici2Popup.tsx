@@ -133,7 +133,7 @@ const Zabici2Popup: React.FC = () => {
                         </div>
                     ))}
                     <div className="zabici-popup__grand-total">
-                        <span>Lacznie</span>
+                        <span>Łącznie</span>
                         <span>{grandTotal}</span>
                     </div>
                 </>
@@ -169,7 +169,7 @@ const Zabici2Popup: React.FC = () => {
                         </div>
                     ))}
                     <div className="zabici-popup__grand-total">
-                        <span>Lacznie</span>
+                        <span>Łącznie</span>
                         <span>{dailyTotal}</span>
                     </div>
                 </>
@@ -205,7 +205,7 @@ const Zabici2Popup: React.FC = () => {
                         </div>
                     ))}
                     <div className="zabici-popup__grand-total">
-                        <span>Lacznie</span>
+                        <span>Łącznie</span>
                         <span>{yearlyTotal}</span>
                     </div>
                 </>
@@ -228,7 +228,7 @@ const Zabici2Popup: React.FC = () => {
             {characterName && (
                 <div className="postepy2-header">
                     <span>
-                        <span className="postepy2-header__label">Postac:</span>
+                        <span className="postepy2-header__label">Postać:</span>
                         <span className="postepy2-header__name">{characterName}</span>
                     </span>
                 </div>

@@ -254,7 +254,7 @@ export function PanelHeader({ chrome, variant, onPointerDown, onContextMenu }: P
                 type="button"
                 className="panel-button panel-button--reset"
                 onClick={chrome.onReset}
-                title="Przywroc domyslna pozycje i rozmiar"
+                title="Przywróć domyślną pozycję i rozmiar"
               />
             )}
             {chrome.onLock && (
@@ -278,7 +278,7 @@ export function PanelHeader({ chrome, variant, onPointerDown, onContextMenu }: P
                 type="button"
                 className="panel-button panel-button--popout"
                 onClick={chrome.onPopout}
-                title="Otworz w osobnym oknie"
+                title="Otwórz w osobnym oknie"
               />
             )}
             {chrome.closable && chrome.onClose && (

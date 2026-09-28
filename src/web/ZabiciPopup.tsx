@@ -47,9 +47,9 @@ const ZabiciPopup: React.FC = () => {
             type="button"
             className={`zabici-popup__team-toggle${showTeam ? ' zabici-popup__team-toggle--active' : ''}`}
             onClick={() => setShowTeam(!showTeam)}
-            title={showTeam ? 'Ukryj druzyne' : 'Pokaz druzyne'}
+            title={showTeam ? 'Ukryj drużynę' : 'Pokaż drużynę'}
         >
-            Druzyna
+            Drużyna
         </button>
     );
 
@@ -84,7 +84,7 @@ const ZabiciPopup: React.FC = () => {
                                     </div>
                                 ))}
                                 <div className="zabici-popup__section-total">
-                                    <span>Lacznie</span>
+                                    <span>Łącznie</span>
                                     <span>{totals.my}</span>
                                 </div>
                             </div>
@@ -107,7 +107,7 @@ const ZabiciPopup: React.FC = () => {
                                         </div>
                                     ))}
                                     <div className="zabici-popup__section-total">
-                                        <span>Lacznie</span>
+                                        <span>Łącznie</span>
                                         <span>{playerTotal}</span>
                                     </div>
                                 </div>
@@ -116,7 +116,7 @@ const ZabiciPopup: React.FC = () => {
 
                         {/* Grand total */}
                         <div className="zabici-popup__grand-total">
-                            <span>Druzyna lacznie</span>
+                            <span>Drużyna łącznie</span>
                             <span>{totals.my + totals.team}</span>
                         </div>
                     </>

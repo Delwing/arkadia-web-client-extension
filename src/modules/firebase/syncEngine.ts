@@ -103,13 +103,13 @@ class FirebaseSyncEngine {
             logSyncActivity('warning', `Konflikt: ${conflicts.map(c => c.category).join(', ')}`);
         });
         eventBus.on('firebase.sync.uploaded', ({ categories, auto }) => {
-            logSyncActivity('success', `${auto ? 'Automatycznie wyslano' : 'Wyslano'}: ${categories.join(', ')}`);
+            logSyncActivity('success', `${auto ? 'Automatycznie wysłano' : 'Wysłano'}: ${categories.join(', ')}`);
         });
         eventBus.on('firebase.sync.applied', ({ categories }) => {
             logSyncActivity('success', `Pobrano z chmury: ${categories.join(', ')}`);
         });
         eventBus.on('firebase.sync.error', ({ message }) => {
-            logSyncActivity('error', `Blad synchronizacji: ${message}`);
+            logSyncActivity('error', `Błąd synchronizacji: ${message}`);
         });
     }
 
@@ -274,7 +274,7 @@ class FirebaseSyncEngine {
         // UI is mounted — otherwise the modal is already on screen.
         if (fresh.length > 0 && !this.conflictUiActive) {
             eventBus.emit('notify', {
-                text: 'Wykryto konflikt synchronizacji ustawien. Otworz Eksport / Import, aby go rozwiazac.',
+                text: 'Wykryto konflikt synchronizacji ustawień. Otwórz Eksport / Import, aby go rozwiązać.',
                 time: 8000,
             });
         }

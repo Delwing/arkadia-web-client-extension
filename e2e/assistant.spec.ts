@@ -110,7 +110,7 @@ test.describe('AI assistant panel', () => {
 
         const card = page.locator('.assistant-card');
         await expect(card).toHaveCount(1);
-        await card.getByRole('button', {name: 'Odrzuc'}).click();
+        await card.getByRole('button', {name: 'Odrzuć'}).click();
 
         await expect(card).toContainText('Odrzucono');
         expect(await page.evaluate(() => localStorage.getItem('aliases'))).toBeNull();

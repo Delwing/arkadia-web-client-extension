@@ -31,8 +31,8 @@ test.describe('Letter composer', () => {
         await expect(composer.locator('#letter-template'), 'should have template selector').toBeVisible();
 
         // Check buttons are present
-        await expect(composer.locator('button:has-text("Podglad")'), 'should have preview button').toBeVisible();
-        await expect(composer.locator('button:has-text("Wyslij")'), 'should have submit button').toBeVisible();
+        await expect(composer.locator('button:has-text("Podgląd")'), 'should have preview button').toBeVisible();
+        await expect(composer.locator('button:has-text("Wyślij")'), 'should have submit button').toBeVisible();
     });
 
     test('form fields work correctly', async ({page}) => {
@@ -111,7 +111,7 @@ test.describe('Letter composer', () => {
         await composer.locator('#letter-content').fill('Tresc listu');
 
         // Submit form
-        await composer.locator('button:has-text("Wyslij")').click();
+        await composer.locator('button:has-text("Wyślij")').click();
 
         // Modal should close
         await expect(composer, 'should close composer after submit').not.toBeVisible();
@@ -173,7 +173,7 @@ test.describe('Letter composer', () => {
         await composer.locator('#letter-content').fill('To jest test podgladu listu.');
 
         // Click preview button
-        await composer.locator('button:has-text("Podglad")').click();
+        await composer.locator('button:has-text("Podgląd")').click();
 
         // Composer should still be open after preview
         await expect(composer, 'composer should remain open after preview').toBeVisible();
@@ -215,7 +215,7 @@ test.describe('Letter composer', () => {
         await composer.locator('#letter-content').fill('Content');
 
         // Submit form
-        await composer.locator('button:has-text("Wyslij")').click();
+        await composer.locator('button:has-text("Wyślij")').click();
         await expect(composer, 'should close composer after submit').not.toBeVisible();
 
         // Reopen composer
@@ -257,7 +257,7 @@ test.describe('Letter composer', () => {
         await expect(templateSelect, 'should select the new template').toHaveValue(/^custom:/);
 
         await composer.locator('#letter-content').fill('Tresc w gwiazdkach');
-        await composer.locator('button:has-text("Podglad")').click();
+        await composer.locator('button:has-text("Podgląd")').click();
         await waitForOutputContaining(page, 'szablon Gwiazdki');
         await waitForOutputContaining(page, '* Tresc w gwiazdkach');
 
@@ -280,7 +280,7 @@ test.describe('Letter composer', () => {
 
         await widthInput.fill('40');
         await composer.locator('#letter-content').fill('Waski list');
-        await composer.locator('button:has-text("Podglad")').click();
+        await composer.locator('button:has-text("Podgląd")').click();
         await waitForOutputContaining(page, 'Podglad listu (szerokosc 40');
 
         // The override lasts for one letter only
@@ -304,7 +304,7 @@ test.describe('Letter composer', () => {
         await expect(composer.locator('.letter-align-button--center'), 'should mark the chosen alignment').toHaveClass(/is-active/);
         await expect(composer.locator('#letter-content'), 'should not change the typed text').toHaveValue('Srodek');
 
-        await composer.locator('button:has-text("Podglad")').click();
+        await composer.locator('button:has-text("Podgląd")').click();
         await waitForOutputContaining(page, `${' '.repeat(12)}Srodek`);
 
         // Remembered for the next letter

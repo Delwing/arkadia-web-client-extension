@@ -50,13 +50,13 @@ test.describe('Carriage blocks popup', () => {
         await expect(items.first()).toContainText('(100)');
 
         // Deleting one row leaves the other.
-        await items.first().getByTitle('Usun blokade').click();
+        await items.first().getByTitle('Usuń blokadę').click();
         await expect(items).toHaveCount(1);
         await expect(items.first()).toContainText('(101)');
         await expect.poll(() => getStoredBlocks(page)).toEqual([101]);
 
         // Clear-all wants a confirming second click before it acts.
-        const clearButton = blocksWindow.getByRole('button', {name: 'Wyczysc'});
+        const clearButton = blocksWindow.getByRole('button', {name: 'Wyczyść'});
         await clearButton.click();
         await expect.poll(() => getStoredBlocks(page), {message: 'first click must not clear yet'}).toEqual([101]);
         await blocksWindow.getByRole('button', {name: 'Na pewno?'}).click();

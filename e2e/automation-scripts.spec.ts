@@ -59,7 +59,7 @@ test.describe('Automation scripts', () => {
         await saveEditor(modal);
 
         await expect(row(modal, 'za (.+)'), 'should name the script in the summary').toContainText('skrypt atak');
-        await expect(rowTitled(modal, 'atak'), 'should count who uses the script').toContainText('uzywany przez 1 element');
+        await expect(rowTitled(modal, 'atak'), 'should count who uses the script').toContainText('używany przez 1 element');
         await closeAutomation(modal);
 
         await resetCommandLog(page);

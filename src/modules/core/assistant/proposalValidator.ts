@@ -187,7 +187,7 @@ function repairPolishLetters(source: string, path: string): { text: string; issu
                 issues.push(err(
                     'polishLetterUnrepairable',
                     path,
-                    `Wzorzec zawiera polska litere w sekwencji ucieczki ("\\${ch}"). Nie moge tego bezpiecznie poprawic - przepisz wzorzec bez polskich znakow.`,
+                    `Wzorzec zawiera polską literę w sekwencji ucieczki ("\\${ch}"). Nie mogę tego bezpiecznie poprawić - przepisz wzorzec bez polskich znaków.`,
                 ));
                 return { text: source, issues, repairs };
             }
@@ -231,7 +231,7 @@ function repairPolishLetters(source: string, path: string): { text: string; issu
                 issues.push(err(
                     'polishLetterUnrepairable',
                     path,
-                    'Wzorzec uzywa polskiej litery jako granicy zakresu w klasie znakow. Nie moge tego bezpiecznie poprawic - wypisz znaki pojedynczo, bez polskich liter.',
+                    'Wzorzec używa polskiej litery jako granicy zakresu w klasie znaków. Nie mogę tego bezpiecznie poprawić - wypisz znaki pojedynczo, bez polskich liter.',
                 ));
                 return { text: source, issues, repairs };
             }
@@ -241,7 +241,7 @@ function repairPolishLetters(source: string, path: string): { text: string; issu
                 path,
                 from: ch,
                 to: ascii,
-                message: `Zamieniono "${ch}" na "${ascii}" - gra wysyla tekst bez polskich znakow, wiec wzorzec z polska litera nigdy by nie zadzialal.`,
+                message: `Zamieniono "${ch}" na "${ascii}" - gra wysyła tekst bez polskich znaków, więc wzorzec z polską literą nigdy by nie zadziałał.`,
             });
             out += ascii;
             prevIsRangeDash = false;
@@ -309,7 +309,7 @@ export function sanitizeRegexSource(
             issues: [err(
                 'patternTooLong',
                 path,
-                `Wzorzec ma ${source.length} znakow, a limit to ${MAX_PATTERN_LENGTH}. Skroc go.`,
+                `Wzorzec ma ${source.length} znaków, a limit to ${MAX_PATTERN_LENGTH}. Skróć go.`,
             )],
             repairs: [],
         };
@@ -327,7 +327,7 @@ export function sanitizeRegexSource(
             issues: [err(
                 'nonAsciiPattern',
                 path,
-                `Wzorzec zawiera znak spoza ASCII ("${nonAscii}"). Wzorce w tym kliencie musza byc w czystym ASCII.`,
+                `Wzorzec zawiera znak spoza ASCII ("${nonAscii}"). Wzorce w tym kliencie muszą być w czystym ASCII.`,
             )],
             repairs,
         };
@@ -339,7 +339,7 @@ export function sanitizeRegexSource(
             issues.push(err(
                 'unsupportedFlag',
                 `${path}.flags`,
-                `Flaga "${flag}" nie jest obslugiwana - dozwolone sa tylko: ${SUPPORTED_TRIGGER_FLAGS.split('').join(', ')}.`,
+                `Flaga "${flag}" nie jest obsługiwana - dozwolone są tylko: ${SUPPORTED_TRIGGER_FLAGS.split('').join(', ')}.`,
             ));
         }
     }
@@ -351,7 +351,7 @@ export function sanitizeRegexSource(
             issues: [err(
                 'catastrophicPattern',
                 path,
-                'Wzorzec ma zagniezdzone kwantyfikatory bez ograniczenia (np. "(a+)+") i moze zawiesic klienta. Uprosc go.',
+                'Wzorzec ma zagnieżdżone kwantyfikatory bez ograniczenia (np. "(a+)+") i może zawiesić klienta. Uprość go.',
             )],
             repairs,
         };
@@ -367,7 +367,7 @@ export function sanitizeRegexSource(
             issues: [err(
                 'invalidRegex',
                 path,
-                `Wzorzec nie jest poprawnym wyrazeniem regularnym: ${(e as Error).message}`,
+                `Wzorzec nie jest poprawnym wyrażeniem regularnym: ${(e as Error).message}`,
             )],
             repairs,
         };
@@ -516,11 +516,11 @@ const COMMAND_RULES: CommandRule[] = [
     { code: 'dropsItems', test: /\b(wyrzuc|porzuc|upusc)\b/i, message: 'Komenda wyrzuca przedmioty.' },
     { code: 'destroysItems', test: /\b(zniszcz|spal|podrzyj|rozerwij|polam)\b/i, message: 'Komenda niszczy przedmioty.' },
     { code: 'givesAwayItems', test: /\b(daj|oddaj|wrecz|sprzedaj|zastaw)\b/i, message: 'Komenda oddaje lub sprzedaje przedmioty.' },
-    { code: 'movesMoney', test: /\b(wyplac|wplac|przelej)\b/i, message: 'Komenda operuje na pieniadzach.' },
-    { code: 'endsSession', test: /\b(quit|koniec|wyloguj|zakoncz)\b/i, message: 'Komenda konczy sesje w grze.' },
-    { code: 'exposesPassword', test: /\b(haslo|password|passwd)\b/i, message: 'Komenda zawiera slowo "haslo" - nigdy nie wysylaj hasla przez alias ani trigger.' },
+    { code: 'movesMoney', test: /\b(wyplac|wplac|przelej)\b/i, message: 'Komenda operuje na pieniądzach.' },
+    { code: 'endsSession', test: /\b(quit|koniec|wyloguj|zakoncz)\b/i, message: 'Komenda kończy sesję w grze.' },
+    { code: 'exposesPassword', test: /\b(haslo|password|passwd)\b/i, message: 'Komenda zawiera słowo "hasło" - nigdy nie wysyłaj hasła przez alias ani trigger.' },
     { code: 'wipesClientData', test: /\/(usun_skroty|usun_skrot|zlom-reset|walka_restart|nabindach--)\b/i, message: 'Komenda kasuje dane zapisane w kliencie.' },
-    { code: 'deletesCharacter', test: /\b(usun\s+postac|skasuj\s+postac|samobojstwo)\b/i, message: 'Komenda moze usunac postac.' },
+    { code: 'deletesCharacter', test: /\b(usun\s+postac|skasuj\s+postac|samobojstwo)\b/i, message: 'Komenda może usunąć postać.' },
 ];
 
 /** Split a command string the way the client does: `;`, newline and `#`. */
@@ -562,7 +562,7 @@ export function inspectCommand(command: unknown, path = 'command'): CommandSafet
     for (const rule of COMMAND_RULES) {
         const m = rule.test.exec(command);
         if (m) {
-            flags.push({ code: rule.code, path, match: m[0], message: `${rule.message} Sprawdz ja przed zatwierdzeniem.` });
+            flags.push({ code: rule.code, path, match: m[0], message: `${rule.message} Sprawdź ją przed zatwierdzeniem.` });
         }
     }
 
@@ -570,14 +570,14 @@ export function inspectCommand(command: unknown, path = 'command'): CommandSafet
         issues.push(err(
             'tooManyCommands',
             path,
-            `Komenda wysyla ${parts.length} polecen naraz (limit ${COMMAND_COUNT_HARD_CAP}). To wyglada na spam i zostalo odrzucone.`,
+            `Komenda wysyła ${parts.length} poleceń naraz (limit ${COMMAND_COUNT_HARD_CAP}). To wygląda na spam i zostało odrzucone.`,
         ));
     } else if (parts.length > COMMAND_COUNT_WARN_THRESHOLD) {
         flags.push({
             code: 'manyCommands',
             path,
             match: `${parts.length}`,
-            message: `Komenda wysyla ${parts.length} polecen naraz. Upewnij sie, ze o to chodzilo.`,
+            message: `Komenda wysyła ${parts.length} poleceń naraz. Upewnij się, że o to chodziło.`,
         });
     }
 
@@ -586,7 +586,7 @@ export function inspectCommand(command: unknown, path = 'command'): CommandSafet
             code: 'rangeExpansion',
             path,
             match: '$i',
-            message: 'Komenda uzywa zakresu "$i" - jedno wywolanie moze wyslac do 50 polecen.',
+            message: 'Komenda używa zakresu "$i" - jedno wywołanie może wysłać do 50 poleceń.',
         });
     }
 
@@ -611,27 +611,27 @@ function validateSettingValue(descriptor: SettingDescriptor, value: unknown): Va
     if (value === undefined || value === null) {
         return descriptor.optional
             ? []
-            : [err('missingValue', path, `Brak wartosci dla "${descriptor.key}"${label}.`)];
+            : [err('missingValue', path, `Brak wartości dla "${descriptor.key}"${label}.`)];
     }
 
     switch (descriptor.type) {
         case 'boolean':
             return typeof value === 'boolean'
                 ? []
-                : [err('wrongValueType', path, `"${descriptor.key}"${label} przyjmuje wartosc logiczna (true/false), a otrzymalem: ${describeValue(value)}.`)];
+                : [err('wrongValueType', path, `"${descriptor.key}"${label} przyjmuje wartość logiczną (true/false), a otrzymałem: ${describeValue(value)}.`)];
 
         case 'number': {
             if (typeof value !== 'number' || !Number.isFinite(value)) {
-                return [err('wrongValueType', path, `"${descriptor.key}"${label} przyjmuje liczbe, a otrzymalem: ${describeValue(value)}.`)];
+                return [err('wrongValueType', path, `"${descriptor.key}"${label} przyjmuje liczbę, a otrzymałem: ${describeValue(value)}.`)];
             }
             if (descriptor.integer && !Number.isInteger(value)) {
-                return [err('nonIntegerValue', path, `"${descriptor.key}"${label} przyjmuje liczbe calkowita, a otrzymalem ${value}.`)];
+                return [err('nonIntegerValue', path, `"${descriptor.key}"${label} przyjmuje liczbę całkowitą, a otrzymałem ${value}.`)];
             }
             if (descriptor.min !== undefined && value < descriptor.min) {
-                return [err('valueOutOfRange', path, `"${descriptor.key}"${label} musi byc >= ${descriptor.min}, a otrzymalem ${value}.`)];
+                return [err('valueOutOfRange', path, `"${descriptor.key}"${label} musi być >= ${descriptor.min}, a otrzymałem ${value}.`)];
             }
             if (descriptor.max !== undefined && value > descriptor.max) {
-                return [err('valueOutOfRange', path, `"${descriptor.key}"${label} musi byc <= ${descriptor.max}, a otrzymalem ${value}.`)];
+                return [err('valueOutOfRange', path, `"${descriptor.key}"${label} musi być <= ${descriptor.max}, a otrzymałem ${value}.`)];
             }
             return [];
         }
@@ -639,7 +639,7 @@ function validateSettingValue(descriptor: SettingDescriptor, value: unknown): Va
         case 'string':
             return typeof value === 'string'
                 ? []
-                : [err('wrongValueType', path, `"${descriptor.key}"${label} przyjmuje tekst, a otrzymalem: ${describeValue(value)}.`)];
+                : [err('wrongValueType', path, `"${descriptor.key}"${label} przyjmuje tekst, a otrzymałem: ${describeValue(value)}.`)];
 
         case 'enum': {
             const allowed = descriptor.enumValues ?? [];
@@ -647,7 +647,7 @@ function validateSettingValue(descriptor: SettingDescriptor, value: unknown): Va
             return [err(
                 'valueNotAllowed',
                 path,
-                `"${descriptor.key}"${label} przyjmuje jedna z wartosci: ${allowed.join(', ')}. Otrzymalem: ${describeValue(value)}.`,
+                `"${descriptor.key}"${label} przyjmuje jedną z wartości: ${allowed.join(', ')}. Otrzymałem: ${describeValue(value)}.`,
                 [...allowed],
             )];
         }
@@ -657,22 +657,22 @@ function validateSettingValue(descriptor: SettingDescriptor, value: unknown): Va
             return [err(
                 'invalidColor',
                 path,
-                `"${descriptor.key}"${label} przyjmuje kolor w formacie "#rrggbb" albo "transparent". Otrzymalem: ${describeValue(value)}.`,
+                `"${descriptor.key}"${label} przyjmuje kolor w formacie "#rrggbb" albo "transparent". Otrzymałem: ${describeValue(value)}.`,
             )];
         }
 
         case 'stringArray':
             return Array.isArray(value) && value.every(v => typeof v === 'string')
                 ? []
-                : [err('wrongValueType', path, `"${descriptor.key}"${label} przyjmuje liste tekstow. Otrzymalem: ${describeValue(value)}.`)];
+                : [err('wrongValueType', path, `"${descriptor.key}"${label} przyjmuje listę tekstów. Otrzymałem: ${describeValue(value)}.`)];
 
         case 'booleanArray': {
             const okShape = Array.isArray(value) && value.every(v => typeof v === 'boolean');
             if (!okShape) {
-                return [err('wrongValueType', path, `"${descriptor.key}"${label} przyjmuje liste wartosci logicznych. Otrzymalem: ${describeValue(value)}.`)];
+                return [err('wrongValueType', path, `"${descriptor.key}"${label} przyjmuje listę wartości logicznych. Otrzymałem: ${describeValue(value)}.`)];
             }
             if (descriptor.length !== undefined && (value as unknown[]).length !== descriptor.length) {
-                return [err('wrongArrayLength', path, `"${descriptor.key}"${label} wymaga dokladnie ${descriptor.length} wartosci, a otrzymalem ${(value as unknown[]).length}.`)];
+                return [err('wrongArrayLength', path, `"${descriptor.key}"${label} wymaga dokładnie ${descriptor.length} wartości, a otrzymałem ${(value as unknown[]).length}.`)];
             }
             return [];
         }
@@ -682,7 +682,7 @@ function validateSettingValue(descriptor: SettingDescriptor, value: unknown): Va
             return [err(
                 'settingNotAssistantEditable',
                 'key',
-                `"${descriptor.key}" ma zlozona strukture i asystent nie moze jej zmieniac - ustaw ja recznie w opcjach klienta.`,
+                `"${descriptor.key}" ma złożoną strukturę i asystent nie może jej zmieniać - ustaw ją ręcznie w opcjach klienta.`,
             )];
     }
 }
@@ -713,7 +713,7 @@ export function validateSettingChange(input: Record<string, unknown>): Validatio
         return fail([err(
             'unknownSettingKey',
             'key',
-            `Nie ma ustawienia "${String(input.key)}".${suggestions.length ? ` Czy chodzilo o: ${suggestions.join(', ')}?` : ''}`,
+            `Nie ma ustawienia "${String(input.key)}".${suggestions.length ? ` Czy chodziło o: ${suggestions.join(', ')}?` : ''}`,
             suggestions,
         )]) as ValidationResult<SettingChangeProposal>;
     }
@@ -722,7 +722,7 @@ export function validateSettingChange(input: Record<string, unknown>): Validatio
         return fail([err(
             'ambiguousSettingKey',
             'key',
-            `Klucz "${String(input.key)}" jest niejednoznaczny - podaj pelna nazwe: ${candidates.join(', ')}.`,
+            `Klucz "${String(input.key)}" jest niejednoznaczny - podaj pełną nazwę: ${candidates.join(', ')}.`,
             candidates,
         )]) as ValidationResult<SettingChangeProposal>;
     }
@@ -781,7 +781,7 @@ export function validateAlias(input: Record<string, unknown>): ValidationResult<
                 path: 'command',
                 from: command,
                 to: folded,
-                message: 'Usunieto polskie znaki z komendy - klient i tak wysyla ja bez nich.',
+                message: 'Usunięto polskie znaki z komendy - klient i tak wysyła ją bez nich.',
             });
             command = folded;
         }
@@ -793,21 +793,21 @@ export function validateAlias(input: Record<string, unknown>): ValidationResult<
             issues.push(err(
                 'undefinedGroupReference',
                 'command',
-                `Komenda uzywa ${dangling.map(n => `$${n}`).join(', ')}, ale wzorzec ma tylko ${groupCount} grup przechwytujacych.`,
+                `Komenda używa ${dangling.map(n => `$${n}`).join(', ')}, ale wzorzec ma tylko ${groupCount} grup przechwytujących.`,
             ));
         }
         if (/\$i/.test(command) && groupCount === 0) {
             issues.push(err(
                 'rangeWithoutGroup',
                 'command',
-                'Komenda uzywa zakresu "$i", ale wzorzec nie ma grupy przechwytujacej, z ktorej mozna odczytac zakres (np. "(.+)").',
+                'Komenda używa zakresu "$i", ale wzorzec nie ma grupy przechwytującej, z której można odczytać zakres (np. "(.+)").',
             ));
         }
     }
 
     if (input.overrides !== undefined) {
         if (!isPlainObject(input.overrides) || Object.values(input.overrides).some(v => typeof v !== 'string')) {
-            issues.push(err('invalidOverrides', 'overrides', 'Pole "overrides" musi byc mapa: nazwa postaci -> komenda.'));
+            issues.push(err('invalidOverrides', 'overrides', 'Pole "overrides" musi być mapą: nazwa postaci -> komenda.'));
         }
     }
 
@@ -852,7 +852,7 @@ function validateMacro(raw: unknown, index: number, triggerType: 'pattern' | 'ev
     const flags: CommandFlag[] = [];
 
     if (!isPlainObject(raw)) {
-        return { issues: [err('invalidMacro', path, 'Kazde makro musi byc obiektem.')], repairs, flags };
+        return { issues: [err('invalidMacro', path, 'Każde makro musi być obiektem.')], repairs, flags };
     }
     const type = raw.type;
     if (typeof type !== 'string' || type === '') {
@@ -865,7 +865,7 @@ function validateMacro(raw: unknown, index: number, triggerType: 'pattern' | 'ev
             issues: [err(
                 'unknownMacroType',
                 `${path}.type`,
-                `Nieznany typ makra "${type}". Dostepne: ${BUILT_IN_MACRO_TYPES.join(', ')}.`,
+                `Nieznany typ makra "${type}". Dostępne: ${BUILT_IN_MACRO_TYPES.join(', ')}.`,
                 [...BUILT_IN_MACRO_TYPES],
             )],
             repairs,
@@ -878,7 +878,7 @@ function validateMacro(raw: unknown, index: number, triggerType: 'pattern' | 'ev
             issues: [err(
                 'macroNotSupportedForEvent',
                 `${path}.type`,
-                `Makro "${type}" dziala tylko dla triggerow tekstowych - trigger zdarzeniowy nie ma linii do zmodyfikowania. Dostepne dla zdarzen: ${EVENT_SAFE_MACRO_TYPES.join(', ')}.`,
+                `Makro "${type}" działa tylko dla triggerów tekstowych - trigger zdarzeniowy nie ma linii do zmodyfikowania. Dostępne dla zdarzeń: ${EVENT_SAFE_MACRO_TYPES.join(', ')}.`,
                 [...EVENT_SAFE_MACRO_TYPES],
             )],
             repairs,
@@ -900,7 +900,7 @@ function validateMacro(raw: unknown, index: number, triggerType: 'pattern' | 'ev
     switch (type) {
         case 'color': {
             if (raw.color === undefined && raw.background === undefined) {
-                issues.push(err('missingMacroColor', `${path}.color`, 'Makro "color" wymaga pola "color" (kolor tekstu) lub "background" (kolor tla).'));
+                issues.push(err('missingMacroColor', `${path}.color`, 'Makro "color" wymaga pola "color" (kolor tekstu) lub "background" (kolor tła).'));
                 break;
             }
             for (const field of ['color', 'background'] as const) {
@@ -917,7 +917,7 @@ function validateMacro(raw: unknown, index: number, triggerType: 'pattern' | 'ev
         case 'replace': {
             const to = raw.to;
             if (typeof to !== 'string') {
-                issues.push(err('missingMacroTo', `${path}.to`, 'Makro "replace" wymaga pola "to" (moze byc pustym tekstem).'));
+                issues.push(err('missingMacroTo', `${path}.to`, 'Makro "replace" wymaga pola "to" (może być pustym tekstem).'));
             } else {
                 macro.to = to;
             }
@@ -937,7 +937,7 @@ function validateMacro(raw: unknown, index: number, triggerType: 'pattern' | 'ev
                         path: `${path}.command`,
                         from: command,
                         to: folded,
-                        message: 'Usunieto polskie znaki z komendy - klient i tak wysyla ja bez nich.',
+                        message: 'Usunięto polskie znaki z komendy - klient i tak wysyła ją bez nich.',
                     });
                 }
                 macro.command = folded;
@@ -951,7 +951,7 @@ function validateMacro(raw: unknown, index: number, triggerType: 'pattern' | 'ev
         case 'beep': {
             if (raw.soundKey !== undefined) {
                 if (typeof raw.soundKey !== 'string') {
-                    issues.push(err('wrongValueType', `${path}.soundKey`, 'Pole "soundKey" musi byc tekstem.'));
+                    issues.push(err('wrongValueType', `${path}.soundKey`, 'Pole "soundKey" musi być tekstem.'));
                 } else {
                     macro.soundKey = raw.soundKey;
                 }
@@ -962,7 +962,7 @@ function validateMacro(raw: unknown, index: number, triggerType: 'pattern' | 'ev
         case 'speak': {
             if (raw.message !== undefined) {
                 if (typeof raw.message !== 'string') {
-                    issues.push(err('wrongValueType', `${path}.message`, 'Pole "message" musi byc tekstem.'));
+                    issues.push(err('wrongValueType', `${path}.message`, 'Pole "message" musi być tekstem.'));
                 } else {
                     macro.message = raw.message;
                 }
@@ -970,7 +970,7 @@ function validateMacro(raw: unknown, index: number, triggerType: 'pattern' | 'ev
                 issues.push(err(
                     'missingMacroMessage',
                     `${path}.message`,
-                    `Makro "${type}" w triggerze zdarzeniowym wymaga pola "message" - nie ma linii tekstu, z ktorej mozna wziac tresc.`,
+                    `Makro "${type}" w triggerze zdarzeniowym wymaga pola "message" - nie ma linii tekstu, z której można wziąć treść.`,
                 ));
             }
             break;
@@ -1010,7 +1010,7 @@ function validateMacro(raw: unknown, index: number, triggerType: 'pattern' | 'ev
                 const v = raw[field];
                 if (v === undefined) continue;
                 if (typeof v !== 'number' || !Number.isFinite(v) || v < 0 || v > 1) {
-                    issues.push(err('valueOutOfRange', `${path}.${field}`, `Pole "${field}" przyjmuje liczbe od 0 do 1.`));
+                    issues.push(err('valueOutOfRange', `${path}.${field}`, `Pole "${field}" przyjmuje liczbę od 0 do 1.`));
                 } else {
                     macro[field] = v;
                 }
@@ -1018,7 +1018,7 @@ function validateMacro(raw: unknown, index: number, triggerType: 'pattern' | 'ev
             if (raw.dimDuration !== undefined) {
                 const v = raw.dimDuration;
                 if (typeof v !== 'number' || !Number.isFinite(v) || v <= 0 || v > 60000) {
-                    issues.push(err('valueOutOfRange', `${path}.dimDuration`, 'Pole "dimDuration" przyjmuje liczbe milisekund od 1 do 60000.'));
+                    issues.push(err('valueOutOfRange', `${path}.dimDuration`, 'Pole "dimDuration" przyjmuje liczbę milisekund od 1 do 60000.'));
                 } else {
                     macro.dimDuration = v;
                 }
@@ -1035,7 +1035,7 @@ function validateMacro(raw: unknown, index: number, triggerType: 'pattern' | 'ev
         default:
             if (isPlugin && raw.pluginConfig !== undefined) {
                 if (!isPlainObject(raw.pluginConfig)) {
-                    issues.push(err('invalidPluginConfig', `${path}.pluginConfig`, 'Pole "pluginConfig" musi byc obiektem.'));
+                    issues.push(err('invalidPluginConfig', `${path}.pluginConfig`, 'Pole "pluginConfig" musi być obiektem.'));
                 } else {
                     macro.pluginConfig = raw.pluginConfig;
                 }
@@ -1081,7 +1081,7 @@ export function validateTrigger(input: Record<string, unknown>): ValidationResul
             return fail([err(
                 'unknownEvent',
                 'event',
-                `Zdarzenie "${event}" nie istnieje. Dostepne zdarzenia: ${SUPPORTED_EVENT_IDS.join(', ')}.`,
+                `Zdarzenie "${event}" nie istnieje. Dostępne zdarzenia: ${SUPPORTED_EVENT_IDS.join(', ')}.`,
                 near,
             )]) as ValidationResult<TriggerProposal>;
         }
@@ -1111,7 +1111,7 @@ export function validateTrigger(input: Record<string, unknown>): ValidationResul
         if (flags) proposal.flags = flags;
         if (input.gmcpMsgType !== undefined) {
             if (typeof input.gmcpMsgType !== 'string' || input.gmcpMsgType.trim() === '') {
-                issues.push(err('wrongValueType', 'gmcpMsgType', 'Pole "gmcpMsgType" musi byc niepustym tekstem.'));
+                issues.push(err('wrongValueType', 'gmcpMsgType', 'Pole "gmcpMsgType" musi być niepustym tekstem.'));
             } else {
                 proposal.gmcpMsgType = input.gmcpMsgType;
             }
@@ -1120,7 +1120,7 @@ export function validateTrigger(input: Record<string, unknown>): ValidationResul
 
     const macros = input.macros;
     if (!Array.isArray(macros) || macros.length === 0) {
-        issues.push(err('missingMacros', 'macros', 'Trigger musi miec co najmniej jedno makro (akcje do wykonania).'));
+        issues.push(err('missingMacros', 'macros', 'Trigger musi mieć co najmniej jedno makro (akcję do wykonania).'));
     } else {
         macros.forEach((raw, index) => {
             const result = validateMacro(raw, index, triggerType);
@@ -1145,13 +1145,13 @@ function validateConditions(raw: unknown, eventArgs: readonly EventArg[]): { iss
     const issues: ValidationIssue[] = [];
     const conditions: TriggerCondition[] = [];
     if (!Array.isArray(raw)) {
-        issues.push(err('wrongValueType', 'conditions', 'Pole "conditions" musi byc tablica warunkow.'));
+        issues.push(err('wrongValueType', 'conditions', 'Pole "conditions" musi być tablicą warunków.'));
         return { issues, conditions };
     }
     raw.forEach((c, i) => {
         const path = `conditions[${i}]`;
         if (typeof c !== 'object' || c === null) {
-            issues.push(err('invalidCondition', path, 'Kazdy warunek musi byc obiektem { arg, op, value }.'));
+            issues.push(err('invalidCondition', path, 'Każdy warunek musi być obiektem { arg, op, value }.'));
             return;
         }
         const { arg, op, value } = c as Record<string, unknown>;
@@ -1165,8 +1165,8 @@ function validateConditions(raw: unknown, eventArgs: readonly EventArg[]): { iss
                 'invalidCondition',
                 `${path}.arg`,
                 argNames.length
-                    ? `Pole "${arg}" nie nalezy do tego zdarzenia. Dostepne pola: ${argNames.join(', ')}.`
-                    : 'To zdarzenie nie niesie zadnych pol, wiec nie obsluguje warunkow.',
+                    ? `Pole "${arg}" nie należy do tego zdarzenia. Dostępne pola: ${argNames.join(', ')}.`
+                    : 'To zdarzenie nie niesie żadnych pól, więc nie obsługuje warunków.',
                 argNames,
             ));
             return;
@@ -1176,14 +1176,14 @@ function validateConditions(raw: unknown, eventArgs: readonly EventArg[]): { iss
             return;
         }
         if (typeof value !== 'string' && typeof value !== 'number' && typeof value !== 'boolean') {
-            issues.push(err('invalidCondition', `${path}.value`, 'Pole "value" musi byc tekstem, liczba albo wartoscia logiczna.'));
+            issues.push(err('invalidCondition', `${path}.value`, 'Pole "value" musi być tekstem, liczbą albo wartością logiczną.'));
             return;
         }
         if (op === 'like' || op === 'notLike') {
             try {
                 new RegExp(String(value), 'i');
             } catch {
-                issues.push(err('invalidCondition', `${path}.value`, 'Wyrazenie regularne w warunku sie nie kompiluje.'));
+                issues.push(err('invalidCondition', `${path}.value`, 'Wyrażenie regularne w warunku się nie kompiluje.'));
                 return;
             }
         }
@@ -1232,14 +1232,14 @@ export function validateBind(input: Record<string, unknown>): ValidationResult<B
         issues.push(err(
             'invalidBindKey',
             'key',
-            `"${key}" nie jest rozpoznawana nazwa klawisza. Uzyj pojedynczego znaku (np. "q") albo kodu klawisza (np. "KeyQ", "Numpad1", "F5").`,
+            `"${key}" nie jest rozpoznawaną nazwą klawisza. Użyj pojedynczego znaku (np. "q") albo kodu klawisza (np. "KeyQ", "Numpad1", "F5").`,
         ));
     }
 
     for (const modifier of ['ctrl', 'alt', 'shift'] as const) {
         const v = input[modifier];
         if (v !== undefined && typeof v !== 'boolean') {
-            issues.push(err('wrongValueType', modifier, `Pole "${modifier}" musi byc true albo false.`));
+            issues.push(err('wrongValueType', modifier, `Pole "${modifier}" musi być true albo false.`));
         }
     }
 
@@ -1255,7 +1255,7 @@ export function validateBind(input: Record<string, unknown>): ValidationResult<B
                 path: 'command',
                 from: command,
                 to: folded,
-                message: 'Usunieto polskie znaki z komendy - klient i tak wysyla ja bez nich.',
+                message: 'Usunięto polskie znaki z komendy - klient i tak wysyła ją bez nich.',
             });
             command = folded;
         }
@@ -1286,14 +1286,14 @@ const KNOWN_KINDS: readonly ProposalKind[] = ['settingChange', 'alias', 'trigger
  */
 export function validateProposal(input: unknown): ValidationResult {
     if (!isPlainObject(input)) {
-        return fail([err('invalidProposal', '', 'Propozycja musi byc obiektem JSON.')]);
+        return fail([err('invalidProposal', '', 'Propozycja musi być obiektem JSON.')]);
     }
     const kind = input.kind;
     if (typeof kind !== 'string' || !KNOWN_KINDS.includes(kind as ProposalKind)) {
         return fail([err(
             'unknownProposalKind',
             'kind',
-            `Nieznany rodzaj propozycji "${String(kind)}". Dostepne: ${KNOWN_KINDS.join(', ')}.`,
+            `Nieznany rodzaj propozycji "${String(kind)}". Dostępne: ${KNOWN_KINDS.join(', ')}.`,
             [...KNOWN_KINDS],
         )]);
     }

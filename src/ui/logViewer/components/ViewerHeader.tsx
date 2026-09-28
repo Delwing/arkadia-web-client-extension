@@ -52,11 +52,11 @@ export function ViewerHeader({
               `${session.lineCount} ${pluralLines(session.lineCount)}`,
               session.file,
           ].join("  ·  ")
-        : "Nie ma jeszcze zadnego logu";
+        : "Nie ma jeszcze żadnego logu";
 
     const exportItems = (
         <>
-            <MenuLabel>{ranged ? "Zaznaczony zakres" : "Caly log"}</MenuLabel>
+            <MenuLabel>{ranged ? "Zaznaczony zakres" : "Cały log"}</MenuLabel>
             <MenuItem onSelect={onExportHtml}>Pobierz HTML</MenuItem>
             <MenuItem onSelect={onExportText}>Pobierz tekst (.txt)</MenuItem>
             <MenuSeparator />
@@ -80,7 +80,7 @@ export function ViewerHeader({
                 <IconButton title="Poprzednia sesja  [" onClick={onPrevSession} disabled={!hasPrev}>
                     <Icon name="chevron-left" />
                 </IconButton>
-                <IconButton title="Nastepna sesja  ]" onClick={onNextSession} disabled={!hasNext}>
+                <IconButton title="Następna sesja  ]" onClick={onNextSession} disabled={!hasNext}>
                     <Icon name="chevron-right" />
                 </IconButton>
             </div>
@@ -126,7 +126,7 @@ export function ViewerHeader({
                             icon={<Icon name="export" size={14} />}
                             trailing={<Icon name="chevron-down" size={14} />}
                             disabled={busy || !session}
-                            title={ranged ? "Zapisz zaznaczony zakres" : "Zapisz caly log"}
+                            title={ranged ? "Zapisz zaznaczony zakres" : "Zapisz cały log"}
                         >
                             {busy ? "Zapisywanie..." : ranged ? "Eksport zakresu" : "Eksport"}
                         </Button>

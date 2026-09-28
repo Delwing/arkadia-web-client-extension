@@ -54,7 +54,7 @@ function searchDocs(query: string): SearchResult[] {
 
 function formatSearchResults(results: SearchResult[], query: string): string {
   if (results.length === 0) {
-    return `<p class="popup-muted">Brak wynikow dla "${query}"</p>`;
+    return `<p class="popup-muted">Brak wyników dla "${query}"</p>`;
   }
 
   const grouped = new Map<string, string[]>();

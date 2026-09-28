@@ -104,7 +104,7 @@ export default function initCarriageBlocks(
                 line.append(text, WHITE);
                 line.createLink([start, start + text.length], {
                     onClick: () => client.sendEvent('leadTo', roomId),
-                    title: `Kliknij aby prowadzic do: ${text}`,
+                    title: `Kliknij aby prowadzić do: ${text}`,
                 });
                 line.append('\n', RESET);
                 output.appendBuffer(line);

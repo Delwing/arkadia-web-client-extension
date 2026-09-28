@@ -196,7 +196,7 @@ describe('regex sanitizing - Polish letters', () => {
         const result = sanitizeRegexSource(`abc\\${PL.s}def`);
         expect(result.ok).toBe(false);
         expect(result.issues[0].code).toBe('polishLetterUnrepairable');
-        expect(result.issues[0].message).toMatch(/Nie moge tego bezpiecznie poprawic/);
+        expect(result.issues[0].message).toMatch(/Nie mogę tego bezpiecznie poprawić/);
     });
 
     it('refuses to repair a Polish letter used as a character-class range bound', () => {

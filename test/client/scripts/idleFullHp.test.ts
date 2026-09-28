@@ -27,9 +27,9 @@ describe('idle full hp notification', () => {
     client.sendEvent('gmcp.char.state', { hp: 5 });
     jest.setSystemTime(120000);
     client.sendEvent('gmcp.char.state', { hp: 6 });
-    expect(client.sendEvent).toHaveBeenCalledWith('notify', { text: 'Masz pelne zycie', system: true });
+    expect(client.sendEvent).toHaveBeenCalledWith('notify', { text: 'Masz pełne życie', system: true });
     // Bindable in the trigger editor, so a player can forward it to a phone.
-    expect(client.sendEvent).toHaveBeenCalledWith('hp.idleFull', { text: 'Masz pelne zycie' });
+    expect(client.sendEvent).toHaveBeenCalledWith('hp.idleFull', { text: 'Masz pełne życie' });
   });
 
   test('does not notify before idle threshold', () => {
@@ -51,6 +51,6 @@ describe('idle full hp notification', () => {
     client.sendEvent('gmcp.char.state', { hp: 5 });
     jest.setSystemTime(210000);
     client.sendEvent('gmcp.char.state', { hp: 6 });
-    expect(client.sendEvent).toHaveBeenCalledWith('notify', { text: 'Masz pelne zycie', system: true });
+    expect(client.sendEvent).toHaveBeenCalledWith('notify', { text: 'Masz pełne życie', system: true });
   });
 });

@@ -79,7 +79,7 @@ describe('MapHelper leading with transports', () => {
 
     map.leadTo(4711);
 
-    expect(lastEvent(client, 'notify')?.payload).toEqual({ text: 'Brak sciezki do lokacji' });
+    expect(lastEvent(client, 'notify')?.payload).toEqual({ text: 'Brak ścieżki do lokacji' });
     expect(client.events.some((e) => e.type === 'routePlanned')).toBe(false);
   });
 

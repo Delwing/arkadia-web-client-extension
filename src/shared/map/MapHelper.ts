@@ -1308,7 +1308,7 @@ export default class MapHelper {
     leadTo(id: number, options: LeadOptions = {}) {
         const currentId = this.currentRoom?.id;
         if (currentId === id) {
-            this.client.sendEvent("notify", { text: 'Jestes juz na miejscu' });
+            this.client.sendEvent("notify", { text: 'Jesteś już na miejscu' });
             return;
         }
         if (this.leadTarget !== id) this.announcedTransfer = null;
@@ -1328,7 +1328,7 @@ export default class MapHelper {
         }
 
         if (typeof currentId !== 'number' || !this.mapReader) {
-            this.client.sendEvent("notify", { text: 'Brak sciezki do lokacji' });
+            this.client.sendEvent("notify", { text: 'Brak ścieżki do lokacji' });
             return;
         }
 
@@ -1352,7 +1352,7 @@ export default class MapHelper {
         if (viaFallback) segments = plan(true);
 
         if (!segments || segments.length === 0) {
-            this.client.sendEvent("notify", { text: 'Brak sciezki do lokacji' });
+            this.client.sendEvent("notify", { text: 'Brak ścieżki do lokacji' });
             return;
         }
         this.drawRoute(segments, currentId, id, { ...options, viaFallback }, blocked);
@@ -1736,7 +1736,7 @@ export default class MapHelper {
                 const destName = destArea ? destArea.getAreaName() : String(finalDestId);
 
                 if (this._destinations.length > 1) {
-                    text += ` → #${finalDestId} ${destName} (${totalDistance}, ${this._destinations.length} przystankow)`;
+                    text += ` → #${finalDestId} ${destName} (${totalDistance}, ${this._destinations.length} przystanków)`;
                 } else {
                     text += ` → #${finalDestId} ${destName} (${totalDistance})`;
                 }

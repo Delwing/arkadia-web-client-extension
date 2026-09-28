@@ -135,7 +135,7 @@ export function ScriptEditor({ id, script, users, onChange, onSelect, onSave }: 
                     {users.map(u => {
                         const title = itemTitle(u);
                         return (
-                            <button key={u.id} type="button" className="automation-user" title="Pokaz ten element" onClick={() => onSelect(u.id)}>
+                            <button key={u.id} type="button" className="automation-user" title="Pokaż ten element" onClick={() => onSelect(u.id)}>
                                 <span className={`automation-user__kind automation-user__kind--${u.kind}`}>{u.kind === "alias" ? "alias" : "wyzwalacz"}</span>
                                 <span className={title.mono ? "is-mono" : undefined}>{title.prefix ? `${title.prefix} ` : ""}{title.text}</span>
                             </button>
@@ -152,8 +152,8 @@ export function ScriptEditor({ id, script, users, onChange, onSelect, onSave }: 
                     </InputGroup>
                 </div>
                 <p className="automation-hint">
-                    Dodajesz go jako akcje „Uruchom skrypt” w dowolnym aliasie lub wyzwalaczu. Z komenda uruchomisz go tez sam,
-                    np. <code>/{script.command?.trim() || "leczenie"} goblin</code> — slowa po komendzie trafia do <code>args</code>.
+                    Dodajesz go jako akcję „Uruchom skrypt” w dowolnym aliasie lub wyzwalaczu. Z komendą uruchomisz go też sam,
+                    np. <code>/{script.command?.trim() || "leczenie"} goblin</code> — słowa po komendzie trafiają do <code>args</code>.
                 </p>
             </Section>
 
@@ -163,7 +163,7 @@ export function ScriptEditor({ id, script, users, onChange, onSelect, onSave }: 
                 extra={
                     <Button
                         size="sm"
-                        title="Uruchom teraz (takze niezapisany kod)"
+                        title="Uruchom teraz (także niezapisany kod)"
                         onClick={() => eventBus.emit("automation.runScript", { id, code: script.code })}
                     >
                         <Play size={13} />Uruchom
@@ -172,22 +172,22 @@ export function ScriptEditor({ id, script, users, onChange, onSelect, onSave }: 
             >
                 <ScriptCodeEditor value={script.code} onChange={code => onChange({ ...script, code })} onSave={onSave} />
                 <p className="automation-hint">
-                    Piszesz od razu kod: pod reka sa <code>args</code> (grupy z wzorca, $1 to <code>args[0]</code>),
-                    <code> api</code> (API wtyczek), <code>ctx</code> i skroty <code>log()</code>, <code>send()</code>, <code>print()</code>,
-                    <code> gmcp</code>, a czesci API bez <code>api.</code> na poczatku: <code>command.send()</code>, <code>map</code>,
-                    <code> team</code>... Dane dla innych skryptow zostaw w <code>vars</code> (np. <code>vars.cel = args[0]</code>),
-                    wspolnym dla wszystkich skryptow do przeladowania strony. Mozna uzyc <code>await</code> i <code>return</code>, a biblioteke z sieci wczytac przez
-                    <code> await import('https://esm.sh/...')</code>. Skrypt dziala raz na uruchomienie; cos, co ma zostac
-                    zarejestrowane na stale, zrob jako wtyczke.
+                    Piszesz od razu kod: pod ręką są <code>args</code> (grupy z wzorca, $1 to <code>args[0]</code>),
+                    <code> api</code> (API wtyczek), <code>ctx</code> i skróty <code>log()</code>, <code>send()</code>, <code>print()</code>,
+                    <code> gmcp</code>, a części API bez <code>api.</code> na początku: <code>command.send()</code>, <code>map</code>,
+                    <code> team</code>... Dane dla innych skryptów zostaw w <code>vars</code> (np. <code>vars.cel = args[0]</code>),
+                    wspólnym dla wszystkich skryptów do przeładowania strony. Można użyć <code>await</code> i <code>return</code>, a bibliotekę z sieci wczytać przez
+                    <code> await import('https://esm.sh/...')</code>. Skrypt działa raz na uruchomienie; coś, co ma zostać
+                    zarejestrowane na stałe, zrób jako wtyczkę.
                 </p>
                 <div className="automation-console">
                     <div className="automation-console__head">
                         <span className="automation-cap">Konsola</span>
                         <span className="automation-spacer" />
-                        <button type="button" className="automation-link" disabled={!log.length} onClick={() => clearScriptLog(id)}>Wyczysc</button>
+                        <button type="button" className="automation-link" disabled={!log.length} onClick={() => clearScriptLog(id)}>Wyczyść</button>
                     </div>
                     <div className="automation-console__lines">
-                        {log.length === 0 && <span className="automation-console__empty">Tu pojawi sie to, co skrypt zrobi.</span>}
+                        {log.length === 0 && <span className="automation-console__empty">Tu pojawi się to, co skrypt zrobi.</span>}
                         {log.map((entry, i) => (
                             <span key={i} className={`automation-console__line is-${entry.kind}`}>
                                 <span className="automation-console__time">{time(entry.at)}</span>

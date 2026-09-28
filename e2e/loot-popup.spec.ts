@@ -215,7 +215,7 @@ test.describe('Loot popup', () => {
         // groundItems=[], so the popup should display the empty-state message.
         const emptyMsg = popup.locator('.popup-empty');
         await expect(emptyMsg, 'popup should show empty message after all items collected').toBeVisible({timeout: 3000});
-        await expect(emptyMsg, 'empty message text should be correct').toHaveText('Brak przedmiotow.');
+        await expect(emptyMsg, 'empty message text should be correct').toHaveText('Brak przedmiotów.');
     });
 
     test('popup clears and closes when entering a new location', async ({page}) => {

@@ -364,7 +364,7 @@ export default function initMapAliases(client: Client, aliases: { pattern: RegEx
                             onClick: () => {
                                 eventBus.emit('staticmap.popup.open', { roomId: match.id });
                             },
-                            title: `Pokaz na mapie: ${match.name}`
+                            title: `Pokaż na mapie: ${match.name}`
                         });
 
                         output.appendBuffer(lineBuffer);

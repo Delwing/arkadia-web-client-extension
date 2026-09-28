@@ -143,6 +143,6 @@ test.describe('Contracts', () => {
 
         const contractsWindowAfter = page.locator('.contracts-window');
         await expect(contractsWindowAfter).toBeVisible({timeout: 3000});
-        await expect(contractsWindowAfter).toContainText('Brak aktywnych zlecen');
+        await expect(contractsWindowAfter).toContainText('Brak aktywnych zleceń');
     });
 });

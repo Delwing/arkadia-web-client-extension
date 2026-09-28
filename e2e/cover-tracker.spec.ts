@@ -58,18 +58,18 @@ test.describe('Cover tracker', () => {
         const coveredRow = row(COVERED_NUM);
         await expect(coveredRow).toHaveCount(1);
         await expect(coveredRow).toContainText(COVERED_DESC);
-        await expect(coveredRow.locator('.cover-dbg-blocked')).toHaveText('ZASLONIETY');
+        await expect(coveredRow.locator('.cover-dbg-blocked')).toHaveText('ZASŁONIĘTY');
         await expect(coveredRow).toContainText(COVERER_DESC);
         // The "przed kim" column is the point of the popup: the player is on it.
         await expect(coveredRow.locator('.cover-dbg-me')).toHaveText('ty');
 
         // The coverer's own row reads from the other side of the same edge.
-        await expect(row(COVERER_NUM)).toContainText('zaslania');
+        await expect(row(COVERER_NUM)).toContainText('zasłania');
 
         // Bottom pane: one log line, with the raw game line underneath it.
         const entries = popup.locator('.cover-dbg-log-entry');
         await expect(entries).toHaveCount(1);
-        await expect(entries.first().locator('.cover-dbg-log-kind')).toHaveText('ZASLONA');
+        await expect(entries.first().locator('.cover-dbg-log-kind')).toHaveText('ZASŁONA');
         await expect(entries.first().locator('.cover-dbg-log-raw')).toHaveText(COVER_LINE);
 
         // The log takes the space left over; it must never squeeze the state table.

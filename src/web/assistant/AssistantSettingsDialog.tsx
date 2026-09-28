@@ -75,19 +75,19 @@ export default function AssistantSettingsDialog({ onClose }: AssistantSettingsDi
                         onChange={event => setWorkerUrlState(event.target.value)}
                     />
                     <small>
-                        Wspolny serwer z pula kluczy. Do testow lokalnych: <code>http://localhost:8787</code>
-                        {' '}(<code>cd worker &amp;&amp; yarn dev</code>). Puste pole wylacza ta droge.
+                        Wspólny serwer z pulą kluczy. Do testów lokalnych: <code>http://localhost:8787</code>
+                        {' '}(<code>cd worker &amp;&amp; yarn dev</code>). Puste pole wyłącza tę drogę.
                     </small>
                 </label>
 
                 <hr />
 
-                <div className="assistant-settings__section-title">Wlasny klucz API (opcjonalnie)</div>
+                <div className="assistant-settings__section-title">Własny klucz API (opcjonalnie)</div>
                 <p className="assistant-settings__note">
-                    Klucz jest zapisywany wylacznie na tym urzadzeniu i <strong>nigdy</strong> nie
-                    trafia do synchronizacji w chmurze ani do eksportu ustawien. Uzywamy go dopiero
-                    wtedy, gdy wspolna pula kluczy jest wyczerpana - albo zawsze, jesli zaznaczysz
-                    opcje ponizej.
+                    Klucz jest zapisywany wyłącznie na tym urządzeniu i <strong>nigdy</strong> nie
+                    trafia do synchronizacji w chmurze ani do eksportu ustawień. Używamy go dopiero
+                    wtedy, gdy wspólna pula kluczy jest wyczerpana - albo zawsze, jeśli zaznaczysz
+                    opcję poniżej.
                 </p>
 
                 <label className="assistant-settings__field">
@@ -131,7 +131,7 @@ export default function AssistantSettingsDialog({ onClose }: AssistantSettingsDi
                         disabled={apiKey.trim() === ''}
                         onChange={event => setPreferByokState(event.target.checked)}
                     />
-                    <span>Zawsze uzywaj mojego klucza (pomijaj wspolna pule)</span>
+                    <span>Zawsze używaj mojego klucza (pomijaj wspólną pulę)</span>
                 </label>
             </div>
         </SubDialog>

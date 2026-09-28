@@ -1,51 +1,51 @@
-# Skrypty i automatyzacja — co mozesz robic
+# Skrypty i automatyzacja — co możesz robić
 
-Podsumowanie mozliwosci systemu skryptow, pluginow i automatyzacji dostepnych dla graczy.
+Podsumowanie możliwości systemu skryptów, pluginów i automatyzacji dostępnych dla graczy.
 
 ---
 
-Aliasy i triggery (wyzwalacze) tworzysz w jednym oknie: **Menu → Automatyzacja**. Maja wspolne grupy, ktore wlaczasz i wylaczasz jednym przelacznikiem i ktore mozna wyeksportowac do pliku i komus przekazac.
+Aliasy i triggery (wyzwalacze) tworzysz w jednym oknie: **Menu → Automatyzacja**. Mają wspólne grupy, które włączasz i wyłączasz jednym przełącznikiem i które można wyeksportować do pliku i komuś przekazać.
 
-## Wlasne aliasy
+## Własne aliasy
 
-Tworzysz skroty do dlugich lub czestych komend — bez pisania ani linijki kodu.
+Tworzysz skróty do długich lub częstych komend — bez pisania ani linijki kodu.
 
 - **Wzorzec regex** — alias reaguje na to, co wpiszesz (np. `^aa (.+)$` zamieni `aa goblin` na `zabij goblin`)
-- **Grupy przechwytujace** — `$1`, `$2` itd. wstawiaja fragmenty z dopasowania do komendy
-- **Skroty obiektow** — `@1`, `@A`, `@@` automatycznie zamieniaja sie na identyfikatory obiektow z lokacji
-- **Wiele akcji** — poza komenda alias moze zagrac dzwiek, wyslac powiadomienie (takze na telefon), przeczytac tekst na glos albo ustawic funkcyjny bind
-- **Inaczej dla postaci** — ten sam alias moze wysylac inna komende w zaleznosci od postaci
-- **Grupy, wlaczanie i wybrane postacie** — alias (tak jak trigger) moze nalezec do grupy, byc wylaczony albo dzialac tylko na wybranych postaciach
-- **Import z Blowtorch i Arkadii** — przeniesienie aliasow z innych klientow jednym kliknieciem
+- **Grupy przechwytujące** — `$1`, `$2` itd. wstawiają fragmenty z dopasowania do komendy
+- **Skróty obiektów** — `@1`, `@A`, `@@` automatycznie zamieniają się na identyfikatory obiektów z lokacji
+- **Wiele akcji** — poza komendą alias może zagrać dźwięk, wysłać powiadomienie (także na telefon), przeczytać tekst na głos albo ustawić funkcyjny bind
+- **Inaczej dla postaci** — ten sam alias może wysyłać inną komendę w zależności od postaci
+- **Grupy, włączanie i wybrane postacie** — alias (tak jak trigger) może należeć do grupy, być wyłączony albo działać tylko na wybranych postaciach
+- **Import z Blowtorch i Arkadii** — przeniesienie aliasów z innych klientów jednym kliknięciem
 
-## Wlasne triggery
+## Własne triggery
 
-Reagujesz na to, co pojawia sie na ekranie — automatycznie, bez czekania.
+Reagujesz na to, co pojawia się na ekranie — automatycznie, bez czekania.
 
-- **Wzorzec regex z flagami** — ignorowanie wielkosci liter, tryb globalny, wieloliniowy
-- **Linia testowa** — wklejasz (albo wybierasz z ostatnich linii gry) tekst i od razu widzisz, czy wzorzec pasuje, co trafi do `$1` i jak linia bedzie wygladac po akcjach
-- **Grupy z wzorca w akcjach** — `$1`, `$2` (albo `{1}`) wstawiaja dopasowane fragmenty do komendy, powiadomienia czy bindu, np. wzorzec `^(\w+) atakuje cie` i komenda `zabij $1`
-- **Filtr typu GMCP** — trigger moze reagowac tylko na walke, czat, opisy lokacji, poczte i 20+ innych kategorii
-- **Triggery zdarzeniowe** — zamiast tekstu, reaguj na zdarzenia: zabicie wroga, start/koniec walki, ogluszenie, polaczenie, rozlaczenie, koniec odliczania zaskoczenia i oslony, transport (postoj, przyjazd na przystanek, dotarcie do celu oznaczonego dzwonkiem, zblizanie sie do przystanku)
-- **Wiele akcji na jednym triggerze** — kazdy trigger moze wykonac dowolna kombinacje:
+- **Wzorzec regex z flagami** — ignorowanie wielkości liter, tryb globalny, wieloliniowy
+- **Linia testowa** — wklejasz (albo wybierasz z ostatnich linii gry) tekst i od razu widzisz, czy wzorzec pasuje, co trafi do `$1` i jak linia będzie wyglądać po akcjach
+- **Grupy z wzorca w akcjach** — `$1`, `$2` (albo `{1}`) wstawiają dopasowane fragmenty do komendy, powiadomienia czy bindu, np. wzorzec `^(\w+) atakuje cie` i komenda `zabij $1`
+- **Filtr typu GMCP** — trigger może reagować tylko na walkę, czat, opisy lokacji, pocztę i 20+ innych kategorii
+- **Triggery zdarzeniowe** — zamiast tekstu reaguj na zdarzenia: zabicie wroga, start/koniec walki, ogłuszenie, połączenie, rozłączenie, koniec odliczania zaskoczenia i osłony, transport (postój, przyjazd na przystanek, dotarcie do celu oznaczonego dzwonkiem, zbliżanie się do przystanku)
+- **Wiele akcji na jednym triggerze** — każdy trigger może wykonać dowolną kombinację:
   - Zmiana na wielkie litery
   - Kolorowanie dopasowania
   - Zamiana tekstu
   - Otoczenie prefiksem/sufiksem
-  - Odtworzenie dzwieku (domyslny beep lub wlasny plik audio)
-  - Wyciszenie / wlaczenie dzwiekow
-  - Wysylanie komendy do serwera
+  - Odtworzenie dźwięku (domyślny beep lub własny plik audio)
+  - Wyciszenie / włączenie dźwięków
+  - Wysyłanie komendy do serwera
   - Wolne lub szybkie miganie tekstu
-  - Pulsowanie (dim z konfigurowalna krzywą animacji)
+  - Pulsowanie (dim z konfigurowalną krzywą animacji)
   - Ustawienie funkcyjnego bindu
-  - Czytanie na glos (synteza mowy) — wlasny tekst z `{1}`/`{nazwa}` z grup wzorca albo `{arg}` ze zdarzenia; glos, tempo, wysokosc i glosnosc w Ustawieniach interfejsu → Dzwiek i powiadomienia
-- **Wlasne dzwieki** — wgrywasz plik audio i uzywasz go w triggerach
-- **Makra z pluginow** — pluginy moga dodawac wlasne typy akcji do triggerow (pojawia sie w ustawieniach automatycznie)
-- **Grupy, wlaczanie i wybrane postacie** — trigger moze nalezec do grupy, byc wylaczony albo dzialac tylko na wybranych postaciach
+  - Czytanie na głos (synteza mowy) — własny tekst z `{1}`/`{nazwa}` z grup wzorca albo `{arg}` ze zdarzenia; głos, tempo, wysokość i głośność w Ustawieniach interfejsu → Dźwięk i powiadomienia
+- **Własne dźwięki** — wgrywasz plik audio i używasz go w triggerach
+- **Makra z pluginów** — pluginy mogą dodawać własne typy akcji do triggerów (pojawiają się w ustawieniach automatycznie)
+- **Grupy, włączanie i wybrane postacie** — trigger może należeć do grupy, być wyłączony albo działać tylko na wybranych postaciach
 
 ## Skrypty w Automatyzacji
 
-Gdy akcje aliasu czy triggera to za malo, piszesz krotki skrypt w JavaScripcie — w tym samym oknie (Menu → Automatyzacja → + → Skrypt).
+Gdy akcje aliasu czy triggera to za mało, piszesz krótki skrypt w JavaScripcie — w tym samym oknie (Menu → Automatyzacja → + → Skrypt).
 
 ```js
 const hp = gmcp.char?.state?.hp;
@@ -54,163 +54,163 @@ await send('wypij miksture');
 log('hp', hp);
 ```
 
-Piszesz od razu kod — bez zadnej funkcji dookola. Mozna uzyc `await` i `return`. Edytor podpowiada (`api.`, `ctx.`) i koloruje skladnie; na telefonie jest zwykle pole tekstowe.
+Piszesz od razu kod — bez żadnej funkcji dookoła. Można użyć `await` i `return`. Edytor podpowiada (`api.`, `ctx.`) i koloruje składnię; na telefonie jest zwykłe pole tekstowe.
 
-- **Kiedy sie uruchamia** — przez akcje **Uruchom skrypt** w dowolnym aliasie lub triggerze, przez wlasna komende (np. `/leczenie goblin`) albo przyciskiem **Uruchom** w edytorze (dziala tez na niezapisanym kodzie)
-- **`args`** — grupy z wzorca aliasu lub triggera (`$1` to `args[0]`) albo slowa po komendzie
-- **`api`** — to samo API, ktore dostaja wtyczki (zob. dokumentacje wtyczek). Jego czesci sa tez pod wlasnymi nazwami, bez `api.`: `command.send(...)`, `map`, `team`, `objects`, `triggers`... Wlasna zmienna o takiej nazwie (np. `const map = new Map()`) po prostu ja przyslania
-- **`ctx`** — skad przyszlo uruchomienie (`ctx.source`, `ctx.line` z linia gry, `ctx.event` z danymi zdarzenia)
-- **`vars`** — obiekt wspolny dla wszystkich skryptow: jeden zapisze `vars.cel = args[0]`, drugi odczyta `vars.cel`. Trzyma dane do przeladowania strony (nie zapisuje ich na stale). W module to `ctx.vars`
-- **Skroty** — `log(...)` pisze do konsoli skryptu, `send(komenda)` wysyla komende, `print(tekst)` wypisuje tekst w oknie gry, `gmcp` to dane GMCP z chwili uruchomienia
-- **Biblioteki** — z sieci przez `await import('https://esm.sh/nazwa')`. Kod z `import ... from` na poczatku albo z `export default function (api, args, ctx)` dziala jako caly modul
-- **Konsola** — pod kodem widac, kto uruchomil skrypt, co wyslal do gry i jaki blad go zatrzymal (z numerem linii)
-- **Na raz** — skrypt dziala raz na uruchomienie; cos, co ma zostac zarejestrowane na stale (trigger, okno), zrob jako wtyczke
-- **Import** — skrypty z paczki przychodza wlaczone albo wylaczone tak, jak byly u autora. Paczke od kogos obcego przejrzyj przed importem: skrypt ma dostep do calego API
+- **Kiedy się uruchamia** — przez akcję **Uruchom skrypt** w dowolnym aliasie lub triggerze, przez własną komendę (np. `/leczenie goblin`) albo przyciskiem **Uruchom** w edytorze (działa też na niezapisanym kodzie)
+- **`args`** — grupy z wzorca aliasu lub triggera (`$1` to `args[0]`) albo słowa po komendzie
+- **`api`** — to samo API, które dostają wtyczki (zob. dokumentację wtyczek). Jego części są też pod własnymi nazwami, bez `api.`: `command.send(...)`, `map`, `team`, `objects`, `triggers`... Własna zmienna o takiej nazwie (np. `const map = new Map()`) po prostu ją przysłania
+- **`ctx`** — skąd przyszło uruchomienie (`ctx.source`, `ctx.line` z linią gry, `ctx.event` z danymi zdarzenia)
+- **`vars`** — obiekt wspólny dla wszystkich skryptów: jeden zapisze `vars.cel = args[0]`, drugi odczyta `vars.cel`. Trzyma dane do przeładowania strony (nie zapisuje ich na stałe). W module to `ctx.vars`
+- **Skróty** — `log(...)` pisze do konsoli skryptu, `send(komenda)` wysyła komendę, `print(tekst)` wypisuje tekst w oknie gry, `gmcp` to dane GMCP z chwili uruchomienia
+- **Biblioteki** — z sieci przez `await import('https://esm.sh/nazwa')`. Kod z `import ... from` na początku albo z `export default function (api, args, ctx)` działa jako cały moduł
+- **Konsola** — pod kodem widać, kto uruchomił skrypt, co wysłał do gry i jaki błąd go zatrzymał (z numerem linii)
+- **Na raz** — skrypt działa raz na uruchomienie; coś, co ma zostać zarejestrowane na stałe (trigger, okno), zrób jako wtyczkę
+- **Import** — skrypty z paczki przychodzą włączone albo wyłączone tak, jak były u autora. Paczkę od kogoś obcego przejrzyj przed importem: skrypt ma dostęp do całego API
 
-Druga nowa akcja, **Wlacz / wylacz grupe**, wlacza, wylacza albo przelacza cala grupe — np. trigger na wejscie do walki moze wlaczyc grupe "Walka", a trigger na jej koniec ja wylaczyc.
+Druga nowa akcja, **Włącz / wyłącz grupę**, włącza, wyłącza albo przełącza całą grupę — np. trigger na wejście do walki może włączyć grupę "Walka", a trigger na jej koniec ją wyłączyć.
 
 ## Bindowanie klawiszy
 
-Mapujesz klawisze na akcje — bez odrywania rak od klawiatury.
+Mapujesz klawisze na akcje — bez odrywania rąk od klawiatury.
 
-- **Domyslne bindy** — `]` kontekstowe akcje, `Ctrl+1` atak, `Ctrl+Q` wsparcie, `` ` `` tryb ruchu, i inne
-- **Wlasne bindy** — przypisujesz dowolny klawisz do dowolnej komendy
-- **Tymczasowe bindy** — `/tbind1 komenda` i `/tbind2 komenda` ustawiaja bindy na czas sesji
-- **Funkcyjne bindy z pluginow** — plugin moze dynamicznie ustawiac co robi dany klawisz
+- **Domyślne bindy** — `]` kontekstowe akcje, `Ctrl+1` atak, `Ctrl+Q` wsparcie, `` ` `` tryb ruchu i inne
+- **Własne bindy** — przypisujesz dowolny klawisz do dowolnej komendy
+- **Tymczasowe bindy** — `/tbind1 komenda` i `/tbind2 komenda` ustawiają bindy na czas sesji
+- **Funkcyjne bindy z pluginów** — plugin może dynamicznie ustawiać, co robi dany klawisz
 
-## Edytor skryptow
+## Edytor skryptów
 
-Piszesz wlasne pluginy w przegladarce, w pelni wyposazonym edytorze.
+Piszesz własne pluginy w przeglądarce, w pełni wyposażonym edytorze.
 
-- **Monaco Editor** — ten sam edytor co w Visual Studio Code, z kolorowaniem skladni i podpowiadaniem
-- **JavaScript i TypeScript** — piszesz w czym chcesz; TypeScript kompiluje sie automatycznie
-- **Podpowiadanie API** — edytor zna cale API pluginow, podpowiada metody i parametry
-- **Snippety** — wpisz `alias`, `trigger`, `eventListener` lub `fBind` i edytor wstawi gotowy szablon
-- **AI asystent** — wbudowany panel AI (OpenAI / Anthropic) pomoze pisac i modyfikowac kod pluginow
-- **Zapis automatyczny** — skompilowany plugin od razu synchronizuje sie z klientem gry
-- **Osobna baza danych** — zrodla TypeScript i skompilowany JS przechowywane osobno, bezpiecznie
+- **Monaco Editor** — ten sam edytor co w Visual Studio Code, z kolorowaniem składni i podpowiadaniem
+- **JavaScript i TypeScript** — piszesz, w czym chcesz; TypeScript kompiluje się automatycznie
+- **Podpowiadanie API** — edytor zna całe API pluginów, podpowiada metody i parametry
+- **Snippety** — wpisz `alias`, `trigger`, `eventListener` lub `fBind`, a edytor wstawi gotowy szablon
+- **AI asystent** — wbudowany panel AI (OpenAI / Anthropic) pomoże pisać i modyfikować kod pluginów
+- **Zapis automatyczny** — skompilowany plugin od razu synchronizuje się z klientem gry
+- **Osobna baza danych** — źródła TypeScript i skompilowany JS przechowywane osobno, bezpiecznie
 
-## System pluginow
+## System pluginów
 
-Rozszerzasz klienta o wlasne funkcje — lub instalujesz pluginy innych graczy.
+Rozszerzasz klienta o własne funkcje — lub instalujesz pluginy innych graczy.
 
 ### Instalacja
 
-Panel **Skrypty** ma dwie zakladki: *Zainstalowane* (co masz) i *Katalog* (co mozesz miec).
+Panel **Skrypty** ma dwie zakładki: *Zainstalowane* (co masz) i *Katalog* (co możesz mieć).
 
-- **Z katalogu** — zakladka "Katalog" pokazuje pluginy innych graczy: szukaj, filtruj po tagach,
-  zajrzyj w opis i historie wersji, a potem kliknij "Zainstaluj". Klient zapamietuje konkretna
-  wersje, wiec plugin nie zmieni sie sam pod reka — gdy autor wyda nowsza, na liscie
-  zainstalowanych pojawi sie przycisk "Aktualizuj"
-- **Przez link** — otworz URL z parametrem `?add-script=...` i plugin zainstaluje sie automatycznie
-- **Wlasny plugin** — przycisk "Dodaj plugin" prowadzi do pozostalych drog: import paczki ZIP,
+- **Z katalogu** — zakładka "Katalog" pokazuje pluginy innych graczy: szukaj, filtruj po tagach,
+  zajrzyj w opis i historię wersji, a potem kliknij "Zainstaluj". Klient zapamiętuje konkretną
+  wersję, więc plugin nie zmieni się sam pod ręką — gdy autor wyda nowszą, na liście
+  zainstalowanych pojawi się przycisk "Aktualizuj"
+- **Przez link** — otwórz URL z parametrem `?add-script=...` i plugin zainstaluje się automatycznie
+- **Własny plugin** — przycisk "Dodaj plugin" prowadzi do pozostałych dróg: import paczki ZIP,
   wklejenie kodu, adres URL, wygenerowanie promptu dla AI albo napisanie pluginu w edytorze
 
-### Co plugin moze robic
+### Co plugin może robić
 
 **Triggery:**
-- Rejestracja triggerow na wzorce regex
-- Triggery jednorazowe (usuwaja sie po pierwszym dopasowaniu)
-- Triggery tokenowe (dopasowuja calé slowa)
+- Rejestracja triggerów na wzorce regex
+- Triggery jednorazowe (usuwają się po pierwszym dopasowaniu)
+- Triggery tokenowe (dopasowują całe słowa)
 - Modyfikacja tekstu — kolorowanie, dodawanie prefiksu/sufiksu, wstawianie, zamiana, usuwanie
-- Tworzenie klikalnych linkow w tekscie
-- Ukrywanie linii (zwrocenie `null`)
+- Tworzenie klikalnych linków w tekście
+- Ukrywanie linii (zwrócenie `null`)
 
 **Aliasy:**
-- Rejestracja wlasnych komend (np. `/dom`, `/tp miasto`)
+- Rejestracja własnych komend (np. `/dom`, `/tp miasto`)
 - Przechwytywanie grup z regex
 
-**Wysylanie komend:**
-- `api.command.send("komenda")` — wyslij komende do serwera
-- Mozliwosc wysylania wielu komend sekwencyjnie
+**Wysyłanie komend:**
+- `api.command.send("komenda")` — wyślij komendę do serwera
+- Możliwość wysyłania wielu komend sekwencyjnie
 
 **Zdarzenia:**
-- Nasluchiwanie zdarzen gry: ruch na mapie, zabicie wroga, dane GMCP, konkretne sciezki GMCP
-- Emitowanie wlasnych zdarzen
-- Odtwarzanie dzwiekow, wyswietlanie powiadomien
+- Nasłuchiwanie zdarzeń gry: ruch na mapie, zabicie wroga, dane GMCP, konkretne ścieżki GMCP
+- Emitowanie własnych zdarzeń
+- Odtwarzanie dźwięków, wyświetlanie powiadomień
 
 **Mapa:**
-- Odczyt aktualnego pokoju (nazwa, koordynaty, wyjscia, area)
+- Odczyt aktualnego pokoju (nazwa, koordynaty, wyjścia, area)
 - Ustawianie lokalizacji
-- Cofanie sie do poprzedniego pokoju
+- Cofanie się do poprzedniego pokoju
 
-**Druzyna:**
-- Lista czlonkow druzyny
+**Drużyna:**
+- Lista członków drużyny
 - Lider, ID lidera, numer gracza
 
 **Dane GMCP:**
-- Pelny dostep do danych GMCP (HP, mana, nazwa pokoju, itd.)
+- Pełny dostęp do danych GMCP (HP, mana, nazwa pokoju itd.)
 
 **Kolejka ataku:**
-- Dodawanie, usuwanie, czyszczenie kolejki celow
+- Dodawanie, usuwanie, czyszczenie kolejki celów
 - Odczyt aktualnej kolejki
 
 **Obiekty na lokacji:**
-- Lista obiektow z numerem, opisem, stanem, skrotem
+- Lista obiektów z numerem, opisem, stanem, skrótem
 
 **Kolorowy tekst:**
 - `AnsiAwareBuffer` — tworzenie bogatego tekstu z kolorami, formatowaniem, linkami
 - Kolory z hex (`#ff0000`) lub RGB
 
 **Przyciski:**
-- Rejestracja wlasnych makr przyciskow (mobilne i desktopowe)
+- Rejestracja własnych makr przycisków (mobilne i desktopowe)
 - Pola konfiguracji: tekst, textarea, numer, checkbox, select
-- Przyciski stanowe (toggle ON/OFF, przelaczanie trybow)
-- Handle do kontroli stanu z poziomu aliasow
+- Przyciski stanowe (toggle ON/OFF, przełączanie trybów)
+- Handle do kontroli stanu z poziomu aliasów
 
-**Filtry listy obiektow:**
-- Zmiana koloru, ikony, prefiksu, sufiksu wpisow na liscie obiektow
+**Filtry listy obiektów:**
+- Zmiana koloru, ikony, prefiksu, sufiksu wpisów na liście obiektów
 - Modyfikacja paska HP
 - Skracanie nazw
-- System priorytetow — filtry composable, wiele pluginow wspolpracuje
+- System priorytetów — filtry composable, wiele pluginów współpracuje
 
-**Makra triggerow:**
-- Plugin moze definiowac wlasne typy akcji dla triggerow uzytkownika
-- Pojawiaja sie automatycznie w ustawieniach triggerow
+**Makra triggerów:**
+- Plugin może definiować własne typy akcji dla triggerów użytkownika
+- Pojawiają się automatycznie w ustawieniach triggerów
 - Konfiguracja przez pola formularza
 
 ### Lifecycle pluginu
 
 - `init(api)` — inicjalizacja, rejestracja wszystkiego
-- `destroy()` — czyszczenie przy wyladowaniu
+- `destroy()` — czyszczenie przy wyładowaniu
 - Metadane: nazwa, wersja, autor, opis
-- Kompatybilnosc wsteczna — stare skrypty (legacy) dzialaja bez zmian
+- Kompatybilność wsteczna — stare skrypty (legacy) działają bez zmian
 
 ### Typy TypeScript
 
-- Pakiet `@arkadia/plugin-types` z pelnym wsparciem IDE
+- Pakiet `@arkadia/plugin-types` z pełnym wsparciem IDE
 - Autocomplete i hover documentation w edytorze
 
 ## Wbudowane skrypty
 
-Klient zawiera ponad 150 gotowych skryptow pokrywajacych praktycznie kazdy aspekt gry:
+Klient zawiera ponad 150 gotowych skryptów pokrywających praktycznie każdy aspekt gry:
 
-**Walka:** kolejka ataku, tryby ataku, timer walki, okno walki, zaslanianie, ucieczka, alarm HP, alert braku broni, ogluszenie wroga, zlamana obrona, zaznaczanie celow, ochrona sojusznikow, ostrzezenie o ataku lidera
+**Walka:** kolejka ataku, tryby ataku, timer walki, okno walki, zasłanianie, ucieczka, alarm HP, alert braku broni, ogłuszenie wroga, złamana obrona, zaznaczanie celów, ochrona sojuszników, ostrzeżenie o ataku lidera
 
-**Ekwipunek:** menedzer pojemnikow, zbieranie lupow, ciecie, depozyt bankowy, porownywanie przedmiotow (inline i w oknie), wytrzymalosc, stan broni, ocena zbroi/broni/tarczy, kolorowanie monet, kolorowanie broni, sklep
+**Ekwipunek:** menedżer pojemników, zbieranie łupów, cięcie, depozyt bankowy, porównywanie przedmiotów (inline i w oknie), wytrzymałość, stan broni, ocena zbroi/broni/tarczy, kolorowanie monet, kolorowanie broni, sklep
 
-**Nawigacja:** chodzenie, GPS, mapa, tryb ruchu, specjalne wyjscia, skroty lokacji, kompas, przechodzenie bram, autobus/transport, lokalizatory, statki
+**Nawigacja:** chodzenie, GPS, mapa, tryb ruchu, specjalne wyjścia, skróty lokacji, kompas, przechodzenie bram, autobus/transport, lokalizatory, statki
 
-**Magia:** ladowanie magii, klucze magiczne, zaklecia, odkadanie magii
+**Magia:** ładowanie magii, klucze magiczne, zaklęcia, odkładanie magii
 
-**Ziola:** licznik ziol, opisy ziol, sklep zielarski, ladowanie ziol, leczenie chorob i zatruc
+**Zioła:** licznik ziół, opisy ziół, sklep zielarski, ładowanie ziół, leczenie chorób i zatruć
 
-**Rzemioslo:** kowalstwo, lowienie ryb, oswajanie zwierzat, wiedza, umiejetnosci, jezyki, nauczyciel jezykow
+**Rzemiosło:** kowalstwo, łowienie ryb, oswajanie zwierząt, wiedza, umiejętności, języki, nauczyciel języków
 
-**Komunikacja:** historia czatu, poczta, nowa wiadomosc, lista przedstawionych, listy
+**Komunikacja:** historia czatu, poczta, nowa wiadomość, lista przedstawionych, listy
 
-**Sledzenie:** postepy (zabici, zlecenia, staz), kontrakty, dostawy, licznik usprawnien, wyroznienie, profesja
+**Śledzenie:** postępy (zabici, zlecenia, staż), kontrakty, dostawy, licznik usprawnień, wyróżnienie, profesja
 
-**Czas i srodowisko:** zegar (Imperium 400 dni, Ishtar 360 dni), sledzenie slonca, pory roku, system przyplywow, labirynty (Raon, Rinde, Taragorn)
+**Czas i środowisko:** zegar (Imperium 400 dni, Ishtar 360 dni), śledzenie słońca, pory roku, system przypływów, labirynty (Raon, Rinde, Taragorn)
 
-**Interfejs:** bindy, multibindy, funkcyjny bind, kolorowanie tymczasowe, gagging (ukrywanie tekstu), pretty containers, krotkie wyjscia, podswietlanie braku wyjscia, podswietlanie kurczacych sie kamieni wprawionych w sprzet, opis osoby, emoji aligatora, dobywanie/opuszczanie, siedzenia, dzwieki
+**Interfejs:** bindy, multibindy, funkcyjny bind, kolorowanie tymczasowe, gagging (ukrywanie tekstu), pretty containers, krótkie wyjścia, podświetlanie braku wyjścia, podświetlanie kurczących się kamieni wprawionych w sprzęt, opis osoby, emoji aligatora, dobywanie/opuszczanie, siedzenia, dźwięki
 
-**Swiat:** timer zniszczenia swiata, odrodzenie swiata, Brokilon, gorskie lokacje, opal, kamienna plyta na bagnach, wrak brygu, wycena kamieni, wycena cen, szyldy gildii
+**Świat:** timer zniszczenia świata, odrodzenie świata, Brokilon, górskie lokacje, opał, kamienna płyta na bagnach, wrak brygu, wycena kamieni, wycena cen, szyldy gildii
 
 ---
 
-> System skryptow i pluginow pozwala graczom automatyzowac, rozszerzac i personalizowac
-> praktycznie kazdy aspekt rozgrywki — od prostych aliasow po pelne pluginy z wlasnym UI,
+> System skryptów i pluginów pozwala graczom automatyzować, rozszerzać i personalizować
+> praktycznie każdy aspekt rozgrywki — od prostych aliasów po pełne pluginy z własnym UI,
 > stanami i integracjami.
 >
-> Szczegolowy opis API pluginow znajdziesz w [PLUGINS.md](PLUGINS.md).
+> Szczegółowy opis API pluginów znajdziesz w [PLUGINS.md](PLUGINS.md).

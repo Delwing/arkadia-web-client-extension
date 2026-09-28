@@ -121,7 +121,7 @@ describe('searchRegistry', () => {
     it('reports a transport failure without leaking the raw error', async () => {
         vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')));
 
-        await expect(searchRegistry({}, REGISTRY)).rejects.toThrow('Nie udalo sie polaczyc z katalogiem pluginow');
+        await expect(searchRegistry({}, REGISTRY)).rejects.toThrow('Nie udało się połączyć z katalogiem pluginów');
     });
 });
 

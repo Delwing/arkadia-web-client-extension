@@ -58,8 +58,8 @@ function FooterButtonSettings({ buttons, onChange }: FooterButtonSettingsProps) 
         <div className="footer-button-settings">
             {buttons.length === 0 && (
                 <p className="popup-field__hint">
-                    Nie masz jeszcze zadnych przyciskow. Kazdy wysyla swoja komende - moze to
-                    byc zwykla komenda, alias albo cokolwiek, co przyjmuje linia komend.
+                    Nie masz jeszcze żadnych przycisków. Każdy wysyła swoją komendę - może to
+                    być zwykła komenda, alias albo cokolwiek, co przyjmuje linia komend.
                 </p>
             )}
             {buttons.map((button, index) => (
@@ -88,7 +88,7 @@ function FooterButtonSettings({ buttons, onChange }: FooterButtonSettingsProps) 
                             size="sm"
                             variant="ghost"
                             className="popup-btn--icon"
-                            title="W gore"
+                            title="W górę"
                             disabled={index === 0}
                             onClick={() => move(index, -1)}
                         >
@@ -98,13 +98,13 @@ function FooterButtonSettings({ buttons, onChange }: FooterButtonSettingsProps) 
                             size="sm"
                             variant="ghost"
                             className="popup-btn--icon"
-                            title="W dol"
+                            title="W dół"
                             disabled={index === buttons.length - 1}
                             onClick={() => move(index, 1)}
                         >
                             <ChevronDown size={14} strokeWidth={2} />
                         </Button>
-                        <DeleteButton title="Usun przycisk" onClick={() => remove(index)} />
+                        <DeleteButton title="Usuń przycisk" onClick={() => remove(index)} />
                     </div>
                     <div className="footer-button-settings__line footer-button-settings__line--minor">
                         <Select
@@ -113,8 +113,8 @@ function FooterButtonSettings({ buttons, onChange }: FooterButtonSettingsProps) 
                             value={button.tone ?? "neutral"}
                             onChange={(e) => patch(index, { tone: e.target.value as FooterButtonConfig["tone"] })}
                         >
-                            <option value="neutral">Zwykly</option>
-                            <option value="accent">Wyrozniony</option>
+                            <option value="neutral">Zwykły</option>
+                            <option value="accent">Wyróżniony</option>
                             <option value="danger">Czerwony</option>
                         </Select>
                         <Input
@@ -122,7 +122,7 @@ function FooterButtonSettings({ buttons, onChange }: FooterButtonSettingsProps) 
                             list="ui-footer-button-states"
                             className="footer-button-settings__state"
                             value={button.state ?? ""}
-                            placeholder="Stan wl./wyl. (opcjonalnie), np. podroz"
+                            placeholder="Stan wł./wył. (opcjonalnie), np. podróż"
                             onChange={(e) => patch(index, { state: e.target.value })}
                         />
                     </div>
@@ -135,12 +135,12 @@ function FooterButtonSettings({ buttons, onChange }: FooterButtonSettingsProps) 
                 <Plus size={14} strokeWidth={2} />Dodaj przycisk
             </Button>
             <p className="popup-field__hint">
-                Przycisk ze stanem swieci sie, gdy ten stan jest wlaczony - wlacza go trigger
-                albo skrypt komenda <code>/przycisk nazwa on</code> (<code>off</code> gasi), albo wtyczka.
+                Przycisk ze stanem świeci się, gdy ten stan jest włączony - włącza go trigger
+                albo skrypt komendą <code>/przycisk nazwa on</code> (<code>off</code> gasi), albo wtyczka.
             </p>
             {fromPlugins.length > 0 && (
                 <p className="popup-field__hint">
-                    W stopce sa tez przyciski wtyczek ({fromPlugins.map(b => b.label).join(", ")}).
+                    W stopce są też przyciski wtyczek ({fromPlugins.map(b => b.label).join(", ")}).
                     Dodaje i usuwa je wtyczka, nie ta lista.
                 </p>
             )}

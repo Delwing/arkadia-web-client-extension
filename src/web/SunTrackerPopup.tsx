@@ -464,7 +464,7 @@ const SunTrackerPopup: React.FC = () => {
                             }}
                             onClick={handleClear}
                         >
-                            Wyczysc
+                            Wyczyść
                         </button>
                     </span>
                 </div>
@@ -473,7 +473,7 @@ const SunTrackerPopup: React.FC = () => {
                         {`Potwierdzone: \u2600 ${sunriseCount}/${yearLength}  \u263E ${sunsetCount}/${yearLength}`}
                         {rangeStart !== null && (
                             <span style={{ color: 'var(--popup-data-gold)', marginLeft: 8 }}>
-                                {`Kliknij dzien koncowy (od ${rangeStart})`}
+                                {`Kliknij dzień końcowy (od ${rangeStart})`}
                             </span>
                         )}
                     </span>
@@ -594,7 +594,7 @@ const SunTrackerPopup: React.FC = () => {
                             gap: 4,
                         }}
                     >
-                        <div style={{ color: 'var(--popup-text-subtle)', marginBottom: 2 }}>Dzien {editCell.dayOfYear}</div>
+                        <div style={{ color: 'var(--popup-text-subtle)', marginBottom: 2 }}>Dzień {editCell.dayOfYear}</div>
                         <label style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--popup-data-gold)' }}>
                             {'\u2600'}
                             <input
@@ -694,7 +694,7 @@ const SunTrackerPopup: React.FC = () => {
                                 onClick={handleRangeFill}
                                 style={{ flex: 1, padding: '3px 8px', background: 'var(--popup-success-subtle-bg)', border: '1px solid var(--popup-success-border)', borderRadius: 3, color: 'var(--popup-success)', cursor: 'pointer', fontSize: 11, fontFamily: 'monospace' }}
                             >
-                                Wypelnij
+                                Wypełnij
                             </button>
                             <button
                                 type="button"

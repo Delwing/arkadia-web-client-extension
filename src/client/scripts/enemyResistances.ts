@@ -90,7 +90,7 @@ function appendParseWarning(line: AnsiAwareBuffer, reason: string): AnsiAwareBuf
     const warnBuffer = colorString(warn, WARNING_COLOR);
     warnBuffer.createLink([0, warn.length], {
         onClick: () => void navigator.clipboard?.writeText(lineText),
-        title: "Kopiuj linie",
+        title: "Kopiuj linię",
     });
     return line.append("\n", {}).appendBuffer(warnBuffer);
 }

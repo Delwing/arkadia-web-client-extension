@@ -58,7 +58,7 @@ export function TriggerEditor({ trigger, onChange, sounds, onRequestSoundUpload,
     const placeholders = isEvent
         ? eventArgs.map(a => ({ token: `{${a.name}}`, label: a.label }))
         : [
-            { token: "$0", label: "Cale dopasowanie" },
+            { token: "$0", label: "Całe dopasowanie" },
             ...Array.from({ length: groupCount(pattern) }, (_, i) => ({ token: `$${i + 1}`, label: `Grupa ${i + 1} z wzorca` })),
         ];
 
@@ -120,7 +120,7 @@ export function TriggerEditor({ trigger, onChange, sounds, onRequestSoundUpload,
                                 title="Linia do testu"
                                 spellCheck={false}
                                 value={sample}
-                                placeholder="Wklej linie z gry, zeby sprawdzic wzorzec"
+                                placeholder="Wklej linię z gry, żeby sprawdzić wzorzec"
                                 onChange={e => setSample(e.target.value)}
                             />
                             {(sample || test.error) && <MatchStatus matched={test.matches.length > 0} error={test.error} />}
@@ -135,11 +135,11 @@ export function TriggerEditor({ trigger, onChange, sounds, onRequestSoundUpload,
                             <span className="automation-row__label">Tylko w</span>
                             <Select
                                 className="automation-msgtype"
-                                title="Typ wiadomosci"
+                                title="Typ wiadomości"
                                 value={trigger.gmcpMsgType ?? ""}
                                 onChange={e => set({ gmcpMsgType: e.target.value || undefined })}
                             >
-                                <option value="">dowolnych wiadomosciach</option>
+                                <option value="">dowolnych wiadomościach</option>
                                 {!msgTypeKnown && <option value={trigger.gmcpMsgType}>{trigger.gmcpMsgType}</option>}
                                 {GMCP_MSG_TYPES.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
                             </Select>
@@ -148,7 +148,7 @@ export function TriggerEditor({ trigger, onChange, sounds, onRequestSoundUpload,
                 )}
             </Section>
 
-            <Section step={2} title="Co zrobic" extra={<span className="popup-badge">{trigger.macros.length}</span>}>
+            <Section step={2} title="Co zrobić" extra={<span className="popup-badge">{trigger.macros.length}</span>}>
                 <ActionList
                     macros={trigger.macros}
                     onChange={(macros: UserMacro[]) => set({ macros })}

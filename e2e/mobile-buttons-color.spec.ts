@@ -239,9 +239,9 @@ test.describe('Mobile buttons color and command configuration', () => {
         await expect(modal).toBeVisible();
 
         // Check that mode toggle buttons exist
-        const soloButton = page.getByRole('button', { name: 'Bez druzyny' });
-        const teamButton = page.getByRole('button', { name: 'W druzynie' });
-        const leaderButton = page.getByRole('button', { name: 'Prowadzacy' });
+        const soloButton = page.getByRole('button', { name: 'Bez drużyny' });
+        const teamButton = page.getByRole('button', { name: 'W drużynie' });
+        const leaderButton = page.getByRole('button', { name: 'Prowadzący' });
 
         await expect(soloButton, 'solo mode button should be visible').toBeVisible();
         await expect(teamButton, 'team mode button should be visible').toBeVisible();

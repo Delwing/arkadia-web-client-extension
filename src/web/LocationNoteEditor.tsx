@@ -146,7 +146,7 @@ function LocationNoteEditor() {
                     rows={6}
                     value={noteText}
                     onChange={e => setNoteText(e.target.value)}
-                    placeholder="Wpisz notatke..."
+                    placeholder="Wpisz notatkę..."
                 />
                 {mapNote && (
                     <div className="readonly-note-entry">

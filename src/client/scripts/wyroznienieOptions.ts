@@ -53,7 +53,7 @@ export default function initWyroznienieOptions(client: Client) {
             onClick: () => {
                 client.sendCommand("opcje wyroznienie niewidoczne");
             },
-            title: "Wylacz wyroznienie"
+            title: "Wyłącz wyróżnienie"
         });
         lineBuffer.appendBuffer(disableBuffer);
         lineBuffer.append(" ]", {});

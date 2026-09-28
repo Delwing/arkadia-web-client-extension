@@ -20,12 +20,12 @@ import { CSS } from "@dnd-kit/utilities";
 
 const DISPLAY_NAMES: Record<string, string> = {
     hp: 'HP',
-    fatigue: 'Zmeczenie',
-    stuffed: 'Glod',
-    encumbrance: 'Obciazenie',
+    fatigue: 'Zmęczenie',
+    stuffed: 'Głód',
+    encumbrance: 'Obciążenie',
     soaked: 'Pragnienie',
     mana: 'Mana',
-    improve: 'Postep',
+    improve: 'Postęp',
     form: 'Forma',
     intox: 'Upojenie',
     headache: 'Kac',

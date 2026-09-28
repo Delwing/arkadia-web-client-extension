@@ -19,8 +19,8 @@ const FILTERS: { key: Filter; label: string }[] = [
 const STATUS: Record<InstalledPlugin["status"], { mark: CardStatus; title: string }> = {
     loaded: { mark: "ok", title: "Wczytany" },
     loading: { mark: "loading", title: "Wczytywanie..." },
-    error: { mark: "error", title: "Blad wczytywania" },
-    legacy: { mark: "warning", title: "Stary skrypt (bez API pluginow)" },
+    error: { mark: "error", title: "Błąd wczytywania" },
+    legacy: { mark: "warning", title: "Stary skrypt (bez API pluginów)" },
     unknown: { mark: "warning", title: "Jeszcze nie wczytany" },
 };
 
@@ -129,8 +129,8 @@ function ScriptsInstalled({
                     <ArrowUpCircle size={16} />
                     <span>
                         {updatable.length === 1
-                            ? "1 plugin ma nowsza wersje w katalogu."
-                            : `${updatable.length} pluginy maja nowsza wersje w katalogu.`}
+                            ? "1 plugin ma nowszą wersję w katalogu."
+                            : `${updatable.length} pluginy mają nowszą wersję w katalogu.`}
                     </span>
                     <Button
                         size="sm"
@@ -145,7 +145,7 @@ function ScriptsInstalled({
 
             {catalogError && (
                 <div className="plugin-banner plugin-banner--muted">
-                    Katalog jest niedostepny, sprawdzanie aktualizacji pominiete ({catalogError}).
+                    Katalog jest niedostępny, sprawdzanie aktualizacji pominięte ({catalogError}).
                 </div>
             )}
 
@@ -153,16 +153,16 @@ function ScriptsInstalled({
                 <div className="plugin-empty">
                     <PackageOpen size={32} />
                     <p className="plugin-empty__title">
-                        {plugins.length === 0 ? "Nie masz jeszcze zadnych pluginow" : "Nic nie pasuje do filtrow"}
+                        {plugins.length === 0 ? "Nie masz jeszcze żadnych pluginów" : "Nic nie pasuje do filtrów"}
                     </p>
                     {plugins.length === 0 && (
                         <>
                             <p className="plugin-empty__text">
-                                Zainstaluj gotowy plugin z katalogu albo dodaj wlasny przyciskiem "Dodaj".
+                                Zainstaluj gotowy plugin z katalogu albo dodaj własny przyciskiem "Dodaj".
                             </p>
                             <Button variant="solid" size="sm" onClick={onBrowseCatalog}>
                                 <Store size={14} />
-                                Przegladaj katalog
+                                Przeglądaj katalog
                             </Button>
                         </>
                     )}
@@ -189,7 +189,7 @@ function ScriptsInstalled({
                                         <div className="plugin-notice plugin-notice--update">
                                             <ArrowUpCircle size={14} />
                                             <span>
-                                                Dostepna wersja <strong>v{plugin.updateVersion}</strong>
+                                                Dostępna wersja <strong>v{plugin.updateVersion}</strong>
                                             </span>
                                             <Button
                                                 size="sm"
@@ -214,14 +214,14 @@ function ScriptsInstalled({
                                         {plugin.source === "registry" && plugin.slug && (
                                             <CardAction
                                                 icon={<Store size={15} />}
-                                                label="Pokaz w katalogu"
+                                                label="Pokaż w katalogu"
                                                 href={registryPageUrl(plugin.slug)}
                                             />
                                         )}
                                         {plugin.source === "url" && (
                                             <CardAction
                                                 icon={<ExternalLink size={15} />}
-                                                label="Otworz zrodlo"
+                                                label="Otwórz źródło"
                                                 href={plugin.id}
                                             />
                                         )}
@@ -236,7 +236,7 @@ function ScriptsInstalled({
                                                         onRemove(plugin.id);
                                                     }}
                                                 >
-                                                    Usun na zawsze
+                                                    Usuń na zawsze
                                                 </Button>
                                                 <Button
                                                     size="sm"
@@ -249,7 +249,7 @@ function ScriptsInstalled({
                                         ) : (
                                             <CardAction
                                                 icon={<Trash2 size={15} />}
-                                                label="Usun"
+                                                label="Usuń"
                                                 variant="danger"
                                                 onClick={() =>
                                                     plugin.source === "local"

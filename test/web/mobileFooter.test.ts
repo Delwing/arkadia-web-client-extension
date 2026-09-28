@@ -22,7 +22,7 @@ describe("mobile footer expander", () => {
             <div id="char-state">
                 <div id="char-state-vitals"></div>
                 <div id="footer-chips"></div>
-                <button id="footer-expand" type="button" title="Rozwin stopke"></button>
+                <button id="footer-expand" type="button" title="Rozwiń stopkę"></button>
             </div>`;
         window.matchMedia = ((query: string) => ({
             media: query,
@@ -47,11 +47,11 @@ describe("mobile footer expander", () => {
 
         button().click();
         expect(expanded()).toBe("1");
-        expect(button().getAttribute("title")).toBe("Zwin stopke");
+        expect(button().getAttribute("title")).toBe("Zwiń stopkę");
 
         button().click();
         expect(expanded()).toBe("0");
-        expect(button().getAttribute("title")).toBe("Rozwin stopke");
+        expect(button().getAttribute("title")).toBe("Rozwiń stopkę");
     });
 
     // An expanded footer left over from a phone-width layout would come back on

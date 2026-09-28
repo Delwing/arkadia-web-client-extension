@@ -50,7 +50,7 @@ export function ActionList({
                 >
                     <span
                         className="automation-act__grip"
-                        title="Przeciagnij, zeby zmienic kolejnosc"
+                        title="Przeciągnij, żeby zmienić kolejność"
                         draggable
                         onDragStart={e => { setDragging(i); e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", String(i)); }}
                         onDragEnd={() => { setDragging(null); setOver(null); }}

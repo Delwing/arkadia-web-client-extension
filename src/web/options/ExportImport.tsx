@@ -10,7 +10,7 @@ const TABS: { key: Tab; label: string }[] = [
     { key: 'firebase', label: 'Synchronizacja' },
     { key: 'local', label: 'Plik' },
     { key: 'google-drive', label: 'Google Drive' },
-    { key: 'devices', label: 'Urzadzenia' },
+    { key: 'devices', label: 'Urządzenia' },
 ];
 
 function ExportImport() {

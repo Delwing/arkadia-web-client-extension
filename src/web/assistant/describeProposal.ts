@@ -34,8 +34,8 @@ export interface ProposalDescription {
 }
 
 export function formatValue(value: unknown): string {
-    if (value === true) return 'wlaczone';
-    if (value === false) return 'wylaczone';
+    if (value === true) return 'włączone';
+    if (value === false) return 'wyłączone';
     if (value === null || value === undefined) return '(brak)';
     if (typeof value === 'string') return value === '' ? '(pusty tekst)' : value;
     if (Array.isArray(value)) return value.map(formatValue).join(', ');
@@ -60,26 +60,26 @@ function currentSettingValue(key: string): unknown {
 }
 
 const MACRO_LABELS: Record<string, string> = {
-    uppercase: 'zamien na wielkie litery',
+    uppercase: 'zamień na wielkie litery',
     color: 'pokoloruj',
-    replace: 'zamien tekst',
-    beep: 'odtworz dzwiek',
+    replace: 'zamień tekst',
+    beep: 'odtwórz dźwięk',
     mute: 'wycisz',
-    unmute: 'wlacz dzwiek',
-    command: 'wyslij komende',
+    unmute: 'włącz dźwięk',
+    command: 'wyślij komendę',
     slowBlink: 'wolne miganie',
     rapidBlink: 'szybkie miganie',
     dim: 'przyciemnij',
     functionalBind: 'bind funkcjonalny',
     wrap: 'otocz tekstem',
     notify: 'powiadomienie',
-    speak: 'czytaj na glos',
+    speak: 'czytaj na głos',
     echo: 'wypisz tekst',
 };
 
 function describeMacro(macro: { type: string; command?: string; color?: string; background?: string; to?: string; message?: string; soundKey?: string }): string {
     const label = MACRO_LABELS[macro.type] ?? macro.type;
-    const colors = [macro.color, macro.background && `tlo ${macro.background}`].filter(Boolean).join(', ');
+    const colors = [macro.color, macro.background && `tło ${macro.background}`].filter(Boolean).join(', ');
     const detail = macro.command ?? (colors || undefined) ?? macro.to ?? macro.message ?? macro.soundKey;
     return detail ? `${label}: ${detail}` : label;
 }
@@ -113,7 +113,7 @@ export function describeProposal(proposal: AssistantProposal): ProposalDescripti
                 title: 'Nowy alias',
                 rows: [
                     { label: 'Wpisujesz', value: proposal.pattern },
-                    { label: 'Klient wysyla', value: proposal.command },
+                    { label: 'Klient wysyła', value: proposal.command },
                 ],
                 warnings: [],
             };
@@ -121,7 +121,7 @@ export function describeProposal(proposal: AssistantProposal): ProposalDescripti
         case 'trigger': {
             const rows = [
                 {
-                    label: 'Uruchamia sie',
+                    label: 'Uruchamia się',
                     value: proposal.type === 'event'
                         ? `na zdarzenie "${proposal.event}"`
                         : `gdy linia pasuje do wzorca ${proposal.pattern}`,
@@ -139,10 +139,10 @@ export function describeProposal(proposal: AssistantProposal): ProposalDescripti
                 title: 'Nowy bind',
                 rows: [
                     { label: 'Klawisz', value: describeBind(proposal) },
-                    { label: 'Wysyla', value: proposal.command },
+                    { label: 'Wysyła', value: proposal.command },
                 ],
                 warnings: conflicts.map(conflict =>
-                    `Ten klawisz jest juz zajety: ${conflict.label}${conflict.command ? ` (${conflict.command})` : ''}.`,
+                    `Ten klawisz jest już zajęty: ${conflict.label}${conflict.command ? ` (${conflict.command})` : ''}.`,
                 ),
             };
         }

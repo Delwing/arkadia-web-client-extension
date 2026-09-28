@@ -248,7 +248,7 @@ export function draftFromItem(item: AutomationItem): Draft {
 }
 
 /** What a new script starts with. */
-export const NEW_SCRIPT = `// Pod reka: args (grupy z wzorca, $1 to args[0]), api (API wtyczek),
+export const NEW_SCRIPT = `// Pod ręką: args (grupy z wzorca, $1 to args[0]), api (API wtyczek),
 // ctx oraz skroty log(), send(), print() i gmcp.
 log('uruchomiony', args);
 `;
@@ -317,12 +317,12 @@ function compiles(source: string): boolean {
 export function draftError(draft: Draft, items: AutomationItem[]): string | null {
     if (draft.kind === "script") {
         const script = draft.data as UserScript;
-        if (!script.name?.trim()) return "Nadaj skryptowi nazwe.";
+        if (!script.name?.trim()) return "Nadaj skryptowi nazwę.";
         if (!script.code.trim()) return "Skrypt nie ma kodu.";
         const command = script.command?.trim().replace(/^\//, "") ?? "";
-        if (command && !SCRIPT_COMMAND.test(command)) return "Komenda moze miec tylko litery, cyfry, _ i -.";
+        if (command && !SCRIPT_COMMAND.test(command)) return "Komenda może mieć tylko litery, cyfry, _ i -.";
         if (command && items.some(i => i.kind === "script" && i.id !== draft.id && i.data.command?.trim().replace(/^\//, "") === command)) {
-            return "Inny skrypt ma juz te komende.";
+            return "Inny skrypt ma już tę komendę.";
         }
         return null;
     }
@@ -330,18 +330,18 @@ export function draftError(draft: Draft, items: AutomationItem[]): string | null
         const alias = draft.data as UserAlias;
         const pattern = alias.pattern.trim();
         if (!pattern) return "Wpisz wzorzec.";
-        if (!compiles(`^${pattern}$`)) return "Wzorzec nie jest poprawnym wyrazeniem regularnym.";
+        if (!compiles(`^${pattern}$`)) return "Wzorzec nie jest poprawnym wyrażeniem regularnym.";
         if (items.some(i => i.kind === "alias" && i.id !== draft.id && i.data.pattern === pattern)) {
-            return "Alias o takim wzorcu juz istnieje.";
+            return "Alias o takim wzorcu już istnieje.";
         }
-        if (!aliasActions(alias).some(m => !isEmptyLinelessAction(m))) return "Dodaj co najmniej jedna akcje.";
+        if (!aliasActions(alias).some(m => !isEmptyLinelessAction(m))) return "Dodaj co najmniej jedną akcję.";
         return null;
     }
     const trigger = draft.data as UserTrigger;
     if (trigger.type === "event") return trigger.event ? null : "Wybierz zdarzenie.";
     const pattern = trigger.pattern?.trim() ?? "";
     if (!pattern) return "Wpisz wzorzec.";
-    if (!compiles(pattern)) return "Wzorzec nie jest poprawnym wyrazeniem regularnym.";
+    if (!compiles(pattern)) return "Wzorzec nie jest poprawnym wyrażeniem regularnym.";
     return null;
 }
 
@@ -411,12 +411,12 @@ export function actionShort(m: UserMacro, pluginLabel?: (type: string) => string
     switch (m.type) {
         case "command": return m.command?.trim() || "komenda";
         case "uppercase": return "wielkie litery";
-        case "color": return m.background ? (m.color ? "koloruj tekst i tlo" : "koloruj tlo") : "koloruj";
-        case "replace": return m.to ? `zamien na "${m.to}"` : "usun tekst";
+        case "color": return m.background ? (m.color ? "koloruj tekst i tło" : "koloruj tło") : "koloruj";
+        case "replace": return m.to ? `zamień na "${m.to}"` : "usuń tekst";
         case "wrap": return "otocz";
-        case "beep": return "dzwiek";
-        case "mute": return "wycisz dzwieki";
-        case "unmute": return "wlacz dzwieki";
+        case "beep": return "dźwięk";
+        case "mute": return "wycisz dźwięki";
+        case "unmute": return "włącz dźwięki";
         case "slowBlink":
         case "rapidBlink": return "miganie";
         case "dim": return "pulsowanie";
@@ -427,8 +427,8 @@ export function actionShort(m: UserMacro, pluginLabel?: (type: string) => string
         case "echo": return m.message ? `wypisz "${m.message}"` : "wypisz";
         case "script": return `skrypt ${storedScripts().find(sc => sc.id === m.scriptId)?.name || "?"}`;
         case "group": {
-            const verb = m.groupState === "on" ? "wlacz" : m.groupState === "off" ? "wylacz" : "przelacz";
-            return `${verb} grupe ${automationGroupName(m.groupId) || "?"}`;
+            const verb = m.groupState === "on" ? "włącz" : m.groupState === "off" ? "wyłącz" : "przełącz";
+            return `${verb} grupę ${automationGroupName(m.groupId) || "?"}`;
         }
         default: return pluginLabel?.(m.type) ?? m.type;
     }
@@ -472,7 +472,7 @@ export function itemSummary(
 ): string {
     if (item.kind === "script") {
         const users = scriptUsers(item.id, items).length;
-        const used = users ? `uzywany przez ${users} ${users === 1 ? "element" : users < 5 ? "elementy" : "elementow"}` : "nieuzywany";
+        const used = users ? `używany przez ${users} ${users === 1 ? "element" : users < 5 ? "elementy" : "elementów"}` : "nieużywany";
         return item.data.command ? `/${item.data.command} \u00b7 ${used}` : used;
     }
     const actions = itemActions(item).map(m => actionShort(m, pluginLabel));

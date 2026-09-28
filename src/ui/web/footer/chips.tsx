@@ -31,7 +31,7 @@ function mmss(seconds: number): string {
  * The transport chip sizes to its own name plus "88:88"; mail and package
  * chips hug their text.
  */
-const FAJKA_SIZES = ["pali sie", "zgasla"];
+const FAJKA_SIZES = ["pali się", "zgasła"];
 const LAMP_SIZES = ["8:88", "off"];
 const COMBAT_SIZES = ["88"];
 const ZASK_SIZES = ["88", "OK"];
@@ -44,7 +44,7 @@ const TEAM_SIZES = ["Wszyscy [88]"];
 const APOCALYPSE_SIZES = ["88:88"];
 const CLOCK_SIZES = ["88:88"];
 // The label is the season, or the part of the day before a season is known.
-const CLOCK_LABEL_SIZES = ["wiosna", "lato", "jesien", "zima", "dzien", "noc"];
+const CLOCK_LABEL_SIZES = ["wiosna", "lato", "jesień", "zima", "dzień", "noc"];
 
 /** Pipe: lit ember when puffed, dim when out. Click lights / snuffs it. */
 export function FajkaChip() {
@@ -54,10 +54,10 @@ export function FajkaChip() {
     <Chip
       icon={<span className="chip__ico"><span className={`chip__ember${lit ? " chip__ember--lit" : ""}`} /></span>}
       label="Fajka"
-      value={lit ? "pali sie" : "zgasla"}
+      value={lit ? "pali się" : "zgasła"}
       sizeTo={FAJKA_SIZES}
       tone={lit ? "warn" : undefined}
-      title={lit ? "Zgas fajke" : "Zapal fajke"}
+      title={lit ? "Zgaś fajkę" : "Zapal fajkę"}
       onClick={() => eventBus.emit("sendCommand", { command: lit ? "zgas fajke" : "/zapal" })}
     />
   );
@@ -79,7 +79,7 @@ export function LampChip() {
       value={lit ? mmss(seconds!) : "off"}
       sizeTo={LAMP_SIZES}
       tone={tone}
-      title={`${lit ? "Zgas lampe" : "Zapal lampe"} (przytrzymaj: napelnij olejem)`}
+      title={`${lit ? "Zgaś lampę" : "Zapal lampę"} (przytrzymaj: napełnij olejem)`}
       onClick={() => eventBus.emit("sendCommand", { command: lit ? "zgas lampe" : "zapal lampe" })}
       onLongPress={() => eventBus.emit("sendCommand", { command: "napelnij lampe olejem" })}
     />
@@ -116,7 +116,7 @@ export function AttackChip() {
     const next = order[(order.indexOf(mode) + 1) % order.length];
     eventBus.emit("attackMode", next); // attackController persists + re-emits
   };
-  return <Chip icon={<ChipIcon name="target" />} label="Atk" value={mode} sizeTo={ATTACK_SIZES} title="Zmien tryb ataku" onClick={cycle} />;
+  return <Chip icon={<ChipIcon name="target" />} label="Atk" value={mode} sizeTo={ATTACK_SIZES} title="Zmień tryb ataku" onClick={cycle} />;
 }
 
 /** Team presence on the current room. Click lists the roster. */
@@ -129,11 +129,11 @@ export function TeamChip() {
   return (
     <Chip
       icon={<ChipIcon name="team" />}
-      label="Druzyna"
+      label="Drużyna"
       value={allHere ? `Wszyscy [${status.teamSize}]` : `Brak: ${status.missing.join(", ")}`}
       sizeTo={TEAM_SIZES}
       tone={allHere ? "ok" : "warn"}
-      title="Pokaz sklad druzyny"
+      title="Pokaż skład drużyny"
       onClick={() => eventBus.emit("sendCommand", { command: "druzyna" })}
     />
   );
@@ -155,7 +155,7 @@ export function TransportChip() {
       value={value}
       sizeTo={[`${payload.label} 88:88`]}
       tone={tone}
-      title="Otworz trase transportu"
+      title="Otwórz trasę transportu"
       onClick={() => eventBus.emit("transport.popup.open")}
     />
   );
@@ -175,7 +175,7 @@ export function PackageChip() {
       icon={<ChipIcon name="box" />}
       label="Paczka"
       value={`${status.recipient}${time}`}
-      title={onClick ? "Prowadz do odbiorcy" : undefined}
+      title={onClick ? "Prowadź do odbiorcy" : undefined}
       onClick={onClick}
     />
   );
@@ -193,14 +193,14 @@ export function MailChip() {
   if (!pending) return null;
   const parts: string[] = [];
   if (state.unreceived) parts.push("Nowa");
-  if (state.unsent) parts.push("Niewyslana");
+  if (state.unsent) parts.push("Niewysłana");
   return (
     <Chip
       icon={<ChipIcon name="mail" />}
       label="Poczta"
       value={parts.join(", ")}
       tone="warn"
-      title="Wyslij zwierze pocztowe"
+      title="Wyślij zwierzę pocztowe"
       className={blinking ? "attention-blink" : undefined}
       onClick={() => eventBus.emit("sendCommand", { command: "wyslij zwierze" })}
     />
@@ -228,7 +228,7 @@ type ClockReading = {
   sunset?: number;
 };
 
-const SEASON_NAMES = ["wiosna", "lato", "jesien", "zima"];
+const SEASON_NAMES = ["wiosna", "lato", "jesień", "zima"];
 const SEASON_COLORS = [
   "var(--popup-data-spring-green)",
   "var(--popup-data-yellow)",
@@ -269,22 +269,22 @@ export function ClockChip() {
   if (!clock) return null;
   const time = `${String(clock.hours).padStart(2, "0")}:${String(Math.floor(clock.minutes)).padStart(2, "0")}`;
   const value = clock.precision && clock.precision > 0 ? `${time} ±${clock.precision}` : time;
-  const part = clock.daylight === true ? "dzien" : clock.daylight === false ? "noc" : "";
+  const part = clock.daylight === true ? "dzień" : clock.daylight === false ? "noc" : "";
   const season = clock.season !== undefined ? SEASON_NAMES[clock.season] : undefined;
   const now = clock.hours + clock.minutes / 60;
   const { sunrise, sunset } = clock;
-  const twilight = sunrise !== undefined && now >= sunrise - TWILIGHT_HOURS && now < sunrise ? "swit"
+  const twilight = sunrise !== undefined && now >= sunrise - TWILIGHT_HOURS && now < sunrise ? "świt"
     : sunset !== undefined && now >= sunset - TWILIGHT_HOURS && now < sunset ? "zmierzch"
     : undefined;
   const icon = clock.daylight === undefined ? "clock" : twilight ? "dawn" : clock.daylight ? "sun" : "moon";
   const iconColor = icon === "clock" ? undefined
-    : twilight === "swit" ? DAWN_COLOR : twilight === "zmierzch" ? DUSK_COLOR
+    : twilight === "świt" ? DAWN_COLOR : twilight === "zmierzch" ? DUSK_COLOR
     : clock.daylight ? SUN_COLOR : MOON_COLOR;
   const tip = [
     clock.dayLabel,
     season && [season, twilight ?? part].filter(Boolean).join(", "),
     clock.sunrise !== undefined && clock.sunset !== undefined
-      ? `wschod ${hhmm(clock.sunrise)}, zachod ${hhmm(clock.sunset)}`
+      ? `wschód ${hhmm(clock.sunrise)}, zachód ${hhmm(clock.sunset)}`
       : undefined,
   ].filter(Boolean).join("\n");
   return (
@@ -311,7 +311,7 @@ export function WeaponChip() {
   useClientEvent("client.disconnect", () => setInCombat(false));
   if (drawn === null) return null;
   const tone: ChipTone | undefined = inCombat && !drawn ? "danger" : undefined;
-  return <Chip icon={<ChipIcon name="sword" />} label="Bron" value={drawn ? "dobyta" : "schowana"} sizeTo={WEAPON_SIZES} sizeCenter tone={tone} />;
+  return <Chip icon={<ChipIcon name="sword" />} label="Broń" value={drawn ? "dobyta" : "schowana"} sizeTo={WEAPON_SIZES} sizeCenter tone={tone} />;
 }
 
 /** Cover cooldown + guard-release toggle (the /puszczaj alias). Click toggles guard. */
@@ -328,11 +328,11 @@ export function CoverChip() {
   return (
     <Chip
       icon={<ChipIcon name="shield" fill={!guard} />}
-      label="Zaslona"
+      label="Zasłona"
       value={active ? cover!.toFixed(1) : "OK"}
       sizeTo={COVER_SIZES}
       tone={active ? "warn" : "ok"}
-      title={guard ? "Zaslony puszczane automatycznie (kliknij: trzymaj)" : "Zaslony trzymane (kliknij: puszczaj automatycznie)"}
+      title={guard ? "Zasłony puszczane automatycznie (kliknij: trzymaj)" : "Zasłony trzymane (kliknij: puszczaj automatycznie)"}
       className={guard ? undefined : "chip--guard-held"}
       onClick={() => eventBus.emit("releaseGuard", !guard)}
     />
@@ -373,7 +373,7 @@ export function ConnectionChip() {
       label=""
       value={parts.join(" ")}
       tone={tone}
-      title={drift == null ? "Ping" : "Ping i zegar proxy wzgledem tego komputera"}
+      title={drift == null ? "Ping" : "Ping i zegar proxy względem tego komputera"}
     />
   );
 }
@@ -412,7 +412,7 @@ export function BreakItemChip() {
       label="Uwaga"
       value={data.text}
       tone="danger"
-      title={data.command ? "Napraw sprzet" : "Odrzuc ostrzezenie"}
+      title={data.command ? "Napraw sprzęt" : "Odrzuć ostrzeżenie"}
       onClick={onClick}
     />
   );

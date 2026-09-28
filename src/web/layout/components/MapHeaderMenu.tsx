@@ -310,17 +310,17 @@ export function MapHeaderMenu({ className = '' }: MapHeaderMenuProps) {
           </>
         ) : (
           <>
-            <MenuItem onClick={handleShowAreas}>Zmien obszar</MenuItem>
-            <MenuItem onClick={handleShowLevels}>Zmien poziom</MenuItem>
+            <MenuItem onClick={handleShowAreas}>Zmień obszar</MenuItem>
+            <MenuItem onClick={handleShowLevels}>Zmień poziom</MenuItem>
             <MenuRow>
-              <MenuItem onClick={handleZoomIn}>Zbliz</MenuItem>
+              <MenuItem onClick={handleZoomIn}>Zbliż</MenuItem>
               <MenuItem onClick={handleZoomOut}>Oddal</MenuItem>
             </MenuRow>
-            <MenuItem onClick={handleOpenSkroty}>Skroty</MenuItem>
+            <MenuItem onClick={handleOpenSkroty}>Skróty</MenuItem>
             <MenuItem onClick={handleOpenTripPlanner}>Planer trasy</MenuItem>
             {hintsEnabled && (
               <MenuCheckItem checked={showCompleted} onClick={handleToggleShowCompleted}>
-                Wiedza: pokaz ukonczone
+                Wiedza: pokaż ukończone
               </MenuCheckItem>
             )}
           </>

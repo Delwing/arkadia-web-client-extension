@@ -33,10 +33,10 @@ export interface BindConflict {
 
 /** Polish labels for the fixed slots. ASCII only, like every other card string. */
 const SLOT_LABELS: Record<string, string> = {
-    main: 'Bind glowny',
-    mainGates: 'Bind glowny - bramy',
-    mainTransport: 'Bind glowny - transport',
-    mainLoot: 'Bind glowny - lup',
+    main: 'Bind główny',
+    mainGates: 'Bind główny - bramy',
+    mainTransport: 'Bind główny - transport',
+    mainLoot: 'Bind główny - łup',
     lamp: 'Lampa',
     attack: 'Atak',
     support: 'Wsparcie',
@@ -44,20 +44,20 @@ const SLOT_LABELS: Record<string, string> = {
     roomBind: 'Bind lokacji',
     drinkable: 'Napoje',
     gateBind: 'Wrota',
-    doubleK: 'Podwojne +k',
+    doubleK: 'Podwójne +k',
 };
 
 const DIRECTION_LABELS: Record<keyof DirectionBinds, string> = {
-    n: 'Kierunek: polnoc',
-    s: 'Kierunek: poludnie',
-    w: 'Kierunek: zachod',
-    e: 'Kierunek: wschod',
-    nw: 'Kierunek: polnocny zachod',
-    ne: 'Kierunek: polnocny wschod',
-    sw: 'Kierunek: poludniowy zachod',
-    se: 'Kierunek: poludniowy wschod',
-    u: 'Kierunek: gora',
-    d: 'Kierunek: dol',
+    n: 'Kierunek: północ',
+    s: 'Kierunek: południe',
+    w: 'Kierunek: zachód',
+    e: 'Kierunek: wschód',
+    nw: 'Kierunek: północny zachód',
+    ne: 'Kierunek: północny wschód',
+    sw: 'Kierunek: południowy zachód',
+    se: 'Kierunek: południowy wschód',
+    u: 'Kierunek: góra',
+    d: 'Kierunek: dół',
     zerknij: 'Zerknij',
     special: 'Kierunek specjalny',
 };
@@ -66,7 +66,7 @@ const ARRAY_LABELS: Record<string, string> = {
     temp: 'Bind tymczasowy',
     enemy: 'Bind wroga',
     enemyBlock: 'Bind blokowania wroga',
-    custom: 'Bind wlasny',
+    custom: 'Bind własny',
 };
 
 /** True when two binds would be triggered by the same keystroke. */

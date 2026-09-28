@@ -31,7 +31,7 @@ const CATEGORY_TITLES: Record<SoundCategory, string> = {
 const CATEGORY_HINTS: Partial<Record<SoundCategory, string>> = {
     hp: 'ostrzeżenie o niskim HP',
     gear: 'uszkodzony ekwipunek',
-    weapon: 'wytracenie',
+    weapon: 'wytrącenie',
 };
 
 type UploadTarget = { type: 'beep' } | { type: 'category'; cat: SoundCategory };

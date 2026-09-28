@@ -149,7 +149,7 @@ export async function parseZlomDatabase(buffer: ArrayBuffer): Promise<ZlomDbResu
         const tarcze = readTarcze(db);
         const zbroje = readZbroje(db);
         if (bronie.length === 0 && tarcze.length === 0 && zbroje.length === 0) {
-            throw new Error('Baza nie zawiera tabel bronie/tarcze/zbroje lub sa puste.');
+            throw new Error('Baza nie zawiera tabel bronie/tarcze/zbroje lub są puste.');
         }
         return { bronie, tarcze, zbroje };
     } finally {
@@ -181,7 +181,7 @@ ctx.addEventListener('message', (event: MessageEvent<ZlomDbWorkerRequest>) => {
                 message:
                     error instanceof Error
                         ? error.message
-                        : 'Nie udalo sie odczytac bazy danych.',
+                        : 'Nie udało się odczytać bazy danych.',
             };
             ctx.postMessage(response);
         }

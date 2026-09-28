@@ -383,7 +383,7 @@ export default function initCarriage(
             note.append(label, PLAIN);
             note.createLink([start, start + label.length], {
                 onClick: () => client.sendEvent('leadTo', lastKnown),
-                title: `Kliknij aby prowadzic do: ${label}`,
+                title: `Kliknij aby prowadzić do: ${label}`,
             });
         }
         note.append('.', RIDE_HALTED_COLOR);

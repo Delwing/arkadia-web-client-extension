@@ -108,15 +108,15 @@ function packFileName(label: string) {
 
 function countLabel(aliases: number, triggers: number, scripts = 0) {
     const parts: string[] = [];
-    if (aliases) parts.push(`${aliases} ${aliases === 1 ? "alias" : "aliasow"}`);
+    if (aliases) parts.push(`${aliases} ${aliases === 1 ? "alias" : "aliasów"}`);
     if (triggers) parts.push(`${triggers} ${triggers === 1 ? "wyzwalacz" : "wyzwalaczy"}`);
-    if (scripts) parts.push(`${scripts} ${scripts === 1 ? "skrypt" : "skryptow"}`);
+    if (scripts) parts.push(`${scripts} ${scripts === 1 ? "skrypt" : "skryptów"}`);
     return parts.join(" i ") || "nic nowego";
 }
 
 function charactersChip(n: number) {
     const few = n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20);
-    return n === 1 ? "1 postac" : `${n} ${few ? "postacie" : "postaci"}`;
+    return n === 1 ? "1 postać" : `${n} ${few ? "postacie" : "postaci"}`;
 }
 
 /** Group header in the list: collapse, name (renamable), count, on/off. */
@@ -140,7 +140,7 @@ function GroupHeader({ group, count, collapsed, onToggleCollapse, onMenu, renami
     const Icon = collapsed ? Folder : FolderOpen;
     return (
         <div className={`automation-group${off ? " is-off" : ""}${drop ? ` is-drop-${drop}` : ""}`} onContextMenu={onMenu} {...dnd}>
-            <button type="button" className="automation-group__toggle" onClick={onToggleCollapse} title={collapsed ? "Rozwin" : "Zwin"}>
+            <button type="button" className="automation-group__toggle" onClick={onToggleCollapse} title={collapsed ? "Rozwiń" : "Zwiń"}>
                 <Chevron size={14} />
                 <Icon size={14} className="automation-group__ic" />
                 {!renaming && <span className="automation-group__name">{group ? group.name : "Bez grupy"}</span>}
@@ -163,7 +163,7 @@ function GroupHeader({ group, count, collapsed, onToggleCollapse, onMenu, renami
                 />
             )}
             <span className="automation-group__count">{count}</span>
-            {off && <span className="automation-chip">wylaczona</span>}
+            {off && <span className="automation-chip">wyłączona</span>}
             <span className="automation-spacer" />
             {group && onMenu && (
                 <button type="button" className="automation-icon-btn" title="Opcje grupy" onClick={onMenu}>
@@ -171,7 +171,7 @@ function GroupHeader({ group, count, collapsed, onToggleCollapse, onMenu, renami
                 </button>
             )}
             {group && (
-                <Switch on={!off} title={off ? "Grupa wylaczona" : "Grupa wlaczona"} onChange={on => setGroupEnabled(group.id, on)} />
+                <Switch on={!off} title={off ? "Grupa wyłączona" : "Grupa włączona"} onChange={on => setGroupEnabled(group.id, on)} />
             )}
         </div>
     );
@@ -346,7 +346,7 @@ export default function AutomationWindow() {
     /** Deletes a stored element after asking; false when the player said no. */
     function confirmRemove(kind: AutomationKind, id: string): boolean {
         const users = kind === "script" ? scriptUsers(id, items).length : 0;
-        const warning = users ? ` Uzywa go ${users} ${users === 1 ? "element" : "elementow"} - ich akcja przestanie dzialac.` : "";
+        const warning = users ? ` Używa go ${users} ${users === 1 ? "element" : "elementów"} - ich akcja przestanie działać.` : "";
         if (!confirm(`Czy na pewno chcesz usunąć ${THIS_ONE[kind]}?${warning}`)) return false;
         removeItem(kind, id);
         dropDraft(id);
@@ -368,8 +368,8 @@ export default function AutomationWindow() {
             .flatMap(i => scriptUsers(i.id, items))
             .filter(u => !memberIds.has(u.id))
             .map(u => u.id)).size;
-        const warning = users ? ` Skrypty z tej grupy uzywa ${users} ${users === 1 ? "element" : "elementow"} spoza niej - ich akcja przestanie dzialac.` : "";
-        if (!confirm(`Usunac grupe "${group.name}"${contents}?${warning}`)) return;
+        const warning = users ? ` Skrypty z tej grupy używa ${users} ${users === 1 ? "element" : "elementów"} spoza niej - ich akcja przestanie działać.` : "";
+        if (!confirm(`Usunąć grupę "${group.name}"${contents}?${warning}`)) return;
         deleteGroup(group.id);
         // Unsaved changes to what was in the group go with it.
         setDrafts(prev => Object.fromEntries(
@@ -412,15 +412,15 @@ export default function AutomationWindow() {
         e.preventDefault();
         const current = effectiveGroup(item, groups);
         const off = item.data.enabled === false;
-        const move = "Przenies do grupy";
+        const move = "Przenieś do grupy";
         const entries: ContextMenuEntry[] = [
             { label: "Edytuj", action: () => select(item.id) },
             { label: "Duplikuj", action: () => duplicateOf(drafts[item.id] ?? draftFromItem(item)) },
-            { label: off ? "Wlacz" : "Wylacz", action: () => toggleItem(item, off) },
+            { label: off ? "Włącz" : "Wyłącz", action: () => toggleItem(item, off) },
             ...groups.filter(g => g.id !== current).map(g => ({ label: g.name, section: move, action: () => moveItem(item.kind, item.id, g.id) })),
             ...(current ? [{ label: "Bez grupy", section: move, action: () => moveItem(item.kind, item.id, undefined) }] : []),
             { label: "Nowa grupa", section: move, icon: FolderPlus, action: () => moveItem(item.kind, item.id, addGroup()) },
-            { label: "Usun", tone: "danger", separator: true, icon: Trash2, action: () => { confirmRemove(item.kind, item.id); } },
+            { label: "Usuń", tone: "danger", separator: true, icon: Trash2, action: () => { confirmRemove(item.kind, item.id); } },
         ];
         showContextMenu(entries, e.clientX, e.clientY, { header: itemTitle(item).text, smallHeader: true });
     }
@@ -507,10 +507,10 @@ export default function AutomationWindow() {
             { label: "Nowy alias w grupie", action: () => create("alias", group.id) },
             { label: "Nowy wyzwalacz w grupie", action: () => create("trigger", group.id) },
             { label: "Nowy skrypt w grupie", action: () => create("script", group.id) },
-            { label: "Zmien nazwe", action: () => setRenamingGroup(group.id) },
-            { label: "Eksportuj grupe", action: () => download(packFileName(group.name), JSON.stringify(buildPack(group.id), null, 2)) },
+            { label: "Zmień nazwę", action: () => setRenamingGroup(group.id) },
+            { label: "Eksportuj grupę", action: () => download(packFileName(group.name), JSON.stringify(buildPack(group.id), null, 2)) },
             {
-                label: "Usun grupe",
+                label: "Usuń grupę",
                 tone: "danger",
                 separator: true,
                 icon: Trash2,
@@ -521,15 +521,15 @@ export default function AutomationWindow() {
 
     function addMenu(e: MouseEvent<HTMLElement>) {
         const kinds: ContextMenuEntry[] = [
-            { label: "Alias - gdy wpiszesz komende", icon: SquareTerminal, action: () => create("alias") },
-            { label: "Wyzwalacz - gdy gra wypisze linie lub zajdzie zdarzenie", icon: Zap, action: () => create("trigger") },
-            { label: "Skrypt - kod JavaScript uruchamiany akcja lub komenda", icon: Code2, action: () => create("script") },
+            { label: "Alias - gdy wpiszesz komendę", icon: SquareTerminal, action: () => create("alias") },
+            { label: "Wyzwalacz - gdy gra wypisze linię lub zajdzie zdarzenie", icon: Zap, action: () => create("trigger") },
+            { label: "Skrypt - kod JavaScript uruchamiany akcją lub komendą", icon: Code2, action: () => create("script") },
         ];
         // Filtered to one kind, only that one is offered; a group always is.
         const shown = kindFilter === "all" ? kinds : [kinds[["alias", "trigger", "script"].indexOf(kindFilter)]];
         openMenuAt(e, [
             ...shown,
-            { label: "Grupa - do porzadkowania elementow", icon: FolderPlus, separator: true, action: () => { addGroup(); } },
+            { label: "Grupa - do porządkowania elementów", icon: FolderPlus, separator: true, action: () => { addGroup(); } },
         ]);
     }
 
@@ -544,7 +544,7 @@ export default function AutomationWindow() {
     async function importFile(file: File) {
         try {
             const result = importPack(parsePack(await file.text()));
-            const skipped = result.skipped ? ` Pominieto ${result.skipped} juz istniejacych.` : "";
+            const skipped = result.skipped ? ` Pominięto ${result.skipped} już istniejących.` : "";
             setNotice(`Zaimportowano: ${countLabel(result.aliases, result.triggers, result.scripts)}.${skipped}`);
         } catch (err) {
             setNotice(err instanceof SyntaxError ? "Plik nie jest poprawnym JSON-em." : (err as Error).message);
@@ -586,7 +586,7 @@ export default function AutomationWindow() {
                         <span className="automation-chip" title={item.data.characters.join(", ")}>{charactersChip(item.data.characters.length)}</span>
                     ) : null}
                 </button>
-                <Switch on={!off} title={off ? "Wylaczony" : "Wlaczony"} onChange={on => toggleItem(item, on)} />
+                <Switch on={!off} title={off ? "Wyłączony" : "Włączony"} onChange={on => toggleItem(item, on)} />
             </div>
         );
     };
@@ -623,13 +623,13 @@ export default function AutomationWindow() {
                 </button>
             ))}
             <div className="automation-nav__filters">
-                <span className="automation-cap">Pokaz</span>
-                <Check label="Wylaczone" checked={showDisabled} onChange={e => setShowDisabled(e.target.checked)} />
+                <span className="automation-cap">Pokaż</span>
+                <Check label="Wyłączone" checked={showDisabled} onChange={e => setShowDisabled(e.target.checked)} />
                 <Check
                     label="Tylko tej postaci"
                     checked={onlyThisCharacter}
                     disabled={!character}
-                    title={character ? `Tylko to, co dziala dla ${character}` : "Nie zalogowano na postac"}
+                    title={character ? `Tylko to, co działa dla ${character}` : "Nie zalogowano na postać"}
                     onChange={e => setOnlyThisCharacter(e.target.checked)}
                 />
             </div>
@@ -710,7 +710,7 @@ export default function AutomationWindow() {
                                             {...groupDnd(group)}
                                             draggable={false}
                                         >
-                                            {group ? "Pusta grupa - przeciagnij tu elementy." : "Przeciagnij tu, zeby wyjac z grupy."}
+                                            {group ? "Pusta grupa - przeciągnij tu elementy." : "Przeciągnij tu, żeby wyjąć z grupy."}
                                         </p>
                                     )}
                                 </div>
@@ -720,9 +720,9 @@ export default function AutomationWindow() {
                 })}
                 {listEmpty && (
                     <p className="automation-empty">
-                        Nie masz jeszcze aliasow ani wyzwalaczy. Alias zamienia wpisana komende na inne, np.{" "}
+                        Nie masz jeszcze aliasów ani wyzwalaczy. Alias zamienia wpisaną komendę na inne, np.{" "}
                         <code>zab (.+)</code> → <code>zabij $1</code>. Wyzwalacz reaguje na linie z gry albo zdarzenie
-                        i wykonuje akcje: koloruje, wysyla komende, gra dzwiek... Kliknij + zeby dodac.
+                        i wykonuje akcje: koloruje, wysyła komendę, gra dźwięk... Kliknij + żeby dodać.
                     </p>
                 )}
                 {!listEmpty && visible.length === 0 && filtering && <p className="automation-empty">Nic nie pasuje.</p>}
@@ -735,7 +735,7 @@ export default function AutomationWindow() {
     const editor = selectedDraft ? (
         <section className="automation-editor" onKeyDown={onEditorKeyDown}>
             <div className="automation-editor__head">
-                <button type="button" className="automation-icon-btn automation-back" title="Wroc do listy" onClick={() => setSelectedId(null)}>
+                <button type="button" className="automation-icon-btn automation-back" title="Wróć do listy" onClick={() => setSelectedId(null)}>
                     <ArrowLeft size={16} />
                 </button>
                 <KindIcon kind={selectedDraft.kind} />
@@ -750,18 +750,18 @@ export default function AutomationWindow() {
                 />
                 <Switch
                     on={selectedDraft.data.enabled !== false}
-                    title="Wlaczony"
+                    title="Włączony"
                     onChange={on => updateDraft({ ...selectedDraft, data: { ...selectedDraft.data, enabled: on ? undefined : false } })}
                 >
-                    <span className="automation-switch__label">Wlaczony</span>
+                    <span className="automation-switch__label">Włączony</span>
                 </Switch>
                 <button
                     type="button"
                     className="automation-icon-btn"
-                    title="Wiecej"
+                    title="Więcej"
                     onClick={e => openMenuAt(e, [
                         { label: "Duplikuj", action: duplicate },
-                        { label: selectedDraft.isNew ? "Odrzuc" : "Usun", action: remove },
+                        { label: selectedDraft.isNew ? "Odrzuć" : "Usuń", action: remove },
                     ])}
                 >
                     <MoreHorizontal size={16} />
@@ -795,7 +795,7 @@ export default function AutomationWindow() {
                 )}
             </div>
             <footer className="automation-editor__foot">
-                <Button variant="danger" onClick={remove}><Trash2 size={15} />{selectedDraft.isNew ? "Odrzuc" : "Usun"}</Button>
+                <Button variant="danger" onClick={remove}><Trash2 size={15} />{selectedDraft.isNew ? "Odrzuć" : "Usuń"}</Button>
                 {saveError && <span className="automation-error">{saveError}</span>}
                 <span className="automation-spacer" />
                 <span className="automation-keys"><kbd>Ctrl</kbd><kbd>Enter</kbd></span>
