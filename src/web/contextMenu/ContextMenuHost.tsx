@@ -8,6 +8,7 @@ import {
 } from 'react';
 import { createPortal } from 'react-dom';
 import { ArrowUpRight, Check } from 'lucide-react';
+import { isTouchPointerType } from '@shared/dom/pointerEnvironment.ts';
 import {
     getContextMenuSnapshot,
     hideContextMenu,
@@ -31,16 +32,22 @@ function renderLabel(label: ContextMenuEntry['label']): ReactNode {
     return label as ReactNode;
 }
 
+/** How the entry being run was pressed; set by the menu's pointerdown. */
+let lastPointerType = '';
+
 /**
  * Runs an entry, then closes the menu and hands the keyboard back to the
  * command line - unless the entry opened a window, which focuses its own
- * field. The action goes first so Safari's transient user activation
- * (clipboard.write etc.) isn't invalidated by the unmount.
+ * field, or it was tapped: on touch, focusing the command line pops the
+ * on-screen keyboard over half the screen. The action goes first so Safari's
+ * transient user activation (clipboard.write etc.) isn't invalidated by the
+ * unmount.
  */
 function run(action: () => void, opensWindow?: boolean) {
     action();
     hideContextMenu();
     if (opensWindow) return;
+    if (isTouchPointerType(lastPointerType)) return;
     const input = document.getElementById('message-input') as HTMLTextAreaElement | null;
     if (input) {
         input.focus();
@@ -212,6 +219,9 @@ export function ContextMenuHost() {
         <div
             ref={menuRef}
             id="context-menu"
+            onPointerDown={(event) => {
+                lastPointerType = event.pointerType;
+            }}
             className={classes.join(' ')}
             style={{
                 left: pos?.x ?? snapshot.x,

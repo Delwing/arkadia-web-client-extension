@@ -338,6 +338,30 @@ test.describe('Mobile command radial', () => {
         expect(await getLastOutgoingCommand(page), 'should not send any command').toBeNull();
     });
 
+    test('tapping a context menu entry does not focus the command input', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+
+        const contentArea = page.locator('#main_text_output_msg_wrapper');
+        const box = await contentArea.boundingBox();
+        expect(box, 'should have bounding box for content area').not.toBeNull();
+        if (!box) return;
+        const centerX = box.x + box.width / 2;
+        const centerY = box.y + box.height / 2;
+
+        await page.locator('#message-input').evaluate((el) => (el as HTMLElement).blur());
+        await dispatchTouchEvent(page, '#main_text_output_msg_wrapper', 'touchstart', centerX, centerY, 1);
+        await page.waitForTimeout(LONG_PRESS_DELAY + 50);
+        await dispatchTouchEvent(page, '#main_text_output_msg_wrapper', 'touchend', centerX, centerY, 1);
+
+        const menu = page.locator('#context-menu');
+        await expect(menu).toBeVisible();
+        await menu.locator('.context-menu__tile').first().tap();
+        await expect(menu).toHaveCount(0);
+        await expect(page.locator('#message-input'), 'tap must not summon the on-screen keyboard').not.toBeFocused();
+    });
+
     test('center release only closes the radial when disabled in settings', async ({page}) => {
         await page.addInitScript(() => {
             localStorage.setItem('mobileButtonSettings', JSON.stringify({
