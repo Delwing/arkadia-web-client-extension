@@ -425,6 +425,13 @@ export default function initSpells(client: Client) {
 
     // === SEMI-INVISIBILITY ===
 
+    // Polniewidzialnosc - on me (e.g. from the diamond mask)
+    client.Triggers.registerTrigger(
+        /^Wpierw twoje dlonie, a potem ksztalty calego ciala staja sie zupelnie niewyrazne\./,
+        (line) => formatSpellOnMe(line, "ROZMYCIE"),
+        tag
+    );
+
     // Polniewidzialnosc - on others
     client.Triggers.registerTrigger(
         /^Sylwetka (?<cel>.+?) zaczyna sie rozmywac, probujesz skupic na niej swoj wzrok, jednak nie udaje ci sie to\.$/,
@@ -436,6 +443,16 @@ export default function initSpells(client: Client) {
     client.Triggers.registerTrigger(
         /^Sylwetka (?<cel>.+?) na powrot staje sie bardziej jednolita, ponownie wiec jestes w stanie skupic na (?:nim|niej) swoj wzrok\.$/,
         (line, matches) => formatSpellOnOthers(line, "ROZMYCIE END", matches.groups?.cel),
+        tag
+    );
+
+    // === SPELL END ===
+
+    // Any spell wearing off - on me. 'rozbrojenie postaci' is left to the
+    // MOZESZ DOBYWAC gag, which already marks its end.
+    client.Triggers.registerTrigger(
+        /^Czujesz, ze efekt dzialania czaru '(?!rozbrojenie postaci')(?<czar>[^']+)' konczy sie/,
+        (line, matches) => formatSpellOnMe(line, `${(matches.groups?.czar ?? "").toUpperCase()} END`),
         tag
     );
 
