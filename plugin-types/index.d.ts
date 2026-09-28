@@ -1403,6 +1403,13 @@ export interface ClientEvents {
   "clock.sunset": ClockSunEventPayload;
   /** Can wield weapon after knockoff */
   "canWieldAfterKnockOff": void;
+  /**
+   * Container contents seen in game output ("Otwarty plecak zawiera ...", "W srodku dostrzegasz ...").
+   * Fires whether or not pretty containers is enabled. container is the name as the game wrote it,
+   * in whatever grammatical case the line uses - compare it against every form returned by
+   * api.containers.getContainerForms(). items is the full, unfiltered list.
+   */
+  "containers.listed": { container: string; items: { name: string; count: string | number }[] };
   /** Team leader performed special exit follow */
   "followSpecialExit": { exit: string };
   /** GMCP events with dynamic paths (e.g., gmcp.room.info, gmcp.char.vitals) */
@@ -3161,6 +3168,30 @@ export interface ContainersApi {
      * ```
      */
     take(type: ContainerType, item: string): void;
+    /**
+     * Look into a container bag and get its contents
+     * Sends "zajrzyj do <bag>" and resolves with the parsed items of the listing.
+     * Every listing (inspected or not) is also announced as the "containers.listed" event.
+     *
+     * @param type - Container type ("money", "gems", "food", "other")
+     * @param options.silent - Hide the command echo and the listing line
+     * @param options.timeout - Milliseconds to wait for the listing (default 5000)
+     * @returns Items in the bag, or null when no listing arrived in time
+     *   (empty bag, bag not carried, no bag assigned)
+     *
+     * @example
+     * ```typescript
+     * const gems = await api.containers.inspect("gems", { silent: true });
+     * gems?.forEach(item => console.log(item.count, item.name));
+     * ```
+     */
+    inspect(type: ContainerType, options?: {
+        silent?: boolean;
+        timeout?: number;
+    }): Promise<{
+        name: string;
+        count: string | number;
+    }[] | null>;
 }
 
 /**

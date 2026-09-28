@@ -20,6 +20,7 @@ import { characterStorage } from "@modules/core/storage";
 import { defaultSettings } from "@modules/core/defaultSettings";
 import { getZlomFormatting } from "./zlom";
 import { wrapItemLine } from "./counterTableUtils";
+import { handleContainerListing } from "./bagManager";
 
 const GROUP_NAME_COLOR = createColorFormat('#557C99');
 
@@ -755,18 +756,23 @@ export default function initContainers(client: Client) {
         width = value;
     });
 
-    const register = () => {
-        client.Triggers.removeByTag(tag);
-        defaultContainerPatterns.forEach(pattern => {
-            client.Triggers.registerTrigger(pattern, (_line, matches): null => {
-                if (matches) {
-                    const output = prettyPrintContainer(matches, columns, 'POJEMNIK', 5, width);
-                    client.print(output);
-                }
-                return null;
-            }, tag);
-        });
-    };
+    // Registered once and always on: every listing is announced as containers.listed (unfiltered),
+    // and only pretty-printed when the setting is enabled.
+    defaultContainerPatterns.forEach(pattern => {
+        client.Triggers.registerTrigger(pattern, (line, matches) => {
+            if (!matches) return line;
+            const listing = {
+                container: matches.groups?.container?.trim() ?? '',
+                items: parseItems(matches.groups?.content ?? ''),
+            };
+            client.sendEvent('containers.listed', listing);
+            if (handleContainerListing(listing)) return null;
+            if (!enabled) return line;
+            const output = prettyPrintContainer(matches, columns, 'POJEMNIK', 5, width);
+            client.print(output);
+            return null;
+        }, tag);
+    });
 
     const applyContainerSettings = (settings: any) => {
         const detail = (settings ?? defaultSettings) as {
@@ -782,14 +788,7 @@ export default function initContainers(client: Client) {
         favoriteMagicKeys = detail.favoriteMagicKeys ?? favoriteMagicKeys;
         magicsColor = detail.magicsColor ?? defaultSettings.magicsColor!;
         magicKeysColor = detail.magicKeysColor ?? defaultSettings.magicKeysColor!;
-        const shouldEnable = !!detail.prettyContainers;
-        if (shouldEnable && !enabled) {
-            enabled = true;
-            register();
-        } else if (!shouldEnable && enabled) {
-            client.Triggers.removeByTag(tag);
-            enabled = false;
-        }
+        enabled = !!detail.prettyContainers;
     };
     applyContainerSettings(characterStorage.get('settings'));
     characterStorage.onChange('settings', applyContainerSettings);

@@ -1253,6 +1253,13 @@ export interface ClientEvents {
   "clock.sunset": ClockSunEventPayload;
   /** Can wield weapon after knockoff */
   "canWieldAfterKnockOff": void;
+  /**
+   * Container contents seen in game output ("Otwarty plecak zawiera ...", "W srodku dostrzegasz ...").
+   * Fires whether or not pretty containers is enabled. container is the name as the game wrote it,
+   * in whatever grammatical case the line uses - compare it against every form returned by
+   * api.containers.getContainerForms(). items is the full, unfiltered list.
+   */
+  "containers.listed": { container: string; items: { name: string; count: string | number }[] };
   /** Team leader performed special exit follow */
   "followSpecialExit": { exit: string };
   /** GMCP events with dynamic paths (e.g., gmcp.room.info, gmcp.char.vitals) */

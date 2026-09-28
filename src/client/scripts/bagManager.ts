@@ -132,6 +132,64 @@ export function containerAction(
     if (shouldClose) client.sendCommand(`zamknij ${forms.pronoun_b} ${forms.biernik}`);
 }
 
+export type ContainerListing = {
+    container: string;
+    items: { name: string; count: string | number }[];
+};
+
+type PendingInspection = {
+    forms: string[];
+    silent: boolean;
+    resolve: (items: ContainerListing["items"] | null) => void;
+    timer: ReturnType<typeof setTimeout>;
+};
+
+const pendingInspections: PendingInspection[] = [];
+
+/**
+ * Looks into the bag assigned to a type and resolves with its parsed contents,
+ * or null when no listing arrives in time (e.g. empty bag, bag not carried).
+ * With silent, the command echo and the listing line are hidden.
+ */
+export function inspectContainer(
+    client: Client,
+    type: keyof ContainerConfig,
+    options: { silent?: boolean; timeout?: number } = {}
+): Promise<ContainerListing["items"] | null> {
+    const bag = containerConfig[type];
+    if (!bag || !bagInDopelniacz[bag]) return Promise.resolve(null);
+    const forms = getBagForms(bag);
+    const silent = !!options.silent;
+    return new Promise((resolve) => {
+        const pending: PendingInspection = {
+            forms: [bag, forms.biernik, forms.dopelniacz],
+            silent,
+            resolve,
+            timer: setTimeout(() => {
+                const idx = pendingInspections.indexOf(pending);
+                if (idx >= 0) pendingInspections.splice(idx, 1);
+                resolve(null);
+            }, options.timeout ?? 5000),
+        };
+        pendingInspections.push(pending);
+        client.sendCommand(`zajrzyj do ${forms.pronoun_d} ${forms.dopelniacz}`, !silent);
+    });
+}
+
+/**
+ * Called for every container listing seen in game output. Resolves the oldest pending
+ * inspection of that bag; returns true when the listing line should be hidden.
+ */
+export function handleContainerListing(listing: ContainerListing): boolean {
+    const noun = listing.container.trim().toLowerCase().split(/\s+/).pop() ?? "";
+    const idx = pendingInspections.findIndex((p) => p.forms.includes(noun));
+    if (idx < 0) return false;
+    const [pending] = pendingInspections.splice(idx, 1);
+    clearTimeout(pending.timer);
+    pending.resolve(listing.items);
+    return pending.silent;
+}
+
 export function takeFromBag(
     client: Client,
     item: string,

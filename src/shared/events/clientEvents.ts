@@ -504,6 +504,8 @@ export interface KnownEvents {
     "loot.popup.closed": void;
     "loot.cleared": void;
     "loot.ground.open": { items: GroundItem[] };
+    // Container contents seen in game output - fires whether or not pretty containers is on
+    "containers.listed": { container: string; items: { name: string; count: string | number }[] };
     "profession.popup.open": void;
     "profession.updated": void;
     "sunTracker.popup.open": { domain?: "Empire" | "Ishtar" } | void;

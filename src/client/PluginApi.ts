@@ -67,7 +67,7 @@ import {
   getGroupDefinitions,
   getTransformDefinitions
 } from "./scripts/prettyContainers";
-import {containerAction, getContainer, getContainerForms} from "./scripts/bagManager";
+import {containerAction, getContainer, getContainerForms, inspectContainer} from "./scripts/bagManager";
 import loadMagics, { loadMagicsRaw } from "./scripts/magicsLoader";
 import loadMagicKeys, { loadMagicKeysRaw } from "./scripts/magicKeyLoader";
 import loadHerbs from "./scripts/herbsLoader";
@@ -2054,6 +2054,25 @@ export interface ContainersApi {
    * ```
    */
   take(type: ContainerType, item: string): void;
+
+  /**
+   * Look into a container bag and get its contents
+   * Sends "zajrzyj do <bag>" and resolves with the parsed items of the listing.
+   * Every listing (inspected or not) is also announced as the "containers.listed" event.
+   *
+   * @param type - Container type ("money", "gems", "food", "other")
+   * @param options.silent - Hide the command echo and the listing line
+   * @param options.timeout - Milliseconds to wait for the listing (default 5000)
+   * @returns Items in the bag, or null when no listing arrived in time
+   *   (empty bag, bag not carried, no bag assigned)
+   *
+   * @example
+   * ```typescript
+   * const gems = await api.containers.inspect("gems", { silent: true });
+   * gems?.forEach(item => console.log(item.count, item.name));
+   * ```
+   */
+  inspect(type: ContainerType, options?: { silent?: boolean; timeout?: number }): Promise<{ name: string; count: string | number }[] | null>;
 }
 
 /**
@@ -3478,6 +3497,9 @@ export class PluginApiImpl implements PluginApi {
       },
       take: (type: ContainerType, item: string) => {
         containerAction(this.client, type, "take", item);
+      },
+      inspect: (type: ContainerType, options?: { silent?: boolean; timeout?: number }) => {
+        return inspectContainer(this.client, type, options);
       }
     };
   }

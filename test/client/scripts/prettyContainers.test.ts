@@ -13,6 +13,7 @@ vi.mock('@modules/data/dataStores/magicsStore', () => ({
 }));
 
 import initContainers from '@client/scripts/prettyContainers';
+import { inspectContainer } from '@client/scripts/bagManager';
 import Client from '@client/Client';
 import type { ClientAdapter } from '@client/Client';
 import { characterStorage } from '@modules/core/storage';
@@ -282,6 +283,82 @@ describe('prettyContainers with real Client', () => {
 
       expect(results).toHaveLength(0);
       expect(mockAdapter.output).toHaveBeenCalled();
+    });
+  });
+
+  describe('containers.listed event', () => {
+    const listen = () => {
+      const received: any[] = [];
+      client.on('containers.listed', (payload) => received.push(payload));
+      return received;
+    };
+
+    test('emits container name and all items', () => {
+      const received = listen();
+      client.onLine('Otwarty prosty skorzany plecak zawiera ognisty agat, dwa ciemnozielone malachity i zloty miecz.', '');
+
+      expect(received).toEqual([{
+        container: 'prosty skorzany plecak',
+        items: [
+          { count: 1, name: 'ognisty agat' },
+          { count: 2, name: 'ciemnozielone malachity' },
+          { count: 1, name: 'zloty miecz' },
+        ],
+      }]);
+    });
+
+    test('emits even when pretty containers is disabled, and leaves the line alone', () => {
+      setTestSettings({ prettyContainers: false });
+      const received = listen();
+      const input = 'Otwierasz na chwile prosty skorzany plecak, sprawdzajac zawartosc. W srodku dostrzegasz ognisty agat.';
+
+      const results = client.onLine(input, '');
+
+      expect(results).toHaveLength(1);
+      expect(results[0].text).toBe(input);
+      expect(received).toEqual([{ container: 'prosty skorzany plecak', items: [{ count: 1, name: 'ognisty agat' }] }]);
+    });
+  });
+
+  describe('inspectContainer', () => {
+    const listing = 'Otwierasz na chwile prosty skorzany plecak, sprawdzajac zawartosc. W srodku dostrzegasz ognisty agat i dwa zolte cyrkony.';
+
+    test('sends zajrzyj and resolves with the items of that bag', async () => {
+      const sendSpy = jest.spyOn(client, 'sendCommand');
+      const promise = inspectContainer(client, 'gems');
+
+      expect(sendSpy).toHaveBeenCalledWith('zajrzyj do swojego plecaka', true);
+      const results = client.onLine(listing, '');
+      client.sendEvent('output-sent', 1);
+
+      await expect(promise).resolves.toEqual([
+        { count: 1, name: 'ognisty agat' },
+        { count: 2, name: 'zolte cyrkony' },
+      ]);
+      // not silent - pretty containers still prints its table
+      expect(results).toHaveLength(0);
+      expect(mockAdapter.output).toHaveBeenCalled();
+    });
+
+    test('silent hides the echo and the listing', async () => {
+      const sendSpy = jest.spyOn(client, 'sendCommand');
+      const promise = inspectContainer(client, 'gems', { silent: true });
+
+      expect(sendSpy).toHaveBeenCalledWith('zajrzyj do swojego plecaka', false);
+      const results = client.onLine(listing, '');
+      client.sendEvent('output-sent', 1);
+
+      await expect(promise).resolves.toHaveLength(2);
+      expect(results).toHaveLength(0);
+      expect(mockAdapter.output).not.toHaveBeenCalled();
+    });
+
+    test('resolves null when no listing arrives', async () => {
+      jest.useFakeTimers();
+      const promise = inspectContainer(client, 'gems', { timeout: 100 });
+      jest.advanceTimersByTime(100);
+      await expect(promise).resolves.toBeNull();
+      jest.useRealTimers();
     });
   });
 
