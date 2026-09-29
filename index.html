@@ -3,8 +3,9 @@
 <head>
     <!-- Google tag (gtag.js) -->
     <script>
-        // Only load Google Analytics if not in test mode
-        if (!window.__DISABLE_GA__) {
+        // Only load Google Analytics on the production host and not in test mode,
+        // so forks, previews and local runs stay out of the stats
+        if (!window.__DISABLE_GA__ && location.hostname === 'delwing.github.io') {
             (function() {
                 var script = document.createElement('script');
                 script.async = true;
