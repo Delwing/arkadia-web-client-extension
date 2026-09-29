@@ -6910,6 +6910,8 @@ select.popup-input.popup-input--control {
 .cover-mark path { stroke-width: 2.2; stroke-linejoin: round; }
 .cover-mark--us path { fill: var(--popup-warning); stroke: var(--popup-warning); }
 .cover-mark--team path { fill: none; stroke: color-mix(in oklab, var(--popup-accent) 80%, var(--popup-text)); }
+/* Covered against us: attacking it is wasted, so the name steps back. */
+.is-covered-us .cover-name { opacity: 0.5; }
 /* Card / nearby names are ellipsised flex items: the ellipsis goes on the text
    and the shield stays pinned right after it. */
 .object-card__name.is-covered-us, .object-card__name.is-covered-team,

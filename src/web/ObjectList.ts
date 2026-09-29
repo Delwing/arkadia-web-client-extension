@@ -878,6 +878,9 @@ html, body {
 #objects-list-pip .object-desc.is-covered-team {
     position: relative;
 }
+#objects-list-pip .is-covered-us .cover-name {
+    opacity: 0.5;
+}
 #objects-list-pip .cover-mark {
     position: absolute;
     left: 100%;
