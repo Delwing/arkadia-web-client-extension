@@ -1,6 +1,6 @@
 import Client from "@client/Client";
 import {globalStorage} from "@modules/core/storage";
-import {getBehaviorSettings, onBehaviorSettingsChange} from "@modules/core/settings";
+import {getBehaviorSettings, onBehaviorSettingsChange, onRenderSettingsChange} from "@modules/core/settings";
 import {createAttackController} from "@client/utils/attackController";
 import {hideContextMenu, showContextMenu} from "@web/contextMenu";
 import eventBus from "@modules/core/eventBus";
@@ -73,6 +73,9 @@ export default class ObjectList {
         // state via `objectList.pipActiveChanged`.
         eventBus.on('objectList.togglePip', () => { void this.togglePictureInPicture(); });
         eventBus.on('layoutManagerStateChanged', this.handleLayoutManagerStateChange);
+        // Cover markers: redraw when the cover graph or the toggle changes.
+        eventBus.on('cover.state', () => this.scheduleRender());
+        onRenderSettingsChange(() => this.scheduleRender());
         onBehaviorSettingsChange(() => {
             this.loadContextMenuCommands();
             this.scheduleRender();
@@ -870,6 +873,31 @@ html, body {
 #objects-list-pip .team-not-attacking {
     display: inline-block;
     transform: skewX(-10deg);
+}
+#objects-list-pip .object-desc.is-covered-us,
+#objects-list-pip .object-desc.is-covered-team {
+    position: relative;
+}
+#objects-list-pip .cover-mark {
+    position: absolute;
+    left: 100%;
+    top: 50%;
+    width: 0.95em;
+    height: 0.95em;
+    margin-left: 0.5ch;
+    transform: translateY(-50%);
+}
+#objects-list-pip .cover-mark path {
+    stroke-width: 2.2;
+    stroke-linejoin: round;
+}
+#objects-list-pip .cover-mark--us path {
+    fill: #de9822;
+    stroke: #de9822;
+}
+#objects-list-pip .cover-mark--team path {
+    fill: none;
+    stroke: #8fb4d9;
 }`;
         this.pipDocument.head.appendChild(styleEl);
     }

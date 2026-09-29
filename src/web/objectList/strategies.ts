@@ -23,6 +23,8 @@ import {
     isAttackingObj,
     isNextQueuedObj,
     attackerObjectsOf,
+    coverNameClass,
+    withCoverMark,
 } from "./context.ts";
 
 export interface ObjectListStrategy {
@@ -159,11 +161,14 @@ export function renderListLines(ctx: RenderContext): string[] {
             coloredDesc = `<span${classAttr} style="${style}">${displayDesc}</span>`;
         }
 
-        const padding = " ".repeat(Math.max(0, descWidth - rawDesc.length));
+        // With cover markers on, every row gets two extra columns so the shield
+        // (floated over this padding) never covers the attacker arrow.
+        const padding = " ".repeat(Math.max(0, descWidth - rawDesc.length) + (ctx.coverMarkers ? 2 : 0));
+        const coverCls = coverNameClass(obj, ctx);
         const isTeammateStr = isTeammate ? "true" : "false";
         const desc = isPlayer
             ? `${displayDesc}${padding}`
-            : `<span class="object-desc" data-object-id="${obj.num}" data-object-num="${num}" data-object-desc="${rawDesc}" data-teammate="${isTeammateStr}" title="Zasłoń">${coloredDesc}</span>${padding}`;
+            : `<span class="object-desc${coverCls ? ` ${coverCls}` : ""}" data-object-id="${obj.num}" data-object-num="${num}" data-object-desc="${rawDesc}" data-teammate="${isTeammateStr}" title="Zasłoń">${withCoverMark(obj, ctx, coloredDesc)}</span>${padding}`;
 
         // Build HP bar with filter override
         let bar = "";
@@ -259,6 +264,8 @@ const cardStrategy: ObjectListStrategy = {
 
             // Name classes
             const nameClasses = ['object-card__name'];
+            const coverCls = coverNameClass(obj, ctx);
+            if (coverCls) nameClasses.push(coverCls);
             if (isTarget && !isPlayer && !isTeammate) nameClasses.push('object-card__name--target');
             if (isTeammate && !isPlayer) nameClasses.push('object-card__name--teammate');
             if (isAttacking && !isPlayer && !isTeammate && !isTarget) nameClasses.push('object-card__name--attacking');
@@ -344,7 +351,7 @@ const cardStrategy: ObjectListStrategy = {
             return `<div class="${cardClasses.join(' ')}" data-object-id="${obj.num}" data-object-num="${num}">
                 <div class="object-card__row1">
                     <span class="${numberClasses.join(' ')}" data-object-num="${num}" data-object-id="${obj.num}" title="Zaatakuj">${num}</span>
-                    <span class="${nameClasses.join(' ')}" data-object-num="${num}" data-object-id="${obj.num}" title="Zasłoń"${nameStyleAttr}>${finalDesc}</span>
+                    <span class="${nameClasses.join(' ')}" data-object-num="${num}" data-object-id="${obj.num}" title="Zasłoń"${nameStyleAttr}>${withCoverMark(obj, ctx, finalDesc)}</span>
                     <span class="object-card__icons">${iconsHtml}</span>
                 </div>
                 <div class="object-card__row2">
@@ -407,6 +414,8 @@ const compactStrategy: ObjectListStrategy = {
 
             // Name classes
             const nameClasses = ['object-card__name'];
+            const coverCls = coverNameClass(obj, ctx);
+            if (coverCls) nameClasses.push(coverCls);
             if (isTarget && !isPlayer && !isTeammate) nameClasses.push('object-card__name--target');
             if (isTeammate && !isPlayer) nameClasses.push('object-card__name--teammate');
             if (isAttacking && !isPlayer && !isTeammate && !isTarget) nameClasses.push('object-card__name--attacking');
@@ -490,7 +499,7 @@ const compactStrategy: ObjectListStrategy = {
                 <div class="object-card__compact-content">
                     ${targetDotHtml}
                     <span class="${numberClasses.join(' ')}" data-object-num="${num}" data-object-id="${obj.num}" title="Zaatakuj">${num}</span>
-                    <span class="${nameClasses.join(' ')}" data-object-num="${num}" data-object-id="${obj.num}" title="Zasłoń"${nameStyleAttr}>${finalDesc}</span>
+                    <span class="${nameClasses.join(' ')}" data-object-num="${num}" data-object-id="${obj.num}" title="Zasłoń"${nameStyleAttr}>${withCoverMark(obj, ctx, finalDesc)}</span>
                     ${attackersHtml}
                 </div>
             </div>`;
@@ -549,6 +558,8 @@ const compactDotsStrategy: ObjectListStrategy = {
 
             // Name classes
             const nameClasses = ['object-card__name'];
+            const coverCls = coverNameClass(obj, ctx);
+            if (coverCls) nameClasses.push(coverCls);
             if (isTarget && !isPlayer && !isTeammate) nameClasses.push('object-card__name--target');
             if (isTeammate && !isPlayer) nameClasses.push('object-card__name--teammate');
             if (isAttacking && !isPlayer && !isTeammate && !isTarget) nameClasses.push('object-card__name--attacking');
@@ -639,7 +650,7 @@ const compactDotsStrategy: ObjectListStrategy = {
                     ${targetDotHtml}
                     <span class="${numberClasses.join(' ')}" data-object-num="${num}" data-object-id="${obj.num}" title="Zaatakuj">${num}</span>
                     ${hpDotsHtml}
-                    <span class="${nameClasses.join(' ')}" data-object-num="${num}" data-object-id="${obj.num}" title="Zasłoń"${nameStyleAttr}>${finalDesc}</span>
+                    <span class="${nameClasses.join(' ')}" data-object-num="${num}" data-object-id="${obj.num}" title="Zasłoń"${nameStyleAttr}>${withCoverMark(obj, ctx, finalDesc)}</span>
                     ${attackersHtml}
                 </div>
             </div>`;
@@ -693,6 +704,8 @@ const raidStrategy: ObjectListStrategy = {
             if (isNextQueued) numberClasses.push('object-card__number--next-target');
 
             const nameClasses = ['object-card__name'];
+            const coverCls = coverNameClass(obj, ctx);
+            if (coverCls) nameClasses.push(coverCls);
             if (isTarget && !isPlayer && !isTeammate) nameClasses.push('object-card__name--target');
             if (isTeammate && !isPlayer) nameClasses.push('object-card__name--teammate');
             if (isAttacking && !isPlayer && !isTeammate && !isTarget) nameClasses.push('object-card__name--attacking');
@@ -769,7 +782,7 @@ const raidStrategy: ObjectListStrategy = {
                 <div class="object-card__raid-content">
                     <div class="object-card__raid-row object-card__raid-row--main">
                         <span class="${numberClasses.join(' ')}" data-object-num="${num}" data-object-id="${obj.num}" title="Zaatakuj">${num}</span>
-                        <span class="${nameClasses.join(' ')}" data-object-num="${num}" data-object-id="${obj.num}" title="Zasłoń"${nameStyleAttr}>${finalDesc}</span>
+                        <span class="${nameClasses.join(' ')}" data-object-num="${num}" data-object-id="${obj.num}" title="Zasłoń"${nameStyleAttr}>${withCoverMark(obj, ctx, finalDesc)}</span>
                     </div>
                     <div class="object-card__raid-row object-card__raid-row--attackers">
                         ${attackersHtml}
@@ -908,7 +921,8 @@ const nearbyStrategy: ObjectListStrategy = {
             const nameCls =
                 'obj__name' + (nameClass ? ` ${nameClass}` : '') +
                 (filterResult.style?.italic ? ' is-italic' : '') +
-                (nameClickable ? ' is-clickable' : '');
+                (nameClickable ? ' is-clickable' : '') +
+                (ctx.coverMarks.has(obj.num) ? ` ${coverNameClass(obj, ctx)}` : '');
             const nameAttrs = nameClickable
                 ? ` data-object-num="${num}" data-object-id="${obj.num}" data-teammate="${isTeammate ? 'true' : 'false'}" title="Zasłoń"`
                 : '';
@@ -950,7 +964,7 @@ const nearbyStrategy: ObjectListStrategy = {
             }
 
             // One line: shortcut, HP bar, name (grows), attackers pushed right.
-            return `<div class="${rowCls}"${rowStyleAttr} data-object-id="${obj.num}" data-object-num="${num}"><div class="obj__main"><span class="${keyCls}"${keyAttrs}>${keyLabel}</span>${hpHtml}<span class="${nameCls}"${nameAttrs}${nameStyleAttr}>${finalDesc}</span>${atksHtml}</div></div>`;
+            return `<div class="${rowCls}"${rowStyleAttr} data-object-id="${obj.num}" data-object-num="${num}"><div class="obj__main"><span class="${keyCls}"${keyAttrs}>${keyLabel}</span>${hpHtml}<span class="${nameCls}"${nameAttrs}${nameStyleAttr}>${withCoverMark(obj, ctx, finalDesc)}</span>${atksHtml}</div></div>`;
         });
 
         return `<div class="objects-list-nearby">${rows.join('')}</div>`;

@@ -53,6 +53,7 @@ export function OutputSection({ draft, update }: OutputSectionProps) {
                 <option value="letters">Litery (A, B, C...)</option>
                 <option value="numbers">Numery (1, 2, 3...)</option>
             </SelectField>
+            <CheckboxRow id="ui-object-list-cover-markers" label="Pokazuj zasłony wrogów (tarcza za nazwą)" checked={draft.objectListCoverMarkers} onChange={(v) => update({ objectListCoverMarkers: v })} />
             <Field label="Menu kontekstowe obiektów (PPM)" htmlFor="ui-object-context-menu-input">
                 <ObjectContextMenuEditor commands={draft.objectContextMenuCommands} onChange={(objectContextMenuCommands) => update({ objectContextMenuCommands })} />
             </Field>

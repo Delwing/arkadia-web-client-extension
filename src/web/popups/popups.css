@@ -6895,6 +6895,30 @@ select.popup-input.popup-input--control {
 .obj__name.item   { color: var(--popup-text-dim); }
 /* objectListFilters italic override */
 .obj__name.is-italic { font-style: italic; }
+
+/* Cover markers (render setting objectListCoverMarkers), every flavor: a filled
+   shield after an enemy covered against us, an outline one when it is covered
+   against a teammate only. */
+.cover-mark {
+  display: inline-block;
+  width: 0.95em;
+  height: 0.95em;
+  vertical-align: -0.12em;
+  margin-left: 0.35em;
+  flex: none;
+}
+.cover-mark path { stroke-width: 2.2; stroke-linejoin: round; }
+.cover-mark--us path { fill: var(--popup-warning); stroke: var(--popup-warning); }
+.cover-mark--team path { fill: none; stroke: color-mix(in oklab, var(--popup-accent) 80%, var(--popup-text)); }
+/* Card / nearby names are ellipsised flex items: the ellipsis goes on the text
+   and the shield stays pinned right after it. */
+.object-card__name.is-covered-us, .object-card__name.is-covered-team,
+.obj__name.is-covered-us, .obj__name.is-covered-team { display: flex; align-items: center; }
+.object-card__name .cover-name, .obj__name .cover-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+/* The monospace list floats the shield over the two columns of padding it
+   reserves after every name, so nothing on the line moves. */
+.object-desc.is-covered-us, .object-desc.is-covered-team { position: relative; }
+.object-desc .cover-mark { position: absolute; left: 100%; top: 50%; margin-left: 0.5ch; transform: translateY(-50%); }
 /* status mark from objectListFilters (ogluch, przelamana obrona, plugin flags).
    The filter's colour rides on the row as --mark-bg and washes it the same way the
    next-target gold does, with the name lifted toward that hue. The doubled class
