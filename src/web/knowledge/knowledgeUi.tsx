@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { memo, type ReactNode } from 'react';
 import { Check, Lightbulb, MapPin, Navigation } from 'lucide-react';
 import eventBus from '@modules/core/eventBus';
 import { MAX_LEVEL, entryHint, isUnavailable, type DetailsEntry, type PlaceStatus } from './knowledgeModel';
@@ -73,20 +73,21 @@ export function StatusChip({ status, kind }: { status: PlaceStatus; kind: 'libra
 /**
  * One knowledge entry: a dot for known / missing, its text, and with hints on
  * where to go, how far it is, Prowadź (while still missing) and a pin that
- * shows it on the map.
+ * shows it on the map. Memoized, so props stay plain values: the report lists hundreds.
  */
-export function EntryRow({
+export const EntryRow = memo(function EntryRow({
     entry,
     hints,
     distance,
     area,
-    extra,
+    categories,
 }: {
     entry: DetailsEntry;
     hints: boolean;
     distance: number | null;
     area?: string;
-    extra?: ReactNode;
+    /** The categories an entry counts for, as chips (Regiony). */
+    categories?: string[];
 }) {
     const unavailable = isUnavailable(entry);
     const status = unavailable ? 'unavailable' : entry.status;
@@ -107,7 +108,11 @@ export function EntryRow({
                         </span>
                     </span>
                 )}
-                {extra}
+                {categories && (
+                    <span className="kn-entry__cats">
+                        {categories.map((cat) => <span key={cat} className="kn-chip kn-chip--sm">{cat}</span>)}
+                    </span>
+                )}
             </span>
             {hints && (
                 <>
@@ -140,4 +145,4 @@ export function EntryRow({
             )}
         </li>
     );
-}
+});

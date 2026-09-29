@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Copy, Download, Library, MoreHorizontal, RefreshCw, Search, Send, X } from 'lucide-react';
 import eventBus from '@modules/core/eventBus';
 import { DockablePopupWrapper } from '@web/layout/components/DockablePopupWrapper';
@@ -19,7 +19,7 @@ import {
     type EntryFilter,
     type LibrarySort,
 } from './knowledgeModel';
-import { useDistance, useKnowledgeData } from './useKnowledgeData';
+import { knowledgeRoomIds, useDistance, useKnowledgeData } from './useKnowledgeData';
 import './knowledge.css';
 
 /** One window for Wiedza and Biblioteki (the id stays the Wiedza one, so layouts keep it). */
@@ -65,7 +65,8 @@ export default function KnowledgeWindow() {
     const [pageOpen, setPageOpen] = useState(false);
 
     const data = useKnowledgeData(isOpen);
-    const distance = useDistance(data.roomVersion);
+    const roomIds = useMemo(() => knowledgeRoomIds(data.rows, data.libraries), [data.rows, data.libraries]);
+    const distance = useDistance(data.roomVersion, roomIds);
 
     // /wiedza opens on what it was showing (Biblioteki aside); /biblioteki on Biblioteki.
     useEffect(() => {

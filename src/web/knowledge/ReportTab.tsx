@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useMemo, useRef } from 'react';
 import { Check } from 'lucide-react';
 import { EntryRow } from './knowledgeUi';
 import {
@@ -41,9 +41,11 @@ export function ReportTab({ rows, query, filter, hints, distance }: ReportTabPro
     const known = withEntries.reduce((sum, row) => sum + row.known, 0);
     const total = withEntries.reduce((sum, row) => sum + row.total, 0);
     const complete = withEntries.filter((row) => row.known >= row.total);
-    const sections = withEntries
+    const sections = useMemo(() => rows
+        .filter((row) => row.total > 0)
         .map((row) => ({ row, entries: filterEntries(row.entries, filter, query, hints) }))
-        .filter(({ row, entries }) => entries.length > 0 && (filter !== 'missing' || row.known < row.total));
+        .filter(({ row, entries }) => entries.length > 0 && (filter !== 'missing' || row.known < row.total)),
+    [rows, filter, query, hints]);
 
     const jumpTo = (name: string) => {
         const section = listRef.current?.querySelector<HTMLElement>(`[data-category="${CSS.escape(name)}"]`);

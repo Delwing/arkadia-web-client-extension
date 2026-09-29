@@ -5,12 +5,14 @@ import {
     getKnowledgeEventsForCharacter,
     type KnowledgeEvent,
 } from '@modules/data/dataStores/knowledgeEventsStore';
+import { getRoomDistances } from '@modules/core/roomInfoProvider';
 import { getEmbeddedMap } from '@web/embedRegistry';
 import { WIEDZA_IMPORTED_EVENT } from '@web/imports/WiedzaImport.tsx';
 import {
     buildCategoryRows,
     levelsFromHistory,
     type BooksPayload,
+    type CategoryRow,
     type DetailsPayload,
     type LibrariesPayload,
 } from './knowledgeModel';
@@ -94,25 +96,32 @@ export function useKnowledgeData(isOpen: boolean) {
     return { details, libraries, books, history, rows, updatedAt, roomVersion };
 }
 
-/** Steps from where the player stands, or null when there is no way (or no map). */
-export function useDistance(roomVersion: number) {
-    const cache = useMemo(() => new Map<number, number | null>(),
-        // A new cache per step: every distance changes.
+/** Every room the window may ask a distance for: entries and libraries. */
+export function knowledgeRoomIds(rows: CategoryRow[], libraries: LibrariesPayload | null): number[] {
+    const ids = new Set<number>();
+    for (const row of rows) {
+        for (const entry of row.entries) if (typeof entry.id === 'number') ids.add(entry.id);
+    }
+    for (const lib of libraries?.libraries ?? []) if (typeof lib.roomId === 'number') ids.add(lib.roomId);
+    return [...ids];
+}
+
+/**
+ * Steps from where the player stands, or null when there is no way (or no map).
+ * The first ask after a step measures every room in `roomIds` in one search:
+ * a pathfind per entry froze the window with hundreds of entries on screen.
+ */
+export function useDistance(roomVersion: number, roomIds: readonly number[]) {
+    const table = useMemo(() => ({ steps: null as Map<number, number | null> | null }),
+        // A new table per step: every distance changes.
         // eslint-disable-next-line react-hooks/exhaustive-deps
-        [roomVersion]);
+        [roomVersion, roomIds]);
     return useCallback((roomId: number | null | undefined): number | null => {
         if (roomId == null) return null;
-        if (cache.has(roomId)) return cache.get(roomId)!;
-        const embedded = getEmbeddedMap();
-        const from = embedded?.currentRoom;
-        let steps: number | null = null;
-        if (embedded?.pathFinder && typeof from === 'number') {
-            steps = from === roomId ? 0 : (embedded.pathFinder.findPath(from, roomId)?.length ?? 0) - 1;
-            if (steps < 0) steps = null;
-        }
-        cache.set(roomId, steps);
-        return steps;
-    }, [cache]);
+        table.steps ??= getRoomDistances(roomIds);
+        if (!table.steps.has(roomId)) table.steps.set(roomId, getRoomDistances([roomId]).get(roomId) ?? null);
+        return table.steps.get(roomId) ?? null;
+    }, [table, roomIds]);
 }
 
 /** The map area a room is in ("Oxenfurt"), if the map knows the room. */

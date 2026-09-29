@@ -49,11 +49,7 @@ export function RegionsTab({ rows, filter, query, hints, area, onArea, distance,
                                 entry={entry}
                                 hints={hints}
                                 distance={hints && entry.status !== 'known' ? distance(entry.id) : null}
-                                extra={
-                                    <span className="kn-entry__cats">
-                                        {entry.categories.map((cat) => <span key={cat} className="kn-chip kn-chip--sm">{cat}</span>)}
-                                    </span>
-                                }
+                                categories={entry.categories}
                             />
                         ))}
                     </ul>
