@@ -1,6 +1,7 @@
 import Client from "@client/Client.ts";
 import eventBus from "@modules/core/eventBus.ts";
 import {globalStorage} from "@modules/core/storage.ts";
+import type {TriggerMatchFunction} from "@client/Triggers.ts";
 
 export interface Contract {
     id: string;
@@ -208,12 +209,55 @@ export function parsePolishDays(text: string | undefined): number {
     return isNaN(parsed) ? 1 : parsed;
 }
 
+// Pattern for contract offer line
+// "Tak, mam pewne pilne zamowienie na zbroje. Potrzebuje czterech tarcz, przynajmniej sredniej jakosci."
+// "Potrzebuje dwudziestu dwoch sztuk plucnicy." - two-word numbers
+// "Potrzebuje czterech srednich ryb morskich." - adjective before item (no "sztuk")
+// "Potrzebuje dziesieciu kilogramow miesa z bazanta." - weight unit instead of "sztuk"
+// "Potrzebuje jeszcze jednej dwurecznej broni klujacej" - with "jeszcze"
+// The whole "amount + item" segment is captured as one group and split by parseAmountAndItem.
+export const contractOfferPattern = /.+? \S+ do [^:]+: Tak, mam pewne pilne zamowienie na ([^.]+)\. Potrzebuje (?:jeszcze )?([^.,]+?)(?:, przynajmniej ([^.]+) jakosci)?\.(?:.*Dobrze zaplace)?/;
+
 // Pattern for deadline line
 // "Na realizacje zamowienia mam siedemnascie dni, pozniej zapewne bede potrzebowac czego innego."
 // "Na realizacje zamowienia mam kilka godzin, pozniej zapewne bede potrzebowac czego innego."
 // "Na realizacje zamowienia mam dzien, pozniej zapewne bede potrzebowac czego innego." - no number, singular
 // The number word is optional (group 1 is undefined when absent -> defaults to 1 day).
 export const deadlinePattern = /.+? \S+ do [^:]+: Na realizacje zamowienia mam (?:([a-z ]+) )?(?:dni|dzien|godzin|godziny|godzine), pozniej zapewne bede potrzebowac czego innego\./;
+
+// Some NPCs (gnomes, e.g. the Tilea craftsman) speak in one run-together
+// CamelCase word: "Tak,MamPewnePilneZamowienieNaZbroje.PotrzebujeJeszcze...".
+// Rewrites such a line into ordinary speech ("Tak, mam pewne pilne zamowienie
+// na zbroje. Potrzebuje jeszcze ...") so the regular patterns apply. Returns
+// null when the line is not rushed speech.
+const rushedSpeechPattern = /^(.+? \S+ do [^:]+: )(\S+)$/;
+
+export function normalizeRushedSpeech(line: string): string | null {
+    const parts = line.match(rushedSpeechPattern);
+    if (!parts || !/[a-z][A-Z]/.test(parts[2])) {
+        return null;
+    }
+    const speech = parts[2]
+        .replace(/,(?=\S)/g, ", ")
+        .replace(/\.(?=\S)/g, ". ")
+        .replace(/, ([A-Z])/g, (_m, c: string) => `, ${c.toLowerCase()}`)
+        .replace(/([a-z])([A-Z])/g, (_m, a: string, b: string) => `${a} ${b.toLowerCase()}`);
+    return parts[1] + speech;
+}
+
+// Matches a speech pattern against the line as-is or, failing that, against
+// its rushed-speech normalization.
+export function matchSpeech(pattern: RegExp): TriggerMatchFunction {
+    return (line) => {
+        const text = line.text.replace(/\s$/g, "");
+        const direct = text.match(pattern);
+        if (direct) {
+            return direct;
+        }
+        const normalized = normalizeRushedSpeech(text);
+        return normalized?.match(pattern) ?? undefined;
+    };
+}
 
 function generateContractId(): string {
     return `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
@@ -278,15 +322,6 @@ export default function initContracts(client: Client, aliases: { pattern: RegExp
     loadContracts();
     cleanupExpiredContracts();
 
-    // Pattern for contract offer line
-    // "Tak, mam pewne pilne zamowienie na zbroje. Potrzebuje czterech tarcz, przynajmniej sredniej jakosci."
-    // "Potrzebuje dwudziestu dwoch sztuk plucnicy." - two-word numbers
-    // "Potrzebuje czterech srednich ryb morskich." - adjective before item (no "sztuk")
-    // "Potrzebuje dziesieciu kilogramow miesa z bazanta." - weight unit instead of "sztuk"
-    // "Potrzebuje jeszcze jednej dwurecznej broni klujacej" - with "jeszcze"
-    // The whole "amount + item" segment is captured as one group and split by parseAmountAndItem.
-    const contractOfferPattern = /.+? \S+ do [^:]+: Tak, mam pewne pilne zamowienie na ([^.]+)\. Potrzebuje (?:jeszcze )?([^.,]+?)(?:, przynajmniej ([^.]+) jakosci)?\.(?:.*Dobrze zaplace)?/;
-
     // Pattern for asking about contract
     // "Pytasz blekitnookiego krotkowlosego mezczyzne o zlecenie."
     const askPattern = /^Pytasz .+ o zlecenie\.$/;
@@ -301,7 +336,7 @@ export default function initContracts(client: Client, aliases: { pattern: RegExp
         return line;
     }, 'contracts');
 
-    client.Triggers.registerTrigger(contractOfferPattern, (line, matches) => {
+    client.Triggers.registerTrigger(matchSpeech(contractOfferPattern), (line, matches) => {
         if (matches && pendingContract) {
             const { count, item, unit } = parseAmountAndItem(matches[2]);
             pendingContract.type = matches[1];
@@ -313,7 +348,7 @@ export default function initContracts(client: Client, aliases: { pattern: RegExp
         return line;
     }, 'contracts');
 
-    client.Triggers.registerTrigger(deadlinePattern, (line, matches) => {
+    client.Triggers.registerTrigger(matchSpeech(deadlinePattern), (line, matches) => {
         if (matches && pendingContract && pendingContract.type) {
             const daysRemaining = parsePolishDays(matches[1]);
             // Anchored to when the contract was given, so a replayed one is not
@@ -343,7 +378,7 @@ export default function initContracts(client: Client, aliases: { pattern: RegExp
     // "Nie, w tej chwili niczego mi nie trzeba. Zajrzyj moze za jakis czas."
     const noContractPattern = /.+? \S+ do [^:]+: Nie, w tej chwili niczego mi nie trzeba\. Zajrzyj moze za jakis czas\./;
 
-    client.Triggers.registerTrigger(noContractPattern, (line) => {
+    client.Triggers.registerTrigger(matchSpeech(noContractPattern), (line) => {
         if (pendingContract && pendingContract.locationId !== null) {
             removeContractsByLocation(pendingContract.locationId);
         }

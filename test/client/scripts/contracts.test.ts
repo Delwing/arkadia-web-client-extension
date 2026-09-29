@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseAmountAndItem, parsePolishDays, deadlinePattern } from '@client/scripts/contracts.ts';
+import { parseAmountAndItem, parsePolishDays, deadlinePattern, contractOfferPattern, normalizeRushedSpeech, matchSpeech } from '@client/scripts/contracts.ts';
 
 describe('parseAmountAndItem', () => {
     it('parses a one-word number, dropping the generic "sztuk" counter', () => {
@@ -95,5 +95,33 @@ describe('deadlinePattern', () => {
 describe('parsePolishDays', () => {
     it('defaults to one day when given no number word', () => {
         expect(parsePolishDays(undefined)).toBe(1);
+    });
+});
+
+describe('rushed (gnome) speech', () => {
+    const speaker = 'Pracowity energiczny gnom (Zetegen NPC) gwaltownie gestykulujac mowi szybko do ciebie: ';
+    const offer = speaker + 'Tak,MamPewnePilneZamowienieNaZbroje.PotrzebujeJeszczeJednejSredniejZbroiChroniacejNogi,PrzynajmniejSredniejJakosci.';
+    const deadline = speaker + 'NaRealizacjeZamowieniaMamPietnascieDni,PozniejZapewneBedePotrzebowacCzegoInnego.';
+    const asLine = (text: string) => ({ text }) as any;
+
+    it('rewrites run-together CamelCase speech into ordinary text', () => {
+        expect(normalizeRushedSpeech(offer)).toBe(speaker +
+            'Tak, mam pewne pilne zamowienie na zbroje. Potrzebuje jeszcze jednej sredniej zbroi chroniacej nogi, przynajmniej sredniej jakosci.');
+    });
+
+    it('leaves ordinary speech alone', () => {
+        expect(normalizeRushedSpeech('Kowal mowi do ciebie: Nie, w tej chwili niczego mi nie trzeba.')).toBeNull();
+    });
+
+    it('matches the contract offer', () => {
+        const m = matchSpeech(contractOfferPattern)(asLine(offer), null as any, 'line')!;
+        expect(m[1]).toBe('zbroje');
+        expect(parseAmountAndItem(m[2])).toEqual({ count: 1, item: 'sredniej zbroi chroniacej nogi' });
+        expect(m[3]).toBe('sredniej');
+    });
+
+    it('matches the deadline', () => {
+        const m = matchSpeech(deadlinePattern)(asLine(deadline), null as any, 'line')!;
+        expect(parsePolishDays(m[1])).toBe(15);
     });
 });
