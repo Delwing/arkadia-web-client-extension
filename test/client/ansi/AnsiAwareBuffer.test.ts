@@ -63,6 +63,29 @@ describe("AnsiAwareBuffer", () => {
         expect(buffer.text).toBe("Inspect here around");
     });
 
+    it("merges a link laid over an existing one instead of dropping its click", () => {
+        const buffer = new AnsiAwareBuffer("Bierzesz stara ksiege z ciala.");
+        const onClick = jest.fn();
+        const onContextMenu = jest.fn();
+        buffer.createLinksForText("stara ksiege", { onClick, title: "wez" });
+        buffer.createLinksForText("ksiege", { onContextMenu });
+
+        const link = buffer.getStateAt(buffer.text.indexOf("ksiege"))?.hyperlink;
+        expect(link?.onClick).toBe(onClick);
+        expect(link?.onContextMenu).toBe(onContextMenu);
+        expect(link?.title).toBe("wez");
+        expect(buffer.getStateAt(0)?.hyperlink).toBeUndefined();
+        expect(buffer.getStateAt(buffer.text.indexOf("stara"))?.hyperlink?.onClick).toBe(onClick);
+    });
+
+    it("keeps each segment's colour when a link spans several", () => {
+        const buffer = new AnsiAwareBuffer("\u001b[31mRed\u001b[0m\u001b[32mGreen\u001b[0m");
+        buffer.createLink([0, 8], { title: "both" });
+        expect(buffer.getStateAt(0)?.foreground).toEqual({ space: "hex", color: "#bb0000" });
+        expect(buffer.getStateAt(3)?.foreground).toEqual({ space: "hex", color: "#00bb00" });
+        expect(buffer.getStateAt(3)?.hyperlink?.title).toBe("both");
+    });
+
     describe("getStateAt", () => {
         it("returns color at specific character index in colored text", () => {
             const buffer = new AnsiAwareBuffer("\u001b[31mRed\u001b[0m");

@@ -1398,24 +1398,32 @@ export class AnsiAwareBuffer {
         const [start, end] = range;
         if (start >= end) return this;
 
-        const text = this.text.slice(start, end);
+        // Per segment, so each keeps its own formatting. A link already on the
+        // text (e.g. loot's click under a book's hover/context menu) is merged:
+        // the new link's handlers win, the old one's fill in what it leaves out.
+        const pieces: { range: TextRange; state: FormatStateSnapshot }[] = [];
+        let pos = 0;
+        for (const segment of this.segments) {
+            const segStart = pos;
+            const segEnd = pos + segment.text.length;
+            pos = segEnd;
+            if (segEnd <= start) continue;
+            if (segStart >= end) break;
+            const state = cloneState(segment.state) || {};
+            const existing = state.hyperlink;
+            state.hyperlink = {
+                onClick: options.onClick ?? existing?.onClick,
+                onContextMenu: options.onContextMenu ?? existing?.onContextMenu,
+                onMouseEnter: options.onMouseEnter ?? existing?.onMouseEnter,
+                onMouseLeave: options.onMouseLeave ?? existing?.onMouseLeave,
+                title: options.title ?? existing?.title,
+            };
+            pieces.push({range: [Math.max(start, segStart), Math.min(end, segEnd)], state});
+        }
 
-        const hyperlink: FormatHyperlink = {
-            onClick: options.onClick,
-            onContextMenu: options.onContextMenu,
-            onMouseEnter: options.onMouseEnter,
-            onMouseLeave: options.onMouseLeave,
-            title: options.title,
-        };
-
-        // Get the current state at this position to preserve existing formatting
-        const currentState = this.getStateAt(start) || {};
-        const newState: FormatStateSnapshot = {
-            ...currentState,
-            hyperlink,
-        };
-
-        this.replace([start, end], text, newState);
+        for (const {range: [from, to], state} of pieces) {
+            this.replace([from, to], this.text.slice(from, to), state);
+        }
 
         return this;
     }
