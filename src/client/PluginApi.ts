@@ -67,7 +67,7 @@ import {
   getGroupDefinitions,
   getTransformDefinitions
 } from "./scripts/prettyContainers";
-import {containerAction, getContainer, getContainerForms, inspectContainer} from "./scripts/bagManager";
+import {containerAction, getContainer, getContainerForms, inspectContainer, registerContainerType, unregisterContainerType} from "./scripts/bagManager";
 import loadMagics, { loadMagicsRaw } from "./scripts/magicsLoader";
 import loadMagicKeys, { loadMagicKeysRaw } from "./scripts/magicKeyLoader";
 import loadHerbs from "./scripts/herbsLoader";
@@ -1967,8 +1967,22 @@ export interface MagicKeysApi {
  * - "gems" - gems container
  * - "food" - food container
  * - "other" - general items container
+ * - any type registered with api.containers.registerType()
  */
-export type ContainerType = "money" | "gems" | "food" | "other";
+export type ContainerType = "money" | "gems" | "food" | "other" | (string & {});
+
+/**
+ * Options for a plugin-defined container type
+ */
+export interface ContainerTypeOptions {
+  /** Name shown in /pojemnik and /pojemniki (defaults to the type id) */
+  label?: string;
+  /**
+   * Type whose bag is used until the player picks one for this type in /pojemnik
+   * (default "other"). May be another registered type.
+   */
+  fallback?: ContainerType;
+}
 
 /**
  * Grammatical forms for a container bag name
@@ -1986,6 +2000,25 @@ export interface ContainerForms {
  * Containers API - Put items into and take items from assigned bags
  */
 export interface ContainersApi {
+  /**
+   * Register a plugin container type. It shows up in /pojemnik and /pojemniki next to the
+   * built-in ones and uses its fallback type's bag until the player assigns one to it.
+   * The player's choice is stored per character. The type is unregistered with the plugin.
+   *
+   * Pick an id unlikely to clash with other plugins (e.g. prefixed with the plugin name).
+   *
+   * @param type - Type id, used with getContainer / put / take / inspect
+   * @param options - Label and fallback type
+   *
+   * @example
+   * ```typescript
+   * // Gems for gem sockets - the "gems" bag unless the player sets another one
+   * api.containers.registerType("mc-gem-sockets", { label: "kamienie do gniazd", fallback: "gems" });
+   * await api.containers.inspect("mc-gem-sockets", { silent: true });
+   * ```
+   */
+  registerType(type: string, options?: ContainerTypeOptions): void;
+
   /**
    * Get the assigned bag name for a container type
    *
@@ -2969,6 +3002,7 @@ export class PluginApiImpl implements PluginApi {
   private buttonMacroIds: Set<string> = new Set();
   private triggerMacroIds: Set<string> = new Set();
   private commandHookIds: Set<string> = new Set();
+  private containerTypes: Set<string> = new Set();
   private footerComponentIds: Set<string> = new Set();
   private footerButtonIds: Set<string> = new Set();
   private mapOverlayIds: Set<string> = new Set();
@@ -3486,6 +3520,10 @@ export class PluginApiImpl implements PluginApi {
 
   private createContainersApi(): ContainersApi {
     return {
+      registerType: (type: string, options?: ContainerTypeOptions) => {
+        registerContainerType(type, options);
+        this.containerTypes.add(type);
+      },
       getContainer: (type: ContainerType) => {
         return getContainer(type);
       },
@@ -3991,6 +4029,12 @@ export class PluginApiImpl implements PluginApi {
       this.client.unregisterCommandHook(id);
     }
     this.commandHookIds.clear();
+
+    // Remove container types registered by this plugin (stored bag choices stay)
+    for (const type of Array.from(this.containerTypes)) {
+      unregisterContainerType(type);
+    }
+    this.containerTypes.clear();
 
     // Remove all command line suggestions registered by this plugin
     for (const word of this.commandLineSuggestions) {

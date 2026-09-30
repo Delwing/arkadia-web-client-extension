@@ -3081,9 +3081,24 @@ export interface MagicKeysApi {
  * - "gems" - gems container
  * - "food" - food container
  * - "other" - general items container
+ * - any type registered with api.containers.registerType()
  */
 
-export type ContainerType = "money" | "gems" | "food" | "other";
+export type ContainerType = "money" | "gems" | "food" | "other" | (string & {});
+
+/**
+ * Options for a plugin-defined container type
+ */
+
+export interface ContainerTypeOptions {
+    /** Name shown in /pojemnik and /pojemniki (defaults to the type id) */
+    label?: string;
+    /**
+     * Type whose bag is used until the player picks one for this type in /pojemnik
+     * (default "other"). May be another registered type.
+     */
+    fallback?: ContainerType;
+}
 
 /**
  * Grammatical forms for a container bag name
@@ -3103,6 +3118,24 @@ export interface ContainerForms {
  */
 
 export interface ContainersApi {
+    /**
+     * Register a plugin container type. It shows up in /pojemnik and /pojemniki next to the
+     * built-in ones and uses its fallback type's bag until the player assigns one to it.
+     * The player's choice is stored per character. The type is unregistered with the plugin.
+     *
+     * Pick an id unlikely to clash with other plugins (e.g. prefixed with the plugin name).
+     *
+     * @param type - Type id, used with getContainer / put / take / inspect
+     * @param options - Label and fallback type
+     *
+     * @example
+     * ```typescript
+     * // Gems for gem sockets - the "gems" bag unless the player sets another one
+     * api.containers.registerType("mc-gem-sockets", { label: "kamienie do gniazd", fallback: "gems" });
+     * await api.containers.inspect("mc-gem-sockets", { silent: true });
+     * ```
+     */
+    registerType(type: string, options?: ContainerTypeOptions): void;
     /**
      * Get the assigned bag name for a container type
      *

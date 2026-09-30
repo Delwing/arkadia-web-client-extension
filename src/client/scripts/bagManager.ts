@@ -9,7 +9,7 @@ const HEADER_COLOR = createColorFormat("#7cfc00");
 const TYPE_COLOR = createColorFormat("#cfb530");
 const BAG_COLOR = createColorFormat("#87ceeb");
 
-const availableTypes = ["money", "gems", "food", "other"] as const;
+const builtInTypes = ["money", "gems", "food", "other"] as const;
 
 const bagInBiernik: Record<string, string> = {
     plecak: "plecak",
@@ -47,15 +47,75 @@ const bagPronouns: Record<string, { biernik: string; dopelniacz: string }> = {
     kaletka: { biernik: "swoja", dopelniacz: "swojej" },
 };
 
-export type ContainerType = (typeof availableTypes)[number];
-type ContainerConfig = Record<ContainerType, string>;
+export type BuiltInContainerType = (typeof builtInTypes)[number];
+/** Built-in types plus types registered by plugins (registerContainerType) */
+export type ContainerType = BuiltInContainerType | (string & {});
 
-const containerConfig: ContainerConfig = {
+/**
+ * Bag per type. Built-in types always have one; a plugin type only once the player
+ * picks a bag for it - until then it uses its fallback type's bag.
+ */
+const containerConfig: Record<string, string> = {
     money: "plecak",
     gems: "plecak",
     food: "plecak",
     other: "plecak",
 };
+
+export interface ContainerTypeOptions {
+    /** Name shown in /pojemnik and /pojemniki (defaults to the type id) */
+    label?: string;
+    /** Type whose bag is used until the player sets one for this type (default "other") */
+    fallback?: ContainerType;
+}
+
+const customTypes = new Map<string, Required<ContainerTypeOptions>>();
+
+function isBuiltIn(type: string): type is BuiltInContainerType {
+    return (builtInTypes as readonly string[]).includes(type);
+}
+
+/** All known types: built-in first, then plugin types in registration order */
+function allTypes(): string[] {
+    return [...builtInTypes, ...customTypes.keys()];
+}
+
+function typeLabel(type: string): string {
+    return customTypes.get(type)?.label ?? type;
+}
+
+/**
+ * Registers a plugin container type. Its bag follows the fallback type until the player
+ * assigns one in /pojemnik; that choice is stored and survives reloads.
+ */
+export function registerContainerType(type: string, options: ContainerTypeOptions = {}) {
+    if (isBuiltIn(type)) throw new Error(`Container type '${type}' is built-in`);
+    const fallback = options.fallback ?? "other";
+    if (fallback === type) throw new Error(`Container type '${type}' cannot fall back to itself`);
+    customTypes.set(type, { label: options.label ?? type, fallback });
+}
+
+/** Forgets a plugin type; its stored bag stays for when it is registered again */
+export function unregisterContainerType(type: string) {
+    customTypes.delete(type);
+}
+
+/** Plugin type without a bag of its own - it uses its fallback type's bag */
+function isInherited(type: string): boolean {
+    return !isBuiltIn(type) && !containerConfig[type];
+}
+
+/** Bag for a type, following fallbacks of plugin types without their own bag */
+function resolveBag(type: string): string | undefined {
+    const seen = new Set<string>();
+    let current: string | undefined = type;
+    while (current && !seen.has(current)) {
+        seen.add(current);
+        if (containerConfig[current]) return containerConfig[current];
+        current = customTypes.get(current)?.fallback;
+    }
+    return undefined;
+}
 
 export interface ContainerForms {
     mianownik: string;
@@ -63,12 +123,12 @@ export interface ContainerForms {
     biernik: string;
 }
 
-export function getContainer(type: keyof ContainerConfig): string {
-    return containerConfig[type];
+export function getContainer(type: ContainerType): string {
+    return resolveBag(type) ?? "";
 }
 
-export function getContainerForms(type: keyof ContainerConfig): ContainerForms | null {
-    const bag = containerConfig[type];
+export function getContainerForms(type: ContainerType): ContainerForms | null {
+    const bag = resolveBag(type);
     if (!bag || !bagInBiernik[bag]) return null;
     return {
         mianownik: bag,
@@ -90,27 +150,37 @@ function saveConfig(_client: Client) {
     characterStorage.set(STORAGE_KEY, containerConfig);
 }
 
-function setContainer(type: keyof ContainerConfig, bag: string, client: Client) {
+function setContainer(type: ContainerType, bag: string, client: Client) {
     containerConfig[type] = bag;
-    client.print(`Ustawiono ${bag} jako pojemnik na '${type}'.`);
+    client.print(`Ustawiono ${bag} jako pojemnik na '${typeLabel(type)}'.`);
     saveConfig(client);
 }
 
+/** Plugin type goes back to its fallback type's bag */
+function resetContainer(type: string, client: Client) {
+    delete containerConfig[type];
+    const fallback = customTypes.get(type)?.fallback ?? "other";
+    client.print(`'${typeLabel(type)}' uzywa pojemnika na '${typeLabel(fallback)}'.`);
+    saveConfig(client);
+}
+
+/** Built-in types get the bag; plugin types drop their own bag and follow their fallbacks */
 function setAll(bag: string, client: Client) {
-    availableTypes.forEach((t) => (containerConfig[t] = bag));
+    builtInTypes.forEach((t) => (containerConfig[t] = bag));
+    customTypes.forEach((_, t) => delete containerConfig[t]);
     client.print(`Ustawiono ${bag} jako pojemnik na wszystkie typy.`);
     saveConfig(client);
 }
 
 export function containerAction(
     client: Client,
-    type: keyof ContainerConfig,
+    type: ContainerType,
     action: "put" | "take",
     item: string
 ) {
-    const bag = containerConfig[type];
-    if (!bag) {
-        client.print(`Brak pojemnika dla typu '${type}'.`);
+    const bag = resolveBag(type);
+    if (!bag || !bagPronouns[bag]) {
+        client.print(`Brak pojemnika dla typu '${typeLabel(type)}'.`);
         return;
     }
     const forms = getBagForms(bag);
@@ -153,10 +223,10 @@ const pendingInspections: PendingInspection[] = [];
  */
 export function inspectContainer(
     client: Client,
-    type: keyof ContainerConfig,
+    type: ContainerType,
     options: { silent?: boolean; timeout?: number } = {}
 ): Promise<ContainerListing["items"] | null> {
-    const bag = containerConfig[type];
+    const bag = resolveBag(type);
     if (!bag || !bagInDopelniacz[bag]) return Promise.resolve(null);
     const forms = getBagForms(bag);
     const silent = !!options.silent;
@@ -193,13 +263,16 @@ export function handleContainerListing(listing: ContainerListing): boolean {
 export function takeFromBag(
     client: Client,
     item: string,
-    type: keyof ContainerConfig = "other"
+    type: ContainerType = "other"
 ) {
     containerAction(client, type, "take", item);
 }
 
 function showConfig(client: Client) {
-    const pairs = availableTypes.map((t) => [t, containerConfig[t]]);
+    const pairs = allTypes().map((t) => {
+        const bag = resolveBag(t) ?? "-";
+        return [typeLabel(t), isInherited(t) ? `${bag} (jak ${typeLabel(customTypes.get(t)!.fallback)})` : bag];
+    });
 
     const headers = ["typ", "pojemnik"];
     const col1Width = Math.max(...pairs.map(([t]) => t.length), headers[0].length);
@@ -276,6 +349,22 @@ function showConfig(client: Client) {
     // Bottom border
     lines.push(new AnsiAwareBuffer(`\\${"-".repeat(width - 2)}/`));
 
+    // Plugin types with their own bag can go back to their fallback's bag
+    customTypes.forEach(({ fallback }, type) => {
+        if (isInherited(type)) return;
+        const line = new AnsiAwareBuffer(`${typeLabel(type)}: `);
+        const text = `uzyj pojemnika na '${typeLabel(fallback)}'`;
+        const textBuffer = colorString(text, TYPE_COLOR);
+        textBuffer.createLink([0, text.length], {
+            onClick: () => resetContainer(type, client),
+            title: `Przywroc domyslny pojemnik dla ${typeLabel(type)}`
+        });
+        line.append("[ ", {});
+        line.appendBuffer(textBuffer);
+        line.append(" ]", {});
+        lines.push(line);
+    });
+
     // Combine all lines
     const output = new AnsiAwareBuffer();
     lines.forEach((line, i) => {
@@ -290,12 +379,12 @@ function showInterface(client: Client, bags: string[]) {
     const lines: AnsiAwareBuffer[] = [];
     bags.forEach((bag) => {
         const line = new AnsiAwareBuffer(`Ustaw ${bag} jako:`);
-        availableTypes.forEach((type) => {
-            const text = `${type}`;
+        allTypes().forEach((type) => {
+            const text = typeLabel(type);
             const textBuffer = colorString(text, TYPE_COLOR);
             textBuffer.createLink([0, text.length], {
                 onClick: () => setContainer(type, bag, client),
-                title: `Ustaw ${bag} jako ${type}`
+                title: `Ustaw ${bag} jako ${text}`
             });
             line.append(" [ ", {});  // Explicitly use default (no color/link)
             line.appendBuffer(textBuffer);
@@ -350,7 +439,12 @@ export default function initBagManager(
     if (initialContainers) Object.assign(containerConfig, initialContainers);
 
     characterStorage.onChange(STORAGE_KEY, (newValue) => {
-        if (newValue) Object.assign(containerConfig, newValue);
+        if (!newValue) return;
+        // Plugin types without a bag of their own are absent - drop overrides reset elsewhere
+        Object.keys(containerConfig).forEach((type) => {
+            if (!isBuiltIn(type) && !(type in newValue)) delete containerConfig[type];
+        });
+        Object.assign(containerConfig, newValue);
     });
     window.addEventListener("beforeunload", () => saveConfig(client));
 

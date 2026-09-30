@@ -299,6 +299,58 @@ interface LocationHighlighter {
 }
 
 /**
+ * Drawing layer for map overlay shapes. "room" draws among the rooms,
+ * "overlay" above them (default), "top" above everything including the
+ * player marker.
+ */
+type MapOverlayLayer = "room" | "overlay" | "top";
+
+/**
+ * Fill/stroke of a map overlay shape. Sizes are in map units (one grid step
+ * is 1) unless the shape sets `noScale`.
+ */
+interface MapOverlayPaint {
+  fill?: string;
+  stroke?: string;
+  strokeWidth?: number;
+  dash?: number[];
+  alpha?: number;
+}
+
+/**
+ * A shape drawn by a map overlay, in map coordinates.
+ */
+type MapOverlayShape = (
+  | { type: "circle"; cx: number; cy: number; radius: number; paint: MapOverlayPaint }
+
+/**
+ * What a map overlay sees when it renders.
+ */
+interface MapOverlayRenderState {
+  currentRoomId?: number;
+  areaId?: number;
+  z?: number;
+  settings: Readonly<MapRenderer.Settings>;
+  getRoom(roomId: number): MapData.Room | undefined;
+}
+
+/**
+ * Definition of a custom map overlay, see {@link MapApi.addOverlay}.
+ */
+interface MapOverlayDefinition {
+  render(state: MapOverlayRenderState): MapOverlayShape | MapOverlayShape[] | void;
+}
+
+/**
+ * Handle returned by {@link MapApi.addOverlay}.
+ */
+interface MapOverlayHandle {
+  readonly id: string;
+  invalidate(): void;
+  remove(): void;
+}
+
+/**
  * Area information exposed via Map API
  */
 interface AreaInfo {
@@ -324,6 +376,14 @@ interface MapApi {
   stepBack(): void;
 
   createHighlighter(options?: LocationHighlighterOptions): LocationHighlighter;
+
+  addOverlay(id: string, overlay: MapOverlayDefinition): MapOverlayHandle;
+
+  applyChanges(changes: RoomChange[], options?: ApplyChangesOptions): number;
+
+  syncAreas(areas: MapAreaData[]): number;
+
+  replaceMap(mapData: MapData.Map, colors?: MapData.Env[]): boolean;
 }
 
 /**
@@ -362,9 +422,31 @@ interface PopupHandle {
 }
 
 /**
+ * Starting size of a popup along one axis:
+ * - a number - pixels (`420`)
+ * - any CSS length - `'420px'`, `'30em'`, `'40%'` / `'50vw'` (of the game window),
+ *   `'min(600px, 80vw)'`
+ * - `'content'` - fit the popup's content
+ *
+ * The result is kept on screen (with a small margin) and never below the
+ * resize minimum (300x150). It is used when the popup first opens and when the
+ * user resets it - a size the user set by resizing always wins.
+ */
+type PopupSize = number | string;
+
+/**
+ * Starting size of a popup. Leave a field out to get the default
+ * (half the game window width, 40% of its height).
+ */
+interface PopupSizeOptions {
+  initialWidth?: PopupSize;
+  initialHeight?: PopupSize;
+}
+
+/**
  * Configuration for creating a persistent popup
  */
-interface PersistentPopupConfig {
+interface PersistentPopupConfig extends PopupSizeOptions {
   id: string;
 
   title: string;
@@ -431,7 +513,7 @@ interface FooterComponentHandle {
  * UI helpers for plugins
  */
 interface UiApi {
-  createPopup(title: string, body: PopupContent): Promise<PopupHandle>;
+  createPopup(title: string, body: PopupContent, options?: PopupSizeOptions): Promise<PopupHandle>;
 
   registerPersistentPopup(config: PersistentPopupConfig): Promise<PersistentPopupHandle>;
 
@@ -444,6 +526,24 @@ interface UiApi {
     content: string | Node | ReactElement,
     position?: 'start' | 'end' | number
   ): FooterComponentHandle;
+
+  registerFooterButton(id: string, button: FooterButtonOptions): FooterButtonHandle;
+
+  setFooterButtonState(name: string, on: boolean): void;
+}
+
+/** What a plugin's footer button is. */
+interface FooterButtonOptions {
+  label: string;
+  command: string;
+  tone?: FooterButtonTone;
+  state?: string;
+  order?: number;
+}
+
+interface FooterButtonHandle {
+  update(button: Partial<FooterButtonOptions>): void;
+  remove(): void;
 }
 
 /**
@@ -464,6 +564,40 @@ interface BindApi {
   clear(): void;
 
   getLabel(): string;
+}
+
+/**
+ * Options for api.multibinds.addTemporary()
+ */
+interface TemporaryMultibindOptions {
+  action: string;
+  label?: string;
+  roomId?: number;
+  highlight?: boolean;
+}
+
+/**
+ * Fields that can be changed on a temporary multibind
+ */
+interface TemporaryMultibindUpdateOptions {
+  action?: string;
+  label?: string;
+  highlight?: boolean;
+}
+
+/**
+ * Handle returned by api.multibinds.addTemporary()
+ */
+interface TemporaryMultibindHandle {
+  update(patch: TemporaryMultibindUpdateOptions): void;
+  remove(): void;
+}
+
+/**
+ * Multibinds API - put temporary commands on the multibind bar (ALT+1..4)
+ */
+interface MultibindsApi {
+  addTemporary(opts: TemporaryMultibindOptions): TemporaryMultibindHandle;
 }
 
 /**
@@ -625,10 +759,35 @@ interface PrettyContainersApi {
 }
 
 /**
+ * Grammatical case of a magic item form; `mnoga_` prefixes the plural.
+ */
+type MagicCase =
+  | 'mianownik'
+  | 'dopelniacz'
+  | 'celownik'
+  | 'biernik'
+  | 'narzednik'
+  | 'miejscownik'
+  | 'mnoga_mianownik'
+  | 'mnoga_dopelniacz'
+  | 'mnoga_celownik'
+  | 'mnoga_biernik'
+  | 'mnoga_narzednik'
+  | 'mnoga_miejscownik';
+
+/**
+ * Forms of one item per case. A case holds a list because variants of the same
+ * item share it - "otwarta"/"zamknieta" containers and alternate phrasings.
+ */
+type MagicForms = Partial<Record<MagicCase, string[]>>;
+
+/**
  * Single magic item entry
  */
 interface MagicEntry {
   type: string[];
+  odmiana?: MagicForms;
+  dodatkowe_regexps?: string[];
   regexps?: string[];
 }
 
@@ -636,6 +795,7 @@ interface MagicEntry {
  * Raw magics data structure
  */
 interface MagicsFile {
+  version?: number;
   magics: Record<string, MagicEntry>;
 }
 
@@ -670,8 +830,17 @@ interface MagicKeysApi {
  * - "gems" - gems container
  * - "food" - food container
  * - "other" - general items container
+ * - any type registered with api.containers.registerType()
  */
-type ContainerType = "money" | "gems" | "food" | "other";
+type ContainerType = "money" | "gems" | "food" | "other" | (string & {});
+
+/**
+ * Options for a plugin-defined container type
+ */
+interface ContainerTypeOptions {
+  label?: string;
+  fallback?: ContainerType;
+}
 
 /**
  * Grammatical forms for a container bag name
@@ -686,6 +855,8 @@ interface ContainerForms {
  * Containers API - Put items into and take items from assigned bags
  */
 interface ContainersApi {
+  registerType(type: string, options?: ContainerTypeOptions): void;
+
   getContainer(type: ContainerType): string;
 
   getContainerForms(type: ContainerType): ContainerForms | null;
@@ -693,6 +864,8 @@ interface ContainersApi {
   put(type: ContainerType, item: string): void;
 
   take(type: ContainerType, item: string): void;
+
+  inspect(type: ContainerType, options?: { silent?: boolean; timeout?: number }): Promise<{ name: string; count: string | number }[] | null>;
 }
 
 /**
@@ -859,6 +1032,29 @@ interface AttackControllerApi {
 }
 
 /**
+ * Walk modes API - walk a step your own way when the player holds a modifier
+ * with a direction key.
+ *
+ * A walk mode rides on the direction keys (numpad by default, or wherever the
+ * player moved them). The player picks its modifier in Klawisze, next to the
+ * built-in "Przemknij", so Alt+numpad can sneak while Ctrl+numpad runs your
+ * mode. It does not change the move mode the ` key cycles.
+ */
+interface WalkModesApi {
+  register(id: string, options: WalkModeOptions): WalkModeHandle;
+}
+
+interface WalkModeOptions {
+  label: string;
+  defaultModifiers?: { ctrl?: boolean; alt?: boolean; shift?: boolean };
+  onMove(direction: string): void;
+}
+
+interface WalkModeHandle {
+  remove(): void;
+}
+
+/**
  * People API - Manage people database entries
  */
 interface PeopleApi {
@@ -955,6 +1151,7 @@ interface PluginApi {
   ui: UiApi;
   colors: ColorsApi;
   bind: BindApi;
+  multibinds: MultibindsApi;
   team: TeamApi;
   gmcp: GmcpApi;
   attackQueue: AttackQueueApi;
@@ -975,6 +1172,7 @@ interface PluginApi {
   combat: CombatApi;
   locationNotes: LocationNotesApi;
   people: PeopleApi;
+  walkModes: WalkModesApi;
   AnsiAwareBuffer: typeof AnsiAwareBuffer;
 }
 
