@@ -5,6 +5,11 @@ import type { PersonEntry } from '../types/people';
 import {AnsiAwareBuffer} from "../ansi/FormatState";
 import { characterStorage } from "@modules/core/storage";
 import { defaultSettings } from "@modules/core/defaultSettings";
+import attackBeepPatterns from "./attack_beep_patterns.json";
+import { upstreamPatterns, type UpstreamTrigger } from "./upstreamTriggers";
+
+// Generated from upstream Arkadia.xml by scripts/extract-upstream-triggers.mjs.
+const UPSTREAM = attackBeepPatterns as UpstreamTrigger[];
 
 const RED = createColorFormat("#ff0000");
 
@@ -65,8 +70,11 @@ export default function initAttackBeep(client: Client) {
         return !!guild && enemyGuilds.includes(guild);
     }
 
-    const beep = (line: AnsiAwareBuffer, matches: RegExpMatchArray): AnsiAwareBuffer => {
-        const attackerName = matches?.groups?.name
+    // Upstream passes the capture groups positionally (matches[2], matches[3]
+    // in Lua): the attacker first, then — for the player phrasings — the
+    // phrase to uppercase.
+    const beep = (line: AnsiAwareBuffer, matches: RegExpMatchArray, upper?: string): AnsiAwareBuffer => {
+        const attackerName = matches?.[1];
         const isEnemy = !!attackerName && shouldBeep(attackerName);
 
         // Fires for every attack line, whoever the attacker is — the
@@ -81,7 +89,6 @@ export default function initAttackBeep(client: Client) {
             client.sendEvent("enemy.attack", { attacker: attackerName });
         }
 
-        const upper = matches?.groups?.upper
         return highlightAttack(line, upper);
     };
 
@@ -98,18 +105,20 @@ export default function initAttackBeep(client: Client) {
         applySettings(settings);
     });
 
-    [
-        /(?<name>.*) atakuje cie!/,
-        /(?<name>.*) atakuje cie nie dajac ci czasu na skontrowanie swojego ataku!/,
-        /^Ku twojemu zdumieniu, (?<name>.*) pojawil sie nagle tuz obok ciebie!/,
-        /^Oczy (?<name>.*) zachodza woalem rytualnego transu, gdy jak blyskawica rzuca sie on na ciebie, rozniecajac burze Tanca Smierci!/,
-        /^W oczach (?<name>.*) rozpala sie swiety ogien nienawisci i z imieniem Morra na ustach (?<upper>rzuca sie do walki z toba)!/,
-        /^(?<name>\w+(?: \w+){0,4}) z determinacja i pewnoscia siebie unosi swoja bron i (?<upper>naciera na ciebie)!/,
-        /^(?<name>\w+(?: \w+){0,4}) z pierwotna wsciekloscia (?<upper>rzuca sie na ciebie), rozpoczynajac walke!/,
-        /^Przy ogluszajacym akompaniamencie okrzyku bojowego '[^']*' (?<name>\w+(?: \w+){0,4}) (?<upper>rzuca sie na ciebie), wiazac cie/
-    ].forEach(p => client.Triggers.registerTrigger(p, beep, tag));
+    client.Triggers.registerTrigger(
+        upstreamPatterns(UPSTREAM, "trigger_func_skrypty_misc_atakuje_cie_beep"),
+        (line, matches) => beep(line, matches),
+        tag,
+    );
+    client.Triggers.registerTrigger(
+        upstreamPatterns(UPSTREAM, "trigger_func_skrypty_misc_player_atakuje_cie_beep"),
+        (line, matches) => beep(line, matches, matches?.[2]),
+        tag,
+    );
 
-    client.Triggers.registerTrigger('atakuje cie!', (line) => {
-        return highlightPhrase(line);
-    }, tag);
+    client.Triggers.registerTrigger(
+        upstreamPatterns(UPSTREAM, "trigger_func_skrypty_ui_misc_fighting_atakuje_cie"),
+        (line) => highlightPhrase(line),
+        tag,
+    );
 }

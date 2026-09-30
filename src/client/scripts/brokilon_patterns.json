@@ -1,0 +1,70 @@
+[
+  {
+    "name": "pulapka",
+    "script": "trigger_func_pulapka_brokilon()",
+    "patterns": [
+      {
+        "pattern": "^Nagle .* podlatuje w gore, robi pol salta i zawisa bezwladnie, przywiazan. do drzewa, by dyndac jak kukielka\\.$",
+        "type": 1
+      },
+      {
+        "pattern": "Nagle czujesz, ze cos oplata twa noge... ziemia w zawrotnym tempie zamienia sie miejscami z niebem. Zwisasz teraz, przywiazany za noge rzemieniem, dyndajac jak kukielka.",
+        "type": 3
+      },
+      {
+        "pattern": "(?i)rzemienna petla",
+        "type": 1
+      }
+    ]
+  },
+  {
+    "name": "strzaly",
+    "script": "trigger_func_strzaly()",
+    "patterns": [
+      {
+        "pattern": "Nadlatujaca ze swistem strzala wbija ci sie w korpus.",
+        "type": 3
+      },
+      {
+        "pattern": "Nagle jakas strzala wbija ci sie w korpus.",
+        "type": 3
+      },
+      {
+        "pattern": "Nagle jakas strzala wbija sie",
+        "type": 2
+      },
+      {
+        "pattern": "W ziemie wbila sie z niesamowita predkoscia dluga strzala.",
+        "type": 3
+      },
+      {
+        "pattern": "Nadlatujaca ze swistem strzala wbija sie",
+        "type": 2
+      }
+    ]
+  },
+  {
+    "name": "rusalka",
+    "script": "trigger_func_rusalka()",
+    "patterns": [
+      {
+        "pattern": "zastyga nagle w miejscu.",
+        "type": 0
+      },
+      {
+        "pattern": "Mimowolnie twoj wzrok krzyzuje sie ze wzrokiem zielonowlosej drobnej rusalki. Jej piekno wprost oszalamia cie...",
+        "type": 3
+      }
+    ]
+  },
+  {
+    "name": "rusalka2",
+    "script": "trigger_func_rusalka2()",
+    "patterns": [
+      {
+        "pattern": "Nie jestes w stanie skrzywdzic tak pieknej istoty!",
+        "type": 3
+      }
+    ]
+  }
+]

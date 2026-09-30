@@ -1,0 +1,39 @@
+[
+  {
+    "name": "gates",
+    "script": "trigger_func_mapper_gates_gates()",
+    "patterns": [
+      {
+        "pattern": "^Probujesz otworzyc .*wrota.*",
+        "type": 1
+      },
+      {
+        "pattern": "^Probujesz otworzyc .*drzwiczki.*",
+        "type": 1
+      },
+      {
+        "pattern": "^Probujesz otworzyc .*krate.*",
+        "type": 1
+      },
+      {
+        "pattern": "^Probujesz otworzyc .*brame.*",
+        "type": 1
+      },
+      {
+        "pattern": "^Probujesz otworzyc niewielka furtke.*",
+        "type": 1
+      }
+    ],
+    "parents": [
+      {
+        "name": "gates",
+        "patterns": [
+          {
+            "pattern": "^[ >]*Probujesz",
+            "type": 1
+          }
+        ]
+      }
+    ]
+  }
+]

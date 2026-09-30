@@ -1,0 +1,36 @@
+[
+  {
+    "name": "blocker-team-dependent",
+    "script": "trigger_func_mapper_blockers_blocker_team_dependent()",
+    "patterns": [
+      {
+        "pattern": "^Probujesz sie ruszyc na .*, jednak pajecze sieci, w ktore sie w miedzyczasie zaplatal.s, uniemozliwiaja ci to\\.$",
+        "type": 1
+      },
+      {
+        "pattern": "Ogromne stwory przysiadaja przed brama, blokujac do niej dostepu.",
+        "type": 2
+      },
+      {
+        "pattern": "Ruszasz w dalsza droge ale nagle stajesz w pol kroku. Masz dziwne odczucie, ze w tym miejscu grozi ci jakies niebezpieczenstwo.",
+        "type": 2
+      },
+      {
+        "pattern": "Nagle czujesz, ze cos oplata twa noge... ziemia w zawrotnym tepie zamienia sie miejscami z niebem. Zwisasz teraz, przywiazany za noge rzemieniem, dyndajac jak kukielka.",
+        "type": 2
+      },
+      {
+        "pattern": "Probujesz otworzyc polyskujace wrota, ale nie udaje ci sie to.",
+        "type": 2
+      },
+      {
+        "pattern": "Probujesz isc naprzod, ale sliski lod sprawia, ze wywracasz sie na nim.",
+        "type": 2
+      },
+      {
+        "pattern": "^Zbyt raptowanie probujesz znowu ruszyc na .*, przez co tylko jeszcze bardziej placzesz sobie nogi w gestwinie pajeczych sieci\\.$",
+        "type": 1
+      }
+    ]
+  }
+]

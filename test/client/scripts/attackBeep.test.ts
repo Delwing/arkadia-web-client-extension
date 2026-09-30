@@ -113,6 +113,21 @@ describe('attack beep triggers', () => {
     expect(beepCalls).toHaveLength(1);
   });
 
+  test('reports the attacker from every upstream attack phrasing', () => {
+    parse('Ku twojemu zdumieniu, Intia pojawil sie nagle tuz obok ciebie!');
+    parse('W oczach Eamon rozpala sie swiety ogien nienawisci i z imieniem Morra na ustach rzuca sie do walki z toba!');
+    parse("Przy ogluszajacym akompaniamencie okrzyku bojowego 'Za Morra!' Intia rzuca sie na ciebie, wiazac cie walka.");
+    parse('Nieznajomy z pierwotna wsciekloscia rzuca sie na ciebie, rozpoczynajac walke!');
+    const enemyCalls = client.sendEvent.mock.calls.filter(call => call[0] === 'enemy.attack');
+    expect(enemyCalls).toEqual([
+      ['enemy.attack', { attacker: 'Intia' }],
+      ['enemy.attack', { attacker: 'Eamon' }],
+      ['enemy.attack', { attacker: 'Intia' }],
+    ]);
+    const attackCalls = client.sendEvent.mock.calls.filter(call => call[0] === 'attack');
+    expect(attackCalls.map(call => call[1].attacker)).toEqual(['Intia', 'Eamon', 'Intia', 'Nieznajomy']);
+  });
+
   test('does not beep on plain phrase trigger', () => {
     const result = parse('atakuje cie!');
     const beepCalls = client.sendEvent.mock.calls.filter(call => call[0] === 'sound:category');

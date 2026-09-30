@@ -4,6 +4,8 @@ import { getShortDir } from "@shared/map";
 import {AnsiAwareBuffer} from "../ansi/FormatState";
 import { characterStorage } from "@modules/core/storage";
 import { defaultSettings } from "@modules/core/defaultSettings";
+import shortExitsPatterns from "./short_exits_patterns.json";
+import { upstreamPatterns, type UpstreamTrigger } from "./upstreamTriggers";
 
 export { getShortDir as toShort };
 
@@ -15,36 +17,10 @@ export function parseExitString(str: string): string[] {
         .filter(Boolean);
 }
 
-const EXIT_PATTERNS: RegExp[] = [
-    /^(?:Jest|Sa) tutaj .* widoczn(?:e|ych) wyjsc(?:|ia|ie): (.*)\.$/,
-    /^W gestych ciemnosciach dostrzegasz .* (?:wiodacy|rozwidlajacy sie) na (.*)\.$/,
-    /^Korytarze jaskini ciagna sie na (.*)\.$/,
-    /^Trakt wiedzie na ([^.]+)\.$/,
-    /[tT]rakt rozgalezia sie na (.*)\.$/,
-    /^(?:Szlak|Sciezka) prowadzi tutaj w .* kieru.*: (.*)\.$/,
-    /^Linia brzegowa ciagnie sie na (.*)\.$/,
-    /^Wedrowke (?:skrajem lasu|po karczowisku|po lesie|przez rozlegle laki) mozesz kontynuowac udajac sie na (.*)\.$/,
-    /^Wijaca sie miedzy skalami, gorska sciezka prowadzi na (.*)\.$/,
-    /^Wydeptane w kukurydzy sciezki prowadza na (.*)\.$/,
-    /^Wyjscia prowadza tutaj w .* kierunkach: (.*)\.$/,
-    /^Wykopany w ziemi tunel rozgalezia sie tutaj, zas jego odnogi wioda na (.*)\.$/,
-    /^Wykopany w ziemi tunel wiedzie w dwoch kierunkach: (.*)\.$/,
-    /^Mozesz sie stad udac na (.*)\.$/,
-    /^Mozesz skierowac lodz na (.*)\.$/,
-    /^Trakt jest zasypany glazami i mozna podazac nim tylko w jednym kierunku, na (.*)\.$/,
-    /^Mozesz podazac traktem na (.*), w strone fortu\.$/,
-    /^Mozesz stad poplynac na (.*)\.$/,
-    /^W mroku nocy dostrzegasz .* widoczne wyjsci.: (.*)\.$/,
-    /^Tunel ciagnie sie na (.*)\.$/,
-    /^Jaskinie ciagna sie na (.*)\.$/,
-    /^Tunele ciagna sie na (.*)\.$/,
-    /^Rozpadlina ciagnie sie na (.*)\.$/,
-    /^W gestych ciemnosciach dostrzegasz sciezke wiodaca na (.*)\.$/,
-    /^Ulice krzyzuja sie tutaj, prowadzac w trzech kierunkach: (.*)\.$/,
-    /^Ulica prowadzi na (.*)\.$/,
-    /^Wykop konczy sie tutaj, zas jedyne widoczne przejscie prowadzi na (.*)\.$/,
-    /^Wykopany w ziemi tunel rozgalezia sie tutaj, zas jego odnogi wioda na (.*)\.$/,
-];
+// Generated from upstream Arkadia.xml by scripts/extract-upstream-triggers.mjs.
+// Upstream nests these under a `room.exits` message-type check; like the hand
+// copy they replace, they are registered without it and match any line.
+const EXIT_PATTERNS = upstreamPatterns(shortExitsPatterns as UpstreamTrigger[], "trigger_func_mapper_directions_ui_wyjscia");
 
 export default function initShortExits(client: Client) {
     let enabled = false;

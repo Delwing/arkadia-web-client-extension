@@ -4,6 +4,7 @@ import xml2js from 'xml2js';
 import xpath from 'xml2js-xpath';
 import { fileURLToPath } from 'url';
 import { Listr } from 'listr2';
+import { toJsRegexSource } from './extract-trigger-patterns.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -129,7 +130,7 @@ function extractPatterns(obj) {
     const props = toArray(obj.regexCodePropertyList && obj.regexCodePropertyList.integer);
     const out = [];
     for (let i = 0; i < Math.max(pats.length, pats.length); i++) {
-        const pattern = pats[i].replaceAll(/\?'(.*?)'/g, "?<$1>") || '';
+        const pattern = toJsRegexSource(pats[i]) || '';
         const type = props[i] !== undefined ? Number(props[i]) : null;
         if (pattern || type !== null) out.push({ pattern, type });
     }

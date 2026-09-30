@@ -1,0 +1,135 @@
+[
+  {
+    "name": "wyjscia",
+    "script": "trigger_func_mapper_directions_ui_wyjscia()",
+    "patterns": [
+      {
+        "pattern": "^(?:Jest|Sa) tutaj .* widoczn(?:e|ych) wyjsc(?:|ia|ie): (.*)\\.$",
+        "type": 1
+      },
+      {
+        "pattern": "^W gestych ciemnosciach dostrzegasz .* (?:wiodacy|rozwidlajacy sie) na (.*)\\.$",
+        "type": 1
+      },
+      {
+        "pattern": "^Korytarze jaskini ciagna sie na (.*)\\.$",
+        "type": 1
+      },
+      {
+        "pattern": "^Trakt wiedzie na ([^.]+)\\.$",
+        "type": 1
+      },
+      {
+        "pattern": "[tT]rakt rozgalezia sie na (.*)\\.$",
+        "type": 1
+      },
+      {
+        "pattern": "^(?:Szlak|Sciezka) prowadzi tutaj w .* kieru.*: (.*)\\.$",
+        "type": 1
+      },
+      {
+        "pattern": "^Linia brzegowa ciagnie sie na (.*)\\.$",
+        "type": 1
+      },
+      {
+        "pattern": "^Wedrowke (?:skrajem lasu|po karczowisku|po lesie|przez rozlegle laki) mozesz kontynuowac udajac sie na (.*)\\.$",
+        "type": 1
+      },
+      {
+        "pattern": "^Wijaca sie miedzy skalami, gorska sciezka prowadzi na (.*)\\.$",
+        "type": 1
+      },
+      {
+        "pattern": "^Wydeptane w kukurydzy sciezki prowadza na (.*)\\.$",
+        "type": 1
+      },
+      {
+        "pattern": "^Wyjscia prowadza tutaj w .* kierunkach: (.*)\\.$",
+        "type": 1
+      },
+      {
+        "pattern": "^Wykopany w ziemi tunel rozgalezia sie tutaj, zas jego odnogi wioda na (.*)\\.$",
+        "type": 1
+      },
+      {
+        "pattern": "^Wykopany w ziemi tunel wiedzie w dwoch kierunkach: (.*)\\.$",
+        "type": 1
+      },
+      {
+        "pattern": "^Mozesz sie stad udac na (.*)\\.$",
+        "type": 1
+      },
+      {
+        "pattern": "^Mozesz skierowac lodz na (.*)\\.$",
+        "type": 1
+      },
+      {
+        "pattern": "^Trakt jest zasypany glazami i mozna podazac nim tylko w jednym kierunku, na (.*)\\.$",
+        "type": 1
+      },
+      {
+        "pattern": "^Mozesz podazac traktem na (.*), w strone fortu\\.$",
+        "type": 1
+      },
+      {
+        "pattern": "^Mozesz stad poplynac na (.*)\\.$",
+        "type": 1
+      },
+      {
+        "pattern": "^W mroku nocy dostrzegasz .* widoczne wyjsci.: (.*)\\.$",
+        "type": 1
+      },
+      {
+        "pattern": "^Tunel ciagnie sie na (.*)\\.$",
+        "type": 1
+      },
+      {
+        "pattern": "^Jaskinie ciagna sie na (.*)\\.$",
+        "type": 1
+      },
+      {
+        "pattern": "^Tunele ciagna sie na (.*)\\.$",
+        "type": 1
+      },
+      {
+        "pattern": "^Rozpadlina ciagnie sie na (.*)\\.$",
+        "type": 1
+      },
+      {
+        "pattern": "^W gestych ciemnosciach dostrzegasz sciezke wiodaca na (.*)\\.$",
+        "type": 1
+      },
+      {
+        "pattern": "^Ulice krzyzuja sie tutaj, prowadzac w trzech kierunkach: (.*)\\.$",
+        "type": 1
+      },
+      {
+        "pattern": "^Ulica prowadzi na (.*)\\.$",
+        "type": 1
+      },
+      {
+        "pattern": "^Wykop konczy sie tutaj, zas jedyne widoczne przejscie prowadzi na (.*)\\.$",
+        "type": 1
+      },
+      {
+        "pattern": "^Wykopany w ziemi tunel rozgalezia sie tutaj, zas jego odnogi wioda na (.*)\\.$",
+        "type": 1
+      },
+      {
+        "pattern": "^Krete, widmowe drozki prowadza na (.*)\\.$",
+        "type": 1
+      }
+    ],
+    "parents": [
+      {
+        "name": "short exits",
+        "patterns": [
+          {
+            "pattern": "return is_msg_type(\"room.exits\")",
+            "type": 4
+          }
+        ]
+      }
+    ]
+  }
+]

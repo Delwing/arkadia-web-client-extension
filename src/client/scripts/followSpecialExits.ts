@@ -3,43 +3,9 @@ import Client from "../Client";
 import followPatterns from "./follow_special_exits_patterns.json";
 import followLua from "../lua/follow/special_exits_follow.lua?raw";
 import {createMatchesLuaCode, escapeLuaString} from "../luaInterop";
-
-interface PatternEntry {
-    pattern: string;
-    type: number;
-}
-
-interface TriggerEntry {
-    name: string;
-    script: string;
-    patterns: PatternEntry[];
-}
+import {patternToTrigger, type UpstreamTrigger} from "./upstreamTriggers";
 
 const FOLLOW_FUNC = "trigger_func_skrypty_ui_special_exits_follow";
-
-// Mudlet pattern types:
-// 0 = substring (matches anywhere)
-// 1 = regex
-// 2 = startOfLine (substring at start)
-// 3 = exactMatch (entire line must match)
-function escapeRegExp(str: string): string {
-    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-function patternToTrigger(entry: PatternEntry): string | RegExp {
-    const {pattern, type} = entry;
-    switch (type) {
-        case 1: // regex
-            return new RegExp(pattern);
-        case 2: // startOfLine
-            return new RegExp(`^${escapeRegExp(pattern)}`);
-        case 3: // exactMatch
-            return new RegExp(`^${escapeRegExp(pattern)}$`);
-        case 0: // substring
-        default:
-            return pattern;
-    }
-}
 
 // A handful of source patterns appear in two entries with conflicting commands.
 // Pin them to the intended command regardless of registration order.
@@ -93,7 +59,7 @@ export default function initFollowSpecialExits(client: Client) {
         }, tag);
     }
 
-    for (const entry of followPatterns as TriggerEntry[]) {
+    for (const entry of followPatterns as UpstreamTrigger[]) {
         for (const patternEntry of entry.patterns) {
             const override = COMMAND_OVERRIDES[patternEntry.pattern];
             const script = override ? `${FOLLOW_FUNC}("${escapeLuaString(override)}")` : entry.script;

@@ -1,0 +1,56 @@
+[
+  {
+    "name": "atakuje-cie-beep",
+    "script": "trigger_func_skrypty_misc_atakuje_cie_beep()",
+    "patterns": [
+      {
+        "pattern": "(.*) atakuje cie!",
+        "type": 1
+      },
+      {
+        "pattern": "(.*) atakuje cie nie dajac ci czasu na skontrowanie swojego ataku!",
+        "type": 1
+      },
+      {
+        "pattern": "^Ku twojemu zdumieniu, (.*) pojawil sie nagle tuz obok ciebie!",
+        "type": 1
+      },
+      {
+        "pattern": "^Oczy (.*) zachodza woalem rytualnego transu, gdy jak blyskawica rzuca sie on na ciebie, rozniecajac burze Tanca Smierci!",
+        "type": 1
+      }
+    ]
+  },
+  {
+    "name": "atakuje-cie-player",
+    "script": "trigger_func_skrypty_misc_player_atakuje_cie_beep(matches[2], matches[3])",
+    "patterns": [
+      {
+        "pattern": "^W oczach (.*) rozpala sie swiety ogien nienawisci i z imieniem Morra na ustach (rzuca sie do walki z toba)!",
+        "type": 1
+      },
+      {
+        "pattern": "^(?<attacker>\\w+(?: \\w+){0,4}) z determinacja i pewnoscia siebie unosi swoja bron i (naciera na ciebie)!",
+        "type": 1
+      },
+      {
+        "pattern": "^(?<attacker>\\w+(?: \\w+){0,4}) z pierwotna wsciekloscia (rzuca sie na ciebie), rozpoczynajac walke!",
+        "type": 1
+      },
+      {
+        "pattern": "^Przy ogluszajacym akompaniamencie okrzyku bojowego '[^']*' (?<attacker>\\w+(?: \\w+){0,4}) (rzuca sie na ciebie), wiazac cie",
+        "type": 1
+      }
+    ]
+  },
+  {
+    "name": "atakuje_cie",
+    "script": "trigger_func_skrypty_ui_misc_fighting_atakuje_cie()",
+    "patterns": [
+      {
+        "pattern": "atakuje cie!",
+        "type": 0
+      }
+    ]
+  }
+]

@@ -3,6 +3,8 @@ import {AnsiAwareBuffer} from "@client/ansi/FormatState.ts";
 import MapHelper from "@shared/map/MapHelper";
 import {getBehaviorSettings} from "@modules/core/settings";
 import {createGateEntryTracker, getGateBindString} from "./gateBind";
+import gatesPatterns from "./gates_patterns.json";
+import {upstreamPatterns, type UpstreamTrigger} from "./upstreamTriggers";
 
 export default function initGates(client: Client) {
     const knock = () => {
@@ -20,15 +22,9 @@ export default function initGates(client: Client) {
         return line;
     };
 
-    const patterns = [
-        /^Probujesz otworzyc .*wrota.*/,
-        /^Probujesz otworzyc .*drzwiczki.*/,
-        /^Probujesz otworzyc .*krate.*/,
-        /^Probujesz otworzyc .*brame.*/,
-        /^Probujesz otworzyc niewielka furtke.*/,
-    ];
-
-    patterns.forEach(p => client.Triggers.registerTrigger(p, showMessage, "gates"));
+    // Generated from upstream Arkadia.xml by scripts/extract-upstream-triggers.mjs.
+    upstreamPatterns(gatesPatterns as UpstreamTrigger[], "trigger_func_mapper_gates_gates")
+        .forEach(p => client.Triggers.registerTrigger(p, showMessage, "gates"));
 
     // Optional: offer the gate command on the functional bind as soon as the
     // player enters a gate location, without waiting for the closed-gate

@@ -31,19 +31,31 @@ function toArray(x) {
     return Array.isArray(x) ? x : [x];
 }
 
+// Mudlet regexes are PCRE; JS spells named groups (?<name>...) rather than (?'name'...).
+export function toJsRegexSource(pattern) {
+    return pattern.replaceAll(/\?'(.*?)'/g, "?<$1>");
+}
+
 function extractPatterns(node) {
     const pats = toArray(node.regexCodeList?.string).filter(Boolean);
     const props = toArray(node.regexCodePropertyList?.integer);
     const out = [];
     for (let i = 0; i < pats.length; i++) {
-        const pattern = pats[i];
         const type = props[i] !== undefined ? Number(props[i]) : 0;
+        const pattern = type === 1 ? toJsRegexSource(pats[i]) : pats[i];
         out.push({ pattern, type });
     }
     return out;
 }
 
-function findTriggersWithScript(node, targetScript, parentChain = []) {
+// `exact` matches the called function's name, so `trigger_func_rusalka` does not
+// also pick up `trigger_func_rusalka2`; otherwise any script starting with it matches.
+function scriptMatches(script, targetScript, exact) {
+    if (!exact) return script.startsWith(targetScript);
+    return script.split('(')[0].trim() === targetScript;
+}
+
+function findTriggersWithScript(node, targetScript, parentChain = [], exact = false) {
     const results = [];
     const name = node.name || '';
     const patterns = extractPatterns(node);
@@ -60,7 +72,7 @@ function findTriggersWithScript(node, targetScript, parentChain = []) {
         : parentChain;
 
     // Check if this trigger matches the target script
-    if (script.startsWith(targetScript)) {
+    if (scriptMatches(script, targetScript, exact)) {
         const entry = {
             name,
             script,
@@ -77,16 +89,16 @@ function findTriggersWithScript(node, targetScript, parentChain = []) {
 
     // Recursively search in child triggers and groups
     for (const child of toArray(node.Trigger)) {
-        results.push(...findTriggersWithScript(child, targetScript, newParentChain));
+        results.push(...findTriggersWithScript(child, targetScript, newParentChain, exact));
     }
     for (const child of toArray(node.TriggerGroup)) {
-        results.push(...findTriggersWithScript(child, targetScript, newParentChain));
+        results.push(...findTriggersWithScript(child, targetScript, newParentChain, exact));
     }
 
     return results;
 }
 
-export async function extractTriggerPatterns(xmlData, targetScript) {
+export async function extractTriggerPatterns(xmlData, targetScript, { exact = false } = {}) {
     const result = await new Promise((resolve, reject) => {
         xml2js.parseString(xmlData, { explicitArray: false }, (err, result) => {
             if (err) reject(err);
@@ -104,10 +116,10 @@ export async function extractTriggerPatterns(xmlData, targetScript) {
 
     // Search in all trigger groups
     for (const group of toArray(triggerPackage.TriggerGroup)) {
-        allResults.push(...findTriggersWithScript(group, targetScript));
+        allResults.push(...findTriggersWithScript(group, targetScript, [], exact));
     }
     for (const trigger of toArray(triggerPackage.Trigger)) {
-        allResults.push(...findTriggersWithScript(trigger, targetScript));
+        allResults.push(...findTriggersWithScript(trigger, targetScript, [], exact));
     }
 
     return allResults;

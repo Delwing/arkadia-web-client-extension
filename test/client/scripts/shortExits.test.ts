@@ -52,4 +52,8 @@ describe('short exits trigger', () => {
     expect(segments?.some(seg => seg.state?.foreground)).toBe(true);
     expect(client.println).not.toHaveBeenCalled();
   });
+
+  test('shortens exit phrasings taken from upstream', () => {
+    expect(parse('Krete, widmowe drozki prowadza na polnoc i zachod.')?.text).toBe('-----: N W');
+  });
 });
