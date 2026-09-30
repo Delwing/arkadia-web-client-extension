@@ -170,10 +170,11 @@ test.describe('Tab completion — output buffer based', () => {
         await waitForOutputContaining(page, 'raz_c');
 
         await setInputValue(page, 'ra');
-        // Cycle through all matches
+        // Cycle through all three matches (raz_c, raz_b, raz)
         await pressTab(page);
         const first = await getInputValue(page);
 
+        await pressTab(page);
         await pressTab(page);
         await pressTab(page);
 

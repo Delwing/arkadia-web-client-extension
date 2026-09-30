@@ -355,6 +355,11 @@ export class CommandLineEngine {
     handleTabCompletion(forward: boolean): void {
         const inputVal = this.field.value;
 
+        // The line changed without a keypress (paste, dictation): start over.
+        if (this.tabCompletionCount !== -1 && inputVal !== this.tabCompletionOld) {
+            this.resetTabCompletionState();
+        }
+
         // First tab press: snapshot the typed text
         if (this.tabCompletionCount === -1) {
             this.tabCompletionTyped = inputVal;
