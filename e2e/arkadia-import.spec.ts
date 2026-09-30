@@ -13,7 +13,8 @@ const FILE = {
         patterns: [
             {Regexp: 'szary wilk', Replacement: 'WILK', Color: '#ff0000'},
             {Regexp: 'mowi (\\w+)', Replacement: 'gada $0 [%%]'},
-            {Regexp: 'slowa', Replacement: '%1'},
+            {Regexp: 'krzyczy (.+)', Replacement: '%0 (%-1) %1'},
+            {Regexp: '(', Color: '#ffffff'},
         ],
     })),
 };
@@ -33,7 +34,7 @@ test('reads the Arkadia client file, lets the user pick parts and imports them',
 
     await pickFile(page);
     const aliases = importRow.getByLabel('Aliasy (1)');
-    const patterns = importRow.getByLabel(/Przekształcanie tekstu \(2\)/);
+    const patterns = importRow.getByLabel(/Przekształcanie tekstu \(3\)/);
     await expect(aliases, 'should offer the aliases found in the file').toBeChecked();
     await expect(patterns, 'should offer the importable text transformations').toBeChecked();
 
@@ -45,8 +46,8 @@ test('reads the Arkadia client file, lets the user pick parts and imports them',
     await importButton.click();
 
     const message = importRow.locator('.import-row__message');
-    await expect(message, 'should report the imported transformations').toContainText('Zaimportowano 2 przekształceń');
-    await expect(message, 'should name the skipped transformation').toContainText('slowa');
+    await expect(message, 'should report the imported transformations').toContainText('Zaimportowano 3 przekształceń');
+    await expect(message, 'should name the skipped transformation').toContainText('Pominięte przekształcenia (błędny wzorzec): (');
     await expect(message, 'should leave the unpicked aliases alone').not.toContainText('aliasów');
 
     await pickFile(page);
@@ -64,6 +65,10 @@ test('reads the Arkadia client file, lets the user pick parts and imports them',
     await pushText(page, 'Elf mowi hej.');
     await expect(page.locator('#main_text_output_msg_wrapper', {hasText: 'Elf gada hej [mowi hej].'}),
         'should fill the capture group and whole match into the replacement').toBeVisible();
+
+    await pushText(page, 'Ork krzyczy glosno i dlugo.');
+    await expect(page.locator('#main_text_output_msg_wrapper', {hasText: 'Ork krzyczy (glosno i dlugo.) glosno'}),
+        'should fill words of the match into the replacement').toBeVisible();
 
     await resetCommandLog(page);
     await submitCommand(page, 'zz');

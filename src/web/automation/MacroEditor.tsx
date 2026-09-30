@@ -235,6 +235,20 @@ export function MacroEditor({
                         <option value="__upload__">Dodaj dzwiek...</option>
                     </Select>
                 )}
+                {macro.type === 'replace' && (
+                    <>
+                        <Input
+                            mono
+                            placeholder="Replacement ($0 = całość, $1 = grupa)"
+                            value={macro.to || ''}
+                            onChange={e => onChange({ ...macro, to: e.target.value })}
+                        />
+                        <PlaceholderChips
+                            placeholders={placeholders}
+                            onInsert={(token) => onChange({ ...macro, to: (macro.to ?? '') + token })}
+                        />
+                    </>
+                )}
                 {macro.type === 'command' && (
                     <>
                         <Input
@@ -493,15 +507,6 @@ export function MacroEditor({
                         />
                     )}
                 </div>
-            )}
-            {macro.type === 'replace' && (
-                <Input
-                    mono
-                    className="trigger-action__replace"
-                    placeholder="Replacement ($0 = całość, $1 = grupa)"
-                    value={macro.to || ''}
-                    onChange={e => onChange({ ...macro, to: e.target.value })}
-                />
             )}
             <DeleteButton onClick={onRemove} title="Usun akcje" />
         </div>

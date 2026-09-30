@@ -60,6 +60,8 @@ export function TriggerEditor({ trigger, onChange, sounds, onRequestSoundUpload,
         : [
             { token: "$0", label: "Cale dopasowanie" },
             ...Array.from({ length: groupCount(pattern) }, (_, i) => ({ token: `$${i + 1}`, label: `Grupa ${i + 1} z wzorca` })),
+            { token: "{word1}", label: "Pierwsze slowo dopasowania ({word2+}: od drugiego slowa do konca)" },
+            { token: "{line}", label: "Cala linia" },
         ];
 
     const pickRecentLine = (e: MouseEvent<HTMLElement>) => {

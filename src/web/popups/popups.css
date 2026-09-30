@@ -998,10 +998,6 @@ select.popup-input.popup-input--control {
   width: var(--ui-ctrl-sm, 24px);
   height: var(--ui-ctrl-sm, 24px);
 }
-.trigger-action__replace.popup-input.popup-input--control {
-  flex: 0 0 9rem;
-  width: 9rem;
-}
 .trigger-condition > select.popup-input.popup-input--control {
   flex: 0 1 12rem;
   width: auto;

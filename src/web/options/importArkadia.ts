@@ -65,10 +65,12 @@ export interface PatternParseResult {
  * beep actions in that order. The client's sounds have no counterpart, so
  * each becomes the default beep.
  *
- * In a replacement the client's `$N` is capture group N+1 and `%%` the whole
- * match; they become `$N+1` and `$0`, which the replace action fills in.
- * `$$` (the rest of the line) and `%N`/`%-N` (words of the match) have no
- * counterpart, so rules using them are skipped.
+ * The client's variables in a replacement become the trigger's placeholders:
+ * `$N` (capture group N+1) → `$N+1`, `%%` (whole match) → `$0`, `%N` (word N
+ * of the match, from 0) → `{wordN+1}`, `%-N` (the match after N words) →
+ * `{wordN+1+}`, and `$$` → `{line}`. The client's `$$` is the line from where
+ * it started looking, so for a second match on one line it is the rest after
+ * the first; `{line}` is always the whole line.
  */
 export function parseArkadiaPatterns(text: string): PatternParseResult {
     let data: any;
@@ -94,11 +96,11 @@ export function parseArkadiaPatterns(text: string): PatternParseResult {
         }
         const macros: UserMacro[] = [];
         if (typeof entry.Replacement === "string") {
-            if (/%-?\d|\$\$/.test(entry.Replacement)) {
-                skipped.push(pattern);
-                continue;
-            }
-            const to = entry.Replacement.replace(/%%|\$(\d+)/g, (_m, n?: string) => n === undefined ? "$0" : `$${Number(n) + 1}`);
+            const to = entry.Replacement.replace(/%%|%(-?)(\d+)|\$\$|\$(\d+)/g, (whole, rest?: string, word?: string, group?: string) => {
+                if (group !== undefined) return `$${Number(group) + 1}`;
+                if (word !== undefined) return `{word${Number(word) + 1}${rest ? "+" : ""}}`;
+                return whole === "%%" ? "$0" : "{line}";
+            });
             macros.push({ type: "replace", to });
         }
         if (typeof entry.Color === "string" && /^#(?:[A-Fa-f0-9]{3}){1,2}$/.test(entry.Color)) {

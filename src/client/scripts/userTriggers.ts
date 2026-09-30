@@ -421,13 +421,34 @@ export function interpolateMatchGroups(text: string, match: RegExpMatchArray): s
 }
 
 /**
+ * Word `n` (from 1) of the matched text, or with `rest` everything from that
+ * word on, spacing kept. Empty when the match has fewer words.
+ */
+function matchWords(matched: string, n: number, rest: boolean): string {
+    const text = matched.trim();
+    const words = text ? text.split(/\s+/) : [];
+    if (n < 1 || n > words.length) return '';
+    if (!rest) return words[n - 1];
+    return text.replace(new RegExp(`^(?:\\S+\\s+){${n - 1}}`), '');
+}
+
+/**
  * The text of a pattern trigger's action with the match filled in: `$0`,
- * `$1`... (as in aliases) and `{1}`, `{name}` (see `interpolateMatchGroups`).
- * A `$` group that does not exist becomes empty, as it does in aliases.
+ * `$1`... (as in aliases), `{1}`, `{name}` (see `interpolateMatchGroups`),
+ * `{line}` for the whole line, `{word1}` for a word of the match and `{word2+}`
+ * for the match from that word on. A named group of the same name wins over
+ * `{line}`/`{wordN}`. A `$` group that does not exist becomes empty, as it
+ * does in aliases.
  */
 export function interpolateMatch(text: string, match: RegExpMatchArray): string {
     if (!text) return text;
-    return interpolateMatchGroups(text.replace(/\$(\d+)/g, (_, n: string) => match[Number(n)] ?? ''), match);
+    const filled = text.replace(/\$(\d+)|\{(line|word(\d+)(\+?))\}/g, (whole, group?: string, special?: string, word?: string, rest?: string) => {
+        if (group !== undefined) return match[Number(group)] ?? '';
+        if (match.groups && special! in match.groups) return whole;
+        if (special === 'line') return match.input ?? match[0];
+        return matchWords(match[0], Number(word), rest === '+');
+    });
+    return interpolateMatchGroups(filled, match);
 }
 
 function applyMacrosToMatch(

@@ -592,6 +592,20 @@ describe('userTriggers', () => {
       expect(interpolateMatch('x$5y', match)).toBe('xy');
     });
 
+    test('interpolateMatch fills {line}, {wordN} and {wordN+}', () => {
+      const match = 'Widzisz: Goblin  atakuje cie!'.match(/Goblin\s+atakuje cie/)!;
+      expect(interpolateMatch('<{line}>', match)).toBe('<Widzisz: Goblin  atakuje cie!>');
+      expect(interpolateMatch('{word1}|{word3}|{word4}', match)).toBe('Goblin|cie|');
+      expect(interpolateMatch('{word2+}', match)).toBe('atakuje cie');
+      expect(interpolateMatch('{word1+}', match)).toBe('Goblin  atakuje cie');
+      expect(interpolateMatch('{word5+}', match)).toBe('');
+    });
+
+    test('a named group called line or wordN wins over the placeholder', () => {
+      const match = 'Goblin atakuje'.match(/(?<line>\w+) (?<word1>\w+)/)!;
+      expect(interpolateMatch('{line}/{word1}/{word2}', match)).toBe('Goblin/atakuje/atakuje');
+    });
+
     test('command, notify and bind get the match filled in', () => {
       const client = new FakeClient();
       initUserTriggers((client as unknown) as any);
