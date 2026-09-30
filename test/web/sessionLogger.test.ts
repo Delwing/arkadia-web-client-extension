@@ -12,11 +12,10 @@ describe("sessionLogger character marks", () => {
     let bus: typeof EventBus;
 
     async function records(): Promise<{ text: string; character?: string }[]> {
-        const { openLogsDb } = await import("@web/logsDatabase");
-        const { getRawSessionData } = await import("@web/logBrowserUtils");
+        const { openLogsDb, readSession } = await import("@web/logsDatabase");
         const db = await openLogsDb();
         if (!db) return [];
-        const entries = (await getRawSessionData(db, storeName)) as { text: string; character?: string }[];
+        const entries = await readSession(db, storeName);
         db.close();
         return entries;
     }
@@ -36,7 +35,7 @@ describe("sessionLogger character marks", () => {
         // The store is named after the moment the module loaded, and two tests
         // can load it in the same millisecond.
         await new Promise<void>((resolve) => {
-            const request = indexedDB.deleteDatabase("ArkadiaMessagesDB");
+            const request = indexedDB.deleteDatabase("ArkadiaLogsDB");
             request.onsuccess = () => resolve();
             request.onerror = () => resolve();
             request.onblocked = () => resolve();

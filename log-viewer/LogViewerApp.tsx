@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { LogViewer, Spinner, type LogSessionInfo, type PersistedPreferences } from "@ui/logViewer";
 import { readPreferences, writePreferences } from "./preferences";
 import { createSessionSource, type ListProgress, type SessionSource } from "./sessionAdapter";
+import { useLogsMigration } from "./useLogsMigration";
 
 /**
  * Standalone log browser.
@@ -19,6 +20,8 @@ export default function LogViewerApp() {
     const [sessions, setSessions] = useState<LogSessionInfo[] | null>(null);
     const [listing, setListing] = useState<ListProgress | null>(null);
     const [source, setSource] = useState<SessionSource | null>(null);
+    // Bumped to list again, when moved logs arrive.
+    const [reloadToken, setReloadToken] = useState(0);
     const [preferences] = useState<PersistedPreferences | null>(() => {
         const stored = readPreferences();
         // `?session=` is how the in-client log browser opens one session in a
@@ -59,7 +62,17 @@ export default function LogViewerApp() {
             controller.abort();
             created.release();
         };
-    }, []);
+    }, [reloadToken]);
+
+    // The client moves old logs to the new store; this page only reads, so it
+    // says they are coming and lists again once they have.
+    const migration = useLogsMigration(useCallback(() => setReloadToken((token) => token + 1), []));
+    const migrationNotice =
+        migration === null
+            ? undefined
+            : migration === "pending"
+              ? "Starsze logi czekają na przeniesienie do nowej bazy. Przeniesie je otwarty klient; pojawią się tu po zakończeniu."
+              : `Przenoszenie starszych logów do nowej bazy: ${migration.done} z ${migration.total}. Pojawią się tu po zakończeniu.`;
 
     const loadSession = useCallback(
         (id: string) => (source ? source.load(id) : Promise.resolve(null)),
@@ -84,6 +97,7 @@ export default function LogViewerApp() {
             loading={listing}
             preferences={preferences}
             onPreferencesChange={onPreferencesChange}
+            listNotice={migrationNotice}
             noSessionsAction={
                 <span className="lv-app__hint">
                     Logi są zapisywane przez klienta. Zaimportować je można w oknie „Logi” w kliencie.

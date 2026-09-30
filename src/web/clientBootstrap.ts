@@ -5,6 +5,7 @@ import { HelperConnection } from "@modules/helper/HelperConnection";
 import { setupHelperResync } from "@modules/helper/helperResync";
 import initSessionLogger from "./sessionLogger";
 import initLogFileSaver from "./logFileSaver";
+import { migrateLegacyLogs } from "./logsMigration";
 import { migrateNewlyCharacterScopedKeys } from "@modules/core/storage";
 import {
     migrateButtonSizeMultiplier,
@@ -116,6 +117,18 @@ export function bootstrapGameClient(opts: { installPorts: () => void }): GameCli
     // Session logging (sessionLogger first — logFileSaver imports its session name).
     initSessionLogger(mudClient).catch(err => console.error('Logger init failed', err));
     initLogFileSaver(mudClient).catch(err => console.error('File saver init failed', err));
+    // Logs from before the one-store layout; a no-op once they have all moved.
+    void migrateLegacyLogs();
+
+    // Asks the browser not to evict IndexedDB (logs, map data) under disk
+    // pressure. The browser decides on its own; it may say no without asking.
+    if (navigator.storage?.persist) {
+        navigator.storage.persist().then(granted => {
+            console.log(granted ? 'Persistent storage granted' : 'Persistent storage not granted');
+        }).catch(err => {
+            console.warn('Failed to request persistent storage:', err);
+        });
+    }
 
     // Initialize Firebase sync services (skip on localhost):
     // - syncListener receives remote changes in realtime

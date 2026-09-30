@@ -64,6 +64,11 @@ export interface LogViewerProps {
     noSessionsAction?: React.ReactNode;
     /** Opens with this in the search box, across every log ("Szukaj w logach"). */
     initialQuery?: string;
+    /**
+     * A line above the session list about sessions that are not in it yet —
+     * the host's logs still being moved to a new store, say.
+     */
+    listNotice?: string;
 }
 
 /**
@@ -90,6 +95,7 @@ export function LogViewer({
     onExport,
     noSessionsAction,
     initialQuery,
+    listNotice,
 }: LogViewerProps) {
     const [state, setState] = useState<ViewerState>(() => {
         const preferredId = preferences?.sessionId;
@@ -760,6 +766,7 @@ export function LogViewer({
                     searching={view.searching}
                     allScope={state.scope === "all"}
                     loading={loading}
+                    notice={listNotice}
                 />
 
                 <div className="lv__main">

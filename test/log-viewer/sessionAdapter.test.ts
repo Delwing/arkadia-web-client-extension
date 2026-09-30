@@ -5,6 +5,7 @@ import {
     recordedBackground,
     resetSessionIndex,
 } from "../../log-viewer/sessionAdapter";
+import { edgeRecord, openLogsDb, writeSession } from "@web/logsDatabase";
 
 const INDEX_KEY = "arkadia.logViewer.sessionIndex";
 
@@ -17,38 +18,23 @@ interface StoredRecord {
 
 function deleteDb(): Promise<void> {
     return new Promise((resolve) => {
-        const request = indexedDB.deleteDatabase("ArkadiaMessagesDB");
+        const request = indexedDB.deleteDatabase("ArkadiaLogsDB");
         request.onsuccess = () => resolve();
         request.onerror = () => resolve();
         request.onblocked = () => resolve();
     });
 }
 
-/** Writes the stores as the logger does: one auto-incremented record per message. */
-function seed(stores: Record<string, StoredRecord[]>, version = 1): Promise<void> {
-    return new Promise((resolve, reject) => {
-        const request = indexedDB.open("ArkadiaMessagesDB", version);
-        request.onupgradeneeded = () => {
-            for (const name of Object.keys(stores)) {
-                if (!request.result.objectStoreNames.contains(name)) {
-                    request.result.createObjectStore(name, { autoIncrement: true });
-                }
-            }
-        };
-        request.onsuccess = () => {
-            const db = request.result;
-            const tx = db.transaction(Object.keys(stores), "readwrite");
-            for (const [name, records] of Object.entries(stores)) {
-                for (const record of records) tx.objectStore(name).add(record);
-            }
-            tx.oncomplete = () => {
-                db.close();
-                resolve();
-            };
-            tx.onerror = () => reject(tx.error);
-        };
-        request.onerror = () => reject(request.error);
-    });
+/** Appends records to sessions as the logger does: one record per message, in order. */
+async function seed(stores: Record<string, StoredRecord[]>): Promise<void> {
+    const db = await openLogsDb();
+    if (!db) throw new Error("no database");
+    for (const [name, records] of Object.entries(stores)) {
+        const last = await edgeRecord(db, name, "prev");
+        const start = last ? last.seq + 1 : 0;
+        await writeSession(db, name, records.map((entry, index) => ({ seq: start + index, entry })));
+    }
+    db.close();
 }
 
 describe("createSessionSource", () => {
@@ -106,7 +92,7 @@ describe("createSessionSource", () => {
         await first.list();
         first.release();
 
-        await seed({ session_5000: [{ text: "jeszcze", timestamp: 6000 }] }, 1);
+        await seed({ session_5000: [{ text: "jeszcze", timestamp: 6000 }] });
         const second = createSessionSource({ candidates: [] });
         const sessions = await second.list();
         second.release();
