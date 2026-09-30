@@ -6,6 +6,7 @@ import {
     PLAYER,
     matchCoverLine,
     resolveObjectId,
+    resolveOrderedCoverer,
     type CoverLineMatch,
     type CoverSource,
     type LocationObject,
@@ -378,8 +379,16 @@ export function createCoverTracker(ctx: CoverTrackerContext): CoverTracker {
 
     function applyEstablished(match: CoverLineMatch, raw: string) {
         const at = ctx.now();
-        const covered = resolve(match.covered);
-        const coverer = resolve(match.coverer, { trimLeadingWords: match.covererHasOrderPrefix });
+        let covered: ResolvedObject;
+        let coverer: ResolvedObject;
+        if (match.coveredIsOrderer) {
+            const list = objects();
+            cacheDescs(list);
+            ({ orderer: covered, coverer } = resolveOrderedCoverer(match.coverer ?? '', list, { playerNum: playerNum() }));
+        } else {
+            covered = resolve(match.covered);
+            coverer = resolve(match.coverer, { trimLeadingWords: match.covererHasOrderPrefix });
+        }
         if (covered.id === undefined || coverer.id === undefined || covered.id === coverer.id) {
             log(entryFor('ambiguous', match, raw, {
                 coveredId: covered.id, covererId: coverer.id,

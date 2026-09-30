@@ -64,6 +64,11 @@ export interface CoverLineMatch {
      * split off by grammar. Resolve it by trying successive suffixes.
      */
     covererHasOrderPrefix?: boolean;
+    /**
+     * "Na rozkaz <orderer> <coverer> zaslania ja" - the covered party is the
+     * orderer, so `coverer` holds both and has to be split, not just trimmed.
+     */
+    coveredIsOrderer?: boolean;
     /** The dead party, for `kind: 'death'`. */
     who?: string;
     /** Only the player's edges for `covered` are cleared ("Juz walczysz z ..."). */
@@ -174,9 +179,31 @@ const RULES: CoverRule[] = [
     },
 
     // --- 3.2 cover established ---------------------------------------------
+    // "ja"/"go"/"jego" is the orderer asking to be covered - these must run before
+    // the named forms below, which would take the pronoun for a name.
+    {
+        re: /^Na rozkaz (?<orderer>.+?) zaslaniasz (?:ja|go|jego) przed ciosami (?<attackers>.+?)\.$/,
+        build: g => ({ kind: 'established', source: 'cover-line', covered: g.orderer, coverer: PLAYER, attackers: attackerList(g.attackers) }),
+    },
+    {
+        re: /^Na rozkaz (?<coverer>.+?) zaslania (?:ja|go|jego) przed ciosami (?<attackers>.+?)\.$/,
+        build: g => ({
+            kind: 'established',
+            source: 'cover-line',
+            coverer: g.coverer,
+            covererHasOrderPrefix: true,
+            coveredIsOrderer: true,
+            attackers: attackerList(g.attackers),
+        }),
+    },
     {
         re: /^Na rozkaz .+? zaslaniasz (?<covered>.+?) przed ciosami (?<attackers>.+?)\.$/,
         build: g => ({ kind: 'established', source: 'cover-line', covered: g.covered, coverer: PLAYER, attackers: attackerList(g.attackers) }),
+    },
+    {
+        // The player gave the order, so the capture is the coverer alone.
+        re: /^Na twoj rozkaz (?<coverer>.+?) zaslania (?<covered>.+?) przed ciosami (?<attackers>.+?)\.$/,
+        build: g => ({ kind: 'established', source: 'cover-line', covered: g.covered, coverer: g.coverer, attackers: attackerList(g.attackers) }),
     },
     {
         // "Na rozkaz <orderer> <coverer> zaslania ..." - grammar cannot tell the two
@@ -461,6 +488,27 @@ export function resolveObjectId(
         const result = sweep(attempt, objects);
         if (result.id !== undefined && !result.ambiguous) return result;
         if (result.id !== undefined && fallback.id === undefined) fallback = result;
+    }
+    return fallback;
+}
+
+/**
+ * Splits "<orderer> <coverer>" at the first word boundary where both halves
+ * resolve cleanly - the orderer is usually a lone player name, but not always.
+ */
+export function resolveOrderedCoverer(
+    name: string,
+    objects: LocationObject[],
+    opts: Omit<ResolveOptions, 'trimLeadingWords'> = {},
+): { orderer: ResolvedObject; coverer: ResolvedObject } {
+    const parts = normalize(name).split(/\s+/).filter(Boolean);
+    let fallback = { orderer: { ambiguous: false } as ResolvedObject, coverer: { ambiguous: false } as ResolvedObject };
+    for (let i = 1; i < parts.length; i++) {
+        const orderer = resolveObjectId(parts.slice(0, i).join(' '), objects, opts);
+        const coverer = resolveObjectId(parts.slice(i).join(' '), objects, opts);
+        if (orderer.id === undefined || coverer.id === undefined || orderer.id === coverer.id) continue;
+        if (!orderer.ambiguous && !coverer.ambiguous) return { orderer, coverer };
+        if (fallback.orderer.id === undefined) fallback = { orderer, coverer };
     }
     return fallback;
 }

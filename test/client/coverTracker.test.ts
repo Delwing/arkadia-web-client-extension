@@ -105,6 +105,41 @@ describe('coverPatterns - grammar', () => {
         expect(third?.coverer).toBe('Abra grozny porywczy zolnierz');
     });
 
+    it('reads "Na twoj rozkaz" with the coverer alone in the capture', () => {
+        const match = matchCoverLine('Na twoj rozkaz Sniks zaslania cie przed ciosami siwego radosnego ogra.');
+        expect(match).toMatchObject({
+            kind: 'established',
+            coverer: 'Sniks',
+            covered: 'cie',
+            attackers: ['siwego radosnego ogra'],
+        });
+        expect(match?.covererHasOrderPrefix).toBeUndefined();
+        expect(matchCoverLine(
+            'Na twoj rozkaz Vesper zaslania Gorertza przed ciosami majestatycznego masywnego mezczyzny.'))
+            .toMatchObject({ kind: 'established', coverer: 'Vesper', covered: 'Gorertza' });
+    });
+
+    it('reads "ja" in a "Na rozkaz" line as the orderer, never as a name', () => {
+        expect(matchCoverLine(
+            'Na rozkaz Muzikuhr zaslaniasz ja przed ciosami barczystego bialobrodego krasnoluda chaosu.'))
+            .toMatchObject({
+                kind: 'established',
+                coverer: '@ty',
+                covered: 'Muzikuhr',
+                attackers: ['barczystego bialobrodego krasnoluda chaosu'],
+            });
+        expect(matchCoverLine('Na rozkaz Muzikuhr Troal zaslania ja przed ciosami wrogow.'))
+            .toMatchObject({
+                kind: 'established',
+                coverer: 'Muzikuhr Troal',
+                coveredIsOrderer: true,
+                attackers: [ENEMIES],
+            });
+        expect(matchCoverLine(
+            'Na rozkaz Muzikuhr Troal zaslania ja przed ciosami poteznego siwowlosego mezczyzny.'))
+            .toMatchObject({ coverer: 'Muzikuhr Troal', coveredIsOrderer: true });
+    });
+
     it('matches the three release lines', () => {
         expect(matchCoverLine('Przestajesz zaslaniac Abra.')).toMatchObject({ kind: 'released', coverer: '@ty' });
         expect(matchCoverLine('Grozny porywczy zolnierz przestaje cie zaslaniac przed ciosami wrogow.'))
@@ -241,6 +276,38 @@ describe('coverTracker - text paths', () => {
         // The two near-identical krasnoludy must land on DIFFERENT object ids.
         expect(new Set(edges.map(e => e.attackerId))).toEqual(new Set([2001, 2002]));
         expect(kinds(h.log)).toEqual(['established', 'established']);
+    });
+
+    describe('ordered covers', () => {
+        const cast: Obj[] = [
+            { num: PLAYER_NUM, desc: 'Vesper', __category: 'player' },
+            { num: 1001, desc: 'Muzikuhr', __category: 'team' },
+            { num: 1002, desc: 'Troal', __category: 'team' },
+            { num: 1003, desc: 'Gorertz', __category: 'team' },
+            { num: 1004, desc: 'Sniks', __category: 'team' },
+            { num: 2001, desc: 'potezny siwowlosy mezczyzna', __category: 'rest' },
+            { num: 2002, desc: 'barczysty bialobrody krasnolud chaosu', __category: 'rest' },
+            { num: 2003, desc: 'siwy radosny ogr', __category: 'rest' },
+        ];
+
+        it('covers the orderer when a teammate is told to cover "ja"', () => {
+            const h = harness(cast);
+            h.tracker.handleLine('Na rozkaz Muzikuhr Troal zaslania ja przed ciosami poteznego siwowlosego mezczyzny.');
+            expect(h.triple()).toEqual(['1001:1002:2001']);
+        });
+
+        it('covers the orderer when the player is told to cover "ja"', () => {
+            const h = harness(cast);
+            h.tracker.handleLine(
+                'Na rozkaz Muzikuhr zaslaniasz ja przed ciosami barczystego bialobrodego krasnoluda chaosu.');
+            expect(h.triple()).toEqual([`1001:${PLAYER_NUM}:2002`]);
+        });
+
+        it('reads the coverer straight off "Na twoj rozkaz"', () => {
+            const h = harness(cast);
+            h.tracker.handleLine('Na twoj rozkaz Sniks zaslania cie przed ciosami siwego radosnego ogra.');
+            expect(h.triple()).toEqual([`${PLAYER_NUM}:1004:2003`]);
+        });
     });
 
     it('creates no edge for a failed cover', () => {
