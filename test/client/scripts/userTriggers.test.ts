@@ -606,6 +606,24 @@ describe('userTriggers', () => {
       expect(interpolateMatch('{line}/{word1}/{word2}', match)).toBe('Goblin/atakuje/atakuje');
     });
 
+    test('{rest} is the text from where the previous match ended, the whole text for the first', () => {
+      const match = 'Goblin atakuje'.match(/atakuje/)!;
+      expect(interpolateMatch('[{rest}]', match, 'reszta')).toBe('[reszta]');
+      expect(interpolateMatch('[{rest}]', match)).toBe('[Goblin atakuje]');
+    });
+
+    test('a global multiline trigger works on the whole message like the Arkadia client', () => {
+      const client = new FakeClient();
+      initUserTriggers((client as unknown) as any);
+      globalStorage.set('triggers', [
+        { pattern: '^(\\w+) krzyczy', flags: 'gm', macros: [{ type: 'replace', to: '<$1|{rest}>' }] },
+      ] as UserTrigger[]);
+      const result = client.Triggers.parseMultiline(new AnsiAwareBuffer('Ork krzyczy.\nTroll krzyczy!\n'), '');
+      // ^ matches at every line; the first {rest} is the whole message, the
+      // second the message after the first match.
+      expect(result?.text).toBe('<Ork|Ork krzyczy.\nTroll krzyczy!\n>.\n<Troll|.\nTroll krzyczy!\n>!\n');
+    });
+
     test('command, notify and bind get the match filled in', () => {
       const client = new FakeClient();
       initUserTriggers((client as unknown) as any);

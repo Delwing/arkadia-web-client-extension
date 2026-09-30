@@ -435,20 +435,34 @@ function matchWords(matched: string, n: number, rest: boolean): string {
 /**
  * The text of a pattern trigger's action with the match filled in: `$0`,
  * `$1`... (as in aliases), `{1}`, `{name}` (see `interpolateMatchGroups`),
- * `{line}` for the whole line, `{word1}` for a word of the match and `{word2+}`
- * for the match from that word on. A named group of the same name wins over
- * `{line}`/`{wordN}`. A `$` group that does not exist becomes empty, as it
- * does in aliases.
+ * `{line}` for the whole line, `{rest}` for the line from where the previous
+ * match ended (see `matchRests`; the whole line when not given), `{word1}` for
+ * a word of the match and `{word2+}` for the match from that word on. A named
+ * group of the same name wins over these. A `$` group that does not exist
+ * becomes empty, as it does in aliases.
  */
-export function interpolateMatch(text: string, match: RegExpMatchArray): string {
+export function interpolateMatch(text: string, match: RegExpMatchArray, rest?: string): string {
     if (!text) return text;
-    const filled = text.replace(/\$(\d+)|\{(line|word(\d+)(\+?))\}/g, (whole, group?: string, special?: string, word?: string, rest?: string) => {
+    const filled = text.replace(/\$(\d+)|\{(line|rest|word(\d+)(\+?))\}/g, (whole, group?: string, special?: string, word?: string, plus?: string) => {
         if (group !== undefined) return match[Number(group)] ?? '';
         if (match.groups && special! in match.groups) return whole;
         if (special === 'line') return match.input ?? match[0];
-        return matchWords(match[0], Number(word), rest === '+');
+        if (special === 'rest') return rest ?? match.input ?? match[0];
+        return matchWords(match[0], Number(word), plus === '+');
     });
     return interpolateMatchGroups(filled, match);
+}
+
+/**
+ * `{rest}` for each of the matches found in `text`, in order: the text from
+ * the end of the previous match on, the whole text for the first. This is the
+ * Arkadia client's `$$`, which searches on from where the last match ended.
+ */
+export function matchRests(text: string, matches: RegExpMatchArray[]): string[] {
+    return matches.map((_, i) => {
+        const prev = matches[i - 1];
+        return prev ? text.slice((prev.index ?? 0) + prev[0].length) : text;
+    });
 }
 
 function applyMacrosToMatch(
@@ -456,8 +470,10 @@ function applyMacrosToMatch(
     line: AnsiAwareBuffer,
     match: RegExpMatchArray,
     macros: UserMacro[],
-    label = ''
+    label = '',
+    rest?: string
 ): void {
+    const fill = (text: string) => interpolateMatch(text, match, rest);
     const matchStart = match.index ?? 0;
     let matchRange: TextRange = [matchStart, matchStart + match[0].length];
 
@@ -481,7 +497,7 @@ function applyMacrosToMatch(
                 break;
             case 'replace':
                 // `$0`, `$1`… and `{1}`, `{name}` fill in the match, as in a command.
-                const replacement = interpolateMatch(macro.to || '', match);
+                const replacement = fill(macro.to || '');
                 line.replace(matchRange, replacement);
                 matchRange = [matchRange[0], matchRange[0] + replacement.length];
                 break;
@@ -496,7 +512,7 @@ function applyMacrosToMatch(
                 break;
             case 'command':
                 if (macro.command) {
-                    client.sendCommand(interpolateMatch(macro.command, match));
+                    client.sendCommand(fill(macro.command));
                 }
                 break;
             case 'slowBlink':
@@ -531,19 +547,19 @@ function applyMacrosToMatch(
             }
             case 'functionalBind':
                 if (macro.command && macro.label) {
-                    const command = interpolateMatch(macro.command, match);
-                    client.FunctionalBind.set(interpolateMatch(macro.label, match), () => {
+                    const command = fill(macro.command);
+                    client.FunctionalBind.set(fill(macro.label), () => {
                         client.sendCommand(command);
                     });
                 }
                 break;
             case 'notify': {
-                const text = interpolateMatch(macro.message ?? '', match) || line.text.substring(matchRange[0], matchRange[1]);
+                const text = fill(macro.message ?? '') || line.text.substring(matchRange[0], matchRange[1]);
                 client.sendEvent("notify", { text, system: true });
                 break;
             }
             case 'push': {
-                const text = interpolateMatch(macro.message ?? '', match) || line.text.substring(matchRange[0], matchRange[1]);
+                const text = fill(macro.message ?? '') || line.text.substring(matchRange[0], matchRange[1]);
                 // Unlike the automatic hp alert, this is sent whether or not the
                 // client is on screen: a trigger the player wrote deliberately
                 // should not silently do nothing while they are at the desk.
@@ -554,13 +570,13 @@ function applyMacrosToMatch(
                 break;
             }
             case 'echo': {
-                const text = interpolateMatch(macro.message ?? '', match);
+                const text = fill(macro.message ?? '');
                 if (text) echoLine(client, text, macro.color);
                 break;
             }
             case 'speak': {
                 const text = macro.message
-                    ? interpolateMatch(macro.message, match)
+                    ? fill(macro.message)
                     : line.text.substring(matchRange[0], matchRange[1]);
                 if (text.trim()) {
                     client.sendEvent("tts:speak", { text });
@@ -789,8 +805,10 @@ export default function initUserTriggers(client: Client) {
                 const hasCaseInsensitiveFlag = flags.includes('i');
                 const hasMultilineFlag = flags.includes('m');
 
-                // Build regexp flags without 'i' (handled by TriggerOptions) and without 'm' (handled by trigger type)
-                const regexpFlags = hasGlobalFlag ? 'g' : '';
+                // 'i' is handled by TriggerOptions. 'm' registers a multiline trigger, which
+                // sees the whole received message, and keeps the regex meaning of the flag:
+                // ^ and $ match at the start and end of every line in it.
+                const regexpFlags = (hasGlobalFlag ? 'g' : '') + (hasMultilineFlag ? 'm' : '');
 
                 let regexp: RegExp;
                 try {
@@ -804,23 +822,26 @@ export default function initUserTriggers(client: Client) {
                     if (item.gmcpMsgType && type !== item.gmcpMsgType) return line;
                     if (hasGlobalFlag) {
                         // For global flag, find all matches and apply macros to each
-                        const globalRegexp = new RegExp(item.pattern!, 'g' + (hasCaseInsensitiveFlag ? 'i' : ''));
+                        const globalRegexp = new RegExp(item.pattern!, 'g' + (hasCaseInsensitiveFlag ? 'i' : '') + (hasMultilineFlag ? 'm' : ''));
+                        const text = line.text;
                         let match: RegExpExecArray | null;
                         const allMatches: RegExpExecArray[] = [];
 
-                        while ((match = globalRegexp.exec(line.text)) !== null) {
+                        while ((match = globalRegexp.exec(text)) !== null) {
                             allMatches.push(match);
                             if (match[0].length === 0) {
                                 globalRegexp.lastIndex++;
                             }
                         }
 
-                        // Apply in reverse order to preserve indices
+                        // Apply in reverse order to preserve indices; {rest} is taken from
+                        // the text as it was before any of them, as each match found it.
+                        const rests = matchRests(text, allMatches);
                         for (let i = allMatches.length - 1; i >= 0; i--) {
-                            applyMacrosToMatch(client, line, allMatches[i], item.macros, item.pattern);
+                            applyMacrosToMatch(client, line, allMatches[i], item.macros, item.pattern, rests[i]);
                         }
                     } else {
-                        applyMacrosToMatch(client, line, matches, item.macros, item.pattern);
+                        applyMacrosToMatch(client, line, matches, item.macros, item.pattern, line.text);
                     }
                     return line;
                 };

@@ -8,7 +8,7 @@
  * I think" the text and the colour are what matter.
  */
 import { expandAliasCommand, substituteGroups } from "@client/scripts/userAliases";
-import { interpolateMatch, type UserMacro } from "@client/scripts/userTriggers";
+import { interpolateMatch, matchRests, type UserMacro } from "@client/scripts/userTriggers";
 import { actionShort } from "./automationModel";
 
 export interface PatternTest {
@@ -22,7 +22,7 @@ export function testTriggerPattern(pattern: string, flags: string, text: string)
     if (!pattern) return { matches: [] };
     let regexp: RegExp;
     try {
-        regexp = new RegExp(pattern, `g${flags.includes("i") ? "i" : ""}`);
+        regexp = new RegExp(pattern, `g${flags.includes("i") ? "i" : ""}${flags.includes("m") ? "m" : ""}`);
     } catch (err) {
         return { error: (err as Error).message, matches: [] };
     }
@@ -120,15 +120,16 @@ export function previewTrigger(text: string, matches: RegExpMatchArray[], macros
     let linePrefix = "";
     let lineSuffix = "";
     const pieces: LineSegment[] = [];
+    const rests = matchRests(text, matches);
     let pos = 0;
-    for (const m of matches) {
+    for (const [i, m] of matches.entries()) {
         const start = m.index ?? 0;
         if (start > pos) pieces.push({ text: text.slice(pos, start) });
         let seg: LineSegment = { text: m[0], match: true };
         for (const macro of macros) {
             switch (macro.type) {
                 case "uppercase": seg = { ...seg, text: seg.text.toUpperCase() }; break;
-                case "replace": seg = { ...seg, text: interpolateMatch(macro.to ?? "", m) }; break;
+                case "replace": seg = { ...seg, text: interpolateMatch(macro.to ?? "", m, rests[i]) }; break;
                 case "color": seg = { ...seg, color: macro.color ?? seg.color, background: macro.background ?? seg.background }; break;
                 case "slowBlink":
                 case "rapidBlink":
@@ -154,8 +155,8 @@ export function previewTrigger(text: string, matches: RegExpMatchArray[], macros
     ];
 
     // Lineless actions run once per match, as in the runtime.
-    const outputs = matches.flatMap(m => macros
-        .map(macro => linelessOutput(macro, t => interpolateMatch(t, m), m[0], Array.from(m).slice(1).map(g => g ?? "")))
+    const outputs = matches.flatMap((m, i) => macros
+        .map(macro => linelessOutput(macro, t => interpolateMatch(t, m, rests[i]), m[0], Array.from(m).slice(1).map(g => g ?? "")))
         .filter((o): o is PreviewOutput => o !== null));
     return { segments, outputs };
 }

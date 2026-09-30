@@ -26,7 +26,7 @@ describe("parseArkadia", () => {
 
 
 describe("parseArkadiaPatterns", () => {
-    it("turns text transformations into global pattern triggers", () => {
+    it("turns text transformations into global multiline triggers, last rule first", () => {
         const json = JSON.stringify({
             patterns: [
                 { Regexp: "wilk", Replacement: "WILK", Color: "#ff0000", Sound: 3 },
@@ -36,29 +36,31 @@ describe("parseArkadiaPatterns", () => {
                 { Regexp: "zwierz (\\w+) (\\w+)", Replacement: "potwor $1 $0 [%%]" },
                 { Regexp: "slowa", Replacement: "%0/%1/%-1" },
                 { Regexp: "reszta", Replacement: "[$$]" },
+                { Regexp: "mowi: &quot;(.+)&quot; &amp; &lt;&gt;", Color: "#fff" },
                 { Regexp: "(" , Color: "#fff" },
                 { Regexp: "nic" },
             ],
         });
         expect(parseArkadiaPatterns(json)).toEqual({
             imported: [
+                { type: "pattern", pattern: 'mowi: "(.+)" & <>', flags: "gm", macros: [{ type: "color", color: "#fff" }] },
+                { type: "pattern", pattern: "reszta", flags: "gm", macros: [{ type: "replace", to: "[{rest}]" }] },
+                { type: "pattern", pattern: "slowa", flags: "gm", macros: [{ type: "replace", to: "{word1}/{word2}/{word2+}" }] },
                 {
-                    type: "pattern", pattern: "wilk", flags: "g",
+                    type: "pattern", pattern: "zwierz (\\w+) (\\w+)", flags: "gm",
+                    macros: [{ type: "replace", to: "potwor $2 $1 [$0]" }],
+                },
+                { type: "pattern", pattern: "spam", flags: "gm", macros: [{ type: "replace", to: "" }] },
+                { type: "pattern", pattern: "brzeczy", flags: "gm", macros: [{ type: "beep", soundKey: "beep" }] },
+                { type: "pattern", pattern: "^Ktos", flags: "gm", macros: [{ type: "color", color: "#0f0" }] },
+                {
+                    type: "pattern", pattern: "wilk", flags: "gm",
                     macros: [
                         { type: "replace", to: "WILK" },
                         { type: "color", color: "#ff0000" },
                         { type: "beep", soundKey: "beep" },
                     ],
                 },
-                { type: "pattern", pattern: "^Ktos", flags: "g", macros: [{ type: "color", color: "#0f0" }] },
-                { type: "pattern", pattern: "brzeczy", flags: "g", macros: [{ type: "beep", soundKey: "beep" }] },
-                { type: "pattern", pattern: "spam", flags: "g", macros: [{ type: "replace", to: "" }] },
-                {
-                    type: "pattern", pattern: "zwierz (\\w+) (\\w+)", flags: "g",
-                    macros: [{ type: "replace", to: "potwor $2 $1 [$0]" }],
-                },
-                { type: "pattern", pattern: "slowa", flags: "g", macros: [{ type: "replace", to: "{word1}/{word2}/{word2+}" }] },
-                { type: "pattern", pattern: "reszta", flags: "g", macros: [{ type: "replace", to: "[{line}]" }] },
             ],
             skipped: ["("],
         });
