@@ -1,9 +1,22 @@
 const MAX_OUTPUT_LINES = 500;
 const MIN_WORD_LENGTH = 2;
+/** Per-line metadata spans: in the DOM even while hidden, but not game text. */
+const CHROME_SELECTOR = '.output-timestamp, .output-message-type';
+
+function lineText(line: Element): string {
+    if (!line.querySelector(CHROME_SELECTOR)) return line.textContent ?? '';
+    const walker = line.ownerDocument.createTreeWalker(line, NodeFilter.SHOW_TEXT);
+    let text = '';
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+        if (node.parentElement?.closest(CHROME_SELECTOR)) continue;
+        text += (node as Text).data;
+    }
+    return text;
+}
 
 /**
  * The text of the last {@link MAX_OUTPUT_LINES} line elements of an output
- * surface, oldest-first. Callers needing their own tokenisation start here —
+ * surface, oldest-first, without the timestamp / message-type spans. Callers needing their own tokenisation start here —
  * voice dictation folds diacritics before splitting, which `\w` cannot do.
  */
 export function harvestOutputLines(wrapper: HTMLElement | null | undefined): string[] {
@@ -13,7 +26,7 @@ export function harvestOutputLines(wrapper: HTMLElement | null | undefined): str
 
     const startIdx = Math.max(0, children.length - MAX_OUTPUT_LINES);
     for (let i = startIdx; i < children.length; i++) {
-        lines.push(children[i].textContent ?? '');
+        lines.push(lineText(children[i]));
     }
 
     return lines;
