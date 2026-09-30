@@ -498,7 +498,7 @@ export function MacroEditor({
                 <Input
                     mono
                     className="trigger-action__replace"
-                    placeholder="Replacement"
+                    placeholder="Replacement ($0 = całość, $1 = grupa)"
                     value={macro.to || ''}
                     onChange={e => onChange({ ...macro, to: e.target.value })}
                 />

@@ -63,8 +63,12 @@ export interface PatternParseResult {
  * A rule rewrites every match in the line, then colours it, and may play one
  * of its six sounds; here that is a global trigger with replace, color and
  * beep actions in that order. The client's sounds have no counterpart, so
- * each becomes the default beep. Replacements with `%`/`$` variables are
- * skipped: the replace action takes its text literally.
+ * each becomes the default beep.
+ *
+ * In a replacement the client's `$N` is capture group N+1 and `%%` the whole
+ * match; they become `$N+1` and `$0`, which the replace action fills in.
+ * `$$` (the rest of the line) and `%N`/`%-N` (words of the match) have no
+ * counterpart, so rules using them are skipped.
  */
 export function parseArkadiaPatterns(text: string): PatternParseResult {
     let data: any;
@@ -90,11 +94,12 @@ export function parseArkadiaPatterns(text: string): PatternParseResult {
         }
         const macros: UserMacro[] = [];
         if (typeof entry.Replacement === "string") {
-            if (/%(%|-?\d+)|\$(\$|\d+)/.test(entry.Replacement)) {
+            if (/%-?\d|\$\$/.test(entry.Replacement)) {
                 skipped.push(pattern);
                 continue;
             }
-            macros.push({ type: "replace", to: entry.Replacement });
+            const to = entry.Replacement.replace(/%%|\$(\d+)/g, (_m, n?: string) => n === undefined ? "$0" : `$${Number(n) + 1}`);
+            macros.push({ type: "replace", to });
         }
         if (typeof entry.Color === "string" && /^#(?:[A-Fa-f0-9]{3}){1,2}$/.test(entry.Color)) {
             macros.push({ type: "color", color: entry.Color });

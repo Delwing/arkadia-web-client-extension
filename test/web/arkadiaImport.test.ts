@@ -33,8 +33,9 @@ describe("parseArkadiaPatterns", () => {
                 { Regexp: "^Ktos", Color: "#0f0" },
                 { Regexp: "brzeczy", Sound: 1 },
                 { Regexp: "spam", Replacement: "" },
-                { Regexp: "zwierz (\\w+)", Replacement: "potwor $0" },
-                { Regexp: "cel", Replacement: "%%!" },
+                { Regexp: "zwierz (\\w+) (\\w+)", Replacement: "potwor $1 $0 [%%]" },
+                { Regexp: "slowa", Replacement: "%1" },
+                { Regexp: "reszta", Replacement: "$$" },
                 { Regexp: "(" , Color: "#fff" },
                 { Regexp: "nic" },
             ],
@@ -52,8 +53,12 @@ describe("parseArkadiaPatterns", () => {
                 { type: "pattern", pattern: "^Ktos", flags: "g", macros: [{ type: "color", color: "#0f0" }] },
                 { type: "pattern", pattern: "brzeczy", flags: "g", macros: [{ type: "beep", soundKey: "beep" }] },
                 { type: "pattern", pattern: "spam", flags: "g", macros: [{ type: "replace", to: "" }] },
+                {
+                    type: "pattern", pattern: "zwierz (\\w+) (\\w+)", flags: "g",
+                    macros: [{ type: "replace", to: "potwor $2 $1 [$0]" }],
+                },
             ],
-            skipped: ["zwierz (\\w+)", "cel", "("],
+            skipped: ["slowa", "reszta", "("],
         });
     });
 

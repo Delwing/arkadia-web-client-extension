@@ -57,6 +57,16 @@ describe('automationPreview', () => {
             ]);
         });
 
+        it('fills the match into a replacement', () => {
+            const { segments } = previewTrigger('Goblin atakuje cie!', [match], [
+                { type: 'replace', to: '$1 ($0)' },
+            ]);
+            expect(segments).toEqual([
+                { text: 'Goblin (Goblin atakuje cie)', match: true },
+                { text: '!' },
+            ]);
+        });
+
         it('fills $1 and falls back to the matched text for an empty message', () => {
             const { outputs } = previewTrigger('Goblin atakuje cie!', [match], [
                 { type: 'command', command: 'zabij $1' },

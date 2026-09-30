@@ -48,7 +48,7 @@ export default function ArkadiaImport() {
         if (preview.withPatterns) {
             const added = addTriggers(preview.patterns.imported);
             lines.push(added ? `Zaimportowano ${added} przekształceń jako wyzwalacze.` : "Brak nowych przekształceń.");
-            if (preview.patterns.skipped.length) lines.push(`Pominięte przekształcenia (zmienne w zamianie lub błędny wzorzec): ${preview.patterns.skipped.join(", ")}`);
+            if (preview.patterns.skipped.length) lines.push(`Pominięte przekształcenia ($$, %N lub %-N w zamianie albo błędny wzorzec): ${preview.patterns.skipped.join(", ")}`);
         }
         setResult({ kind: "done", message: lines.join("\n") });
         setPreview(null);

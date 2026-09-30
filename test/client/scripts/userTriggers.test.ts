@@ -100,6 +100,15 @@ describe('userTriggers', () => {
     expect(result?.text).toBe('bar foo');
   });
 
+  test('replace fills in $0, $N and {N} from the match', () => {
+    const client = new FakeClient();
+    initUserTriggers((client as unknown) as any);
+    const list: UserTrigger[] = [{ pattern: '(\\w+) atakuje (\\w+)', macros: [{ type: 'replace', to: '[$0] $2 <- {1} $9' }] }];
+    globalStorage.set('triggers', list);
+    const result = client.Triggers.parseLine(new AnsiAwareBuffer('Ork atakuje cie!'), '');
+    expect(result?.text).toBe('[Ork atakuje cie] cie <- Ork !');
+  });
+
   test('beep plays sound', () => {
     const client = new FakeClient();
     initUserTriggers((client as unknown) as any);

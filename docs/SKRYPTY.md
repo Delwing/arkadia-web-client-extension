@@ -24,7 +24,7 @@ Reagujesz na to, co pojawia sie na ekranie — automatycznie, bez czekania.
 
 - **Wzorzec regex z flagami** — ignorowanie wielkosci liter, tryb globalny, wieloliniowy
 - **Linia testowa** — wklejasz (albo wybierasz z ostatnich linii gry) tekst i od razu widzisz, czy wzorzec pasuje, co trafi do `$1` i jak linia bedzie wygladac po akcjach
-- **Grupy z wzorca w akcjach** — `$1`, `$2` (albo `{1}`) wstawiaja dopasowane fragmenty do komendy, powiadomienia czy bindu, np. wzorzec `^(\w+) atakuje cie` i komenda `zabij $1`
+- **Grupy z wzorca w akcjach** — `$1`, `$2` (albo `{1}`) wstawiaja dopasowane fragmenty do komendy, zamiany tekstu, powiadomienia czy bindu (`$0` to cale dopasowanie), np. wzorzec `^(\w+) atakuje cie` i komenda `zabij $1`
 - **Filtr typu GMCP** — trigger moze reagowac tylko na walke, czat, opisy lokacji, poczte i 20+ innych kategorii
 - **Triggery zdarzeniowe** — zamiast tekstu, reaguj na zdarzenia: zabicie wroga, start/koniec walki, ogluszenie, polaczenie, rozlaczenie, koniec odliczania zaskoczenia i oslony, transport (postoj, przyjazd na przystanek, dotarcie do celu oznaczonego dzwonkiem, zblizanie sie do przystanku)
 - **Wiele akcji na jednym triggerze** — kazdy trigger moze wykonac dowolna kombinacje:

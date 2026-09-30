@@ -128,7 +128,7 @@ export function previewTrigger(text: string, matches: RegExpMatchArray[], macros
         for (const macro of macros) {
             switch (macro.type) {
                 case "uppercase": seg = { ...seg, text: seg.text.toUpperCase() }; break;
-                case "replace": seg = { ...seg, text: macro.to ?? "" }; break;
+                case "replace": seg = { ...seg, text: interpolateMatch(macro.to ?? "", m) }; break;
                 case "color": seg = { ...seg, color: macro.color ?? seg.color, background: macro.background ?? seg.background }; break;
                 case "slowBlink":
                 case "rapidBlink":

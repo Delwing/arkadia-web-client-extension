@@ -459,7 +459,8 @@ function applyMacrosToMatch(
                 }
                 break;
             case 'replace':
-                const replacement = macro.to || '';
+                // `$0`, `$1`… and `{1}`, `{name}` fill in the match, as in a command.
+                const replacement = interpolateMatch(macro.to || '', match);
                 line.replace(matchRange, replacement);
                 matchRange = [matchRange[0], matchRange[0] + replacement.length];
                 break;
