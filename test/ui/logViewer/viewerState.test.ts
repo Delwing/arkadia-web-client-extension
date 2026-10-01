@@ -407,8 +407,12 @@ describe("preferences", () => {
     });
 
     it("round-trips the tag/line-number toggle", () => {
-        const restored = applyPreferences(initialViewerState("a"), pickPreferences(state({ showMeta: false })));
-        expect(restored.showMeta).toBe(false);
+        const restored = applyPreferences(initialViewerState("a"), pickPreferences(state({ showMeta: true })));
+        expect(restored.showMeta).toBe(true);
+    });
+
+    it("hides the tag and line-number columns by default", () => {
+        expect(initialViewerState("a").showMeta).toBe(false);
     });
 
     it("shows the game's colours by default", () => {

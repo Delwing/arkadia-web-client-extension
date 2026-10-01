@@ -14,7 +14,7 @@ export { LogViewer } from "./LogViewer";
 export type { LogViewerProps } from "./LogViewer";
 
 /** The host chrome the two hosts need in order to match the viewer. */
-export { Button, Icon, IconButton, Spinner } from "./ui";
+export { Button, Icon, IconButton, MenuItem, Spinner } from "./ui";
 export type { IconName } from "./ui";
 
 export {

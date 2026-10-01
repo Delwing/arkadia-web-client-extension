@@ -2,7 +2,7 @@
    Log viewer — controls.
    ============================================================================
 
-   The buttons, inputs, toggles, chips, badges and menus the viewer is built
+   The buttons, inputs, toggles, badges and menus the viewer is built
    from. They were a shared design system once; what survives here is only what
    this screen uses, styled against the viewer's own palette
    (`../logViewerTheme.css`).
@@ -416,99 +416,6 @@
 
 .lv .lv-toggle--mono {
     font-family: var(--lv-font-mono);
-}
-
-/* --- segmented ----------------------------------------------------------- */
-
-.lv .lv-segmented {
-    display: inline-flex;
-    gap: var(--lv-space-1);
-    padding: var(--lv-space-1);
-    border: 1px solid var(--lv-border);
-    border-radius: var(--lv-radius-4);
-    background: var(--lv-bg-sunken);
-}
-
-.lv .lv-segmented__item {
-    height: var(--lv-control-md);
-    padding: 0 var(--lv-space-6);
-    border: none;
-    border-radius: var(--lv-radius-3);
-    background: transparent;
-    color: var(--lv-text-secondary);
-    font-size: var(--lv-text-4);
-    line-height: 1;
-    white-space: nowrap;
-    transition:
-        background-color var(--lv-duration-1) linear,
-        color var(--lv-duration-1) linear;
-}
-
-.lv .lv-segmented__item:hover:not(:disabled) {
-    color: var(--lv-text);
-}
-
-.lv .lv-segmented__item[data-state='on'] {
-    background: var(--lv-bg-element-active);
-    color: var(--lv-text);
-}
-
-/* An option that is not available yet stays in place rather than disappearing:
-   the control keeps its width, and the reason is in the button's title. */
-.lv .lv-segmented__item:disabled {
-    color: var(--lv-text-faint);
-}
-
-/* --- chip ---------------------------------------------------------------- */
-
-.lv .lv-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--lv-space-3);
-    height: var(--lv-control-md);
-    padding: 0 var(--lv-space-5);
-    border: 1px solid var(--lv-border);
-    border-radius: var(--lv-radius-full);
-    background: transparent;
-    color: var(--lv-text-tertiary);
-    font-size: var(--lv-text-4);
-    line-height: 1;
-    white-space: nowrap;
-    transition:
-        background-color var(--lv-duration-1) linear,
-        border-color var(--lv-duration-1) linear,
-        color var(--lv-duration-1) linear;
-}
-
-.lv .lv-chip:hover:not(:disabled) {
-    border-color: var(--lv-border-element);
-}
-
-.lv .lv-chip[data-state='on'] {
-    background: var(--lv-bg-selected);
-    border-color: var(--lv-border-strong);
-    color: var(--lv-text);
-}
-
-.lv .lv-chip__count {
-    font-family: var(--lv-font-mono);
-    font-size: var(--lv-text-1);
-    font-variant-numeric: tabular-nums;
-    color: var(--lv-text-faint);
-}
-
-.lv .lv-chip[data-state='on'] .lv-chip__count {
-    color: var(--lv-text-secondary);
-}
-
-/* A dot that marks the chip's channel, so colour is never the only cue but is
-   still available at a glance. */
-.lv .lv-chip__dot {
-    width: 6px;
-    height: 6px;
-    border-radius: var(--lv-radius-full);
-    background: currentColor;
-    opacity: 0.85;
 }
 
 /* --- field and keycap ---------------------------------------------------- */

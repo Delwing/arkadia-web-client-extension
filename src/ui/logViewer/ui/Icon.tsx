@@ -7,9 +7,11 @@ import {
     Copy,
     Download,
     ExternalLink,
+    Eye,
     Ellipsis,
     PanelLeft,
     Search,
+    SlidersHorizontal,
     SkipBack,
     SkipForward,
     Upload,
@@ -41,9 +43,11 @@ const ICONS = {
     more: Ellipsis,
     "jump-end": SkipForward,
     "open-external": ExternalLink,
+    options: SlidersHorizontal,
     search: Search,
     sessions: PanelLeft,
     trash: Trash2,
+    view: Eye,
     warning: TriangleAlert,
 } satisfies Record<string, ComponentType<{ size?: number; strokeWidth?: number; className?: string }>>;
 
