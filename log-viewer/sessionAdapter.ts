@@ -23,7 +23,7 @@ import {
     type LogSessionInfo,
 } from "@ui/logViewer";
 import { splitLines } from "@web/logBrowserUtils";
-import { countSession, countSessions, LogsDatabase, readSession, type StoredLogEntry } from "@web/logsDatabase";
+import { countEach, countSession, LogsDatabase, readSession, sessionNames, type StoredLogEntry } from "@web/logsDatabase";
 import { collectCharacters } from "@web/options/exportUtils";
 
 /** `session_1758304931000` -> 1758304931000; null for anything else. */
@@ -273,7 +273,10 @@ function byStart(a: string, b: string): number {
 const yieldToBrowser = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
 
 /** How often the growing list is handed over while the rest are indexed. */
-const UPDATE_EVERY_MS = 400;
+const UPDATE_EVERY_MS = 250;
+
+/** Logs counted per transaction: few enough to hand the list over often. */
+const COUNT_CHUNK = 25;
 
 /**
  * Parsed logs kept by one source, by line count. Enough for the open log and
@@ -289,11 +292,11 @@ export interface ListProgress {
 
 export interface SessionSource {
     /**
-     * Every log's list entry, oldest first. The `priority` logs go to
-     * `onUpdate` before the rest of the store is so much as counted (with a
-     * `total` of 0, as it is not known yet), so the viewer can open on them; the
-     * newest log follows, then the rest newest to oldest. Stops early, with
-     * what it has, once `signal` aborts.
+     * Every log's list entry, oldest first. The `priority` logs are listed
+     * before the rest is counted, and go to `onUpdate` at once with the number
+     * of logs, so the viewer can open on them; the rest join newest to oldest,
+     * handed over every quarter second with how many are done. Stops early,
+     * with what it has, once `signal` aborts.
      */
     list(
         onUpdate?: (sessions: LogSessionInfo[], progress: ListProgress) => void,
@@ -404,49 +407,46 @@ export function createSessionSource(options: LoadOptions = {}): SessionSource {
                 await yieldToBrowser();
             };
 
-            // The `priority` logs are listed before the rest of the store is
-            // even counted: counting walks every record, which on years of logs
-            // is a wait of its own, and the log being recorded is the one a
-            // player opens the window for. The total is not known yet.
+            // The `priority` logs are listed first, on their own: the log being
+            // recorded is the one a player opens the window for.
             for (const name of new Set(options.priority ?? [])) {
                 if (signal?.aborted || released) break;
                 if (!name) continue;
                 const count = await countSession(db, name);
                 if (count > 0) await listOne(name, count);
             }
-            onUpdate?.(
-                [...listed.keys()].sort(byStart).map((name) => listed.get(name)!),
-                { done: listed.size, total: 0 },
-            );
             if (signal?.aborted || released) return [...listed.values()];
 
-            const counts = await countSessions(db);
-            const names = [...counts.keys()].sort(byStart);
+            // Naming the logs is cheap; counting their records is not (it walks
+            // every one), so the rest are counted a few at a time, newest first,
+            // and each joins the list as soon as it is counted.
+            const names = (await sessionNames(db)).sort(byStart);
+            const known = new Set(names);
             // Sessions that are gone (deleted, or replaced by an import) leave the index.
             for (const name of Object.keys(file.entries)) {
-                if (!counts.has(name)) delete file.entries[name];
+                if (!known.has(name)) delete file.entries[name];
             }
-
-            const present = names.filter((name) => (counts.get(name) ?? 0) > 0);
+            const list = () => names.flatMap((name) => listed.get(name) ?? []);
             // Not twice: the log being recorded has grown since it was listed
             // above, and reading it again would only be the same log.
-            const pending = present.filter((name) => !listed.has(name));
-            const newest = present[present.length - 1];
-            const first = pending.filter((name) => name === newest);
-            const order = [...first, ...pending.filter((name) => name !== newest).reverse()];
-            const list = () => present.flatMap((name) => listed.get(name) ?? []);
-            const alreadyListed = present.length - pending.length;
+            const order = names.filter((name) => !listed.has(name)).reverse();
+            let done = names.length - order.length;
+            onUpdate?.(list(), { done, total: names.length });
 
             let lastUpdate = performance.now();
-            for (let position = 0; position < order.length; position += 1) {
+            for (let start = 0; start < order.length; start += COUNT_CHUNK) {
                 if (signal?.aborted || released) break;
-                const name = order[position];
-                await listOne(name, counts.get(name) ?? 0);
-                const firstBatchDone = position === first.length - 1;
-                if (onUpdate && (firstBatchDone || performance.now() - lastUpdate > UPDATE_EVERY_MS)) {
-                    onUpdate(list(), { done: alreadyListed + position + 1, total: present.length });
-                    saveIndex();
-                    lastUpdate = performance.now();
+                const chunk = order.slice(start, start + COUNT_CHUNK);
+                const counts = await countEach(db, chunk);
+                for (let i = 0; i < chunk.length; i += 1) {
+                    if (signal?.aborted || released) break;
+                    if (counts[i] > 0) await listOne(chunk[i], counts[i]);
+                    done += 1;
+                    if (onUpdate && performance.now() - lastUpdate > UPDATE_EVERY_MS) {
+                        onUpdate(list(), { done, total: names.length });
+                        saveIndex();
+                        lastUpdate = performance.now();
+                    }
                 }
             }
             saveIndex();

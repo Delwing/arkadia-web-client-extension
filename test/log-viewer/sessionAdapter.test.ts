@@ -62,22 +62,38 @@ describe("createSessionSource", () => {
         expect(sessions[1].characters).toEqual(["Beta"]);
     });
 
-    it("hands the priority sessions over before counting the store, then the newest", async () => {
+    it("hands the priority sessions over before counting the rest, with the total", async () => {
         const updates: { ids: string[]; done: number; total: number }[] = [];
         const source = createSessionSource({ candidates: [], priority: ["session_1000"] });
-        await source.list((sessions, progress) => updates.push({ ids: sessions.map((s) => s.id), ...progress }));
+        const sessions = await source.list((partial, progress) =>
+            updates.push({ ids: partial.map((s) => s.id), ...progress }),
+        );
         source.release();
-        expect(updates[0]).toEqual({ ids: ["session_1000"], done: 1, total: 0 });
-        expect(updates[1]).toEqual({ ids: ["session_1000", "session_5000"], done: 2, total: 2 });
+        expect(updates[0]).toEqual({ ids: ["session_1000"], done: 1, total: 2 });
+        expect(sessions.map((session) => session.id)).toEqual(["session_1000", "session_5000"]);
     });
 
     it("opens even when the priority session is not stored yet", async () => {
-        const updates: string[][] = [];
+        const updates: { ids: string[]; done: number; total: number }[] = [];
         const source = createSessionSource({ candidates: [], priority: ["session_9000"] });
-        const sessions = await source.list((partial) => updates.push(partial.map((s) => s.id)));
+        const sessions = await source.list((partial, progress) =>
+            updates.push({ ids: partial.map((s) => s.id), ...progress }),
+        );
         source.release();
-        expect(updates[0]).toEqual([]);
+        expect(updates[0]).toEqual({ ids: [], done: 0, total: 2 });
         expect(sessions.map((session) => session.id)).toEqual(["session_1000", "session_5000"]);
+    });
+
+    it("lists every log of a store larger than one counting chunk", async () => {
+        const many: Record<string, { text: string; timestamp: number }[]> = {};
+        for (let i = 1; i <= 60; i++) many[`session_${10000 + i}`] = [{ text: `log ${i}`, timestamp: 10000 + i }];
+        await seed(many);
+        const source = createSessionSource({ candidates: [] });
+        const sessions = await source.list();
+        source.release();
+        expect(sessions).toHaveLength(62);
+        expect(sessions[0].id).toBe("session_1000");
+        expect(sessions[61].id).toBe("session_10060");
     });
 
     it("reads a finished log once: the next opening takes it from the index", async () => {

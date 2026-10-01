@@ -123,6 +123,44 @@ export function countSessions(db: IDBDatabase): Promise<Map<string, number>> {
   });
 }
 
+/**
+ * Every session's id, without counting any: one step per session, so it costs
+ * next to nothing even on a large store, where counting walks every record.
+ */
+export function sessionNames(db: IDBDatabase): Promise<string[]> {
+  return new Promise((resolve, reject) => {
+    const names: string[] = [];
+    const tx = db.transaction(RECORDS, "readonly");
+    const cursorRequest = tx.objectStore(RECORDS).openKeyCursor();
+    cursorRequest.onsuccess = () => {
+      const cursor = cursorRequest.result;
+      if (!cursor) return;
+      const id = (cursor.key as [string, number])[0];
+      names.push(id);
+      cursor.continue([id, []]);
+    };
+    tx.oncomplete = () => resolve(names);
+    tx.onabort = () => reject(tx.error);
+  });
+}
+
+/** Record counts of `ids`, in that order, in one transaction. */
+export function countEach(db: IDBDatabase, ids: string[]): Promise<number[]> {
+  return new Promise((resolve, reject) => {
+    const counts = new Array<number>(ids.length).fill(0);
+    const tx = db.transaction(RECORDS, "readonly");
+    const store = tx.objectStore(RECORDS);
+    ids.forEach((id, i) => {
+      const request = store.count(sessionRange(id));
+      request.onsuccess = () => {
+        counts[i] = request.result;
+      };
+    });
+    tx.oncomplete = () => resolve(counts);
+    tx.onabort = () => reject(tx.error);
+  });
+}
+
 /** Record count of one session; 0 when there is no such session. */
 export function countSession(db: IDBDatabase, sessionId: string): Promise<number> {
   return new Promise((resolve, reject) => {

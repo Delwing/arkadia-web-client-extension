@@ -87,6 +87,23 @@
     min-height: 0;
 }
 
+/* The session list still being built: a hairline over the top of the body. */
+.lv__progress {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 3;
+    height: 3px;
+    background: var(--lv-border-subtle);
+}
+
+.lv__progress-fill {
+    height: 100%;
+    background: var(--lv-accent-solid);
+    transition: width 0.2s ease-out;
+}
+
 .lv__main {
     display: flex;
     flex-direction: column;

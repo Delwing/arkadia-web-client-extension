@@ -780,6 +780,16 @@ export function LogViewer({
             />
 
             <div className="lv__split">
+                {/* How far the list has got, along the top edge, where it costs
+                    the log no room and shows with the sidebar folded away too. */}
+                {loading && loading.total > 0 ? (
+                    <div className="lv__progress" title={`Wczytywanie listy logów: ${loading.done} z ${loading.total}`}>
+                        <div
+                            className="lv__progress-fill"
+                            style={{ width: `${Math.min(100, (loading.done / loading.total) * 100)}%` }}
+                        />
+                    </div>
+                ) : null}
                 {/* Only ever visible while the sidebar is a drawer; the docked
                     sidebar cannot be "open", so the scrim never renders. */}
                 {sidebarOpen ? (
