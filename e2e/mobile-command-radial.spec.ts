@@ -315,4 +315,122 @@ test.describe('Mobile command radial', () => {
         // Radial should not have opened
         await expect(radialOverlay, 'radial menu should remain hidden on short tap').not.toHaveClass(/mobile-command-radial--visible/);
     });
+    test('releasing in the center opens the output context menu', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+
+        const contentArea = page.locator('#main_text_output_msg_wrapper');
+        const radialOverlay = page.locator('#mobile-command-radial');
+        const box = await contentArea.boundingBox();
+        expect(box, 'should have bounding box for content area').not.toBeNull();
+        if (!box) return;
+        const centerX = box.x + box.width / 2;
+        const centerY = box.y + box.height / 2;
+
+        await dispatchTouchEvent(page, '#main_text_output_msg_wrapper', 'touchstart', centerX, centerY, 1);
+        await page.waitForTimeout(LONG_PRESS_DELAY + 50);
+        await expect(radialOverlay).toHaveClass(/mobile-command-radial--visible/);
+        await dispatchTouchEvent(page, '#main_text_output_msg_wrapper', 'touchend', centerX, centerY, 1);
+
+        await expect(radialOverlay).not.toHaveClass(/mobile-command-radial--visible/);
+        await expect(page.locator('#context-menu'), 'output context menu should open').toBeVisible();
+        expect(await getLastOutgoingCommand(page), 'should not send any command').toBeNull();
+    });
+
+    test('tapping a context menu entry does not focus the command input', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+
+        const contentArea = page.locator('#main_text_output_msg_wrapper');
+        const box = await contentArea.boundingBox();
+        expect(box, 'should have bounding box for content area').not.toBeNull();
+        if (!box) return;
+        const centerX = box.x + box.width / 2;
+        const centerY = box.y + box.height / 2;
+
+        await page.locator('#message-input').evaluate((el) => (el as HTMLElement).blur());
+        await dispatchTouchEvent(page, '#main_text_output_msg_wrapper', 'touchstart', centerX, centerY, 1);
+        await page.waitForTimeout(LONG_PRESS_DELAY + 50);
+        await dispatchTouchEvent(page, '#main_text_output_msg_wrapper', 'touchend', centerX, centerY, 1);
+
+        const menu = page.locator('#context-menu');
+        await expect(menu).toBeVisible();
+        await menu.locator('.context-menu__tile').first().tap();
+        await expect(menu).toHaveCount(0);
+        await expect(page.locator('#message-input'), 'tap must not summon the on-screen keyboard').not.toBeFocused();
+    });
+
+    test('center release only closes the radial when disabled in settings', async ({page}) => {
+        await page.addInitScript(() => {
+            localStorage.setItem('mobileButtonSettings', JSON.stringify({
+                radial: {enabled: true, centerMenu: false, commands: []},
+            }));
+        });
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+
+        const contentArea = page.locator('#main_text_output_msg_wrapper');
+        const radialOverlay = page.locator('#mobile-command-radial');
+        const box = await contentArea.boundingBox();
+        expect(box, 'should have bounding box for content area').not.toBeNull();
+        if (!box) return;
+        const centerX = box.x + box.width / 2;
+        const centerY = box.y + box.height / 2;
+
+        await dispatchTouchEvent(page, '#main_text_output_msg_wrapper', 'touchstart', centerX, centerY, 1);
+        await page.waitForTimeout(LONG_PRESS_DELAY + 50);
+        await expect(radialOverlay).toHaveClass(/mobile-command-radial--visible/);
+        await dispatchTouchEvent(page, '#main_text_output_msg_wrapper', 'touchend', centerX, centerY, 1);
+
+        await expect(radialOverlay).not.toHaveClass(/mobile-command-radial--visible/);
+        await expect(page.locator('#context-menu')).toHaveCount(0);
+    });
+
+    test('long press on a link with its own menu opens that menu instead of the radial', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+
+        const radialOverlay = page.locator('#mobile-command-radial');
+        const point = await page.evaluate(() => {
+            const area = document.getElementById('main_text_output_msg_wrapper')!;
+            const rect = area.getBoundingClientRect();
+            const link = document.createElement('span');
+            link.id = 'e2e-menu-link';
+            link.textContent = 'link';
+            link.dataset.outputContextMenu = 'true';
+            Object.assign(link.style, {
+                position: 'fixed',
+                left: `${rect.left + 20}px`,
+                top: `${rect.top + 20}px`,
+                width: '60px',
+                height: '24px',
+                zIndex: '5',
+            });
+            link.addEventListener('contextmenu', (event) => {
+                event.preventDefault();
+                (window as any).__e2eLinkMenu = ((window as any).__e2eLinkMenu ?? 0) + 1;
+            });
+            area.appendChild(link);
+            return {x: rect.left + 50, y: rect.top + 32};
+        });
+
+        await dispatchTouchEvent(page, '#e2e-menu-link', 'touchstart', point.x, point.y, 1);
+        await page.waitForTimeout(LONG_PRESS_DELAY + 50);
+        await expect(radialOverlay, 'radial should not open over a link').not.toHaveClass(/mobile-command-radial--visible/);
+        expect(await page.evaluate(() => (window as any).__e2eLinkMenu ?? 0), 'link menu should open on long press').toBe(1);
+        // The browser's own touch contextmenu must not open the link menu a second time.
+        await page.evaluate(({x, y}) => {
+            document.getElementById('e2e-menu-link')!.dispatchEvent(new MouseEvent('contextmenu', {
+                bubbles: true, cancelable: true, clientX: x, clientY: y, button: 2,
+            }));
+        }, point);
+        await dispatchTouchEvent(page, '#e2e-menu-link', 'touchend', point.x, point.y, 1);
+
+        await expect(radialOverlay).not.toHaveClass(/mobile-command-radial--visible/);
+        expect(await page.evaluate(() => (window as any).__e2eLinkMenu ?? 0), 'link menu should open once').toBe(1);
+    });
 });
