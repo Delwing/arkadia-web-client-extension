@@ -140,22 +140,3 @@ export function splitLines(html: string): string[] {
   lines.push(line);
   return lines;
 }
-
-export async function getRawSessionData(db: IDBDatabase, storeName: string): Promise<LogEntry[]> {
-  return new Promise(resolve => {
-    let tx: IDBTransaction;
-    try {
-      tx = db.transaction(storeName, "readonly");
-    } catch (error) {
-      console.error(`Failed to create transaction for ${storeName}:`, error);
-      resolve([]);
-      return;
-    }
-    const req = tx.objectStore(storeName).getAll();
-    req.onsuccess = () => resolve(req.result as LogEntry[]);
-    req.onerror = () => {
-      console.error(`Failed to read from ${storeName}:`, req.error);
-      resolve([]);
-    };
-  });
-}

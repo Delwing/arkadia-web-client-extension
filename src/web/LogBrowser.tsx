@@ -18,6 +18,7 @@ import { Button, Icon, IconButton, LogViewer, Spinner } from "@ui/logViewer";
 import type { LogSessionInfo, PersistedPreferences } from "@ui/logViewer";
 import { readPreferences, writePreferences } from "../../log-viewer/preferences";
 import { createSessionSource, type ListProgress, type SessionSource } from "../../log-viewer/sessionAdapter";
+import { useLogsMigration } from "../../log-viewer/useLogsMigration";
 import { LogManager } from "./LogManager";
 import { currentSessionName } from "./sessionLogger";
 import "./logBrowser.css";
@@ -125,6 +126,18 @@ export function LogBrowser({ headerTrailing, initialQuery }: LogBrowserProps) {
         setReloadToken((token) => token + 1);
     }, []);
 
+    // Old logs are listed once they have moved to the new store, not before;
+    // until then the list says they are on their way. Listing again keeps the
+    // viewer (and the log open in it) mounted, unlike `reload`.
+    const relist = useCallback(() => setReloadToken((token) => token + 1), []);
+    const migration = useLogsMigration(relist);
+    const migrationNotice =
+        migration === null
+            ? undefined
+            : migration === "pending"
+              ? "Przenoszenie starszych logów do nowej bazy... Pojawią się tu po zakończeniu."
+              : `Przenoszenie starszych logów do nowej bazy: ${migration.done} z ${migration.total}. Pojawią się tu po zakończeniu.`;
+
     const openManager = useCallback((startImport: boolean) => {
         setImportOnOpen(startImport);
         setManageOpen(true);
@@ -144,6 +157,7 @@ export function LogBrowser({ headerTrailing, initialQuery }: LogBrowserProps) {
                     loading={listing}
                     preferences={initialPreferences}
                     initialQuery={initialQuery}
+                    listNotice={migrationNotice}
                     onPreferencesChange={onPreferencesChange}
                     // With no logs at all the viewer has nothing to offer, but
                     // this host does: importing is the one thing that gets a

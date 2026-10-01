@@ -3,7 +3,7 @@ import { globalStorage } from "@modules/core/storage";
 import {AnsiAwareBuffer} from "@client/ansi/FormatState";
 import eventBus from "@modules/core/eventBus";
 import type { CombatEntry } from "@client/scripts/combatWindow";
-import { openLogsDb, releaseOnUpgrade, upgradeLogsDb } from "./logsDatabase";
+import { addLogRecord, openLogsDb, releaseOnUpgrade, type StoredLogEntry } from "./logsDatabase";
 
 const sessionId = Date.now();
 const storeName = `session_${sessionId}`;
@@ -35,18 +35,6 @@ globalStorage.onChange('loggingEnabled', (newValue) => {
   loggingEnabled = !!newValue;
 });
 
-async function openOrCreateStore(storeName: string): Promise<IDBDatabase> {
-  const existing = await openLogsDb();
-  if (existing?.objectStoreNames.contains(storeName)) return existing;
-  existing?.close();
-  return upgradeLogsDb(db => {
-    if (!db.objectStoreNames.contains(storeName)) {
-      db.createObjectStore(storeName, { autoIncrement: true });
-    }
-  });
-}
-
-/** False when the connection was closed under us (released for an upgrade), so the caller reopens and retries. */
 /** Stamps a record carries only where they change; see `write`. */
 interface RecordMarks {
   character?: string;
@@ -62,22 +50,17 @@ function currentOutputBackground(): string | undefined {
   return document.body.style.getPropertyValue('--output-bg').trim() || undefined;
 }
 
-async function save(db: IDBDatabase, text: string, type?: string, timestamp?: number, marks: RecordMarks = {}): Promise<boolean> {
+/** False when the connection was closed under us, so the caller reopens and retries. */
+async function save(db: IDBDatabase, seq: number, text: string, type?: string, timestamp?: number, marks: RecordMarks = {}): Promise<boolean> {
   try {
-    const tx = db.transaction(storeName, 'readwrite');
-    await new Promise<void>((resolve, reject) => {
-      // Event time, not arrival: a stored log is a record of the game.
-      const record: { text: string; type?: string; timestamp: number } & RecordMarks =
-        { text, type, timestamp: timestamp ?? eventNow() };
-      // Present only on the record that starts a character's (or a
-      // background's) stretch of the log, so the shape every other reader of
-      // the store knows is unchanged.
-      if (marks.character) record.character = marks.character;
-      if (marks.background) record.background = marks.background;
-      const req = tx.objectStore(storeName).add(record);
-      req.onsuccess = () => resolve();
-      req.onerror = () => reject(req.error);
-    });
+    // Event time, not arrival: a stored log is a record of the game.
+    const record: StoredLogEntry = { text, type, timestamp: timestamp ?? eventNow() };
+    // Present only on the record that starts a character's (or a
+    // background's) stretch of the log, so the shape every other reader of
+    // the store knows is unchanged.
+    if (marks.character) record.character = marks.character;
+    if (marks.background) record.background = marks.background;
+    await addLogRecord(db, storeName, seq, record);
   } catch (err) {
     if (err instanceof DOMException && err.name === 'InvalidStateError') return false;
     console.error('Failed to log message', err);
@@ -109,6 +92,8 @@ export default async function initSessionLogger(client: SessionClient) {
   /** The output background the log last recorded; a change stamps the next record. */
   let recordedBackground: string | undefined;
   let opening: Promise<IDBDatabase | null> | null = null;
+  /** Position of the next record in the session. */
+  let nextSeq = 0;
   let closeTimeout: number | null = null;
 
   eventBus.on('player.character', name => {
@@ -128,9 +113,10 @@ export default async function initSessionLogger(client: SessionClient) {
     }
 
     // Lines arrive in bursts; they must share one open, or every line but the
-    // last leaks a connection that then blocks other tabs' upgrades for good.
-    opening ??= openOrCreateStore(storeName)
+    // last leaks a connection.
+    opening ??= openLogsDb()
       .then(opened => {
+        if (!opened) return null;
         db = opened;
         releaseOnUpgrade(opened, () => {
           if (db === opened) db = null;
@@ -153,14 +139,17 @@ export default async function initSessionLogger(client: SessionClient) {
     // whichever of them happened to resume first.
     const character = pendingCharacter;
     pendingCharacter = undefined;
+    // Likewise the position, or the records would be ordered by which write
+    // resumed first rather than by arrival.
+    const seq = nextSeq++;
     const current = currentOutputBackground();
     const background = current !== recordedBackground ? current : undefined;
     if (background) recordedBackground = background;
-    // A second attempt covers the connection being released for another
-    // tab's upgrade between opening it and writing.
+    // A second attempt covers the connection being closed (the database
+    // deleted, or closed by the browser) between opening it and writing.
     for (let attempt = 0; attempt < 2; attempt++) {
       const currentDb = await ensureDb();
-      if (currentDb && (await save(currentDb, text, type, timestamp, { character, background }))) {
+      if (currentDb && (await save(currentDb, seq, text, type, timestamp, { character, background }))) {
         scheduleClose();
         return;
       }

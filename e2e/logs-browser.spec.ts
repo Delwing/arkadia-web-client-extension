@@ -220,7 +220,7 @@ test.describe('Logi browser', () => {
         await login(page);
         await page.evaluate(async () => {
             await new Promise<void>((resolve) => {
-                const request = indexedDB.deleteDatabase('ArkadiaMessagesDB');
+                const request = indexedDB.deleteDatabase('ArkadiaLogsDB');
                 request.onsuccess = () => resolve();
                 request.onerror = () => resolve();
                 request.onblocked = () => resolve();
@@ -241,6 +241,44 @@ test.describe('Logi browser', () => {
         await expect(importButton).toBeVisible();
         await importButton.click();
         await expect(page.getByText('Zarządzanie logami')).toBeVisible();
+    });
+});
+
+test.describe('Logi after the move to one store', () => {
+    test('logs from the old one-store-per-session database are moved and listed', async ({page}) => {
+        await login(page);
+        // What an older build left behind: a store per session.
+        await page.evaluate(async () => {
+            await new Promise<void>((resolve, reject) => {
+                const request = indexedDB.open('ArkadiaMessagesDB', 1);
+                request.onupgradeneeded = () => {
+                    request.result.createObjectStore('session_1700000000000', {autoIncrement: true});
+                };
+                request.onsuccess = () => {
+                    const db = request.result;
+                    const tx = db.transaction('session_1700000000000', 'readwrite');
+                    tx.objectStore('session_1700000000000').add({text: 'STARY_ZNACZNIK z dawnej sesji', timestamp: 1700000000000});
+                    tx.objectStore('session_1700000000000').add({text: 'druga linia', timestamp: 1700000001000});
+                    tx.oncomplete = () => {
+                        db.close();
+                        resolve();
+                    };
+                    tx.onerror = () => reject(tx.error);
+                };
+                request.onerror = () => reject(request.error);
+            });
+        });
+
+        // The move runs on start.
+        await login(page);
+        await expect.poll(() => page.evaluate(async () =>
+            (await indexedDB.databases()).some((database) => database.name === 'ArkadiaMessagesDB'),
+        )).toBe(false);
+
+        await openLogs(page);
+        await expect(page.locator('.lv-sidebar__notice')).toHaveCount(0);
+        await page.locator('.lv-session', {hasText: '2 ln'}).click();
+        await expect(page.locator('.lv-log')).toContainText('STARY_ZNACZNIK z dawnej sesji');
     });
 });
 

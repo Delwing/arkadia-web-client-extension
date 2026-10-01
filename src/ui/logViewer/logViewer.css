@@ -131,6 +131,16 @@
     color: var(--lv-text-secondary);
 }
 
+.lv-sidebar__notice {
+    margin: var(--lv-space-6) var(--lv-space-3) 0;
+    padding: var(--lv-space-4) var(--lv-space-5);
+    border: 1px solid var(--lv-accent-border);
+    border-radius: var(--lv-radius-3);
+    background: var(--lv-accent-bg);
+    font-size: var(--lv-text-3);
+    color: var(--lv-text);
+}
+
 .lv-sidebar__items {
     display: flex;
     flex-direction: column;

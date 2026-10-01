@@ -686,16 +686,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // whether to auto-open from it.
     applyDefaultLayoutMode();
 
-    // Request persistent storage
-    if (navigator.storage?.persist) {
-        navigator.storage.persist().then(granted => {
-            console.log(granted ? 'Persistent storage granted' : 'Persistent storage not granted');
-        }).catch(err => {
-            console.warn('Failed to request persistent storage:', err);
-        });
-    }
-
-
     const commitInfo = document.getElementById('commit-info') as HTMLElement | null;
     if (commitInfo) {
         const formatCommitDate = (raw: string): string => {

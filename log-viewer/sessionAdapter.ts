@@ -1,8 +1,9 @@
 /**
  * Turns the client's stored log records into the viewer's model.
  *
- * This is the only place that knows about IndexedDB, `session_<ms>` store names
- * or the shape of a stored entry. Everything downstream works on `LogSession`,
+ * This is the only reader that knows about the log database
+ * (`@web/logsDatabase`), `session_<ms>` session ids or the shape of a stored
+ * entry. Everything downstream works on `LogSession`,
  * which is what lets the showcase drive the same viewer from mock data.
  *
  * A stored record is one *message* and may hold several lines of text; the
@@ -21,8 +22,8 @@ import {
     type LogSession,
     type LogSessionInfo,
 } from "@ui/logViewer";
-import { getRawSessionData, splitLines } from "@web/logBrowserUtils";
-import { LogsDatabase } from "@web/logsDatabase";
+import { splitLines } from "@web/logBrowserUtils";
+import { countSession, countSessions, LogsDatabase, readSession, type StoredLogEntry } from "@web/logsDatabase";
 import { collectCharacters } from "@web/options/exportUtils";
 
 /** `session_1758304931000` -> 1758304931000; null for anything else. */
@@ -66,18 +67,7 @@ export function htmlToText(html: string): string {
     });
 }
 
-interface StoredEntry {
-    text: string;
-    type?: string;
-    timestamp: number;
-    /**
-     * Written by `sessionLogger` on the first record after the character
-     * changed, and on nothing else — see `src/web/sessionLogger.ts`.
-     */
-    character?: string;
-    /** Written by `sessionLogger` on the first record after the output background changed. */
-    background?: string;
-}
+type StoredEntry = StoredLogEntry;
 
 /** The output background the session was last recorded with, if it says. */
 export function recordedBackground(entries: StoredEntry[]): string | undefined {
@@ -113,27 +103,6 @@ export function entriesToLines(entries: StoredEntry[]): { lines: LogLine[]; mark
         }
     }
     return { lines, marks };
-}
-
-/** Store names holding at least one record, oldest first. */
-export async function listSessionStores(db: IDBDatabase): Promise<string[]> {
-    const names: string[] = [];
-    for (let index = 0; index < db.objectStoreNames.length; index += 1) {
-        const name = db.objectStoreNames.item(index);
-        if (!name) continue;
-        try {
-            const request = db.transaction(name, "readonly").objectStore(name).count();
-            const count = await new Promise<number>((resolve) => {
-                request.onsuccess = () => resolve(request.result);
-                request.onerror = () => resolve(0);
-            });
-            if (count > 0) names.push(name);
-        } catch {
-            // A store that cannot be opened (another tab mid-upgrade) is skipped
-            // rather than failing the whole list.
-        }
-    }
-    return names.sort((a, b) => (sessionStartFromName(a) ?? 0) - (sessionStartFromName(b) ?? 0));
 }
 
 export interface LoadOptions {
@@ -296,41 +265,8 @@ function infoFromEntry(name: string, entry: IndexEntry, options: LoadOptions, no
 
 // --- Reading the store -------------------------------------------------------
 
-function storeNames(db: IDBDatabase): string[] {
-    return Array.from(db.objectStoreNames).sort(
-        (a, b) => (sessionStartFromName(a) ?? 0) - (sessionStartFromName(b) ?? 0),
-    );
-}
-
-/** Record counts of the stores, in one transaction; a store that cannot be read is left out. */
-function countStores(db: IDBDatabase, names: string[]): Promise<Map<string, number>> {
-    const counts = new Map<string, number>();
-    if (names.length === 0) return Promise.resolve(counts);
-    return new Promise((resolve) => {
-        let tx: IDBTransaction;
-        try {
-            tx = db.transaction(names, "readonly");
-        } catch {
-            if (names.length === 1) {
-                resolve(counts);
-                return;
-            }
-            // A store vanished under us (deleted in another tab): count the
-            // others one by one rather than losing them all.
-            void Promise.all(names.map((name) => countStores(db, [name]))).then((parts) => {
-                for (const part of parts) part.forEach((value, key) => counts.set(key, value));
-                resolve(counts);
-            });
-            return;
-        }
-        for (const name of names) {
-            const request = tx.objectStore(name).count();
-            request.onsuccess = () => counts.set(name, request.result);
-        }
-        tx.oncomplete = () => resolve(counts);
-        tx.onerror = () => resolve(counts);
-        tx.onabort = () => resolve(counts);
-    });
+function byStart(a: string, b: string): number {
+    return (sessionStartFromName(a) ?? 0) - (sessionStartFromName(b) ?? 0);
 }
 
 /** Lets the page paint and handle input between logs. */
@@ -403,9 +339,17 @@ export function createSessionSource(options: LoadOptions = {}): SessionSource {
         }
     };
 
-    /** Reads and parses one store, and brings its index entry up to date. */
-    const readAndParse = async (db: IDBDatabase, name: string): Promise<LogSession | null> => {
-        const entries = (await getRawSessionData(db, name)) as StoredEntry[];
+    /**
+     * The open connection, asked for before each use: it is let go of when the
+     * database is deleted under us, and the next ask reopens it.
+     */
+    const connection = async (): Promise<IDBDatabase | null> => (released ? null : database.get());
+
+    /** Reads and parses one session, and brings its index entry up to date. */
+    const readAndParse = async (name: string): Promise<LogSession | null> => {
+        const db = await connection();
+        if (!db) return null;
+        const entries = await readSession(db, name);
         const session = parseSession(name, entries, parseOptions);
         const file = loadIndex(candidatesKey);
         if (session) file.entries[name] = indexEntry(session, entries.length, entries);
@@ -415,10 +359,9 @@ export function createSessionSource(options: LoadOptions = {}): SessionSource {
     };
 
     const load = async (id: string): Promise<LogSession | null> => {
-        if (released) return null;
-        const db = await database.get();
-        if (!db || !db.objectStoreNames.contains(id)) return null;
-        const count = (await countStores(db, [id])).get(id);
+        const db = await connection();
+        if (!db) return null;
+        const count = await countSession(db, id);
         if (!count) return null;
         const cached = cache.get(id);
         if (cached && cached.count === count) {
@@ -427,20 +370,19 @@ export function createSessionSource(options: LoadOptions = {}): SessionSource {
             cache.set(id, cached);
             return cached.session;
         }
-        const session = await readAndParse(db, id);
+        const session = await readAndParse(id);
         saveIndex();
         return session;
     };
 
     return {
         async list(onUpdate, signal) {
-            if (released) return [];
-            const db = await database.get();
+            const db = await connection();
             if (!db) return [];
-            const names = storeNames(db);
-            const counts = await countStores(db, names);
+            const counts = await countSessions(db);
+            const names = [...counts.keys()].sort(byStart);
             const file = loadIndex(candidatesKey);
-            // Stores that are gone (deleted, or replaced by an import) leave the index.
+            // Sessions that are gone (deleted, or replaced by an import) leave the index.
             for (const name of Object.keys(file.entries)) {
                 if (!counts.has(name)) delete file.entries[name];
             }
@@ -461,8 +403,15 @@ export function createSessionSource(options: LoadOptions = {}): SessionSource {
                 if (known && known.count === counts.get(name)) {
                     listed.set(name, infoFromEntry(name, known, options, now));
                 } else {
-                    const session = await readAndParse(db, name);
-                    if (session) listed.set(name, infoFromEntry(name, file.entries[name], options, now));
+                    try {
+                        const session = await readAndParse(name);
+                        if (session) listed.set(name, infoFromEntry(name, file.entries[name], options, now));
+                    } catch (error) {
+                        // One log that cannot be read is left out of this
+                        // listing, not out of the rest: it is still stored, and
+                        // its index entry stays for the next opening.
+                        console.error(`[Logs] Failed to read ${name}:`, error);
+                    }
                     // Reading a log is the slow part; let the page breathe.
                     await yieldToBrowser();
                 }

@@ -35,6 +35,8 @@ export interface SessionSidebarProps {
     allScope: boolean;
     /** Set while the host is still listing sessions. */
     loading?: { done: number; total: number } | null;
+    /** Shown above the list: sessions the host has that are not listed yet. */
+    notice?: string;
     /**
      * Whether the drawer is showing. Meaningless on a wide screen, where the
      * sidebar is docked and this attribute is not styled at all.
@@ -53,6 +55,7 @@ export function SessionSidebar({
     searching,
     allScope,
     loading,
+    notice,
     open,
 }: SessionSidebarProps) {
     const groups = groupByDay(visibleSessions);
@@ -74,6 +77,7 @@ export function SessionSidebar({
             </div>
 
             <div className="lv-sidebar__list">
+                {notice ? <div className="lv-sidebar__notice">{notice}</div> : null}
                 {groups.length === 0 ? (
                     <div className="lv-sidebar__group">
                         {total === 0 ? "Nie ma jeszcze żadnego logu." : "Brak sesji pasujących do filtra."}

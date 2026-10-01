@@ -22,15 +22,11 @@ import { formatClock, type LogSessionInfo } from "@ui/logViewer";
 import SubDialog from "./SubDialog";
 import type { LogExportData, LogsExportWorkerResponse } from "./logsExport.shared";
 import LogsExportWorker from "./logsExport.worker?worker";
-import { collectLogStyles, getRawSessionData } from "./logBrowserUtils";
+import { collectLogStyles } from "./logBrowserUtils";
 import { getSavedToDiskSessions } from "./logFileSaver";
-import { LogsDatabase } from "./logsDatabase";
+import { countSessions, deleteSessions, LogsDatabase, readSession, writeSession } from "./logsDatabase";
 
 // --- Downloaded status, in a database of its own -------------------------
-//
-// Deliberately not in `ArkadiaMessagesDB`: a "has been archived" flag must not
-// make the log database go through a version upgrade, which every tab has to
-// stand aside for.
 
 function openMetaDb(): Promise<IDBDatabase> {
     return new Promise((resolve, reject) => {
@@ -264,7 +260,7 @@ export function LogManager({
             if (!db) return;
             const data: LogExportData = { version: 1, sessions: {} };
             for (const name of selectedNames) {
-                const entries = await getRawSessionData(db, name);
+                const entries = await readSession(db, name);
                 if (entries.length > 0) data.sessions[name] = entries;
             }
             download(
@@ -306,11 +302,7 @@ export function LogManager({
 
                 const db = await logsDb.get();
                 if (!db) return;
-                const existing = new Set<string>();
-                for (let index = 0; index < db.objectStoreNames.length; index += 1) {
-                    const name = db.objectStoreNames.item(index);
-                    if (name) existing.add(name);
-                }
+                const existing = new Set((await countSessions(db)).keys());
 
                 const toImport = names.filter((name) => !existing.has(name));
                 const skipped = names.length - toImport.length;
@@ -322,24 +314,14 @@ export function LogManager({
                     return;
                 }
 
-                // One upgrade creates every store; the records go in afterwards.
-                const upgraded = await logsDb.upgrade((upgradeDb) => {
-                    for (const name of toImport) {
-                        if (!upgradeDb.objectStoreNames.contains(name)) {
-                            upgradeDb.createObjectStore(name, { autoIncrement: true });
-                        }
-                    }
-                });
                 for (const name of toImport) {
                     const entries = data.sessions[name];
                     if (!entries || entries.length === 0) continue;
-                    await new Promise<void>((resolve, reject) => {
-                        const tx = upgraded.transaction(name, "readwrite");
-                        const store = tx.objectStore(name);
-                        for (const entry of entries) store.add(entry);
-                        tx.oncomplete = () => resolve();
-                        tx.onerror = () => reject(tx.error);
-                    });
+                    await writeSession(
+                        db,
+                        name,
+                        entries.map((entry, seq) => ({ seq, entry })),
+                    );
                 }
 
                 setStatus({
@@ -366,18 +348,15 @@ export function LogManager({
         setStatus(null);
         const logsDb = new LogsDatabase();
         try {
-            await logsDb.upgrade((upgradeDb) => {
-                for (const name of selectedNames) {
-                    if (upgradeDb.objectStoreNames.contains(name)) upgradeDb.deleteObjectStore(name);
-                }
-            });
+            const db = await logsDb.get();
+            if (!db) throw new Error("Logs database is unavailable");
+            await deleteSessions(db, selectedNames);
             setSelected(new Set());
             onSessionsChanged();
         } catch (error) {
             console.error("[LogManager] Delete failed:", error);
             setStatus({ tone: "danger", text: "Nie udało się usunąć sesji." });
         } finally {
-            // Held open, this connection would block the next tab's upgrade.
             logsDb.release();
             setBusy("");
         }

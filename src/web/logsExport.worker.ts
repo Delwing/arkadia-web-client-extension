@@ -4,6 +4,7 @@ import type {
     LogsExportWorkerRequest,
     LogsExportWorkerResponse,
 } from './logsExport.shared';
+import { countSessions, openLogsDb, readSession } from './logsDatabase';
 
 function formatDateTime(ts: number): string {
     const d = new Date(ts);
@@ -56,41 +57,6 @@ function splitLines(html: string): string[] {
     return lines;
 }
 
-async function openDb(): Promise<IDBDatabase | null> {
-    return new Promise((resolve) => {
-        try {
-            const request = indexedDB.open('ArkadiaMessagesDB');
-            request.onsuccess = () => resolve(request.result);
-            request.onerror = () => {
-                console.error('[LogsExport] Failed to open IndexedDB:', request.error);
-                resolve(null);
-            };
-        } catch (error) {
-            console.error('[LogsExport] Error opening IndexedDB:', error);
-            resolve(null);
-        }
-    });
-}
-
-async function getSessionData(db: IDBDatabase, storeName: string): Promise<LogEntry[]> {
-    return new Promise(resolve => {
-        let tx: IDBTransaction;
-        try {
-            tx = db.transaction(storeName, 'readonly');
-        } catch (error) {
-            console.error(`Failed to create transaction for ${storeName}:`, error);
-            resolve([]);
-            return;
-        }
-        const req = tx.objectStore(storeName).getAll();
-        req.onsuccess = () => resolve(req.result as LogEntry[]);
-        req.onerror = () => {
-            console.error(`Failed to read from ${storeName}:`, req.error);
-            resolve([]);
-        };
-    });
-}
-
 function generateHtml(logs: LogEntry[], sessionName: string, inlineStyles: string): string {
     const entries: string[] = [];
     for (const l of logs) {
@@ -108,27 +74,10 @@ function generateHtml(logs: LogEntry[], sessionName: string, inlineStyles: strin
     return `<!doctype html><html lang="en"><head>${head}</head><body><div id="logs-preview">${entries.join('\n')}</div></body></html>`;
 }
 
+/** Sessions holding at least one record, oldest first. */
 async function getSessionsWithContent(db: IDBDatabase): Promise<string[]> {
-    const available: string[] = [];
-    for (let i = 0; i < db.objectStoreNames.length; i++) {
-        const name = db.objectStoreNames.item(i);
-        if (!name) continue;
-        try {
-            const tx = db.transaction(name, 'readonly');
-            const req = tx.objectStore(name).count();
-            const count = await new Promise<number>(resolve => {
-                req.onsuccess = () => resolve(req.result);
-                req.onerror = () => resolve(0);
-            });
-            if (count > 0) {
-                available.push(name);
-            }
-        } catch (error) {
-            console.error(`Error accessing session ${name}:`, error);
-        }
-    }
-    available.sort((a, b) => a.localeCompare(b));
-    return available;
+    const counts = await countSessions(db);
+    return [...counts.keys()].filter(name => (counts.get(name) ?? 0) > 0).sort((a, b) => a.localeCompare(b));
 }
 
 const ctx = self as unknown as {
@@ -144,7 +93,7 @@ ctx.addEventListener('message', (event: MessageEvent<LogsExportWorkerRequest>) =
 
     (async () => {
         try {
-            const db = await openDb();
+            const db = await openLogsDb();
             if (!db) {
                 ctx.postMessage({
                     type: 'error',
@@ -174,7 +123,7 @@ ctx.addEventListener('message', (event: MessageEvent<LogsExportWorkerRequest>) =
                     sessionName: formatSessionLabel(sessionName),
                 });
 
-                const logs = await getSessionData(db, sessionName);
+                const logs = await readSession(db, sessionName);
                 if (logs.length === 0) continue;
 
                 const html = generateHtml(logs, sessionName, data.inlineStyles);
