@@ -1,4 +1,5 @@
 export interface TooltipEntry {
+    /** Left-hand grey caption; empty draws none. */
     label: string;
     content: string | Node;
 }
@@ -49,10 +50,12 @@ export function showTooltip(
         const wrapper = document.createElement('div');
         wrapper.className = 'hover-tooltip__entry';
 
-        const labelEl = document.createElement('span');
-        labelEl.className = 'hover-tooltip__label';
-        labelEl.textContent = entry.label;
-        wrapper.appendChild(labelEl);
+        if (entry.label) {
+            const labelEl = document.createElement('span');
+            labelEl.className = 'hover-tooltip__label';
+            labelEl.textContent = entry.label;
+            wrapper.appendChild(labelEl);
+        }
 
         const contentEl = document.createElement('span');
         contentEl.className = 'hover-tooltip__content';

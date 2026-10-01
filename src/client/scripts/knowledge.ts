@@ -40,7 +40,8 @@ import {
     removeAllPluginNotes,
 } from '@modules/core/pluginLocationNotesRegistry';
 import knowledgeData from '../knowledge.json';
-import { getUiPort } from '@client/ports';
+import { getUiPort, type BookCategoryState } from '@client/ports';
+import { buildBookContextMenuItems, getBookCategoryStates, getBookOverallStatus } from '@client/bookProgress.ts';
 import {
     addKnowledgeEvent,
     parseDativeCategory,
@@ -1094,24 +1095,15 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
         return undefined;
     }
 
-    function getBookStatusColor(bookKey: string, categories: string[]): FormatStateSnapshot | null {
-        if (!currentSnapshot) {
-            return null;
-        }
+    function getBookStates(bookKey: string, categories: string[]): BookCategoryState[] {
         const characterKey = getCharacterProgressKey();
-        const bookProg = currentSnapshot.data.bookProgress?.[characterKey]?.[bookKey];
-        if (!bookProg) {
-            return null; // not_started — keep default gray
-        }
-        const allCompleted = categories.every((cat) => findBookProgValue(bookProg, cat) === true);
-        if (allCompleted) {
-            return BOOK_STATUS_COLORS.completed;
-        }
-        const anyStarted = categories.some((cat) => findBookProgValue(bookProg, cat) != null);
-        if (anyStarted) {
-            return BOOK_STATUS_COLORS.in_progress;
-        }
-        return null;
+        const bookProg = currentSnapshot?.data.bookProgress?.[characterKey]?.[bookKey];
+        return getBookCategoryStates(bookProg, categories);
+    }
+
+    function getBookStatusColor(states: BookCategoryState[]): FormatStateSnapshot | null {
+        const status = getBookOverallStatus(states);
+        return status === 'not_started' ? null : BOOK_STATUS_COLORS[status];
     }
 
     function registerBookTriggers(books: Record<string, KnowledgeBookEntry> | undefined) {
@@ -1171,7 +1163,8 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
                     }
 
                     // Color based on book progress status
-                    const bookColor = getBookStatusColor(entry.bookKey, entry.categories);
+                    const states = getBookStates(entry.bookKey, entry.categories);
+                    const bookColor = getBookStatusColor(states);
                     if (bookColor) {
                         const startIndex =
                             typeof matches.index === 'number' && matches.index >= 0
@@ -1183,17 +1176,18 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
                     }
 
                     line.createLinksForText(tokenText, {
-                        onMouseEnter: (ev) => getUiPort().showBookTooltip(entry.categories, ev.pageX, ev.pageY),
+                        // Read on each event: progress changes after the line was drawn.
+                        onMouseEnter: (ev) => getUiPort().showBookTooltip(
+                            getBookStates(entry.bookKey, entry.categories), ev.pageX, ev.pageY,
+                        ),
                         onMouseLeave: () => getUiPort().hideBookTooltip(),
                         onContextMenu: (ev) => {
                             getUiPort().hideBookTooltip();
-                            const items = entry.categories.map((category) => {
-                                const dative = getDativeCategoryName(category);
-                                const zglebiaj = `zglebiaj wiedze o ${dative} z ${entry.dopelniacz}`;
-                                const biernik = entry.biernik?.trim();
-                                const cmd = biernik ? `otworz ${biernik};${zglebiaj}` : zglebiaj;
-                                return { label: zglebiaj, action: () => client.sendCommand(cmd) };
-                            });
+                            const items = buildBookContextMenuItems(
+                                getBookStates(entry.bookKey, entry.categories),
+                                entry,
+                                (cmd) => client.sendCommand(cmd),
+                            );
                             getUiPort().showContextMenu(items, ev.pageX, ev.pageY);
                         },
                     }, {caseInsensitive: true});

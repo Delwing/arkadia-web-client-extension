@@ -5,8 +5,8 @@ import loadMagics from "./magicsLoader";
 import {getMagicsStore, MagicsFile} from "@modules/data/dataStores/magicsStore";
 import {getMagicForms, getSingleMagicForm} from "@modules/data/magicForms";
 import {getKnowledgeStore, KnowledgeBookEntry, KnowledgeBookCategoryProgress, DEFAULT_KNOWLEDGE_CHARACTER_KEY} from "@modules/data/dataStores/knowledgeStore";
-import { getUiPort } from "@client/ports";
-import { getDativeCategoryName } from "../knowledgeCategories";
+import { getUiPort, type BookCategoryState } from "@client/ports";
+import { buildBookContextMenuItems, getBookCategoryStates, getBookOverallStatus } from "../bookProgress";
 import {AnsiAwareBuffer} from "../ansi/FormatState";
 import {
     MITHRIL_COLOR,
@@ -517,36 +517,21 @@ let bookProgressByCharacter: Record<string, Record<string, KnowledgeBookCategory
 const BOOK_IN_PROGRESS_COLOR = createColorFormat('#b8a960');
 const BOOK_COMPLETED_COLOR = createColorFormat('#7aab7a');
 
-function findBookProgValue(bookProg: KnowledgeBookCategoryProgress, cat: string): true | 'in_progress' | undefined {
-    // Try exact match first, then case-insensitive
-    if (bookProg[cat] != null) return bookProg[cat];
-    const lower = cat.toLowerCase();
-    for (const [key, value] of Object.entries(bookProg)) {
-        if (key.toLowerCase() === lower) return value;
-    }
-    return undefined;
+function getBookStates(entry: BookLookupEntry): BookCategoryState[] {
+    const current = characterStorage.getCharacter();
+    const charKey = current?.trim() || DEFAULT_KNOWLEDGE_CHARACTER_KEY;
+    return getBookCategoryStates(bookProgressByCharacter[charKey]?.[entry.bookKey], entry.categories);
 }
 
 function getBookColor(entry: BookLookupEntry): ReturnType<typeof createColorFormat> | null {
-    const current = characterStorage.getCharacter();
-    const charKey = current?.trim() || DEFAULT_KNOWLEDGE_CHARACTER_KEY;
-    const bookProg = bookProgressByCharacter[charKey]?.[entry.bookKey];
-    if (!bookProg) return null;
-    const allCompleted = entry.categories.every((cat) => findBookProgValue(bookProg, cat) === true);
-    if (allCompleted) return BOOK_COMPLETED_COLOR;
-    const anyStarted = entry.categories.some((cat) => findBookProgValue(bookProg, cat) != null);
-    if (anyStarted) return BOOK_IN_PROGRESS_COLOR;
+    const status = getBookOverallStatus(getBookStates(entry));
+    if (status === 'completed') return BOOK_COMPLETED_COLOR;
+    if (status === 'in_progress') return BOOK_IN_PROGRESS_COLOR;
     return null;
 }
 
 function openBookContextMenu(client: Client, entry: BookLookupEntry, x: number, y: number) {
-    const items = entry.categories.map((category) => {
-        const dative = getDativeCategoryName(category);
-        const zglebiaj = `zglebiaj wiedze o ${dative} z ${entry.dopelniacz}`;
-        const biernik = entry.biernik?.trim();
-        const cmd = biernik ? `otworz ${biernik};${zglebiaj}` : zglebiaj;
-        return { label: zglebiaj, action: () => client.sendCommand(cmd) };
-    });
+    const items = buildBookContextMenuItems(getBookStates(entry), entry, (cmd) => client.sendCommand(cmd));
     getUiPort().showContextMenu(items, x, y);
 }
 
@@ -729,7 +714,7 @@ async function loadMagicAndKeysFilter(client: Client) {
                     buffer.color([0, buffer.length], bookColor);
                 }
                 buffer.createLink([0, buffer.length], {
-                    onMouseEnter: (ev) => getUiPort().showBookTooltip(entry.categories, ev.pageX, ev.pageY),
+                    onMouseEnter: (ev) => getUiPort().showBookTooltip(getBookStates(entry), ev.pageX, ev.pageY),
                     onMouseLeave: () => getUiPort().hideBookTooltip(),
                     onContextMenu: (ev) => {
                         getUiPort().hideBookTooltip();

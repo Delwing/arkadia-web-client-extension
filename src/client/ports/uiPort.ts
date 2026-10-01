@@ -11,6 +11,16 @@ export interface ContextMenuEntry {
     label: string | Node;
     action: () => void;
     opensWindow?: boolean;
+    /** A checkmark in the icon column (on) or an empty one (off). */
+    checked?: boolean;
+}
+
+export type BookCategoryStatus = 'completed' | 'in_progress' | 'not_started';
+
+/** One knowledge category a book teaches, with the character's progress in it. */
+export interface BookCategoryState {
+    category: string;
+    status: BookCategoryStatus;
 }
 
 export interface ContextMenuOptions {
@@ -32,7 +42,7 @@ export interface ContextMenuOptions {
 export interface UiPort {
     showHerbTooltip(herbId: string, actions: HerbUse[] | undefined, x: number, y: number): void;
     hideHerbTooltip(): void;
-    showBookTooltip(categories: string[], x: number, y: number): void;
+    showBookTooltip(categories: BookCategoryState[], x: number, y: number): void;
     hideBookTooltip(): void;
     showContextMenu(items: ContextMenuEntry[], x: number, y: number, options?: ContextMenuOptions): void;
     /**

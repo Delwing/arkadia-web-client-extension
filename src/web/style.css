@@ -3275,6 +3275,29 @@ body.layout-manager-enabled #notification-center {
   word-break: break-word;
 }
 
+.book-tooltip__category {
+  display: inline-flex;
+  gap: 0.35rem;
+  align-items: baseline;
+}
+
+.book-tooltip__mark {
+  width: 1em;
+  text-align: center;
+}
+
+.book-tooltip__category--completed {
+  color: #7aab7a;
+}
+
+.book-tooltip__category--in_progress {
+  color: #b8a960;
+}
+
+.book-tooltip__category--not_started {
+  color: #888;
+}
+
 /* ANSI blink animations */
 /* Slow blink: < 150 per minute (1 blink per second) */
 @keyframes ansi-slow-blink {
