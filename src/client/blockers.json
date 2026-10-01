@@ -164,6 +164,10 @@
     "type": "2"
   },
   {
+    "pattern": "^[ >]*Kierujesz sie w strone krzakow porastajacych [a-z-]+ czesc kotliny, lecz bezradnie zatrzymujesz sie przed zwarta sciana kolcow i galezi\\.",
+    "type": "1"
+  },
+  {
     "pattern": "Ochotnik zagradza ci droge!",
     "type": "2"
   },
