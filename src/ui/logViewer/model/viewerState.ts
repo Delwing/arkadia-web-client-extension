@@ -70,7 +70,9 @@ export function initialViewerState(sessionId: string): ViewerState {
         channels: allChannelsOn(),
         range: null,
         showTimestamps: true,
-        showMeta: true,
+        // Off: the line number and channel tag are for whoever is filtering,
+        // not for reading, and they cost two columns of a narrow dialog.
+        showMeta: false,
         // On by default: the game's own colours are how players read their logs,
         // and the plain-text rendering is the fallback, not the intent.
         showColors: true,
@@ -96,11 +98,11 @@ export function effectiveScope(state: Pick<ViewerState, "scope" | "range">): Sea
 /**
  * The slice the viewer is currently narrowed to, or null for the whole log.
  *
- * A range is only APPLIED in "Zakres" scope. In "Ten log" and "Wszystkie logi"
- * it stays drawn on the timeline, ready to be picked up again, but it does not
- * hide anything — otherwise those two scopes would promise a search wider than
- * the rows they can show, and the counter would start naming hits the player
- * cannot scroll to.
+ * A range is only APPLIED in "Zakres" scope, and the viewer keeps the two
+ * together: drawing a range switches to it, clearing one switches back, and
+ * while there is one the search row shows the range in place of the scope
+ * menu. So a range on screen is always a range in force — there used to be a
+ * "selected but not narrowing" state, and nobody could tell it apart.
  */
 export function appliedRange(state: Pick<ViewerState, "scope" | "range">): TimeRange | null {
     return effectiveScope(state) === "range" ? state.range : null;

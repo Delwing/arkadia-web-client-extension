@@ -18,7 +18,7 @@ import {
 } from "./model/viewerState";
 import { buildLogHtml, escapeHtml } from "./export/logHtml";
 import { copyBlobToClipboard, downloadBlob, renderLogImage, type ImageStyle } from "./export/logImage";
-import { ChannelBar, ChannelMenu } from "./components/ChannelBar";
+import { ChannelMenu } from "./components/ChannelBar";
 import { LineMenu, type LineMenuState } from "./components/LineMenu";
 import { LogPane, type ScrollRequest } from "./components/LogPane";
 import { SearchBar } from "./components/SearchBar";
@@ -26,6 +26,7 @@ import { SessionSidebar } from "./components/SessionSidebar";
 import { StatusBar } from "./components/StatusBar";
 import { Timeline } from "./components/Timeline";
 import { ViewerHeader } from "./components/ViewerHeader";
+import { ViewMenu } from "./components/ViewMenu";
 import "./logViewerTheme.css";
 import "./ui/controls.css";
 import "./logViewer.css";
@@ -47,6 +48,8 @@ export interface LogViewerProps {
     loading?: { done: number; total: number } | null;
     /** Rendered at the right end of the header — a close control, typically. */
     headerTrailing?: React.ReactNode;
+    /** The host's own entries at the end of the copy-and-save menu. */
+    menuExtra?: React.ReactNode;
     /** Preferences to restore; `onPreferencesChange` reports them back. */
     preferences?: PersistedPreferences | null;
     onPreferencesChange?: (preferences: PersistedPreferences) => void;
@@ -89,6 +92,7 @@ export function LogViewer({
     loadSession,
     loading,
     headerTrailing,
+    menuExtra,
     preferences,
     onPreferencesChange,
     onCopy,
@@ -124,6 +128,11 @@ export function LogViewer({
      * opened the viewer for, and the list is one tap away.
      */
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    /**
+     * "Pokaż wszystkie" under an All-logs search, which otherwise narrows the
+     * session list to the logs with hits. A new search narrows it again.
+     */
+    const [showAllSessions, setShowAllSessions] = useState(false);
     const [busy, setBusy] = useState(false);
     const [exportError, setExportError] = useState("");
     const searchRef = useRef<HTMLInputElement>(null);
@@ -223,6 +232,10 @@ export function LogViewer({
             ),
         [sessions, state, activeQuery, openSession, crossSearch],
     );
+
+    useEffect(() => {
+        setShowAllSessions(false);
+    }, [state.query, state.scope]);
 
     /* --- preference persistence ----------------------------------------- */
 
@@ -415,6 +428,24 @@ export function LogViewer({
 
     /* --- range ----------------------------------------------------------- */
 
+    /**
+     * The state with `range` in place, and the scope that goes with it.
+     *
+     * The two change in one update. The effect above would get there too, a
+     * render later — and that render is a frame of a range on screen that is
+     * not narrowing anything, which is the state this viewer no longer has.
+     */
+    const withRange = useCallback((previous: ViewerState, range: TimeRange | null): ViewerState => {
+        if (range && previous.scope !== "range") {
+            scopeBeforeRange.current = previous.scope;
+            return { ...previous, range, scope: "range", matchIndex: 0, notice: "" };
+        }
+        if (!range && previous.scope === "range") {
+            return { ...previous, range, scope: scopeBeforeRange.current, matchIndex: 0, notice: "" };
+        }
+        return { ...previous, range, matchIndex: 0 };
+    }, []);
+
     const openLines = view.session?.lines;
     const setRangeBound = useCallback(
         (edge: "from" | "to", timestamp: number) => {
@@ -430,20 +461,20 @@ export function LogViewer({
                 if (edge === "from") from = Math.min(timestamp, to);
                 else to = Math.max(timestamp, from);
                 const range = from <= first && to >= last ? null : { from, to };
-                return { ...previous, range, matchIndex: 0 };
+                return withRange(previous, range);
             });
             // Reveal the bound that was just set: "start here" lands at the top,
             // "end here" at the bottom of the narrowed slice.
             requestScroll({ kind: edge === "from" ? "top" : "bottom" });
         },
-        [openLines, requestScroll],
+        [openLines, requestScroll, withRange],
     );
 
     const setRange = useCallback(
         (range: TimeRange | null) => {
-            setState((previous) => ({ ...previous, range, matchIndex: 0 }));
+            setState((previous) => withRange(previous, range));
         },
-        [],
+        [withRange],
     );
 
     const clearRange = useCallback(() => {
@@ -737,6 +768,7 @@ export function LogViewer({
                 onCopyImage={copyImage}
                 busy={busy}
                 ranged={view.range !== null}
+                menuExtra={menuExtra}
                 trailing={headerTrailing}
             />
 
@@ -765,6 +797,8 @@ export function LogViewer({
                     hitsBySession={view.hitsBySession}
                     searching={view.searching}
                     allScope={state.scope === "all"}
+                    showAll={showAllSessions}
+                    onShowAllChange={setShowAllSessions}
                     loading={loading}
                     notice={listNotice}
                 />
@@ -784,7 +818,8 @@ export function LogViewer({
                             onOnlyMatchesChange={(value) => patch({ onlyMatches: value, matchIndex: 0 })}
                             scope={state.scope}
                             onScopeChange={selectScope}
-                            hasRange={hasRange}
+                            range={state.range}
+                            onClearRange={clearRange}
                             allScopePending={Boolean(loading)}
                             onStep={step}
                             onKeyDown={onSearchKeyDown}
@@ -793,26 +828,27 @@ export function LogViewer({
                             subLine={subLine}
                             subIsNotice={subIsNotice}
                             invalid={view.invalidPattern}
-                            // The same eight filters as the chip bar below,
-                            // drawn as one button. Only one of the two is ever
-                            // visible — see `logViewer.css`.
                             filters={
-                                <div className="lv-only-narrow">
+                                <>
                                     <ChannelMenu
                                         channels={state.channels}
                                         counts={view.channelCounts}
                                         onToggle={toggleChannel}
                                         onShowAll={showAllChannels}
                                     />
-                                </div>
+                                    <ViewMenu
+                                        showTimestamps={state.showTimestamps}
+                                        onShowTimestampsChange={(value) => patch({ showTimestamps: value })}
+                                        showMeta={state.showMeta}
+                                        onShowMetaChange={(value) => patch({ showMeta: value })}
+                                        showColors={state.showColors}
+                                        onShowColorsChange={(value) => patch({ showColors: value })}
+                                        colorsAvailable={(session?.lines ?? []).some((line) => Boolean(line.html))}
+                                        wrap={state.wrap}
+                                        onWrapChange={(value) => patch({ wrap: value })}
+                                    />
+                                </>
                             }
-                        />
-
-                        <ChannelBar
-                            channels={state.channels}
-                            counts={view.channelCounts}
-                            onToggle={toggleChannel}
-                            onShowAll={showAllChannels}
                         />
 
                         {session ? (
@@ -874,19 +910,7 @@ export function LogViewer({
                         shownLines={view.rows.length}
                         totalLines={session?.lines.length ?? info?.lineCount ?? 0}
                         viewport={viewport}
-                        range={state.range}
-                        rangeActive={view.range !== null}
-                        onClearRange={clearRange}
                         error={exportError}
-                        showTimestamps={state.showTimestamps}
-                        onShowTimestampsChange={(value) => patch({ showTimestamps: value })}
-                        showMeta={state.showMeta}
-                        onShowMetaChange={(value) => patch({ showMeta: value })}
-                        showColors={state.showColors}
-                        onShowColorsChange={(value) => patch({ showColors: value })}
-                        colorsAvailable={(session?.lines ?? []).some((line) => Boolean(line.html))}
-                        wrap={state.wrap}
-                        onWrapChange={(value) => patch({ wrap: value })}
                         live={Boolean(info?.live)}
                         follow={state.follow}
                         onFollowChange={(value) => patch({ follow: value })}

@@ -119,8 +119,10 @@
     /* Game text the server did not tag more specifically. Full contrast: it
        can be anything, including something said to you. */
     --lv-log-other: var(--lv-text);
-    /* The client talking, not the game — a script, a plugin, `printLine`. */
-    --lv-log-script: #ffca16;
+    /* The client talking, not the game — a script, a plugin, `printLine`.
+       Plain text, not a channel colour of its own: scripts colour their own
+       output, and the log has to show it the way the main window did. */
+    --lv-log-script: var(--lv-text);
 
     --lv-log-event-login: var(--lv-text-secondary);
     --lv-log-event-death: var(--lv-danger-text);
@@ -203,9 +205,8 @@
     }
 }
 
-/* The light themes: the two bright channels would vanish on a pale ground. */
+/* The light themes: the bright channel would vanish on a pale ground. */
 .theme-light-parchment .lv-theme,
 .theme-light-silver .lv-theme {
     --lv-log-notify: #0e7490;
-    --lv-log-script: #8a6100;
 }

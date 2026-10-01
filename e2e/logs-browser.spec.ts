@@ -47,8 +47,11 @@ async function activeLineInView(page: Page): Promise<boolean> {
     });
 }
 
-const scopeButton = (page: Page, label: string) =>
-    page.locator('.lv-segmented__item', {hasText: label});
+/** Picks where the search looks, from the menu next to the field. */
+async function chooseScope(page: Page, label: string): Promise<void> {
+    await page.getByTitle('Gdzie szukać').click();
+    await page.locator('.lv-menu__item', {hasText: label}).click();
+}
 
 test.describe('Logi browser', () => {
     test('a match in another session is reached, and shown, in one step', async ({page}) => {
@@ -65,7 +68,7 @@ test.describe('Logi browser', () => {
         await expect(page.locator('.lv-log')).toContainText('nowa 49');
 
         // The match is in the other log, so the search has to look at all of them.
-        await scopeButton(page, 'Wszystkie logi').click();
+        await chooseScope(page, 'We wszystkich logach');
         await page.fill('#lv-search', 'SZUKANY_ZNACZNIK');
         // The sidebar badges the session that holds it, and says how many.
         await expect(page.locator('.lv-session .lv-badge')).toHaveText('1');
@@ -95,8 +98,10 @@ test.describe('Logi browser', () => {
 
         await openLogs(page);
         const input = page.locator('#lv-search');
-        await input.fill('TRAF');
         const position = page.locator('.lv-search__count');
+        // The counter and arrows only mean something once there is a query.
+        await expect(position).toHaveCount(0);
+        await input.fill('TRAF');
         await expect(position).toHaveText('1 z 2');
         await input.press('Enter');
         await expect(position).toHaveText('2 z 2');
@@ -152,22 +157,26 @@ test.describe('Logi browser', () => {
         await openLogs(page);
         const pane = page.locator('.lv-log');
         await expect(pane).toContainText('pozny TRAF');
-        await expect(scopeButton(page, 'Zakres')).toBeDisabled();
+        await expect(page.locator('.lv-range-chip')).toHaveCount(0);
 
         // End the range on a line before the second match.
         await pane.getByText('a 19', {exact: false}).first().click({button: 'right'});
         await page.locator('.lv-line-menu').getByText('Zakończ na tej linii').click();
         await expect(pane).not.toContainText('pozny TRAF');
 
-        // A range narrows the search to itself, without being asked twice.
-        await expect(scopeButton(page, 'Zakres')).toHaveAttribute('data-state', 'on');
+        // A range narrows the search to itself, without being asked twice: it
+        // takes the place of the scope menu next to the field.
+        await expect(page.locator('.lv-range-chip')).toBeVisible();
+        await expect(page.getByTitle('Gdzie szukać')).toHaveCount(0);
         await page.fill('#lv-search', 'TRAF');
         await expect(page.locator('.lv-search__count')).toHaveText('1 z 1');
         await expect(page.locator('.lv-log__row[data-current="true"]')).toContainText('wczesny TRAF');
 
-        // The whole log again finds both.
-        await scopeButton(page, 'Ten log').click();
+        // Clearing the range is the whole log again, and finds both.
+        await page.getByTitle('Wyczyść zakres').click();
+        await expect(page.locator('.lv-range-chip')).toHaveCount(0);
         await expect(page.locator('.lv-search__count')).toHaveText('1 z 2');
+        await expect(pane).toContainText('pozny TRAF');
     });
 
     test('dragging across the timeline selects a range', async ({page}) => {
@@ -193,7 +202,8 @@ test.describe('Logi browser', () => {
         await expect(page.locator('.lv-range-chip')).toContainText('zakres');
         // The export offer follows the range, so a saved file cannot claim to
         // hold the whole log while holding a slice.
-        await expect(page.getByTitle('Zapisz zaznaczony zakres')).toHaveText('Eksport zakresu');
+        await page.getByTitle('Kopiowanie i eksport').click();
+        await expect(page.locator('.lv-menu__label')).toHaveText('Zaznaczony zakres');
     });
 
     test('the export menu still saves HTML, text and an image', async ({page}) => {
@@ -208,12 +218,58 @@ test.describe('Logi browser', () => {
             ['Pobierz jako obraz', '.png'],
         ];
         for (const [label, suffix] of formats) {
-            await page.getByTitle('Zapisz cały log').click();
+            await page.getByTitle('Kopiowanie i eksport').click();
             const waitDownload = page.waitForEvent('download');
             await page.locator('.lv-menu__item', {hasText: label}).click();
             const download = await waitDownload;
             expect(download.suggestedFilename(), label).toContain(suffix);
         }
+    });
+
+    test('searching every log narrows the session list to the ones with hits', async ({page}) => {
+        await login(page);
+        await pushText(page, 'Najstarsza: ZNACZNIK_SESJI tutaj');
+        await pushFiller(page, 'pierwsza', 5);
+        await login(page);
+        await pushFiller(page, 'druga', 5);
+        await login(page);
+        await pushFiller(page, 'trzecia', 5);
+
+        await openLogs(page);
+        const sessions = page.locator('.lv-session');
+        await expect(sessions).toHaveCount(3);
+
+        await chooseScope(page, 'We wszystkich logach');
+        await page.fill('#lv-search', 'ZNACZNIK_SESJI');
+        // The one with the hit, and the open one so the player keeps their place.
+        await expect(sessions).toHaveCount(2);
+        await expect(page.locator('.lv-sidebar')).toContainText('Sesje z trafieniami');
+        await expect(page.locator('.lv-session .lv-badge')).toHaveText('1');
+
+        await page.locator('.lv-sidebar').getByRole('button', {name: 'Pokaż wszystkie'}).click();
+        await expect(sessions).toHaveCount(3);
+        await page.locator('.lv-sidebar').getByRole('button', {name: 'Tylko z trafieniami'}).click();
+        await expect(sessions).toHaveCount(2);
+
+        // Back in one log, the list is the whole list again.
+        await chooseScope(page, 'W tym logu');
+        await expect(sessions).toHaveCount(3);
+    });
+
+    test('display switches live in the Widok menu', async ({page}) => {
+        await login(page);
+        await pushFiller(page, 'linia', 10);
+        await openLogs(page);
+        const pane = page.locator('.lv-log');
+        await expect(pane).toHaveAttribute('data-meta', 'false');
+
+        await page.getByTitle('Jak pokazywać log').click();
+        const menu = page.locator('.lv-menu');
+        await menu.locator('.lv-menu__item--check', {hasText: 'Numer i typ linii'}).click();
+        await expect(pane).toHaveAttribute('data-meta', 'true');
+        // A switch, not a command: the menu stays for the next one.
+        await menu.locator('.lv-menu__item--check', {hasText: 'Godziny'}).click();
+        await expect(pane).toHaveAttribute('data-timestamps', 'false');
     });
 
     test('an empty store still offers a way out of itself', async ({page}) => {
@@ -326,11 +382,10 @@ test.describe('Logi browser on a phone', () => {
         await pushFiller(page, 'linia', 20);
         await openLogs(page);
 
-        // With the tag and line-number columns off, the text starts right after
-        // the clock — so a time column too narrow for `HH:MM:SS` does not just
-        // clip, it runs into the log. It did: the phone rules once pinned this
-        // column at 52px for a stamp that needs 57.
-        await page.locator('.lv-toggle', {hasText: 'Typ'}).first().click();
+        // With the tag and line-number columns off (the default), the text
+        // starts right after the clock — so a time column too narrow for
+        // `HH:MM:SS` does not just clip, it runs into the log. It did: the phone
+        // rules once pinned this column at 52px for a stamp that needs 57.
         await expect(page.locator('.lv-log')).toHaveAttribute('data-meta', 'false');
 
         const fits = await page.evaluate(() => {
@@ -340,14 +395,10 @@ test.describe('Logi browser on a phone', () => {
         expect(fits).toBe(true);
     });
 
-    test('the channel filters are one menu, and the chip bar stands down', async ({page}) => {
+    test('the channel filters are one menu', async ({page}) => {
         await login(page);
         await pushFiller(page, 'linia', 20);
         await openLogs(page);
-
-        // Eight chips do not fit a phone in either shape — wrapped they took
-        // four rows, scrolling they were cut off.
-        await expect(page.locator('.lv-channels')).toBeHidden();
 
         const button = page.getByTitle('Które kanały są widoczne');
         await expect(button).toHaveText('Kanały');

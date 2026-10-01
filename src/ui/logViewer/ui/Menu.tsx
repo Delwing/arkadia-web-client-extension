@@ -133,19 +133,27 @@ export function MenuItem({
  *
  * The check sits in a fixed column so the labels line up whether or not they
  * are on, and the menu does not close on a click — turning three channels off
- * should take three taps, not three trips back to the button.
+ * should take three taps, not three trips back to the button. A row that
+ * picks one of several (where to search) passes `closeOnSelect`: that choice
+ * is made once.
  */
 export function MenuCheckItem({
     checked,
     label,
     count,
     dotColor,
+    disabled,
+    title,
+    closeOnSelect,
     onToggle,
 }: {
     checked: boolean;
     label: string;
     count?: number;
     dotColor?: string;
+    disabled?: boolean;
+    title?: string;
+    closeOnSelect?: boolean;
     onToggle: () => void;
 }) {
     return (
@@ -153,8 +161,10 @@ export function MenuCheckItem({
             type="button"
             className="lv-menu__item lv-menu__item--check"
             data-state={checked ? "on" : "off"}
+            disabled={disabled}
+            title={title}
             onClick={(event) => {
-                event.stopPropagation();
+                if (!closeOnSelect) event.stopPropagation();
                 onToggle();
             }}
         >

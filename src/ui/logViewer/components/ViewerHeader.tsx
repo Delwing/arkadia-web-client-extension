@@ -23,6 +23,11 @@ export interface ViewerHeaderProps {
     busy?: boolean;
     /** Labels say "zakres" when only a slice of the session is in view. */
     ranged: boolean;
+    /**
+     * The host's own entries, at the end of the copy-and-save menu — the
+     * client's "open in a new tab", which the standalone page has no use for.
+     */
+    menuExtra?: React.ReactNode;
     /** Rendered at the far right — the dialog's close control, when there is one. */
     trailing?: React.ReactNode;
 }
@@ -42,6 +47,7 @@ export function ViewerHeader({
     onCopyImage,
     busy,
     ranged,
+    menuExtra,
     trailing,
 }: ViewerHeaderProps) {
     const meta = session
@@ -53,17 +59,6 @@ export function ViewerHeader({
               session.file,
           ].join("  ·  ")
         : "Nie ma jeszcze żadnego logu";
-
-    const exportItems = (
-        <>
-            <MenuLabel>{ranged ? "Zaznaczony zakres" : "Cały log"}</MenuLabel>
-            <MenuItem onSelect={onExportHtml}>Pobierz HTML</MenuItem>
-            <MenuItem onSelect={onExportText}>Pobierz tekst (.txt)</MenuItem>
-            <MenuSeparator />
-            <MenuItem onSelect={onDownloadImage}>Pobierz jako obraz</MenuItem>
-            <MenuItem onSelect={onCopyImage}>Kopiuj jako obraz</MenuItem>
-        </>
-    );
 
     return (
         <div className="lv__header">
@@ -107,56 +102,39 @@ export function ViewerHeader({
                 <div className="lv__meta">{meta}</div>
             </div>
 
-            {/* Wide enough for both controls: copying is one click away. */}
-            <div className="lv-row lv-row--tight lv-hide-narrow">
-                <Button
-                    size="sm"
-                    icon={<Icon name="copy" size={14} />}
-                    onClick={onCopyView}
-                    disabled={!session}
-                    title="Skopiuj linie widoczne na ekranie"
-                >
-                    Kopiuj widok
-                </Button>
-                <Menu
-                    disabled={busy || !session}
-                    trigger={
-                        <Button
-                            size="sm"
-                            icon={<Icon name="export" size={14} />}
-                            trailing={<Icon name="chevron-down" size={14} />}
-                            disabled={busy || !session}
-                            title={ranged ? "Zapisz zaznaczony zakres" : "Zapisz cały log"}
-                        >
-                            {busy ? "Zapisywanie..." : ranged ? "Eksport zakresu" : "Eksport"}
-                        </Button>
-                    }
-                >
-                    {exportItems}
-                </Menu>
-            </div>
-
-            {/* On a phone the same actions share one overflow menu. Shrinking
-                the two buttons to their icons was not enough: a host adds its
-                own controls here (the client adds three), and with those the
-                row ran off the right edge of the screen. */}
-            <div className="lv-only-narrow">
-                <Menu
-                    disabled={busy || !session}
-                    trigger={
-                        <IconButton
-                            title={busy ? "Zapisywanie..." : "Kopiowanie i eksport"}
-                            disabled={busy || !session}
-                        >
-                            <Icon name="more" />
-                        </IconButton>
-                    }
-                >
-                    <MenuItem onSelect={onCopyView}>Kopiuj widok</MenuItem>
-                    <MenuSeparator />
-                    {exportItems}
-                </Menu>
-            </div>
+            {/* Copying and every export in one menu. They used to be two
+                buttons plus an icon from the host, on a header that also
+                carries the session's name — the one thing it is for. On a
+                phone the label goes and the icon stays. */}
+            <Menu
+                disabled={busy || !session}
+                trigger={
+                    <Button
+                        size="sm"
+                        icon={<Icon name="export" size={14} />}
+                        trailing={<Icon name="chevron-down" size={14} />}
+                        disabled={busy || !session}
+                        title="Kopiowanie i eksport"
+                    >
+                        <span className="lv-hide-narrow">{busy ? "Zapisywanie..." : "Kopiuj / zapisz"}</span>
+                    </Button>
+                }
+            >
+                <MenuItem onSelect={onCopyView}>Kopiuj widok</MenuItem>
+                <MenuSeparator />
+                <MenuLabel>{ranged ? "Zaznaczony zakres" : "Cały log"}</MenuLabel>
+                <MenuItem onSelect={onExportHtml}>Pobierz HTML</MenuItem>
+                <MenuItem onSelect={onExportText}>Pobierz tekst (.txt)</MenuItem>
+                <MenuSeparator />
+                <MenuItem onSelect={onDownloadImage}>Pobierz jako obraz</MenuItem>
+                <MenuItem onSelect={onCopyImage}>Kopiuj jako obraz</MenuItem>
+                {menuExtra ? (
+                    <>
+                        <MenuSeparator />
+                        {menuExtra}
+                    </>
+                ) : null}
+            </Menu>
 
             {trailing ? (
                 <div className="lv-row lv-row--tight">

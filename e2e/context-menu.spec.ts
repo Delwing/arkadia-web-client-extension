@@ -227,8 +227,8 @@ test.describe('Context menu', () => {
         await menu.locator('.context-menu__item', {hasText: 'Szukaj w logach'}).click();
         await page.waitForSelector('#logs-modal:not([hidden])', {timeout: 5000});
         await expect(page.locator('#lv-search')).toHaveValue('Goblin atakuje cie');
-        await expect(page.locator('.lv-segmented__item[data-state="on"]', {hasText: 'Wszystkie logi'}))
-            .toHaveCount(1);
+        // The search looks in every log, which the scope menu next to the field says.
+        await expect(page.getByTitle('Gdzie szukać')).toHaveText('We wszystkich logach');
     });
 
     test('with selection, Kopiuj jako obraz and Zapisz jako HTML appear', async ({page}) => {

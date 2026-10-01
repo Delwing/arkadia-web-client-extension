@@ -214,16 +214,47 @@
 
 /* --- search bar --------------------------------------------------------- */
 
+/* Wraps rather than overflows: with a query the row carries the field, where
+   to look, the counter, the arrows, "Tylko trafienia" and both menus, and a
+   row wider than the pane drags the whole dialog sideways. */
 .lv-search {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: var(--lv-space-4);
     padding: var(--lv-space-5) var(--lv-space-8);
     border-bottom: 1px solid var(--lv-border-subtle);
 }
 
+/* Starts small and grows to 340px. The basis is what a wrapping row measures
+   when it decides where to break — before anything shrinks — so a 340px basis
+   pushed the menus onto a second line the moment a query added the counter. */
 .lv-search__field {
-    width: 340px;
+    flex: 1 1 180px;
+    min-width: 160px;
+    max-width: 340px;
+}
+
+.lv-search__only {
+    flex-shrink: 0;
+}
+
+/* The match options (case, regex) behind one button inside the field. It
+   lights up while either is on, so a search that finds nothing because regex
+   was left on is not a mystery. */
+.lv .lv-search__adornment {
+    width: 28px;
+    height: 28px;
+    border-color: transparent;
+}
+
+.lv .lv-search__options[data-state='on'] {
+    background: var(--lv-accent-bg);
+    color: var(--lv-accent-text);
+}
+
+/* The channel and view menus, pushed to the far end by the spacer before them. */
+.lv-search__filters {
     flex-shrink: 0;
 }
 
@@ -236,14 +267,14 @@
    floor: the counter runs from "" to "Bledny wzorzec" to "3 z 128" while you
    type, and the sub-line can be a notice naming a character and a day, which
    no fixed width could ever fit. A floor alone let that notice widen the block
-   and shove the scope buttons sideways; 168px both ways means nothing after it
-   can move, and the overflow is handled by the ellipsis below. */
+   and shove the controls after it sideways; 128px both ways means nothing
+   after it can move, and the overflow is handled by the ellipsis below. */
 .lv-search__counter {
     display: flex;
     flex-direction: column;
     gap: 1px;
-    flex: 0 0 168px;
-    min-width: 168px;
+    flex: 0 0 128px;
+    min-width: 128px;
     font-variant-numeric: tabular-nums;
 }
 
@@ -285,25 +316,6 @@
    is the one thing in this row that catches the eye when it appears. */
 .lv-search__sub[data-notice='true'] {
     color: var(--lv-accent-text);
-}
-
-/* --- channel bar -------------------------------------------------------- */
-
-/* Eight chips plus "Pokaz wszystkie" do not fit a narrow dialog on one line,
-   and a chip squeezed until its count clips is worse than a second row. */
-.lv-channels {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--lv-space-3);
-    padding: var(--lv-space-4) var(--lv-space-8);
-    border-bottom: 1px solid var(--lv-border-subtle);
-}
-
-.lv-channels__label {
-    margin-right: var(--lv-space-2);
-    font-size: var(--lv-text-3);
-    color: var(--lv-text-secondary);
 }
 
 /* --- timeline ----------------------------------------------------------- */
@@ -558,7 +570,6 @@
     --lv-text-faint: #6f6d66;
     --lv-accent-text: color-mix(in srgb, var(--lv-accent-solid) 60%, #fff);
     --lv-log-notify: #4ccce6;
-    --lv-log-script: #ffca16;
 }
 
 .lv-log[data-ground='light'] {
@@ -568,13 +579,13 @@
     --lv-text-faint: #8a8880;
     --lv-accent-text: color-mix(in srgb, var(--lv-accent-solid) 70%, #000);
     --lv-log-notify: #0e7490;
-    --lv-log-script: #8a6100;
 }
 
 .lv-log[data-ground] {
     --lv-log-comm: var(--lv-text);
     --lv-log-combat: var(--lv-text);
     --lv-log-other: var(--lv-text);
+    --lv-log-script: var(--lv-text);
     --lv-log-room: var(--lv-text-secondary);
     --lv-log-system: var(--lv-text-tertiary);
     --lv-log-command: var(--lv-accent-text);
@@ -769,6 +780,15 @@
     color: var(--lv-text);
 }
 
+/* A line of help inside a menu, not a command. */
+.lv .lv-menu__note {
+    max-width: 240px;
+    padding: var(--lv-space-3) var(--lv-space-4);
+    font-size: var(--lv-text-3);
+    line-height: var(--lv-leading-normal);
+    color: var(--lv-text-tertiary);
+}
+
 /* The viewer is hosted at every width there is: a maximised desktop window, a
    Bootstrap dialog inside the client, and a phone held in one hand. Three
    things give way as the screen narrows, in this order — the legend, then the
@@ -782,10 +802,6 @@
         row-gap: var(--lv-space-3);
         padding-top: var(--lv-space-3);
         padding-bottom: var(--lv-space-3);
-    }
-
-    .lv-search {
-        flex-wrap: wrap;
     }
 
     .lv-status {
@@ -803,10 +819,6 @@
 @media (max-width: 1040px) {
     .lv {
         --lv-sidebar-width: 240px;
-    }
-
-    .lv-search__field {
-        width: 240px;
     }
 
     .lv-legend {
@@ -895,12 +907,12 @@
         font-size: var(--lv-text-2);
     }
 
-    /* Two rows, not three. `order` puts the counter beside the field rather
-       than under it, so the row that was just a search box now carries the
-       whole "where am I in the results" story:
+    /* Two rows. The first is the search itself and, once there is a query,
+       where you are in the results; the second is where to look and the
+       filters:
 
-           [ Szukaj ...  Aa .* ] [ 3 z 128 ] [^] [v]
-           [ Kanaly 6/8 ] [ Trafienia ] [ Log | Wszystkie ]              */
+           [ Szukaj ...   ^ v  o ] [ 3 z 128 ]
+           [ W tym logu v ] [ Trafienia ]      [ Kanaly v ] [ Widok v ]    */
     .lv-search {
         gap: var(--lv-space-3);
         padding: var(--lv-space-4);
@@ -913,18 +925,14 @@
         width: auto;
     }
 
-    /* Fixed at 168px the counter reserved nearly half a phone's width for text
-       that is empty until you type. Here it takes what it needs, up to a cap,
-       and clips the rest — the whole notice is on the element's title. */
+    /* Fixed at 168px the counter reserved nearly half a phone's width. Here it
+       takes what it needs, up to a cap, and clips the rest — the whole notice
+       is on the element's title. */
     .lv-search__counter {
         order: 2;
         flex: 0 1 auto;
         min-width: 0;
         max-width: 96px;
-    }
-
-    .lv-search > .lv-row {
-        order: 3;
     }
 
     /* `.lv` prefixed deliberately: the rule that hides this by default is
@@ -936,38 +944,19 @@
         height: 0;
     }
 
-    .lv-search > .lv-toggle {
+    /* The scope menu (its anchor) or, while there is one, the range. */
+    .lv-search > .lv-menu-anchor,
+    .lv-search > .lv-range-chip {
         order: 5;
     }
 
-    .lv-search > .lv-only-narrow {
+    .lv-search__only {
         order: 6;
     }
 
-    /* Takes the width left on its row, and the whole row on a phone too narrow
-       to share one — which is where it ends up under about 360px. */
-    .lv-search > .lv-segmented {
+    .lv-search__filters {
         order: 7;
-        flex-grow: 1;
-    }
-
-    .lv-segmented__item {
-        flex: 1 1 0;
-        padding: 0 var(--lv-space-2);
-    }
-
-    /* "Zakres" is only reachable from a line's long-press here — the timeline
-       it is normally dragged out on is hidden. Until there is a range to
-       search, the button is a third of a row saying nothing. */
-    .lv-segmented__item:disabled {
-        display: none;
-    }
-
-    /* Eight chips never fitted: wrapped they took four rows, and in one
-       scrolling row the last of them were cut off with nothing to say so.
-       `ChannelMenu` puts the same filters in the row above. */
-    .lv-channels {
-        display: none;
+        margin-left: auto;
     }
 
     /* A histogram with 9px drag handles is a mouse instrument. The log scrolls
@@ -1129,14 +1118,6 @@
     white-space: nowrap;
 }
 
-/* A slice that is selected but not applied is stated, not celebrated: the log
-   in front of the player is the whole log, and the chip must not imply
-   otherwise. */
-.lv-range-chip[data-active='false'] {
-    border-color: var(--lv-border);
-    background: var(--lv-bg-sunken);
-    color: var(--lv-text-tertiary);
-}
 
 /* --- line context menu --------------------------------------------------- */
 

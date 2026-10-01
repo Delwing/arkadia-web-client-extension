@@ -14,7 +14,7 @@
  * provide one.
  */
 import { useCallback, useEffect, useState, type ReactNode } from "react";
-import { Button, Icon, IconButton, LogViewer, Spinner } from "@ui/logViewer";
+import { Button, Icon, IconButton, LogViewer, MenuItem, Spinner } from "@ui/logViewer";
 import type { LogSessionInfo, PersistedPreferences } from "@ui/logViewer";
 import { readPreferences, writePreferences } from "../../log-viewer/preferences";
 import { createSessionSource, type ListProgress, type SessionSource } from "../../log-viewer/sessionAdapter";
@@ -167,20 +167,22 @@ export function LogBrowser({ headerTrailing, initialQuery }: LogBrowserProps) {
                             Zaimportuj logi z pliku
                         </Button>
                     }
-                    // Icon-only, like the session arrows at the other end of
-                    // the same header: labelled, these two pushed the header
-                    // past the dialog's width on a small laptop and took the
-                    // close control off the edge with them.
+                    menuExtra={
+                        <MenuItem
+                            disabled={!openSessionId}
+                            onSelect={() => openSessionId && openInNewTab(openSessionId)}
+                        >
+                            Otwórz w nowej karcie
+                        </MenuItem>
+                    }
+                    // Labelled: an archive icon alone did not say "delete or
+                    // import logs". It fits now that copying and exporting are
+                    // one menu; on a phone the label goes and the icon stays.
                     headerTrailing={
                         <>
-                            <IconButton
-                                disabled={!openSessionId}
-                                onClick={() => openSessionId && openInNewTab(openSessionId)}
-                                title="Otwórz ten log w nowej karcie"
-                            >
-                                <Icon name="open-external" />
-                            </IconButton>
-                            <IconButton
+                            <Button
+                                size="sm"
+                                icon={<Icon name="archive" size={14} />}
                                 // Deleting or importing reloads the list; not
                                 // while it is still being built.
                                 disabled={listing !== null}
@@ -191,8 +193,8 @@ export function LogBrowser({ headerTrailing, initialQuery }: LogBrowserProps) {
                                         : "Zarządzanie logami: usuwanie, archiwum, import"
                                 }
                             >
-                                <Icon name="archive" />
-                            </IconButton>
+                                <span className="lv-hide-narrow">Zarządzaj</span>
+                            </Button>
                             {headerTrailing}
                             {/* Stock's window has no header of the shell, so the
                                 close control lives here; the shell closes on any
