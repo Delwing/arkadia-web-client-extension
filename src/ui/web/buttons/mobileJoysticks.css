@@ -1,0 +1,98 @@
+/* Floating joysticks — shared between stock and forge-ui
+   (src/ui/web/buttons/MobileJoysticks.tsx). Position, size and colours are set
+   inline from the user's settings. */
+.mobile-joystick {
+  --joystick-color: #6CA6CD;
+  --joystick-font-color: #f1f5f9;
+  position: fixed;
+  z-index: 1000;
+  box-sizing: border-box;
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, var(--joystick-color) 80%, white);
+  background: radial-gradient(circle,
+      color-mix(in srgb, var(--joystick-color) 30%, transparent) 0%,
+      color-mix(in srgb, var(--joystick-color) 55%, transparent) 100%);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  cursor: pointer;
+  opacity: 0.85;
+  transition: opacity 0.15s ease;
+}
+
+.mobile-joystick--active,
+.mobile-joystick--dragging {
+  opacity: 1;
+}
+
+.mobile-joystick--dragging {
+  cursor: grabbing;
+  box-shadow: 0 0 14px rgba(0, 0, 0, 0.45);
+  z-index: 1001;
+}
+
+.mobile-joystick__tick {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--joystick-font-color);
+  opacity: 0.55;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.mobile-joystick__tick--active {
+  opacity: 1;
+  width: 9px;
+  height: 9px;
+}
+
+.mobile-joystick__knob {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 46%;
+  height: 46%;
+  border-radius: 50%;
+  background: var(--joystick-color);
+  border: 1px solid color-mix(in srgb, var(--joystick-color) 60%, white);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.mobile-joystick__label {
+  color: var(--joystick-font-color);
+  font-size: 12px;
+  line-height: 1.1;
+  text-align: center;
+  padding: 0 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mobile-joystick__tag {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  padding: 2px 7px;
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.85);
+  color: #f1f5f9;
+  font-size: 12px;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+
+.mobile-joystick__tag--active {
+  background: var(--joystick-color);
+  color: var(--joystick-font-color);
+  font-weight: 600;
+}

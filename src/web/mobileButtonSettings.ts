@@ -1,6 +1,7 @@
 import { globalStorage } from "@modules/core/storage";
 import eventBus from "@modules/core/eventBus";
 import { ButtonMacroConfig, MobileButtonSetting, defaultFontColor } from "./buttonSettings";
+import { createDefaultJoysticks, parseJoystickSettings, type JoystickSettings } from "./joystickSettings";
 
 export interface RadialCommandSetting {
     id: string;
@@ -166,6 +167,7 @@ export interface Settings {
     leader: LayoutSettings;
     locked: boolean;
     radial: RadialSettings;
+    joysticks: JoystickSettings;
     buttonSize?: number;   // Size in pixels (default 36)
     buttonGap?: number;    // Gap between buttons in pixels (default 2)
 }
@@ -312,6 +314,7 @@ export function loadSettings(): Settings {
                     leader: parseLayout(raw.leader),
                     locked,
                     radial: parseRadialSettings(raw.radial),
+                    joysticks: parseJoystickSettings(raw.joysticks),
                     buttonSize,
                     buttonGap,
                 };
@@ -354,6 +357,7 @@ export function loadSettings(): Settings {
                 },
                 locked,
                 radial: parseRadialSettings(raw.radial),
+                joysticks: parseJoystickSettings(raw.joysticks),
                 buttonSize,
                 buttonGap,
             };
@@ -365,6 +369,7 @@ export function loadSettings(): Settings {
         leader: createDefaultLayout(),
         locked: false,
         radial: { enabled: true, commands: cloneDefaultRadialCommands() },
+        joysticks: createDefaultJoysticks(),
         buttonSize: defaultButtonSize,
         buttonGap: defaultButtonGap,
     };

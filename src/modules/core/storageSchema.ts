@@ -95,6 +95,8 @@ export interface GlobalStorageSchema {
     deviceInfo: DeviceInfo;
     objectsListPosition: any; // TODO: type position data
     mobileButtonsPosition: any; // TODO: type position data
+    /** Joystick centres as viewport fractions, per id and orientation. Device-local. */
+    mobileJoystickPositions: Record<string, Partial<Record<'portrait' | 'landscape', { x: number; y: number }>>>;
     settingsMigrationsVersion: number;
     contracts: ContractsSnapshot;
     custom_sounds: CustomSound[];
@@ -207,6 +209,7 @@ export const globalStorageKeys = [
     'deviceInfo',
     'objectsListPosition',
     'mobileButtonsPosition',
+    'mobileJoystickPositions',
     'settingsMigrationsVersion',
     'custom_sounds',
     'letter_templates',
