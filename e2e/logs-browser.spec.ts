@@ -338,6 +338,34 @@ test.describe('Logi browser', () => {
         await importButton.click();
         await expect(page.getByText('Zarządzanie logami')).toBeVisible();
     });
+
+    test('the window closes while the sessions are still loading', async ({page}) => {
+        // While the flag is up, opening the log database never answers, so the
+        // listing hangs on its loading screen the way a large store would.
+        await page.addInitScript(() => {
+            const open = IDBFactory.prototype.open;
+            IDBFactory.prototype.open = function (this: IDBFactory, name: string, version?: number) {
+                if (name === 'ArkadiaLogsDB' && (window as unknown as {__stallLogs?: boolean}).__stallLogs) {
+                    return {} as IDBOpenDBRequest;
+                }
+                return open.call(this, name, version);
+            };
+        });
+        await login(page);
+        await pushText(page, 'Krasnolud czeka na liste sesji.');
+
+        await page.evaluate(() => { (window as unknown as {__stallLogs?: boolean}).__stallLogs = true; });
+        await page.click('#menu-button');
+        await page.click('#logs-button');
+        await expect(page.locator('#logs-modal .logs-browser__loading')).toBeVisible();
+        await page.locator('#logs-close').click();
+        await expect(page.locator('#logs-modal')).toBeHidden();
+
+        // Nothing of the abandoned listing is left behind: it lists again.
+        await page.evaluate(() => { (window as unknown as {__stallLogs?: boolean}).__stallLogs = false; });
+        await openLogs(page);
+        await expect(page.locator('#logs-modal')).toContainText('Krasnolud czeka na liste sesji.');
+    });
 });
 
 test.describe('Logi after the move to one store', () => {

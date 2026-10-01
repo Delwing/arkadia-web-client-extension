@@ -143,10 +143,23 @@ export function LogBrowser({ headerTrailing, initialQuery }: LogBrowserProps) {
         setManageOpen(true);
     }, []);
 
+    // Stock's window has no header of the shell, so its close control lives
+    // here, in the header and on the loading screen alike; the shell closes on
+    // any [data-modal-dismiss] inside it. Under forge, where there is no
+    // `#logs-modal`, the host's own shell carries one.
+    const closeControl = inStockModal ? (
+        <IconButton id="logs-close" data-modal-dismiss title="Zamknij  Esc">
+            <Icon name="close" />
+        </IconButton>
+    ) : null;
+
     return (
         <div className="lv-theme logs-browser">
             {sessions === null ? (
                 <div className="logs-browser__loading">
+                    {/* The listing can take a while on a large store; closing
+                        unmounts the browser, which aborts it. */}
+                    {closeControl ? <div className="logs-browser__loading-close">{closeControl}</div> : null}
                     <Spinner size="lg" />
                     <span>Wczytywanie sesji...</span>
                 </div>
@@ -196,20 +209,13 @@ export function LogBrowser({ headerTrailing, initialQuery }: LogBrowserProps) {
                                 <span className="lv-hide-narrow">Zarządzaj</span>
                             </Button>
                             {headerTrailing}
-                            {/* Stock's window has no header of the shell, so the
-                                close control lives here; the shell closes on any
-                                [data-modal-dismiss] inside it. Under forge, where
-                                there is no `#logs-modal`, the host passes its own
-                                control as `headerTrailing` instead. */}
-                            {inStockModal ? (
+                            {closeControl ? (
                                 <>
                                     {/* Sets the window's own control apart from
                                         the log actions; between the two actions
                                         it split a pair that belongs together. */}
                                     <div className="lv-divider--vertical lv-hide-narrow" />
-                                    <IconButton id="logs-close" data-modal-dismiss title="Zamknij  Esc">
-                                        <Icon name="close" />
-                                    </IconButton>
+                                    {closeControl}
                                 </>
                             ) : null}
                         </>

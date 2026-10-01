@@ -27,8 +27,16 @@
     gap: var(--lv-space-6);
     flex-grow: 1;
     min-height: 0;
+    position: relative;
     color: var(--lv-text-secondary);
     font-size: var(--lv-text-5);
+}
+
+/* Where the header's close control sits once the list is in. */
+.logs-browser__loading-close {
+    position: absolute;
+    top: var(--lv-space-3);
+    right: var(--lv-space-3);
 }
 
 /* --- session management -------------------------------------------------- */
