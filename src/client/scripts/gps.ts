@@ -193,6 +193,11 @@ export default function initGps(client: Client) {
         if (client.Map.currentRoom?.id !== entry.roomId) {
             client.Map.setMapRoomById(entry.roomId);
             client.sendEvent('notify', {text: `Map Sync: gps ${entry.id}`});
+        } else {
+            // The marker may have stayed put while we wandered off the map (into a forest
+            // and back out the same way), so standing where it already is still confirms
+            // the position and has to drop the lost warning - just without a fresh entry.
+            client.Map.setMapRoomById(entry.roomId, {silent: true});
         }
     }
 

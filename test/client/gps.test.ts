@@ -68,12 +68,13 @@ describe('gps triggers', () => {
     expect(client.sendEvent).toHaveBeenCalledWith('notify', { text: 'Map Sync: gps 10_1' });
   });
 
-  test('gps lines do not update when already at location', () => {
+  test('gps lines only confirm the position silently when already at location', () => {
     jest.clearAllMocks();
     client.Map.currentRoom.id = 10;
     parse('l1');
     parse('l2');
-    expect(client.Map.setMapRoomById).not.toHaveBeenCalled();
+    expect(client.Map.setMapRoomById).toHaveBeenCalledTimes(1);
+    expect(client.Map.setMapRoomById).toHaveBeenCalledWith(10, { silent: true });
     expect(client.sendEvent).not.toHaveBeenCalled();
   });
 

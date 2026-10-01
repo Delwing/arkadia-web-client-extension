@@ -146,6 +146,15 @@ describe('MapHelper lost position', () => {
     expect(map.isLost).toBe(false);
   });
 
+  test('a silent confirmation of the room already shown clears it too', () => {
+    // The GPS matching the room the marker never left, e.g. back out of a forest the way we went in.
+    const { map } = getLost();
+
+    map.setMapRoomById(1, { silent: true });
+
+    expect(map.isLost).toBe(false);
+  });
+
   test('a script placing us with renderRoomById clears the warning', () => {
     // The labyrinth mappers and the tide system put us down this way.
     const { map } = getLost();
