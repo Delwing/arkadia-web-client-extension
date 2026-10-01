@@ -156,7 +156,9 @@ export function SessionSidebar({
             <div className="lv-sidebar__foot">
                 <span>
                     {loading
-                        ? `Wczytywanie ${loading.done} z ${loading.total}...`
+                        ? loading.total
+                            ? `Wczytywanie ${loading.done} z ${loading.total}...`
+                            : "Wczytywanie..."
                         : narrowed
                           ? `${listed.filter(hasHits).length} z ${total} ${pluralSessions(total)}`
                           : shown === total

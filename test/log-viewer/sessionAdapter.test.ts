@@ -62,12 +62,22 @@ describe("createSessionSource", () => {
         expect(sessions[1].characters).toEqual(["Beta"]);
     });
 
-    it("hands the newest and the priority sessions over first, with progress", async () => {
+    it("hands the priority sessions over before counting the store, then the newest", async () => {
         const updates: { ids: string[]; done: number; total: number }[] = [];
         const source = createSessionSource({ candidates: [], priority: ["session_1000"] });
         await source.list((sessions, progress) => updates.push({ ids: sessions.map((s) => s.id), ...progress }));
         source.release();
-        expect(updates[0]).toEqual({ ids: ["session_1000", "session_5000"], done: 2, total: 2 });
+        expect(updates[0]).toEqual({ ids: ["session_1000"], done: 1, total: 0 });
+        expect(updates[1]).toEqual({ ids: ["session_1000", "session_5000"], done: 2, total: 2 });
+    });
+
+    it("opens even when the priority session is not stored yet", async () => {
+        const updates: string[][] = [];
+        const source = createSessionSource({ candidates: [], priority: ["session_9000"] });
+        const sessions = await source.list((partial) => updates.push(partial.map((s) => s.id)));
+        source.release();
+        expect(updates[0]).toEqual([]);
+        expect(sessions.map((session) => session.id)).toEqual(["session_1000", "session_5000"]);
     });
 
     it("reads a finished log once: the next opening takes it from the index", async () => {

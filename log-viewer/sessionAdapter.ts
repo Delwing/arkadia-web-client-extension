@@ -289,10 +289,11 @@ export interface ListProgress {
 
 export interface SessionSource {
     /**
-     * Every log's list entry, oldest first. The `priority` logs and the newest
-     * come first and go to `onUpdate` at once, so the viewer can open; the rest
-     * follow newest to oldest. Stops early, with what it has, once `signal`
-     * aborts.
+     * Every log's list entry, oldest first. The `priority` logs go to
+     * `onUpdate` before the rest of the store is so much as counted (with a
+     * `total` of 0, as it is not known yet), so the viewer can open on them; the
+     * newest log follows, then the rest newest to oldest. Stops early, with
+     * what it has, once `signal` aborts.
      */
     list(
         onUpdate?: (sessions: LogSessionInfo[], progress: ListProgress) => void,
@@ -379,45 +380,71 @@ export function createSessionSource(options: LoadOptions = {}): SessionSource {
         async list(onUpdate, signal) {
             const db = await connection();
             if (!db) return [];
+            const file = loadIndex(candidatesKey);
+            const now = options.now ?? Date.now();
+            const listed = new Map<string, LogSessionInfo>();
+
+            /** Lists one log, from the index when it is current, else by reading it. */
+            const listOne = async (name: string, count: number) => {
+                const known = file.entries[name];
+                if (known && known.count === count) {
+                    listed.set(name, infoFromEntry(name, known, options, now));
+                    return;
+                }
+                try {
+                    const session = await readAndParse(name);
+                    if (session) listed.set(name, infoFromEntry(name, file.entries[name], options, now));
+                } catch (error) {
+                    // One log that cannot be read is left out of this listing,
+                    // not out of the rest: it is still stored, and its index
+                    // entry stays for the next opening.
+                    console.error(`[Logs] Failed to read ${name}:`, error);
+                }
+                // Reading a log is the slow part; let the page breathe.
+                await yieldToBrowser();
+            };
+
+            // The `priority` logs are listed before the rest of the store is
+            // even counted: counting walks every record, which on years of logs
+            // is a wait of its own, and the log being recorded is the one a
+            // player opens the window for. The total is not known yet.
+            for (const name of new Set(options.priority ?? [])) {
+                if (signal?.aborted || released) break;
+                if (!name) continue;
+                const count = await countSession(db, name);
+                if (count > 0) await listOne(name, count);
+            }
+            onUpdate?.(
+                [...listed.keys()].sort(byStart).map((name) => listed.get(name)!),
+                { done: listed.size, total: 0 },
+            );
+            if (signal?.aborted || released) return [...listed.values()];
+
             const counts = await countSessions(db);
             const names = [...counts.keys()].sort(byStart);
-            const file = loadIndex(candidatesKey);
             // Sessions that are gone (deleted, or replaced by an import) leave the index.
             for (const name of Object.keys(file.entries)) {
                 if (!counts.has(name)) delete file.entries[name];
             }
 
-            const now = options.now ?? Date.now();
-            const listed = new Map<string, LogSessionInfo>();
             const present = names.filter((name) => (counts.get(name) ?? 0) > 0);
-            const wanted = new Set<string | undefined>([...(options.priority ?? []), present[present.length - 1]]);
-            const first = present.filter((name) => wanted.has(name));
-            const order = [...first, ...present.filter((name) => !wanted.has(name)).reverse()];
+            // Not twice: the log being recorded has grown since it was listed
+            // above, and reading it again would only be the same log.
+            const pending = present.filter((name) => !listed.has(name));
+            const newest = present[present.length - 1];
+            const first = pending.filter((name) => name === newest);
+            const order = [...first, ...pending.filter((name) => name !== newest).reverse()];
             const list = () => present.flatMap((name) => listed.get(name) ?? []);
+            const alreadyListed = present.length - pending.length;
 
             let lastUpdate = performance.now();
             for (let position = 0; position < order.length; position += 1) {
                 if (signal?.aborted || released) break;
                 const name = order[position];
-                const known = file.entries[name];
-                if (known && known.count === counts.get(name)) {
-                    listed.set(name, infoFromEntry(name, known, options, now));
-                } else {
-                    try {
-                        const session = await readAndParse(name);
-                        if (session) listed.set(name, infoFromEntry(name, file.entries[name], options, now));
-                    } catch (error) {
-                        // One log that cannot be read is left out of this
-                        // listing, not out of the rest: it is still stored, and
-                        // its index entry stays for the next opening.
-                        console.error(`[Logs] Failed to read ${name}:`, error);
-                    }
-                    // Reading a log is the slow part; let the page breathe.
-                    await yieldToBrowser();
-                }
+                await listOne(name, counts.get(name) ?? 0);
                 const firstBatchDone = position === first.length - 1;
                 if (onUpdate && (firstBatchDone || performance.now() - lastUpdate > UPDATE_EVERY_MS)) {
-                    onUpdate(list(), { done: position + 1, total: order.length });
+                    onUpdate(list(), { done: alreadyListed + position + 1, total: present.length });
                     saveIndex();
                     lastUpdate = performance.now();
                 }
