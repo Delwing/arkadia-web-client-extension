@@ -6,6 +6,7 @@ import '@web-ui/messageFlair.css'
 import '@web-ui/buttons/desktopButtons.css'
 import '@web-ui/buttons/mobileCommandRadial.css'
 import '@web-ui/buttons/mobileDirectionButtons.css'
+import '@web-ui/buttons/mobileJoysticks.css'
 import mudClient from "./MudClient.ts";
 import {
     DEFAULT_SESSION_PROXY_URL,
@@ -28,6 +29,7 @@ import BossKeyOverlay from "@web-ui/bossKey/BossKeyOverlay";
 import MobileDirectionButtons from "@web-ui/buttons/MobileDirectionButtons";
 import DesktopButtons from "@web-ui/buttons/DesktopButtons";
 import MobileCommandRadial from "@web-ui/buttons/MobileCommandRadial";
+import MobileJoysticks from "@web-ui/buttons/MobileJoysticks";
 import SettingsDialog from "./settings/SettingsDialog";
 import {
     getRenderSettings,
@@ -1295,6 +1297,7 @@ document.addEventListener('DOMContentLoaded', () => {
     createRoot(document.createElement('div')).render(createElement(MobileDirectionButtons, { client }));
     createRoot(document.createElement('div')).render(createElement(DesktopButtons, { client }));
     createRoot(document.createElement('div')).render(createElement(MobileCommandRadial, { client }));
+    createRoot(document.createElement('div')).render(createElement(MobileJoysticks, { client }));
 
     // Boss key: Pause / ScrollLock drops a fake Word window over the whole
     // client. Same detached-root pattern as the buttons above — it portals to

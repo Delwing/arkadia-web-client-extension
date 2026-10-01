@@ -22,6 +22,7 @@ import { SettingsSection } from "./fields";
 import DesktopButtons from "../options/DesktopButtons";
 import MobileButtons from "../options/MobileButtons";
 import MobileRadialCommands from "../options/MobileRadialCommands";
+import MobileJoysticks from "../options/MobileJoysticks";
 
 type UiCategoryKey = Extract<SettingsCategoryKey, `ui-${string}`>;
 
@@ -86,11 +87,12 @@ export function useUiSettingsPages({ soundManager, onEnableNotifications }: UiSe
     // The button editors keep their own drafts (separate storage entries);
     // remounting them is how a reopened dialog drops their unsaved edits.
     const [buttonsGeneration, setButtonsGeneration] = useState(0);
-    const buttonSaves = useRef({ desktop: () => {}, mobile: () => {}, radial: () => {} });
+    const buttonSaves = useRef({ desktop: () => {}, mobile: () => {}, radial: () => {}, joysticks: () => {} });
     const registerButtonSave = useRef({
         desktop: (fn: () => void) => { buttonSaves.current.desktop = fn; },
         mobile: (fn: () => void) => { buttonSaves.current.mobile = fn; },
         radial: (fn: () => void) => { buttonSaves.current.radial = fn; },
+        joysticks: (fn: () => void) => { buttonSaves.current.joysticks = fn; },
     }).current;
 
     const update = useCallback((patch: Partial<UiSettingsType>) => setDraft(prev => ({ ...prev, ...patch })), []);
@@ -208,10 +210,11 @@ export function useUiSettingsPages({ soundManager, onEnableNotifications }: UiSe
         savedRef.current = normalized;
         setDraft(normalized);
         buttonSaves.current.desktop();
-        // Mobile buttons and the radial menu share a storage entry; each merges
+        // Mobile buttons, the radial menu and joysticks share a storage entry; each merges
         // its part into what is stored, so saving both keeps both.
         buttonSaves.current.mobile();
         buttonSaves.current.radial();
+        buttonSaves.current.joysticks();
     }, []);
 
     const commitCustomDark = (color: string) => {
@@ -287,6 +290,11 @@ export function useUiSettingsPages({ soundManager, onEnableNotifications }: UiSe
         "ui-radial": (
             <SettingsSection title="Konfiguracja" full>
                 <MobileRadialCommands key={buttonsGeneration} registerSave={registerButtonSave.radial} />
+            </SettingsSection>
+        ),
+        "ui-joysticks": (
+            <SettingsSection title="Konfiguracja" full>
+                <MobileJoysticks key={buttonsGeneration} registerSave={registerButtonSave.joysticks} />
             </SettingsSection>
         ),
         "ui-footer": <FooterSections draft={draft} update={update} />,

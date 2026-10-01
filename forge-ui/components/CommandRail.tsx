@@ -5,6 +5,7 @@ import FooterStrip from '@web-ui/footer/FooterStrip';
 import DesktopButtons from '@web-ui/buttons/DesktopButtons';
 import MobileCommandRadial from '@web-ui/buttons/MobileCommandRadial';
 import MobileDirectionButtons from '@web-ui/buttons/MobileDirectionButtons';
+import MobileJoysticks from '@web-ui/buttons/MobileJoysticks';
 import VitalGems from './VitalGems';
 import Menu from './Menu';
 import ReconnectChip from './ReconnectChip';
@@ -34,6 +35,7 @@ export default function CommandRail() {
             <DesktopButtons client={client} />
             <MobileCommandRadial client={client} />
             <MobileDirectionButtons client={client} messageInputId="alt-input" />
+            <MobileJoysticks client={client} />
             <div className="hud-panel">
                 {/* Forge wraps the shared bind row in its own always-present band
                     (alwaysVisible) so the plate keeps a stable height. */}

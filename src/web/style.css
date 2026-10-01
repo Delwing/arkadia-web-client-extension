@@ -2705,6 +2705,59 @@ select.popup-input.popup-input--control.is-warning {
   line-height: normal;
   white-space: nowrap;
 }
+/* Joysticki: one card per joystick, its commands laid out like the compass. */
+.joystick-editor {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.joystick-editor__card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1 1 18rem;
+  max-width: 26rem;
+  padding: 10px;
+  border: 1px solid var(--popup-border);
+  border-radius: var(--ui-radius-sm, 4px);
+}
+.joystick-editor__head {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.joystick-editor__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+}
+.joystick-editor__grid .popup-input {
+  min-width: 0;
+  text-align: center;
+}
+.joystick-editor__grid .joystick-editor__center {
+  border-style: dashed;
+}
+.joystick-editor__look {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+}
+.joystick-editor__size,
+.joystick-editor__color {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.joystick-editor__size input[type="range"] {
+  width: 6rem;
+}
+.joystick-editor__size-value {
+  min-width: 3.2em;
+  color: var(--popup-text-subtle);
+  font-size: var(--ui-fs-sm, 13px);
+}
 .settings-sort-item__badge {
   padding: 1px 6px;
   border-radius: var(--ui-radius-sm, 4px);

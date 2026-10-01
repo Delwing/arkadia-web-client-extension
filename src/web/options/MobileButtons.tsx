@@ -126,8 +126,9 @@ function MobileButtons({ registerSave }: { registerSave: (save: () => void) => v
         registerSave(() => {
             // Untouched: leave storage (and the live buttons) alone.
             if (JSON.stringify(settings) === stored) return;
-            // The radial menu shares this entry but is edited in "Menu kołowe".
-            const next = { ...settings, radial: loadSettings().radial };
+            // The radial menu and joysticks share this entry but have their own pages.
+            const current = loadSettings();
+            const next = { ...settings, radial: current.radial, joysticks: current.joysticks };
             saveSettings(next);
             const { isInAnyTeam, isLeader } = getTeamState();
             applySettings(next, isInAnyTeam, isLeader);

@@ -26,6 +26,7 @@ export type SettingsCategoryKey =
     | "ui-buttons"
     | "ui-mobile-buttons"
     | "ui-radial"
+    | "ui-joysticks"
     | "ui-footer"
     | "ui-map"
     | "ui-sound"
@@ -61,6 +62,7 @@ export const SETTINGS_CATEGORIES: readonly SettingsCategory[] = [
     { key: "ui-buttons", group: "ui", label: "Przyciski", keywords: "makra" },
     { key: "ui-mobile-buttons", group: "ui", label: "Przyciski mobilne", keywords: "makra kierunki telefon drużyna" },
     { key: "ui-radial", group: "ui", label: "Menu kołowe", keywords: "radialne gest komendy telefon" },
+    { key: "ui-joysticks", group: "ui", label: "Joysticki", keywords: "gałka gest przesunięcie kierunki telefon fado" },
     { key: "ui-footer", group: "ui", label: "Stopka", keywords: "paski kondycja" },
     { key: "ui-map", group: "ui", label: "Mapa" },
     { key: "ui-sound", group: "ui", label: "Dźwięk i powiadomienia", keywords: "dźwięki beep powiadomienia push mowa tts głos czytanie lektor" },

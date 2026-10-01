@@ -24,6 +24,7 @@ export type SettingsCategory =
     | 'ui-buttons'
     | 'ui-mobile-buttons'
     | 'ui-radial'
+    | 'ui-joysticks'
     | 'ui-footer'
     | 'ui-map'
     | 'ui-sound'
