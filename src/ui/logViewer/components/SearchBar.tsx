@@ -1,4 +1,4 @@
-import { forwardRef } from "react";
+import { forwardRef, useLayoutEffect, useRef, useState } from "react";
 import { Button, Icon, IconButton, Input, InputShell, Menu, MenuCheckItem, MenuSeparator, Toggle } from "../ui";
 import { formatClock } from "../model/format";
 import type { SearchScope, TimeRange } from "../model/types";
@@ -16,6 +16,8 @@ const SCOPE_PLACEHOLDER: Record<SearchScope, string> = {
 export interface SearchBarProps {
     query: string;
     onQueryChange: (value: string) => void;
+    /** Empties the field and hands focus back to it — the same as Escape. */
+    onClear: () => void;
     caseSensitive: boolean;
     onCaseSensitiveChange: (value: boolean) => void;
     regex: boolean;
@@ -58,6 +60,7 @@ export const SearchBar = forwardRef<HTMLInputElement, SearchBarProps>(function S
     const {
         query,
         onQueryChange,
+        onClear,
         caseSensitive,
         onCaseSensitiveChange,
         regex,
@@ -81,18 +84,36 @@ export const SearchBar = forwardRef<HTMLInputElement, SearchBarProps>(function S
     const searching = query.length > 0;
     const optionsOn = caseSensitive || regex;
 
+    // The counter inside the field runs from "1 z 2" to "Brak trafień tutaj",
+    // so the text's right padding follows what the adornments measure rather
+    // than a guess that either wastes the field or runs under them.
+    const adornmentsRef = useRef<HTMLSpanElement>(null);
+    const [adornmentsWidth, setAdornmentsWidth] = useState(0);
+    useLayoutEffect(() => {
+        const element = adornmentsRef.current;
+        if (!element) return;
+        const measure = () => setAdornmentsWidth(element.offsetWidth);
+        measure();
+        const observer = new ResizeObserver(measure);
+        observer.observe(element);
+        return () => observer.disconnect();
+    }, []);
+
     return (
         <div className="lv-search" data-searching={searching}>
             <InputShell
                 className="lv-search__field"
                 icon={<Icon name="search" size={14} />}
                 adornments={
-                    <>
+                    <span ref={adornmentsRef} className="lv-search__adornments">
                         {/* Inside the field, like an editor's find box: beside
                             it they cost the row the width that kept it on one
                             line once there was a query. */}
                         {searching ? (
                             <>
+                                <span className="lv-search__count" data-tone={counterTone}>
+                                    {counter}
+                                </span>
                                 <IconButton
                                     size="sm"
                                     className="lv-search__adornment"
@@ -108,6 +129,14 @@ export const SearchBar = forwardRef<HTMLInputElement, SearchBarProps>(function S
                                     onClick={() => onStep(1)}
                                 >
                                     <Icon name="chevron-down" size={14} />
+                                </IconButton>
+                                <IconButton
+                                    size="sm"
+                                    className="lv-search__adornment lv-search__clear"
+                                    title="Wyczyść wyszukiwanie  Esc"
+                                    onClick={onClear}
+                                >
+                                    <Icon name="close" size={14} />
                                 </IconButton>
                             </>
                         ) : null}
@@ -139,7 +168,7 @@ export const SearchBar = forwardRef<HTMLInputElement, SearchBarProps>(function S
                                 onToggle={() => onRegexChange(!regex)}
                             />
                         </Menu>
-                    </>
+                    </span>
                 }
             >
                 <Input
@@ -154,7 +183,7 @@ export const SearchBar = forwardRef<HTMLInputElement, SearchBarProps>(function S
                     placeholder={`${SCOPE_PLACEHOLDER[scope]}  Ctrl+F`}
                     autoComplete="off"
                     spellCheck={false}
-                    style={{ paddingRight: searching ? "96px" : "40px" }}
+                    style={{ paddingRight: `${adornmentsWidth + 8}px` }}
                 />
             </InputShell>
 
@@ -204,18 +233,6 @@ export const SearchBar = forwardRef<HTMLInputElement, SearchBarProps>(function S
 
             {searching ? (
                 <>
-                    <div className="lv-search__counter">
-                        <span className="lv-search__count" data-tone={counterTone}>
-                            {counter}
-                        </span>
-                        {/* The notice can be any length ("Dalej w: <postac>, <dzien>"), so
-                            it is clipped rather than wrapped — the full text is in the
-                            title. A second line here would push the whole row down. */}
-                        <span className="lv-search__sub" data-notice={subIsNotice} title={subLine || undefined}>
-                            {subLine}
-                        </span>
-                    </div>
-
                     <Toggle
                         pressed={onlyMatches}
                         onPressedChange={onOnlyMatchesChange}
@@ -227,6 +244,16 @@ export const SearchBar = forwardRef<HTMLInputElement, SearchBarProps>(function S
                         <span className="lv-only-narrow">Trafienia</span>
                     </Toggle>
                 </>
+            ) : null}
+
+            {/* Progress across every log, or a jump the player did not ask
+                for. It can be any length ("Dalej w: <postac>, <dzien>"), so it
+                takes the room before the menus and clips there — the full
+                text is in the title. */}
+            {subLine ? (
+                <span className="lv-search__sub" data-notice={subIsNotice} title={subLine}>
+                    {subLine}
+                </span>
             ) : null}
 
             {/* Forces the wrap between the search row and the filter row on a

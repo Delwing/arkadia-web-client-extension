@@ -128,7 +128,10 @@
     background: var(--lv-bg-app);
     font-size: var(--lv-text-2);
     font-weight: var(--lv-weight-semibold);
-    color: var(--lv-text-secondary);
+    /* Italic and a step dimmer than the entries' own text, so the day reads
+       as a heading over them rather than as one more entry. */
+    font-style: italic;
+    color: var(--lv-text-tertiary);
 }
 
 .lv-sidebar__notice {
@@ -226,17 +229,35 @@
     border-bottom: 1px solid var(--lv-border-subtle);
 }
 
-/* Starts small and grows to 340px. The basis is what a wrapping row measures
-   when it decides where to break — before anything shrinks — so a 340px basis
-   pushed the menus onto a second line the moment a query added the counter. */
+/* The basis is what a wrapping row measures when it decides where to break —
+   before anything shrinks — so it stays modest and the field grows into the
+   rest. With the counter inside the field there is room for a wider cap. */
 .lv-search__field {
-    flex: 1 1 180px;
+    /* Grows ahead of the spacer, so it fills to its cap before anything else
+       takes the slack — otherwise a query's extra controls shrank the field
+       just as the player started using it. */
+    flex: 999 1 260px;
     min-width: 160px;
-    max-width: 340px;
+    max-width: 520px;
+}
+
+/* Every control in the row stands as tall as the field, so the row reads as
+   one line rather than a big field with small buttons hung beside it. */
+.lv .lv-search__scope,
+.lv .lv-search__only,
+.lv .lv-search > .lv-range-chip,
+.lv .lv-search__filters .lv-menu-anchor > .lv-button {
+    height: var(--lv-control-xl);
 }
 
 .lv-search__only {
     flex-shrink: 0;
+}
+
+.lv-search__adornments {
+    display: flex;
+    align-items: center;
+    gap: var(--lv-space-1);
 }
 
 /* The match options (case, regex) behind one button inside the field. It
@@ -258,39 +279,20 @@
     flex-shrink: 0;
 }
 
-/* The counter and its sub-line are both empty until you type, and an empty
-   span makes no line box at all — so the block used to be 1px tall at rest and
-   two lines tall from the first keystroke, taking the whole row up with it.
-   Both lines therefore reserve their height unconditionally, below.
-
-   The width is reserved for the same reason, and exactly rather than as a
-   floor: the counter runs from "" to "Bledny wzorzec" to "3 z 128" while you
-   type, and the sub-line can be a notice naming a character and a day, which
-   no fixed width could ever fit. A floor alone let that notice widen the block
-   and shove the controls after it sideways; 128px both ways means nothing
-   after it can move, and the overflow is handled by the ellipsis below. */
-.lv-search__counter {
-    display: flex;
-    flex-direction: column;
-    gap: 1px;
-    flex: 0 0 128px;
-    min-width: 128px;
-    font-variant-numeric: tabular-nums;
-}
-
+/* "3 z 128" beside the arrows that step through it, like an editor's find
+   box. The field's text padding follows its width, so it never runs under. */
 .lv-search__count {
-    font-size: var(--lv-text-4);
-    line-height: 16px;
-    min-height: 16px;
+    padding: 0 var(--lv-space-2);
+    font-size: var(--lv-text-3);
     font-weight: var(--lv-weight-medium);
-    color: var(--lv-text);
+    font-variant-numeric: tabular-nums;
+    color: var(--lv-text-secondary);
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    pointer-events: none;
 }
 
 .lv-search__count[data-tone='muted'] {
-    color: var(--lv-text-secondary);
+    color: var(--lv-text-tertiary);
     font-weight: var(--lv-weight-regular);
 }
 
@@ -298,15 +300,15 @@
     color: var(--lv-danger-text);
 }
 
-/* A notice is as long as the session it names, and at 168px "Dalej w: Kethra,
-   Wczoraj · pt 18 wrz" wraps to two lines and grows the row a second time. It
-   is clipped instead: a notice is meant to catch the eye, not to be a
-   paragraph, and the whole text is on the element's title. */
+/* Progress across every log, or a notice naming a character and a day. It
+   takes the spacer's place before the menus and clips there instead of
+   wrapping or shoving them; the whole text is on the title. */
 .lv-search__sub {
+    flex: 1 1 0;
+    min-width: 0;
     font-size: var(--lv-text-2);
-    line-height: 15px;
-    min-height: 15px;
     color: var(--lv-text-tertiary);
+    font-variant-numeric: tabular-nums;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -318,6 +320,11 @@
     color: var(--lv-accent-text);
 }
 
+/* The sub-line already pushes the menus to the far end. */
+.lv .lv-search__sub ~ .lv-spacer {
+    display: none;
+}
+
 /* --- timeline ----------------------------------------------------------- */
 
 .lv-timeline {
@@ -325,7 +332,7 @@
     flex-direction: column;
     gap: var(--lv-space-3);
     padding: var(--lv-space-5) var(--lv-space-8) var(--lv-space-4);
-    border-bottom: 1px solid var(--lv-border-subtle);
+    border-top: 1px solid var(--lv-border-subtle);
 }
 
 .lv-timeline__head {
@@ -600,8 +607,8 @@
     justify-content: center;
 }
 
-/* The time column is `8.5ch`, not a pixel count: `ch` is one character of the
-   pane's own monospace font, `HH:MM:SS` is eight of them, and half a character
+/* The time column is `12.5ch`, not a pixel count: `ch` is one character of the
+   pane's own monospace font, `HH:MM:SS.mmm` is twelve of them, and half a character
    is the breathing room. Hard-coded pixels went wrong the moment the phone
    rules narrowed this column to 52px for a stamp that needs 57 — the timestamp
    then ran into the text, which is what you see with the tag and line-number
@@ -609,7 +616,7 @@
 .lv-log__row,
 .lv-log__probe {
     display: grid;
-    grid-template-columns: 8.5ch 40px 46px minmax(0, 1fr);
+    grid-template-columns: 12.5ch 40px 46px minmax(0, 1fr);
     column-gap: var(--lv-space-6);
     padding: 0 var(--lv-space-8);
     line-height: var(--lv-line-height);
@@ -625,7 +632,7 @@
 
 .lv-log[data-timestamps='true'][data-meta='false'] .lv-log__row,
 .lv-log[data-timestamps='true'][data-meta='false'] .lv-log__probe {
-    grid-template-columns: 8.5ch minmax(0, 1fr);
+    grid-template-columns: 12.5ch minmax(0, 1fr);
 }
 
 .lv-log[data-timestamps='false'][data-meta='false'] .lv-log__row,
@@ -698,8 +705,11 @@
     white-space: pre;
 }
 
+/* A light fill and an outline rather than a solid fill: the hit keeps the
+   game's colour, and green or red text has to stay readable on top of it. */
 .lv-log__text mark {
-    background: var(--lv-accent-a5);
+    background: var(--lv-accent-a3);
+    outline: 1px solid var(--lv-accent-border);
     color: inherit;
     border-radius: var(--lv-radius-1);
 }
@@ -731,9 +741,11 @@
     color: var(--lv-danger-text);
 }
 
+/* The bar's own font, not the log's monospace: centring two line boxes of
+   different fonts and sizes left the two labels on different baselines.
+   Tabular digits keep the times from jittering as the view scrolls. */
 .lv-status__view {
-    font-family: var(--lv-font-mono);
-    font-size: var(--lv-text-2);
+    font-variant-numeric: tabular-nums;
 }
 
 /* --- responsive --------------------------------------------------------- */
@@ -861,12 +873,27 @@
     .lv .lv-only-drawer {
         display: inline-flex;
     }
+
+    .lv .lv-only-docked {
+        display: none;
+    }
 }
 
 /* Docked: no drawer button, no scrim, no transform to undo. */
 @media (min-width: 901px) {
     .lv .lv-only-drawer {
         display: none;
+    }
+
+    /* Folded away for a wider log. The drawer below 901px never reads this. */
+    .lv[data-sidebar='hidden'] .lv-sidebar {
+        display: none;
+    }
+
+    .lv .lv-sidebar-toggle[data-state='on'] {
+        background: var(--lv-bg-selected);
+        border-color: var(--lv-border-strong);
+        color: var(--lv-text);
     }
 }
 
@@ -907,11 +934,11 @@
         font-size: var(--lv-text-2);
     }
 
-    /* Two rows. The first is the search itself and, once there is a query,
-       where you are in the results; the second is where to look and the
-       filters:
+    /* Two rows. The first is the search itself, with where you are in the
+       results inside it and, while there is one, the cross-log progress or
+       notice beside it; the second is where to look and the filters:
 
-           [ Szukaj ...   ^ v  o ] [ 3 z 128 ]
+           [ Szukaj ...  3 z 128  ^ v  o ] [ 1 w 2 logach ]
            [ W tym logu v ] [ Trafienia ]      [ Kanaly v ] [ Widok v ]    */
     .lv-search {
         gap: var(--lv-space-3);
@@ -925,10 +952,9 @@
         width: auto;
     }
 
-    /* Fixed at 168px the counter reserved nearly half a phone's width. Here it
-       takes what it needs, up to a cap, and clips the rest — the whole notice
+    /* Takes what it needs, up to a cap, and clips the rest — the whole notice
        is on the element's title. */
-    .lv-search__counter {
+    .lv-search__sub {
         order: 2;
         flex: 0 1 auto;
         min-width: 0;
@@ -989,7 +1015,7 @@
        because a timestamp is a timestamp. */
     .lv-log__row,
     .lv-log__probe {
-        grid-template-columns: 8.5ch 30px 38px minmax(0, 1fr);
+        grid-template-columns: 12.5ch 30px 38px minmax(0, 1fr);
         column-gap: var(--lv-space-4);
         padding: 0 var(--lv-space-4);
     }
@@ -1015,6 +1041,7 @@
         --lv-control-sm: 36px;
         --lv-control-md: 38px;
         --lv-control-lg: 40px;
+        --lv-control-xl: 42px;
     }
 
     .lv-session {

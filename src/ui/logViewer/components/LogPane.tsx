@@ -1,10 +1,12 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Button, EmptyState } from "../ui";
 import { CHANNEL_META } from "../model/channels";
 import { LOG_EVENT_META } from "../model/events";
-import { formatClock } from "../model/format";
+import { formatClockMs } from "../model/format";
+import type { MatchSegment } from "../model/search";
 import type { RenderedRow } from "../model/viewerState";
+import { highlightHtml } from "./highlightHtml";
 
 export interface LogPaneProps {
     rows: RenderedRow[];
@@ -471,7 +473,6 @@ export function LogPane({
                     const eventMeta = row.event
                         ? LOG_EVENT_META[row.event as keyof typeof LOG_EVENT_META]
                         : undefined;
-                    let occurrence = -1;
                     return (
                         <div
                             key={virtualRow.key}
@@ -490,7 +491,7 @@ export function LogPane({
                             }}
                         >
                             {showTimestamps ? (
-                                <span className="lv-log__time">{formatClock(row.timestamp)}</span>
+                                <span className="lv-log__time">{formatClockMs(row.timestamp)}</span>
                             ) : null}
                             {showMeta ? (
                                 <>
@@ -509,26 +510,20 @@ export function LogPane({
                                 style={{ color: CHANNEL_META[row.channel].colorToken }}
                                 title={wrap ? undefined : row.text}
                             >
-                                {showColors && row.html && row.matchCount === 0 ? (
-                                    // The stored HTML carries the game's own colours. It is only
-                                    // used when nothing has to be highlighted inside it: mixing
-                                    // marks into pre-rendered markup would mean parsing it.
-                                    <span dangerouslySetInnerHTML={{ __html: row.html }} />
+                                {showColors && row.html ? (
+                                    // The stored HTML carries the game's own colours; hits are
+                                    // marked inside it rather than costing the line its colours.
+                                    <ColoredText
+                                        html={row.html}
+                                        segments={row.segments}
+                                        matchCount={row.matchCount}
+                                        currentOccurrence={isCurrentRow ? currentOccurrence : -1}
+                                    />
                                 ) : (
-                                    row.segments.map((segment, index) => {
-                                        if (!segment.match) {
-                                            return <span key={index}>{segment.text}</span>;
-                                        }
-                                        occurrence += 1;
-                                        return (
-                                            <mark
-                                                key={index}
-                                                data-current={isCurrentRow && occurrence === currentOccurrence}
-                                            >
-                                                {segment.text}
-                                            </mark>
-                                        );
-                                    })
+                                    <PlainText
+                                        segments={row.segments}
+                                        currentOccurrence={isCurrentRow ? currentOccurrence : -1}
+                                    />
                                 )}
                             </div>
                         </div>
@@ -539,7 +534,7 @@ export function LogPane({
             {/* Hidden, laid out by the same grid as a real row — see the
                 measuring effect above. */}
             <div className="lv-log__probe" ref={probeRef}>
-                {showTimestamps ? <span className="lv-log__time">00:00:00</span> : null}
+                {showTimestamps ? <span className="lv-log__time">00:00:00.000</span> : null}
                 {showMeta ? (
                     <>
                         <span className="lv-log__number">0000</span>
@@ -553,3 +548,46 @@ export function LogPane({
         </div>
     );
 }
+
+interface TextProps {
+    segments: MatchSegment[];
+    /** Which hit in this line is the current one; -1 when none is. */
+    currentOccurrence: number;
+}
+
+/** The line as plain text, hits marked. */
+function PlainText({ segments, currentOccurrence }: TextProps) {
+    let occurrence = -1;
+    return (
+        <>
+            {segments.map((segment, index) => {
+                if (!segment.match) return <span key={index}>{segment.text}</span>;
+                occurrence += 1;
+                return (
+                    <mark key={index} data-current={occurrence === currentOccurrence}>
+                        {segment.text}
+                    </mark>
+                );
+            })}
+        </>
+    );
+}
+
+/**
+ * The line in the game's colours, hits marked inside them. Memoised: an inline
+ * `{ __html }` object makes React 19 re-parse the markup on every render, and
+ * the pane re-renders on every scroll frame.
+ */
+const ColoredText = memo(function ColoredText({
+    html,
+    segments,
+    matchCount,
+    currentOccurrence,
+}: TextProps & { html: string; matchCount: number }) {
+    const markup = useMemo(() => {
+        const marked = matchCount === 0 ? html : highlightHtml(html, segments, currentOccurrence);
+        return marked === null ? null : { __html: marked };
+    }, [html, segments, matchCount, currentOccurrence]);
+    if (!markup) return <PlainText segments={segments} currentOccurrence={currentOccurrence} />;
+    return <span dangerouslySetInnerHTML={markup} />;
+});

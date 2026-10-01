@@ -1,5 +1,5 @@
 import { useEffect, type RefObject } from "react";
-import { formatClock } from "../model/format";
+import { formatClockMs } from "../model/format";
 
 export interface LineMenuState {
     x: number;
@@ -88,7 +88,7 @@ export function LineMenu({ menu, hasRange, boundary, onSetBound, onClearRange, o
             onContextMenu={(event) => event.preventDefault()}
         >
             <div className="lv-line-menu__label">
-                linia {menu.lineNumber} {"·"} {formatClock(menu.timestamp)}
+                linia {menu.lineNumber} {"·"} {formatClockMs(menu.timestamp)}
             </div>
             <button
                 type="button"

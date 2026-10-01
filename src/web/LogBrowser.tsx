@@ -202,13 +202,15 @@ export function LogBrowser({ headerTrailing, initialQuery }: LogBrowserProps) {
                                 there is no `#logs-modal`, the host passes its own
                                 control as `headerTrailing` instead. */}
                             {inStockModal ? (
-                                <IconButton
-                                    id="logs-close"
-                                    data-modal-dismiss
-                                    title="Zamknij  Esc"
-                                >
-                                    <Icon name="close" />
-                                </IconButton>
+                                <>
+                                    {/* Sets the window's own control apart from
+                                        the log actions; between the two actions
+                                        it split a pair that belongs together. */}
+                                    <div className="lv-divider--vertical lv-hide-narrow" />
+                                    <IconButton id="logs-close" data-modal-dismiss title="Zamknij  Esc">
+                                        <Icon name="close" />
+                                    </IconButton>
+                                </>
                             ) : null}
                         </>
                     }

@@ -10,6 +10,10 @@ export interface ViewerHeaderProps {
     sessionCount: number;
     /** Opens the session list while it is a drawer; hidden once it is docked. */
     onToggleSessions: () => void;
+    /** Whether the docked session list is shown; a drawer ignores it. */
+    sidebarShown: boolean;
+    /** Hides or shows the docked session list, for a wider log. */
+    onToggleDockedSessions: () => void;
     onPrevSession: () => void;
     onNextSession: () => void;
     hasPrev: boolean;
@@ -36,6 +40,8 @@ export function ViewerHeader({
     session,
     sessionCount,
     onToggleSessions,
+    sidebarShown,
+    onToggleDockedSessions,
     onPrevSession,
     onNextSession,
     hasPrev,
@@ -56,7 +62,8 @@ export function ViewerHeader({
               `${formatClock(session.startedAt, true)}–${session.live ? "teraz" : formatClock(session.endedAt, true)}`,
               formatDuration(session.endedAt - session.startedAt),
               `${session.lineCount} ${pluralLines(session.lineCount)}`,
-              session.file,
+              // No file name: "session_1790641357416.txt" says nothing the
+              // date and time do not. It is on the line's title for support.
           ].join("  ·  ")
         : "Nie ma jeszcze żadnego logu";
 
@@ -67,6 +74,15 @@ export function ViewerHeader({
                 className="lv-only-drawer"
                 title={`Lista sesji (${sessionCount})`}
                 onClick={onToggleSessions}
+            >
+                <Icon name="sessions" />
+            </IconButton>
+            {/* The same list, docked: folding it away gives the log the width. */}
+            <IconButton
+                className="lv-only-docked lv-sidebar-toggle"
+                data-state={sidebarShown ? "on" : "off"}
+                title={sidebarShown ? "Ukryj listę sesji" : `Pokaż listę sesji (${sessionCount})`}
+                onClick={onToggleDockedSessions}
             >
                 <Icon name="sessions" />
             </IconButton>
@@ -99,7 +115,9 @@ export function ViewerHeader({
                         </>
                     ) : null}
                 </div>
-                <div className="lv__meta">{meta}</div>
+                <div className="lv__meta" title={session?.file}>
+                    {meta}
+                </div>
             </div>
 
             {/* Copying and every export in one menu. They used to be two
@@ -137,10 +155,7 @@ export function ViewerHeader({
             </Menu>
 
             {trailing ? (
-                <div className="lv-row lv-row--tight">
-                    <div className="lv-divider--vertical lv-hide-narrow" />
-                    {trailing}
-                </div>
+                <div className="lv-row lv-row--tight">{trailing}</div>
             ) : null}
         </div>
     );

@@ -112,6 +112,46 @@ test.describe('Logi browser', () => {
         await expect(position).toHaveText('2 z 2');
     });
 
+    test('the docked session list folds away and stays folded', async ({page}) => {
+        await page.setViewportSize({width: 1400, height: 800});
+        await login(page);
+        await pushText(page, 'linia');
+        await openLogs(page);
+
+        const sidebar = page.locator('.lv-sidebar');
+        await expect(sidebar).toBeVisible();
+        await page.getByTitle('Ukryj listę sesji').click();
+        await expect(sidebar).toBeHidden();
+
+        // A preference, like the view options: reopening the window keeps it.
+        await page.keyboard.press('Escape');
+        await expect(page.locator('#logs-modal')).toBeHidden();
+        await openLogs(page);
+        await expect(sidebar).toBeHidden();
+        await page.getByTitle(/Pokaż listę sesji/).click();
+        await expect(sidebar).toBeVisible();
+    });
+
+    test('the field keeps its width with a query and clears from inside', async ({page}) => {
+        await page.setViewportSize({width: 1400, height: 800});
+        await login(page);
+        await pushText(page, 'pierwszy TRAF');
+        await openLogs(page);
+
+        const field = page.locator('.lv-search__field');
+        const input = page.locator('#lv-search');
+        const atRest = await field.evaluate(el => el.getBoundingClientRect().width);
+        await input.fill('TRAF');
+        await expect(page.locator('.lv-search__count')).toHaveText('1 z 1');
+        // The counter, arrows and "Tylko trafienia" must not cost the field width.
+        expect(await field.evaluate(el => el.getBoundingClientRect().width)).toBe(atRest);
+
+        await page.getByTitle(/Wyczyść wyszukiwanie/).click();
+        await expect(input).toHaveValue('');
+        await expect(input).toBeFocused();
+        await expect(page.locator('.lv-search__count')).toHaveCount(0);
+    });
+
     test('Page Up scrolls the pane', async ({page}) => {
         await login(page);
         await pushFiller(page, 'linia', 200);
@@ -384,7 +424,7 @@ test.describe('Logi browser on a phone', () => {
 
         // With the tag and line-number columns off (the default), the text
         // starts right after the clock — so a time column too narrow for
-        // `HH:MM:SS` does not just clip, it runs into the log. It did: the phone
+        // `HH:MM:SS.mmm` does not just clip, it runs into the log. It did: the phone
         // rules once pinned this column at 52px for a stamp that needs 57.
         await expect(page.locator('.lv-log')).toHaveAttribute('data-meta', 'false');
 

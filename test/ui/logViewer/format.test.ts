@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
     formatClock,
+    formatClockMs,
     formatDateLong,
     formatDayLabel,
     formatDuration,
@@ -18,6 +19,12 @@ describe("formatClock", () => {
 
     it("drops seconds when short", () => {
         expect(formatClock(at(20, 41, 3), true)).toBe("20:41");
+    });
+});
+
+describe("formatClockMs", () => {
+    it("adds padded milliseconds for log lines", () => {
+        expect(formatClockMs(at(9, 5, 3) + 42)).toBe("09:05:03.042");
     });
 });
 

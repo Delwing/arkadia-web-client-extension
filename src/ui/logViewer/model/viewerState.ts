@@ -33,6 +33,8 @@ export interface ViewerState {
     showMeta: boolean;
     showColors: boolean;
     wrap: boolean;
+    /** The docked session list. A drawer on narrow screens ignores it. */
+    showSidebar: boolean;
     follow: boolean;
     /** One-off message under the counter; cleared on the next query edit. */
     notice: string;
@@ -77,6 +79,7 @@ export function initialViewerState(sessionId: string): ViewerState {
         // and the plain-text rendering is the fallback, not the intent.
         showColors: true,
         wrap: true,
+        showSidebar: true,
         follow: true,
         notice: "",
     };
@@ -116,6 +119,7 @@ export interface PersistedPreferences {
     showMeta: boolean;
     showColors: boolean;
     wrap: boolean;
+    showSidebar: boolean;
     scope: SearchScope;
     sessionId?: string;
 }
@@ -127,6 +131,7 @@ export function pickPreferences(state: ViewerState): PersistedPreferences {
         showMeta: state.showMeta,
         showColors: state.showColors,
         wrap: state.wrap,
+        showSidebar: state.showSidebar,
         // "Zakres" is not storable: the range it depends on is deliberately not
         // persisted either, so the scope to come back to is the wider one.
         scope: state.scope === "range" ? "log" : state.scope,
@@ -153,6 +158,7 @@ export function applyPreferences(state: ViewerState, stored: unknown): ViewerSta
         showMeta: typeof preferences.showMeta === "boolean" ? preferences.showMeta : state.showMeta,
         showColors: typeof preferences.showColors === "boolean" ? preferences.showColors : state.showColors,
         wrap: typeof preferences.wrap === "boolean" ? preferences.wrap : state.wrap,
+        showSidebar: typeof preferences.showSidebar === "boolean" ? preferences.showSidebar : state.showSidebar,
         scope: preferences.scope === "all" || preferences.scope === "log" ? preferences.scope : state.scope,
     };
 }

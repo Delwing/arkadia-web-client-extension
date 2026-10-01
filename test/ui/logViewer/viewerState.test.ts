@@ -385,8 +385,9 @@ describe("stepMatch, all-logs scope", () => {
 
 describe("preferences", () => {
     it("round-trips the persisted slice", () => {
-        const source = state({ wrap: false, scope: "all", showTimestamps: false, showColors: false });
+        const source = state({ wrap: false, scope: "all", showTimestamps: false, showColors: false, showSidebar: false });
         const restored = applyPreferences(initialViewerState("a"), pickPreferences(source));
+        expect(restored.showSidebar).toBe(false);
         expect(restored.wrap).toBe(false);
         expect(restored.scope).toBe("all");
         expect(restored.showTimestamps).toBe(false);

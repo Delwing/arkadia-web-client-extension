@@ -9,6 +9,11 @@ export function formatClock(timestamp: number, short = false): string {
     return short ? hhmm : `${hhmm}:${pad(date.getSeconds())}`;
 }
 
+/** `20:41:03.042` — a log line, where several land in the same second. */
+export function formatClockMs(timestamp: number): string {
+    return `${formatClock(timestamp)}.${String(new Date(timestamp).getMilliseconds()).padStart(3, "0")}`;
+}
+
 /**
  * Axis label for a session of a given length. A four-minute session labelled
  * `20:14 20:14 20:15 …` tells the player nothing, so short spans get seconds.

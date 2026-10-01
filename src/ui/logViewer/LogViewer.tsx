@@ -245,8 +245,10 @@ export function LogViewer({
     const persisted = useMemo(() => pickPreferences(state), [
         state.channels,
         state.showTimestamps,
+        state.showMeta,
         state.showColors,
         state.wrap,
+        state.showSidebar,
         state.scope,
         state.sessionId,
     ]);
@@ -703,7 +705,9 @@ export function LogViewer({
             const progress = crossSearch?.running ? ` (przeszukano ${crossSearch.scanned} z ${crossSearch.total})` : "";
             return { subLine: `${summary}${progress}`, subIsNotice: false };
         }
-        return { subLine: "Enter / Shift+Enter", subIsNotice: false };
+        // Enter / Shift+Enter are on the arrows' titles; a standing hint here
+        // would only take room from the menus.
+        return { subLine: "", subIsNotice: false };
     }, [state.notice, state.scope, view.searching, view.hitsBySession, sessions, loading, crossSearch]);
 
     const emptyMessage = useMemo(() => {
@@ -748,6 +752,7 @@ export function LogViewer({
         <div
             className="lv lv-theme"
             ref={rootRef}
+            data-sidebar={state.showSidebar ? "shown" : "hidden"}
             onKeyDown={onRootKeyDown}
             // The viewer owns its shortcuts only while focus is inside it: a
             // modal that listens on `window` steals keys from the game input.
@@ -757,6 +762,8 @@ export function LogViewer({
                 session={info}
                 sessionCount={sessions.length}
                 onToggleSessions={() => setSidebarOpen((open) => !open)}
+                sidebarShown={state.showSidebar}
+                onToggleDockedSessions={() => patch({ showSidebar: !state.showSidebar })}
                 onPrevSession={() => stepSession(-1)}
                 onNextSession={() => stepSession(1)}
                 hasPrev={positionInOrder > 0}
@@ -805,11 +812,14 @@ export function LogViewer({
 
                 <div className="lv__main">
                     {info ? (
-                        <>
                         <SearchBar
                             ref={searchRef}
                             query={state.query}
                             onQueryChange={(value) => patch({ query: value, matchIndex: 0, notice: "" })}
+                            onClear={() => {
+                                patch({ query: "", matchIndex: 0, notice: "" });
+                                searchRef.current?.focus();
+                            }}
                             caseSensitive={state.caseSensitive}
                             onCaseSensitiveChange={(value) => patch({ caseSensitive: value, matchIndex: 0 })}
                             regex={state.regex}
@@ -850,27 +860,6 @@ export function LogViewer({
                                 </>
                             }
                         />
-
-                        {session ? (
-                        <Timeline
-                            allLines={session.lines}
-                            activityLines={activityLines}
-                            live={session.live}
-                            matchTimestamps={matchTimestamps}
-                            currentMatchTimestamp={currentMatchTimestamp}
-                            viewport={viewport}
-                            onJumpToTime={jumpToTime}
-                            onJumpToStart={() => {
-                                patch({ follow: false });
-                                requestScroll({ kind: "top" });
-                            }}
-                            onJumpToEnd={() => requestScroll({ kind: "bottom" })}
-                            range={state.range}
-                            rangeActive={view.range !== null}
-                            onRangeChange={setRange}
-                        />
-                        ) : null}
-                        </>
                     ) : null}
 
                     <LogPane
@@ -905,6 +894,30 @@ export function LogViewer({
                             });
                         }}
                     />
+
+                    {/* Under the log rather than over it: the log is what the
+                        window is for, and the timeline is a way of moving
+                        through it — next to the status line that says where
+                        the view is. */}
+                    {info && session ? (
+                        <Timeline
+                            allLines={session.lines}
+                            activityLines={activityLines}
+                            live={session.live}
+                            matchTimestamps={matchTimestamps}
+                            currentMatchTimestamp={currentMatchTimestamp}
+                            viewport={viewport}
+                            onJumpToTime={jumpToTime}
+                            onJumpToStart={() => {
+                                patch({ follow: false });
+                                requestScroll({ kind: "top" });
+                            }}
+                            onJumpToEnd={() => requestScroll({ kind: "bottom" })}
+                            range={state.range}
+                            rangeActive={view.range !== null}
+                            onRangeChange={setRange}
+                        />
+                    ) : null}
 
                     <StatusBar
                         shownLines={view.rows.length}
