@@ -4,9 +4,11 @@ import type Client from '@client/Client';
 import { globalStorage } from '@modules/core/storage';
 import { getShellSettings } from '@modules/core/settings';
 import { loadSettings } from '@web/mobileButtonSettings';
+import { executeMacro } from '@web/scripts/buttonMacroExecutor';
 import {
     JOYSTICK_DIRECTIONS,
     directionAngle,
+    joystickMacro,
     parseJoystickSettings,
     pickJoystickDirection,
     type JoystickDirection,
@@ -77,10 +79,12 @@ type Gesture = {
     direction: JoystickDirection | null;
 };
 
-function Joystick({ item, center, locked, onSend, onMove, onMoved }: {
+function Joystick({ item, center, locked, describe, onSend, onMove, onMoved }: {
     item: JoystickSetting;
     center: Point;
     locked: boolean;
+    /** What a slot shows: the command, or a built-in action's name. */
+    describe: (value: string) => string;
     onSend: (command: string) => void;
     onMove: (id: string, center: Point) => void;
     onMoved: (id: string, center: Point) => void;
@@ -189,7 +193,7 @@ function Joystick({ item, center, locked, onSend, onMove, onMoved }: {
     };
 
     const tagsVisible = peek || direction !== null;
-    const label = item.label || item.center;
+    const label = item.label || (item.center ? describe(item.center) : '');
 
     // Tags of a joystick parked by the screen edge would run off it; nudge them back in.
     useLayoutEffect(() => {
@@ -251,7 +255,7 @@ function Joystick({ item, center, locked, onSend, onMove, onMoved }: {
                         className={'mobile-joystick__tag' + (dir === direction ? ' mobile-joystick__tag--active' : '')}
                         style={{ left: radius + Math.cos(angle) * at, top: radius + Math.sin(angle) * at }}
                     >
-                        {item.commands[dir]}
+                        {describe(item.commands[dir]!)}
                     </span>
                 );
             })}
@@ -294,9 +298,21 @@ export default function MobileJoysticks({ client }: { client: Client }) {
 
     const fallbacks = defaultCenters(joysticks.items, viewport);
 
-    const send = (command: string) => {
+    const send = (value: string) => {
         if (getShellSettings().hapticFeedback !== false) navigator.vibrate?.(20);
-        client.sendCommand(command);
+        const macro = joystickMacro(value);
+        if (macro) executeMacro(client, macro.macroType, { macroType: macro.macroType });
+        else client.sendCommand(value);
+    };
+
+    const describe = (value: string) => {
+        const macro = joystickMacro(value);
+        if (!macro) return value;
+        if (macro.macroType === 'specialExit') {
+            // Name the exit this room actually has, as the action would take it.
+            return Object.keys(client.Map.currentRoom?.specialExits ?? {})[0] ?? macro.label;
+        }
+        return macro.label;
     };
 
     const move = (id: string, center: Point) => {
@@ -329,6 +345,7 @@ export default function MobileJoysticks({ client }: { client: Client }) {
                     item={item}
                     center={moving[item.id] ?? resolveCenter(item, positions, fallbacks[index], viewport)}
                     locked={locked}
+                    describe={describe}
                     onSend={send}
                     onMove={move}
                     onMoved={moved}

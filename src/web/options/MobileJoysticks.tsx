@@ -3,6 +3,7 @@ import { Button, Check, DeleteButton, Input } from "@web-ui/primitives/index.ts"
 import { globalStorage } from "@modules/core/storage";
 import { loadSettings, saveSettings } from "../mobileButtonSettings";
 import {
+    JOYSTICK_MACROS,
     JOYSTICK_MAX_SIZE,
     JOYSTICK_MIN_SIZE,
     clampJoystickSize,
@@ -17,6 +18,9 @@ import {
 
 /** The 3x3 editor grid: compass directions around the tap command. */
 const GRID: (JoystickDirection | "center")[] = ["nw", "n", "ne", "w", "center", "e", "sw", "s", "se"];
+
+/** Suggests the built-in actions in every slot. */
+const ACTIONS_LIST_ID = "joystick-actions";
 
 function JoystickCard({ item, disabled, onChange, onRemove }: {
     item: JoystickSetting;
@@ -48,6 +52,7 @@ function JoystickCard({ item, disabled, onChange, onRemove }: {
                     <Input
                         key={cell}
                         mono
+                        list={ACTIONS_LIST_ID}
                         className="joystick-editor__center"
                         value={item.center}
                         placeholder="dotknięcie"
@@ -59,6 +64,7 @@ function JoystickCard({ item, disabled, onChange, onRemove }: {
                     <Input
                         key={cell}
                         mono
+                        list={ACTIONS_LIST_ID}
                         value={item.commands[cell] ?? ""}
                         placeholder={cell}
                         title={`Komenda po przesunięciu: ${cell}`}
@@ -144,7 +150,13 @@ function MobileJoysticks({ registerSave }: { registerSave: (save: () => void) =>
                 Dotknięcie wysyła komendę ze środka, przesunięcie palcem od środka — komendę z danego kierunku.
                 Przytrzymanie pokazuje wszystkie komendy wokół joysticka; przytrzymaj i przeciągnij, aby go przesunąć
                 (chyba że przyciski mobilne są zablokowane). Puste pola kierunków są pomijane.
+                Zamiast komendy można wpisać <code>@zerknij</code> albo <code>@wyjscie</code> (pierwsze wyjście specjalne z lokacji).
             </p>
+            <datalist id={ACTIONS_LIST_ID}>
+                {Object.entries(JOYSTICK_MACROS).map(([value, macro]) => (
+                    <option key={value} value={value}>{macro.label}</option>
+                ))}
+            </datalist>
             <div className="joystick-editor">
                 {joysticks.items.length === 0 && (
                     <p className="popup-field__hint">Brak joysticków. Dodaj nowy.</p>

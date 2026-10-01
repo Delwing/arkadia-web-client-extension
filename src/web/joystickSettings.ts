@@ -34,6 +34,19 @@ export const JOYSTICK_MAX_SIZE = 220;
 export const defaultJoystickColor = '#6CA6CD';
 export const defaultJoystickFontColor = '#f1f5f9';
 
+/**
+ * Built-in actions a slot can hold instead of a command: the same macros the
+ * mobile buttons run, for things a fixed command can't express.
+ */
+export const JOYSTICK_MACROS: Record<string, { macroType: string; label: string }> = {
+    '@zerknij': { macroType: 'zerknij', label: 'zerknij' },
+    '@wyjscie': { macroType: 'specialExit', label: 'wyjście specjalne' },
+};
+
+export function joystickMacro(value: string): { macroType: string; label: string } | null {
+    return JOYSTICK_MACROS[value.trim().toLowerCase()] ?? null;
+}
+
 const DEFAULT_JOYSTICKS: JoystickSetting[] = [
     {
         id: 'joystick-compass',
@@ -48,7 +61,7 @@ const DEFAULT_JOYSTICKS: JoystickSetting[] = [
         id: 'joystick-vertical',
         label: '',
         center: '',
-        commands: { n: 'u', e: 'wyjdz', s: 'd', w: 'wejdz' },
+        commands: { n: 'u', e: '@zerknij', s: 'd', w: '@wyjscie' },
         size: 84,
         color: defaultJoystickColor,
         fontColor: defaultJoystickFontColor,

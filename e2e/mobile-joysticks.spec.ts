@@ -19,7 +19,7 @@ const JOYSTICKS = {
             id: 'vertical',
             label: 'pion',
             center: '',
-            commands: {n: 'u', s: 'd'},
+            commands: {n: 'u', s: 'd', e: '@zerknij'},
             size: 90,
             color: '#6CA6CD',
             fontColor: '#f1f5f9',
@@ -80,6 +80,12 @@ test.describe('Mobile joysticks', () => {
         await expect.poll(() => getLastOutgoingCommand(page)).toBe('d');
     });
 
+    test('a built-in action runs instead of being sent as text', async ({page}) => {
+        await boot(page);
+        await swipe(page, 'vertical', 40, 0);
+        await expect.poll(() => getLastOutgoingCommand(page)).toBe('zerknij');
+    });
+
     test('a tap sends the centre command', async ({page}) => {
         await boot(page);
         const c = await centerOf(page, 'compass');
@@ -94,7 +100,7 @@ test.describe('Mobile joysticks', () => {
 
         await page.mouse.move(before.x, before.y);
         await page.mouse.down();
-        await expect(joystick.locator('.mobile-joystick__tag')).toHaveText(['u', 'd']);
+        await expect(joystick.locator('.mobile-joystick__tag')).toHaveText(['u', 'zerknij', 'd']);
 
         await page.mouse.move(before.x - 60, before.y - 80, {steps: 5});
         await page.mouse.up();

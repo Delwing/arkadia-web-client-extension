@@ -3,6 +3,7 @@ import {
     JOYSTICK_MAX_SIZE,
     JOYSTICK_MIN_SIZE,
     createDefaultJoysticks,
+    joystickMacro,
     parseJoystickSettings,
     pickJoystickDirection,
 } from '@web/joystickSettings.ts';
@@ -59,5 +60,19 @@ describe('pickJoystickDirection', () => {
     it('ignores swipes pointing away from every configured direction', () => {
         expect(pickJoystickDirection(0, 50, 20, { n: 'u' })).toBeNull();
         expect(pickJoystickDirection(10, -50, 20, { n: 'u' })).toBe('n');
+    });
+});
+
+describe('joystickMacro', () => {
+    it('recognises the built-in actions and nothing else', () => {
+        expect(joystickMacro('@zerknij')?.macroType).toBe('zerknij');
+        expect(joystickMacro(' @Wyjscie ')?.macroType).toBe('specialExit');
+        expect(joystickMacro('zerknij')).toBeNull();
+        expect(joystickMacro('@cokolwiek')).toBeNull();
+    });
+
+    it('puts the special exit left and zerknij right on the small default joystick', () => {
+        const small = createDefaultJoysticks().items[1];
+        expect(small.commands).toEqual({ n: 'u', s: 'd', w: '@wyjscie', e: '@zerknij' });
     });
 });
