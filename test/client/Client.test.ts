@@ -371,6 +371,21 @@ test('sendCommand expands @> to the next target in the attack queue', async () =
   expect((global as any).clientAdapterMock.send).toHaveBeenLastCalledWith('parsed:zabij ob_31', false, undefined);
 });
 
+test('sendCommand expands user references, shortcuts first', async () => {
+  const client = new Client((global as any).clientAdapterMock as any);
+  jest.spyOn(client.ObjectManager, 'getObjectsOnLocation').mockReturnValue([
+    { num: 7, shortcut: 'A' },
+  ] as any);
+  client.commandProcessor.objectRefs.set('tank', 7);
+  client.commandProcessor.objectRefs.set('a', 99);
+
+  await client.sendCommand('zaslon @Tank');
+  expect((global as any).clientAdapterMock.send).toHaveBeenLastCalledWith('parsed:zaslon ob_7', false, undefined);
+
+  await client.sendCommand('zaslon @a');
+  expect((global as any).clientAdapterMock.send).toHaveBeenLastCalledWith('parsed:zaslon ob_7', false, undefined);
+});
+
 test('sendCommand leaves @> alone when the attack queue is empty', async () => {
   const client = new Client((global as any).clientAdapterMock as any);
 

@@ -506,6 +506,48 @@ export default function initObjectAliases(
                 attackController.attackByTarget(m[1]);
             }
         });
+        const refs = client.commandProcessor.objectRefs;
+        const describe = (num: number) =>
+            client.ObjectManager.getObjectsOnLocation().find(o => o.num === num)?.desc
+            ?? client.TeamManager.getAccumulatedObjectsData?.()?.get(num)?.desc
+            ?? `ob_${num}`;
+        aliases.push({
+            pattern: /^\/ref(?: (\S+)(?: (.+))?)?$/,
+            callback: (m: RegExpMatchArray) => {
+                const [, rawName, query] = m;
+                if (!rawName) {
+                    if (refs.size === 0) {
+                        client.print('Brak referencji. Ustaw: /ref nazwa cel');
+                        return;
+                    }
+                    refs.forEach((num, name) => client.print(`@${name} -> ${describe(num)}`));
+                    return;
+                }
+                const name = rawName.toLowerCase();
+                if (!query) {
+                    const num = refs.get(name);
+                    client.print(num !== undefined ? `@${name} -> ${describe(num)}` : `Nie ma referencji @${name}.`);
+                    return;
+                }
+                // Letters alone could also be a team shortcut, which always wins.
+                if (!/^[a-z][a-z0-9]+$/.test(name)) {
+                    client.print('Nazwa referencji: litera, potem litery lub cyfry, co najmniej 2 znaki.');
+                    return;
+                }
+                const obj = findTarget(query, 'team');
+                if (obj) {
+                    refs.set(name, obj.num);
+                    client.print(`@${name} -> ${describe(obj.num)}`);
+                }
+            }
+        });
+        aliases.push({
+            pattern: /^\/unref (\S+)$/,
+            callback: (m: RegExpMatchArray) => {
+                const name = m[1].toLowerCase();
+                client.print(refs.delete(name) ? `Usunieto @${name}.` : `Nie ma referencji @${name}.`);
+            }
+        });
         aliases.push({
             pattern: /^\/walka_restart$/,
             callback: () => {

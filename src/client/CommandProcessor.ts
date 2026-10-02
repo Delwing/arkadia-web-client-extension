@@ -18,6 +18,13 @@ export interface CommandHook {
 
 export default class CommandProcessor {
     aliases: AliasList = new AliasList();
+    /**
+     * User-named references (`/ref tank @A` -> `@tank`), lowercase name to
+     * object number. They point at the object, not the shortcut, so they keep
+     * following the same person when shortcuts are handed out again. Session
+     * only: object numbers do not survive a relog.
+     */
+    readonly objectRefs = new Map<string, number>();
     private commandHooks: CommandHook[] = [];
     private client: Client;
 
@@ -100,6 +107,8 @@ export default class CommandProcessor {
      * `@1`, `@A`, `@@` name objects on the location by their shortcut; `@>` is
      * the next target in the attack queue (the one /nn would attack). Team
      * shortcuts take every letter, so the queue needs a non-alphanumeric token.
+     * Anything else is looked up in the user's own references (`/ref`), after
+     * the shortcuts so a reference can never hide one.
      */
     private expandObjectShortcuts(command: string): string {
         return command.replace(/@(>|[A-Za-z0-9@]+)/g, (match, short) => {
@@ -110,7 +119,11 @@ export default class CommandProcessor {
             const obj = this.client.ObjectManager.getObjectsOnLocation().find(
                 o => o.shortcut?.toLowerCase() === short.toLowerCase()
             );
-            return obj ? `ob_${obj.num}` : match;
+            if (obj) {
+                return `ob_${obj.num}`;
+            }
+            const ref = this.objectRefs.get(short.toLowerCase());
+            return ref !== undefined ? `ob_${ref}` : match;
         });
     }
 }

@@ -48,6 +48,7 @@ class FakeClient {
     isLeader: jest.fn(() => true),
   };
   sendCommand = jest.fn();
+  commandProcessor = { objectRefs: new Map<string, number>() };
   registerCommandHook = jest.fn();
   releaseGuard = jest.fn(() => this.sendCommand('przestan zaslaniac'));
   goOutOfGuard = jest.fn(() => this.sendCommand('przestan kryc sie za zaslona'));
@@ -77,6 +78,8 @@ describe('object aliases', () => {
   let orderShieldTarget: () => void;
   let markAttack: (m: RegExpMatchArray) => void;
   let markDefense: (m: RegExpMatchArray) => void;
+  let ref: (m: RegExpMatchArray) => void;
+  let unref: (m: RegExpMatchArray) => void;
   let setAttackMode: (mode: 'A' | 'AW' | 'AWR') => void;
 
   beforeEach(() => {
@@ -115,6 +118,8 @@ describe('object aliases', () => {
     orderShieldTarget = getAlias(/^\/rz$/) as unknown as () => void;
     markAttack = getAlias(/^\/wa (.+)$/);
     markDefense = getAlias(/^\/wz (.+)$/);
+    ref = getAlias(/^\/ref(?: (\S+)(?: (.+))?)?$/);
+    unref = getAlias(/^\/unref (\S+)$/);
     (globalThis as any).gmcp = gmcp;
     gmcp.char = { options: { group_cover: 1 } } as any;
 
@@ -148,6 +153,31 @@ describe('object aliases', () => {
     client.TeamManager.getAccumulatedObjectsData.mockReturnValue(new Map([[7, { team: true }]]));
     shield(['', 'ob_7'] as unknown as RegExpMatchArray);
     expect(client.sendCommand).toHaveBeenCalledWith('zaslon ob_7');
+  });
+
+  test('/ref names an object for @name, by expanded id or by name', () => {
+    client.ObjectManager.getObjectsOnLocation.mockReturnValue([
+      { num: 7, shortcut: 'A', desc: 'Gerwazy' },
+      { num: 8, shortcut: 'B', desc: 'Protazy' },
+    ]);
+    ref(['', 'Tank', 'ob_7'] as unknown as RegExpMatchArray);
+    ref(['', 'heal', 'prot'] as unknown as RegExpMatchArray);
+    expect([...client.commandProcessor.objectRefs]).toEqual([['tank', 7], ['heal', 8]]);
+    expect(client.print).toHaveBeenCalledWith('@tank -> Gerwazy');
+
+    client.print.mockClear();
+    ref([''] as unknown as RegExpMatchArray);
+    expect(client.print.mock.calls).toEqual([['@tank -> Gerwazy'], ['@heal -> Protazy']]);
+
+    unref(['', 'tank'] as unknown as RegExpMatchArray);
+    expect([...client.commandProcessor.objectRefs.keys()]).toEqual(['heal']);
+  });
+
+  test('/ref rejects names that could be a shortcut', () => {
+    client.ObjectManager.getObjectsOnLocation.mockReturnValue([{ num: 7, shortcut: 'A', desc: 'Gerwazy' }]);
+    ref(['', 'a', 'ob_7'] as unknown as RegExpMatchArray);
+    ref(['', '12', 'ob_7'] as unknown as RegExpMatchArray);
+    expect(client.commandProcessor.objectRefs.size).toBe(0);
   });
 
   test('surprise alias sends zaskocz with object number', () => {

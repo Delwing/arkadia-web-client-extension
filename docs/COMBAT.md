@@ -36,6 +36,19 @@ Aliasy przyjmujące `id` (`/z`, `/x`, `/prze`, `/za`, `/zas`, `/za2`-`/za4`, `/w
 | `/cq` | Wyczyść kolejkę ataku |
 | `/nn` | Atakuj następny cel z kolejki |
 
+W komendach `@>` oznacza następny cel z kolejki, np. `/z @>` albo `zabij @>`.
+
+## Własne referencje
+
+| Komenda | Opis |
+|---------|------|
+| `/ref nazwa id` | Nazwij obiekt, np. `/ref tank @A` albo `/ref tank gerw`; potem `@tank` działa jak `@A`, np. `/zas @tank` |
+| `/ref nazwa` | Pokaż, na kogo wskazuje `@nazwa` |
+| `/ref` | Pokaż wszystkie referencje |
+| `/unref nazwa` | Usuń referencję |
+
+Referencja wskazuje osobę, a nie skrót - gdy skróty się przetasują, `@tank` dalej oznacza tę samą postać. Nazwa zaczyna się od litery i ma co najmniej 2 znaki (litery i cyfry); skróty z listy mają pierwszeństwo przed referencjami. Referencje znikają po wylogowaniu, bo numery obiektów się wtedy zmieniają.
+
 ## Zasłanianie
 
 | Komenda | Opis |
