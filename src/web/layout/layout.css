@@ -342,6 +342,12 @@ body.layout-manager-enabled .object-list-panel-container #objects-list {
   cursor: default;
 }
 
+body.layout-manager-enabled .object-list-panel-container #objects-list-others {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
 /* Resize Handles */
 .resize-handle {
   position: absolute;

@@ -7,11 +7,14 @@ import { SplitContextMenu } from './components/SplitContextMenu';
 import { MapPanel } from './panels/MapPanel';
 import { ObjectListPanel } from './panels/ObjectListPanel';
 import { useLayoutManager } from './hooks/useLayoutManager';
-import type { DockSide } from './types';
+import { useBuiltInPanelSetting } from '../hooks/useBuiltInPanelSetting';
+import { OBJECT_LIST_OTHERS_ID, PANEL_CONFIGS, SEPARATE_OTHERS_SETTING, type DockSide } from './types';
 
 interface LayoutContentProps {
   mapElement: HTMLElement | null;
   objectListElement: HTMLElement | null;
+  /** Host for the non-team objects window (#objects-list-others). */
+  objectListOthersElement?: HTMLElement | null;
   /** Override the built-in objectList panel's title (default "Kondycje"). */
   objectListTitle?: string;
   /** Custom content for the objectList panel; when set, the legacy
@@ -22,6 +25,7 @@ interface LayoutContentProps {
 export function LayoutContent({
   mapElement,
   objectListElement,
+  objectListOthersElement,
   objectListTitle,
   renderObjectList,
 }: LayoutContentProps) {
@@ -55,6 +59,27 @@ export function LayoutContent({
     // loadVersion in deps so Restore Default / device-sync import re-opens
     // built-ins after the manager's live-windows map is cleared by loadState.
   }, [isLayoutMode, layoutState.enabledPanels.objectList, manager, loadVersion, objectListTitle]);
+
+  // The non-team objects window lives and dies with the Kondycje split setting.
+  // Shells that render their own object list (renderObjectList) have no such
+  // window, so it's never opened there.
+  const [separateOthers] = useBuiltInPanelSetting('objectList', SEPARATE_OTHERS_SETTING, false);
+  const showOthers =
+    isLayoutMode &&
+    layoutState.enabledPanels.objectList &&
+    separateOthers === true &&
+    !renderObjectList &&
+    !!objectListOthersElement;
+  useEffect(() => {
+    if (showOthers) {
+      manager.open(OBJECT_LIST_OTHERS_ID, {
+        title: PANEL_CONFIGS[OBJECT_LIST_OTHERS_ID].title,
+        docked: 'right',
+      });
+    } else if (manager.has(OBJECT_LIST_OTHERS_ID)) {
+      manager.close(OBJECT_LIST_OTHERS_ID);
+    }
+  }, [showOthers, manager, loadVersion]);
 
   // Apply CSS variables that size the dock grid tracks. They live on
   // #main-container (falling back to #content-area) so BOTH grids can read them:
@@ -229,6 +254,11 @@ export function LayoutContent({
           {renderObjectList
             ? renderObjectList()
             : <ObjectListPanel objectListElement={objectListElement} />}
+        </BuiltInPortal>
+      )}
+      {manager.has(OBJECT_LIST_OTHERS_ID) && objectListOthersElement && (
+        <BuiltInPortal id={OBJECT_LIST_OTHERS_ID} manager={manager}>
+          <ObjectListPanel objectListElement={objectListOthersElement} withTimers={false} />
         </BuiltInPortal>
       )}
 

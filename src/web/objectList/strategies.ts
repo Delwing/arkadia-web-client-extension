@@ -197,7 +197,7 @@ export function renderListLines(ctx: RenderContext): string[] {
             }
         }
 
-        const attackers = objects
+        const attackers = ctx.allObjects
             .filter((o: any) => o.attack_num === obj.num)
             .map((o: any) => o.shortcut);
         const arrow = attackers.length ? ` <- ${attackers.join(" ")}` : "";
@@ -339,7 +339,7 @@ const cardStrategy: ObjectListStrategy = {
             }
 
             // Build attackers
-            const attackers = objects
+            const attackers = ctx.allObjects
                 .filter((o: any) => o.attack_num === obj.num)
                 .map((o: any) => `<span class="object-card__attacker">${o.shortcut}</span>`)
                 .join('');
@@ -469,7 +469,7 @@ const compactStrategy: ObjectListStrategy = {
             }
 
             // Build attackers inline with name
-            const attackers = objects
+            const attackers = ctx.allObjects
                 .filter((o: any) => o.attack_num === obj.num)
                 .map((o: any) => `<span class="object-card__attacker">${o.shortcut}</span>`)
                 .join('');
@@ -620,7 +620,7 @@ const compactDotsStrategy: ObjectListStrategy = {
             }
 
             // Build attackers inline with name
-            const attackers = objects
+            const attackers = ctx.allObjects
                 .filter((o: any) => o.attack_num === obj.num)
                 .map((o: any) => `<span class="object-card__attacker">${o.shortcut}</span>`)
                 .join('');
@@ -767,7 +767,7 @@ const raidStrategy: ObjectListStrategy = {
                 `;
             }
 
-            const attackers = objects
+            const attackers = ctx.allObjects
                 .filter((o: any) => o.attack_num === obj.num)
                 .map((o: any) => `<span class="object-card__attacker">${o.shortcut}</span>`)
                 .join('');
@@ -885,7 +885,7 @@ const nearbyStrategy: ObjectListStrategy = {
             const nameClass = nearbyNameClass(obj, allegiance);
 
             // Who is attacking THIS object, colored by their side.
-            const attackerObjs = attackerObjectsOf(obj, objects);
+            const attackerObjs = attackerObjectsOf(obj, ctx.allObjects);
             // Left edge marks the leader's chosen targets (same as the other
             // flavors): red = marked attack target, green = marked defense target.
             const markFg = filterResult.style?.descriptionColor;

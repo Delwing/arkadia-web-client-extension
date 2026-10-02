@@ -303,8 +303,9 @@ export function apply(settings: UiSettings) {
     if (objectsList) {
         objectsList.style.fontSize = settings.contentFontSize + 'rem';
     }
-    const objects = document.getElementById('objects-list');
-    if (objects) {
+    // Kondycje and its non-team window look the same.
+    for (const objects of [document.getElementById('objects-list'), document.getElementById('objects-list-others')]) {
+        if (!objects) continue;
         // --window-font-* is set by the Kondycje window's settings cog when the
         // user overrides the font for that window alone (windowSettings.ts).
         // The fallback must be spelled out: an unset var with no fallback makes

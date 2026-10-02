@@ -277,7 +277,19 @@ export const PANEL_CONFIGS: Record<string, PanelConfig> = {
     minWidth: 100,
     minHeight: 100,
   },
+  objectListOthers: {
+    id: 'objectListOthers',
+    title: 'Pozostali',
+    closable: false,
+    minWidth: 100,
+    minHeight: 100,
+  },
 };
+
+/** The window that takes the non-team objects off Kondycje, when that is switched on. */
+export const OBJECT_LIST_OTHERS_ID = 'objectListOthers';
+/** Kondycje setting that splits the non-team objects into their own window. */
+export const SEPARATE_OTHERS_SETTING = 'separateOthers';
 
 export const MIN_DOCK_SIZE = 100;
 export const MAX_DOCK_SIZE_RATIO = 0.4; // Max 40% of viewport

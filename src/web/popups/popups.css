@@ -1726,25 +1726,45 @@ select.popup-input.popup-input--control {
   gap: 0.25rem;
 }
 
-#objects-list .objects-list-controls {
+/* Kondycje's non-team half. It exists only as a layout window (layout.css
+   shows it inside the panel container); outside one it stays hidden. */
+#objects-list-others {
+  display: none;
+  padding: 0.5vh 1vh;
+  font-family: monospace;
+  font-size: 0.6rem;
+  box-sizing: border-box;
+  overflow-x: hidden;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+#objects-list .objects-list-controls,
+#objects-list-others .objects-list-controls {
   display: none;
   gap: 0.25rem;
 }
 
-#objects-list .objects-list-content {
+#objects-list .objects-list-content,
+#objects-list-others .objects-list-content {
   white-space: pre;
 }
 
 #objects-list .object-num,
+#objects-list-others .object-num,
 #objects-list .object-desc,
+#objects-list-others .object-desc,
 #objects-list .object-hp-bar,
-#objects-list .object-hp-bar-teammate {
+#objects-list-others .object-hp-bar,
+#objects-list .object-hp-bar-teammate,
+#objects-list-others .object-hp-bar-teammate {
   cursor: pointer;
   -webkit-user-select: none;
   user-select: none;
 }
 
-#objects-list .target-dot {
+#objects-list .target-dot,
+#objects-list-others .target-dot {
   cursor: pointer;
   -webkit-user-select: none;
   user-select: none;
@@ -1752,15 +1772,18 @@ select.popup-input.popup-input--control {
   transition: opacity 0.15s ease;
 }
 
-#objects-list .target-dot:hover {
+#objects-list .target-dot:hover,
+#objects-list-others .target-dot:hover {
   opacity: 1;
 }
 
-#objects-list .target-dot.target-dot-active {
+#objects-list .target-dot.target-dot-active,
+#objects-list-others .target-dot.target-dot-active {
   opacity: 1;
 }
 
-#objects-list .team-not-attacking {
+#objects-list .team-not-attacking,
+#objects-list-others .team-not-attacking {
   display: inline-block;
   transform: skewX(-10deg);
 }

@@ -4,18 +4,25 @@ import {getBehaviorSettings, onBehaviorSettingsChange, onRenderSettingsChange} f
 import {createAttackController} from "@client/utils/attackController";
 import {hideContextMenu, showContextMenu} from "@web/contextMenu";
 import eventBus from "@modules/core/eventBus";
-import {getBuiltInPanelSetting, loadLayoutState} from "./layout/utils/layoutStorage";
+import {getBuiltInPanelSetting, loadLayoutState, subscribeToPanelSetting} from "./layout/utils/layoutStorage";
 import {getObjectListChrome} from "./layout/builtInChrome";
-import {buildRenderContext, type ObjectListViewMode} from "./objectList/context.ts";
+import {SEPARATE_OTHERS_SETTING} from "./layout/types";
+import {buildRenderContext, scopeRenderContext, type ObjectListViewMode, type RenderContext} from "./objectList/context.ts";
 import {getStrategy, renderListLines} from "./objectList/strategies.ts";
 import {buildObjectContextMenu} from "./objectList/objectContextMenu.ts";
 
 const DEFAULT_CONTEXT_MENU_COMMANDS = ['ob', 'ocen', 'zapros', 'wskaz'];
+const EMPTY_HTML = '<span style="color: #888; font-style: italic;">Brak obiektów</span>';
 
 export default class ObjectList {
     private client: Client;
     private readonly container: HTMLElement | null;
     private readonly content: HTMLElement | null;
+    /** The second window (#objects-list-others) that takes everyone outside the team. */
+    private readonly othersContainer: HTMLElement | null;
+    private readonly othersContent: HTMLElement | null;
+    private separateOthers = false;
+    private objectListPanelEnabled = true;
     private isDragging = false;
     private startX = 0;
     private startY = 0;
@@ -42,7 +49,9 @@ export default class ObjectList {
     constructor(client: Client) {
         this.client = client;
         this.container = document.getElementById("objects-list");
-        this.content = this.setupContainer();
+        this.content = this.setupContainer(this.container);
+        this.othersContainer = document.getElementById("objects-list-others");
+        this.othersContent = this.setupContainer(this.othersContainer);
         this.isMobile = this.isMobileBrowser();
         this.attackController = createAttackController(client);
         this.setupDraggable();
@@ -52,6 +61,8 @@ export default class ObjectList {
             // Also attach to content for better event capture in docked panels
             this.content?.addEventListener("click", this.onClick);
             this.content?.addEventListener("contextmenu", this.onContextMenu);
+            this.othersContainer?.addEventListener("click", this.onClick);
+            this.othersContainer?.addEventListener("contextmenu", this.onContextMenu);
             // Use capture phase at document level for card view contextmenu
             document.addEventListener("contextmenu", this.onDocumentContextMenu, true);
         }
@@ -68,6 +79,11 @@ export default class ObjectList {
         this.initializePipInfoSources();
         this.loadContextMenuCommands();
         this.initializeCardViewMode();
+        this.separateOthers = getBuiltInPanelSetting<boolean>('objectList', SEPARATE_OTHERS_SETTING, false) === true;
+        subscribeToPanelSetting('builtIn', 'objectList', SEPARATE_OTHERS_SETTING, (value) => {
+            this.separateOthers = value === true;
+            this.scheduleRender();
+        });
         // The PiP toggle lives in the panel header now (ObjectListHeaderActions);
         // it drives the window through this event and reflects the open/closed
         // state via `objectList.pipActiveChanged`.
@@ -91,6 +107,7 @@ export default class ObjectList {
     private initializeCardViewMode() {
         const layoutState = loadLayoutState();
         this.isLayoutManagerEnabled = layoutState.enabled;
+        this.objectListPanelEnabled = layoutState.enabledPanels.objectList;
         this.syncViewModeWithLayoutState(this.isLayoutManagerEnabled);
         // Subscribe to view mode changes from the header toggle
         eventBus.on('objectListViewMode', (mode: ObjectListViewMode) => {
@@ -107,6 +124,13 @@ export default class ObjectList {
     private handleLayoutManagerStateChange = () => {
         const layoutState = loadLayoutState();
         const isEnabled = layoutState.enabled;
+        // An import or reset can flip the split without a setting notification.
+        const separateOthers = getBuiltInPanelSetting<boolean>('objectList', SEPARATE_OTHERS_SETTING, false) === true;
+        if (separateOthers !== this.separateOthers || layoutState.enabledPanels.objectList !== this.objectListPanelEnabled) {
+            this.separateOthers = separateOthers;
+            this.objectListPanelEnabled = layoutState.enabledPanels.objectList;
+            this.scheduleRender();
+        }
         if (isEnabled === this.isLayoutManagerEnabled) {
             return;
         }
@@ -134,13 +158,21 @@ export default class ObjectList {
         }
     }
 
-    private setupContainer() {
-        if (!this.container) return null;
-        this.container.innerHTML = "";
+    private setupContainer(container: HTMLElement | null) {
+        if (!container) return null;
+        container.innerHTML = "";
         const content = document.createElement("div");
         content.className = "objects-list-content";
-        this.container.appendChild(content);
+        container.appendChild(content);
         return content;
+    }
+
+    /**
+     * The non-team objects get their own window only in the layout manager,
+     * where that window can exist; otherwise the one list shows everybody.
+     */
+    private isSplit(): boolean {
+        return this.separateOthers && this.isLayoutManagerEnabled && this.objectListPanelEnabled && !!this.othersContent;
     }
 
     private setupDraggable() {
@@ -578,28 +610,37 @@ export default class ObjectList {
         const manager = this.client.ObjectManager;
         if (!manager) return;
         const objects = manager.getObjectsOnLocation();
+        const split = this.isSplit();
+        const ctx = buildRenderContext(this.client, objects, this.attackController.getAttackCommand());
+        this.renderInto(this.content, scopeRenderContext(ctx, split ? 'team' : 'all'));
+        if (this.othersContent) {
+            if (split) {
+                this.renderInto(this.othersContent, scopeRenderContext(ctx, 'others'));
+            } else {
+                this.othersContent.innerHTML = "";
+            }
+        }
+        this.rebuildPictureInPictureHtml();
+    }
 
+    private renderInto(content: HTMLElement, ctx: RenderContext) {
         // Show placeholder if no objects
-        if (objects.length === 0) {
-            this.content.innerHTML = '<span style="color: #888; font-style: italic;">Brak obiektów</span>';
-            this.rebuildPictureInPictureHtml();
+        if (ctx.objects.length === 0) {
+            content.innerHTML = EMPTY_HTML;
             return;
         }
 
-        const ctx = buildRenderContext(this.client, objects, this.attackController.getAttackCommand());
         const strategy = getStrategy(this.viewMode);
-        this.content.innerHTML = strategy.render(ctx);
+        content.innerHTML = strategy.render(ctx);
 
         // Card-family flavors need the capture-phase context menu on each cards
         // container (raid renders several); other flavors use the delegated
         // onContextMenu via each row's data-object-id.
         if (strategy.cardContextMenu && !this.isMobile) {
-            this.content.querySelectorAll('.objects-list-cards').forEach((el) => {
+            content.querySelectorAll('.objects-list-cards').forEach((el) => {
                 el.addEventListener('contextmenu', this.onCardContextMenu as EventListener, true);
             });
         }
-
-        this.rebuildPictureInPictureHtml();
     }
 
     private onCardContextMenu = (e: MouseEvent) => {
@@ -629,7 +670,7 @@ export default class ObjectList {
         if (!target) return;
 
         // Check if click is inside our container
-        if (!this.container?.contains(target) && !this.content?.contains(target)) return;
+        if (!this.container?.contains(target) && !this.content?.contains(target) && !this.othersContainer?.contains(target)) return;
 
         const cardEl = target.closest('.object-card') as HTMLElement | null;
         if (!cardEl) return;
@@ -1026,7 +1067,7 @@ html, body {
         const objects = manager.getObjectsOnLocation();
 
         if (objects.length === 0) {
-            return ['<span style="color: #888; font-style: italic;">Brak obiektów</span>'];
+            return [EMPTY_HTML];
         }
 
         const ctx = buildRenderContext(this.client, objects, this.attackController.getAttackCommand());

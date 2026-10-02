@@ -6,6 +6,7 @@ import {
   setPopupSetting,
   subscribeToPanelSetting,
 } from './utils/layoutStorage';
+import { OBJECT_LIST_OTHERS_ID } from './types';
 
 /**
  * Per-window settings: what the settings cog in a window's header edits.
@@ -19,7 +20,7 @@ import {
  */
 
 /** Built-in panels keep their settings in `builtInPanels`, everything else in `popupPanels`. */
-const BUILT_IN_WINDOW_IDS = new Set(['map', 'objectList']);
+const BUILT_IN_WINDOW_IDS = new Set(['map', 'objectList', OBJECT_LIST_OTHERS_ID]);
 
 type SettingScope = 'popup' | 'builtIn';
 

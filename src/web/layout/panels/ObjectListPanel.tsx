@@ -4,9 +4,11 @@ import { ObjectListTimersBar } from '../components/ObjectListTimersBar';
 
 interface ObjectListPanelProps {
   objectListElement: HTMLElement | null;
+  /** The weapon / cover / order timers bar; only Kondycje carries it. */
+  withTimers?: boolean;
 }
 
-export function ObjectListPanel({ objectListElement }: ObjectListPanelProps) {
+export function ObjectListPanel({ objectListElement, withTimers = true }: ObjectListPanelProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [timersHost, setTimersHost] = useState<HTMLDivElement | null>(null);
   const originalParentRef = useRef<HTMLElement | null>(null);
@@ -79,7 +81,7 @@ export function ObjectListPanel({ objectListElement }: ObjectListPanelProps) {
 
   return (
     <>
-      {timersHost && createPortal(<ObjectListTimersBar />, timersHost)}
+      {withTimers && timersHost && createPortal(<ObjectListTimersBar />, timersHost)}
       <div ref={containerRef} className="object-list-panel-container" />
     </>
   );

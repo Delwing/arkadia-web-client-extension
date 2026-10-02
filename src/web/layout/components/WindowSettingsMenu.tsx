@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useWindowSetting } from '../../hooks/useWindowSetting';
 import { ensureFontLoaded, resolveOutputFontFamily } from '../../fontLoader';
 import { usePopover } from '../hooks/usePopover';
+import { OBJECT_LIST_OTHERS_ID } from '../types';
 import {
   WINDOW_FONT_FAMILY_KEY,
   WINDOW_FONT_FAMILY_OPTIONS,
@@ -24,7 +25,7 @@ const PANEL_WIDTH = 256;
  * published on <body> by uiSettingsCore.apply.
  */
 function mainFontSize(windowId: string): number {
-  const name = windowId === 'objectList' ? '--objects-font-size' : '--output-font-size';
+  const name = windowId === 'objectList' || windowId === OBJECT_LIST_OTHERS_ID ? '--objects-font-size' : '--output-font-size';
   const value = parseFloat(getComputedStyle(document.body).getPropertyValue(name));
   return Number.isFinite(value) ? value : 0.875;
 }

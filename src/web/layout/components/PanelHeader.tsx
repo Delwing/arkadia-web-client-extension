@@ -1,11 +1,12 @@
 import { ReactNode, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { PANEL_CONFIGS, WindowRecord } from '../types';
+import { OBJECT_LIST_OTHERS_ID, PANEL_CONFIGS, WindowRecord } from '../types';
 import { getObjectListChrome } from '../builtInChrome';
 import { getPopup, RegisteredPopup, subscribeToRegistry } from '../popupRegistry';
 import { useLayoutManager } from '../hooks/useLayoutManager';
 import { useWindowAppearance } from '../hooks/useWindowAppearance';
 import type { WindowSettingField } from '../windowSettings';
 import { MAP_SETTINGS_FIELDS } from '../mapSettingsFields';
+import { OBJECT_LIST_SETTINGS_FIELDS } from '../objectListSettingsFields';
 import { MapHeaderMenu } from './MapHeaderMenu';
 import { ObjectListHeaderActions } from './ObjectListHeaderActions';
 import { WindowSettingsMenu } from './WindowSettingsMenu';
@@ -35,9 +36,9 @@ export interface PanelChrome {
   settingsAppearance?: boolean;
 }
 
-/** Windows with a settings cog: every popup plus the built-in Kondycje and map. */
+/** Windows with a settings cog: every popup plus the built-in Kondycje (and its non-team window) and map. */
 function hasSettingsCog(windowId: string, isPopup: boolean): boolean {
-  return isPopup || windowId === 'objectList' || windowId === 'map';
+  return isPopup || windowId === 'objectList' || windowId === OBJECT_LIST_OTHERS_ID || windowId === 'map';
 }
 
 /** The map is a canvas, not text — its cog has only its own fields. */
@@ -75,7 +76,7 @@ function usePopupInfo(panelId: string): RegisteredPopup | null {
 export function usePanelChrome(window: WindowRecord): PanelChrome {
   const { manager, getBuiltInPanelState, updateBuiltInPanelState } = useLayoutManager();
   const popup = usePopupInfo(window.id);
-  const isBuiltIn = window.id === 'map' || window.id === 'objectList';
+  const isBuiltIn = window.id === 'map' || window.id === 'objectList' || window.id === OBJECT_LIST_OTHERS_ID;
   const builtInState = isBuiltIn ? getBuiltInPanelState(window.id) : undefined;
 
   // Shell-level chrome override for the built-in objectList (forge-ui retitles it
@@ -135,7 +136,12 @@ export function usePanelChrome(window: WindowRecord): PanelChrome {
         ? () => manager.setPoppedOut(window.id, true)
         : undefined,
     settingsWindowId: withSettings ? window.id : undefined,
-    settingsFields: window.id === 'map' ? MAP_SETTINGS_FIELDS : popup?.settingsFields,
+    settingsFields:
+      window.id === 'map'
+        ? MAP_SETTINGS_FIELDS
+        : window.id === 'objectList' && !objectListChrome?.hideStockActions
+        ? OBJECT_LIST_SETTINGS_FIELDS
+        : popup?.settingsFields,
     settingsAppearance: withAppearance,
   };
 }

@@ -1363,10 +1363,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (layoutManagerRoot) {
         const mapElement = document.getElementById('map');
         const objectListElement = document.getElementById('objects-list');
+        const objectListOthersElement = document.getElementById('objects-list-others');
         createRoot(layoutManagerRoot).render(
             createElement(LayoutManagerWrapper, {
                 mapElement,
                 objectListElement,
+                objectListOthersElement,
             })
         );
     }

@@ -24,8 +24,10 @@ export type ObjectListViewMode =
 
 /** The facts shared by every flavor for a single render pass. */
 export interface RenderContext {
-    /** The objects on the current location (already fetched by the shell). */
+    /** The objects this window shows (all of them, unless the list is split). */
     objects: any[];
+    /** Every object on the location; who-attacks-whom looks across a split. */
+    allObjects: any[];
     /** TeamManager (may be undefined in headless/early states). */
     tm: any;
     /** Whether the local character currently leads the team. */
@@ -68,7 +70,28 @@ export function buildRenderContext(
     const descWidth = Math.max(0, ...objects.map((o: any) => (o.desc || "").length));
     const coverMarkers = getRenderSettings().objectListCoverMarkers === true;
     const coverMarks = buildCoverMarks(client, objects, tm);
-    return { objects, tm, isLeader, teamAttacking, validNextQueuedId, descWidth, attackCommand, coverMarks, coverMarkers };
+    return { objects, allObjects: objects, tm, isLeader, teamAttacking, validNextQueuedId, descWidth, attackCommand, coverMarks, coverMarkers };
+}
+
+/** Which part of the location a window shows when the list is split. */
+export type ObjectListScope = 'all' | 'team' | 'others';
+
+/** The player and teammates go to the main window, everything else to the other one. */
+export function isTeamSide(obj: any, tm: any): boolean {
+    return obj.shortcut === '@' || !!tm?.isInTeam?.(obj.desc || "");
+}
+
+/**
+ * Narrow a context to one side of a split. Team state, the queued enemy and the
+ * attacker arrows still come from the whole location; only the shown rows (and
+ * the list view's padding column) follow the scope.
+ */
+export function scopeRenderContext(ctx: RenderContext, scope: ObjectListScope): RenderContext {
+    if (scope === 'all') return ctx;
+    const wantTeam = scope === 'team';
+    const objects = ctx.allObjects.filter((o: any) => isTeamSide(o, ctx.tm) === wantTeam);
+    const descWidth = Math.max(0, ...objects.map((o: any) => (o.desc || "").length));
+    return { ...ctx, objects, descWidth };
 }
 
 /** Is this object currently attacking someone (numeric or `true` attack_num)? */

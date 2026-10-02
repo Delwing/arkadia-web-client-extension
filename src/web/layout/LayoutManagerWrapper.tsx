@@ -13,6 +13,8 @@ import TransportDebugPopup from '../TransportDebugPopup';
 interface LayoutManagerWrapperProps {
   mapElement: HTMLElement | null;
   objectListElement: HTMLElement | null;
+  /** Host for the non-team objects window (#objects-list-others). */
+  objectListOthersElement?: HTMLElement | null;
   onLayoutModeChange?: (enabled: boolean) => void;
   /** Override the built-in objectList panel's title (default "Kondycje"). */
   objectListTitle?: string;
@@ -44,6 +46,7 @@ function PopupPortalContainer() {
 export function LayoutManagerWrapper({
   mapElement,
   objectListElement,
+  objectListOthersElement,
   onLayoutModeChange,
   objectListTitle,
   renderObjectList,
@@ -53,6 +56,7 @@ export function LayoutManagerWrapper({
       <LayoutContent
         mapElement={mapElement}
         objectListElement={objectListElement}
+        objectListOthersElement={objectListOthersElement}
         objectListTitle={objectListTitle}
         renderObjectList={renderObjectList}
       />
