@@ -1,7 +1,9 @@
 import Client from '@client/Client';
 import type { ClientAdapter } from '@client/Client';
 import { characterStorage } from '@modules/core/storage';
-import { containerAction, getContainer, getContainerForms, registerContainerType, unregisterContainerType } from '@client/scripts/bagManager';
+import Triggers from '@client/Triggers';
+import { AnsiAwareBuffer } from '@client/ansi/FormatState';
+import initBagManager, { containerAction, getContainer, getContainerForms, registerContainerType, unregisterContainerType } from '@client/scripts/bagManager';
 import { setTestSettings } from '../helpers/testSettings';
 
 describe('bagManager containerAction', () => {
@@ -123,5 +125,74 @@ describe('bagManager plugin container types', () => {
     test('unknown type has no bag', () => {
         expect(getContainer('test-missing')).toBe('');
         expect(getContainerForms('test-missing')).toBeNull();
+    });
+});
+
+describe('bagManager /pojemnik', () => {
+    class FakeClient {
+        Triggers = new Triggers(({} as unknown) as any);
+        println = jest.fn();
+        print = jest.fn();
+        sendCommand = jest.fn();
+    }
+
+    let client: FakeClient;
+
+    beforeEach(() => {
+        localStorage.clear();
+        characterStorage.setCharacter('TestChar');
+        setTestSettings({ containerOpen: true, containerClose: true });
+        client = new FakeClient();
+    });
+
+    function scanInventory(...lines: string[]): string {
+        const aliases: { pattern: RegExp; callback: Function }[] = [];
+        initBagManager((client as unknown) as any, aliases);
+        aliases.find((a) => a.pattern.test('/pojemnik'))!.callback();
+        lines.forEach((line) => Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), ''));
+        return client.println.mock.calls.map(([buf]) => (buf as AnsiAwareBuffer).text).join('\n');
+    }
+
+    test('finds bags listed on the "Masz przy sobie" line', () => {
+        const printed = scanInventory(
+            'Na plecach nosisz prawie pusta otwarta pakowna kruczoczarna sakwe.',
+            'Masz przy sobie dlugi klucz, zamkniety skorzany woreczek i otwarta ciemnoniebieska runiczna sakiewke.',
+        );
+        expect(printed).toContain('Ustaw sakwa jako:');
+        expect(printed).toContain('Ustaw sakiewka jako:');
+    });
+
+    test('numbers several bags of the same kind, plural ones included', () => {
+        const printed = scanInventory(
+            'Masz przy sobie otwarta runiczna sakiewke, klucz i dwie zamkniete skorzane sakiewki.',
+        );
+        expect(printed).toContain('Ustaw 1. sakiewka (otwarta runiczna) jako:');
+        expect(printed).toContain('Ustaw 2. sakiewka (zamkniete skorzane) jako:');
+        expect(printed).toContain('Ustaw 3. sakiewka (zamkniete skorzane) jako:');
+        expect(printed).not.toMatch(/Ustaw sakiewka jako/);
+    });
+
+    test('commands address the chosen bag by its ordinal', () => {
+        characterStorage.set('containers', { money: '2. sakiewka', gems: 'plecak', food: 'plecak', other: 'plecak' });
+        initBagManager((client as unknown) as any);
+        containerAction(client as any, 'money', 'take', 'monety');
+        expect(client.sendCommand.mock.calls.map(([cmd]) => cmd)).toEqual([
+            'otworz 2. swoja sakiewke',
+            'wez monety z 2. swojej sakiewki',
+            'zamknij 2. swoja sakiewke',
+        ]);
+        expect(getContainer('money')).toBe('2. sakiewka');
+        expect(getContainerForms('money')).toEqual({ mianownik: 'sakiewka', dopelniacz: 'sakiewki', biernik: 'sakiewke', index: 2 });
+    });
+
+    test('a bare bag name keeps the old commands', () => {
+        characterStorage.set('containers', { money: 'sakiewka', gems: 'plecak', food: 'plecak', other: 'plecak' });
+        initBagManager((client as unknown) as any);
+        containerAction(client as any, 'money', 'put', 'monety');
+        expect(client.sendCommand.mock.calls.map(([cmd]) => cmd)).toEqual([
+            'otworz swoja sakiewke',
+            'wloz monety do swojej sakiewki',
+            'zamknij swoja sakiewke',
+        ]);
     });
 });

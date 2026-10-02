@@ -3111,6 +3111,11 @@ export interface ContainerForms {
     dopelniacz: string;
     /** Accusative form (biernik) - e.g., "plecak", "torbe" */
     biernik: string;
+    /**
+     * Which of several same-named bags, when the player carries more than one -
+     * address it as `${index}. swojej ${dopelniacz}`. Absent means the first one.
+     */
+    index?: number;
 }
 
 /**
@@ -3140,7 +3145,7 @@ export interface ContainersApi {
      * Get the assigned bag name for a container type
      *
      * @param type - Container type ("money", "gems", "food", "other")
-     * @returns The bag name (e.g., "plecak", "torba")
+     * @returns The bag name (e.g., "plecak", "torba", or "2. sakiewka" for the second of several)
      *
      * @example
      * ```typescript

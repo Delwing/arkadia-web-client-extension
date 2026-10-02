@@ -13,6 +13,8 @@ Menedżer pojemników pozwala przypisać wybrane torby, plecaki i inne pojemniki
 3. Wybierz `wszystkie`, by używać pojemnika dla wszystkich kategorii
 4. Sprawdź aktualne przypisania komendą `/pojemniki`
 
+Jeśli nosisz kilka pojemników tego samego rodzaju (np. dwie sakiewki), lista je numeruje — `1. sakiewka (otwarta runiczna)`, `2. sakiewka (skórzana)` — a komendy trafiają do wybranego (`otworz 2. swoja sakiewke`). Numer to kolejność w ekwipunku, więc po zdobyciu lub oddaniu innej sakiewki uruchom `/pojemnik` ponownie.
+
 > Ustawienia są zapisywane w pamięci przeglądarki.
 
 ### Komendy pojemników

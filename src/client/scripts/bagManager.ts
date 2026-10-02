@@ -47,6 +47,36 @@ const bagPronouns: Record<string, { biernik: string; dopelniacz: string }> = {
     kaletka: { biernik: "swoja", dopelniacz: "swojej" },
 };
 
+/** Plural forms as they follow a numeral in the inventory: "dwie sakiewki", "piec sakiewek" */
+const bagPlural: Record<string, string[]> = {
+    plecak: ["plecaki", "plecakow"],
+    torba: ["torby", "toreb"],
+    worek: ["worki", "workow"],
+    sakiewka: ["sakiewki", "sakiewek"],
+    mieszek: ["mieszki", "mieszkow"],
+    sakwa: ["sakwy", "sakw"],
+    wor: ["wory", "worow"],
+    szkatulka: ["szkatulki", "szkatulek"],
+    kaletka: ["kaletki", "kaletek"],
+};
+
+const numerals: Record<string, number> = {
+    dwa: 2, dwie: 2, trzy: 3, cztery: 4, piec: 5,
+    szesc: 6, siedem: 7, osiem: 8, dziewiec: 9, dziesiec: 10,
+};
+
+/** Words that end an item description when walking back from the bag noun */
+const descriptionStops = new Set(["i", "oraz", "masz", "nosisz", "sobie", "na", "w", "z", "ze", "przy", "do"]);
+
+/**
+ * A stored bag is its noun, optionally prefixed with which of several same-named
+ * bags it is: "sakiewka" (the first one) or "2. sakiewka".
+ */
+function parseBag(bag: string): { noun: string; index?: number } {
+    const match = bag.match(/^(\d+)\.\s*(\S+)$/);
+    return match ? { noun: match[2], index: Number(match[1]) } : { noun: bag };
+}
+
 export type BuiltInContainerType = (typeof builtInTypes)[number];
 /** Built-in types plus types registered by plugins (registerContainerType) */
 export type ContainerType = BuiltInContainerType | (string & {});
@@ -121,6 +151,8 @@ export interface ContainerForms {
     mianownik: string;
     dopelniacz: string;
     biernik: string;
+    /** Which of several same-named bags; absent means the first one */
+    index?: number;
 }
 
 export function getContainer(type: ContainerType): string {
@@ -129,20 +161,28 @@ export function getContainer(type: ContainerType): string {
 
 export function getContainerForms(type: ContainerType): ContainerForms | null {
     const bag = resolveBag(type);
-    if (!bag || !bagInBiernik[bag]) return null;
+    if (!bag) return null;
+    const { noun, index } = parseBag(bag);
+    if (!bagInBiernik[noun]) return null;
     return {
-        mianownik: bag,
-        dopelniacz: bagInDopelniacz[bag],
-        biernik: bagInBiernik[bag],
+        mianownik: noun,
+        dopelniacz: bagInDopelniacz[noun],
+        biernik: bagInBiernik[noun],
+        ...(index !== undefined && { index }),
     };
 }
 
+/** Command forms of a known bag, with the ordinal of the chosen one ("2. swoja sakiewke") */
 function getBagForms(bag: string) {
+    const { noun, index } = parseBag(bag);
+    if (!bagPronouns[noun]) return null;
+    const ordinal = index !== undefined ? `${index}. ` : "";
     return {
-        biernik: bagInBiernik[bag],
-        dopelniacz: bagInDopelniacz[bag],
-        pronoun_b: bagPronouns[bag].biernik,
-        pronoun_d: bagPronouns[bag].dopelniacz,
+        noun,
+        biernik: `${ordinal}${bagPronouns[noun].biernik} ${bagInBiernik[noun]}`,
+        dopelniacz: `${ordinal}${bagPronouns[noun].dopelniacz} ${bagInDopelniacz[noun]}`,
+        // "ze swojej", but "z 2. swojej"
+        from: ordinal ? "z" : "ze",
     };
 }
 
@@ -179,11 +219,11 @@ export function containerAction(
     item: string
 ) {
     const bag = resolveBag(type);
-    if (!bag || !bagPronouns[bag]) {
+    const forms = bag ? getBagForms(bag) : null;
+    if (!forms) {
         client.print(`Brak pojemnika dla typu '${typeLabel(type)}'.`);
         return;
     }
-    const forms = getBagForms(bag);
     const settings = characterStorage.get("settings");
     const shouldOpen = settings?.containerOpen !== false;
     const shouldClose = settings?.containerClose !== false;
@@ -191,15 +231,15 @@ export function containerAction(
         .split(",")
         .map((i) => i.trim())
         .filter((i) => i.length);
-    if (shouldOpen) client.sendCommand(`otworz ${forms.pronoun_b} ${forms.biernik}`);
+    if (shouldOpen) client.sendCommand(`otworz ${forms.biernik}`);
     items.forEach((it) =>
         client.sendCommand(
             action === "put"
-                ? `wloz ${it} do ${forms.pronoun_d} ${forms.dopelniacz}`
-                : `wez ${it} ze ${forms.pronoun_d} ${forms.dopelniacz}`
+                ? `wloz ${it} do ${forms.dopelniacz}`
+                : `wez ${it} ${forms.from} ${forms.dopelniacz}`
         )
     );
-    if (shouldClose) client.sendCommand(`zamknij ${forms.pronoun_b} ${forms.biernik}`);
+    if (shouldClose) client.sendCommand(`zamknij ${forms.biernik}`);
 }
 
 export type ContainerListing = {
@@ -227,12 +267,12 @@ export function inspectContainer(
     options: { silent?: boolean; timeout?: number } = {}
 ): Promise<ContainerListing["items"] | null> {
     const bag = resolveBag(type);
-    if (!bag || !bagInDopelniacz[bag]) return Promise.resolve(null);
-    const forms = getBagForms(bag);
+    const forms = bag ? getBagForms(bag) : null;
+    if (!forms) return Promise.resolve(null);
     const silent = !!options.silent;
     return new Promise((resolve) => {
         const pending: PendingInspection = {
-            forms: [bag, forms.biernik, forms.dopelniacz],
+            forms: [forms.noun, bagInBiernik[forms.noun], bagInDopelniacz[forms.noun]],
             silent,
             resolve,
             timer: setTimeout(() => {
@@ -242,7 +282,7 @@ export function inspectContainer(
             }, options.timeout ?? 5000),
         };
         pendingInspections.push(pending);
-        client.sendCommand(`zajrzyj do ${forms.pronoun_d} ${forms.dopelniacz}`, !silent);
+        client.sendCommand(`zajrzyj do ${forms.dopelniacz}`, !silent);
     });
 }
 
@@ -375,10 +415,51 @@ function showConfig(client: Client) {
     client.println(output);
 }
 
-function showInterface(client: Client, bags: string[]) {
+type FoundBag = { noun: string; description: string };
+
+/** Last few words before the bag noun, within its own item of the inventory list */
+function describeBefore(text: string): string {
+    const words = text.split(",").pop()!.trim().split(/\s+/).filter(Boolean);
+    let start = words.length;
+    while (start > 0 && !descriptionStops.has(words[start - 1]) && !(words[start - 1] in numerals)) start--;
+    return words.slice(Math.max(start, words.length - 3)).join(" ");
+}
+
+/** Bags named in an inventory line, in order; "dwie runiczne sakiewki" counts as two */
+function findBags(line: string): FoundBag[] {
+    const found: { at: number; bag: FoundBag }[] = [];
+    Object.keys(bagInBiernik).forEach((noun) => {
+        const singular = new RegExp(`\\b${bagInBiernik[noun]}\\b`, "g");
+        for (const match of line.matchAll(singular)) {
+            found.push({ at: match.index!, bag: { noun, description: describeBefore(line.slice(0, match.index)) } });
+        }
+        const plural = new RegExp(`\\b(${Object.keys(numerals).join("|")})\\s+((?:[a-z-]+\\s+){0,4})(?:${bagPlural[noun].join("|")})\\b`, "g");
+        for (const match of line.matchAll(plural)) {
+            const bag = { noun, description: match[2].trim() };
+            for (let i = 0; i < numerals[match[1]]; i++) found.push({ at: match.index!, bag });
+        }
+    });
+    return found.sort((a, b) => a.at - b.at).map(({ bag }) => bag);
+}
+
+/** Bags to offer: the bare noun when only one is carried, numbered when there are several */
+function bagChoices(found: FoundBag[]): { bag: string; label: string }[] {
+    const counts = new Map<string, number>();
+    found.forEach(({ noun }) => counts.set(noun, (counts.get(noun) ?? 0) + 1));
+    const seen = new Map<string, number>();
+    return found.map(({ noun, description }) => {
+        if (counts.get(noun) === 1) return { bag: noun, label: noun };
+        const index = (seen.get(noun) ?? 0) + 1;
+        seen.set(noun, index);
+        const bag = `${index}. ${noun}`;
+        return { bag, label: description ? `${bag} (${description})` : bag };
+    });
+}
+
+function showInterface(client: Client, bags: { bag: string; label: string }[]) {
     const lines: AnsiAwareBuffer[] = [];
-    bags.forEach((bag) => {
-        const line = new AnsiAwareBuffer(`Ustaw ${bag} jako:`);
+    bags.forEach(({ bag, label }) => {
+        const line = new AnsiAwareBuffer(`Ustaw ${label} jako:`);
         allTypes().forEach((type) => {
             const text = typeLabel(type);
             const textBuffer = colorString(text, TYPE_COLOR);
@@ -411,20 +492,15 @@ function showInterface(client: Client, bags: string[]) {
 }
 
 function configure(client: Client) {
-    const found: string[] = [];
+    const found: FoundBag[] = [];
     const tag = "bag-config";
     client.Triggers.registerTrigger(/.*/, (line) => {
         const rawLine = line.text.toLowerCase();
+        found.push(...findBags(rawLine));
+        // "Masz przy sobie" closes the inventory but lists carried bags too
         if (rawLine.startsWith("masz przy sobie")) {
             client.Triggers.removeByTag(tag);
-            showInterface(client, found);
-        } else {
-            Object.entries(bagInBiernik).forEach(([name, biernik]) => {
-                const regex = new RegExp(`\\b${biernik}\\b`);
-                if (regex.test(rawLine) && !found.includes(name)) {
-                    found.push(name);
-                }
-            });
+            showInterface(client, bagChoices(found));
         }
         return line;
     }, tag);
