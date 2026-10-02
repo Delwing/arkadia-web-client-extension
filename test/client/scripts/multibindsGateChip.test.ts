@@ -14,9 +14,10 @@ interface Chip {
     index: number;
     action: string;
     label: string;
+    kind?: string;
 }
 
-const GATE_INDEX = 7;
+const GATE_INDEX = 1003;
 
 function createClient() {
     const handlers = new Map<string, ((detail: any) => void)[]>();
@@ -53,7 +54,7 @@ describe('multibinds gate chip', () => {
     }
 
     function gateChip(list: Chip[]) {
-        return list.find(chip => chip.index === GATE_INDEX);
+        return list.find(chip => chip.kind === 'gate');
     }
 
     test('shows the gate chip when entering a gate location', () => {
@@ -64,6 +65,7 @@ describe('multibinds gate chip', () => {
 
         expect(gateChip(list)).toEqual({
             index: GATE_INDEX,
+            kind: 'gate',
             action: 'zapukaj w brame',
             label: 'ALT+B',
         });

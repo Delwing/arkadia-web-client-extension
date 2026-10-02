@@ -67,7 +67,8 @@ export default class MultiBinds {
           wrapper.disabled = true;
         }
 
-        wrapper.append(keySpan, actionSpan);
+        if (bind.label) wrapper.append(keySpan);
+        wrapper.append(actionSpan);
         this.container!.appendChild(wrapper);
       });
   }

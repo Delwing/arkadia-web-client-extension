@@ -6,7 +6,9 @@ import { useClientEvent, useHardwareKeyboard } from "../hooks";
 interface DisplayMultibind {
   index: number;
   action: string;
+  /** Key label; empty for a slot without a key. */
   label: string;
+  kind?: "room" | "drink" | "gate";
   /** Display name of a temporary (plugin) bind, shown instead of the action. */
   name?: string;
   temporary?: boolean;
@@ -93,16 +95,9 @@ export default function MultiBindStrip({
         .map((bind) => {
           const action = bind.action.trim();
           // The multibinds event tags the location's room bind, drinkable bind and
-          // gate bind with reserved indexes (5, 6 and 7 — see
-          // client/scripts/multibinds.ts), so each UI can colour them apart from the
-          // plain numbered multibinds.
-          const kind = bind.index === 5
-            ? " multi-bind--room"
-            : bind.index === 6
-              ? " multi-bind--drink"
-              : bind.index === 7
-                ? " multi-bind--gate"
-                : "";
+          // gate bind with a kind (see client/scripts/multibinds.ts), so each UI can
+          // colour them apart from the plain numbered multibinds.
+          const kind = bind.kind ? ` multi-bind--${bind.kind}` : "";
           // Temporary binds (plugins, api.multibinds.addTemporary) read apart from
           // saved ones; a highlighted slot gets a visible border.
           const flags = `${bind.temporary ? " multi-bind--temporary" : ""}${bind.highlight ? " multi-bind--highlight" : ""}`;
@@ -118,7 +113,7 @@ export default function MultiBindStrip({
                 if (action) eventBus.emit("sendCommand", { command: bind.action });
               }}
             >
-              {showKeys && <span className="multi-bind-key">{bind.label}</span>}
+              {showKeys && bind.label && <span className="multi-bind-key">{bind.label}</span>}
               <span className="multi-bind-action">{name || bind.action}</span>
             </button>
           );

@@ -9,7 +9,8 @@ import {
 } from './multibindImport.shared';
 
 const REQUIRED_COLUMNS = ['_row_id', 'index', 'uniqness', 'room_id', 'action'] as const;
-const MAX_MULTIBIND_INDEX = 4;
+/** Same cap as the client keeps on load: a keymap can have more than four slots. */
+const MAX_MULTIBIND_INDEX = 99;
 
 let sqlPromise: Promise<SqlJsStatic> | null = null;
 

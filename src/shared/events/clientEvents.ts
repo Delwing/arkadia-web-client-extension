@@ -55,8 +55,10 @@ type MultibindList = {
     list: {
         index: number;
         action: string;
-        /** Key label, e.g. "ALT+1". */
+        /** Key label, e.g. "ALT+1"; empty for a slot without a key. */
         label: string;
+        /** The location's own bind, drink or gate bind, rather than a numbered multibind. */
+        kind?: 'room' | 'drink' | 'gate';
         /** Display name of a temporary bind - shown instead of the action when set. */
         name?: string;
         /** Slot filled by a temporary (plugin) bind rather than a saved one. */

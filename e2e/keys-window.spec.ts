@@ -202,4 +202,23 @@ test.describe('Klawisze window', () => {
 
         await closeKeysWindow(page);
     });
+
+    test("multibind slots can be added, given a key and removed from the end", async ({page}) => {
+        await openKeysWindow(page);
+        const section = page.locator("#binds-modal .keys-section[data-section=\"multi\"]");
+        await expect(section.locator(".keys-row")).toHaveCount(4);
+
+        await section.getByRole("button", {name: "Multibind", exact: true}).click();
+        await expect(section.locator(".keys-row")).toHaveCount(5);
+        await expect(bindKey(page, "slot:multibinds[4]")).toHaveText("brak");
+
+        await captureKey(page, "slot:multibinds[4]", "Alt+5");
+        await expect(bindKey(page, "slot:multibinds[4]")).toContainText("5");
+        await page.screenshot({path: "test-results/keys-multibinds.png"});
+
+        await section.locator("[data-bind=\"slot:multibinds[4]\"] button[title=\"Usuń ostatni multibind\"]").click();
+        await expect(section.locator(".keys-row")).toHaveCount(4);
+        await expect(section.locator("[data-bind=\"slot:multibinds[3]\"] button[title=\"Usuń ostatni multibind\"]")).toHaveCount(1);
+        await closeKeysWindow(page);
+    });
 });

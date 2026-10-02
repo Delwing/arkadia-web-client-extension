@@ -107,7 +107,7 @@ Komendy do poruszania się, mapy i automatycznego chodzenia.
 
 | Komenda | Opis |
 |---------|------|
-| `/mbind numer akcja` | Ustaw multibind 1-4 dla bieżącej lokacji |
+| `/mbind numer akcja` | Ustaw multibind o danym numerze dla bieżącej lokacji (domyślnie 1-4, więcej slotów dodasz w oknie Klawisze) |
 | `/mbind+ akcja` | Dodaj akcję do pierwszego wolnego multibinda |
 | `/mbind-` | Usuń wszystkie multibindy z bieżącej lokacji |
 | `/mbind- numer` | Usuń wskazany multibind |

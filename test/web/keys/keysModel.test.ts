@@ -257,3 +257,27 @@ describe("matchesSearch", () => {
         expect(matchesSearch(entry, "atak")).toBe(false);
     });
 });
+
+describe("multibind slots", () => {
+    it("lists one entry per slot the keymap has, a keyless one included", () => {
+        const b = binds({ multibinds: [{ key: "Digit1", alt: true }, { key: "" }, { key: "F9" }] });
+        const multi = buildEntries(b, []).filter(e => e.group === "multi");
+        expect(multi.map(e => e.label)).toEqual(["Multibind 1", "Multibind 2", "Multibind 3"]);
+        expect(multi.map(e => e.combo && comboId(e.combo))).toEqual(["alt+Digit1", null, "F9"]);
+    });
+
+    it("writes a slot's key without touching the others", () => {
+        const b = binds({ multibinds: [{ key: "Digit1", alt: true }, { key: "" }] });
+        const next = writeSlot(b, "multibinds[1]", { key: "F8" });
+        expect(next.multibinds).toEqual([{ key: "Digit1", alt: true }, { key: "F8" }]);
+        expect(readSlot(next, "multibinds[1]")).toEqual({ key: "F8" });
+    });
+
+    it("folds a helper hotkey into the slot it triggers", () => {
+        const b = binds({ multibinds: [{ key: "Digit1", alt: true }, { key: "F8" }] });
+        const { list } = mergeEntries(buildEntries(b, [helper({ key: "f8", action: "bind", targetBind: "multibind2", mode: "global" })]));
+        const slot = list.find(e => e.id === "slot:multibinds[1]")!;
+        expect(slot.reach).toBe("global");
+        expect(list.some(e => e.ref.kind === "helper")).toBe(false);
+    });
+});

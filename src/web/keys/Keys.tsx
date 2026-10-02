@@ -2,7 +2,7 @@ import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, use
 import { createPortal } from "react-dom";
 import { ChevronDown, ChevronRight, Download, Globe, MoreHorizontal, Pencil, Plug, Plus, Search, X } from "lucide-react";
 import { Button, DeleteButton, Input, Segmented } from "@web-ui/primitives/index.ts";
-import type { BindSettings, Keymap, WalkModifiers } from "@modules/core/keymapTypes";
+import { MAX_MULTIBIND_SLOTS, type BindSettings, type Keymap, type WalkModifiers } from "@modules/core/keymapTypes";
 import { effectiveWalkModifiers, getWalkModes, subscribeWalkModes, walkModifiersOf } from "@modules/core/walkModeRegistry";
 import {
     createKeymap,
@@ -31,7 +31,7 @@ import {
     GROUPS,
     MODIFIER_CODES,
     REACH_LABELS,
-    SLOT_BY_PATH,
+    slotDef,
     bindOf,
     buildEntries,
     mergeEntries,
@@ -358,7 +358,7 @@ export default function Keys({ helperConnection, headerSlot, onImport }: KeysPro
                 commit({ ...binds, custom });
             }
         } else {
-            const slot = SLOT_BY_PATH.get(ref.path);
+            const slot = slotDef(ref.path);
             if (combo && reserved) {
                 if (!slot?.helperId) {
                     setNotice(`${comboLabel(combo)} zajmuje przeglądarka, a tej funkcji helper nie obsłuży.`);
@@ -484,7 +484,7 @@ export default function Keys({ helperConnection, headerSlot, onImport }: KeysPro
 
         const action: Pick<StoredBind, "action" | "command" | "targetBind"> = ref.kind === "custom"
             ? { action: "command", command: entry.command ?? "" }
-            : { action: "bind", targetBind: SLOT_BY_PATH.get(ref.path)?.helperId };
+            : { action: "bind", targetBind: slotDef(ref.path)?.helperId };
         if (action.action === "bind" && !action.targetBind) {
             setNotice(`Helper nie obsługuje funkcji „${entry.label}”.`);
             return;
@@ -639,7 +639,7 @@ export default function Keys({ helperConnection, headerSlot, onImport }: KeysPro
         return (
             <section className="keys-section" data-section="basic">
                 {sectionHead("basic", undefined, size === "phone" ? all.length : undefined)}
-                {all.slice(0, limit).map(e => <Fragment key={e.id}>{row(e, !!SLOT_BY_PATH.get((e.ref as { path: string }).path)?.inherits)}</Fragment>)}
+                {all.slice(0, limit).map(e => <Fragment key={e.id}>{row(e, !!slotDef((e.ref as { path: string }).path)?.inherits)}</Fragment>)}
                 {limit < all.length && (
                     <button type="button" className="keys-add" onClick={() => setExpanded(new Set([...expanded, "basic"]))}>
                         Pokaż wszystkie {all.length}<ChevronDown size={14} />
@@ -679,6 +679,53 @@ export default function Keys({ helperConnection, headerSlot, onImport }: KeysPro
         <section className="keys-section" data-section="temp">
             {sectionHead("temp")}
             {[0, 1].map(i => <Fragment key={i}>{row(entry(`slot:temp[${i}]`))}</Fragment>)}
+        </section>
+    );
+
+    /**
+     * Multibind slots: as many as the player wants. Slot n runs the room's
+     * n-th multibind; a slot without a key is used from the bar only. Only the
+     * last slot can go, so the rooms' saved binds keep their numbers.
+     */
+    const multibindKeys = binds.multibinds ?? [];
+    const addMultibind = () => commit({ ...binds, multibinds: [...multibindKeys, { key: "" }] });
+    const removeLastMultibind = () => {
+        const last = multibindKeys.length - 1;
+        const e = entries.find(x => x.id === `slot:multibinds[${last}]`);
+        if (e?.twinId) commitHelper(helperBinds.filter(b => b.id !== e.twinId));
+        commit({ ...binds, multibinds: multibindKeys.slice(0, last) });
+    };
+    const multiSection = () => (
+        <section className="keys-section" data-section="multi">
+            {sectionHead("multi", undefined, multibindKeys.length)}
+            {multibindKeys.length === 0 && <p className="keys-muted keys-empty">Brak multibindów.</p>}
+            {multibindKeys.slice(0, MAX_MULTIBIND_SLOTS).map((_, i) => {
+                const e = entry(`slot:multibinds[${i}]`);
+                const last = i === multibindKeys.length - 1;
+                return (
+                    <div
+                        key={e.id}
+                        className={`keys-row${e.combo ? " is-pickable" : ""}${visible(e) ? "" : " is-hidden"}`}
+                        data-bind={e.id}
+                        title={e.combo ? `Pokaż klawisz ${comboLabel(e.combo)}` : undefined}
+                        onClick={() => selectEntry(e)}
+                    >
+                        <span className="keys-row__label">
+                            {e.label}
+                            {reachBadge(e)}
+                            {last && <DeleteButton className="keys-row__delete" title="Usuń ostatni multibind" onClick={ev => { ev.stopPropagation(); removeLastMultibind(); }} />}
+                        </span>
+                        {kc(e)}
+                    </div>
+                );
+            })}
+            {multibindKeys.length < MAX_MULTIBIND_SLOTS && (
+                <div className="keys-adds">
+                    <button type="button" className="keys-add" onClick={addMultibind}>
+                        <Plus size={14} strokeWidth={2.2} />Multibind
+                    </button>
+                </div>
+            )}
         </section>
     );
 
@@ -923,7 +970,7 @@ export default function Keys({ helperConnection, headerSlot, onImport }: KeysPro
 
 
     const sections: Record<Group | "helper", () => ReactNode> = {
-        basic: basicSection, enemy: enemySection, temp: tempSection, dir: dirSection, own: ownSection, helper: helperSection,
+        basic: basicSection, enemy: enemySection, temp: tempSection, multi: multiSection, dir: dirSection, own: ownSection, helper: helperSection,
     };
 
     // ── Keyboard ────────────────────────────────────────────────────────
@@ -1036,7 +1083,7 @@ export default function Keys({ helperConnection, headerSlot, onImport }: KeysPro
         return comboInLayer(code, parts.join("+"));
     }, [selected]);
 
-    const helperIdOf = (e: KeyEntry) => e.ref.kind === "slot" ? SLOT_BY_PATH.get(e.ref.path)?.helperId : undefined;
+    const helperIdOf = (e: KeyEntry) => e.ref.kind === "slot" ? slotDef(e.ref.path)?.helperId : undefined;
 
     const detail = () => {
         if (!selectedCombo) {
@@ -1340,7 +1387,7 @@ export default function Keys({ helperConnection, headerSlot, onImport }: KeysPro
         </div>
     );
 
-    const listOrder: (Group | "helper")[] = ["dir", "basic", "enemy", "temp", "own", "helper"];
+    const listOrder: (Group | "helper")[] = ["dir", "basic", "enemy", "temp", "multi", "own", "helper"];
     const tabCount = (g: Group | "helper") => g === "helper" ? 0 : entries.filter(e => e.group === g && e.combo).length;
 
     let body: ReactNode;
@@ -1361,7 +1408,7 @@ export default function Keys({ helperConnection, headerSlot, onImport }: KeysPro
                 </div>
                 <div className="keys-lists">
                     {basicSection()}
-                    <div className="keys-lists__stack">{enemySection()}{tempSection()}</div>
+                    <div className="keys-lists__stack">{enemySection()}{tempSection()}{multiSection()}</div>
                     {dirSection()}
                     {ownSection()}
                 </div>
@@ -1432,6 +1479,7 @@ export default function Keys({ helperConnection, headerSlot, onImport }: KeysPro
                 {tempSection()}
                 {basicSection()}
                 {enemySection()}
+                {multiSection()}
                 {ownSection()}
                 {helperSection()}
             </>

@@ -123,6 +123,10 @@ export function findBindConflicts(
         }
     }
 
+    binds.multibinds?.forEach((bind, index) => {
+        push(`multibinds[${index}]`, `Multibind ${index + 1}`, bind);
+    });
+
     for (const listName of ['temp', 'enemy', 'enemyBlock'] as const) {
         const list = binds[listName];
         if (!Array.isArray(list)) continue;

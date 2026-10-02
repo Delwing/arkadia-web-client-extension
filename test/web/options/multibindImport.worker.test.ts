@@ -87,7 +87,7 @@ describe('parseMultibindsDatabase', () => {
             rows: [
                 { idx: 1, uniq: 'abc', roomId: 12, action: 'say hi' },
                 { idx: 2, uniq: '   ', roomId: 34, action: 'cmd' },
-                { idx: 9, uniq: 'ignored', roomId: 8, action: 'skip' },
+                { idx: 100, uniq: 'ignored', roomId: 8, action: 'skip' },
             ],
         });
 

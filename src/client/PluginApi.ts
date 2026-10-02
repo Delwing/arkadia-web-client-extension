@@ -1353,7 +1353,7 @@ export interface TemporaryMultibindHandle {
 }
 
 /**
- * Multibinds API - put temporary commands on the multibind bar (ALT+1..4)
+ * Multibinds API - put temporary commands on the multibind bar (ALT+1..4 by default; players can add slots)
  */
 export interface MultibindsApi {
   /**
@@ -1367,7 +1367,7 @@ export interface MultibindsApi {
    * - a saved bind in the current room with the same action is reused (and gets
    *   the highlight) instead of taking a new slot; the same goes for an earlier
    *   temporary bind with the same action,
-   * - otherwise the lowest free slot 1..4 is taken; when all slots are used the
+   * - otherwise the lowest free slot of the player's slots (1..4 by default) is taken; when all slots are used the
    *   bind is not shown and its key does nothing.
    *
    * @example

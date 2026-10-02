@@ -19,7 +19,7 @@ się od razu, nie ma przycisku "Zapisz".
 
 - **Rysunek klawiatury** pokazuje, co jest pod każdym klawiszem. Zakładki nad nim
   (Bez modyfikatora, Ctrl, Alt, Shift, Ctrl+Alt) przełączają warstwę. Kolor mówi,
-  do jakiej grupy należy bind (Podstawowe, Wrogowie, Tymczasowe, Kierunki, Własne).
+  do jakiej grupy należy bind (Podstawowe, Wrogowie, Tymczasowe, Multibindy, Kierunki, Własne).
 - **Kliknięcie klawisza na rysunku** pokazuje szczegóły: co robi, czy działa, a
   wolnemu klawiszowi można od razu przypisać komendę.
 - **Zmiana klawisza:** kliknij klawisz na liście pod rysunkiem i naciśnij nowy.
@@ -28,6 +28,10 @@ się od razu, nie ma przycisku "Zapisz".
   uruchamia oba naraz. Okno podpowiada wolne klawisze w pobliżu - kliknięcie
   przenosi tam bind.
 - **Własne** - "+ Komenda" dodaje skrót wysyłający dowolną komendę.
+- **Multibindy** - domyślnie cztery sloty (Alt+1..4). "+ Multibind" dodaje kolejny
+  (do 20), kosz przy ostatnim go usuwa. Slot bez klawisza nadal widać na pasku
+  multibindów, tylko bez podpowiedzi klawisza - działa po kliknięciu. `/mbind`
+  przyjmuje numery wszystkich slotów.
 - **Kierunki** - "Użyj strzałek" przenosi N/S/W/E na strzałki (i z powrotem).
 - **Tryby chodzenia** (pod Kierunkami) - każdy tryb dostaje modyfikator (Ctrl,
   Alt, Shift), który trzymany z dowolnym klawiszem kierunku idzie tym trybem.

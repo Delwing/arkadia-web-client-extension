@@ -45,6 +45,12 @@ const defaultBinds: BindSettings = {
         zerknij: { key: 'Numpad5' },
         special: { key: 'Numpad0' },
     },
+    multibinds: [
+        { key: 'Digit1', alt: true },
+        { key: 'Digit2', alt: true },
+        { key: 'Digit3', alt: true },
+        { key: 'Digit4', alt: true },
+    ],
     custom: [],
 };
 
@@ -341,6 +347,9 @@ function mergeBindSettings(raw: any): BindSettings {
             ...defaultBinds.directions,
             ...(raw.directions || {}),
         },
+        multibinds: Array.isArray(raw.multibinds)
+            ? raw.multibinds.map((b: any) => (b && typeof b === 'object' && typeof b.key === 'string' ? b : { key: '' }))
+            : defaultBinds.multibinds!.map(b => ({ ...b })),
         walkModes: mergeWalkModes(raw.walkModes),
         custom: Array.isArray(raw.custom) ? raw.custom : [],
     };

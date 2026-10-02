@@ -5,6 +5,7 @@
   --keys-basic: var(--popup-accent);
   --keys-enemy: var(--popup-danger);
   --keys-temp: var(--popup-warning);
+  --keys-multi: color-mix(in oklab, #d98bb4 85%, var(--popup-text));
   --keys-dir: color-mix(in oklab, #62b8be 85%, var(--popup-text));
   --keys-own: color-mix(in oklab, #a898dc 85%, var(--popup-text));
   --keys-helper: var(--popup-accent);
@@ -24,6 +25,7 @@
 .keys [data-group="basic"] { --g: var(--keys-basic); }
 .keys [data-group="enemy"] { --g: var(--keys-enemy); }
 .keys [data-group="temp"] { --g: var(--keys-temp); }
+.keys [data-group="multi"] { --g: var(--keys-multi); }
 .keys [data-group="dir"] { --g: var(--keys-dir); }
 .keys [data-group="own"] { --g: var(--keys-own); }
 

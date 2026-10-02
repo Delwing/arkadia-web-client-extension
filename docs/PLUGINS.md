@@ -615,7 +615,7 @@ const label = api.bind.getLabel();
 
 #### `api.multibinds` - Tymczasowe Multibindy
 
-Dodaje komendy na pasek multibindów (ALT+1..4) na czas, gdy są potrzebne - np. na bieżący krok listy kontrolnej. Tymczasowe multibindy żyją tylko w pamięci: nie są zapisywane, nie są synchronizowane i nie zmieniają bindów lokacji utworzonych przez `/mbind`. Po wyładowaniu pluginu znikają automatycznie.
+Dodaje komendy na pasek multibindów (domyślnie ALT+1..4; gracz może mieć więcej slotów) na czas, gdy są potrzebne - np. na bieżący krok listy kontrolnej. Tymczasowe multibindy żyją tylko w pamięci: nie są zapisywane, nie są synchronizowane i nie zmieniają bindów lokacji utworzonych przez `/mbind`. Po wyładowaniu pluginu znikają automatycznie.
 
 ```typescript
 const handle = api.multibinds.addTemporary({
@@ -634,7 +634,7 @@ handle.remove();
 
 Przydział slotów (liczony przy każdym odświeżeniu, w kolejności dodania):
 - jeśli zapisany bind lokacji ma tę samą komendę, jest używany zamiast nowego slotu (i dostaje wyróżnienie, gdy `highlight: true`); to samo dotyczy wcześniejszego tymczasowego binda z tą samą komendą,
-- w przeciwnym razie zajmowany jest najniższy wolny slot 1..4; gdy wszystkie są zajęte, bind nie jest pokazywany, a jego klawisz nic nie robi.
+- w przeciwnym razie zajmowany jest najniższy wolny slot spośród slotów gracza (domyślnie 1..4); gdy wszystkie są zajęte, bind nie jest pokazywany, a jego klawisz nic nie robi.
 
 Na pasku tymczasowe bindy mają przerywaną ramkę, a wyróżnione - ramkę w kolorze akcentu. W zdarzeniu `multibinds` wpisy mają dodatkowe pola `temporary`, `highlight` i `name` (nazwa z `label`; pole `label` wpisu to nadal etykieta klawisza).
 

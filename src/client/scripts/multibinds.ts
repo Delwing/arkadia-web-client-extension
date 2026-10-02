@@ -1,5 +1,5 @@
 import Client from "../Client";
-import { getMultibindLabel, MULTIBIND_KEYS } from "../multibindKeys";
+import { formatBindKey, getMultibindKeyLabel, getMultibindKeys, getMultibindLabel } from "../multibindKeys";
 import {
     replaceAll as replaceMultibinds,
     subscribe as subscribeMultibinds,
@@ -11,16 +11,21 @@ import MapHelper from "@shared/map/MapHelper";
 import { getGateBindString, isGateRoom } from "./gateBind";
 import { resolveMultibindSlots, temporaryMultibinds } from "./temporaryMultibinds";
 
-const isMac = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform);
-const ALT_LABEL = isMac ? '⌥' : 'ALT';
+/** Bar indexes of the room's own binds, past any multibind slot so they sort last. */
+const ROOM_BIND_INDEX = 1001;
+const DRINKABLE_BIND_INDEX = 1002;
+const GATE_BIND_INDEX = 1003;
 
-const MAX_BINDS = 4;
+/** Saved binds past this index are dropped on load (a broken record, not a slot). */
+const MAX_STORED_INDEX = 99;
 
 interface DisplayMultibind {
     index: number;
     action: string;
-    /** Key label, e.g. "ALT+1". */
+    /** Key label, e.g. "ALT+1"; empty for a slot without a key. */
     label: string;
+    /** The location's own bind, drink or gate bind, rather than a numbered multibind. */
+    kind?: 'room' | 'drink' | 'gate';
     /** Display name of a temporary bind (shown on the bar instead of the action). */
     name?: string;
     /** Slot filled by a temporary (plugin) bind, not a saved one. */
@@ -29,23 +34,20 @@ interface DisplayMultibind {
     highlight?: boolean;
 }
 
-function isValidIndex(index: number) {
-    return Number.isInteger(index) && index >= 1 && index <= MAX_BINDS;
+/** How many multibind slots the active keymap has. */
+function slotCount() {
+    return getMultibindKeys().length;
 }
 
-function bindLabel(bind: Bind): string {
-    let key = bind.key;
-    if (key.startsWith('Digit')) key = key.substring(5);
-    else if (key.startsWith('Key')) key = key.substring(3);
-    else if (key === 'BracketRight') key = ']';
-    else if (key === 'BracketLeft') key = '[';
-    else if (key === 'Backquote') key = '`';
-    const parts: string[] = [];
-    if (bind.ctrl) parts.push('CTRL');
-    if (bind.alt) parts.push(ALT_LABEL);
-    if (bind.shift) parts.push('SHIFT');
-    parts.push(key);
-    return parts.join('+');
+function isValidIndex(index: number) {
+    return Number.isInteger(index) && index >= 1 && index <= slotCount();
+}
+
+function slotRangeMessage() {
+    const count = slotCount();
+    return count > 0
+        ? `Numer binda musi byc pomiedzy 1, a ${count}.`
+        : 'Brak slotow multibindow - dodaj je w oknie Klawisze.';
 }
 
 export default function initMultibinds(client: Client, aliases?: { pattern: RegExp; callback: Function }[]) {
@@ -58,7 +60,10 @@ export default function initMultibinds(client: Client, aliases?: { pattern: RegE
     let drinkableBind: Bind = { key: 'KeyN', alt: true };
     let gateBind: Bind = { key: 'KeyB', alt: true };
 
+    let multibindKeys = getMultibindKeys();
+
     function applyMultibindKeys(b: any) {
+        multibindKeys = getMultibindKeys();
         if (b?.roomBind) {
             roomBind = b.roomBind;
         }
@@ -71,7 +76,11 @@ export default function initMultibinds(client: Client, aliases?: { pattern: RegE
     }
 
     applyMultibindKeys(globalStorage.get('binds'));
-    globalStorage.onChange('binds', applyMultibindKeys);
+    globalStorage.onChange('binds', (b) => {
+        applyMultibindKeys(b);
+        // Slot count and key labels may have changed.
+        if (isInitialized) sendUpdate(getRoomId());
+    });
 
     function runWhenReady(action: () => void) {
         if (isInitialized) {
@@ -160,7 +169,7 @@ export default function initMultibinds(client: Client, aliases?: { pattern: RegE
     /** Saved binds of the room merged with the temporary binds that apply to it. */
     function resolveSlots(roomId: number | null) {
         const saved = roomId === null ? undefined : data.get(roomId);
-        return resolveMultibindSlots(saved, roomId, temporaryMultibinds.list(), MAX_BINDS);
+        return resolveMultibindSlots(saved, roomId, temporaryMultibinds.list(), slotCount());
     }
 
     function toBarDisplay(roomId: number | null): DisplayMultibind[] {
@@ -170,7 +179,7 @@ export default function initMultibinds(client: Client, aliases?: { pattern: RegE
                 const entry: DisplayMultibind = {
                     index,
                     action: slot.action,
-                    label: getMultibindLabel(index),
+                    label: getMultibindKeyLabel(index),
                 };
                 if (slot.name) entry.name = slot.name;
                 if (slot.temporary) entry.temporary = true;
@@ -201,25 +210,28 @@ export default function initMultibinds(client: Client, aliases?: { pattern: RegE
 
             if (room?.userData?.bind) {
                 additionalBinds.push({
-                    index: MAX_BINDS + 1,
+                    index: ROOM_BIND_INDEX,
+                    kind: 'room',
                     action: MapHelper.getBindPrintable(room.userData.bind),
-                    label: bindLabel(roomBind)
+                    label: formatBindKey(roomBind)
                 });
             }
 
             if (room?.userData?.drinkable) {
                 additionalBinds.push({
-                    index: MAX_BINDS + 2,
+                    index: DRINKABLE_BIND_INDEX,
+                    kind: 'drink',
                     action: "napij sie do syta wody",
-                    label: bindLabel(drinkableBind)
+                    label: formatBindKey(drinkableBind)
                 });
             }
 
             if (showGateBind) {
                 additionalBinds.push({
-                    index: MAX_BINDS + 3,
+                    index: GATE_BIND_INDEX,
+                    kind: 'gate',
                     action: MapHelper.getBindPrintable(getGateBindString(room)),
-                    label: bindLabel(gateBind)
+                    label: formatBindKey(gateBind)
                 });
             }
 
@@ -235,7 +247,7 @@ export default function initMultibinds(client: Client, aliases?: { pattern: RegE
 
     function create(roomId: number, index: number, action: string) {
         if (!isValidIndex(index)) {
-            log(`Numer binda musi byc pomiedzy 1, a ${MAX_BINDS}.`);
+            log(slotRangeMessage());
             return;
         }
         const normalized = action.trim();
@@ -263,14 +275,17 @@ export default function initMultibinds(client: Client, aliases?: { pattern: RegE
         runWhenReady(() => {
             const normalized = action.trim();
             const roomMap = data.get(roomId);
-            for (let i = 1; i <= MAX_BINDS; i += 1) {
+            const count = slotCount();
+            for (let i = 1; i <= count; i += 1) {
                 if (!roomMap || !roomMap.has(i)) {
                     set(roomId, i, normalized);
                     persist();
                     return;
                 }
             }
-            log(`Lokacja ma juz maksymalna (${MAX_BINDS}) liczbe bindow.`);
+            log(count > 0
+                ? `Lokacja ma juz maksymalna (${count}) liczbe bindow.`
+                : slotRangeMessage());
         });
     }
 
@@ -342,7 +357,7 @@ export default function initMultibinds(client: Client, aliases?: { pattern: RegE
         list.forEach(item => {
             const roomId = Number(item.roomId);
             const index = Number(item.index);
-            if (!isValidIndex(index) || Number.isNaN(roomId)) {
+            if (!Number.isInteger(index) || index < 1 || index > MAX_STORED_INDEX || Number.isNaN(roomId)) {
                 return;
             }
             set(roomId, index, item.action);
@@ -365,15 +380,11 @@ export default function initMultibinds(client: Client, aliases?: { pattern: RegE
         if (ev.repeat) {
             return;
         }
-        const entry = Object.entries(MULTIBIND_KEYS).find(([, def]) => {
-            if (!def) return false;
-            return bindMatches(ev, def);
-        });
-        if (!entry) {
+        const slot = multibindKeys.findIndex(def => !!def?.key && bindMatches(ev, def));
+        if (slot === -1) {
             return;
         }
-        const index = parseInt(entry[0], 10);
-        runCurrent(index);
+        runCurrent(slot + 1);
         ev.preventDefault();
     });
 
@@ -426,11 +437,13 @@ export default function initMultibinds(client: Client, aliases?: { pattern: RegE
         if (bindName === 'gateBind') {
             client.Map.executeBind(getGateBindString(client.Map.currentRoom));
         }
+        const multibind = /^multibind(\d+)$/.exec(bindName);
+        if (multibind) runCurrent(parseInt(multibind[1], 10));
     });
 
     if (aliases) {
         aliases.push({
-            pattern: /^\/mbind (\d) (.+)$/,
+            pattern: /^\/mbind (\d+) (.+)$/,
             callback: (matches: RegExpMatchArray) => {
                 const index = parseInt(matches[1], 10);
                 const action = matches[2].trim();
@@ -460,11 +473,11 @@ export default function initMultibinds(client: Client, aliases?: { pattern: RegE
             }
         });
         aliases.push({
-            pattern: /^\/mbind- (\d)$/,
+            pattern: /^\/mbind- (\d+)$/,
             callback: (matches: RegExpMatchArray) => {
                 const index = parseInt(matches[1], 10);
                 if (!isValidIndex(index)) {
-                    log(`Numer binda musi byc pomiedzy 1, a ${MAX_BINDS}.`);
+                    log(slotRangeMessage());
                     return;
                 }
                 clearCurrentIndex(index);

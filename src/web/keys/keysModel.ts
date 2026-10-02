@@ -6,7 +6,7 @@
  * Everything here is pure, so the window (Keys.tsx) only holds state and draws.
  */
 
-import type { Bind, BindSettings, DirectionBinds, WalkModifiers } from "@modules/core/keymapTypes";
+import { MAX_MULTIBIND_SLOTS, type Bind, type BindSettings, type DirectionBinds, type WalkModifiers } from "@modules/core/keymapTypes";
 import { directionModifiers, hasWalkModifier, sameWalkModifiers } from "@modules/core/walkModeRegistry";
 import type { StoredBind } from "@modules/helper/helperBinds";
 import type { BindMode } from "@modules/helper/helperProtocol";
@@ -189,12 +189,13 @@ export function fromHelperKey(helperKey: string): Combo | null {
 
 // ── Entries ─────────────────────────────────────────────────────────────
 
-export type Group = "basic" | "enemy" | "temp" | "dir" | "own";
+export type Group = "basic" | "enemy" | "temp" | "multi" | "dir" | "own";
 
 export const GROUPS: readonly { id: Group; label: string }[] = [
     { id: "basic", label: "Podstawowe" },
     { id: "enemy", label: "Wrogowie" },
     { id: "temp", label: "Tymczasowe" },
+    { id: "multi", label: "Multibindy" },
     { id: "dir", label: "Kierunki" },
     { id: "own", label: "Własne" },
 ];
@@ -285,8 +286,25 @@ export const SLOTS: readonly SlotDef[] = [
     dir("special3", "specjalny 3", "specjalny 3", "dir_special3"),
 ];
 
-export const SLOT_BY_PATH = new Map(SLOTS.map(s => [s.path, s]));
+const SLOT_BY_PATH = new Map(SLOTS.map(s => [s.path, s]));
 const SLOT_BY_HELPER_ID = new Map(SLOTS.filter(s => s.helperId).map(s => [s.helperId!, s]));
+
+/** Multibind slot `index` (0-based): its own entry, since the keymap holds as many as the player adds. */
+function multibindSlot(index: number): SlotDef {
+    const n = index + 1;
+    return { path: `multibinds[${index}]`, label: `Multibind ${n}`, short: `MB${n}`, group: "multi", helperId: `multibind${n}` };
+}
+
+/** The slot at `path`, fixed or a multibind slot. */
+export function slotDef(path: string): SlotDef | undefined {
+    const multi = /^multibinds\[(\d+)\]$/.exec(path);
+    return multi ? multibindSlot(Number(multi[1])) : SLOT_BY_PATH.get(path);
+}
+
+function slotByHelperId(helperId: string): SlotDef | undefined {
+    const multi = /^multibind(\d+)$/.exec(helperId);
+    return multi ? multibindSlot(Number(multi[1]) - 1) : SLOT_BY_HELPER_ID.get(helperId);
+}
 
 /** The helper's own action that only brings the client window to the front. */
 export const FOCUS_HELPER_TARGET = "focus";
@@ -346,8 +364,8 @@ export function writeSlot(binds: BindSettings, path: string, bind: Bind | undefi
     const next: BindSettings = { ...binds };
     const indexed = /^(\w+)\[(\d+)\]$/.exec(path);
     if (indexed) {
-        const name = indexed[1] as "temp" | "enemy" | "enemyBlock";
-        const list = [...next[name]];
+        const name = indexed[1] as "temp" | "enemy" | "enemyBlock" | "multibinds";
+        const list = [...(next[name] ?? [])];
         list[Number(indexed[2])] = bind ?? { key: "" };
         next[name] = list;
         return next;
@@ -357,7 +375,7 @@ export function writeSlot(binds: BindSettings, path: string, bind: Bind | undefi
         return next;
     }
     const record = next as unknown as Record<string, Bind | undefined>;
-    if (bind === undefined && SLOT_BY_PATH.get(path)?.inherits) delete record[path];
+    if (bind === undefined && slotDef(path)?.inherits) delete record[path];
     else record[path] = bind ?? { key: "" };
     return next;
 }
@@ -370,7 +388,7 @@ function helperEntry(b: StoredBind): KeyEntry {
         if (b.targetBind === FOCUS_HELPER_TARGET) {
             return { id: entryId(ref), ref, group: "basic", label: "Przywołaj okno klienta", short: "Przywołaj", combo, reach, helperTarget: b.targetBind };
         }
-        const slot = b.targetBind ? SLOT_BY_HELPER_ID.get(b.targetBind) : undefined;
+        const slot = b.targetBind ? slotByHelperId(b.targetBind) : undefined;
         const name = slot?.label ?? b.targetBind ?? "?";
         return {
             id: entryId(ref), ref, group: slot?.group ?? "basic", label: name,
@@ -392,6 +410,11 @@ export function buildEntries(binds: BindSettings, helperBinds: readonly StoredBi
             combo: comboOf(bind), reach: "client", inherits: slot.inherits && !bind,
         });
     }
+    (binds.multibinds ?? []).slice(0, MAX_MULTIBIND_SLOTS).forEach((bind, index) => {
+        const slot = multibindSlot(index);
+        const ref: EntryRef = { kind: "slot", path: slot.path };
+        entries.push({ id: entryId(ref), ref, group: slot.group, label: slot.label, short: slot.short, combo: comboOf(bind), reach: "client" });
+    });
     binds.custom.forEach((b, index) => {
         const ref: EntryRef = { kind: "custom", index };
         entries.push({
@@ -431,7 +454,7 @@ export function mergeEntries(entries: readonly KeyEntry[]): MergedEntries {
         const twin = helpers.find(h => {
             if (taken.has(h.id) || !sameCombo(h.combo, entry.combo)) return false;
             if (entry.ref.kind === "slot") {
-                const helperId = SLOT_BY_PATH.get(entry.ref.path)?.helperId;
+                const helperId = slotDef(entry.ref.path)?.helperId;
                 return !!helperId && h.helperTarget === helperId;
             }
             return h.helperTarget === undefined && h.command === entry.command;

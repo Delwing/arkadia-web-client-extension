@@ -23,6 +23,9 @@ export interface Bind {
 /** The modifier part of a bind, without a key: what a walk mode adds to a direction key. */
 export type WalkModifiers = Pick<Bind, 'ctrl' | 'alt' | 'shift'>;
 
+/** The most multibind slots a keymap can have; the client reads no more. */
+export const MAX_MULTIBIND_SLOTS = 20;
+
 export interface CustomBind extends Bind {
     command: string;
 }
@@ -65,6 +68,12 @@ export interface BindSettings {
     /** Double-press bind that sends the `+k` game command. */
     doubleK: Bind;
     directions: DirectionBinds;
+    /**
+     * Keys of the multibind slots: slot n sits on index n-1, and the length is
+     * how many slots there are. A slot with an empty key has no key and is used
+     * from the bar only. Missing on older keymaps, which get the default ALT+1..4.
+     */
+    multibinds?: Bind[];
     /**
      * Modifier held with a direction key to walk that step in a given walk mode
      * (`przemknij`, a plugin's own walking), keyed by walk mode id. A mode with no
