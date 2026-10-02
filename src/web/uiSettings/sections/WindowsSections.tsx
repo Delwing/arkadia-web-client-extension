@@ -3,6 +3,8 @@ import { Button, Field } from "@web-ui/primitives/index.ts";
 import { CheckboxRow, NumberField, SelectField, SettingsSection } from "../fields";
 import ObjectContextMenuEditor from "../ObjectContextMenuEditor";
 import { isLayoutModeForced } from "@web/layout/utils/layoutStorage";
+import { useBuiltInPanelSetting } from "@web/hooks/useBuiltInPanelSetting.ts";
+import { SEPARATE_OTHERS_SETTING } from "@web/layout/types.ts";
 
 interface LayoutManagerSectionProps {
     layoutEnabled: boolean;
@@ -16,6 +18,9 @@ export function LayoutManagerSection({
     layoutEnabled, layoutObjectList, onLayoutEnabledChange, onLayoutObjectListChange, onLayoutReset,
 }: LayoutManagerSectionProps) {
     const layoutForced = isLayoutModeForced();
+    // Alias of the toggle in Kondycje's settings cog: the same window setting,
+    // so flipping either one moves the other.
+    const [separateOthers, setSeparateOthers] = useBuiltInPanelSetting('objectList', SEPARATE_OTHERS_SETTING, false);
 
     return (
         <SettingsSection title="Menedżer Okien">
@@ -31,6 +36,7 @@ export function LayoutManagerSection({
                     <>
                         <CheckboxRow id="ui-layout-manager-enabled" label="Włącz menedżer okien" checked={layoutEnabled} onChange={onLayoutEnabledChange} />
                         <CheckboxRow id="ui-layout-manager-object-list" label="Kondycje" checked={layoutObjectList} onChange={onLayoutObjectListChange} disabled={!layoutEnabled} className="ui-settings-indent" />
+                        <CheckboxRow id="ui-layout-manager-separate-others" label="Pozostali w osobnym oknie" checked={separateOthers === true} onChange={setSeparateOthers} disabled={!layoutEnabled || !layoutObjectList} className="ui-settings-indent ui-settings-indent--2" />
                     </>
                 )}
                 <Button size="sm" className="ui-settings-self-start" id="ui-layout-manager-reset" onClick={onLayoutReset}>Przywróć domyślny układ</Button>

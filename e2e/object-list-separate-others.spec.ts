@@ -1,6 +1,7 @@
 import {expect, test} from './support/fixtures';
 import type {Page} from '@playwright/test';
 import {ensureGameSocket, getLastOutgoingCommand, GMCP_PATHS, pushGmcp, waitForCommandInput} from './support/mocks';
+import {openSettings, waitForSettingsModalClosed} from './support/settings';
 
 // Kondycje's "Pozostali w osobnym oknie" moves everyone outside the team into
 // a second layout window and drops them from Kondycje itself.
@@ -85,5 +86,27 @@ test.describe('Kondycje: non-team objects in their own window', () => {
         await toggleSeparateOthers(page);
         await expect(page.locator('[data-panel-id="objectListOthers"]')).toHaveCount(0);
         await expect(main).toContainText('Angry Orc');
+    });
+
+    test('the UI settings checkbox is the same setting as the cog toggle', async ({page}) => {
+        await gotoWithLayout(page);
+        await pushLocation(page);
+
+        const modal = await openSettings(page, 'ui-windows');
+        const checkbox = modal.locator('#ui-layout-manager-separate-others');
+        await expect(checkbox).not.toBeChecked();
+        await checkbox.check();
+        await page.keyboard.press('Escape');
+        await waitForSettingsModalClosed(page);
+
+        // Applied at once, no Save needed.
+        await expect(page.locator('#objects-list-others')).toContainText('Angry Orc');
+        await expect(page.locator('#objects-list')).not.toContainText('Angry Orc');
+
+        await toggleSeparateOthers(page);
+        await expect(page.locator('[data-panel-id="objectListOthers"]')).toHaveCount(0);
+
+        await openSettings(page, 'ui-windows');
+        await expect(checkbox).not.toBeChecked();
     });
 });

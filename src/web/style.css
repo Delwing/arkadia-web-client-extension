@@ -2802,6 +2802,9 @@ select.popup-input.popup-input--control.is-warning {
 .ui-settings-indent {
   margin-left: 20px;
 }
+.ui-settings-indent--2 {
+  margin-left: 40px;
+}
 /* A button that keeps its size instead of stretching across the card. */
 .ui-settings-self-start {
   align-self: flex-start;
