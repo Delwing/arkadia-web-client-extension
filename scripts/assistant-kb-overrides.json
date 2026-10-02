@@ -1,6 +1,16 @@
 {
   "$comment": "Hand-maintained gap-fillers for scripts/build-assistant-kb.ts. Only add entries here for things the generator genuinely cannot recover from source (settings written straight from a save() callback instead of a bound control, non-literal defaults, aliases missing from the docs tables). Everything else must stay generated.",
   "settings": {
+    "ui.renderSettings.systemFontFamily": {
+      "label": "Nazwa czcionki zainstalowanej w systemie",
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Wygląd → Wygląd",
+      "note": "Uzywana, gdy czcionka okna wyjscia to Zainstalowana w systemie (fontFamily system)."
+    },
+    "ui.renderSettings.uploadedFontFamily": {
+      "label": "Rodzina wgranej czcionki",
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Wygląd → Wygląd",
+      "note": "Ustawiana sama z wgranych plikow (fontFamily uploaded). Pliki zostaja na urzadzeniu, synchronizowana jest tylko nazwa."
+    },
     "character.settings.guilds": {
       "label": "Moje gildie",
       "uiLocation": "Menu (☰) → Ustawienia → Postać → Gildie",

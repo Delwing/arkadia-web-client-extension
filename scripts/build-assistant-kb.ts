@@ -823,6 +823,7 @@ const SETTINGS_PANELS: PanelSpec[] = [
     { category: 'ui-buttons', files: ['src/web/options/DesktopButtons.tsx'] },
     { category: 'ui-mobile-buttons', files: ['src/web/uiSettings/sections/OtherSections.tsx'], sections: ['Wyświetlanie'] },
     { category: 'ui-radial', files: ['src/web/options/MobileRadialCommands.tsx'] },
+    { category: 'ui-joysticks', files: ['src/web/options/MobileJoysticks.tsx'] },
     {
         category: 'ui-other',
         files: ['src/web/uiSettings/sections/OtherSections.tsx', 'src/web/uiSettings/sections/LogsSection.tsx'],
