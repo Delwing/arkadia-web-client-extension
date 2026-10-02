@@ -534,10 +534,13 @@ export default function initObjectAliases(
                     client.print('Nazwa referencji: litera, potem litery lub cyfry, co najmniej 2 znaki.');
                     return;
                 }
-                const obj = findTarget(query, 'team');
-                if (obj) {
-                    refs.set(name, obj.num);
-                    client.print(`@${name} -> ${describe(obj.num)}`);
+                // A bare ob_<num> is taken as is, here or not - menus and
+                // scripts already know the exact object.
+                const byId = query.trim().match(/^ob_(\d+)$/);
+                const num = byId ? parseInt(byId[1], 10) : findTarget(query, 'team')?.num;
+                if (num !== undefined) {
+                    refs.set(name, num);
+                    client.print(`@${name} -> ${describe(num)}`);
                 }
             }
         });

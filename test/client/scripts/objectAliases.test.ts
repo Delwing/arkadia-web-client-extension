@@ -173,6 +173,13 @@ describe('object aliases', () => {
     expect([...client.commandProcessor.objectRefs.keys()]).toEqual(['heal']);
   });
 
+  test('/ref takes an ob_ id even when the object is not on the location', () => {
+    client.ObjectManager.getObjectsOnLocation.mockReturnValue([]);
+    ref(['', 'tank', 'ob_1243432'] as unknown as RegExpMatchArray);
+    expect(client.commandProcessor.objectRefs.get('tank')).toBe(1243432);
+    expect(client.print).toHaveBeenCalledWith('@tank -> ob_1243432');
+  });
+
   test('/ref rejects names that could be a shortcut', () => {
     client.ObjectManager.getObjectsOnLocation.mockReturnValue([{ num: 7, shortcut: 'A', desc: 'Gerwazy' }]);
     ref(['', 'a', 'ob_7'] as unknown as RegExpMatchArray);

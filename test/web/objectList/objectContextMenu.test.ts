@@ -23,6 +23,15 @@ describe('buildObjectContextMenu', () => {
         expect(items[2].icon).toBeDefined();
     });
 
+    test('a /ref command gets its own icon and names the object', () => {
+        const sent: string[] = [];
+        const { items } = buildObjectContextMenu({ id: '7' }, ['/ref tank', 'cmoknij'], (c) => sent.push(c));
+
+        expect(items[0].icon).not.toBe(items[1].icon);
+        items[0].action();
+        expect(sent).toEqual(['/ref tank ob_7']);
+    });
+
     test('a teammate cannot be queued for an attack', () => {
         const { items, options } = buildObjectContextMenu(
             { id: '5', desc: 'Arel', teammate: true },

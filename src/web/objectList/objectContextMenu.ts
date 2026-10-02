@@ -1,4 +1,4 @@
-import { Crosshair, Eye, ListPlus, Pencil, Scale, Shield, Swords, Terminal, UserPlus } from "lucide-react";
+import { Crosshair, Eye, ListPlus, Pencil, Scale, Shield, Swords, Tag, Terminal, UserPlus } from "lucide-react";
 import type { ContextMenuEntry, ContextMenuIcon, ContextMenuOptions } from "@web/contextMenu";
 import { openSettingsPage } from "@web/settings/categories.ts";
 
@@ -10,6 +10,7 @@ const VERB_ICONS: [RegExp, ContextMenuIcon][] = [
     [/^(ob|obejrzyj)\b/, Eye],
     [/^ocen/, Scale],
     [/^zapros/, UserPlus],
+    [/^\/ref\b/, Tag],
 ];
 
 function verbIcon(command: string): ContextMenuIcon {

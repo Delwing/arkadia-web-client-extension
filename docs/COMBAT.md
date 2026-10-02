@@ -42,7 +42,7 @@ W komendach `@>` oznacza następny cel z kolejki, np. `/z @>` albo `zabij @>`.
 
 | Komenda | Opis |
 |---------|------|
-| `/ref nazwa id` | Nazwij obiekt, np. `/ref tank @A` albo `/ref tank gerw`; potem `@tank` działa jak `@A`, np. `/zas @tank` |
+| `/ref nazwa id` | Nazwij obiekt, np. `/ref tank @A`, `/ref tank gerw` albo `/ref tank ob_123` (`ob_` działa też dla obiektu spoza lokacji); potem `@tank` działa jak `@A`, np. `/zas @tank` |
 | `/ref nazwa` | Pokaż, na kogo wskazuje `@nazwa` |
 | `/ref` | Pokaż wszystkie referencje |
 | `/unref nazwa` | Usuń referencję |
