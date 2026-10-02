@@ -1,6 +1,7 @@
 import initLostTeamMates from '@client/scripts/lostTeamMates';
 import { EventEmitter } from 'events';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
+import { objectListFilters } from '@modules/core/objectListFilters.ts';
 
 class FakeMap {
     currentRoom: { id: number } | null = null;
@@ -215,6 +216,61 @@ describe('lostTeamMates', () => {
 
             client.sendEvent('gmcp.objects.nums', [77, 99]);
             expect(client.lastLostRooms()).toEqual([]);
+        });
+    });
+
+    describe('linkdead marker', () => {
+        const STAYED = 'Troal traci kontakt z rzeczywistoscia. Mimo to, nie opuszcza swiata Arkadii.';
+
+        const lastLinkdead = (): number[] | null => {
+            for (let i = client.sentEvents.length - 1; i >= 0; i--) {
+                if (client.sentEvents[i].type === 'objects.linkdead') return client.sentEvents[i].detail;
+            }
+            return null;
+        };
+
+        const suffixFor = (num: number): string | undefined => {
+            const result = objectListFilters.apply({ object: { num } } as any);
+            return result.style.suffix;
+        };
+
+        beforeEach(() => {
+            client.TeamManager.getAccumulatedObjectsData.mockReturnValue(new Map([
+                [5, { desc: 'Troal' }],
+                [6, { desc: 'Muzikuhr' }],
+            ]));
+            client.sendEvent('gmcp.objects.nums', [5, 6]);
+        });
+
+        test('"Mimo to" marks a visible non-team player with *', () => {
+            fireTrigger(client, STAYED);
+
+            expect(lastLinkdead()).toEqual([5]);
+            expect(suffixFor(5)).toContain('*');
+            expect(suffixFor(6)).toBeUndefined();
+        });
+
+        test.each(['odnawia', 'odzyskuje'])('"%s kontakt" clears the marker', verb => {
+            fireTrigger(client, STAYED);
+            fireTrigger(client, `Troal ${verb} kontakt z rzeczywistoscia.`);
+
+            expect(lastLinkdead()).toEqual([]);
+            expect(suffixFor(5)).toBeUndefined();
+        });
+
+        test('disappearing from the object list clears the marker for good', () => {
+            fireTrigger(client, STAYED);
+            client.sendEvent('gmcp.objects.nums', [6]);
+            expect(lastLinkdead()).toEqual([]);
+
+            client.sendEvent('gmcp.objects.nums', [5, 6]);
+            expect(suffixFor(5)).toBeUndefined();
+        });
+
+        test('player not on location is not marked', () => {
+            fireTrigger(client, 'Obcy traci kontakt z rzeczywistoscia. Mimo to, nie opuszcza swiata Arkadii.');
+
+            expect(lastLinkdead()).toBeNull();
         });
     });
 

@@ -74,6 +74,7 @@ export default class ObjectList {
         this.client.on("enemy.paralyzed", () => this.scheduleRender());
         this.client.on("enemy.paralyzed.end", () => this.scheduleRender());
         this.client.on("enemy.broken_defense", () => this.scheduleRender());
+        this.client.on("objects.linkdead", () => this.scheduleRender());
         this.client.on("output-sent", () => this.handleOutputUpdate());
         this.client.on("buffer-sent", () => this.handleOutputUpdate());
         this.initializePipInfoSources();

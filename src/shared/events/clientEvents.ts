@@ -205,6 +205,8 @@ export interface KnownEvents {
     "mapTransportHops": [Array<{ fromRoomId: number; toRoomId: number; transportName: string; label?: string; color: string }> | null];
     "mapHighlights": [{ roomId: number; color: string }[]];
     "mapLostRooms": [number[]];
+    /** Object ids that lost contact with reality but stayed in the world (shown with * in the object list). */
+    "objects.linkdead": [number[]];
     "mapParkedCarriages": [Array<{ roomId: number; label: string }>];
     "mapCarriageBlocks": [number[]];
     "mapShowCarriageBlocks": [boolean];
