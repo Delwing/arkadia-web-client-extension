@@ -66,6 +66,7 @@ function parseDesktopSteps(raw: unknown): ButtonMacroConfig[] | undefined {
         if (typeof entry.command === 'string') step.command = entry.command;
         if (typeof entry.direction === 'string') step.direction = entry.direction;
         if (typeof entry.enemySlot === 'number') step.enemySlot = entry.enemySlot;
+        if (typeof entry.exitIndex === 'number') step.exitIndex = entry.exitIndex;
         if (entry.pluginConfig && typeof entry.pluginConfig === 'object') {
             step.pluginConfig = entry.pluginConfig as Record<string, any>;
         }
@@ -90,6 +91,7 @@ function parseHoldConfig(candidate: Record<string, unknown>): ButtonMacroConfig 
             command: typeof holdObj.command === 'string' ? holdObj.command : undefined,
             direction: typeof holdObj.direction === 'string' ? holdObj.direction : undefined,
             enemySlot: typeof holdObj.enemySlot === 'number' ? holdObj.enemySlot : undefined,
+            exitIndex: typeof holdObj.exitIndex === 'number' ? holdObj.exitIndex : undefined,
             pluginConfig: holdObj.pluginConfig && typeof holdObj.pluginConfig === 'object' ? holdObj.pluginConfig as Record<string, any> : undefined,
             steps,
         };
@@ -133,6 +135,7 @@ function parseButton(raw: unknown): DesktopButtonSetting | null {
         ? Math.min(1, Math.max(0, candidate.backgroundOpacity))
         : defaultBackgroundOpacity;
     const enemySlot = typeof candidate.enemySlot === 'number' ? candidate.enemySlot : undefined;
+    const exitIndex = typeof candidate.exitIndex === 'number' ? candidate.exitIndex : undefined;
     const direction = typeof candidate.direction === 'string' ? candidate.direction : undefined;
     const validListPositions: ListPosition[] = ['top', 'bottom', 'left', 'right'];
     const listPosition: ListPosition | undefined = validListPositions.includes(candidate.listPosition as ListPosition)
@@ -148,7 +151,7 @@ function parseButton(raw: unknown): DesktopButtonSetting | null {
     const holdEnabled = typeof candidate.holdEnabled === 'boolean' ? candidate.holdEnabled : undefined;
     const hold = parseHoldConfig(candidate);
     const steps = macroType === 'compound' ? parseDesktopSteps(candidate.steps as unknown) : undefined;
-    return { id, label, macroType, command, color, fontColor, fontSize, width, height, x, y, backgroundOpacity, enemySlot, direction, listPosition, listGrowDirection, listCloseOnlyByButton, pluginConfig, holdEnabled, hold, steps };
+    return { id, label, macroType, command, color, fontColor, fontSize, width, height, x, y, backgroundOpacity, enemySlot, exitIndex, direction, listPosition, listGrowDirection, listCloseOnlyByButton, pluginConfig, holdEnabled, hold, steps };
 }
 
 export function loadSettings(): DesktopButtonsSettings {

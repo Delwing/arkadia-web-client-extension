@@ -150,7 +150,7 @@ function MobileJoysticks({ registerSave }: { registerSave: (save: () => void) =>
                 Dotknięcie wysyła komendę ze środka, przesunięcie palcem od środka — komendę z danego kierunku.
                 Przytrzymanie pokazuje wszystkie komendy wokół joysticka; przytrzymaj i przeciągnij, aby go przesunąć
                 (chyba że przyciski mobilne są zablokowane). Puste pola kierunków są pomijane.
-                Zamiast komendy można wpisać <code>@zerknij</code> albo <code>@wyjscie</code> (pierwsze wyjście specjalne z lokacji).
+                Zamiast komendy można wpisać <code>@zerknij</code> albo <code>@wyjscie</code> (pierwsze wyjście specjalne z lokacji); <code>@wyjscie2</code> i <code>@wyjscie3</code> biorą drugie i trzecie.
             </p>
             <datalist id={ACTIONS_LIST_ID}>
                 {Object.entries(JOYSTICK_MACROS).map(([value, macro]) => (

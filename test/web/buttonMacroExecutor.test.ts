@@ -36,3 +36,28 @@ describe('zerknij button macro', () => {
         expect(client.sendCommand).toHaveBeenCalledWith('zerknij');
     });
 });
+
+describe('special exit button macro', () => {
+    const withExits = () => ({
+        ...makeClient(null),
+        Map: { currentRoom: { specialExits: { 'wejdz do namiotu': 1, 'wespnij sie na drzewo': 2 } } },
+    });
+
+    test('takes the first special exit by default', () => {
+        const client = withExits();
+        executeMacro(client as never, 'specialExit', { macroType: 'specialExit' });
+        expect(client.sendCommand).toHaveBeenCalledWith('wejdz do namiotu');
+    });
+
+    test('takes the chosen special exit', () => {
+        const client = withExits();
+        executeMacro(client as never, 'specialExit', { macroType: 'specialExit', exitIndex: 1 });
+        expect(client.sendCommand).toHaveBeenCalledWith('wespnij sie na drzewo');
+    });
+
+    test('does nothing when the room has fewer special exits', () => {
+        const client = withExits();
+        executeMacro(client as never, 'specialExit', { macroType: 'specialExit', exitIndex: 2 });
+        expect(client.sendCommand).not.toHaveBeenCalled();
+    });
+});

@@ -206,6 +206,7 @@ function parseSteps(raw: unknown): ButtonMacroConfig[] | undefined {
         if (typeof entry.command === 'string') step.command = entry.command;
         if (typeof entry.direction === 'string') step.direction = entry.direction;
         if (typeof entry.enemySlot === 'number') step.enemySlot = entry.enemySlot;
+        if (typeof entry.exitIndex === 'number') step.exitIndex = entry.exitIndex;
         if (entry.pluginConfig && typeof entry.pluginConfig === 'object') {
             step.pluginConfig = entry.pluginConfig as Record<string, any>;
         }

@@ -107,6 +107,14 @@ export function lookCommand(client: Client): string {
 }
 
 /**
+ * The room's special exit at `index` (0 = first), in the order the map lists them, or null when
+ * the room has fewer. Shared by the special-exit keys, buttons and joystick actions.
+ */
+export function specialExitAt(client: Client, index = 0): string | null {
+    return Object.keys(client.Map.currentRoom?.specialExits ?? {})[index] ?? null;
+}
+
+/**
  * Whether a keystroke on `binding`'s key selects the walk mode: the event
  * carries the binding's own modifiers plus exactly the mode's. `mods` must
  * already be free of the modifiers the direction keys hold (see
@@ -128,8 +136,7 @@ function sendDirection(client: Client, direction: string, mode?: WalkMode): void
     let step = direction;
     const specialIndex = SPECIAL_EXIT_SLOTS.indexOf(direction);
     if (specialIndex >= 0) {
-        const exits = client.Map.currentRoom?.specialExits ?? {};
-        const exit = Object.keys(exits)[specialIndex];
+        const exit = specialExitAt(client, specialIndex);
         if (!exit) return;
         step = exit;
     }

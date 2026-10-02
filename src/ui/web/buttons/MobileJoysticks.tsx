@@ -5,6 +5,7 @@ import { globalStorage } from '@modules/core/storage';
 import { getShellSettings } from '@modules/core/settings';
 import { loadSettings } from '@web/mobileButtonSettings';
 import { executeMacro } from '@web/scripts/buttonMacroExecutor';
+import { specialExitAt } from '@client/scripts/directionBinds.ts';
 import {
     JOYSTICK_DIRECTIONS,
     directionAngle,
@@ -301,7 +302,7 @@ export default function MobileJoysticks({ client }: { client: Client }) {
     const send = (value: string) => {
         if (getShellSettings().hapticFeedback !== false) navigator.vibrate?.(20);
         const macro = joystickMacro(value);
-        if (macro) executeMacro(client, macro.macroType, { macroType: macro.macroType });
+        if (macro) executeMacro(client, macro.macroType, { macroType: macro.macroType, exitIndex: macro.exitIndex });
         else client.sendCommand(value);
     };
 
@@ -310,7 +311,7 @@ export default function MobileJoysticks({ client }: { client: Client }) {
         if (!macro) return value;
         if (macro.macroType === 'specialExit') {
             // Name the exit this room actually has, as the action would take it.
-            return Object.keys(client.Map.currentRoom?.specialExits ?? {})[0] ?? macro.label;
+            return specialExitAt(client, macro.exitIndex) ?? macro.label;
         }
         return macro.label;
     };

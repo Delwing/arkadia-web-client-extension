@@ -67,6 +67,8 @@ describe('joystickMacro', () => {
     it('recognises the built-in actions and nothing else', () => {
         expect(joystickMacro('@zerknij')?.macroType).toBe('zerknij');
         expect(joystickMacro(' @Wyjscie ')?.macroType).toBe('specialExit');
+        expect(joystickMacro('@wyjscie2')).toMatchObject({ macroType: 'specialExit', exitIndex: 1 });
+        expect(joystickMacro('@wyjscie3')).toMatchObject({ macroType: 'specialExit', exitIndex: 2 });
         expect(joystickMacro('zerknij')).toBeNull();
         expect(joystickMacro('@cokolwiek')).toBeNull();
     });

@@ -17,6 +17,7 @@ import {
 import type { MobileButtonSetting } from '@web/buttonSettings';
 import { defaultFontColor } from '@web/buttonSettings';
 import { executeMacro, updateMoveModeLabel, type MacroExecutorCallbacks } from '@web/scripts/buttonMacroExecutor';
+import { specialExitAt } from '@client/scripts/directionBinds.ts';
 import { useClientEvent } from '../hooks';
 
 const HOLD_DURATION = 500;
@@ -133,11 +134,10 @@ function computeButtonVisual(id: string, cfg: MobileButtonSetting, activeButtons
 
     let dataDirection: string | undefined;
     if (cfg.macroType === 'specialExit') {
-        const specialExits = client.Map.currentRoom?.specialExits ?? {};
-        const firstExit = Object.keys(specialExits)[0];
-        if (firstExit) {
-            effectiveLabel = firstExit.length > 5 ? `${firstExit.slice(0, 4)}…` : firstExit;
-            dataDirection = firstExit;
+        const exit = specialExitAt(client, cfg.exitIndex);
+        if (exit) {
+            effectiveLabel = exit.length > 5 ? `${exit.slice(0, 4)}…` : exit;
+            dataDirection = exit;
         } else {
             effectiveLabel = cfg.label;
             dataDirection = cfg.label || undefined;

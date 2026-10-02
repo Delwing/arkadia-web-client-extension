@@ -52,6 +52,18 @@ export default function MacroConfigEditor({ config, onChange, pluginMacros, butt
                 </Select>
             )}
 
+            {config.macroType === 'specialExit' && (
+                <Select
+                    className="settings-narrow"
+                    value={config.exitIndex ?? 0}
+                    onChange={e => onChange({ exitIndex: parseInt(e.target.value) })}
+                >
+                    <option value={0}>Pierwsze</option>
+                    <option value={1}>Drugie</option>
+                    <option value={2}>Trzecie</option>
+                </Select>
+            )}
+
             {config.macroType === 'compound' && (
                 <CompoundStepsEditor
                     steps={config.steps || []}

@@ -38,12 +38,21 @@ export const defaultJoystickFontColor = '#f1f5f9';
  * Built-in actions a slot can hold instead of a command: the same macros the
  * mobile buttons run, for things a fixed command can't express.
  */
-export const JOYSTICK_MACROS: Record<string, { macroType: string; label: string }> = {
+export interface JoystickMacro {
+    macroType: string;
+    label: string;
+    /** For specialExit: which of the room's special exits (0-2). */
+    exitIndex?: number;
+}
+
+export const JOYSTICK_MACROS: Record<string, JoystickMacro> = {
     '@zerknij': { macroType: 'zerknij', label: 'zerknij' },
     '@wyjscie': { macroType: 'specialExit', label: 'wyjście specjalne' },
+    '@wyjscie2': { macroType: 'specialExit', label: 'drugie wyjście specjalne', exitIndex: 1 },
+    '@wyjscie3': { macroType: 'specialExit', label: 'trzecie wyjście specjalne', exitIndex: 2 },
 };
 
-export function joystickMacro(value: string): { macroType: string; label: string } | null {
+export function joystickMacro(value: string): JoystickMacro | null {
     return JOYSTICK_MACROS[value.trim().toLowerCase()] ?? null;
 }
 

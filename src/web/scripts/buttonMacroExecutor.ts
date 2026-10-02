@@ -4,7 +4,7 @@ import {
     executeButtonMacro,
     type AnyButtonSetting,
 } from "@modules/core/pluginButtonMacroRegistry";
-import { lookCommand } from "@client/scripts/directionBinds";
+import { lookCommand, specialExitAt } from "@client/scripts/directionBinds";
 export const MOVE_MODE_LABELS = ["zwykly", "prz", "prz dr"];
 export const MOVE_MODE_TITLES = ["zwykly", "przemknij", "przemknij z druzyna"];
 
@@ -66,10 +66,9 @@ export function executeMacro(
             client.sendCommand(lookCommand(client));
             break;
         case 'specialExit': {
-            const specialExits = client.Map.currentRoom?.specialExits ?? {};
-            const firstExit = Object.keys(specialExits)[0];
-            if (firstExit) {
-                client.sendCommand(firstExit);
+            const exit = specialExitAt(client, config.exitIndex);
+            if (exit) {
+                client.sendCommand(exit);
             }
             break;
         }

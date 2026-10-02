@@ -25,6 +25,7 @@ export interface ButtonMacroConfig {
     command?: string;
     direction?: string;
     enemySlot?: number; // For attackEnemy and blockEnemy macros (0-2)
+    exitIndex?: number; // For specialExit: which of the room's special exits (0-2), first when unset
     pluginConfig?: Record<string, any>;
     steps?: ButtonMacroConfig[]; // For compound macro: sequential steps to execute
 }
