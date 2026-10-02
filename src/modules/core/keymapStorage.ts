@@ -323,11 +323,9 @@ function mergeBindSettings(raw: any): BindSettings {
         drinkable: raw.drinkable || defaultBinds.drinkable,
         gateBind: raw.gateBind || defaultBinds.gateBind,
         doubleK: raw.doubleK || defaultBinds.doubleK,
-        temp: Array.isArray(raw.temp) && raw.temp.length >= 2
-            ? [
-                { ...defaultBinds.temp[0], ...(raw.temp[0] || {}) },
-                { ...defaultBinds.temp[1], ...(raw.temp[1] || {}) },
-            ]
+        // As many as the player added; the first two fall back to their default keys.
+        temp: Array.isArray(raw.temp)
+            ? raw.temp.map((b: any, i: number) => ({ ...(defaultBinds.temp[i] ?? { key: '' }), ...(b && typeof b === 'object' ? b : {}) }))
             : [...defaultBinds.temp],
         enemy: Array.isArray(raw.enemy) && raw.enemy.length >= 3
             ? [

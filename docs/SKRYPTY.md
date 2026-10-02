@@ -75,7 +75,7 @@ Mapujesz klawisze na akcje — bez odrywania rąk od klawiatury.
 
 - **Domyślne bindy** — `]` kontekstowe akcje, `Ctrl+1` atak, `Ctrl+Q` wsparcie, `` ` `` tryb ruchu i inne
 - **Własne bindy** — przypisujesz dowolny klawisz do dowolnej komendy
-- **Tymczasowe bindy** — `/tbind1 komenda` i `/tbind2 komenda` ustawiają bindy na czas sesji
+- **Tymczasowe bindy** — `/tbind1 komenda`, `/tbind2 komenda` (i kolejne, gdy dodasz je w oknie Klawisze) ustawiają bindy na czas sesji
 - **Funkcyjne bindy z pluginów** — plugin może dynamicznie ustawiać, co robi dany klawisz
 
 ## Edytor skryptów

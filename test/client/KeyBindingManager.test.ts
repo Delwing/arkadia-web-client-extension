@@ -98,11 +98,12 @@ describe('KeyBindingManager', () => {
     expect(printSpy).toHaveBeenCalledWith(expect.stringContaining('wyczyszczone'));
   });
 
-  test('setTempBind ignores invalid index', () => {
+  test('setTempBind on a slot the keymap lacks only says so', () => {
     const client = new Client((global as any).clientAdapterMock as any);
     const printSpy = jest.spyOn(client, 'println').mockImplementation();
     client.setTempBind(99, 'test');
-    expect(printSpy).not.toHaveBeenCalled();
+    expect(printSpy).toHaveBeenCalledWith('Brak tymczasowego przypisania 100 - dodaj je w oknie Klawisze.');
+    expect(client.tempBinds.every(tb => tb.command !== 'test')).toBe(true);
   });
 
   test('lampBind triggers lamp refill command on keydown', () => {

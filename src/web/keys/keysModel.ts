@@ -6,7 +6,7 @@
  * Everything here is pure, so the window (Keys.tsx) only holds state and draws.
  */
 
-import { MAX_MULTIBIND_SLOTS, type Bind, type BindSettings, type DirectionBinds, type WalkModifiers } from "@modules/core/keymapTypes";
+import { MAX_MULTIBIND_SLOTS, MAX_TEMP_BIND_SLOTS, type Bind, type BindSettings, type DirectionBinds, type WalkModifiers } from "@modules/core/keymapTypes";
 import { directionModifiers, hasWalkModifier, sameWalkModifiers } from "@modules/core/walkModeRegistry";
 import type { StoredBind } from "@modules/helper/helperBinds";
 import type { BindMode } from "@modules/helper/helperProtocol";
@@ -268,8 +268,6 @@ export const SLOTS: readonly SlotDef[] = [
     { path: "enemyBlock[0]", label: "Blokuj wroga 1", short: "Blokuj 1", group: "enemy", helperId: "enemyBlock1" },
     { path: "enemyBlock[1]", label: "Blokuj wroga 2", short: "Blokuj 2", group: "enemy", helperId: "enemyBlock2" },
     { path: "enemyBlock[2]", label: "Blokuj wroga 3", short: "Blokuj 3", group: "enemy", helperId: "enemyBlock3" },
-    { path: "temp[0]", label: "Tymczasowe 1", short: "Tymcz. 1", group: "temp", helperId: "temp1" },
-    { path: "temp[1]", label: "Tymczasowe 2", short: "Tymcz. 2", group: "temp", helperId: "temp2" },
     dir("nw", "NW", "NW", "dir_nw"),
     dir("n", "N", "N", "dir_n"),
     dir("ne", "NE", "NE", "dir_ne"),
@@ -289,21 +287,36 @@ export const SLOTS: readonly SlotDef[] = [
 const SLOT_BY_PATH = new Map(SLOTS.map(s => [s.path, s]));
 const SLOT_BY_HELPER_ID = new Map(SLOTS.filter(s => s.helperId).map(s => [s.helperId!, s]));
 
-/** Multibind slot `index` (0-based): its own entry, since the keymap holds as many as the player adds. */
-function multibindSlot(index: number): SlotDef {
+/** The keymap lists that hold as many slots as the player adds. */
+export type SlotList = "temp" | "multibinds";
+
+const SLOT_LISTS: Record<SlotList, { group: Group; label: string; short: string; helperId: string; max: number }> = {
+    temp: { group: "temp", label: "Tymczasowe", short: "Tymcz.", helperId: "temp", max: MAX_TEMP_BIND_SLOTS },
+    multibinds: { group: "multi", label: "Multibind", short: "MB", helperId: "multibind", max: MAX_MULTIBIND_SLOTS },
+};
+
+/** Slot `index` (0-based) of a growing list: its own entry, numbered from 1. */
+function listSlot(list: SlotList, index: number): SlotDef {
+    const def = SLOT_LISTS[list];
     const n = index + 1;
-    return { path: `multibinds[${index}]`, label: `Multibind ${n}`, short: `MB${n}`, group: "multi", helperId: `multibind${n}` };
+    return { path: `${list}[${index}]`, label: `${def.label} ${n}`, short: `${def.short} ${n}`, group: def.group, helperId: `${def.helperId}${n}` };
 }
 
-/** The slot at `path`, fixed or a multibind slot. */
+/** How many slots a growing list can hold. */
+export function maxListSlots(list: SlotList): number {
+    return SLOT_LISTS[list].max;
+}
+
+/** The slot at `path`, fixed or in a growing list. */
 export function slotDef(path: string): SlotDef | undefined {
-    const multi = /^multibinds\[(\d+)\]$/.exec(path);
-    return multi ? multibindSlot(Number(multi[1])) : SLOT_BY_PATH.get(path);
+    const listed = /^(temp|multibinds)\[(\d+)\]$/.exec(path);
+    return listed ? listSlot(listed[1] as SlotList, Number(listed[2])) : SLOT_BY_PATH.get(path);
 }
 
 function slotByHelperId(helperId: string): SlotDef | undefined {
-    const multi = /^multibind(\d+)$/.exec(helperId);
-    return multi ? multibindSlot(Number(multi[1]) - 1) : SLOT_BY_HELPER_ID.get(helperId);
+    const listed = /^(temp|multibind)(\d+)$/.exec(helperId);
+    if (!listed) return SLOT_BY_HELPER_ID.get(helperId);
+    return listSlot(listed[1] === "temp" ? "temp" : "multibinds", Number(listed[2]) - 1);
 }
 
 /** The helper's own action that only brings the client window to the front. */
@@ -410,11 +423,13 @@ export function buildEntries(binds: BindSettings, helperBinds: readonly StoredBi
             combo: comboOf(bind), reach: "client", inherits: slot.inherits && !bind,
         });
     }
-    (binds.multibinds ?? []).slice(0, MAX_MULTIBIND_SLOTS).forEach((bind, index) => {
-        const slot = multibindSlot(index);
-        const ref: EntryRef = { kind: "slot", path: slot.path };
-        entries.push({ id: entryId(ref), ref, group: slot.group, label: slot.label, short: slot.short, combo: comboOf(bind), reach: "client" });
-    });
+    for (const list of Object.keys(SLOT_LISTS) as SlotList[]) {
+        (binds[list] ?? []).slice(0, maxListSlots(list)).forEach((bind, index) => {
+            const slot = listSlot(list, index);
+            const ref: EntryRef = { kind: "slot", path: slot.path };
+            entries.push({ id: entryId(ref), ref, group: slot.group, label: slot.label, short: slot.short, combo: comboOf(bind), reach: "client" });
+        });
+    }
     binds.custom.forEach((b, index) => {
         const ref: EntryRef = { kind: "custom", index };
         entries.push({

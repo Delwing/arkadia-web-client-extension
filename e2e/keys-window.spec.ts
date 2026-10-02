@@ -1,5 +1,5 @@
 import {expect, test} from './support/fixtures';
-import {ensureGameSocket, waitForCommandInput} from './support/mocks';
+import {ensureGameSocket, getLastOutgoingCommand, submitCommand, waitForCommandInput} from './support/mocks';
 import {bindKey, captureKey, closeKeysWindow, openKeysWindow} from './support/keys';
 
 /** The one control: where the selected binding works. */
@@ -220,5 +220,21 @@ test.describe('Klawisze window', () => {
         await expect(section.locator(".keys-row")).toHaveCount(4);
         await expect(section.locator("[data-bind=\"slot:multibinds[3]\"] button[title=\"Usuń ostatni multibind\"]")).toHaveCount(1);
         await closeKeysWindow(page);
+    });
+
+    test("a third temp bind can be added and set with /tbind3", async ({page}) => {
+        await openKeysWindow(page);
+        const section = page.locator("#binds-modal .keys-section[data-section=\"temp\"]");
+        await expect(section.locator(".keys-row")).toHaveCount(2);
+        await section.getByRole("button", {name: "Tymczasowy", exact: true}).click();
+        await expect(section.locator(".keys-row")).toHaveCount(3);
+        await captureKey(page, "slot:temp[2]", "F7");
+        await closeKeysWindow(page);
+
+        await submitCommand(page, "/tbind3 zerknij");
+        await expect(page.locator("#main_text_output_msg_wrapper")).toContainText("Tymczasowe przypisanie 3 (F7) ustawione na: zerknij");
+        await page.locator("#main_text_output_msg_wrapper").click();
+        await page.keyboard.press("F7");
+        await expect.poll(() => getLastOutgoingCommand(page)).toBe("zerknij");
     });
 });

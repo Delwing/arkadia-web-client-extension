@@ -1,7 +1,7 @@
 import type Client from "./Client";
 import { formatLabel } from "./scripts/functionalBind";
 import { globalStorage } from "@modules/core/storage";
-import { bindMatches } from "@modules/core/keymapTypes";
+import { bindMatches, MAX_TEMP_BIND_SLOTS } from "@modules/core/keymapTypes";
 import { switchKeymap, getActiveKeymapId } from "@modules/core/keymapStorage";
 import type { HelperConnection } from "@modules/helper/HelperConnection";
 import type { HotkeyMsg } from "@modules/helper/helperProtocol";
@@ -94,24 +94,22 @@ export default class KeyBindingManager {
                     }
                     break;
                 }
-                case 'temp1':
-                    if (this.tempBinds[0]?.command) this.client.sendCommand(this.tempBinds[0].command);
-                    break;
-                case 'temp2':
-                    if (this.tempBinds[1]?.command) this.client.sendCommand(this.tempBinds[1].command);
-                    break;
             }
+            const temp = /^temp(\d+)$/.exec(bindName);
+            const tempCommand = temp ? this.tempBinds[Number(temp[1]) - 1]?.command : null;
+            if (tempCommand) this.client.sendCommand(tempCommand);
         });
     }
 
     setTempBind(index: number, command: string) {
         const bind = this.tempBinds[index];
         if (!bind) {
+            this.client.println(`Brak tymczasowego przypisania ${index + 1} - dodaj je w oknie Klawisze.`);
             return;
         }
         const trimmed = command.trim();
         bind.command = trimmed ? trimmed : null;
-        const label = formatLabel(bind);
+        const label = bind.key ? formatLabel(bind) : 'bez klawisza';
         if (bind.command) {
             this.client.println(`Tymczasowe przypisanie ${index + 1} (${label}) ustawione na: ${bind.command}`);
         } else {
@@ -176,7 +174,7 @@ export default class KeyBindingManager {
                 }
             });
             this.tempBinds.forEach(tb => {
-                if (!tb.command) {
+                if (!tb.command || !tb.key) {
                     return;
                 }
                 if (bindMatches(ev, tb)) {
@@ -253,30 +251,18 @@ export default class KeyBindingManager {
                 this.doubleKBind = { ...doubleK };
                 this.lastDoubleKPress = Number.NEGATIVE_INFINITY;
             }
+            // One temp bind per keymap slot; a slot keeps its command across key changes.
             const temp = b?.temp;
             if (Array.isArray(temp)) {
-                temp.forEach((tempBind: any, index: number) => {
-                    if (!tempBind || typeof tempBind !== 'object') {
-                        return;
-                    }
-                    if (typeof tempBind.key !== 'string' || tempBind.key === '') {
-                        return;
-                    }
-                    const current = this.tempBinds[index];
-                    if (current) {
-                        current.key = tempBind.key;
-                        current.ctrl = tempBind.ctrl ? true : undefined;
-                        current.alt = tempBind.alt ? true : undefined;
-                        current.shift = tempBind.shift ? true : undefined;
-                    } else {
-                        this.tempBinds[index] = {
-                            key: tempBind.key,
-                            ctrl: tempBind.ctrl ? true : undefined,
-                            alt: tempBind.alt ? true : undefined,
-                            shift: tempBind.shift ? true : undefined,
-                            command: null,
-                        };
-                    }
+                this.tempBinds = temp.slice(0, MAX_TEMP_BIND_SLOTS).map((tempBind: any, index: number) => {
+                    const valid = !!tempBind && typeof tempBind === 'object' && typeof tempBind.key === 'string';
+                    return {
+                        key: valid ? tempBind.key : '',
+                        ctrl: valid && tempBind.ctrl ? true : undefined,
+                        alt: valid && tempBind.alt ? true : undefined,
+                        shift: valid && tempBind.shift ? true : undefined,
+                        command: this.tempBinds[index]?.command ?? null,
+                    };
                 });
             }
             const custom = b?.custom;

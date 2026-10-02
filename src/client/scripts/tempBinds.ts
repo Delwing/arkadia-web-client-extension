@@ -1,21 +1,13 @@
 import Client from "../Client";
 
-function registerTempBind(
-    client: Client,
-    aliases: { pattern: RegExp; callback: Function }[],
-    pattern: RegExp,
-    index: number,
-) {
+/** `/tbindN [komenda]` sets (or clears) temp bind N, for every slot the keymap has. */
+export default function initTempBinds(client: Client, aliases: { pattern: RegExp; callback: Function }[]) {
     aliases.push({
-        pattern,
+        pattern: /^\/tbind(\d+)(?:\s+(.*))?$/,
         callback: (matches: RegExpMatchArray) => {
-            const command = matches[1] ?? '';
-            client.setTempBind(index, command);
+            const index = parseInt(matches[1], 10) - 1;
+            if (index < 0) return;
+            client.setTempBind(index, matches[2] ?? '');
         },
     });
-}
-
-export default function initTempBinds(client: Client, aliases: { pattern: RegExp; callback: Function }[]) {
-    registerTempBind(client, aliases, /^\/tbind1(?:\s+(.*))?$/, 0);
-    registerTempBind(client, aliases, /^\/tbind2(?:\s+(.*))?$/, 1);
 }

@@ -28,6 +28,8 @@ się od razu, nie ma przycisku "Zapisz".
   uruchamia oba naraz. Okno podpowiada wolne klawisze w pobliżu - kliknięcie
   przenosi tam bind.
 - **Własne** - "+ Komenda" dodaje skrót wysyłający dowolną komendę.
+- **Tymczasowe** - "+ Tymczasowy" dodaje kolejny tymczasowy bind (`/tbind3`, `/tbind4`...),
+  kosz przy ostatnim go usuwa.
 - **Multibindy** - domyślnie cztery sloty (Alt+1..4). "+ Multibind" dodaje kolejny
   (do 20), kosz przy ostatnim go usuwa. Slot bez klawisza nadal widać na pasku
   multibindów, tylko bez podpowiedzi klawisza - działa po kliknięciu. `/mbind`
@@ -130,6 +132,12 @@ aplikacji; same skróty ustawiasz tutaj.
 |---------|------|
 | `/tbind1 [komenda]` | Ustaw (lub wyczyść) pierwszy tymczasowy bind |
 | `/tbind2 [komenda]` | Ustaw (lub wyczyść) drugi tymczasowy bind |
+| `/tbindN [komenda]` | Ustaw (lub wyczyść) N-ty tymczasowy bind |
+
+Domyślnie są dwa tymczasowe bindy (F4, F5). W oknie **Klawisze**, w grupie
+Tymczasowe, "+ Tymczasowy" dodaje kolejny (do 20), a kosz przy ostatnim go usuwa.
+Tymczasowy bind bez klawisza nadal pamięta komendę - można go wywołać skrótem
+helpera.
 
 > **Wskazówka:** Komendy w bindach można rozdzielać znakiem `#`.
 

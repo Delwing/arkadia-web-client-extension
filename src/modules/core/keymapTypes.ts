@@ -26,6 +26,9 @@ export type WalkModifiers = Pick<Bind, 'ctrl' | 'alt' | 'shift'>;
 /** The most multibind slots a keymap can have; the client reads no more. */
 export const MAX_MULTIBIND_SLOTS = 20;
 
+/** The most temporary binds (`/tbindN`) a keymap can have. */
+export const MAX_TEMP_BIND_SLOTS = 20;
+
 export interface CustomBind extends Bind {
     command: string;
 }

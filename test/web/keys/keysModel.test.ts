@@ -281,3 +281,14 @@ describe("multibind slots", () => {
         expect(list.some(e => e.ref.kind === "helper")).toBe(false);
     });
 });
+
+describe("temp bind slots", () => {
+    it("lists one entry per temp bind the keymap has, a helper hotkey on any of them", () => {
+        const b = binds({ temp: [{ key: "F4" }, { key: "F5" }, { key: "" }] });
+        const temp = buildEntries(b, []).filter(e => e.group === "temp");
+        expect(temp.map(e => e.label)).toEqual(["Tymczasowe 1", "Tymczasowe 2", "Tymczasowe 3"]);
+        const hot = buildEntries(b, [helper({ key: "f9", action: "bind", targetBind: "temp3" })]).find(e => e.ref.kind === "helper")!;
+        expect(hot.targetLabel).toBe("Tymczasowe 3");
+        expect(hot.group).toBe("temp");
+    });
+});
