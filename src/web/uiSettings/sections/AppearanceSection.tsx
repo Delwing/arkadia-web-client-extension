@@ -6,6 +6,7 @@ import { defaultUiSettings } from "../../defaultUiSettings";
 import { Button, Field, Input, Select } from "@web-ui/primitives/index.ts";
 import { CheckboxRow, ColorField, NumberField, SelectField, SettingsSection } from "../fields";
 import PalettePreviewDialog from "../PalettePreviewDialog";
+import { SystemFontField, UploadedFontField } from "../FontSourceFields";
 
 interface AppearanceSectionProps {
     draft: UiSettings;
@@ -85,7 +86,9 @@ function AppearanceSection({ draft, update, commitCustomDark }: AppearanceSectio
                 <option value="jetbrains-mono">JetBrains Mono</option>
                 <option value="cascadia-mono">Cascadia Mono</option>
                 <option value="vera-sans-mono">Bitstream Vera Sans Mono</option>
-                <option value="custom">Własna (link)</option>
+                <option value="system">Zainstalowana w systemie</option>
+                <option value="uploaded">Wgrana z plików</option>
+                <option value="custom">Z linku (arkusz stylów)</option>
             </SelectField>
             {isCustomFont && (
                 <div id="ui-custom-font-settings" className="ui-settings-stack">
@@ -96,6 +99,12 @@ function AppearanceSection({ draft, update, commitCustomDark }: AppearanceSectio
                         <Input id="ui-custom-font-family" placeholder="np. Roboto" value={draft.customFontFamily} onChange={(e) => onCustomFontFamilyInput(e.target.value)} />
                     </Field>
                 </div>
+            )}
+            {draft.fontFamily === 'system' && (
+                <SystemFontField value={draft.systemFontFamily} onChange={(v) => update({ systemFontFamily: v })} />
+            )}
+            {draft.fontFamily === 'uploaded' && (
+                <UploadedFontField family={draft.uploadedFontFamily} onFamilyChange={(v) => update({ uploadedFontFamily: v })} />
             )}
             <NumberField id="ui-content-font" label="Rozmiar czcionki treści (rem)" value={draft.contentFontSize} step={0.1} onChange={(n) => update({ contentFontSize: n })} />
             <NumberField id="ui-objects-font" label="Rozmiar czcionki listy obiektów (rem)" value={draft.objectsFontSize} step={0.1} onChange={(n) => update({ objectsFontSize: n })} />

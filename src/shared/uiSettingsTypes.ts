@@ -12,7 +12,7 @@ export type SoundCategories = Partial<Record<SoundCategory, string | null>>;
 
 export type MapPosition = 'top-overlay' | 'bottom-overlay' | 'right-overlay' | 'left-overlay' | 'top' | 'bottom' | 'right' | 'left';
 
-export type UiFontSelection = 'default' | 'fira-code' | 'jetbrains-mono' | 'cascadia-mono' | 'vera-sans-mono' | 'custom';
+export type UiFontSelection = 'default' | 'fira-code' | 'jetbrains-mono' | 'cascadia-mono' | 'vera-sans-mono' | 'custom' | 'system' | 'uploaded';
 
 export type MapRoomShape = 'rectangle' | 'circle' | 'roundedRectangle';
 
@@ -61,6 +61,10 @@ export interface RenderSettings {
     fontFamily: UiFontSelection;
     customFontUrl: string;
     customFontFamily: string;
+    /** Installed font picked by name (fontFamily 'system'). */
+    systemFontFamily: string;
+    /** Family of the font files uploaded on this device (fontFamily 'uploaded'); the files themselves are not synced. */
+    uploadedFontFamily: string;
     xtermPalette: 'arkadia' | 'proper';
     colorTheme: ColorTheme;
     customThemeColor?: string;

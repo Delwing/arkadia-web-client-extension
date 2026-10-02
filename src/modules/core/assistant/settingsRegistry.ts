@@ -101,7 +101,7 @@ const CONSTRAINTS: Record<string, Constraint> = {
     languageAliases: { type: 'complex' },
 
     // --- render slice -------------------------------------------------------
-    fontFamily: { type: 'enum', enumValues: ['default', 'fira-code', 'jetbrains-mono', 'cascadia-mono', 'vera-sans-mono', 'custom'] },
+    fontFamily: { type: 'enum', enumValues: ['default', 'fira-code', 'jetbrains-mono', 'cascadia-mono', 'vera-sans-mono', 'custom', 'system', 'uploaded'] },
     xtermPalette: { type: 'enum', enumValues: ['arkadia', 'proper'] },
     colorTheme: {
         type: 'enum',

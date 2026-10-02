@@ -23,6 +23,8 @@ export const defaultRenderSettings: RenderSettings = {
     fontFamily: 'default',
     customFontUrl: '',
     customFontFamily: '',
+    systemFontFamily: '',
+    uploadedFontFamily: '',
     xtermPalette: 'arkadia',
     colorTheme: 'default',
     outputBackground: '#242424',
@@ -94,7 +96,7 @@ export const shellSettingsKeys = [
 ] as const satisfies readonly (keyof ShellSettings)[];
 
 export const renderSettingsKeys = [
-    'fontFamily', 'customFontUrl', 'customFontFamily',
+    'fontFamily', 'customFontUrl', 'customFontFamily', 'systemFontFamily', 'uploadedFontFamily',
     'xtermPalette', 'colorTheme', 'customThemeColor', 'outputBackground',
     'outputBottomPadding', 'showTimestamps', 'highlightMessageBlocks', 'objectListCoverMarkers', 'commandEcho',
     'clearInputOnSend', 'autoLowercaseCommands', 'soundCategories', 'customBeepSoundKey',

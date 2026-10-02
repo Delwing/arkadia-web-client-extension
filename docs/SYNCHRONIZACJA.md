@@ -43,7 +43,7 @@ Synchronizowane są zawsze wszystkie poniższe kategorie - nie trzeba (i nie da 
 
 | Kategoria | Opis |
 |-----------|------|
-| **Ustawienia interfejsu** | Kolory, czcionki, motyw, układ okien |
+| **Ustawienia interfejsu** | Kolory, czcionki, motyw, układ okien (pliki wgranej czcionki zostają na urządzeniu, synchronizowana jest tylko jej nazwa) |
 | **Bindy klawiszy** | Przypisania klawiszy do komend |
 | **Skróty** | Zapisane lokacje na mapie |
 | **Ustawienia postaci** | Ustawienia rozgrywki (profesja, staż itp.) |

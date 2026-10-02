@@ -1,4 +1,7 @@
-export type UiFontSelection = 'default' | 'fira-code' | 'jetbrains-mono' | 'cascadia-mono' | 'vera-sans-mono' | 'custom';
+import type { UiFontSelection } from '@shared/uiSettingsTypes.ts';
+import { UPLOADED_FONT_FACE_FAMILY } from './fonts/uploadedFont';
+
+export type { UiFontSelection };
 
 // Bitstream Vera Sans Mono is self-hosted (fonts/vera-sans-mono.css), so it has no stylesheet here.
 const fontStylesheets: Partial<Record<UiFontSelection, string>> = {
@@ -15,14 +18,17 @@ export function isUiFontSelection(value: unknown): value is UiFontSelection {
         || value === 'jetbrains-mono'
         || value === 'cascadia-mono'
         || value === 'vera-sans-mono'
-        || value === 'custom';
+        || value === 'custom'
+        || value === 'system'
+        || value === 'uploaded';
 }
 
 export function ensureFontLoaded(selection: UiFontSelection, customHref?: string) {
     if (typeof document === 'undefined') {
         return;
     }
-    if (selection === 'default') {
+    // Installed fonts need nothing; uploaded faces are published by fonts/uploadedFont.
+    if (selection === 'default' || selection === 'system' || selection === 'uploaded') {
         return;
     }
     const href = selection === 'custom'
@@ -63,9 +69,43 @@ export function ensureFontLoaded(selection: UiFontSelection, customHref?: string
     document.head.appendChild(link);
 }
 
-/** CSS font-family stack for a font selection, or undefined for the system default. */
-export function resolveOutputFontFamily(selection: UiFontSelection, customFontFamily: string): string | undefined {
+function quoteFamily(name: string): string {
+    return /['",]/.test(name) ? name : `"${name}"`;
+}
+
+/** The typed-in family name behind a selection: link, installed or uploaded. */
+export function selectedFontName(settings: {
+    fontFamily: UiFontSelection;
+    customFontFamily?: string;
+    systemFontFamily?: string;
+    uploadedFontFamily?: string;
+}): string {
+    switch (settings.fontFamily) {
+    case 'custom':
+        return settings.customFontFamily ?? '';
+    case 'system':
+        return settings.systemFontFamily ?? '';
+    case 'uploaded':
+        return settings.uploadedFontFamily ?? '';
+    default:
+        return '';
+    }
+}
+
+/**
+ * CSS font-family stack for a font selection, or undefined for the system
+ * default. `familyName` is the name that goes with 'custom', 'system' or
+ * 'uploaded' (see selectedFontName).
+ */
+export function resolveOutputFontFamily(selection: UiFontSelection, familyName: string): string | undefined {
     switch (selection) {
+    case 'uploaded': {
+        // The uploaded faces first; on a device without the files, an
+        // installed copy of the same family, then the default.
+        const trimmed = familyName.trim();
+        const fallback = trimmed && !/['",]/.test(trimmed) ? `, "${trimmed}"` : '';
+        return `"${UPLOADED_FONT_FACE_FAMILY}"${fallback}, monospace`;
+    }
     case 'fira-code':
         return '"Fira Code", monospace';
     case 'jetbrains-mono':
@@ -74,15 +114,13 @@ export function resolveOutputFontFamily(selection: UiFontSelection, customFontFa
         return '"Cascadia Mono", monospace';
     case 'vera-sans-mono':
         return '"Bitstream Vera Sans Mono", monospace';
+    case 'system':
     case 'custom': {
-        const trimmed = customFontFamily.trim();
+        const trimmed = familyName.trim();
         if (!trimmed) {
             return undefined;
         }
-        const normalized = /['",]/.test(trimmed)
-            ? trimmed
-            : `"${trimmed}"`;
-        return `${normalized}, monospace`;
+        return `${quoteFamily(trimmed)}, monospace`;
     }
     default:
         return undefined;

@@ -1,4 +1,5 @@
-import {ensureFontLoaded, isUiFontSelection, resolveOutputFontFamily} from "./fontLoader";
+import {ensureFontLoaded, isUiFontSelection, resolveOutputFontFamily, selectedFontName} from "./fontLoader";
+import {setUploadedFontActive} from "./fonts/uploadedFont";
 import type { SoundCategory } from '@shared/events/clientEvents.ts';
 import type { SoundCategories } from './defaultUiSettings';
 import {
@@ -236,7 +237,8 @@ export function apply(settings: UiSettings) {
     const customHref = settings.customFontUrl?.trim();
     const normalizedHref = customHref && /^https?:\/\//i.test(customHref) ? customHref : undefined;
     ensureFontLoaded(settings.fontFamily, normalizedHref);
-    const resolvedFontFamily = resolveOutputFontFamily(settings.fontFamily, settings.customFontFamily ?? '');
+    setUploadedFontActive(settings.fontFamily === 'uploaded');
+    const resolvedFontFamily = resolveOutputFontFamily(settings.fontFamily, selectedFontName(settings));
     const mapScale = normalizeMapScale(settings.mapScale);
     const contentArea = document.getElementById('content-area');
     if (contentArea) {
@@ -461,6 +463,12 @@ export function load(): UiSettings {
             const customFontFamily = typeof parsed.customFontFamily === 'string'
                 ? parsed.customFontFamily.trim()
                 : defaultUiSettings.customFontFamily;
+            const systemFontFamily = typeof parsed.systemFontFamily === 'string'
+                ? parsed.systemFontFamily.trim()
+                : defaultUiSettings.systemFontFamily;
+            const uploadedFontFamily = typeof parsed.uploadedFontFamily === 'string'
+                ? parsed.uploadedFontFamily.trim()
+                : defaultUiSettings.uploadedFontFamily;
             const clearInputOnSend = typeof parsed.clearInputOnSend === 'boolean'
                 ? parsed.clearInputOnSend
                 : defaultUiSettings.clearInputOnSend;
@@ -617,6 +625,8 @@ export function load(): UiSettings {
                 fontFamily,
                 customFontUrl: normalizedCustomFontUrl,
                 customFontFamily,
+                systemFontFamily,
+                uploadedFontFamily,
                 autoLowercaseCommands,
                 customBeepSoundKey,
                 soundCategories,
