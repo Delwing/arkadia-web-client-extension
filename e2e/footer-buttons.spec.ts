@@ -139,9 +139,10 @@ test.describe('Footer buttons', () => {
         await expect.poll(async () => await shown.count()).toBeGreaterThan(0);
         await expect.poll(async () => await shown.count()).toBeLessThan(10);
 
-        // The command line keeps its one-line height.
+        // The command line keeps its one-line height: the row is as tall as Wyślij.
         const rowHeight = await page.locator('#footer-buttons').evaluate(el => el.getBoundingClientRect().height);
-        expect(rowHeight).toBeLessThanOrEqual(30);
+        const sendHeight = await page.locator('#send-button').evaluate(el => el.getBoundingClientRect().height);
+        expect(rowHeight).toBe(sendHeight);
 
         await more.click();
         const hidden = page.locator('[data-footer-button-overflow]').first();

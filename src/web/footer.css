@@ -515,8 +515,10 @@ body[data-urgent-chips-first="1"] .status-slot:has(> .chip--danger) {
    A short row in the command bar, between Wyślij and the ⋯ menu (see
    @web-ui/footer/FooterButtons.tsx). The row wraps so it can be measured;
    what lands on a second line is hidden and offered behind its own ⋯, because
-   the command line must not lose height to them. */
-.footer-buttons {
+   the command line must not lose height to them. Scoped under #input-area,
+   or the bar's `#input-area button` reset (no padding, subtle text) wins over
+   plain classes; they take the bar's height, so they line up with Wyślij. */
+#input-area .footer-buttons {
   position: relative;
   display: flex;
   /* Never wider than a third of the bar: the command line comes first. What
@@ -526,16 +528,16 @@ body[data-urgent-chips-first="1"] .status-slot:has(> .chip--danger) {
   align-items: center;
   min-width: 0;
   max-width: min(33%, 26rem);
-  height: 28px;
+  height: var(--cmd-h);
 }
 
-.footer-buttons__row {
+#input-area .footer-buttons__row {
   display: flex;
   flex: 1 1 auto;
   align-items: center;
   gap: 6px;
   min-width: 0;
-  height: 28px;
+  height: var(--cmd-h);
   overflow: hidden;
 }
 
@@ -544,16 +546,13 @@ body[data-urgent-chips-first="1"] .status-slot:has(> .chip--danger) {
   flex-shrink: 0;
   align-items: center;
   gap: 5px;
-  height: 28px;
   min-width: 0;
   min-height: 0;
-  padding: 0 10px;
-  border: 1px solid var(--popup-border-subtle);
-  border-radius: 7px;
+  border: 1px solid var(--popup-border-control);
+  border-radius: 8px;
   background-color: var(--popup-control-bg);
   color: var(--popup-text);
   font: inherit;
-  font-size: 12.5px;
   white-space: nowrap;
   opacity: 1;
   cursor: pointer;
@@ -565,24 +564,35 @@ body[data-urgent-chips-first="1"] .status-slot:has(> .chip--danger) {
   background-color: var(--popup-control-hover-bg);
 }
 
+#input-area .footer-button {
+  gap: 5px;
+  padding: 0 12px;
+  color: var(--popup-text);
+  font-size: 12.5px;
+  white-space: nowrap;
+}
+
 /* Off the first line: measured, then kept out of sight behind the ⋯. */
-.footer-button.is-overflow {
+#input-area .footer-button.is-overflow {
   visibility: hidden;
   pointer-events: none;
 }
 
-.footer-button--more {
-  padding: 0 7px;
+#input-area .footer-button--more {
+  width: var(--cmd-h);
+  padding: 0;
 }
 
 /* Tones: the button's own colour, so a "zabij cel" reads as one. */
-.footer-button--accent {
+.footer-button--accent,
+#input-area .footer-button--accent {
   --footer-button-tone: var(--popup-accent);
   border-color: color-mix(in srgb, var(--popup-accent) 45%, transparent);
   color: var(--popup-text-bright);
 }
 
-.footer-button--danger {
+.footer-button--danger,
+#input-area .footer-button--danger {
   --footer-button-tone: var(--footer-vital-danger);
   border-color: color-mix(in srgb, var(--footer-vital-danger) 45%, transparent);
   color: color-mix(in srgb, var(--footer-vital-danger) 80%, #fff);
@@ -590,12 +600,14 @@ body[data-urgent-chips-first="1"] .status-slot:has(> .chip--danger) {
 
 /* A plugin's button, dashed like its footer chips: not something the player
    put there, and not something the settings list can rewrite. */
-.footer-button--plugin {
+.footer-button--plugin,
+#input-area .footer-button--plugin {
   border-style: dashed;
 }
 
 /* Switched on (a mode the player is in): filled, with a dot. */
-.footer-button.is-on {
+.footer-button.is-on,
+#input-area .footer-button.is-on {
   border-color: var(--footer-button-tone, var(--popup-accent));
   background-color: color-mix(in srgb, var(--footer-button-tone, var(--popup-accent)) 22%, transparent);
   color: var(--popup-text-bright);
@@ -627,9 +639,10 @@ body[data-urgent-chips-first="1"] .status-slot:has(> .chip--danger) {
   padding: 6px;
 }
 
-.footer-buttons__panel-item {
+#input-area .footer-buttons__panel-item {
   justify-content: flex-start;
   width: 100%;
+  height: 30px;
 }
 
 /* The phone sheet's grid; the desktop never shows it (footerMobile.css does). */

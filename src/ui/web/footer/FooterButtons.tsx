@@ -24,7 +24,7 @@ function buttonClass(button: FooterButton, extra?: string): string {
  * measured width moves behind a ⋯ of its own rather than wrapping.
  */
 /** Room the "..." needs at the right end of the row, in px. */
-const MORE_WIDTH = 34;
+const MORE_WIDTH = 42;
 
 export default function FooterButtons() {
   const buttons = useFooterButtons();
