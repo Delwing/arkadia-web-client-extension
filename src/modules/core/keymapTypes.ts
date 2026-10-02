@@ -40,6 +40,10 @@ export interface DirectionBinds {
     d: Bind;
     zerknij: Bind;
     special: Bind;
+    /** Second special exit of the room. Unbound by default. */
+    special2?: Bind;
+    /** Third special exit of the room. Unbound by default. */
+    special3?: Bind;
 }
 
 export interface BindSettings {

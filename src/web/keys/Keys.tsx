@@ -697,7 +697,7 @@ export default function Keys({ helperConnection, headerSlot, onImport }: KeysPro
                 })}
             </div>
             <div className="keys-compass keys-compass--extra">
-                {(["u", "d", "special"] as const).map(d => {
+                {(["u", "d", "special", "special2", "special3"] as const).map(d => {
                     const e = entry(`slot:directions.${d}`);
                     return (
                         <div key={d} className={`keys-compass__cell${visible(e) ? "" : " is-hidden"}`} data-bind={e.id}>

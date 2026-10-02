@@ -144,3 +144,31 @@ describe('walk modes on direction keys', () => {
         expect(registerWalkMode({ id: 'sneak', label: 'x', onMove: vi.fn() })).toBe(false);
     });
 });
+
+describe('second and third special exit', () => {
+    const exits = { 'wejdz do namiotu': 1, 'wespnij sie na drzewo': 2, 'zejdz do piwnicy': 3 };
+
+    test('are unbound by default', () => {
+        client.Map.currentRoom.specialExits = exits;
+        press('Numpad0');
+        expect(client.sendCommand).toHaveBeenCalledWith('wejdz do namiotu');
+        expect(client.sendCommand).toHaveBeenCalledTimes(1);
+    });
+
+    test('walk the room\'s second and third special exits once bound', () => {
+        store({ directions: { ...defaultBinds.directions, special2: { key: 'Numpad0', ctrl: true }, special3: { key: 'Numpad0', shift: true } } });
+        client.Map.currentRoom.specialExits = exits;
+        press('Numpad0', { ctrl: true });
+        press('Numpad0', { shift: true });
+        expect(client.sendCommand).toHaveBeenNthCalledWith(1, 'wespnij sie na drzewo');
+        expect(client.sendCommand).toHaveBeenNthCalledWith(2, 'zejdz do piwnicy');
+    });
+
+    test('do nothing when the room has fewer special exits', () => {
+        store({ directions: { ...defaultBinds.directions, special3: { key: 'F9' } } });
+        client.Map.currentRoom.specialExits = { 'wejdz do namiotu': 1 };
+        const event = press('F9');
+        expect(event.defaultPrevented).toBe(true);
+        expect(client.sendCommand).not.toHaveBeenCalled();
+    });
+});

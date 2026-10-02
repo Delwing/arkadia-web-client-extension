@@ -281,6 +281,8 @@ export const SLOTS: readonly SlotDef[] = [
     dir("u", "góra", "góra", "dir_u"),
     dir("d", "dół", "dół", "dir_d"),
     dir("special", "specjalny", "specjalny", "dir_special"),
+    dir("special2", "specjalny 2", "specjalny 2", "dir_special2"),
+    dir("special3", "specjalny 3", "specjalny 3", "dir_special3"),
 ];
 
 export const SLOT_BY_PATH = new Map(SLOTS.map(s => [s.path, s]));
@@ -555,7 +557,7 @@ export function freeKeysNear(combo: Combo, byCombo: Map<string, KeyEntry[]>, lim
 // ── Walk modes ──────────────────────────────────────────────────────────
 
 /** The direction slots a walk mode rides on (zerknij is a look, not a step). */
-const WALK_DIRECTIONS: readonly (keyof DirectionBinds)[] = ["nw", "n", "ne", "w", "e", "sw", "s", "se", "u", "d", "special"];
+const WALK_DIRECTIONS: readonly (keyof DirectionBinds)[] = ["nw", "n", "ne", "w", "e", "sw", "s", "se", "u", "d", "special", "special2", "special3"];
 
 /**
  * The modifiers a walk mode cannot use because the direction keys already hold

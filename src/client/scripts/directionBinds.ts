@@ -46,7 +46,8 @@ interface DirectionBinding {
     shift?: boolean;
 }
 
-const DEFAULT_DIRECTION_BINDS: Record<string, RawDirectionBind> = {
+/** Built-in keys; null for a slot that stays unbound until the player gives it a key. */
+const DEFAULT_DIRECTION_BINDS: Record<string, RawDirectionBind | null> = {
     n: { key: 'Numpad8' },
     s: { key: 'Numpad2' },
     w: { key: 'Numpad4' },
@@ -59,7 +60,12 @@ const DEFAULT_DIRECTION_BINDS: Record<string, RawDirectionBind> = {
     d: { key: 'NumpadDivide' },
     zerknij: { key: 'Numpad5' },
     special: { key: 'Numpad0' },
+    special2: null,
+    special3: null,
 };
+
+/** The special-exit slots, in the order the room lists its special exits. */
+const SPECIAL_EXIT_SLOTS = ['special', 'special2', 'special3'];
 
 function isDirectionMap(value: unknown): value is Record<string, Partial<RawDirectionBind> | undefined> {
     return !!value && typeof value === 'object';
@@ -68,16 +74,17 @@ function isDirectionMap(value: unknown): value is Record<string, Partial<RawDire
 function buildDirectionBindings(
     dirs?: Record<string, Partial<RawDirectionBind> | undefined>,
 ): DirectionBinding[] {
-    return Object.entries(DEFAULT_DIRECTION_BINDS).map(([direction, fallback]) => {
+    return Object.entries(DEFAULT_DIRECTION_BINDS).flatMap(([direction, fallback]) => {
         const override = dirs?.[direction];
         const source = override && override.key ? override : fallback;
-        return {
+        if (!source) return [];
+        return [{
             direction,
             code: source.key as string,
             ctrl: !!source.ctrl,
             alt: !!source.alt,
             shift: !!source.shift,
-        };
+        }];
     });
 }
 
@@ -119,11 +126,12 @@ function sendDirection(client: Client, direction: string, mode?: WalkMode): void
         return;
     }
     let step = direction;
-    if (direction === 'special') {
+    const specialIndex = SPECIAL_EXIT_SLOTS.indexOf(direction);
+    if (specialIndex >= 0) {
         const exits = client.Map.currentRoom?.specialExits ?? {};
-        const first = Object.keys(exits)[0];
-        if (!first) return;
-        step = first;
+        const exit = Object.keys(exits)[specialIndex];
+        if (!exit) return;
+        step = exit;
     }
     if (mode?.onMove) {
         mode.onMove(step);

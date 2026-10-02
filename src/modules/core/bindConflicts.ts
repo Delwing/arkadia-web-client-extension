@@ -60,6 +60,8 @@ const DIRECTION_LABELS: Record<keyof DirectionBinds, string> = {
     d: 'Kierunek: dół',
     zerknij: 'Zerknij',
     special: 'Kierunek specjalny',
+    special2: 'Kierunek specjalny 2',
+    special3: 'Kierunek specjalny 3',
 };
 
 const ARRAY_LABELS: Record<string, string> = {
