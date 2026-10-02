@@ -96,8 +96,17 @@ export default class CommandProcessor {
         return false;
     }
 
+    /**
+     * `@1`, `@A`, `@@` name objects on the location by their shortcut; `@>` is
+     * the next target in the attack queue (the one /nn would attack). Team
+     * shortcuts take every letter, so the queue needs a non-alphanumeric token.
+     */
     private expandObjectShortcuts(command: string): string {
-        return command.replace(/@([A-Za-z0-9@]+)/g, (match, short) => {
+        return command.replace(/@(>|[A-Za-z0-9@]+)/g, (match, short) => {
+            if (short === '>') {
+                const next = this.client.TeamManager.peekEnemyFromQueue();
+                return next ? `ob_${next}` : match;
+            }
             const obj = this.client.ObjectManager.getObjectsOnLocation().find(
                 o => o.shortcut?.toLowerCase() === short.toLowerCase()
             );

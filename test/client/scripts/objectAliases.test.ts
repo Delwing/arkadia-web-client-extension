@@ -130,6 +130,26 @@ describe('object aliases', () => {
     expect(client.sendCommand).toHaveBeenCalledWith('zabij ob_5');
   });
 
+  test('kill alias accepts an expanded ob_ id (@1, @>)', () => {
+    client.ObjectManager.getObjectsOnLocation.mockReturnValue([{ num: 5, shortcut: '1' }]);
+    kill(['', 'ob_5'] as unknown as RegExpMatchArray);
+    expect(client.sendCommand).toHaveBeenCalledWith('zabij ob_5');
+  });
+
+  test('kill alias refuses an ob_ id that is not on the location', () => {
+    client.ObjectManager.getObjectsOnLocation.mockReturnValue([{ num: 5, shortcut: '1' }]);
+    kill(['', 'ob_9'] as unknown as RegExpMatchArray);
+    expect(client.sendCommand).not.toHaveBeenCalled();
+    expect(client.print).toHaveBeenCalledWith('Nie ma tu ob_9.');
+  });
+
+  test('zaslon alias accepts an expanded ob_ id', () => {
+    client.ObjectManager.getObjectsOnLocation.mockReturnValue([{ num: 7, shortcut: 'A' }]);
+    client.TeamManager.getAccumulatedObjectsData.mockReturnValue(new Map([[7, { team: true }]]));
+    shield(['', 'ob_7'] as unknown as RegExpMatchArray);
+    expect(client.sendCommand).toHaveBeenCalledWith('zaslon ob_7');
+  });
+
   test('surprise alias sends zaskocz with object number', () => {
     client.ObjectManager.getObjectsOnLocation.mockReturnValue([{ num: 6, shortcut: '2' }]);
     surprise(['', '2'] as unknown as RegExpMatchArray);

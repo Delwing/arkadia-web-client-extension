@@ -44,6 +44,16 @@ export default function initObjectAliases(
      * silently doing nothing.
      */
     function findTarget(query: string, prefer: 'team' | 'enemy') {
+        // `@1`, `@>` etc. are expanded to `ob_<num>` before aliases see them.
+        const byId = query.trim().match(/^ob_(\d+)$/);
+        if (byId) {
+            const num = parseInt(byId[1], 10);
+            const obj = client.ObjectManager.getObjectsOnLocation().find(o => o.num === num);
+            if (!obj) {
+                client.print(`Nie ma tu ${query.trim()}.`);
+            }
+            return obj;
+        }
         const byShortcut = findByShortcut(query);
         if (byShortcut) {
             return byShortcut;

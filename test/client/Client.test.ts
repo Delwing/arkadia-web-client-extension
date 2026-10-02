@@ -362,6 +362,22 @@ test('sendCommand expands object shortcuts', async () => {
   expect((global as any).clientAdapterMock.send).toHaveBeenNthCalledWith(3, 'parsed:help ob_42', false, undefined);
 });
 
+test('sendCommand expands @> to the next target in the attack queue', async () => {
+  const client = new Client((global as any).clientAdapterMock as any);
+  client.TeamManager.addEnemyToQueue(31);
+  client.TeamManager.addEnemyToQueue(32);
+
+  await client.sendCommand('zabij @>');
+  expect((global as any).clientAdapterMock.send).toHaveBeenLastCalledWith('parsed:zabij ob_31', false, undefined);
+});
+
+test('sendCommand leaves @> alone when the attack queue is empty', async () => {
+  const client = new Client((global as any).clientAdapterMock as any);
+
+  await client.sendCommand('zabij @>');
+  expect((global as any).clientAdapterMock.send).toHaveBeenLastCalledWith('parsed:zabij @>', false, undefined);
+});
+
 /**
  * A trigger that throws used to escape onLine() with inLineProcess still true, which permanently
  * stopped print() from ever emitting 'output-sent' again — one bad line killed the whole output

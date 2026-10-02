@@ -22,4 +22,4 @@ Rozszerzenie dodaje wiele przydatnych funkcji do klienta webowego Arkadii, w tym
 Możesz tworzyć własne aliasy w ustawieniach klienta:
 - **Wzorzec** - wyrażenie regularne dopasowujące komendę
 - **Akcje** - komenda wysyłana do serwera (może używać `$1`, `$2` itp. dla grup z dopasowania), dźwięk, powiadomienie, czytanie na głos, funkcyjny bind
-- **Skróty obiektów** - `@1`, `@A`, `@@` zostaną zamienione na identyfikatory obiektów
+- **Skróty obiektów** - `@1`, `@A`, `@@` zostaną zamienione na identyfikatory obiektów, a `@>` na następny cel z kolejki ataku (ten, którego zaatakuje `/nn`)

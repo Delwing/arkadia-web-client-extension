@@ -12,7 +12,7 @@ Tworzysz skróty do długich lub częstych komend — bez pisania ani linijki ko
 
 - **Wzorzec regex** — alias reaguje na to, co wpiszesz (np. `^aa (.+)$` zamieni `aa goblin` na `zabij goblin`)
 - **Grupy przechwytujące** — `$1`, `$2` itd. wstawiają fragmenty z dopasowania do komendy
-- **Skróty obiektów** — `@1`, `@A`, `@@` automatycznie zamieniają się na identyfikatory obiektów z lokacji
+- **Skróty obiektów** — `@1`, `@A`, `@@` automatycznie zamieniają się na identyfikatory obiektów z lokacji, a `@>` na następny cel z kolejki ataku
 - **Wiele akcji** — poza komendą alias może zagrać dźwięk, wysłać powiadomienie (także na telefon), przeczytać tekst na głos albo ustawić funkcyjny bind
 - **Inaczej dla postaci** — ten sam alias może wysyłać inną komendę w zależności od postaci
 - **Grupy, włączanie i wybrane postacie** — alias (tak jak trigger) może należeć do grupy, być wyłączony albo działać tylko na wybranych postaciach
