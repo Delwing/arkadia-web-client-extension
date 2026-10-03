@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import type { KnowledgeEvent } from '@modules/data/dataStores/knowledgeEventsStore';
 import { levelIndex } from './knowledgeModel';
 import { LevelBar } from './knowledgeUi';
+import {roomContextMenuHandler} from "@modules/core/contextMenus";
 
 function formatDate(timestamp: number): string {
     const d = new Date(timestamp);
@@ -52,7 +53,7 @@ export function HistoryTab({ events }: { events: KnowledgeEvent[] | null }) {
                             <td>
                                 {e.type === 'level_change'
                                     ? <LevelBar value={Math.max(0, levelIndex(e.level))} />
-                                    : e.locationId ? <span className="kn-muted kn-mono">#{e.locationId}</span> : null}
+                                    : e.locationId ? <span className="kn-muted kn-mono" onContextMenu={roomContextMenuHandler(e.locationId)}>#{e.locationId}</span> : null}
                             </td>
                         </tr>
                     ))}

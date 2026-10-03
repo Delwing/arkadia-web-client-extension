@@ -6,6 +6,7 @@ import eventBus from "@modules/core/eventBus.ts";
 import {createColorFormat} from "@modules/core/Colors";
 import {getBehaviorSettings} from "@modules/core/settings";
 import {getLongDir, isDirection} from "@shared/map/directions";
+import {roomContextMenuHandler} from "@modules/core/contextMenus";
 
 const STORAGE_KEY = 'carriages';
 
@@ -383,6 +384,7 @@ export default function initCarriage(
             note.append(label, PLAIN);
             note.createLink([start, start + label.length], {
                 onClick: () => client.sendEvent('leadTo', lastKnown),
+                onContextMenu: roomContextMenuHandler(lastKnown),
                 title: `Kliknij aby prowadzić do: ${label}`,
             });
         }

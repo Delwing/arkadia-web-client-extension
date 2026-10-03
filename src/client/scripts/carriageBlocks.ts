@@ -4,6 +4,7 @@ import eventBus from "@modules/core/eventBus.ts";
 import {getLongDir} from "@shared/map/directions";
 import {isDrivableExit} from "@shared/map/exitCommands";
 import type {FormatStateSnapshot} from "@client/ansi/FormatState.ts";
+import {roomContextMenuHandler} from "@modules/core/contextMenus";
 import {
     blockRoom,
     clearBlockedRooms,
@@ -104,6 +105,7 @@ export default function initCarriageBlocks(
                 line.append(text, WHITE);
                 line.createLink([start, start + text.length], {
                     onClick: () => client.sendEvent('leadTo', roomId),
+                    onContextMenu: roomContextMenuHandler(roomId),
                     title: `Kliknij aby prowadzić do: ${text}`,
                 });
                 line.append('\n', RESET);

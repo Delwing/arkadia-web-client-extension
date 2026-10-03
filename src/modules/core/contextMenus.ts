@@ -184,3 +184,27 @@ export function openMapContextMenu(roomId: number, x: number, y: number, extraIt
         width: 300,
     });
 }
+
+/** The bits of a DOM or React mouse event the room menu needs. */
+interface MenuMouseEvent {
+    clientX: number;
+    clientY: number;
+    preventDefault(): void;
+    stopPropagation(): void;
+}
+
+/**
+ * Right-click handler for a room link outside the map (game output, popups):
+ * the same menu as a right click on the map, plus centring the main map on it.
+ */
+export function roomContextMenuHandler(roomId: number) {
+    return (ev: MenuMouseEvent) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        openMapContextMenu(roomId, ev.clientX, ev.clientY, [{
+            label: 'Pokaż na mapie',
+            icon: MapIcon,
+            action: () => eventBus.emit('map.centerOn', { roomId }),
+        }]);
+    };
+}

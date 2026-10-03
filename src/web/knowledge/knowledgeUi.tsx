@@ -2,6 +2,7 @@ import { memo, type ReactNode } from 'react';
 import { Check, Lightbulb, MapPin, Navigation } from 'lucide-react';
 import eventBus from '@modules/core/eventBus';
 import { MAX_LEVEL, entryHint, isUnavailable, type DetailsEntry, type PlaceStatus } from './knowledgeModel';
+import {roomContextMenuHandler} from "@modules/core/contextMenus";
 
 /** Ten segments, `value` of them lit. */
 export function LevelBar({ value, max = MAX_LEVEL, size = 'sm' }: { value: number; max?: number; size?: 'sm' | 'lg' }) {
@@ -123,6 +124,7 @@ export const EntryRow = memo(function EntryRow({
                             className="kn-icon-btn kn-entry__lead"
                             title="Prowadź"
                             onClick={() => eventBus.emit('leadTo', id)}
+                            onContextMenu={roomContextMenuHandler(id)}
                         >
                             <Navigation size={14} />
                         </button>
@@ -135,6 +137,7 @@ export const EntryRow = memo(function EntryRow({
                             className="kn-icon-btn kn-entry__map"
                             title="Pokaż na mapie"
                             onClick={() => eventBus.emit('staticmap.popup.open', { roomId: id })}
+                            onContextMenu={roomContextMenuHandler(id)}
                         >
                             <MapPin size={14} />
                         </button>

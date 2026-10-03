@@ -5,6 +5,7 @@ import {
     getCommandLog,
     pushGmcp,
     resetCommandLog,
+    submitCommand,
     waitForCommandInput,
     waitForMapReady,
 } from './support/mocks';
@@ -201,5 +202,25 @@ test.describe('Map context menu', () => {
         const commandLog = await getCommandLog(page);
         // /idz calls leadTo (path arrow visible) and then sends direction commands after delay
         expect(commandLog.length).toBeGreaterThan(0);
+    });
+});
+
+test.describe("Room links outside the map", () => {
+    test.beforeEach(async ({ page }) => {
+        await page.goto("/");
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+    });
+
+    test("right-clicking a room link in the output opens the map menu", async ({ page }) => {
+        await submitCommand(page, "/dodaj_skrot 2 e2eskrot");
+        await submitCommand(page, "/pokaz_skroty");
+        const link = page.locator("#main_text_output_msg_wrapper").getByText("prowadz", { exact: true }).last();
+        await link.click({ button: "right" });
+
+        const menu = page.locator(CONTEXT_MENU_SELECTOR);
+        await expect(menu.locator(".context-menu__quick")).toHaveText(["Idź", "Prowadź", "Tu jestem"]);
+        await expect(menu.locator(".context-menu__item").first()).toHaveText("Pokaż na mapie");
+        await expect(menu.locator(".context-menu-header")).toContainText("#2");
     });
 });

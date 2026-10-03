@@ -4,6 +4,7 @@ import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
 import { usePopup } from './hooks/usePopup';
 import type { CarriageEntry } from '@client/scripts/carriage';
 import { getEmbeddedMap, subscribeEmbeddedMap } from './embedRegistry';
+import {roomContextMenuHandler} from "@modules/core/contextMenus";
 
 interface CarriagesPopupPayload {
     carriages: CarriageEntry[];
@@ -126,6 +127,7 @@ const CarriagesPopup: React.FC = () => {
                         type="button"
                         className="popup-btn popup-btn--primary popup-btn--sm"
                         onClick={() => handleProwadz(roomId)}
+                        onContextMenu={roomContextMenuHandler(roomId)}
                         title={`Prowadź do lokacji ${roomId}`}
                     >
                         {roomLabel ?? roomId}

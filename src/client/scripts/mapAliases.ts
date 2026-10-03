@@ -6,6 +6,7 @@ import {getNote} from "@modules/data/locationNotesStorage";
 import {getPluginLocationNotes} from "@modules/core/pluginLocationNotesRegistry";
 import {getSnapshot as getMultibindSnapshot} from "@modules/data/multibindStore";
 import {getMultibindLabel} from "../multibindKeys";
+import {roomContextMenuHandler} from "@modules/core/contextMenus";
 
 type SearchableRoom = {
     id: number;
@@ -354,7 +355,8 @@ export default function initMapAliases(client: Client, aliases: { pattern: RegEx
                             onClick: () => {
                                 client.sendEvent('leadTo', match.id);
                             },
-                            title: `Kliknij aby prowadzić do: ${match.name}`
+                            onContextMenu: roomContextMenuHandler(match.id),
+                            title: `Kliknij aby prowadzić do: ${match.name}, prawy klik: opcje`
                         });
 
                         lineBuffer.append(' ');
@@ -364,6 +366,7 @@ export default function initMapAliases(client: Client, aliases: { pattern: RegEx
                             onClick: () => {
                                 eventBus.emit('staticmap.popup.open', { roomId: match.id });
                             },
+                            onContextMenu: roomContextMenuHandler(match.id),
                             title: `Pokaż na mapie: ${match.name}`
                         });
 

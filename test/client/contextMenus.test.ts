@@ -1,4 +1,4 @@
-import { buildHerbContextMenuItems, openHerbContextMenu, openMapContextMenu } from "@modules/core/contextMenus";
+import { buildHerbContextMenuItems, openHerbContextMenu, openMapContextMenu, roomContextMenuHandler } from "@modules/core/contextMenus";
 import { showContextMenu } from "@web/contextMenu";
 import { characterStorage } from "@modules/core/storage";
 import eventBus from "@modules/core/eventBus";
@@ -182,5 +182,24 @@ describe("openMapContextMenu", () => {
         openMapContextMenu(7, 0, 0);
 
         expect(shown()[3]).toMatchObject({ header: "Lokacja #7", width: 300 });
+    });
+});
+
+describe("roomContextMenuHandler", () => {
+    afterEach(() => (showContextMenu as jest.Mock).mockClear());
+
+    it("opens the map menu at the cursor, with centring the main map after the big buttons", () => {
+        const emitSpy = jest.spyOn(eventBus, "emit");
+        const ev = { clientX: 40, clientY: 50, preventDefault: jest.fn(), stopPropagation: jest.fn() };
+
+        roomContextMenuHandler(7)(ev);
+        const [items, x, y] = (showContextMenu as jest.Mock).mock.calls[0];
+
+        expect(ev.preventDefault).toHaveBeenCalled();
+        expect([x, y]).toEqual([40, 50]);
+        expect(items[3].label).toBe("Pokaż na mapie");
+        items[3].action();
+        expect(emitSpy).toHaveBeenCalledWith("map.centerOn", { roomId: 7 });
+        emitSpy.mockRestore();
     });
 });

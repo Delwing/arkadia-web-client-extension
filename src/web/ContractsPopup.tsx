@@ -5,6 +5,7 @@ import { usePopup } from './hooks/usePopup';
 import { usePopupSetting } from './hooks/usePopupSetting';
 import type { Contract } from '@client/scripts/contracts';
 import { getEmbeddedMap } from './embedRegistry';
+import {roomContextMenuHandler} from "@modules/core/contextMenus";
 
 interface ContractsPopupPayload {
     contracts: Contract[];
@@ -167,6 +168,7 @@ const ContractsPopup: React.FC = () => {
                                             type="button"
                                             className="popup-btn popup-btn--primary"
                                             onClick={() => handleProwadz(contract.locationId!)}
+                                            onContextMenu={roomContextMenuHandler(contract.locationId)}
                                             title="Prowadź do lokacji"
                                         >
                                             Prowadź{distance !== null && ` (${distance})`}

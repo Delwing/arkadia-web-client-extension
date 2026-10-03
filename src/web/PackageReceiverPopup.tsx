@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState, useMemo } from 'react';
 import eventBus from '@modules/core/eventBus';
 import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
 import { usePopup } from './hooks/usePopup';
+import {roomContextMenuHandler} from "@modules/core/contextMenus";
 import {
     NpcListEntry,
     clearLocal,
@@ -161,12 +162,13 @@ const PackageReceiverPopup: React.FC = () => {
                                 className="package-receiver__npc-item"
                             >
                                 <span className="package-receiver__npc-name">{npc.name}</span>
-                                <span className="package-receiver__npc-loc">{npc.loc}</span>
+                                <span className="package-receiver__npc-loc" onContextMenu={roomContextMenuHandler(npc.loc)}>{npc.loc}</span>
                                 <div className="package-receiver__npc-actions">
                                     <button
                                         type="button"
                                         className="package-receiver__npc-btn"
                                         onClick={() => handleShowOnMap(npc.loc)}
+                                        onContextMenu={roomContextMenuHandler(npc.loc)}
                                         title="Pokaż na mapie"
                                     >
                                         &#x1f50d;
@@ -175,6 +177,7 @@ const PackageReceiverPopup: React.FC = () => {
                                         type="button"
                                         className="package-receiver__npc-btn"
                                         onClick={() => handleNavigate(npc.loc)}
+                                        onContextMenu={roomContextMenuHandler(npc.loc)}
                                         title="Prowadź do lokacji"
                                     >
                                         Idź

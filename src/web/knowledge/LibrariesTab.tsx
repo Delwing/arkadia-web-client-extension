@@ -11,6 +11,7 @@ import {
     type LibrarySort,
 } from './knowledgeModel';
 import { areaOfRoom, currentArea } from './useKnowledgeData';
+import {roomContextMenuHandler} from "@modules/core/contextMenus";
 
 export interface LibrariesTabProps {
     report: LibrariesPayload | null;
@@ -107,7 +108,7 @@ export function LibrariesTab({ report, sort, hideCompleted, distance, onOpenCate
                 </div>
                 <div className="kn-lib__actions">
                     {!isHere && lib.remaining > 0 && lib.roomId != null && (
-                        <button type="button" className="kn-btn kn-btn--sm" onClick={() => eventBus.emit('leadTo', lib.roomId!)}>
+                        <button type="button" className="kn-btn kn-btn--sm" onClick={() => eventBus.emit('leadTo', lib.roomId!)} onContextMenu={roomContextMenuHandler(lib.roomId)}>
                             <Navigation size={13} />
                             Prowadź
                         </button>

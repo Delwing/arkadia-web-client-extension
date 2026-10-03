@@ -4,6 +4,7 @@ import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
 import { usePopup } from './hooks/usePopup';
 import { clearBlockedRooms, getBlockedRooms, unblockRoom } from '@modules/data/carriageBlocks';
 import { getEmbeddedMap, subscribeEmbeddedMap } from './embedRegistry';
+import {roomContextMenuHandler} from "@modules/core/contextMenus";
 
 const POPUP_ID = 'popup:carriageBlocks';
 
@@ -90,13 +91,14 @@ const CarriageBlocksPopup: React.FC = () => {
                 <div className="popup-list carriage-blocks-list">
                     {rooms.map(roomId => (
                         <div key={roomId} className="carriage-block-item">
-                            <span className="carriage-block-label" title={roomLabel(roomId)}>
+                            <span className="carriage-block-label" title={roomLabel(roomId)} onContextMenu={roomContextMenuHandler(roomId)}>
                                 {roomLabel(roomId)}
                             </span>
                             <button
                                 type="button"
                                 className="popup-btn popup-btn--sm"
                                 onClick={() => handlePreview(roomId)}
+                                onContextMenu={roomContextMenuHandler(roomId)}
                                 title={`Pokaż lokację ${roomId} na mapie`}
                             >
                                 Mapa

@@ -24,6 +24,7 @@ import {
     verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import {roomContextMenuHandler} from "@modules/core/contextMenus";
 
 interface ShortcutEntry {
     key: string;
@@ -176,7 +177,7 @@ function SortableStop({ stop, index, isUnreachable, distance, color, onRemove }:
                 &#x2630;
             </span>
             <span className="trip-planner-stop-number">{index + 1}.</span>
-            <span className="trip-planner-stop-id">#{stop.id}</span>
+            <span className="trip-planner-stop-id" onContextMenu={roomContextMenuHandler(stop.id)}>#{stop.id}</span>
             {stop.name && (
                 <span className="trip-planner-stop-name">{stop.name}</span>
             )}

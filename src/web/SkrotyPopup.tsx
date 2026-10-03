@@ -3,6 +3,7 @@ import eventBus from '@modules/core/eventBus';
 import { globalStorage } from '@modules/core/storage';
 import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
 import { usePopup } from './hooks/usePopup';
+import {roomContextMenuHandler} from "@modules/core/contextMenus";
 
 interface ShortcutEntry {
     key: string;
@@ -68,12 +69,13 @@ const SkrotyPopup: React.FC = () => {
                         <div key={shortcut.key} className="popup-item">
                             <div className="popup-row">
                                 <span className="skroty-item-key">{shortcut.key}</span>
-                                <span className="skroty-item-id">({shortcut.id})</span>
+                                <span className="skroty-item-id" onContextMenu={roomContextMenuHandler(shortcut.id)}>({shortcut.id})</span>
                                 <div className="popup-toolbar">
                                     <button
                                         type="button"
                                         className="popup-btn"
                                         onClick={() => handleProwadz(shortcut.id)}
+                                        onContextMenu={roomContextMenuHandler(shortcut.id)}
                                         title="Pokaż ścieżkę na mapie"
                                     >
                                         Prowadź
@@ -82,6 +84,7 @@ const SkrotyPopup: React.FC = () => {
                                         type="button"
                                         className="popup-btn"
                                         onClick={() => handlePokaz(shortcut.id)}
+                                        onContextMenu={roomContextMenuHandler(shortcut.id)}
                                         title="Wycentruj mapę na lokacji"
                                     >
                                         Pokaż
@@ -90,6 +93,7 @@ const SkrotyPopup: React.FC = () => {
                                         type="button"
                                         className="popup-btn"
                                         onClick={() => handleUstaw(shortcut.id)}
+                                        onContextMenu={roomContextMenuHandler(shortcut.id)}
                                         title="Ustaw lokacje na mapie"
                                     >
                                         Ustaw
@@ -98,6 +102,7 @@ const SkrotyPopup: React.FC = () => {
                                         type="button"
                                         className="popup-btn popup-btn--primary"
                                         onClick={() => handleIdz(shortcut.id)}
+                                        onContextMenu={roomContextMenuHandler(shortcut.id)}
                                         title="Rozpocznij chodzenie do lokacji"
                                     >
                                         Idź

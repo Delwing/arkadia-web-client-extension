@@ -4,6 +4,7 @@ import { globalStorage } from "@modules/core/storage";
 import eventBus from "@modules/core/eventBus";
 import { getCurrentRoomId } from "@modules/core/currentRoomProvider";
 import type { ClientEvents } from "@modules/core/eventBus";
+import {roomContextMenuHandler} from "@modules/core/contextMenus";
 
 interface ShortcutEntry {
     key: string;
@@ -107,7 +108,7 @@ function Shortcuts() {
                         <td>{item.label}</td>
                         <td>
                             <div className="popup-inline">
-                                <Button size="sm" onClick={() => eventBus.emit('leadTo', item.id)}>Prowadź</Button>
+                                <Button size="sm" onClick={() => eventBus.emit('leadTo', item.id)} onContextMenu={roomContextMenuHandler(item.id)}>Prowadź</Button>
                                 <DeleteButton onClick={() => remove(item.key)} />
                             </div>
                         </td>

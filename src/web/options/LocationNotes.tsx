@@ -4,6 +4,7 @@ import { Button, DeleteButton, Input } from "@web-ui/primitives/index.ts";
 import eventBus from "@modules/core/eventBus";
 import { getAllNotes, deleteNote, type LocationNote } from "./locationNotesStorage";
 import { foldText } from "@web/settings/settingsSearch.ts";
+import {roomContextMenuHandler} from "@modules/core/contextMenus";
 
 function LocationNotes() {
     const [notes, setNotes] = useState<LocationNote[]>([]);
@@ -109,7 +110,7 @@ function LocationNotes() {
                                 </td>
                                 <td>
                                     <div className="popup-inline">
-                                        <Button size="sm" onClick={() => handleNavigate(note.id)} title="Prowadź do lokacji">
+                                        <Button size="sm" onClick={() => handleNavigate(note.id)} onContextMenu={roomContextMenuHandler(note.id)} title="Prowadź do lokacji">
                                             Idź
                                         </Button>
                                         <Button size="sm" variant="ghost" className="popup-btn--icon" onClick={() => handleEdit(note)} title="Edytuj notatkę">

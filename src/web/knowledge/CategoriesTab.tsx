@@ -15,6 +15,7 @@ import {
     type EntryFilter,
 } from './knowledgeModel';
 import { areaOfRoom } from './useKnowledgeData';
+import {roomContextMenuHandler} from "@modules/core/contextMenus";
 
 const SOURCE_ICONS: Record<KnowledgeDetailsType, LucideIcon> = {
     fight: Swords,
@@ -201,6 +202,7 @@ function CategoryDetail({
                                             className="kn-icon-btn"
                                             title="Prowadź"
                                             onClick={() => eventBus.emit('leadTo', lib.roomId!)}
+                                            onContextMenu={roomContextMenuHandler(lib.roomId)}
                                         >
                                             <Navigation size={14} />
                                         </button>
