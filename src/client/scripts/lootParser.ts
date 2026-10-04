@@ -229,9 +229,14 @@ export default function initLootParser(client: Client) {
 
                 // Then make items clickable (createLink preserves existing color)
                 for (const item of items) {
+                    // The line is printed before later bodies are looked at, so a look-alike body can't be
+                    // detected here; the number is the only reliable target when it is known.
+                    const name = item.fullName.toLowerCase();
                     const command = stertyIndex != null
-                        ? `wez ${item.fullName.toLowerCase()} z ${stertyIndex}. sterty`
-                        : `wez ${item.fullName.toLowerCase()} z ciala ${description.toLowerCase()}`;
+                        ? `wez ${name} z ${stertyIndex}. sterty`
+                        : bodyNumber != null
+                            ? `wez ${name} z ${bodyNumber}. ciala`
+                            : `wez ${name} z ciala ${description.toLowerCase()}`;
                     buffer.createLinksForText(item.fullName, {
                         onClick: () => client.sendCommand(command),
                         title: command,

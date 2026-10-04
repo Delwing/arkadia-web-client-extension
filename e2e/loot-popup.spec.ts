@@ -187,6 +187,23 @@ test.describe('Loot popup', () => {
             ]));
     });
 
+    test('inline loot links take from the examined body by number', async ({page}) => {
+        await setupLootTester(page);
+        await enterRoom(page);
+
+        await submitCommand(page, 'ob 3. cialo');
+        await pushBodyResponse(page, 'ciemnoskorego okropnego skavena', 'skavenska zielonkawa kolczuge');
+
+        const link = page.locator('#main_text_output_msg_wrapper [title="wez skavenska zielonkawa kolczuge z 3. ciala"]');
+        await expect(link, 'inline item link should target body 3 by number').toBeVisible({timeout: 5000});
+
+        await resetCommandLog(page);
+        await link.first().click();
+        await expect
+            .poll(async () => getCommandLog(page), {message: 'clicking the link should take from 3. ciala', timeout: 3000})
+            .toEqual(expect.arrayContaining(['wez skavenska zielonkawa kolczuge z 3. ciala']));
+    });
+
     test('clicking an item sends correct wez command and removes item from popup', async ({page}) => {
         await setupLootTester(page);
         await enterRoom(page);
