@@ -82,6 +82,35 @@ describe('TeamManager', () => {
     expect(manager.getTeamMembers()).toEqual([]);
   });
 
+  test('clears the team, leader and targets on a new life (relog)', () => {
+    client.sendEvent('gmcp.objects.data', {
+      '1': { desc: 'Bob', living: true, team: true },
+      '2': { desc: 'Vesper', living: true, team: true, team_leader: true },
+      '3': { desc: 'ork', living: true, attack_target: true },
+    });
+    expect(manager.isInAnyTeam()).toBe(true);
+
+    client.sendEvent('reset');
+
+    expect(manager.getTeamMembers()).toEqual([]);
+    expect(manager.isInAnyTeam()).toBe(false);
+    expect(manager.getLeader()).toBeUndefined();
+    expect(manager.getLeaderId()).toBeUndefined();
+    expect(manager.getAttackTargetId()).toBeUndefined();
+    expect(manager.getAccumulatedObjectsData().size).toBe(0);
+  });
+
+  test('clearing the team forgets the leader id', () => {
+    client.sendEvent('gmcp.objects.data', {
+      '99': { desc: 'Ja', living: true, team: true, team_leader: true },
+    });
+    expect(manager.isLeader()).toBe(true);
+
+    client.Triggers.parseLine(new AnsiAwareBuffer('Porzucasz druzyne, ktorej przewodziles.'), '');
+
+    expect(manager.isLeader()).toBe(false);
+  });
+
   test('Druzyne prowadzi does not add members, requests gmcp refresh', () => {
     client.Triggers.parseLine(new AnsiAwareBuffer('Druzyne prowadzi Vesper i oprocz ciebie sa w niej jeszcze: Pablo i Opeteh.'), '');
     expect(manager.getTeamMembers()).toEqual([]);

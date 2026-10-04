@@ -49,6 +49,9 @@ export default class TeamManager {
         this.client.on('gmcp.room.info', detail => {
             this.handleRoomInfo(detail);
         });
+        // A new life (relog after `zakoncz`, death) drops us from any team, and every
+        // object id we knew belongs to the old session - the game says nothing about it.
+        this.client.on('reset', () => this.resetSession());
         if (typeof (this.client as any).Triggers?.registerTrigger === 'function') {
             this.registerTriggers();
         }
@@ -424,15 +427,31 @@ export default class TeamManager {
     }
 
     clearTeam() {
-        const hadMembers = this.members.size > 0 || this.leader !== undefined;
+        const hadMembers = this.members.size > 0 || this.leader !== undefined || this.leaderId !== undefined;
+        const hadLeaderTarget = this.leaderAttackTargetId !== undefined;
         this.members.clear();
         this.teamMemberDescriptions.clear();
         this.leader = undefined;
+        this.leaderId = undefined;
+        this.leaderAttackTargetId = undefined;
         this.joined = false;
         if (hadMembers) {
             this.client.sendEvent('teamChange');
+            this.client.sendEvent('isTeamLeader', false);
+        }
+        if (hadLeaderTarget) {
+            this.client.sendEvent('teamLeaderTargetAvatar');
         }
         this.clearEnemyQueue();
+    }
+
+    private resetSession() {
+        this.avatarAttackTargetId = undefined;
+        this.attackTargetId = undefined;
+        this.defenseTargetId = undefined;
+        this.missingTargetCounts.clear();
+        this.accumulatedObjectsData.clear();
+        this.clearTeam();
     }
 
     getAccumulatedObjectsData() {
