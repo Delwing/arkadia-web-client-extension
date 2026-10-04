@@ -154,6 +154,39 @@ test.describe('Loot popup', () => {
         await expect(secondSection, 'second section should list helm').toContainText('helm');
     });
 
+    test('keeps bodies with the same description apart and takes from them by number', async ({page}) => {
+        await setupLootTester(page);
+        await enterRoom(page);
+        await pushRoomContents(page, 'Cialo jakiegos skavena, cialo jakiegos skavena i cialo jakiegos skavena');
+
+        await submitCommand(page, '/loot');
+        await expect
+            .poll(async () => getCommandLog(page), {message: 'should send ob for all three bodies', timeout: 3000})
+            .toEqual(expect.arrayContaining(['ob 1. cialo', 'ob 2. cialo', 'ob 3. cialo']));
+
+        await pushBodyResponse(page, 'ciemnoskorego okropnego skavena', 'czarna skavenska pare nareczakow i krotka matowa halabarde');
+        await pushBodyResponse(page, 'czerwonoskorego zrecznego skavena', 'szarawy lekki napiersnik');
+        await pushBodyResponse(page, 'ciemnoskorego okropnego skavena', 'skavenska zielonkawa kolczuge');
+
+        const popup = page.locator('.loot-popup');
+        await expect(popup, 'loot popup should become visible').toBeVisible({timeout: 5000});
+
+        const regularSections = popup.locator('.loot-popup__section:not(.loot-popup__section--special)');
+        await expect(regularSections, 'each body should get its own section').toHaveCount(3);
+        await expect(regularSections.nth(0), 'first body keeps its items').toContainText('nareczakow');
+        await expect(regularSections.nth(2), 'third body keeps its items').toContainText('kolczuge');
+
+        await resetCommandLog(page);
+        await popup.locator('.loot-popup__item', {hasText: 'kolczuge'}).click();
+        await popup.locator('.loot-popup__item', {hasText: 'napiersnik'}).click();
+        await expect
+            .poll(async () => getCommandLog(page), {message: 'twin bodies are addressed by number, unique ones by description', timeout: 3000})
+            .toEqual(expect.arrayContaining([
+                'wez skavenska zielonkawa kolczuge z 3. ciala',
+                'wez szarawy lekki napiersnik z ciala czerwonoskorego zrecznego skavena',
+            ]));
+    });
+
     test('clicking an item sends correct wez command and removes item from popup', async ({page}) => {
         await setupLootTester(page);
         await enterRoom(page);

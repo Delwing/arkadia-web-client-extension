@@ -7,7 +7,10 @@ import type { LootPopupPayload, LootItem, GroundItem } from '@client/scripts/loo
 interface BodyEntry {
     description: string;
     items: LootItem[];
+    bodyNumber?: number;
     stertyIndex?: number;
+    // Another body here shares the description, so `z ciala <opis>` would always hit the first one.
+    ambiguous?: boolean;
 }
 
 interface SpecialItem {
@@ -21,6 +24,9 @@ function lootCommand(itemName: string, body: BodyEntry): string {
     if (body.stertyIndex != null) {
         return `wez ${name} z ${body.stertyIndex}. sterty`;
     }
+    if (body.ambiguous && body.bodyNumber != null) {
+        return `wez ${name} z ${body.bodyNumber}. ciala`;
+    }
     return `wez ${name} z ciala ${body.description.toLowerCase()}`;
 }
 
@@ -32,13 +38,25 @@ const LootPopup: React.FC = () => {
 
     const handleOpen = useCallback((data: LootPopupPayload) => {
         setBodies(prev => {
-            const existing = prev.findIndex(b => b.description === data.description);
+            const sameBody = (b: BodyEntry) => data.bodyNumber != null
+                ? b.bodyNumber === data.bodyNumber
+                : b.bodyNumber == null && b.description === data.description;
+            const existing = prev.findIndex(sameBody);
+            const twins = prev.filter(b => !sameBody(b) && b.description === data.description);
+            const entry: BodyEntry = {
+                description: data.description,
+                items: data.items,
+                bodyNumber: data.bodyNumber,
+                stertyIndex: data.stertyIndex,
+                ambiguous: twins.length > 0 || (existing >= 0 && prev[existing].ambiguous),
+            };
+            // Sticky: a twin stays ambiguous even after the other body's section is emptied and removed.
+            const updated = prev.map(b => twins.includes(b) ? { ...b, ambiguous: true } : b);
             if (existing >= 0) {
-                const updated = [...prev];
-                updated[existing] = { description: data.description, items: data.items, stertyIndex: data.stertyIndex };
+                updated[existing] = entry;
                 return updated;
             }
-            return [...prev, { description: data.description, items: data.items, stertyIndex: data.stertyIndex }];
+            return [...updated, entry];
         });
     }, []);
 
@@ -166,7 +184,7 @@ const LootPopup: React.FC = () => {
                             const regularItems = body.items.filter(item => !item.special);
                             if (regularItems.length === 0) return null;
                             return (
-                                <div key={body.description} className="loot-popup__section">
+                                <div key={body.bodyNumber ?? body.description} className="loot-popup__section">
                                     <div className="loot-popup__section-header">{body.description}</div>
                                     <div className="loot-popup__items">
                                         {body.items.map((item, itemIndex) => {
