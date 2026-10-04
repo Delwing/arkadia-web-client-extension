@@ -10,7 +10,13 @@ export default function initGates(client: Client) {
     };
     client.FunctionalBind.setCategory('gates', null, knock);
 
+    // The room the gate bind was offered in. The closed-gate trigger never
+    // cleared it, so with nothing set after it the key kept knocking on that
+    // gate (its own `gate` command included) anywhere the player went next.
+    let gateBindRoomId: number | undefined;
+
     const setGateBind = () => {
+        gateBindRoomId = client.Map.currentRoom?.id;
         const printable = MapHelper.getBindPrintable(getGateBindString(client.Map.currentRoom));
         client.FunctionalBind.setCategory('gates', printable, knock, false);
     };
@@ -41,6 +47,10 @@ export default function initGates(client: Client) {
         pendingBind?.();
         pendingBind = undefined;
         const room = client.Map.currentRoom;
+        if (room?.id !== gateBindRoomId) {
+            gateBindRoomId = undefined;
+            client.FunctionalBind.clearCategory('gates');
+        }
         // Always track, so the verdict stays right when the option is toggled.
         const atFreshGate = gateEntry.update(room);
         if (getBehaviorSettings().gateAsFunctionalBind !== true) {

@@ -83,6 +83,8 @@ export class FunctionalBind {
     private ctrl: boolean;
     private alt: boolean;
     private shift: boolean;
+    /** Called when an active bind is cleared, by its owner or after use. */
+    onCleared?: () => void;
 
     constructor(client: Client, options: FunctionalBindOptions = {}) {
         this.client = client;
@@ -133,10 +135,14 @@ export class FunctionalBind {
     }
 
     clear() {
+        const wasActive = this.currentPrintable !== null;
         this.functionalBind = () => {
         };
         this.currentPrintable = null;
         this.printedInMessage = false;
+        if (wasActive) {
+            this.onCleared?.();
+        }
     }
 
     /** Execute the current bind action. Called by FunctionalBindManager on keydown. */
@@ -201,9 +207,11 @@ export class FunctionalBind {
 /**
  * Manages multiple FunctionalBind instances, one per category.
  *
- * When a key is pressed, the manager finds the highest-priority active bind
- * whose key matches and executes it. Lower-priority binds are preserved and
- * will surface when higher-priority ones are cleared.
+ * When a key is pressed, the manager finds the most recently set active bind
+ * whose key matches and executes it. Clearing that bind - by its owner or after
+ * use - also drops the older binds on the same key: they were set for an earlier
+ * moment, and one surfacing silently fires a command the player can no longer
+ * see (a gate knock from rooms back, under a plugin's bind line).
  *
  * Backward-compatible: `set(printable, callback, clearAfterUse)` targets the
  * 'default' category. Use `setCategory(category, ...)` to target a specific one.
@@ -217,7 +225,9 @@ export class FunctionalBindManager {
     constructor(client: Client) {
         // Create one FunctionalBind per category
         for (const cat of FUNCTIONAL_BIND_CATEGORIES) {
-            this.categories.set(cat, new FunctionalBind(client));
+            const bind = new FunctionalBind(client);
+            bind.onCleared = () => this.dropOlderBinds(cat);
+            this.categories.set(cat, bind);
             this.setOrder.set(cat, 0);
         }
 
@@ -249,6 +259,23 @@ export class FunctionalBindManager {
         client.on('executeFunctionalBind', () => {
             this.findBestBind()?.execute();
         });
+    }
+
+    /** Clear every active bind on the same key that was set before `category`. */
+    private dropOlderBinds(category: FunctionalBindCategory) {
+        const order = this.setOrder.get(category) ?? 0;
+        this.setOrder.set(category, 0);
+        const cleared = this.categories.get(category)!;
+        for (const [cat, bind] of this.categories) {
+            if (cat === category || !bind.isActive() || (this.setOrder.get(cat) ?? 0) >= order) continue;
+            const sameKey = bind.getKey() === cleared.getKey()
+                && bind.getCtrl() === cleared.getCtrl()
+                && bind.getAlt() === cleared.getAlt()
+                && bind.getShift() === cleared.getShift();
+            if (sameKey) {
+                bind.clear();
+            }
+        }
     }
 
     /** Find the highest-priority active bind, optionally filtered by a key event. */

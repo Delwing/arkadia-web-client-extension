@@ -50,26 +50,70 @@ describe('FunctionalBindManager clearCategory', () => {
     } as any;
   }
 
-  test('clearing a category lets earlier category surface on key press', () => {
+  function pressBind() {
+    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'BracketRight', key: ']', bubbles: true }));
+  }
+
+  test('clearing a category does not bring back an earlier one on the same key', () => {
     const client = createMockClient();
     const manager = new FunctionalBindManager(client);
 
     const defaultCb = jest.fn();
     const gatesCb = jest.fn();
 
-    // Set default first, then gates — gates wins by recency.
     manager.setCategory('default', 'usiadz', defaultCb);
     manager.setCategory('gates', 'uderz we wrota', gatesCb);
 
-    // Clear gates — default should surface.
+    manager.clearCategory('gates');
+    pressBind();
+
+    expect(defaultCb).not.toHaveBeenCalled();
+    expect(gatesCb).not.toHaveBeenCalled();
+    expect(manager.getCategory('default')?.isActive()).toBe(false);
+  });
+
+  // Regression: a plugin bind cleared after use let a gate knock from rooms back fire
+  // under the plugin's bind line.
+  test('a bind cleared after use does not bring back an earlier one', () => {
+    const manager = new FunctionalBindManager(createMockClient());
+
+    const gatesCb = jest.fn();
+    const pluginCb = jest.fn();
+
+    manager.setCategory('gates', 'uderz we wrota', gatesCb);
+    manager.set('ob czarne plytki', pluginCb, true);
+
+    pressBind();
+    pressBind();
+
+    expect(pluginCb).toHaveBeenCalledTimes(1);
+    expect(gatesCb).not.toHaveBeenCalled();
+  });
+
+  test('clearing an older bind leaves the newer one alone', () => {
+    const manager = new FunctionalBindManager(createMockClient());
+
+    const gatesCb = jest.fn();
+    const defaultCb = jest.fn();
+
+    manager.setCategory('gates', 'uderz we wrota', gatesCb);
+    manager.setCategory('default', 'usiadz', defaultCb);
     manager.clearCategory('gates');
 
-    // Simulate keydown matching BracketRight (default bind key).
-    const event = new KeyboardEvent('keydown', { code: 'BracketRight', key: ']', bubbles: true });
-    window.dispatchEvent(event);
+    pressBind();
 
     expect(defaultCb).toHaveBeenCalled();
-    expect(gatesCb).not.toHaveBeenCalled();
+  });
+
+  test('binds on a different key survive', () => {
+    const manager = new FunctionalBindManager(createMockClient());
+
+    manager.updateOptions({ key: 'KeyG', ctrl: true }, 'gates');
+    manager.setCategory('gates', 'uderz we wrota', jest.fn());
+    manager.setCategory('default', 'usiadz', jest.fn());
+    manager.clearCategory('default');
+
+    expect(manager.getCategory('gates')?.isActive()).toBe(true);
   });
 
   test('clearCategory resets setOrder so a re-set category can win again', () => {

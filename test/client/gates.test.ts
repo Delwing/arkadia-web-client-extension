@@ -81,6 +81,18 @@ describe('gates triggers', () => {
     expect(label).toBe('zapukaj w brame;wejdz');
   });
 
+  test('the closed-gate bind is dropped once the player walks away', () => {
+    client.Map.currentRoom = { id: 7, userData: { gate: 'zastukaj we wrota' } };
+    parse('Probujesz otworzyc masywne wrota.');
+
+    client.emit('enterLocation', { id: 7 });
+    expect(client.FunctionalBind.clearCategory).not.toHaveBeenCalled();
+
+    client.Map.currentRoom = { id: 8, userData: {} };
+    client.emit('enterLocation', { id: 8 });
+    expect(client.FunctionalBind.clearCategory).toHaveBeenCalledWith('gates');
+  });
+
   describe('gateAsFunctionalBind option', () => {
     function enter(room: any) {
       client.Map.currentRoom = room;

@@ -2,11 +2,8 @@
  * Categories for multi-functional binds.
  *
  * Each functional bind caller belongs to a category. When multiple categories
- * share the same key, only the highest-priority active bind fires. Lower-priority
- * binds are preserved and restored when higher-priority ones clear.
- *
- * When multiple categories share the same key, the most recently set
- * category fires. When it is cleared, earlier categories surface.
+ * share the same key, the most recently set category fires. When it is cleared,
+ * the earlier ones on that key are cleared with it - nothing resurfaces.
  */
 
 export type FunctionalBindCategory = 'gates' | 'transport' | 'loot' | 'default';
