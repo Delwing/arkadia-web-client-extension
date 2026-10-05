@@ -125,6 +125,18 @@ test.describe('Context menu', () => {
         await expect(page.locator('.knowledge-window')).toBeVisible({timeout: 5000});
     });
 
+    test('clicking Czas opens the Czas window', async ({page}) => {
+        const output = page.locator(OUTPUT_SELECTOR);
+        await output.click({button: 'right'});
+
+        const menu = page.locator(CONTEXT_MENU_SELECTOR);
+        await expect(menu).toBeVisible();
+        await expect(menu.locator('.context-menu__tile', {hasText: 'Zegar'})).toHaveCount(0);
+
+        await menu.locator('.context-menu__tile', {hasText: 'Czas'}).click();
+        await expect(page.locator('.world-time-popup')).toBeVisible();
+    });
+
     test('timestamp toggle adds/removes output-show-timestamps class', async ({page}) => {
         const output = page.locator(OUTPUT_SELECTOR);
 

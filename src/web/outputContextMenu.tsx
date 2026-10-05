@@ -79,7 +79,7 @@ const WINDOW_LAUNCHERS: WindowLauncher[] = ([
     { label: 'Zlecenia', icon: ScrollText, popupId: 'popup:contracts', open: command('/zlecenia') },
     { label: 'Wozy', icon: Caravan, popupId: 'popup:carriages', open: command('/wozw') },
     { label: 'Skróty', icon: Zap, popupId: 'popup:skroty', open: () => eventBus.emit('skroty.popup.open') },
-    { label: 'Zegar', icon: Clock, popupId: 'popup:clock', open: command('/czas') },
+    { label: 'Czas', icon: Clock, popupId: 'popup:worldTime', open: command('/czas') },
     { label: 'Chat', icon: MessageCircle, popupId: 'popup:chat', open: command('/chatw') },
     { label: 'Walka', icon: Swords, popupId: 'popup:combat', open: command('/walkaw') },
     { label: 'Statystyki', icon: PieChart, popupId: 'popup:stat', open: () => eventBus.emit('stat.popup.open') },

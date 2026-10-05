@@ -310,7 +310,7 @@ class ClockDisplay {
 
     public update(domain: Domain, data: ClockSnapshot): void {
         // Always update snapshot and emit event for both domains
-        // This allows ClockPopup to show both domains
+        // This lets the Czas popup switch between both domains
         this.snapshots[domain] = data;
         eventBus.emit("clock.update", {domain, ...data});
     }
@@ -968,18 +968,11 @@ export function initClock(client: Client): ClockManager {
     const manager = new ClockManager(client);
 
     client.aliases.push({
-        pattern: /^\/czas$/,
+        pattern: /^\/czasw?$/,
         callback: () => {
             const activeDomain = manager.getActiveDomain();
             eventBus.emit("clock.popup.open", { domain: activeDomain })
         }
-    })
-
-    // Compact "Czas" season/date/time-of-day widget (ported from forge-ui's
-    // TimePanel) — distinct from the full clock/calendar popup ("Zegar") above.
-    client.aliases.push({
-        pattern: /^\/czasw$/,
-        callback: () => eventBus.emit("worldTime.popup.open"),
     })
 
     client.aliases.push({

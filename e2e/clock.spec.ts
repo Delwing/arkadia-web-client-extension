@@ -346,7 +346,7 @@ test.describe('Clock System', () => {
         await pushText(page, 'Jest w przyblizeniu poludnie, pietnasty dzien pory Birke wedlug rachuby czasu Starszego Ludu.');
         await expect(page.locator('#clock-display')).toContainText('12:00');
 
-        await submitCommand(page, '/czasw');
+        await submitCommand(page, '/czas');
         const body = page.locator('.world-time-popup');
         const domainSwitch = page.locator('.wt-domain-switch');
         const sun = body.locator('.wt-sun');

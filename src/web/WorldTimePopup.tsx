@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import eventBus from '@modules/core/eventBus';
 import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
 import { usePopup } from './hooks/usePopup';
@@ -65,16 +65,18 @@ const IconMoon = () => (
  *
  * The header switch shows the other domain's clock; it follows the active
  * domain again as soon as that changes (crossing between Imperium and Ishtar).
- *
- * Distinct from the full clock/calendar popup ("Zegar", popup:clock).
+ * Opened by /czas (or /czasw), the footer clock chip and the window menu.
  */
 const WorldTimePopup: React.FC = () => {
-    const { wrapperProps } = usePopup(POPUP_ID, { openEvent: 'worldTime.popup.open' });
+    const [pickedDomain, setPickedDomain] = useState<Domain | undefined>();
+    const onOpen = useCallback((data?: { domain?: Domain }) => {
+        if (data?.domain) setPickedDomain(data.domain);
+    }, []);
+    const { wrapperProps } = usePopup(POPUP_ID, { openEvent: 'clock.popup.open', onOpen });
 
     const [gmcpSeason, setGmcpSeason] = useState<number | undefined>();
     const [gmcpDaylight, setGmcpDaylight] = useState<boolean | undefined>();
     const [activeDomain, setActiveDomain] = useState<Domain | undefined>();
-    const [pickedDomain, setPickedDomain] = useState<Domain | undefined>();
     const [clocks, setClocks] = useState<Partial<Record<Domain, ClockSnapshot>>>({});
 
     useEffect(() => {

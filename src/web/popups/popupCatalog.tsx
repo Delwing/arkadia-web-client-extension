@@ -5,7 +5,6 @@ import CarriageBlocksPopup from '../CarriageBlocksPopup';
 import CarriagesPopup from '../CarriagesPopup';
 import CechyPopup from '../CechyPopup';
 import ChatPopup from '../ChatPopup';
-import ClockPopup from '../ClockPopup';
 import CombatPopup from '../CombatPopup';
 import CombatStatusPopup from '../CombatStatusPopup';
 import CoverDebugPopup from '../CoverDebugPopup';
@@ -70,7 +69,6 @@ export interface PopupCatalogEntry {
  * They are mounted separately by each host.
  */
 export const POPUP_CATALOG: PopupCatalogEntry[] = [
-    { id: 'popup:clock', Component: ClockPopup },
     { id: 'popup:worldTime', Component: WorldTimePopup },
     { id: 'popup:contracts', Component: ContractsPopup },
     { id: 'popup:carriages', Component: CarriagesPopup },

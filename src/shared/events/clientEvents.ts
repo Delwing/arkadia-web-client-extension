@@ -378,7 +378,6 @@ export interface KnownEvents {
     "clock.update": ClockUpdatePayload;
     "clock.domain.active": ClockDomainActivePayload;
     "clock.popup.open": { domain?: "Empire" | "Ishtar" };
-    "worldTime.popup.open": void;
     "clock.mismatch": ClockMismatchPayload;
     "clock.sunrise": ClockSunEventPayload;
     "clock.sunset": ClockSunEventPayload;

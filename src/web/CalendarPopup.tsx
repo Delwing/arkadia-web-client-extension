@@ -27,7 +27,7 @@ const MOON = '☾';
 const FULL_MOON = '●';
 const NEW_MOON = '○';
 
-// matching ClockPopup / ClockDisplay
+// matching ClockDisplay
 const SEASON_COLORS = [
     'var(--popup-data-spring-green)',
     'var(--popup-data-yellow)',

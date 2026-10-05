@@ -50,7 +50,6 @@ export const crossDir = (side: DockSide): SplitDir =>
 
 // Built-in popup types
 export type BuiltInPopupType =
-  | 'clock'
   | 'worldTime'
   | 'contracts'
   | 'carriages'

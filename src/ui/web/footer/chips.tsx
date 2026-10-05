@@ -296,7 +296,7 @@ export function ClockChip() {
       value={value}
       sizeTo={CLOCK_SIZES}
       valueFirst
-      title={tip ? `${tip}\n(kliknij: zegar)` : "Zegar"}
+      title={tip ? `${tip}\n(kliknij: czas)` : "Czas"}
       onClick={() => eventBus.emit("clock.popup.open", { domain: active })}
     />
   );

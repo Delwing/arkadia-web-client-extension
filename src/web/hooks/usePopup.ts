@@ -49,13 +49,13 @@ export interface UsePopupResult {
  *
  * @example
  * ```tsx
- * const { wrapperProps, open, close } = usePopup('popup:clock');
+ * const { wrapperProps, open, close } = usePopup('popup:worldTime');
  *
  * return (
  *   <DockablePopupWrapper
  *     {...wrapperProps}
- *     popupType="clock"
- *     title="Clock"
+ *     popupType="worldTime"
+ *     title="Czas"
  *     minWidth={300}
  *   >
  *     {content}
