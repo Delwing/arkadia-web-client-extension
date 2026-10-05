@@ -40,7 +40,7 @@ describe('savePlugin', () => {
 
         // What the editor holds: the copy loaded before the publish, with no slug.
         const inMemory = editorPlugin();
-        await savePlugin(inMemory, PLUGIN_ID, '', new Set(), bundle, status);
+        await savePlugin(inMemory, PLUGIN_ID, bundle, status);
 
         expect((await getEditorPlugin(PLUGIN_ID))?.registrySlug).toBe('combat-alert');
         // The live copy learns it too, so a second publish in the same session
@@ -51,7 +51,7 @@ describe('savePlugin', () => {
     it('does not invent a catalogue link for a plugin that was never published', async () => {
         await storeEditorPlugin(editorPlugin());
 
-        await savePlugin(editorPlugin(), PLUGIN_ID, '', new Set(), bundle, status);
+        await savePlugin(editorPlugin(), PLUGIN_ID, bundle, status);
 
         expect((await getEditorPlugin(PLUGIN_ID))?.registrySlug).toBeUndefined();
     });
@@ -59,9 +59,25 @@ describe('savePlugin', () => {
     it('lets an explicit slug on the in-memory plugin win over the stored one', async () => {
         await storeEditorPlugin(editorPlugin({ registrySlug: 'old-slug' }));
 
-        await savePlugin(editorPlugin({ registrySlug: 'new-slug' }), PLUGIN_ID, '', new Set(), bundle, status);
+        await savePlugin(editorPlugin({ registrySlug: 'new-slug' }), PLUGIN_ID, bundle, status);
 
         expect((await getEditorPlugin(PLUGIN_ID))?.registrySlug).toBe('new-slug');
+    });
+
+    it('builds and stores the files as they were when the save started', async () => {
+        const inMemory = editorPlugin();
+        const bundling = vi.fn(async () => {
+            // Typing while esbuild runs: the model writes straight into the files.
+            inMemory.files['index.ts'].content = 'typed during bundle';
+            return 'compiled';
+        });
+
+        const saved = await savePlugin(inMemory, PLUGIN_ID, bundling, status);
+
+        expect(saved.files['index.ts'].content).toBe('export async function init() {}');
+        expect((await getEditorPlugin(PLUGIN_ID))?.files['index.ts'].content).toBe('export async function init() {}');
+        // The live copy keeps the newer text, still waiting for the next save.
+        expect(inMemory.files['index.ts'].content).toBe('typed during bundle');
     });
 });
 

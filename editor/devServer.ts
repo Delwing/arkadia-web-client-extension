@@ -61,12 +61,15 @@ export interface DevServerMessage {
 }
 
 type StatusChangeCallback = (status: DevServerStatus, message?: string) => void
-type PluginUpdateCallback = (pluginId: string, plugin: EditorPluginData) => void
+/**
+ * The IDE wrote a plugin to storage. `changed` lists the paths a file-update
+ * sent; 'all' means a full sync that replaced the whole file set.
+ */
+type PluginUpdateCallback = (pluginId: string, plugin: EditorPluginData, changed: string[] | 'all') => void
 type ReloadRequestCallback = (pluginId: string) => void
 type PluginSelectedCallback = (pluginId: string) => void
 type FileFocusedCallback = (filePath: string) => void
 type FilePreviewCallback = (pluginId: string, files: FileUpdate[]) => void
-type FileSavedCallback = (pluginId: string, filePaths: string[]) => void
 
 const DEFAULT_CONFIG: DevServerConfig = {
   host: 'localhost',
@@ -88,7 +91,11 @@ export class DevServerClient {
   private onPluginSelectedFromIDE: PluginSelectedCallback | null = null
   private onFileFocusedFromIDE: FileFocusedCallback | null = null
   private onFilePreview: FilePreviewCallback | null = null
-  private onFileSavedFromIDE: FileSavedCallback | null = null
+
+  // Messages are handled one at a time, in arrival order. Updates read the
+  // stored plugin, bundle it and write it back; two of them in flight at
+  // once would each write over the other's files.
+  private messageQueue: Promise<void> = Promise.resolve()
 
   // Bundler function to compile TypeScript
   private bundlePlugin: ((files: Record<string, PluginFile>, entryPoint: string) => Promise<string>) | null = null
@@ -158,10 +165,6 @@ export class DevServerClient {
     this.onFilePreview = callback
   }
 
-  setOnFileSavedFromIDE(callback: FileSavedCallback) {
-    this.onFileSavedFromIDE = callback
-  }
-
   setCurrentPluginId(pluginId: string | null) {
     this.currentPluginId = pluginId
   }
@@ -218,7 +221,9 @@ export class DevServerClient {
     }
 
     this.ws.onmessage = (event) => {
-      this.handleMessage(event.data)
+      this.messageQueue = this.messageQueue
+        .then(() => this.handleMessage(event.data))
+        .catch(error => console.error('[DevServer] Failed to handle message:', error))
     }
   }
 
@@ -367,12 +372,7 @@ export class DevServerClient {
     // Store updated plugin
     await storeEditorPlugin(plugin)
 
-    // Notify callbacks
-    this.onPluginUpdate?.(message.pluginId, plugin)
-
-    // Notify that files were saved from IDE (to clear modified status)
-    const savedPaths = fileUpdates.map(f => f.path)
-    this.onFileSavedFromIDE?.(message.pluginId, savedPaths)
+    this.onPluginUpdate?.(message.pluginId, plugin, fileUpdates.map(f => f.path))
   }
 
   private async handleFullSync(message: DevServerMessage) {
@@ -407,7 +407,8 @@ export class DevServerClient {
     const plugin: EditorPluginData = {
       id: message.pluginId,
       name: message.name || existingPlugin?.name || 'Synced Plugin',
-      compiled,
+      // A failed build keeps the last good bundle rather than blanking it.
+      compiled: compiled || existingPlugin?.compiled || '',
       files,
       folders: message.folders || [],
       entryPoint: message.entryPoint,
@@ -420,6 +421,9 @@ export class DevServerClient {
       createdAt: existingPlugin?.createdAt || now,
       updatedAt: now,
       lastCompiledAt: compiled ? now : (existingPlugin?.lastCompiledAt || now),
+      // The IDE knows nothing of the catalogue link; dropping it would make
+      // the next publish a brand new plugin instead of an update.
+      ...(existingPlugin?.registrySlug ? { registrySlug: existingPlugin.registrySlug } : {}),
     }
 
     // Store plugin
@@ -436,8 +440,7 @@ export class DevServerClient {
       }
     }
 
-    // Notify callback
-    this.onPluginUpdate?.(message.pluginId, plugin)
+    this.onPluginUpdate?.(message.pluginId, plugin, 'all')
   }
 
   private async sendPluginList() {

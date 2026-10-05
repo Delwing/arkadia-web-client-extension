@@ -1,5 +1,6 @@
 import type * as monaco from 'monaco-editor'
 import type { EditorPluginData, PluginFile } from '@client/utils/pluginEditorStorage.ts'
+import type { SavedBaseline } from './savedBaseline'
 
 export interface TreeNode {
   name: string
@@ -16,6 +17,8 @@ export interface EditorState {
   currentPlugin: EditorPluginData | null
   editorModels: Map<string, monaco.editor.ITextModel>
   modifiedFiles: Set<string>
+  /** Shape of the open plugin when last loaded or saved; see savedBaseline.ts */
+  baseline: SavedBaseline | null
   esbuildInitialized: boolean
 }
 

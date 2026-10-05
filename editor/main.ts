@@ -19,6 +19,8 @@ import {
 
 // Import our refactored modules
 import type {EditorState} from './types'
+import type {EditorPluginData, PluginFile} from '@client/utils/pluginEditorStorage.ts'
+import {baselineOf, pathsCoveredBySave, structureChanged} from './savedBaseline'
 import {updateStatus} from './utils'
 import {bundlePlugin, initEsbuild} from './bundler'
 import {
@@ -131,6 +133,7 @@ const state: EditorState = {
   currentPlugin: null,
   editorModels: new Map(),
   modifiedFiles: new Set(),
+  baseline: null,
   esbuildInitialized: false,
 }
 
@@ -162,11 +165,38 @@ function currentPluginLanguage(): 'typescript' | 'javascript' {
   return state.currentPlugin?.entryPoint.endsWith('.ts') ? 'typescript' : 'javascript'
 }
 
+/**
+ * Unsaved work in the open plugin: edited files, or files and folders added,
+ * removed, renamed or moved since it was loaded or saved.
+ */
+function isPluginDirty(): boolean {
+  if (!state.currentPlugin) return false
+  return state.modifiedFiles.size > 0
+    || structureChanged(state.currentPlugin.files, state.currentPlugin.folders, state.baseline)
+}
+
+/** "unsaved changes in 2 files", or "unsaved file changes" for structure-only edits. */
+function describeUnsaved(): string {
+  const count = state.modifiedFiles.size
+  if (count === 0) return 'unsaved file changes'
+  return `unsaved changes in ${count === 1 ? '1 file' : `${count} files`}`
+}
+
 /** Header and save state follow the open plugin and its modified files. */
 function updateDirtyUI() {
   if (!state.currentPlugin) return
-  const count = state.modifiedFiles.size
-  setSaveState(count > 0 ? 'dirty' : 'clean', count)
+  setSaveState(isPluginDirty() ? 'dirty' : 'clean', state.modifiedFiles.size)
+}
+
+// Opening, reloading and taking IDE updates into the open plugin each await
+// storage or a dialog. They run one at a time, so a second request cannot
+// load over a first one halfway through, or patch a plugin being replaced.
+let editorQueue: Promise<unknown> = Promise.resolve()
+
+function exclusive<T>(task: () => Promise<T>): Promise<T> {
+  const run = editorQueue.then(task)
+  editorQueue = run.catch(error => console.error('[Editor]', error))
+  return run
 }
 
 /**
@@ -174,17 +204,20 @@ function updateDirtyUI() {
  * first when the open one has unsaved changes. Resolves false when the user
  * cancelled.
  */
-async function requestOpenPlugin(pluginId: string, source: 'user' | 'ide' = 'user'): Promise<boolean> {
+function requestOpenPlugin(pluginId: string, source: 'user' | 'ide' = 'user'): Promise<boolean> {
+  return exclusive(() => openPlugin(pluginId, source))
+}
+
+async function openPlugin(pluginId: string, source: 'user' | 'ide'): Promise<boolean> {
   if (pluginId === state.currentPluginId) return true
 
-  if (state.modifiedFiles.size > 0 && state.currentPlugin) {
+  if (isPluginDirty() && state.currentPlugin) {
     const target = pluginList.find(p => p.id === pluginId)?.name ?? pluginId
-    const files = state.modifiedFiles.size === 1 ? '1 file' : `${state.modifiedFiles.size} files`
     const { button } = await openDialog({
       title: 'Unsaved changes',
       message: source === 'ide'
-        ? `Your IDE switched to ${target}, but ${state.currentPlugin.name} has unsaved changes in ${files}. Save them first?`
-        : `${state.currentPlugin.name} has unsaved changes in ${files}. Save them before opening ${target}?`,
+        ? `Your IDE switched to ${target}, but ${state.currentPlugin.name} has ${describeUnsaved()}. Save them first?`
+        : `${state.currentPlugin.name} has ${describeUnsaved()}. Save them before opening ${target}?`,
       buttons: [
         { id: 'discard', label: 'Discard', kind: 'danger', start: true },
         { id: 'cancel', label: 'Cancel' },
@@ -192,8 +225,7 @@ async function requestOpenPlugin(pluginId: string, source: 'user' | 'ide' = 'use
       ],
     })
     if (button === 'save') {
-      await saveCurrentPlugin()
-      if (state.modifiedFiles.size > 0) return false // save failed; stay put
+      if (!(await saveCurrentPlugin())) return false // save failed; stay put
     } else if (button !== 'discard') {
       return false
     }
@@ -233,7 +265,9 @@ function closePlugin() {
   state.currentPlugin = null
   state.currentFilePath = null
   state.modifiedFiles.clear()
+  state.baseline = null
   state.editor?.setValue('')
+  getDevServer().setCurrentPluginId(null)
 
   showDisabledFileTree()
   setHeaderPlugin(null)
@@ -274,164 +308,147 @@ function renderCurrentFileTree() {
   })
 }
 
-// Switch to a different file in the editor
-function switchToFile(filePath: string, position?: IPosition | IRange) {
+/** Put a file into Monaco's TypeScript view of the plugin, so imports of it resolve. */
+function syncExtraLib(pluginId: string, filePath: string, file: PluginFile) {
+  const uri = `file:///${pluginId}/${filePath}`
+  if (file.language === 'typescript' || file.language === 'javascript') {
+    monaco.typescript.typescriptDefaults.addExtraLib(file.content, uri)
+    monaco.typescript.javascriptDefaults.addExtraLib(file.content, uri)
+  } else if (file.language === 'json') {
+    // A .d.ts beside the JSON declares it as a module, so TypeScript types
+    // `import data from './x.json'` without validating the JSON itself.
+    const dtsUri = uri.replace('.json', '.json.d.ts')
+    let inferredType = 'any'
+    try {
+      inferredType = inferJsonType(JSON.parse(file.content || '{}'))
+    } catch {
+      // Invalid JSON while typing: fall back to any
+    }
+    const tsModuleContent = `declare const value: ${inferredType};
+export default value;`
+    monaco.typescript.typescriptDefaults.addExtraLib(tsModuleContent, dtsUri)
+    monaco.typescript.javascriptDefaults.addExtraLib(tsModuleContent, dtsUri)
+  }
+}
 
-  if (!state.currentPlugin || !state.editor) return
+/**
+ * The Monaco model for one file of the open plugin. Typing in it writes
+ * through to the plugin's files, marks the file modified and mirrors it to
+ * the IDE.
+ */
+function createFileModel(pluginId: string, filePath: string, file: PluginFile, registerLib = true): monaco.editor.ITextModel {
+  const uri = monaco.Uri.parse(`file:///${pluginId}/${filePath}`)
+  // Navigating to an import path can leave a model behind that is not ours;
+  // it may be stale, so start fresh from the plugin's files.
+  monaco.editor.getModel(uri)?.dispose()
 
-    if (filePath.startsWith("@types")) {
-      const model = monaco.editor.createModel(
-          pluginApiTypes,
-          "typescript",
-          monaco.Uri.parse("file:plugin-api.ts")
-      )
-      state.editor.updateOptions({readOnly: true})
-        state.editor.setModel(model)
-      state.editor.onDidChangeModel(() => {
-        model.dispose()
-      })
+  const model = monaco.editor.createModel(file.content, file.language, uri)
+  state.editorModels.set(filePath, model)
+  if (registerLib) syncExtraLib(pluginId, filePath, file)
 
-      if (position !== undefined) {
-        if ("startLineNumber" in position) {
-          state.editor.setPosition({lineNumber: position.startLineNumber, column: position.startColumn})
-          state.editor.revealLineInCenter(position.startLineNumber)
-        } else if ("lineNumber" in position) {
-          state.editor.setPosition(position)
-          state.editor.revealLineInCenter(position.lineNumber)
-        }
+  model.onDidChangeContent(() => {
+    const current = state.currentPluginId === pluginId ? state.currentPlugin?.files[filePath] : undefined
+    if (!current) return
+    const content = model.getValue()
+    current.content = content
+    state.modifiedFiles.add(filePath)
+    renderCurrentFileTree()
+
+    // Mirror to the IDE, unless this change came from it
+    if (!isReceivingFromIDE) {
+      const devServer = getDevServer()
+      if (devServer.getStatus() === 'connected') {
+        devServer.sendFilePreview(pluginId, filePath, content)
       }
-        return;
     }
 
+    syncExtraLib(pluginId, filePath, current)
+  })
+  return model
+}
 
-  state.editor.updateOptions({readOnly: false})
+/**
+ * Replace a model's text with what the IDE sent, keeping the cursor where it
+ * was and without echoing the change back to the IDE.
+ */
+function setModelFromIDE(model: monaco.editor.ITextModel, content: string) {
+  if (model.getValue() === content) return
+  const shown = state.editor?.getModel() === model
+  const selection = shown ? state.editor!.getSelection() : null
+  isReceivingFromIDE = true
+  try {
+    model.setValue(content)
+  } finally {
+    isReceivingFromIDE = false
+  }
+  if (selection) state.editor!.setSelection(selection)
+}
 
-  // Save current file content before switching
-  if (state.currentFilePath && state.editorModels.has(state.currentFilePath)) {
-    const model = state.editorModels.get(state.currentFilePath)!
-    const newContent = model.getValue()
-    state.currentPlugin.files[state.currentFilePath].content = newContent
+function revealPosition(position?: IPosition | IRange) {
+  if (position === undefined || !state.editor) return
+  if ("startLineNumber" in position) {
+    state.editor.setPosition({lineNumber: position.startLineNumber, column: position.startColumn})
+    state.editor.revealLineInCenter(position.startLineNumber)
+  } else if ("lineNumber" in position) {
+    state.editor.setPosition(position)
+    state.editor.revealLineInCenter(position.lineNumber)
+  }
+}
 
-    // Update Monaco's virtual file system
-    const uri = `file:///${state.currentPluginId}/${state.currentFilePath}`
-    monaco.typescript.typescriptDefaults.addExtraLib(newContent, uri)
-    monaco.typescript.javascriptDefaults.addExtraLib(newContent, uri)
+// The read-only plugin API typings, shown when a definition jumps into them
+const PLUGIN_API_URI = monaco.Uri.parse("file:plugin-api.ts")
+
+function showPluginApiTypes(position?: IPosition | IRange) {
+  if (!state.editor) return
+  const model = monaco.editor.getModel(PLUGIN_API_URI)
+    ?? monaco.editor.createModel(pluginApiTypes, "typescript", PLUGIN_API_URI)
+  state.editor.updateOptions({readOnly: true})
+  if (state.editor.getModel() !== model) {
+    state.editor.setModel(model)
+    const sub = state.editor.onDidChangeModel(() => {
+      sub.dispose()
+      model.dispose()
+    })
+  }
+  revealPosition(position)
+}
+
+// Switch to a different file in the editor
+function switchToFile(filePath: string, position?: IPosition | IRange) {
+  if (!state.currentPlugin || !state.currentPluginId || !state.editor) return
+
+  if (filePath.startsWith("@types")) {
+    showPluginApiTypes(position)
+    return
   }
 
-  state.currentFilePath = filePath
   const file = state.currentPlugin.files[filePath]
-
   if (!file) {
     updateStatus(`File not found: ${filePath}`, 'error')
     return
   }
 
-  // Get or create model for this file
-  let model = state.editorModels.get(filePath)
-  if (!model) {
-    const uri = monaco.Uri.parse(`file:///${state.currentPluginId}/${filePath}`)
-    const existingModel = monaco.editor.getModel(uri)
+  state.editor.updateOptions({readOnly: false})
+  state.currentFilePath = filePath
 
-    // If Monaco has a model but it's not in our editorModels map, dispose it
-    // because it might be stale (created when navigating to old import paths)
-    if (existingModel) {
-      existingModel.dispose()
-    }
-
-    // Always create a fresh model with content from plugin.files
-    model = monaco.editor.createModel(file.content, file.language, uri)
-
-    state.editorModels.set(filePath, model)
-
-    // Add the file to Monaco's virtual file system immediately
-    const fileUri = `file:///${state.currentPluginId}/${filePath}`
-    if (file.language === 'typescript' || file.language === 'javascript') {
-      monaco.typescript.typescriptDefaults.addExtraLib(file.content, fileUri)
-      monaco.typescript.javascriptDefaults.addExtraLib(file.content, fileUri)
-    } else if (file.language === 'json') {
-      // For JSON files, create a TypeScript declaration module with .d.ts extension
-      const dtsUri = fileUri.replace('.json', '.json.d.ts')
-      try {
-        const jsonContent = JSON.parse(file.content || '{}')
-        const inferredType = inferJsonType(jsonContent)
-        const tsModuleContent = `declare const value: ${inferredType};
-export default value;`
-        monaco.typescript.typescriptDefaults.addExtraLib(tsModuleContent, dtsUri)
-        monaco.typescript.javascriptDefaults.addExtraLib(tsModuleContent, dtsUri)
-      } catch {
-        const tsModuleContent = `declare const value: any;
-export default value;`
-        monaco.typescript.typescriptDefaults.addExtraLib(tsModuleContent, dtsUri)
-        monaco.typescript.javascriptDefaults.addExtraLib(tsModuleContent, dtsUri)
-      }
-    }
-
-    // Listen for content changes
-    const capturedFilePath = filePath
-    const capturedPluginId = state.currentPluginId
-    model.onDidChangeContent(() => {
-      if (state.currentPlugin?.files?.[capturedFilePath]) {
-        const content = model.getValue()
-        state.currentPlugin.files[capturedFilePath].content = content
-
-        // Mark file as modified
-        state.modifiedFiles.add(capturedFilePath)
-        renderCurrentFileTree()
-
-        // Send preview to IDE (if not receiving from IDE to prevent loop)
-        if (!isReceivingFromIDE && capturedPluginId) {
-          const devServer = getDevServer()
-          if (devServer.getStatus() === 'connected') {
-            devServer.sendFilePreview(capturedPluginId, capturedFilePath, content)
-          }
-        }
-
-        // Update Monaco's virtual file system (for JS/TS/JSON files)
-        const fileLanguage = state.currentPlugin.files[capturedFilePath].language
-        const uri = `file:///${capturedPluginId}/${capturedFilePath}`
-
-        if (fileLanguage === 'typescript' || fileLanguage === 'javascript') {
-          monaco.typescript.typescriptDefaults.addExtraLib(content, uri)
-          monaco.typescript.javascriptDefaults.addExtraLib(content, uri)
-        } else if (fileLanguage === 'json') {
-          // For JSON files, create a TypeScript module
-          try {
-            const jsonContent = JSON.parse(content || '{}')
-            const inferredType = inferJsonType(jsonContent)
-            const tsModuleContent = `const value: ${inferredType} = ${content || '{}'};
-export default value;`
-            monaco.typescript.typescriptDefaults.addExtraLib(tsModuleContent, uri)
-            monaco.typescript.javascriptDefaults.addExtraLib(tsModuleContent, uri)
-          } catch {
-            const tsModuleContent = `const value: any = {};
-export default value;`
-            monaco.typescript.typescriptDefaults.addExtraLib(tsModuleContent, uri)
-            monaco.typescript.javascriptDefaults.addExtraLib(tsModuleContent, uri)
-          }
-        }
-      }
-    })
-  }
-
+  const model = state.editorModels.get(filePath) ?? createFileModel(state.currentPluginId, filePath, file)
   state.editor.setModel(model)
-
-  if (position !== undefined) {
-    if ("startLineNumber" in position) {
-      state.editor.setPosition({lineNumber: position.startLineNumber, column: position.startColumn})
-      state.editor.revealLineInCenter(position.startLineNumber)
-    } else if ("lineNumber" in position) {
-      state.editor.setPosition(position)
-      state.editor.revealLineInCenter(position.lineNumber)
-    }
-  }
+  revealPosition(position)
 
   renderCurrentFileTree()
   setBreadcrumb(filePath)
   updateStatus(`Editing: ${filePath}`, 'normal')
 }
 
-// Load plugin into editor
-async function loadPlugin(pluginId: string) {
+// Bumped by every load; a load that finds a newer one started gives way.
+let loadGeneration = 0
+
+/**
+ * Load a plugin into the editor, dropping whatever is open. `openFile` keeps
+ * a file open across a reload when the plugin still has it.
+ */
+async function loadPlugin(pluginId: string, openFile?: string | null) {
+  const generation = ++loadGeneration
   let plugin = await getEditorPlugin(pluginId)
   if (!plugin) {
     // Plugins added through "Wklej kod" (older builds) live only in the runtime
@@ -442,6 +459,7 @@ async function loadPlugin(pluginId: string) {
       await reloadPluginList()
     }
   }
+  if (generation !== loadGeneration) return
   if (!plugin) {
     updateStatus('Plugin not found', 'error')
     return
@@ -464,8 +482,9 @@ async function loadPlugin(pluginId: string) {
 
   state.currentPluginId = pluginId
   state.currentPlugin = plugin
-  state.currentFilePath = plugin.entryPoint
+  state.currentFilePath = openFile && plugin.files[openFile] ? openFile : plugin.entryPoint
   state.modifiedFiles.clear()
+  state.baseline = baselineOf(plugin.files, plugin.folders)
 
   // Notify dev server about current plugin
   getDevServer().setCurrentPluginId(pluginId)
@@ -487,62 +506,14 @@ async function loadPlugin(pluginId: string) {
   disposeImportPathProvider = registerImportPathCompletion(pluginId, plugin.files)
   disposeAutoImportProvider = registerAutoImportCompletion(pluginId, plugin.files)
 
-  // Create models for all files
+  // Create models for all files (updateMonacoFileSystem registered their libs)
   for (const [filePath, file] of Object.entries(plugin.files)) {
-    const uri = monaco.Uri.parse(`file:///${pluginId}/${filePath}`)
-    const model = monaco.editor.createModel(file.content, file.language, uri)
-    state.editorModels.set(filePath, model)
-
-    // Attach content change listener
-    const capturedFilePath = filePath
-    const capturedPluginId = pluginId
-    model.onDidChangeContent(() => {
-      if (state.currentPlugin?.files?.[capturedFilePath]) {
-        const content = model.getValue()
-        state.currentPlugin.files[capturedFilePath].content = content
-        state.modifiedFiles.add(capturedFilePath)
-        renderCurrentFileTree()
-
-        // Send preview to IDE (if not receiving from IDE to prevent loop)
-        if (!isReceivingFromIDE && capturedPluginId) {
-          const devServer = getDevServer()
-          if (devServer.getStatus() === 'connected') {
-            devServer.sendFilePreview(capturedPluginId, capturedFilePath, content)
-          }
-        }
-
-        // Update Monaco's virtual file system
-        const fileLanguage = state.currentPlugin.files[capturedFilePath].language
-        const uri = `file:///${capturedPluginId}/${capturedFilePath}`
-
-        if (fileLanguage === 'typescript' || fileLanguage === 'javascript') {
-          monaco.typescript.typescriptDefaults.addExtraLib(content, uri)
-          monaco.typescript.javascriptDefaults.addExtraLib(content, uri)
-        } else if (fileLanguage === 'json') {
-          // For JSON files, create a TypeScript declaration module with .d.ts extension
-          const dtsUri = uri.replace('.json', '.json.d.ts')
-          try {
-            const jsonContent = JSON.parse(content || '{}')
-            const inferredType = inferJsonType(jsonContent)
-            const tsModuleContent = `declare const value: ${inferredType};
-export default value;`
-            monaco.typescript.typescriptDefaults.addExtraLib(tsModuleContent, dtsUri)
-            monaco.typescript.javascriptDefaults.addExtraLib(tsModuleContent, dtsUri)
-          } catch {
-            const tsModuleContent = `declare const value: any;
-export default value;`
-            monaco.typescript.typescriptDefaults.addExtraLib(tsModuleContent, dtsUri)
-            monaco.typescript.javascriptDefaults.addExtraLib(tsModuleContent, dtsUri)
-          }
-        }
-      }
-    })
+    createFileModel(pluginId, filePath, file, false)
   }
 
   // Render file tree
   renderCurrentFileTree()
 
-  // Load the entry point file
   switchToFile(state.currentFilePath!)
   refreshStatusBar()
   updateStatus(`Loaded: ${plugin.name}`, 'success')
@@ -959,46 +930,46 @@ async function createNewFile() {
 
   state.currentPlugin.files[filePath] = createPluginFile(filePath, '')
 
-  const uri = `file:///${filePath}`
-  monaco.typescript.typescriptDefaults.addExtraLib('', uri)
-  monaco.typescript.javascriptDefaults.addExtraLib('', uri)
-
   renderCurrentFileTree()
   switchToFile(filePath)
   hideNewFileModal()
   updateStatus(`Created: ${filePath}`, 'success')
 }
 
-// Save plugin wrapper
-async function saveCurrentPlugin() {
-  if (!state.currentPlugin || !state.editor) {
+/**
+ * Save plugin wrapper. Files already hold what the models show (each model
+ * writes through on change), so nothing is read back from the editor: it may
+ * be showing the read-only API typings rather than a plugin file.
+ * Resolves false when the save failed.
+ */
+async function saveCurrentPlugin(): Promise<boolean> {
+  const plugin = state.currentPlugin
+  if (!plugin) {
     updateStatus('No plugin loaded', 'error')
-    return
-  }
-
-  // Update current file content before saving
-  if (state.currentFilePath && state.currentPlugin.files[state.currentFilePath]) {
-    state.currentPlugin.files[state.currentFilePath].content = state.editor.getValue()
+    return false
   }
 
   setSaveState('saving')
   try {
-    const result = await savePlugin(
-      state.currentPlugin,
-      state.currentPluginId,
-      state.editor.getValue(),
-      state.modifiedFiles,
-      bundlePlugin,
-      updateStatus
-    )
+    const saved = await savePlugin(plugin, state.currentPluginId, bundlePlugin, updateStatus)
 
-    state.currentPluginId = result.id
-    setHeaderPlugin({ name: state.currentPlugin.name, language: currentPluginLanguage() })
+    // Another plugin was opened while this one bundled; its state is not ours to touch.
+    if (state.currentPlugin !== plugin) return true
+
+    state.currentPluginId = saved.id
+    // Only what the save really covered is clean: typing during the bundle stays modified.
+    for (const path of pathsCoveredBySave(state.modifiedFiles, plugin.files, saved.files)) {
+      state.modifiedFiles.delete(path)
+    }
+    state.baseline = baselineOf(saved.files, saved.folders)
+    setHeaderPlugin({ name: plugin.name, language: currentPluginLanguage() })
     await reloadPluginList()
     renderCurrentFileTree()
+    return true
   } catch {
     // Error already reported by savePlugin; keep the Save button asking.
-    setSaveState('failed', state.modifiedFiles.size)
+    if (state.currentPlugin === plugin) setSaveState('failed', state.modifiedFiles.size)
+    return false
   }
 }
 
@@ -1044,8 +1015,7 @@ async function renameCurrentPlugin() {
 
   const previous = state.currentPlugin.name
   state.currentPlugin.name = name
-  await saveCurrentPlugin()
-  if (state.modifiedFiles.size > 0 && state.currentPlugin.name === name) {
+  if (!(await saveCurrentPlugin()) && state.currentPlugin.name === name) {
     // Save failed: put the old name back so the header does not lie.
     state.currentPlugin.name = previous
     setHeaderPlugin({ name: previous, language: currentPluginLanguage() })
@@ -1333,6 +1303,66 @@ function hideDevServerModal() {
   modal.style.display = 'none'
 }
 
+/**
+ * The IDE saved some files of the open plugin. Those files take the IDE's
+ * text and count as saved; every other file, saved or not, is left alone.
+ */
+function takeFileUpdateFromIDE(stored: EditorPluginData, paths: string[]) {
+  const plugin = state.currentPlugin!
+  const pluginId = state.currentPluginId!
+  for (const path of paths) {
+    const file = stored.files[path]
+    if (!file) continue
+    const open = plugin.files[path]
+    if (open) {
+      const model = state.editorModels.get(path)
+      if (model) setModelFromIDE(model, file.content)
+      open.content = file.content
+    } else {
+      plugin.files[path] = { ...file }
+      createFileModel(pluginId, path, plugin.files[path])
+    }
+    state.modifiedFiles.delete(path)
+    state.baseline?.paths.add(path)
+  }
+  plugin.compiled = stored.compiled
+  plugin.lastCompiledAt = stored.lastCompiledAt
+  plugin.updatedAt = stored.updatedAt
+  renderCurrentFileTree()
+  updateStatus(`Plugin updated from IDE: ${stored.name}`, 'success')
+}
+
+/**
+ * The IDE replaced the whole open plugin. With nothing unsaved here it just
+ * reloads; otherwise the user picks between the IDE's version and their own.
+ */
+async function takeFullSyncFromIDE(stored: EditorPluginData) {
+  const plugin = state.currentPlugin!
+  if (isPluginDirty()) {
+    const { button } = await openDialog({
+      title: 'Full sync from IDE',
+      message: `Your IDE sent all of ${stored.name}, but ${plugin.name} has ${describeUnsaved()} here. ` +
+        'Keeping them leaves them unsaved; saving then overwrites what the IDE sent.',
+      buttons: [
+        { id: 'ide', label: 'Use IDE version', kind: 'danger', start: true },
+        { id: 'keep', label: 'Keep my changes', kind: 'primary' },
+      ],
+    })
+    if (state.currentPlugin !== plugin) return
+    if (button !== 'ide') {
+      // Storage now holds the IDE's copy: whatever differs from it is unsaved.
+      for (const [path, file] of Object.entries(plugin.files)) {
+        if (stored.files[path]?.content !== file.content) state.modifiedFiles.add(path)
+      }
+      state.baseline = baselineOf(stored.files, stored.folders)
+      renderCurrentFileTree()
+      return
+    }
+  }
+  await loadPlugin(stored.id, state.currentFilePath)
+  updateStatus(`Plugin synced from IDE: ${stored.name}`, 'success')
+}
+
 function setupDevServer() {
   const devServer = getDevServer()
 
@@ -1349,51 +1379,38 @@ function setupDevServer() {
     }
   })
 
-  // Set up plugin update callback
-  devServer.setOnPluginUpdate(async (pluginId, plugin) => {
+  // The IDE wrote a plugin to storage. Fold it into the open copy rather
+  // than swapping the copy out, so browser edits it did not touch survive.
+  devServer.setOnPluginUpdate((pluginId, plugin, changed) => {
     console.log('[DevServer] Plugin updated:', pluginId)
-
-    // If this is the currently loaded plugin, update it
-    if (state.currentPluginId === pluginId) {
-      // Update the in-memory plugin data
-      state.currentPlugin = plugin
-
-      // Track which files were updated from IDE
-      const updatedFromIDE = new Set<string>()
-
-      // Update editor models with new file contents
-      for (const [filePath, file] of Object.entries(plugin.files)) {
-        const model = state.editorModels.get(filePath)
-        if (model) {
-          const currentValue = model.getValue()
-          if (currentValue !== file.content) {
-            updatedFromIDE.add(filePath)
-            model.setValue(file.content)
-          }
-        }
+    void exclusive(async () => {
+      if (state.currentPluginId === pluginId && state.currentPlugin) {
+        if (changed === 'all') await takeFullSyncFromIDE(plugin)
+        else takeFileUpdateFromIDE(plugin, changed)
       }
-
-      // Clear modified status for files updated from IDE
-      // (the model change listener would have re-added them)
-      for (const filePath of updatedFromIDE) {
-        state.modifiedFiles.delete(filePath)
-      }
-
-      // Re-render file tree
-      renderCurrentFileTree()
-      updateStatus(`Plugin updated from IDE: ${plugin.name}`, 'success')
-    }
-
-    // Refresh plugin list in case a new plugin was added
-    await reloadPluginList()
+      // Refresh plugin list in case a new plugin was added
+      await reloadPluginList()
+    })
   })
 
   // Set up reload request callback
   devServer.setOnReloadRequest((pluginId) => {
     console.log('[DevServer] Reload requested for plugin:', pluginId)
-    if (state.currentPluginId === pluginId) {
-      loadPlugin(pluginId)
-    }
+    void exclusive(async () => {
+      if (state.currentPluginId !== pluginId || !state.currentPlugin) return
+      if (isPluginDirty()) {
+        const { button } = await openDialog({
+          title: 'Reload from IDE',
+          message: `Your IDE asked to reload ${state.currentPlugin.name}, which has ${describeUnsaved()} here. Reloading drops them.`,
+          buttons: [
+            { id: 'reload', label: 'Reload', kind: 'danger', start: true },
+            { id: 'keep', label: 'Keep my changes', kind: 'primary' },
+          ],
+        })
+        if (button !== 'reload' || state.currentPluginId !== pluginId) return
+      }
+      await loadPlugin(pluginId, state.currentFilePath)
+    })
   })
 
   // Set up plugin selected from IDE callback
@@ -1424,55 +1441,14 @@ function setupDevServer() {
     switchToFile(filePath)
   })
 
-  // Set up file saved from IDE callback (clears modified status)
-  devServer.setOnFileSavedFromIDE((pluginId, filePaths) => {
-    if (state.currentPluginId !== pluginId) {
-      return
-    }
-
-    // Clear modified status for files that were saved in IDE
-    for (const filePath of filePaths) {
-      state.modifiedFiles.delete(filePath)
-    }
-    renderCurrentFileTree()
-  })
-
-  // Set up file preview callback (live sync as you type, without saving)
+  // Live sync as the IDE types, without saving: the browser shows the
+  // IDE's unsaved buffer, so the file reads as modified here too.
   devServer.setOnFilePreview((pluginId, files) => {
-    // Only process if this is the current plugin
-    if (state.currentPluginId !== pluginId) {
-      return
-    }
-
-    // Set flag to prevent sending preview back to IDE
-    isReceivingFromIDE = true
-
+    if (state.currentPluginId !== pluginId) return
     for (const file of files) {
       const model = state.editorModels.get(file.path)
-      if (model) {
-        const currentValue = model.getValue()
-        // Only update if content is different
-        if (currentValue !== file.content) {
-          // Preserve cursor position
-          const position = state.editor?.getPosition()
-          const selection = state.editor?.getSelection()
-
-          // Update model content directly (this won't trigger save to IndexedDB)
-          model.setValue(file.content)
-
-          // Restore cursor position if editing the same file
-          if (state.currentFilePath === file.path && state.editor) {
-            if (selection) {
-              state.editor.setSelection(selection)
-            } else if (position) {
-              state.editor.setPosition(position)
-            }
-          }
-        }
-      }
+      if (model) setModelFromIDE(model, file.content)
     }
-
-    isReceivingFromIDE = false
   })
 
   // Initialize UI
@@ -1682,7 +1658,7 @@ function setupEventListeners() {
 
   // Warn before closing window/tab with unsaved changes
   window.addEventListener('beforeunload', (e) => {
-    if (state.modifiedFiles.size > 0) {
+    if (isPluginDirty()) {
       e.preventDefault()
       e.returnValue = ''
       return ''

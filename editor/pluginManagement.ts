@@ -16,6 +16,7 @@ import {
   getAllStoredPlugins,
 } from '@client/utils/pluginStorage.ts'
 import type { StatusType } from './types'
+import { cloneFiles } from './savedBaseline'
 import JSZip from 'jszip'
 
 /** What the plugin switcher and the welcome screen show for one plugin. */
@@ -114,14 +115,17 @@ export function removeFromLocalStorageList(pluginId: string) {
   }
 }
 
+/**
+ * Bundle and store the plugin. The files are copied first, so typing during
+ * the bundle neither leaks into this build nor counts as saved: the result
+ * carries the copy, and the caller clears only the files that still match it.
+ */
 export async function savePlugin(
   plugin: EditorPluginData,
   pluginId: string | null,
-  _editorValue: string,
-  modifiedFiles: Set<string>,
   bundlePluginFunc: (files: Record<string, PluginFile>, entryPoint: string) => Promise<string>,
   updateStatus: (message: string, type: StatusType) => void
-): Promise<{ id: string; isNewPlugin: boolean }> {
+): Promise<{ id: string; isNewPlugin: boolean; files: Record<string, PluginFile>; folders: string[] }> {
   const name = plugin.name.trim()
 
   if (!name) {
@@ -131,14 +135,17 @@ export async function savePlugin(
 
   const now = Date.now()
   const isNewPlugin = !pluginId
+  const files = cloneFiles(plugin.files)
+  const folders = [...(plugin.folders ?? [])]
+  const entryPoint = plugin.entryPoint
 
   let compiled: string
 
   // Bundle/compile based on file structure
-  if (Object.keys(plugin.files).length > 0) {
+  if (Object.keys(files).length > 0) {
     try {
       updateStatus('Bundling plugin...', 'normal')
-      compiled = await bundlePluginFunc(plugin.files, plugin.entryPoint)
+      compiled = await bundlePluginFunc(files, entryPoint)
     } catch (error) {
       updateStatus('Bundling failed: ' + (error as Error).message, 'error')
       console.error(error)
@@ -181,7 +188,7 @@ export async function savePlugin(
   }
 
   // Store in editor database
-  await storeEditorPlugin(plugin)
+  await storeEditorPlugin({ ...plugin, files, folders, entryPoint })
 
   // Sync compiled JS to plugin storage
   if (pluginId) {
@@ -196,11 +203,8 @@ export async function savePlugin(
     localStorage.setItem('stored_scripts_updated', Date.now().toString())
   }
 
-  // Clear modified files indicator
-  modifiedFiles.clear()
-
   updateStatus(`Saved: ${name}`, 'success')
-  return { id: plugin.id, isNewPlugin }
+  return { id: plugin.id, isNewPlugin, files, folders }
 }
 
 export async function deletePlugin(
