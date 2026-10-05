@@ -149,12 +149,29 @@ export function usePanelChrome(window: WindowRecord): PanelChrome {
 /** Title width still kept readable before the header gives up on one row. */
 const MIN_TITLE_WIDTH = 120;
 
+const STACKED_CLASS = 'managed-panel__header--stacked';
+
+/** Width the header needs to fit everything on one row, title kept readable. */
+function measureOneRowWidth(header: HTMLElement): number {
+  // Measured on the live one-row layout: the stacked class comes off just for
+  // the reading and goes back before anything paints. A width remembered from
+  // an earlier one-row layout goes stale - the window buttons are bigger on a
+  // phone, so coming back to a wide screen would leave the header stacked.
+  const wasStacked = header.classList.contains(STACKED_CLASS);
+  if (wasStacked) header.classList.remove(STACKED_CLASS);
+  const title = header.querySelector<HTMLElement>('.managed-panel__title');
+  const titleWidth = title?.clientWidth ?? 0;
+  const titleWanted = Math.min(title?.scrollWidth ?? 0, MIN_TITLE_WIDTH);
+  const width = header.scrollWidth + Math.max(0, titleWanted - titleWidth);
+  if (wasStacked) header.classList.add(STACKED_CLASS);
+  return width;
+}
+
 /**
  * Whether the header needs two rows: the title and window buttons on top, the
  * popup's own header actions below. That happens when all of it can't share
  * one row without squeezing the title below {@link MIN_TITLE_WIDTH} - on a
- * phone, say. The one-row width is measured while on one row and remembered,
- * so the header goes back as soon as the window is wide enough again.
+ * phone, say. The header goes back as soon as the window is wide enough again.
  */
 function useStackedHeader(
   headerRef: React.RefObject<HTMLDivElement | null>,
@@ -163,7 +180,6 @@ function useStackedHeader(
 ): boolean {
   const [stacked, setStacked] = useState(false);
   const stackedRef = useRef(false);
-  const oneRowWidthRef = useRef(0);
   const enabledRef = useRef(enabled);
   enabledRef.current = enabled;
 
@@ -172,14 +188,7 @@ function useStackedHeader(
     const header = headerRef.current;
     let next = false;
     if (header && enabledRef.current) {
-      if (!stackedRef.current) {
-        const title = header.querySelector<HTMLElement>('.managed-panel__title');
-        const titleWidth = title?.clientWidth ?? 0;
-        const titleWanted = Math.min(title?.scrollWidth ?? 0, MIN_TITLE_WIDTH);
-        oneRowWidthRef.current =
-          header.scrollWidth + Math.max(0, titleWanted - titleWidth);
-      }
-      next = header.clientWidth < oneRowWidthRef.current;
+      next = header.clientWidth < measureOneRowWidth(header);
     }
     if (next !== stackedRef.current) {
       stackedRef.current = next;
@@ -237,7 +246,7 @@ export function PanelHeader({ chrome, variant, onPointerDown, onContextMenu }: P
   return (
     <div
       ref={headerRef}
-      className={`${headerClass}${stacked ? ' managed-panel__header--stacked' : ''}`}
+      className={`${headerClass}${stacked ? ` ${STACKED_CLASS}` : ''}`}
       onPointerDown={handlePointerDown}
       onContextMenu={onContextMenu}
     >
