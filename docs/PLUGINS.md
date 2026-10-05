@@ -609,6 +609,11 @@ api.bind.set("use potion", undefined, true); // clearAfterUse
 // Wyczyść bind
 api.bind.clear();
 
+// Pobierz aktualnie zbindowaną komendę (null, gdy nic nie jest zbindowane)
+if (api.bind.get() !== "otul sie plaszczem") {
+    api.bind.set("otul sie plaszczem");
+}
+
 // Pobierz etykietę bindu
 const label = api.bind.getLabel();
 ```

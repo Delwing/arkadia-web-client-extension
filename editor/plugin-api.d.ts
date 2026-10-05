@@ -563,6 +563,8 @@ interface BindApi {
 
   clear(): void;
 
+  get(): string | null;
+
   getLabel(): string;
 }
 
@@ -594,7 +596,7 @@ interface TemporaryMultibindHandle {
 }
 
 /**
- * Multibinds API - put temporary commands on the multibind bar (ALT+1..4)
+ * Multibinds API - put temporary commands on the multibind bar (ALT+1..4 by default; players can add slots)
  */
 interface MultibindsApi {
   addTemporary(opts: TemporaryMultibindOptions): TemporaryMultibindHandle;
@@ -849,6 +851,7 @@ interface ContainerForms {
   mianownik: string;
   dopelniacz: string;
   biernik: string;
+  index?: number;
 }
 
 /**

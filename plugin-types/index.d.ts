@@ -2415,6 +2415,21 @@ export interface BindApi {
      */
     clear(): void;
     /**
+     * Get the command currently set on the function bind
+     * Returns null when nothing is bound (or the bind was set with a callback only).
+     * Lets a plugin skip re-setting (and re-printing) a bind that is already in place.
+     *
+     * @returns The bound command, or null
+     *
+     * @example
+     * ```typescript
+     * if (api.bind.get() !== "otul sie plaszczem") {
+     *   api.bind.set("otul sie plaszczem");
+     * }
+     * ```
+     */
+    get(): string | null;
+    /**
      * Get the current bind label (key combination)
      * Returns the configured key combination like "CTRL+]" or "ALT+SHIFT+K"
      *
@@ -2466,7 +2481,7 @@ export interface TemporaryMultibindHandle {
 }
 
 /**
- * Multibinds API - put temporary commands on the multibind bar (ALT+1..4)
+ * Multibinds API - put temporary commands on the multibind bar (ALT+1..4 by default; players can add slots)
  */
 
 export interface MultibindsApi {
@@ -2481,7 +2496,7 @@ export interface MultibindsApi {
      * - a saved bind in the current room with the same action is reused (and gets
      *   the highlight) instead of taking a new slot; the same goes for an earlier
      *   temporary bind with the same action,
-     * - otherwise the lowest free slot 1..4 is taken; when all slots are used the
+     * - otherwise the lowest free slot of the player's slots (1..4 by default) is taken; when all slots are used the
      *   bind is not shown and its key does nothing.
      *
      * @example

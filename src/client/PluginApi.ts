@@ -1305,6 +1305,22 @@ export interface BindApi {
   clear(): void;
 
   /**
+   * Get the command currently set on the function bind
+   * Returns null when nothing is bound (or the bind was set with a callback only).
+   * Lets a plugin skip re-setting (and re-printing) a bind that is already in place.
+   *
+   * @returns The bound command, or null
+   *
+   * @example
+   * ```typescript
+   * if (api.bind.get() !== "otul sie plaszczem") {
+   *   api.bind.set("otul sie plaszczem");
+   * }
+   * ```
+   */
+  get(): string | null;
+
+  /**
    * Get the current bind label (key combination)
    * Returns the configured key combination like "CTRL+]" or "ALT+SHIFT+K"
    *
@@ -3337,6 +3353,10 @@ export class PluginApiImpl implements PluginApi {
 
       clear: () => {
         this.client.FunctionalBind.clear();
+      },
+
+      get: () => {
+        return this.client.FunctionalBind.getCategory('default')?.getPrintable() ?? null;
       },
 
       getLabel: () => {
