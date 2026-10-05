@@ -9,7 +9,7 @@
   flex-direction: column;
   gap: 5px;
   padding: 8px 11px;
-  overflow: hidden;
+  overflow: auto;
 }
 
 .wt-clock {
@@ -111,4 +111,42 @@
 .wt-domain-switch .popup-segmented__item {
   padding: 0 7px;
   font-size: 11px;
+}
+/* manual set-time form ("Ustaw"): labels left, controls right */
+.wt-set {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 6px 10px;
+  padding-top: 7px;
+  border-top: 1px solid var(--popup-border-subtle);
+  font-size: 12px;
+}
+.wt-set-label {
+  color: var(--popup-text-dim, #b7aa8b);
+  white-space: nowrap;
+}
+.wt-set-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+.wt-set-num {
+  width: 4.5em;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.wt-set-month {
+  min-width: 0;
+  width: 100%;
+}
+.wt-set-colon {
+  color: var(--popup-text-subtle);
+  font-weight: 600;
+}
+.wt-set-action {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
 }

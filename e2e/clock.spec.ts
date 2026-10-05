@@ -362,4 +362,28 @@ test.describe('Clock System', () => {
         await domainSwitch.getByText('Ishtar').click();
         await expect(body.locator('.wt-time')).toHaveText('12:00');
     });
+
+    test('Ustaw in the Czas popup sets the shown domain clock by hand', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+
+        await pushText(page, 'Jest w przyblizeniu szosta rano, 1 dzien miesiaca Nachhexen wedlug Kalendarza Imperialnego.');
+        await submitCommand(page, '/czas');
+        const body = page.locator('.world-time-popup');
+        await expect(body.locator('.wt-time')).toHaveText('06:00');
+
+        await page.locator('.wt-set-toggle').click();
+        const form = body.locator('.wt-set');
+        const numbers = form.locator('input[type="number"]');
+        await numbers.nth(0).fill('9');
+        await numbers.nth(1).fill('30');
+        await form.getByText('Dzień roku').click();
+        await numbers.nth(2).fill('100');
+        await form.getByRole('button', {name: 'Ustaw'}).click();
+
+        await expect(body.locator('.wt-time')).toHaveText('09:30');
+        await expect(body.locator('.wt-doy')).toContainText('dzień 100');
+        await expect(numbers.nth(0)).toHaveValue('');
+    });
 });

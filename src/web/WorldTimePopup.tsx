@@ -2,7 +2,8 @@ import React, { useCallback, useEffect, useState } from 'react';
 import eventBus from '@modules/core/eventBus';
 import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
 import { usePopup } from './hooks/usePopup';
-import { Segmented } from '@web-ui/primitives';
+import { Button, Segmented } from '@web-ui/primitives';
+import ClockSetTimeForm from './ClockSetTimeForm';
 import './WorldTimePopup.css';
 
 const POPUP_ID = 'popup:worldTime';
@@ -65,6 +66,7 @@ const IconMoon = () => (
  *
  * The header switch shows the other domain's clock; it follows the active
  * domain again as soon as that changes (crossing between Imperium and Ishtar).
+ * "Ustaw" in the header opens a form that sets the shown domain's clock by hand.
  * Opened by /czas (or /czasw), the footer clock chip and the window menu.
  */
 const WorldTimePopup: React.FC = () => {
@@ -77,6 +79,7 @@ const WorldTimePopup: React.FC = () => {
     const [gmcpSeason, setGmcpSeason] = useState<number | undefined>();
     const [gmcpDaylight, setGmcpDaylight] = useState<boolean | undefined>();
     const [activeDomain, setActiveDomain] = useState<Domain | undefined>();
+    const [showSetTime, setShowSetTime] = useState(false);
     const [clocks, setClocks] = useState<Partial<Record<Domain, ClockSnapshot>>>({});
 
     useEffect(() => {
@@ -133,9 +136,20 @@ const WorldTimePopup: React.FC = () => {
             initialWidth={240}
             bodyClassName="world-time-popup"
             headerActions={
-                <div className="wt-domain-switch">
-                    <Segmented value={shownDomain} options={DOMAIN_OPTIONS} onChange={setPickedDomain} />
-                </div>
+                <>
+                    <div className="wt-domain-switch">
+                        <Segmented value={shownDomain} options={DOMAIN_OPTIONS} onChange={setPickedDomain} />
+                    </div>
+                    <Button
+                        size="sm"
+                        variant={showSetTime ? 'solid' : 'secondary'}
+                        className="wt-set-toggle"
+                        onClick={() => setShowSetTime(v => !v)}
+                        title={showSetTime ? 'Ukryj ustawianie czasu' : 'Ustaw czas ręcznie'}
+                    >
+                        Ustaw
+                    </Button>
+                </>
             }
         >
             <div className="wt-clock">
@@ -171,6 +185,7 @@ const WorldTimePopup: React.FC = () => {
                     {clock?.sunset !== undefined ? formatSunHour(clock.sunset) : '--:--'}
                 </span>
             </div>
+            {showSetTime && <ClockSetTimeForm domain={shownDomain} />}
         </DockablePopupWrapper>
     );
 };
