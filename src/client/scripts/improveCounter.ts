@@ -440,6 +440,8 @@ export default class ImproveCounter extends BaseCounter {
         this.countLevel(level, now);
         this.lastTime = now;
         this.lastKills = kills;
+        // An improvement only comes from fighting, whether or not combat was seen
+        this.waitingForFirstCombat = false;
         this.persist();
         this.emitUpdate();
         const msg = colorString(

@@ -29,8 +29,7 @@ export default function initCombatState(client: Client) {
         const inCombat = attackNum !== false;
         client.sendEvent('combatState', inCombat);
     });
-
-    client.on('client.disconnect', () => {
-        playerNum = undefined;
-    });
+    // No reset on disconnect: PlayerIdentity keeps the id across a resumed
+    // session and doesn't announce it again, so forgetting it here left
+    // combat undetected for the rest of the session.
 }

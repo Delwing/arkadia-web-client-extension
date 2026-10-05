@@ -127,4 +127,17 @@ describe("combat timer", () => {
     expect(client.sendEvent).not.toHaveBeenCalled();
   });
 
+  test("keeps detecting combat after a resumed session", () => {
+    const client = new FakeClient();
+    initCombatState((client as unknown) as any);
+    client.dispatchEvent(new CustomEvent("player.objectNum", { detail: 7 }));
+    // The identity survives the gap and is not announced again
+    client.dispatchEvent(new CustomEvent("client.disconnect"));
+    client.sendEvent.mockClear();
+    client.dispatchEvent(
+      new CustomEvent("gmcp.objects.data", { detail: { "7": { attack_num: 1 } } }),
+    );
+    expect(client.sendEvent).toHaveBeenCalledWith("combatState", true);
+  });
+
 });

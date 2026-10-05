@@ -288,6 +288,21 @@ describe('improve counter', () => {
     const printed = c.print.mock.calls[0][0]?.text;
     expect(printed).toMatch(/WSZYSTKICH DO TEJ PORY: 2 postepow/);
   });
+  test('an improvement ends the wait for the first fight', () => {
+    client.dispatch('gmcp.char.state', { improve: 1 });
+    // A reset mid-session waits for combat; none is seen
+    reset();
+    jest.advanceTimersByTime(60000);
+    parse('Zabiles smoka chaosu.');
+    client.dispatch('gmcp.char.state', { improve: 2 });
+    jest.advanceTimersByTime(30000);
+    show();
+    const printed = client.print.mock.calls.at(-1)[0]?.text;
+    expect(printed).toMatch(/Od ostatniego postepu:\s+0:30 : zabici: 0\/0/);
+    parse('Zabiles smoka chaosu.');
+    show();
+    expect(client.print.mock.calls.at(-1)[0]?.text).toMatch(/zabici: 1\/1/);
+  });
   describe('tied to the life (object number)', () => {
     const today = '2026/1/15';
     const lifetime = () => characterStorage.get('improve_counter_lifetime') as any;
