@@ -21,6 +21,7 @@ import {
     createMarkEnemyEvent,
     createMarkAllyEvent,
     createSetColorEvent,
+    createSetNoteEvent,
 } from './peopleLocalEvents';
 import { characterStorage } from '@modules/core/storage';
 
@@ -122,9 +123,9 @@ export function addLocalPerson(entry: PersonEntry): void {
  * Edit an existing person entry (creates a replace event)
  */
 export function editPerson(targetKey: string, newEntry: PersonEntry): void {
-    // Remove existing replace/ignore events for this target, but preserve mark-enemy, mark-ally, and set-color
+    // Remove existing replace/ignore events for this target, but preserve mark-enemy, mark-ally, set-color and set-note
     const filteredEvents = localEventsSnapshot.events.filter(
-        (e) => e.targetKey !== targetKey || e.type === 'add' || e.type === 'mark-enemy' || e.type === 'mark-ally' || e.type === 'set-color'
+        (e) => e.targetKey !== targetKey || e.type === 'add' || e.type === 'mark-enemy' || e.type === 'mark-ally' || e.type === 'set-color' || e.type === 'set-note'
     );
     const event = createReplaceEvent(targetKey, newEntry);
     localEventsSnapshot = {
@@ -269,6 +270,31 @@ export function clearPersonColor(targetKey: string): void {
     }
     localEventsSnapshot = {
         events: filteredEvents,
+        timestamp: Date.now(),
+    };
+    saveLocalEvents(localEventsSnapshot);
+    recomputeMerged();
+}
+
+/**
+ * Set the note for a person. An empty note removes it, together with the show-on-meet flag.
+ */
+export function setPersonNote(targetKey: string, note: string, showNoteOnMeet: boolean): void {
+    const filteredEvents = localEventsSnapshot.events.filter(
+        (e) => !(e.targetKey === targetKey && e.type === 'set-note')
+    );
+    const trimmed = note.trim();
+    // An edit carries the note over from the entry's previous key, so dropping this key's events
+    // may not be enough to clear it - an empty note then overrides the carried one.
+    const stillCarried = !trimmed && !!remoteData && applyLocalEvents(remoteData, filteredEvents)
+        .some((p) => makePersonKey(p.name, p.description) === targetKey && p.note);
+    if (!trimmed && !stillCarried && filteredEvents.length === localEventsSnapshot.events.length) {
+        return; // No changes
+    }
+    localEventsSnapshot = {
+        events: trimmed || stillCarried
+            ? [...filteredEvents, createSetNoteEvent(targetKey, trimmed, trimmed ? showNoteOnMeet : false)]
+            : filteredEvents,
         timestamp: Date.now(),
     };
     saveLocalEvents(localEventsSnapshot);

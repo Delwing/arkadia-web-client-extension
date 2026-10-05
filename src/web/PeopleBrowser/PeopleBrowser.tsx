@@ -20,8 +20,9 @@ import {
     unmarkAsAlly,
     setPersonColor,
     clearPersonColor,
+    setPersonNote,
 } from '@modules/data/peopleLoader';
-import PersonEditModal from './PersonEditModal';
+import PersonEditModal, { type PersonNote } from './PersonEditModal';
 import { HeaderButton } from '@web-ui/primitives';
 
 const POPUP_ID = 'popup:peopleBrowser';
@@ -86,7 +87,7 @@ const PeopleBrowser: React.FC = () => {
         setSelectedPersonKey(undefined);
     }, []);
 
-    const handleModalSave = useCallback((entry: PersonEntry) => {
+    const handleModalSave = useCallback((entry: PersonEntry, note: PersonNote) => {
         if (modalMode === 'add') {
             addLocalPerson(entry);
         } else if (selectedPerson) {
@@ -97,6 +98,12 @@ const PeopleBrowser: React.FC = () => {
                 const targetKey = makePersonKey(selectedPerson.name, selectedPerson.description);
                 editPerson(targetKey, entry);
             }
+        }
+        // Keyed on the saved name and description, so it lands on the entry as it is after an edit.
+        const previousNote = modalMode === 'edit' ? selectedPerson?.note ?? '' : '';
+        const previousShow = modalMode === 'edit' ? selectedPerson?.showNoteOnMeet ?? false : false;
+        if (note.text !== previousNote || (note.text && note.showOnMeet !== previousShow)) {
+            setPersonNote(makePersonKey(entry.name, entry.description), note.text, note.showOnMeet);
         }
         handleModalClose();
     }, [modalMode, selectedPerson, handleModalClose]);

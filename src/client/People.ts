@@ -5,8 +5,12 @@ import {createColorFormat} from '@modules/core/Colors';
 import {AnsiAwareBuffer, FormatStateSnapshot} from "@client/ansi/FormatState.ts";
 import { characterStorage } from "@modules/core/storage";
 import { defaultSettings } from "@modules/core/defaultSettings";
+import { isType } from "./Triggers";
 
 const RED = createColorFormat('#ff0000')
+const NOTE_LABEL_COLOR = createColorFormat('#87afff')
+const NOTE_NAME_COLOR = createColorFormat('#ffff5f')
+const NOTE_TEXT_COLOR = createColorFormat('#d0d0d0')
 
 export default class People {
 
@@ -145,6 +149,63 @@ export default class People {
                 }
             }
         })
+        this.registerNoteTrigger()
+    }
+
+    /**
+     * Prints the notes of the people standing in the room under the room's living line, for every
+     * entry whose note is ticked to show on meeting. An entry is met by its description or, once
+     * introduced, by its name.
+     */
+    private registerNoteTrigger() {
+        const noted = this.people.filter(person => !person.ignored && person.note && person.showNoteOnMeet)
+        if (noted.length === 0) {
+            return
+        }
+        this.client.Triggers.registerTrigger(isType('room.contents.living'), (line, _matches, _type, originalLine) => {
+            const notes = this.findNotesFor(originalLine, noted)
+            if (notes.length === 0) {
+                return line
+            }
+            notes.forEach(({ person }) => {
+                const [first, ...rest] = person.note!.split(/\r?\n/)
+                line.append('\n')
+                line.append('  Notatka ', NOTE_LABEL_COLOR)
+                line.append(`(${person.name}): `, NOTE_NAME_COLOR)
+                line.append(first, NOTE_TEXT_COLOR)
+                rest.forEach(more => line.append(`\n    ${more}`, NOTE_TEXT_COLOR))
+            })
+            return line
+        }, this.tag)
+    }
+
+    /**
+     * The noted people met in a living line, in the order they stand in it. One mention is one
+     * person: where descriptions overlap ("wysoki mezczyzna" inside "wysoki mezczyzna w kapturze")
+     * the longest wins.
+     */
+    private findNotesFor(text: string, noted: PersonListEntry[]) {
+        const found: { person: PersonListEntry; start: number; end: number }[] = []
+        noted.forEach(person => {
+            const starts = [
+                ...this.findTokenIndices(text, person.description).map(start => ({ start, end: start + person.description.length })),
+                ...(person.name.length > 2 ? this.findTokenIndices(text, person.name, true) : [])
+                    .map(start => ({ start, end: start + person.name.length })),
+            ]
+            starts.forEach(span => found.push({ person, ...span }))
+        })
+        const accepted: typeof found = []
+        found
+            .sort((a, b) => (b.end - b.start) - (a.end - a.start))
+            .forEach(candidate => {
+                const clashes = accepted.some(other => candidate.start < other.end && other.start < candidate.end
+                    && (candidate.start !== other.start || candidate.end !== other.end))
+                const duplicate = accepted.some(other => other.person === candidate.person)
+                if (!clashes && !duplicate) {
+                    accepted.push(candidate)
+                }
+            })
+        return accepted.sort((a, b) => a.start - b.start)
     }
 
     private shouldHighlight(replacement: { guild: string; isEnemy?: boolean; color?: string }) {

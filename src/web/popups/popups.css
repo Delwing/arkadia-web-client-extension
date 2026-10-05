@@ -3831,6 +3831,12 @@ select.popup-input.popup-input--control {
   color: var(--popup-text-dim);
 }
 
+.people-modal__note {
+  min-height: 3.5rem;
+  resize: vertical;
+  font-family: inherit;
+}
+
 /* The "this entry was edited locally" recap block. */
 .people-modal__original {
   display: flex;

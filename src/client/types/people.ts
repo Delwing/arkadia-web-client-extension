@@ -5,7 +5,7 @@ export interface PersonEntry {
 }
 
 // Local edit event types
-export type PersonEditEventType = 'add' | 'replace' | 'ignore' | 'mark-enemy' | 'mark-ally' | 'set-color';
+export type PersonEditEventType = 'add' | 'replace' | 'ignore' | 'mark-enemy' | 'mark-ally' | 'set-color' | 'set-note';
 
 export interface PersonEditEvent {
     id: string;
@@ -14,6 +14,8 @@ export interface PersonEditEvent {
     targetKey?: string; // For 'ignore', 'replace', 'mark-enemy', 'set-color': `${name}|${description}`
     entry?: PersonEntry; // For 'add' and 'replace': the new entry data
     color?: string; // For 'set-color': hex color value (e.g., '#ff0000')
+    note?: string; // For 'set-note': free-text note about the person
+    showNoteOnMeet?: boolean; // For 'set-note': print the note under the room's living line
 }
 
 export interface PeopleLocalEventsSnapshot {
@@ -28,6 +30,8 @@ export interface PersonListEntry extends PersonEntry {
     isEnemy: boolean;
     isAlly: boolean;
     color?: string; // Individual color override (hex value)
+    note?: string;
+    showNoteOnMeet?: boolean;
     originalEntry?: PersonEntry;
     eventId?: string;
 }

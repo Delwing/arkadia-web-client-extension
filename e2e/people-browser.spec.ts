@@ -3,9 +3,11 @@ import type {Page} from '@playwright/test';
 import {
     ensureGameSocket,
     primeCharInfo,
+    pushText,
     waitForCharacter,
     waitForCommandInput,
     waitForMapReady,
+    waitForOutputContaining,
 } from './support/mocks';
 
 async function prepareClient(page: Page, charName = 'Tester'): Promise<void> {
@@ -496,5 +498,31 @@ test.describe('PeopleLocalEvents character switch', () => {
             'should restore CharA local person after switch back',
         ).toHaveCount(1);
         await expect(popup.locator('.people-browser__item').first(), 'should still display SojusznikA after switch').toContainText('SojusznikA');
+    });
+});
+
+test.describe('People notes', () => {
+    test('shows a ticked note under the room living line', async ({page}) => {
+        await prepareClient(page);
+        await openPeopleBrowser(page);
+        await waitForPeopleLoaded(page);
+
+        const popup = peopleBrowserPopup(page);
+        await popup.locator('.people-browser__item').filter({hasText: 'Aldous'}).locator('.people-browser__item-edit').click();
+
+        const modal = page.locator('.people-modal');
+        await expect(modal).toBeVisible();
+        await modal.locator('textarea').fill('pozycza i nie oddaje');
+        await modal.locator('label', {hasText: 'Pokaż notatkę przy spotkaniu'}).locator('input').check();
+        await modal.locator('button', {hasText: 'Zapisz'}).click();
+        await expect(modal).not.toBeVisible();
+
+        await pushText(page, 'Wysoki wojownik stoi tutaj.', {type: 'room.contents.living'});
+        await waitForOutputContaining(page, 'Notatka (Aldous): pozycza i nie oddaje');
+
+        // Reopening the entry shows the saved note and tick
+        await popup.locator('.people-browser__item').filter({hasText: 'Aldous'}).locator('.people-browser__item-edit').click();
+        await expect(modal.locator('textarea')).toHaveValue('pozycza i nie oddaje');
+        await expect(modal.locator('label', {hasText: 'Pokaż notatkę przy spotkaniu'}).locator('input')).toBeChecked();
     });
 });

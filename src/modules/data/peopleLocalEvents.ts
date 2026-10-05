@@ -76,6 +76,8 @@ export function applyLocalEvents(
                     isEnemy: original?.isEnemy ?? false,
                     isAlly: original?.isAlly ?? false,
                     color: original?.color,
+                    note: original?.note,
+                    showNoteOnMeet: original?.showNoteOnMeet,
                     originalEntry: original?.originalEntry
                         ?? (original && original.source === 'remote'
                             ? {
@@ -140,6 +142,19 @@ export function applyLocalEvents(
                 }
                 break;
             }
+
+            case 'set-note': {
+                if (!event.targetKey) break;
+                const existing = result.get(event.targetKey);
+                if (existing) {
+                    result.set(event.targetKey, {
+                        ...existing,
+                        note: event.note || undefined,
+                        showNoteOnMeet: !!event.note && !!event.showNoteOnMeet,
+                    });
+                }
+                break;
+            }
         }
     }
 
@@ -200,5 +215,16 @@ export function createSetColorEvent(targetKey: string, color: string | undefined
         timestamp: Date.now(),
         targetKey,
         color,
+    };
+}
+
+export function createSetNoteEvent(targetKey: string, note: string, showNoteOnMeet: boolean): PersonEditEvent {
+    return {
+        id: generateEventId(),
+        type: 'set-note',
+        timestamp: Date.now(),
+        targetKey,
+        note,
+        showNoteOnMeet,
     };
 }

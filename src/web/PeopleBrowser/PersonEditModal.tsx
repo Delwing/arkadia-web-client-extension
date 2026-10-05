@@ -5,10 +5,15 @@ import { GUILD_CODES_BY_ID } from '@modules/data/peopleGuilds';
 
 const ALL_GUILD_CODES = Object.values(GUILD_CODES_BY_ID).sort();
 
+export interface PersonNote {
+    text: string;
+    showOnMeet: boolean;
+}
+
 export interface PersonEditModalProps {
     show: boolean;
     onClose: () => void;
-    onSave: (entry: PersonEntry) => void;
+    onSave: (entry: PersonEntry, note: PersonNote) => void;
     onIgnore?: () => void;
     onRestore?: () => void;
     onRestoreOriginal?: () => void;
@@ -43,16 +48,22 @@ const PersonEditModal: React.FC<PersonEditModalProps> = ({
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [guild, setGuild] = useState('NPC');
+    const [note, setNote] = useState('');
+    const [showNoteOnMeet, setShowNoteOnMeet] = useState(false);
 
     useEffect(() => {
         if (person && mode === 'edit') {
             setName(person.name);
             setDescription(person.description);
             setGuild(person.guild);
+            setNote(person.note ?? '');
+            setShowNoteOnMeet(person.showNoteOnMeet ?? false);
         } else {
             setName('');
             setDescription('');
             setGuild('NPC');
+            setNote('');
+            setShowNoteOnMeet(false);
         }
     }, [person, mode, show]);
 
@@ -68,7 +79,7 @@ const PersonEditModal: React.FC<PersonEditModalProps> = ({
             name: name.trim(),
             description: description.trim(),
             guild,
-        });
+        }, { text: note.trim(), showOnMeet: showNoteOnMeet });
     };
 
     const isIgnored = person?.ignored ?? false;
@@ -166,6 +177,27 @@ const PersonEditModal: React.FC<PersonEditModalProps> = ({
                             ))}
                         </select>
                     </div>
+
+                    {!isIgnored && (
+                        <div className="people-modal__field">
+                            <label className="people-modal__label">Notatka</label>
+                            <textarea
+                                className="popup-input people-modal__note"
+                                rows={3}
+                                value={note}
+                                onChange={(e) => setNote(e.target.value)}
+                                placeholder="np. handluje ziołami, zna drogę do Ishtaru"
+                            />
+                            <label className="popup-check">
+                                <input
+                                    type="checkbox"
+                                    checked={showNoteOnMeet}
+                                    onChange={(e) => setShowNoteOnMeet(e.target.checked)}
+                                />
+                                <span>Pokaż notatkę przy spotkaniu</span>
+                            </label>
+                        </div>
+                    )}
 
                     {mode === 'edit' && !isIgnored && (
                         <div className="people-modal__field">

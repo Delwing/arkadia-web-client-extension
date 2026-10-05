@@ -89,7 +89,7 @@ act at once, outside `Zapisz`.
 
 ## Other menu entries worth knowing
 - `Nagrania` — session recordings
-- `Baza postaci` — known-players browser
+- `Baza postaci` — known-players browser; each entry can carry a note (`Notatka`), and ticking `Pokaż notatkę przy spotkaniu` prints it under the room line listing who is present
 - `Odbiorcy paczek` — package receivers
 - `Kod QR lokacji` — QR code for the current room
 - `Skrypty (wtyczki)` — user scripts / plugins
