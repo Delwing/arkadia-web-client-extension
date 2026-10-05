@@ -47,21 +47,21 @@ export default function initChatHistory(client: Client, aliases?: { pattern: Reg
         const members = teamManager.getTeamMembers();
         if (members.length === 0) return false;
 
-        const trimmedText = text.trim();
+        // The speaker is named before the colon, but not always first - an emote
+        // can lead ("Nie wyjmujac fajki z ust Pablo mowi w Mrocznej Mowie: ...").
+        // Look for whole words in that part only, so a name inside the speech
+        // itself does not count.
+        const colon = text.indexOf(":");
+        const header = colon === -1 ? text : text.slice(0, colon);
+        const words = ` ${header.toLowerCase().split(/[\s,.;!?"']+/).filter(Boolean).join(" ")} `;
+        const hasWords = (phrase: string) => words.includes(` ${phrase.toLowerCase().trim()} `);
 
         // Own speech counts as team when in a team
-        if (trimmedText.startsWith("Mowisz") || trimmedText.startsWith("Krzyczysz") || trimmedText.startsWith("Szepczesz")) {
+        if (["mowisz", "krzyczysz", "szepczesz"].some(hasWords)) {
             return true;
         }
 
-        // Check if message starts with a team member's name
-        // Messages from team members typically start with their name
-        for (const member of members) {
-            if (trimmedText.startsWith(member)) {
-                return true;
-            }
-        }
-        return false;
+        return members.some(hasWords);
     }
 
     function addEntry(buffer: AnsiAwareBuffer) {
