@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import eventBus from '@modules/core/eventBus';
 import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
 import { usePopup } from './hooks/usePopup';
-import { Button, Segmented } from '@web-ui/primitives';
+import { HeaderButton, Segmented } from '@web-ui/primitives';
 import ClockSetTimeForm from './ClockSetTimeForm';
 import './WorldTimePopup.css';
 
@@ -138,17 +138,16 @@ const WorldTimePopup: React.FC = () => {
             headerActions={
                 <>
                     <div className="wt-domain-switch">
-                        <Segmented value={shownDomain} options={DOMAIN_OPTIONS} onChange={setPickedDomain} />
+                        <Segmented size="sm" value={shownDomain} options={DOMAIN_OPTIONS} onChange={setPickedDomain} />
                     </div>
-                    <Button
-                        size="sm"
-                        variant={showSetTime ? 'solid' : 'secondary'}
+                    <HeaderButton
+                        active={showSetTime}
                         className="wt-set-toggle"
                         onClick={() => setShowSetTime(v => !v)}
                         title={showSetTime ? 'Ukryj ustawianie czasu' : 'Ustaw czas ręcznie'}
                     >
                         Ustaw
-                    </Button>
+                    </HeaderButton>
                 </>
             }
         >

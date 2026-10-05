@@ -5,6 +5,7 @@ import { usePopup } from './hooks/usePopup';
 import type { CarriageEntry } from '@client/scripts/carriage';
 import { getEmbeddedMap, subscribeEmbeddedMap } from './embedRegistry';
 import {roomContextMenuHandler} from "@modules/core/contextMenus";
+import { HeaderButton } from '@web-ui/primitives';
 
 interface CarriagesPopupPayload {
     carriages: CarriageEntry[];
@@ -143,14 +144,9 @@ const CarriagesPopup: React.FC = () => {
     );
 
     const headerActions = (
-        <button
-            type="button"
-            className="popup-btn popup-btn--sm"
-            onClick={handleOpenBlocks}
-            title="Lokacje nieprzejezdne dla wozu"
-        >
+        <HeaderButton onClick={handleOpenBlocks} title="Lokacje nieprzejezdne dla wozu">
             Blokady
-        </button>
+        </HeaderButton>
     );
 
     return (

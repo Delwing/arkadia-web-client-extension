@@ -4,6 +4,7 @@ import { usePopup } from './hooks/usePopup';
 import { usePopupSetting } from './hooks/usePopupSetting';
 import { usePopupData } from './hooks/usePopupData';
 import { getKillData, KillData } from '../client/scripts/kill';
+import { HeaderButton } from '@web-ui/primitives';
 
 const POPUP_ID = 'popup:zabici';
 
@@ -43,14 +44,9 @@ const ZabiciPopup: React.FC = () => {
 
     // Toggle button in header
     const headerActions = (
-        <button
-            type="button"
-            className={`zabici-popup__team-toggle${showTeam ? ' zabici-popup__team-toggle--active' : ''}`}
-            onClick={() => setShowTeam(!showTeam)}
-            title={showTeam ? 'Ukryj drużynę' : 'Pokaż drużynę'}
-        >
+        <HeaderButton active={showTeam} onClick={() => setShowTeam(!showTeam)} title={showTeam ? 'Ukryj drużynę' : 'Pokaż drużynę'}>
             Drużyna
-        </button>
+        </HeaderButton>
     );
 
     return (

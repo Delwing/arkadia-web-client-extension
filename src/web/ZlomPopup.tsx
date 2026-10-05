@@ -22,6 +22,7 @@ import {
 import { defaultSettings } from '@modules/core/defaultSettings';
 import { openSettingsPage } from '@web/settings/categories.ts';
 import type { ZlomDbResult } from '@modules/data/zlomDbImport.shared';
+import { HeaderButton } from '@web-ui/primitives';
 
 const POPUP_ID = 'popup:zlom';
 const PAGE_SIZE = 100;
@@ -372,32 +373,26 @@ const ZlomPopup: React.FC = () => {
 
     const headerActions = (
         <>
-            <button
-                type="button"
-                className="popup-btn"
+            <HeaderButton
                 onClick={handleExport}
                 title="Zapisz bazę do pliku JSON"
                 disabled={importState.phase === 'loading'}
             >
                 Export
-            </button>
-            <button
-                type="button"
-                className="popup-btn"
+            </HeaderButton>
+            <HeaderButton
                 onClick={handleJsonImportClick}
                 title="Wczytaj bazę z pliku JSON"
                 disabled={importState.phase === 'loading'}
             >
                 Import
-            </button>
-            <button
-                type="button"
-                className="popup-btn"
+            </HeaderButton>
+            <HeaderButton
                 onClick={() => openSettingsPage('data-import', 'import-zlom')}
                 title="Import bazy z Mudleta (Ustawienia → Import z innych klientów)"
             >
                 Import z Mudleta
-            </button>
+            </HeaderButton>
             <input
                 ref={jsonInputRef}
                 type="file"

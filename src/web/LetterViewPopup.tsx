@@ -3,6 +3,7 @@ import eventBus from '@modules/core/eventBus';
 import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
 import { usePopup } from './hooks/usePopup';
 import type { LetterContent } from '@client/scripts/poczta';
+import { HeaderButton } from '@web-ui/primitives';
 
 const POPUP_ID = 'popup:letter-view';
 
@@ -38,24 +39,10 @@ const LetterViewPopup: React.FC = () => {
     }, [letter]);
 
     const headerActions = letter ? (
-        <div className="letter-view-actions">
-            <button
-                type="button"
-                className="popup-btn"
-                onClick={handleReply}
-                title="Odpowiedz"
-            >
-                Odpowiedz
-            </button>
-            <button
-                type="button"
-                className="popup-btn"
-                onClick={handleForward}
-                title="Przekaż dalej"
-            >
-                Przekaż
-            </button>
-        </div>
+        <>
+            <HeaderButton onClick={handleReply} title="Odpowiedz">Odpowiedz</HeaderButton>
+            <HeaderButton onClick={handleForward} title="Przekaż dalej">Przekaż</HeaderButton>
+        </>
     ) : null;
 
     return (

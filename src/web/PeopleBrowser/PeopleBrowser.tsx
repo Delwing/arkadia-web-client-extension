@@ -22,6 +22,7 @@ import {
     clearPersonColor,
 } from '@modules/data/peopleLoader';
 import PersonEditModal from './PersonEditModal';
+import { HeaderButton } from '@web-ui/primitives';
 
 const POPUP_ID = 'popup:peopleBrowser';
 
@@ -214,15 +215,9 @@ const PeopleBrowser: React.FC = () => {
     const displayTitle = totalCount > 0 ? `Baza postaci (${totalCount})` : 'Baza postaci';
 
     const headerActions = (
-        <button
-            type="button"
-            className={`people-browser__refresh${isRefreshing ? ' people-browser__refresh--active' : ''}`}
-            onClick={refreshData}
-            disabled={isRefreshing}
-            title="Odśwież bazę postaci"
-        >
+        <HeaderButton onClick={refreshData} disabled={isRefreshing} title="Odśwież bazę postaci">
             {isRefreshing ? 'Odświeżanie...' : 'Odśwież'}
-        </button>
+        </HeaderButton>
     );
 
     return (

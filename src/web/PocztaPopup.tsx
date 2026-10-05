@@ -5,8 +5,16 @@ import {usePopup} from './hooks/usePopup';
 import {usePopupSetting} from './hooks/usePopupSetting';
 import {gmcp} from '@client/gmcp';
 import type {MailEntry, MailType} from '@client/scripts/poczta';
+import {HeaderButton, Segmented} from '@web-ui/primitives';
 
 const POPUP_ID = 'popup:poczta';
+
+const TAB_OPTIONS: {value: MailType; label: string}[] = [
+    {value: 'nieprzeczytane', label: 'Nowe'},
+    {value: 'odebrane', label: 'Odebrane'},
+    {value: 'wyslane', label: 'Wysłane'},
+    {value: 'niewyslane', label: 'Niewysłane'},
+];
 
 const PocztaPopup: React.FC = () => {
     const [mails, setMails] = useState<MailEntry[]>([]);
@@ -58,45 +66,12 @@ const PocztaPopup: React.FC = () => {
     }, []);
 
     const headerActions = (
-        <div className="poczta-tabs">
-            <button
-                type="button"
-                className={`popup-btn${activeTab === 'nieprzeczytane' ? ' popup-btn--primary' : ''}`}
-                onClick={() => handleTabChange('nieprzeczytane')}
-            >
-                Nowe
-            </button>
-            <button
-                type="button"
-                className={`popup-btn${activeTab === 'odebrane' ? ' popup-btn--primary' : ''}`}
-                onClick={() => handleTabChange('odebrane')}
-            >
-                Odebrane
-            </button>
-            <button
-                type="button"
-                className={`popup-btn${activeTab === 'wyslane' ? ' popup-btn--primary' : ''}`}
-                onClick={() => handleTabChange('wyslane')}
-            >
-                Wysłane
-            </button>
-            <button
-                type="button"
-                className={`popup-btn${activeTab === 'niewyslane' ? ' popup-btn--primary' : ''}`}
-                onClick={() => handleTabChange('niewyslane')}
-            >
-                Niewysłane
-            </button>
-            <button
-                type="button"
-                className="popup-btn poczta-refresh-btn"
-                onClick={handleRefresh}
-                disabled={!isConnected || isLoading}
-                title="Odśwież"
-            >
+        <>
+            <Segmented size="sm" value={activeTab} options={TAB_OPTIONS} onChange={handleTabChange} />
+            <HeaderButton onClick={handleRefresh} disabled={!isConnected || isLoading} title="Odśwież">
                 &#8635;
-            </button>
-        </div>
+            </HeaderButton>
+        </>
     );
 
     return (

@@ -103,15 +103,6 @@
   text-transform: uppercase;
   color: var(--popup-text-dim, #b7aa8b);
 }
-/* Imperium / Ishtar switch, shrunk to the 22px header-action row */
-.wt-domain-switch .popup-segmented {
-  height: 22px;
-  padding: 1px;
-}
-.wt-domain-switch .popup-segmented__item {
-  padding: 0 7px;
-  font-size: 11px;
-}
 /* manual set-time form ("Ustaw"): labels left, controls right */
 .wt-set {
   display: grid;

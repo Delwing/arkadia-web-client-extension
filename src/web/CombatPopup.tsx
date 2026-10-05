@@ -10,6 +10,7 @@ import {
     CombatEntry,
     CombatMessageType
 } from '../client/scripts/combatWindow';
+import { HeaderButton } from '@web-ui/primitives';
 
 const POPUP_ID = 'popup:combat';
 const DISPLAY_LIMIT = 200;
@@ -148,15 +149,15 @@ const CombatPopup: React.FC = () => {
     const headerActions = (
         <>
             {TOGGLES.map(toggle => (
-                <button
+                <HeaderButton
                     key={toggle.type}
-                    type="button"
-                    className={`combat-popup__toggle combat-popup__toggle--${toggle.type.replace('combat.', '')}${toggleStates[toggle.type] ? ' combat-popup__toggle--active' : ''}`}
+                    active={toggleStates[toggle.type]}
+                    className={`combat-popup__toggle--${toggle.type.replace('combat.', '')}`}
                     onClick={() => toggleSetters[toggle.type](!toggleStates[toggle.type])}
                     title={toggleStates[toggle.type] ? `Ukryj: ${toggle.label}` : `Pokaż: ${toggle.label}`}
                 >
                     {toggle.label}
-                </button>
+                </HeaderButton>
             ))}
         </>
     );

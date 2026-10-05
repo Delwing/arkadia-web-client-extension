@@ -40,6 +40,7 @@ import {
     type ResistanceKind,
     type ResistanceTrait,
 } from '@modules/data/enemyResistanceStore';
+import { HeaderButton } from '@web-ui/primitives';
 
 const POPUP_ID = 'popup:enemyResistances';
 const CONFIRM_MS = 4000;
@@ -184,14 +185,9 @@ const EnemyResistancesPopup: React.FC = () => {
     };
 
     const headerActions = entries.length > 0 ? (
-        <button
-            type="button"
-            className={`popup-btn popup-btn--sm${confirmClear ? ' popup-btn--danger' : ''}`}
-            onClick={handleClearAll}
-            title="Usuń wszystkie wpisy"
-        >
+        <HeaderButton danger={confirmClear} onClick={handleClearAll} title="Usuń wszystkie wpisy">
             {confirmClear ? 'Na pewno?' : 'Wyczyść'}
-        </button>
+        </HeaderButton>
     ) : undefined;
 
     const removeButton = (group: EnemyResistanceGroup) => (

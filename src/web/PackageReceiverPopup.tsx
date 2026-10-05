@@ -11,6 +11,7 @@ import {
     removeLocalNpc,
     subscribe as subscribeNpcStore,
 } from './dataStores/npcStore';
+import { HeaderButton } from '@web-ui/primitives';
 
 const POPUP_ID = 'popup:packageReceiver';
 
@@ -88,32 +89,11 @@ const PackageReceiverPopup: React.FC = () => {
     }, [npcs, search]);
 
     const headerActions = (
-        <div className="package-receiver__sort-buttons">
-            <button
-                type="button"
-                className="popup-btn"
-                onClick={handleRefreshNpcs}
-                title="Aktualizuj listę NPC"
-            >
-                Aktualizuj
-            </button>
-            <button
-                type="button"
-                className="popup-btn"
-                onClick={handleExportNpcs}
-                title="Eksportuj listę NPC"
-            >
-                Eksport
-            </button>
-            <button
-                type="button"
-                className="popup-btn"
-                onClick={handleClearNpcs}
-                title="Wyczyść listę NPC"
-            >
-                Wyczyść
-            </button>
-        </div>
+        <>
+            <HeaderButton onClick={handleRefreshNpcs} title="Aktualizuj listę NPC">Aktualizuj</HeaderButton>
+            <HeaderButton onClick={handleExportNpcs} title="Eksportuj listę NPC">Eksport</HeaderButton>
+            <HeaderButton onClick={handleClearNpcs} title="Wyczyść listę NPC">Wyczyść</HeaderButton>
+        </>
     );
 
     return (

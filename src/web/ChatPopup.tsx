@@ -6,6 +6,7 @@ import { usePopupSetting } from './hooks/usePopupSetting';
 import { usePopupData } from './hooks/usePopupData';
 import { useAutoScroll } from './hooks/useAutoScroll';
 import { getChatHistory, ChatEntry } from '../client/scripts/chatHistory';
+import { HeaderButton } from '@web-ui/primitives';
 
 const POPUP_ID = 'popup:chat';
 const DISPLAY_LIMIT = 100;
@@ -82,14 +83,13 @@ const ChatPopup: React.FC = () => {
 
     // Team filter in header; wrapping and timestamps live in the settings cog.
     const headerActions = (
-        <button
-            type="button"
-            className={`chat-popup__team-toggle${showTeamOnly ? ' chat-popup__team-toggle--active' : ''}`}
+        <HeaderButton
+            active={showTeamOnly}
             onClick={() => setShowTeamOnly(!showTeamOnly)}
             title={showTeamOnly ? 'Pokaż wszystkie wiadomości' : 'Pokaż tylko wiadomości drużyny'}
         >
             Drużyna
-        </button>
+        </HeaderButton>
     );
 
     return (

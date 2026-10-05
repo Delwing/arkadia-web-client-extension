@@ -2242,7 +2242,6 @@ span.import-source__icon > svg {
   }
 }
 
-
 .ui-settings-section,
 .character-settings-section {
   background-color: var(--popup-section-bg);
@@ -3531,29 +3530,6 @@ body.layout-manager-enabled #notification-center {
   overflow: hidden;
   position: relative;
   background-color: #000;
-}
-
-.static-map-popup__image-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: var(--popup-control-bg);
-  border: 1px solid var(--popup-border);
-  color: var(--popup-text-dim);
-  border-radius: 0.25rem;
-  padding: 0.2rem;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  margin-left: 0.25rem;
-}
-
-.static-map-popup__image-btn:hover {
-  background-color: var(--popup-control-hover-bg);
-  color: var(--popup-text-bright);
-}
-
-.static-map-popup__image-btn:active {
-  background-color: rgba(255, 255, 255, 0.15);
 }
 
 /* ===== Object List Documentation ===== */

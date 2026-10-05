@@ -1245,7 +1245,16 @@ Na telefonach klient podnosi te wartości (większe kontrolki pod palec) — uż
 - Treść buduj przez DOM (`document.createElement`) albo HTML-em; dodaj własny padding.
 - Korzeń treści może wypełnić okno: `height: 100%` (np. z `display: flex; flex-direction: column`, a przewijana lista w środku `flex: 1; min-height: 0; overflow-y: auto`).
 - Rozmiar startowy: `initialWidth` / `initialHeight` — liczba (px), dowolna długość CSS (`'420px'`, `'30em'`, `'40%'` i `'50vw'` liczone od okna gry, `'min(600px, 80vw)'`) albo `'content'` (dopasuj do treści). Bez nich okno dostaje połowę szerokości i 40% wysokości okna gry. Rozmiar zawsze mieści się na ekranie (z małym marginesem) i nie schodzi poniżej 300×150. Działa przy pierwszym otwarciu i po „Przywróć domyślną pozycję i rozmiar” — rozmiar ustawiony przez gracza ma pierwszeństwo. Przy `initialHeight: 'content'` korzeń treści nie może mieć `height: 100%`, bo nie będzie czego mierzyć. To samo działa w `createPopup(title, body, { initialWidth, initialHeight })`.
-- Przyciski w nagłówku (`headerActions`): małe i ciche — `popup-btn popup-btn--control popup-btn--sm popup-btn--ghost`.
+- Przyciski w nagłówku (`headerActions`): `popup-header-btn` — tej samej wysokości co przyciski okna obok. Włączony przełącznik dostaje `is-active`, przycisk niebezpieczny (np. „Na pewno?” przy czyszczeniu) `popup-header-btn--danger`. Wybór jednej z kilku opcji to `popup-segmented popup-segmented--sm`:
+
+  ```html
+  <button class="popup-header-btn">Wyczyść</button>
+  <button class="popup-header-btn is-active">Drużyna</button>
+  <div class="popup-segmented popup-segmented--sm">
+    <label class="popup-segmented__item is-active"><input type="radio" class="popup-segmented__input" name="widok" checked>Lista</label>
+    <label class="popup-segmented__item"><input type="radio" class="popup-segmented__input" name="widok">Mapa</label>
+  </div>
+  ```
 - Otwieranie z menu ⋮: `api.ui.addPopupMenuEntry('Nazwa okna', () => popup.isOpen ? popup.close() : popup.open())`.
 
 ```typescript

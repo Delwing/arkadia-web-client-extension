@@ -9,6 +9,7 @@ import PanelHintCard from './assistant/PanelHintCard';
 import { detectPanelHint, type PanelHint } from './assistant/detectPanelHint';
 import { loadKnowledgeBundle } from './assistant/knowledgeBundleClient';
 import AssistantSettingsDialog from './assistant/AssistantSettingsDialog';
+import { HeaderButton } from '@web-ui/primitives';
 
 /**
  * The in-client AI assistant.
@@ -187,22 +188,12 @@ export default function AssistantPopup() {
 
     const headerActions = (
         <>
-            <button
-                type="button"
-                className="assistant-header-btn"
-                title="Wyczyść rozmowę"
-                onClick={() => setMessages([])}
-            >
+            <HeaderButton title="Wyczyść rozmowę" onClick={() => setMessages([])}>
                 Wyczyść
-            </button>
-            <button
-                type="button"
-                className="assistant-header-btn"
-                title="Ustawienia asystenta"
-                onClick={() => setShowSettings(true)}
-            >
+            </HeaderButton>
+            <HeaderButton title="Ustawienia asystenta" onClick={() => setShowSettings(true)}>
                 Ustawienia
-            </button>
+            </HeaderButton>
         </>
     );
 

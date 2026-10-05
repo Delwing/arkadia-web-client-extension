@@ -20,6 +20,7 @@ import {
     findLastKnownStat,
     getCechyHistory,
 } from '../client/scripts/cechyHistory';
+import { HeaderButton } from '@web-ui/primitives';
 
 const POPUP_ID = 'popup:cechy';
 
@@ -308,14 +309,9 @@ const CechyPopup: React.FC = () => {
                 </span>
             )}
             {entries.length > 0 && (
-                <button
-                    type="button"
-                    className={`popup-btn popup-btn--sm${confirmingClear ? ' popup-btn--danger' : ''}`}
-                    onClick={handleClear}
-                    title="Wyczyść historie cech"
-                >
+                <HeaderButton danger={confirmingClear} onClick={handleClear} title="Wyczyść historie cech">
                     {confirmingClear ? 'Na pewno?' : 'Wyczyść'}
-                </button>
+                </HeaderButton>
             )}
         </>
     );

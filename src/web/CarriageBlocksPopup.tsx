@@ -5,6 +5,7 @@ import { usePopup } from './hooks/usePopup';
 import { clearBlockedRooms, getBlockedRooms, unblockRoom } from '@modules/data/carriageBlocks';
 import { getEmbeddedMap, subscribeEmbeddedMap } from './embedRegistry';
 import {roomContextMenuHandler} from "@modules/core/contextMenus";
+import { HeaderButton } from '@web-ui/primitives';
 
 const POPUP_ID = 'popup:carriageBlocks';
 
@@ -60,14 +61,9 @@ const CarriageBlocksPopup: React.FC = () => {
     }, [confirmClear]);
 
     const headerActions = rooms.length > 0 ? (
-        <button
-            type="button"
-            className={`popup-btn popup-btn--sm${confirmClear ? ' popup-btn--danger' : ''}`}
-            onClick={handleClearAll}
-            title="Usuń wszystkie blokady"
-        >
+        <HeaderButton danger={confirmClear} onClick={handleClearAll} title="Usuń wszystkie blokady">
             {confirmClear ? 'Na pewno?' : 'Wyczyść'}
-        </button>
+        </HeaderButton>
     ) : undefined;
 
     return (

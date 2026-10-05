@@ -12,6 +12,7 @@ import type {
 } from '@client/scripts/coverTracker';
 import { ANY_ATTACKER } from '@client/coverPatterns';
 import './CoverDebugPopup.css';
+import { HeaderButton } from '@web-ui/primitives';
 
 const POPUP_ID = 'popup:coverDebug';
 /** The log is a debug tape, not a history - keep it short enough to stay readable. */
@@ -112,22 +113,16 @@ const CoverDebugPopup: React.FC = () => {
 
     const headerActions = (
         <>
-            <button
-                type="button"
-                className={`popup-btn popup-btn--sm${hideGmcp ? ' popup-btn--primary' : ''}`}
+            <HeaderButton
+                active={hideGmcp}
                 onClick={() => setHideGmcp(!hideGmcp)}
                 title="Ukryj wpisy wywnioskowane tylko z GMCP"
             >
                 bez GMCP
-            </button>
-            <button
-                type="button"
-                className="popup-btn popup-btn--sm"
-                onClick={() => { setLog([]); unknownBlocks.current = 0; }}
-                title="Wyczyść log zdarzeń"
-            >
+            </HeaderButton>
+            <HeaderButton onClick={() => { setLog([]); unknownBlocks.current = 0; }} title="Wyczyść log zdarzeń">
                 Wyczyść
-            </button>
+            </HeaderButton>
         </>
     );
 

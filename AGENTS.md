@@ -143,6 +143,7 @@ yarn test:e2e -- --shard=1/12              # Run one CI shard
 
 ### Styling
 - Build UI from `@web-ui/primitives` (Dialog, Button, Input, Field, Check, Select, …) and the `popup-*` classes; page-level windows go through `src/web/modals/appModal.ts`. Do not add Bootstrap or Bootstrap class names
+- Window header actions (`headerActions`) use `HeaderButton` (`active` for a toggle, `danger` for a destructive or confirming click) and `<Segmented size="sm">` for a choice — no per-popup header button classes or wrapper divs
 - Follow existing CSS patterns
 
 ## Protected Directories

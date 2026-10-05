@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
 import { usePopup } from './hooks/usePopup';
 import { DATA_SOURCES, computeNextFetch, type DataSource } from './dataSourcesRegistry';
+import { HeaderButton } from '@web-ui/primitives';
 
 const POPUP_ID = 'popup:dataSources';
 
@@ -201,15 +202,9 @@ const DataSourcesPopup: React.FC = () => {
   }, [loadMetadata]);
 
   const headerActions = selectedSource ? null : (
-    <button
-      type="button"
-      className="popup-btn"
-      onClick={handleRefreshAll}
-      disabled={refreshingAll}
-      title="Odśwież wszystkie źródła"
-    >
+    <HeaderButton onClick={handleRefreshAll} disabled={refreshingAll} title="Odśwież wszystkie źródła">
       Odśwież wszystko
-    </button>
+    </HeaderButton>
   );
 
   const selectedRow = selectedSource ? rows[selectedSource.id] : undefined;

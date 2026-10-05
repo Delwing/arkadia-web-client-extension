@@ -209,10 +209,9 @@ body.layout-manager-enabled #content-area > .world {
 /* Unified forged voice for custom header ACTION buttons — one style every
    text action button reuses (the objectList "Lista" mode toggle, chat team
    toggle, popup headerActions…), rather than each carrying its own stock CSS.
-   Scoped to DIRECT-child buttons so it spares the nested icon toggles
-   (.popup-menu__toggle + its dropdown items) and the icon control buttons
-   (.panel-button: pin / lock / close / reset / popout). */
-.managed-panel__header-actions > button:not(.panel-button) {
+   Keyed on HeaderButton (.popup-header-btn), so it spares the icon toggles
+   (.popup-menu__toggle + its dropdown items) and the window buttons. */
+.managed-panel__header .popup-header-btn {
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -231,13 +230,13 @@ body.layout-manager-enabled #content-area > .world {
   white-space: nowrap;
   transition: color 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
 }
-.managed-panel__header-actions > button:not(.panel-button):hover {
+.managed-panel__header .popup-header-btn:hover {
   color: var(--parchment);
   border-color: var(--bronze-dim);
   background-color: rgba(42, 37, 28, 0.9);
 }
 /* toggled/active state (e.g. objectList non-list mode) reads as bronze */
-.managed-panel__header-actions > button:not(.panel-button)[class*="--active"] {
+.managed-panel__header .popup-header-btn.is-active {
   color: var(--bronze);
   border-color: var(--bronze-dim);
   background-color: rgba(110, 86, 32, 0.28);

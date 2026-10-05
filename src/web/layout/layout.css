@@ -229,11 +229,17 @@ body.layout-locked .tab-group-tab--closable {
   margin-left: auto;
 }
 
-/* The two groups inside the header actions - the popup's own actions and the
-   window buttons - take no part in the one-row layout. */
-.managed-panel__custom-actions,
+/* The window buttons take no part in the one-row layout; the popup's own
+   actions (HeaderButton, Segmented size="sm") are one group, a little apart
+   from each other and further from the window buttons. */
 .managed-panel__window-buttons {
   display: contents;
+}
+.managed-panel__custom-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-right: 6px;
 }
 
 /* Too narrow for one row (see useStackedHeader): title and window buttons on
@@ -275,6 +281,7 @@ body.layout-locked .tab-group-tab--closable {
   align-items: center;
   gap: 4px;
   min-width: 0;
+  margin-right: 0;
 }
 
 /* Panel content base */

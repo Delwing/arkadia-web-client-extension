@@ -836,6 +836,69 @@ select.popup-input.popup-input--control {
   color: var(--popup-text-strong);
 }
 
+/* Compact segmented choice for a window header (Segmented size="sm"). */
+.popup-segmented.popup-segmented--sm {
+  height: var(--panel-btn-size, 20px);
+  padding: 1px;
+  border-radius: var(--ui-radius-sm, 4px);
+}
+.popup-segmented--sm .popup-segmented__item {
+  padding: 0 7px;
+  border-radius: 3px;
+  font-size: var(--ui-fs-xs, 12px);
+}
+
+/* Header button: the one way to put an action in a window header, next to the
+   window buttons (HeaderButton). As tall as those buttons, so the header keeps
+   its height; `is-active` marks a toggle that is on. */
+.popup-header-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  box-sizing: border-box;
+  height: var(--panel-btn-size, 20px);
+  padding: 0 7px;
+  border: 1px solid var(--popup-border-control);
+  border-radius: var(--ui-radius-sm, 4px);
+  background-color: transparent;
+  color: var(--popup-text-medium);
+  font-family: inherit;
+  font-size: var(--ui-fs-xs, 12px);
+  font-weight: 500;
+  line-height: normal;
+  white-space: nowrap;
+  cursor: pointer;
+  opacity: 1; /* see .popup-btn */
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.popup-header-btn:hover:not(:disabled) {
+  background-color: var(--popup-control-active-bg);
+  color: var(--popup-text-strong);
+}
+.popup-header-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.popup-header-btn.is-active {
+  background-color: var(--popup-accent-bg);
+  border-color: var(--popup-accent-border);
+  color: var(--popup-accent);
+}
+.popup-header-btn.is-active:hover:not(:disabled) {
+  background-color: var(--popup-accent-hover-bg);
+}
+.popup-header-btn--danger,
+.popup-header-btn--danger:hover:not(:disabled) {
+  background-color: var(--popup-danger-bg);
+  border-color: var(--popup-danger-border);
+  color: var(--popup-danger);
+}
+.popup-header-btn svg {
+  width: 12px;
+  height: 12px;
+}
+
 /* Choice list: exclusive options as rows, a title and a line of explanation each. */
 .popup-choices {
   display: flex;
@@ -1585,51 +1648,33 @@ select.popup-input.popup-input--control {
   color: var(--popup-text);
 }
 
-.combat-popup__toggle {
-  background-color: var(--popup-control-bg);
-  border: 1px solid var(--popup-border);
-  color: var(--popup-text-dim);
-  font-size: 0.7rem;
-  padding: 0.15rem 0.4rem;
-  border-radius: 0.25rem;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  white-space: nowrap;
-  margin-right: 0.25rem;
-}
-
-.combat-popup__toggle:hover {
-  background-color: var(--popup-control-hover-bg);
-  color: var(--popup-text-bright);
-}
-
-.combat-popup__toggle--active.combat-popup__toggle--avatar {
+.popup-header-btn.is-active.combat-popup__toggle--avatar {
   background-color: var(--popup-success-bg);
   border-color: rgba(34, 197, 94, 0.4);
   color: var(--popup-success);
 }
 
-.combat-popup__toggle--active.combat-popup__toggle--avatar:hover {
+.popup-header-btn.is-active.combat-popup__toggle--avatar:hover {
   background-color: var(--popup-success-hover-bg);
 }
 
-.combat-popup__toggle--active.combat-popup__toggle--team {
+.popup-header-btn.is-active.combat-popup__toggle--team {
   background-color: var(--popup-accent-bg);
   border-color: var(--popup-accent-border);
   color: var(--popup-accent);
 }
 
-.combat-popup__toggle--active.combat-popup__toggle--team:hover {
+.popup-header-btn.is-active.combat-popup__toggle--team:hover {
   background-color: var(--popup-accent-hover-bg);
 }
 
-.combat-popup__toggle--active.combat-popup__toggle--others {
+.popup-header-btn.is-active.combat-popup__toggle--others {
   background-color: rgba(251, 146, 60, 0.2);
   border-color: rgba(251, 146, 60, 0.4);
   color: var(--popup-data-orange-light);
 }
 
-.combat-popup__toggle--active.combat-popup__toggle--others:hover {
+.popup-header-btn.is-active.combat-popup__toggle--others:hover {
   background-color: rgba(251, 146, 60, 0.3);
 }
 
@@ -1793,12 +1838,6 @@ select.popup-input.popup-input--control {
 .contracts-window {
   --fw-width: 520px;
   --fw-min-width: 350px;
-}
-
-.contracts-sort-buttons {
-  display: flex;
-  gap: 0.25rem;
-  margin-right: 0.5rem;
 }
 
 /* Contracts window body has smaller gap */
@@ -2105,34 +2144,6 @@ select.popup-input.popup-input--control {
   color: var(--popup-text);
 }
 
-.chat-popup__team-toggle {
-  background-color: var(--popup-control-bg);
-  border: 1px solid var(--popup-border);
-  color: var(--popup-text-dim);
-  font-size: 0.7rem;
-  padding: 0.15rem 0.4rem;
-  border-radius: 0.25rem;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  white-space: nowrap;
-  margin-right: 0.5rem;
-}
-
-.chat-popup__team-toggle:hover {
-  background-color: var(--popup-control-hover-bg);
-  color: var(--popup-text-bright);
-}
-
-.chat-popup__team-toggle--active {
-  background-color: var(--popup-accent-bg);
-  border-color: var(--popup-accent-border);
-  color: var(--popup-accent);
-}
-
-.chat-popup__team-toggle--active:hover {
-  background-color: var(--popup-accent-hover-bg);
-}
-
 .chat-popup__messages--no-wrap .chat-popup__message {
   white-space: nowrap;
   overflow: hidden;
@@ -2281,29 +2292,6 @@ select.popup-input.popup-input--control {
   padding: 0.1rem 0.3rem;
   background-color: rgba(255, 255, 0, 0.1);
   border-radius: 0.25rem;
-}
-
-.postepy-popup__image-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: var(--popup-control-bg);
-  border: 1px solid var(--popup-border);
-  color: var(--popup-text-dim);
-  border-radius: 0.25rem;
-  padding: 0.2rem;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  margin-left: 0.25rem;
-}
-
-.postepy-popup__image-btn:hover {
-  background-color: var(--popup-control-hover-bg);
-  color: var(--popup-text-bright);
-}
-
-.postepy-popup__image-btn:active {
-  background-color: var(--popup-control-pressed-bg);
 }
 
 /* ── postepy2 (incl. graphs) ─────────────────────────────────────────── */
@@ -3119,33 +3107,6 @@ select.popup-input.popup-input--control {
   font-weight: bold;
 }
 
-.zabici-popup__team-toggle {
-  background-color: var(--popup-control-bg);
-  border: 1px solid var(--popup-border);
-  color: var(--popup-text-dim);
-  font-size: 0.7rem;
-  padding: 0.15rem 0.4rem;
-  border-radius: 0.25rem;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  white-space: nowrap;
-}
-
-.zabici-popup__team-toggle:hover {
-  background-color: var(--popup-control-hover-bg);
-  color: var(--popup-text-bright);
-}
-
-.zabici-popup__team-toggle--active {
-  background-color: rgba(135, 206, 235, 0.2);
-  border-color: rgba(135, 206, 235, 0.4);
-  color: var(--popup-data-blue);
-}
-
-.zabici-popup__team-toggle--active:hover {
-  background-color: rgba(135, 206, 235, 0.3);
-}
-
 /* ── zabici2 (lifetime) ──────────────────────────────────────────────── */
 /* Zabici2 (Lifetime) Popup */
 
@@ -3515,35 +3476,6 @@ select.popup-input.popup-input--control {
 
 /* ── people browser ──────────────────────────────────────────────────── */
 /* People Browser Popup */
-/* People browser refresh header action */
-.people-browser__refresh {
-  background-color: var(--popup-control-bg);
-  border: 1px solid var(--popup-border);
-  color: var(--popup-text-dim);
-  padding: 1px 8px;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background-color 0.15s, border-color 0.15s, color 0.15s;
-}
-
-.people-browser__refresh:hover {
-  background-color: var(--popup-control-hover-bg);
-  color: var(--popup-text-bright);
-}
-
-.people-browser__refresh--active {
-  background-color: var(--popup-accent-bg);
-  border-color: var(--popup-accent-border);
-  color: var(--popup-accent);
-  cursor: wait;
-}
-
-.people-browser__refresh:disabled {
-  cursor: wait;
-}
-
 .people-browser-body {
   display: flex;
   flex-direction: column;
@@ -4133,12 +4065,6 @@ select.popup-input.popup-input--control {
   --fw-min-width: 350px;
 }
 
-.poczta-tabs {
-  display: flex;
-  gap: 0.25rem;
-  margin-right: 0.5rem;
-}
-
 .poczta-loading,
 .poczta-list {
   flex: 1;
@@ -4583,12 +4509,6 @@ select.popup-input.popup-input--control {
   background-color: var(--popup-bg);
   font-size: 0.8rem;
   line-height: 1.4;
-}
-
-.package-receiver__sort-buttons {
-  display: flex;
-  gap: 0.25rem;
-  margin-right: 0.5rem;
 }
 
 .package-receiver__controls {
@@ -5520,14 +5440,6 @@ select.popup-input.popup-input--control {
   white-space: pre-wrap;
   word-wrap: break-word;
 }
-
-.letter-view-actions {
-  display: flex;
-  gap: 0.25rem;
-  margin-right: 0.5rem;
-}
-
-/* letter-view action buttons folded to .popup-btn. */
 
 /* ── herbManager (ziola bags) ────────────────────────────────────────────────
    The /ziola HerbManager body (bags + pills). Palette promoted to `--popup-*`
@@ -7251,8 +7163,7 @@ select.popup-input.popup-input--control {
   font-size: 0.85rem;
 }
 
-.assistant-btn,
-.assistant-header-btn {
+.assistant-btn {
   background-color: var(--popup-control-bg);
   border: 1px solid var(--popup-border);
   color: var(--popup-text-dim);
@@ -7264,14 +7175,7 @@ select.popup-input.popup-input--control {
   transition: all 0.15s ease;
 }
 
-.assistant-header-btn {
-  margin-right: 0.4rem;
-  font-size: 0.7rem;
-  padding: 0.15rem 0.4rem;
-}
-
-.assistant-btn:hover,
-.assistant-header-btn:hover {
+.assistant-btn:hover {
   background-color: var(--popup-control-hover-bg);
   color: var(--popup-text-bright);
 }

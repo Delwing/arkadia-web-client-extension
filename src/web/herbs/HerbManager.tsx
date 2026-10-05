@@ -12,6 +12,7 @@ import { DockablePopupWrapper } from "../layout/components/DockablePopupWrapper"
 import { useLayoutManagerOptional } from "../layout/hooks/useLayoutManager";
 import { usePopup } from "../hooks/usePopup";
 import { usePopupSetting } from "../hooks/usePopupSetting";
+import { HeaderButton } from '@web-ui/primitives';
 
 const POPUP_ID = 'popup:herb';
 
@@ -675,30 +676,23 @@ const HerbManager = () => {
 
     const headerActions = useMemo(() => (
         <>
-            <button
-                type="button"
-                className={`herb-window__toggle${giveMode ? ' herb-window__toggle--active' : ''}`}
-                onClick={toggleGiveMode}
-                title="Przekaż zioła komuś na lokacji"
-            >
+            <HeaderButton active={giveMode} onClick={toggleGiveMode} title="Przekaż zioła komuś na lokacji">
                 Daj
-            </button>
-            <button
-                type="button"
-                className={`herb-window__toggle${showEffects ? ' herb-window__toggle--active' : ''}`}
+            </HeaderButton>
+            <HeaderButton
+                active={showEffects}
                 onClick={() => setShowEffects(!showEffects)}
                 title={showEffects ? 'Ukryj efekty' : 'Pokaż efekty ziół'}
             >
                 Efekty
-            </button>
-            <button
-                type="button"
-                className={`herb-window__toggle${isCompact ? ' herb-window__toggle--active' : ''}`}
+            </HeaderButton>
+            <HeaderButton
+                active={isCompact}
                 onClick={() => setIsCompact(!isCompact)}
                 title={isCompact ? 'Widok normalny' : 'Widok kompaktowy'}
             >
                 Kompaktowy
-            </button>
+            </HeaderButton>
         </>
     ), [showEffects, isCompact, setShowEffects, setIsCompact, giveMode, toggleGiveMode]);
 

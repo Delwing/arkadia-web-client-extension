@@ -53,6 +53,28 @@ export function Button({ variant = 'secondary', size = 'md', className, type = '
     return <button type={type} className={buttonClass(variant, size, className)} {...rest} />;
 }
 
+export interface HeaderButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+    /** A toggle that is on. */
+    active?: boolean;
+    /** Destructive, or arming one (a second click confirms). */
+    danger?: boolean;
+}
+
+/**
+ * An action in a window header (`headerActions`): small and as tall as the
+ * window buttons beside it. Every popup header uses this rather than its own
+ * button class; a choice between options there is `<Segmented size="sm">`.
+ */
+export function HeaderButton({ active, danger, className, type = 'button', ...rest }: HeaderButtonProps) {
+    return (
+        <button
+            type={type}
+            className={cx('popup-header-btn', active && 'is-active', danger && 'popup-header-btn--danger', className)}
+            {...rest}
+        />
+    );
+}
+
 /** A link that looks like a Button — for actions that open a page (opens in a new tab). */
 export function LinkButton({ variant = 'secondary', size = 'md', className, ...rest }: AnchorHTMLAttributes<HTMLAnchorElement> & Pick<ButtonProps, 'variant' | 'size'>) {
     return <a target="_blank" rel="noopener noreferrer" className={buttonClass(variant, size, className)} {...rest} />;
@@ -225,6 +247,8 @@ export interface SegmentedProps<T extends string> {
     onChange: (value: T) => void;
     /** Radio group name; one is generated when omitted. */
     name?: string;
+    /** sm = header size, as tall as the window buttons (see HeaderButton). */
+    size?: 'sm' | 'md';
 }
 
 /**
@@ -232,11 +256,11 @@ export interface SegmentedProps<T extends string> {
  * option is a real radio input (visually hidden, covering its label), so it is
  * a proper radio group for the keyboard and for label lookups.
  */
-export function Segmented<T extends string>({ value, options, onChange, name }: SegmentedProps<T>) {
+export function Segmented<T extends string>({ value, options, onChange, name, size = 'md' }: SegmentedProps<T>) {
     const generated = useId();
     const group = name ?? generated;
     return (
-        <div className="popup-segmented">
+        <div className={cx('popup-segmented', size === 'sm' && 'popup-segmented--sm')}>
             {options.map(o => (
                 <label key={o.value} className={cx('popup-segmented__item', o.value === value && 'is-active')}>
                     <input

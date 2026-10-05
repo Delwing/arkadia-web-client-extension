@@ -6,6 +6,7 @@ import { usePopupSetting } from './hooks/usePopupSetting';
 import type { Contract } from '@client/scripts/contracts';
 import { getEmbeddedMap } from './embedRegistry';
 import {roomContextMenuHandler} from "@modules/core/contextMenus";
+import { Segmented } from '@web-ui/primitives';
 
 interface ContractsPopupPayload {
     contracts: Contract[];
@@ -13,6 +14,11 @@ interface ContractsPopupPayload {
 }
 
 type SortMode = 'distance' | 'time';
+
+const SORT_OPTIONS: { value: SortMode; label: string }[] = [
+    { value: 'distance', label: 'Odległość' },
+    { value: 'time', label: 'Czas' },
+];
 
 const ONE_INGAME_DAY_MS = 48 * 60 * 1000; // 48 real minutes = 1 in-game day
 
@@ -98,24 +104,7 @@ const ContractsPopup: React.FC = () => {
     }, [contractsWithDistance, sortMode]);
 
     const headerActions = (
-        <div className="contracts-sort-buttons">
-            <button
-                type="button"
-                className={`popup-btn${sortMode === 'distance' ? ' popup-btn--primary' : ''}`}
-                onClick={() => setSortMode('distance')}
-                title="Sortuj po odległości"
-            >
-                Odległość
-            </button>
-            <button
-                type="button"
-                className={`popup-btn${sortMode === 'time' ? ' popup-btn--primary' : ''}`}
-                onClick={() => setSortMode('time')}
-                title="Sortuj po czasie"
-            >
-                Czas
-            </button>
-        </div>
+        <Segmented size="sm" value={sortMode} options={SORT_OPTIONS} onChange={setSortMode} />
     );
 
     return (
