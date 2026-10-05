@@ -80,3 +80,35 @@
 .wt-doy {
   color: var(--popup-accent-border, #9a7b3e);
 }
+/* sunrise / sunset strip under the clock */
+.wt-sun {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 5px;
+  border-top: 1px solid var(--popup-border-subtle);
+  font-family: var(--output-font-family, ui-monospace, monospace);
+  font-size: 11px;
+  color: var(--popup-text, #d8cdb2);
+  font-variant-numeric: tabular-nums;
+}
+.wt-sun-item {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.wt-sun-label {
+  font-size: 9.5px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--popup-text-dim, #b7aa8b);
+}
+/* Imperium / Ishtar switch, shrunk to the 22px header-action row */
+.wt-domain-switch .popup-segmented {
+  height: 22px;
+  padding: 1px;
+}
+.wt-domain-switch .popup-segmented__item {
+  padding: 0 7px;
+  font-size: 11px;
+}

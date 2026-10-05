@@ -1,5 +1,5 @@
 import {expect, test} from './support/fixtures';
-import {ensureGameSocket, GMCP_PATHS, pushGmcp, pushText, waitForCommandInput} from './support/mocks';
+import {ensureGameSocket, GMCP_PATHS, pushGmcp, pushText, submitCommand, waitForCommandInput} from './support/mocks';
 
 test.describe('Clock System', () => {
     test.beforeEach(async ({context}) => {
@@ -335,5 +335,31 @@ test.describe('Clock System', () => {
         await page.clock.runFor(2000);
 
         await expect(chip).toHaveAttribute('title', /wiosna, noc/);
+    });
+
+    test('Czas popup shows sun times and switches between Imperium and Ishtar', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+
+        await pushText(page, 'Jest w przyblizeniu szosta rano, 1 dzien miesiaca Nachhexen wedlug Kalendarza Imperialnego.');
+        await pushText(page, 'Jest w przyblizeniu poludnie, pietnasty dzien pory Birke wedlug rachuby czasu Starszego Ludu.');
+        await expect(page.locator('#clock-display')).toContainText('12:00');
+
+        await submitCommand(page, '/czasw');
+        const body = page.locator('.world-time-popup');
+        const domainSwitch = page.locator('.wt-domain-switch');
+        const sun = body.locator('.wt-sun');
+
+        // Follows the domain you are in (the last time read was Ishtar)
+        await expect(body.locator('.wt-time')).toHaveText('12:00');
+        await expect(sun).toContainText(/Wsch\S*\s*\d\d:00/);
+        await expect(sun).toContainText(/Zach\S*\s*\d\d:00/);
+
+        await domainSwitch.getByText('Imperium').click();
+        await expect(body.locator('.wt-time')).toHaveText('06:00');
+
+        await domainSwitch.getByText('Ishtar').click();
+        await expect(body.locator('.wt-time')).toHaveText('12:00');
     });
 });
