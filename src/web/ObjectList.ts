@@ -45,6 +45,8 @@ export default class ObjectList {
     private viewMode: ObjectListViewMode = 'list';
     private isLayoutManagerEnabled = false;
     private renderScheduled = false;
+    private pressedTarget: Element | null = null;
+    private suppressClick = false;
 
     constructor(client: Client) {
         this.client = client;
@@ -56,11 +58,15 @@ export default class ObjectList {
         this.attackController = createAttackController(client);
         this.setupDraggable();
         if (!this.isMobile) {
+            this.container?.addEventListener("mousedown", this.onMouseDown);
+            this.container?.addEventListener("mouseup", this.onMouseUp);
             this.container?.addEventListener("click", this.onClick);
             this.container?.addEventListener("contextmenu", this.onContextMenu);
             // Also attach to content for better event capture in docked panels
             this.content?.addEventListener("click", this.onClick);
             this.content?.addEventListener("contextmenu", this.onContextMenu);
+            this.othersContainer?.addEventListener("mousedown", this.onMouseDown);
+            this.othersContainer?.addEventListener("mouseup", this.onMouseUp);
             this.othersContainer?.addEventListener("click", this.onClick);
             this.othersContainer?.addEventListener("contextmenu", this.onContextMenu);
             // Use capture phase at document level for card view contextmenu
@@ -317,8 +323,35 @@ export default class ObjectList {
         return null;
     }
 
+    private onMouseDown = (e: MouseEvent) => {
+        this.pressedTarget = this.getEventTargetElement(e.target);
+    };
+
+    /**
+     * In combat the list re-renders on nearly every hit, so the element pressed
+     * is often swapped out before the button is released - and then the browser
+     * fires no click at all, so a dot or HP bar click is silently lost. When the
+     * release lands on the same object in the fresh render, treat it as the click.
+     */
+    private onMouseUp = (e: MouseEvent) => {
+        const pressed = this.pressedTarget;
+        this.pressedTarget = null;
+        if (e.button !== 0 || !pressed || pressed.isConnected) return;
+        const released = this.getEventTargetElement(e.target);
+        const pressedId = pressed.closest("[data-object-id]")?.getAttribute("data-object-id");
+        if (!pressedId || released?.closest("[data-object-id]")?.getAttribute("data-object-id") !== pressedId) return;
+        this.onClick(e);
+        // Should a browser still fire a click for this press, don't act twice.
+        this.suppressClick = true;
+        setTimeout(() => { this.suppressClick = false; });
+    };
+
     private onClick = (e: MouseEvent) => {
         if (this.isMobile) return;
+        if (this.suppressClick) {
+            this.suppressClick = false;
+            return;
+        }
         const target = this.getEventTargetElement(e.target);
         if (!target) return;
         if (target.closest(".objects-list-controls")) {
@@ -718,6 +751,8 @@ export default class ObjectList {
             this.pipDocument.body.appendChild(pipContent);
             this.pipContent = pipContent;
             if (!this.isMobile) {
+                this.pipContent.addEventListener("mousedown", this.onMouseDown);
+                this.pipContent.addEventListener("mouseup", this.onMouseUp);
                 this.pipContent.addEventListener("click", this.onClick);
                 this.pipContent.addEventListener("contextmenu", this.onContextMenu);
             }
@@ -751,6 +786,8 @@ export default class ObjectList {
             pipWindow.removeEventListener("pagehide", this.handlePictureInPictureClose);
         }
         if (this.pipContent && !this.isMobile) {
+            this.pipContent.removeEventListener("mousedown", this.onMouseDown);
+            this.pipContent.removeEventListener("mouseup", this.onMouseUp);
             this.pipContent.removeEventListener("click", this.onClick);
             this.pipContent.removeEventListener("contextmenu", this.onContextMenu);
         }
