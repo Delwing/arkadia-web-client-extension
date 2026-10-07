@@ -1,3 +1,6 @@
+// TypeScript's DOM lib dropped `renotify`, but Chrome still honours it.
+type AlertNotificationOptions = NotificationOptions & { renotify?: boolean };
+
 /**
  * Local, on-this-machine notifications.
  *
@@ -32,7 +35,12 @@ export default class NotificationManager {
             navigator.serviceWorker.ready
                 // Shares the tag the push handler uses, so a local notification
                 // and a pushed one carrying the same alert collapse into one.
-                .then((reg) => reg.showNotification(message, { tag: 'arkadia-alert' }))
+                // `renotify` makes a repeat pop up again; without it Chrome
+                // swaps the text in silently while the old one is still shown.
+                .then((reg) => {
+                    const options: AlertNotificationOptions = { tag: 'arkadia-alert', renotify: true };
+                    return reg.showNotification(message, options);
+                })
                 .catch(() => {});
         } else {
             new Notification(message);
