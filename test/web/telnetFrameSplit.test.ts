@@ -154,6 +154,34 @@ describe('a telnet sequence split across frames', () => {
         expect(answers).toHaveLength(1);
     });
 
+    /*
+     * The socket can die with the head of a packet still held back — a phone put
+     * away mid-fight. The resume has to replay that head, not start after it: the
+     * rest of the packet alone has no IAC SB in front of it, and rendered as a bare
+     * `sgs {"text":"G1sy..."}` line.
+     */
+    it('replays a held-back packet head after a resume', () => {
+        const offset = (socket: FakeSocket) =>
+            Number(socket.protocols?.find(v => v.startsWith('o.'))?.slice(2) ?? 0);
+        const first = instances[0];
+        const base = offset(first);
+        const before = 'Rozgladasz sie.\r\n';
+        const cut = 8;
+        first.onmessage?.({data: dataFrame(before + GMCP.substring(0, cut))});
+        first.onclose?.({code: 1006, reason: '', wasClean: false} as CloseEvent);
+
+        arkadiaClient.connect();
+        const second = instances[1];
+        expect(offset(second)).toBe(base + before.length);
+
+        // The proxy replays from the offset it was given.
+        second.onmessage?.({data: dataFrame(GMCP + TAIL)});
+
+        expect(states).toEqual([{hp: 5}]);
+        expect(lines.join('')).not.toContain('state {');
+        expect(lines.join('')).toContain('Jestes glodny.');
+    });
+
     it('does not re-answer a WILL GMCP that fell entirely inside one frame', () => {
         const socket = instances[0];
         socket.onmessage?.({data: dataFrame('Witaj\r\n\xFF\xFB\xC9')});

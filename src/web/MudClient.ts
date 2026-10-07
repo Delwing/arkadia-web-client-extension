@@ -408,7 +408,7 @@ class MudClient implements ClientAdapter {
         this.clockOffsetWarned = false;
         this.gmcpInitialized = false;
         this.textDecoder = new TextDecoder('utf-8', {fatal: false});
-        this.pendingSubneg = "";
+        this.dropHeldTelnet();
         this.negotiationCarry = "";
         this.pendingLineTail = "";
         this.pendingMsgTails.clear();
@@ -515,7 +515,7 @@ class MudClient implements ClientAdapter {
                 this.pingTracker.stop();
                 this.mccpHandler.reset();
                 this.echoHandler.reset();
-                this.pendingSubneg = "";
+                this.dropHeldTelnet();
                 this.negotiationCarry = "";
                 this.pendingLineTail = "";
                 this.pendingMsgTails.clear();
@@ -902,6 +902,21 @@ class MudClient implements ClientAdapter {
             if (tail.length > 0) return true;
         }
         return false;
+    }
+
+    /**
+     * Discard a telnet sequence held back for the next frame, and take its bytes off
+     * processedBytes. They were counted on arrival but never reached the pipeline, so a
+     * resumed attach must replay them: resuming past them hands over only the rest of
+     * the packet, which has no IAC SB in front of it and renders as game text — a bare
+     * `sgs {"text":"G1sy..."}` in the main output after a phone comes back.
+     *
+     * Same units as the count: the session proxy runs without MCCP, so the held bytes
+     * are the bytes that came off the wire.
+     */
+    private dropHeldTelnet(): void {
+        this.processedBytes = Math.max(0, this.processedBytes - this.pendingSubneg.length);
+        this.pendingSubneg = "";
     }
 
     /** Queue a chunk of raw game text for the flushLines pipeline. */
