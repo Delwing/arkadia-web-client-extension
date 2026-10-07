@@ -140,6 +140,8 @@ Zakresy działają rosnąco (`1-7`) i malejąco (`7-1`). Maksymalnie 50 iteracji
 
 > **Konfiguracja:** Komendy konfiguruje się w ustawieniach postaci w sekcji "Dobywanie/Opuszczanie". Każdy slot może zawierać wiele komend oddzielonych średnikiem (;).
 
+> **Chip „Broń” w stopce:** kliknięcie wysyła `/dob`, gdy broń jest schowana, i `/op`, gdy jest dobyta; przytrzymanie wysyła osobną komendę (domyślnie wyłączone). Wszystkie trzy komendy można zmienić w tej samej sekcji ustawień, np. na `/dob 1` albo dowolną komendę gry.
+
 ## Kalendarz słońca
 
 | Komenda | Opis |

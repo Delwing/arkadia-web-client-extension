@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import eventBus from "@modules/core/eventBus";
+import { characterStorage } from "@modules/core/storage";
+import { defaultSettings, type Settings } from "@modules/core/defaultSettings";
 import type { PackageStatus } from "@shared/events/clientEvents";
 import { TRANSPORT_SOON_SECONDS } from "@client/types/transport.ts";
 import { useAttentionBlink, useClientEvent } from "../hooks";
@@ -302,16 +304,67 @@ export function ClockChip() {
   );
 }
 
-/** Whether a weapon is drawn. Neutral either way; red only when fighting without it. */
+interface WeaponChipCommands {
+  draw: string;
+  sheathe: string;
+  hold: string;
+}
+
+function readWeaponChipCommands(): WeaponChipCommands {
+  const st: Partial<Settings> = characterStorage.get("settings") ?? {};
+  const pick = (value: unknown, fallback: string) => (typeof value === "string" ? value : fallback).trim();
+  return {
+    draw: pick(st.weaponChipDrawCommand, defaultSettings.weaponChipDrawCommand),
+    sheathe: pick(st.weaponChipSheatheCommand, defaultSettings.weaponChipSheatheCommand),
+    hold: pick(st.weaponChipHoldCommand, defaultSettings.weaponChipHoldCommand),
+  };
+}
+
+/** The character's weapon-chip commands, following edits and character switches. */
+function useWeaponChipCommands(): WeaponChipCommands {
+  const [commands, setCommands] = useState(readWeaponChipCommands);
+  useEffect(() => {
+    const reload = () => setCommands(readWeaponChipCommands());
+    const offSettings = characterStorage.onChange("settings", reload);
+    const offCharacter = characterStorage.onCharacterChange(reload);
+    return () => { offSettings(); offCharacter(); };
+  }, []);
+  return commands;
+}
+
+/**
+ * Whether a weapon is drawn. Neutral either way; red only when fighting without it.
+ * Click sends the character's draw command while sheathed and the sheathe command
+ * while drawn (`/dob` and `/op` by default); a long press sends the hold command.
+ */
 export function WeaponChip() {
   const [drawn, setDrawn] = useState<boolean | null>(null);
   const [inCombat, setInCombat] = useState(false);
+  const commands = useWeaponChipCommands();
   useClientEvent<boolean>("weapon_state", (v) => setDrawn(Boolean(v)));
   useClientEvent<boolean>("combatState", (v) => setInCombat(Boolean(v)));
   useClientEvent("client.disconnect", () => setInCombat(false));
   if (drawn === null) return null;
   const tone: ChipTone | undefined = inCombat && !drawn ? "danger" : undefined;
-  return <Chip icon={<ChipIcon name="sword" />} label="Broń" value={drawn ? "dobyta" : "schowana"} sizeTo={WEAPON_SIZES} sizeCenter tone={tone} />;
+  const click = drawn ? commands.sheathe : commands.draw;
+  const send = (command: string) => eventBus.emit("sendCommand", { command });
+  const tip = [
+    click && `kliknij: ${click}`,
+    commands.hold && `przytrzymaj: ${commands.hold}`,
+  ].filter(Boolean).join("\n");
+  return (
+    <Chip
+      icon={<ChipIcon name="sword" />}
+      label="Broń"
+      value={drawn ? "dobyta" : "schowana"}
+      sizeTo={WEAPON_SIZES}
+      sizeCenter
+      tone={tone}
+      title={tip || undefined}
+      onClick={click ? () => send(click) : undefined}
+      onLongPress={commands.hold ? () => send(commands.hold) : undefined}
+    />
+  );
 }
 
 /** Cover cooldown + guard-release toggle (the /puszczaj alias). Click toggles guard. */

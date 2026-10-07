@@ -1,7 +1,10 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import eventBus from "@modules/core/eventBus";
+import { characterStorage } from "@modules/core/storage";
+import { defaultSettings } from "@modules/core/defaultSettings";
 import { AttackChip, ClockChip, ConnectionChip, CoverChip, WeaponChip } from "@web-ui/footer/chips";
+import { CHIP_LONG_PRESS_MS } from "@web-ui/footer/Chip";
 
 // The stock footer used to have its own components for these; it now renders the
 // shared chips, so their behaviour is pinned here.
@@ -128,6 +131,65 @@ describe("footer chips", () => {
       expect(tone()).toEqual(["chip--danger"]);
       emit("combatState", false);
       expect(tone()).toEqual([]);
+    });
+
+    describe("commands", () => {
+      let sent: string[];
+      let off: () => void;
+
+      beforeEach(() => {
+        sent = [];
+        off = eventBus.on("sendCommand", ({ command }) => { sent.push(command); });
+      });
+
+      afterEach(() => {
+        off();
+        characterStorage.remove("settings");
+        vi.useRealTimers();
+      });
+
+      const hold = () => act(() => {
+        chip()!.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true, button: 0 }));
+        vi.advanceTimersByTime(CHIP_LONG_PRESS_MS);
+      });
+
+      test("click draws while sheathed and sheathes while drawn, /dob and /op by default", () => {
+        mount(<WeaponChip />);
+        emit("weapon_state", false);
+        act(() => chip()!.click());
+        emit("weapon_state", true);
+        act(() => chip()!.click());
+        expect(sent).toEqual(["/dob", "/op"]);
+        expect(chip()!.title).toBe("kliknij: /op");
+      });
+
+      test("uses the character's commands and follows their edits", () => {
+        characterStorage.set("settings", { ...defaultSettings, weaponChipDrawCommand: "/dob 1" });
+        mount(<WeaponChip />);
+        emit("weapon_state", false);
+        act(() => chip()!.click());
+        act(() => characterStorage.set("settings", { ...defaultSettings, weaponChipDrawCommand: "/dob 2" }));
+        act(() => chip()!.click());
+        expect(sent).toEqual(["/dob 1", "/dob 2"]);
+      });
+
+      test("an empty command leaves the chip inert", () => {
+        characterStorage.set("settings", { ...defaultSettings, weaponChipSheatheCommand: "" });
+        mount(<WeaponChip />);
+        emit("weapon_state", true);
+        expect(chip()!.tagName).toBe("DIV");
+      });
+
+      test("a long press sends the hold command instead of the click", () => {
+        vi.useFakeTimers();
+        characterStorage.set("settings", { ...defaultSettings, weaponChipHoldCommand: "/dob 3" });
+        mount(<WeaponChip />);
+        emit("weapon_state", false);
+        expect(chip()!.title).toBe("kliknij: /dob\nprzytrzymaj: /dob 3");
+        hold();
+        act(() => chip()!.click());
+        expect(sent).toEqual(["/dob 3"]);
+      });
     });
   });
 });

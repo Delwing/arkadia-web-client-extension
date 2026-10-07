@@ -69,7 +69,8 @@ Path: `☰` → `Ustawienia` → group `Postać` in the sidebar.
 Per-character — stored under the currently logged-in character. The form is
 disabled until a character is selected. Covers: compass/exits, containers,
 coin/item collecting (with per-enemy overrides), combat commands, herbs,
-`/dob` + `/op` slots, default language and language-switch aliases.
+`/dob` + `/op` slots (plus what a click / long press on the footer weapon chip
+sends), default language and language-switch aliases.
 
 ## Change interface / appearance / sound / buttons
 Path: `☰` → `Ustawienia` → group `Interfejs` in the sidebar.

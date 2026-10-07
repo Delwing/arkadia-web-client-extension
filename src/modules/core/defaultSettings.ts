@@ -74,6 +74,12 @@ export interface Settings {
     opCommand1: string;
     opCommand2: string;
     opCommand3: string;
+    /** Sent by a click on the footer weapon chip while the weapon is sheathed. */
+    weaponChipDrawCommand: string;
+    /** Sent by a click on the footer weapon chip while the weapon is drawn. */
+    weaponChipSheatheCommand: string;
+    /** Sent by a long press on the footer weapon chip; empty = no long press. */
+    weaponChipHoldCommand: string;
 }
 
 export const defaultSettings: Settings = {
@@ -153,4 +159,7 @@ export const defaultSettings: Settings = {
     opCommand1: '',
     opCommand2: '',
     opCommand3: '',
+    weaponChipDrawCommand: '/dob',
+    weaponChipSheatheCommand: '/op',
+    weaponChipHoldCommand: '',
 };

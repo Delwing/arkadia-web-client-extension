@@ -596,6 +596,40 @@ export function DrawSheatheSection({settings, onChangeSetting}: GeneralSettingsS
                     {column('dob')}
                     {column('op')}
                 </div>
+                <p className="popup-field__hint">
+                    Chip „Broń” w stopce: kliknięcie wysyła komendę dobycia, gdy broń jest schowana,
+                    a opuszczenia, gdy jest dobyta. Przytrzymanie wysyła trzecią komendę.
+                    Puste pole wyłącza daną akcję.
+                </p>
+                <div className="settings-columns">
+                    <Field label="Chip Broń: klik, gdy schowana">
+                        <Input
+                            mono
+                            className="settings-command"
+                            value={settings.weaponChipDrawCommand}
+                            placeholder="/dob"
+                            onChange={e => onChangeSetting(s => s.weaponChipDrawCommand = e.target.value)}
+                        />
+                    </Field>
+                    <Field label="Chip Broń: klik, gdy dobyta">
+                        <Input
+                            mono
+                            className="settings-command"
+                            value={settings.weaponChipSheatheCommand}
+                            placeholder="/op"
+                            onChange={e => onChangeSetting(s => s.weaponChipSheatheCommand = e.target.value)}
+                        />
+                    </Field>
+                    <Field label="Chip Broń: przytrzymanie">
+                        <Input
+                            mono
+                            className="settings-command"
+                            value={settings.weaponChipHoldCommand}
+                            placeholder="np. /dob 3"
+                            onChange={e => onChangeSetting(s => s.weaponChipHoldCommand = e.target.value)}
+                        />
+                    </Field>
+                </div>
             </div>
         </section>
     );
