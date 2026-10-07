@@ -203,7 +203,8 @@ export function Check({ label, type = 'checkbox', className, ...rest }: CheckPro
 export interface ChoiceListProps<T extends string> {
     value: T;
     options: { value: T; label: ReactNode; description?: ReactNode }[];
-    onChange: (value: T) => void;
+    /** Not an inference site, so a useState setter (SetStateAction<T>) cannot widen T to string. */
+    onChange: (value: NoInfer<T>) => void;
     /** Radio group name; one is generated when omitted. */
     name?: string;
     /** Id of the group, for a Field label and for tests. */
@@ -244,7 +245,8 @@ export function ChoiceList<T extends string>({ value, options, onChange, name, i
 export interface SegmentedProps<T extends string> {
     value: T;
     options: { value: T; label: ReactNode }[];
-    onChange: (value: T) => void;
+    /** Not an inference site, so a useState setter (SetStateAction<T>) cannot widen T to string. */
+    onChange: (value: NoInfer<T>) => void;
     /** Radio group name; one is generated when omitted. */
     name?: string;
     /** sm = header size, as tall as the window buttons (see HeaderButton). */
