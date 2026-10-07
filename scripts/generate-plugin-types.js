@@ -40,6 +40,13 @@ function extractExports(content) {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
 
+    // A comment inside a declaration (a member's JSDoc) belongs to the declaration
+    if (inBlock && (inComment || line.trim().startsWith('/*'))) {
+      currentBlock.push(line);
+      inComment = !line.includes('*/');
+      continue;
+    }
+
     // Track multiline comments (JSDoc)
     if (line.trim().startsWith('/**')) {
       inComment = true;
@@ -63,14 +70,18 @@ function extractExports(content) {
     if (inBlock) {
       currentBlock.push(line);
 
-      // Track braces to know when interface/type ends
-      for (const char of line) {
-        if (char === '{') braceDepth++;
-        if (char === '}') braceDepth--;
+      // Track brackets of every kind to know when interface/type ends: a type can
+      // be a parenthesised union whose members are object literals
+      const code = line.replace(/\/\/.*$/, '');
+      for (const char of code) {
+        if (char === '{' || char === '(' || char === '[') braceDepth++;
+        if (char === '}' || char === ')' || char === ']') braceDepth--;
       }
 
-      // End of declaration
-      if (braceDepth === 0 && (line.includes('}') || line.includes(';'))) {
+      // End of declaration, unless an unparenthesised union/intersection goes on
+      const next = (lines[i + 1] ?? '').trim();
+      const continues = next.startsWith('|') || next.startsWith('&');
+      if (braceDepth === 0 && !continues && (code.includes('}') || code.includes(';'))) {
         exports.push(currentBlock.join('\n'));
         currentBlock = [];
         inBlock = false;
