@@ -3,6 +3,7 @@ import eventBus from '@modules/core/eventBus';
 import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
 import { usePopup } from './hooks/usePopup';
 import type { TransportTimesDebugPayload, TransportTimesDebugEntry } from '@client/types/transport';
+import { WINDOW_MONOSPACE, windowFontPx } from './layout/windowSettings';
 
 const POPUP_ID = 'popup:transport-times-debug';
 
@@ -108,7 +109,7 @@ const TransportTimesDebugPopup: React.FC = () => {
             bodyClassName="transport-times-debug-popup-body"
         >
             <div style={{
-                fontFamily: 'monospace', fontSize: 11, padding: 8,
+                fontFamily: WINDOW_MONOSPACE, fontSize: windowFontPx(11), padding: 8,
                 color: 'var(--popup-text)', display: 'flex', flexDirection: 'column',
                 height: '100%', overflow: 'hidden',
             }}>
@@ -123,7 +124,7 @@ const TransportTimesDebugPopup: React.FC = () => {
                             background: 'var(--popup-input-bg)',
                             border: '1px solid var(--popup-border-control)',
                             borderRadius: 3, color: 'var(--popup-input-text)',
-                            padding: '3px 6px', fontSize: 11, fontFamily: 'monospace',
+                            padding: '3px 6px', fontSize: windowFontPx(11), fontFamily: WINDOW_MONOSPACE,
                         }}
                     />
                     <select
@@ -133,7 +134,7 @@ const TransportTimesDebugPopup: React.FC = () => {
                             background: 'var(--popup-control-bg)',
                             border: '1px solid var(--popup-border-control)',
                             borderRadius: 3, color: 'var(--popup-text-subtle)',
-                            padding: '3px 6px', fontSize: 11, fontFamily: 'monospace',
+                            padding: '3px 6px', fontSize: windowFontPx(11), fontFamily: WINDOW_MONOSPACE,
                         }}
                     >
                         <option value="name">Sort: nazwa</option>
@@ -150,7 +151,7 @@ const TransportTimesDebugPopup: React.FC = () => {
                     </label>
                 </div>
                 <div style={{
-                    fontSize: 10, color: 'var(--popup-text-dim)',
+                    fontSize: windowFontPx(10), color: 'var(--popup-text-dim)',
                     marginBottom: 6, display: 'flex', justifyContent: 'space-between',
                 }}>
                     <span>{totals.transports} transportów, {totals.recorded}/{totals.legs} segmentów zapisanych</span>
@@ -158,7 +159,7 @@ const TransportTimesDebugPopup: React.FC = () => {
                         type="button"
                         onClick={() => eventBus.emit('transportTimesDebug.request')}
                         style={{
-                            padding: '2px 8px', fontSize: 10, fontFamily: 'monospace',
+                            padding: '2px 8px', fontSize: windowFontPx(10), fontFamily: WINDOW_MONOSPACE,
                             background: 'var(--popup-control-bg)',
                             border: '1px solid var(--popup-border-control)',
                             borderRadius: 3, color: 'var(--popup-text-subtle)',
@@ -206,12 +207,12 @@ const TransportSection: React.FC<TransportSectionProps> = ({ entry }) => {
                 <span style={{ color: 'var(--popup-text-bright)', fontWeight: 'bold' }}>
                     {open ? '▾' : '▸'} {entry.name}
                 </span>
-                <span style={{ color: 'var(--popup-text-dim)', fontSize: 10 }}>
+                <span style={{ color: 'var(--popup-text-dim)', fontSize: windowFontPx(10) }}>
                     {recordedCount}/{entry.legs.length}
                 </span>
             </div>
             {open && (
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: windowFontPx(11) }}>
                     <thead>
                         <tr style={{ color: 'var(--popup-text-dim)', textAlign: 'right' }}>
                             <th style={{ textAlign: 'left', padding: '2px 4px', fontWeight: 'normal' }}>leg</th>
@@ -233,7 +234,7 @@ const TransportSection: React.FC<TransportSectionProps> = ({ entry }) => {
                                     <td style={{ padding: '2px 4px', color: 'var(--popup-text)' }}>
                                         <span style={{ color: 'var(--popup-text-dim)' }}>{i}.</span>{' '}
                                         {l.fromLabel} <span style={{ color: 'var(--popup-text-dim)' }}>&rarr;</span> {l.toLabel}
-                                        <span style={{ color: 'var(--popup-text-dim)', marginLeft: 6, fontSize: 10 }}>
+                                        <span style={{ color: 'var(--popup-text-dim)', marginLeft: 6, fontSize: windowFontPx(10) }}>
                                             ({l.fromId}&rarr;{l.toId})
                                         </span>
                                     </td>
@@ -252,7 +253,7 @@ const TransportSection: React.FC<TransportSectionProps> = ({ entry }) => {
                                     <td style={{ padding: '2px 4px', textAlign: 'right', color: 'var(--popup-text-dim)' }}>
                                         {formatSeconds(l.originalTime)}
                                     </td>
-                                    <td style={{ padding: '2px 4px', textAlign: 'right', color: 'var(--popup-text-dim)', fontSize: 10 }}>
+                                    <td style={{ padding: '2px 4px', textAlign: 'right', color: 'var(--popup-text-dim)', fontSize: windowFontPx(10) }}>
                                         {formatRelative(l.updatedAt)}
                                     </td>
                                     <td style={{ padding: '2px 4px', textAlign: 'right' }}>
@@ -262,7 +263,7 @@ const TransportSection: React.FC<TransportSectionProps> = ({ entry }) => {
                                             disabled={l.shortest === null}
                                             onClick={() => resetLeg(l.fromId, l.toId)}
                                             style={{
-                                                padding: '1px 6px', fontSize: 10, fontFamily: 'monospace',
+                                                padding: '1px 6px', fontSize: windowFontPx(10), fontFamily: WINDOW_MONOSPACE,
                                                 background: 'var(--popup-control-bg)',
                                                 border: '1px solid var(--popup-border-control)',
                                                 borderRadius: 3,

@@ -16,6 +16,7 @@ import {
     STORAGE_KEY,
     type ProfessionState,
 } from '@client/scripts/profession';
+import { WINDOW_MONOSPACE, windowFontPx } from './layout/windowSettings';
 
 const POPUP_ID = 'popup:profession';
 
@@ -145,8 +146,8 @@ const ProfessionPopup: React.FC = () => {
         borderRadius: 3,
         color: 'var(--popup-input-text)',
         padding: '2px 6px',
-        fontSize: 11,
-        fontFamily: 'monospace',
+        fontSize: windowFontPx(11),
+        fontFamily: WINDOW_MONOSPACE,
     };
 
     const btnStyle: React.CSSProperties = {
@@ -154,8 +155,8 @@ const ProfessionPopup: React.FC = () => {
         border: '1px solid var(--popup-border-control)',
         borderRadius: 3,
         cursor: 'pointer',
-        fontSize: 11,
-        fontFamily: 'monospace',
+        fontSize: windowFontPx(11),
+        fontFamily: WINDOW_MONOSPACE,
         background: 'var(--popup-control-bg)',
         color: 'var(--popup-text-subtle)',
     };
@@ -184,7 +185,7 @@ const ProfessionPopup: React.FC = () => {
             initialWidth={340}
             className="profession-window"
         >
-            <div style={{ fontFamily: 'monospace', fontSize: 12, padding: 8, color: 'var(--popup-text)', display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ fontFamily: WINDOW_MONOSPACE, fontSize: windowFontPx(12), padding: 8, color: 'var(--popup-text)', display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {!state ? (
                     <div style={{ textAlign: 'center', padding: 16 }}>
                         <div style={{ color: 'var(--popup-text-dim)', marginBottom: 12 }}>Brak danych o zawodzie</div>
@@ -210,13 +211,13 @@ const ProfessionPopup: React.FC = () => {
                                     transition: 'width 0.3s',
                                 }} />
                             </div>
-                            <div style={{ color: 'var(--popup-text-faint)', fontSize: 10, marginTop: 2, textAlign: 'right' }}>
+                            <div style={{ color: 'var(--popup-text-faint)', fontSize: windowFontPx(10), marginTop: 2, textAlign: 'right' }}>
                                 {totalPoints} / {FULL_PROFESSION_POINTS} pkt
                             </div>
                         </div>
 
                         {/* Stats */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 11 }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: windowFontPx(11) }}>
                             {/* Start time */}
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <span style={{ color: 'var(--popup-text-dim)' }}>Rozpoczęcie:</span>

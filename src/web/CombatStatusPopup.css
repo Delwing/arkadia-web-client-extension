@@ -58,7 +58,7 @@
 }
 
 .cs-label {
-  font-size: 10px;
+  font-size: calc(10px * var(--window-font-scale, 1));
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -84,7 +84,7 @@
   min-width: 56px;
   text-align: right;
   font-family: var(--output-font-family, ui-monospace, monospace);
-  font-size: 9px;
+  font-size: calc(9px * var(--window-font-scale, 1));
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--popup-text-dim, #b7aa8b);
@@ -131,7 +131,7 @@
   align-items: center;
   justify-content: center;
   font-family: var(--output-font-family, ui-monospace, monospace);
-  font-size: 8.5px;
+  font-size: calc(8.5px * var(--window-font-scale, 1));
   letter-spacing: 0.05em;
   font-variant-numeric: tabular-nums;
   color: #e8dfc8;

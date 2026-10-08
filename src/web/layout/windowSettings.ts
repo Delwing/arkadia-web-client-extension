@@ -111,14 +111,42 @@ export function getWindowFontFamily(id: string): WindowFontFamily | null {
 }
 
 /**
+ * The unitless main-window size a window follows until overridden, published
+ * on <body> by uiSettingsCore.apply: Kondycje follows the objects font size,
+ * everything else the output font size.
+ */
+function mainSizeVar(id: string): string {
+  return id === 'objectList' || id === OBJECT_LIST_OTHERS_ID
+    ? '--objects-font-size-value'
+    : '--output-font-size-value';
+}
+
+/** An inline px font size that follows the window's font size setting. */
+export function windowFontPx(px: number): string {
+  return `calc(${px}px * var(--window-font-scale, 1))`;
+}
+
+/** Inline monospace that follows the window's font setting. */
+export const WINDOW_MONOSPACE = 'var(--window-font-family, monospace)';
+
+/** Font stacks a window's chosen face replaces, so content in any of them follows it. */
+const FAMILY_VARS = ['--output-font-family', '--window-font-family', '--font-ui', '--font-mono'];
+
+/**
  * Write a window's font overrides onto the element that wraps its content.
  *
  * `--output-font-*` is what popup content already reads, so re-declaring it here
  * overrides the main window's value for this window alone; `--window-font-*` is
  * set too for content whose own default is not the main output font (Kondycje
- * falls back to its objects font size). Custom properties inherit through the
- * `display: contents` portal target, and the element travels with the window
- * into docks, tabs and popped-out windows.
+ * falls back to its objects font size).
+ *
+ * Content sized in fixed rem/px multiplies by `--window-font-scale` (the
+ * override over the main size; unset, so 1, when not overridden), and content
+ * in a face of its own reads `--window-font-family`. `font-family` and the UI
+ * and mono stacks are re-declared so everything else inherits the chosen face.
+ *
+ * Custom properties inherit through the `display: contents` portal target, and
+ * the element travels with the window into docks, tabs and popped-out windows.
  */
 export function applyWindowAppearance(target: HTMLElement, id: string): void {
   const size = getWindowFontSize(id);
@@ -127,18 +155,20 @@ export function applyWindowAppearance(target: HTMLElement, id: string): void {
   if (size !== null) {
     style.setProperty('--output-font-size', `${size}rem`);
     style.setProperty('--window-font-size', `${size}rem`);
+    style.setProperty('--window-font-scale', `calc(${size} / var(${mainSizeVar(id)}, 0.875))`);
   } else {
     style.removeProperty('--output-font-size');
     style.removeProperty('--window-font-size');
+    style.removeProperty('--window-font-scale');
   }
   if (family !== null) {
     // The main window only loads the font it uses itself.
     ensureFontLoaded(family);
     const css = resolveOutputFontFamily(family, '') ?? 'monospace';
-    style.setProperty('--output-font-family', css);
-    style.setProperty('--window-font-family', css);
+    for (const name of FAMILY_VARS) style.setProperty(name, css);
+    style.fontFamily = css;
   } else {
-    style.removeProperty('--output-font-family');
-    style.removeProperty('--window-font-family');
+    for (const name of FAMILY_VARS) style.removeProperty(name);
+    style.removeProperty('font-family');
   }
 }

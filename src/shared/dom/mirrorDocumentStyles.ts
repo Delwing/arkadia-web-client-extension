@@ -38,7 +38,11 @@ function closestStyleSource(node: Node | null, head: HTMLElement): StyleSource |
     return null;
 }
 
-/** Copies `<html>` / `<body>` classes and `<body>` data-* attributes, which select the theme. */
+/**
+ * Copies `<html>` / `<body>` classes and `<body>` data-* attributes, which select
+ * the theme, and the custom properties set inline on `<body>` (the output font
+ * and its size, which window content reads).
+ */
 export function mirrorThemeAttributes(source: Document, target: Document): void {
     target.documentElement.className = source.documentElement.className;
     target.body.className = source.body.className;
@@ -49,6 +53,14 @@ export function mirrorThemeAttributes(source: Document, target: Document): void 
     }
     for (const attr of Array.from(source.body.attributes)) {
         if (attr.name.startsWith('data-')) target.body.setAttribute(attr.name, attr.value);
+    }
+    const from = source.body.style;
+    const to = target.body.style;
+    for (const name of Array.from(to)) {
+        if (name.startsWith('--') && !from.getPropertyValue(name)) to.removeProperty(name);
+    }
+    for (const name of Array.from(from)) {
+        if (name.startsWith('--')) to.setProperty(name, from.getPropertyValue(name));
     }
 }
 

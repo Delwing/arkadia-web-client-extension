@@ -19,6 +19,7 @@ import {
     seasonOf,
     sunHour,
 } from '@client/scripts/sunModel.ts';
+import { WINDOW_MONOSPACE, windowFontPx } from './layout/windowSettings';
 
 const POPUP_ID = 'popup:calendar';
 
@@ -177,8 +178,8 @@ const CalendarPopup: React.FC = () => {
             initialWidth={520}
         >
             <div style={{
-                fontFamily: 'monospace',
-                fontSize: 12,
+                fontFamily: WINDOW_MONOSPACE,
+                fontSize: windowFontPx(12),
                 padding: 8,
                 color: 'var(--popup-text)',
                 display: 'flex',
@@ -215,7 +216,7 @@ const CalendarPopup: React.FC = () => {
                     <span style={{
                         ...dimStyle,
                         alignSelf: 'center',
-                        fontSize: 11,
+                        fontSize: windowFontPx(11),
                         minWidth: 58,
                         textAlign: 'center',
                     }}>
@@ -284,12 +285,12 @@ const Month: React.FC<{
                 justifyContent: 'space-between',
                 alignItems: 'baseline',
                 marginBottom: 4,
-                fontSize: 12,
+                fontSize: windowFontPx(12),
             }}>
                 <span style={{ fontWeight: 'bold', color: 'var(--popup-text-strong)' }}>
                     {section.month}
                 </span>
-                <span style={{ ...dimStyle, fontSize: 11 }}>
+                <span style={{ ...dimStyle, fontSize: windowFontPx(11) }}>
                     {section.seasons.map(s => (
                         <span key={s} style={{ color: SEASON_COLORS[s], marginRight: 6 }}>
                             {SEASON_NAMES[s]}
@@ -352,7 +353,7 @@ const Day: React.FC<{
                 textAlign: 'center',
                 border,
                 borderRadius: 3,
-                fontSize: 10,
+                fontSize: windowFontPx(10),
                 lineHeight: 1.3,
                 minWidth: 0,
                 cursor: 'default',
@@ -364,7 +365,7 @@ const Day: React.FC<{
         >
             <div style={{
                 ...dimStyle,
-                fontSize: 9,
+                fontSize: windowFontPx(9),
                 display: 'flex',
                 justifyContent: 'center',
                 gap: 2,
@@ -380,7 +381,7 @@ const Day: React.FC<{
                     </span>
                 )}
             </div>
-            <div style={{ fontSize: 10 }}>
+            <div style={{ fontSize: windowFontPx(10) }}>
                 <span style={{ color: 'var(--popup-data-gold)' }}>{SUN}{day.sunrise}</span>
                 {' '}
                 <span style={{ color: 'var(--popup-data-blue)' }}>{MOON}{day.sunset}</span>
@@ -411,7 +412,7 @@ const Summary: React.FC<{
     const sunsetMs = realTimeInYear(anchor, yearOffset, day, sunHour(domain, day, 'sunset'));
     const dayStartMs = realTimeInYear(anchor, yearOffset, day, 0);
     return (
-        <div style={{ fontSize: 11, lineHeight: '17px' }}>
+        <div style={{ fontSize: windowFontPx(11), lineHeight: '17px' }}>
             <div>
                 <span style={dimStyle}>
                     {hovered ? 'Wybrany' : yearOffset === 0 ? 'Dziś' : 'Początek roku'}:{' '}
@@ -461,7 +462,7 @@ const Summary: React.FC<{
 const Legend: React.FC<{ domain: Domain }> = ({ domain }) => (
     <div style={{
         ...dimStyle,
-        fontSize: 10,
+        fontSize: windowFontPx(10),
         marginTop: 6,
         display: 'flex',
         gap: 10,

@@ -14,6 +14,7 @@ import {
     nightLengthHours,
     sunHour,
 } from '@client/scripts/sunModel.ts';
+import { WINDOW_MONOSPACE, windowFontPx } from './layout/windowSettings';
 
 const POPUP_ID = 'popup:sunCalc';
 
@@ -58,7 +59,7 @@ const sectionStyle: React.CSSProperties = {
 const headingStyle: React.CSSProperties = {
     color: 'var(--popup-text-subtle)',
     textTransform: 'uppercase',
-    fontSize: 10,
+    fontSize: windowFontPx(10),
     letterSpacing: 1,
     marginBottom: 4,
 };
@@ -189,14 +190,14 @@ const SunCalcPopup: React.FC = () => {
                     <div>
                         <div style={headingStyle}>Geheimnisnacht</div>
                         <Pick label="Noc" night={forecast.night} />
-                        <div style={{ ...labelStyle, marginTop: 2, fontSize: 11 }}>
+                        <div style={{ ...labelStyle, marginTop: 2, fontSize: windowFontPx(11) }}>
                             Noc = najbliżej 21:00, zawsze przed - nigdy po.
                             {forecast.yearOffset > 0 && ` W tym roku IG już było - to rok +${forecast.yearOffset}.`}
                         </div>
                         <div style={{ marginTop: 6 }}>
                             <CandidateTable forecast={forecast} />
                         </div>
-                        <div style={{ ...labelStyle, marginTop: 6, fontSize: 11 }}>
+                        <div style={{ ...labelStyle, marginTop: 6, fontSize: windowFontPx(11) }}>
                             Pełnia co 25 dni IG, noc zaczyna się o zachodzie. Kolejny dzień IG
                             przesuwa zachód o 48 min RL (46 na granicy bloku).
                         </div>
@@ -216,8 +217,8 @@ const SunCalcPopup: React.FC = () => {
             initialWidth={420}
         >
             <div style={{
-                fontFamily: 'monospace',
-                fontSize: 12,
+                fontFamily: WINDOW_MONOSPACE,
+                fontSize: windowFontPx(12),
                 padding: 8,
                 color: 'var(--popup-text)',
                 display: 'flex',
@@ -263,7 +264,7 @@ const Pick: React.FC<{ label: string; night: NightCandidate | null }> = ({ label
 };
 
 const CandidateTable: React.FC<{ forecast: GeheimnisnachtForecast }> = ({ forecast }) => (
-    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
+    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: windowFontPx(11) }}>
         <thead>
             <tr style={labelStyle}>
                 <th style={{ textAlign: 'left', fontWeight: 'normal' }}>Pełnia</th>

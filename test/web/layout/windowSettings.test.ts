@@ -84,6 +84,37 @@ describe('applyWindowAppearance', () => {
     expect(el.style.getPropertyValue('--output-font-family')).toBe('');
   });
 
+  it('scales fixed-size text by the override over the main size, per window kind', () => {
+    const el = document.createElement('div');
+    setWindowSetting('popup:chat', WINDOW_FONT_SIZE_KEY, 1.1);
+    applyWindowAppearance(el, 'popup:chat');
+    expect(el.style.getPropertyValue('--window-font-scale')).toBe('calc(1.1 / var(--output-font-size-value, 0.875))');
+
+    const objects = document.createElement('div');
+    setWindowSetting('objectList', WINDOW_FONT_SIZE_KEY, 0.7);
+    applyWindowAppearance(objects, 'objectList');
+    expect(objects.style.getPropertyValue('--window-font-scale')).toBe('calc(0.7 / var(--objects-font-size-value, 0.875))');
+
+    setWindowSetting('popup:chat', WINDOW_FONT_SIZE_KEY, null);
+    applyWindowAppearance(el, 'popup:chat');
+    expect(el.style.getPropertyValue('--window-font-scale')).toBe('');
+  });
+
+  it('gives the chosen face to all of the window content', () => {
+    const el = document.createElement('div');
+    setWindowSetting('popup:chat', WINDOW_FONT_FAMILY_KEY, 'fira-code');
+    applyWindowAppearance(el, 'popup:chat');
+    for (const name of ['--window-font-family', '--font-ui', '--font-mono']) {
+      expect(el.style.getPropertyValue(name)).toBe('"Fira Code", monospace');
+    }
+    expect(el.style.fontFamily).toBe('"Fira Code", monospace');
+
+    setWindowSetting('popup:chat', WINDOW_FONT_FAMILY_KEY, null);
+    applyWindowAppearance(el, 'popup:chat');
+    expect(el.style.getPropertyValue('--font-ui')).toBe('');
+    expect(el.style.fontFamily).toBe('');
+  });
+
   it('uses plain monospace for the system default font', () => {
     const el = document.createElement('div');
     setWindowSetting('popup:chat', WINDOW_FONT_FAMILY_KEY, 'default');

@@ -270,6 +270,10 @@ export function apply(settings: UiSettings) {
         // Kondycje's own default size — its window settings cog shows it as
         // the value the window follows until overridden.
         document.body.style.setProperty('--objects-font-size', settings.objectsFontSize + 'rem');
+        // Unitless twins: a window with a size of its own divides by these
+        // for the scale its fixed-size text multiplies by (windowSettings.ts).
+        document.body.style.setProperty('--output-font-size-value', String(settings.contentFontSize));
+        document.body.style.setProperty('--objects-font-size-value', String(settings.objectsFontSize));
     }
     const content = document.getElementById('main_text_output_msg_wrapper');
     if (content) {

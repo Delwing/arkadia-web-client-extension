@@ -28,7 +28,7 @@
   gap: 5px;
   margin-bottom: -3px;
   font-family: var(--output-font-family, ui-monospace, monospace);
-  font-size: 9px;
+  font-size: calc(9px * var(--window-font-scale, 1));
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -68,7 +68,7 @@
 }
 .wt-time {
   font-family: var(--output-font-family, ui-monospace, monospace);
-  font-size: 23px;
+  font-size: calc(23px * var(--window-font-scale, 1));
   font-weight: 600;
   line-height: 1;
   color: var(--popup-text-bright, #e8dfc8);
@@ -88,7 +88,7 @@
 /* season and day of the year — mono caps, the season in its own hue */
 .wt-season-line {
   font-family: var(--output-font-family, ui-monospace, monospace);
-  font-size: 9.5px;
+  font-size: calc(9.5px * var(--window-font-scale, 1));
   letter-spacing: 0.05em;
   text-transform: uppercase;
   white-space: nowrap;
@@ -103,7 +103,7 @@
 /* world date — Cinzel, parchment-dim */
 .wt-date {
   font-family: "Cinzel", serif;
-  font-size: 11px;
+  font-size: calc(11px * var(--window-font-scale, 1));
   letter-spacing: 0.06em;
   color: var(--popup-text-dim, #b7aa8b);
   white-space: nowrap;
@@ -146,7 +146,7 @@
   top: 0;
   transform: translateX(-50%);
   font-family: var(--output-font-family, ui-monospace, monospace);
-  font-size: 10px;
+  font-size: calc(10px * var(--window-font-scale, 1));
   line-height: 13px;
   color: var(--popup-text-dim, #b7aa8b);
   font-variant-numeric: tabular-nums;
