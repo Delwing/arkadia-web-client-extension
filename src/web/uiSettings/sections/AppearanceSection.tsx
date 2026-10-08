@@ -108,17 +108,6 @@ function AppearanceSection({ draft, update, commitCustomDark }: AppearanceSectio
             )}
             <NumberField id="ui-content-font" label="Rozmiar czcionki treści (rem)" value={draft.contentFontSize} step={0.1} onChange={(n) => update({ contentFontSize: n })} />
             <NumberField id="ui-objects-font" label="Rozmiar czcionki listy obiektów (rem)" value={draft.objectsFontSize} step={0.1} onChange={(n) => update({ objectsFontSize: n })} />
-            <Field label="Kolor tła listy obiektów" htmlFor="ui-objectlist-bg-color">
-                <div className="popup-inline ui-settings-color-alpha">
-                    <input id="ui-objectlist-bg-color" type="color" className="popup-color" value={draft.objectListBackgroundColor} onChange={(e) => update({ objectListBackgroundColor: e.target.value })} />
-                    <label htmlFor="ui-objectlist-bg-alpha" className="popup-field__hint">Przezroczystość</label>
-                    <input id="ui-objectlist-bg-alpha" type="range" min={0} max={1} step={0.01} className="popup-range" value={draft.objectListBackgroundAlpha} onChange={(e) => update({ objectListBackgroundAlpha: parseFloat(e.target.value) })} />
-                    <span id="ui-objectlist-bg-alpha-value" className="popup-field__hint ui-settings-color-alpha__value">{draft.objectListBackgroundAlpha}</span>
-                    <Button id="ui-objectlist-bg-reset" size="sm" variant="ghost" onClick={() => update({ objectListBackgroundColor: defaultUiSettings.objectListBackgroundColor, objectListBackgroundAlpha: defaultUiSettings.objectListBackgroundAlpha })}>
-                        Przywróć domyślny
-                    </Button>
-                </div>
-            </Field>
             <ColorField id="ui-output-background" label="Kolor tła okna głównego" value={draft.outputBackground} onChange={(v) => update({ outputBackground: v })} onReset={() => update({ outputBackground: defaultUiSettings.outputBackground })} />
             <CheckboxRow id="ui-highlight-message-blocks" label="Wyróżniaj bloki wiadomości" checked={draft.highlightMessageBlocks} onChange={(v) => update({ highlightMessageBlocks: v })} />
             <Field label="Paleta kolorów" htmlFor="ui-xterm-palette">

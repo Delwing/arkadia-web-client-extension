@@ -7,6 +7,7 @@ import initSessionLogger from "./sessionLogger";
 import initLogFileSaver from "./logFileSaver";
 import { migrateLegacyLogs } from "./logsMigration";
 import { migrateNewlyCharacterScopedKeys } from "@modules/core/storage";
+import { migrateObjectListBackground } from "@web/layout/windowSettings.ts";
 import {
     migrateButtonSizeMultiplier,
     migrateFooterComponentVisibility,
@@ -51,6 +52,7 @@ export function bootstrapGameClient(opts: { installPorts: () => void }): GameCli
     runAllSettingsMigrations();
     migrateButtonSizeMultiplier();
     migrateFooterComponentVisibility();
+    migrateObjectListBackground();
     void migrateLayoutManagerState();
 
     // Supply the UI's implementations of the client's injectable ports (tooltips,

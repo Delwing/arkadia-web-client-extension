@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import type { UiSettings } from "../../uiSettingsCore";
 import { Button, Field } from "@web-ui/primitives/index.ts";
 import { CheckboxRow, NumberField, SelectField, SettingsSection } from "../fields";
@@ -5,6 +6,9 @@ import ObjectContextMenuEditor from "../ObjectContextMenuEditor";
 import { isLayoutModeForced } from "@web/layout/utils/layoutStorage";
 import { useBuiltInPanelSetting } from "@web/hooks/useBuiltInPanelSetting.ts";
 import { SEPARATE_OTHERS_SETTING } from "@web/layout/types.ts";
+import { listSettingsWindows } from "@web/layout/settingsWindows.ts";
+import { subscribeToRegistry } from "@web/layout/popupRegistry.ts";
+import { WindowSettingsSections } from "@web/layout/components/WindowSettingsMenu.tsx";
 
 interface LayoutManagerSectionProps {
     layoutEnabled: boolean;
@@ -63,6 +67,44 @@ export function OutputSection({ draft, update }: OutputSectionProps) {
             <Field label="Menu kontekstowe obiektów (PPM)" htmlFor="ui-object-context-menu-input">
                 <ObjectContextMenuEditor commands={draft.objectContextMenuCommands} onChange={(objectContextMenuCommands) => update({ objectContextMenuCommands })} />
             </Field>
+        </SettingsSection>
+    );
+}
+
+/**
+ * Every window's settings, the same ones its header cog edits, for when the
+ * header has no room for the cog (a phone, say). They save at once, like the cog.
+ */
+export function WindowSettingsSection() {
+    const [windows, setWindows] = useState(listSettingsWindows);
+    useEffect(() => subscribeToRegistry(() => setWindows(listSettingsWindows())), []);
+    const [selectedId, setSelectedId] = useState(windows[0]?.id ?? '');
+    const selected = windows.find(w => w.id === selectedId) ?? windows[0];
+
+    return (
+        <SettingsSection title="Ustawienia okien">
+            <div className="ui-settings-stack" data-settings-ignore>
+                <SelectField
+                    id="ui-window-settings-window"
+                    label="Okno"
+                    hint="Zamknięte okna pojawią się na liście po otwarciu."
+                    value={selected?.id ?? ''}
+                    onChange={setSelectedId}
+                >
+                    {windows.map(w => <option key={w.id} value={w.id}>{w.title}</option>)}
+                </SelectField>
+                {selected && (
+                    <div className="window-settings window-settings--inline" data-window-settings={selected.id}>
+                        <WindowSettingsSections
+                            key={selected.id}
+                            windowId={selected.id}
+                            title={selected.title}
+                            fields={selected.fields}
+                            appearance={selected.appearance}
+                        />
+                    </div>
+                )}
+            </div>
         </SettingsSection>
     );
 }

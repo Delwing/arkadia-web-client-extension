@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import type { WindowRecord } from '../types';
 import type { WindowManager } from '../WindowManager';
 import { PanelSettingsButton, usePanelChrome } from './PanelHeader';
+import { useWindowBackground } from '../hooks/useWindowAppearance';
 import {
   getPopoutEntry,
   registerPopoutWindow,
@@ -143,6 +144,7 @@ function PopoutFrame({
   manager: WindowManager;
 }) {
   const chrome = usePanelChrome(w);
+  const background = useWindowBackground(w.id);
   const contentRef = useRef<HTMLDivElement>(null);
 
   // Attach the window's persistent portal-target div into our content slot —
@@ -194,6 +196,7 @@ function PopoutFrame({
       <div
         className="managed-panel__content docked-panel__content popout-frame__content"
         ref={contentRef}
+        {...background}
       />
     </div>
   );

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { windowManager } from '@web/layout/WindowManager';
 import { getPopup, subscribeToRegistry } from '@web/layout/popupRegistry';
-import { useWindowAppearance } from '@web/layout/hooks/useWindowAppearance';
+import { useWindowAppearance, useWindowBackground } from '@web/layout/hooks/useWindowAppearance';
 import { WindowSettingsMenu } from '@web/layout/components/WindowSettingsMenu';
 
 /**
@@ -49,6 +49,7 @@ export default function FloatingPopupHost({
     const registered = popup != null;
     // Font overrides from the window's settings cog (same as the stock shells).
     useWindowAppearance(popupId, registered);
+    const background = useWindowBackground(popupId);
 
     const bodyRef = useRef<HTMLDivElement | null>(null);
     const [pos, setPos] = useState<Pos>({ x: initialX, y: initialY });
@@ -186,7 +187,7 @@ export default function FloatingPopupHost({
                     </button>
                 </div>
             </div>
-            <div ref={bodyRef} className="panel__body" />
+            <div ref={bodyRef} className="panel__body" {...background} />
 
             {RESIZE_DIRS.map((dir) => (
                 <div

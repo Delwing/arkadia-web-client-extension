@@ -1,9 +1,13 @@
-import { useEffect } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useWindowSetting } from '../../hooks/useWindowSetting';
 import { ensureFontLoaded, resolveOutputFontFamily } from '../../fontLoader';
 import { usePopover } from '../hooks/usePopover';
 import { OBJECT_LIST_OTHERS_ID } from '../types';
 import {
+  joinWindowBackground,
+  normalizeWindowBackground,
+  splitWindowBackground,
+  WINDOW_BACKGROUND_KEY,
   WINDOW_FONT_FAMILY_KEY,
   WINDOW_FONT_FAMILY_OPTIONS,
   WINDOW_FONT_SIZE_KEY,
@@ -55,6 +59,24 @@ function fontStack(family: WindowFontFamily | null): string {
 }
 
 const INHERIT = '';
+
+/** Any CSS colour as `#rrggbb`, or null when it isn't an opaque rgb colour. */
+function toHex(css: string): string | null {
+  const m = css.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)$/);
+  if (!m || (m[4] !== undefined && Number(m[4]) === 0)) return null;
+  return `#${[m[1], m[2], m[3]].map(c => Number(c).toString(16).padStart(2, '0')).join('')}`;
+}
+
+/** The theme's window background as `#rrggbb`: what the picker opens on before an override. */
+function themeBackground(anchor: Element | null): string {
+  const doc = anchor?.ownerDocument ?? document;
+  const probe = doc.createElement('div');
+  probe.style.backgroundColor = 'var(--popup-bg)';
+  doc.body.appendChild(probe);
+  const resolved = toHex((doc.defaultView ?? window).getComputedStyle(probe).backgroundColor);
+  probe.remove();
+  return resolved ?? '#1a1a1a';
+}
 
 /**
  * Font and font size. The font dropdown previews itself: the closed select and
@@ -115,6 +137,74 @@ function AppearanceSection({ windowId }: { windowId: string }) {
           >
             ↺
           </button>
+        </div>
+      </div>
+      <BackgroundRow windowId={windowId} />
+    </>
+  );
+}
+
+/**
+ * Background colour and opacity. Until the window is overridden both controls
+ * show the theme's background, fully opaque;
+ * changing either stores an override, and the reset drops it again.
+ */
+function BackgroundRow({ windowId }: { windowId: string }) {
+  const [stored, setStored] = useWindowSetting<string | null>(windowId, WINDOW_BACKGROUND_KEY, null);
+  const override = normalizeWindowBackground(stored);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [themeColor, setThemeColor] = useState('#1a1a1a');
+  useLayoutEffect(() => {
+    if (override === null) setThemeColor(themeBackground(inputRef.current));
+  }, [override]);
+
+  const { color, alpha } = splitWindowBackground(override ?? themeColor);
+  const percent = Math.round(alpha * 100);
+  const colorId = `window-settings-bg-${windowId}`;
+  const alphaId = `window-settings-bg-alpha-${windowId}`;
+
+  return (
+    <>
+      <div className="window-settings__row">
+        <label className="window-settings__label" htmlFor={colorId}>Tło</label>
+        <div className="window-settings__size">
+          <input
+            ref={inputRef}
+            id={colorId}
+            type="color"
+            className="popup-color window-settings__color"
+            value={color}
+            onChange={e => setStored(joinWindowBackground(e.target.value, alpha))}
+            title={override === null ? 'Domyślne' : color}
+          />
+          <span className={`window-settings__size-value${override ? '' : ' window-settings__size-value--inherit'}`}>
+            {override === null ? 'Domyślne' : color}
+          </span>
+          <button
+            type="button"
+            className="popup-btn window-settings__step window-settings__reset"
+            onClick={() => setStored(null)}
+            disabled={override === null}
+            title="Przywróć domyślne tło"
+          >
+            ↺
+          </button>
+        </div>
+      </div>
+      <div className="window-settings__row">
+        <label className="window-settings__label" htmlFor={alphaId}>Krycie tła</label>
+        <div className="window-settings__size">
+          <input
+            id={alphaId}
+            type="range"
+            min={0}
+            max={100}
+            step={1}
+            className="popup-range window-settings__range"
+            value={percent}
+            onChange={e => setStored(joinWindowBackground(color, e.target.valueAsNumber / 100))}
+          />
+          <span className="window-settings__alpha-value">{percent}%</span>
         </div>
       </div>
     </>
@@ -190,6 +280,40 @@ function FieldRow({ windowId, field }: { windowId: string; field: WindowSettingF
   }
 }
 
+interface WindowSettingsSectionsProps {
+  windowId: string;
+  /** Heading of the window's own fields. */
+  title: string;
+  fields?: WindowSettingField[];
+  /** Offer the shared appearance fields; false for windows without text (the map). */
+  appearance?: boolean;
+}
+
+/**
+ * A window's settings: the shared appearance fields, then the window's own.
+ * Shown by the cog's panel and by the settings dialog's "Ustawienia okien".
+ */
+export function WindowSettingsSections({ windowId, title, fields, appearance = true }: WindowSettingsSectionsProps) {
+  return (
+    <>
+      {appearance && (
+        <section className="window-settings__section">
+          <h3 className="window-settings__section-title">Wygląd</h3>
+          <AppearanceSection windowId={windowId} />
+        </section>
+      )}
+      {fields && fields.length > 0 && (
+        <section className="window-settings__section">
+          <h3 className="window-settings__section-title">{title}</h3>
+          {fields.map(field => (
+            <FieldRow key={field.key} windowId={windowId} field={field} />
+          ))}
+        </section>
+      )}
+    </>
+  );
+}
+
 interface WindowSettingsMenuProps {
   windowId: string;
   title: string;
@@ -227,20 +351,7 @@ export function WindowSettingsMenu({ windowId, title, fields, appearance = true,
           style={popover.style}
         >
           <div className="window-settings__header">Ustawienia okna</div>
-          {appearance && (
-            <section className="window-settings__section">
-              <h3 className="window-settings__section-title">Wygląd</h3>
-              <AppearanceSection windowId={windowId} />
-            </section>
-          )}
-          {fields && fields.length > 0 && (
-            <section className="window-settings__section">
-              <h3 className="window-settings__section-title">{title}</h3>
-              {fields.map(field => (
-                <FieldRow key={field.key} windowId={windowId} field={field} />
-              ))}
-            </section>
-          )}
+          <WindowSettingsSections windowId={windowId} title={title} fields={fields} appearance={appearance} />
         </div>
       )}
     </div>

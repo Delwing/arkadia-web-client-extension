@@ -3,6 +3,7 @@ import type { DockSide, DragState, WindowRecord } from '../types';
 import type { WindowManager } from '../WindowManager';
 import { startUndockableDrag } from '../utils/dragHandlers';
 import { PanelSettingsButton, usePanelChrome } from './PanelHeader';
+import { useWindowBackground } from '../hooks/useWindowAppearance';
 
 interface TabGroupPanelProps {
   side: DockSide;
@@ -180,6 +181,7 @@ interface TabContentProps {
 
 function TabContent({ id, manager }: TabContentProps) {
   const contentRef = useRef<HTMLDivElement>(null);
+  const background = useWindowBackground(id);
 
   useLayoutEffect(() => {
     const slot = contentRef.current;
@@ -195,6 +197,7 @@ function TabContent({ id, manager }: TabContentProps) {
     <div
       className="docked-panel-content managed-panel__content"
       ref={contentRef}
+      {...background}
     />
   );
 }

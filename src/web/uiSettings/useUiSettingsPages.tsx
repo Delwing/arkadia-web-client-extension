@@ -8,7 +8,7 @@ import { apply, load, normalizeMapScale, save, type UiSettings as UiSettingsType
 import { getEmbeddedMap } from "../embedRegistry";
 import { defaultUiSettings } from "../defaultUiSettings";
 import AppearanceSection from "./sections/AppearanceSection";
-import { LayoutManagerSection, OutputSection } from "./sections/WindowsSections";
+import { LayoutManagerSection, OutputSection, WindowSettingsSection } from "./sections/WindowsSections";
 import CommandsSection from "./sections/CommandsSection";
 import FooterSections from "./sections/FooterSections";
 import MapSections from "./sections/MapSections";
@@ -271,6 +271,7 @@ export function useUiSettingsPages({ soundManager, onEnableNotifications }: UiSe
                     onLayoutReset={onLayoutReset}
                 />
                 <OutputSection draft={draft} update={update} />
+                <WindowSettingsSection />
             </>
         ),
         "ui-commands": <CommandsSection draft={draft} update={update} />,

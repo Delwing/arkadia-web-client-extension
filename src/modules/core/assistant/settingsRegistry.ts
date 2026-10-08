@@ -184,8 +184,6 @@ const CHROME_FIELDS: Record<string, Constraint & { optional?: boolean }> = {
     splitViewHeight: { type: 'number', min: 0, max: 100, optional: true },
     showCombatTimer: { type: 'boolean', optional: true },
     showTransportLabel: { type: 'boolean', optional: true },
-    objectListBackgroundColor: { type: 'color' },
-    objectListBackgroundAlpha: { type: 'number', min: 0, max: 1 },
     // Drag-and-drop reorder editors. Structurally these are just string arrays,
     // but the assistant must not author them: the generated KB classifies both
     // as `complex`, the model is told to point at the panel instead, and a

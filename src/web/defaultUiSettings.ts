@@ -64,8 +64,6 @@ export const defaultChromeSettings: ChromeSettings = {
     mobileFooterExpand: 'toggle',
     keepMultibindsVisible: false,
     multibindKeyHints: 'auto',
-    objectListBackgroundColor: '#000000',
-    objectListBackgroundAlpha: 0.4,
     alwaysVisibleBars: [],
     barOrder: ['hp', 'fatigue', 'stuffed', 'encumbrance', 'soaked', 'mana', 'improve', 'form', 'intox', 'headache', 'panic'],
     ttsEnabled: true,

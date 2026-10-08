@@ -2838,17 +2838,6 @@ select.popup-input.popup-input--control.is-warning {
   align-self: flex-start;
 }
 
-/* Colour + opacity slider on one line (Wyglad > Kolor tla listy obiektow). */
-.ui-settings-color-alpha {
-  flex-wrap: wrap;
-}
-.ui-settings-color-alpha > .popup-range {
-  flex: 1 1 120px;
-}
-.ui-settings-color-alpha__value {
-  min-width: 2.5rem;
-}
-
 /* Output font from the player's own files or system (Wyglad > Czcionka). */
 .ui-font-drop {
   display: flex;

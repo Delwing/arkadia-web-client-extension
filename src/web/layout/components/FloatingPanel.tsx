@@ -4,6 +4,7 @@ import { clampFloatingTop } from '../types';
 import type { DragState, WindowRecord } from '../types';
 import type { WindowManager } from '../WindowManager';
 import { PanelHeader, usePanelChrome } from './PanelHeader';
+import { useWindowBackground } from '../hooks/useWindowAppearance';
 import { startFloatingDrag } from '../utils/dragHandlers';
 import { FIT_MARGIN, fitToViewport, readViewport } from '../utils/fitToViewport';
 
@@ -47,6 +48,7 @@ export function FloatingPanel({
   const windowRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const chrome = usePanelChrome(w);
+  const background = useWindowBackground(w.id);
   const viewport = useViewport();
   // On a phone the whole window is kept on screen, so its titlebar (drag
   // handle and close button) can always be reached.
@@ -214,6 +216,7 @@ export function FloatingPanel({
       <div
         className="managed-panel__content floating-panel__content script-window-content"
         ref={contentRef}
+        {...background}
       />
       {!chrome.isLocked &&
         ALL_DIRECTIONS.map(dir => (

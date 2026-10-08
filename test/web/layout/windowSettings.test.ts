@@ -2,13 +2,20 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   applyWindowAppearance,
+  getWindowBackground,
   getWindowFontFamily,
   getWindowFontSize,
   getWindowSetting,
+  joinWindowBackground,
+  migrateObjectListBackground,
+  normalizeWindowBackground,
   setWindowSetting,
+  splitWindowBackground,
   subscribeToWindowSetting,
+  WINDOW_BACKGROUND_KEY,
   WINDOW_FONT_FAMILY_KEY,
   WINDOW_FONT_SIZE_KEY,
+  windowBackgroundRgba,
 } from '@web/layout/windowSettings';
 import {
   getBuiltInPanelSetting,
@@ -120,5 +127,89 @@ describe('applyWindowAppearance', () => {
     setWindowSetting('popup:chat', WINDOW_FONT_FAMILY_KEY, 'default');
     applyWindowAppearance(el, 'popup:chat');
     expect(el.style.getPropertyValue('--output-font-family')).toBe('monospace');
+  });
+});
+
+describe('window background', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    invalidateLayoutCache();
+  });
+
+  it('accepts #rrggbb and #rrggbbaa colours only', () => {
+    expect(normalizeWindowBackground('#A0b1C2')).toBe('#a0b1c2');
+    expect(normalizeWindowBackground('#a0b1c266')).toBe('#a0b1c266');
+    // Fully opaque is stored without the alpha.
+    expect(normalizeWindowBackground('#a0b1c2ff')).toBe('#a0b1c2');
+    expect(normalizeWindowBackground('red')).toBeNull();
+    expect(normalizeWindowBackground('#fff')).toBeNull();
+    expect(normalizeWindowBackground(12)).toBeNull();
+    setWindowSetting('popup:chat', WINDOW_BACKGROUND_KEY, 'url(x)');
+    expect(getWindowBackground('popup:chat')).toBeNull();
+  });
+
+  it('splits and joins colour and opacity', () => {
+    expect(splitWindowBackground('#10203066')).toEqual({ color: '#102030', alpha: 0.4 });
+    expect(splitWindowBackground('#102030')).toEqual({ color: '#102030', alpha: 1 });
+    expect(joinWindowBackground('#102030', 0.4)).toBe('#10203066');
+    expect(joinWindowBackground('#102030', 1)).toBe('#102030');
+    expect(windowBackgroundRgba('#10203066')).toBe('rgba(16, 32, 48, 0.4)');
+  });
+
+  it('re-declares the popup background for the window content', () => {
+    const el = document.createElement('div');
+    setWindowSetting('popup:chat', WINDOW_BACKGROUND_KEY, '#102030');
+    applyWindowAppearance(el, 'popup:chat');
+    expect(el.style.getPropertyValue('--popup-bg')).toBe('#102030');
+
+    // Translucent: content surfaces go see-through so what is under the window shows.
+    setWindowSetting('popup:chat', WINDOW_BACKGROUND_KEY, '#10203080');
+    applyWindowAppearance(el, 'popup:chat');
+    expect(el.style.getPropertyValue('--popup-bg')).toBe('transparent');
+
+    setWindowSetting('popup:chat', WINDOW_BACKGROUND_KEY, null);
+    applyWindowAppearance(el, 'popup:chat');
+    expect(el.style.getPropertyValue('--popup-bg')).toBe('');
+  });
+});
+
+describe('migrateObjectListBackground', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    invalidateLayoutCache();
+  });
+
+  it('moves a customised Kondycje background into both Kondycje windows', () => {
+    localStorage.setItem('uiSettings', JSON.stringify({
+      objectsFontSize: 0.8, objectListBackgroundColor: '#336699', objectListBackgroundAlpha: 0.4,
+    }));
+    migrateObjectListBackground();
+    invalidateLayoutCache();
+    expect(getWindowBackground('objectList')).toBe('#33669966');
+    expect(getWindowBackground('objectListOthers')).toBe('#33669966');
+    expect(JSON.parse(localStorage.getItem('uiSettings')!)).toEqual({ objectsFontSize: 0.8 });
+  });
+
+  it('leaves the default and an existing window override alone', () => {
+    setWindowSetting('objectListOthers', WINDOW_BACKGROUND_KEY, '#123456');
+    localStorage.setItem('uiSettings', JSON.stringify({ objectListBackgroundColor: '#000000', objectListBackgroundAlpha: 0.4 }));
+    migrateObjectListBackground();
+    invalidateLayoutCache();
+    expect(getWindowBackground('objectList')).toBeNull();
+    expect(getWindowBackground('objectListOthers')).toBe('#123456');
+    expect(JSON.parse(localStorage.getItem('uiSettings')!)).toEqual({});
+  });
+});
+
+describe('applyWindowAppearance and window defaults', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    invalidateLayoutCache();
+  });
+
+  it('leaves Kondycje content alone until its background is overridden', () => {
+    const el = document.createElement('div');
+    applyWindowAppearance(el, 'objectList');
+    expect(el.style.getPropertyValue('--popup-bg')).toBe('');
   });
 });

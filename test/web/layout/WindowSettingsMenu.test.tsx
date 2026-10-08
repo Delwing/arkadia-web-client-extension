@@ -6,6 +6,7 @@ import { WindowSettingsMenu } from '@web/layout/components/WindowSettingsMenu';
 import { usePopupSetting } from '@web/hooks/usePopupSetting';
 import {
   getWindowSetting,
+  WINDOW_BACKGROUND_KEY,
   WINDOW_FONT_FAMILY_KEY,
   WINDOW_FONT_SIZE_KEY,
   type WindowSettingField,
@@ -132,6 +133,35 @@ describe('WindowSettingsMenu', () => {
     click(panel.querySelector('.window-settings__step[title="Większa czcionka"]'));
     expect(reset().disabled).toBe(false);
     click(reset());
+    expect(reset().disabled).toBe(true);
+  });
+
+  function setInput(input: HTMLInputElement, value: string) {
+    act(() => {
+      // Through the native setter, past React's value tracker.
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, value);
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+  }
+
+  it('sets the background colour and opacity and resets them to the default', () => {
+    act(() => root.render(<WindowSettingsMenu windowId="popup:chat" title="Czat" />));
+    const panel = openMenu()!;
+    const picker = panel.querySelector<HTMLInputElement>('input[type="color"]')!;
+    const opacity = panel.querySelector<HTMLInputElement>('input[type="range"]')!;
+    const reset = () => panel.querySelector<HTMLButtonElement>('.window-settings__reset[title="Przywróć domyślne tło"]')!;
+    expect(reset().disabled).toBe(true);
+    expect(opacity.value).toBe('100');
+
+    setInput(picker, '#334455');
+    expect(getWindowSetting('popup:chat', WINDOW_BACKGROUND_KEY, null)).toBe('#334455');
+    expect(reset().disabled).toBe(false);
+
+    setInput(opacity, '40');
+    expect(getWindowSetting('popup:chat', WINDOW_BACKGROUND_KEY, null)).toBe('#33445566');
+
+    click(reset());
+    expect(getWindowSetting('popup:chat', WINDOW_BACKGROUND_KEY, 'unset')).toBeNull();
     expect(reset().disabled).toBe(true);
   });
 

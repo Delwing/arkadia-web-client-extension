@@ -210,8 +210,6 @@ export interface ChromeSettings extends DeviceViewSettings {
     splitViewHeight?: number;
     showCombatTimer?: boolean;
     showTransportLabel?: boolean;
-    objectListBackgroundColor: string;
-    objectListBackgroundAlpha: number;
     alwaysVisibleBars: string[];
     barOrder: string[];
     /**

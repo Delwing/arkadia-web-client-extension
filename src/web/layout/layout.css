@@ -292,6 +292,34 @@ body.layout-locked .tab-group-tab--closable {
   position: relative;
 }
 
+/* ── Window background (settings cog, windowSettings.ts) ────────────────────
+   The content slot paints the colour. A translucent one has to let what is
+   under the window show through: the shell paints nothing behind the slot and
+   the content's --popup-bg is transparent (applyWindowAppearance). Surfaces
+   that float over the content or must hide what they cover get the theme's
+   background back, captured on the slot before the content redeclares it;
+   zero specificity, so a UI's own value for them (forge) still wins. */
+.managed-panel__content,
+.panel__body {
+  --window-theme-bg: var(--popup-bg);
+}
+.managed-panel:has([data-window-bg="translucent"]),
+.panel--floating:has([data-window-bg="translucent"]) {
+  background: transparent;
+}
+/* Only the background goes see-through: the title bar keeps the theme's window
+   background under its own colour, as it had from the shell. */
+.managed-panel:has([data-window-bg="translucent"]) > .managed-panel__header {
+  background:
+    linear-gradient(var(--popup-control-bg, var(--surface-raised, #252525)), var(--popup-control-bg, var(--surface-raised, #252525))),
+    var(--popup-bg, var(--surface-ground, #1a1a1a));
+}
+:where([data-window-bg="translucent"] :is(
+  .popup-popover, .context-menu, .popup-dialog, .popup-switch, .dialog-tab__dot, th
+)) {
+  --popup-bg: var(--window-theme-bg);
+}
+
 /* Locked state base */
 .managed-panel--locked .managed-panel__header {
   cursor: default;
@@ -353,6 +381,14 @@ body.layout-manager-enabled .object-list-panel-container #objects-list-others {
   display: block;
   width: 100%;
   height: 100%;
+}
+
+/* In a window the list paints no background of its own, so the window's shows
+   (the theme's, or the one set from its settings cog). Its tint (uiSettingsCore)
+   is for the list floating over the output. */
+body.layout-manager-enabled .object-list-panel-container #objects-list,
+body.layout-manager-enabled .object-list-panel-container #objects-list-others {
+  background-color: transparent !important;
 }
 
 /* Resize Handles */

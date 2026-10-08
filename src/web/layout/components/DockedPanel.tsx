@@ -2,6 +2,7 @@ import { useLayoutEffect, useRef } from 'react';
 import type { DragState, WindowRecord } from '../types';
 import type { WindowManager } from '../WindowManager';
 import { PanelHeader, usePanelChrome } from './PanelHeader';
+import { useWindowBackground } from '../hooks/useWindowAppearance';
 import { startUndockableDrag } from '../utils/dragHandlers';
 
 interface DockedPanelProps {
@@ -20,6 +21,7 @@ export function DockedPanel({
   const panelRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const chrome = usePanelChrome(window);
+  const background = useWindowBackground(window.id);
 
   // Attach the window's persistent portal-target div into our content slot.
   useLayoutEffect(() => {
@@ -75,6 +77,7 @@ export function DockedPanel({
       <div
         className="managed-panel__content docked-panel__content docked-panel-content"
         ref={contentRef}
+        {...background}
       />
     </div>
   );

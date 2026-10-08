@@ -1440,6 +1440,13 @@ select.popup-input.popup-input--control {
 .window-settings-anchor {
   display: inline-flex;
 }
+/* The same fields laid out in the settings dialog (Okna > Ustawienia okien). */
+.window-settings--inline {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  max-width: 22rem;
+}
 .window-settings__header {
   font-size: calc(0.8rem * var(--window-font-scale, 1));
   font-weight: 600;
@@ -1478,6 +1485,19 @@ select.popup-input.popup-input--control {
   flex: 0 0 1.75rem;
   height: 1.625rem;
   font-size: calc(0.875rem * var(--window-font-scale, 1));
+}
+.window-settings__color {
+  width: 2.25rem;
+  height: 1.625rem;
+}
+.window-settings__range {
+  flex: 1;
+  min-width: 0;
+}
+.window-settings__alpha-value {
+  min-width: 2.75rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 .window-settings__size-value {
   flex: 1;

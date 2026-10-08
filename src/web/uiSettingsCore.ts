@@ -23,6 +23,8 @@ import {
 } from "@modules/core/settings";
 import {chromeSettingsKeys} from "@shared/settingsDefaults";
 import {loadLayoutState} from "@web/layout";
+import {OBJECT_LIST_OTHERS_ID} from "@web/layout/types.ts";
+import {getWindowBackground, subscribeToWindowSetting, WINDOW_BACKGROUND_KEY, windowBackgroundRgba} from "@web/layout/windowSettings.ts";
 import {applyCustomTheme, generateRandomColor, removeCustomTheme} from "./themes/randomTheme";
 
 // Re-export for backwards compatibility
@@ -32,13 +34,6 @@ export const ALL_SOUND_CATEGORIES: SoundCategory[] = [
     'attack', 'hp', 'fishing', 'lamp', 'gear',
     'transport', 'spell', 'block', 'weapon', 'stun',
 ];
-
-export function hexAlphaToRgba(hex: string, alpha: number): string {
-    const r = parseInt(hex.slice(1, 3), 16);
-    const g = parseInt(hex.slice(3, 5), 16);
-    const b = parseInt(hex.slice(5, 7), 16);
-    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-}
 
 export function formatBytes(bytes: number): string {
     if (bytes === 0) return '0 B';
@@ -233,6 +228,35 @@ export async function guessFontFamilyFromStylesheet(href: string): Promise<strin
     }
 }
 
+/** Kondycje element ids and the windows whose background setting they follow. */
+const OBJECT_LIST_BACKGROUNDS: [elementId: string, windowId: string][] = [
+    ['objects-list', 'objectList'],
+    ['objects-list-others', OBJECT_LIST_OTHERS_ID],
+];
+let objectListBackgroundsSubscribed = false;
+
+/** The Kondycje list's tint while it floats over the output (window manager off). */
+const FLOATING_OBJECT_LIST_TINT = 'rgba(0, 0, 0, 0.4)';
+
+/**
+ * Paint the Kondycje lists for when they float over the output with the window
+ * manager off: the window background set from its settings cog, else the tint.
+ * Inside the window manager the list is a window like any other: layout.css
+ * clears this and the window's content slot paints its background.
+ */
+function applyObjectListBackgrounds(): void {
+    for (const [elementId, windowId] of OBJECT_LIST_BACKGROUNDS) {
+        const el = document.getElementById(elementId);
+        const background = getWindowBackground(windowId);
+        if (el) el.style.backgroundColor = background === null ? FLOATING_OBJECT_LIST_TINT : windowBackgroundRgba(background);
+    }
+    if (objectListBackgroundsSubscribed) return;
+    objectListBackgroundsSubscribed = true;
+    for (const [, windowId] of OBJECT_LIST_BACKGROUNDS) {
+        subscribeToWindowSetting(windowId, WINDOW_BACKGROUND_KEY, applyObjectListBackgrounds);
+    }
+}
+
 export function apply(settings: UiSettings) {
     const customHref = settings.customFontUrl?.trim();
     const normalizedHref = customHref && /^https?:\/\//i.test(customHref) ? customHref : undefined;
@@ -310,6 +334,7 @@ export function apply(settings: UiSettings) {
         objectsList.style.fontSize = settings.contentFontSize + 'rem';
     }
     // Kondycje and its non-team window look the same.
+    applyObjectListBackgrounds();
     for (const objects of [document.getElementById('objects-list'), document.getElementById('objects-list-others')]) {
         if (!objects) continue;
         // --window-font-* is set by the Kondycje window's settings cog when the
@@ -319,7 +344,6 @@ export function apply(settings: UiSettings) {
         // proportional UI font instead of the stylesheet's monospace.
         objects.style.fontFamily = `var(--window-font-family, ${resolvedFontFamily || 'monospace'})`;
         objects.style.fontSize = `var(--window-font-size, ${settings.objectsFontSize}rem)`;
-        objects.style.backgroundColor = hexAlphaToRgba(settings.objectListBackgroundColor, settings.objectListBackgroundAlpha);
     }
     const iframeContainer = document.getElementById('iframe-container') as HTMLElement | null;
     if (iframeContainer) {
@@ -450,14 +474,6 @@ export function load(): UiSettings {
                 && /^#[0-9a-f]{6}$/i.test(parsed.outputBackground.trim())
                     ? parsed.outputBackground.trim()
                     : defaultUiSettings.outputBackground;
-            const objectListBackgroundColor = typeof parsed.objectListBackgroundColor === 'string'
-                && /^#[0-9a-f]{6}$/i.test(parsed.objectListBackgroundColor.trim())
-                    ? parsed.objectListBackgroundColor.trim()
-                    : defaultUiSettings.objectListBackgroundColor;
-            const objectListBackgroundAlpha = typeof parsed.objectListBackgroundAlpha === 'number'
-                && parsed.objectListBackgroundAlpha >= 0 && parsed.objectListBackgroundAlpha <= 1
-                    ? parsed.objectListBackgroundAlpha
-                    : defaultUiSettings.objectListBackgroundAlpha;
             const fontFamily = isUiFontSelection(parsed.fontFamily)
                 ? parsed.fontFamily
                 : defaultUiSettings.fontFamily;
@@ -675,8 +691,6 @@ export function load(): UiSettings {
                 outputBottomPadding,
                 outputMaxElements,
                 splitViewHeight,
-                objectListBackgroundColor,
-                objectListBackgroundAlpha,
                 colorTheme,
                 customThemeColor,
                 ttsEnabled: typeof parsed.ttsEnabled === 'boolean' ? parsed.ttsEnabled : defaultUiSettings.ttsEnabled,
