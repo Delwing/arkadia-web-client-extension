@@ -26,6 +26,7 @@ import {
     normalizeLuaGagsWalkaConfig,
 } from "../luaGagsSettings";
 import {recordCombatStat} from "./combatStats";
+import {foldText} from "@shared/foldText.ts";
 import {createMatchesLuaCode, escapeLuaString} from "../luaInterop";
 
 const ERROR_COLOR = createColorFormat('#ff0000');
@@ -108,6 +109,16 @@ function applyWalkaConfig(value: unknown) {
     const normalized = normalizeLuaGagsWalkaConfig(value);
     walkaConfig.ownSpecPrefix = normalized.ownSpecPrefix;
     walkaConfig.finPrefix = normalized.finPrefix;
+}
+
+/**
+ * A combat.avatar blow lands on the player when the line names them: "rani cie",
+ * "trafia ciebie". Whole words only - the bare substring also sits inside
+ * "ciele", "ciezko" and "cios", which turned the player's own hits into hits
+ * taken.
+ */
+export function isHitOnMe(text: string): boolean {
+    return /\b(ciebie|cie|ci)\b/.test(foldText(text));
 }
 
 function getDeleteMode(type: string): LuaGagDeleteMode {
@@ -275,7 +286,7 @@ export default function registerLuaGagTriggers(client: Client) {
             who_hits: () => {
                 let who;
                 if (gags.is_type(null,"combat.avatar")) {
-                    who = global.line.text.match(/ciebie|cie|ci/) ? "innych_ciosy_we_mnie" : "moje_ciosy"
+                    who = isHitOnMe(global.line.text) ? "innych_ciosy_we_mnie" : "moje_ciosy"
                 } else {
                     who = "innych_ciosy"
                 }
