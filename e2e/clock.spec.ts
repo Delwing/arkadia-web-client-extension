@@ -337,7 +337,7 @@ test.describe('Clock System', () => {
         await expect(chip).toHaveAttribute('title', /wiosna, noc/);
     });
 
-    test('Czas popup shows sun times and switches between Imperium and Ishtar', async ({page}) => {
+    test('Czas popup shows sun times and switches between the current and the other domain', async ({page}) => {
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
@@ -351,19 +351,25 @@ test.describe('Clock System', () => {
         const domainSwitch = page.locator('.wt-domain-switch');
         const sun = body.locator('.wt-sun');
 
-        // Follows the domain you are in (the last time read was Ishtar)
+        // Bieżąca: the domain you are in (the last time read was Ishtar)
+        await expect(body.locator('.wt-domain-label')).toHaveText('Ishtar');
         await expect(body.locator('.wt-time')).toHaveText('12:00');
-        await expect(sun).toContainText(/Wsch\S*\s*\d\d:00/);
-        await expect(sun).toContainText(/Zach\S*\s*\d\d:00/);
+        await expect(sun.getByTitle('Wschód słońca')).toHaveText(/^\d\d:00$/);
+        await expect(sun.getByTitle('Zachód słońca')).toHaveText(/^\d\d:00$/);
 
-        await domainSwitch.getByText('Imperium').click();
+        await domainSwitch.getByText('Druga').click();
+        await expect(body.locator('.wt-domain-label')).toHaveText('Imperium');
         await expect(body.locator('.wt-time')).toHaveText('06:00');
 
-        await domainSwitch.getByText('Ishtar').click();
-        await expect(body.locator('.wt-time')).toHaveText('12:00');
+        // Crossing into Imperium swaps what "the other" domain is
+        await pushText(page, 'Jest w przyblizeniu szosta rano, 1 dzien miesiaca Nachhexen wedlug Kalendarza Imperialnego.');
+        await expect(body.locator('.wt-domain-label')).toHaveText('Ishtar');
+
+        await domainSwitch.getByText('Bieżąca').click();
+        await expect(body.locator('.wt-domain-label')).toHaveText('Imperium');
     });
 
-    test('Ustaw in the Czas popup sets the shown domain clock by hand', async ({page}) => {
+    test('/czas imperium sets the clock shown in the Czas popup', async ({page}) => {
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
@@ -373,17 +379,35 @@ test.describe('Clock System', () => {
         const body = page.locator('.world-time-popup');
         await expect(body.locator('.wt-time')).toHaveText('06:00');
 
-        await page.locator('.wt-set-toggle').click();
-        const form = body.locator('.wt-set');
-        const numbers = form.locator('input[type="number"]');
-        await numbers.nth(0).fill('9');
-        await numbers.nth(1).fill('30');
-        await form.getByText('Dzień roku').click();
-        await numbers.nth(2).fill('100');
-        await form.getByRole('button', {name: 'Ustaw'}).click();
+        await submitCommand(page, '/czas imperium 9 100');
 
-        await expect(body.locator('.wt-time')).toHaveText('09:30');
-        await expect(body.locator('.wt-doy')).toContainText('dzień 100');
-        await expect(numbers.nth(0)).toHaveValue('');
+        await expect(body.locator('.wt-time')).toHaveText('09:00');
+        await expect(body.locator('.wt-doy')).toHaveText('dzień 100');
+    });
+
+    test('Obie in the Czas popup shows both domains, current first, and is remembered', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+
+        await pushText(page, 'Jest w przyblizeniu szosta rano, 1 dzien miesiaca Nachhexen wedlug Kalendarza Imperialnego.');
+        await pushText(page, 'Jest w przyblizeniu poludnie, pietnasty dzien pory Birke wedlug rachuby czasu Starszego Ludu.');
+        await submitCommand(page, '/czas');
+        const body = page.locator('.world-time-popup');
+        await expect(body.locator('.wt-time')).toHaveText('12:00');
+
+        await page.locator('.wt-domain-switch').getByText('Obie').click();
+        await expect(body.locator('.wt-domain-label')).toHaveText(['Ishtar', 'Imperium']);
+        await expect(body.locator('.wt-time')).toHaveText(['12:00', '06:00']);
+        await expect(body.locator('.wt-domain-label.is-here')).toHaveText('Ishtar');
+
+        await page.reload();
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+        await submitCommand(page, '/czas');
+        await expect(page.locator('.world-time-popup .wt-time')).toHaveCount(2);
+
+        await page.locator('.wt-domain-switch').getByText('Bieżąca').click();
+        await expect(page.locator('.world-time-popup .wt-time')).toHaveCount(1);
     });
 });

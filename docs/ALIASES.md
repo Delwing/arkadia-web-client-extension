@@ -71,11 +71,9 @@ Zakresy działają rosnąco (`1-7`) i malejąco (`7-1`). Maksymalnie 50 iteracji
 
 | Komenda | Opis |
 |---------|------|
-| `/czas` lub `/czasw` | Otwórz okno Czas: godzina, data, pora roku, wschód i zachód słońca (przełącznik Imperium / Ishtar w nagłówku) |
+| `/czas` lub `/czasw` | Otwórz okno Czas: godzina, data, pora roku, wschód i zachód słońca (przełącznik w nagłówku: bieżąca domena, druga albo obie naraz) |
 | `/czas imperium <godzina> [<dzien>]` | Ustaw czas w Imperium (godzina 0-23, opcjonalnie dzień roku 1-400) |
 | `/czas ishtar <godzina> [<dzien>]` | Ustaw czas w Ishtar (godzina 0-23, opcjonalnie dzień roku 1-360) |
-
-> **Wskazówka:** Czas można również ustawić w oknie zegara - wybierz godzinę, miesiąc i dzień, a następnie kliknij "Ustaw".
 
 ## Język
 

@@ -7,43 +7,58 @@
 .world-time-popup {
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  padding: 8px 11px;
+  gap: 8px;
+  padding: 10px 12px 7px;
   overflow: auto;
 }
 
-.wt-clock {
-  display: flex;
-  align-items: stretch;
-  gap: 6px 14px;
-  flex-wrap: wrap;
-}
-/* season stacked directly over the world date, pinned to the right of the clock */
-.wt-cal {
+/* one domain's clock; "Oba" stacks two under a hairline, each captioned */
+.wt-domain {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
-  gap: 2px;
-  margin-left: auto;
-  text-align: right;
+  gap: 9px;
 }
-/* sun/moon icon + time are one vertically-centered unit */
-.wt-now {
+.wt-domain + .wt-domain {
+  padding-top: 8px;
+  border-top: 1px solid var(--popup-border-subtle);
+}
+.wt-domain-label {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 5px;
+  margin-bottom: -3px;
+  font-family: var(--output-font-family, ui-monospace, monospace);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--popup-text-subtle, #8a7f66);
 }
-/* icon fills the full height of the two right-hand rows */
+/* the domain you stand in: a small accent dot after its name */
+.wt-domain-label.is-here {
+  color: var(--popup-text-dim, #b7aa8b);
+}
+.wt-domain-label.is-here::after {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--popup-accent, #c9a45c);
+}
+
+/* sky icon + clock on the left, the calendar stacked on the right */
+.wt-clock {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 .wt-sky {
   display: flex;
-  align-items: center;
-  width: 28px;
-  height: 28px;
   flex: 0 0 auto;
 }
 .wt-sky svg {
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
 }
 .wt-day {
   color: #f0c25a;
@@ -60,84 +75,80 @@
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.02em;
 }
-/* season label — mirrors forge's header meta: mono, uppercase, season-coloured */
-.wt-season {
+.wt-cal {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+  min-width: 0;
+  margin-left: auto;
+  text-align: right;
+  line-height: 1.15;
+}
+/* season and day of the year — mono caps, the season in its own hue */
+.wt-season-line {
   font-family: var(--output-font-family, ui-monospace, monospace);
   font-size: 9.5px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--popup-text-subtle, #8a7f66);
+}
+.wt-season {
   font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
 }
-/* world date — mirrors forge's .tp-date: Cinzel caps, parchment-dim */
-.wt-date {
-  font-family: "Cinzel", serif;
-  font-size: 9.5px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--popup-text-dim, #b7aa8b);
-}
-/* day-of-year — forge's .tp-doy: dimmed bronze, a notch below the date colour */
 .wt-doy {
   color: var(--popup-accent-border, #9a7b3e);
 }
-/* sunrise / sunset strip under the clock */
-.wt-sun {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  padding-top: 5px;
-  border-top: 1px solid var(--popup-border-subtle);
-  font-family: var(--output-font-family, ui-monospace, monospace);
+/* world date — Cinzel, parchment-dim */
+.wt-date {
+  font-family: "Cinzel", serif;
   font-size: 11px;
-  color: var(--popup-text, #d8cdb2);
-  font-variant-numeric: tabular-nums;
-}
-.wt-sun-item {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 6px;
-}
-.wt-sun-label {
-  font-size: 9.5px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--popup-text-dim, #b7aa8b);
-}
-/* manual set-time form ("Ustaw"): labels left, controls right */
-.wt-set {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  align-items: center;
-  gap: 6px 10px;
-  padding-top: 7px;
-  border-top: 1px solid var(--popup-border-subtle);
-  font-size: 12px;
-}
-.wt-set-label {
+  letter-spacing: 0.06em;
   color: var(--popup-text-dim, #b7aa8b);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
-.wt-set-controls {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  min-width: 0;
+
+/* 24h day track: daylight band between sunrise and sunset, a tick at now */
+.wt-day-track {
+  position: relative;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--popup-border-subtle);
 }
-.wt-set-num {
-  width: 4.5em;
-  text-align: center;
+.wt-daylight {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 2px;
+  background: color-mix(in srgb, #f0c25a 45%, transparent);
+}
+.wt-now-mark {
+  position: absolute;
+  top: -3px;
+  width: 2px;
+  height: 9px;
+  margin-left: -1px;
+  border-radius: 1px;
+  background: var(--popup-text-bright, #e8dfc8);
+}
+/* sunrise / sunset times hang under the ends of the daylight band */
+.wt-sun {
+  position: relative;
+  height: 13px;
+  margin-top: 3px;
+}
+.wt-sun-time {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  font-family: var(--output-font-family, ui-monospace, monospace);
+  font-size: 10px;
+  line-height: 13px;
+  color: var(--popup-text-dim, #b7aa8b);
   font-variant-numeric: tabular-nums;
-}
-.wt-set-month {
-  min-width: 0;
-  width: 100%;
-}
-.wt-set-colon {
-  color: var(--popup-text-subtle);
-  font-weight: 600;
-}
-.wt-set-action {
-  grid-column: 1 / -1;
-  display: flex;
-  justify-content: flex-end;
+  white-space: nowrap;
 }
