@@ -143,6 +143,8 @@ import {
   setPersonColor,
   clearPersonColor,
   getMergedSnapshot,
+  subscribeMerged,
+  refresh as refreshPeople,
   makePersonKey,
   type PersonListEntry
 } from "@modules/data/peopleLoader";
@@ -2863,6 +2865,13 @@ export interface PeopleApi {
   findByKey(key: string): PersonListEntry | undefined;
   getAll(): PersonListEntry[];
   makeKey(name: string, description: string): string;
+  /**
+   * Called with the merged people list now (if loaded) and on every change.
+   * Returns an unsubscribe function; subscriptions end when the plugin unloads.
+   */
+  subscribe(listener: (people: PersonListEntry[]) => void): () => void;
+  /** Loads the people database if nothing has yet, or refreshes a stale copy. */
+  refresh(): Promise<void>;
 }
 
 /**
@@ -3019,6 +3028,7 @@ export class PluginApiImpl implements PluginApi {
   private aliasMap: Map<string, PluginAlias> = new Map();
   private popupHandles: Set<PopupHandle> = new Set();
   private popupMenuEntryIds: Set<string> = new Set();
+  private peopleUnsubscribers: Set<() => void> = new Set();
   private contextMenuEntryIds: Set<string> = new Set();
   private buttonMacroIds: Set<string> = new Set();
   private triggerMacroIds: Set<string> = new Set();
@@ -3971,6 +3981,20 @@ export class PluginApiImpl implements PluginApi {
 
       makeKey: (name: string, description: string): string => {
         return makePersonKey(name, description);
+      },
+
+      subscribe: (listener: (people: PersonListEntry[]) => void): (() => void) => {
+        const off = subscribeMerged(people => listener(people ?? []));
+        const unsubscribe = () => {
+          off();
+          this.peopleUnsubscribers.delete(unsubscribe);
+        };
+        this.peopleUnsubscribers.add(unsubscribe);
+        return unsubscribe;
+      },
+
+      refresh: async (): Promise<void> => {
+        await refreshPeople();
       }
     };
   }
@@ -4007,6 +4031,10 @@ export class PluginApiImpl implements PluginApi {
       unregisterPopupMenuEntry(id);
     }
     this.popupMenuEntryIds.clear();
+
+    for (const unsubscribe of Array.from(this.peopleUnsubscribers)) {
+      unsubscribe();
+    }
 
     for (const id of Array.from(this.contextMenuEntryIds)) {
       unregisterContextMenuEntry(id);

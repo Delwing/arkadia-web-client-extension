@@ -1233,6 +1233,31 @@ export interface ClientEvents {
   "enemyKilled": { objNum: number; killer: "ME" | "TEAM" | "OTHER"; hasBody?: boolean };
   /** All enemies killed */
   "allEnemiesKilled": void;
+  /**
+   * Every combat line a gag classified: gag type (moje_ciosy, innych_parowanie, ...),
+   * the prefix shown ("3/6", "FIN", a special's name) and the raw line. finisher is
+   * true when the prefix is the player's killing-blow prefix.
+   */
+  "combat.gag": { type: string; prefix: string; text: string; finisher?: boolean };
+  /** The player is stunned (ogluszenie) */
+  "stunStart": void;
+  /** The player's stun wore off */
+  "stunEnd": void;
+  /** Someone else got stunned; name as the line declined it ("orka") */
+  "enemy.paralyzed": { name: string };
+  /** Someone else's stun ended; name is '' when the object list timed it out */
+  "enemy.paralyzed.end": { name: string };
+  /** A cover (zaslona) changed; kind 'established' carries covererId/coveredId/attackerId */
+  "cover.event": {
+    at: number;
+    kind: "established" | "failed" | "blocked" | "break-failed" | "break-ok" | "released" | "retreat" | "expired" | "gmcp-suspect" | "ambiguous";
+    coveredId?: number;
+    covererId?: number;
+    attackerId?: number;
+    raw: string;
+  };
+  /** GMCP Char.Info - the player's name, race, guilds */
+  "gmcp.char.info": { name?: string; race?: string; gender?: string; [key: string]: unknown };
   /** Plugin loaded successfully */
   "plugin:loaded": PluginLoadedPayload;
   /** Plugin error occurred */

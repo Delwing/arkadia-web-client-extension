@@ -494,7 +494,8 @@ export interface KnownEvents {
     "weaponKnockedOffNekroTilea": void;
     "weapon_state": boolean;
     // Every combat gag (Lua and TS) as it is applied: gag type (moje_ciosy, ...), prefix, raw line
-    "combat.gag": { type: string; prefix: string; text: string };
+    // finisher: the prefix is the killing-blow prefix the player set (FIN by default)
+    "combat.gag": { type: string; prefix: string; text: string; finisher?: boolean };
     // Lua gag events - stun
     "stunStart": void;
     "stunEnd": void;

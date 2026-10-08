@@ -240,7 +240,8 @@ export default function registerLuaGagTriggers(client: Client) {
             },
             gag_prefix: (_, prefix: string, type: string) => {
                 recordCombatStat(prefix, type, global.line?.text ?? "");
-                client.sendEvent("combat.gag", { type, prefix, text: global.line?.text ?? "" });
+                const finisher = !!walkaConfig.finPrefix.trim() && prefix.trim() === walkaConfig.finPrefix.trim();
+                client.sendEvent("combat.gag", { type, prefix, text: global.line?.text ?? "", finisher });
                 const mode = getDeleteMode(type);
                 if (mode === 1) {
                     return global.line.markAsDeleted();
