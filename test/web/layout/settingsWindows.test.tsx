@@ -7,6 +7,7 @@ import { registerPopup, unregisterPopup, type RegisteredPopup } from '@web/layou
 import { getWindowSetting, WINDOW_FONT_SIZE_KEY } from '@web/layout/windowSettings';
 import { invalidateLayoutCache } from '@web/layout/utils/layoutStorage';
 import { WindowSettingsSection } from '@web/uiSettings/sections/WindowsSections';
+import { MODAL_EVENT } from '@web/modals/appModal';
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -62,8 +63,25 @@ describe('WindowSettingsSection', () => {
     unregisterPopup('popup:chat');
   });
 
-  it('edits the chosen window and picks up popups as they open', () => {
+  it('is built only while the settings dialog shows', () => {
+    const modal = document.createElement('div');
+    modal.id = 'settings-modal';
+    document.body.appendChild(modal);
     act(() => root.render(<WindowSettingsSection />));
+    expect(container.querySelector('#ui-window-settings-window')).toBeNull();
+    act(() => { modal.dispatchEvent(new Event(MODAL_EVENT.show)); });
+    expect(container.querySelector('#ui-window-settings-window')).not.toBeNull();
+    act(() => { modal.dispatchEvent(new Event(MODAL_EVENT.hidden)); });
+    expect(container.querySelector('#ui-window-settings-window')).toBeNull();
+    modal.remove();
+  });
+
+  it('edits the chosen window and picks up popups as they open', () => {
+    const modal = document.createElement('div');
+    modal.id = 'settings-modal';
+    document.body.appendChild(modal);
+    act(() => root.render(<WindowSettingsSection />));
+    act(() => { modal.dispatchEvent(new Event(MODAL_EVENT.show)); });
     const select = () => container.querySelector<HTMLSelectElement>('#ui-window-settings-window')!;
     expect([...select().options].map(o => o.value)).not.toContain('popup:chat');
 
@@ -74,11 +92,12 @@ describe('WindowSettingsSection', () => {
       select().value = 'popup:chat';
       select().dispatchEvent(new Event('change', { bubbles: true }));
     });
-    expect(container.querySelector('[data-window-settings="popup:chat"]')).not.toBeNull();
+    expect(container.querySelector('.window-settings-inline')).not.toBeNull();
     act(() => {
       container.querySelector<HTMLButtonElement>('.window-settings__step[title="Większa czcionka"]')!
         .dispatchEvent(new MouseEvent('click', { bubbles: true }));
     });
     expect(getWindowSetting('popup:chat', WINDOW_FONT_SIZE_KEY, null)).toBe(0.9);
+    modal.remove();
   });
 });

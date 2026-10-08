@@ -1441,7 +1441,7 @@ select.popup-input.popup-input--control {
   display: inline-flex;
 }
 /* The same fields laid out in the settings dialog (Okna > Ustawienia okien). */
-.window-settings--inline {
+.window-settings-inline {
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
@@ -1499,7 +1499,8 @@ select.popup-input.popup-input--control {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
-.window-settings__size-value {
+.window-settings__size-value,
+.window-settings__bg-value {
   flex: 1;
   text-align: center;
   font-variant-numeric: tabular-nums;
@@ -1507,7 +1508,8 @@ select.popup-input.popup-input--control {
 .window-settings__size-value--inherit {
   color: var(--popup-text-dim);
 }
-.window-settings__reset:not(:disabled) {
+.window-settings__reset:not(:disabled),
+.window-settings__bg-reset:not(:disabled) {
   color: var(--popup-accent);
 }
 .window-settings__toggle {

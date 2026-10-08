@@ -149,7 +149,7 @@ describe('WindowSettingsMenu', () => {
     const panel = openMenu()!;
     const picker = panel.querySelector<HTMLInputElement>('input[type="color"]')!;
     const opacity = panel.querySelector<HTMLInputElement>('input[type="range"]')!;
-    const reset = () => panel.querySelector<HTMLButtonElement>('.window-settings__reset[title="Przywróć domyślne tło"]')!;
+    const reset = () => panel.querySelector<HTMLButtonElement>('.window-settings__bg-reset')!;
     expect(reset().disabled).toBe(true);
     expect(opacity.value).toBe('100');
 

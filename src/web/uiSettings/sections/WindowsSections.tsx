@@ -9,6 +9,8 @@ import { SEPARATE_OTHERS_SETTING } from "@web/layout/types.ts";
 import { listSettingsWindows } from "@web/layout/settingsWindows.ts";
 import { subscribeToRegistry } from "@web/layout/popupRegistry.ts";
 import { WindowSettingsSections } from "@web/layout/components/WindowSettingsMenu.tsx";
+import { AppModal, MODAL_EVENT } from "@web/modals/appModal.ts";
+import { SETTINGS_MODAL_ID } from "@web/settings/categories.ts";
 
 interface LayoutManagerSectionProps {
     layoutEnabled: boolean;
@@ -75,7 +77,30 @@ export function OutputSection({ draft, update }: OutputSectionProps) {
  * Every window's settings, the same ones its header cog edits, for when the
  * header has no room for the cog (a phone, say). They save at once, like the cog.
  */
+/** Whether the settings dialog shows; its pages stay mounted while it is closed. */
+function useSettingsDialogOpen(): boolean {
+    const [open, setOpen] = useState(() => !!AppModal.byId(SETTINGS_MODAL_ID)?.isOpen);
+    useEffect(() => {
+        const modalEl = document.getElementById(SETTINGS_MODAL_ID);
+        const onShow = () => setOpen(true);
+        const onHidden = () => setOpen(false);
+        modalEl?.addEventListener(MODAL_EVENT.show, onShow);
+        modalEl?.addEventListener(MODAL_EVENT.hidden, onHidden);
+        return () => {
+            modalEl?.removeEventListener(MODAL_EVENT.show, onShow);
+            modalEl?.removeEventListener(MODAL_EVENT.hidden, onHidden);
+        };
+    }, []);
+    return open;
+}
+
 export function WindowSettingsSection() {
+    // Built only while the dialog shows: the hidden pages would otherwise carry
+    // a copy of every open window's title and settings.
+    return useSettingsDialogOpen() ? <WindowSettingsPicker /> : <SettingsSection title="Ustawienia okien">{null}</SettingsSection>;
+}
+
+function WindowSettingsPicker() {
     const [windows, setWindows] = useState(listSettingsWindows);
     useEffect(() => subscribeToRegistry(() => setWindows(listSettingsWindows())), []);
     const [selectedId, setSelectedId] = useState(windows[0]?.id ?? '');
@@ -94,7 +119,7 @@ export function WindowSettingsSection() {
                     {windows.map(w => <option key={w.id} value={w.id}>{w.title}</option>)}
                 </SelectField>
                 {selected && (
-                    <div className="window-settings window-settings--inline" data-window-settings={selected.id}>
+                    <div className="window-settings-inline">
                         <WindowSettingsSections
                             key={selected.id}
                             windowId={selected.id}

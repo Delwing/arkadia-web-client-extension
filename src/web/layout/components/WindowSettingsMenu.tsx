@@ -177,12 +177,12 @@ function BackgroundRow({ windowId }: { windowId: string }) {
             onChange={e => setStored(joinWindowBackground(e.target.value, alpha))}
             title={override === null ? 'Domyślne' : color}
           />
-          <span className={`window-settings__size-value${override ? '' : ' window-settings__size-value--inherit'}`}>
+          <span className={`window-settings__bg-value${override ? '' : ' window-settings__size-value--inherit'}`}>
             {override === null ? 'Domyślne' : color}
           </span>
           <button
             type="button"
-            className="popup-btn window-settings__step window-settings__reset"
+            className="popup-btn window-settings__step window-settings__bg-reset"
             onClick={() => setStored(null)}
             disabled={override === null}
             title="Przywróć domyślne tło"
