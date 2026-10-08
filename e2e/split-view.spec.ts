@@ -248,4 +248,38 @@ test.describe('Split view', () => {
         expect(Math.abs(await readScrollTop() - scrollTopBefore)).toBeLessThan(5);
         await expect(page.locator('#message-input')).toBeFocused();
     });
+
+    test('dragging the split handle keeps the scrollback where it is', async ({page}) => {
+        // Only a profile that already has stored UI settings saves the dragged
+        // height, and saving re-applies the settings — the path that used to
+        // yank the top pane to the bottom.
+        await page.addInitScript(() => {
+            if (!localStorage.getItem('uiSettings')) localStorage.setItem('uiSettings', '{}');
+        });
+        await page.reload();
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+
+        await pushManyLines(page, 200);
+        await scrollOutputToTop(page);
+        await page.waitForTimeout(300);
+        const readScrollTop = () => page.evaluate((sel) => (document.querySelector(sel) as HTMLElement).scrollTop, OUTPUT_SELECTOR);
+        const scrollTopBefore = await readScrollTop();
+
+        const handle = (await page.locator('#split-handle').boundingBox())!;
+        const x = handle.x + handle.width / 2;
+        await page.mouse.move(x, handle.y + 1);
+        await page.mouse.down();
+        await page.mouse.move(x, handle.y - 100, {steps: 10});
+        await page.mouse.up();
+
+        await expect.poll(() => page.evaluate(() => {
+            const stored = JSON.parse(localStorage.getItem('uiSettings') || '{}');
+            return typeof stored.splitViewHeight === 'number';
+        })).toBe(true);
+        // Negative assertion: give a stray re-pin time to land
+        await page.waitForTimeout(300);
+        expect(await hasSplitHidden(page)).toBe(false);
+        expect(Math.abs(await readScrollTop() - scrollTopBefore)).toBeLessThan(5);
+    });
 });

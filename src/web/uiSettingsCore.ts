@@ -342,7 +342,10 @@ export function apply(settings: UiSettings) {
     if (map) {
         map.dispatchEvent(new CustomEvent('resize'));
     }
-    if (content) {
+    // Re-pin after the font/padding changes above — but not while the user is
+    // reading the scrollback: saving the split pane's dragged height lands here
+    // too, and would yank the top pane to the bottom.
+    if (content && (!splitBottom || splitBottom.classList.contains('split-hidden'))) {
         content.scrollTop = content.scrollHeight;
     }
     const embedded = getEmbeddedMap();
