@@ -613,7 +613,9 @@ h1 {
   z-index: 1;
   height: 15rem;
   max-height: 50vh;
-  overflow: hidden;
+  /* Not clipped here: the close button straddles the handle line and pokes
+     out above the pane. #sticky-area clips the mirrored lines instead. */
+  overflow: visible;
 }
 
 #split-bottom.split-hidden {
@@ -635,11 +637,38 @@ h1 {
   background-color: var(--popup-text-strong);
 }
 
+/* Centred on the 2px handle line, at the right. */
+#split-close {
+  position: absolute;
+  top: 1px;
+  right: 12px;
+  transform: translateY(-50%);
+  z-index: 3;
+  padding: 1px 8px;
+  border: 1px solid var(--footer-control-hover-border);
+  border-radius: 999px;
+  background-color: var(--popup-bg);
+  color: var(--popup-text-subtle);
+  font-size: 11px;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+#split-close:hover {
+  border-color: var(--popup-text-strong);
+  color: var(--popup-text-strong);
+}
+
 #sticky-area {
   display: flex;
   flex-direction: column;
+  /* Newest lines sit at the bottom; older ones overflow upwards and are cut
+     off at the handle. */
+  justify-content: flex-end;
+  overflow: hidden;
   background-color: inherit;
   position: absolute;
+  top: 2px;
   bottom: 0;
   width: 100%;
 }

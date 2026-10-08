@@ -83,6 +83,34 @@ test.describe('Double-click scroll to bottom', () => {
         expect(await isScrolledToBottom(page)).toBe(false);
     });
 
+    test('a real single click focuses the input but keeps the split view open', async ({page}) => {
+        await pushManyLines(page, 80);
+        await page.locator('#message-input').evaluate((el) => (el as HTMLElement).blur());
+
+        await scrollOutputToTop(page);
+
+        const box = await page.locator(OUTPUT_SELECTOR).boundingBox();
+        await page.mouse.click(box!.x + box!.width / 2, box!.y + 20);
+
+        await expect(page.locator('#message-input')).toBeFocused();
+        // Negative assertion: give a stray scroll-to-bottom time to land
+        await page.waitForTimeout(300);
+        await expect(page.locator('#split-bottom')).not.toHaveClass(/split-hidden/);
+        expect(await isScrolledToBottom(page)).toBe(false);
+    });
+
+    test('the close button on the split view scrolls to bottom and closes it', async ({page}) => {
+        await pushManyLines(page, 80);
+
+        await scrollOutputToTop(page);
+
+        await page.locator('#split-close').click();
+
+        await expect(page.locator('#split-bottom')).toHaveClass(/split-hidden/);
+        await expect.poll(() => isScrolledToBottom(page)).toBe(true);
+        await expect(page.locator('#message-input')).toBeFocused();
+    });
+
     test('double-click at bottom has no adverse effect', async ({page}) => {
         await pushManyLines(page, 80);
 

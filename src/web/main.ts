@@ -259,8 +259,13 @@ setupOutputContextMenu(outputWrapper);
 
 
 function closeHistoryScrollback() {
-    outputWrapper.scrollTop = outputWrapper.scrollHeight;
+    outputMessageHandler.closeSplitView();
 }
+
+document.getElementById('split-close')?.addEventListener('click', () => {
+    closeHistoryScrollback();
+    (document.getElementById('message-input') as HTMLElement | null)?.focus();
+});
 
 
 let lastTap = 0;
@@ -823,6 +828,16 @@ document.addEventListener('DOMContentLoaded', () => {
     if (contentArea) {
         const interactiveSelector = 'a, button, input, textarea, select, [contenteditable], .plugin-window, .app-modal, .managed-panel';
 
+        // A click only hands focus to the command line; it must leave the
+        // scrollback where it is, or a single click while reading the history
+        // would close the split view. Closing it is a double-click or the
+        // pane's close button.
+        const focusKeepingScroll = () => {
+            messageInput.setAttribute('data-keep-scroll', '');
+            messageInput.focus({preventScroll: true});
+            messageInput.removeAttribute('data-keep-scroll');
+        };
+
         const focusMessageInput = (target: EventTarget | null) => {
             // Check if there's a text selection
             const selection = window.getSelection();
@@ -831,7 +846,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (!target || !(target instanceof Element)) {
-                messageInput.focus();
+                focusKeepingScroll();
                 return;
             }
 
@@ -848,19 +863,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (active && active !== document.body && active.closest?.(interactiveSelector)) {
                         return;
                     }
-                    // Keep the scrollback where it is: a link clicked in the
-                    // history view must not close the split view.
-                    messageInput.setAttribute('data-keep-scroll', '');
-                    messageInput.focus({preventScroll: true});
-                    messageInput.removeAttribute('data-keep-scroll');
+                    focusKeepingScroll();
                 }, 0);
                 return;
             }
 
-            messageInput.focus();
-            setTimeout(() => {
-                messageInput.focus()
-            }, 1)
+            focusKeepingScroll();
+            setTimeout(focusKeepingScroll, 1);
         };
 
         if (window.PointerEvent) {

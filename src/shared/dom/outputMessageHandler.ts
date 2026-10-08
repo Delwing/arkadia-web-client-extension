@@ -42,6 +42,10 @@ export type OutputMessageHandler = {
     // host can debounce its own layout churn (stock suppresses across
     // multibinds show/hide) without reaching into the engine's internals.
     suppressSplitView(durationMs: number): void;
+    // Closes the split view on purpose (double-click, the pane's close button)
+    // and pins the output to the bottom. Unlike just scrolling down, this works
+    // while output is pouring in, when the scroll it causes would be ignored.
+    closeSplitView(): void;
     // Appends an arbitrary node through the same insert/trim/scroll/sticky-mirror
     // pipeline as an incoming client message. `rebuild` — when provided — must
     // return a fresh, independently-live equivalent node; it is called again
@@ -340,6 +344,10 @@ export function setupOutputMessageHandler(
         isSplitView: () => splitView.isSplitView(),
         suppressSplitView: (durationMs: number) => {
             splitView.suppress(durationMs);
+        },
+        closeSplitView: () => {
+            splitView.close();
+            splitView.pinToBottom(true);
         },
         appendNode,
     };
