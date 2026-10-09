@@ -11,7 +11,8 @@ import {
     removeLocalNpc,
     subscribe as subscribeNpcStore,
 } from './dataStores/npcStore';
-import { HeaderButton } from '@web-ui/primitives';
+import { Button, DeleteButton, HeaderButton, Input } from '@web-ui/primitives';
+import { MapPin, Navigation, Search, X } from 'lucide-react';
 
 const POPUP_ID = 'popup:packageReceiver';
 
@@ -92,7 +93,7 @@ const PackageReceiverPopup: React.FC = () => {
         <>
             <HeaderButton onClick={handleRefreshNpcs} title="Aktualizuj listę NPC">Aktualizuj</HeaderButton>
             <HeaderButton onClick={handleExportNpcs} title="Eksportuj listę NPC">Eksport</HeaderButton>
-            <HeaderButton onClick={handleClearNpcs} title="Wyczyść listę NPC">Wyczyść</HeaderButton>
+            <HeaderButton danger onClick={handleClearNpcs} title="Wyczyść listę NPC">Wyczyść</HeaderButton>
         </>
     );
 
@@ -111,20 +112,20 @@ const PackageReceiverPopup: React.FC = () => {
         >
             <div className="package-receiver__controls">
                 <div className="package-receiver__search">
-                    <input
-                        type="text"
-                        placeholder="Filtruj..."
+                    <Search className="package-receiver__search-icon" size={14} strokeWidth={2} />
+                    <Input
+                        placeholder="Szukaj odbiorcy..."
                         value={search}
                         onChange={e => setSearch(e.target.value)}
-                        className="popup-input"
                     />
                     {search && (
                         <button
                             type="button"
                             className="package-receiver__search-clear"
                             onClick={() => setSearch('')}
+                            title="Wyczyść wyszukiwanie"
                         >
-                            X
+                            <X size={14} strokeWidth={2} />
                         </button>
                     )}
                 </div>
@@ -136,41 +137,47 @@ const PackageReceiverPopup: React.FC = () => {
                     </div>
                 ) : (
                     <div className="package-receiver__list">
+                        <div className="package-receiver__head">
+                            <span>Odbiorca</span>
+                            <span>Lokacja</span>
+                            <span />
+                        </div>
                         {sortedNpcs.map(npc => (
                             <div
                                 key={`${npc.name}-${npc.loc}`}
                                 className="package-receiver__npc-item"
                             >
-                                <span className="package-receiver__npc-name">{npc.name}</span>
-                                <span className="package-receiver__npc-loc" onContextMenu={roomContextMenuHandler(npc.loc)}>{npc.loc}</span>
+                                <span className="package-receiver__npc-name">
+                                    <span className="package-receiver__npc-name-text">{npc.name}</span>
+                                    {npc.source === 'local' && (
+                                        <span className="package-receiver__badge" title="Dodano lokalnie">lokalny</span>
+                                    )}
+                                </span>
+                                <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="package-receiver__npc-loc"
+                                    onClick={() => handleShowOnMap(npc.loc)}
+                                    onContextMenu={roomContextMenuHandler(npc.loc)}
+                                    title="Pokaż na mapie"
+                                >
+                                    <MapPin size={13} strokeWidth={2} />
+                                    {npc.loc}
+                                </Button>
                                 <div className="package-receiver__npc-actions">
-                                    <button
-                                        type="button"
-                                        className="package-receiver__npc-btn"
-                                        onClick={() => handleShowOnMap(npc.loc)}
-                                        onContextMenu={roomContextMenuHandler(npc.loc)}
-                                        title="Pokaż na mapie"
-                                    >
-                                        &#x1f50d;
-                                    </button>
-                                    <button
-                                        type="button"
-                                        className="package-receiver__npc-btn"
+                                    <Button
+                                        size="sm"
+                                        className="package-receiver__go"
                                         onClick={() => handleNavigate(npc.loc)}
                                         onContextMenu={roomContextMenuHandler(npc.loc)}
                                         title="Prowadź do lokacji"
                                     >
-                                        Idź
-                                    </button>
-                                    {npc.source === 'local' && (
-                                        <button
-                                            type="button"
-                                            className="package-receiver__npc-btn package-receiver__npc-btn--delete"
-                                            onClick={() => handleDeleteNpc(npc)}
-                                            title="Usuń"
-                                        >
-                                            X
-                                        </button>
+                                        <Navigation size={13} strokeWidth={2} /> Idź
+                                    </Button>
+                                    {npc.source === 'local' ? (
+                                        <DeleteButton onClick={() => handleDeleteNpc(npc)} />
+                                    ) : (
+                                        <span className="package-receiver__action-slot" />
                                     )}
                                 </div>
                             </div>

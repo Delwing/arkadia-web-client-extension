@@ -4491,7 +4491,6 @@ select.popup-input optgroup {
 .deposits-popup__coin--copper { color: #875f00; }
 
 /* ── package receiver ────────────────────────────────────────────────── */
-/* Package Receiver Popup */
 .package-receiver-body {
   display: flex;
   flex-direction: column;
@@ -4504,52 +4503,51 @@ select.popup-input optgroup {
 }
 
 .package-receiver__controls {
-  display: flex;
-  gap: 0.5rem;
-  padding: 0.5rem;
+  padding: 8px 10px;
   border-bottom: 1px solid var(--popup-border);
 }
 
 .package-receiver__search {
-  flex: 1;
   position: relative;
 }
 
-.package-receiver__search input {
-  width: 100%;
-  padding-right: 1.5rem;
-  font-size: calc(0.75rem * var(--window-font-scale, 1));
-  background-color: var(--popup-hover-bg);
-  border: 1px solid var(--popup-border);
-  color: var(--popup-text);
+.package-receiver__search .popup-input.popup-input--control {
+  padding-left: 28px;
+  padding-right: 28px;
 }
 
-.package-receiver__search input::placeholder {
-  color: var(--popup-text-dimmer);
+.package-receiver__search-icon {
+  position: absolute;
+  left: 9px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--popup-text-faint);
+  pointer-events: none;
 }
 
 .package-receiver__search-clear {
   position: absolute;
-  right: 0.25rem;
+  right: 4px;
   top: 50%;
   transform: translateY(-50%);
+  display: inline-flex;
+  padding: 3px;
+  border: 0;
+  border-radius: 4px;
   background: none;
-  border: none;
-  cursor: pointer;
   color: var(--popup-text-dim);
-  font-size: calc(0.7rem * var(--window-font-scale, 1));
-  padding: 0.125rem 0.25rem;
+  cursor: pointer;
 }
 
 .package-receiver__search-clear:hover {
-  color: var(--popup-danger-soft);
+  background-color: var(--popup-control-hover-bg);
+  color: var(--popup-text-strong);
 }
 
 .package-receiver__content {
   flex: 1;
   overflow-y: auto;
   min-height: 0;
-  padding: 0.25rem;
 }
 
 .package-receiver__empty {
@@ -4557,9 +4555,8 @@ select.popup-input optgroup {
   justify-content: center;
   align-items: center;
   height: 100%;
-  color: var(--popup-text-dim);
-  font-style: italic;
   padding: 1rem;
+  color: var(--popup-text-dim);
 }
 
 .package-receiver__list {
@@ -4567,13 +4564,38 @@ select.popup-input optgroup {
   flex-direction: column;
 }
 
+.package-receiver__head,
 .package-receiver__npc-item {
   display: grid;
-  grid-template-columns: 1fr 60px auto;
-  gap: 0.5rem;
-  padding: 0.2rem 0.35rem;
-  border-radius: 0.2rem;
+  grid-template-columns: minmax(0, 1fr) 84px 96px;
+  gap: 8px;
   align-items: center;
+  padding: 0 10px;
+}
+
+.package-receiver__head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  height: 26px;
+  background-color: var(--popup-bg);
+  border-bottom: 1px solid var(--popup-border);
+  color: var(--popup-text-faint);
+  font-size: var(--ui-fs-xs, 11px);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Lines the heading up with the number inside the location button. */
+.package-receiver__head > :nth-child(2) {
+  padding-left: 7px;
+}
+
+.package-receiver__npc-item {
+  min-height: 36px;
+  border-bottom: 1px solid var(--popup-border-subtle);
+  font-size: calc(0.875rem * var(--window-font-scale, 1));
 }
 
 .package-receiver__npc-item:hover {
@@ -4581,46 +4603,58 @@ select.popup-input optgroup {
 }
 
 .package-receiver__npc-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
   color: var(--popup-text);
+  font-weight: 600;
+}
+
+.package-receiver__npc-name-text {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.package-receiver__npc-loc {
-  color: var(--popup-text-dim);
-  text-align: right;
-  font-size: calc(0.75rem * var(--window-font-scale, 1));
+.package-receiver__badge {
+  flex-shrink: 0;
+  padding: 0 6px;
+  border-radius: 999px;
+  background-color: var(--popup-accent-bg);
+  color: var(--popup-accent);
+  font-size: var(--ui-fs-xs, 11px);
+  line-height: 16px;
+}
+
+/* Location id and map marker in one: opens the map on that room. */
+.popup-btn.package-receiver__npc-loc {
+  justify-self: start;
+  gap: 4px;
+  padding: 0 6px;
+  color: var(--popup-text-medium);
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+
+.popup-btn.package-receiver__npc-loc:hover:not(:disabled) {
+  color: var(--popup-accent);
 }
 
 .package-receiver__npc-actions {
   display: flex;
-  gap: 0.25rem;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 4px;
 }
 
-.package-receiver__npc-btn {
-  background-color: var(--popup-control-bg);
-  border: 1px solid var(--popup-border);
-  color: var(--popup-text-subtle);
-  font-size: calc(0.7rem * var(--window-font-scale, 1));
-  padding: 0.1rem 0.35rem;
-  border-radius: 0.2rem;
-  cursor: pointer;
-  transition: all 0.15s ease;
+.popup-btn.package-receiver__go {
+  gap: 4px;
 }
 
-.package-receiver__npc-btn:hover {
-  background-color: var(--popup-control-active-bg);
-  color: var(--popup-text);
-}
-
-.package-receiver__npc-btn--delete {
-  color: rgba(239, 68, 68, 0.7);
-}
-
-.package-receiver__npc-btn--delete:hover {
-  background-color: var(--popup-danger-bg);
-  color: var(--popup-danger);
+/* Keeps the action columns lined up on rows without a bin. */
+.package-receiver__action-slot {
+  width: var(--ui-ctrl-sm, 28px);
 }
 
 /* ── transport route ─────────────────────────────────────────────────── */
