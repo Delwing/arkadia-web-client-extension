@@ -10,7 +10,7 @@ import {
     type Library,
     type LibrarySort,
 } from './knowledgeModel';
-import { areaOfRoom, currentArea } from './useKnowledgeData';
+import { areaOfRoom, currentArea, leadToLibrary } from './useKnowledgeData';
 import {roomContextMenuHandler} from "@modules/core/contextMenus";
 
 export interface LibrariesTabProps {
@@ -60,10 +60,10 @@ export function LibrariesTab({ report, sort, hideCompleted, distance, onOpenCate
         const isHere = lib === here;
         const libArea = areaOfRoom(lib.roomId);
         const steps = isHere ? null : distance(lib.roomId);
-        const pending = lib.categories.filter((c) => c.status !== 'completed');
         const meta = [
             libArea,
             isHere ? `${lib.total} ${plural(lib.total, 'kategoria', 'kategorie', 'kategorii')}` : steps != null ? `${steps} lok.` : libArea && area && libArea !== area ? 'inny obszar' : '',
+            libraryProgressText(lib),
         ].filter(Boolean).join(' · ');
         return (
             <div
@@ -83,34 +83,34 @@ export function LibrariesTab({ report, sort, hideCompleted, distance, onOpenCate
                     {meta && <span className="kn-muted">{meta}</span>}
                 </div>
                 <div className="kn-lib__cats">
-                    {pending.length === 0 ? (
-                        <span className="kn-chip kn-chip--ok"><Check size={12} strokeWidth={2.4} />wszystko zgłębione</span>
-                    ) : (
-                        pending.map((cat) => (
-                            <button
-                                key={cat.name}
-                                type="button"
-                                className={`kn-chip kn-chip--btn${cat.status === 'in_progress' ? ' kn-chip--warn' : ''}`}
-                                title="Otwórz w Kategoriach"
-                                onClick={() => onOpenCategory(cat.name)}
-                            >
-                                {cat.name}
-                            </button>
-                        ))
-                    )}
+                    {lib.categories.map((cat) => (
+                        <button
+                            key={cat.name}
+                            type="button"
+                            className={`kn-chip kn-chip--btn${cat.status === 'completed' ? ' kn-chip--ok' : cat.status === 'in_progress' ? ' kn-chip--warn' : ''}`}
+                            data-status={cat.status}
+                            title="Otwórz w Kategoriach"
+                            onClick={() => onOpenCategory(cat.name)}
+                        >
+                            {cat.status === 'completed' && <Check size={12} strokeWidth={2.4} />}
+                            {cat.name}
+                        </button>
+                    ))}
                 </div>
-                <div className="kn-lib__progress">
-                    <span className="kn-stack">
-                        <span className="kn-stack__done" style={{ width: `${(lib.completed / lib.total) * 100}%` }} />
-                        <span className="kn-stack__doing" style={{ width: `${(lib.in_progress / lib.total) * 100}%` }} />
-                    </span>
-                    <span className="kn-muted">{libraryProgressText(lib)}</span>
-                </div>
+                <span className="kn-stack kn-lib__progress">
+                    <span className="kn-stack__done" style={{ width: `${(lib.completed / lib.total) * 100}%` }} />
+                    <span className="kn-stack__doing" style={{ width: `${(lib.in_progress / lib.total) * 100}%` }} />
+                </span>
                 <div className="kn-lib__actions">
-                    {!isHere && lib.remaining > 0 && lib.roomId != null && (
-                        <button type="button" className="kn-btn kn-btn--sm" onClick={() => eventBus.emit('leadTo', lib.roomId!)} onContextMenu={roomContextMenuHandler(lib.roomId)}>
-                            <Navigation size={13} />
-                            Prowadź
+                    {!isHere && (
+                        <button
+                            type="button"
+                            className="kn-btn kn-btn--sm kn-lib__lead"
+                            onClick={() => leadToLibrary(lib)}
+                            onContextMenu={lib.roomId != null ? roomContextMenuHandler(lib.roomId) : undefined}
+                        >
+                            <Navigation size={12} />
+                            <span>Prowadź</span>
                         </button>
                     )}
                     <button
@@ -122,7 +122,7 @@ export function LibrariesTab({ report, sort, hideCompleted, distance, onOpenCate
                             libraryMenu(lib, rect.left, rect.bottom + 4);
                         }}
                     >
-                        <MoreHorizontal size={15} />
+                        <MoreHorizontal size={14} />
                     </button>
                 </div>
             </div>
@@ -146,6 +146,7 @@ export function LibrariesTab({ report, sort, hideCompleted, distance, onOpenCate
                 </div>
             )}
             <div className="kn-legend">
+                <span><span className="kn-chip kn-chip--ok"><Check size={12} strokeWidth={2.4} />nazwa</span> zgłębione tutaj</span>
                 <span><span className="kn-chip kn-chip--warn">nazwa</span> w trakcie tutaj</span>
                 <span><span className="kn-chip">nazwa</span> jeszcze nie czytane tutaj</span>
                 <span className="kn-muted">Klik w kategorię otwiera ją w zakładce Kategorie.</span>

@@ -137,3 +137,12 @@ export function currentArea(): string | undefined {
     const room = getEmbeddedMap()?.currentRoom;
     return typeof room === 'number' ? areaOfRoom(room) : undefined;
 }
+
+/**
+ * Prowadź to a library. The map room is looked up when the report is built;
+ * if the map was not ready then, the map resolves the library's id now.
+ */
+export function leadToLibrary(lib: { roomId?: number | null; locationId: string }) {
+    if (lib.roomId != null) eventBus.emit('leadTo', lib.roomId);
+    else eventBus.emit('leadToByInternalId', lib.locationId);
+}

@@ -1,13 +1,16 @@
 import { describe, expect, test } from 'vitest';
 import {
     buildAreaSections,
+    buildBookRows,
     buildCategoryRows,
     entryHint,
+    filterBooks,
     filterEntries,
     isUnavailable,
     levelIndex,
     levelsFromHistory,
     libraryProgressText,
+    sortBooks,
     sortCategories,
     sortLibraries,
     uniqueEntryNames,
@@ -199,5 +202,37 @@ describe('buildAreaSections', () => {
         const other = sections.find((s) => s.area === 'Inne')!;
         expect([other.known, other.total], 'the known entry with no area still counts').toEqual([1, 2]);
         expect(buildAreaSections(rows, 'all', '', false, areaOf, 'Novigrad')[0].area).toBe('Novigrad');
+    });
+});
+
+describe('books', () => {
+    const rows = buildBookRows({
+        books: {
+            'Ksiega umarlych': { categories: ['Nieumarli', 'wampiry'] } as never,
+            'Bestiariusz': { categories: ['wampiry'] } as never,
+            'Zwoj': { categories: ['golemy'] } as never,
+        },
+        bookProgress: { 'Ksiega umarlych': { nieumarli: true }, 'Zwoj': { golemy: true } },
+    });
+
+    test('each category read on its own, named as the category is', () => {
+        expect(rows.find((row) => row.name === 'Ksiega umarlych')).toEqual({
+            name: 'Ksiega umarlych',
+            categories: [{ name: 'nieumarli', status: 'completed' }, { name: 'wampiry', status: 'not_started' }],
+            read: 1,
+            remaining: 1,
+        });
+    });
+
+    test('the most left to read first, or by name', () => {
+        expect(sortBooks(rows, 'most').map((row) => row.name)).toEqual(['Bestiariusz', 'Ksiega umarlych', 'Zwoj']);
+        expect(sortBooks(rows, 'name').map((row) => row.name)).toEqual(['Bestiariusz', 'Ksiega umarlych', 'Zwoj']);
+        expect(sortBooks(rows, 'most').at(-1)?.remaining).toBe(0);
+    });
+
+    test('a search matches the name or a category', () => {
+        expect(filterBooks(rows, 'umar').map((row) => row.name)).toEqual(['Ksiega umarlych']);
+        expect(filterBooks(rows, 'WAMP').map((row) => row.name)).toEqual(['Ksiega umarlych', 'Bestiariusz']);
+        expect(filterBooks(rows, '  ')).toHaveLength(3);
     });
 });

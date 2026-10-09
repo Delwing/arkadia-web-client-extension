@@ -135,7 +135,7 @@ export type CategoryRow = {
     entries: DetailsEntry[];
     known: number;
     total: number;
-    libraries: { id: string; name: string; status: PlaceStatus; roomId?: number | null; current: boolean }[];
+    libraries: { id: string; name: string; status: PlaceStatus; locationId: string; roomId?: number | null; current: boolean }[];
     books: { name: string; status: PlaceStatus }[];
 };
 
@@ -162,7 +162,7 @@ export function buildCategoryRows(
         const libs = (libraries?.libraries ?? []).flatMap((lib) => {
             const cat = lib.categories.find((c) => same(c.name, base));
             return cat
-                ? [{ id: lib.id, name: lib.name, status: cat.status, roomId: lib.roomId, current: lib.id === libraries?.currentLibraryId }]
+                ? [{ id: lib.id, name: lib.name, status: cat.status, locationId: lib.locationId, roomId: lib.roomId, current: lib.id === libraries?.currentLibraryId }]
                 : [];
         });
         const bookRows = Object.entries(books?.books ?? {})
@@ -294,6 +294,50 @@ export function plural(n: number, one: string, few: string, many: string): strin
     const tens = n % 100;
     const units = n % 10;
     return units >= 2 && units <= 4 && (tens < 12 || tens > 14) ? few : many;
+}
+
+// ── books ───────────────────────────────────────────────────────────────────
+
+export type BookRow = {
+    name: string;
+    /** The categories it teaches, each read (or not) on its own. */
+    categories: { name: string; status: PlaceStatus }[];
+    read: number;
+    remaining: number;
+};
+
+/** Every known book, with how far each of its categories is read. */
+export function buildBookRows(books: BooksPayload | null): BookRow[] {
+    return Object.entries(books?.books ?? {}).map(([name, book]) => {
+        const progress = books?.bookProgress[name] ?? {};
+        const categories = book.categories.map((category) => {
+            const base = KNOWLEDGE_CATEGORY_CONFIG.find((c) => same(c.base, category))?.base ?? category;
+            return { name: base, status: bookStatus(progress, base) };
+        });
+        const read = categories.filter((c) => c.status === 'completed').length;
+        return { name, categories, read, remaining: categories.length - read };
+    });
+}
+
+export type BookSort = 'most' | 'name';
+
+export const BOOK_SORTS: { key: BookSort; label: string }[] = [
+    { key: 'most', label: 'Najwięcej do przeczytania' },
+    { key: 'name', label: 'Alfabetycznie' },
+];
+
+export function sortBooks(rows: BookRow[], sort: BookSort): BookRow[] {
+    const byName = (a: BookRow, b: BookRow) => a.name.localeCompare(b.name);
+    const sorted = [...rows];
+    if (sort === 'name') return sorted.sort(byName);
+    return sorted.sort((a, b) => b.remaining - a.remaining || byName(a, b));
+}
+
+/** Books whose name or a category matches the typed text. */
+export function filterBooks(rows: BookRow[], query: string): BookRow[] {
+    const q = fold(query.trim());
+    if (!q) return rows;
+    return rows.filter((row) => fold(row.name).includes(q) || row.categories.some((c) => fold(c.name).includes(q)));
 }
 
 // ── regions ─────────────────────────────────────────────────────────────────

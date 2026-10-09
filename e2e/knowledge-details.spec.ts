@@ -110,6 +110,37 @@ test.describe('Wiedza window', () => {
         await expect(knowledgeWindow(page).locator('.kn-cat__name')).toHaveText(name);
     });
 
+    test('Biblioteki: every library away from here can be led to', async ({page}) => {
+        await submitCommand(page, '/biblioteki');
+        const libs = knowledgeWindow(page).locator('.kn-lib:not(.is-here)');
+        await expect(libs.first()).toBeVisible();
+        await expect(libs.locator('.kn-lib__lead')).toHaveCount(await libs.count());
+    });
+
+    test('Księgi: every book with its categories, read one by one', async ({page}) => {
+        const BOOK = 'ceramiczna wypalona tabliczka';
+        await submitCommand(page, '/wiedza');
+        await tab(page, 'Księgi').click();
+        const win = knowledgeWindow(page);
+        const book = win.locator(`.kn-book[data-book="${BOOK}"]`);
+        const chip = book.locator('.kn-lib__cats button', {hasText: CHAOS_CATEGORY_NAME});
+        await expect(chip).toHaveAttribute('data-status', 'not_started');
+
+        await win.locator('#knowledge-hide-read').uncheck();
+        await chip.click();
+        await expect(chip).toHaveAttribute('data-status', 'completed');
+
+        // Read through, it hides behind "Pokaż" while read ones are hidden.
+        await win.locator('#knowledge-hide-read').check();
+        await expect(book).toHaveCount(0);
+        await expect(win.locator('.kn-libs__done')).toContainText('1 księga przeczytana');
+
+        // Kategorie shows the same book as read.
+        await tab(page, 'Kategorie').click();
+        await win.locator('.kn-cat-row', {hasText: CHAOS_CATEGORY_NAME}).click();
+        await expect(win.locator('.kn-cat .kn-card__row', {hasText: BOOK}).locator('[data-status]')).toHaveAttribute('data-status', 'completed');
+    });
+
     test('on a phone, categories are a list and each one a page', async ({page}) => {
         await page.setViewportSize({width: 390, height: 844});
         await submitCommand(page, '/wiedza');

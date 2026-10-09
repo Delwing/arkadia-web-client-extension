@@ -562,22 +562,59 @@
 .kn-libs { display: flex; flex-direction: column; gap: 8px; padding: 14px; }
 .kn-lib {
   display: grid;
-  grid-template-columns: minmax(180px, 280px) minmax(0, 1fr) 160px auto;
+  /* A header line, and the chips wrapping under it however many there are. */
+  position: relative;
+  overflow: hidden;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "name actions"
+    "cats cats";
   align-items: center;
-  gap: 16px;
-  padding: 12px 10px 12px 16px;
+  gap: 10px 16px;
+  padding: 12px 10px 14px 16px;
   border: 1px solid var(--popup-border);
   border-radius: 10px;
   background: var(--popup-section-bg);
 }
 .kn-lib.is-here { border-color: var(--popup-accent-border); background: var(--popup-accent-dim-bg); }
 .kn-lib.is-done .kn-lib__title { color: var(--popup-text-subtle); }
-.kn-lib__name { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.kn-lib__name { grid-area: name; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .kn-lib__name .kn-muted { font-size: calc(12.5px * var(--window-font-scale, 1)); }
 .kn-lib__title { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-weight: 600; }
-.kn-lib__cats { display: flex; flex-wrap: wrap; gap: 5px; }
-.kn-lib__progress { display: flex; flex-direction: column; gap: 4px; font-size: calc(12px * var(--window-font-scale, 1)); }
-.kn-lib__actions { display: flex; align-items: center; justify-content: flex-end; gap: 4px; min-width: 32px; }
+.kn-lib__cats { grid-area: cats; display: flex; flex-wrap: wrap; gap: 5px; }
+/* Progress is the card's bottom edge; the words for it are in the line under the name. */
+.kn-lib__progress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  border-radius: 0;
+  background: var(--popup-border);
+}
+/* Prowadź and ⋯ as one split button. */
+.kn-lib__actions {
+  grid-area: actions;
+  display: flex;
+  align-self: start;
+  overflow: hidden;
+  border: 1px solid var(--popup-border);
+  border-radius: 6px;
+  background: var(--popup-control-bg);
+}
+.kn-lib__actions > button {
+  height: 26px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--popup-text-subtle);
+}
+.kn-lib__actions > button:hover { background: var(--popup-control-hover-bg); color: var(--popup-text); }
+.kn-lib__actions > button + button { border-left: 1px solid var(--popup-border); }
+.kn-lib__actions > .kn-btn { gap: 5px; padding: 0 9px; font-size: calc(12.5px * var(--window-font-scale, 1)); }
+.kn-lib__actions > .kn-icon-btn { width: 28px; }
+/* The font's line box leaves room above for accents (ź), so the letters sit ~1px high next to the icon. */
+.kn-lib__actions > .kn-btn > span { transform: translateY(1px); }
 .kn-libs__done {
   display: flex;
   align-items: center;
@@ -650,12 +687,10 @@
 .kn--narrow .kn-places { grid-template-columns: minmax(0, 1fr); }
 .kn--narrow .kn-card__row { min-height: 52px; }
 .kn--narrow .kn-icon-btn { width: 40px; height: 40px; }
+.kn--narrow .kn-lib__actions > button { height: 36px; }
+.kn--narrow .kn-lib__actions > .kn-icon-btn { width: 36px; }
 .kn--narrow .kn-entry { grid-template-columns: 8px minmax(0, 1fr) auto auto; }
 .kn--narrow .kn-entry__far { display: none; }
-.kn--narrow .kn-lib { grid-template-columns: minmax(0, 1fr) auto; gap: 10px; }
-.kn--narrow .kn-lib__cats,
-.kn--narrow .kn-lib__progress { grid-column: 1 / -1; }
-.kn--narrow .kn-lib__actions { grid-row: 1; grid-column: 2; }
 .kn--narrow .kn-search { flex: 1 1 100%; }
 .kn--narrow .kn-report-sec__levels { flex-basis: 100%; }
 .kn--narrow .kn-bar--lg > span { width: 14px; }

@@ -9,12 +9,15 @@ import { showContextMenu } from '@web/contextMenu';
 import { CategoriesTab } from './CategoriesTab';
 import { ReportTab } from './ReportTab';
 import { LibrariesTab } from './LibrariesTab';
+import { BooksTab } from './BooksTab';
 import { RegionsTab } from './RegionsTab';
 import { HistoryTab } from './HistoryTab';
 import { Segmented, Switch } from './knowledgeUi';
 import {
+    BOOK_SORTS,
     LIBRARY_SORTS,
     uniqueEntryNames,
+    type BookSort,
     type CategorySort,
     type EntryFilter,
     type LibrarySort,
@@ -25,12 +28,13 @@ import './knowledge.css';
 /** One window for Wiedza and Biblioteki (the id stays the Wiedza one, so layouts keep it). */
 export const KNOWLEDGE_POPUP_ID = 'popup:knowledgeDetails';
 
-type Tab = 'categories' | 'report' | 'libraries' | 'areas' | 'history';
+type Tab = 'categories' | 'report' | 'libraries' | 'books' | 'areas' | 'history';
 
 const TABS: { key: Tab; label: string }[] = [
     { key: 'categories', label: 'Kategorie' },
     { key: 'report', label: 'Raport' },
     { key: 'libraries', label: 'Biblioteki' },
+    { key: 'books', label: 'Księgi' },
     { key: 'areas', label: 'Regiony' },
     { key: 'history', label: 'Historia' },
 ];
@@ -62,6 +66,8 @@ export default function KnowledgeWindow() {
     const [area, setArea] = usePopupSetting(KNOWLEDGE_POPUP_ID, 'selectedArea', '');
     const [librarySort, setLibrarySort] = usePopupSetting<LibrarySort>(KNOWLEDGE_POPUP_ID, 'librarySort', 'most');
     const [hideDoneLibraries, setHideDoneLibraries] = usePopupSetting(KNOWLEDGE_POPUP_ID, 'hideDoneLibraries', true);
+    const [bookSort, setBookSort] = usePopupSetting<BookSort>(KNOWLEDGE_POPUP_ID, 'bookSort', 'most');
+    const [hideReadBooks, setHideReadBooks] = usePopupSetting(KNOWLEDGE_POPUP_ID, 'hideReadBooks', true);
     const [pageOpen, setPageOpen] = useState(false);
 
     const data = useKnowledgeData(isOpen);
@@ -161,7 +167,7 @@ export default function KnowledgeWindow() {
             <input
                 id="knowledge-search"
                 type="search"
-                placeholder={hints ? 'Szukaj we wpisach i podpowiedziach' : 'Szukaj we wpisach'}
+                placeholder={tab === 'books' ? 'Szukaj ksiąg i kategorii' : hints ? 'Szukaj we wpisach i podpowiedziach' : 'Szukaj we wpisach'}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
             />
@@ -216,6 +222,19 @@ export default function KnowledgeWindow() {
                         </select>
                     </>
                 );
+            case 'books':
+                return (
+                    <>
+                        {searchField}
+                        <label className="kn-check" htmlFor="knowledge-hide-read">
+                            <input id="knowledge-hide-read" type="checkbox" checked={hideReadBooks} onChange={(e) => setHideReadBooks(e.target.checked)} />
+                            Ukryj przeczytane
+                        </label>
+                        <select id="knowledge-book-sort" className="kn-select" value={bookSort} onChange={(e) => setBookSort(e.target.value as BookSort)}>
+                            {BOOK_SORTS.map((option) => <option key={option.key} value={option.key}>{option.label}</option>)}
+                        </select>
+                    </>
+                );
             default:
                 return null;
         }
@@ -246,6 +265,16 @@ export default function KnowledgeWindow() {
                         sort={librarySort}
                         hideCompleted={hideDoneLibraries}
                         distance={distance}
+                        onOpenCategory={openCategory}
+                    />
+                );
+            case 'books':
+                return (
+                    <BooksTab
+                        books={data.books}
+                        sort={bookSort}
+                        hideRead={hideReadBooks}
+                        query={query}
                         onOpenCategory={openCategory}
                     />
                 );

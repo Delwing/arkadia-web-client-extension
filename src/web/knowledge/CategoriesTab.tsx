@@ -14,7 +14,7 @@ import {
     type CategorySort,
     type EntryFilter,
 } from './knowledgeModel';
-import { areaOfRoom } from './useKnowledgeData';
+import { areaOfRoom, leadToLibrary } from './useKnowledgeData';
 import {roomContextMenuHandler} from "@modules/core/contextMenus";
 
 const SOURCE_ICONS: Record<KnowledgeDetailsType, LucideIcon> = {
@@ -196,13 +196,13 @@ function CategoryDetail({
                                         >
                                             Zgłębiaj
                                         </button>
-                                    ) : lib.status !== 'completed' && lib.roomId != null ? (
+                                    ) : !lib.current ? (
                                         <button
                                             type="button"
                                             className="kn-icon-btn"
                                             title="Prowadź"
-                                            onClick={() => eventBus.emit('leadTo', lib.roomId!)}
-                                            onContextMenu={roomContextMenuHandler(lib.roomId)}
+                                            onClick={() => leadToLibrary(lib)}
+                                            onContextMenu={lib.roomId != null ? roomContextMenuHandler(lib.roomId) : undefined}
                                         >
                                             <Navigation size={14} />
                                         </button>
