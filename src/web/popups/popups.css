@@ -1728,46 +1728,6 @@ select.popup-input.popup-input--control {
   background-color: var(--popup-success-hover-bg);
 }
 
-/* Herb text window styles - matches #main_text_output_msg_wrapper styling */
-.herb-text-window {
-  font-family: var(--window-font-family, monospace);
-}
-
-/* Uses the popup surface tokens rather than Bootstrap's `--bs-body-*`: in the
-   stock UI those are aliases of --popup-bg/--popup-text anyway, but forge does
-   not load Bootstrap globally, so the herb window used to fall through to
-   Bootstrap's light-theme `:root` defaults (white bg) that the scoped modal
-   stylesheet leaks — white ANSI text on a white body. */
-.herb-text-window-body {
-  overflow: auto;
-  background: var(--popup-bg, #0f0f0f);
-}
-
-.herb-text-content {
-  padding: 0.5rem 8px;
-  font-size: var(--output-font-size, 0.775rem);
-  line-height: 1.4;
-  white-space: pre-wrap;
-  font-family: var(--output-font-family), monospace;
-  color: var(--popup-text, var(--popup-input-text));
-}
-
-.herb-text-content [data-output-clickable] {
-  cursor: pointer;
-  text-decoration: underline;
-  text-decoration-color: rgba(255, 255, 255, 0.3);
-}
-
-.herb-text-content [data-output-clickable]:hover {
-  text-decoration-color: rgba(255, 255, 255, 0.7);
-}
-
-.herb-text-content--empty {
-  color: var(--popup-text-dim);
-  font-style: italic;
-  white-space: normal;
-}
-
 #objects-list {
   position: absolute;
   top: 0;
@@ -5663,6 +5623,279 @@ select.popup-input.popup-input--control {
   background-color: rgba(0, 0, 0, 0.3);
   color: var(--popup-text-medium);
   white-space: nowrap;
+}
+
+/* Filter bar shared by every mode: search plus one-at-a-time effect chips. */
+.herb-filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.herb-filter__search.herb-filter__search {
+  width: 12rem;
+  max-width: 100%;
+}
+
+.herb-filter__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 9px;
+  border: 1px solid var(--popup-border-control);
+  border-radius: 999px;
+  background: var(--popup-subtle-bg);
+  color: var(--popup-text-medium);
+  font: inherit;
+  font-size: var(--ui-fs-sm, 12px);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.herb-filter__chip:hover {
+  background: var(--popup-hover-bg);
+}
+
+.herb-filter__chip.is-active {
+  border-color: var(--popup-accent);
+  background: var(--popup-accent-subtle-bg);
+  color: var(--popup-accent);
+}
+
+.herb-filter__count {
+  opacity: 0.6;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Bag grid under an active filter: non-matching herbs fade but stay draggable. */
+.herb-pill--dim {
+  opacity: 0.25;
+  filter: grayscale(1);
+}
+
+.herb-empty-filter {
+  color: var(--popup-text-dim);
+  font-style: italic;
+}
+
+/* Effect tokens (+kon, -zmc, tr…): green = what the group is for, orange = side effect, red = poison. */
+.herb-tok {
+  display: inline-block;
+  padding: 0 5px;
+  border-radius: var(--ui-radius-sm, 4px);
+  background: var(--popup-subtle-bg);
+  color: var(--popup-text-medium);
+  font-size: var(--ui-fs-sm, 12px);
+  white-space: nowrap;
+}
+
+.herb-tok + .herb-tok {
+  margin-left: 3px;
+}
+
+.herb-tok--good { color: var(--popup-success-light); }
+.herb-tok--side { color: var(--popup-warning-light); }
+.herb-tok--bad {
+  background: var(--popup-danger-bg);
+  color: var(--popup-danger-light);
+}
+
+.herb-amounts {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.herb-amount {
+  min-width: 1.5em;
+  padding: 0 5px;
+  border: 1px solid var(--popup-border-control);
+  border-radius: var(--ui-radius-sm, 4px);
+  background: var(--popup-control-bg);
+  color: var(--popup-text);
+  font: inherit;
+  font-size: var(--ui-fs-xs, 11px);
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.herb-amount:hover {
+  border-color: var(--popup-accent);
+  background: var(--popup-control-hover-bg);
+}
+
+.herb-amount--wide {
+  padding: 0 9px;
+}
+
+/* Lista: one compact line per herb. */
+.herb-list.herb-list td {
+  padding: 2px 8px;
+}
+
+.herb-list__sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.herb-list__count {
+  width: 1%;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.herb-list__name {
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.herb-list__use {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin: 1px 14px 1px 0;
+  white-space: nowrap;
+}
+
+.herb-list__action {
+  color: var(--popup-text-dim);
+}
+
+.herb-list__section td {
+  padding-top: 10px;
+  color: var(--popup-text-dim);
+  font-size: var(--ui-fs-xs, 11px);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Efekty: collapsible groups. */
+.herb-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  /* Same size as the Lista table (.popup-table), not the larger window body. */
+  font-size: var(--ui-fs, 13px);
+}
+
+.herb-group {
+  border: 1px solid var(--popup-border-subtle);
+  border-radius: var(--ui-radius, 6px);
+  background: var(--popup-section-bg);
+}
+
+.herb-group--danger {
+  border-color: var(--popup-danger-border);
+}
+
+.herb-group__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  color: var(--popup-text-dim);
+  cursor: pointer;
+  user-select: none;
+}
+
+.herb-group__label {
+  color: var(--popup-text-strong);
+  font-weight: 600;
+}
+
+.herb-group__tokens {
+  font-family: var(--output-font-family, monospace);
+  font-size: var(--ui-fs-xs, 11px);
+}
+
+.herb-group__summary {
+  margin-left: auto;
+  font-size: var(--ui-fs-sm, 12px);
+}
+
+.herb-group__pin {
+  display: inline-flex;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--popup-text-faint);
+  cursor: pointer;
+}
+
+.herb-group__pin.is-active {
+  color: var(--popup-warning);
+}
+
+.herb-group__body {
+  padding: 0 10px 6px 32px;
+}
+
+.herb-group__warning {
+  padding: 2px 0 4px;
+  color: var(--popup-danger-light);
+  font-size: var(--ui-fs-sm, 12px);
+}
+
+.herb-group__row {
+  display: grid;
+  grid-template-columns: minmax(8rem, 1fr) 6rem minmax(7rem, 1.3fr) 6rem;
+  gap: 8px;
+  align-items: center;
+  padding: 3px 0;
+  border-top: 1px solid var(--popup-border-subtle);
+}
+
+.herb-group__row:first-child {
+  border-top: 0;
+}
+
+.herb-group__herb {
+  font-weight: 500;
+}
+
+.herb-group__count,
+.herb-group__action {
+  color: var(--popup-text-dim);
+  font-weight: 400;
+}
+
+.herb-group__use {
+  justify-self: end;
+}
+
+/* Kopiuj: a split header button (copy the list / pick another format). */
+.herb-copy {
+  display: inline-flex;
+}
+
+.herb-copy > .popup-header-btn:first-child {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.herb-copy__chevron.herb-copy__chevron {
+  margin-left: -1px;
+  padding-left: 3px;
+  padding-right: 3px;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+.herb-copy__hint {
+  overflow: hidden;
+  font-family: var(--output-font-family, monospace);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.herb-copy__note {
+  margin-top: 3px;
+  padding: 4px 8px 2px;
+  border-top: 1px solid var(--popup-border-subtle);
+  color: var(--popup-warning-light);
+  font-size: var(--ui-fs-xs, 11px);
 }
 
 /* Compact mode for herb manager */

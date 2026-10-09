@@ -385,14 +385,14 @@
       "/zg — Zgaś lampę",
       "/zglebiaj — Wyświetl kategorie wiedzy w aktualnej bibliotece",
       "/zi (/zi <akcja> <ziolo> [ilosc]) — Wyjmij ziolo z woreczka i wykonaj na nim podana akcje",
-      "/ziola — Otwórz okno zarządzania woreczkami ziół",
+      "/ziola — Otwórz okno ziół (w ostatnio używanym trybie)",
       "/ziola_buduj — Przeglądaj woreczki i zapisz ich zawartość",
       "/ziola_daj (/ziola_daj cel ziolo) — Daj 1 sztukę zioła wskazanemu celowi",
       "/ziola_fajka (/ziola_fajka <ziolo>) — Nabij fajke wskazanym ziolem, pobierajac je z woreczka",
       "/ziola_odloz_woreczek (/ziola_odloz_woreczek numer) — Odłóż woreczek (odbezpiecz, odtrocz, odłóż)",
       "/ziola_pokaz — Wyświetl ostatnie podsumowanie ziół (bez listy woreczków)",
       "/ziola_przepakuj (/ziola_przepakuj from to) — Przepakuj zioła z woreczka `from` do woreczka `to`",
-      "/ziola2 — Wyświetl alternatywne podsumowanie ziół",
+      "/ziola2 — Otwórz okno ziół od razu w trybie Lista",
       "/zlecenia — Otwórz okno z listą aktywnych zleceń od rzemieślników",
       "/zlok — Wymuś odświeżenie bieżącej pozycji na mapie",
       "/zlom — Wyświetl zapisane bronie (alias `/zlom bronie`)",
@@ -509,13 +509,14 @@
         "title": "Zioła",
         "headings": [
           "Komendy",
+          "Okno ziół",
           "Wyjmowanie ziół",
           "Leczenie",
           "Zarządzanie woreczkami",
           "Dawanie ziół z okna woreczków",
           "Ustawienia"
         ],
-        "tokens": 681
+        "tokens": 998
       },
       {
         "id": "TRACKING.md",
@@ -6245,7 +6246,7 @@
       "pattern": "/\\/ziola$/",
       "source": "src/client/scripts/herbCounter.ts",
       "usage": "/ziola",
-      "description": "Otwórz okno zarządzania woreczkami ziół",
+      "description": "Otwórz okno ziół (w ostatnio używanym trybie)",
       "documentedIn": "HERBS.md"
     },
     {
@@ -6308,7 +6309,7 @@
       "pattern": "/\\/ziola2$/",
       "source": "src/client/scripts/herbCounter.ts",
       "usage": "/ziola2",
-      "description": "Wyświetl alternatywne podsumowanie ziół",
+      "description": "Otwórz okno ziół od razu w trybie Lista",
       "documentedIn": "HERBS.md"
     },
     {
@@ -6957,14 +6958,15 @@
       "title": "Zioła",
       "headings": [
         "Komendy",
+        "Okno ziół",
         "Wyjmowanie ziół",
         "Leczenie",
         "Zarządzanie woreczkami",
         "Dawanie ziół z okna woreczków",
         "Ustawienia"
       ],
-      "tokens": 681,
-      "content": "# Zioła\n\nModuł licznika ziół pozwala zliczyć zawartość wszystkich noszonych woreczków z ziołami i zapisać te dane w pamięci przeglądarki.\n\n## Komendy\n\n| Komenda | Opis |\n|---------|------|\n| `/ziola_buduj` | Przeglądaj woreczki i zapisz ich zawartość |\n| `/woreczki_buduj` | Oceń stan wszystkich woreczków i zapisz w liczniku |\n| `/ziola_pokaz` | Wyświetl ostatnie podsumowanie ziół (bez listy woreczków) |\n| `/ziola` | Otwórz okno zarządzania woreczkami ziół |\n| `/ziola2` | Wyświetl alternatywne podsumowanie ziół |\n\n## Wyjmowanie ziół\n\n| Komenda | Opis |\n|---------|------|\n| `/wezz ziolo` | Wyjmij jedną sztukę zioła z woreczków |\n| `/wezz ziolo ilosc` | Wyjmij wskazaną liczbę zioła |\n| `/zi akcja ziolo` | Wyjmij zioło i od razu wykonaj akcję |\n| `/zi akcja ziolo ilosc` | Wyjmij wskazaną liczbę zioła i wykonaj akcję |\n| `/z_akcja ziolo` | Alternatywa dla `/zi` - np. `/z_zjedz deliona` |\n| `/z_akcja ziolo ilosc` | Alternatywa dla `/zi` z ilością - np. `/z_przyloz lawenda 3` |\n\n## Leczenie\n\nPrzy komunikacie o chorobie lub zatruciu (np. `Cierpisz na chorobe pluc.`) klient wypisuje listę ziół, którymi można się wyleczyć. Zioła, które masz w woreczkach, są zielone i klikalne - kliknięcie wysyła odpowiednią komendę `/zi`.\n\n| Komenda | Opis |\n|---------|------|\n| `/leczenie` | Wyświetl listę wszystkich chorób i zapisanych na nie ziół |\n\n> **Wskazówka:** Dostępność ziół jest sprawdzana na podstawie licznika woreczków, więc warto najpierw użyć `/ziola_buduj`.\n\n## Zarządzanie woreczkami\n\n| Komenda | Opis |\n|---------|------|\n| `/ziola_przepakuj from to` | Przepakuj zioła z woreczka `from` do woreczka `to` |\n| `/ziola_daj cel ziolo` | Daj 1 sztukę zioła wskazanemu celowi |\n| `/ziola_daj cel ziolo ilosc` | Daj wskazaną ilość zioła wskazanemu celowi |\n| `/ziola_odloz_woreczek numer` | Odłóż woreczek (odbezpiecz, odtrocz, odłóż) |\n\n> **Wskazówka:** Cel można podać jako skrót (litera/numer z listy obiektów, jak w `/z`, `/zas`) albo jako imię członka drużyny.\n\n## Dawanie ziół z okna woreczków\n\nW oknie `/ziola` przycisk **Daj** włącza panel przekazywania ziół:\n\n1. Wybierz cel z listy (wszystkie postacie obecne na lokacji; drużyna jest wyświetlana osobno, przycisk odświeżania obok).\n2. Przeciągnij zioła z woreczków do panelu - shift+klik dzieli stos na pół, jeśli chcesz dać tylko część.\n3. Kliknięcie zioła w panelu odkłada je z powrotem do woreczka.\n4. Przycisk **Daj** wyjmuje wszystkie zebrane zioła z woreczków i przekazuje je jedną komendą `daj`.\n\n## Ustawienia\n\nW ustawieniach skryptów można zdefiniować komendy wykonywane przed i po użyciu ziół. Wiele komend należy oddzielić średnikiem (`;`).\n\n> Informacje o zliczonych ziołach są przechowywane w pamięci przeglądarki osobno dla każdej postaci."
+      "tokens": 998,
+      "content": "# Zioła\n\nModuł licznika ziół pozwala zliczyć zawartość wszystkich noszonych woreczków z ziołami i zapisać te dane w pamięci przeglądarki.\n\n## Komendy\n\n| Komenda | Opis |\n|---------|------|\n| `/ziola_buduj` | Przeglądaj woreczki i zapisz ich zawartość |\n| `/woreczki_buduj` | Oceń stan wszystkich woreczków i zapisz w liczniku |\n| `/ziola_pokaz` | Wyświetl ostatnie podsumowanie ziół (bez listy woreczków) |\n| `/ziola` | Otwórz okno ziół (w ostatnio używanym trybie) |\n| `/ziola2` | Otwórz okno ziół od razu w trybie Lista |\n\n## Okno ziół\n\nOkno ma trzy tryby, przełączane w nagłówku:\n\n- **Woreczki** - zawartość każdego woreczka; zioła można przeciągać między woreczkami i przekazywać innym (przycisk **Daj**, opis niżej).\n- **Lista** - zwarta lista: jedna linia na zioło z sumą ze wszystkich woreczków, każde użycie z efektem i przyciskami 1/3/5 (wysyłają `/zi akcja ziolo ilosc`; przycisków nigdy nie ma więcej niż posiadanych sztuk). Zioła do palenia mają przycisk **nabij**.\n- **Efekty** - zioła pogrupowane według tego, co robią (Leczenie, Zmęczenie, Odtrutki, Odporność, Mana, Cechy…). Zioło z kilkoma efektami pojawia się w każdej swojej grupie. Skutki uboczne są oznaczone na pomarańczowo, trucizny na czerwono - grupa **Trucizny** nie ma przycisków użycia. Gwiazdka przypina grupę na górę.\n\nWe wszystkich trybach działa wyszukiwanie (po nazwie zioła, efekcie lub nazwie grupy - np. `kac` znajdzie zarówno `+kac`, jak i `-kac`) i filtr efektu (jeden naraz - kliknięcie aktywnego zdejmuje filtr). W trybie Woreczki niepasujące zioła są przyciemnione, ale nadal można je przeciągać.\n\nPrzycisk **Kopiuj** kopiuje do schowka listę posiadanych ziół; strzałka obok oferuje też listę z działaniem i podział na woreczki. Przy aktywnym filtrze kopiowane jest tylko to, co do niego pasuje.\n\n## Wyjmowanie ziół\n\n| Komenda | Opis |\n|---------|------|\n| `/wezz ziolo` | Wyjmij jedną sztukę zioła z woreczków |\n| `/wezz ziolo ilosc` | Wyjmij wskazaną liczbę zioła |\n| `/zi akcja ziolo` | Wyjmij zioło i od razu wykonaj akcję |\n| `/zi akcja ziolo ilosc` | Wyjmij wskazaną liczbę zioła i wykonaj akcję |\n| `/z_akcja ziolo` | Alternatywa dla `/zi` - np. `/z_zjedz deliona` |\n| `/z_akcja ziolo ilosc` | Alternatywa dla `/zi` z ilością - np. `/z_przyloz lawenda 3` |\n\n## Leczenie\n\nPrzy komunikacie o chorobie lub zatruciu (np. `Cierpisz na chorobe pluc.`) klient wypisuje listę ziół, którymi można się wyleczyć. Zioła, które masz w woreczkach, są zielone i klikalne - kliknięcie wysyła odpowiednią komendę `/zi`.\n\n| Komenda | Opis |\n|---------|------|\n| `/leczenie` | Wyświetl listę wszystkich chorób i zapisanych na nie ziół |\n\n> **Wskazówka:** Dostępność ziół jest sprawdzana na podstawie licznika woreczków, więc warto najpierw użyć `/ziola_buduj`.\n\n## Zarządzanie woreczkami\n\n| Komenda | Opis |\n|---------|------|\n| `/ziola_przepakuj from to` | Przepakuj zioła z woreczka `from` do woreczka `to` |\n| `/ziola_daj cel ziolo` | Daj 1 sztukę zioła wskazanemu celowi |\n| `/ziola_daj cel ziolo ilosc` | Daj wskazaną ilość zioła wskazanemu celowi |\n| `/ziola_odloz_woreczek numer` | Odłóż woreczek (odbezpiecz, odtrocz, odłóż) |\n\n> **Wskazówka:** Cel można podać jako skrót (litera/numer z listy obiektów, jak w `/z`, `/zas`) albo jako imię członka drużyny.\n\n## Dawanie ziół z okna woreczków\n\nW oknie `/ziola` przycisk **Daj** włącza panel przekazywania ziół:\n\n1. Wybierz cel z listy (wszystkie postacie obecne na lokacji; drużyna jest wyświetlana osobno, przycisk odświeżania obok).\n2. Przeciągnij zioła z woreczków do panelu - shift+klik dzieli stos na pół, jeśli chcesz dać tylko część.\n3. Kliknięcie zioła w panelu odkłada je z powrotem do woreczka.\n4. Przycisk **Daj** wyjmuje wszystkie zebrane zioła z woreczków i przekazuje je jedną komendą `daj`.\n\n## Ustawienia\n\nW ustawieniach skryptów można zdefiniować komendy wykonywane przed i po użyciu ziół. Wiele komend należy oddzielić średnikiem (`;`).\n\n> Informacje o zliczonych ziołach są przechowywane w pamięci przeglądarki osobno dla każdej postaci."
     },
     {
       "id": "TRACKING.md",
@@ -7129,8 +7131,8 @@
     }
   ],
   "gaps": [],
-  "version": "427fb7bcde3ee14f",
-  "generatedAt": "2026-10-08T11:07:09.167Z",
+  "version": "b91bf8cb3d8a3268",
+  "generatedAt": "2026-10-09T12:20:52.025Z",
   "stats": {
     "settings": 147,
     "settingsWithLabels": 147,
@@ -7138,9 +7140,9 @@
     "commandsWithDescriptions": 237,
     "events": 34,
     "docs": 12,
-    "leanChars": 48913,
-    "leanTokens": 12229,
-    "fatChars": 282438,
-    "fatTokens": 70610
+    "leanChars": 48931,
+    "leanTokens": 12233,
+    "fatChars": 283755,
+    "fatTokens": 70939
   }
 }

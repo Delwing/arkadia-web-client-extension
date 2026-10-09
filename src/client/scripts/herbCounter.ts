@@ -743,7 +743,7 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
         });
         aliases.push({
             pattern: /\/ziola2$/, callback: () => {
-                client.sendEvent('herbTextWindowOpen');
+                client.sendEvent('herbManagerOpen', {mode: 'list'});
             }
         });
         aliases.push({

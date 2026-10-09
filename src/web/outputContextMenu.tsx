@@ -1,7 +1,6 @@
 import {
     BookOpen,
     Leaf,
-    FileText,
     ScrollText,
     Zap,
     Clock,
@@ -75,7 +74,6 @@ const command = (value: string) => () => eventBus.emit('sendCommand', { command:
 const WINDOW_LAUNCHERS: WindowLauncher[] = ([
     { label: 'Wiedza', icon: BookOpen, popupId: 'popup:knowledgeDetails', open: command('/wiedza') },
     { label: 'Zioła', icon: Leaf, popupId: 'popup:herb', open: command('/ziola') },
-    { label: 'Zioła (tekst)', icon: FileText, popupId: 'popup:herb-text', open: command('/ziola2') },
     { label: 'Zlecenia', icon: ScrollText, popupId: 'popup:contracts', open: command('/zlecenia') },
     { label: 'Wozy', icon: Caravan, popupId: 'popup:carriages', open: command('/wozw') },
     { label: 'Skróty', icon: Zap, popupId: 'popup:skroty', open: () => eventBus.emit('skroty.popup.open') },

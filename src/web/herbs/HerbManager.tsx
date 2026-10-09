@@ -12,9 +12,29 @@ import { DockablePopupWrapper } from "../layout/components/DockablePopupWrapper"
 import { useLayoutManagerOptional } from "../layout/hooks/useLayoutManager";
 import { usePopup } from "../hooks/usePopup";
 import { usePopupSetting } from "../hooks/usePopupSetting";
-import { HeaderButton } from '@web-ui/primitives';
+import { HeaderButton, Segmented } from '@web-ui/primitives';
+import { HerbCopyButton, HerbEffectsView, HerbFilterBar, HerbListView } from "./HerbViews";
+import {
+    formatHerbInventory,
+    herbTotals,
+    isHerbFilterActive,
+    matchesHerbFilter,
+    type HerbCopyFormat,
+    type HerbFilter,
+    type HerbWindowMode,
+} from "./herbInventory";
 
 const POPUP_ID = 'popup:herb';
+
+const MODE_OPTIONS: { value: HerbWindowMode; label: string }[] = [
+    { value: 'bags', label: 'Woreczki' },
+    { value: 'list', label: 'Lista' },
+    { value: 'effects', label: 'Efekty' },
+];
+
+const EMPTY_FILTER: HerbFilter = { query: '', group: null };
+
+type ListSort = { key: 'name' | 'count'; dir: 1 | -1 };
 
 type HerbCounts = HerbBagsState | undefined;
 
@@ -274,6 +294,10 @@ const HerbManager = () => {
     };
 
     const [bags, setBags] = useState<HerbBag[]>(() => rebuildBags(getInitialCounts()));
+    const [counts, setCounts] = useState<HerbBagsState>(() => getInitialCounts() ?? {});
+    const [herbsData, setHerbsData] = useState<HerbsData | null>(null);
+    const [filter, setFilter] = useState<HerbFilter>(EMPTY_FILTER);
+    const [copied, setCopied] = useState(false);
     const [activeBag, setActiveBag] = useState<number | null>(null);
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -297,6 +321,10 @@ const HerbManager = () => {
     const { wrapperProps, isOpen, isPinned, setIsOpen } = usePopup(POPUP_ID);
     const [isCompact, setIsCompact] = usePopupSetting(POPUP_ID, 'isCompact', false);
     const [showEffects, setShowEffects] = usePopupSetting(POPUP_ID, 'showEffects', false);
+    const [mode, setMode] = usePopupSetting<HerbWindowMode>(POPUP_ID, 'mode', 'bags');
+    const [listSort, setListSort] = usePopupSetting<ListSort>(POPUP_ID, 'listSort', { key: 'name', dir: 1 });
+    const [openGroups, setOpenGroups] = usePopupSetting<string[]>(POPUP_ID, 'openGroups', ['heal', 'fatigue', 'antidote', 'smoke']);
+    const [pinnedGroups, setPinnedGroups] = usePopupSetting<string[]>(POPUP_ID, 'pinnedGroups', []);
 
     // Wrap close to also hide context menu
     const wrappedOnClose = useCallback(() => {
@@ -321,11 +349,15 @@ const HerbManager = () => {
         return herbsDataPromiseRef.current;
     }, []);
 
+    // Every mode but the plain bag grid reads the herb data, so load it on open.
     useEffect(() => {
-        if (showEffects) {
-            void ensureHerbsData();
-        }
-    }, [showEffects, ensureHerbsData]);
+        if (!isOpen) return;
+        let cancelled = false;
+        void ensureHerbsData().then(data => {
+            if (!cancelled) setHerbsData(data);
+        });
+        return () => { cancelled = true; };
+    }, [isOpen, ensureHerbsData]);
 
     // Check if popup is managed by layout to determine overlay visibility
     const layoutContext = useLayoutManagerOptional();
@@ -340,6 +372,7 @@ const HerbManager = () => {
                 // in the give basket would be double-counted, so drop it.
                 setBasket([]);
                 setBags(rebuildBags(detail as HerbCounts));
+                setCounts(normalizeHerbBagsState(detail));
             }
         });
         return () => unsubscribe();
@@ -354,8 +387,11 @@ const HerbManager = () => {
     }, [isOpen]);
 
     useEffect(() => {
-        const unsubscribeOpen = eventBus.on("herbManagerOpen", () => {
+        const unsubscribeOpen = eventBus.on("herbManagerOpen", (detail) => {
             setError(null);
+            if (detail && detail.mode) {
+                setMode(detail.mode);
+            }
             setIsOpen(true);
         });
         const unsubscribeClose = eventBus.on("herbManagerClose", () => {
@@ -366,7 +402,7 @@ const HerbManager = () => {
             unsubscribeOpen();
             unsubscribeClose();
         };
-    }, [handleClose, setIsOpen]);
+    }, [handleClose, setIsOpen, setMode]);
 
     useEffect(() => {
         if (!isOpen) {
@@ -374,6 +410,7 @@ const HerbManager = () => {
             setGiveMode(false);
             setGiveDropActive(false);
             setBasket([]);
+            setFilter(EMPTY_FILTER);
         }
     }, [isOpen]);
 
@@ -674,8 +711,57 @@ const HerbManager = () => {
         return undefined; // Use CSS default
     }, [bags.length]);
 
+    const totals = useMemo(() => herbTotals(counts), [counts]);
+    const ownedIds = useMemo(() => Object.keys(totals).filter(herbId => totals[herbId] > 0), [totals]);
+    const visibleIds = useMemo(
+        () => ownedIds.filter(herbId => matchesHerbFilter(herbId, herbsData, filter)),
+        [ownedIds, herbsData, filter],
+    );
+    const visibleSet = useMemo(() => new Set(visibleIds), [visibleIds]);
+    const filterActive = isHerbFilterActive(filter);
+
+    const previewCopy = useCallback(
+        (format: HerbCopyFormat) => formatHerbInventory(format, visibleIds, counts, herbsData),
+        [visibleIds, counts, herbsData],
+    );
+    const handleCopy = useCallback((format: HerbCopyFormat) => {
+        const text = previewCopy(format);
+        if (!navigator.clipboard) {
+            setError("Schowek jest niedostępny.");
+            return;
+        }
+        navigator.clipboard.writeText(text)
+            .then(() => setCopied(true))
+            .catch(() => setError("Nie udało się skopiować do schowka."));
+    }, [previewCopy]);
+    useEffect(() => {
+        if (!copied) return;
+        const timer = setTimeout(() => setCopied(false), 1500);
+        return () => clearTimeout(timer);
+    }, [copied]);
+    const copyNote = filterActive ? `Kopiuje tylko to, co pasuje do filtra (${visibleIds.length} z ${ownedIds.length}).` : null;
+
+    const changeMode = useCallback((next: HerbWindowMode) => {
+        // The give basket only lives in the bag grid; leaving it puts the herbs back.
+        if (next !== 'bags' && giveMode) {
+            toggleGiveMode();
+        }
+        setMode(next);
+    }, [giveMode, toggleGiveMode, setMode]);
+
+    const toggleGroup = useCallback((key: string) => {
+        setOpenGroups(prev => prev.includes(key) ? prev.filter(entry => entry !== key) : [...prev, key]);
+    }, [setOpenGroups]);
+    const togglePin = useCallback((key: string) => {
+        setPinnedGroups(prev => prev.includes(key) ? prev.filter(entry => entry !== key) : [...prev, key]);
+    }, [setPinnedGroups]);
+
+    // Woreczki-only buttons sit left of Kopiuj and the mode switch, so those
+    // two stay put when the mode changes.
     const headerActions = useMemo(() => (
         <>
+            {mode === 'bags' && (
+            <>
             <HeaderButton active={giveMode} onClick={toggleGiveMode} title="Przekaż zioła komuś na lokacji">
                 Daj
             </HeaderButton>
@@ -693,8 +779,12 @@ const HerbManager = () => {
             >
                 Kompaktowy
             </HeaderButton>
+            </>
+            )}
+            <HerbCopyButton preview={previewCopy} onCopy={handleCopy} copied={copied} filterNote={copyNote} />
+            <Segmented<HerbWindowMode> size="sm" value={mode} options={MODE_OPTIONS} onChange={changeMode} />
         </>
-    ), [showEffects, isCompact, setShowEffects, setIsCompact, giveMode, toggleGiveMode]);
+    ), [mode, showEffects, isCompact, setShowEffects, setIsCompact, giveMode, toggleGiveMode, previewCopy, handleCopy, copied, copyNote, changeMode]);
 
     const handleBackdropClick = () => {
         if (isPinned) {
@@ -720,7 +810,7 @@ const HerbManager = () => {
                 {...wrapperProps}
                 onClose={wrappedOnClose}
                 popupType="herb"
-                title="Woreczki ziół"
+                title="Zioła"
                 minWidth={300}
                 minHeight={200}
                 initialWidth={1000}
@@ -738,7 +828,10 @@ const HerbManager = () => {
                             {error}
                         </div>
                     )}
-                    {giveMode && (
+                    {!emptyState && (
+                        <HerbFilterBar filter={filter} onChange={setFilter} herbIds={ownedIds} herbsData={herbsData} />
+                    )}
+                    {mode === 'bags' && giveMode && (
                         <div
                             className={`herb-give-panel${giveDropActive ? " herb-give-panel--active" : ""}`}
                             onDragOver={handleGiveDragOver}
@@ -825,6 +918,25 @@ const HerbManager = () => {
                         <div className="popup-notice herb-manager-status">
                             Brak danych o woreczkach. Użyj aliasu <code>/ziola_buduj</code>, aby odświeżyć zawartość.
                         </div>
+                    ) : mode === 'list' ? (
+                        <HerbListView
+                            herbIds={visibleIds}
+                            totals={totals}
+                            herbsData={herbsData}
+                            sort={listSort}
+                            onSort={setListSort}
+                        />
+                    ) : mode === 'effects' ? (
+                        <HerbEffectsView
+                            herbIds={visibleIds}
+                            totals={totals}
+                            herbsData={herbsData}
+                            group={filter.group}
+                            openGroups={openGroups}
+                            onToggleGroup={toggleGroup}
+                            pinnedGroups={pinnedGroups}
+                            onTogglePin={togglePin}
+                        />
                     ) : (
                         <div className="herb-grid" style={gridStyle}>
                             {bags.map(bag => {
@@ -867,7 +979,7 @@ const HerbManager = () => {
                                                         <button
                                                             key={stack.instanceId}
                                                             type="button"
-                                                            className={`herb-pill${stack.isSplit ? " herb-pill-split" : ""}${showEffects ? " herb-pill--with-effects" : ""}`}
+                                                            className={`herb-pill${stack.isSplit ? " herb-pill-split" : ""}${showEffects ? " herb-pill--with-effects" : ""}${filterActive && !visibleSet.has(stack.herbId) ? " herb-pill--dim" : ""}`}
                                                             style={getHerbStyle(stack.herbId)}
                                                             draggable={!busy}
                                                             onDragStart={handleDragStart(bag.bagNumber, stack)}

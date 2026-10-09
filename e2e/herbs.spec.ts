@@ -179,6 +179,81 @@ test.describe('Herb bag tracking', () => {
         await expect.poll(() => getCommandLog(page)).toContain('daj ziola ob_60106');
     });
 
+    test('/ziola2 opens the list mode with use buttons per herb', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+
+        await pushGmcp(page, 'char.info', {name: 'HerbList', object_num: 60006});
+        await waitForCharacter(page, 'HerbList');
+
+        await simulateHerbBagScan(page, [
+            {content: 'trzy rozetkowate lancetowate liscie i dwa zlocistopomaranczowe duze kwiaty'},
+            {content: 'dwa rozetkowate lancetowate liscie'},
+        ]);
+
+        await submitCommand(page, '/ziola2');
+        const herbPopup = page.locator('.herb-window');
+        await expect(herbPopup).toBeVisible({timeout: 5000});
+        await expect(herbPopup.getByRole('radio', {name: 'Lista'})).toBeChecked();
+
+        // Totals across both bags, one row per herb
+        const babka = herbPopup.locator('.herb-list tbody tr', {hasText: 'babka'});
+        await expect(babka.locator('.herb-list__count')).toHaveText('5');
+        await expect(herbPopup.locator('.herb-list tbody tr', {hasText: 'arnika'}).locator('.herb-list__count')).toHaveText('2');
+
+        // Arnika is held twice, so it offers no 3/5 buttons
+        await expect(herbPopup.locator('.herb-list tbody tr', {hasText: 'arnika'}).locator('.herb-amount')).toHaveText(['1']);
+
+        await resetCommandLog(page);
+        await babka.getByRole('button', {name: '3', exact: true}).click();
+        await expect.poll(async () => (await getCommandLog(page)).some(command => command.startsWith('przyloz 3 '))).toBe(true);
+    });
+
+    test('effect chips pick one group at a time and copy follows the filter', async ({page, context}) => {
+        await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+
+        await pushGmcp(page, 'char.info', {name: 'HerbEffects', object_num: 60007});
+        await waitForCharacter(page, 'HerbEffects');
+
+        await simulateHerbBagScan(page, [
+            {content: 'trzy rozetkowate lancetowate liscie i dwa zlocistopomaranczowe duze kwiaty'},
+        ]);
+
+        await submitCommand(page, '/ziola');
+        const herbPopup = page.locator('.herb-window');
+        await expect(herbPopup).toBeVisible({timeout: 5000});
+        await herbPopup.locator('.popup-segmented__item', {hasText: 'Efekty'}).click();
+        await expect(herbPopup.getByRole('radio', {name: 'Efekty'})).toBeChecked();
+        // Woreczki-only header buttons are gone in the other modes
+        await expect(herbPopup.getByRole('button', {name: 'Daj', exact: true})).toHaveCount(0);
+
+        const groups = herbPopup.locator('.herb-group__label');
+        await expect(groups).toHaveText(['Leczenie', 'Zmęczenie']);
+
+        const chips = herbPopup.locator('.herb-filter__chip');
+        await chips.filter({hasText: 'Leczenie'}).click();
+        await expect(groups).toHaveText(['Leczenie']);
+
+        // Picking another chip replaces the first one
+        await chips.filter({hasText: 'Zmęczenie'}).click();
+        await expect(groups).toHaveText(['Zmęczenie']);
+        await expect(herbPopup.locator('.herb-filter__chip.is-active')).toHaveCount(1);
+
+        await herbPopup.getByRole('button', {name: 'Kopiuj'}).click();
+        await expect(herbPopup.getByRole('button', {name: 'Skopiowano'})).toBeVisible();
+        const copied = await page.evaluate(() => navigator.clipboard.readText());
+        expect(copied).toContain('2 arnika');
+        expect(copied).not.toContain('babka');
+
+        // Clicking the active chip clears the filter
+        await chips.filter({hasText: 'Zmęczenie'}).click();
+        await expect(groups).toHaveText(['Leczenie', 'Zmęczenie']);
+    });
+
     test('should show empty state when no herbs have been scanned', async ({page}) => {
         await page.goto('/');
         await waitForCommandInput(page);

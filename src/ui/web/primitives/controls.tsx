@@ -58,6 +58,8 @@ export interface HeaderButtonProps extends ButtonHTMLAttributes<HTMLButtonElemen
     active?: boolean;
     /** Destructive, or arming one (a second click confirms). */
     danger?: boolean;
+    /** Anchor for a popover opened from the button. */
+    ref?: Ref<HTMLButtonElement>;
 }
 
 /**

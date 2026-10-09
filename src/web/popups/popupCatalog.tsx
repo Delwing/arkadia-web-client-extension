@@ -14,7 +14,6 @@ import DepositsPopup from '../DepositsPopup';
 import EnemyResistancesPopup from '../EnemyResistancesPopup';
 import FishingPopup from '../FishingPopup';
 import HerbManager from '../herbs/HerbManager';
-import HerbTextWindow from '../herbs/HerbTextWindow';
 import KnowledgeWindow from '../knowledge/KnowledgeWindow';
 import DocsWindow from '../documentation/DocsWindow';
 import LetterViewPopup from '../LetterViewPopup';
@@ -75,7 +74,6 @@ export const POPUP_CATALOG: PopupCatalogEntry[] = [
     { id: 'popup:carriageBlocks', Component: CarriageBlocksPopup },
     { id: 'popup:fishing', Component: FishingPopup },
     { id: 'popup:herb', Component: HerbManager },
-    { id: 'popup:herb-text', Component: HerbTextWindow },
     { id: 'popup:peopleBrowser', Component: PeopleBrowser },
     // Wiedza and Biblioteki: one window, tabs for each.
     { id: 'popup:knowledgeDetails', Component: KnowledgeWindow },

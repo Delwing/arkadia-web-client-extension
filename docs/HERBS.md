@@ -9,8 +9,20 @@ Moduł licznika ziół pozwala zliczyć zawartość wszystkich noszonych woreczk
 | `/ziola_buduj` | Przeglądaj woreczki i zapisz ich zawartość |
 | `/woreczki_buduj` | Oceń stan wszystkich woreczków i zapisz w liczniku |
 | `/ziola_pokaz` | Wyświetl ostatnie podsumowanie ziół (bez listy woreczków) |
-| `/ziola` | Otwórz okno zarządzania woreczkami ziół |
-| `/ziola2` | Wyświetl alternatywne podsumowanie ziół |
+| `/ziola` | Otwórz okno ziół (w ostatnio używanym trybie) |
+| `/ziola2` | Otwórz okno ziół od razu w trybie Lista |
+
+## Okno ziół
+
+Okno ma trzy tryby, przełączane w nagłówku:
+
+- **Woreczki** - zawartość każdego woreczka; zioła można przeciągać między woreczkami i przekazywać innym (przycisk **Daj**, opis niżej).
+- **Lista** - zwarta lista: jedna linia na zioło z sumą ze wszystkich woreczków, każde użycie z efektem i przyciskami 1/3/5 (wysyłają `/zi akcja ziolo ilosc`; przycisków nigdy nie ma więcej niż posiadanych sztuk). Zioła do palenia mają przycisk **nabij**.
+- **Efekty** - zioła pogrupowane według tego, co robią (Leczenie, Zmęczenie, Odtrutki, Odporność, Mana, Cechy…). Zioło z kilkoma efektami pojawia się w każdej swojej grupie. Skutki uboczne są oznaczone na pomarańczowo, trucizny na czerwono - grupa **Trucizny** nie ma przycisków użycia. Gwiazdka przypina grupę na górę.
+
+We wszystkich trybach działa wyszukiwanie (po nazwie zioła, efekcie lub nazwie grupy - np. `kac` znajdzie zarówno `+kac`, jak i `-kac`) i filtr efektu (jeden naraz - kliknięcie aktywnego zdejmuje filtr). W trybie Woreczki niepasujące zioła są przyciemnione, ale nadal można je przeciągać.
+
+Przycisk **Kopiuj** kopiuje do schowka listę posiadanych ziół; strzałka obok oferuje też listę z działaniem i podział na woreczki. Przy aktywnym filtrze kopiowane jest tylko to, co do niego pasuje.
 
 ## Wyjmowanie ziół
 

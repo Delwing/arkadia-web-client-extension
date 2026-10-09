@@ -324,9 +324,8 @@ export interface KnownEvents {
     "requestHerbCounts": void;
     "herbManagerClose": void;
     "herbCounts": unknown;
-    "herbManagerOpen": void;
-    "herbTextWindowOpen": void;
-    "herbTextWindowClose": void;
+    /** Opens the Zioła window, optionally in a given mode (`/ziola2` opens the list). */
+    "herbManagerOpen": { mode?: "bags" | "list" | "effects" } | void;
     "sound:play": { key: string };
     "sound:muted": boolean;
     "sound:category": SoundCategory;
