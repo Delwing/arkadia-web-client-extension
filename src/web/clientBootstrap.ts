@@ -10,6 +10,7 @@ import { migrateNewlyCharacterScopedKeys } from "@modules/core/storage";
 import { migrateObjectListBackground } from "@web/layout/windowSettings.ts";
 import {
     migrateButtonSizeMultiplier,
+    migrateCoverMarkersOn,
     migrateFooterComponentVisibility,
     migrateLayoutManagerState,
     migrateMobileButtonMacroField,
@@ -49,6 +50,7 @@ export function bootstrapGameClient(opts: { installPorts: () => void }): GameCli
     // bumps the version counter past this migration's gate.
     migrateUiSettingsSplit();
     migrateZerknijButtonMacro();
+    migrateCoverMarkersOn();
     runAllSettingsMigrations();
     migrateButtonSizeMultiplier();
     migrateFooterComponentVisibility();

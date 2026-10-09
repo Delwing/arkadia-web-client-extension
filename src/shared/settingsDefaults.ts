@@ -31,7 +31,7 @@ export const defaultRenderSettings: RenderSettings = {
     outputBottomPadding: 0,
     showTimestamps: false,
     highlightMessageBlocks: false,
-    objectListCoverMarkers: false,
+    objectListCoverMarkers: true,
     commandEcho: true,
     clearInputOnSend: false,
     autoLowercaseCommands: false,

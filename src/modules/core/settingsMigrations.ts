@@ -262,6 +262,11 @@ const migrations: Migration[] = [
         description: 'Elementals yield only gems: drop silver and gold from the stock elemental overrides',
         migrate: migrateElementalGemsOnly,
     },
+    {
+        version: 17,
+        description: 'Turn enemy cover markers on for everyone (handled by migrateCoverMarkersOn)',
+        migrate: settings => settings, // No-op for core Settings; actual migration is below
+    },
 ];
 
 /**
@@ -646,6 +651,27 @@ export function migrateZerknijButtonMacroData(input: unknown): { data: any; chan
 
     visit(data);
     return { data, changed };
+}
+
+/**
+ * Migration v17: cover markers became on by default. It was off before, so a
+ * stored `false` is almost always the old default rather than a choice -
+ * switch it on once; anyone who wants it off can turn it off again.
+ */
+export function migrateCoverMarkersOn(): void {
+    if (getMigrationsVersion() >= 17) {
+        return;
+    }
+
+    try {
+        const render = globalStorage.get('renderSettings');
+        if (render && render.objectListCoverMarkers === false) {
+            globalStorage.set('renderSettings', { ...render, objectListCoverMarkers: true });
+            console.log('[SettingsMigrations] Turned enemy cover markers on');
+        }
+    } catch (e) {
+        console.error('[SettingsMigrations] Failed to turn cover markers on:', e);
+    }
 }
 
 export function migrateZerknijButtonMacro(): void {

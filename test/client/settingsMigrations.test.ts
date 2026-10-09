@@ -2,6 +2,7 @@ import {
     migrateSettings,
     runAllSettingsMigrations,
     getLatestMigrationVersion,
+    migrateCoverMarkersOn,
     migrateImportedValue,
     migrateMobileButtonMacroData,
     migrateZerknijButtonMacro,
@@ -442,6 +443,32 @@ describe('settingsMigrations', () => {
             const { settings } = migrateSettings({ collectOverrides: [troll] }, 15);
 
             expect(settings.collectOverrides).toEqual([troll]);
+        });
+    });
+
+    describe('migration v17: cover markers on', () => {
+        it('switches a stored false on and keeps the other render settings', () => {
+            localStorage.setItem('renderSettings', JSON.stringify({ objectListCoverMarkers: false, showTimestamps: true }));
+
+            migrateCoverMarkersOn();
+
+            expect(JSON.parse(localStorage.getItem('renderSettings')!))
+                .toEqual({ objectListCoverMarkers: true, showTimestamps: true });
+        });
+
+        it('leaves storage alone when there are no render settings', () => {
+            migrateCoverMarkersOn();
+            expect(localStorage.getItem('renderSettings')).toBeNull();
+        });
+
+        it('is skipped once the migration version is past it', () => {
+            localStorage.setItem('settingsMigrationsVersion', '17');
+            const stored = JSON.stringify({ objectListCoverMarkers: false });
+            localStorage.setItem('renderSettings', stored);
+
+            migrateCoverMarkersOn();
+
+            expect(localStorage.getItem('renderSettings')).toBe(stored);
         });
     });
 
