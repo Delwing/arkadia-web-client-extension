@@ -22,7 +22,7 @@ import {
     setBehaviorSettings,
 } from "@modules/core/settings";
 import {chromeSettingsKeys} from "@shared/settingsDefaults";
-import {FOOTER_PRESET_IDS, type FooterPresetId} from "@shared/footerLayoutTypes.ts";
+import {FOOTER_PRESET_IDS, type FooterLayoutTweakSet, type FooterPresetId} from "@shared/footerLayoutTypes.ts";
 import {loadLayoutState} from "@web/layout";
 import {OBJECT_LIST_OTHERS_ID} from "@web/layout/types.ts";
 import {getWindowBackground, subscribeToWindowSetting, WINDOW_BACKGROUND_KEY, windowBackgroundRgba} from "@web/layout/windowSettings.ts";
@@ -570,6 +570,10 @@ export function load(): UiSettings {
                 : defaultUiSettings.keepMultibindsVisible;
             // Unset (or unknown) leaves each UI on its own footer layout.
             const footerLayout = FOOTER_PRESET_IDS.includes(parsed.footerLayout) ? (parsed.footerLayout as FooterPresetId) : undefined;
+            // Kept as stored: the footer pulls each value into range as it applies it.
+            const footerLayoutTweaks = parsed.footerLayoutTweaks && typeof parsed.footerLayoutTweaks === 'object' && !Array.isArray(parsed.footerLayoutTweaks)
+                ? (parsed.footerLayoutTweaks as FooterLayoutTweakSet)
+                : undefined;
             const footerUrgentChipsFirst = typeof parsed.footerUrgentChipsFirst === 'boolean'
                 ? parsed.footerUrgentChipsFirst
                 : defaultUiSettings.footerUrgentChipsFirst;
@@ -636,6 +640,7 @@ export function load(): UiSettings {
                 xtermPalette,
                 footerMode,
                 footerLayout,
+                footerLayoutTweaks,
                 explorationMode,
                 fightTitleIcon,
                 hapticFeedback,

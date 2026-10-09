@@ -54,6 +54,33 @@ test.describe('Footer layout', () => {
         await expect.poll(() => getCommandLog(page)).toEqual(expect.arrayContaining(['n', 'wyjscie']));
     });
 
+    test('each layout offers its own adjustments, and they reshape the footer', async ({page}) => {
+        await page.setViewportSize({width: 1280, height: 800});
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+        await enterRoom(page);
+
+        const modal = await openSettings(page, 'ui-footer');
+        await modal.locator('#ui-footer-layout').selectOption('stock');
+        await expect(modal.locator('#ui-footer-chip-arrange')).toBeVisible();
+        await expect(modal.locator('#ui-footer-chip-rows')).toHaveCount(0);
+
+        await modal.locator('#ui-footer-layout').selectOption('arkadia');
+        await expect(modal.locator('#ui-footer-chip-arrange')).toHaveCount(0);
+        await modal.locator('#ui-footer-chip-rows').fill('2');
+        await modal.locator('#ui-footer-chip-look').selectOption('icon');
+        await modal.locator('#ui-footer-compass').uncheck();
+        await expect(modal.locator('#ui-footer-compass-width')).toHaveCount(0);
+        await saveSettings(page);
+
+        const grid = page.locator('#char-state #footer-chips.footer-chip-grid');
+        await expect(grid).toBeVisible();
+        await expect(grid).not.toHaveClass(/footer-chips--text/);
+        expect(await grid.evaluate((el) => (el as HTMLElement).style.getPropertyValue('--chip-rows'))).toBe('2');
+        await expect(page.locator('.footer-compass')).toHaveCount(0);
+    });
+
     test('a phone keeps the stock footer whatever the pick', async ({page}) => {
         await page.setViewportSize({width: 390, height: 800});
         await pickLayout(page, 'arkadia');

@@ -1,9 +1,9 @@
-import type { FooterPresetId } from "@shared/footerLayoutTypes";
 import type { UiSettings } from "../../uiSettingsCore";
 import { defaultUiSettings } from "../../defaultUiSettings";
 import BarOrderSettings from "../../options/BarOrderSettings";
 import FooterButtonSettings from "../../options/FooterButtonSettings";
 import FooterComponentSettings from "../../options/FooterComponentSettings";
+import FooterLayoutSettings from "../../options/FooterLayoutSettings";
 import { CheckboxRow, RangeField, SelectField, SettingsSection } from "../fields";
 
 interface FooterSectionsProps {
@@ -15,18 +15,11 @@ function FooterSections({ draft, update }: FooterSectionsProps) {
     return (
         <>
             <SettingsSection title="Układ stopki">
-                <SelectField
-                    id="ui-footer-layout"
-                    label="Układ"
-                    hint="Jeden dla obu interfejsów. Telefon zawsze ma układ klasyczny."
-                    value={draft.footerLayout ?? ""}
-                    onChange={(v) => update({ footerLayout: v ? (v as FooterPresetId) : undefined })}
-                >
-                    <option value="">Własny układ interfejsu</option>
-                    <option value="stock">Klasyczny</option>
-                    <option value="forge">Kuźnia</option>
-                    <option value="arkadia">Arkadia (Mudlet)</option>
-                </SelectField>
+                <FooterLayoutSettings
+                    layout={draft.footerLayout}
+                    tweaks={draft.footerLayoutTweaks}
+                    onChange={(footerLayout, footerLayoutTweaks) => update({ footerLayout, footerLayoutTweaks })}
+                />
             </SettingsSection>
 
             <SettingsSection title="Stan postaci">

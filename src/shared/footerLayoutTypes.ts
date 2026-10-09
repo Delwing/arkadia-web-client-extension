@@ -104,3 +104,36 @@ export interface FooterLayout {
 /** The layouts that come with the client. */
 export const FOOTER_PRESET_IDS: readonly string[] = ['stock', 'forge', 'arkadia'];
 export type FooterPresetId = 'stock' | 'forge' | 'arkadia';
+
+/**
+ * The few knobs a picked layout offers in the settings (Stopka -> Układ
+ * stopki), so a player can adjust it without building their own. Each layout
+ * offers only the ones that mean something in it (FOOTER_PRESET_TWEAKS).
+ */
+export interface FooterLayoutTweaks {
+    /** How the main chips read: on tiles with a glyph, or as "Label: value" lines. */
+    chipLook?: FooterChipLook;
+    /** The main chips on one line with the rest behind "+N", or on as many lines as they need. */
+    chipArrange?: 'fold' | 'wrap';
+    /** Lines in the chip grid. */
+    chipRows?: number;
+    /** Vitals per line. */
+    vitalsPerRow?: number;
+    /** Show the exit compass. */
+    compass?: boolean;
+    /** Width shares, in percent of the band; the vitals take what is left. */
+    compassWidth?: number;
+    chipsWidth?: number;
+}
+
+export type FooterLayoutTweak = keyof FooterLayoutTweaks;
+
+/** The tweaks each layout offers, in the order the settings show them. */
+export const FOOTER_PRESET_TWEAKS: Record<FooterPresetId, readonly FooterLayoutTweak[]> = {
+    stock: ['chipLook', 'chipArrange'],
+    forge: ['chipLook'],
+    arkadia: ['chipLook', 'chipRows', 'vitalsPerRow', 'compass', 'compassWidth', 'chipsWidth'],
+};
+
+/** Every layout's own tweaks, kept apart so switching layouts loses nothing. */
+export type FooterLayoutTweakSet = Partial<Record<FooterPresetId, FooterLayoutTweaks>>;

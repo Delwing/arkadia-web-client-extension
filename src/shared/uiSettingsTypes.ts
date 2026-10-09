@@ -1,5 +1,5 @@
 import type { SoundCategory } from '@shared/events/clientEvents';
-import type { FooterPresetId } from '@shared/footerLayoutTypes';
+import type { FooterLayoutTweakSet, FooterPresetId } from '@shared/footerLayoutTypes';
 
 // UI settings type definitions.
 //
@@ -178,6 +178,8 @@ export interface ChromeSettings extends DeviceViewSettings {
      * each UI keeps its own: the stock footer here, the HUD plate in forge.
      */
     footerLayout?: FooterPresetId;
+    /** The player's adjustments to each layout (Stopka -> Układ stopki). */
+    footerLayoutTweaks?: FooterLayoutTweakSet;
     footerComponents: FooterComponentConfig[];
     /** The player's own buttons beside the command line; empty out of the box. */
     footerButtons: FooterButtonConfig[];
