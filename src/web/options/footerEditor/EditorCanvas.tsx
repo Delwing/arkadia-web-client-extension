@@ -66,7 +66,9 @@ body.footer-preview-body { display: block !important; margin: 0 !important; padd
 #footer-layout .fle-node + .fle-node > .footer-cell { margin-left: 16px; }
 .hud-panel .fle-node + .fle-node > .footer-cell { margin-left: 14px; }
 .footer-band > .fle-node:only-child > .footer-vitals { flex: 1; }
-.fle-node:not(:last-child) > .status-vitals:not(:empty) { padding-right: 14px; border-right: 1px solid var(--popup-border-subtle); }
+.fle-node:not(:last-child) > .status-vitals:not(:empty),
+.fle-node:not(:last-child) > .footer-vitals { padding-right: 14px; border-right: 1px solid var(--popup-border-subtle); }
+.fle-node:last-child > .footer-vitals { padding-right: 0; border-right: 0; }
 .fle-placeholder {
   display: inline-flex; align-items: center; padding: 2px 8px; border: 1px dashed currentColor; border-radius: 6px;
   font: 12px system-ui, sans-serif; opacity: .65; white-space: nowrap;

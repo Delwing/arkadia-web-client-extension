@@ -200,11 +200,16 @@
 .status-vitals:empty {
   display: none;
 }
-/* Nothing after the vitals to set them apart from. */
+/* Nothing after the vitals to set them apart from; and with Postępy as a bar
+   under them, the divider runs beside the whole block, not the vitals alone. */
 .status-vitals:last-child:not(:empty),
-.footer-vitals:last-child .status-vitals:not(:empty) {
+.footer-vitals > .status-vitals:not(:empty) {
   padding-right: 0;
   border-right: 0;
+}
+.footer-vitals:not(:last-child) {
+  padding-right: 14px;
+  border-right: 1px solid var(--popup-border-subtle);
 }
 .vital {
   --vital-color: var(--footer-vital-ok);
@@ -565,9 +570,11 @@ body[data-urgent-chips-first="1"] .status-slot:has(> .chip--danger) {
   flex: 1;
 }
 /* Postępy as an experience bar under the vitals (the vitals block's improveBar):
-   the stack takes the band's width when it has the band to itself. */
+   as wide as the vitals, so it ends where the last of them ends - or the band's
+   or cell's whole width when the block has it to itself. */
 .footer-vitals {
   display: flex;
+  flex: 0 1 auto;
   flex-direction: column;
   gap: 5px;
   min-width: 0;

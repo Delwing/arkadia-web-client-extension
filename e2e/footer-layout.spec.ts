@@ -184,6 +184,27 @@ test.describe('Footer layout', () => {
         }
     });
 
+    test('on the classic line, Postępy as a bar runs exactly under the vitals, the divider beside both', async ({page}) => {
+        await page.setViewportSize({width: 1280, height: 800});
+        await pickLayout(page, 'stock');
+        await page.addInitScript(() => {
+            const settings = JSON.parse(localStorage.getItem('uiSettings') ?? '{}');
+            localStorage.setItem('uiSettings', JSON.stringify({...settings, footerLayoutTweaks: {stock: {improveBar: true}}}));
+        });
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+        await pushGmcp(page, 'char.state', {hp: 6, fatigue: 2, stuffed: 1, mana: 3, improve: 4});
+
+        const block = page.locator('#char-state .footer-vitals');
+        await expect(block.locator('.improve-bar')).toBeVisible();
+        const right = (selector: string) => page.locator(selector).last().evaluate((el) => el.getBoundingClientRect().right);
+        expect(await right('#char-state .footer-vitals .improve-bar')).toBeCloseTo(await right('#char-state .footer-vitals .vital'), 0);
+        const border = (selector: string) => page.locator(selector).evaluate((el) => getComputedStyle(el).borderRightWidth);
+        expect(await border('#char-state .footer-vitals')).toBe('1px');
+        expect(await border('#char-state .footer-vitals .status-vitals')).toBe('0px');
+    });
+
     test('a phone keeps the stock footer whatever the pick', async ({page}) => {
         await page.setViewportSize({width: 390, height: 800});
         await pickLayout(page, 'arkadia');
