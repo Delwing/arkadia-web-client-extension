@@ -5,7 +5,6 @@ import { getMagicsStore } from '@modules/data/dataStores/magicsStore';
 import { getMagicKeysStore } from '@modules/data/dataStores/magicKeysStore';
 import { getKnowledgeStore } from '@modules/data/dataStores/knowledgeStore';
 import { getWiedzaStore } from '@modules/data/dataStores/wiedzaStore';
-import { getKnowledgeDetailsStore } from '@modules/data/dataStores/knowledgeDetailsStore';
 import * as peopleStore from '@modules/data/peopleStore';
 import * as npcStore from '@web/dataStores/npcStore';
 
@@ -99,14 +98,6 @@ export const DATA_SOURCES: DataSource[] = [
     getMetadata: () => getWiedzaStore().getMetadata(),
     getSnapshot: () => getWiedzaStore().getSnapshot(),
     refresh: () => getWiedzaStore().refresh({ force: true }),
-  },
-  {
-    id: 'knowledgeDetails',
-    label: 'Szczegóły wiedzy',
-    ttlMs: ONE_DAY_MS,
-    getMetadata: () => getKnowledgeDetailsStore().getMetadata(),
-    getSnapshot: () => getKnowledgeDetailsStore().getSnapshot(),
-    refresh: () => getKnowledgeDetailsStore().refresh({ force: true }),
   },
   {
     id: 'npc',
