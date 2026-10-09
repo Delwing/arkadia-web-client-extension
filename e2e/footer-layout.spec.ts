@@ -1,6 +1,7 @@
 import {expect, test} from './support/fixtures';
 import type {Page} from '@playwright/test';
 import {ensureGameSocket, getCommandLog, GMCP_PATHS, pushGmcp, waitForCommandInput} from './support/mocks';
+import {openSettings, saveSettings} from './support/settings';
 
 /**
  * The footer layout (uiSettings.footerLayout): one pick, drawn by every UI.
@@ -20,12 +21,17 @@ async function enterRoom(page: Page): Promise<void> {
 }
 
 test.describe('Footer layout', () => {
-    test('the Arkadia layout lays the exits, vitals and chips out side by side', async ({page}) => {
+    test('the Arkadia layout, picked in the settings, lays the exits, vitals and chips out side by side', async ({page}) => {
         await page.setViewportSize({width: 1280, height: 800});
-        await pickLayout(page, 'arkadia');
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
+        await expect(page.locator('.footer-compass')).toHaveCount(0);
+
+        const modal = await openSettings(page, 'ui-footer');
+        await modal.locator('#ui-footer-layout').selectOption('arkadia');
+        await saveSettings(page);
+
         await enterRoom(page);
         await pushGmcp(page, 'char.state', {hp: 6, fatigue: 2, stuffed: 3, soaked: 3, mana: 8});
 

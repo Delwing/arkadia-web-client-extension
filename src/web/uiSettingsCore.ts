@@ -22,6 +22,7 @@ import {
     setBehaviorSettings,
 } from "@modules/core/settings";
 import {chromeSettingsKeys} from "@shared/settingsDefaults";
+import {FOOTER_PRESET_IDS, type FooterPresetId} from "@shared/footerLayoutTypes.ts";
 import {loadLayoutState} from "@web/layout";
 import {OBJECT_LIST_OTHERS_ID} from "@web/layout/types.ts";
 import {getWindowBackground, subscribeToWindowSetting, WINDOW_BACKGROUND_KEY, windowBackgroundRgba} from "@web/layout/windowSettings.ts";
@@ -567,6 +568,8 @@ export function load(): UiSettings {
             const keepMultibindsVisible = typeof parsed.keepMultibindsVisible === 'boolean'
                 ? parsed.keepMultibindsVisible
                 : defaultUiSettings.keepMultibindsVisible;
+            // Unset (or unknown) leaves each UI on its own footer layout.
+            const footerLayout = FOOTER_PRESET_IDS.includes(parsed.footerLayout) ? (parsed.footerLayout as FooterPresetId) : undefined;
             const footerUrgentChipsFirst = typeof parsed.footerUrgentChipsFirst === 'boolean'
                 ? parsed.footerUrgentChipsFirst
                 : defaultUiSettings.footerUrgentChipsFirst;
@@ -632,6 +635,7 @@ export function load(): UiSettings {
                 emojiLabels: !!parsed.emojiLabels,
                 xtermPalette,
                 footerMode,
+                footerLayout,
                 explorationMode,
                 fightTitleIcon,
                 hapticFeedback,

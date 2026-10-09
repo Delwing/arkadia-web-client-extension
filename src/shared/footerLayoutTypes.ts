@@ -102,4 +102,5 @@ export interface FooterLayout {
 }
 
 /** The layouts that come with the client. */
+export const FOOTER_PRESET_IDS: readonly string[] = ['stock', 'forge', 'arkadia'];
 export type FooterPresetId = 'stock' | 'forge' | 'arkadia';

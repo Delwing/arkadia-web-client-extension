@@ -165,6 +165,7 @@ const CHROME_FIELDS: Record<string, Constraint & { optional?: boolean }> = {
         ],
     },
     footerMode: { type: 'number', min: 0, max: 4, integer: true },
+    footerLayout: { type: 'enum', enumValues: ['stock', 'forge', 'arkadia'], label: 'Układ stopki', optional: true },
     footerComponents: { type: 'complex' },
     footerUrgentChipsFirst: { type: 'boolean', label: 'Pilne plakietki na początku stopki' },
     footerBindsScale: { type: 'number', min: 0.8, max: 2, label: 'Skala paska bindów' },

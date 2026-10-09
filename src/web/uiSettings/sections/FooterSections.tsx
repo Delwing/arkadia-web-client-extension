@@ -1,3 +1,4 @@
+import type { FooterPresetId } from "@shared/footerLayoutTypes";
 import type { UiSettings } from "../../uiSettingsCore";
 import { defaultUiSettings } from "../../defaultUiSettings";
 import BarOrderSettings from "../../options/BarOrderSettings";
@@ -13,6 +14,21 @@ interface FooterSectionsProps {
 function FooterSections({ draft, update }: FooterSectionsProps) {
     return (
         <>
+            <SettingsSection title="Układ stopki">
+                <SelectField
+                    id="ui-footer-layout"
+                    label="Układ"
+                    hint="Jeden dla obu interfejsów. Telefon zawsze ma układ klasyczny."
+                    value={draft.footerLayout ?? ""}
+                    onChange={(v) => update({ footerLayout: v ? (v as FooterPresetId) : undefined })}
+                >
+                    <option value="">Własny układ interfejsu</option>
+                    <option value="stock">Klasyczny</option>
+                    <option value="forge">Kuźnia</option>
+                    <option value="arkadia">Arkadia (Mudlet)</option>
+                </SelectField>
+            </SettingsSection>
+
             <SettingsSection title="Stan postaci">
                 <SelectField id="ui-footer-mode" label="Tryb stopki" value={String(draft.footerMode)} onChange={(v) => update({ footerMode: parseInt(v, 10) })}>
                     <option value="4">Kafelki</option>
