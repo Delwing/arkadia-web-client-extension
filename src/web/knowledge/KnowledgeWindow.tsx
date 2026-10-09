@@ -118,10 +118,12 @@ export default function KnowledgeWindow() {
         const strip = rootRef.current?.querySelector<HTMLElement>('.kn-tabs');
         const on = strip?.querySelector<HTMLElement>('.is-on');
         if (!strip || !on) return;
-        const box = strip.getBoundingClientRect();
+        // Measure against the padding box: the strip's border clips, and scrollLeft snaps to whole pixels.
+        const left = strip.getBoundingClientRect().left + strip.clientLeft;
+        const right = left + strip.clientWidth;
         const btn = on.getBoundingClientRect();
-        if (btn.left < box.left) strip.scrollLeft -= box.left - btn.left;
-        else if (btn.right > box.right) strip.scrollLeft += btn.right - box.right;
+        if (btn.left < left) strip.scrollLeft -= Math.ceil(left - btn.left);
+        else if (btn.right > right) strip.scrollLeft += Math.ceil(btn.right - right);
     }, [tab, narrow, isOpen]);
 
     const openCategory = useCallback((name: string) => {
