@@ -70,7 +70,7 @@ test.describe('Context menu', () => {
         await expect(menu.locator('.context-menu__item')).toHaveText(['Znaczniki czasu', 'Typy wiadomości']);
         // All of them, always: no search and no "+N".
         const tiles = menu.locator('.context-menu__tiles .context-menu__tile');
-        await expect(tiles).toHaveCount(23);
+        await expect(tiles).toHaveCount(22);
         await expect(tiles.first()).toHaveText('Cechy');
         await expect(tiles.last()).toHaveText('Złom');
         const columns = await menu.locator('.context-menu__tiles').evaluate(
