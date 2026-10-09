@@ -2,6 +2,16 @@ import type { PersonListEntry } from '@client/types/people';
 import type { PeopleBrowserQuery, PeopleBrowserResult } from './PeopleBrowserTypes';
 import { makePersonKey } from '@modules/data/peopleLoader';
 
+/** Anything the user did to the entry on this device: added, edited, ignored, marked, coloured or noted. */
+function hasLocalChanges(person: PersonListEntry): boolean {
+    return person.source !== 'remote'
+        || person.ignored
+        || person.isEnemy
+        || person.isAlly
+        || !!person.color
+        || !!person.note;
+}
+
 export class PeopleBrowserService {
     private people: PersonListEntry[] = [];
 
@@ -28,8 +38,7 @@ export class PeopleBrowserService {
         const searchLower = searchTerm.toLowerCase().trim();
 
         const filtered = this.people.filter((person) => {
-            // Filter by local edits only
-            if (localOnly && person.source === 'remote' && !person.ignored) {
+            if (localOnly && !hasLocalChanges(person)) {
                 return false;
             }
 
