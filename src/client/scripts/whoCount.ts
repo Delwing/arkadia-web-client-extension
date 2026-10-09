@@ -20,10 +20,20 @@ const DEFAULT_NAME_COLOR = createColorFormat('#ffffff');
  */
 const REPLY_IDLE_MS = 600;
 
+/**
+ * How long a reply the game paged stays open. The next page only comes after the ENTER the
+ * pager trigger in main.ts sends has made the round trip, which on a laggy link can take
+ * seconds — and the pager line is proof that more is coming.
+ */
+const PAGED_REPLY_IDLE_MS = 5000;
+
 const KTO_HEADER = /^Sposrod\s+.+\s+osob przebywajacych obecnie w swiecie Arkadii, znane tobie to:/m;
 
 /** Sentence punctuation, which no kto line has. See {@link takeKtoBody}. */
 const SENTENCE_END = /[.!?]/;
+
+/** The game's pager, cutting a long reply into pages: "[linia 40/43 - ENTER by przejsc dalej, q by przerwac, ? by uzyskac pomoc]". */
+const PAGER_LINE = /^\[linia \d+\/\d+ - ENTER by przejsc dalej/;
 
 /**
  * Split a frame into the part that still belongs to the kto reply and whether the reply
@@ -35,14 +45,22 @@ const SENTENCE_END = /[.!?]/;
  * reply ended and unrelated output began (a weapon shouting "Tarcza!", say), and everything
  * from there on is neither parsed nor decorated. When no line has one, the frame is reply
  * body all the way to its end and the reply may well continue in the next frame.
+ *
+ * The one exception is the pager line a long reply is cut by: it has a question mark, yet
+ * it says the opposite — the reply goes on after the next ENTER. The body stops in front
+ * of it and the reply stays open (`paged`).
  */
-export function takeKtoBody(text: string): { body: string; ended: boolean } {
+export function takeKtoBody(text: string): { body: string; ended: boolean; paged: boolean } {
     const lines = text.split('\n');
-    const end = lines.findIndex(l => SENTENCE_END.test(l));
+    const end = lines.findIndex(l => PAGER_LINE.test(l) || SENTENCE_END.test(l));
     if (end === -1) {
-        return { body: text, ended: false };
+        return { body: text, ended: false, paged: false };
     }
-    return { body: lines.slice(0, end).join('\n'), ended: true };
+    const body = lines.slice(0, end).join('\n');
+    if (PAGER_LINE.test(lines[end])) {
+        return { body, ended: false, paged: true };
+    }
+    return { body, ended: true, paged: false };
 }
 
 /** The part of a frame that belongs to the kto reply. See {@link takeKtoBody}. */
@@ -100,6 +118,13 @@ interface OpenReply {
     /** The previous reply's names, frozen for as long as this one is being assembled. */
     baseline: string[];
     baselineSet: Set<string>;
+    /**
+     * The message type the header came in. The game interleaves its other streams (comm,
+     * emotes, combat…) between the frames of one reply, so only a frame of this type can
+     * carry the rest of it — a channel message landing between the halves must neither be
+     * parsed for names nor close the reply with its period.
+     */
+    type: string;
 }
 
 export default function initWhoCount(client: Client) {
@@ -231,7 +256,7 @@ export default function initWhoCount(client: Client) {
      * names then have to be printed rather than inserted — there is no line left to attach
      * them to.
      */
-    function scheduleIdleClose(): void {
+    function scheduleIdleClose(ms: number): void {
         clearIdleTimer();
         idleTimer = setTimeout(() => {
             idleTimer = null;
@@ -243,7 +268,7 @@ export default function initWhoCount(client: Client) {
                 client.print(out);
             }
             commitReply();
-        }, REPLY_IDLE_MS);
+        }, ms);
     }
 
     // Single-line trigger for the count display (header line)
@@ -283,14 +308,15 @@ export default function initWhoCount(client: Client) {
     }, TAG);
 
     /**
-     * Matches the frame that opens a kto reply and — while one is open — every frame after
-     * it, since any of them may carry the rest of that reply. The zero-length match is how
+     * Matches the frame that opens a kto reply and — while one is open — every later frame
+     * of its type (and a prompt), since any of them may carry the rest of that reply. The zero-length match is how
      * the callback tells a continuation from a header: it reads from the end of the match.
      */
-    const matchKtoFrame: TriggerMatchFunction = (line) => {
+    const matchKtoFrame: TriggerMatchFunction = (line, _matches, type) => {
         const header = KTO_HEADER.exec(line.text);
         if (header) return header;
         if (!openReply) return undefined;
+        if (type !== openReply.type && type !== 'prompt') return undefined;
         const continuation = [''] as unknown as RegExpMatchArray;
         continuation.index = 0;
         continuation.input = line.text;
@@ -332,7 +358,7 @@ export default function initWhoCount(client: Client) {
                 pushDeparted(start, departed(openReply));
                 commitReply();
             }
-            openReply = { names: [], baseline: previousNames, baselineSet: new Set(previousNames) };
+            openReply = { names: [], baseline: previousNames, baselineSet: new Set(previousNames), type };
         } else if (openReply && type === 'prompt') {
             // A prompt ends the server's burst, so it ends the reply too — and does it
             // straight away, rather than making the player wait out the idle timer.
@@ -348,7 +374,7 @@ export default function initWhoCount(client: Client) {
         let cursor = start + matches[0].length;
         if (text[cursor] === '\n') cursor++;
 
-        const { body, ended } = takeKtoBody(text.slice(cursor));
+        const { body, ended, paged } = takeKtoBody(text.slice(cursor));
         const names = parseKtoNames(body);
         const bodyEnd = Math.min(cursor + body.length, line.length);
 
@@ -369,7 +395,7 @@ export default function initWhoCount(client: Client) {
             pushDeparted(bodyEnd, departed(reply));
             commitReply();
         } else {
-            scheduleIdleClose();
+            scheduleIdleClose(paged ? PAGED_REPLY_IDLE_MS : REPLY_IDLE_MS);
         }
 
         applyInserts();

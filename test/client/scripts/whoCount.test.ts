@@ -237,6 +237,7 @@ describe('takeKtoBody', () => {
         expect(takeKtoBody('Zorlan   Norvath\nDrevos   Halven')).toEqual({
             body: 'Zorlan   Norvath\nDrevos   Halven',
             ended: false,
+            paged: false,
         });
     });
 
@@ -244,6 +245,16 @@ describe('takeKtoBody', () => {
         expect(takeKtoBody('Zorlan   Norvath\nKot siedzi.\nDrevos')).toEqual({
             body: 'Zorlan   Norvath',
             ended: true,
+            paged: false,
+        });
+    });
+
+    it('keeps the reply open at the pager line, question mark and all', () => {
+        const pager = '[linia 40/43 - ENTER by przejsc dalej, q by przerwac, ? by uzyskac pomoc]';
+        expect(takeKtoBody(`Zorlan   Norvath\n${pager}`)).toEqual({
+            body: 'Zorlan   Norvath',
+            ended: false,
+            paged: true,
         });
     });
 });
@@ -304,6 +315,52 @@ describe('a kto reply split across frames', () => {
         expect(second).toContain('Zakonczyli');
         expect(second).toContain('Corvath');
         expect(second.indexOf('Zakonczyli')).toBeLessThan(second.indexOf(ROOM));
+    });
+
+    it('lets another stream land between the halves without closing the reply', () => {
+        const client = createClient();
+        client.onLine([HEADER, ROW1, ROW2, ROOM].join('\n'), 'text');
+
+        client.onLine(`${HEADER}\n${ROW1}\n`, 'text');
+        const between = render(client.onLine('Ktos mowi do ciebie: czesc.\n', 'comm'));
+        expect(between).not.toContain('Zakonczyli');
+
+        const out = render(client.onLine([ROW2, ROOM].join('\n'), 'text'));
+        expect(out).not.toContain('Zakonczyli');
+        expect(out).not.toContain('+ ');
+    });
+
+    it('carries a reply over the pager to its next page', () => {
+        // As recorded: the page and the pager line arrive as separate messages of the same
+        // type (the pager line has no newline), and the rest only after the ENTER.
+        const PAGER = '[linia 40/43 - ENTER by przejsc dalej, q by przerwac, ? by uzyskac pomoc]';
+        const client = createClient();
+        client.onLine([HEADER, ROW1, ROW2, ROOM].join('\n'), 'other');
+
+        const page = render(client.onLine(`${HEADER}\n${ROW1}\n`, 'other'));
+        const pager = render(client.onLine(PAGER, 'other'));
+        const rest = render(client.onLine(`${ROW2}\n${ROOM}`, 'other'));
+
+        expect(page + pager + rest).not.toContain('Zakonczyli');
+        expect(page + pager + rest).not.toContain('+ ');
+    });
+
+    it('waits out the pager round trip before giving up on the next page', () => {
+        vi.useFakeTimers();
+        try {
+            const printed: string[] = [];
+            const client = createClient(buffer => printed.push(buffer.text));
+            client.onLine([HEADER, ROW1, ROW2, ROOM].join('\n'), 'other');
+
+            client.onLine(`${HEADER}\n${ROW1}\n`, 'other');
+            client.onLine('[linia 40/43 - ENTER by przejsc dalej, q by przerwac, ? by uzyskac pomoc]', 'other');
+            vi.advanceTimersByTime(2000);
+            const rest = render(client.onLine(`${ROW2}\n${ROOM}`, 'other'));
+
+            expect(printed.join('') + rest).not.toContain('Zakonczyli');
+        } finally {
+            vi.useRealTimers();
+        }
     });
 
     it('closes the reply on the prompt that ends the burst', () => {
