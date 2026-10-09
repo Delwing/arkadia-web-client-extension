@@ -94,3 +94,29 @@
   color: #94a3b8;
   text-align: center;
 }
+
+/* Alignment guides shown while dragging a desktop button (see snapGuides.ts) */
+.desktop-button-guides {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+.desktop-button-guide {
+  position: fixed;
+  pointer-events: none;
+  --guide-color: rgba(125, 211, 252, 0.85);
+}
+
+.desktop-button-guide.vertical {
+  width: 1px;
+  background: repeating-linear-gradient(to bottom, var(--guide-color) 0 4px, transparent 4px 7px);
+  margin-left: -0.5px;
+}
+
+.desktop-button-guide.horizontal {
+  height: 1px;
+  background: repeating-linear-gradient(to right, var(--guide-color) 0 4px, transparent 4px 7px);
+  margin-top: -0.5px;
+}

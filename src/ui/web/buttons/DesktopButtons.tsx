@@ -12,6 +12,7 @@ import type { DesktopButtonSetting, ListGrowDirection, ListPosition } from '@web
 import { executeMacro, updateMoveModeLabel, type MacroExecutorCallbacks } from '@web/scripts/buttonMacroExecutor';
 import { isTouchPointerType } from '@shared/dom/pointerEnvironment.ts';
 import { useClientEvent } from '../hooks';
+import { snapBox, type Box, type Guide } from './snapGuides';
 
 const LONG_PRESS_DURATION = 1000; // ms for drag activation
 const HOLD_THRESHOLD = 500; // ms determines tap vs hold
@@ -44,6 +45,7 @@ export default function DesktopButtons({ client }: { client: Client }) {
     const [activeListButtonId, setActiveListButtonId] = useState<string | null>(null);
 
     const containerRef = useRef<HTMLDivElement | null>(null);
+    const guidesRef = useRef<HTMLDivElement | null>(null);
     const buttonRefs = useRef(new Map<string, HTMLButtonElement>());
     const listRefs = useRef(new Map<string, HTMLDivElement>());
     const settingsRef = useRef(settings);
@@ -83,13 +85,15 @@ export default function DesktopButtons({ client }: { client: Client }) {
     // Drag state.
     const dragState = useRef<{
         isDragging: boolean;
+        /** Set on drop; `isDragging` lingers 50ms longer to swallow the click, but moves must stop now. */
+        dropped: boolean;
         dragButtonId: string | null;
         offsetX: number;
         offsetY: number;
         initialX: number;
         initialY: number;
         longPressTimer: number | null;
-    }>({ isDragging: false, dragButtonId: null, offsetX: 0, offsetY: 0, initialX: 0, initialY: 0, longPressTimer: null });
+    }>({ isDragging: false, dropped: false, dragButtonId: null, offsetX: 0, offsetY: 0, initialX: 0, initialY: 0, longPressTimer: null });
 
     // Hold-action state (tap-vs-hold disambiguation via press/release timing).
     const buttonPressStart = useRef(new Map<string, PressStart>());
@@ -237,6 +241,7 @@ export default function DesktopButtons({ client }: { client: Client }) {
         ds.initialY = clientY;
         ds.longPressTimer = window.setTimeout(() => {
             ds.isDragging = true;
+            ds.dropped = false;
             ds.dragButtonId = buttonId;
             const rect = btn.getBoundingClientRect();
             ds.offsetX = ds.initialX - rect.left;
@@ -248,16 +253,32 @@ export default function DesktopButtons({ client }: { client: Client }) {
         }, LONG_PRESS_DURATION);
     }, [hideAllLists]);
 
-    const updateDragPosition = useCallback((clientX: number, clientY: number) => {
+    // Alt held while dragging inverts the snap setting for that move.
+    const updateDragPosition = useCallback((clientX: number, clientY: number, invertSnap = false) => {
         const ds = dragState.current;
         const btn = ds.dragButtonId ? buttonRefs.current.get(ds.dragButtonId) : null;
         if (!btn) return;
-        const newX = clientX - ds.offsetX;
-        const newY = clientY - ds.offsetY;
         const maxX = window.innerWidth - btn.offsetWidth - 5;
         const maxY = window.innerHeight - btn.offsetHeight - 5;
-        btn.style.left = `${Math.min(maxX, Math.max(5, newX))}px`;
-        btn.style.top = `${Math.min(maxY, Math.max(5, newY))}px`;
+        const clampX = (x: number) => Math.min(maxX, Math.max(5, x));
+        const clampY = (y: number) => Math.min(maxY, Math.max(5, y));
+        const moving: Box = {
+            x: clampX(clientX - ds.offsetX),
+            y: clampY(clientY - ds.offsetY),
+            width: btn.offsetWidth,
+            height: btn.offsetHeight,
+        };
+        const others: Box[] = [];
+        if ((settingsRef.current.snap ?? true) !== invertSnap) {
+            buttonRefs.current.forEach((other, id) => {
+                if (id === ds.dragButtonId) return;
+                others.push({ x: parseFloat(other.style.left) || 0, y: parseFloat(other.style.top) || 0, width: other.offsetWidth, height: other.offsetHeight });
+            });
+        }
+        const snapped = snapBox(moving, others);
+        btn.style.left = `${Math.round(clampX(snapped.x))}px`;
+        btn.style.top = `${Math.round(clampY(snapped.y))}px`;
+        renderGuides(guidesRef.current, snapped.guides);
     }, []);
 
     const endDrag = useCallback(() => {
@@ -271,7 +292,8 @@ export default function DesktopButtons({ client }: { client: Client }) {
             buttonDragged.current.delete(ds.dragButtonId);
         }
 
-        if (ds.isDragging && ds.dragButtonId) {
+        if (ds.isDragging && !ds.dropped && ds.dragButtonId) {
+            ds.dropped = true;
             const btn = buttonRefs.current.get(ds.dragButtonId);
             if (btn) {
                 const newX = parseInt(btn.style.left, 10) || 0;
@@ -286,6 +308,7 @@ export default function DesktopButtons({ client }: { client: Client }) {
                 btn.style.zIndex = '';
                 btn.style.opacity = '';
             }
+            renderGuides(guidesRef.current, []);
         }
 
         setTimeout(() => {
@@ -308,9 +331,9 @@ export default function DesktopButtons({ client }: { client: Client }) {
                 }
             });
             const ds = dragState.current;
-            if (!ds.isDragging || !ds.dragButtonId) return;
+            if (!ds.isDragging || ds.dropped || !ds.dragButtonId) return;
             e.preventDefault();
-            updateDragPosition(e.clientX, e.clientY);
+            updateDragPosition(e.clientX, e.clientY, e.altKey);
         };
         const handleMouseUp = () => {
             resolveHoldOrTapRelease();
@@ -329,7 +352,7 @@ export default function DesktopButtons({ client }: { client: Client }) {
                 }
             });
             const ds = dragState.current;
-            if (!ds.isDragging || !ds.dragButtonId) return;
+            if (!ds.isDragging || ds.dropped || !ds.dragButtonId) return;
             e.preventDefault();
             updateDragPosition(touch.clientX, touch.clientY);
         };
@@ -513,6 +536,7 @@ export default function DesktopButtons({ client }: { client: Client }) {
             className={'desktop-buttons-container' + (settings.locked ? ' drag-locked' : '')}
             ref={containerRef}
         >
+            <div className="desktop-button-guides" ref={guidesRef} />
             {settings.buttons.map((btnSettings) => {
                 const { label, color } = displayFor(btnSettings);
                 const isListButton = ['zList', 'zaList', 'wList', 'przeList', 'idzList'].includes(btnSettings.macroType);
@@ -569,6 +593,20 @@ export default function DesktopButtons({ client }: { client: Client }) {
     );
 
     return createPortal(content, document.body);
+}
+
+/** Draws the drag alignment guides imperatively — they change on every pointer move. */
+function renderGuides(layer: HTMLDivElement | null, guides: Guide[]) {
+    if (!layer) return;
+    while (layer.children.length > guides.length) layer.lastChild!.remove();
+    while (layer.children.length < guides.length) layer.appendChild(document.createElement('div'));
+    guides.forEach((g, i) => {
+        const line = layer.children[i] as HTMLDivElement;
+        line.className = 'desktop-button-guide ' + (g.axis === 'x' ? 'vertical' : 'horizontal');
+        line.style.cssText = g.axis === 'x'
+            ? `left:${g.pos}px;top:${g.from}px;height:${g.to - g.from}px`
+            : `top:${g.pos}px;left:${g.from}px;width:${g.to - g.from}px`;
+    });
 }
 
 function listItemStyle(settings: DesktopButtonSetting): CSSVarStyle {

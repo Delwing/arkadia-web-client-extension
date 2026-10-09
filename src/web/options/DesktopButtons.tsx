@@ -312,6 +312,12 @@ function DesktopButtons({ registerSave }: { registerSave: (save: () => void) => 
                         checked={settings.locked}
                         onChange={e => setSettings(prev => ({ ...prev, locked: e.target.checked }))}
                     />
+                    <Check
+                        id="desktop-buttons-snap"
+                        label={<span title="Przytrzymaj Alt podczas przesuwania, aby chwilowo to odwrócić">Wyrównuj do innych przycisków</span>}
+                        checked={settings.snap}
+                        onChange={e => setSettings(prev => ({ ...prev, snap: e.target.checked }))}
+                    />
                 </div>
 
                 {settings.buttons.length === 0 && (

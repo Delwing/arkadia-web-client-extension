@@ -14,6 +14,8 @@ export { defaultFontColor };
 export interface DesktopButtonsSettings {
     buttons: DesktopButtonSetting[];
     locked: boolean;
+    /** Snap to other buttons while dragging; Alt inverts it for the drag. */
+    snap: boolean;
 }
 
 export const defaultButtonColor = '#6EB4DC';
@@ -43,6 +45,7 @@ export function createDefaultSettings(): DesktopButtonsSettings {
     return {
         buttons: [],
         locked: false,
+        snap: true,
     };
 }
 
@@ -159,6 +162,7 @@ export function loadSettings(): DesktopButtonsSettings {
         const raw = globalStorage.get('desktopButtonSettings') as any;
         if (raw && typeof raw === 'object') {
             const locked = !!raw.locked;
+            const snap = raw.snap !== false;
             const buttons: DesktopButtonSetting[] = [];
             if (Array.isArray(raw.buttons)) {
                 for (const entry of raw.buttons) {
@@ -168,7 +172,7 @@ export function loadSettings(): DesktopButtonsSettings {
                     }
                 }
             }
-            return { buttons, locked };
+            return { buttons, locked, snap };
         }
     } catch {
         // ignore errors, return default
