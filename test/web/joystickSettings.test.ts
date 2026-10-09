@@ -19,7 +19,14 @@ describe('parseJoystickSettings', () => {
     });
 
     it('keeps an emptied list empty', () => {
-        expect(parseJoystickSettings({ enabled: true, items: [] })).toEqual({ enabled: true, items: [] });
+        expect(parseJoystickSettings({ enabled: true, items: [] })).toEqual({ enabled: true, locked: false, items: [] });
+    });
+
+    it('keeps its own lock, falling back to the mobile buttons lock until one is saved', () => {
+        expect(parseJoystickSettings({ locked: true, items: [] }).locked).toBe(true);
+        expect(parseJoystickSettings({ locked: false, items: [] }, true).locked).toBe(false);
+        expect(parseJoystickSettings({ items: [] }, true).locked).toBe(true);
+        expect(parseJoystickSettings(undefined, true).locked).toBe(true);
     });
 
     it('trims commands, drops empty ones and clamps the size', () => {

@@ -119,6 +119,27 @@ test.describe('Mobile joysticks', () => {
         expect(Math.round(reloaded.y)).toBe(Math.round(after.y));
     });
 
+    test('locked from the settings page, a long press swipes instead of dragging', async ({page}) => {
+        await boot(page);
+        await openSettings(page, 'ui-joysticks');
+        const settings = page.locator(`${SETTINGS_MODAL} .settings-page[data-settings-category="ui-joysticks"]`);
+        await settings.locator('#mobile-joysticks-lock').check();
+        await saveSettings(page);
+
+        const joystick = page.locator('.mobile-joystick[data-joystick-id="vertical"]');
+        const before = await centerOf(page, 'vertical');
+        await page.mouse.move(before.x, before.y);
+        await page.mouse.down();
+        await expect(joystick.locator('.mobile-joystick__tag')).toHaveText(['u', 'zerknij', 'd']);
+        await page.mouse.move(before.x, before.y - 60, {steps: 5});
+        await page.mouse.up();
+
+        await expect.poll(() => getLastOutgoingCommand(page)).toBe('u');
+        const after = await centerOf(page, 'vertical');
+        expect(Math.round(after.x)).toBe(Math.round(before.x));
+        expect(Math.round(after.y)).toBe(Math.round(before.y));
+    });
+
     test('are added and enabled from the Joysticki settings page', async ({page}) => {
         await page.setViewportSize({width: 1280, height: 900});
         await boot(page, null);

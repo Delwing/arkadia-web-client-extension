@@ -270,15 +270,13 @@ function Joystick({ item, center, locked, describe, onSend, onMove, onMoved }: {
  */
 export default function MobileJoysticks({ client }: { client: Client }) {
     const [joysticks, setJoysticks] = useState<JoystickSettings>(() => loadSettings().joysticks);
-    const [locked, setLocked] = useState(() => loadSettings().locked);
     const [positions, setPositions] = useState<Positions>(loadPositions);
     const [viewport, setViewport] = useState<Viewport>(currentViewport);
     /** Live centres while a joystick is being dragged; persisted on release. */
     const [moving, setMoving] = useState<Record<string, Point>>({});
 
     useEffect(() => globalStorage.onChange('mobileButtonSettings', (next) => {
-        setJoysticks(parseJoystickSettings((next as any)?.joysticks));
-        setLocked(!!next?.locked);
+        setJoysticks(parseJoystickSettings((next as any)?.joysticks, !!next?.locked));
     }), []);
 
     useEffect(() => globalStorage.onChange('mobileJoystickPositions', (next) => {
@@ -345,7 +343,7 @@ export default function MobileJoysticks({ client }: { client: Client }) {
                     key={item.id}
                     item={item}
                     center={moving[item.id] ?? resolveCenter(item, positions, fallbacks[index], viewport)}
-                    locked={locked}
+                    locked={joysticks.locked}
                     describe={describe}
                     onSend={send}
                     onMove={move}
