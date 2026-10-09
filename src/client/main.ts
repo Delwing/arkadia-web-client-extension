@@ -161,6 +161,7 @@ import initDataRefresh from './scripts/dataRefresh'
 import initTcolor from './scripts/tcolor'
 import initOpal from './scripts/opal'
 import initBagno from './scripts/bagno'
+import initCytadela from './scripts/cytadela'
 import initWrak from './scripts/wrak'
 import initLastSeen from './scripts/lastSeen'
 import initZlom from './scripts/zlom'
@@ -416,6 +417,7 @@ export function registerScripts(client: Client) {
     initTcolor(client, aliases)
     initOpal(client)
     initBagno(client)
+    initCytadela(client)
     initWrak(client)
     initLastSeen(client, aliases)
     initBilety(client, aliases)
