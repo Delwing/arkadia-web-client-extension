@@ -1,8 +1,18 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type RefObject } from 'react';
 import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
 import { usePopup } from './hooks/usePopup';
 import { DATA_SOURCES, computeNextFetch, type DataSource } from './dataSourcesRegistry';
-import { HeaderButton } from '@web-ui/primitives';
+import { Button, HeaderButton, Input } from '@web-ui/primitives';
+import { ArrowLeft, Check, ChevronDown, ChevronUp, Copy, Eye, RefreshCw, Search } from 'lucide-react';
+import { highlightJson } from './jsonHighlight';
+import {
+  clearMatches,
+  findInOutput,
+  paintMatches,
+  revealMatch,
+  type HighlightNames,
+  type OutputMatch,
+} from './outputSearch/outputSearch';
 
 const POPUP_ID = 'popup:dataSources';
 
@@ -19,8 +29,24 @@ interface RowState {
 interface DetailState {
   loading: boolean;
   error: boolean;
+  hasData: boolean;
+  /** Serialised snapshot, cut to PREVIEW_LIMIT. */
   text: string;
+  /** Full serialised snapshot, for copying. */
+  fullText: string;
 }
+
+type RowStatus = 'loading' | 'error' | 'empty' | 'due' | 'ok';
+
+const STATUS_TITLES: Record<RowStatus, string> = {
+  loading: 'Pobieranie…',
+  error: 'Ostatnie pobranie nie powiodło się',
+  empty: 'Jeszcze nie pobrano',
+  due: 'Do odświeżenia',
+  ok: 'Aktualne',
+};
+
+const EMPTY_DETAIL: DetailState = { loading: false, error: false, hasData: false, text: '', fullText: '' };
 
 function formatRelativePast(from: number | undefined, now: number): string {
   if (!from) return 'nigdy';
@@ -55,20 +81,119 @@ function formatAbsolute(ts: number | undefined): string {
   return new Date(ts).toLocaleString('pl-PL');
 }
 
-function formatSnapshot(snapshot: unknown): string {
-  if (snapshot === undefined || snapshot === null) {
-    return 'Brak danych — źródło nie zostało jeszcze pobrane.';
-  }
+function formatSize(chars: number): string {
+  if (chars < 1024) return `${chars} B`;
+  if (chars < 1024 * 1024) return `${Math.round(chars / 1024)} KB`;
+  return `${(chars / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function formatSnapshot(snapshot: unknown): DetailState {
+  if (snapshot === undefined || snapshot === null) return EMPTY_DETAIL;
   let text: string;
   try {
     text = JSON.stringify(snapshot, null, 2);
   } catch {
     text = String(snapshot);
   }
-  if (text.length > PREVIEW_LIMIT) {
-    return `${text.slice(0, PREVIEW_LIMIT)}\n\n… (podgląd obcięto, ${text.length} znaków)`;
-  }
-  return text;
+  return { ...EMPTY_DETAIL, hasData: true, text: text.slice(0, PREVIEW_LIMIT), fullText: text };
+}
+
+const SEARCH_NAMES: HighlightNames = { all: 'data-sources-search', current: 'data-sources-search-current' };
+
+/** How long typing settles before a search over a large preview runs. */
+const SEARCH_DELAY_MS = 150;
+
+interface PreviewSearchProps {
+  /** The preview's scroll box; its <pre> is searched. */
+  scrollRef: RefObject<HTMLDivElement | null>;
+  inputRef: RefObject<HTMLInputElement | null>;
+  /** The previewed text, to search again when it changes. */
+  content: string;
+}
+
+/**
+ * Find in the preview: hits are painted over the coloured JSON (see
+ * outputSearch.ts) and Enter / Shift+Enter walk them. Case and Polish letters
+ * don't matter, as in the other searches.
+ */
+function PreviewSearch({ scrollRef, inputRef, content }: PreviewSearchProps) {
+  const [query, setQuery] = useState('');
+  const [matches, setMatches] = useState<OutputMatch[]>([]);
+  const [current, setCurrent] = useState(-1);
+
+  const reveal = useCallback((match: OutputMatch | undefined) => {
+    if (match && scrollRef.current) revealMatch(scrollRef.current, match, 0);
+  }, [scrollRef]);
+
+  useEffect(() => {
+    const scroll = scrollRef.current;
+    if (!scroll) return;
+    const timer = setTimeout(() => {
+      const skip = new Set(Array.from(scroll.children).filter(child => child.tagName !== 'PRE'));
+      const found = findInOutput(scroll, query, skip);
+      setMatches(found);
+      setCurrent(found.length > 0 ? 0 : -1);
+      reveal(found[0]);
+    }, query.trim() ? SEARCH_DELAY_MS : 0);
+    return () => clearTimeout(timer);
+  }, [query, content, scrollRef, reveal]);
+
+  useEffect(() => paintMatches(matches, current, SEARCH_NAMES), [matches, current]);
+  useEffect(() => () => clearMatches(SEARCH_NAMES), []);
+
+  const step = (forward: boolean) => {
+    if (matches.length === 0) return;
+    const next = (current + (forward ? 1 : -1) + matches.length) % matches.length;
+    setCurrent(next);
+    reveal(matches[next]);
+  };
+
+  const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      step(!event.shiftKey);
+    } else if (event.key === 'Escape' && query) {
+      event.preventDefault();
+      event.stopPropagation();
+      setQuery('');
+    }
+  };
+
+  const count = !query.trim() ? '' : matches.length === 0 ? 'brak' : `${current + 1} z ${matches.length}`;
+
+  return (
+    <div className="data-sources-search">
+      <Search className="data-sources-search__icon" size={14} strokeWidth={2} />
+      <Input
+        ref={inputRef}
+        placeholder="Szukaj w danych…"
+        value={query}
+        onChange={e => setQuery(e.target.value)}
+        onKeyDown={onKeyDown}
+      />
+      <span className="data-sources-search__count">{count}</span>
+      <Button
+        size="sm"
+        variant="ghost"
+        className="popup-btn--icon"
+        disabled={matches.length === 0}
+        onClick={() => step(false)}
+        title="Poprzednie (Shift+Enter)"
+      >
+        <ChevronUp size={15} strokeWidth={2} />
+      </Button>
+      <Button
+        size="sm"
+        variant="ghost"
+        className="popup-btn--icon"
+        disabled={matches.length === 0}
+        onClick={() => step(true)}
+        title="Następne (Enter)"
+      >
+        <ChevronDown size={15} strokeWidth={2} />
+      </Button>
+    </div>
+  );
 }
 
 const DataSourcesPopup: React.FC = () => {
@@ -80,7 +205,10 @@ const DataSourcesPopup: React.FC = () => {
   const [now, setNow] = useState(() => Date.now());
   const [refreshingAll, setRefreshingAll] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [detail, setDetail] = useState<DetailState>({ loading: false, error: false, text: '' });
+  const [detail, setDetail] = useState<DetailState>(EMPTY_DETAIL);
+  const [copied, setCopied] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
 
   const selectedSource = useMemo(
     () => (selectedId ? DATA_SOURCES.find(s => s.id === selectedId) ?? null : null),
@@ -108,13 +236,13 @@ const DataSourcesPopup: React.FC = () => {
   }, []);
 
   const loadDetail = useCallback(async (source: DataSource) => {
-    setDetail({ loading: true, error: false, text: '' });
+    setDetail({ ...EMPTY_DETAIL, loading: true });
     try {
       const snapshot = await source.getSnapshot();
-      setDetail({ loading: false, error: false, text: formatSnapshot(snapshot) });
+      setDetail(formatSnapshot(snapshot));
     } catch (e) {
       console.error(`Failed to read snapshot for data source ${source.id}:`, e);
-      setDetail({ loading: false, error: true, text: '' });
+      setDetail({ ...EMPTY_DETAIL, error: true });
     }
   }, []);
 
@@ -135,15 +263,23 @@ const DataSourcesPopup: React.FC = () => {
   // Load the raw snapshot when a source is selected for preview.
   useEffect(() => {
     if (!isOpen || !selectedSource) return;
+    setCopied(false);
     void loadDetail(selectedSource);
   }, [isOpen, selectedSource, loadDetail]);
 
-  // Keep relative times live while the list is visible.
+  // Keep relative times live while the popup is visible.
   useEffect(() => {
-    if (!isOpen || selectedSource) return;
+    if (!isOpen) return;
     const interval = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(interval);
-  }, [isOpen, selectedSource]);
+  }, [isOpen]);
+
+  // Revert the copy button's confirmation after a moment.
+  useEffect(() => {
+    if (!copied) return;
+    const timeout = setTimeout(() => setCopied(false), 1500);
+    return () => clearTimeout(timeout);
+  }, [copied]);
 
   const handleRefresh = useCallback(
     async (source: DataSource) => {
@@ -161,6 +297,10 @@ const DataSourcesPopup: React.FC = () => {
         }));
         return;
       }
+      setRows(prev => ({
+        ...prev,
+        [source.id]: { ...prev[source.id], loading: false },
+      }));
       await loadMetadata(source);
     },
     [loadMetadata],
@@ -176,38 +316,30 @@ const DataSourcesPopup: React.FC = () => {
 
   const handleRefreshAll = useCallback(async () => {
     setRefreshingAll(true);
-    setRows(prev => {
-      const next = { ...prev };
-      for (const source of DATA_SOURCES) {
-        next[source.id] = { ...next[source.id], loading: true, error: false };
-      }
-      return next;
-    });
-    await Promise.allSettled(
-      DATA_SOURCES.map(async source => {
-        try {
-          await source.refresh();
-        } catch (e) {
-          console.error(`Failed to refresh data source ${source.id}:`, e);
-          setRows(prev => ({
-            ...prev,
-            [source.id]: { ...prev[source.id], loading: false, error: true },
-          }));
-          return;
-        }
-        await loadMetadata(source);
-      }),
-    );
+    await Promise.allSettled(DATA_SOURCES.map(source => handleRefresh(source)));
     setRefreshingAll(false);
-  }, [loadMetadata]);
+  }, [handleRefresh]);
+
+  const handleCopy = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(detail.fullText);
+      setCopied(true);
+    } catch (e) {
+      console.error('Failed to copy data source preview:', e);
+    }
+  }, [detail.fullText]);
+
+  // Highlighting the whole preview is the slow part; do it once per snapshot.
+  const detailHtml = useMemo(() => ({ __html: highlightJson(detail.text) }), [detail.text]);
 
   const headerActions = selectedSource ? null : (
-    <HeaderButton onClick={handleRefreshAll} disabled={refreshingAll} title="Odśwież wszystkie źródła">
+    <HeaderButton onClick={handleRefreshAll} disabled={refreshingAll} title="Pobierz wszystkie źródła teraz">
       Odśwież wszystko
     </HeaderButton>
   );
 
   const selectedRow = selectedSource ? rows[selectedSource.id] : undefined;
+  const truncated = detail.fullText.length > detail.text.length;
 
   return (
     <DockablePopupWrapper
@@ -216,94 +348,162 @@ const DataSourcesPopup: React.FC = () => {
       title="Źródła danych"
       minWidth={360}
       minHeight={200}
-      initialWidth={480}
-      initialHeight={380}
+      initialWidth={520}
+      initialHeight={400}
       className="data-sources-popup"
       bodyClassName="data-sources-popup-body"
       headerActions={headerActions}
     >
       {selectedSource ? (
-        <div className="data-sources-detail">
-          <div className="data-sources-detail__header">
-            <button
-              type="button"
-              className="popup-btn"
+        <div
+          className="data-sources-detail"
+          tabIndex={-1}
+          onKeyDown={e => {
+            // Ctrl+F finds in the preview instead of the game output.
+            if (e.code !== 'KeyF' || !(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey) return;
+            if (!searchRef.current) return;
+            e.preventDefault();
+            searchRef.current.focus();
+            searchRef.current.select();
+          }}
+        >
+          <div className="data-sources-detail__bar">
+            <Button
+              size="sm"
+              variant="ghost"
+              className="popup-btn--icon"
               onClick={() => setSelectedId(null)}
               title="Powrót do listy"
             >
-              ← Powrót
-            </button>
-            <span className="data-sources-detail__title">{selectedSource.label}</span>
-            <button
-              type="button"
-              className="popup-btn"
+              <ArrowLeft size={15} strokeWidth={2} />
+            </Button>
+            <div className="data-sources-detail__heading">
+              <span className="data-sources-detail__title">{selectedSource.label}</span>
+              <span className="data-sources-detail__meta" title={formatAbsolute(selectedRow?.refreshedAt)}>
+                pobrano {formatRelativePast(selectedRow?.refreshedAt, now)}
+                {detail.hasData && ` · ${formatSize(detail.fullText.length)}`}
+              </span>
+            </div>
+            <Button size="sm" onClick={handleCopy} disabled={!detail.hasData} title="Kopiuj dane do schowka">
+              {copied ? <Check size={13} strokeWidth={2} /> : <Copy size={13} strokeWidth={2} />}
+              {copied ? 'Skopiowano' : 'Kopiuj'}
+            </Button>
+            <Button
+              size="sm"
               onClick={() => handleDetailRefresh(selectedSource)}
               disabled={selectedRow?.loading}
               title="Pobierz teraz"
             >
-              {selectedRow?.loading ? '…' : 'Odśwież'}
-            </button>
+              <RefreshCw
+                size={13}
+                strokeWidth={2}
+                className={selectedRow?.loading ? 'data-sources__spin' : undefined}
+              />
+              Odśwież
+            </Button>
           </div>
           {detail.loading ? (
-            <div className="data-sources-detail__status">Ładowanie…</div>
+            <div className="data-sources__empty"><span className="popup-spinner" /> Wczytywanie…</div>
           ) : detail.error ? (
-            <div className="data-sources-detail__status">Nie udało się wczytać danych.</div>
+            <div className="data-sources__empty data-sources__empty--error">Nie udało się wczytać danych.</div>
+          ) : !detail.hasData ? (
+            <div className="data-sources__empty">Brak danych — źródło nie zostało jeszcze pobrane.</div>
           ) : (
-            <pre className="data-sources-detail__content">{detail.text}</pre>
+            <>
+              <PreviewSearch
+                key={selectedSource.id}
+                scrollRef={scrollRef}
+                inputRef={searchRef}
+                content={detail.text}
+              />
+              <div className="data-sources-detail__scroll" ref={scrollRef}>
+                <pre className="data-sources-detail__content" dangerouslySetInnerHTML={detailHtml} />
+                {truncated && (
+                  <div className="data-sources-detail__truncated">
+                    Pokazano {formatSize(detail.text.length)} z {formatSize(detail.fullText.length)}.
+                    Szukanie obejmuje tylko pokazaną część, Kopiuj zabiera całość.
+                  </div>
+                )}
+              </div>
+            </>
           )}
         </div>
       ) : (
-        <table className="data-sources-table">
-          <thead>
-            <tr>
-              <th>Źródło</th>
-              <th>Pobrano</th>
-              <th>Następne</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
-            {DATA_SOURCES.map(source => {
-              const row = rows[source.id];
-              const refreshedAt = row?.refreshedAt;
-              const nextAt = computeNextFetch(refreshedAt, source.ttlMs);
-              const due = nextAt !== undefined && nextAt <= now;
-              return (
-                <tr key={source.id} className={due ? 'data-sources-row--due' : undefined}>
-                  <td>{source.label}</td>
-                  <td title={formatAbsolute(refreshedAt)}>
-                    {row?.error ? 'błąd' : formatRelativePast(refreshedAt, now)}
-                  </td>
-                  <td>
-                    {formatRelativeFuture(nextAt, now)}
-                    {source.versionChecked && (
-                      <span className="data-sources-note"> (wg wersji)</span>
-                    )}
-                  </td>
-                  <td className="data-sources-action-cell">
-                    <button
-                      type="button"
-                      className="popup-btn"
-                      onClick={() => setSelectedId(source.id)}
-                      title="Pokaż surowe dane"
-                    >
-                      Podgląd
-                    </button>
-                    <button
-                      type="button"
-                      className="popup-btn"
-                      onClick={() => handleRefresh(source)}
-                      disabled={row?.loading}
-                      title="Pobierz teraz"
-                    >
-                      {row?.loading ? '…' : 'Odśwież'}
-                    </button>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+        <div className="data-sources__list">
+          <div className="data-sources__head">
+            <span>Źródło</span>
+            <span>Pobrano</span>
+            <span>Następne</span>
+            <span />
+          </div>
+          {DATA_SOURCES.map(source => {
+            const row = rows[source.id];
+            const refreshedAt = row?.refreshedAt;
+            const nextAt = computeNextFetch(refreshedAt, source.ttlMs);
+            const due = nextAt !== undefined && nextAt <= now;
+            const status: RowStatus = row?.loading
+              ? 'loading'
+              : row?.error
+                ? 'error'
+                : !refreshedAt
+                  ? 'empty'
+                  : due
+                    ? 'due'
+                    : 'ok';
+            return (
+              <div key={source.id} className={`data-sources__item data-sources__item--${status}`}>
+                <button
+                  type="button"
+                  className="data-sources__name"
+                  onClick={() => setSelectedId(source.id)}
+                  title="Pokaż pobrane dane"
+                >
+                  <span className="data-sources__dot" title={STATUS_TITLES[status]} />
+                  <span className="data-sources__name-text">{source.label}</span>
+                </button>
+                <span className="data-sources__time" title={formatAbsolute(refreshedAt)}>
+                  {row?.error
+                    ? <span className="data-sources__badge data-sources__badge--error">błąd</span>
+                    : formatRelativePast(refreshedAt, now)}
+                </span>
+                <span
+                  className="data-sources__time"
+                  title={source.versionChecked
+                    ? 'Pobierane, gdy na serwerze pojawi się nowa wersja — czas to tylko szacunek'
+                    : undefined}
+                >
+                  {formatRelativeFuture(nextAt, now)}
+                  {source.versionChecked && <span className="data-sources__badge">wg wersji</span>}
+                </span>
+                <div className="data-sources__actions">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="popup-btn--icon"
+                    onClick={() => setSelectedId(source.id)}
+                    title="Pokaż pobrane dane"
+                  >
+                    <Eye size={15} strokeWidth={1.75} />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="popup-btn--icon"
+                    onClick={() => handleRefresh(source)}
+                    disabled={row?.loading}
+                    title="Pobierz teraz"
+                  >
+                    <RefreshCw
+                      size={15}
+                      strokeWidth={1.75}
+                      className={row?.loading ? 'data-sources__spin' : undefined}
+                    />
+                  </Button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       )}
     </DockablePopupWrapper>
   );

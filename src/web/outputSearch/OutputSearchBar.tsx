@@ -97,7 +97,7 @@ function SearchBar({ initialQuery, outputWrapper, splitBottom, skip, commandInpu
     }, [outputWrapper]);
 
     useEffect(() => paintMatches(matches, current), [matches, current]);
-    useEffect(() => clearMatches, []);
+    useEffect(() => () => clearMatches(), []);
 
     // Pinned to the output's top right, wherever the layout has put the output.
     useLayoutEffect(() => {

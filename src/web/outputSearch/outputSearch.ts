@@ -64,26 +64,31 @@ function highlightApi(): { registry: HighlightRegistry; Highlight: new (...range
     return { registry: css.highlights, Highlight };
 }
 
-const ALL = "output-search";
-const CURRENT = "output-search-current";
+/** The `::highlight()` names painted: every hit, and the current one. */
+export interface HighlightNames {
+    all: string;
+    current: string;
+}
+
+const OUTPUT_NAMES: HighlightNames = { all: "output-search", current: "output-search-current" };
 
 /**
  * Paint the hits with the CSS Custom Highlight API: nothing is inserted into the
  * output, so the game text, its listeners and the trimming stay as they are.
  */
-export function paintMatches(matches: readonly OutputMatch[], current: number): void {
+export function paintMatches(matches: readonly OutputMatch[], current: number, names = OUTPUT_NAMES): void {
     const api = highlightApi();
     if (!api) return;
-    api.registry.set(ALL, new api.Highlight(...matches.map(m => m.range)));
+    api.registry.set(names.all, new api.Highlight(...matches.map(m => m.range)));
     const hit = matches[current];
-    if (hit) api.registry.set(CURRENT, new api.Highlight(hit.range));
-    else api.registry.delete(CURRENT);
+    if (hit) api.registry.set(names.current, new api.Highlight(hit.range));
+    else api.registry.delete(names.current);
 }
 
-export function clearMatches(): void {
+export function clearMatches(names = OUTPUT_NAMES): void {
     const api = highlightApi();
-    api?.registry.delete(ALL);
-    api?.registry.delete(CURRENT);
+    api?.registry.delete(names.all);
+    api?.registry.delete(names.current);
 }
 
 /**
