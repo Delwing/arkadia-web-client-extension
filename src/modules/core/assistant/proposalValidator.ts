@@ -30,7 +30,7 @@
  */
 
 import { stripPolishCharacters } from '@client/stripPolishCharacters';
-import { CONDITION_OPERATORS, SUPPORTED_EVENTS, type BuiltInMacroType, type EventArg, type TriggerCondition, type UserMacro, type UserTrigger } from '@client/scripts/userTriggers';
+import { CONDITION_OPERATORS, SUPPORTED_EVENTS, TEXT_STYLES, type BuiltInMacroType, type EventArg, type TriggerCondition, type UserMacro, type UserTrigger } from '@client/scripts/userTriggers';
 import type { UserAlias } from '@client/scripts/userAliases';
 import type { CustomBind } from '../keymapTypes';
 import {
@@ -899,8 +899,19 @@ function validateMacro(raw: unknown, index: number, triggerType: 'pattern' | 'ev
 
     switch (type) {
         case 'color': {
+            for (const style of TEXT_STYLES) {
+                const value = raw[style];
+                if (value === undefined) continue;
+                if (typeof value !== 'boolean') {
+                    issues.push(err('wrongValueType', `${path}.${style}`, `Pole "${style}" musi być true albo false.`));
+                } else if (value) {
+                    macro[style] = true;
+                }
+            }
             if (raw.color === undefined && raw.background === undefined) {
-                issues.push(err('missingMacroColor', `${path}.color`, 'Makro "color" wymaga pola "color" (kolor tekstu) lub "background" (kolor tła).'));
+                if (!TEXT_STYLES.some(style => macro[style])) {
+                    issues.push(err('missingMacroColor', `${path}.color`, `Makro "color" wymaga pola "color" (kolor tekstu), "background" (kolor tła) lub stylu (${TEXT_STYLES.join(', ')}: true).`));
+                }
                 break;
             }
             for (const field of ['color', 'background'] as const) {

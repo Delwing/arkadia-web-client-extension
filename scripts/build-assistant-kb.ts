@@ -1302,6 +1302,7 @@ const USER_DOCS = [
     'docs/BINDS.md',
     'docs/SHORTCUTS.md',
     'docs/ALIASES.md',
+    'docs/AUTOMATYZACJE.md',
     'docs/SKRYPTY.md',
     'docs/SYNCHRONIZACJA.md',
     'public/llms.txt',
@@ -1333,7 +1334,8 @@ function buildDocs(): DocEntry[] {
     const docs: DocEntry[] = [];
     for (const relPath of USER_DOCS) {
         const abs = path.join(ROOT, relPath);
-        const content = readFile(abs).replace(/\r\n/g, '\n').trim();
+        // Screenshots mean nothing to the assistant.
+        const content = readFile(abs).replace(/\r\n/g, '\n').replace(/^!\[[^\]]*\]\([^)]*\)\n+/gm, '').trim();
         const titleMatch = content.match(/^#\s+(.+)$/m);
         const headings = [...content.matchAll(/^#{2,3}\s+(.+)$/gm)].map(m => m[1].trim());
         docs.push({

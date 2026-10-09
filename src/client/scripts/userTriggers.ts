@@ -14,6 +14,11 @@ export interface UserMacro {
     type: BuiltInMacroType | string;  // string allows plugin macros like "plugin:..."
     color?: string;  // color: the match's colour; echo: the printed line's, absent = default
     background?: string;  // color only: the match's background, absent = unchanged
+    // color only: text styles laid over the match, absent = unchanged
+    bold?: boolean;
+    italic?: boolean;
+    underline?: boolean;
+    strikethrough?: boolean;
     to?: string;
     command?: string;
     soundKey?: string;
@@ -43,6 +48,10 @@ export interface UserMacro {
     wrapSuffix?: string;
     wrapScope?: 'match' | 'line';
 }
+
+/** The text styles a color action can lay over its match. */
+export const TEXT_STYLES = ['bold', 'italic', 'underline', 'strikethrough'] as const;
+export type TextStyle = typeof TEXT_STYLES[number];
 
 export type TriggerType = 'pattern' | 'event';
 
@@ -458,6 +467,10 @@ function applyMacrosToMatch(
                 }
                 if (macro.background) {
                     line.applyFormat(matchRange, { background: createColorFormat(macro.background).foreground });
+                }
+                // Only the styles turned on: an undefined key would clear one already there.
+                for (const style of TEXT_STYLES) {
+                    if (macro[style]) line.applyFormat(matchRange, { [style]: true });
                 }
                 break;
             case 'replace':

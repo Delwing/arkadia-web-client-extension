@@ -167,7 +167,13 @@ export function TriggerEditor({ trigger, onChange, sounds, onRequestSoundUpload,
                                 <span
                                     key={i}
                                     className={`${s.match ? "automation-out__match" : ""}${s.effect ? " is-effect" : ""}`}
-                                    style={s.color || s.background ? { color: s.color, backgroundColor: s.background } : undefined}
+                                    style={{
+                                        color: s.color,
+                                        backgroundColor: s.background,
+                                        fontWeight: s.bold ? "bold" : undefined,
+                                        fontStyle: s.italic ? "italic" : undefined,
+                                        textDecoration: [s.underline && "underline", s.strikethrough && "line-through"].filter(Boolean).join(" ") || undefined,
+                                    }}
                                 >
                                     {s.text}
                                 </span>

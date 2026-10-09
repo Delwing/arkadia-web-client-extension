@@ -9,7 +9,15 @@ import shortcutsMd from "../../../docs/SHORTCUTS.md?raw";
 import aliasesMd from "../../../docs/ALIASES.md?raw";
 import synchronizacjaMd from "../../../docs/SYNCHRONIZACJA.md?raw";
 import skryptyMd from "../../../docs/SKRYPTY.md?raw";
+import automatyzacjeMd from "../../../docs/AUTOMATYZACJE.md?raw";
 import { objectListDocHtml, objectListDocInit } from "../objectListDoc";
+
+/** Screenshots under docs/img, emitted as assets; pages link them as `img/...`. */
+const IMAGES = import.meta.glob<string>("../../../docs/img/**/*.png", { eager: true, query: "?url", import: "default" });
+
+/** Points a page's `](img/...)` links at the built image, so they resolve wherever the window opens. */
+const withImages = (md: string) =>
+  md.replace(/\]\((img\/[^)\s]+)\)/g, (_, src: string) => `](${IMAGES[`../../../docs/${src}`] ?? src})`);
 
 /** Where a page sits in the table of contents. */
 export type DocGroup = "Start" | "Gra" | "Klient";
@@ -35,7 +43,8 @@ export const DOC_PAGES: DocPageDef[] = [
   { key: "herbs", title: "Zioła", group: "Gra", md: herbsMd },
   { key: "binds", title: "Bindowanie", group: "Klient", md: bindsMd },
   { key: "shortcuts", title: "Skróty lokacji", group: "Klient", md: shortcutsMd },
-  { key: "skrypty", title: "Skrypty i automatyzacja", group: "Klient", md: skryptyMd },
+  { key: "automatyzacje", title: "Automatyzacje", group: "Klient", md: withImages(automatyzacjeMd) },
+  { key: "skrypty", title: "Skrypty i wtyczki", group: "Klient", md: skryptyMd },
   { key: "sync", title: "Synchronizacja", group: "Klient", md: synchronizacjaMd },
   { key: "aliases", title: "Inne komendy", group: "Klient", md: aliasesMd },
 ];

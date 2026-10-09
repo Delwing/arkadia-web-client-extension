@@ -1033,6 +1033,12 @@ select.popup-input.popup-input--control {
   gap: 10px;
   min-height: var(--ui-ctrl, 28px);
 }
+.trigger-action__styles.popup-segmented {
+  align-self: center;
+}
+.trigger-action__styles .popup-segmented__item {
+  padding: 0 6px;
+}
 .color-slot {
   display: inline-flex;
   align-items: center;

@@ -417,6 +417,34 @@ describe('userTriggers', () => {
     expect(client.sendCommand).toHaveBeenCalledTimes(1);
   });
 
+  test('color applies text styles to match', () => {
+    const client = new FakeClient();
+    initUserTriggers((client as unknown) as any);
+    const list: UserTrigger[] = [{ pattern: 'foo', macros: [{ type: 'color', bold: true, underline: true }] }];
+    globalStorage.set('triggers', list);
+    const result = client.Triggers.parseLine(new AnsiAwareBuffer('bar foo baz'), '');
+
+    const segments = result?.getSegments() ?? [];
+    const fooSegment = segments.find(seg => seg.text === 'foo');
+    expect(fooSegment?.state?.bold).toBe(true);
+    expect(fooSegment?.state?.underline).toBe(true);
+    expect(fooSegment?.state?.italic).toBeUndefined();
+    expect(segments.find(seg => seg.text === 'bar ')?.state?.bold).toBeUndefined();
+  });
+
+  test('color styles keep styles set by an earlier action', () => {
+    const client = new FakeClient();
+    initUserTriggers((client as unknown) as any);
+    const list: UserTrigger[] = [{ pattern: 'foo', macros: [{ type: 'color', italic: true }, { type: 'color', color: '#ff0000', bold: true }] }];
+    globalStorage.set('triggers', list);
+    const result = client.Triggers.parseLine(new AnsiAwareBuffer('bar foo baz'), '');
+
+    const fooSegment = (result?.getSegments() ?? []).find(seg => seg.text === 'foo');
+    expect(fooSegment?.state?.italic).toBe(true);
+    expect(fooSegment?.state?.bold).toBe(true);
+    expect(fooSegment?.state?.foreground).toBeDefined();
+  });
+
   test('slowBlink applies slow blink to match', () => {
     const client = new FakeClient();
     initUserTriggers((client as unknown) as any);

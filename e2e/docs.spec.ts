@@ -82,6 +82,19 @@ test.describe('Dokumentacja', () => {
         await expect(win.locator('.doc-custom .js-demo-list')).not.toBeEmpty();
         await expect(win.locator('.doc-nav__sub button').first()).toHaveText('Scenariusz użyty w przykładach');
     });
+
+    test('Automatyzacje shows its screenshots', async ({ page }) => {
+        await openDocs(page);
+        const win = docsWindow(page);
+        await win.locator('.doc-nav__page', { hasText: 'Automatyzacje' }).click();
+        await expect(win.locator('.doc-crumb')).toHaveText('Klient / Automatyzacje');
+        const shot = win.locator('.doc-text img').first();
+        await expect(shot).toBeVisible();
+        await expect.poll(() => shot.evaluate(img => (img as HTMLImageElement).naturalWidth), {
+            message: 'the screenshot should load',
+        }).toBeGreaterThan(0);
+        await page.screenshot({ path: 'test-results/docs-automatyzacje.png' });
+    });
 });
 
 test.describe('Dokumentacja on a phone', () => {

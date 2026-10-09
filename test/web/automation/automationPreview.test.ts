@@ -57,6 +57,13 @@ describe('automationPreview', () => {
             ]);
         });
 
+        it('shows the text styles of a color action', () => {
+            const { segments } = previewTrigger('Goblin atakuje cie!', [match], [
+                { type: 'color', bold: true, strikethrough: true },
+            ]);
+            expect(segments[0]).toEqual({ text: 'Goblin atakuje cie', match: true, bold: true, strikethrough: true });
+        });
+
         it('fills $1 and falls back to the matched text for an empty message', () => {
             const { outputs } = previewTrigger('Goblin atakuje cie!', [match], [
                 { type: 'command', command: 'zabij $1' },

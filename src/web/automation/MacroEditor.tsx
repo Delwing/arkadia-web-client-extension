@@ -1,16 +1,24 @@
 import React, { useState } from 'react';
+import { Bold, Italic, Strikethrough, Underline } from 'lucide-react';
 import { CustomSound } from '@modules/core/customSounds';
 import {
     isTriggerMacroAvailable,
     type PluginTriggerMacro,
 } from '@modules/core/pluginTriggerMacroRegistry';
 import { Check, DeleteButton, Field, Input, Select } from '@web-ui/primitives/index.ts';
-import type { UserMacro } from '@client/scripts/userTriggers';
+import { TEXT_STYLES, type TextStyle, type UserMacro } from '@client/scripts/userTriggers';
 import type { DimEasing } from '@client/ansi/FormatState';
 import type { UserScript } from '@client/scripts/userScripts';
 import { getAutomationGroups } from '@modules/core/automation';
 import { globalStorage } from '@modules/core/storage';
 import { ColorSlot } from './ColorSlot';
+
+const TEXT_STYLE_BUTTONS: Record<TextStyle, { title: string; icon: typeof Bold }> = {
+    bold: { title: 'Pogrubienie', icon: Bold },
+    italic: { title: 'Kursywa', icon: Italic },
+    underline: { title: 'Podkreślenie', icon: Underline },
+    strikethrough: { title: 'Przekreślenie', icon: Strikethrough },
+};
 
 function storedScripts(): UserScript[] {
     const value = globalStorage.get('automationScripts');
@@ -125,6 +133,7 @@ export function MacroEditor({
                             soundKey: nextType === 'beep' ? macro.soundKey || 'beep' : undefined,
                             color: nextType === 'color' && macro.color === undefined && macro.background === undefined ? '#ffff00' : macro.color,
                             background: nextType === 'color' ? macro.background : undefined,
+                            ...Object.fromEntries(TEXT_STYLES.map(style => [style, nextType === 'color' ? macro[style] : undefined])),
                             scriptId: nextType === 'script' ? macro.scriptId ?? storedScripts()[0]?.id : undefined,
                             groupId: nextType === 'group' ? macro.groupId ?? getAutomationGroups()[0]?.id : undefined,
                             groupState: nextType === 'group' ? macro.groupState ?? 'toggle' : undefined,
@@ -132,7 +141,7 @@ export function MacroEditor({
                     }}
                 >
                     {!lineless && <option value="uppercase">Wielkie litery</option>}
-                    {!lineless && <option value="color">Koloruj</option>}
+                    {!lineless && <option value="color">Koloruj / formatuj</option>}
                     {!lineless && <option value="replace">Zamień</option>}
                     {!lineless && <option value="wrap">Otocz tekstem</option>}
                     <option value="beep">Dźwięk</option>
@@ -491,6 +500,24 @@ export function MacroEditor({
                             fallback="#800000"
                             onChange={background => onChange({ ...macro, background })}
                         />
+                    )}
+                    {macro.type === 'color' && (
+                        <div className="popup-segmented trigger-action__styles">
+                            {TEXT_STYLES.map(style => {
+                                const { title, icon: Icon } = TEXT_STYLE_BUTTONS[style];
+                                return (
+                                    <label key={style} title={title} className={`popup-segmented__item${macro[style] ? ' is-active' : ''}`}>
+                                        <input
+                                            type="checkbox"
+                                            className="popup-segmented__input"
+                                            checked={!!macro[style]}
+                                            onChange={e => onChange({ ...macro, [style]: e.target.checked || undefined })}
+                                        />
+                                        <Icon size={14} strokeWidth={2} />
+                                    </label>
+                                );
+                            })}
+                        </div>
                     )}
                 </div>
             )}

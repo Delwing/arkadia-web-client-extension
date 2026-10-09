@@ -21,7 +21,9 @@ import { aliasActions, aliasCommandMirror, type UserAlias } from "@client/script
 import {
     CONDITION_OPERATORS,
     SUPPORTED_EVENTS,
+    TEXT_STYLES,
     canonicalEventId,
+    type TextStyle,
     type TriggerCondition,
     type UserMacro,
     type UserTrigger,
@@ -407,12 +409,23 @@ export function eventLabel(event: string | undefined): string {
     return SUPPORTED_EVENTS.find(e => e.id === id)?.label ?? id;
 }
 
+const TEXT_STYLE_WORDS: Record<TextStyle, string> = {
+    bold: "pogrubienie",
+    italic: "kursywa",
+    underline: "podkreślenie",
+    strikethrough: "przekreślenie",
+};
+
 /** A few words per action, for the row under the pattern. */
 export function actionShort(m: UserMacro, pluginLabel?: (type: string) => string | undefined): string {
     switch (m.type) {
         case "command": return m.command?.trim() || "komenda";
         case "uppercase": return "wielkie litery";
-        case "color": return m.background ? (m.color ? "koloruj tekst i tło" : "koloruj tło") : "koloruj";
+        case "color": {
+            const paint = m.background ? (m.color ? "koloruj tekst i tło" : "koloruj tło") : m.color ? "koloruj" : "";
+            const styles = TEXT_STYLES.filter(s => m[s]).map(s => TEXT_STYLE_WORDS[s]);
+            return [paint, ...styles].filter(Boolean).join(", ") || "formatuj";
+        }
         case "replace": return m.to ? `zamień na "${m.to}"` : "usuń tekst";
         case "wrap": return "otocz";
         case "beep": return "dźwięk";

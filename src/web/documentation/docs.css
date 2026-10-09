@@ -324,6 +324,14 @@
 .doc-text th,
 .doc-text td { padding: 6px 10px; border: 1px solid var(--popup-border); text-align: left; vertical-align: top; }
 .doc-text th { color: var(--popup-text-dim); font-size: calc(12px * var(--window-font-scale, 1)); font-weight: 600; }
+.doc-text img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 4px 0;
+  border: 1px solid var(--popup-border);
+  border-radius: 6px;
+}
 .doc code,
 .doc-tip code {
   padding: 0 4px;

@@ -99,15 +99,21 @@ test('colour action sets a background with an empty text swatch', async ({page})
     await expect(text, 'x clears the text colour').toHaveClass(/is-empty/);
     expect(await colors.boundingBox(), 'clearing a colour does not shift the row').toEqual(before);
 
+    const bold = action.getByTitle('Pogrubienie');
+    await bold.click();
+    await expect(bold, 'the style toggle shows it is on').toHaveClass(/is-active/);
+
     await modal.getByTitle('Linia do testu').fill('Widzisz ognisty smok.');
     await expect(modal.locator('.automation-out__match'), 'preview shows the background')
         .toHaveCSS('background-color', 'rgb(0, 64, 128)');
+    await expect(modal.locator('.automation-out__match'), 'preview shows the bold').toHaveCSS('font-weight', '700');
     await saveEditor(modal);
     await closeAutomation(modal);
 
     await pushText(page, 'Nad toba leci ognisty smok!');
     const match = page.locator('#main_text_output_msg_wrapper span', {hasText: /^ognisty smok$/}).last();
     await expect(match, 'game line gets the background').toHaveCSS('background-color', 'rgb(0, 64, 128)');
+    await expect(match, 'game line gets the bold').toHaveCSS('font-weight', '700');
 });
 
 test('GMCP event trigger lets the user pick a known GMCP package', async ({page}) => {

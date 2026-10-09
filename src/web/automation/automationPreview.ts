@@ -8,7 +8,7 @@
  * I think" the text and the colour are what matter.
  */
 import { expandAliasCommand, substituteGroups } from "@client/scripts/userAliases";
-import { interpolateMatch, type UserMacro } from "@client/scripts/userTriggers";
+import { interpolateMatch, TEXT_STYLES, type UserMacro } from "@client/scripts/userTriggers";
 import { actionShort } from "./automationModel";
 
 export interface PatternTest {
@@ -74,6 +74,10 @@ export interface LineSegment {
     match?: boolean;
     color?: string;
     background?: string;
+    bold?: boolean;
+    italic?: boolean;
+    underline?: boolean;
+    strikethrough?: boolean;
     /** Blinks or pulses in the game window. */
     effect?: boolean;
 }
@@ -129,7 +133,10 @@ export function previewTrigger(text: string, matches: RegExpMatchArray[], macros
             switch (macro.type) {
                 case "uppercase": seg = { ...seg, text: seg.text.toUpperCase() }; break;
                 case "replace": seg = { ...seg, text: macro.to ?? "" }; break;
-                case "color": seg = { ...seg, color: macro.color ?? seg.color, background: macro.background ?? seg.background }; break;
+                case "color":
+                    seg = { ...seg, color: macro.color ?? seg.color, background: macro.background ?? seg.background };
+                    for (const style of TEXT_STYLES) if (macro[style]) seg = { ...seg, [style]: true };
+                    break;
                 case "slowBlink":
                 case "rapidBlink":
                 case "dim": seg = { ...seg, effect: true }; break;

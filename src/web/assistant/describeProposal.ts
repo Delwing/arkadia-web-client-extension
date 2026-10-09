@@ -61,7 +61,7 @@ function currentSettingValue(key: string): unknown {
 
 const MACRO_LABELS: Record<string, string> = {
     uppercase: 'zamień na wielkie litery',
-    color: 'pokoloruj',
+    color: 'koloruj / formatuj',
     replace: 'zamień tekst',
     beep: 'odtwórz dźwięk',
     mute: 'wycisz',
@@ -77,9 +77,16 @@ const MACRO_LABELS: Record<string, string> = {
     echo: 'wypisz tekst',
 };
 
-function describeMacro(macro: { type: string; command?: string; color?: string; background?: string; to?: string; message?: string; soundKey?: string }): string {
+function describeMacro(macro: { type: string; command?: string; color?: string; background?: string; to?: string; message?: string; soundKey?: string; bold?: boolean; italic?: boolean; underline?: boolean; strikethrough?: boolean }): string {
     const label = MACRO_LABELS[macro.type] ?? macro.type;
-    const colors = [macro.color, macro.background && `tło ${macro.background}`].filter(Boolean).join(', ');
+    const colors = [
+        macro.color,
+        macro.background && `tło ${macro.background}`,
+        macro.bold && 'pogrubienie',
+        macro.italic && 'kursywa',
+        macro.underline && 'podkreślenie',
+        macro.strikethrough && 'przekreślenie',
+    ].filter(Boolean).join(', ');
     const detail = macro.command ?? (colors || undefined) ?? macro.to ?? macro.message ?? macro.soundKey;
     return detail ? `${label}: ${detail}` : label;
 }

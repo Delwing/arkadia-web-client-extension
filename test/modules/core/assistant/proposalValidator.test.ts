@@ -545,6 +545,19 @@ describe('trigger proposals - pattern', () => {
         }))).toEqual(['invalidColor']);
     });
 
+    it('accepts text styles for the color macro, alone or with a colour', () => {
+        const stylesOnly = validateProposal({
+            kind: 'trigger', pattern: 'abc', macros: [{ type: 'color', bold: true, italic: true }],
+        });
+        expect(errorCodes(stylesOnly)).toEqual([]);
+        expect(validateProposal({
+            kind: 'trigger', pattern: 'abc', macros: [{ type: 'color', color: '#ffff00', underline: true }],
+        }).ok).toBe(true);
+        expect(errorCodes(validateProposal({
+            kind: 'trigger', pattern: 'abc', macros: [{ type: 'color', bold: 'tak' }],
+        }))).toEqual(['wrongValueType', 'missingMacroColor']);
+    });
+
     it('allows an empty replacement for the replace macro', () => {
         expect(validateProposal({
             kind: 'trigger', pattern: 'spam', macros: [{ type: 'replace', to: '' }],
