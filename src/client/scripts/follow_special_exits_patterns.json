@@ -908,7 +908,7 @@
     "script": "trigger_func_skrypty_ui_special_exits_follow(\"wejdz do dziury\")",
     "patterns": [
       {
-        "pattern": "podchodzi do waskiej dziury pod jednym drzew i po chwili w nim znika.",
+        "pattern": "podchodzi do waskiej dziury pod jednym z drzew i po chwili w niej znika.",
         "type": 0
       }
     ]

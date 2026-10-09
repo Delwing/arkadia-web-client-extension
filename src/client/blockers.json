@@ -168,6 +168,18 @@
     "type": "1"
   },
   {
+    "pattern": "Probujesz przecisnac sie przez krzewy w rozrzedzonym miejscu, rosliny drapia cie po twarzy, zupelnie jakby nie chcac przepuscic intruza.",
+    "type": "0"
+  },
+  {
+    "pattern": "Przejscie jest zastawione glazem.",
+    "type": "0"
+  },
+  {
+    "pattern": "Nie mozesz sie tam udac, gdyz krepuja cie liny.",
+    "type": "0"
+  },
+  {
     "pattern": "Ochotnik zagradza ci droge!",
     "type": "2"
   },
