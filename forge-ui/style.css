@@ -632,6 +632,7 @@ body::after {
    cells, chips in a grid or as "Label: value" lines, the exit compass. */
 .footer-band { display: flex; align-items: flex-start; gap: 14px; padding: 0 2px; }
 .footer-cell { display: flex; align-items: flex-start; min-width: 0; }
+.footer-cell + .footer-cell { margin-left: 14px; }
 .footer-row { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .footer-column { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .footer-cell .gems { flex-wrap: wrap; }

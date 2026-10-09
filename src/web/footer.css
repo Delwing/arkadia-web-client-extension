@@ -510,6 +510,10 @@ body[data-urgent-chips-first="1"] .status-slot:has(> .chip--danger) {
   align-self: stretch;
   min-width: 0;
 }
+/* Cells side by side (the Arkadia columns) keep clear of one another. */
+#footer-layout .footer-cell + .footer-cell {
+  margin-left: 16px;
+}
 #footer-layout .footer-row {
   display: flex;
   align-items: center;
@@ -522,10 +526,39 @@ body[data-urgent-chips-first="1"] .status-slot:has(> .chip--danger) {
   gap: 4px;
   min-width: 0;
 }
+/* Vitals N to a line (the vitals block's perRow) share their cell evenly, across
+   and down. Each vital spans a label track and a meter track of its column
+   (subgrid), so in a column the labels line up and every meter starts at one
+   point and runs to the column's end. */
 .status-vitals--grid {
   display: grid;
-  grid-template-columns: repeat(var(--vitals-per-row), max-content);
-  gap: 4px 14px;
+  grid-template-columns: repeat(var(--vitals-per-row), max-content minmax(0, 1fr));
+  grid-auto-rows: 1fr;
+  align-content: stretch;
+  /* Between vitals; between a label and its meter is the vital's own gap. */
+  gap: 4px 18px;
+}
+.status-vitals--grid .vital {
+  display: grid;
+  grid-column: span 2;
+  grid-template-columns: subgrid;
+  column-gap: 6px;
+  align-items: center;
+  min-width: 0;
+}
+.status-vitals--grid .vital__pips,
+.status-vitals--grid .vital__bar {
+  width: auto;
+  min-width: 0;
+}
+/* The vitals take their whole cell, so the lines spread over its height. */
+#footer-layout .footer-cell > .status-vitals--grid,
+#footer-layout .footer-cell > .footer-vitals {
+  flex: 1;
+  align-self: stretch;
+}
+#footer-layout .footer-cell > .footer-vitals > .status-vitals--grid {
+  flex: 1;
 }
 /* Postępy as an experience bar under the vitals (the vitals block's improveBar):
    the stack takes the band's width when it has the band to itself. */

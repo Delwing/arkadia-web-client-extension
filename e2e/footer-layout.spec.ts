@@ -136,6 +136,32 @@ test.describe('Footer layout', () => {
         expect(await vitals.locator('.status-vitals').evaluate((el) => getComputedStyle(el).borderRightWidth)).toBe('0px');
     });
 
+    test('the Arkadia vitals share their cell evenly, labels and meters aligned in columns', async ({page}) => {
+        await page.setViewportSize({width: 1280, height: 800});
+        await pickLayout(page, 'arkadia');
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+        await pushGmcp(page, 'char.state', {hp: 6, fatigue: 2, stuffed: 1, soaked: 1, mana: 3, encumbrance: 2, intox: 3});
+
+        const grid = page.locator('#char-state .status-vitals--grid');
+        const vitals = grid.locator('.vital');
+        await expect(vitals).toHaveCount(7);
+        const box = async (locator: ReturnType<typeof page.locator>) => locator.evaluate((el) => {
+            const rect = el.getBoundingClientRect();
+            return {left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom};
+        });
+        // Four to a line: the first and fifth vital share a column.
+        const [first, fifth, fourth] = [vitals.nth(0), vitals.nth(4), vitals.nth(3)];
+        expect((await box(fifth.locator('.vital__label'))).left).toBeCloseTo((await box(first.locator('.vital__label'))).left, 0);
+        const meter = '.vital__label + *';
+        expect((await box(fifth.locator(meter))).left).toBeCloseTo((await box(first.locator(meter))).left, 0);
+        // The lines spread over the cell's height, the columns over its width.
+        const cell = await box(grid);
+        expect((await box(fifth)).top).toBeGreaterThan((cell.top + cell.bottom) / 2);
+        expect((await box(fourth)).right).toBeGreaterThan(cell.right - 6);
+    });
+
     test('a phone keeps the stock footer whatever the pick', async ({page}) => {
         await page.setViewportSize({width: 390, height: 800});
         await pickLayout(page, 'arkadia');
