@@ -56,6 +56,24 @@ describe('NotificationManager', () => {
     expect(mockNotification).toHaveBeenCalledWith('test message');
   });
 
+  test('notify via service worker shows each alert untagged', async () => {
+    // A shared tag made a repeat replace the one still in macOS Notification
+    // Center without popping a new banner.
+    (global as any).Notification = Object.assign(jest.fn(), { permission: 'granted' });
+    const showNotification = jest.fn().mockResolvedValue(undefined);
+    const original = (navigator as any).serviceWorker;
+    (navigator as any).serviceWorker = { ready: Promise.resolve({ showNotification }) };
+
+    const mgr = new NotificationManager();
+    mgr.notify('Jestes ciezko ranny');
+    mgr.notify('Jestes ciezko ranny');
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(showNotification).toHaveBeenCalledTimes(2);
+    expect(showNotification).toHaveBeenCalledWith('Jestes ciezko ranny');
+    (navigator as any).serviceWorker = original;
+  });
+
   test('notify does nothing when Notification is undefined', () => {
     delete (global as any).Notification;
     const mgr = new NotificationManager();
