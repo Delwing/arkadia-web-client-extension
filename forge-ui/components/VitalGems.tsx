@@ -29,7 +29,8 @@ const VITALS: VitalCfg[] = [
     { key: 'panic', name: 'Panika', icon: 'i-pan', hue: '--panic', max: 4, default: 0 },
 ];
 
-export default function VitalGems() {
+/** `improveBar`: Postępy as the full-width bar over the gems, or a gem among them. */
+export default function VitalGems({ improveBar = true }: { improveBar?: boolean }) {
     const [vitalState, setVitalState] = useState<Record<string, number>>({});
     const [charOptions, setCharOptions] = useState<{ form?: number }>({});
 
@@ -46,14 +47,14 @@ export default function VitalGems() {
     // Read the live "improve" points from GMCP like every other vital; the bar
     // stays hidden (null) until char.state provides a value.
     const improveRaw = vitalState[improveCfg.key];
-    const improveValue = typeof improveRaw === 'number'
+    const improveValue = improveBar && typeof improveRaw === 'number'
         ? Math.max(0, Math.min(improveCfg.max, improveRaw))
         : null;
 
     return (
         <>
             <div className="gems" id="alt-gems">
-                {VITALS.filter((cfg) => cfg.key !== 'improve').map((cfg) => {
+                {VITALS.filter((cfg) => !improveBar || cfg.key !== 'improve').map((cfg) => {
                     const raw = vitalState[cfg.key];
                     const defined = typeof raw === 'number';
 

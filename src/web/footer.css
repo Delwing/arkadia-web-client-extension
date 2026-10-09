@@ -196,6 +196,12 @@
 .status-vitals:empty {
   display: none;
 }
+/* Nothing after the vitals to set them apart from. */
+.status-vitals:last-child:not(:empty),
+.footer-vitals:last-child .status-vitals:not(:empty) {
+  padding-right: 0;
+  border-right: 0;
+}
 .vital {
   --vital-color: var(--footer-vital-ok);
   display: inline-flex;
@@ -521,9 +527,69 @@ body[data-urgent-chips-first="1"] .status-slot:has(> .chip--danger) {
   grid-template-columns: repeat(var(--vitals-per-row), max-content);
   gap: 4px 14px;
 }
+/* Postępy as an experience bar under the vitals (the vitals block's improveBar):
+   the stack takes the band's width when it has the band to itself. */
+.footer-vitals {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+.footer-band > .footer-vitals:only-child,
+.footer-cell > .footer-vitals {
+  flex: 1;
+}
+.improve-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.improve-label {
+  flex-shrink: 0;
+  color: var(--popup-text-subtle);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.improve-track {
+  display: grid;
+  flex: 1;
+  grid-template-columns: repeat(var(--improve-max), minmax(0, 1fr));
+  gap: 2px;
+  min-width: 60px;
+}
+.improve-seg {
+  height: 5px;
+  border-radius: 2px;
+  background-color: var(--popup-control-active-bg);
+}
+.improve-seg.on {
+  background-color: var(--popup-accent);
+}
+.improve-value {
+  flex-shrink: 0;
+  color: var(--popup-text);
+  font-family: var(--output-font-family);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+}
 .footer-cell > .status-vitals:not(:empty) {
   padding-right: 0;
   border-right: 0;
+}
+/* Chips on as many lines as they need (a chip block arranged to wrap). */
+.footer-strip {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.footer-strip > .status-slot:empty {
+  display: none;
 }
 .footer-chip-grid {
   display: grid;

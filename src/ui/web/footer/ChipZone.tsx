@@ -137,8 +137,8 @@ export default function ChipZone({ block, claimed }: { block: FooterChipsBlock; 
     );
   }
   return (
-    <div className={`footer-strip${look}`}>
-      {items.map((item) => <FooterItemView key={item.id} item={item} />)}
+    <div id={rest ? "footer-chips" : undefined} className={`footer-strip${look}`}>
+      {items.map((item) => <Slot key={item.id} item={item} />)}
     </div>
   );
 }

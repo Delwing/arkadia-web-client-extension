@@ -17,7 +17,7 @@ export const forgeFooterSkin: FooterSkin = {
     },
     separator: () => <div className="hud-seam" />,
     block(node) {
-        if (node.block === 'vitals') return <VitalGems />;
+        if (node.block === 'vitals') return <VitalGems improveBar={node.improveBar === true} />;
         if (node.block === 'reconnect') return <ReconnectChip />;
         return undefined;
     },

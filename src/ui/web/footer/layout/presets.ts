@@ -21,7 +21,7 @@ export const STOCK_FOOTER_LAYOUT: FooterLayout = {
 /**
  * The forge HUD plate: the location binds (always there, so the plate keeps
  * its height) with the reconnect chip at their end, then the chips, then the
- * vitals.
+ * vitals with Postępy as a full-width bar under them.
  */
 export const FORGE_FOOTER_LAYOUT: FooterLayout = {
   bands: [
@@ -32,7 +32,7 @@ export const FORGE_FOOTER_LAYOUT: FooterLayout = {
       ],
     },
     { children: [{ type: "block", block: "chips", items: "rest", arrange: "wrap" }] },
-    { children: [{ type: "block", block: "vitals" }] },
+    { children: [{ type: "block", block: "vitals", improveBar: true }] },
   ],
 };
 

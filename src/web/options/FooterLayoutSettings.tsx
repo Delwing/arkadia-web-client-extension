@@ -71,6 +71,9 @@ export default function FooterLayoutSettings({ layout, tweaks, onChange }: Foote
             {values && offered("vitalsPerRow") && (
                 <RangeField id="ui-footer-vitals-per-row" label="Pasków stanu w linii" value={values.vitalsPerRow} min={1} max={11} step={1} onChange={(v) => set("vitalsPerRow", v)} />
             )}
+            {values && offered("improveBar") && (
+                <CheckboxRow id="ui-footer-improve-bar" label="Postępy jako pasek pod stanem postaci" checked={values.improveBar} onChange={(v) => set("improveBar", v)} />
+            )}
             {values && offered("compass") && (
                 <CheckboxRow id="ui-footer-compass" label="Róża kierunków z wyjściami" checked={values.compass} onChange={(v) => set("compass", v)} />
             )}

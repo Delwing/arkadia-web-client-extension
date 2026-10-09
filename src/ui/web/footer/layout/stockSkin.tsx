@@ -1,28 +1,38 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { ChevronUp } from "lucide-react";
 import { globalStorage } from "@modules/core/storage";
 import type { FooterBand, FooterLayout } from "@shared/footerLayoutTypes";
 import MultiBindStrip from "../MultiBindStrip";
 import { FooterButtonSheet } from "../FooterButtons";
 import type { FooterSkin } from "./FooterLayout";
+import { bandHas } from "./layoutTree";
 
 function readFooterMode(): number {
   const mode = (globalStorage.get("uiSettings") as { footerMode?: number } | null)?.footerMode;
   return typeof mode === "number" ? mode : 4;
 }
 
+/** How the binds tell their row whether it has anything to show. */
+const BindsActive = createContext<(active: boolean) => void>(() => {});
+
 /**
- * The location binds in the `#multi-binds` row, which shows only while it is
- * `.active` - while there are binds, or always when the player keeps it (main.ts
- * watches that class to hold the split view still while the row comes and goes).
+ * The band with the location binds: the `#multi-binds` row, which shows only
+ * while it is `.active` - while there are binds, or always when the player
+ * keeps it (main.ts watches that class to hold the split view still while the
+ * row comes and goes). Whatever else the band holds rides along in it.
  */
-function StockBinds({ alwaysVisible }: { alwaysVisible?: boolean }) {
+function BindsRow({ children }: { children: ReactNode }) {
   const [active, setActive] = useState(false);
   return (
     <div id="multi-binds" className={active ? "active" : undefined}>
-      <MultiBindStrip alwaysVisible={alwaysVisible} onActiveChange={setActive} />
+      <BindsActive.Provider value={setActive}>{children}</BindsActive.Provider>
     </div>
   );
+}
+
+function StockBinds({ alwaysVisible }: { alwaysVisible?: boolean }) {
+  const setActive = useContext(BindsActive);
+  return <MultiBindStrip alwaysVisible={alwaysVisible} onActiveChange={setActive} />;
 }
 
 /**
@@ -46,20 +56,19 @@ function StatusLine({ children }: { children: ReactNode }) {
   );
 }
 
-const bindsOnly = (band: FooterBand) =>
-  band.children.length === 1 && band.children[0].type === "block" && band.children[0].block === "multibinds";
+const holdsBinds = (band: FooterBand) => bandHas(band, "multibinds");
 
-/** The band that becomes the status line: the first one that is not just the binds. */
-const statusIndex = (layout: FooterLayout) => layout.bands.findIndex((band) => !bindsOnly(band));
+/** The band that becomes the status line: the first one without the binds. */
+const statusIndex = (layout: FooterLayout) => layout.bands.findIndex((band) => !holdsBinds(band));
 
 /**
- * The stock UI's footer: each band its own full-width row under the output. A
- * band of nothing but the binds is the `#multi-binds` row itself; the first
- * other band is the status line.
+ * The stock UI's footer: each band its own full-width row under the output. The
+ * band with the binds is the `#multi-binds` row; the first other band is the
+ * status line.
  */
 export const stockFooterSkin: FooterSkin = {
   band({ band, index, layout, children }) {
-    if (bindsOnly(band)) return children;
+    if (holdsBinds(band)) return <BindsRow>{children}</BindsRow>;
     if (index === statusIndex(layout)) return <StatusLine>{children}</StatusLine>;
     return <div className="footer-band">{children}</div>;
   },

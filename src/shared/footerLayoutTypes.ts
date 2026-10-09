@@ -61,6 +61,8 @@ export interface FooterVitalsBlock extends FooterNodeBase {
     block: 'vitals';
     /** Vitals per line, wrapping onto more lines; unset keeps them on one. */
     perRow?: number;
+    /** Postępy left out of the vitals and drawn under them as a bar, one tick per point. */
+    improveBar?: boolean;
 }
 
 /** The current room's exits as a clickable compass rose, special exits beside it. */
@@ -119,6 +121,8 @@ export interface FooterLayoutTweaks {
     chipRows?: number;
     /** Vitals per line. */
     vitalsPerRow?: number;
+    /** Postępy as a bar under the vitals rather than one of them. */
+    improveBar?: boolean;
     /** Show the exit compass. */
     compass?: boolean;
     /** Width shares, in percent of the band; the vitals take what is left. */
@@ -130,9 +134,9 @@ export type FooterLayoutTweak = keyof FooterLayoutTweaks;
 
 /** The tweaks each layout offers, in the order the settings show them. */
 export const FOOTER_PRESET_TWEAKS: Record<FooterPresetId, readonly FooterLayoutTweak[]> = {
-    stock: ['chipLook', 'chipArrange'],
-    forge: ['chipLook'],
-    arkadia: ['chipLook', 'chipRows', 'vitalsPerRow', 'compass', 'compassWidth', 'chipsWidth'],
+    stock: ['chipLook', 'chipArrange', 'improveBar'],
+    forge: ['chipLook', 'improveBar'],
+    arkadia: ['chipLook', 'chipRows', 'vitalsPerRow', 'improveBar', 'compass', 'compassWidth', 'chipsWidth'],
 };
 
 /** Every layout's own tweaks, kept apart so switching layouts loses nothing. */

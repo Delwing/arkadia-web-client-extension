@@ -4,6 +4,7 @@ import MultiBindStrip from "../MultiBindStrip";
 import Vitals from "../Vitals";
 import ChipZone from "../ChipZone";
 import ExitCompass from "../ExitCompass";
+import ImproveBar from "../ImproveBar";
 import { claimedChipIds } from "./layoutTree";
 
 /**
@@ -27,16 +28,24 @@ function sharedBlock(node: FooterBlockNode, claimed: ReadonlySet<string>): React
       return <ChipZone block={node} claimed={claimed} />;
     case "multibinds":
       return <MultiBindStrip alwaysVisible={node.alwaysVisible} />;
-    case "vitals":
-      return (
+    case "vitals": {
+      const row = (
         <div
           id="char-state-vitals"
           className={`status-vitals${node.perRow ? " status-vitals--grid" : ""}`}
           style={node.perRow ? ({ "--vitals-per-row": node.perRow } as CSSProperties) : undefined}
         >
-          <Vitals />
+          <Vitals withoutImprove={node.improveBar} />
         </div>
       );
+      if (!node.improveBar) return row;
+      return (
+        <div className="footer-vitals">
+          {row}
+          <ImproveBar />
+        </div>
+      );
+    }
     case "compass":
       return <ExitCompass />;
     case "reconnect":

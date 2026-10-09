@@ -112,6 +112,30 @@ test.describe('Footer layout', () => {
         expect(await chips.locator('#clock-display .chip').evaluate((el) => el.getBoundingClientRect().height)).toBeLessThan(24);
     });
 
+    test('the forge layout in the stock UI: binds row, spaced chips, vitals over a Postępy bar', async ({page}) => {
+        await page.setViewportSize({width: 1280, height: 800});
+        await pickLayout(page, 'forge');
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+        await pushGmcp(page, 'char.state', {hp: 6, fatigue: 2, improve: 5});
+
+        // The binds band is the bind row itself, not part of the status line.
+        await expect(page.locator('#multi-binds')).toContainText('Brak akcji');
+        await expect(page.locator('#char-state #multi-binds')).toHaveCount(0);
+
+        const chips = page.locator('#char-state #footer-chips.footer-strip');
+        await expect(chips).toBeVisible();
+        expect(await chips.evaluate((el) => getComputedStyle(el).columnGap)).toBe('6px');
+
+        // Postępy leaves the vitals for a bar of its own under them.
+        const vitals = page.locator('.footer-band .footer-vitals');
+        await expect(vitals.locator('.improve-bar .improve-seg.on')).toHaveCount(5);
+        await expect(vitals.locator('.vital[data-vital="improve"]')).toHaveCount(0);
+        await expect(vitals.locator('.vital[data-vital="hp"]')).toBeVisible();
+        expect(await vitals.locator('.status-vitals').evaluate((el) => getComputedStyle(el).borderRightWidth)).toBe('0px');
+    });
+
     test('a phone keeps the stock footer whatever the pick', async ({page}) => {
         await page.setViewportSize({width: 390, height: 800});
         await pickLayout(page, 'arkadia');

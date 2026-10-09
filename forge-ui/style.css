@@ -644,7 +644,9 @@ body::after {
   align-items: center;
   min-width: 0;
 }
-.footer-chip-grid > .status-slot { display: inline-flex; }
+.footer-chip-grid > .status-slot,
+.footer-strip > .status-slot { display: inline-flex; }
+.footer-strip > .status-slot:empty { display: none; }
 .footer-chip-grid > .status-slot:empty { display: none; }
 /* a column of chips reads as one: each as wide as the widest in it */
 .footer-chip-grid > .status-slot > .chip { flex: 1; }

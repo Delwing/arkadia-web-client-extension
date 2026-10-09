@@ -9,7 +9,7 @@ const block = (layout: FooterLayout, kind: FooterBlockNode["block"]) => blocks(l
 describe("layoutTweaks", () => {
   it("reads the settings' starting values off a layout", () => {
     expect(layoutTweaks(ARKADIA_FOOTER_LAYOUT)).toEqual({
-      chipLook: "text", chipArrange: "fold", chipRows: 4, vitalsPerRow: 4, compass: true, compassWidth: 14, chipsWidth: 46,
+      chipLook: "text", chipArrange: "fold", chipRows: 4, vitalsPerRow: 4, improveBar: false, compass: true, compassWidth: 14, chipsWidth: 46,
     });
     expect(layoutTweaks(STOCK_FOOTER_LAYOUT)).toMatchObject({ chipLook: "icon", chipArrange: "fold", compass: false });
   });

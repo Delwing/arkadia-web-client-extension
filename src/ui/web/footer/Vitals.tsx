@@ -57,9 +57,10 @@ function Meter({ reading, mode }: { reading: VitalReading; mode: VitalsMode }) {
  * Char.State vitals, drawn the way the player chose (see {@link VitalsMode}) and
  * coloured by how bad they are (getColorLevel). A vital at its resting value is
  * left out unless the player keeps it on (Stopka → Kolejnosc i widocznosc paskow),
- * so the row only speaks up when something changed.
+ * so the row only speaks up when something changed. `withoutImprove` leaves
+ * Postępy to an ImproveBar of its own.
  */
-export default function Vitals() {
+export default function Vitals({ withoutImprove = false }: { withoutImprove?: boolean }) {
   const [state, setState] = useState<Partial<CharStateData>>({});
   const [formDisabled, setFormDisabled] = useState(false);
   const [layout, setLayout] = useState(readLayout);
@@ -75,7 +76,8 @@ export default function Vitals() {
     return () => { offChrome(); offMap(); };
   }, []);
 
-  const vitals = visibleVitals(state, layout.order, layout.always, formDisabled);
+  const vitals = visibleVitals(state, layout.order, layout.always, formDisabled)
+    .filter((reading) => !withoutImprove || reading.key !== "improve");
   return (
     <>
       {vitals.map((reading) => (

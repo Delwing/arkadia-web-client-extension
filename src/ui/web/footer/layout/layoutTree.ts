@@ -50,6 +50,7 @@ export function tweakLayout(layout: FooterLayout, tweaks: FooterLayoutTweaks | u
       case "vitals":
         return {
           ...node,
+          ...(typeof tweaks.improveBar === "boolean" ? { improveBar: tweaks.improveBar } : {}),
           ...(perRow !== undefined && node.perRow !== undefined ? { perRow } : {}),
           ...(has && (compassWidth !== undefined || chipsWidth !== undefined) ? { grow: vitalsWidth } : {}),
         };
@@ -78,7 +79,7 @@ export function tweakLayout(layout: FooterLayout, tweaks: FooterLayoutTweaks | u
 /** What a layout's tweakable settings are as it stands - the settings' starting values. */
 export function layoutTweaks(layout: FooterLayout): Required<FooterLayoutTweaks> {
   const found: Required<FooterLayoutTweaks> = {
-    chipLook: "icon", chipArrange: "fold", chipRows: 4, vitalsPerRow: 4, compass: false, compassWidth: 14, chipsWidth: 46,
+    chipLook: "icon", chipArrange: "fold", chipRows: 4, vitalsPerRow: 4, improveBar: false, compass: false, compassWidth: 14, chipsWidth: 46,
   };
   const visit = (node: FooterNode) => {
     if (node.type !== "block") {
@@ -90,8 +91,9 @@ export function layoutTweaks(layout: FooterLayout): Required<FooterLayoutTweaks>
       if (node.arrange !== "grid") found.chipArrange = node.arrange;
       if (node.rows !== undefined) found.chipRows = node.rows;
       if (node.grow !== undefined) found.chipsWidth = node.grow;
-    } else if (node.block === "vitals" && node.perRow !== undefined) {
-      found.vitalsPerRow = node.perRow;
+    } else if (node.block === "vitals") {
+      if (node.perRow !== undefined) found.vitalsPerRow = node.perRow;
+      found.improveBar = node.improveBar === true;
     } else if (node.block === "compass") {
       found.compass = true;
       if (node.grow !== undefined) found.compassWidth = node.grow;
