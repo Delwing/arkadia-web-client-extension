@@ -675,6 +675,8 @@
 .kn--narrow .kn-hide-narrow { display: none; }
 .kn--narrow .kn-toolbar { padding: 8px 10px; }
 .kn--narrow .kn-tabs { max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+/* Scroll rather than squash: a shrunk tab clips its own label. */
+.kn--narrow .kn-tabs > button { flex-shrink: 0; }
 .kn--narrow .kn-cat-list { border-right: 0; }
 .kn--narrow .kn-cat-row { min-height: 52px; padding: 9px 10px; }
 .kn--narrow .kn-cat-page { display: flex; flex-direction: column; min-height: 0; padding: 4px 6px 0; }

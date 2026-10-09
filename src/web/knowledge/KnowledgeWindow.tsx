@@ -113,6 +113,17 @@ export default function KnowledgeWindow() {
         return () => observer.disconnect();
     }, [isOpen]);
 
+    // A narrow tab strip scrolls; keep the open tab in sight (/biblioteki can open on one off screen).
+    useLayoutEffect(() => {
+        const strip = rootRef.current?.querySelector<HTMLElement>('.kn-tabs');
+        const on = strip?.querySelector<HTMLElement>('.is-on');
+        if (!strip || !on) return;
+        const box = strip.getBoundingClientRect();
+        const btn = on.getBoundingClientRect();
+        if (btn.left < box.left) strip.scrollLeft -= box.left - btn.left;
+        else if (btn.right > box.right) strip.scrollLeft += btn.right - box.right;
+    }, [tab, narrow, isOpen]);
+
     const openCategory = useCallback((name: string) => {
         setCategory(name);
         setTab('categories');

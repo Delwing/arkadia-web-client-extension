@@ -154,5 +154,14 @@ test.describe('Wiedza window', () => {
 
         await win.locator('#knowledge-back').click();
         await expect(win.locator('.kn-cat-row')).toHaveCount(14);
+
+        // Six tabs do not fit: the strip scrolls, every label whole, the open one in sight.
+        const tabs = win.locator('.kn-tabs');
+        const clipped = await tabs.locator('button').evaluateAll((buttons) => buttons.filter((b) => b.scrollWidth > b.clientWidth).length);
+        expect(clipped, 'no tab squashed into a clipped label').toBe(0);
+        await tab(page, 'Historia').click();
+        await expect(tab(page, 'Historia')).toBeInViewport({ratio: 1});
+        await submitCommand(page, '/biblioteki');
+        await expect(tab(page, 'Biblioteki')).toBeInViewport({ratio: 1});
     });
 });
