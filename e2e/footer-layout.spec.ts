@@ -1,6 +1,6 @@
 import {expect, test} from './support/fixtures';
 import type {Page} from '@playwright/test';
-import {ensureGameSocket, getCommandLog, GMCP_PATHS, pushGmcp, waitForCommandInput} from './support/mocks';
+import {ensureGameSocket, getCommandLog, GMCP_PATHS, pushGmcp, pushText, waitForCommandInput} from './support/mocks';
 import {openSettings, saveSettings} from './support/settings';
 
 /**
@@ -85,6 +85,31 @@ test.describe('Footer layout', () => {
         const lamp = await width('lamp-timer');
         expect(lamp).toBeGreaterThan(0);
         expect(await width('pipe-status')).toBeCloseTo(lamp, 0);
+    });
+
+    test('the classic line in the text look keeps every chip on one line while they fit', async ({page}) => {
+        await page.setViewportSize({width: 1280, height: 800});
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+        await pushText(page, 'Jest w przyblizeniu szosta rano, 1 dzien miesiaca Nachhexen wedlug Kalendarza Imperialnego.');
+
+        const modal = await openSettings(page, 'ui-footer');
+        await modal.locator('#ui-footer-layout').selectOption('stock');
+        await modal.locator('#ui-footer-chip-look').selectOption('text');
+        await saveSettings(page);
+
+        const chips = page.locator('#footer-chips.footer-chips--text');
+        await expect(chips.locator('#clock-display')).toContainText('06:00');
+        await expect(chips.locator('#lamp-timer')).toBeVisible();
+        // A new reading redraws the clock, which has the line measured again.
+        await pushText(page, 'Jest w przyblizeniu siodma rano, 1 dzien miesiaca Nachhexen wedlug Kalendarza Imperialnego.');
+        await expect(chips.locator('#clock-display')).toContainText('07:00');
+        await expect(page.locator('#char-state .status-more')).toHaveCount(0);
+        // The clock leads with its value, so its label takes no colon, and stays one line high.
+        const clockLabel = chips.locator('#clock-display .chip__lab');
+        expect(await clockLabel.evaluate((el) => getComputedStyle(el, '::after').content)).toBe('none');
+        expect(await chips.locator('#clock-display .chip').evaluate((el) => el.getBoundingClientRect().height)).toBeLessThan(24);
     });
 
     test('a phone keeps the stock footer whatever the pick', async ({page}) => {

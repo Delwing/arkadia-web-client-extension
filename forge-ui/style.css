@@ -657,7 +657,10 @@ body::after {
   font-size: 12.5px;
   color: var(--parchment-dim);
 }
-.footer-chips--text .chip__lab::after { content: ":"; }
+/* "Label:" before a value, not after one that leads; a fixed-width (grid) label
+   puts the colon in a second column */
+.footer-chips--text .chip:not(.chip--value-first) .chip__lab::after { content: ":"; }
+.footer-chips--text .chip__lab.chip__sized::after { grid-area: 1 / 2; }
 .footer-chips--text .chip__val { font-size: 11px; }
 .footer-compass { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .footer-compass__rose {

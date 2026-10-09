@@ -11,7 +11,8 @@ export const CHIP_LONG_PRESS_MS = 300;
  *
  * Presentational and theme-agnostic: it only emits semantic class names
  * (`chip`, `chip__ico`, `chip__text`, `chip__lab`, `chip__val`, the
- * `chip--{tone}` urgency modifier and `chip--act` for interactive chips). Each
+ * `chip--{tone}` urgency modifier, `chip--act` for interactive chips and
+ * `chip--value-first` when the value leads). Each
  * host UI skins those classes — the forge HUD gives them the forged-stone look,
  * the stock UI can give them its own. Renders a `<button>` when it does
  * something on click and a plain `<div>` otherwise, so only interactive chips
@@ -50,7 +51,7 @@ export function Chip({ icon, label, labelColor, labelSizeTo, value, sizeTo, size
 }) {
   const hold = useLongPress(onLongPress);
   const cls = [
-    "chip", tone && `chip--${tone}`, (onClick || onLongPress) && "chip--act",
+    "chip", tone && `chip--${tone}`, valueFirst && "chip--value-first", (onClick || onLongPress) && "chip--act",
     hold.state === "holding" && "chip--holding", hold.state === "held" && "chip--held", className,
   ].filter(Boolean).join(" ");
   const inner = (

@@ -46,11 +46,14 @@ function FoldedChips({ items, rest, look }: { items: FooterItem[]; rest: boolean
     if (!row) return;
     const measure = () => {
       const slots = Array.from(row.children) as HTMLElement[];
-      const shown = slots.filter((slot) => slot.offsetWidth > 0);
-      const firstTop = shown.length > 0 ? Math.min(...shown.map((slot) => slot.offsetTop)) : 0;
+      const shown = slots.filter((slot) => slot.offsetWidth > 0 && slot.offsetHeight > 0);
+      // A slot is on a later line when it starts below where the first line's
+      // shortest slot ends; chips of different heights centre on their line, so
+      // their tops alone would differ without any of them having wrapped.
+      const firstBottom = shown.length > 0 ? Math.min(...shown.map((slot) => slot.offsetTop + slot.offsetHeight)) : 0;
       let wrapped = 0;
       for (const slot of shown) {
-        const past = slot.offsetTop > firstTop + 2;
+        const past = slot.offsetTop >= firstBottom - 1;
         if (past) wrapped++;
         slot.classList.toggle("is-wrapped", past && !openRef.current);
       }
@@ -67,7 +70,8 @@ function FoldedChips({ items, rest, look }: { items: FooterItem[]; rest: boolean
       mutation.disconnect();
     };
   }, []);
-  useLayoutEffect(() => measureRef.current(), [open]);
+  // The look reshapes every chip without touching what the observers watch.
+  useLayoutEffect(() => measureRef.current(), [open, look]);
 
   return (
     <>

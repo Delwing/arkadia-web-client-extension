@@ -558,8 +558,13 @@ body[data-urgent-chips-first="1"] .status-slot:has(> .chip--danger) {
   letter-spacing: 0;
   text-transform: none;
 }
-#footer-layout .footer-chips--text .chip__lab::after {
+/* "Label:" before a value; a chip whose value leads ("07:30 zima") reads without.
+   A fixed-width label is a one-cell grid: the colon takes a second column. */
+#footer-layout .footer-chips--text .chip:not(.chip--value-first) .chip__lab::after {
   content: ":";
+}
+#footer-layout .footer-chips--text .chip__lab.chip__sized::after {
+  grid-area: 1 / 2;
 }
 #footer-layout .footer-chips--text .chip__text {
   gap: 4px;
