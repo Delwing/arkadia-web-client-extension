@@ -94,7 +94,7 @@ describe('people notes', () => {
 
     const result = parse('Niska kobieta stoi tutaj.');
 
-    expect(result?.text).toBe('Niska kobieta stoi tutaj.\n  Notatka (Mara): sprzedaje ziola');
+    expect(result?.text).toBe('Niska kobieta stoi tutaj.\n✎ Notatka (Mara): sprzedaje ziola');
   });
 
   it('does not print a note that is not ticked', () => {
@@ -112,7 +112,7 @@ describe('people notes', () => {
   it('matches an introduced person by name', () => {
     setPersonNote(key('Mara', 'niska kobieta'), 'sprzedaje ziola', true);
 
-    expect(parse('Mara i Eamon.')?.text).toBe('Mara i Eamon.\n  Notatka (Mara): sprzedaje ziola');
+    expect(parse('Mara i Eamon.')?.text).toBe('Mara i Eamon.\n✎ Notatka (Mara): sprzedaje ziola');
   });
 
   it('picks the longest description when one contains another', () => {
@@ -120,7 +120,7 @@ describe('people notes', () => {
     setPersonNote(key('Eamon', 'wysoki mezczyzna w kapturze'), 'w kapturze', true);
 
     expect(parse('Wysoki mezczyzna w kapturze.')?.text)
-      .toBe('Wysoki mezczyzna w kapturze.\n  Notatka (Eamon): w kapturze');
+      .toBe('Wysoki mezczyzna w kapturze.\n✎ Notatka (Eamon): w kapturze');
   });
 
   it('prints notes in the order people stand in the line, each line of a note on its own', () => {
@@ -128,7 +128,7 @@ describe('people notes', () => {
     setPersonNote(key('Eamon', 'wysoki mezczyzna'), 'wrog', true);
 
     expect(parse('Wysoki mezczyzna i niska kobieta.')?.text).toBe(
-      'Wysoki mezczyzna i niska kobieta.\n  Notatka (Eamon): wrog\n  Notatka (Mara): pierwsza\n    druga',
+      'Wysoki mezczyzna i niska kobieta.\n✎ Notatka (Eamon): wrog\n✎ Notatka (Mara): pierwsza\n  druga',
     );
   });
 });

@@ -170,10 +170,10 @@ export default class People {
             notes.forEach(({ person }) => {
                 const [first, ...rest] = person.note!.split(/\r?\n/)
                 line.append('\n')
-                line.append('  Notatka ', NOTE_LABEL_COLOR)
+                line.append('✎ Notatka ', NOTE_LABEL_COLOR)
                 line.append(`(${person.name}): `, NOTE_NAME_COLOR)
                 line.append(first, NOTE_TEXT_COLOR)
-                rest.forEach(more => line.append(`\n    ${more}`, NOTE_TEXT_COLOR))
+                rest.forEach(more => line.append(`\n  ${more}`, NOTE_TEXT_COLOR))
             })
             return line
         }, this.tag)
