@@ -646,6 +646,8 @@ body::after {
 }
 .footer-chip-grid > .status-slot { display: inline-flex; }
 .footer-chip-grid > .status-slot:empty { display: none; }
+/* a column of chips reads as one: each as wide as the widest in it */
+.footer-chip-grid > .status-slot > .chip { flex: 1; }
 .footer-chips--text .chip { padding: 0; border-color: transparent; background: none; box-shadow: none; }
 .footer-chips--text .chip__ico { display: none; }
 .footer-chips--text .chip__lab {

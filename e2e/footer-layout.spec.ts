@@ -79,6 +79,12 @@ test.describe('Footer layout', () => {
         await expect(grid).not.toHaveClass(/footer-chips--text/);
         expect(await grid.evaluate((el) => (el as HTMLElement).style.getPropertyValue('--chip-rows'))).toBe('2');
         await expect(page.locator('.footer-compass')).toHaveCount(0);
+
+        // Lampa and Fajka share the first column: one width, whatever their text.
+        const width = (id: string) => grid.locator(`#${id} .chip`).evaluate((el) => el.getBoundingClientRect().width);
+        const lamp = await width('lamp-timer');
+        expect(lamp).toBeGreaterThan(0);
+        expect(await width('pipe-status')).toBeCloseTo(lamp, 0);
     });
 
     test('a phone keeps the stock footer whatever the pick', async ({page}) => {

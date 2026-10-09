@@ -537,6 +537,10 @@ body[data-urgent-chips-first="1"] .status-slot:has(> .chip--danger) {
 .footer-chip-grid > .status-slot:empty {
   display: none;
 }
+/* A column of chips reads as one: each as wide as the widest in it. */
+.footer-chip-grid > .status-slot > .chip {
+  flex: 1;
+}
 /* The text look: "Label: value" with no tile and no glyph, the value in its tone. */
 #footer-layout .footer-chips--text .chip {
   height: auto;
