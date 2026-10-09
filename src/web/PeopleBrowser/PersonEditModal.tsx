@@ -2,8 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import type { PersonEntry, PersonListEntry } from '@client/types/people';
 import { GUILD_CODES_BY_ID } from '@modules/data/peopleGuilds';
+import { Check as CheckIcon } from 'lucide-react';
+import { Button, Check, Dialog, Field, Input, Notice, Select, TextArea } from '@web-ui/primitives';
 
 const ALL_GUILD_CODES = Object.values(GUILD_CODES_BY_ID).sort();
+
+const FORM_ID = 'people-modal-form';
 
 export interface PersonNote {
     text: string;
@@ -88,239 +92,174 @@ const PersonEditModal: React.FC<PersonEditModalProps> = ({
     const isMarkedEnemy = person?.isEnemy ?? false;
     const isMarkedAlly = person?.isAlly ?? false;
     const currentColor = person?.color;
+    const isEditing = mode === 'edit' && !isIgnored;
+    const canSave = !!name.trim() && !!description.trim();
 
-    // Portaled to <body>: the modal must cover the viewport, not the popup body it
+    const footer = (
+        <>
+            {mode === 'edit' && isIgnored && onRestore && (
+                <Button className="people-modal__mark--ally" onClick={onRestore} title="Przywróć tę postać">
+                    Przywróć
+                </Button>
+            )}
+            {isEditing && !isLocallyAdded && onIgnore && (
+                <Button
+                    variant="ghost"
+                    className="people-modal__mark--warning"
+                    onClick={onIgnore}
+                    title="Ignoruj tę postać (nie twórz triggerów)"
+                >
+                    Ignoruj
+                </Button>
+            )}
+            {mode === 'edit' && isLocallyAdded && onDelete && (
+                <Button variant="danger" onClick={onDelete} title="Usuń tę postać">
+                    Usuń
+                </Button>
+            )}
+            <span className="people-modal__footer-spacer" />
+            <Button onClick={onClose}>Anuluj</Button>
+            {!isIgnored && (
+                <Button variant="solid" type="submit" form={FORM_ID} disabled={!canSave}>
+                    Zapisz
+                </Button>
+            )}
+        </>
+    );
+
+    // Portaled to <body>: the dialog must cover the viewport, not the popup body it
     // is declared in — an alternative UI (forge) puts a `filter` on the popup body,
     // which would otherwise trap a `position: fixed` child inside the panel.
-    // `data-popup-overlay` is the shared opt-out that keeps clicking the modal from
+    // `data-popup-overlay` is the shared opt-out that keeps clicking the dialog from
     // closing the popup underneath it (see useDockablePopup's outside-click guard).
     return createPortal(
-        <div className="people-modal" data-popup-overlay onClick={onClose}>
-            <div
-                className="people-modal__dialog"
-                onClick={(e) => e.stopPropagation()}
+        <div data-popup-overlay>
+            <Dialog
+                title={mode === 'add' ? 'Dodaj postać' : `Edytuj postać${person ? `: ${person.name}` : ''}`}
+                onClose={onClose}
+                className="people-modal"
+                footer={footer}
             >
-                <div className="people-modal__header">
-                    <h5 className="people-modal__title">
-                        {mode === 'add' ? 'Dodaj postać' : 'Edytuj postać'}
-                    </h5>
-                    <button
-                        type="button"
-                        className="people-modal__close"
-                        onClick={onClose}
-                        title="Zamknij"
-                    >
-                        &times;
-                    </button>
-                </div>
-                <div className="people-modal__body">
+                <form
+                    id={FORM_ID}
+                    className="people-modal__form"
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        handleSave();
+                    }}
+                >
+                    {isIgnored && (
+                        <Notice variant="warning">
+                            Ta postać jest ignorowana: nie tworzy triggerów. Przywróć ją, aby ją edytować.
+                        </Notice>
+                    )}
+
                     {hasOriginal && person?.originalEntry && (
                         <div className="people-modal__original">
                             <div>
-                                <span className="people-modal__hint">Oryginalne wartości:</span>
+                                <span className="people-modal__hint">Zmieniona lokalnie. Oryginał:</span>
                                 <div>
-                                    <strong>Nazwa:</strong> {person.originalEntry.name}
-                                </div>
-                                <div>
-                                    <strong>Opis:</strong> {person.originalEntry.description}
-                                </div>
-                                <div>
-                                    <strong>Gildia:</strong> {person.originalEntry.guild}
+                                    <strong>{person.originalEntry.name}</strong> ({person.originalEntry.guild}) {person.originalEntry.description}
                                 </div>
                             </div>
                             {onRestoreOriginal && (
-                                <button
-                                    type="button"
-                                    className="popup-btn"
-                                    onClick={onRestoreOriginal}
-                                    title="Przywróć oryginalne wartości"
-                                >
-                                    Przywróć
-                                </button>
+                                <Button size="sm" onClick={onRestoreOriginal} title="Przywróć oryginalne wartości">
+                                    Przywróć oryginał
+                                </Button>
                             )}
                         </div>
                     )}
 
-                    <div className="people-modal__field">
-                        <label className="people-modal__label">Nazwa</label>
-                        <input
-                            type="text"
-                            className="popup-input"
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            placeholder="np. Eamon"
-                        />
+                    <div className="people-modal__row">
+                        <Field label="Imię" className="people-modal__name">
+                            <Input
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                placeholder="np. Eamon"
+                                disabled={isIgnored}
+                                autoFocus={mode === 'add'}
+                            />
+                        </Field>
+                        <Field label="Gildia" className="people-modal__guild">
+                            <Select value={guild} onChange={(e) => setGuild(e.target.value)} disabled={isIgnored}>
+                                {ALL_GUILD_CODES.map((g) => (
+                                    <option key={g} value={g}>
+                                        {g}
+                                    </option>
+                                ))}
+                            </Select>
+                        </Field>
                     </div>
 
-                    <div className="people-modal__field">
-                        <label className="people-modal__label">Opis</label>
-                        <input
-                            type="text"
-                            className="popup-input"
+                    <Field label="Opis" hint="Tak, jak gra opisuje postać, zanim się przedstawi.">
+                        <Input
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
                             placeholder="np. wysoki mezczyzna"
+                            disabled={isIgnored}
                         />
-                    </div>
-
-                    <div className="people-modal__field">
-                        <label className="people-modal__label">Gildia</label>
-                        <select
-                            className="popup-input"
-                            value={guild}
-                            onChange={(e) => setGuild(e.target.value)}
-                        >
-                            {ALL_GUILD_CODES.map((g) => (
-                                <option key={g} value={g}>
-                                    {g}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
+                    </Field>
 
                     {!isIgnored && (
-                        <div className="people-modal__field">
-                            <label className="people-modal__label">Notatka</label>
-                            <textarea
-                                className="popup-input people-modal__note"
+                        <Field label="Notatka">
+                            <TextArea
+                                className="people-modal__note"
                                 rows={3}
                                 value={note}
                                 onChange={(e) => setNote(e.target.value)}
                                 placeholder="np. handluje ziołami"
                             />
-                            <label className="popup-check">
-                                <input
-                                    type="checkbox"
-                                    checked={showNoteOnMeet}
-                                    onChange={(e) => setShowNoteOnMeet(e.target.checked)}
-                                />
-                                <span>Pokaż notatkę przy spotkaniu</span>
-                            </label>
-                        </div>
+                            <Check
+                                checked={showNoteOnMeet}
+                                onChange={(e) => setShowNoteOnMeet(e.target.checked)}
+                                label="Pokaż notatkę przy spotkaniu"
+                            />
+                        </Field>
                     )}
 
-                    {mode === 'edit' && !isIgnored && (
-                        <div className="people-modal__field">
-                            <label className="people-modal__label">Kolor indywidualny</label>
-                            <div className="people-modal__color-row">
-                                <input
-                                    type="color"
-                                    className="people-modal__color"
-                                    value={currentColor || '#ffff5f'}
-                                    onChange={(e) => onSetColor?.(e.target.value)}
-                                    title="Wybierz kolor"
-                                />
+                    {isEditing && (
+                        <div className="people-modal__marks">
+                            <div className="people-modal__marks-head">
+                                <span className="popup-field__label">Oznaczenia</span>
+                                <span className="people-modal__hint">zapisują się od razu</span>
+                            </div>
+                            <div className="people-modal__marks-row">
+                                <Button
+                                    className={isMarkedEnemy ? 'people-modal__mark--enemy is-active' : 'people-modal__mark--enemy'}
+                                    onClick={isMarkedEnemy ? onUnmarkEnemy : onMarkEnemy}
+                                    title={isMarkedEnemy ? 'Odznacz jako wroga' : 'Oznacz jako wroga'}
+                                >
+                                    {isMarkedEnemy && <CheckIcon size={14} strokeWidth={2.5} />}
+                                    Wróg
+                                </Button>
+                                <Button
+                                    className={isMarkedAlly ? 'people-modal__mark--ally is-active' : 'people-modal__mark--ally'}
+                                    onClick={isMarkedAlly ? onUnmarkAlly : onMarkAlly}
+                                    title={isMarkedAlly ? 'Odznacz jako sojusznika' : 'Oznacz jako sojusznika'}
+                                >
+                                    {isMarkedAlly && <CheckIcon size={14} strokeWidth={2.5} />}
+                                    Sojusznik
+                                </Button>
+                                <span className="people-modal__marks-sep" />
+                                <label className="people-modal__color-label" title="Kolor indywidualny">
+                                    <input
+                                        type="color"
+                                        className="people-modal__color"
+                                        value={currentColor || '#ffff5f'}
+                                        onChange={(e) => onSetColor?.(e.target.value)}
+                                    />
+                                    <span>{currentColor ? 'Kolor własny' : 'Kolor gildii'}</span>
+                                </label>
                                 {currentColor && onClearColor && (
-                                    <button
-                                        type="button"
-                                        className="popup-btn"
-                                        onClick={onClearColor}
-                                        title="Usuń indywidualny kolor"
-                                    >
+                                    <Button size="sm" variant="ghost" onClick={onClearColor} title="Usuń indywidualny kolor">
                                         Wyczyść
-                                    </button>
-                                )}
-                                {!currentColor && (
-                                    <span className="people-modal__hint">Brak (użyje koloru gildii)</span>
+                                    </Button>
                                 )}
                             </div>
                         </div>
                     )}
-                </div>
-                <div className="people-modal__footer">
-                    <div className="people-modal__footer-group">
-                        {mode === 'edit' && !isIgnored && !isMarkedEnemy && onMarkEnemy && (
-                            <button
-                                type="button"
-                                className="popup-btn popup-btn--md people-modal__btn--danger-outline"
-                                onClick={onMarkEnemy}
-                                title="Oznacz jako wroga"
-                            >
-                                Wróg
-                            </button>
-                        )}
-                        {mode === 'edit' && !isIgnored && isMarkedEnemy && onUnmarkEnemy && (
-                            <button
-                                type="button"
-                                className="popup-btn popup-btn--md popup-btn--danger"
-                                onClick={onUnmarkEnemy}
-                                title="Odznacz jako wroga"
-                            >
-                                Wróg
-                            </button>
-                        )}
-                        {mode === 'edit' && !isIgnored && !isMarkedAlly && onMarkAlly && (
-                            <button
-                                type="button"
-                                className="popup-btn popup-btn--md people-modal__btn--success-outline"
-                                onClick={onMarkAlly}
-                                title="Oznacz jako sojusznika"
-                            >
-                                Sojusznik
-                            </button>
-                        )}
-                        {mode === 'edit' && !isIgnored && isMarkedAlly && onUnmarkAlly && (
-                            <button
-                                type="button"
-                                className="popup-btn popup-btn--md popup-btn--success"
-                                onClick={onUnmarkAlly}
-                                title="Odznacz jako sojusznika"
-                            >
-                                Sojusznik
-                            </button>
-                        )}
-                        {mode === 'edit' && !isIgnored && !isLocallyAdded && onIgnore && (
-                            <button
-                                type="button"
-                                className="popup-btn popup-btn--md people-modal__btn--warning-outline"
-                                onClick={onIgnore}
-                                title="Ignoruj tę postać (nie twórz triggerów)"
-                            >
-                                Ignoruj
-                            </button>
-                        )}
-                        {mode === 'edit' && isIgnored && onRestore && (
-                            <button
-                                type="button"
-                                className="popup-btn popup-btn--md people-modal__btn--success-outline"
-                                onClick={onRestore}
-                                title="Przywróć tę postać"
-                            >
-                                Przywróć
-                            </button>
-                        )}
-                        {mode === 'edit' && isLocallyAdded && onDelete && (
-                            <button
-                                type="button"
-                                className="popup-btn popup-btn--md people-modal__btn--danger-outline"
-                                onClick={onDelete}
-                                title="Usuń tę postać"
-                            >
-                                Usuń
-                            </button>
-                        )}
-                    </div>
-                    <div className="people-modal__footer-group">
-                        <button
-                            type="button"
-                            className="popup-btn popup-btn--md"
-                            onClick={onClose}
-                        >
-                            Anuluj
-                        </button>
-                        {!isIgnored && (
-                            <button
-                                type="button"
-                                className="popup-btn popup-btn--md popup-btn--primary"
-                                onClick={handleSave}
-                                disabled={!name.trim() || !description.trim()}
-                            >
-                                Zapisz
-                            </button>
-                        )}
-                    </div>
-                </div>
-            </div>
+                </form>
+            </Dialog>
         </div>,
         document.body,
     );

@@ -39,7 +39,7 @@ async function addLocalPerson(
     {name, description, guild}: {name: string; description: string; guild?: string},
 ): Promise<void> {
     const popup = peopleBrowserPopup(page);
-    await popup.locator('button', {hasText: '+ Dodaj'}).click();
+    await popup.locator('button', {hasText: 'Dodaj'}).click();
 
     const modal = page.locator('.people-modal');
     await expect(modal).toBeVisible();
@@ -315,7 +315,7 @@ test.describe('People browser popup – extended', () => {
         await waitForPeopleLoaded(page);
 
         const popup = peopleBrowserPopup(page);
-        const statusSelect = popup.locator('.people-browser__status-filter select');
+        const statusFilter = popup.locator('.people-browser__status-filter');
 
         // Mark first person (Aldous) as enemy
         const aldousItem = popup.locator('.people-browser__item').filter({hasText: 'Aldous'});
@@ -334,7 +334,7 @@ test.describe('People browser popup – extended', () => {
         await expect(modal, 'should close modal after marking ally').not.toBeVisible();
 
         // Filter by enemies
-        await statusSelect.selectOption('enemy');
+        await statusFilter.getByText('Wrogowie').click();
         await expect(
             popup.locator('.people-browser__item'),
             'should show only 1 enemy',
@@ -342,7 +342,7 @@ test.describe('People browser popup – extended', () => {
         await expect(popup.locator('.people-browser__item').first(), 'should show Aldous as enemy').toContainText('Aldous');
 
         // Filter by allies
-        await statusSelect.selectOption('ally');
+        await statusFilter.getByText('Sojusznicy').click();
         await expect(
             popup.locator('.people-browser__item'),
             'should show only 1 ally',
@@ -350,7 +350,7 @@ test.describe('People browser popup – extended', () => {
         await expect(popup.locator('.people-browser__item').first(), 'should show Berenika as ally').toContainText('Berenika');
 
         // Clear filter
-        await statusSelect.selectOption('');
+        await statusFilter.getByText('Wszyscy').click();
         await expect(popup.locator('.people-browser__item'), 'should show all 5 people after clearing status filter').toHaveCount(5);
     });
 

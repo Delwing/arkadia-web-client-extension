@@ -23,11 +23,18 @@ import {
     setPersonNote,
 } from '@modules/data/peopleLoader';
 import PersonEditModal, { type PersonNote } from './PersonEditModal';
-import { HeaderButton } from '@web-ui/primitives';
+import { Button, Check, HeaderButton, Input, Segmented, Select } from '@web-ui/primitives';
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, NotebookPen, Pencil, Search, Undo2, UserPlus, X } from 'lucide-react';
 
 const POPUP_ID = 'popup:peopleBrowser';
 
 const ALL_GUILD_CODES = Object.values(GUILD_CODES_BY_ID).sort();
+
+const STATUS_OPTIONS: { value: StatusFilter; label: string }[] = [
+    { value: '', label: 'Wszyscy' },
+    { value: 'enemy', label: 'Wrogowie' },
+    { value: 'ally', label: 'Sojusznicy' },
+];
 
 const PeopleBrowser: React.FC = () => {
     const { wrapperProps, setIsOpen, isOpen } = usePopup(POPUP_ID);
@@ -219,6 +226,13 @@ const PeopleBrowser: React.FC = () => {
     }, [setPage, result]);
 
     const totalCount = result?.totalCount ?? 0;
+    const hasFilters = !!(searchTerm || guildFilter || statusFilter || localOnly);
+    const resetFilters = useCallback(() => {
+        setSearchTerm('');
+        setGuildFilter('');
+        setStatusFilter('');
+        setLocalOnly(false);
+    }, [setSearchTerm, setGuildFilter, setStatusFilter, setLocalOnly]);
     const displayTitle = totalCount > 0 ? `Baza postaci (${totalCount})` : 'Baza postaci';
 
     const headerActions = (
@@ -241,84 +255,53 @@ const PeopleBrowser: React.FC = () => {
             bodyClassName="people-browser-body"
         >
             <div className="people-browser__controls">
-                <button
-                    type="button"
-                    className="popup-btn popup-btn--success"
-                    onClick={handleAddClick}
-                    title="Dodaj nową postać"
-                >
-                    + Dodaj
-                </button>
-
-                <div className="people-browser__search">
-                    <input
-                        type="text"
-                        className="popup-input"
-                        placeholder="Szukaj po nazwie lub opisie..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                    {searchTerm && (
-                        <button
-                            type="button"
-                            className="people-browser__search-clear"
-                            onClick={() => setSearchTerm('')}
-                        >
-                            X
-                        </button>
-                    )}
-                </div>
-
-                <div className="people-browser__guild-filter">
-                    <select
-                        className="popup-input"
-                        value={guildFilter}
-                        onChange={(e) => setGuildFilter(e.target.value)}
-                    >
-                        <option value="">Wszystkie gildie</option>
-                        {ALL_GUILD_CODES.map((guild) => (
-                            <option key={guild} value={guild}>
-                                {guild}
-                            </option>
-                        ))}
-                    </select>
-                </div>
-
-                <div className="people-browser__status-filter">
-                    <select
-                        className="popup-input"
-                        value={statusFilter}
-                        onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-                    >
-                        <option value="">Wszyscy</option>
-                        <option value="enemy">Wrogowie</option>
-                        <option value="ally">Sojusznicy</option>
-                    </select>
-                </div>
-
-                <div className="people-browser__local-only">
-                    <label className="people-browser__local-only-label">
-                        <input
-                            type="checkbox"
-                            checked={localOnly}
-                            onChange={(e) => setLocalOnly(e.target.checked)}
+                <div className="people-browser__toolbar">
+                    <div className="people-browser__search">
+                        <Search className="people-browser__search-icon" size={14} strokeWidth={2} />
+                        <Input
+                            placeholder="Szukaj po imieniu lub opisie..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
                         />
-                        <span>Tylko lokalne</span>
-                    </label>
+                        {searchTerm && (
+                            <button
+                                type="button"
+                                className="people-browser__search-clear"
+                                onClick={() => setSearchTerm('')}
+                                title="Wyczyść wyszukiwanie"
+                            >
+                                <X size={14} strokeWidth={2} />
+                            </button>
+                        )}
+                    </div>
+                    <Button variant="solid" onClick={handleAddClick} title="Dodaj nową postać">
+                        <UserPlus size={15} strokeWidth={2} /> Dodaj
+                    </Button>
                 </div>
 
-                <div className="people-browser__page-size">
-                    <select
-                        className="popup-input"
-                        value={pageSize}
-                        onChange={(e) => handlePageSizeChange(Number(e.target.value) as PageSize)}
-                    >
-                        {PAGE_SIZE_OPTIONS.map((size) => (
-                            <option key={size} value={size}>
-                                {size} na stronę
-                            </option>
-                        ))}
-                    </select>
+                <div className="people-browser__filters">
+                    <div className="people-browser__guild-filter">
+                        <Select value={guildFilter} onChange={(e) => setGuildFilter(e.target.value)} title="Gildia">
+                            <option value="">Wszystkie gildie</option>
+                            {ALL_GUILD_CODES.map((guild) => (
+                                <option key={guild} value={guild}>
+                                    {guild}
+                                </option>
+                            ))}
+                        </Select>
+                    </div>
+
+                    <div className="people-browser__status-filter">
+                        <Segmented value={statusFilter} onChange={setStatusFilter} options={STATUS_OPTIONS} />
+                    </div>
+
+                    <Check
+                        className="people-browser__local-only"
+                        label="Tylko lokalne"
+                        title="Tylko postacie zmienione na tym urządzeniu: dodane, edytowane, ignorowane, wróg, sojusznik, kolor, notatka"
+                        checked={localOnly}
+                        onChange={(e) => setLocalOnly(e.target.checked)}
+                    />
                 </div>
             </div>
 
@@ -327,81 +310,107 @@ const PeopleBrowser: React.FC = () => {
                     <div className="people-browser__loading">Ładowanie...</div>
                 ) : !result || result.items.length === 0 ? (
                     <div className="people-browser__empty">
-                        {searchTerm || guildFilter || statusFilter
-                            ? 'Brak wyników pasujących do filtrów.'
-                            : 'Brak danych o ludziach.'}
+                        {hasFilters ? (
+                            <>
+                                <span>Brak wyników pasujących do filtrów.</span>
+                                <Button size="sm" onClick={resetFilters}>Wyczyść filtry</Button>
+                            </>
+                        ) : (
+                            <span>Brak danych o ludziach.</span>
+                        )}
                     </div>
                 ) : (
                     <div className="people-browser__list">
+                        <div className="people-browser__head">
+                            <span>Imię</span>
+                            <span>Gildia</span>
+                            <span>Opis</span>
+                        </div>
                         {result.items.map((person, index) => {
                             const isIgnored = person.ignored;
                             const isLocal = person.source === 'local';
                             const isEdited = person.source === 'edited';
                             const isMarkedEnemy = person.isEnemy;
-                            const isMarkedAlly = person.isAlly;
-                            const hasColor = !!person.color;
+                            const isMarkedAlly = person.isAlly && !isMarkedEnemy;
+                            const hasColor = !!person.color && !isMarkedEnemy;
+                            const itemClass = [
+                                'people-browser__item',
+                                isIgnored && 'people-browser__item--ignored',
+                                isMarkedEnemy && 'people-browser__item--enemy',
+                                person.isAlly && 'people-browser__item--ally',
+                            ].filter(Boolean).join(' ');
 
                             return (
                                 <div
                                     key={`${person.name}-${person.guild}-${person.description}-${index}`}
-                                    className={`people-browser__item ${isIgnored ? 'people-browser__item--ignored' : ''} ${isMarkedEnemy ? 'people-browser__item--enemy' : ''} ${isMarkedAlly ? 'people-browser__item--ally' : ''}`}
+                                    className={itemClass}
+                                    onClick={() => handleEditClick(person)}
                                 >
-                                    <span className="people-browser__item-name" style={hasColor && !isMarkedEnemy ? { color: person.color } : undefined}>
-                                        {person.name}
-                                        {isMarkedEnemy && (
+                                    <span className="people-browser__item-name">
+                                        {hasColor && (
                                             <span
-                                                className="people-browser__badge people-browser__badge--enemy"
-                                                title="Oznaczony jako wróg"
-                                            >
-                                                !
-                                            </span>
-                                        )}
-                                        {isMarkedAlly && !isMarkedEnemy && (
-                                            <span
-                                                className="people-browser__badge people-browser__badge--ally"
-                                                title="Oznaczony jako sojusznik"
-                                            >
-                                                ♦
-                                            </span>
-                                        )}
-                                        {hasColor && !isMarkedEnemy && (
-                                            <span
-                                                className="people-browser__badge people-browser__badge--color"
+                                                className="people-browser__swatch"
                                                 style={{ backgroundColor: person.color }}
                                                 title={`Kolor indywidualny: ${person.color}`}
                                             />
                                         )}
+                                        <span
+                                            className="people-browser__item-name-text"
+                                            style={hasColor ? { color: person.color } : undefined}
+                                        >
+                                            {person.name}
+                                        </span>
+                                    </span>
+                                    <span className="people-browser__item-guild">{person.guild}</span>
+                                    <span className="people-browser__item-desc">
+                                        <span className="people-browser__item-desc-text">{person.description}</span>
+                                        {person.note && (
+                                            <span className="people-browser__note" title={person.note}>
+                                                <NotebookPen size={13} strokeWidth={2} />
+                                            </span>
+                                        )}
+                                        {isMarkedEnemy && (
+                                            <span className="people-browser__badge people-browser__badge--enemy" title="Oznaczony jako wróg">
+                                                wróg
+                                            </span>
+                                        )}
+                                        {isMarkedAlly && (
+                                            <span className="people-browser__badge people-browser__badge--ally" title="Oznaczony jako sojusznik">
+                                                sojusznik
+                                            </span>
+                                        )}
                                         {isLocal && (
-                                            <span
-                                                className="people-browser__badge people-browser__badge--local"
-                                                title="Dodano lokalnie"
-                                            >
-                                                +
+                                            <span className="people-browser__badge people-browser__badge--local" title="Dodano lokalnie">
+                                                lokalna
                                             </span>
                                         )}
                                         {isEdited && (
                                             <span
                                                 className="people-browser__badge people-browser__badge--edited"
                                                 title={person.originalEntry
-                                                    ? `Oryginal: ${person.originalEntry.name} (${person.originalEntry.guild}) - ${person.originalEntry.description}`
+                                                    ? `Oryginał: ${person.originalEntry.name} (${person.originalEntry.guild}) - ${person.originalEntry.description}`
                                                     : 'Edytowano lokalnie'}
                                             >
-                                                *
+                                                zmieniona
+                                            </span>
+                                        )}
+                                        {isIgnored && (
+                                            <span className="people-browser__badge people-browser__badge--ignored" title="Ignorowana: nie tworzy triggerów">
+                                                ignorowana
                                             </span>
                                         )}
                                     </span>
-                                    <span className="people-browser__item-guild">{person.guild}</span>
-                                    <span className="people-browser__item-desc">{person.description}</span>
-                                    <span className="people-browser__item-actions">
-                                        <button
-                                            type="button"
-                                            className="people-browser__item-edit"
-                                            onClick={() => handleEditClick(person)}
-                                            title={isIgnored ? 'Przywróć/Edytuj' : 'Edytuj'}
-                                        >
-                                            {isIgnored ? '↩' : '✎'}
-                                        </button>
-                                    </span>
+                                    <button
+                                        type="button"
+                                        className="people-browser__item-edit"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleEditClick(person);
+                                        }}
+                                        title={isIgnored ? 'Przywróć/Edytuj' : 'Edytuj'}
+                                    >
+                                        {isIgnored ? <Undo2 size={14} strokeWidth={2} /> : <Pencil size={14} strokeWidth={2} />}
+                                    </button>
                                 </div>
                             );
                         })}
@@ -409,49 +418,47 @@ const PeopleBrowser: React.FC = () => {
                 )}
             </div>
 
-            {result && result.totalPages > 1 && (
-                <div className="people-browser__pagination">
-                    <button
-                        type="button"
-                        className="people-browser__page-btn"
-                        onClick={goToFirstPage}
-                        disabled={page === 0}
-                        title="Pierwsza strona"
+            <div className="people-browser__footer">
+                <span className="people-browser__range">
+                    {result && totalCount > 0
+                        ? `${result.currentPage * pageSize + 1}–${Math.min(totalCount, (result.currentPage + 1) * pageSize)} z ${totalCount}`
+                        : '0 wyników'}
+                </span>
+
+                {result && result.totalPages > 1 && (
+                    <div className="people-browser__pagination">
+                        <Button size="sm" variant="ghost" className="popup-btn--icon" onClick={goToFirstPage} disabled={page === 0} title="Pierwsza strona">
+                            <ChevronsLeft size={15} strokeWidth={2} />
+                        </Button>
+                        <Button size="sm" variant="ghost" className="popup-btn--icon" onClick={goToPrevPage} disabled={page === 0} title="Poprzednia strona">
+                            <ChevronLeft size={15} strokeWidth={2} />
+                        </Button>
+                        <span className="people-browser__pagination-info">
+                            Strona {result.currentPage + 1} z {result.totalPages}
+                        </span>
+                        <Button size="sm" variant="ghost" className="popup-btn--icon" onClick={goToNextPage} disabled={page >= result.totalPages - 1} title="Następna strona">
+                            <ChevronRight size={15} strokeWidth={2} />
+                        </Button>
+                        <Button size="sm" variant="ghost" className="popup-btn--icon" onClick={goToLastPage} disabled={page >= result.totalPages - 1} title="Ostatnia strona">
+                            <ChevronsRight size={15} strokeWidth={2} />
+                        </Button>
+                    </div>
+                )}
+
+                <div className="people-browser__page-size">
+                    <Select
+                        value={pageSize}
+                        onChange={(e) => handlePageSizeChange(Number(e.target.value) as PageSize)}
+                        title="Liczba postaci na stronie"
                     >
-                        &laquo;
-                    </button>
-                    <button
-                        type="button"
-                        className="people-browser__page-btn"
-                        onClick={goToPrevPage}
-                        disabled={page === 0}
-                        title="Poprzednia strona"
-                    >
-                        &lsaquo;
-                    </button>
-                    <span className="people-browser__pagination-info">
-                        Strona {result.currentPage + 1} z {result.totalPages}
-                    </span>
-                    <button
-                        type="button"
-                        className="people-browser__page-btn"
-                        onClick={goToNextPage}
-                        disabled={page >= result.totalPages - 1}
-                        title="Następna strona"
-                    >
-                        &rsaquo;
-                    </button>
-                    <button
-                        type="button"
-                        className="people-browser__page-btn"
-                        onClick={goToLastPage}
-                        disabled={page >= result.totalPages - 1}
-                        title="Ostatnia strona"
-                    >
-                        &raquo;
-                    </button>
+                        {PAGE_SIZE_OPTIONS.map((size) => (
+                            <option key={size} value={size}>
+                                {size} na stronę
+                            </option>
+                        ))}
+                    </Select>
                 </div>
-            )}
+            </div>
 
             <PersonEditModal
                 show={showModal}
