@@ -2,9 +2,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { flushSync } from "react-dom";
 import { PlaybackControls } from "./components";
 import { ContextMenuHost } from "@web/contextMenu";
-import FooterLayout from "./footer/layout/FooterLayout";
-import { STOCK_FOOTER_LAYOUT } from "./footer/layout/presets";
-import { stockFooterSkin } from "./footer/layout/stockSkin";
+import StockFooter from "./footer/layout/StockFooter";
 import { registerBuiltinFooterItems } from "./footer/builtinItems";
 
 type MountResult = {
@@ -26,7 +24,7 @@ export const mountMigratedComponents = (): MountResult => {
   const footerContainer = document.getElementById("footer-layout");
   if (footerContainer) {
     const root = createRoot(footerContainer);
-    flushSync(() => root.render(<FooterLayout layout={STOCK_FOOTER_LAYOUT} skin={stockFooterSkin} />));
+    flushSync(() => root.render(<StockFooter />));
     roots.push(root);
   }
 

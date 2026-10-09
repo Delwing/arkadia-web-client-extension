@@ -29,7 +29,7 @@ function Slot({ item }: { item: FooterItem }) {
  * One line of chips; those that wrap past it hide behind "+N", and opening that
  * lets the line wrap to show them all.
  */
-function FoldedChips({ items, rest }: { items: FooterItem[]; rest: boolean }) {
+function FoldedChips({ items, rest, look }: { items: FooterItem[]; rest: boolean; look: string }) {
   const chipsRef = useRef<HTMLDivElement>(null);
   const [hidden, setHidden] = useState(0);
   const [open, setOpen] = useState(false);
@@ -74,7 +74,7 @@ function FoldedChips({ items, rest }: { items: FooterItem[]; rest: boolean }) {
       <div
         id={rest ? "footer-chips" : undefined}
         ref={chipsRef}
-        className={`status-chips${open ? " is-open" : ""}`}
+        className={`status-chips${look}${open ? " is-open" : ""}`}
       >
         {items.map((item) => <Slot key={item.id} item={item} />)}
       </div>
@@ -109,6 +109,9 @@ export default function ChipZone({ block, claimed }: { block: FooterChipsBlock; 
         .map((id) => all.find((item) => item.id === id))
         .filter((item): item is FooterItem => item !== undefined);
 
+  // The text look rides on the zone, so every chip in it reads "Label: value".
+  const look = block.look === "text" ? " footer-chips--text" : "";
+
   if (block.quiet) {
     if (items.length === 0) return null;
     return (
@@ -117,9 +120,20 @@ export default function ChipZone({ block, claimed }: { block: FooterChipsBlock; 
       </span>
     );
   }
-  if (block.arrange === "fold") return <FoldedChips items={items} rest={rest} />;
+  if (block.arrange === "fold") return <FoldedChips items={items} rest={rest} look={look} />;
+  if (block.arrange === "grid") {
+    return (
+      <div
+        id={rest ? "footer-chips" : undefined}
+        className={`footer-chip-grid${look}`}
+        style={{ "--chip-rows": block.rows ?? 4 } as CSSProperties}
+      >
+        {items.map((item) => <Slot key={item.id} item={item} />)}
+      </div>
+    );
+  }
   return (
-    <div className="footer-strip">
+    <div className={`footer-strip${look}`}>
       {items.map((item) => <FooterItemView key={item.id} item={item} />)}
     </div>
   );

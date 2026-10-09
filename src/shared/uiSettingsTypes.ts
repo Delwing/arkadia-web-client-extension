@@ -1,4 +1,5 @@
 import type { SoundCategory } from '@shared/events/clientEvents';
+import type { FooterPresetId } from '@shared/footerLayoutTypes';
 
 // UI settings type definitions.
 //
@@ -172,6 +173,11 @@ export interface ChromeSettings extends DeviceViewSettings {
     mapHeight: number;
     mapPosition: MapPosition;
     footerMode: number;
+    /**
+     * Which footer layout every UI draws (see @shared/footerLayoutTypes). Unset,
+     * each UI keeps its own: the stock footer here, the HUD plate in forge.
+     */
+    footerLayout?: FooterPresetId;
     footerComponents: FooterComponentConfig[];
     /** The player's own buttons beside the command line; empty out of the box. */
     footerButtons: FooterButtonConfig[];

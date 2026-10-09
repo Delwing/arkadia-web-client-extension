@@ -80,4 +80,21 @@ describe("FooterLayout", () => {
     expect(bands[1].querySelector(".own-reconnect")).not.toBeNull();
     expect(bands[1].querySelector(".footer-strip")?.textContent).toBe("test-aconnection-status");
   });
+
+  it("gives a node with a share of the band its own cell, and lays a chip grid in rows", () => {
+    const layout: Layout = {
+      bands: [{
+        children: [
+          { type: "block", block: "chips", items: "rest", arrange: "grid", rows: 2, look: "text", grow: 3 },
+        ],
+      }],
+    };
+    mount(layout, { band: ({ children }) => <section>{children}</section> });
+
+    const cell = container.querySelector<HTMLElement>(".footer-cell");
+    expect(cell?.style.flexGrow).toBe("3");
+    const grid = cell?.querySelector<HTMLElement>(".footer-chip-grid.footer-chips--text");
+    expect(grid?.style.getPropertyValue("--chip-rows")).toBe("2");
+    expect([...grid!.querySelectorAll(".status-slot")].map((el) => el.id)).toEqual(ITEMS);
+  });
 });

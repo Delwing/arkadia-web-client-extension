@@ -156,8 +156,10 @@
 }
 
 /* -- status line ----------------------------------------------------------
-   Vitals | chips (configured order, optionally urgent first; the rest behind "+N") | connection. */
-#char-state {
+   Vitals | chips (configured order, optionally urgent first; the rest behind "+N") | connection.
+   Any further band of the layout is drawn the same way. */
+#char-state,
+#footer-layout .footer-band {
   --chip-h: 22px;
   display: flex;
   align-items: center;
@@ -345,9 +347,10 @@ body[data-urgent-chips-first="1"] .status-slot:has(> .chip--danger) {
   display: none;
 }
 
-/* A chip: glyph, caps label, mono value, in a small tile. Shared markup
-   (@web-ui/footer/Chip.tsx); the forge HUD skins the same classes its own way. */
-#char-state .chip {
+/* A chip: glyph, caps label, mono value, in a small tile, in whichever band the
+   layout puts it. Shared markup (@web-ui/footer/Chip.tsx); the forge HUD skins
+   the same classes its own way. */
+#footer-layout .chip {
   --chip-tone: var(--popup-text-subtle);
   position: relative;
   display: inline-flex;
@@ -369,14 +372,14 @@ body[data-urgent-chips-first="1"] .status-slot:has(> .chip--danger) {
   isolation: isolate;
   appearance: none;
 }
-#char-state .chip--act {
+#footer-layout .chip--act {
   cursor: pointer;
   -webkit-touch-callout: none;
 }
-#char-state .chip--act:hover {
+#footer-layout .chip--act:hover {
   border-color: var(--popup-border-strong);
 }
-#char-state .chip__ico {
+#footer-layout .chip__ico {
   display: inline-flex;
   flex-shrink: 0;
   align-items: center;
@@ -384,78 +387,78 @@ body[data-urgent-chips-first="1"] .status-slot:has(> .chip--danger) {
   width: 14px;
   height: 14px;
 }
-#char-state .chip__ico svg,
-#char-state .chip > svg {
+#footer-layout .chip__ico svg,
+#footer-layout .chip > svg {
   display: block;
   width: 13px;
   height: 13px;
 }
 /* Label and value share a baseline (caps next to lowercase mono); the pair is
    centred against the icon as a block. */
-#char-state .chip__text {
+#footer-layout .chip__text {
   display: inline-flex;
   align-items: baseline;
   gap: 6px;
   min-width: 0;
 }
-#char-state .chip__lab {
+#footer-layout .chip__lab {
   color: var(--popup-text-faint);
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
-#char-state .chip__val {
+#footer-layout .chip__val {
   overflow: hidden;
   color: var(--popup-text);
   font-family: var(--output-font-family);
   font-size: 11.5px;
   text-overflow: ellipsis;
 }
-#char-state .chip--ok {
+#footer-layout .chip--ok {
   --chip-tone: var(--footer-vital-ok);
 }
-#char-state .chip--ok .chip__val {
+#footer-layout .chip--ok .chip__val {
   color: var(--footer-vital-ok);
 }
-#char-state .chip--warn {
+#footer-layout .chip--warn {
   --chip-tone: var(--footer-vital-warn);
   border-color: color-mix(in srgb, var(--footer-vital-warn) 40%, transparent);
   background-color: color-mix(in srgb, var(--footer-vital-warn) 10%, transparent);
 }
-#char-state .chip--warn .chip__val {
+#footer-layout .chip--warn .chip__val {
   color: color-mix(in srgb, var(--footer-vital-warn) 75%, #fff);
 }
-#char-state .chip--danger {
+#footer-layout .chip--danger {
   --chip-tone: var(--footer-vital-danger);
   border-color: color-mix(in srgb, var(--footer-vital-danger) 50%, transparent);
   background-color: color-mix(in srgb, var(--footer-vital-danger) 12%, transparent);
 }
-#char-state .chip--danger .chip__val {
+#footer-layout .chip--danger .chip__val {
   color: color-mix(in srgb, var(--footer-vital-danger) 70%, #fff);
 }
 /* Zaslona: while the guard is held (covers not released automatically) the shield
    fills in the accent colour. */
-#char-state .chip__ico--fill svg {
+#footer-layout .chip__ico--fill svg {
   fill: currentColor;
 }
-#char-state .chip--guard-held .chip__ico {
+#footer-layout .chip--guard-held .chip__ico {
   color: var(--popup-accent);
 }
 /* Plugin items are the plugin's own markup, drawn as it is: no frame of ours.
    A plugin that wants the chip look uses the chip classes (Chip.tsx). */
-#char-state .footer-plugin-item {
+#footer-layout .footer-plugin-item {
   align-items: center;
   height: var(--chip-h);
   font-size: var(--ui-fs-sm, 13px);
 }
-#char-state .footer-plugin-item:has(> .footer-node-host:empty) {
+#footer-layout .footer-plugin-item:has(> .footer-node-host:empty) {
   display: none;
 }
 
 /* Long press (Chip onLongPress): a tint sweeps across while held, then fades. */
-#char-state .chip--holding::before,
-#char-state .chip--held::before {
+#footer-layout .chip--holding::before,
+#footer-layout .chip--held::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -465,10 +468,10 @@ body[data-urgent-chips-first="1"] .status-slot:has(> .chip--danger) {
   pointer-events: none;
   z-index: -1;
 }
-#char-state .chip--holding::before {
+#footer-layout .chip--holding::before {
   animation: chipHoldFill var(--chip-hold-ms, 300ms) linear forwards;
 }
-#char-state .chip--held::before {
+#footer-layout .chip--held::before {
   animation: chipHoldDone 400ms ease-out forwards;
 }
 @keyframes chipHoldFill {
@@ -480,16 +483,156 @@ body[data-urgent-chips-first="1"] .status-slot:has(> .chip--danger) {
   to { opacity: 0; }
 }
 /* The pipe's ember (FajkaChip). */
-#char-state .chip__ember {
+#footer-layout .chip__ember {
   display: inline-block;
   width: 8px;
   height: 8px;
   border-radius: 50%;
   background-color: var(--popup-text-faint);
 }
-#char-state .chip__ember--lit {
+#footer-layout .chip__ember--lit {
   background-color: #ff9a3c;
   box-shadow: 0 0 6px #ff7a18;
+}
+
+/* -- layout pieces beyond the stock footer ----------------------------------
+   (@web-ui/footer/layout: a node's share of the band, vitals and chips in
+   grids, the text chip look, the exit compass.) */
+#footer-layout .footer-cell {
+  display: flex;
+  align-items: center;
+  align-self: stretch;
+  min-width: 0;
+}
+#footer-layout .footer-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+#footer-layout .footer-column {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.status-vitals--grid {
+  display: grid;
+  grid-template-columns: repeat(var(--vitals-per-row), max-content);
+  gap: 4px 14px;
+}
+.footer-cell > .status-vitals:not(:empty) {
+  padding-right: 0;
+  border-right: 0;
+}
+.footer-chip-grid {
+  display: grid;
+  grid-template-rows: repeat(var(--chip-rows), var(--chip-h));
+  grid-auto-flow: column;
+  grid-auto-columns: max-content;
+  gap: 2px 14px;
+  align-items: center;
+  min-width: 0;
+}
+.footer-chip-grid > .status-slot:empty {
+  display: none;
+}
+/* The text look: "Label: value" with no tile and no glyph, the value in its tone. */
+#footer-layout .footer-chips--text .chip {
+  height: auto;
+  padding: 0;
+  border-color: transparent;
+  background: transparent;
+}
+#footer-layout .footer-chips--text .chip__ico {
+  display: none;
+}
+#footer-layout .footer-chips--text .chip__lab {
+  color: var(--popup-text-subtle);
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+}
+#footer-layout .footer-chips--text .chip__lab::after {
+  content: ":";
+}
+#footer-layout .footer-chips--text .chip__text {
+  gap: 4px;
+}
+
+/* The exit compass: a 3x3 rose with up and down beside it, special exits after. */
+.footer-compass {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.footer-compass__rose {
+  display: grid;
+  grid-template-columns: repeat(3, 20px) 20px;
+  grid-auto-rows: 20px;
+  column-gap: 2px;
+  row-gap: 2px;
+}
+.footer-compass__rose > :nth-child(4n) {
+  margin-left: 6px;
+}
+.footer-compass__dir {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--popup-text-faint);
+  font-size: 12px;
+  line-height: 1;
+  opacity: 0.35;
+}
+.footer-compass__dir.is-open {
+  border-color: var(--popup-border-subtle);
+  background-color: var(--popup-control-bg);
+  color: var(--popup-text);
+  opacity: 1;
+  cursor: pointer;
+}
+.footer-compass__dir.is-open:hover {
+  border-color: var(--popup-border-strong);
+}
+.footer-compass__here {
+  align-self: center;
+  justify-self: center;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--popup-text-faint);
+}
+.footer-compass__special {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.footer-compass__exit {
+  overflow: hidden;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  padding: 1px 6px;
+  border: 1px solid var(--popup-border-subtle);
+  border-radius: 4px;
+  background-color: var(--popup-control-bg);
+  color: var(--popup-text);
+  font: inherit;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
 }
 
 /* Touch: pills are buttons to hit, not hints to read. */

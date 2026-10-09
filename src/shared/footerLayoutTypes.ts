@@ -16,10 +16,23 @@ export type FooterChipItems = 'rest' | string[];
  * How a chip block lays its chips out.
  * - `fold`: one line; whatever wraps past it hides behind a "+N" toggle.
  * - `wrap`: as many lines as the chips need.
+ * - `grid`: `rows` lines, filled top to bottom and then column by column.
  */
-export type FooterChipArrange = 'fold' | 'wrap';
+export type FooterChipArrange = 'fold' | 'wrap' | 'grid';
 
-export interface FooterChipsBlock {
+/**
+ * How a chip reads: `icon` - a glyph, a caps label and the value, on a tile;
+ * `text` - a plain "Label: value" line.
+ */
+export type FooterChipLook = 'icon' | 'text';
+
+/** What every node can say about its share of the band. */
+interface FooterNodeBase {
+    /** Share of the row's width against its siblings (flex-grow); unset takes what it needs. */
+    grow?: number;
+}
+
+export interface FooterChipsBlock extends FooterNodeBase {
     type: 'block';
     block: 'chips';
     /**
@@ -29,24 +42,35 @@ export interface FooterChipsBlock {
      */
     items: FooterChipItems;
     arrange: FooterChipArrange;
+    /** Lines of a `grid` (4 when unset). */
+    rows?: number;
+    look?: FooterChipLook;
     /** Set apart and dimmed - a diagnostic rather than a status (the connection). */
     quiet?: boolean;
 }
 
-export interface FooterMultibindsBlock {
+export interface FooterMultibindsBlock extends FooterNodeBase {
     type: 'block';
     block: 'multibinds';
     /** Keep the row, with its placeholder, when the room has no binds. */
     alwaysVisible?: boolean;
 }
 
-export interface FooterVitalsBlock {
+export interface FooterVitalsBlock extends FooterNodeBase {
     type: 'block';
     block: 'vitals';
+    /** Vitals per line, wrapping onto more lines; unset keeps them on one. */
+    perRow?: number;
+}
+
+/** The current room's exits as a clickable compass rose, special exits beside it. */
+export interface FooterCompassBlock extends FooterNodeBase {
+    type: 'block';
+    block: 'compass';
 }
 
 /** The way back to the game after a dropped session, for UIs without one elsewhere. */
-export interface FooterReconnectBlock {
+export interface FooterReconnectBlock extends FooterNodeBase {
     type: 'block';
     block: 'reconnect';
 }
@@ -55,11 +79,12 @@ export type FooterBlockNode =
     | FooterChipsBlock
     | FooterMultibindsBlock
     | FooterVitalsBlock
+    | FooterCompassBlock
     | FooterReconnectBlock;
 
 export type FooterBlockId = FooterBlockNode['block'];
 
-export interface FooterGroupNode {
+export interface FooterGroupNode extends FooterNodeBase {
     type: 'row' | 'column';
     children: FooterNode[];
 }
@@ -75,3 +100,6 @@ export interface FooterLayout {
     /** Top to bottom. */
     bands: FooterBand[];
 }
+
+/** The layouts that come with the client. */
+export type FooterPresetId = 'stock' | 'forge' | 'arkadia';

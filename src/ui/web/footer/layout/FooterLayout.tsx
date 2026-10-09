@@ -1,8 +1,9 @@
-import { Fragment, useMemo, type ReactNode } from "react";
+import { Fragment, useMemo, type CSSProperties, type ReactNode } from "react";
 import type { FooterBand, FooterBlockNode, FooterLayout as Layout, FooterNode } from "@shared/footerLayoutTypes";
 import MultiBindStrip from "../MultiBindStrip";
 import Vitals from "../Vitals";
 import ChipZone from "../ChipZone";
+import ExitCompass from "../ExitCompass";
 import { claimedChipIds } from "./layoutTree";
 
 /**
@@ -28,10 +29,16 @@ function sharedBlock(node: FooterBlockNode, claimed: ReadonlySet<string>): React
       return <MultiBindStrip alwaysVisible={node.alwaysVisible} />;
     case "vitals":
       return (
-        <div id="char-state-vitals" className="status-vitals">
+        <div
+          id="char-state-vitals"
+          className={`status-vitals${node.perRow ? " status-vitals--grid" : ""}`}
+          style={node.perRow ? ({ "--vitals-per-row": node.perRow } as CSSProperties) : undefined}
+        >
           <Vitals />
         </div>
       );
+    case "compass":
+      return <ExitCompass />;
     case "reconnect":
       return null;
   }
@@ -42,13 +49,18 @@ export default function FooterLayout({ layout, skin }: { layout: Layout; skin: F
   const claimed = useMemo(() => claimedChipIds(layout), [layout]);
 
   const draw = (node: FooterNode, key: number): ReactNode => {
+    let drawn: ReactNode;
     if (node.type === "block") {
       const own = skin.block?.(node);
-      return <Fragment key={key}>{own !== undefined ? own : sharedBlock(node, claimed)}</Fragment>;
+      drawn = own !== undefined ? own : sharedBlock(node, claimed);
+    } else {
+      drawn = <div className={`footer-${node.type}`}>{node.children.map(draw)}</div>;
     }
+    // A node with a share of the width gets a cell holding exactly that share.
+    if (node.grow === undefined) return <Fragment key={key}>{drawn}</Fragment>;
     return (
-      <div key={key} className={`footer-${node.type}`}>
-        {node.children.map(draw)}
+      <div key={key} className="footer-cell" style={{ flexGrow: node.grow, flexShrink: 1, flexBasis: 0 }}>
+        {drawn}
       </div>
     );
   };

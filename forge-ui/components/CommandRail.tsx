@@ -2,6 +2,7 @@ import { useRef } from 'react';
 import { useCommandLine } from '../hooks/useCommandLine';
 import FooterLayout from '@web-ui/footer/layout/FooterLayout';
 import { FORGE_FOOTER_LAYOUT } from '@web-ui/footer/layout/presets';
+import { useFooterLayout } from '@web-ui/footer/layout/useFooterLayout';
 import DesktopButtons from '@web-ui/buttons/DesktopButtons';
 import MobileCommandRadial from '@web-ui/buttons/MobileCommandRadial';
 import MobileDirectionButtons from '@web-ui/buttons/MobileDirectionButtons';
@@ -26,6 +27,7 @@ export default function CommandRail() {
     // History, completion, multiline, password mode and sticky focus all come
     // from the shared command-line engine — see useCommandLine.
     const { passwordMode } = useCommandLine({ inputRef, passwordRef });
+    const footerLayout = useFooterLayout(FORGE_FOOTER_LAYOUT);
 
     return (
         <div className="rail">
@@ -40,7 +42,7 @@ export default function CommandRail() {
                     chips, the vital gems - as the footer layout arranges them.
                     The bind strip is always mounted (it self-empties to its
                     placeholder), so the plate keeps a stable height. */}
-                <FooterLayout layout={FORGE_FOOTER_LAYOUT} skin={forgeFooterSkin} />
+                <FooterLayout layout={footerLayout} skin={forgeFooterSkin} />
                 <div className="hud-seam" />
 
                 <div className="command">

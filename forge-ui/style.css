@@ -627,6 +627,83 @@ body::after {
   -webkit-user-select: none;
   user-select: none;
 }
+/* ---- footer layout pieces (@web-ui/footer/layout) ------------------------
+   What a picked layout other than the plate's own brings: bands of several
+   cells, chips in a grid or as "Label: value" lines, the exit compass. */
+.footer-band { display: flex; align-items: flex-start; gap: 14px; padding: 0 2px; }
+.footer-cell { display: flex; align-items: flex-start; min-width: 0; }
+.footer-row { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.footer-column { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.footer-cell .gems { flex-wrap: wrap; }
+.footer-chip-grid {
+  display: grid;
+  grid-template-rows: repeat(var(--chip-rows), auto);
+  grid-auto-flow: column;
+  grid-auto-columns: max-content;
+  gap: 3px 12px;
+  align-items: center;
+  min-width: 0;
+}
+.footer-chip-grid > .status-slot { display: inline-flex; }
+.footer-chip-grid > .status-slot:empty { display: none; }
+.footer-chips--text .chip { padding: 0; border-color: transparent; background: none; box-shadow: none; }
+.footer-chips--text .chip__ico { display: none; }
+.footer-chips--text .chip__lab {
+  font-family: "EB Garamond", Georgia, serif;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 12.5px;
+  color: var(--parchment-dim);
+}
+.footer-chips--text .chip__lab::after { content: ":"; }
+.footer-chips--text .chip__val { font-size: 11px; }
+.footer-compass { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.footer-compass__rose {
+  display: grid;
+  grid-template-columns: repeat(4, 20px);
+  grid-auto-rows: 20px;
+  gap: 2px;
+}
+.footer-compass__rose > :nth-child(4n) { margin-left: 6px; }
+.footer-compass__dir {
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: none;
+  color: var(--parchment-dim);
+  font-size: 12px;
+  line-height: 1;
+  opacity: .3;
+  appearance: none; -webkit-appearance: none;
+}
+.footer-compass__dir.is-open {
+  border-color: var(--iron-hi);
+  background: linear-gradient(180deg, #201b13, #14100b);
+  color: var(--bronze);
+  opacity: 1;
+  cursor: pointer;
+}
+.footer-compass__dir.is-open:hover { border-color: var(--bronze-dim); }
+.footer-compass__here { place-self: center; width: 6px; height: 6px; border-radius: 50%; background: var(--bronze-dim); }
+.footer-compass__special { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.footer-compass__exit {
+  overflow: hidden;
+  padding: 1px 7px;
+  border: 1px solid var(--iron-hi);
+  border-radius: 999px;
+  background: linear-gradient(180deg, #201b13, #14100b);
+  color: var(--parchment);
+  font-family: "EB Garamond", Georgia, serif;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+  appearance: none; -webkit-appearance: none;
+}
+.footer-compass__exit:hover { border-color: var(--bronze-dim); }
+
 .chip {
   display: inline-flex;
   align-items: center;

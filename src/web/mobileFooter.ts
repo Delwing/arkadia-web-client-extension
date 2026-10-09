@@ -66,8 +66,7 @@ const COLLAPSE_TITLE = 'Zwiń stopkę';
  * Unfolded by the expander, the footer is one more thing Back folds away.
  */
 export function setupMobileFooter(): () => void {
-    const button = document.getElementById('footer-expand');
-    if (!document.getElementById('char-state') || !button) return () => {};
+    if (!document.getElementById('char-state') || !document.getElementById('footer-expand')) return () => {};
 
     // The flag rides on <body>, not on the footer: the location-bind row unfolds
     // with it and is the footer's sibling, which no CSS selector can reach from
@@ -75,7 +74,7 @@ export function setupMobileFooter(): () => void {
     let releaseBack: (() => void) | null = null;
     const setExpanded = (expanded: boolean) => {
         document.body.dataset.footerExpanded = expanded ? '1' : '0';
-        button.setAttribute('title', expanded ? COLLAPSE_TITLE : EXPAND_TITLE);
+        document.getElementById('footer-expand')?.setAttribute('title', expanded ? COLLAPSE_TITLE : EXPAND_TITLE);
         // Only the player's own unfolding: a footer pinned open is not a layer.
         const layered = expanded && getFooterExpandMode() === 'toggle';
         if (layered && !releaseBack) {
@@ -96,13 +95,16 @@ export function setupMobileFooter(): () => void {
 
     setExpanded(getFooterExpandMode() === 'expanded');
 
-    const onClick = () => {
+    // Listened for on the document: the footer layout redraws the status line,
+    // expander and all, when the player picks another layout.
+    const onClick = (event: MouseEvent) => {
+        if (!(event.target as Element | null)?.closest?.('#footer-expand')) return;
         // The expander is hidden outside `toggle` mode; ignoring the click keeps
         // that true even if something else reaches the button.
         if (getFooterExpandMode() !== 'toggle') return;
         setExpanded(document.body.dataset.footerExpanded !== '1');
     };
-    button.addEventListener('click', onClick);
+    document.addEventListener('click', onClick);
 
     const unsubscribeSettings = globalStorage.onChange('uiSettings', () => { applyMode(); });
 
@@ -116,7 +118,7 @@ export function setupMobileFooter(): () => void {
     media?.addEventListener('change', onMediaChange);
 
     return () => {
-        button.removeEventListener('click', onClick);
+        document.removeEventListener('click', onClick);
         media?.removeEventListener('change', onMediaChange);
         unsubscribeSettings();
         releaseBack?.();
