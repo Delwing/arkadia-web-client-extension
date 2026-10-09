@@ -162,6 +162,28 @@ test.describe('Footer layout', () => {
         expect((await box(fourth)).right).toBeGreaterThan(cell.right - 6);
     });
 
+    test('Postępy as a bar shows what the game reported before it was switched on, in every layout', async ({page}) => {
+        await page.setViewportSize({width: 1280, height: 800});
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+        // Reported once, long before the setting changes; nothing comes after it.
+        await pushGmcp(page, 'char.state', {hp: 6, fatigue: 2, improve: 7});
+        await pushGmcp(page, 'char.state', {fatigue: 3});
+
+        for (const layout of ['stock', 'arkadia']) {
+            const modal = await openSettings(page, 'ui-footer');
+            await modal.locator('#ui-footer-layout').selectOption(layout);
+            await modal.locator('#ui-footer-improve-bar').check();
+            await saveSettings(page);
+
+            const bar = page.locator('#char-state .improve-bar');
+            await expect(bar, layout).toBeVisible();
+            await expect(bar.locator('.improve-seg.on'), layout).toHaveCount(7);
+            await expect(page.locator('#char-state .vital[data-vital="hp"]'), layout).toBeVisible();
+        }
+    });
+
     test('a phone keeps the stock footer whatever the pick', async ({page}) => {
         await page.setViewportSize({width: 390, height: 800});
         await pickLayout(page, 'arkadia');

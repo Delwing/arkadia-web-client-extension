@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { globalStorage } from "@modules/core/storage";
 import { getMapSettings, onMapSettingsChange } from "@modules/core/settings";
-import { useClientEvent } from "../hooks";
-import { VITAL_EMOJI, VITAL_LABELS, VITAL_NAMES, visibleVitals, type CharStateData, type VitalReading } from "./vitalsModel";
+import { useCharState, useFormDisabled } from "./charStateStore";
+import { VITAL_EMOJI, VITAL_LABELS, VITAL_NAMES, visibleVitals, type VitalReading } from "./vitalsModel";
 
 /**
  * `uiSettings.footerMode` (Stopka → Tryb stopki):
@@ -61,15 +61,11 @@ function Meter({ reading, mode }: { reading: VitalReading; mode: VitalsMode }) {
  * Postępy to an ImproveBar of its own.
  */
 export default function Vitals({ withoutImprove = false }: { withoutImprove?: boolean }) {
-  const [state, setState] = useState<Partial<CharStateData>>({});
-  const [formDisabled, setFormDisabled] = useState(false);
+  const state = useCharState();
+  const formDisabled = useFormDisabled();
   const [layout, setLayout] = useState(readLayout);
   const [emoji, setEmoji] = useState(() => getMapSettings().emojiLabels);
 
-  useClientEvent<Partial<CharStateData>>("gmcp.char.state", (next) => setState((prev) => ({ ...prev, ...next })));
-  useClientEvent<{ form?: number }>("gmcp.char.options", (options) => {
-    if (options && "form" in options) setFormDisabled(options.form === 0);
-  });
   useEffect(() => {
     const offChrome = globalStorage.onChange("uiSettings", () => setLayout(readLayout()));
     const offMap = onMapSettingsChange((map) => setEmoji(map.emojiLabels));

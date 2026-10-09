@@ -1,5 +1,5 @@
-import { useState, type CSSProperties } from "react";
-import { useClientEvent } from "../hooks";
+import type { CSSProperties } from "react";
+import { useCharState } from "./charStateStore";
 import { readVital, VITAL_NAMES } from "./vitalsModel";
 
 /**
@@ -7,11 +7,8 @@ import { readVital, VITAL_NAMES } from "./vitalsModel";
  * as wide as it is given. Hidden until the game has reported the value.
  */
 export default function ImproveBar() {
-  const [raw, setRaw] = useState<number | undefined>(undefined);
-  useClientEvent<{ improve?: number }>("gmcp.char.state", (state) => {
-    if (typeof state?.improve === "number") setRaw(state.improve);
-  });
-  if (raw === undefined) return null;
+  const raw = useCharState().improve;
+  if (typeof raw !== "number") return null;
 
   const { value, max } = readVital("improve", raw);
   return (

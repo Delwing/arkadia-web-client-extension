@@ -1,6 +1,6 @@
-import { useState, type CSSProperties } from 'react';
+import type { CSSProperties } from 'react';
 import { getColorLevel } from '@web/colors';
-import { useClientEvent } from '../hooks/useClientEvent';
+import { useCharForm, useCharState } from '@web-ui/footer/charStateStore';
 
 // Config mirrors the stock CharState DEFAULT_CONFIG; hue + icon are HUD styling.
 interface VitalCfg {
@@ -31,15 +31,10 @@ const VITALS: VitalCfg[] = [
 
 /** `improveBar`: Postępy as the full-width bar over the gems, or a gem among them. */
 export default function VitalGems({ improveBar = true }: { improveBar?: boolean }) {
-    const [vitalState, setVitalState] = useState<Record<string, number>>({});
-    const [charOptions, setCharOptions] = useState<{ form?: number }>({});
-
-    useClientEvent('gmcp.char.state', (state) => {
-        setVitalState(prev => ({ ...prev, ...(state as Record<string, number>) }));
-    });
-    useClientEvent('gmcp.char.options', (options) => {
-        setCharOptions(prev => ({ ...prev, ...(options as { form?: number }) }));
-    });
+    // The session's merged Char.State, so gems drawn afresh (a layout switch)
+    // show what is known at once.
+    const vitalState = useCharState() as Record<string, number | undefined>;
+    const charForm = useCharForm();
 
     // "improve" (Postep) is lifted out of the gem row and shown as a thin,
     // full-width segmented bar above it — one tick per point, WoW exp-bar style.
@@ -61,7 +56,7 @@ export default function VitalGems({ improveBar = true }: { improveBar?: boolean 
                     // All vitals show by default; hide only bars with no GMCP data yet,
                     // and "form" when the character has no fighting form at all (N/A).
                     if (!defined) return null;
-                    if (cfg.key === 'form' && raw === 0 && (charOptions.form ?? 0) === 0) return null;
+                    if (cfg.key === 'form' && raw === 0 && (charForm ?? 0) === 0) return null;
 
                     let value = raw;
                     let max = cfg.max;
