@@ -26,6 +26,8 @@ export interface JoystickSetting {
 
 export interface JoystickSettings {
     enabled: boolean;
+    /** Locked joysticks can't be dragged: a long press only shows the commands. */
+    locked: boolean;
     items: JoystickSetting[];
 }
 
@@ -80,6 +82,7 @@ const DEFAULT_JOYSTICKS: JoystickSetting[] = [
 export function createDefaultJoysticks(): JoystickSettings {
     return {
         enabled: false,
+        locked: false,
         items: DEFAULT_JOYSTICKS.map(j => ({ ...j, commands: { ...j.commands } })),
     };
 }
@@ -102,8 +105,12 @@ export function clampJoystickSize(size: unknown): number {
     return Math.round(Math.min(JOYSTICK_MAX_SIZE, Math.max(JOYSTICK_MIN_SIZE, n)));
 }
 
-export function parseJoystickSettings(raw: unknown): JoystickSettings {
-    if (!raw || typeof raw !== 'object') return createDefaultJoysticks();
+/**
+ * `legacyLocked` is the mobile buttons' lock, which joysticks followed before
+ * they had their own; it applies until the joystick lock is first saved.
+ */
+export function parseJoystickSettings(raw: unknown, legacyLocked = false): JoystickSettings {
+    if (!raw || typeof raw !== 'object') return { ...createDefaultJoysticks(), locked: legacyLocked };
     const source = raw as Record<string, unknown>;
     const items: JoystickSetting[] = [];
     const usedIds = new Set<string>();
@@ -129,7 +136,8 @@ export function parseJoystickSettings(raw: unknown): JoystickSettings {
             fontColor: str(entry.fontColor) || defaultJoystickFontColor,
         });
     });
-    return { enabled: source.enabled === true, items };
+    const locked = typeof source.locked === 'boolean' ? source.locked : legacyLocked;
+    return { enabled: source.enabled === true, locked, items };
 }
 
 /** Angle (radians, screen coordinates: y grows down) each direction points at. */

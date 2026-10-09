@@ -315,7 +315,7 @@ export function loadSettings(): Settings {
                     leader: parseLayout(raw.leader),
                     locked,
                     radial: parseRadialSettings(raw.radial),
-                    joysticks: parseJoystickSettings(raw.joysticks),
+                    joysticks: parseJoystickSettings(raw.joysticks, locked),
                     buttonSize,
                     buttonGap,
                 };
@@ -358,7 +358,7 @@ export function loadSettings(): Settings {
                 },
                 locked,
                 radial: parseRadialSettings(raw.radial),
-                joysticks: parseJoystickSettings(raw.joysticks),
+                joysticks: parseJoystickSettings(raw.joysticks, locked),
                 buttonSize,
                 buttonGap,
             };
