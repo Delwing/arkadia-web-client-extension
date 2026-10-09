@@ -3,6 +3,7 @@ import eventBus from "@modules/core/eventBus";
 import { gmcp } from "@client/gmcp";
 import { getShortDir, longToShort } from "@shared/map/directions";
 import { useClientEvent } from "../hooks";
+import { PREVIEW_EXITS, useFooterPreview } from "./layout/previewContext";
 
 const SHORT_DIRS = new Set(Object.values(longToShort));
 
@@ -38,8 +39,11 @@ const go = (command: string) => eventBus.emit("sendCommand", { command });
  * ("wyjscie", "brama") line up beside it as buttons of their own.
  */
 export default function ExitCompass() {
-  const [exits, setExits] = useState(() => readExits(gmcp?.room?.info));
+  const [liveExits, setExits] = useState(() => readExits(gmcp?.room?.info));
   useClientEvent<{ exits?: unknown }>("gmcp.room.info", (info) => setExits(readExits(info)));
+  // The layout editor's preview shows a rose with some exits even before a room.
+  const preview = useFooterPreview();
+  const exits = preview && liveExits.standard.size === 0 && liveExits.special.length === 0 ? readExits(PREVIEW_EXITS) : liveExits;
 
   return (
     <div className="footer-compass">

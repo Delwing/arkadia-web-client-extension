@@ -635,9 +635,11 @@ body::after {
 .footer-cell + .footer-cell { margin-left: 14px; }
 .footer-row { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .footer-column { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-.footer-cell .gems { flex-wrap: wrap; }
+.footer-cell .gems,
+.footer-band .gems { flex-wrap: wrap; min-width: 0; }
 .footer-chip-grid {
   display: grid;
+  flex-shrink: 0;
   grid-template-rows: repeat(var(--chip-rows), auto);
   grid-auto-flow: column;
   grid-auto-columns: max-content;

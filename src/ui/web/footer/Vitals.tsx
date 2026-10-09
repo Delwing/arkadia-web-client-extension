@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { globalStorage } from "@modules/core/storage";
 import { getMapSettings, onMapSettingsChange } from "@modules/core/settings";
 import { useCharState, useFormDisabled } from "./charStateStore";
+import { PREVIEW_CHAR_STATE, useFooterPreview } from "./layout/previewContext";
+import { DEFAULT_VITAL_ORDER } from "./vitalsModel";
 import { VITAL_EMOJI, VITAL_LABELS, VITAL_NAMES, visibleVitals, type VitalReading } from "./vitalsModel";
 
 /**
@@ -61,8 +63,12 @@ function Meter({ reading, mode }: { reading: VitalReading; mode: VitalsMode }) {
  * Postępy to an ImproveBar of its own.
  */
 export default function Vitals({ withoutImprove = false }: { withoutImprove?: boolean }) {
-  const state = useCharState();
-  const formDisabled = useFormDisabled();
+  const live = useCharState();
+  const liveFormDisabled = useFormDisabled();
+  // The layout editor's preview shows every vital, as the game might.
+  const preview = useFooterPreview();
+  const state = preview ? { ...PREVIEW_CHAR_STATE, ...live } : live;
+  const formDisabled = preview ? false : liveFormDisabled;
   const [layout, setLayout] = useState(readLayout);
   const [emoji, setEmoji] = useState(() => getMapSettings().emojiLabels);
 
@@ -72,7 +78,7 @@ export default function Vitals({ withoutImprove = false }: { withoutImprove?: bo
     return () => { offChrome(); offMap(); };
   }, []);
 
-  const vitals = visibleVitals(state, layout.order, layout.always, formDisabled)
+  const vitals = visibleVitals(state, layout.order, preview ? DEFAULT_VITAL_ORDER : layout.always, formDisabled)
     .filter((reading) => !withoutImprove || reading.key !== "improve");
   return (
     <>

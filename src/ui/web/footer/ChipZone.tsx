@@ -4,6 +4,9 @@ import type { FooterItem } from "@modules/core/footerRegistry";
 import type { FooterChipsBlock } from "@shared/footerLayoutTypes";
 import { useFooterItems } from "./useFooterItems";
 import FooterItemView from "./FooterItemView";
+import { Chip } from "./Chip";
+import { CHIP_NAMES } from "./chipNames";
+import { useFooterPreview } from "./layout/previewContext";
 
 /**
  * One chip slot. Keeps the chip's config id as the element id (older code, plugins
@@ -13,6 +16,7 @@ import FooterItemView from "./FooterItemView";
  */
 function Slot({ item }: { item: FooterItem }) {
   const plugin = item.source !== "builtin";
+  const preview = useFooterPreview();
   return (
     <span
       id={plugin ? undefined : item.id}
@@ -21,6 +25,9 @@ function Slot({ item }: { item: FooterItem }) {
       style={{ "--order": item.order } as CSSProperties}
     >
       <FooterItemView item={item} />
+      {/* The layout editor's preview: a chip with nothing to show yet stands in
+          as its name (the preview's stylesheet hides this beside a real one). */}
+      {preview && <Chip icon={null} label={item.label ?? CHIP_NAMES[item.id] ?? item.id} value="–" className="footer-preview-sample" />}
     </span>
   );
 }

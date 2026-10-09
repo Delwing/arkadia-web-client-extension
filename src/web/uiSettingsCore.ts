@@ -22,7 +22,8 @@ import {
     setBehaviorSettings,
 } from "@modules/core/settings";
 import {chromeSettingsKeys} from "@shared/settingsDefaults";
-import {FOOTER_PRESET_IDS, type FooterLayoutTweakSet, type FooterPresetId} from "@shared/footerLayoutTypes.ts";
+import {FOOTER_PRESET_IDS, type FooterLayoutChoice, type FooterLayoutTweakSet, type FooterPresetId} from "@shared/footerLayoutTypes.ts";
+import {sanitizeFooterLayout} from "@shared/footerLayoutSanitize.ts";
 import {loadLayoutState} from "@web/layout";
 import {OBJECT_LIST_OTHERS_ID} from "@web/layout/types.ts";
 import {getWindowBackground, subscribeToWindowSetting, WINDOW_BACKGROUND_KEY, windowBackgroundRgba} from "@web/layout/windowSettings.ts";
@@ -569,7 +570,11 @@ export function load(): UiSettings {
                 ? parsed.keepMultibindsVisible
                 : defaultUiSettings.keepMultibindsVisible;
             // Unset (or unknown) leaves each UI on its own footer layout.
-            const footerLayout = FOOTER_PRESET_IDS.includes(parsed.footerLayout) ? (parsed.footerLayout as FooterPresetId) : undefined;
+            const footerLayout = FOOTER_PRESET_IDS.includes(parsed.footerLayout) || parsed.footerLayout === 'custom'
+                ? (parsed.footerLayout as FooterLayoutChoice)
+                : undefined;
+            const footerCustomLayout = sanitizeFooterLayout(parsed.footerCustomLayout) ?? undefined;
+            const footerCustomBase = FOOTER_PRESET_IDS.includes(parsed.footerCustomBase) ? (parsed.footerCustomBase as FooterPresetId) : undefined;
             // Kept as stored: the footer pulls each value into range as it applies it.
             const footerLayoutTweaks = parsed.footerLayoutTweaks && typeof parsed.footerLayoutTweaks === 'object' && !Array.isArray(parsed.footerLayoutTweaks)
                 ? (parsed.footerLayoutTweaks as FooterLayoutTweakSet)
@@ -641,6 +646,8 @@ export function load(): UiSettings {
                 footerMode,
                 footerLayout,
                 footerLayoutTweaks,
+                footerCustomLayout,
+                footerCustomBase,
                 explorationMode,
                 fightTitleIcon,
                 hapticFeedback,

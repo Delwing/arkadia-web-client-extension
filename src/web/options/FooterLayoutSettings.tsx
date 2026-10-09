@@ -1,33 +1,65 @@
+import { useState } from "react";
 import {
     FOOTER_PRESET_TWEAKS,
+    type FooterLayout,
+    type FooterLayoutChoice,
     type FooterLayoutTweak,
     type FooterLayoutTweaks,
     type FooterLayoutTweakSet,
     type FooterPresetId,
 } from "@shared/footerLayoutTypes";
+import { Button } from "@web-ui/primitives/index.ts";
 import { FOOTER_PRESETS } from "@web-ui/footer/layout/presets.ts";
-import { layoutTweaks } from "@web-ui/footer/layout/layoutTree.ts";
+import { layoutTweaks, tweakLayout } from "@web-ui/footer/layout/layoutTree.ts";
 import { CheckboxRow, RangeField, SelectField } from "../uiSettings/fields";
+import FooterLayoutDialog from "./footerEditor/FooterLayoutDialog";
+
+export interface FooterLayoutSettingsValue {
+    footerLayout?: FooterLayoutChoice;
+    footerLayoutTweaks?: FooterLayoutTweakSet;
+    footerCustomLayout?: FooterLayout;
+    footerCustomBase?: FooterPresetId;
+}
 
 interface FooterLayoutSettingsProps {
-    layout: FooterPresetId | undefined;
-    tweaks: FooterLayoutTweakSet | undefined;
-    onChange: (layout: FooterPresetId | undefined, tweaks: FooterLayoutTweakSet | undefined) => void;
+    value: FooterLayoutSettingsValue;
+    onChange: (patch: FooterLayoutSettingsValue) => void;
 }
+
+const PRESET_NAMES: Record<FooterPresetId, string> = {
+    stock: "Klasyczny",
+    forge: "Piętrowy",
+    arkadia: "Mudlet",
+};
+
+/** A preset as the player has adjusted it: where their own layout starts from. */
+const presetAsTweaked = (preset: FooterPresetId, tweaks: FooterLayoutTweakSet | undefined): FooterLayout =>
+    tweakLayout(FOOTER_PRESETS[preset], tweaks?.[preset]);
 
 /**
  * Stopka -> Układ stopki: the layout every UI draws, then the handful of
  * adjustments that layout offers (FOOTER_PRESET_TWEAKS). Each layout keeps its
  * own adjustments, so trying another one and coming back loses nothing.
+ * "Dostosuj" opens a preset in the layout editor (a dialog over the settings)
+ * to build the player's own from; their own is kept while they try presets.
  */
-export default function FooterLayoutSettings({ layout, tweaks, onChange }: FooterLayoutSettingsProps) {
+export default function FooterLayoutSettings({ value, onChange }: FooterLayoutSettingsProps) {
+    // Nothing picked is the classic layout.
+    const choice = value.footerLayout ?? "stock";
+    const tweaks = value.footerLayoutTweaks;
+    const layout = choice !== "custom" ? choice : undefined;
     const own = layout ? tweaks?.[layout] : undefined;
     const values = layout ? { ...layoutTweaks(FOOTER_PRESETS[layout]), ...own } : null;
-    const set = <K extends FooterLayoutTweak>(key: K, value: FooterLayoutTweaks[K]) => {
+    const set = <K extends FooterLayoutTweak>(key: K, next: FooterLayoutTweaks[K]) => {
         if (!layout) return;
-        onChange(layout, { ...tweaks, [layout]: { ...own, [key]: value } });
+        onChange({ footerLayoutTweaks: { ...tweaks, [layout]: { ...own, [key]: next } } });
     };
     const offered = (key: FooterLayoutTweak) => layout !== undefined && FOOTER_PRESET_TWEAKS[layout].includes(key);
+
+    const base = value.footerCustomBase ?? "stock";
+    /** The editor, open on a layout; "Gotowe" makes it the player's own, `base` the preset it came from. */
+    const [editing, setEditing] = useState<{ initial: FooterLayout; base: FooterPresetId } | null>(null);
+    const customize = (preset: FooterPresetId) => setEditing({ initial: presetAsTweaked(preset, tweaks), base: preset });
 
     return (
         <>
@@ -35,14 +67,49 @@ export default function FooterLayoutSettings({ layout, tweaks, onChange }: Foote
                 id="ui-footer-layout"
                 label="Układ"
                 hint="Jeden dla obu interfejsów. Telefon zawsze ma układ klasyczny."
-                value={layout ?? ""}
-                onChange={(v) => onChange(v ? (v as FooterPresetId) : undefined, tweaks)}
+                value={choice}
+                onChange={(v) => {
+                    // Nothing of their own yet: start it from the layout they had.
+                    if (v === "custom" && !value.footerCustomLayout) customize(layout ?? "stock");
+                    else onChange({ footerLayout: v as FooterLayoutChoice });
+                }}
             >
-                <option value="">Własny układ interfejsu</option>
-                <option value="stock">Klasyczny</option>
-                <option value="forge">Kuźnia</option>
-                <option value="arkadia">Arkadia (Mudlet)</option>
+                <option value="stock">{PRESET_NAMES.stock}</option>
+                <option value="forge">{PRESET_NAMES.forge}</option>
+                <option value="arkadia">{PRESET_NAMES.arkadia}</option>
+                <option value="custom">Własny</option>
             </SelectField>
+            {layout && (
+                <div className="popup-field">
+                    <Button size="sm" id="ui-footer-customize" onClick={() => customize(layout)}>Dostosuj…</Button>
+                    <div className="popup-field__hint">
+                        Otwiera edytor z tym układem, by zbudować z niego własny{value.footerCustomLayout ? " – zastąpi obecny własny" : ""}.
+                    </div>
+                </div>
+            )}
+            {choice === "custom" && value.footerCustomLayout && (
+                <div className="popup-field footer-layout-custom-actions">
+                    <Button size="sm" id="ui-footer-edit" onClick={() => setEditing({ initial: value.footerCustomLayout!, base })}>Edytuj układ…</Button>
+                    <Button
+                        size="sm"
+                        variant="ghost"
+                        id="ui-footer-restore"
+                        onClick={() => onChange({ footerCustomLayout: presetAsTweaked(base, tweaks) })}
+                    >
+                        Przywróć {PRESET_NAMES[base]}
+                    </Button>
+                </div>
+            )}
+            {editing && (
+                <FooterLayoutDialog
+                    initial={editing.initial}
+                    onCancel={() => setEditing(null)}
+                    onDone={(footerCustomLayout) => {
+                        onChange({ footerLayout: "custom", footerCustomLayout, footerCustomBase: editing.base });
+                        setEditing(null);
+                    }}
+                />
+            )}
             {values && offered("chipLook") && (
                 <SelectField
                     id="ui-footer-chip-look"

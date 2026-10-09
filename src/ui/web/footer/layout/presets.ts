@@ -1,13 +1,14 @@
 import type { FooterLayout, FooterPresetId } from "@shared/footerLayoutTypes";
 
 /**
- * The stock footer: the location binds (shown only when there are any), then
- * the status line - vitals, every chip on one folding line, the connection
- * set apart at the end.
+ * The classic footer, every UI's default: the location binds (shown only when
+ * there are any) with the way back after a dropped session (for a UI without
+ * one elsewhere), then the status line - vitals, every chip on one folding
+ * line, the connection set apart at the end.
  */
 export const STOCK_FOOTER_LAYOUT: FooterLayout = {
   bands: [
-    { children: [{ type: "block", block: "multibinds" }] },
+    { children: [{ type: "block", block: "multibinds" }, { type: "block", block: "reconnect" }] },
     {
       children: [
         { type: "block", block: "vitals" },

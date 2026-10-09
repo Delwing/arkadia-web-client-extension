@@ -1,7 +1,14 @@
 import type { FooterSkin } from '@web-ui/footer/layout/FooterLayout';
+import type { FooterPreviewHost } from '@web-ui/footer/layout/previewHost';
 import { bandHas } from '@web-ui/footer/layout/layoutTree';
 import VitalGems from './VitalGems';
 import ReconnectChip from './ReconnectChip';
+import { useFooterPreview } from '@web-ui/footer/layout/previewContext';
+
+/** The reconnect chip, left out of the layout editor's preview: it needs the live session. */
+function Reconnect() {
+    return useFooterPreview() ? null : <ReconnectChip />;
+}
 
 /**
  * The footer as bands of the forge HUD plate, each parted from the next by an
@@ -18,7 +25,13 @@ export const forgeFooterSkin: FooterSkin = {
     separator: () => <div className="hud-seam" />,
     block(node) {
         if (node.block === 'vitals') return <VitalGems improveBar={node.improveBar === true} />;
-        if (node.block === 'reconnect') return <ReconnectChip />;
+        if (node.block === 'reconnect') return <Reconnect />;
         return undefined;
     },
+};
+
+/** For the layout editor: the footer drawn on the plate, as the HUD draws it. */
+export const forgeFooterPreviewHost: FooterPreviewHost = {
+    skin: forgeFooterSkin,
+    Frame: ({ children }) => <div className="hud-panel">{children}</div>,
 };

@@ -1,0 +1,118 @@
+/* The footer layout editor (FooterLayoutDialog): the live footer on top, what to
+   add under it, then the selected piece's settings beside the warnings and JSON.
+   Imported by the dialog, so it comes along wherever the settings open (forge too). */
+/* One fixed height: what is shown under the preview changes as pieces are
+   picked, and a dialog that grew and shrank with it (centred, so from both
+   ends) would move the preview about. The body scrolls instead. */
+.footer-editor-dialog.popup-dialog--xl {
+  width: min(1200px, calc(100vw - 32px));
+  max-width: none;
+  height: min(88vh, 940px);
+  max-height: none;
+}
+.footer-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+.footer-editor__stage {
+  padding: 0 4px;
+  border: 1px solid var(--popup-border-subtle);
+  border-radius: var(--ui-radius, 6px);
+  background-color: var(--popup-bg);
+}
+.footer-editor__frame {
+  display: block;
+  width: 100%;
+  height: 120px;
+  border: 0;
+  background: transparent;
+}
+.footer-editor__palette,
+.footer-editor__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.footer-editor__label {
+  color: var(--popup-text-subtle);
+  font-size: var(--ui-fs-sm, 13px);
+}
+.footer-editor__panels {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: 12px;
+  align-items: start;
+}
+@media (max-width: 760px) {
+  .footer-editor__panels {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.footer-editor__panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--popup-border-subtle);
+  border-radius: var(--ui-radius, 6px);
+}
+.footer-editor__panel-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.footer-editor__title {
+  color: var(--popup-text);
+  font-weight: 600;
+}
+.footer-editor__warnings {
+  margin: 0;
+  padding-left: 1.1em;
+}
+.footer-outline__chips {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 14rem;
+  overflow-y: auto;
+  padding: 6px 8px;
+  border: 1px solid var(--popup-border-subtle);
+  border-radius: var(--ui-radius, 6px);
+}
+
+/* The palette: pieces to drag onto the preview. */
+.footer-editor__piece {
+  padding: 4px 10px;
+  border: 1px dashed var(--popup-border-strong);
+  border-radius: 999px;
+  background-color: var(--popup-control-bg);
+  color: var(--popup-text);
+  font: inherit;
+  font-size: var(--ui-fs-sm, 13px);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+.footer-editor__piece:hover {
+  border-color: var(--popup-accent);
+}
+/* The piece on its way, under the pointer. */
+.footer-editor__carried {
+  position: fixed;
+  z-index: 2000;
+  padding: 4px 10px;
+  border: 1px solid var(--popup-accent);
+  border-radius: 999px;
+  background-color: var(--popup-control-bg);
+  color: var(--popup-text);
+  font-size: var(--ui-fs-sm, 13px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}

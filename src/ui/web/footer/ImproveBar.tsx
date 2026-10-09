@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
 import { useCharState } from "./charStateStore";
+import { PREVIEW_CHAR_STATE, useFooterPreview } from "./layout/previewContext";
 import { readVital, VITAL_NAMES } from "./vitalsModel";
 
 /**
@@ -7,7 +8,9 @@ import { readVital, VITAL_NAMES } from "./vitalsModel";
  * as wide as it is given. Hidden until the game has reported the value.
  */
 export default function ImproveBar() {
-  const raw = useCharState().improve;
+  const live = useCharState().improve;
+  const preview = useFooterPreview();
+  const raw = live ?? (preview ? PREVIEW_CHAR_STATE.improve : undefined);
   if (typeof raw !== "number") return null;
 
   const { value, max } = readVital("improve", raw);

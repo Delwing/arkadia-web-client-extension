@@ -107,6 +107,9 @@ export interface FooterLayout {
 export const FOOTER_PRESET_IDS: readonly string[] = ['stock', 'forge', 'arkadia'];
 export type FooterPresetId = 'stock' | 'forge' | 'arkadia';
 
+/** What `uiSettings.footerLayout` can name: a preset, or the player's own layout. */
+export type FooterLayoutChoice = FooterPresetId | 'custom';
+
 /**
  * The few knobs a picked layout offers in the settings (Stopka -> Układ
  * stopki), so a player can adjust it without building their own. Each layout

@@ -1,4 +1,5 @@
 import type { FooterComponentConfig } from "../defaultUiSettings";
+import { CHIP_NAMES } from "@web-ui/footer/chipNames.ts";
 
 /**
  * The joins behind the footer settings panel, kept out of the component itself
@@ -12,24 +13,7 @@ import type { FooterComponentConfig } from "../defaultUiSettings";
  * is registered for on the way back out (`toConfig`).
  */
 
-export const DISPLAY_NAMES: Record<string, string> = {
-    'clock-display': 'Zegar',
-    'transport-timer': 'Timer transportu',
-    'lamp-timer': 'Timer lampy',
-    'pipe-status': 'Fajka',
-    'break-item-warning': 'Ostrzeżenie o uszkodzeniu',
-    'mail-status': 'Status poczty',
-    'package-status': 'Status paczki',
-    'weapon-state': 'Stan broni',
-    'attack-mode': 'Tryb ataku',
-    'release-guard-timer': 'Timer zasłonięcia',
-    'zask-timer': 'Timer zaskoczenia',
-    'order-timer': 'Timer rozkazu',
-    'combat-timer': 'Timer walki (30s)',
-    'world-destruction-timer': 'Timer apokalipsy',
-    'team-panel': 'Panel drużyny',
-    'connection-status': 'Ping i zegar proxy',
-};
+export const DISPLAY_NAMES: Record<string, string> = CHIP_NAMES;
 
 /** A config row plus what to call it, which for a plugin only the registry knows. */
 export interface FooterRow extends FooterComponentConfig {

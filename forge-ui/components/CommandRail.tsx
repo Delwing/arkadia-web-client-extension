@@ -1,14 +1,17 @@
 import { useRef } from 'react';
 import { useCommandLine } from '../hooks/useCommandLine';
 import FooterLayout from '@web-ui/footer/layout/FooterLayout';
-import { FORGE_FOOTER_LAYOUT } from '@web-ui/footer/layout/presets';
 import { useFooterLayout } from '@web-ui/footer/layout/useFooterLayout';
 import DesktopButtons from '@web-ui/buttons/DesktopButtons';
 import MobileCommandRadial from '@web-ui/buttons/MobileCommandRadial';
 import MobileDirectionButtons from '@web-ui/buttons/MobileDirectionButtons';
 import MobileJoysticks from '@web-ui/buttons/MobileJoysticks';
 import Menu from './Menu';
-import { forgeFooterSkin } from './forgeFooterSkin';
+import { forgeFooterPreviewHost, forgeFooterSkin } from './forgeFooterSkin';
+import { setFooterPreviewHost } from '@web-ui/footer/layout/previewHost';
+
+// The layout editor (in the shared settings) draws its preview on the plate.
+setFooterPreviewHost(forgeFooterPreviewHost);
 import { useClient } from '../client/ClientContext';
 
 /**
@@ -27,7 +30,7 @@ export default function CommandRail() {
     // History, completion, multiline, password mode and sticky focus all come
     // from the shared command-line engine — see useCommandLine.
     const { passwordMode } = useCommandLine({ inputRef, passwordRef });
-    const footerLayout = useFooterLayout(FORGE_FOOTER_LAYOUT);
+    const footerLayout = useFooterLayout();
 
     return (
         <div className="rail">

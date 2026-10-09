@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react';
 import { getColorLevel } from '@web/colors';
 import { useCharForm, useCharState } from '@web-ui/footer/charStateStore';
+import { PREVIEW_CHAR_STATE, useFooterPreview } from '@web-ui/footer/layout/previewContext';
 
 // Config mirrors the stock CharState DEFAULT_CONFIG; hue + icon are HUD styling.
 interface VitalCfg {
@@ -33,8 +34,12 @@ const VITALS: VitalCfg[] = [
 export default function VitalGems({ improveBar = true }: { improveBar?: boolean }) {
     // The session's merged Char.State, so gems drawn afresh (a layout switch)
     // show what is known at once.
-    const vitalState = useCharState() as Record<string, number | undefined>;
-    const charForm = useCharForm();
+    // The layout editor's preview shows every gem, as the game might.
+    const preview = useFooterPreview();
+    const live = useCharState();
+    const vitalState = (preview ? { ...PREVIEW_CHAR_STATE, ...live } : live) as Record<string, number | undefined>;
+    const liveForm = useCharForm();
+    const charForm = preview ? 1 : liveForm;
 
     // "improve" (Postep) is lifted out of the gem row and shown as a thin,
     // full-width segmented bar above it — one tick per point, WoW exp-bar style.

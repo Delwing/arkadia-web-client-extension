@@ -6,6 +6,7 @@ import MultiBindStrip from "../MultiBindStrip";
 import { FooterButtonSheet } from "../FooterButtons";
 import type { FooterSkin } from "./FooterLayout";
 import { bandHas } from "./layoutTree";
+import { useFooterPreview } from "./previewContext";
 
 function readFooterMode(): number {
   const mode = (globalStorage.get("uiSettings") as { footerMode?: number } | null)?.footerMode;
@@ -23,8 +24,9 @@ const BindsActive = createContext<(active: boolean) => void>(() => {});
  */
 function BindsRow({ children }: { children: ReactNode }) {
   const [active, setActive] = useState(false);
+  const preview = useFooterPreview();
   return (
-    <div id="multi-binds" className={active ? "active" : undefined}>
+    <div id="multi-binds" className={active || preview ? "active" : undefined}>
       <BindsActive.Provider value={setActive}>{children}</BindsActive.Provider>
     </div>
   );
@@ -32,7 +34,8 @@ function BindsRow({ children }: { children: ReactNode }) {
 
 function StockBinds({ alwaysVisible }: { alwaysVisible?: boolean }) {
   const setActive = useContext(BindsActive);
-  return <MultiBindStrip alwaysVisible={alwaysVisible} onActiveChange={setActive} />;
+  const preview = useFooterPreview();
+  return <MultiBindStrip alwaysVisible={alwaysVisible || preview} onActiveChange={setActive} />;
 }
 
 /**

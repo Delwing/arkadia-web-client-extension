@@ -11,7 +11,7 @@ import { useFooterLayout } from "./useFooterLayout";
  * status line into its two rails and knows no other shape.
  */
 export default function StockFooter() {
-  const picked = useFooterLayout(STOCK_FOOTER_LAYOUT);
+  const picked = useFooterLayout();
   const phone = useMediaQuery(MOBILE_FOOTER_QUERY);
   return <FooterLayout layout={phone ? STOCK_FOOTER_LAYOUT : picked} skin={stockFooterSkin} />;
 }

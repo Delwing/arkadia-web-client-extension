@@ -6,6 +6,7 @@ import ChipZone from "../ChipZone";
 import ExitCompass from "../ExitCompass";
 import ImproveBar from "../ImproveBar";
 import { claimedChipIds } from "./layoutTree";
+import { useFooterPreview } from "./previewContext";
 
 /**
  * How one UI draws the footer layout. The layout decides what goes where; the
@@ -22,12 +23,18 @@ export interface FooterSkin {
   block?(node: FooterBlockNode): ReactNode | undefined;
 }
 
-function sharedBlock(node: FooterBlockNode, claimed: ReadonlySet<string>): ReactNode {
+/**
+ * Wraps what the layout draws for each band and node (the layout editor marks
+ * them out to select and drag); `path` is `[band]` or `[band, child, ...]`.
+ */
+export type FooterDecorator = (props: { path: readonly number[]; node?: FooterNode; children: ReactNode }) => ReactNode;
+
+function sharedBlock(node: FooterBlockNode, claimed: ReadonlySet<string>, preview: boolean): ReactNode {
   switch (node.block) {
     case "chips":
       return <ChipZone block={node} claimed={claimed} />;
     case "multibinds":
-      return <MultiBindStrip alwaysVisible={node.alwaysVisible} />;
+      return <MultiBindStrip alwaysVisible={node.alwaysVisible || preview} />;
     case "vitals": {
       const row = (
         <div
@@ -54,34 +61,36 @@ function sharedBlock(node: FooterBlockNode, claimed: ReadonlySet<string>): React
 }
 
 /** The footer, as `layout` arranges it and `skin` draws it. */
-export default function FooterLayout({ layout, skin }: { layout: Layout; skin: FooterSkin }) {
+export default function FooterLayout({ layout, skin, decorate }: { layout: Layout; skin: FooterSkin; decorate?: FooterDecorator }) {
   const claimed = useMemo(() => claimedChipIds(layout), [layout]);
+  const preview = useFooterPreview();
 
-  const draw = (node: FooterNode, key: number): ReactNode => {
+  const draw = (node: FooterNode, path: number[]): ReactNode => {
     let drawn: ReactNode;
     if (node.type === "block") {
       const own = skin.block?.(node);
-      drawn = own !== undefined ? own : sharedBlock(node, claimed);
+      drawn = own !== undefined ? own : sharedBlock(node, claimed, preview);
     } else {
-      drawn = <div className={`footer-${node.type}`}>{node.children.map(draw)}</div>;
+      drawn = <div className={`footer-${node.type}`}>{node.children.map((child, i) => draw(child, [...path, i]))}</div>;
     }
     // A node with a share of the width gets a cell holding exactly that share.
-    if (node.grow === undefined) return <Fragment key={key}>{drawn}</Fragment>;
-    return (
-      <div key={key} className="footer-cell" style={{ flexGrow: node.grow, flexShrink: 1, flexBasis: 0 }}>
-        {drawn}
-      </div>
-    );
+    if (node.grow !== undefined) {
+      drawn = <div className="footer-cell" style={{ flexGrow: node.grow, flexShrink: 1, flexBasis: 0 }}>{drawn}</div>;
+    }
+    return <Fragment key={path.join(".")}>{decorate ? decorate({ path, node, children: drawn }) : drawn}</Fragment>;
   };
 
   return (
     <>
-      {layout.bands.map((band, index) => (
-        <Fragment key={index}>
-          {index > 0 && skin.separator?.()}
-          {skin.band({ band, index, layout, children: band.children.map(draw) })}
-        </Fragment>
-      ))}
+      {layout.bands.map((band, index) => {
+        const drawn = skin.band({ band, index, layout, children: band.children.map((child, i) => draw(child, [index, i])) });
+        return (
+          <Fragment key={index}>
+            {index > 0 && skin.separator?.()}
+            {decorate ? decorate({ path: [index], children: drawn }) : drawn}
+          </Fragment>
+        );
+      })}
     </>
   );
 }

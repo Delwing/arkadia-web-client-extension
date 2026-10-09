@@ -14,12 +14,9 @@ interface FooterSectionsProps {
 function FooterSections({ draft, update }: FooterSectionsProps) {
     return (
         <>
-            <SettingsSection title="Układ stopki">
-                <FooterLayoutSettings
-                    layout={draft.footerLayout}
-                    tweaks={draft.footerLayoutTweaks}
-                    onChange={(footerLayout, footerLayoutTweaks) => update({ footerLayout, footerLayoutTweaks })}
-                />
+            {/* Full width while the player builds their own: the editor needs the room. */}
+            <SettingsSection title="Układ stopki" full={draft.footerLayout === "custom"}>
+                <FooterLayoutSettings value={draft} onChange={update} />
             </SettingsSection>
 
             <SettingsSection title="Stan postaci">

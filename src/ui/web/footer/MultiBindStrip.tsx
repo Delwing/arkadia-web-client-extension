@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import eventBus from "@modules/core/eventBus";
 import { globalStorage } from "@modules/core/storage";
+import { PREVIEW_BINDS, useFooterPreview } from "./layout/previewContext";
 import { useClientEvent, useHardwareKeyboard } from "../hooks";
 
 interface DisplayMultibind {
@@ -56,7 +57,10 @@ export default function MultiBindStrip({
   alwaysVisible?: boolean;
   onActiveChange?: (active: boolean) => void;
 }) {
-  const [binds, setBinds] = useState<DisplayMultibind[]>([]);
+  const [liveBinds, setBinds] = useState<DisplayMultibind[]>([]);
+  // The layout editor's preview shows a few binds even where the room has none.
+  const preview = useFooterPreview();
+  const binds = preview && liveBinds.length === 0 ? PREVIEW_BINDS : liveBinds;
   const [keepVisible, setKeepVisible] = useState(getInitialKeepVisible);
   const [keyHintMode, setKeyHintMode] = useState(getKeyHintMode);
   const hardwareKeyboard = useHardwareKeyboard();
