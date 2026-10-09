@@ -186,7 +186,7 @@ const PersonEditModal: React.FC<PersonEditModalProps> = ({
                                 rows={3}
                                 value={note}
                                 onChange={(e) => setNote(e.target.value)}
-                                placeholder="np. handluje ziołami, zna drogę do Ishtaru"
+                                placeholder="np. handluje ziołami"
                             />
                             <label className="popup-check">
                                 <input
