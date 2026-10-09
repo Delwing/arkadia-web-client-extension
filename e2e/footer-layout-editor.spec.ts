@@ -216,7 +216,10 @@ test.describe('Footer layout editor', () => {
 
         await frame(editor, '1.2').click(); // the chips: the most settings
         expect(await top()).toBe(before);
-        await frame(editor, '0').click(); // a band: hardly any
+        // A band: hardly any. Its strip of binds starts at the left and covers
+        // the middle once the text runs a little wider, so click the free end.
+        const band = await steadyBox(frame(editor, '0'));
+        await frame(editor, '0').click({position: {x: band.width - 8, y: band.height / 2}});
         expect(await top()).toBe(before);
         await frame(editor, '1.1').click();
         expect(await top()).toBe(before);
