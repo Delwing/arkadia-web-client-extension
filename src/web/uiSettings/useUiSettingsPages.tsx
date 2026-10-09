@@ -79,6 +79,7 @@ export function useUiSettingsPages({ soundManager, onEnableNotifications }: UiSe
     const [customSounds, setCustomSounds] = useState<CustomSound[]>([]);
     const [layoutEnabled, setLayoutEnabled] = useState(() => loadLayoutState().enabled);
     const [layoutObjectList, setLayoutObjectList] = useState(() => loadLayoutState().enabledPanels.objectList);
+    const [layoutRailsFull, setLayoutRailsFull] = useState(() => loadLayoutState().spanningDocks === "leftRight");
     const [mapVersion, setMapVersion] = useState("");
     const [refreshing, setRefreshing] = useState(false);
     const [explorationStats, setExplorationStats] = useState("");
@@ -178,6 +179,7 @@ export function useUiSettingsPages({ soundManager, onEnableNotifications }: UiSe
         const ls = loadLayoutState();
         setLayoutEnabled(ls.enabled);
         setLayoutObjectList(ls.enabledPanels.objectList);
+        setLayoutRailsFull(ls.spanningDocks === "leftRight");
         refreshExplorationStats();
         void updateMapVersion();
         return fresh;
@@ -238,10 +240,18 @@ export function useUiSettingsPages({ soundManager, onEnableNotifications }: UiSe
         setLayoutObjectList(v);
         eventBus.emit("layoutManagerStateChanged");
     };
+    const onLayoutRailsFullChange = (v: boolean) => {
+        const ls = loadLayoutState();
+        ls.spanningDocks = v ? "leftRight" : "topBottom";
+        saveLayoutState(ls);
+        setLayoutRailsFull(v);
+        eventBus.emit("layoutManagerStateChanged");
+    };
     const onLayoutReset = () => {
         const ls = resetLayoutState();
         setLayoutEnabled(ls.enabled);
         setLayoutObjectList(ls.enabledPanels.objectList);
+        setLayoutRailsFull(ls.spanningDocks === "leftRight");
         eventBus.emit("layoutManagerStateChanged");
     };
 
@@ -265,9 +275,10 @@ export function useUiSettingsPages({ soundManager, onEnableNotifications }: UiSe
         "ui-windows": (
             <>
                 <LayoutManagerSection
-                    layoutEnabled={layoutEnabled} layoutObjectList={layoutObjectList}
+                    layoutEnabled={layoutEnabled} layoutObjectList={layoutObjectList} layoutRailsFull={layoutRailsFull}
                     onLayoutEnabledChange={onLayoutEnabledChange}
                     onLayoutObjectListChange={onLayoutObjectListChange}
+                    onLayoutRailsFullChange={onLayoutRailsFullChange}
                     onLayoutReset={onLayoutReset}
                 />
                 <OutputSection draft={draft} update={update} />

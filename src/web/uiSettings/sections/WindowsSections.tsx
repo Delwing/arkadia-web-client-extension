@@ -3,7 +3,7 @@ import type { UiSettings } from "../../uiSettingsCore";
 import { Button, Field } from "@web-ui/primitives/index.ts";
 import { CheckboxRow, NumberField, SelectField, SettingsSection } from "../fields";
 import ObjectContextMenuEditor from "../ObjectContextMenuEditor";
-import { isLayoutModeForced } from "@web/layout/utils/layoutStorage";
+import { isLayoutModeForced, isRailSpanSupported } from "@web/layout/utils/layoutStorage";
 import { useBuiltInPanelSetting } from "@web/hooks/useBuiltInPanelSetting.ts";
 import { SEPARATE_OTHERS_SETTING } from "@web/layout/types.ts";
 import { listSettingsWindows } from "@web/layout/settingsWindows.ts";
@@ -15,15 +15,19 @@ import { SETTINGS_MODAL_ID } from "@web/settings/categories.ts";
 interface LayoutManagerSectionProps {
     layoutEnabled: boolean;
     layoutObjectList: boolean;
+    layoutRailsFull: boolean;
     onLayoutEnabledChange: (v: boolean) => void;
     onLayoutObjectListChange: (v: boolean) => void;
+    onLayoutRailsFullChange: (v: boolean) => void;
     onLayoutReset: () => void;
 }
 
 export function LayoutManagerSection({
-    layoutEnabled, layoutObjectList, onLayoutEnabledChange, onLayoutObjectListChange, onLayoutReset,
+    layoutEnabled, layoutObjectList, layoutRailsFull,
+    onLayoutEnabledChange, onLayoutObjectListChange, onLayoutRailsFullChange, onLayoutReset,
 }: LayoutManagerSectionProps) {
     const layoutForced = isLayoutModeForced();
+    const railSpanSupported = isRailSpanSupported();
     // Alias of the toggle in Kondycje's settings cog: the same window setting,
     // so flipping either one moves the other.
     const [separateOthers, setSeparateOthers] = useBuiltInPanelSetting('objectList', SEPARATE_OTHERS_SETTING, false);
@@ -41,13 +45,59 @@ export function LayoutManagerSection({
                 ) : (
                     <>
                         <CheckboxRow id="ui-layout-manager-enabled" label="Włącz menedżer okien" checked={layoutEnabled} onChange={onLayoutEnabledChange} />
-                        <CheckboxRow id="ui-layout-manager-object-list" label="Kondycje" checked={layoutObjectList} onChange={onLayoutObjectListChange} disabled={!layoutEnabled} className="ui-settings-indent" />
+                        <CheckboxRow id="ui-layout-manager-object-list" label="Kondycje jako okno" hint="Wyłączone: lista pływa nad tekstem gry i przesuwasz ją myszą." checked={layoutObjectList} onChange={onLayoutObjectListChange} disabled={!layoutEnabled} className="ui-settings-indent" />
                         <CheckboxRow id="ui-layout-manager-separate-others" label="Pozostali w osobnym oknie" checked={separateOthers === true} onChange={setSeparateOthers} disabled={!layoutEnabled || !layoutObjectList} className="ui-settings-indent ui-settings-indent--2" />
+                        {railSpanSupported && (
+                            <DockArrangementTiles railsFull={layoutRailsFull} onChange={onLayoutRailsFullChange} disabled={!layoutEnabled} />
+                        )}
                     </>
                 )}
                 <Button size="sm" className="ui-settings-self-start" id="ui-layout-manager-reset" onClick={onLayoutReset}>Przywróć domyślny układ</Button>
             </div>
         </SettingsSection>
+    );
+}
+
+const DOCK_ARRANGEMENTS = [
+    { railsFull: false, id: "ui-layout-arrangement-wide", label: "Pasek poleceń na całą szerokość" },
+    { railsFull: true, id: "ui-layout-arrangement-tall", label: "Boczne okna na całą wysokość" },
+] as const;
+
+/** Which of the two dock arrangements, each drawn as a miniature of the screen. */
+function DockArrangementTiles({ railsFull, onChange, disabled }: {
+    railsFull: boolean; onChange: (railsFull: boolean) => void; disabled: boolean;
+}) {
+    return (
+        <div className="ui-settings-indent dock-arrangement-tiles">
+            {DOCK_ARRANGEMENTS.map(a => (
+                <label key={a.id} className="dock-arrangement-tile">
+                    <input
+                        type="radio"
+                        id={a.id}
+                        name="ui-layout-arrangement"
+                        checked={railsFull === a.railsFull}
+                        disabled={disabled}
+                        onChange={() => onChange(a.railsFull)}
+                    />
+                    <DockArrangementPreview railsFull={a.railsFull} />
+                    <span>{a.label}</span>
+                </label>
+            ))}
+        </div>
+    );
+}
+
+/** Side docks, game output and command bar, as the arrangement places them. */
+function DockArrangementPreview({ railsFull }: { railsFull: boolean }) {
+    const sideHeight = railsFull ? 56 : 40;
+    const barX = railsFull ? 27 : 3;
+    return (
+        <svg viewBox="0 0 96 62" width="96" height="62">
+            <rect className="dock-arrangement-tile__dock" x="3" y="3" width="21" height={sideHeight} rx="2" />
+            <rect className="dock-arrangement-tile__dock" x="72" y="3" width="21" height={sideHeight} rx="2" />
+            <rect className="dock-arrangement-tile__output" x="27" y="3" width="42" height="40" rx="2" />
+            <rect className="dock-arrangement-tile__bar" x={barX} y="46" width={96 - 2 * barX} height="13" rx="2" />
+        </svg>
     );
 }
 

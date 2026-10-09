@@ -573,6 +573,30 @@ h1 {
   overflow: hidden;
 }
 
+/* "Boczne doki na całą wysokość": layout.css's rail grid only knows content,
+   input and the bottom dock, but this shell also stacks the multibind row and
+   the status line between the output and the command line. Give each its own
+   row in the centre column, keep every other child (empty roots, modals) out
+   of the rail columns, and drop the forge spacing — the stock docks sit flush.
+   `html` outranks the same selectors in layout.css, which loads later. */
+html body.layout-manager-enabled.layout-rails-vertical #main-container {
+  grid-template-rows:
+    minmax(0, 1fr) auto auto auto var(--dock-bottom-size, 0px);
+  grid-template-areas:
+    "left content    right"
+    "left multibinds right"
+    "left charstate  right"
+    "left input      right"
+    "left bottom     right";
+  gap: 0;
+}
+body.layout-manager-enabled.layout-rails-vertical #main-container > * {
+  grid-column: 2;
+}
+body.layout-manager-enabled.layout-rails-vertical #multi-binds { grid-area: multibinds; }
+body.layout-manager-enabled.layout-rails-vertical #char-state { grid-area: charstate; }
+html body.layout-manager-enabled.layout-rails-vertical #input-area { margin-top: 0; }
+
 #main_text_output_msg_wrapper {
   flex: 1;
   overflow-y: auto;
@@ -2832,6 +2856,59 @@ select.popup-input.popup-input--control.is-warning {
 }
 .ui-settings-indent--2 {
   margin-left: 40px;
+}
+
+/* Dock arrangement (Menedżer Okien): two radio tiles, each a miniature screen. */
+.dock-arrangement-tiles {
+  display: flex;
+  gap: 8px;
+}
+.dock-arrangement-tile {
+  position: relative;
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid var(--popup-border);
+  border-radius: 6px;
+  background: var(--popup-control-bg);
+  color: var(--popup-text-dim);
+  font-size: var(--ui-fs, 13px);
+  text-align: center;
+  cursor: pointer;
+}
+.dock-arrangement-tile:hover {
+  background: var(--popup-control-hover-bg);
+}
+.dock-arrangement-tile:has(input:checked) {
+  border-color: var(--popup-accent);
+  background: var(--popup-accent-bg);
+  color: var(--popup-text-strong);
+}
+.dock-arrangement-tile:has(input:focus-visible) {
+  outline: 2px solid var(--popup-accent);
+  outline-offset: 1px;
+}
+.dock-arrangement-tile:has(input:disabled) {
+  opacity: 0.5;
+  cursor: default;
+}
+/* The tile is the control; the radio only carries the state. */
+.dock-arrangement-tile > input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.dock-arrangement-tile__dock {
+  fill: color-mix(in srgb, var(--popup-accent) 45%, transparent);
+}
+.dock-arrangement-tile__output {
+  fill: color-mix(in srgb, var(--popup-text) 12%, transparent);
+}
+.dock-arrangement-tile__bar {
+  fill: color-mix(in srgb, var(--popup-text) 35%, transparent);
 }
 /* A button that keeps its size instead of stretching across the card. */
 .ui-settings-self-start {

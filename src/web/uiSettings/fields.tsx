@@ -21,18 +21,26 @@ export function SettingsSection({ title, headerExtra, full, children }: { title:
     );
 }
 
-export function CheckboxRow({ id, label, checked, onChange, disabled, className }: {
-    id: string; label: ReactNode; checked: boolean; onChange: (checked: boolean) => void; disabled?: boolean; className?: string;
+/** `hint` is a line of explanation under the box, indented with it. */
+export function CheckboxRow({ id, label, hint, checked, onChange, disabled, className }: {
+    id: string; label: ReactNode; hint?: ReactNode; checked: boolean; onChange: (checked: boolean) => void; disabled?: boolean; className?: string;
 }) {
-    return (
+    const check = (
         <Check
             id={id}
-            className={className}
+            className={hint ? undefined : className}
             label={label}
             checked={checked}
             disabled={disabled}
             onChange={(e) => onChange(e.target.checked)}
         />
+    );
+    if (!hint) return check;
+    return (
+        <div className={className}>
+            {check}
+            <div className="popup-field__hint popup-check__hint">{hint}</div>
+        </div>
     );
 }
 

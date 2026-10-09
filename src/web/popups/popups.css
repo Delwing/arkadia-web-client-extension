@@ -693,6 +693,10 @@ select.popup-input optgroup {
   accent-color: var(--popup-accent);
   cursor: pointer;
 }
+/* A line of explanation under a checkbox, lined up with its label text. */
+.popup-check__hint {
+  padding-left: calc(var(--ui-check, 16px) + 8px);
+}
 /* Chip input: a field of removable chips plus a typing slot. */
 .popup-chips {
   display: flex;

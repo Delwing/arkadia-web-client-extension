@@ -60,7 +60,7 @@ import CharacterManagement from "./options/CharacterManagementModal.tsx"
 import Places from "./places/Places.tsx"
 import { OPEN_PLACE_EVENT, openPlace } from "./places/placesData.ts"
 import HelperSettings from "./options/HelperSettings.tsx"
-import {applyDefaultLayoutMode, LayoutManagerWrapper} from "@web/layout"
+import {applyDefaultLayoutMode, LayoutManagerWrapper, setRailSpanSupported} from "@web/layout"
 import {globalStorage} from "@modules/core/storage"
 import {setOutputTimestampVisibility, setupOutputMessageHandler} from "@shared/dom/outputMessageHandler";
 import {isLikelyTouchDevice, isMobileLikeViewport, isTouchPointerType} from "@shared/dom/pointerEnvironment.ts";
@@ -692,6 +692,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // before anything reads the layout state — panels and popups decide
     // whether to auto-open from it.
     applyDefaultLayoutMode();
+    // index.html provides #layout-left/right-dock-host, so the player may let
+    // the side docks span the full height (Okna → Menedżer Okien). Must run
+    // before the LayoutProvider mounts.
+    setRailSpanSupported(true);
 
     const commitInfo = document.getElementById('commit-info') as HTMLElement | null;
     if (commitInfo) {
