@@ -1,13 +1,9 @@
 import { useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import type { FooterItem } from "@modules/core/footerRegistry";
+import type { FooterChipsBlock } from "@shared/footerLayoutTypes";
 import { useFooterItems } from "./useFooterItems";
 import FooterItemView from "./FooterItemView";
-import Vitals from "./Vitals";
-import { FooterButtonSheet } from "./FooterButtons";
-
-/** Pulled out of the chip flow and shown last, quietly: a diagnostic, not a status. */
-const CONNECTION_ID = "connection-status";
 
 /**
  * One chip slot. Keeps the chip's config id as the element id (older code, plugins
@@ -30,17 +26,10 @@ function Slot({ item }: { item: FooterItem }) {
 }
 
 /**
- * The status line of the stock footer: vitals as pip meters, then the chips from the
- * common footer registry (built-ins and plugin items, already filtered and ordered by
- * the player's config), the connection at the end. Chips that do not fit on one
- * line hide behind "+N"; opening it lets the line wrap to show them all. On a phone
- * the same line is folded and unfolded by the footer expander (mobileFooter.ts).
+ * One line of chips; those that wrap past it hide behind "+N", and opening that
+ * lets the line wrap to show them all.
  */
-export default function StatusLine() {
-  const items = useFooterItems();
-  const connection = items.find((item) => item.id === CONNECTION_ID);
-  const chips = items.filter((item) => item.id !== CONNECTION_ID);
-
+function FoldedChips({ items, rest }: { items: FooterItem[]; rest: boolean }) {
   const chipsRef = useRef<HTMLDivElement>(null);
   const [hidden, setHidden] = useState(0);
   const [open, setOpen] = useState(false);
@@ -82,11 +71,12 @@ export default function StatusLine() {
 
   return (
     <>
-      <div id="char-state-vitals" className="status-vitals">
-        <Vitals />
-      </div>
-      <div id="footer-chips" ref={chipsRef} className={`status-chips${open ? " is-open" : ""}`}>
-        {chips.map((item) => <Slot key={item.id} item={item} />)}
+      <div
+        id={rest ? "footer-chips" : undefined}
+        ref={chipsRef}
+        className={`status-chips${open ? " is-open" : ""}`}
+      >
+        {items.map((item) => <Slot key={item.id} item={item} />)}
       </div>
       {(hidden > 0 || open) && (
         <button
@@ -98,16 +88,39 @@ export default function StatusLine() {
           {open ? <ChevronDown size={13} strokeWidth={2.2} /> : <>+{hidden}<ChevronUp size={13} strokeWidth={2.2} /></>}
         </button>
       )}
-      {connection && (
-        <span className="status-connection">
-          <Slot item={connection} />
-        </span>
-      )}
-      <button id="footer-expand" type="button" className="status-expand">
-        <ChevronUp size={14} strokeWidth={2.2} />
-      </button>
-      {/* Phone only (footerMobile.css shows it): the sheet's button grid. */}
-      <FooterButtonSheet />
     </>
+  );
+}
+
+/**
+ * A chip block of the footer layout: the registry items it was given (see
+ * {@link FooterChipsBlock.items}), already filtered and ordered by the player's
+ * config. A chip still self-hides when its own data is absent, so the zone only
+ * shows what is currently relevant.
+ *
+ * `claimed` holds every id some chip block lists, which `rest` leaves out.
+ */
+export default function ChipZone({ block, claimed }: { block: FooterChipsBlock; claimed: ReadonlySet<string> }) {
+  const all = useFooterItems();
+  const rest = block.items === "rest";
+  const items = rest
+    ? all.filter((item) => !claimed.has(item.id))
+    : (block.items as string[])
+        .map((id) => all.find((item) => item.id === id))
+        .filter((item): item is FooterItem => item !== undefined);
+
+  if (block.quiet) {
+    if (items.length === 0) return null;
+    return (
+      <span className="status-connection">
+        {items.map((item) => <Slot key={item.id} item={item} />)}
+      </span>
+    );
+  }
+  if (block.arrange === "fold") return <FoldedChips items={items} rest={rest} />;
+  return (
+    <div className="footer-strip">
+      {items.map((item) => <FooterItemView key={item.id} item={item} />)}
+    </div>
   );
 }

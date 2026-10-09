@@ -13,6 +13,12 @@
   --footer-vital-danger: #d8736b;
 }
 
+/* The footer bands (@web-ui/footer/layout) sit straight in the page flow, as if
+   the host were not there; the docked-rails grid gives it a box (style.css). */
+#footer-layout {
+  display: contents;
+}
+
 /* -- location binds ------------------------------------------------------- */
 #multi-binds {
   display: none;

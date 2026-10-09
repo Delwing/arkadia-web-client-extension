@@ -1,19 +1,18 @@
 import { useRef } from 'react';
 import { useCommandLine } from '../hooks/useCommandLine';
-import MultiBindStrip from '@web-ui/footer/MultiBindStrip';
-import FooterStrip from '@web-ui/footer/FooterStrip';
+import FooterLayout from '@web-ui/footer/layout/FooterLayout';
+import { FORGE_FOOTER_LAYOUT } from '@web-ui/footer/layout/presets';
 import DesktopButtons from '@web-ui/buttons/DesktopButtons';
 import MobileCommandRadial from '@web-ui/buttons/MobileCommandRadial';
 import MobileDirectionButtons from '@web-ui/buttons/MobileDirectionButtons';
 import MobileJoysticks from '@web-ui/buttons/MobileJoysticks';
-import VitalGems from './VitalGems';
 import Menu from './Menu';
-import ReconnectChip from './ReconnectChip';
+import { forgeFooterSkin } from './forgeFooterSkin';
 import { useClient } from '../client/ClientContext';
 
 /**
- * The bottom HUD plate: one forged panel stacking, top to bottom, the location
- * binds, the footer status chips, the vital gems and the command trough — each
+ * The bottom HUD plate: one forged panel stacking, top to bottom, the footer
+ * bands (location binds, status chips, vital gems) and the command trough — each
  * band parted from the next by an engraved seam so they read as cut into one
  * piece of steel. The location-bind and footer bands are always mounted (they
  * self-empty rather than unmount), so the plate keeps a stable height and never
@@ -37,22 +36,11 @@ export default function CommandRail() {
             <MobileDirectionButtons client={client} messageInputId="alt-input" />
             <MobileJoysticks client={client} />
             <div className="hud-panel">
-                {/* Forge wraps the shared bind row in its own always-present band
-                    (alwaysVisible) so the plate keeps a stable height. */}
-                {/* The bind band doubles as the home for the reconnect chip: it
-                    is always mounted (so nothing shifts when the chip appears)
-                    and it is the top edge of the plate, where a dropped session
-                    should announce itself. The chip is last in the DOM and
-                    margin-left:auto'd to the right end, so the location binds keep
-                    the left and the status control keeps the plate's status edge. */}
-                <div className="multibind-strip">
-                    <MultiBindStrip alwaysVisible />
-                    <ReconnectChip />
-                </div>
-                <div className="hud-seam" />
-                <FooterStrip />
-                <div className="hud-seam" />
-                <VitalGems />
+                {/* The footer bands - binds with the reconnect chip, the status
+                    chips, the vital gems - as the footer layout arranges them.
+                    The bind strip is always mounted (it self-empties to its
+                    placeholder), so the plate keeps a stable height. */}
+                <FooterLayout layout={FORGE_FOOTER_LAYOUT} skin={forgeFooterSkin} />
                 <div className="hud-seam" />
 
                 <div className="command">

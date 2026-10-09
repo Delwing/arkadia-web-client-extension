@@ -2,8 +2,9 @@ import { createRoot, type Root } from "react-dom/client";
 import { flushSync } from "react-dom";
 import { PlaybackControls } from "./components";
 import { ContextMenuHost } from "@web/contextMenu";
-import MultiBindStrip from "./footer/MultiBindStrip";
-import StatusLine from "./footer/StatusLine";
+import FooterLayout from "./footer/layout/FooterLayout";
+import { STOCK_FOOTER_LAYOUT } from "./footer/layout/presets";
+import { stockFooterSkin } from "./footer/layout/stockSkin";
 import { registerBuiltinFooterItems } from "./footer/builtinItems";
 
 type MountResult = {
@@ -17,29 +18,15 @@ type MountResult = {
 export const mountMigratedComponents = (): MountResult => {
   const roots: Root[] = [];
 
-  // The status line: vitals, then the chips from the common footer registry (the
-  // built-ins registered here, plugin items as they come). Rendered synchronously:
-  // setupMobileFooter wires its expander button right after this returns.
+  // The footer: the location binds and the status line (vitals, then the chips
+  // from the common footer registry - the built-ins registered here, plugin items
+  // as they come), as the footer layout arranges them. Rendered synchronously:
+  // setupMobileFooter wires the status line's expander right after this returns.
   registerBuiltinFooterItems();
-  const statusContainer = document.getElementById("char-state");
-  if (statusContainer) {
-    const root = createRoot(statusContainer);
-    flushSync(() => root.render(<StatusLine />));
-    roots.push(root);
-  }
-
-  // MultiBinds is special: it mounts into the persistent #multi-binds container
-  // (kept by index.html so main.ts's cached reference + split-view MutationObserver
-  // stay valid) and toggles that container's `active` class via onActiveChange —
-  // the same DOM contract the stock CSS, the split-view hook and e2e expect.
-  const multiBindsContainer = document.getElementById("multi-binds");
-  if (multiBindsContainer) {
-    const root = createRoot(multiBindsContainer);
-    root.render(
-      <MultiBindStrip
-        onActiveChange={(active) => multiBindsContainer.classList.toggle("active", active)}
-      />
-    );
+  const footerContainer = document.getElementById("footer-layout");
+  if (footerContainer) {
+    const root = createRoot(footerContainer);
+    flushSync(() => root.render(<FooterLayout layout={STOCK_FOOTER_LAYOUT} skin={stockFooterSkin} />));
     roots.push(root);
   }
 

@@ -200,7 +200,8 @@ const outputWrapper = document.getElementById('main_text_output_msg_wrapper') as
 const splitBottom = document.getElementById('split-bottom') as HTMLElement;
 const splitHandle = document.getElementById('split-handle')!;
 const stickyArea = document.getElementById('sticky-area') as HTMLElement;
-const multiBindsElement = document.getElementById('multi-binds');
+// Holds #multi-binds once the footer layout renders (mountMigratedComponents).
+const footerLayoutElement = document.getElementById('footer-layout');
 const STICKY_LINES = 50;
 const DOUBLE_CLICK_TIMEOUT_MS = 300;
 
@@ -231,10 +232,10 @@ const outputMessageHandler = setupOutputMessageHandler(mudClient, {
 // Multibinds appearing or disappearing is stock-only layout churn, so its
 // extra suppression + forced rescroll stays here, layered on top of the
 // shared engine via the returned handle.
-if (multiBindsElement) {
+if (footerLayoutElement) {
     const mutationObserver = new MutationObserver((mutations) => {
         for (const mutation of mutations) {
-            if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+            if (mutation.type === 'attributes' && (mutation.target as Element).id === 'multi-binds') {
                 outputMessageHandler.suppressSplitView(500);
 
                 // Force scroll to bottom after layout settles
@@ -249,9 +250,10 @@ if (multiBindsElement) {
             }
         }
     });
-    mutationObserver.observe(multiBindsElement, {
+    mutationObserver.observe(footerLayoutElement, {
         attributes: true,
-        attributeFilter: ['class']
+        attributeFilter: ['class'],
+        subtree: true,
     });
 }
 

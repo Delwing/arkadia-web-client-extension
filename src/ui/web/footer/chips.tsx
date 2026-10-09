@@ -16,8 +16,8 @@ import { ChipIcon } from "./icons";
  * a strip only ever shows what is currently relevant; Fajka and Lampa are the
  * always-on chips (both double as an on/off switch).
  *
- * These are the building blocks — hosts compose them: the forge HUD renders them
- * through <FooterStrip>, the stock status line through <StatusLine>.
+ * These are the building blocks — every UI places them through the footer layout's
+ * chip blocks (<ChipZone>, see layout/FooterLayout).
  */
 
 /** M:SS from a seconds count (floored). */

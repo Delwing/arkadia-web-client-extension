@@ -574,27 +574,29 @@ h1 {
 }
 
 /* "Boczne doki na całą wysokość": layout.css's rail grid only knows content,
-   input and the bottom dock, but this shell also stacks the multibind row and
-   the status line between the output and the command line. Give each its own
-   row in the centre column, keep every other child (empty roots, modals) out
+   input and the bottom dock, but this shell also stacks the footer bands (the
+   multibind row, the status line) between the output and the command line.
+   Give the footer its own row in the centre column, its bands stacked in it, keep every other child (empty roots, modals) out
    of the rail columns, and drop the forge spacing — the stock docks sit flush.
    `html` outranks the same selectors in layout.css, which loads later. */
 html body.layout-manager-enabled.layout-rails-vertical #main-container {
   grid-template-rows:
-    minmax(0, 1fr) auto auto auto var(--dock-bottom-size, 0px);
+    minmax(0, 1fr) auto auto var(--dock-bottom-size, 0px);
   grid-template-areas:
-    "left content    right"
-    "left multibinds right"
-    "left charstate  right"
-    "left input      right"
-    "left bottom     right";
+    "left content right"
+    "left footer  right"
+    "left input   right"
+    "left bottom  right";
   gap: 0;
 }
 body.layout-manager-enabled.layout-rails-vertical #main-container > * {
   grid-column: 2;
 }
-body.layout-manager-enabled.layout-rails-vertical #multi-binds { grid-area: multibinds; }
-body.layout-manager-enabled.layout-rails-vertical #char-state { grid-area: charstate; }
+body.layout-manager-enabled.layout-rails-vertical #footer-layout {
+  display: flex;
+  flex-direction: column;
+  grid-area: footer;
+}
 html body.layout-manager-enabled.layout-rails-vertical #input-area { margin-top: 0; }
 
 #main_text_output_msg_wrapper {

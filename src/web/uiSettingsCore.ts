@@ -311,10 +311,6 @@ export function apply(settings: UiSettings) {
         document.body.style.setProperty('--output-bg', settings.outputBackground);
         content.style.paddingBottom = settings.outputBottomPadding > 0 ? settings.outputBottomPadding + 'px' : '';
     }
-    const charState = document.getElementById('char-state');
-    if (charState) {
-        charState.setAttribute('data-footer-mode', String(settings.footerMode));
-    }
     if (document.body) {
         // Gates the whole phone-footer stylesheet (footerMobile.css). It rides
         // on <body> rather than on #char-state because the location-bind row
