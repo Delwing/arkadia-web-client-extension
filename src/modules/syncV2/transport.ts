@@ -34,8 +34,13 @@ export interface BaseDoc {
     schemaVersion: 1;
     folded: Record<string, number>;
     encrypted: boolean;
-    /** JSON of UserRecord[], or JSON of EncryptedData when encrypted. */
+    /**
+     * JSON of UserRecord[] (gzipped and base64-encoded when compressed), or
+     * JSON of EncryptedData of that when encrypted.
+     */
     data: string;
+    /** Absent in bases written before compression. */
+    compressed?: boolean;
     updatedAt: number;
 }
 

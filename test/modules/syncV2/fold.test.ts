@@ -68,4 +68,35 @@ describe('encodeRecords / decodeRecords', () => {
         await expect(decodeRecords(encoded.data, true, null)).rejects.toThrow();
         await expect(decodeRecords(encoded.data, true, 'wrong')).rejects.toThrow();
     });
+
+    it('round-trips compressed records, plain and encrypted', async () => {
+        const polish = [rec('aliases', 'k', 'zażółć gęślą jaźń', 1)];
+        const plain = await encodeRecords(polish, null, { compress: true });
+        expect(plain).toMatchObject({ encrypted: false, compressed: true });
+        expect(plain.data).not.toContain('aliases');
+        expect(await decodeRecords(plain.data, false, null, true)).toEqual(polish);
+
+        const secret = await encodeRecords(polish, 'secret', { compress: true });
+        expect(secret).toMatchObject({ encrypted: true, compressed: true });
+        expect(await decodeRecords(secret.data, true, 'secret', true)).toEqual(polish);
+    });
+
+    it('shrinks a base of many visited rooms far below the Firestore commit limit', async () => {
+        const rooms: UserRecord[] = [];
+        for (const character of ['Alice', 'Bob', 'Carol']) {
+            for (let room = 1; room <= 25_000; room += 1) {
+                rooms.push({
+                    type: 'visitedRooms', scope: `char:${character}`, key: String(room), value: true,
+                    stamp: stamp(1_700_000_000_000 + room, '6f1c2a9e-0b7d-4c3e-9a51-2d8e7f4b1c60'),
+                    origin: '6f1c2a9e-0b7d-4c3e-9a51-2d8e7f4b1c60', seq: room,
+                });
+            }
+        }
+        const raw = JSON.stringify(rooms).length;
+        const encoded = await encodeRecords(rooms, 'secret', { compress: true });
+
+        expect(raw).toBeGreaterThan(11 * 1024 * 1024);
+        expect(encoded.data.length).toBeLessThan(raw / 5);
+        expect(await decodeRecords(encoded.data, true, 'secret', true)).toHaveLength(rooms.length);
+    });
 });

@@ -31,6 +31,15 @@ if (!globalThis.crypto?.subtle) {
     });
 }
 
+// gzip for the sync v2 base (fold.ts); jsdom has no compression streams
+const streams = await import('stream/web');
+if (!globalThis.CompressionStream) {
+    Object.assign(globalThis, {
+        CompressionStream: streams.CompressionStream,
+        DecompressionStream: streams.DecompressionStream,
+    });
+}
+
 class LocalStorageMock {
     private store: Record<string, string> = {};
     clear() { this.store = {}; }

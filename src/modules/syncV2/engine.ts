@@ -306,7 +306,7 @@ export class SyncEngineV2 {
             const base = await this.options.transport.readBase();
             usage?.read(1, base?.data.length ?? 0);
             if (base) {
-                const records = await decodeRecords(base.data, base.encrypted, key);
+                const records = await decodeRecords(base.data, base.encrypted, key, base.compressed);
                 this.options.log?.(`Applying the base: ${records.length} records...`);
                 await tracker.apply(records, applyOptions);
                 this.options.log?.(`Applied the base: ${records.length} records (${describe(records)})`);
@@ -416,7 +416,7 @@ export class SyncEngineV2 {
         let baseBytes = 0;
         await transport.fold(async (base, log) => {
             const folded: Record<string, number> = { ...(base?.folded ?? {}), ...(log.folded ?? {}) };
-            let records = base ? await decodeRecords(base.data, base.encrypted, key) : [];
+            let records = base ? await decodeRecords(base.data, base.encrypted, key, base.compressed) : [];
             for (const batch of log.batches) {
                 records = foldRecords(records, await decodeRecords(batch.data, batch.encrypted, key), this.rules);
                 folded[batch.device] = Math.max(folded[batch.device] ?? 0, batch.toSeq);
@@ -425,7 +425,7 @@ export class SyncEngineV2 {
                 records = foldRecords(records, extra, this.rules);
                 folded[deviceId] = Math.max(folded[deviceId] ?? 0, ...extra.map(r => r.seq));
             }
-            const encoded = await encodeRecords(compactRecords(records, this.now()), encryptionKey());
+            const encoded = await encodeRecords(compactRecords(records, this.now()), encryptionKey(), { compress: true });
             baseBytes = encoded.data.length;
             const next: BaseDoc = { schemaVersion: 1, folded, updatedAt: this.now(), ...encoded };
             return { base: next, keep: [], folded };

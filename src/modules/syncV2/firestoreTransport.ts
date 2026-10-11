@@ -2,7 +2,7 @@
  * Firestore implementation of the sync v2 transport:
  *
  *   users/{uid}/syncV2/log        { batches[], folded, watching }
- *   users/{uid}/syncV2/base       { schemaVersion, folded, encrypted, updatedAt, data, chunks }
+ *   users/{uid}/syncV2/base       { schemaVersion, folded, encrypted, compressed, updatedAt, data, chunks }
  *   users/{uid}/syncV2/base__{n}  { data }   only when the base outgrows one document
  *
  * See docs/dev/SYNC_V2_PLAN.md, section 8.1.
@@ -82,6 +82,7 @@ export class FirestoreTransport implements SyncTransport {
             schemaVersion: 1,
             folded: (data.folded as Record<string, number> | undefined) ?? {},
             encrypted: data.encrypted === true,
+            compressed: data.compressed === true,
             updatedAt: (data.updatedAt as number | undefined) ?? 0,
             data: parts.join(''),
         };
@@ -118,6 +119,7 @@ export class FirestoreTransport implements SyncTransport {
                     schemaVersion: 1,
                     folded: (baseData.folded as Record<string, number> | undefined) ?? {},
                     encrypted: baseData.encrypted === true,
+                    compressed: baseData.compressed === true,
                     updatedAt: (baseData.updatedAt as number | undefined) ?? 0,
                     data: parts.join(''),
                 };
@@ -129,6 +131,7 @@ export class FirestoreTransport implements SyncTransport {
                 schemaVersion: 1,
                 folded: result.base.folded,
                 encrypted: result.base.encrypted,
+                compressed: result.base.compressed === true,
                 updatedAt: result.base.updatedAt,
                 data: chunks[0],
                 chunks: chunks.length,

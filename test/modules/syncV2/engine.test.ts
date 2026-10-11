@@ -5,6 +5,7 @@ import { UserDataTracker } from '@modules/userData/tracker';
 import { applyCounterChange, type ItemChange, type LocalItem, type UserDataType } from '@modules/userData/types';
 import { SyncEngineV2, type EpochStore, type SyncEngineActivity, type SyncEngineTimings, type VisibilitySource } from '@modules/syncV2/engine';
 import { MemoryTransport, type BaseDoc, type FoldResult, type LogDoc } from '@modules/syncV2/transport';
+import { decodeRecords } from '@modules/syncV2/fold';
 
 class MapType<V> implements UserDataType<V> {
     readonly data = new Map<string, V>();
@@ -223,7 +224,11 @@ describe('SyncEngineV2', () => {
         for (let i = 0; i < 20; i += 1) pc.aliases.data.set(`a${i}`, `a long alias number ${i}`);
         start(pc);
 
-        await vi.waitFor(() => expect(transport.base?.data).toContain('a long alias number 19'));
+        await vi.waitFor(() => expect(transport.base).not.toBeNull());
+        const base = transport.base!;
+        expect(base.compressed).toBe(true);
+        const records = await decodeRecords(base.data, base.encrypted, null, base.compressed);
+        expect(records.map(r => r.value)).toContain('a long alias number 19');
         expect(transport.log.batches).toEqual([]);
         expect(transport.log.folded.pc).toBeGreaterThan(0);
     });

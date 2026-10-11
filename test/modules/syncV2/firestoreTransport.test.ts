@@ -112,14 +112,14 @@ describe('FirestoreTransport', () => {
             expect(base).toBeNull();
             expect(log.batches).toHaveLength(1);
             return {
-                base: { schemaVersion: 1, folded: { pc: 3 }, encrypted: false, data: '[1]', updatedAt: 7 },
+                base: { schemaVersion: 1, folded: { pc: 3 }, encrypted: false, compressed: true, data: 'H4sI', updatedAt: 7 },
                 keep: [],
                 folded: { pc: 3 },
             };
         });
 
         expect(store.get('users/user-1/syncV2/log')).toMatchObject({ batches: [], folded: { pc: 3 } });
-        expect(await t.readBase()).toEqual({ schemaVersion: 1, folded: { pc: 3 }, encrypted: false, data: '[1]', updatedAt: 7 });
+        expect(await t.readBase()).toEqual({ schemaVersion: 1, folded: { pc: 3 }, encrypted: false, compressed: true, data: 'H4sI', updatedAt: 7 });
     });
 
     it('splits a large base over several documents and joins it back', async () => {
