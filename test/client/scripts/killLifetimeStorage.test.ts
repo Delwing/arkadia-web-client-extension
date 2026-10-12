@@ -10,6 +10,8 @@ import {
     importRecords,
     importAllKillRecords,
     makeId,
+    mergeImportedKills,
+    onKillCountsSet,
 } from '@client/scripts/killLifetimeStorage';
 
 // Use unique character names per test to avoid cross-test interference
@@ -260,6 +262,57 @@ describe('killLifetimeStorage', () => {
             const records = await getAllRecords(CHARACTER);
             expect(records).toHaveLength(1);
             expect(records[0].count).toBe(2);
+        });
+    });
+
+    describe('mergeImportedKills', () => {
+        test('max keeps the higher count per mob and day, so a re-import changes nothing', async () => {
+            const CHARACTER = uniqueChar();
+            await recordKillToDB(CHARACTER, 'orka', '2025/3/1');
+            await recordKillToDB(CHARACTER, 'orka', '2025/3/1');
+            await recordKillToDB(CHARACTER, 'orka', '2025/3/1');
+
+            const entries = [
+                {mob: 'orka', date: '2025/3/1', count: 2},
+                {mob: 'trolla', date: '2025/3/1', count: 4},
+            ];
+            expect(await mergeImportedKills(CHARACTER, entries, 'max')).toBe(1);
+            const totals = await getLifetimeTotals(CHARACTER);
+            expect(totals).toEqual([{mob: 'orka', total: 3}, {mob: 'trolla', total: 4}]);
+
+            expect(await mergeImportedKills(CHARACTER, entries, 'max')).toBe(0);
+        });
+
+        test('add adds the imported counts to the stored ones', async () => {
+            const CHARACTER = uniqueChar();
+            await recordKillToDB(CHARACTER, 'orka', '2025/3/1');
+            await mergeImportedKills(CHARACTER, [{mob: 'orka', date: '2025/3/1', count: 5}], 'add');
+            expect(await getKillsByDate(CHARACTER, '2025/3/1')).toEqual([{mob: 'orka', count: 6}]);
+        });
+
+        test('moves pre-IndexedDB totals in first and tells the kill counter', async () => {
+            const CHARACTER = uniqueChar();
+            localStorage.setItem(`${CHARACTER}:kill_counter`, JSON.stringify({goblina: 7}));
+            const notified: string[][] = [];
+            const off = onKillCountsSet(chars => notified.push(chars));
+
+            await mergeImportedKills(CHARACTER, [{mob: 'goblina', date: '2025/3/2', count: 1}], 'max');
+            off();
+
+            expect(await getLifetimeTotals(CHARACTER)).toEqual([{mob: 'goblina', total: 8}]);
+            expect(notified).toEqual([[CHARACTER]]);
+        });
+
+        test('leaves the localStorage copy alone once the character has records', async () => {
+            const CHARACTER = uniqueChar();
+            await recordKillToDB(CHARACTER, 'orka', '2025/3/1');
+            // What the kill counter writes after that kill: a copy of the records.
+            localStorage.setItem(`${CHARACTER}:kill_counter`, JSON.stringify({orka: 1}));
+
+            await mergeImportedKills(CHARACTER, [{mob: 'orka', date: '2024/5/9', count: 4}], 'max');
+            await migrateFromLocalStorage(CHARACTER);
+
+            expect(await getLifetimeTotals(CHARACTER)).toEqual([{mob: 'orka', total: 5}]);
         });
     });
 });

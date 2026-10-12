@@ -1,6 +1,7 @@
 import WiedzaImport from "./WiedzaImport";
 import ZlomImport from "./ZlomImport";
 import PostepyImport from "./PostepyImport";
+import ZabiciImport from "./ZabiciImport";
 import MultibindImport from "./MultibindImport";
 import AliasImport from "./AliasImport";
 import mudletIcon from "./icons/mudlet.png";
@@ -11,7 +12,7 @@ import arkadiaIcon from "./icons/arkadia.svg?raw";
 /**
  * Ustawienia → Dane → Import z innych klientów: every import of another
  * client's data in one place, grouped by where the file comes from. The
- * windows that own the data (Wiedza, Złom, Postępy, Bindowanie, Aliasy) keep
+ * windows that own the data (Wiedza, Złom, Postępy, Zabici, Bindowanie, Aliasy) keep
  * their import buttons as shortcuts to this page.
  */
 export default function ImportPage() {
@@ -29,6 +30,7 @@ export default function ImportPage() {
                     <WiedzaImport />
                     <ZlomImport />
                     <PostepyImport />
+                    <ZabiciImport />
                     <MultibindImport row />
                 </div>
             </section>

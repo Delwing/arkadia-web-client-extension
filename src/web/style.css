@@ -2239,6 +2239,11 @@ span.import-source__icon > svg {
   border-radius: var(--ui-radius, 6px);
   background-color: var(--popup-control-bg);
 }
+.import-zabici__targets {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
 .import-row__preview > p.popup-field__hint {
   margin: 0;
 }

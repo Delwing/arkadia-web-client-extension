@@ -313,4 +313,42 @@ export async function setKillCounts(records: KillRecord[]): Promise<void> {
     for (const listener of killCountsListeners) listener(characters);
 }
 
+export type KillMergeMode = 'max' | 'add';
+
+/**
+ * Merge kills from another client into one character's records, per mob and
+ * day: `max` keeps the higher count (re-importing the same file changes
+ * nothing), `add` adds the imported count to the stored one. Goes through
+ * setKillCounts, so the kill counter and its windows pick the change up.
+ * Returns how many records changed.
+ */
+export async function mergeImportedKills(
+    character: string,
+    entries: {mob: string; date: string; count: number}[],
+    mode: KillMergeMode,
+): Promise<number> {
+    // Pre-IndexedDB totals first, or a later migration would add them on top
+    // of the import. Once the character has records, the localStorage totals
+    // are only a copy of them (the counter rewrites it on every kill), so
+    // migrating it then would count those kills twice.
+    let records = await getRecordsByCharacter(character);
+    if (records.length === 0) {
+        await migrateFromLocalStorage(character);
+        records = await getRecordsByCharacter(character);
+    } else {
+        localStorage.setItem(`${MIGRATION_KEY_PREFIX}${character}`, 'true');
+    }
+    const stored = new Map(records.map(r => [r.id, r.count]));
+    const merged = new Map<string, KillRecord>();
+    for (const {mob, date, count} of entries) {
+        const id = makeId(character, mob, date);
+        const current = merged.get(id)?.count ?? stored.get(id) ?? 0;
+        const next = mode === 'add' ? current + count : Math.max(current, count);
+        merged.set(id, {id, character, mob, date, count: next});
+    }
+    const changed = [...merged.values()].filter(r => r.count !== (stored.get(r.id) ?? 0));
+    await setKillCounts(changed);
+    return changed.length;
+}
+
 export {makeId, openDB};
