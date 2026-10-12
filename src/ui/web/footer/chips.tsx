@@ -5,6 +5,7 @@ import { defaultSettings, type Settings } from "@modules/core/defaultSettings";
 import type { PackageStatus } from "@shared/events/clientEvents";
 import { TRANSPORT_SOON_SECONDS } from "@client/types/transport.ts";
 import { useAttentionBlink, useClientEvent } from "../hooks";
+import type { TooltipPart } from "@shared/dom/tooltip.ts";
 import { Chip, type ChipTone } from "./Chip";
 import { ChipIcon } from "./icons";
 
@@ -59,7 +60,7 @@ export function FajkaChip() {
       value={lit ? "pali się" : "zgasła"}
       sizeTo={FAJKA_SIZES}
       tone={lit ? "warn" : undefined}
-      title={lit ? "Zgaś fajkę" : "Zapal fajkę"}
+      tip={{ header: "Fajka", click: lit ? "zgaś fajkę" : "zapal fajkę" }}
       onClick={() => eventBus.emit("sendCommand", { command: lit ? "zgas fajke" : "/zapal" })}
     />
   );
@@ -81,7 +82,12 @@ export function LampChip() {
       value={lit ? mmss(seconds!) : "off"}
       sizeTo={LAMP_SIZES}
       tone={tone}
-      title={`${lit ? "Zgaś lampę" : "Zapal lampę"} (przytrzymaj: napełnij olejem)`}
+      tip={{
+        header: "Lampa",
+        rows: [{ label: "Paliwo", content: lit ? `na ${mmss(seconds!)}` : "zgaszona" }],
+        click: lit ? "zgaś lampę" : "zapal lampę",
+        hold: "napełnij olejem",
+      }}
       onClick={() => eventBus.emit("sendCommand", { command: lit ? "zgas lampe" : "zapal lampe" })}
       onLongPress={() => eventBus.emit("sendCommand", { command: "napelnij lampe olejem" })}
     />
@@ -118,7 +124,7 @@ export function AttackChip() {
     const next = order[(order.indexOf(mode) + 1) % order.length];
     eventBus.emit("attackMode", next); // attackController persists + re-emits
   };
-  return <Chip icon={<ChipIcon name="target" />} label="Atk" value={mode} sizeTo={ATTACK_SIZES} title="Zmień tryb ataku" onClick={cycle} />;
+  return <Chip icon={<ChipIcon name="target" />} label="Atk" value={mode} sizeTo={ATTACK_SIZES} tip={{ header: "Tryb ataku", click: "A → AW → AWR" }} onClick={cycle} />;
 }
 
 /** Team presence on the current room. Click lists the roster. */
@@ -135,7 +141,14 @@ export function TeamChip() {
       value={allHere ? `Wszyscy [${status.teamSize}]` : `Brak: ${status.missing.join(", ")}`}
       sizeTo={TEAM_SIZES}
       tone={allHere ? "ok" : "warn"}
-      title="Pokaż skład drużyny"
+      tip={{
+        header: "Drużyna",
+        rows: [
+          { label: "Członkowie", content: String(status.teamSize) },
+          ...(allHere ? [] : [{ label: "Brak", content: status.missing.join(", ") }]),
+        ],
+        click: "pokaż skład drużyny",
+      }}
       onClick={() => eventBus.emit("sendCommand", { command: "druzyna" })}
     />
   );
@@ -157,7 +170,11 @@ export function TransportChip() {
       value={value}
       sizeTo={[`${payload.label} 88:88`]}
       tone={tone}
-      title="Otwórz trasę transportu"
+      tip={{
+        header: payload.label,
+        rows: remaining == null ? [] : [{ label: "Odjazd za", content: mmss(remaining) }],
+        click: "otwórz trasę transportu",
+      }}
       onClick={() => eventBus.emit("transport.popup.open")}
     />
   );
@@ -177,7 +194,14 @@ export function PackageChip() {
       icon={<ChipIcon name="box" />}
       label="Paczka"
       value={`${status.recipient}${time}`}
-      title={onClick ? "Prowadź do odbiorcy" : undefined}
+      tip={{
+        header: "Paczka",
+        rows: [
+          { label: "Odbiorca", content: status.recipient },
+          ...(time ? [{ label: "Pozostało", content: time.trim() }] : []),
+        ],
+        click: onClick ? "prowadź do odbiorcy" : undefined,
+      }}
       onClick={onClick}
     />
   );
@@ -202,7 +226,14 @@ export function MailChip() {
       label="Poczta"
       value={parts.join(", ")}
       tone="warn"
-      title="Wyślij zwierzę pocztowe"
+      tip={{
+        header: "Poczta",
+        rows: [
+          ...(state.unreceived ? [{ label: "", content: "Czeka nowa poczta" }] : []),
+          ...(state.unsent ? [{ label: "", content: "Masz niewysłaną pocztę" }] : []),
+        ],
+        click: "wyślij zwierzę pocztowe",
+      }}
       className={blinking ? "attention-blink" : undefined}
       onClick={() => eventBus.emit("sendCommand", { command: "wyslij zwierze" })}
     />
@@ -254,6 +285,33 @@ function hhmm(hour: number): string {
   return `${String(h).padStart(2, "0")}:${String(Math.round((hour - h) * 60)).padStart(2, "0")}`;
 }
 
+/** Tooltip text in a colour (the hover tooltip takes DOM, not JSX). */
+function tinted(text: string, color: string | undefined): Node {
+  const span = document.createElement("span");
+  span.textContent = text;
+  if (color) span.style.color = color;
+  return span;
+}
+
+/**
+ * The game day as a bar for the clock tooltip: midnight to midnight, the daylight
+ * stretch between sunrise and sunset lit, a tick where the clock stands now.
+ */
+function dayBar(now: number, sunrise: number, sunset: number): Node {
+  const pct = (hour: number) => `${(Math.min(24, Math.max(0, hour)) / 24) * 100}%`;
+  const bar = document.createElement("div");
+  bar.className = "chip-tip-daybar";
+  const day = document.createElement("span");
+  day.className = "chip-tip-daybar__day";
+  day.style.left = pct(sunrise);
+  day.style.width = `calc(${pct(sunset)} - ${pct(sunrise)})`;
+  const mark = document.createElement("span");
+  mark.className = "chip-tip-daybar__now";
+  mark.style.left = pct(now);
+  bar.append(day, mark);
+  return bar;
+}
+
 /**
  * In-game clock (HH:MM, ±precision while it is still an estimate) for the active
  * domain, then the season. The icon tells the time of day - sun, moon, or half a
@@ -282,13 +340,17 @@ export function ClockChip() {
   const iconColor = icon === "clock" ? undefined
     : twilight === "świt" ? DAWN_COLOR : twilight === "zmierzch" ? DUSK_COLOR
     : clock.daylight ? SUN_COLOR : MOON_COLOR;
-  const tip = [
-    clock.dayLabel,
-    season && [season, twilight ?? part].filter(Boolean).join(", "),
-    clock.sunrise !== undefined && clock.sunset !== undefined
-      ? `wschód ${hhmm(clock.sunrise)}, zachód ${hhmm(clock.sunset)}`
-      : undefined,
-  ].filter(Boolean).join("\n");
+  const dayPart = twilight ?? part;
+  const rows: TooltipPart[] = [
+    { label: "Godzina", content: clock.precision && clock.precision > 0 ? `${time}, ±${clock.precision} min` : time },
+  ];
+  if (season) rows.push({ label: "Pora roku", content: tinted(season, SEASON_COLORS[clock.season!]) });
+  if (dayPart) rows.push({ label: "Pora dnia", content: tinted(dayPart, iconColor) });
+  if (sunrise !== undefined && sunset !== undefined) {
+    rows.push(dayBar(now, sunrise, sunset));
+    rows.push({ label: "Wschód", content: tinted(hhmm(sunrise), DAWN_COLOR) });
+    rows.push({ label: "Zachód", content: tinted(hhmm(sunset), DUSK_COLOR) });
+  }
   return (
     <Chip
       icon={<ChipIcon name={icon} color={iconColor} />}
@@ -298,7 +360,7 @@ export function ClockChip() {
       value={value}
       sizeTo={CLOCK_SIZES}
       valueFirst
-      title={tip ? `${tip}\n(kliknij: czas)` : "Czas"}
+      tip={{ header: clock.dayLabel ?? "Czas", rows, click: "otwórz okno czasu" }}
       onClick={() => eventBus.emit("clock.popup.open", { domain: active })}
     />
   );
@@ -348,10 +410,6 @@ export function WeaponChip() {
   const tone: ChipTone | undefined = inCombat && !drawn ? "danger" : undefined;
   const click = drawn ? commands.sheathe : commands.draw;
   const send = (command: string) => eventBus.emit("sendCommand", { command });
-  const tip = [
-    click && `kliknij: ${click}`,
-    commands.hold && `przytrzymaj: ${commands.hold}`,
-  ].filter(Boolean).join("\n");
   return (
     <Chip
       icon={<ChipIcon name="sword" />}
@@ -360,7 +418,7 @@ export function WeaponChip() {
       sizeTo={WEAPON_SIZES}
       sizeCenter
       tone={tone}
-      title={tip || undefined}
+      tip={click || commands.hold ? { header: "Broń", click: click || undefined, hold: commands.hold || undefined } : undefined}
       onClick={click ? () => send(click) : undefined}
       onLongPress={commands.hold ? () => send(commands.hold) : undefined}
     />
@@ -385,7 +443,14 @@ export function CoverChip() {
       value={active ? cover!.toFixed(1) : "OK"}
       sizeTo={COVER_SIZES}
       tone={active ? "warn" : "ok"}
-      title={guard ? "Zasłony puszczane automatycznie (kliknij: trzymaj)" : "Zasłony trzymane (kliknij: puszczaj automatycznie)"}
+      tip={{
+        header: "Zasłona",
+        rows: [
+          { label: "Gotowa", content: active ? `za ${cover!.toFixed(1)} s` : "teraz" },
+          { label: "Zasłony", content: guard ? "puszczane automatycznie" : "trzymane" },
+        ],
+        click: guard ? "trzymaj zasłony" : "puszczaj zasłony automatycznie",
+      }}
       className={guard ? undefined : "chip--guard-held"}
       onClick={() => eventBus.emit("releaseGuard", !guard)}
     />
@@ -426,7 +491,13 @@ export function ConnectionChip() {
       label=""
       value={parts.join(" ")}
       tone={tone}
-      title={drift == null ? "Ping" : "Ping i zegar proxy względem tego komputera"}
+      tip={{
+        header: "Połączenie",
+        rows: [
+          ...(ping != null ? [{ label: "Ping", content: `${Math.round(ping)} ms` }] : []),
+          ...(drift != null ? [{ label: "Zegar proxy", content: `${drift >= 0 ? "+" : ""}${drift.toFixed(1)} s względem tego komputera` }] : []),
+        ],
+      }}
     />
   );
 }
@@ -465,7 +536,7 @@ export function BreakItemChip() {
       label="Uwaga"
       value={data.text}
       tone="danger"
-      title={data.command ? "Napraw sprzęt" : "Odrzuć ostrzeżenie"}
+      tip={{ header: "Uwaga", rows: [{ label: "", content: data.text }], click: data.command ? "napraw sprzęt" : "odrzuć ostrzeżenie" }}
       onClick={onClick}
     />
   );

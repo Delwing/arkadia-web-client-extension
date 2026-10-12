@@ -1,4 +1,5 @@
 import type { HerbUse } from '@modules/data/dataStores/herbsStore';
+import type { TooltipContent, TooltipHandle } from '@shared/dom/tooltip.ts';
 
 /**
  * A single context-menu entry.
@@ -45,6 +46,11 @@ export interface UiPort {
     showBookTooltip(categories: BookCategoryState[], x: number, y: number): void;
     hideBookTooltip(): void;
     showContextMenu(items: ContextMenuEntry[], x: number, y: number, options?: ContextMenuOptions): void;
+    /**
+     * Optional: give an element a hover card in the UI's tooltip (plugin
+     * `api.ui.setTooltip`). Omitted → the element simply has no tooltip.
+     */
+    attachTooltip?(element: Element, card: TooltipContent | null): TooltipHandle;
     /**
      * Optional: whether global keybinds (e.g. direction/movement keys) should be
      * suppressed right now, for UI state the client can't see — e.g. an open

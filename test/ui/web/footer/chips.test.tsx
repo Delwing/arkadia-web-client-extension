@@ -17,6 +17,23 @@ describe("footer chips", () => {
     eventBus.emit(event as never, payload as never);
   });
   const chip = () => container.querySelector(".chip") as HTMLElement | null;
+  /** Hovers the chip and reads its tooltip back, one "label: content" line per row. */
+  const hoverTip = () => {
+    act(() => { chip()!.dispatchEvent(new MouseEvent("pointerover", { bubbles: true })); });
+    const tooltip = document.getElementById("hover-tooltip")!;
+    return {
+      header: tooltip.querySelector(".hover-tooltip__header")?.textContent,
+      rows: [...tooltip.querySelectorAll(".hover-tooltip__entry")].map((row) =>
+        [row.querySelector(".hover-tooltip__label")?.textContent, row.querySelector(".hover-tooltip__content")?.textContent]
+          .filter(Boolean).join(": ")),
+    };
+  };
+
+  beforeAll(() => {
+    const tooltip = document.createElement("div");
+    tooltip.id = "hover-tooltip";
+    document.body.appendChild(tooltip);
+  });
 
   beforeEach(() => {
     container = document.createElement("div");
@@ -109,6 +126,29 @@ describe("footer chips", () => {
       expect(opened).toEqual([{ domain: "Empire" }]);
       off();
     });
+
+    test("the tooltip carries the date, season, day part, a day bar and the sun times", () => {
+      mount(<ClockChip />);
+      emit("clock.domain.active", { domain: "Empire" });
+      emit("clock.update", { domain: "Empire", hours: 12, minutes: 0, daylight: true, season: 0, sunrise: 6, sunset: 19, dayLabel: "10 Pflugzeit" });
+      expect(hoverTip()).toEqual({
+        header: "10 Pflugzeit",
+        rows: ["Godzina: 12:00", "Pora roku: wiosna", "Pora dnia: dzień", "Wschód: 06:00", "Zachód: 19:00", "kliknij: otwórz okno czasu"],
+      });
+      const now = document.querySelector<HTMLElement>("#hover-tooltip .chip-tip-daybar__now")!;
+      expect(now.style.left).toBe("50%");
+
+      // The tooltip follows the clock while it is open.
+      emit("clock.update", { domain: "Empire", hours: 18, minutes: 0, daylight: true, season: 0, sunrise: 6, sunset: 19, dayLabel: "10 Pflugzeit" });
+      expect(document.querySelector("#hover-tooltip")!.textContent).toContain("zmierzch");
+
+      // Clicking the chip keeps it up; a press anywhere else puts it away.
+      const tooltip = document.getElementById("hover-tooltip")!;
+      act(() => { chip()!.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true })); });
+      expect(tooltip.classList.contains("show")).toBe(true);
+      act(() => { document.body.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true })); });
+      expect(tooltip.classList.contains("show")).toBe(false);
+    });
   });
 
   describe("WeaponChip", () => {
@@ -160,7 +200,7 @@ describe("footer chips", () => {
         emit("weapon_state", true);
         act(() => chip()!.click());
         expect(sent).toEqual(["/dob", "/op"]);
-        expect(chip()!.title).toBe("kliknij: /op");
+        expect(hoverTip()).toEqual({ header: "Broń", rows: ["kliknij: /op"] });
       });
 
       test("uses the character's commands and follows their edits", () => {
@@ -185,7 +225,7 @@ describe("footer chips", () => {
         characterStorage.set("settings", { ...defaultSettings, weaponChipHoldCommand: "/dob 3" });
         mount(<WeaponChip />);
         emit("weapon_state", false);
-        expect(chip()!.title).toBe("kliknij: /dob\nprzytrzymaj: /dob 3");
+        expect(hoverTip().rows).toEqual(["kliknij: /dob", "przytrzymaj: /dob 3"]);
         hold();
         act(() => chip()!.click());
         expect(sent).toEqual(["/dob 3"]);

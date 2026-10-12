@@ -1,7 +1,15 @@
 import { useEffect, useRef, useState, type CSSProperties, type MouseEvent, type PointerEvent, type ReactNode } from "react";
+import { hideTooltipFor, showCardFor, type TooltipCard, type TooltipContent } from "@shared/dom/tooltip.ts";
 import "./chip.css";
 
 export type ChipTone = "ok" | "warn" | "danger";
+
+/**
+ * A chip's hover card, drawn in the shared #hover-tooltip like the herb and book
+ * tooltips (see TooltipCard). Plugin footer components get the same card through
+ * `api.ui.setTooltip`.
+ */
+export type ChipTip = TooltipCard;
 
 /** How long a chip must be held before its long-press action fires. */
 export const CHIP_LONG_PRESS_MS = 300;
@@ -28,8 +36,12 @@ export const CHIP_LONG_PRESS_MS = 300;
  * chip is as wide as its widest state and never resizes as the value changes.
  * It is a floor, not a cap: a value longer than every candidate still grows it.
  * Digits are tabular there, so "8.8" stands for any one-decimal countdown.
+ *
+ * `tip` shows in the shared hover tooltip while a mouse is over the chip and is
+ * redrawn as the chip re-renders, so a ticking value stays current in it. Where
+ * there is no hover tooltip (a popout window) it falls back to a native title.
  */
-export function Chip({ icon, label, labelColor, labelSizeTo, value, sizeTo, sizeCenter, valueFirst, tone, onClick, onLongPress, title, className }: {
+export function Chip({ icon, label, labelColor, labelSizeTo, value, sizeTo, sizeCenter, valueFirst, tone, onClick, onLongPress, tip, className }: {
   icon: ReactNode;
   label: string;
   /** Tints the label (the clock chip colours its season name). */
@@ -46,10 +58,11 @@ export function Chip({ icon, label, labelColor, labelSizeTo, value, sizeTo, size
   tone?: ChipTone;
   onClick?: () => void;
   onLongPress?: () => void;
-  title?: string;
+  tip?: string | ChipTip;
   className?: string;
 }) {
   const hold = useLongPress(onLongPress);
+  const hover = useChipTip(tip);
   const cls = [
     "chip", tone && `chip--${tone}`, valueFirst && "chip--value-first", (onClick || onLongPress) && "chip--act",
     hold.state === "holding" && "chip--holding", hold.state === "held" && "chip--held", className,
@@ -64,14 +77,15 @@ export function Chip({ icon, label, labelColor, labelSizeTo, value, sizeTo, size
       </span>
     </>
   );
-  if (!onClick && !onLongPress) return <div className={cls} title={title}>{inner}</div>;
+  if (!onClick && !onLongPress) return <div className={cls} {...hover}>{inner}</div>;
   return (
     <button
       type="button"
       className={cls}
-      title={title}
       style={onLongPress ? ({ "--chip-hold-ms": `${CHIP_LONG_PRESS_MS}ms` } as CSSProperties) : undefined}
       {...hold.handlers}
+      onPointerEnter={hover.onPointerEnter}
+      onPointerLeave={() => { hover.onPointerLeave?.(); hold.handlers.onPointerLeave?.(); }}
       onClick={() => { if (!hold.consumeFired()) onClick?.(); }}
     >
       {inner}
@@ -98,6 +112,26 @@ function Sized({ className, style, sizeTo, center, children }: {
       <span>{children}</span>
     </span>
   );
+}
+
+/** Pointer handlers that show `tip` in the hover tooltip while a mouse is over the chip. */
+function useChipTip(tip: TooltipContent | undefined) {
+  const [anchor, setAnchor] = useState<HTMLElement | null>(null);
+
+  // Every render while hovered: a countdown or the clock ticks inside the tooltip too.
+  useEffect(() => {
+    if (anchor && tip) showCardFor(anchor, tip);
+  });
+  useEffect(() => {
+    if (!anchor) return;
+    return () => hideTooltipFor(anchor);
+  }, [anchor]);
+
+  if (!tip) return {};
+  return {
+    onPointerEnter: (e: PointerEvent<HTMLElement>) => { if (e.pointerType !== "touch") setAnchor(e.currentTarget); },
+    onPointerLeave: () => setAnchor(null),
+  };
 }
 
 type HoldState = "idle" | "holding" | "held";

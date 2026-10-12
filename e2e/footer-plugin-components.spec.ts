@@ -20,6 +20,7 @@ const CHIP_TEXT = 'CHIP-OK';
 const PLUGIN_SOURCE = `
 export async function init(api) {
     const handle = api.ui.registerFooterComponent('chip', '<span>${CHIP_TEXT}</span>', 'end');
+    api.ui.setTooltip(handle.element, { header: '${PLUGIN_NAME}', rows: [{ label: 'Stan', content: 'gotowy' }], click: 'nic nie robi' });
     globalThis.__footerChipHandle = handle;
     return { name: '${PLUGIN_NAME}', version: '1.0.0' };
 }
@@ -161,6 +162,24 @@ test.describe('plugin footer components in the footer settings', () => {
         expect(await footerOrder(page, PLUGIN_ITEM), 'and keep it behind the shown chips')
             .toBeGreaterThan(await footerOrder(page, LAST_CHIP));
         await expect(chip(page), 'and it should still be shown').toBeVisible();
+    });
+});
+
+test.describe('plugin footer component tooltips', () => {
+    test('show the card the plugin set, in the client tooltip', async ({page}) => {
+        await page.goto('/');
+        await ensureGameSocket(page);
+        await waitForCommandInput(page);
+
+        await loadPlugin(page);
+        await chip(page).hover();
+        const tooltip = page.locator('#hover-tooltip');
+        await expect(tooltip.locator('.hover-tooltip__header')).toHaveText(PLUGIN_NAME);
+        await expect(tooltip).toContainText('gotowy');
+        await expect(tooltip).toContainText('nic nie robi');
+
+        await page.mouse.move(0, 0);
+        await expect(tooltip).not.toBeVisible();
     });
 });
 

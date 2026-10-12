@@ -2359,6 +2359,56 @@ export interface UiApi {
      * player's own - whose state carries this name draws itself as on.
      */
     setFooterButtonState(name: string, on: boolean): void;
+    /**
+     * Give an element a hover card in the client's own tooltip, the one the
+     * built-in footer chips, herbs and books use, instead of a browser `title`.
+     * Shown above the element while the mouse is over it; clicking the element
+     * leaves it up. Pass a string for one line, or a card with a header,
+     * label/value rows and click / hold hints.
+     *
+     * The card is redrawn at once when you call `update()` while it is shown, so
+     * a ticking value can follow along. Tooltips are removed with the plugin.
+     *
+     * @example
+     * ```typescript
+     * const chip = api.ui.registerFooterComponent('timer', '<span class="chip">…</span>');
+     * const tip = api.ui.setTooltip(chip.element, {
+     *   header: 'Mój licznik',
+     *   rows: [{ label: 'Pozostało', content: '0:42' }],
+     *   click: 'zresetuj licznik',
+     * });
+     * tip.update({ header: 'Mój licznik', rows: [{ label: 'Pozostało', content: '0:41' }] });
+     * ```
+     */
+    setTooltip(element: Element, tooltip: string | PluginTooltip | null): PluginTooltipHandle;
+}
+
+/** A hover card for {@link UiApi.setTooltip}. */
+
+export interface PluginTooltip {
+    /** Bold first line. */
+    header?: string;
+    /**
+     * Rows of the card: a grey label beside its content (text, or a DOM node for
+     * colour or icons), or a bare DOM node laid out full width (a bar, a chart).
+     */
+    rows?: Array<{
+        label: string;
+        content: string | Node;
+    } | Node>;
+    /** What a click does, dimmed at the foot after "kliknij". */
+    click?: string;
+    /** What a long press does, after "przytrzymaj". */
+    hold?: string;
+}
+
+/** Handle for a tooltip set with {@link UiApi.setTooltip}. */
+
+export interface PluginTooltipHandle {
+    /** Replace the card; null leaves the element without one. */
+    update(tooltip: string | PluginTooltip | null): void;
+    /** Take the tooltip off the element. */
+    remove(): void;
 }
 
 /** What a plugin's footer button is. */

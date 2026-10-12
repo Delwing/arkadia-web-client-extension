@@ -1307,6 +1307,17 @@ api.ui.addPopupMenuEntry('Łupy', () => (popup.isOpen ? popup.close() : popup.op
   ```
 
   Ikona to SVG (dopasuje się do 13px i koloru chipa). `chip--warn` / `chip--danger` na elemencie `chip` — gdy coś wymaga uwagi. Etykieta krótka (kilka liter, wyświetlana wersalikami), wartość zwięzła. Jedna linia, bez własnego `line-height` i wysokości.
+- **Podpowiedź** (`setTooltip`) — zamiast `title` daj chipowi taką samą kartę jak wbudowane: nagłówek, wiersze etykieta–wartość i na dole, co robi kliknięcie i przytrzymanie. `update()` odświeża ją na bieżąco, a przy wyłączeniu pluginu znika sama.
+
+  ```js
+  const chip = api.ui.registerFooterComponent('cel', '<span class="chip">…</span>');
+  const tip = api.ui.setTooltip(chip.element, {
+    header: 'Cel',
+    rows: [{ label: 'Kondycja', content: 'ledwo stoi' }],
+    click: 'zaatakuj cel',
+  });
+  // później: tip.update({ ... }) albo tip.remove()
+  ```
 - **Przycisk** (`registerFooterButton`) — gdy chodzi o wysłanie komendy. `tone: 'accent'` tylko dla trybu lub ważnej akcji, `'danger'` dla ryzykownych; `state` zapala go, gdy tryb jest włączony.
 - Stopka jest wąska — jeden, najwyżej dwa elementy na plugin.
 

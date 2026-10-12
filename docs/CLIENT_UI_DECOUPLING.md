@@ -79,6 +79,7 @@ interface UiPort {
   showBookTooltip(categories, x, y): void;
   hideBookTooltip(): void;
   showContextMenu(items, x, y, options?): void;
+  attachTooltip?(element, card): TooltipHandle;  // plugin api.ui.setTooltip; omit = no tooltip
 }
 setUiPort(port);   // UI installs its implementation
 getUiPort();       // client core reads it (no-op until set)

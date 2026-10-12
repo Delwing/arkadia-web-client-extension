@@ -164,8 +164,8 @@ test.describe('Clock System', () => {
         await expect(clockDisplay).toContainText('±60');
 
         // Clock should be clickable
-        const title = await clockDisplay.locator('.chip').getAttribute('title');
-        expect(title).toContain('kliknij');
+        await clockDisplay.locator('.chip').hover();
+        await expect(page.locator('#hover-tooltip')).toContainText('otwórz okno czasu');
     });
 
     test('Ishtar sunrise event works independently from Empire', async ({page}) => {
@@ -324,7 +324,10 @@ test.describe('Clock System', () => {
         // day or night rides in the icon and the tooltip.
         const chip = clockDisplay.locator('.chip');
         await expect(chip.locator('.chip__lab')).toHaveText('wiosna');
-        await expect(chip).toHaveAttribute('title', /wiosna, dzień/);
+        const tooltip = page.locator('#hover-tooltip');
+        await chip.hover();
+        await expect(tooltip).toContainText('wiosna');
+        await expect(tooltip).toContainText('dzień');
 
         // Set time at sunset
         await pushText(page, 'Jest w przyblizeniu osma wieczorem, 10 dzien miesiaca Pflugzeit wedlug Kalendarza Imperialnego.');
@@ -334,7 +337,7 @@ test.describe('Clock System', () => {
         await pushGmcp(page, 'room.time', { daylight: false });
         await page.clock.runFor(2000);
 
-        await expect(chip).toHaveAttribute('title', /wiosna, noc/);
+        await expect(tooltip).toContainText('noc');
     });
 
     test('Czas popup shows sun times and switches between the current and the other domain', async ({page}) => {
