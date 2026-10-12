@@ -11,6 +11,7 @@ import {
 import {
     getAllRecords,
     getDistinctDates,
+    parseDateForSort,
 } from '../client/scripts/killLifetimeStorage';
 import {characterStorage} from '@modules/core/storage';
 import {Button, HeaderButton, Input, Segmented, Select} from '@web-ui/primitives';
@@ -45,9 +46,8 @@ const yearOf = (date: string) => date === 'unknown' ? 'unknown' : date.split('/'
 
 /** Newest first, the pre-dates migration bucket last. */
 function newestFirst(a: string, b: string): number {
-    if (a === 'unknown') return 1;
-    if (b === 'unknown') return -1;
-    return b.localeCompare(a);
+    // Numerically: the dates are not zero-padded, so 2026/9/30 < 2026/10/1.
+    return parseDateForSort(b) - parseDateForSort(a);
 }
 
 const periodLabel = (p: string) => p === 'unknown' ? 'Nieznana data (migracja)' : p;

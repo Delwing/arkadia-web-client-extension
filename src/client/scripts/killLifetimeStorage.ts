@@ -210,7 +210,8 @@ export async function migrateFromLocalStorage(character: string): Promise<void> 
     localStorage.setItem(migrationKey, 'true');
 }
 
-function parseDateForSort(d: string): number {
+/** A kill date ("YYYY/M/D", a bare year, or "unknown" as the oldest) as a number that sorts by time. */
+export function parseDateForSort(d: string): number {
     if (d === 'unknown') return 0;
     const parts = d.split('/');
     const y = parseInt(parts[0], 10) || 0;

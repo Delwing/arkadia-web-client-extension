@@ -11,6 +11,7 @@ import {
     importAllKillRecords,
     makeId,
     mergeImportedKills,
+    parseDateForSort,
     onKillCountsSet,
 } from '@client/scripts/killLifetimeStorage';
 
@@ -314,5 +315,12 @@ describe('killLifetimeStorage', () => {
 
             expect(await getLifetimeTotals(CHARACTER)).toEqual([{mob: 'orka', total: 5}]);
         });
+    });
+
+    test('parseDateForSort orders unpadded dates by time, "unknown" first', () => {
+        const dates = ['2026/10/1', '2026/9/30', 'unknown', '2026/1/12', '2026/1/5', '2025/12/31'];
+        expect([...dates].sort((a, b) => parseDateForSort(a) - parseDateForSort(b)))
+            .toEqual(['unknown', '2025/12/31', '2026/1/5', '2026/1/12', '2026/9/30', '2026/10/1']);
+        expect(parseDateForSort('2026')).toBeGreaterThan(parseDateForSort('2025/12/31'));
     });
 });
