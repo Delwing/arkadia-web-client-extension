@@ -13,7 +13,8 @@ import {
     getDistinctDates,
 } from '../client/scripts/killLifetimeStorage';
 import {characterStorage} from '@modules/core/storage';
-import {Button, Input, Segmented, Select} from '@web-ui/primitives';
+import {Button, HeaderButton, Input, Segmented, Select} from '@web-ui/primitives';
+import {openSettingsPage} from '@web/settings/categories.ts';
 import {ChevronDown, ChevronLeft, ChevronRight, Search, X} from 'lucide-react';
 
 const POPUP_ID = 'popup:zabici2';
@@ -125,29 +126,37 @@ const Zabici2Popup: React.FC = () => {
     const periodIndex = periods.indexOf(currentPeriod);
 
     const headerActions = (
-        <Segmented<TabType>
-            size="sm"
-            value={activeTab}
-            onChange={setActiveTab}
-            options={[
-                {value: 'all', label: 'Wszystkie'},
-                {value: 'daily', label: 'Dzień'},
-                {value: 'yearly', label: 'Rok'},
-            ]}
-        />
+        <>
+            <HeaderButton
+                onClick={() => openSettingsPage('data-import', 'import-zabici')}
+                title="Import z Mudleta (Ustawienia → Import z innych klientów)"
+            >
+                Import
+            </HeaderButton>
+            <Segmented<TabType>
+                size="sm"
+                value={activeTab}
+                onChange={setActiveTab}
+                options={[
+                    {value: 'all', label: 'Wszystkie'},
+                    {value: 'daily', label: 'Dzień'},
+                    {value: 'yearly', label: 'Rok'},
+                ]}
+            />
+        </>
     );
 
     const renderRows = (entries: MobCount[]) => entries.map(({mob, count}) => (
-        <div key={mob} className={`zabici2-popup__row ${isUnique(mob) ? 'zabici2-popup__row--unique' : ''}`}>
-            <span className="zabici2-popup__mob" title={mob}>{mob}</span>
-            <span className="zabici2-popup__count">{count}</span>
+        <div key={mob} className={`kill-list__row ${isUnique(mob) ? 'kill-list__row--unique' : ''}`}>
+            <span className="kill-list__mob" title={mob}>{mob}</span>
+            <span className="kill-list__count">{count}</span>
         </div>
     ));
 
     const sortHeader = (key: SortType, label: string) => (
         <button
             type="button"
-            className={`zabici2-popup__sort ${sortBy === key ? 'is-active' : ''}`}
+            className={`kill-list__sort ${sortBy === key ? 'is-active' : ''}`}
             onClick={() => setSortBy(key)}
         >
             {label}
@@ -226,49 +235,49 @@ const Zabici2Popup: React.FC = () => {
                 </div>
             </div>
 
-            <div className="zabici2-popup__stats">
-                <div className="zabici2-popup__stat">
-                    <span className="zabici2-popup__stat-value">{total}</span>
-                    <span className="zabici2-popup__stat-label">Zabitych</span>
+            <div className="kill-stats">
+                <div className="kill-stats__item">
+                    <span className="kill-stats__value">{total}</span>
+                    <span className="kill-stats__label">Zabitych</span>
                 </div>
-                <div className="zabici2-popup__stat">
-                    <span className="zabici2-popup__stat-value">{kills.length}</span>
-                    <span className="zabici2-popup__stat-label">Rodzajów</span>
+                <div className="kill-stats__item">
+                    <span className="kill-stats__value">{kills.length}</span>
+                    <span className="kill-stats__label">Różnych</span>
                 </div>
-                <div className="zabici2-popup__stat zabici2-popup__stat--unique">
-                    <span className="zabici2-popup__stat-value">{uniqueCount}</span>
-                    <span className="zabici2-popup__stat-label">Unikalnych</span>
+                <div className="kill-stats__item kill-stats__item--unique">
+                    <span className="kill-stats__value">{uniqueCount}</span>
+                    <span className="kill-stats__label">Unikalnych</span>
                 </div>
             </div>
 
             <div className="zabici2-popup__content">
-                <div className="zabici2-popup__head">
+                <div className="kill-list__head">
                     {sortHeader('name', 'Przeciwnik')}
                     {sortHeader('count', 'Ilość')}
                 </div>
                 {shown.length === 0 && <div className="popup-empty">{emptyText}</div>}
                 {uniqueShown.length > 0 && (
                     <>
-                        <div className="zabici2-popup__group zabici2-popup__group--unique">
+                        <div className="kill-list__group kill-list__group--unique">
                             <span>Unikalni</span>
-                            <span className="zabici2-popup__group-count">{uniqueShown.length}</span>
+                            <span className="kill-list__group-count">{uniqueShown.length}</span>
                         </div>
                         {renderRows(uniqueShown)}
                     </>
                 )}
                 {othersShown.length > 0 && (
                     <>
-                        <div className="zabici2-popup__group">
+                        <div className="kill-list__group">
                             <span>Pozostali</span>
-                            <span className="zabici2-popup__group-count">{othersShown.length}</span>
+                            <span className="kill-list__group-count">{othersShown.length}</span>
                         </div>
                         {renderRows(othersShown)}
                     </>
                 )}
             </div>
 
-            <div className="zabici2-popup__footer">
-                <span className="zabici2-popup__character">{characterName}</span>
+            <div className="kill-list__footer">
+                <span className="kill-list__footer-note">{characterName}</span>
                 <span>
                     {query ? <>Pasujące <b>{shownTotal}</b> z {total}</> : <>Łącznie <b>{total}</b></>}
                 </span>
