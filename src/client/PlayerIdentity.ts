@@ -16,7 +16,8 @@ import type {GmcpCharInfo, ObjectData} from "@shared/events";
  * 2. **A new body, same life.** `przeobrazenie`, the appearance scrolls and the face
  *    ointment (`posmaruj twarz mascia`) rebuild
  *    the character in place, handing out a fresh id and giving the old one back
- *    when the effect lapses, some twenty minutes later. Nothing about the session
+ *    when the effect lapses - after a time that differs between them (one
+ *    przeobrazenie held for over forty minutes). Nothing about the session
  *    changed, so `reset` there would wipe the chat history, combat stats, the clock
  *    session and the counters for no reason - and every script still watching the
  *    old id would go quiet, most visibly the mapper, which stays paused because the
