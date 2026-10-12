@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties, type MouseEvent, type PointerEvent, type ReactNode } from "react";
-import { hideTooltipFor, showCardFor, type TooltipCard, type TooltipContent } from "@shared/dom/tooltip.ts";
+import { hideTooltipFor, showCardFor, TOOLTIP_DELAY_MS, type TooltipCard, type TooltipContent } from "@shared/dom/tooltip.ts";
 import "./chip.css";
 
 export type ChipTone = "ok" | "warn" | "danger";
@@ -114,9 +114,17 @@ function Sized({ className, style, sizeTo, center, children }: {
   );
 }
 
-/** Pointer handlers that show `tip` in the hover tooltip while a mouse is over the chip. */
+/**
+ * Pointer handlers that show `tip` in the hover tooltip while a mouse rests on the
+ * chip, after the shared tooltip delay.
+ */
 function useChipTip(tip: TooltipContent | undefined) {
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
+  const timer = useRef<number | null>(null);
+  const cancel = () => {
+    if (timer.current !== null) { window.clearTimeout(timer.current); timer.current = null; }
+  };
+  useEffect(() => cancel, []);
 
   // Every render while hovered: a countdown or the clock ticks inside the tooltip too.
   useEffect(() => {
@@ -129,8 +137,13 @@ function useChipTip(tip: TooltipContent | undefined) {
 
   if (!tip) return {};
   return {
-    onPointerEnter: (e: PointerEvent<HTMLElement>) => { if (e.pointerType !== "touch") setAnchor(e.currentTarget); },
-    onPointerLeave: () => setAnchor(null),
+    onPointerEnter: (e: PointerEvent<HTMLElement>) => {
+      if (e.pointerType === "touch") return;
+      const el = e.currentTarget;
+      cancel();
+      timer.current = window.setTimeout(() => { timer.current = null; setAnchor(el); }, TOOLTIP_DELAY_MS);
+    },
+    onPointerLeave: () => { cancel(); setAnchor(null); },
   };
 }
 

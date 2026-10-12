@@ -2362,8 +2362,8 @@ export interface UiApi {
     /**
      * Give an element a hover card in the client's own tooltip, the one the
      * built-in footer chips, herbs and books use, instead of a browser `title`.
-     * Shown above the element while the mouse is over it; clicking the element
-     * leaves it up. Pass a string for one line, or a card with a header,
+     * Shown above the element once the mouse rests on it for about half a second,
+     * like a `title`; clicking the element leaves it up. Pass a string for one line, or a card with a header,
      * label/value rows and click / hold hints.
      *
      * The card is redrawn at once when you call `update()` while it is shown, so

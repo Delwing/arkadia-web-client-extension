@@ -5,6 +5,7 @@ import { characterStorage } from "@modules/core/storage";
 import { defaultSettings } from "@modules/core/defaultSettings";
 import { AttackChip, ClockChip, ConnectionChip, CoverChip, WeaponChip } from "@web-ui/footer/chips";
 import { CHIP_LONG_PRESS_MS } from "@web-ui/footer/Chip";
+import { TOOLTIP_DELAY_MS } from "@shared/dom/tooltip";
 
 // The stock footer used to have its own components for these; it now renders the
 // shared chips, so their behaviour is pinned here.
@@ -19,7 +20,13 @@ describe("footer chips", () => {
   const chip = () => container.querySelector(".chip") as HTMLElement | null;
   /** Hovers the chip and reads its tooltip back, one "label: content" line per row. */
   const hoverTip = () => {
-    act(() => { chip()!.dispatchEvent(new MouseEvent("pointerover", { bubbles: true })); });
+    const fake = vi.isFakeTimers();
+    if (!fake) vi.useFakeTimers();
+    act(() => {
+      chip()!.dispatchEvent(new MouseEvent("pointerover", { bubbles: true }));
+      vi.advanceTimersByTime(TOOLTIP_DELAY_MS);
+    });
+    if (!fake) vi.useRealTimers();
     const tooltip = document.getElementById("hover-tooltip")!;
     return {
       header: tooltip.querySelector(".hover-tooltip__header")?.textContent,

@@ -14,6 +14,13 @@ let initialized = false;
 /** The control a showTooltipFor tooltip belongs to; pressing it keeps the tooltip up. */
 let anchorElement: Element | null = null;
 
+/**
+ * How long the mouse rests on a control before its tooltip shows, about as long
+ * as a native title. Every control waits it afresh, so running the mouse along
+ * the footer does not flash a tooltip for each chip passed over.
+ */
+export const TOOLTIP_DELAY_MS = 450;
+
 function ensureTooltip(): HTMLElement | null {
     if (!tooltipElement) {
         tooltipElement = document.getElementById('hover-tooltip') as HTMLElement | null;
@@ -206,21 +213,24 @@ export interface TooltipHandle {
 /**
  * Gives a plain DOM element a hover card - the imperative twin of Chip's `tip`,
  * for content that is not one of our React chips (plugin footer components).
- * Mouse and pen only: a touch press would show and dismiss it in one go.
+ * Mouse and pen only: a touch press would show and dismiss it in one go. Shows
+ * after {@link TOOLTIP_DELAY_MS}.
  */
 export function attachTooltip(anchor: Element, card: TooltipContent | null): TooltipHandle {
     let current = card;
     let hovered = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
     const show = () => {
         if (current) showCardFor(anchor, current);
         else hideTooltipFor(anchor);
     };
     const enter = (e: Event) => {
         if ((e as PointerEvent).pointerType === 'touch') return;
-        hovered = true;
-        show();
+        if (timer !== null) clearTimeout(timer);
+        timer = setTimeout(() => { timer = null; hovered = true; show(); }, TOOLTIP_DELAY_MS);
     };
     const leave = () => {
+        if (timer !== null) { clearTimeout(timer); timer = null; }
         hovered = false;
         hideTooltipFor(anchor);
     };
