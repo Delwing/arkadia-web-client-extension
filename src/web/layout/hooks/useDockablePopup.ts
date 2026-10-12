@@ -12,6 +12,13 @@ import { clearClosedPopupState } from '../utils/layoutStorage';
 import type { WindowSettingField } from '../windowSettings';
 import { pushBackLayer } from '@web-ui/backNavigation.ts';
 
+/**
+ * Modals open over the windows: the stock app modals, the Dialog primitive and
+ * forge's menu modals, each with its backdrop. A click or Escape there is for
+ * the modal, not an outside click that closes a floating window.
+ */
+const MODAL_SELECTOR = '.app-modal, .popup-dialog-backdrop, .forge-menu-backdrop';
+
 interface UseDockablePopupOptions {
   popupId: string;
   popupType: PopupType;
@@ -287,12 +294,16 @@ export function useDockablePopup({
       // menu) opt out of the outside-click close via this attribute.
       const popupOverlay = target.closest('[data-popup-overlay]');
       if (floatingPopup || dockedPopup || contextMenu || popupOverlay) return;
+      if (target.closest(MODAL_SELECTOR)) return;
       onCloseRef.current();
     };
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
       if (isPinnedRef.current) return;
+      // Escape belongs to the modal on top (it closes that, not the windows under it).
+      if (document.body.classList.contains('app-modal-open')) return;
+      if ((event.target as Element | null)?.closest?.(MODAL_SELECTOR)) return;
       if (windowManager.get(popupId)?.poppedOut) return;
       if (windowManager.findPanelDock(popupId)) return;
       event.preventDefault();

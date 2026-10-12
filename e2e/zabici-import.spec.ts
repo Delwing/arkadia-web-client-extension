@@ -51,8 +51,6 @@ test('imports Mudlet lifetime kills into the Zabici window', async ({page}) => {
     await expect(row, 'should report the import').toContainText('Zaimportowano 16 zabitych (Importer, inny).');
 
     await page.locator('#settings-modal .app-modal__close').first().click();
-    // Closing the settings dialog closes open windows too; open it again.
-    await submitCommand(page, '/zabici2w');
     await expect(win.locator('.kill-list__footer'), 'max mode keeps the higher orka count for the day').toContainText('Łącznie 8');
     await expect(win.locator('.kill-list__row--unique'), 'should list the imported unique kill').toContainText('Bergmunda');
     await expect(win.locator('.kill-list__row').filter({hasText: 'orka'}), 'should add today\'s kill to the imported ones').toContainText('5');
