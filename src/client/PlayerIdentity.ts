@@ -1,6 +1,6 @@
 import type Client from "./Client";
 import {characterStorage} from "@modules/core/storage";
-import type {GmcpCharInfo} from "@shared/events";
+import type {GmcpCharInfo, ObjectData} from "@shared/events";
 
 /**
  * Arkadia gives every object a numeric id, players included, and GMCP keys
@@ -29,6 +29,13 @@ import type {GmcpCharInfo} from "@shared/events";
  *
  * {@link sessionNum} therefore moves for a new life but not for a new body, and
  * {@link num} follows whichever body we are wearing right now.
+ *
+ * Char.Info is not the last word on which body that is, though. Logging back into a
+ * character that is still transformed - the server's "przejmujesz nad nia kontrole"
+ * - brings a Char.Info with the original id while the room holds only the
+ * transformed one, and no spell line follows to explain it. Objects.Data flags our
+ * own object with `avatar`, so whenever the server says so, that is the body we
+ * wear; see {@link handleData}.
  *
  * A third case moves nothing but still has to be handled: the session proxy can hand
  * a session back that this client was already in, after a dropped socket or a page
@@ -78,6 +85,13 @@ export default class PlayerIdentity {
     /** The id we wore when the current transformation started. */
     private preTransform?: number;
     private lastName?: string;
+    /**
+     * The id the last Char.Info carried. A change of id mid-session is judged
+     * against this rather than {@link current}, since the avatar flag may already
+     * have moved us onto the new body before the Char.Info that has to say whether
+     * it was a death.
+     */
+    private charInfoNum?: number;
 
     private lastNums: number[] = [];
     private previousNums: number[] = [];
@@ -107,6 +121,7 @@ export default class PlayerIdentity {
 
         this.client.on('gmcp.char.info', info => this.handleCharInfo(info));
         this.client.on('gmcp.objects.nums', nums => this.handleNums(nums));
+        this.client.on('gmcp.objects.data', data => this.handleData(data));
         this.client.on('client.connect', () => {
             this.connectedSinceCharInfo = true;
         });
@@ -242,11 +257,12 @@ export default class PlayerIdentity {
                 this.client.sendEvent('player.character', name);
             }
             this.startNewLife(num);
-        } else if (num !== this.current) {
+        } else if (num !== (this.charInfoNum ?? this.current)) {
             this.lastCharInfoNumChange = Date.now();
             this.pending = num;
             setTimeout(() => this.settleNewBody(num), 0);
         }
+        this.charInfoNum = num;
         // The server placed us; nothing left to guess.
         this.awaiting = undefined;
         this.resumeCandidate = undefined;
@@ -294,6 +310,23 @@ export default class PlayerIdentity {
         if (this.awaiting) {
             this.tryReidentify(list);
         }
+    }
+
+    /**
+     * The server naming our object outright. Only ever a change of body, never of
+     * life: a death is still Char.Info's to announce, and is judged there.
+     */
+    private handleData(data: Map<number, ObjectData> | undefined) {
+        if (!data || typeof data !== 'object') {
+            return;
+        }
+        const own = Object.keys(data).find(key => data[key]?.avatar === true);
+        if (own === undefined) {
+            return;
+        }
+        this.awaiting = undefined;
+        this.resumeCandidate = undefined;
+        this.setNum(Number(own));
     }
 
     /**

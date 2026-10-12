@@ -232,6 +232,54 @@ describe('PlayerIdentity', () => {
     });
   });
 
+  // Logging back into a character still under przeobrazenie: Char.Info carries the
+  // original id, the room only the transformed body, and no spell line explains it.
+  // Left to Char.Info, the player was listed twice - once by name, once as a stranger.
+  describe('when Objects.Data flags our own object', () => {
+    const avatar = (num: number) => client.sendEvent('gmcp.objects.data', { [num]: { avatar: true, hp: 6 } });
+
+    test('wears the flagged body over the id a login named', () => {
+      login(101);
+      client.sendEvent('gmcp.objects.nums', [512]);
+      avatar(512);
+
+      expect(identity.num).toBe(512);
+      expect(identity.sessionNum).toBe(101);
+      expect(characterStorage.get('object_num')).toBe('101');
+      expect(resets).toBe(0);
+    });
+
+    test('goes back to the login id when the effect lapses', () => {
+      login(101);
+      client.sendEvent('gmcp.objects.nums', [512]);
+      avatar(512);
+
+      client.line(RESTORE_LINE);
+      client.sendEvent('gmcp.objects.nums', [101]);
+      avatar(101);
+
+      expect(identity.num).toBe(101);
+      expect(resets).toBe(0);
+    });
+
+    test('ignores entries that are not us', () => {
+      login(101);
+      client.sendEvent('gmcp.objects.data', { 204: { hp: 6, desc: 'straznik' } });
+      expect(identity.num).toBe(101);
+    });
+
+    // The flag may move us onto a new body ahead of the Char.Info for it.
+    test('a death it got to first is still a death', async () => {
+      login(101);
+      avatar(512);
+      client.sendEvent('gmcp.char.info', { name: 'Hero', object_num: 512 });
+      await settle();
+
+      expect(identity.sessionNum).toBe(512);
+      expect(resets).toBe(1);
+    });
+  });
+
   // The proxy resumes the telnet session a dropped socket was attached to, and
   // Char.Info is only pushed when one is opened - so there is nothing to restore the
   // id from afterwards. Forgetting it here left the player listed among the strangers
