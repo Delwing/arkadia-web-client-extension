@@ -16,6 +16,8 @@ import {
 } from "./proxySession.ts";
 import {OPEN_SETTINGS_EVENT} from "./assistant/openSettings.ts";
 import {ProxyControls} from "./hostProxy/ProxyControls.tsx";
+import {AccountSession} from "./account/accountSession";
+import {AccountScreen} from "./account/AccountScreen";
 import recordingManager from "./RecordingManager.ts";
 import eventBus from "@modules/core/eventBus";
 import {setupOutputContextMenu} from "./outputContextMenu";
@@ -406,13 +408,97 @@ client.on('gmcp_msg.room.long', () => {
     lastSystemLoginMessage = null;
 });
 
+/*
+Konto: logging in by e-mail, creating an account and a character over GMCP.
+Only the direct connection speaks it (see account/accountProtocol.ts), and
+while it runs the login card stays up over the live connection.
+*/
+let pendingAccountRequest: (() => void) | null = null;
+// Set by Wyloguj until the connection it closes is gone.
+let accountLeaving = false;
+const onGameReady = () => {
+    const run = pendingAccountRequest;
+    pendingAccountRequest = null;
+    run?.();
+};
+mudClient.on('gmcp.client.connect', onGameReady);
+const accountSession = new AccountSession({
+    sendGmcp: (path, payload) => mudClient.sendGmcp(path, payload ?? ''),
+    onGmcp: (path, listener) => {
+        const event = `gmcp.${path}` as const;
+        mudClient.on(event, listener);
+        return () => mudClient.off(event, listener);
+    },
+    // The game takes requests once it has said client.connect, as it does for the
+    // original client; an open socket alone is not yet listening.
+    whenReady: (run) => {
+        if (isConnected && !pendingAccountRequest) {
+            run();
+            return;
+        }
+        pendingAccountRequest = run;
+        if (isConnected || isConnecting) return;
+        isConnecting = true;
+        lastSystemLoginMessage = null;
+        updateConnectButtons();
+        void client.prepareSounds();
+        mudClient.connect();
+    },
+    disconnect: () => {
+        pendingAccountRequest = null;
+        if (isConnected) {
+            accountLeaving = true;
+            requestDisconnect();
+        } else if (isConnecting) {
+            mudClient.disconnect();
+        }
+    },
+}, {
+    onLoginFailed: (message) => {
+        lastSystemLoginMessage = message;
+        pendingAccountRequest = null;
+        mudClient.disconnect();
+    },
+    onEnteredGame: () => {
+        updateConnectButtons();
+        if (!isMobileLikeViewport()) document.getElementById('message-input')?.focus();
+    },
+});
+accountSession.subscribe(() => updateConnectButtons());
+
+/**
+ * Close the connection on the player's word. The close event does not always
+ * come, so once the socket is shut a second later the state follows without it,
+ * the same as the event would have done.
+ */
+function requestDisconnect() {
+    if (isDisconnecting) return;
+    isDisconnecting = true;
+    updateConnectButtons();
+    mudClient.disconnect();
+    setTimeout(() => {
+        if (isDisconnecting && !mudClient.isSocketOpen()) {
+            isConnected = false;
+            isDisconnecting = false;
+            pendingAccountRequest = null;
+            accountLeaving = false;
+            accountSession.reset();
+            updateConnectButtons();
+        }
+    }, 1000);
+}
+
 // Function to update the connect button state
 function updateConnectButtons() {
     const authPanel = document.getElementById('auth-panel');
     const authOverlay = document.getElementById('auth-overlay') as HTMLElement | null;
+    const account = accountSession.getState();
 
-    // Connecting: the form and the connect button give way to the spinner.
-    authPanel?.classList.toggle('is-connecting', isConnecting);
+    // Connecting: the form and the connect button give way to the spinner, which
+    // also covers an e-mail login waiting for the game's answer.
+    authPanel?.classList.toggle('is-connecting', isConnecting || account.loggingIn);
+    authPanel?.classList.toggle('is-account', account.view !== 'off');
+    authPanel?.classList.toggle('is-direct', mudClient.getProxyMode() === 'direct');
 
     // Offline with the login screen dismissed: the command line shows the closed
     // connection and offers to reconnect in place of the send button.
@@ -421,7 +507,10 @@ function updateConnectButtons() {
 
 
     if (authOverlay) {
-        authOverlay.style.display = (!isConnected && !playbackMode && !authClosed) ? 'flex' : 'none';
+        // Leaving an account keeps the card up through the close: there is no game
+        // under it to show for the moment the socket takes to go.
+        const accountUp = accountSession.isActive() || (accountLeaving && isDisconnecting);
+        authOverlay.style.display = ((!isConnected || accountUp) && !playbackMode && !authClosed) ? 'flex' : 'none';
     }
 
     updateMainMenuItem('disconnect-button', isConnected
@@ -583,6 +672,9 @@ mudClient.on('client.disconnect', () => {
     isConnected = false;
     isConnecting = false;
     isDisconnecting = false;
+    pendingAccountRequest = null;
+    accountLeaving = false;
+    accountSession.reset();
     // Reopening the login overlay would be wrong while a reattach is in flight: the
     // character is still in the world, so there is nothing to log in to, and it would
     // flash over the output for as long as the reconnect takes.
@@ -827,6 +919,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!messageInput) return;
         if (isMobileLikeViewport()) return;
         if (document.hidden) return;
+        // The account screens are still up: the game comes once a character is chosen.
+        if (accountSession.isActive()) return;
         messageInput.focus();
     };
     mudClient.on('client.connect', focusCommandInputOnConnect);
@@ -956,17 +1050,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (isDisconnecting) {
                 return;
             }
-            isDisconnecting = true;
-            updateConnectButtons();
-            mudClient.disconnect();
-            // Fallback: ensure state updates after a delay if disconnect event doesn't fire
-            setTimeout(() => {
-                if (isDisconnecting && !mudClient.isSocketOpen()) {
-                    isConnected = false;
-                    isDisconnecting = false;
-                    updateConnectButtons();
-                }
-            }, 1000);
+            requestDisconnect();
         } else {
             // Connect
             if (isConnecting) {
@@ -1182,6 +1266,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const character = loginCharacter?.value || '';
             const password = loginPassword?.value || '';
 
+            // An e-mail opens the account rather than a character. Over telnet the
+            // game asks for one in its own text menu, so only the direct connection
+            // takes this road; the others type it in below like a name.
+            if (character.includes('@') && mudClient.getProxyMode() === 'direct') {
+                if (isConnected || isConnecting) return;
+                lastSystemLoginMessage = null;
+                accountSession.login(character.trim(), password);
+                return;
+            }
+
             if (character) {
                 unsubLoginMessage = eventBus.on('socket.incoming', () => {
                     unsubLoginMessage?.();
@@ -1252,6 +1346,17 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Konto: the screens that replace the card for an account, and the way in.
+    const accountRoot = document.getElementById('account-root');
+    if (accountRoot) {
+        createRoot(accountRoot).render(createElement(AccountScreen, {session: accountSession}));
+    }
+    document.getElementById('create-account-link')?.addEventListener('click', () => {
+        lastSystemLoginMessage = null;
+        accountSession.openCreateAccount();
+    });
+    updateConnectButtons();
+
     // The login screen's connection footer: the mode (direct / helper / proxy),
     // what the helper is doing, and each mode's settings (proxy URL, MCCP).
     const proxyControlsRoot = document.getElementById('proxy-controls-root');
@@ -1262,7 +1367,10 @@ document.addEventListener('DOMContentLoaded', () => {
             onResumeNoticeChange: (enabled: boolean) => setResumeNoticeEnabled(enabled),
             initialMode: mudClient.getProxyMode(),
             initialUrl: mudClient.getUserProxyUrl() ?? '',
-            onModeChange: (mode) => mudClient.setProxyMode(mode),
+            onModeChange: (mode) => {
+                mudClient.setProxyMode(mode);
+                updateConnectButtons();
+            },
             onUrlChange: (url: string) => mudClient.setUserProxyUrl(url),
             onUseProxy: (url: string) => {
                 mudClient.setUserProxyUrl(url);

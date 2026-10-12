@@ -220,11 +220,11 @@
         <section id="auth-panel">
             <img src="logo.png" class="auth-logo" alt="Dargoth Client" />
             <div class="auth-body">
-                <h1 class="auth-title">Wejdź do Arkadii</h1>
+                <h1 class="auth-title auth-title-main">Wejdź do Arkadii</h1>
                 <div id="connecting-spinner"><span class="auth-spinner"></span>Łączenie…</div>
                 <div id="system-login-message"></div>
                 <form id="login-form">
-                    <label class="auth-field"><span class="auth-label">Postać</span>
+                    <label class="auth-field"><span class="auth-label">Postać albo e-mail konta</span>
                         <input id="login-character" class="auth-input" type="text" autocomplete="username" spellcheck="false" autofocus></label>
                     <label class="auth-field"><span class="auth-label">Hasło</span>
                         <span class="auth-pass">
@@ -233,6 +233,9 @@
                         </span></label>
                     <button id="login-submit" class="auth-btn auth-btn--solid auth-btn--lg" type="submit">Zaloguj</button>
                 </form>
+                <div id="create-account-row"><span class="auth-dim">Nie masz konta?</span><button id="create-account-link" type="button" class="auth-btn auth-btn--link">Załóż konto</button></div>
+                <!-- Konto: AccountScreen.tsx, while #auth-panel carries is-account -->
+                <div id="account-root"></div>
                 <div class="auth-or"><span></span>albo<span></span></div>
                 <button id="connect-button" type="button" class="auth-btn auth-btn--two">
                     <span>Połącz bez logowania</span><span class="auth-muted">nowa postać albo logowanie w grze</span>
