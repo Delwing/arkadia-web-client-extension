@@ -3214,16 +3214,99 @@ select.popup-input optgroup {
   overflow-y: auto;
 }
 
-.kill-list__group--team {
+/* Solo view: plain rows, no column head, the stats row carries the total. */
+.zabici-popup__content > .kill-list__row {
+  min-height: 26px;
+}
+
+.kill-stats--compact .kill-stats__item {
+  flex-direction: row;
+  align-items: baseline;
+  gap: 6px;
+  padding: 5px 10px;
+}
+
+/* Team view: a card per person, packed into as many columns as fit. */
+.kill-cards {
+  columns: 150px;
+  column-gap: 6px;
+  padding: 6px;
+}
+
+.kill-card {
+  break-inside: avoid;
+  margin-bottom: 6px;
+  overflow: hidden;
+  border: 1px solid var(--popup-border-subtle);
+  border-radius: 6px;
+  background-color: var(--popup-section-bg);
+}
+
+.kill-card__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--popup-border-subtle);
+}
+
+.kill-card__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   color: var(--popup-data-blue);
+  font-weight: 600;
+}
+
+.kill-card--me .kill-card__name {
+  color: var(--popup-text-strong);
+}
+
+.kill-card__total {
+  color: var(--popup-text-strong);
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.kill-card__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  padding: 1px 8px;
+}
+
+.kill-card__row:first-of-type {
+  padding-top: 3px;
+}
+
+.kill-card__row:last-child {
+  padding-bottom: 4px;
+}
+
+.kill-card__row--unique .kill-list__mob {
+  color: var(--popup-data-orange);
+  font-weight: 600;
+}
+
+.kill-card__row .kill-list__count {
+  color: var(--popup-text-medium);
+}
+
+.kill-card__empty {
+  padding: 3px 8px 4px;
+  color: var(--popup-text-faint);
 }
 
 /* The row a kill just changed lights up, then fades back. */
-.kill-list__row {
+.kill-list__row,
+.kill-card__row {
   transition: background-color 1.2s ease;
 }
 
-.kill-list__row.kill-list__row--fresh {
+.kill-list__row.kill-fresh,
+.kill-card__row.kill-fresh {
   background-color: var(--popup-accent-dim-bg);
   transition: none;
 }

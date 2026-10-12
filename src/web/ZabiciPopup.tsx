@@ -84,11 +84,11 @@ const ZabiciPopup: React.FC = () => {
         </HeaderButton>
     );
 
-    const renderRows = (player: string, entries: [string, number][]) => entries.map(([mob, count]) => {
+    const renderRows = (player: string, entries: [string, number][], rowClass: string) => entries.map(([mob, count]) => {
         const key = rowKey(player, mob);
-        const classes = ['kill-list__row'];
-        if (isUnique(mob)) classes.push('kill-list__row--unique');
-        if (key === freshKey) classes.push('kill-list__row--fresh');
+        const classes = [rowClass];
+        if (isUnique(mob)) classes.push(`${rowClass}--unique`);
+        if (key === freshKey) classes.push('kill-fresh');
         return (
             <div key={mob} className={classes.join(' ')} data-kill-key={key}>
                 <span className="kill-list__mob" title={mob}>{mob}</span>
@@ -96,6 +96,18 @@ const ZabiciPopup: React.FC = () => {
             </div>
         );
     });
+
+    const renderCard = (player: string, name: string, total: number, entries: [string, number][]) => (
+        <section key={name} className={`kill-card${player === ME ? ' kill-card--me' : ''}`}>
+            <header className="kill-card__head">
+                <span className="kill-card__name" title={name}>{name}</span>
+                <span className="kill-card__total">{total}</span>
+            </header>
+            {entries.length > 0
+                ? renderRows(player, entries, 'kill-card__row')
+                : <div className="kill-card__empty">—</div>}
+        </section>
+    );
 
     const isEmpty = myEntries.length === 0 && (!showTeam || teamEntries.length === 0);
 
@@ -112,7 +124,7 @@ const ZabiciPopup: React.FC = () => {
             bodyClassName="popup-body zabici-popup__body"
             headerActions={headerActions}
         >
-            <div className="kill-stats">
+            <div className="kill-stats kill-stats--compact">
                 <div className="kill-stats__item">
                     <span className="kill-stats__value">{totals.my}</span>
                     <span className="kill-stats__label">Ja</span>
@@ -141,41 +153,14 @@ const ZabiciPopup: React.FC = () => {
                     <div className="popup-empty">
                         Brak zabitych w tej sesji.
                     </div>
+                ) : showTeam ? (
+                    <div className="kill-cards">
+                        {renderCard(ME, 'Ja', totals.my, myEntries)}
+                        {teamEntries.map(([player, mobs]) => renderCard(player, player, sum(mobs), sortedKills(mobs)))}
+                    </div>
                 ) : (
-                    <>
-                        <div className="kill-list__head">
-                            <span>Przeciwnik</span>
-                            <span>Ilość</span>
-                        </div>
-                        {myEntries.length > 0 && (
-                            <>
-                                <div className="kill-list__group">
-                                    <span>Ja</span>
-                                    <span className="kill-list__group-count">{totals.my}</span>
-                                </div>
-                                {renderRows(ME, myEntries)}
-                            </>
-                        )}
-                        {showTeam && teamEntries.map(([player, mobs]) => (
-                            <React.Fragment key={player}>
-                                <div className="kill-list__group kill-list__group--team">
-                                    <span>{player}</span>
-                                    <span className="kill-list__group-count">{sum(mobs)}</span>
-                                </div>
-                                {renderRows(player, sortedKills(mobs))}
-                            </React.Fragment>
-                        ))}
-                    </>
+                    renderRows(ME, myEntries, 'kill-list__row')
                 )}
-            </div>
-
-            <div className="kill-list__footer">
-                <span className="kill-list__footer-note">Sesja</span>
-                <span>
-                    {showTeam
-                        ? <>Drużyna razem <b>{totals.my + totals.team}</b></>
-                        : <>Łącznie <b>{totals.my}</b></>}
-                </span>
             </div>
         </DockablePopupWrapper>
     );
