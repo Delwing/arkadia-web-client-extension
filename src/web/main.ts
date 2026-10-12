@@ -57,7 +57,7 @@ import Keys from "./keys/Keys.tsx"
 import Scripts from "./options/Scripts.tsx"
 import AutomationWindow from "./automation/AutomationWindow.tsx"
 import Recordings from "./options/Recordings.tsx"
-import {CLOSE_SETTINGS_EVENT, OPEN_SETTINGS_PAGE_EVENT, SAVE_SETTINGS_EVENT, openSettingsPage, requestSettingsCategory, requestSettingsResume, type OpenSettingsPageDetail} from "./settings/categories.ts";
+import {CLOSE_SETTINGS_EVENT, OPEN_SETTINGS_PAGE_EVENT, SAVE_SETTINGS_EVENT, requestSettingsCategory, requestSettingsResume, type OpenSettingsPageDetail} from "./settings/categories.ts";
 import CharacterManagement from "./options/CharacterManagementModal.tsx"
 import Places from "./places/Places.tsx"
 import { OPEN_PLACE_EVENT, openPlace } from "./places/placesData.ts"
@@ -1448,11 +1448,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const bindsRoot = document.getElementById('binds-options');
     if (bindsRoot) {
-        // The multibind import lives in Ustawienia → Import z innych klientów.
         createRoot(bindsRoot).render(createElement(Keys, {
             helperConnection,
             headerSlot: document.getElementById('binds-header-slot'),
-            onImport: () => openSettingsPage('data-import', 'import-multibinds'),
         }));
     }
 

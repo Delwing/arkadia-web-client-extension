@@ -6,10 +6,9 @@ import {
     toKey,
     type StoredMultibindRecord,
 } from "@web/dataStores/multibindStore.ts";
-import SubDialog from "@web/SubDialog.tsx";
-import { Button, Check, Field, Select } from "@web-ui/primitives/index.ts";
+import { Button, Check, Field, Notice, Select } from "@web-ui/primitives/index.ts";
 import { parseInWorker } from "./parseInWorker";
-import { ImportRow } from "./ImportRow";
+import { ImportActions, ImportRow, type ImportResult } from "./ImportRow";
 
 type ConflictPolicy = 'keep-last' | 'keep-first' | 'skip-conflicts';
 
@@ -69,26 +68,20 @@ function applyConflictPolicy(rows: MultibindImportRow[], policy: ConflictPolicy)
 }
 
 /**
- * Import of the Mudlet multibind database (.db): parse, a summary dialog with
- * the conflict policy, then a cancellable, progress-reporting import.
- *
- * `row` renders it as a row of the "Import z innych klientów" page. Without it
- * the component is headless and opens its file picker on `openEvent` — how the
- * Klawisze window's ⋯ "Importuj bazę multibindów" works in forge.
+ * Import of the Mudlet multibind database (.db), as a row of the "Import z
+ * innych klientów" page: parse, an inline summary with the conflict policy,
+ * then a cancellable, progress-reporting import.
  */
-export default function MultibindImport({ row, openEvent }: { row?: boolean; openEvent?: string }) {
+export default function MultibindImport() {
     const [multibinds, setMultibinds] = useState<StoredMultibindRecord[]>([]);
     const [importData, setImportData] = useState<ImportData | null>(null);
     const [conflictPolicy, setConflictPolicy] = useState<ConflictPolicy>('keep-last');
     const [overwriteExisting, setOverwriteExisting] = useState(true);
-    const [showImportModal, setShowImportModal] = useState(false);
-    const [importError, setImportError] = useState<string | null>(null);
-    const [importResult, setImportResult] = useState<{ newCount: number; updatedCount: number; skippedCount: number } | null>(null);
+    const [result, setResult] = useState<ImportResult>(null);
     const [isParsingDb, setIsParsingDb] = useState(false);
     const [isRunningImport, setIsRunningImport] = useState(false);
     const [importProgress, setImportProgress] = useState<{ processed: number; total: number; eta: number | null } | null>(null);
     const [importCancelled, setImportCancelled] = useState(false);
-    const fileInputRef = useRef<HTMLInputElement | null>(null);
     const cancelImportRef = useRef(false);
 
     useEffect(() => subscribeMultibinds(setMultibinds), []);
@@ -128,18 +121,11 @@ export default function MultibindImport({ row, openEvent }: { row?: boolean; ope
         };
     }, [importPlan, overwriteExisting]);
 
-    function openPicker() {
-        setImportError(null);
-        setImportCancelled(false);
-        setImportResult(null);
-        fileInputRef.current?.click();
-    }
-
     async function handleFile(file: File) {
         setIsParsingDb(true);
-        setImportError(null);
+        setResult(null);
+        setImportData(null);
         setImportCancelled(false);
-        setImportResult(null);
         try {
             const parsed = await parseInWorker<ParsedMultibindDatabase>(
                 () => new Worker(new URL('../options/multibindImport.worker.ts', import.meta.url), { type: 'module' }),
@@ -148,11 +134,8 @@ export default function MultibindImport({ row, openEvent }: { row?: boolean; ope
             setImportData({ fileName: file.name, rows: parsed.rows, totalRows: parsed.totalRows, invalidRows: parsed.invalidRows });
             setConflictPolicy('keep-last');
             setOverwriteExisting(true);
-            setShowImportModal(true);
         } catch (err) {
-            setImportData(null);
-            setShowImportModal(false);
-            setImportError(err instanceof Error ? err.message : 'Nie udało się odczytać bazy danych.');
+            setResult({ kind: 'error', message: err instanceof Error ? err.message : 'Nie udało się odczytać bazy danych.' });
         } finally {
             setIsParsingDb(false);
         }
@@ -162,8 +145,7 @@ export default function MultibindImport({ row, openEvent }: { row?: boolean; ope
         if (!importPlan || importPlan.rows.length === 0) return;
         setIsRunningImport(true);
         setImportCancelled(false);
-        setImportError(null);
-        setImportResult(null);
+        setResult(null);
         cancelImportRef.current = false;
         const total = importPlan.rows.length;
         setImportProgress({ processed: 0, total, eta: null });
@@ -207,67 +189,41 @@ export default function MultibindImport({ row, openEvent }: { row?: boolean; ope
         const finalList = Array.from(finalMap.values()).sort((a, b) => (a.roomId - b.roomId) || (a.index - b.index));
         try {
             await replaceMultibinds(finalList);
-            setImportResult({ newCount, updatedCount: overwriteExisting ? updateCount : 0, skippedCount });
+            const updated = overwriteExisting ? updateCount : 0;
+            setResult({
+                kind: 'done',
+                message: `Import zakończony.\nNowe wpisy: ${newCount}\nZaktualizowane: ${updated}\nPominięte: ${skippedCount}`,
+            });
+            setImportData(null);
         } catch (err) {
-            setImportError(err instanceof Error ? err.message : 'Nie udało się zapisać multibindów.');
+            setResult({ kind: 'error', message: err instanceof Error ? err.message : 'Nie udało się zapisać multibindów.' });
         } finally {
             setIsRunningImport(false);
             setImportProgress(null);
         }
     }
 
-    function handleCancelImport() {
-        if (!isRunningImport) {
-            setShowImportModal(false);
-            return;
-        }
-        cancelImportRef.current = true;
-    }
-
-    function closeImportModal() {
-        if (isRunningImport) return;
-        setShowImportModal(false);
+    function cancelPreview() {
         setImportData(null);
-        setImportError(null);
         setImportCancelled(false);
-        setImportResult(null);
     }
 
-    // Headless mode: a host button elsewhere asks for the picker by event, and
-    // hears back while the file is being parsed (to disable itself).
-    const openPickerRef = useRef(openPicker);
-    openPickerRef.current = openPicker;
-    useEffect(() => {
-        if (!openEvent) return;
-        const onOpen = () => openPickerRef.current();
-        window.addEventListener(openEvent, onOpen);
-        return () => window.removeEventListener(openEvent, onOpen);
-    }, [openEvent]);
-    useEffect(() => {
-        window.dispatchEvent(new CustomEvent('binds-parsing', { detail: isParsingDb }));
-    }, [isParsingDb]);
-
-    const dialog = showImportModal && (
-        <SubDialog
-            title="Importuj bazę multibindów"
-            onClose={closeImportModal}
-            // No way out while the worker is chewing through the file.
-            dismissible={!isRunningImport}
-            footer={isRunningImport ? (
-                <Button onClick={handleCancelImport}>Anuluj</Button>
-            ) : (
-                <>
-                    <Button onClick={closeImportModal}>Zamknij</Button>
-                    <Button variant="solid" onClick={runImport} disabled={!importPlan || importPlan.rows.length === 0 || !!importResult}>Importuj</Button>
-                </>
-            )}
+    return (
+        <ImportRow
+            id="import-multibinds"
+            title="Multibindy"
+            file={<>Plik <code>Database_multibinds.db</code> z profilu Mudleta. Przed importem pokaże podsumowanie i pozwoli wybrać, co zrobić z konfliktami.</>}
+            accept=".db,application/x-sqlite3"
+            busy={isParsingDb || isRunningImport}
+            onFile={file => void handleFile(file)}
+            result={result}
+            onDismiss={() => setResult(null)}
         >
-            <div className="ui-settings-stack">
-                {importError && <div className="popup-notice popup-notice--danger">{importError}</div>}
-                {importSummary ? (
+            {importData && importSummary && (
+                <>
                     <div className="binds-import__summary">
                         {([
-                            ['Plik', importData?.fileName || '—'],
+                            ['Plik', importData.fileName || '—'],
                             ['Łącznie wierszy', importSummary.totalRows],
                             ['Wiersze do importu', importSummary.toImport],
                             ['Nowe wpisy', importSummary.newEntries],
@@ -281,17 +237,7 @@ export default function MultibindImport({ row, openEvent }: { row?: boolean; ope
                             </div>
                         ))}
                     </div>
-                ) : (
-                    !importError && <p className="popup-field__hint">Brak danych do importu.</p>
-                )}
-                {importPlan && (
-                    <>
-                        <Check
-                            label="Nadpisz wpisy"
-                            checked={overwriteExisting}
-                            disabled={isRunningImport}
-                            onChange={ev => setOverwriteExisting(ev.target.checked)}
-                        />
+                    <div className="settings-fields-row">
                         <Field label="Polityka konfliktów">
                             <Select
                                 className="settings-narrow"
@@ -304,68 +250,33 @@ export default function MultibindImport({ row, openEvent }: { row?: boolean; ope
                                 ))}
                             </Select>
                         </Field>
-                    </>
-                )}
-                {importProgress && (
-                    <div className="popup-field">
-                        <progress className="popup-progress" max={importProgress.total || 1} value={importProgress.processed} />
-                        <div className="binds-import__progress-text">
-                            <span>Przetworzono wierszy: {importProgress.processed}/{importProgress.total}</span>
-                            <span>{importProgress.eta !== null ? `~${importProgress.eta.toFixed(1)} s do końca` : 'Szacowanie…'}</span>
+                    </div>
+                    <Check
+                        label="Nadpisz wpisy"
+                        checked={overwriteExisting}
+                        disabled={isRunningImport}
+                        onChange={ev => setOverwriteExisting(ev.target.checked)}
+                    />
+                    {importProgress && (
+                        <div className="popup-field">
+                            <progress className="popup-progress" max={importProgress.total || 1} value={importProgress.processed} />
+                            <div className="binds-import__progress-text">
+                                <span>Przetworzono wierszy: {importProgress.processed}/{importProgress.total}</span>
+                                <span>{importProgress.eta !== null ? `~${importProgress.eta.toFixed(1)} s do końca` : 'Szacowanie…'}</span>
+                            </div>
                         </div>
-                    </div>
-                )}
-                {isRunningImport && (
-                    <div className="popup-inline">
-                        <span className="popup-spinner" />
-                        <span>Importowanie…</span>
-                    </div>
-                )}
-                {importCancelled && <div className="popup-notice popup-notice--warning">Import przerwany.</div>}
-                {importResult && !isRunningImport && (
-                    <div className="popup-notice popup-notice--success">
-                        <strong>Import zakończony.</strong>
-                        <div>Nowe wpisy: {importResult.newCount}</div>
-                        <div>Zaktualizowane: {importResult.updatedCount}</div>
-                        <div>Pominięte: {importResult.skippedCount}</div>
-                    </div>
-                )}
-            </div>
-        </SubDialog>
-    );
-
-    if (row) {
-        return (
-            <>
-                <ImportRow
-                    id="import-multibinds"
-                    title="Multibindy"
-                    file={<>Baza multibindów z Mudleta (<code>.db</code>). Przed importem pokaże podsumowanie i pozwoli wybrać, co zrobić z konfliktami.</>}
-                    accept=".db,application/x-sqlite3"
-                    busy={isParsingDb}
-                    onFile={file => void handleFile(file)}
-                    result={importError && !showImportModal ? { kind: 'error', message: importError } : null}
-                    onDismiss={() => setImportError(null)}
-                />
-                {dialog}
-            </>
-        );
-    }
-    return (
-        <>
-            <input
-                ref={fileInputRef}
-                type="file"
-                accept=".db,application/x-sqlite3"
-                hidden
-                onChange={ev => {
-                    const file = ev.target.files?.[0];
-                    ev.target.value = '';
-                    if (file) void handleFile(file);
-                }}
-            />
-            {importError && !showImportModal && <div className="popup-notice popup-notice--danger">{importError}</div>}
-            {dialog}
-        </>
+                    )}
+                    {importCancelled && <Notice variant="warning">Import przerwany.</Notice>}
+                    {isRunningImport ? (
+                        <div className="popup-inline">
+                            <Button size="sm" variant="solid" disabled><span className="popup-spinner" /> Importowanie…</Button>
+                            <Button size="sm" variant="ghost" onClick={() => { cancelImportRef.current = true; }}>Przerwij</Button>
+                        </div>
+                    ) : (
+                        <ImportActions onImport={() => void runImport()} onCancel={cancelPreview} disabled={importSummary.toImport === 0} />
+                    )}
+                </>
+            )}
+        </ImportRow>
     );
 }

@@ -31,7 +31,7 @@ export default function ImportPage() {
                     <ZlomImport />
                     <PostepyImport />
                     <ZabiciImport />
-                    <MultibindImport row />
+                    <MultibindImport />
                 </div>
             </section>
             <section className="character-settings-section">

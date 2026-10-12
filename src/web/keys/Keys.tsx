@@ -23,7 +23,7 @@ import { MODAL_EVENT } from "@web/modals/appModal.ts";
 import { getDownloadUrl } from "@web/helperDownload.ts";
 import { isStandaloneWindow } from "@modules/helper/helperResync";
 import SubDialog from "@web/SubDialog.tsx";
-import MultibindImport from "@web/imports/MultibindImport.tsx";
+import { openSettingsPage } from "@web/settings/categories.ts";
 import { KEYBOARD, KEYBOARD_HEIGHT, KEYBOARD_WIDTH, type KeyCap } from "./keyboardLayout";
 import {
     BASE_LAYERS,
@@ -111,11 +111,9 @@ interface KeysProps {
     helperConnection?: HelperConnection | null;
     /** Where the window's toolbar goes (the modal header); inline when absent. */
     headerSlot?: HTMLElement | null;
-    /** Opens the multibind import; without it the import dialog opens inside this window. */
-    onImport?: () => void;
 }
 
-export default function Keys({ helperConnection, headerSlot, onImport }: KeysProps) {
+export default function Keys({ helperConnection, headerSlot }: KeysProps) {
     const rootRef = useRef<HTMLDivElement>(null);
 
     // ── Keymap and binds ────────────────────────────────────────────────
@@ -553,8 +551,8 @@ export default function Keys({ helperConnection, headerSlot, onImport }: KeysPro
     };
 
     const importMultibinds = () => {
-        if (onImport) onImport();
-        else window.dispatchEvent(new Event("binds-open-import"));
+        // The import lives in Ustawienia → Import z innych klientów.
+        openSettingsPage("data-import", "import-multibinds");
     };
 
     // ── Pieces ──────────────────────────────────────────────────────────
@@ -1532,7 +1530,6 @@ export default function Keys({ helperConnection, headerSlot, onImport }: KeysPro
 
     return (
         <div className={`keys keys--${size}`} ref={rootRef}>
-            <MultibindImport openEvent="binds-open-import" />
             {headerSlot ? createPortal(toolbar, headerSlot) : toolbar}
             {size === "phone" && helperChip && <div className="keys-phone-helper">{helperChip}</div>}
             {helperCaptureBar}

@@ -65,33 +65,28 @@ test.describe('Multibind import', () => {
             buffer: Buffer.alloc(0),
         });
 
-        // The import dialog renders inline inside #settings-modal (see @web/SubDialog),
-        // so both the host modal and the dialog match — take the innermost, the
-        // same way scripts.spec.ts locates its sub-dialogs.
-        const importModal = page.locator('.popup-dialog').filter({
-            has: page.locator('.popup-dialog__title:has-text("Importuj bazę multibindów")'),
-        }).last();
-        await expect(importModal, 'should show import summary modal').toBeVisible();
-        await expect(importModal, 'should summarize total rows to process').toContainText('Łącznie wierszy: 5');
-        await expect(importModal, 'should list rows selected for import').toContainText('Wiersze do importu: 3');
-        await expect(importModal, 'should count new entries to import').toContainText('Nowe wpisy: 3');
-        await expect(importModal, 'should report number of updates').toContainText('Aktualizacje: 0');
-        await expect(importModal, 'should report skipped rows').toContainText('Pominięte: 2');
-        await expect(importModal, 'should report invalid rows').toContainText('Nieprawidłowe wiersze: 1');
-        await expect(importModal, 'should report resolved conflicts').toContainText('Usunięte konflikty: 1');
+        // The summary shows inline in the import row.
+        const importRow = page.locator(IMPORT_ROW);
+        await expect(importRow, 'should show the import summary').toBeVisible();
+        await expect(importRow, 'should summarize total rows to process').toContainText('Łącznie wierszy: 5');
+        await expect(importRow, 'should list rows selected for import').toContainText('Wiersze do importu: 3');
+        await expect(importRow, 'should count new entries to import').toContainText('Nowe wpisy: 3');
+        await expect(importRow, 'should report number of updates').toContainText('Aktualizacje: 0');
+        await expect(importRow, 'should report skipped rows').toContainText('Pominięte: 2');
+        await expect(importRow, 'should report invalid rows').toContainText('Nieprawidłowe wiersze: 1');
+        await expect(importRow, 'should report resolved conflicts').toContainText('Usunięte konflikty: 1');
 
-        await importModal.getByRole('button', { name: 'Importuj' }).click();
+        await importRow.getByRole('button', { name: 'Importuj' }).click();
         // Four rows are written inside a single frame, so the "Importowanie…" state
         // is never reliably observable here — the bulk-import test below covers the
         // progress UI. Wait on the terminal state instead.
-        await expect(importModal.getByText('Import zakończony.'), 'should confirm import completion').toBeVisible({ timeout: 5000 });
-        await expect(importModal.getByText('Importowanie…'), 'should hide progress indicator after completion').not.toBeVisible();
-        await expect(importModal, 'should reiterate new entries count after import').toContainText('Nowe wpisy: 3');
-        await expect(importModal, 'should reiterate updated entries count after import').toContainText('Zaktualizowane: 0');
-        await expect(importModal, 'should reiterate skipped entries count after import').toContainText('Pominięte: 2');
+        await expect(importRow.getByText('Import zakończony.'), 'should confirm import completion').toBeVisible({ timeout: 5000 });
+        await expect(importRow.getByText('Importowanie…'), 'should hide progress indicator after completion').not.toBeVisible();
+        await expect(importRow, 'should reiterate new entries count after import').toContainText('Nowe wpisy: 3');
+        await expect(importRow, 'should reiterate updated entries count after import').toContainText('Zaktualizowane: 0');
+        await expect(importRow, 'should reiterate skipped entries count after import').toContainText('Pominięte: 2');
 
-        await importModal.getByRole('button', { name: 'Zamknij' }).click();
-        await expect(importModal, 'should close import modal after acknowledgement').not.toBeVisible();
+        await expect(importRow.locator('.binds-import__summary'), 'should drop the summary once imported').toHaveCount(0);
 
         await closeImportPage(page);
 
@@ -206,19 +201,16 @@ test.describe('Multibind import', () => {
             buffer: Buffer.alloc(0),
         });
 
-        const importModal = page.locator('.popup-dialog').filter({
-            has: page.locator('.popup-dialog__title:has-text("Importuj bazę multibindów")'),
-        }).last();
-        await expect(importModal, 'should queue every row for import').toContainText(`Wiersze do importu: ${rows.length}`);
+        const importRow = page.locator(IMPORT_ROW);
+        await expect(importRow, 'should queue every row for import').toContainText(`Wiersze do importu: ${rows.length}`);
 
-        await importModal.getByRole('button', { name: 'Importuj' }).click();
-        await expect(importModal.getByText('Importowanie…'), 'should show import in progress').toBeVisible();
-        await expect(importModal.getByText('Import zakończony.'), 'should confirm import completion').toBeVisible({ timeout: 30000 });
-        await expect(importModal.getByText('Importowanie…'), 'should hide progress indicator after completion').not.toBeVisible();
-        await expect(importModal, 'should report every row as a new entry').toContainText(`Nowe wpisy: ${rows.length}`);
+        await importRow.getByRole('button', { name: 'Importuj' }).click();
+        await expect(importRow.getByText('Importowanie…'), 'should show import in progress').toBeVisible();
+        await expect(importRow.getByText('Import zakończony.'), 'should confirm import completion').toBeVisible({ timeout: 30000 });
+        await expect(importRow.getByText('Importowanie…'), 'should hide progress indicator after completion').not.toBeVisible();
+        await expect(importRow, 'should report every row as a new entry').toContainText(`Nowe wpisy: ${rows.length}`);
 
-        await importModal.getByRole('button', { name: 'Zamknij' }).click();
-        await expect(importModal, 'should close import modal after acknowledgement').not.toBeVisible();
+        await expect(importRow.locator('.binds-import__summary'), 'should drop the summary once imported').toHaveCount(0);
         await closeImportPage(page);
     });
 

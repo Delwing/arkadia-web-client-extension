@@ -57,7 +57,7 @@ export default function PostepyImport() {
         <ImportRow
             id="import-postepy"
             title="Postępy"
-            file={<>Baza postępów z Mudleta (<code>.db</code>). Trafia do licznika bieżącej postaci{current ? ` (${current})` : ""}.</>}
+            file={<>Plik <code>Database_improvee.db</code> z profilu Mudleta. Trafia do licznika bieżącej postaci{current ? ` (${current})` : ""}.</>}
             accept=".db"
             busy={busy}
             onFile={onFile}
