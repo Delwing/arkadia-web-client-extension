@@ -40,6 +40,7 @@ export const defaultFooterComponents: FooterComponentConfig[] = [
     { id: 'team-panel', visible: true, order: 14 },
     // Off by default: a diagnostic, not something to watch while playing.
     { id: 'connection-status', visible: false, order: 15 },
+    { id: 'spell-effects', visible: true, order: 16 },
 ];
 
 /** Stock-UI chrome defaults (this UI only); references the stock footer list. */

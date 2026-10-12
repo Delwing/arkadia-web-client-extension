@@ -3,6 +3,7 @@ export const CHIP_NAMES: Record<string, string> = {
   "clock-display": "Zegar",
   "transport-timer": "Timer transportu",
   "lamp-timer": "Timer lampy",
+  "spell-effects": "Czary na postaci",
   "pipe-status": "Fajka",
   "break-item-warning": "Ostrzeżenie o uszkodzeniu",
   "mail-status": "Status poczty",

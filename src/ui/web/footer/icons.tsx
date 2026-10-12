@@ -102,6 +102,13 @@ const PATHS: Record<string, ReactNode> = {
       <path d="M16 5v11" />
     </>
   ),
+  // a four-pointed sparkle with a small one beside it: a spell in effect
+  spark: (
+    <>
+      <path d="M8.5 3.5c.5 3.4 1.6 4.5 5 5-3.4.5-4.5 1.6-5 5-.5-3.4-1.6-4.5-5-5 3.4-.5 4.5-1.6 5-5z" />
+      <path d="M15 12.5v4M13 14.5h4" />
+    </>
+  ),
   banner: (
     <>
       <path d="M6 3v14.5" />

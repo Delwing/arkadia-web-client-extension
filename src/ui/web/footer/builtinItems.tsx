@@ -4,6 +4,7 @@ import { defaultFooterComponents } from "@web/defaultUiSettings";
 import {
   FajkaChip,
   LampChip,
+  SpellEffectsChip,
   CombatChip,
   ZaskChip,
   AttackChip,
@@ -33,6 +34,7 @@ const CHIPS: Record<string, () => ReactNode> = {
   "clock-display": () => <ClockChip />,
   "pipe-status": () => <FajkaChip />,
   "lamp-timer": () => <LampChip />,
+  "spell-effects": () => <SpellEffectsChip />,
   "weapon-state": () => <WeaponChip />,
   "combat-timer": () => <CombatChip />,
   "zask-timer": () => <ZaskChip />,

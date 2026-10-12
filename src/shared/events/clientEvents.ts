@@ -222,6 +222,8 @@ export interface KnownEvents {
     "requestMapPath": void;
     "notify": NotificationPayload;
     "lampTimer": number | null;
+    /** The spells we are under that have warned how long they have left, soonest first. */
+    "spellEffects": { name: string; seconds: number }[];
     "coverTimer": number | null;
     /** A maneuver was attempted and the 5s cover cooldown started (or restarted). */
     "cover.start": void;

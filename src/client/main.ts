@@ -13,6 +13,7 @@ import initWarningTriggers from './scripts/warningTriggers'
 import initLostTeamMates from './scripts/lostTeamMates'
 import initAttackQueue from './scripts/attackQueue'
 import initLamp from './scripts/lamp'
+import initSpellEffects from './scripts/spellEffects'
 import initCoverTimer from './scripts/coverTimer'
 import initOrderTimer from './scripts/orderTimer'
 import initCombatState from './scripts/combatState'
@@ -275,6 +276,7 @@ export function registerScripts(client: Client) {
     initAttackQueue(client, aliases)
     initAttackModeAlias(client, aliases)
     initLamp(client)
+    initSpellEffects(client)
     initCoverTimer(client)
     initOrderTimer(client)
     initCombatState(client)

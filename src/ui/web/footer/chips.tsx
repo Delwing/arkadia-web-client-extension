@@ -36,6 +36,8 @@ function mmss(seconds: number): string {
  */
 const FAJKA_SIZES = ["pali się", "zgasła"];
 const LAMP_SIZES = ["8:88", "off"];
+// The longest warning is 16:00.
+const SPELL_SIZES = ["88:88"];
 const COMBAT_SIZES = ["88"];
 const ZASK_SIZES = ["88", "OK"];
 const ATTACK_SIZES = ["A", "AW", "AWR"];
@@ -91,6 +93,37 @@ export function LampChip() {
       onClick={() => eventBus.emit("sendCommand", { command: lit ? "zgas lampe" : "zapal lampe" })}
       onLongPress={() => eventBus.emit("sendCommand", { command: "napelnij lampe olejem" })}
     />
+  );
+}
+
+/**
+ * One chip per spell we are under, counting down from the game's last warning of
+ * how long it has left (scripts/spellEffects). Absent until a spell first warns.
+ */
+export function SpellEffectsChip() {
+  const [effects, setEffects] = useState<{ name: string; seconds: number }[]>([]);
+  useClientEvent<{ name: string; seconds: number }[]>("spellEffects", (v) => setEffects(v ?? []));
+  if (effects.length === 0) return null;
+  return (
+    <>
+      {effects.map(({ name, seconds }) => {
+        const tone: ChipTone = seconds <= 30 ? "danger" : seconds <= 120 ? "warn" : "ok";
+        return (
+          <Chip
+            key={name}
+            icon={<ChipIcon name="spark" />}
+            label={name}
+            value={mmss(seconds)}
+            sizeTo={SPELL_SIZES}
+            tone={tone}
+            tip={{
+              header: `Czar: ${name}`,
+              rows: [{ label: "Zostało", content: seconds > 0 ? `ok. ${mmss(seconds)}` : "kończy się" }],
+            }}
+          />
+        );
+      })}
+    </>
   );
 }
 
