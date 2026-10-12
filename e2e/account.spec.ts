@@ -245,6 +245,31 @@ test.describe('Konto', () => {
         await expect(page.locator('#auth-panel')).not.toHaveClass(/is-connecting/);
     });
 
+    test('the client introduces itself before anything else on the native endpoint', async ({ page }) => {
+        await page.goto('/');
+        await page.locator('#login-character').fill('gracz@example.com');
+        await page.locator('#login-password').fill('haslo');
+        await page.locator('#login-submit').click();
+        await gameListens(page);
+        await expectSent(page, 'client.source', { params: 'source=dargoth-client' });
+        const [hello] = await sentGmcp(page, 'Core.Hello') as Array<{ client: string; version?: string }>;
+        expect(hello.client).toBe('Dargoth Client');
+        expect(hello.version).toMatch(/^\w+$/);
+        // The introduction goes first, the account login after it, as in the original client.
+        const order = await page.evaluate(() => {
+            const paths: string[] = [];
+            for (const socket of (window as any).__mockSockets ?? []) {
+                for (const frame of socket?.sent ?? []) {
+                    let bytes = '';
+                    try { bytes = atob(frame); } catch { continue; }
+                    if (bytes.startsWith('\xff\xfa\xc9')) paths.push(bytes.slice(3).split(' ')[0]);
+                }
+            }
+            return paths.filter((p) => ['Core.Hello', 'client.source', 'account.login'].includes(p));
+        });
+        expect(order).toEqual(['Core.Hello', 'client.source', 'account.login']);
+    });
+
     test('only the direct connection offers creating an account', async ({ page }) => {
         await page.goto('/');
         await expect(page.locator('#create-account-link')).toBeVisible();

@@ -41,7 +41,11 @@ type Params<T> = [T] extends [void]
 type EventListener<K extends keyof ClientEvents> = (...args: Params<ClientEvents[K]>) => void;
 
 // WebSocket configuration
-const WEBSOCKET_URL = import.meta.env.VITE_WEBSOCKET_URL ?? 'wss://arkadia.rpg.pl/wss';
+/** How this client names itself to the game (Core.Hello). */
+const CLIENT_NAME = 'Dargoth Client';
+/** The original web client's attribution tag (client.source), ours rather than its "source=www". */
+const CLIENT_SOURCE = 'source=dargoth-client';
+const WEBSOCKET_URL =import.meta.env.VITE_WEBSOCKET_URL ?? 'wss://arkadia.rpg.pl/wss';
 // Query the proxy worker reads to know which telnet host/port to bridge to.
 const PROXY_QUERY = '?host=arkadia.rpg.pl&port=23';
 const MCCP_STORAGE_KEY = 'mccpEnabled';
@@ -104,6 +108,8 @@ class MudClient implements ClientAdapter {
     private connectionCheckProbes = 0;
     private closeCause: CloseCause = 'remote';
     private gmcpInitialized: boolean = false;
+    // Whether this connection has said Core.Hello yet (see introduce).
+    private introduced = false;
     // Streaming UTF-8 decoder for the raw telnet text stream; holds a trailing
     // partial multi-byte char across WebSocket frames.
     private textDecoder = new TextDecoder('utf-8', {fatal: false});
@@ -176,6 +182,7 @@ class MudClient implements ClientAdapter {
             },
         });
         this.telnetOptionHandler = createTelnetOptionParser(this.gmcpStream);
+        this.on('gmcp.client.connect', () => this.onNativeConnect());
         this.mccpHandler = new MccpHandler((data) => this.sendRaw(data));
         this.mccpHandler.enabled = localStorage.getItem(MCCP_STORAGE_KEY) !== 'false';
         this.proxyMode = MudClient.loadProxyMode();
@@ -407,6 +414,7 @@ class MudClient implements ClientAdapter {
         this.reportedClockOffset = null;
         this.clockOffsetWarned = false;
         this.gmcpInitialized = false;
+        this.introduced = false;
         this.textDecoder = new TextDecoder('utf-8', {fatal: false});
         this.dropHeldTelnet();
         this.negotiationCarry = "";
@@ -730,11 +738,33 @@ class MudClient implements ClientAdapter {
             return;
         }
         this.gmcpInitialized = true;
+        this.introduce();
         // Char/Core/Room are auto-enabled after IAC DO GMCP; add the rest.
         // Objects drives item/combat panels; Gmcp_msgs streams game text. Then
         // turn on base64 encoding for gmcp_msgs so its text decodes consistently.
         this.sendGmcp('Core.Supports.Add', ['Objects 1', 'Gmcp_msgs 1', 'Mail 1']);
         this.sendGmcp('Core.Options.Set', ['base64_gmcp_msgs']);
+    }
+
+    /**
+     * Say which client this is, once per connection, the way GMCP clients do
+     * (Mudlet sends the same Core.Hello). Over telnet it opens the negotiation
+     * above; the native endpoint never offers GMCP, it announces client.connect,
+     * and there the original web client's client.source follows as well, tagged
+     * so Arkadia can tell our players from those of its own client.
+     */
+    private introduce(): void {
+        if (this.introduced) {
+            return;
+        }
+        this.introduced = true;
+        const build = typeof __COMMIT_SHA__ === 'string' ? __COMMIT_SHA__ : '';
+        this.sendGmcp('Core.Hello', build ? {client: CLIENT_NAME, version: build} : {client: CLIENT_NAME});
+    }
+
+    private onNativeConnect(): void {
+        this.introduce();
+        this.sendGmcp('client.source', {params: CLIENT_SOURCE});
     }
 
     /**

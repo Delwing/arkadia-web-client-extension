@@ -136,6 +136,20 @@ describe('GMCP negotiation across a proxy resume', () => {
         expect(sent).toContain('Core.Supports.Add');
     });
 
+    it('says which client it is before announcing its modules, once', () => {
+        const socket = connectThroughSessionProxy();
+
+        socket.onmessage?.({data: dataFrame('Witaj w Arkadii\r\n\xFF\xFB\xC9')});
+        socket.onmessage?.({data: dataFrame('\xFF\xFB\xC9')});
+
+        const sent = socket.sentBytes();
+        expect(sent).toContain('Core.Hello {"client":"Dargoth Client"');
+        expect(sent.indexOf('Core.Hello')).toBeLessThan(sent.indexOf('Core.Supports.Add'));
+        expect(sent.split('Core.Hello').length - 1).toBe(1);
+        // client.source is the native endpoint's; telnet has no use for it.
+        expect(sent).not.toContain('client.source');
+    });
+
     /*
      * The game ended the session while nobody was attached; the socket is about to be
      * closed after the replay of its parting words. There is nothing to negotiate with.
