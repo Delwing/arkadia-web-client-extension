@@ -95,7 +95,7 @@ export function SessionSidebar({
             <div className="lv-sidebar__list">
                 {notice ? <div className="lv-sidebar__notice">{notice}</div> : null}
                 {groups.length === 0 ? (
-                    <div className="lv-sidebar__group">
+                    <div className="lv-sidebar__empty">
                         {total === 0
                             ? "Nie ma jeszcze żadnego logu."
                             : narrowed
@@ -121,8 +121,14 @@ export function SessionSidebar({
                                         onClick={() => onSelect(session.id)}
                                     >
                                         <span className="lv-row lv-row--tight">
-                                            <span className="lv-session__name lv-truncate">
-                                                {charactersLabel(session.characters, session.dateLabel)}
+                                            {/* The day heads the group already; repeating it
+                                                as the name made a session without a character
+                                                pass for one more heading. */}
+                                            <span
+                                                className="lv-session__name lv-truncate"
+                                                data-anonymous={session.characters.length === 0}
+                                            >
+                                                {charactersLabel(session.characters, "Bez postaci")}
                                             </span>
                                             {session.live ? (
                                                 <span className="lv-session__live" title="Nagrywana teraz" />

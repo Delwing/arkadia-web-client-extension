@@ -141,12 +141,31 @@
     position: sticky;
     top: 0;
     z-index: var(--lv-z-sticky);
+    display: flex;
+    align-items: center;
+    gap: var(--lv-space-3);
     padding: var(--lv-space-6) var(--lv-space-3) var(--lv-space-3);
     background: var(--lv-bg-app);
     font-size: var(--lv-text-2);
     font-weight: var(--lv-weight-semibold);
-    /* Italic and a step dimmer than the entries' own text, so the day reads
-       as a heading over them rather than as one more entry. */
+    /* Capitals in the accent with a rule running off them: a section divider,
+       so the day never reads as one more entry. */
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+    color: var(--lv-accent-text);
+}
+
+.lv-sidebar__group::after {
+    content: '';
+    flex-grow: 1;
+    height: 1px;
+    background: var(--lv-border);
+}
+
+.lv-sidebar__empty {
+    padding: var(--lv-space-6) var(--lv-space-3) var(--lv-space-3);
+    font-size: var(--lv-text-2);
     font-style: italic;
     color: var(--lv-text-tertiary);
 }
@@ -199,6 +218,12 @@
     flex-grow: 1;
     font-size: var(--lv-text-6);
     font-weight: var(--lv-weight-medium);
+}
+
+/* No character was found: say so quietly rather than shout a placeholder. */
+.lv-session__name[data-anonymous='true'] {
+    font-style: italic;
+    color: var(--lv-text-secondary);
 }
 
 .lv-session[data-selected='true'] .lv-session__name {
