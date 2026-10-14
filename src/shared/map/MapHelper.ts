@@ -3,7 +3,7 @@ import {describeCarriageRoute} from "./carriagePathFinder";
 import {planRoute, type RouteSegment} from "./transportPathFinder";
 import {roomDistances} from "./roomDistances";
 import type {TransportDef} from "@client/scripts/transports/definitions";
-import {getLongDir, getShortDir, isPolishDirection, longToShort} from "./directions";
+import {directionToStub, getLongDir, getShortDir, isPolishDirection, longToShort} from "./directions";
 import {characterStorage} from "@modules/core/storage";
 
 type Position = {
@@ -933,7 +933,8 @@ export default class MapHelper {
      * The literal exit wins when it exists. Otherwise a special exit whose target sits that way is
      * preferred, then any exit whose target sits that way — so "w" still works in a room whose
      * only westward exit is recorded as "nw" or as a special-exit command. Returns `direction`
-     * unchanged when nothing better is known.
+     * unchanged when nothing better is known, or when the room has an unexplored stub that way:
+     * the game says that exit exists, so a room merely drawn in that direction must not steal it.
      *
      * Split out of move() so callers that must not advance the mapper (driving a carriage, where
      * the ride is asynchronous and GMCP is the authority) can still resolve the direction.
@@ -942,6 +943,8 @@ export default class MapHelper {
         if (!this.mapReader || this.paused || !this.currentRoom) return direction;
         const potentialExit = getLongDir(direction);
         if (this.currentRoom.exits?.[potentialExit]) return direction;
+        const stub = directionToStub(potentialExit);
+        if (stub !== undefined && this.currentRoom.stubs?.includes(stub)) return direction;
 
         const leadsThatWay = ([, id]: [string, number]) =>
             this.findRoomByExit(this.currentRoom, this.mapReader.getRoom(id), potentialExit);

@@ -38,6 +38,18 @@ const shortToLong: Record<string, string> = {
     d: "down",
 };
 
+// Mudlet's numbering for exit stubs (room.stubs).
+const stubNumbers: Record<string, number> = {
+    north: 1, northeast: 2, northwest: 3,
+    east: 4, west: 5,
+    south: 6, southeast: 7, southwest: 8,
+    up: 9, down: 10,
+};
+
+export function directionToStub(dir: string): number | undefined {
+    return stubNumbers[getLongDir(dir)];
+}
+
 export function getLongDir(dir: string): string {
     const lower = dir.toLowerCase();
     return polishToEnglish[lower] ?? shortToLong[lower] ?? lower;
