@@ -1,14 +1,15 @@
 import Client from "../Client";
-import {getLongDir, isDirection, isPolishDirection, polishToEnglish} from "@shared/map/directions";
+import {directionToStub, getLongDir, isDirection, isPolishDirection, polishToEnglish} from "@shared/map/directions";
 import {stripPolishCharacters} from "../stripPolishCharacters";
 import {parseExitString} from "./shortExits";
+import {parseDirectionBypass} from "./directionBypass";
 import {gmcp} from "../gmcp";
 import {colorString, colorStringInLine, createColorFormat} from "@modules/core/Colors";
 import {AnsiAwareBuffer} from "../ansi/FormatState";
 import eventBus from "@modules/core/eventBus";
 import {PathFinder} from "mudlet-map-renderer";
 
-const ENTRY_ROOM_ID = 23147;
+export const ENTRY_ROOM_ID = 23147;
 const ENTRY_UP_TARGET = 23146;
 
 const POOL_ROOM_IDS: number[] = [
@@ -20,7 +21,7 @@ const POOL_ROOM_IDS: number[] = [
 const SPARE_ROOM_IDS: number[] = [24447, 24448, 24449];
 const CHAPEL_ROOM_ID = 24446;
 
-const ALL_ROOM_IDS = [ENTRY_ROOM_ID, ...POOL_ROOM_IDS, ...SPARE_ROOM_IDS, CHAPEL_ROOM_ID];
+export const ALL_ROOM_IDS = [ENTRY_ROOM_ID, ...POOL_ROOM_IDS, ...SPARE_ROOM_IDS, CHAPEL_ROOM_ID];
 
 const LABYRINTH_EXIT_PATTERN = /^(?:Jest|Sa) tutaj .* widoczn(?:e|ych) wyjsc(?:|ia|ie): (.*)\.$/;
 
@@ -106,6 +107,9 @@ function detectRoomType(fingerprint: string): RoomType {
 
 function extractDirection(command: string): string | null {
     let cmd = stripPolishCharacters(command);
+    // `s!` bypasses map movement and command hooks; it is still a real step the mapper must follow
+    const bypass = parseDirectionBypass(cmd);
+    if (bypass) return getLongDir(bypass);
     if (cmd.startsWith('przemknij z druzyna ')) cmd = cmd.substring(20);
     else if (cmd.startsWith('przemknij ')) cmd = cmd.substring(10);
     else if (cmd.startsWith('jedz na ')) cmd = cmd.substring(8);
@@ -116,13 +120,7 @@ function extractDirection(command: string): string | null {
 }
 
 function directionToStubNumber(dir: string): number {
-    const map: Record<string, number> = {
-        north: 1, northeast: 2, northwest: 3,
-        east: 4, west: 5,
-        south: 6, southeast: 7, southwest: 8,
-        up: 9, down: 10,
-    };
-    return map[dir] ?? 0;
+    return directionToStub(dir) ?? 0;
 }
 
 interface RaonRoom {
@@ -476,6 +474,21 @@ function repositionAllRooms(client: Client) {
 
 const CHAPEL_PLACEHOLDER_FP = '__chapel_placeholder__';
 
+// Room numbers are insertion order, so a re-keyed room must keep its slot
+// (delete + set would move it to the end and renumber every room after it).
+function renameRoomKey(from: string, to: string) {
+    const entries = [...rooms];
+    rooms.clear();
+    for (const [fp, r] of entries) {
+        rooms.set(fp === from ? to : fp, r);
+    }
+    for (const [, r] of rooms) {
+        for (const [dir, target] of r.exits) {
+            if (target === from) r.exits.set(dir, to);
+        }
+    }
+}
+
 function getChapelFingerprint(): string | null {
     for (const [fp, r] of rooms) {
         if (r.roomType === 'chapel') return fp;
@@ -563,10 +576,9 @@ function finishCapture(client: Client, descriptionLines: string[], exitString: s
     if (isNew && roomType === 'chapel') {
         const placeholder = rooms.get(CHAPEL_PLACEHOLDER_FP);
         if (placeholder) {
-            rooms.delete(CHAPEL_PLACEHOLDER_FP);
             placeholder.fingerprint = fingerprint;
             room = placeholder;
-            rooms.set(fingerprint, room);
+            renameRoomKey(CHAPEL_PLACEHOLDER_FP, fingerprint);
         }
     }
 
@@ -665,8 +677,9 @@ function finishCapture(client: Client, descriptionLines: string[], exitString: s
         }
     }
 
-    // Record bidirectional edge from source room
-    if (direction && sourceFingerprint) {
+    // Record bidirectional edge from source room. Arriving back in the source means the step
+    // that got us here went unseen (we were elsewhere), so the edge would be a false self-loop.
+    if (direction && sourceFingerprint && sourceFingerprint !== fingerprint) {
         const sourceRoom = rooms.get(sourceFingerprint);
         if (sourceRoom) {
             sourceRoom.exits.set(direction, fingerprint);

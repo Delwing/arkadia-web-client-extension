@@ -2,6 +2,7 @@ import Client from "../Client";
 import {getLongDir, isDirection, isPolishDirection, polishToEnglish} from "@shared/map/directions";
 import {stripPolishCharacters} from "../stripPolishCharacters";
 import {parseExitString} from "./shortExits";
+import {parseDirectionBypass} from "./directionBypass";
 import {gmcp} from "../gmcp";
 import {colorString, createColorFormat} from "@modules/core/Colors";
 import {AnsiAwareBuffer} from "../ansi/FormatState";
@@ -52,8 +53,11 @@ let nextGridPosition = 0;
 
 const rooms = new Map<string, LabyrinthRoom>();
 
-function extractDirection(command: string): string | null {
+export function extractDirection(command: string): string | null {
     let cmd = stripPolishCharacters(command);
+    // `s!` bypasses map movement and command hooks; it is still a real step the mapper must follow
+    const bypass = parseDirectionBypass(cmd);
+    if (bypass) return getLongDir(bypass);
     if (cmd.startsWith('przemknij z druzyna ')) cmd = cmd.substring(20);
     else if (cmd.startsWith('przemknij ')) cmd = cmd.substring(10);
     else if (cmd.startsWith('jedz na ')) cmd = cmd.substring(8);

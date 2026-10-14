@@ -1,4 +1,5 @@
-import initDirectionBypass from '@client/scripts/directionBypass';
+import initDirectionBypass, {parseDirectionBypass} from '@client/scripts/directionBypass';
+import {extractDirection as rindeDirection} from '@client/scripts/rindeLabyrinthMapper';
 
 describe('direction bypass aliases', () => {
   function setup() {
@@ -32,5 +33,20 @@ describe('direction bypass aliases', () => {
   test('does not match unrelated commands ending in "!"', () => {
     const { aliases } = setup();
     expect(aliases.some(a => a.pattern.test('zabij!'))).toBe(false);
+  });
+});
+
+describe('parseDirectionBypass', () => {
+  test('reads the direction behind a bypass', () => {
+    expect(parseDirectionBypass('se!')).toBe('se');
+  });
+
+  test.each(['se', 'zabij!', 'polnoc!'])('ignores "%s"', (command) => {
+    expect(parseDirectionBypass(command)).toBeNull();
+  });
+
+  test('the Rinde labyrinth mapper follows a bypass step', () => {
+    expect(rindeDirection('s!')).toBe('south');
+    expect(rindeDirection('zabij!')).toBeNull();
   });
 });
