@@ -245,13 +245,12 @@ class RecordingManager {
     private createRecorder(auto: boolean) {
         const recorder = new Recorder<CommandOptions>({
             processIncomingData: (d, opts) => eventBus.emit('playback.incomingData', d, opts),
+            // Playback only runs offline, so a replayed command just drives the client once
+            // (map, triggers, hooks). A second notifySendCommand hook used to run it twice.
             sendCommand: (cmd, echo, options) => {
                 eventBus.emit('sendCommand', { command: cmd, echo: echo ?? false, options });
             },
             emit: (ev, ...args) => this.emitRecorderEvent(auto, recorder, ev, ...args),
-            notifySendCommand: (command, echo = false, options) => {
-                eventBus.emit('sendCommand', { command, echo: echo ?? false, options });
-            },
         }, {
             saveRecording,
             getRecording,
