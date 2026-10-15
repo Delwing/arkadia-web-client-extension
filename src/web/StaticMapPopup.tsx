@@ -9,6 +9,7 @@ import { usePopover } from './layout/hooks/usePopover';
 import { getNote, type LocationNote } from '@web/options/locationNotesStorage';
 import { openMapContextMenu } from '@modules/core/contextMenus';
 import { getPluginLocationNotes, type PluginLocationNote } from '@modules/core/pluginLocationNotesRegistry';
+import { getMapOverlays, mirrorMapOverlay, onMapOverlaysChange } from '@modules/core/mapOverlayRegistry';
 import { clearClosedPopupState, getPinnedPopupsByPrefix, getPopupLockedState, getPopupPinnedState, getPopupSetting, setPopupSetting, setBuiltInPanelSetting } from './layout/utils/layoutStorage';
 import { copyCanvasToClipboard } from '@shared/dom/copyCanvasToClipboard.ts';
 import { showMapNoteTooltipForRoom } from './mapNoteTooltip';
@@ -435,6 +436,7 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
         let gridHandler: ((value: boolean) => void) | null = null;
         let areaExitLabelsHandler: ((value: boolean) => void) | null = null;
         let dataChangedHandler: (() => void) | null = null;
+        let overlaysUnsubscribe: (() => void) | null = null;
 
         const initTimeout = requestAnimationFrame(() => {
             if (!parentContainer) return;
@@ -453,6 +455,17 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
 
             renderer.centerOnResize = false;
             renderer.setZoom(0.30);
+
+            // Plugin overlays, the same ones the main map shows.
+            for (const [id, overlay] of getMapOverlays()) {
+                renderer.addSceneOverlay(id, mirrorMapOverlay(overlay));
+            }
+            overlaysUnsubscribe = onMapOverlaysChange(({ type, id, overlay }) => {
+                const current = rendererRef.current;
+                if (!current) return;
+                if (type === 'add') current.addSceneOverlay(id, mirrorMapOverlay(overlay));
+                else current.removeSceneOverlay(id);
+            });
 
             const actualPlayerRoom = embedded.currentRoom;
 
@@ -837,6 +850,7 @@ function StaticMapWindow({ instance, onClose }: { instance: StaticMapInstance; o
 
         return () => {
             cancelAnimationFrame(initTimeout);
+            overlaysUnsubscribe?.();
             if (pathHandler) eventBus.off('mapPath', pathHandler);
             if (highlightHandler) eventBus.off('mapHighlights', highlightHandler);
             if (transportHopsHandler) eventBus.off('mapTransportHops', transportHopsHandler);

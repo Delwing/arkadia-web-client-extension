@@ -12,6 +12,8 @@ export class PluginMapOverlay implements SceneOverlay {
   private ctx?: SceneOverlayContext;
   private readonly onChange = () => this.ctx?.invalidate();
   private reportedError = false;
+  /** Renderers showing this overlay through {@link mirror}. */
+  private readonly mirrors = new Set<SceneOverlayContext>();
 
   constructor(
     private readonly label: string,
@@ -20,6 +22,34 @@ export class PluginMapOverlay implements SceneOverlay {
 
   invalidate(): void {
     this.ctx?.invalidate();
+    this.mirrors.forEach((ctx) => ctx.invalidate());
+  }
+
+  /**
+   * The same overlay for another renderer (the static map window). A scene
+   * overlay keeps one context and `detach()` does not say which renderer let
+   * go, so a second renderer gets its own thin copy: same drawing, its own
+   * position/area events, and redrawn by the plugin's `invalidate()` too.
+   */
+  mirror(): SceneOverlay {
+    let ctx: SceneOverlayContext | undefined;
+    const onChange = () => ctx?.invalidate();
+    return {
+      render: (state: MapState) => this.render(state),
+      attach: (next: SceneOverlayContext) => {
+        ctx = next;
+        this.mirrors.add(next);
+        next.state.events.on("position", onChange);
+        next.state.events.on("area", onChange);
+      },
+      detach: () => {
+        if (!ctx) return;
+        this.mirrors.delete(ctx);
+        ctx.state.events.off("position", onChange);
+        ctx.state.events.off("area", onChange);
+        ctx = undefined;
+      },
+    };
   }
 
   attach(ctx: SceneOverlayContext): void {

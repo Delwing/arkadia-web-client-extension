@@ -33,6 +33,19 @@ export function getMapOverlays(): ReadonlyMap<string, SceneOverlay> {
   return overlays;
 }
 
+/**
+ * The overlay to hand a second renderer (the static map window). An overlay
+ * attaches to one renderer at a time, so ones that can copy themselves do;
+ * any other is shared for drawing only, without its event subscriptions.
+ */
+export function mirrorMapOverlay(overlay: SceneOverlay): SceneOverlay {
+  const mirror = (overlay as { mirror?: () => SceneOverlay }).mirror;
+  if (typeof mirror === "function") {
+    return mirror.call(overlay);
+  }
+  return { sceneSpace: overlay.sceneSpace, render: (state, bounds) => overlay.render(state, bounds) };
+}
+
 export function onMapOverlaysChange(listener: Listener): () => void {
   listeners.add(listener);
   return () => {
