@@ -775,7 +775,9 @@ export interface MapApi {
    * (`{ areaId, areaName, rooms, labels }`) with coordinates in source
    * orientation; y is flipped for you, exactly as when the map first loads.
    * Areas the map does not already contain are skipped, since adding one needs a
-   * full reload.
+   * full reload. Leave `labels` out to keep the area's current labels - handy
+   * when adding rooms to an area read through {@link getAreas}, which returns
+   * rooms only (with y already flipped: negate it back before passing them in).
    *
    * Changes live in memory only: they are lost when the map data reloads.
    *

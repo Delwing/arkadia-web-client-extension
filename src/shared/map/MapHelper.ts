@@ -606,7 +606,10 @@ export default class MapHelper {
             const nextRooms = (incoming.rooms ?? []).map(room => ({...room, y: -room.y}));
 
             wrapped.area.rooms = nextRooms;
-            wrapped.area.labels = incoming.labels ?? [];
+            // No labels given means keep the ones the area has: rooms are readable
+            // through the plugin API, labels are not, so a caller adding rooms
+            // could not pass them back.
+            wrapped.area.labels = incoming.labels ?? wrapped.area.labels ?? [];
             if (incoming.areaName) {
                 wrapped.area.areaName = incoming.areaName;
                 this.areas[areaId] = incoming.areaName;

@@ -292,6 +292,26 @@ describe('MapHelper.syncAreas', () => {
         expect(helper.getAreaName(2)).toBe('Nowa nazwa');
     });
 
+    it('should keep the area labels when none are passed', () => {
+        const {helper, wrapped} = createHelperWithArea();
+        wrapped.area.labels = [{labelId: 3, Text: 'stara etykieta'}] as any;
+        const {labels, ...withoutLabels} = incomingArea();
+        void labels;
+
+        helper.syncAreas([withoutLabels]);
+
+        expect(wrapped.area.labels).toEqual([{labelId: 3, Text: 'stara etykieta'}]);
+    });
+
+    it('should clear the labels when an empty list is passed', () => {
+        const {helper, wrapped} = createHelperWithArea();
+        wrapped.area.labels = [{labelId: 3, Text: 'stara etykieta'}] as any;
+
+        helper.syncAreas([{...incomingArea(), labels: []}]);
+
+        expect(wrapped.area.labels).toEqual([]);
+    });
+
     it('should rebuild the hash and internal-id indexes, dropping stale entries', () => {
         const {helper} = createHelperWithArea();
 
