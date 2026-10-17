@@ -11,6 +11,7 @@
 
 import type React from 'react';
 import type { PluginPopupType } from './types';
+import type { WindowSettingField } from './windowSettings';
 
 export type PopupContent = string | Node | React.ReactNode;
 
@@ -24,6 +25,8 @@ export interface PluginPopupConfig {
   body?: PopupContent;
   /** Custom actions to display in the popup header (buttons, etc.) */
   headerActions?: Node | React.ReactNode;
+  /** Fields the popup's settings cog shows next to the shared font settings */
+  settingsFields?: WindowSettingField[];
   isPinned: boolean;
   /** Starting size - px number, CSS length or 'content' (see utils/popupSize) */
   initialWidth?: number | string;

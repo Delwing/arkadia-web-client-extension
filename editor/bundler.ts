@@ -1,6 +1,7 @@
 import * as esbuild from 'esbuild-wasm'
 import type { PluginFile } from '../src/client/utils/pluginEditorStorage'
 import type { StatusType } from './types'
+import { PLUGIN_UI_MODULE_FILTER, buildPluginUiShim, type PluginUiModule } from '../src/shared/pluginUiGlobal'
 
 let esbuildInitialized = false
 
@@ -49,9 +50,11 @@ export async function bundlePlugin(files: Record<string, PluginFile>, entryPoint
           }
 
           // Add extension if missing
-          if (!resolved.endsWith('.ts') && !resolved.endsWith('.js') && !resolved.endsWith('.json')) {
+          if (!/\.(tsx?|js|json)$/.test(resolved)) {
             if (files[`${resolved}.ts`]) {
               resolved = `${resolved}.ts`
+            } else if (files[`${resolved}.tsx`]) {
+              resolved = `${resolved}.tsx`
             } else if (files[`${resolved}.js`]) {
               resolved = `${resolved}.js`
             } else if (files[`${resolved}.json`]) {
@@ -80,7 +83,9 @@ export async function bundlePlugin(files: Record<string, PluginFile>, entryPoint
 
           // Determine the correct loader based on file language
           let loader: esbuild.Loader
-          if (file.language === 'typescript') {
+          if (args.path.endsWith('.tsx')) {
+            loader = 'tsx'
+          } else if (file.language === 'typescript') {
             loader = 'ts'
           } else if (file.language === 'json') {
             loader = 'json'
@@ -104,6 +109,19 @@ export async function bundlePlugin(files: Record<string, PluginFile>, entryPoint
       }
     }
 
+    // react, react/jsx-runtime and @arkadia/ui come from the client at runtime
+    // (see src/shared/pluginUiGlobal.ts): a bundled second React breaks hooks.
+    const hostUiPlugin: esbuild.Plugin = {
+      name: 'arkadia-host-ui',
+      setup(build) {
+        build.onResolve({ filter: PLUGIN_UI_MODULE_FILTER }, args => ({ path: args.path, namespace: 'arkadia-host-ui' }))
+        build.onLoad({ filter: /.*/, namespace: 'arkadia-host-ui' }, args => ({
+          contents: buildPluginUiShim(args.path as PluginUiModule),
+          loader: 'js',
+        }))
+      }
+    }
+
     // Bundle using esbuild
     const result = await esbuild.build({
       stdin: {
@@ -115,7 +133,8 @@ export async function bundlePlugin(files: Record<string, PluginFile>, entryPoint
       format: 'esm',
       target: 'es2020',
       write: false,
-      plugins: [virtualFsPlugin],
+      jsx: 'automatic',
+      plugins: [hostUiPlugin, virtualFsPlugin],
     })
 
     if (result.outputFiles && result.outputFiles.length > 0) {

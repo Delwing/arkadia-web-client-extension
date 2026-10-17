@@ -8,6 +8,16 @@ import type { PluginPopupConfig } from '@web/layout/pluginPopupRegistry';
 export type { UiSettings, PluginPopupConfig };
 
 /**
+ * The UI host's React and the curated set of UI components handed to plugins
+ * (`api.ui.react`, `api.ui.components`). Typed loosely here; the plugin-facing
+ * shapes are declared in PluginApi.ts.
+ */
+export interface PluginUiKit {
+    React: unknown;
+    components: Record<string, unknown>;
+}
+
+/**
  * Plugin-host port: web-UI-specific capabilities that the plugin API needs but
  * that are owned by the surrounding UI — the default UI settings shape and the
  * plugin-popup lifecycle.
@@ -29,6 +39,14 @@ export interface PluginHostPort {
     openPluginPopup(popupId: string): Promise<void>;
     closePluginPopup(popupId: string): void;
     getPluginPopup(popupId: string): PluginPopupConfig | undefined;
+
+    /** React and UI components for plugins, or null when no UI host renders popups. */
+    getUiKit(): PluginUiKit | null;
+
+    /** A popup's persisted settings bag - the keys its settings cog edits. */
+    getWindowSetting<T>(popupId: string, key: string, defaultValue: T): T;
+    setWindowSetting<T>(popupId: string, key: string, value: T): void;
+    subscribeToWindowSetting(popupId: string, key: string, listener: (value: unknown) => void): () => void;
 }
 
 const noopPluginHostPort: PluginHostPort = {
@@ -43,6 +61,11 @@ const noopPluginHostPort: PluginHostPort = {
     openPluginPopup: () => Promise.resolve(),
     closePluginPopup: () => {},
     getPluginPopup: () => undefined,
+    getUiKit: () => null,
+    // Without a UI host there is no layout to keep settings in.
+    getWindowSetting: (_popupId, _key, defaultValue) => defaultValue,
+    setWindowSetting: () => {},
+    subscribeToWindowSetting: () => () => {},
 };
 
 let current: PluginHostPort = noopPluginHostPort;

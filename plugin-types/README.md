@@ -75,6 +75,38 @@ export async function destroy(): Promise<void> {
 }
 ```
 
+## React Plugins (TSX)
+
+Popups can be React components, but they must use the client's React (`api.ui.react`), not a bundled copy, or hooks fail. The package ships an esbuild plugin that maps `react`, `react/jsx-runtime` and `@arkadia/ui` to the client at runtime:
+
+```js
+import { build } from 'esbuild';
+import { arkadiaHostUi } from '@arkadia/plugin-types/esbuild.cjs';
+
+await build({
+  entryPoints: ['src/index.tsx'],
+  bundle: true,
+  format: 'esm',
+  jsx: 'automatic',
+  outfile: 'dist/plugin.js',
+  plugins: [arkadiaHostUi()],
+});
+```
+
+```tsx
+import { useState } from 'react';
+import { Button } from '@arkadia/ui';
+
+const Counter = () => {
+  const [n, setN] = useState(0);
+  return <Button variant="solid" onClick={() => setN(n + 1)}>Klik {n}</Button>;
+};
+```
+
+For types, add `"@arkadia/plugin-types/ui"` to `compilerOptions.types` and install `@types/react` as a dev dependency.
+
+> **Experimental:** `api.ui.components` / `@arkadia/ui` (Button, HeaderButton, Segmented, Select, Input, Field, Check, MenuButton, Notice) and their props may change between client versions.
+
 ## Available Types
 
 ### Core Plugin Types

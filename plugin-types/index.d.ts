@@ -1540,6 +1540,99 @@ export interface TriggersApi {
      * @param tag - Tag to filter by
      */
     removeByTag(tag: string): void;
+    /**
+     * Wait for the first game line that matches one of the patterns.
+     *
+     * The temporary triggers are removed as soon as one matches, the timeout
+     * passes, or the signal aborts. Lines are not changed or gagged.
+     *
+     * @param patterns - One pattern, or alternatives; the first to match wins
+     * @param options - Timeout in ms (none by default), abort signal, trigger tag
+     * @returns Which pattern matched, its match and the line text
+     * @throws An Error named `TimeoutError` when the timeout passes, and the
+     *         signal's reason (an `AbortError` by default) when it aborts
+     *
+     * @example
+     * ```typescript
+     * api.command.send('szukaj ziol');
+     * const r = await api.triggers.waitFor(
+     *   [/^Znajdujesz (?!sie )(.*)\.$/, /^Nie znajdujesz zadnych ziol\./],
+     *   { timeout: 15000, signal }
+     * );
+     * if (r.index === 0) console.log('found', r.match[1]);
+     * ```
+     */
+    waitFor(patterns: TriggerSubPattern | TriggerSubPattern[], options?: WaitForOptions): Promise<WaitForResult>;
+}
+
+/** Options for {@link TriggersApi.waitFor} */
+
+export interface WaitForOptions {
+    /** Give up after this many milliseconds */
+    timeout?: number;
+    /** Abort the wait (e.g. when the user presses Stop) */
+    signal?: AbortSignal;
+    /**
+     * Tag for the temporary triggers. Note that removeByTag only removes them;
+     * use `signal` to cancel the wait itself.
+     */
+    tag?: string;
+}
+
+/** Result of {@link TriggersApi.waitFor} */
+
+export interface WaitForResult {
+    /** Index of the pattern that matched */
+    index: number;
+    /** The match (capture groups for regex patterns) */
+    match: RegExpMatchArray;
+    /** Plain text of the matched line */
+    line: string;
+}
+
+/**
+ * A plugin's own key-value store. Values are JSON and stay in this browser,
+ * namespaced by plugin id. Keep it small (settings, lists); use IndexedDB for
+ * large or growing data.
+ */
+
+export interface PluginKeyValueStore {
+    /** Read a value, or `defaultValue` when there is none */
+    get<T>(key: string, defaultValue: T): T;
+    get<T = unknown>(key: string): T | undefined;
+    /** Store a JSON-serialisable value */
+    set<T>(key: string, value: T): void;
+    /** Remove a value */
+    remove(key: string): void;
+    /** All keys this plugin has stored here */
+    keys(): string[];
+    /**
+     * Listen for changes to one key, including the character switching
+     * (for the character store).
+     * @returns Function that removes the listener
+     */
+    onChange<T = unknown>(key: string, listener: (value: T | undefined) => void): () => void;
+}
+
+/** Plugin storage, see {@link PluginKeyValueStore} */
+
+export interface StorageApi {
+    /** Values kept per character; reads follow the active character */
+    character: PluginKeyValueStore;
+    /** Values shared by all characters in this browser */
+    global: PluginKeyValueStore;
+}
+
+/** The active character */
+
+export interface CharacterApi {
+    /** Name of the active character, or null before one has logged in */
+    getName(): string | null;
+    /**
+     * Listen for the active character changing
+     * @returns Function that removes the listener
+     */
+    onChange(listener: (name: string | null) => void): () => void;
 }
 
 /**
@@ -1929,7 +2022,9 @@ export interface MapApi {
      * (`{ areaId, areaName, rooms, labels }`) with coordinates in source
      * orientation; y is flipped for you, exactly as when the map first loads.
      * Areas the map does not already contain are skipped, since adding one needs a
-     * full reload.
+     * full reload. Leave `labels` out to keep the area's current labels - handy
+     * when adding rooms to an area read through {@link getAreas}, which returns
+     * rooms only (with y already flipped: negate it back before passing them in).
      *
      * Changes live in memory only: they are lost when the map data reloads.
      *
@@ -2075,6 +2170,11 @@ export interface PersistentPopupConfig extends PopupSizeOptions {
      * When pinned, popup will be restored on page reload.
      */
     pinned?: boolean;
+    /**
+     * Fields for the popup's settings cog. Pass the same array every time.
+     * Read and write the values with the handle's getSetting / setSetting.
+     */
+    settingsFields?: PluginWindowSettingField[];
 }
 
 /**
@@ -2106,6 +2206,19 @@ export interface PersistentPopupHandle extends PopupHandle {
      * @param actions - DOM node or React element for header actions
      */
     setHeaderActions(actions: Node | React.ReactNode): void;
+    /**
+     * Read a value from the popup's settings, kept with its window layout
+     * (the keys of `settingsFields`, or any other key the plugin chooses).
+     */
+    getSetting<T>(key: string, defaultValue: T): T;
+    /** Store a value in the popup's settings. */
+    setSetting<T>(key: string, value: T): void;
+    /**
+     * Listen for changes to one setting - from the settings cog, another
+     * setSetting call, or a layout import.
+     * @returns Function that removes the listener
+     */
+    onSettingChange<T>(key: string, listener: (value: T) => void): () => void;
 }
 
 /**
@@ -2177,10 +2290,173 @@ export interface FooterComponentHandle {
 }
 
 /**
+ * A field in a plugin popup's settings cog (⚙ in the window header), shown
+ * under the shared font settings. The value is kept in the window's settings
+ * and read back with {@link PersistentPopupHandle.getSetting}.
+ */
+
+export type PluginWindowSettingField = {
+    type: 'toggle';
+    key: string;
+    label: string;
+    default: boolean; /** The stored flag is the opposite of the label */
+    inverted?: boolean;
+} | {
+    type: 'select';
+    key: string;
+    label: string;
+    default: string;
+    options: {
+        value: string;
+        label: string;
+    }[];
+} | {
+    type: 'number';
+    key: string;
+    label: string;
+    default: number;
+    min?: number;
+    max?: number;
+    step?: number;
+};
+
+/**
+ * The host's React, as handed to plugins on `api.ui.react`.
+ * Use it (or a bundler mapping of `react` to it) instead of bundling React.
+ */
+
+export type PluginReact = typeof import('react');
+
+/** @experimental Props may change between client versions. */
+
+export interface PluginButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+    /** solid = the one main action; secondary = default; ghost = quiet; danger = destructive */
+    variant?: 'solid' | 'secondary' | 'ghost' | 'danger';
+    size?: 'sm' | 'md';
+}
+
+/** @experimental Props may change between client versions. */
+
+export interface PluginHeaderButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+    /** A toggle that is on */
+    active?: boolean;
+    /** Destructive, or arming one (a second click confirms) */
+    danger?: boolean;
+}
+
+/** @experimental Props may change between client versions. */
+
+export interface PluginSegmentedProps<T extends string = string> {
+    value: T;
+    options: {
+        value: T;
+        label: React.ReactNode;
+    }[];
+    onChange: (value: T) => void;
+    name?: string;
+    /** sm = window header size */
+    size?: 'sm' | 'md';
+}
+
+/** @experimental Props may change between client versions. */
+
+export interface PluginFieldProps {
+    label?: React.ReactNode;
+    htmlFor?: string;
+    hint?: React.ReactNode;
+    error?: React.ReactNode;
+    children: React.ReactNode;
+    className?: string;
+}
+
+/** @experimental Props may change between client versions. */
+
+export interface PluginCheckProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type'> {
+    label?: React.ReactNode;
+    type?: 'checkbox' | 'radio';
+}
+
+/** @experimental Props may change between client versions. */
+
+export interface PluginInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+    /** Monospace with typing aids off - for patterns and commands */
+    mono?: boolean;
+}
+
+/** @experimental Props may change between client versions. */
+
+export interface PluginNoticeProps {
+    variant?: 'success' | 'warning' | 'danger';
+    onClose?: () => void;
+    className?: string;
+    children: React.ReactNode;
+}
+
+/** @experimental Props may change between client versions. */
+
+export interface PluginMenuButtonProps {
+    label: React.ReactNode;
+    items: {
+        label: React.ReactNode;
+        hint?: React.ReactNode;
+        onSelect: () => void;
+        disabled?: boolean;
+    }[];
+    size?: 'sm' | 'md';
+    title?: string;
+    /** Makes it a split button: the label runs this, the chevron opens the list */
+    onClick?: () => void;
+    menuWidth?: number;
+    disabled?: boolean;
+}
+
+/**
+ * The client's own UI components, styled like its built-in windows in every theme.
+ *
+ * @experimental This set and its props may change between client versions.
+ * Only components rendered inside a plugin popup or footer are supported.
+ */
+
+export interface PluginUiComponents {
+    Button: React.ComponentType<PluginButtonProps>;
+    HeaderButton: React.ComponentType<PluginHeaderButtonProps>;
+    Segmented: <T extends string>(props: PluginSegmentedProps<T>) => React.ReactElement;
+    Select: React.ComponentType<React.SelectHTMLAttributes<HTMLSelectElement>>;
+    Input: React.ComponentType<PluginInputProps>;
+    Field: React.ComponentType<PluginFieldProps>;
+    Check: React.ComponentType<PluginCheckProps>;
+    MenuButton: React.ComponentType<PluginMenuButtonProps>;
+    Notice: React.ComponentType<PluginNoticeProps>;
+}
+
+/**
  * UI helpers for plugins
  */
 
 export interface UiApi {
+    /**
+     * The host's React. Build popup content with it so hooks work: a plugin
+     * that bundles its own React gets a second copy, and hooks then fail.
+     * Throws when no UI host is running.
+     *
+     * @example
+     * ```typescript
+     * const { createElement: h, useState } = api.ui.react;
+     * function Counter() {
+     *   const [n, setN] = useState(0);
+     *   return h(api.ui.components.Button, { onClick: () => setN(n + 1) }, `Klik ${n}`);
+     * }
+     * await api.ui.registerPersistentPopup({ id: 'counter', title: 'Licznik', createContent: () => h(Counter) });
+     * ```
+     */
+    readonly react: PluginReact;
+    /**
+     * The client's own UI components (Button, HeaderButton, Segmented, …).
+     * Throws when no UI host is running.
+     *
+     * @experimental This set and its props may change between client versions.
+     */
+    readonly components: PluginUiComponents;
     /**
      * Create a draggable popup window.
      *
@@ -4192,6 +4468,10 @@ export interface PluginApi {
     people: PeopleApi;
     /** Walk modes - walk a direction key your own way under a player-chosen modifier */
     walkModes: WalkModesApi;
+    /** Storage - the plugin's own per-character and global values */
+    storage: StorageApi;
+    /** The active character */
+    character: CharacterApi;
     /**
      * AnsiAwareBuffer class for creating formatted text buffers
      *

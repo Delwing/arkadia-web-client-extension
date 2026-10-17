@@ -22,8 +22,12 @@ import {
     closePluginPopup,
     getPluginPopup,
 } from './layout/pluginPopupRegistry';
+import { getWindowSetting, setWindowSetting, subscribeToWindowSetting } from './layout/windowSettings';
+import { getPluginUiKit, publishPluginUiKit } from './pluginUiKit';
 
 export function installClientPorts(): void {
+    publishPluginUiKit();
+
     setUiPort({
         showHerbTooltip,
         hideHerbTooltip,
@@ -45,5 +49,9 @@ export function installClientPorts(): void {
         openPluginPopup,
         closePluginPopup,
         getPluginPopup,
+        getUiKit: getPluginUiKit,
+        getWindowSetting,
+        setWindowSetting,
+        subscribeToWindowSetting,
     });
 }

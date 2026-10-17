@@ -150,6 +150,7 @@ function PluginPopupItem({ config }: { config: PluginPopupConfig }) {
       initialHeight={initialSize.height}
       className="plugin-window"
       bodyClassName="plugin-window-body"
+      settingsFields={config.settingsFields}
       headerActions={headerActions instanceof Node ? <NodeRenderer node={headerActions} /> : headerActions}
     >
       <div ref={setContainerRef} className="plugin-popup-content">

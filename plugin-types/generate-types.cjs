@@ -91,7 +91,14 @@ function shouldExport(node) {
         name?.endsWith('Options') ||
         name?.endsWith('Definition') ||
         name?.endsWith('State') ||
+        name?.endsWith('Props') ||
         name === 'PluginApi' ||
+        // Plugin UI, storage and waiting
+        name === 'PluginReact' ||
+        name === 'PluginUiComponents' ||
+        name === 'PluginWindowSettingField' ||
+        name === 'PluginKeyValueStore' ||
+        name === 'WaitForResult' ||
         name === 'PluginInfo' ||
         name === 'Plugin' ||
         name === 'PopupContent' ||
@@ -1317,6 +1324,16 @@ export default PluginApi;
 // Write output file
 const finalOutput = output.join('\n');
 fs.writeFileSync(OUTPUT_FILE, finalOutput, 'utf-8');
+
+// The host-UI shim used by esbuild.cjs is compiled from the same module the
+// client's editor bundler uses, so both map react/@arkadia/ui identically.
+const SHIM_SOURCE = path.join(PROJECT_ROOT, 'src', 'shared', 'pluginUiGlobal.ts');
+const SHIM_OUTPUT = path.join(__dirname, 'pluginUiShim.cjs');
+const shim = ts.transpileModule(fs.readFileSync(SHIM_SOURCE, 'utf-8'), {
+  compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
+});
+fs.writeFileSync(SHIM_OUTPUT, `// AUTO-GENERATED from src/shared/pluginUiGlobal.ts by generate-types.cjs\n${shim.outputText}`, 'utf-8');
+console.log(`📝 Shim: ${path.relative(PROJECT_ROOT, SHIM_OUTPUT)}`);
 
 console.log('✅ Type definitions generated successfully!');
 console.log(`📦 Exported ${exportedTypes.size} type definitions`);

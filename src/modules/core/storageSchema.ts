@@ -60,6 +60,8 @@ export interface CharacterStorageSchema {
     carriages: Record<string, CarriageRecord>;
     /** Ostatnie znane haslo do drzwi Lisicy, np. "1-9-5-2". */
     lisica_code: string;
+    /** Data plugins keep through `api.storage.character`, by plugin id then key. */
+    plugin_data: Record<string, Record<string, unknown>>;
 }
 
 /**
@@ -113,6 +115,12 @@ export interface GlobalStorageSchema {
      * receives alerts for whichever character is being played.
      */
     pushCredentials: { pushId: string; pushSecret: string };
+    /**
+     * Data plugins keep through `api.storage.global`, by plugin id then key.
+     * Named apart from the character key `plugin_data`: the first-character
+     * migration moves unscoped character keys under the character prefix.
+     */
+    plugin_global_data: Record<string, Record<string, unknown>>;
 }
 
 /**
@@ -148,6 +156,7 @@ export const CHARACTER_KEY_OPTIONS: Partial<Record<keyof CharacterStorageSchema,
     lua_gags_colors: { notifyOnNull: true },
     lua_gags_walka_config: { notifyOnNull: true },
     profession: { notifyOnNull: true },
+    plugin_data: { notifyOnNull: true },
 };
 
 /** All character-scoped storage keys as a const array for runtime use. */
@@ -181,6 +190,7 @@ export const characterStorageKeys = [
     'pipe_filled',
     'carriages',
     'lisica_code',
+    'plugin_data',
 ] as const satisfies readonly (keyof CharacterStorageSchema)[];
 
 /** All global storage keys as a const array for runtime use. */
@@ -216,4 +226,5 @@ export const globalStorageKeys = [
     'last_world_rebirth',
     'carriage_blocked_rooms',
     'pushCredentials',
+    'plugin_global_data',
 ] as const satisfies readonly (keyof GlobalStorageSchema)[];

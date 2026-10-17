@@ -405,6 +405,27 @@ api.triggers.removeByTag(tag);
 **Callback zwraca:**
 - Zmodyfikowaną linię lub `null` aby ukryć linię
 
+**Czekanie na linię (`waitFor`)**
+
+`api.triggers.waitFor(wzorce, opcje)` zwraca obietnicę, która spełnia się przy pierwszej linii pasującej do któregoś wzorca. Tymczasowe triggery znikają same: po dopasowaniu, po upływie `timeout` albo po przerwaniu przez `signal`. Linia nie jest zmieniana.
+
+```typescript
+const stop = new AbortController();   // stop.abort() np. z przycisku „Stop”
+
+api.command.send('szukaj ziol');
+try {
+  const r = await api.triggers.waitFor(
+    [/^Znajdujesz (?!sie )(.*)\.$/, /^Nie znajdujesz zadnych ziol\./],
+    { timeout: 15000, signal: stop.signal }
+  );
+  if (r.index === 0) api.output.print(`Znalezione: ${r.match[1]}`);
+} catch (e) {
+  // e.name === 'TimeoutError' po upływie czasu, 'AbortError' po stop.abort()
+}
+```
+
+Wynik: `index` (który wzorzec pasował), `match` (grupy) i `line` (tekst linii). `removeByTag(tag)` usuwa tylko triggery — oczekiwanie przerywa się sygnałem.
+
 #### `api.output` - Wypisywanie Tekstu
 
 ```typescript
@@ -531,6 +552,28 @@ radar.remove();     // usuń z mapy
 - Ponowne `addOverlay` z tym samym `id` zastępuje poprzedni overlay. Overlaye
   pluginu są usuwane automatycznie przy jego wyłączeniu.
 - Błąd w `render` nie psuje mapy - jest logowany raz w konsoli, a overlay nic nie rysuje.
+
+#### `api.storage` i `api.character` - Dane Pluginu
+
+Plugin ma własny magazyn wartości (JSON) w tej przeglądarce, oddzielony od innych pluginów:
+
+- `api.storage.character` — osobno dla każdej postaci; odczyty idą za aktywną postacią.
+- `api.storage.global` — wspólne dla wszystkich postaci.
+
+```typescript
+const queue = api.storage.character.get('kolejka', []);   // wartość domyślna, gdy brak
+api.storage.character.set('kolejka', [...queue, 'delion']);
+api.storage.character.remove('kolejka');
+api.storage.global.keys();                                // klucze zapisane przez plugin
+
+// Zmiana wartości — także po przełączeniu postaci
+api.storage.character.onChange('kolejka', (value) => { /* ... */ });
+
+api.character.getName();                                  // 'Ziolko' albo null przed zalogowaniem
+api.character.onChange((name) => { /* ... */ });
+```
+
+Trzymaj tu małe dane (ustawienia, listy). Rosnące dane, np. dziennik, zapisuj w IndexedDB z nazwą postaci w kluczu. Nasłuchy znikają przy wyładowaniu pluginu.
 
 #### `api.team` - Drużyna
 
@@ -1295,6 +1338,62 @@ const popup = await api.ui.registerPersistentPopup({
 api.ui.addPopupMenuEntry('Łupy', () => (popup.isOpen ? popup.close() : popup.open()));
 ```
 
+#### Okna w React
+
+Treść okna może być komponentem React. Musi to być React klienta — `api.ui.react` — a nie własna kopia w paczce pluginu: przy dwóch kopiach hooki (`useState` itd.) przestają działać. Komponenty klienta są w `api.ui.components`: `Button`, `HeaderButton`, `Segmented`, `Select`, `Input`, `Field`, `Check`, `MenuButton`, `Notice`. Wyglądają jak w oknach klienta, w każdym motywie.
+
+> **Eksperymentalne:** zestaw `api.ui.components` i ich propsy mogą się zmienić w kolejnych wersjach klienta.
+
+Bez bundlera:
+
+```typescript
+const { createElement: h, useState } = api.ui.react;
+const { Button } = api.ui.components;
+
+function Licznik() {
+  const [n, setN] = useState(0);
+  return h(Button, { variant: 'solid', onClick: () => setN(n + 1) }, `Klik ${n}`);
+}
+
+const popup = await api.ui.registerPersistentPopup({ id: 'licznik', title: 'Licznik', createContent: () => h(Licznik) });
+```
+
+W TSX z bundlerem (edytor pluginów albo własny esbuild z `arkadiaHostUi()`, zob. [Typy TypeScript](#typy-typescript)) importy `react`, `react/jsx-runtime` i `@arkadia/ui` trafiają do klienta same:
+
+```tsx
+import { useState } from 'react';
+import { Button } from '@arkadia/ui';
+
+function Licznik() {
+  const [n, setN] = useState(0);
+  return <Button variant="solid" onClick={() => setN(n + 1)}>Klik {n}</Button>;
+}
+```
+
+Podaj komponent w `createContent` raz; potem przerysowuje się sam ze swojego stanu, bez `setBody`.
+
+#### Ustawienia okna (⚙)
+
+`settingsFields` dodaje pola do menu ⚙ okna, pod wspólnymi ustawieniami czcionki. Wartości są zapisywane razem z układem okien; czyta i zapisuje je uchwyt okna:
+
+```typescript
+const popup = await api.ui.registerPersistentPopup({
+  id: 'zielarz',
+  title: 'Zielarz',
+  createContent,
+  settingsFields: [
+    { type: 'toggle', key: 'altH', label: 'Alt+H szuka', default: true },
+    { type: 'number', key: 'pauza', label: 'Przerwa (ms)', default: 300, min: 0, max: 2000, step: 50 },
+    { type: 'select', key: 'smieci', label: 'Śmieci', default: 'odloz', options: [
+      { value: 'odloz', label: 'Odkładaj' }, { value: 'zostaw', label: 'Zostawiaj' } ] },
+  ],
+});
+
+popup.getSetting('pauza', 300);
+popup.setSetting('zakladka', 'trasy');        // dowolny klucz, nie tylko z settingsFields
+const off = popup.onSettingChange('altH', (on) => { /* ... */ });
+```
+
 ### Stopka
 
 - **Komponent** (`registerFooterComponent`) jest wstawiany bez ramki. Żeby wyglądał jak wbudowane chipy, użyj ich znaczników:
@@ -1439,6 +1538,27 @@ export async function init(api: PluginApi): Promise<PluginInfo> {
 ```
 
 Zobacz `plugin-types/README.md` i `plugin-types/index.d.ts` dla pełnej dokumentacji typów.
+
+### Plugin w TSX (React)
+
+Pakiet zawiera plugin esbuild `arkadiaHostUi()`, który podmienia `react`, `react/jsx-runtime` i `@arkadia/ui` na React i komponenty klienta (zob. [Okna w React](#okna-w-react)):
+
+```js
+// build.mjs
+import { build } from 'esbuild';
+import { arkadiaHostUi } from '@arkadia/plugin-types/esbuild.cjs';
+
+await build({
+  entryPoints: ['src/index.tsx'],
+  bundle: true,
+  format: 'esm',
+  jsx: 'automatic',
+  outfile: 'dist/plugin.js',
+  plugins: [arkadiaHostUi()],
+});
+```
+
+Typy dla `@arkadia/ui`: dodaj `"@arkadia/plugin-types/ui"` do `types` w `tsconfig.json`. Dla `react` zainstaluj `@types/react` jako zależność deweloperską. Edytor pluginów robi to samo bez konfiguracji — wystarczy plik `.tsx`.
 
 ## Kompatybilność Wsteczna
 
