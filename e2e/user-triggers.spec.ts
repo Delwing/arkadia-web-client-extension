@@ -62,7 +62,7 @@ test('pattern trigger fills $1 from the match and previews it on a test line', a
     await action.getByPlaceholder('Command').fill('zabij $1');
 
     await modal.getByTitle('Linia do testu').fill('Goblin atakuje cie!');
-    await expect(modal.locator('.automation-test'), 'should show the match and its group').toContainText('$1 = Goblin');
+    await expect(modal.locator('.automation-test__group.automation-g1'), 'should show the match and its group').toHaveText('$1Goblin');
     await expect(modal.locator('.automation-out'), 'should preview the command').toContainText('zabij Goblin');
     await saveEditor(modal);
     await closeAutomation(modal);
