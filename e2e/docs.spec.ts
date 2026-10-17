@@ -95,6 +95,22 @@ test.describe('Dokumentacja', () => {
         }).toBeGreaterThan(0);
         await page.screenshot({ path: 'test-results/docs-automatyzacje.png' });
     });
+
+    test('Połączenie draws its diagrams inline', async ({ page }) => {
+        await openDocs(page);
+        const win = docsWindow(page);
+        await win.locator('.doc-nav__page', { hasText: 'Połączenie' }).click();
+        await expect(win.locator('.doc-crumb')).toHaveText('Klient / Połączenie');
+        const diagrams = win.locator('figure.doc-diagram');
+        await expect(diagrams).toHaveCount(4);
+        await expect(diagrams.first().locator('svg text', { hasText: 'Serwer Arkadii' })).toBeVisible();
+        await diagrams.last().scrollIntoViewIfNeeded();
+        await page.screenshot({ path: 'test-results/docs-polaczenie.png' });
+
+        await win.locator('.doc-nav__page', { hasText: 'Dane' }).click();
+        await expect(win.locator('.doc-crumb')).toHaveText('Klient / Dane');
+        await page.screenshot({ path: 'test-results/docs-dane.png' });
+    });
 });
 
 test.describe('Dokumentacja on a phone', () => {

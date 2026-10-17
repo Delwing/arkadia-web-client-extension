@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 132" class="doc-dg" font-family="inherit">
+  <defs><marker id="dg-arr-d" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" class="dg-head"/></marker></defs>
+  <rect x="8" y="24" width="150" height="60" rx="8" class="dg-box"/>
+  <text x="83" y="50" text-anchor="middle" class="dg-t">Przeglądarka</text>
+  <text x="83" y="69" text-anchor="middle" class="dg-s">karta z klientem</text>
+  <rect x="362" y="24" width="150" height="60" rx="8" class="dg-box"/>
+  <text x="437" y="50" text-anchor="middle" class="dg-t">Serwer Arkadii</text>
+  <text x="437" y="69" text-anchor="middle" class="dg-s">arkadia.rpg.pl</text>
+  <line x1="164" y1="54" x2="356" y2="54" class="dg-line" marker-start="url(#dg-arr-d)" marker-end="url(#dg-arr-d)"/>
+  <text x="260" y="44" text-anchor="middle" class="dg-s">WebSocket (wss)</text>
+  <text x="260" y="122" text-anchor="middle" class="dg-s">Połączenie żyje tak długo, jak karta - zamrożona lub zamknięta karta je zrywa.</text>
+</svg>

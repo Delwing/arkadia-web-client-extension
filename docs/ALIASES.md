@@ -1,6 +1,6 @@
 # Inne aliasy
 
-Pozostałe aliasy i funkcje rozszerzenia.
+Pozostałe aliasy i funkcje klienta.
 
 ## Własne aliasy
 

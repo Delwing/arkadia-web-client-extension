@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 150" class="doc-dg" font-family="inherit">
+  <defs><marker id="dg-arr-h" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" class="dg-head"/></marker></defs>
+  <rect x="2" y="8" width="314" height="104" rx="10" class="dg-zone"/>
+  <text x="14" y="26" class="dg-s">Twój komputer</text>
+  <rect x="12" y="38" width="120" height="60" rx="8" class="dg-box"/>
+  <text x="72" y="64" text-anchor="middle" class="dg-t">Przeglądarka</text>
+  <text x="72" y="83" text-anchor="middle" class="dg-s">karta z klientem</text>
+  <rect x="186" y="38" width="120" height="60" rx="8" class="dg-box dg-hi"/>
+  <text x="246" y="64" text-anchor="middle" class="dg-t">Pomocnik</text>
+  <text x="246" y="83" text-anchor="middle" class="dg-s">Arkadia Helper</text>
+  <rect x="384" y="38" width="128" height="60" rx="8" class="dg-box"/>
+  <text x="448" y="64" text-anchor="middle" class="dg-t">Serwer Arkadii</text>
+  <text x="448" y="83" text-anchor="middle" class="dg-s">port 23 (telnet)</text>
+  <line x1="137" y1="68" x2="181" y2="68" class="dg-line" marker-start="url(#dg-arr-h)" marker-end="url(#dg-arr-h)"/>
+  <text x="159" y="58" text-anchor="middle" class="dg-s">lokalnie</text>
+  <line x1="311" y1="68" x2="379" y2="68" class="dg-line" marker-start="url(#dg-arr-h)" marker-end="url(#dg-arr-h)"/>
+  <text x="348" y="58" text-anchor="middle" class="dg-s">telnet</text>
+  <text x="260" y="140" text-anchor="middle" class="dg-s">Pomocnik tylko przekazuje bajty - zamknięta karta nadal kończy połączenie.</text>
+</svg>

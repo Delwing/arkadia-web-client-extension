@@ -1,6 +1,6 @@
 # Bindowanie
 
-Rozszerzenie umożliwia ustawienie bindów do szybkiego wykonywania akcji.
+Klient umożliwia ustawienie bindów do szybkiego wykonywania akcji.
 
 ## Domyślne bindy
 

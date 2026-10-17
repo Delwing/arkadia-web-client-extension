@@ -332,6 +332,25 @@
   border: 1px solid var(--popup-border);
   border-radius: 6px;
 }
+
+/* Inline diagrams (the .svg files under docs/img): drawn in the window's palette, so they follow the theme. */
+.doc-diagram { margin: 6px 0 10px; }
+.doc-dg { display: block; width: 100%; max-width: 560px; height: auto; font-size: 13px; }
+.doc-dg .dg-box { fill: var(--popup-section-bg); stroke: var(--popup-border); stroke-width: 1.2; }
+.doc-dg .dg-hi { fill: var(--popup-accent-dim-bg); stroke: var(--popup-accent); }
+.doc-dg .dg-zone { fill: none; stroke: var(--popup-border); stroke-dasharray: 4 4; }
+.doc-dg .dg-t { fill: var(--popup-text-bright); font-size: 14px; font-weight: 600; }
+.doc-dg .dg-s { fill: var(--popup-text-dim); font-size: 11.5px; }
+.doc-dg .dg-line { fill: none; stroke: var(--popup-text-dim); stroke-width: 1.5; }
+.doc-dg .dg-strong { stroke: var(--popup-accent); stroke-width: 2.5; }
+.doc-dg .dg-dash { stroke-dasharray: 5 4; }
+.doc-dg .dg-head { fill: var(--popup-text-dim); }
+.doc-dg .dg-bar { stroke: var(--popup-text-dim); stroke-width: 4; stroke-linecap: round; }
+.doc-dg .dg-bar-hi { stroke: var(--popup-accent); }
+.doc-dg .dg-buf { fill: var(--popup-accent-dim-bg); stroke: var(--popup-accent); }
+.doc-dg .dg-on-hi { fill: var(--popup-text); }
+.doc-dg .dg-tick { stroke: var(--popup-border); stroke-dasharray: 2 3; }
+
 .doc code,
 .doc-tip code {
   padding: 0 4px;

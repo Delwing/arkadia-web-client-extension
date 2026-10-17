@@ -1,6 +1,6 @@
 # Synchronizacja Firebase
 
-Rozszerzenie umożliwia synchronizację ustawień między urządzeniami za pomocą Firebase. Dzięki temu możesz korzystać z tych samych ustawień na różnych komputerach, telefonach i przeglądarkach.
+Klient umożliwia synchronizację ustawień między urządzeniami za pomocą Firebase. Dzięki temu możesz korzystać z tych samych ustawień na różnych komputerach, telefonach i przeglądarkach.
 
 ## Spis treści
 

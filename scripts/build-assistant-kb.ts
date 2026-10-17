@@ -1305,6 +1305,8 @@ const USER_DOCS = [
     'docs/AUTOMATYZACJE.md',
     'docs/SKRYPTY.md',
     'docs/SYNCHRONIZACJA.md',
+    'docs/POLACZENIE.md',
+    'docs/DANE.md',
     'public/llms.txt',
 ];
 

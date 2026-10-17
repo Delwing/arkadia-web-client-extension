@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 200" class="doc-dg" font-family="inherit">
+  <defs><marker id="dg-arr-w" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 10 5 0 10z" class="dg-head"/></marker></defs>
+  <text x="8" y="45" class="dg-t">Karta</text>
+  <text x="8" y="97" class="dg-t">Proxy</text>
+  <text x="8" y="163" class="dg-t">Gra</text>
+  <line x1="190" y1="22" x2="190" y2="168" class="dg-tick"/>
+  <line x1="370" y1="22" x2="370" y2="168" class="dg-tick"/>
+  <text x="130" y="30" text-anchor="middle" class="dg-s">aktywna</text>
+  <text x="280" y="30" text-anchor="middle" class="dg-s">zamrożona / brak zasięgu</text>
+  <text x="441" y="30" text-anchor="middle" class="dg-s">wraca</text>
+  <line x1="70" y1="40" x2="190" y2="40" class="dg-bar"/>
+  <line x1="190" y1="40" x2="370" y2="40" class="dg-line dg-dash"/>
+  <line x1="370" y1="40" x2="512" y2="40" class="dg-bar"/>
+  <line x1="70" y1="92" x2="512" y2="92" class="dg-bar dg-bar-hi"/>
+  <rect x="190" y="84" width="180" height="16" rx="4" class="dg-buf"/>
+  <text x="280" y="116" text-anchor="middle" class="dg-s">zbiera tekst z gry</text>
+  <line x1="382" y1="84" x2="382" y2="50" class="dg-line" marker-end="url(#dg-arr-w)"/>
+  <text x="390" y="72" class="dg-s">odtwarza zaległy tekst</text>
+  <line x1="70" y1="158" x2="512" y2="158" class="dg-bar"/>
+  <text x="280" y="146" text-anchor="middle" class="dg-s">postać cały czas jest w grze</text>
+  <path d="M192 176 V182 H368 V176" class="dg-line"/><text x="280" y="194" text-anchor="middle" class="dg-s">przerwa: do 35 minut</text>
+</svg>

@@ -1,6 +1,6 @@
-# Rozszerzenie Arkadia
+# Klient Arkadia
 
-Rozszerzenie dodaje wiele przydatnych funkcji do klienta webowego Arkadii, w tym aliasy, bindy, zarządzanie pojemnikami i automatyzację.
+Klient dodaje wiele przydatnych funkcji do gry w Arkadię w przeglądarce, w tym aliasy, bindy, zarządzanie pojemnikami i automatyzację.
 
 ## Kategorie dokumentacji
 
@@ -13,6 +13,8 @@ Rozszerzenie dodaje wiele przydatnych funkcji do klienta webowego Arkadii, w tym
 | **Zioła** | Licznik i zarządzanie ziołami |
 | **Bindowanie** | Bindy — okno **Klawisze** |
 | **Miejsca** | Zapisane lokacje na mapie: skróty i notatki |
+| **Połączenie** | Tryby połączenia: bezpośrednio, pomocnik, proxy |
+| **Dane** | Gdzie klient przechowuje dane i jak ich nie stracić |
 | **Synchronizacja** | Synchronizacja ustawień przez Firebase |
 | **Skrypty i automatyzacja** | Aliasy, triggery, bindy, edytor i pluginy — przegląd możliwości |
 | **Inne** | Pozostałe aliasy i funkcje |
