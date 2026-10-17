@@ -200,6 +200,13 @@
   align-items: center;
   gap: 6px;
 }
+.automation-nav__library {
+  margin-top: 6px;
+}
+.automation-kind--library {
+  background-color: color-mix(in srgb, var(--popup-success) 14%, transparent);
+  color: var(--popup-success);
+}
 .automation-notice {
   margin: 6px 4px 0;
   color: var(--popup-text-medium);
@@ -396,6 +403,82 @@
 .automation-item.is-new .automation-item__sub {
   font-family: inherit;
   font-style: italic;
+}
+
+/* ── Biblioteka: ready-made recipes, in place of the list and the editor ── */
+.automation-library {
+  grid-column: 2 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 18px 20px;
+}
+.automation-library__head h3 {
+  margin: 0 0 4px;
+  color: var(--popup-text-bright);
+  font-size: var(--ui-fs-lg, 16px);
+}
+.automation-library__head p {
+  max-width: 44rem;
+}
+.automation-library__section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.automation-library__cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
+  gap: 10px;
+}
+.automation-recipe {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1px solid var(--popup-border-subtle);
+  border-radius: var(--ui-radius, 6px);
+  background-color: var(--popup-section-bg);
+}
+.automation-recipe__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.automation-recipe__head h4 {
+  margin: 0;
+  color: var(--popup-text-bright);
+  font-size: var(--ui-fs, 14px);
+  font-weight: 600;
+}
+.automation-recipe p {
+  flex: 1;
+  margin: 0;
+  color: var(--popup-text-medium);
+  font-size: var(--ui-fs-sm, 13px);
+  line-height: 1.45;
+}
+.automation-recipe__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.automation-recipe__foot .popup-btn,
+.automation-recipe__added {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.automation-recipe__what {
+  color: var(--popup-text-subtle);
+  font-size: var(--ui-fs-xs, 12px);
+}
+.automation-recipe__added {
+  color: var(--popup-success);
+  font-size: var(--ui-fs-sm, 13px);
 }
 
 /* ── Right: the editor ── */
@@ -1044,6 +1127,12 @@ select.automation-override__select.popup-input.popup-input--control {
   }
   .automation-nav__io {
     flex-direction: row;
+  }
+  .automation-nav__library {
+    margin-top: 0;
+  }
+  .automation-library {
+    grid-column: 1 / -1;
   }
   .automation-notice {
     flex-basis: 100%;

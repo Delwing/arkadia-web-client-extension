@@ -560,6 +560,13 @@ export function parsePack(text: string): AutomationPack {
     };
 }
 
+/** What a trigger does, whatever it is called and wherever it sits: two with the same shape are duplicates. */
+export function triggerShape(t: UserTrigger): string {
+    return JSON.stringify([
+        t.type ?? "pattern", t.pattern ?? "", t.event ?? "", t.flags ?? "", t.gmcpMsgType ?? "", t.conditions ?? [], t.macros,
+    ]);
+}
+
 /**
  * Adds a pack to what is stored. Its groups are matched to existing ones by
  * name; everything gets new ids, so importing the same file twice never
@@ -615,10 +622,9 @@ export function importPack(pack: AutomationPack): { aliases: number; triggers: n
     if (newAliases.length) globalStorage.set("aliases", [...aliases, ...newAliases]);
 
     const triggers = storedTriggers();
-    const shape = (t: UserTrigger) => JSON.stringify([t.type ?? "pattern", t.pattern ?? "", t.event ?? "", t.flags ?? "", t.gmcpMsgType ?? "", t.macros]);
-    const known = new Set(triggers.map(shape));
+    const known = new Set(triggers.map(triggerShape));
     const newTriggers = normalizeTriggerList(pack.triggers).map(remap).filter(t => {
-        const dup = known.has(shape(t));
+        const dup = known.has(triggerShape(t));
         if (dup) skipped++;
         return !dup;
     });

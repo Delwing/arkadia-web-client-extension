@@ -8,11 +8,23 @@ Aliasy, wyzwalacze i skrypty tworzysz w jednym oknie: **Menu → Automatyzacja**
 
 Okno ma trzy kolumny:
 
-- **Po lewej** — filtr rodzaju (*Wszystko*, *Aliasy*, *Wyzwalacze*, *Skrypty*) z liczbą elementów. **Wyłączone** pokazuje też to, co wyłączyłeś, a **Tylko tej postaci** chowa to, co na zalogowanej postaci nie działa. Na dole **Importuj** i **Eksportuj wszystko**
+- **Po lewej** — filtr rodzaju (*Wszystko*, *Aliasy*, *Wyzwalacze*, *Skrypty*) z liczbą elementów, a pod nim **Biblioteka** gotowych automatyzacji. **Wyłączone** pokazuje też to, co wyłączyłeś, a **Tylko tej postaci** chowa to, co na zalogowanej postaci nie działa. Na dole **Importuj** i **Eksportuj wszystko**
 - **Na środku** — lista w grupach, z polem **Szukaj** (po wzorcu, komendzie albo nazwie). Przycisk **+** dodaje alias, wyzwalacz, skrypt albo grupę; ikona folderu obok tworzy nową grupę
 - **Po prawej** — edytor zaznaczonego elementu. **Zapisz** (albo `Ctrl+Enter`) zapisuje zmiany, **Cofnij zmiany** wraca do zapisanej wersji
 
 Element ze zmianami, których jeszcze nie zapisałeś, ma przy nazwie pomarańczową kropkę. Przełącznik przy każdym wierszu włącza go i wyłącza bez otwierania edytora, a menu **…** pozwala go zduplikować, przenieść do innej grupy albo usunąć.
+
+## Biblioteka
+
+**Biblioteka** w lewej kolumnie zbiera gotowe automatyzacje na to, o co gracze pytają najczęściej, np.:
+
+- **Dźwięk na nieodebraną pocztę** — dźwięk, gdy na poczcie czeka list do odebrania
+- **Dźwięk na każdy atak** — dźwięk, gdy ktokolwiek cię zaatakuje, nie tylko ktoś z wrogiej gildii
+- **Powiadomienie na telefon przy niskim życiu** — gdy kondycja spadnie do progu *Alarmu niskiego zdrowia*. Telefon parujesz w *Ustawieniach interfejsu → Dźwięk i powiadomienia*
+- **Przyjazd transportu na głos** — czyta nazwę pojazdu, który podjechał, gdy czekasz na przystanku
+- **Rozrywanie kokonów** — alias `kok 1-5` wysyła `rozerwij 1. kokon`, `rozerwij 2. kokon`... aż do 5
+
+**Dodaj** wstawia ją na twoją listę jako zwykły element w grupie (np. *Dźwięki*), który możesz potem zmienić, wyłączyć albo usunąć. Dodana ma znaczek **Dodano**, a **Pokaż** otwiera ją w edytorze.
 
 ## Grupy
 

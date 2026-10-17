@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent, type HTMLAttributes, type KeyboardEvent, type MouseEvent } from "react";
 import {
     ArrowLeft,
+    BookOpen,
+    Check as CheckIcon,
     ChevronDown,
     ChevronRight,
     Code2,
@@ -36,6 +38,7 @@ import { TriggerEditor } from "./TriggerEditor";
 import { ScriptEditor } from "./ScriptEditor";
 import { Switch, openMenuAt } from "./EditorParts";
 import { useCustomSounds, usePluginMacros } from "./useCustomSounds";
+import { LIBRARY, recipeItems, recipePack, type LibraryRecipe } from "./automationLibrary";
 import {
     KIND_LABEL,
     buildPack,
@@ -184,6 +187,9 @@ export default function AutomationWindow() {
     const [groups, setGroups] = useState<AutomationGroup[]>(getAutomationGroups);
     const [character, setCharacter] = useState<string | null>(() => characterStorage.getCharacter());
     const [kindFilter, setKindFilter] = useState<KindFilter>("all");
+    const [view, setView] = useState<"items" | "library">("items");
+    /** A row to scroll to once the list has rendered it. */
+    const [revealId, setRevealId] = useState<string | null>(null);
     const [showDisabled, setShowDisabled] = useState(true);
     const [onlyThisCharacter, setOnlyThisCharacter] = useState(false);
     const [query, setQuery] = useState("");
@@ -552,6 +558,37 @@ export default function AutomationWindow() {
         }
     }
 
+    function addRecipe(recipe: LibraryRecipe) {
+        const result = importPack(recipePack(recipe));
+        const added = result.aliases + result.triggers + result.scripts;
+        setNotice(added ? `Dodano "${recipe.title}" do grupy ${recipe.group}.` : `"${recipe.title}" już masz.`);
+    }
+
+    /** Back to the list, with the recipe's first element open in the editor. */
+    function showRecipe(found: AutomationItem[]) {
+        const first = found[0];
+        if (!first) return;
+        setView("items");
+        setKindFilter("all");
+        setQuery("");
+        const group = effectiveGroup(first, groups) ?? "";
+        setCollapsed(prev => {
+            const next = new Set(prev);
+            next.delete(group);
+            return next;
+        });
+        select(first.id);
+        setRevealId(first.id);
+    }
+
+    useEffect(() => {
+        if (!revealId) return;
+        const row = rootRef.current?.querySelector(`.automation-item[data-id="${CSS.escape(revealId)}"]`);
+        if (!row) return;
+        row.scrollIntoView({ block: "center" });
+        setRevealId(null);
+    }, [revealId, view, items]);
+
     function onEditorKeyDown(e: KeyboardEvent) {
         if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
             e.preventDefault();
@@ -569,6 +606,7 @@ export default function AutomationWindow() {
         return (
             <div
                 key={item.id}
+                data-id={item.id}
                 className={`automation-item${selectedId === item.id ? " is-selected" : ""}${off ? " is-off" : ""}${drop ? ` is-drop-${drop}` : ""}${dragging ? " is-dragging" : ""}`}
                 onContextMenu={e => rowMenu(e, item)}
                 {...rowDnd(item, sectionItems, index, group)}
@@ -613,8 +651,8 @@ export default function AutomationWindow() {
                 <button
                     key={kind}
                     type="button"
-                    className={`automation-nav__kind${kindFilter === kind ? " is-active" : ""}`}
-                    onClick={() => setKindFilter(kind)}
+                    className={`automation-nav__kind${view === "items" && kindFilter === kind ? " is-active" : ""}`}
+                    onClick={() => { setKindFilter(kind); setView("items"); }}
                 >
                     {kind === "all"
                         ? <span className="automation-kind"><LayoutList size={14} /></span>
@@ -623,6 +661,16 @@ export default function AutomationWindow() {
                     <span className="automation-nav__count">{counts[kind]}</span>
                 </button>
             ))}
+            <button
+                type="button"
+                className={`automation-nav__kind automation-nav__library${view === "library" ? " is-active" : ""}`}
+                title="Gotowe automatyzacje do dodania jednym kliknięciem"
+                onClick={() => setView("library")}
+            >
+                <span className="automation-kind automation-kind--library"><BookOpen size={14} /></span>
+                <span className="automation-nav__label">Biblioteka</span>
+                <span className="automation-nav__count">{LIBRARY.length}</span>
+            </button>
             <div className="automation-nav__filters">
                 <span className="automation-cap">Pokaż</span>
                 <Check label="Wyłączone" checked={showDisabled} onChange={e => setShowDisabled(e.target.checked)} />
@@ -731,6 +779,56 @@ export default function AutomationWindow() {
         </div>
     );
 
+    const categories = [...new Set(LIBRARY.map(r => r.category))];
+    const library = (
+        <section className="automation-library">
+            <header className="automation-library__head">
+                <h3>Biblioteka</h3>
+                <p className="automation-hint">
+                    Gotowe automatyzacje na to, o co gracze pytają najczęściej. Dodana trafia na twoją listę jako
+                    zwykły element - możesz ją zmienić, wyłączyć albo usunąć.
+                </p>
+            </header>
+            {categories.map(category => (
+                <div key={category} className="automation-library__section">
+                    <span className="automation-cap">{category}</span>
+                    <div className="automation-library__cards">
+                        {LIBRARY.filter(r => r.category === category).map(recipe => {
+                            const found = recipeItems(recipe, items);
+                            const aliases = recipe.aliases?.length ?? 0;
+                            const triggers = recipe.triggers?.length ?? 0;
+                            const scripts = recipe.scripts?.length ?? 0;
+                            const kinds = (["alias", "trigger", "script"] as const).filter((_, i) => [aliases, triggers, scripts][i]);
+                            return (
+                                <article key={recipe.id} className="automation-recipe" data-recipe={recipe.id}>
+                                    <div className="automation-recipe__head">
+                                        {kinds.map(kind => <KindIcon key={kind} kind={kind} />)}
+                                        <h4>{recipe.title}</h4>
+                                    </div>
+                                    <p>{recipe.description}</p>
+                                    <div className="automation-recipe__foot">
+                                        <span className="automation-recipe__what">
+                                            {countLabel(aliases, triggers, scripts)} · grupa {recipe.group}
+                                        </span>
+                                        <span className="automation-spacer" />
+                                        {found.length ? (
+                                            <>
+                                                <span className="automation-recipe__added"><CheckIcon size={14} />Dodano</span>
+                                                <Button size="sm" onClick={() => showRecipe(found)}>Pokaż</Button>
+                                            </>
+                                        ) : (
+                                            <Button size="sm" variant="solid" onClick={() => addRecipe(recipe)}><Plus size={14} />Dodaj</Button>
+                                        )}
+                                    </div>
+                                </article>
+                            );
+                        })}
+                    </div>
+                </div>
+            ))}
+        </section>
+    );
+
     const dirty = selectedDraft ? isDirty(selectedDraft) : false;
 
     const editor = selectedDraft ? (
@@ -818,11 +916,15 @@ export default function AutomationWindow() {
     );
 
     return (
-        <div ref={rootRef} className={`automation${selectedDraft ? " has-selection" : ""}`}>
+        <div ref={rootRef} className={`automation${view === "items" && selectedDraft ? " has-selection" : ""}`}>
             {soundInput}
             {nav}
-            {list}
-            {editor}
+            {view === "library" ? library : (
+                <>
+                    {list}
+                    {editor}
+                </>
+            )}
         </div>
     );
 }
