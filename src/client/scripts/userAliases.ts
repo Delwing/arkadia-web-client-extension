@@ -1,7 +1,7 @@
 import Client from "../Client";
 import { characterStorage, globalStorage } from "@modules/core/storage";
 import { isAutomationActiveNow, onAutomationScopeChange, type AutomationMeta } from "@modules/core/automation";
-import { applyLinelessMacro, type UserMacro } from "./userTriggers";
+import { applyLinelessMacro, interpolateMatchGroups, type UserMacro } from "./userTriggers";
 
 export interface UserAlias extends AutomationMeta {
     pattern: string;
@@ -60,8 +60,9 @@ function expandRange(start: number, end: number): number[] {
     return result;
 }
 
+/** `$1` (empty when there is no such group), and `{1}` / `{name}` as in triggers (left standing). */
 export function substituteGroups(cmd: string, m: RegExpMatchArray): string {
-    return cmd.replace(/\$(\d+)/g, (_, n) => m[parseInt(n)] ?? '');
+    return interpolateMatchGroups(cmd.replace(/\$(\d+)/g, (_, n) => m[parseInt(n)] ?? ''), m);
 }
 
 /**

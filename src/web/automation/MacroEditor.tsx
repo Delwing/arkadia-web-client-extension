@@ -35,6 +35,8 @@ export interface MacroPlaceholder {
     /** Inserted as is, e.g. `{attacker}` or `$1`. */
     token: string;
     label: string;
+    /** A capture group's colour class, so the button matches the group in the pattern. */
+    className?: string;
 }
 
 export function normalizeMacro(macro: UserMacro): UserMacro {
@@ -66,7 +68,7 @@ function PlaceholderChips({
                 <button
                     key={p.token}
                     type="button"
-                    className="popup-btn popup-btn--sm trigger-arg-chips__chip"
+                    className={`popup-btn popup-btn--sm trigger-arg-chips__chip${p.className ? ` is-group ${p.className}` : ''}`}
                     title={p.label}
                     onClick={() => onInsert(p.token)}
                 >

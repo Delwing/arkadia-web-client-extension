@@ -22,7 +22,7 @@ export function testTriggerPattern(pattern: string, flags: string, text: string)
     if (!pattern) return { matches: [] };
     let regexp: RegExp;
     try {
-        regexp = new RegExp(pattern, `g${flags.includes("i") ? "i" : ""}`);
+        regexp = new RegExp(pattern, `gd${flags.includes("i") ? "i" : ""}`);
     } catch (err) {
         return { error: (err as Error).message, matches: [] };
     }
@@ -42,7 +42,7 @@ export function testAliasPattern(pattern: string, input: string): PatternTest {
     if (!pattern) return { matches: [] };
     let regexp: RegExp;
     try {
-        regexp = new RegExp(`^${pattern}$`);
+        regexp = new RegExp(`^${pattern}$`, "d");
     } catch (err) {
         return { error: (err as Error).message, matches: [] };
     }

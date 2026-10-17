@@ -683,6 +683,32 @@
   background-color: var(--popup-accent-subtle-bg);
   color: var(--popup-accent);
 }
+/* Ready pattern pieces: beside the flags in a trigger, beside the field in an alias. */
+.automation-insert {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+}
+.automation-insert:hover,
+.automation-flag:hover {
+  background-color: var(--popup-control-hover-bg);
+  color: var(--popup-text);
+}
+.automation-pattern {
+  display: flex;
+  gap: 6px;
+  min-width: 0;
+}
+.automation-pattern > .popup-input-group {
+  flex: 1;
+  min-width: 0;
+}
+.automation-snippet {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
 
 /* The test line under a pattern. */
 .automation-test {
@@ -712,10 +738,112 @@
   font-size: var(--ui-fs-sm, 13px);
   outline: none;
 }
-.automation-test__group {
-  color: var(--popup-text-medium);
+/*
+ * Capture group colours: group 1 is always the first, in the pattern, on the
+ * test chips and on the insert buttons. Built from the theme's own colours so
+ * they follow it; group 7 starts over.
+ */
+:root,
+.automation {
+  --automation-g1: var(--popup-accent);
+  --automation-g2: var(--popup-warning);
+  --automation-g3: var(--popup-success);
+  --automation-g4: var(--automation-script, #a898dc);
+  --automation-g5: color-mix(in srgb, var(--popup-accent) 45%, var(--popup-success));
+  --automation-g6: color-mix(in srgb, var(--popup-warning) 50%, var(--automation-script, #a898dc));
+}
+.automation-g1 { --grp: var(--automation-g1); }
+.automation-g2 { --grp: var(--automation-g2); }
+.automation-g3 { --grp: var(--automation-g3); }
+.automation-g4 { --grp: var(--automation-g4); }
+.automation-g5 { --grp: var(--automation-g5); }
+.automation-g6 { --grp: var(--automation-g6); }
+
+/*
+ * A field with its groups tinted: the tints are a layer over the input that
+ * copies its font and padding (see HighlightInput), with transparent text so
+ * the input's own text shows through.
+ */
+.automation-hl {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-width: 0;
+}
+.automation-hl > input {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+}
+/* In the test row the wrapper takes the place the input had, and the size it asked for. */
+.automation-test > .automation-hl {
+  flex: 1 1 12rem;
+}
+.popup-input-group > .automation-hl > .popup-input.popup-input--control {
+  border-radius: 0;
+}
+.automation-hl__backdrop {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  overflow-x: clip;
+  border: 0 solid transparent;
+  pointer-events: none;
+}
+.automation-hl__text {
+  color: transparent;
+  white-space: pre;
+}
+.automation-grp {
+  border-radius: 2px;
+  background-color: color-mix(in srgb, var(--grp) 22%, transparent);
+  box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--grp) 75%, transparent);
+}
+.automation-grp-tok {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 5px;
+  border-radius: 4px;
+  background-color: color-mix(in srgb, var(--grp, var(--popup-text-subtle)) 20%, transparent);
+  color: var(--grp, var(--popup-text-medium));
   font-family: var(--font-mono, ui-monospace, monospace);
   font-size: var(--ui-fs-xs, 12px);
+  font-weight: 600;
+  line-height: 18px;
+}
+.automation-grp-tok__name {
+  margin-left: 4px;
+  font-weight: 500;
+}
+.automation-grp-tok.is-unknown {
+  --grp: var(--popup-danger);
+}
+.automation-test__group {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding-right: 6px;
+  border-radius: 4px;
+  background-color: color-mix(in srgb, var(--grp, transparent) 10%, transparent);
+  color: var(--popup-text-bright);
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: var(--ui-fs-xs, 12px);
+}
+/* Insert buttons for a group: the group's colour on the button's own frame. */
+.trigger-arg-chips__chip.is-group {
+  border-color: color-mix(in srgb, var(--grp) 55%, transparent);
+  background-color: color-mix(in srgb, var(--grp) 14%, transparent);
+  color: var(--grp);
+}
+.automation-unknown {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  color: var(--popup-danger);
+  font-size: var(--ui-fs-sm, 13px);
 }
 .automation-link {
   display: inline-flex;

@@ -110,6 +110,20 @@ describe('user aliases', () => {
     expect(client.output).toEqual(expectedSequence);
   });
 
+  test('fills named groups as {name}, and leaves unknown braces alone', async () => {
+    const client = new AliasClient();
+    initUserAliases((client as unknown) as any, client.aliases);
+    globalStorage.set('aliases', [
+      { pattern: 'zab (?<cel>\\w+)', command: 'zabij {cel};powiedz {kto} $1' },
+    ] as any);
+
+    const alias = client.aliases.find((e) => e.pattern.test('zab goblina'));
+    await alias!.callback('zab goblina'.match(alias!.pattern) as RegExpMatchArray);
+    await client.flush();
+
+    expect(client.executed).toEqual(['zabij goblina', 'powiedz {kto} goblina']);
+  });
+
   describe('range expansion with $i', () => {
     function setupRangeClient() {
       const client = new AliasClient();

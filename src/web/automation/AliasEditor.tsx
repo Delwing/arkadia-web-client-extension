@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { ArrowRight, Bell, Check as CheckIcon, Code2, FlaskConical, Folder, MessageSquareText, Smartphone, Volume2, X } from "lucide-react";
+import { useRef, useState } from "react";
+import { ArrowRight, ArrowUp, Bell, Braces, Check as CheckIcon, Code2, FlaskConical, Folder, MessageSquareText, Smartphone, Volume2, X } from "lucide-react";
 import { Button, DeleteButton, Input, InputGroup, NO_PASSWORD_MANAGER, Select } from "@web-ui/primitives/index.ts";
 import { aliasActions, type UserAlias } from "@client/scripts/userAliases";
 import type { UserMacro } from "@client/scripts/userTriggers";
@@ -7,7 +7,21 @@ import type { CustomSound } from "@modules/core/customSounds";
 import { characterStorage } from "@modules/core/storage";
 import { ActionList } from "./ActionList";
 import { CharacterScope, CharacterScopeSwitch, Section, useCharacters } from "./EditorParts";
-import { groupCount, matchGroups, previewAlias, testAliasPattern, type PreviewOutput } from "./automationPreview";
+import { previewAlias, testAliasPattern, type PreviewOutput } from "./automationPreview";
+import { GroupValues, HighlightInput, SnippetMenu, UnknownTokens } from "./GroupParts";
+import { patternFromText } from "./patternSnippets";
+import { groupPlaceholders, macroTexts, matchRanges, missingGroupWhy, patternGroups, unknownGroupTokens } from "./regexGroups";
+
+/** What the Input primitive puts on a code field, for the highlighted one that cannot use it. */
+const CODE_FIELD = {
+    ...NO_PASSWORD_MANAGER,
+    type: "text",
+    autoCorrect: "off",
+    autoComplete: "off",
+    autoCapitalize: "off",
+    spellCheck: false,
+    className: "popup-input popup-input--control popup-input--mono",
+} as const;
 
 const OUTPUT_ICON: Partial<Record<PreviewOutput["kind"], typeof ArrowRight>> = {
     notify: Bell,
@@ -42,15 +56,18 @@ export function AliasEditor({ alias, onChange, sounds, onRequestSoundUpload }: {
     onRequestSoundUpload: () => Promise<string | undefined>;
 }) {
     const [sample, setSample] = useState("");
+    const patternInput = useRef<HTMLInputElement>(null);
     const [addChar, setAddChar] = useState("");
     const actions = aliasActions(alias);
     const setActions = (macros: UserMacro[]) => onChange({ ...alias, macros });
 
     const pattern = alias.pattern.trim();
     const test = testAliasPattern(pattern, sample.trim());
+    const lead = sample.length - sample.trimStart().length;
     const match = test.matches[0];
-    const groups = groupCount(pattern);
-    const placeholders = Array.from({ length: groups }, (_, i) => ({ token: `$${i + 1}`, label: `Grupa ${i + 1} z wzorca` }));
+    const groups = patternGroups(pattern);
+    const placeholders = groupPlaceholders(groups);
+    const unknown = test.error ? [] : [...new Set(actions.flatMap(m => macroTexts(m)).flatMap(t => unknownGroupTokens(t, groups)))];
 
     const overrides = Object.entries(alias.overrides ?? {});
     const characters = useCharacters(overrides.map(([c]) => c));
@@ -65,19 +82,33 @@ export function AliasEditor({ alias, onChange, sounds, onRequestSoundUpload }: {
     return (
         <>
             <Section step={1} title="Kiedy wpiszesz">
-                <InputGroup before="^" after="$">
-                    <Input
-                        mono
-                        title="Wzorzec"
-                        spellCheck={false}
+                <div className="automation-pattern">
+                    <InputGroup before="^" after="$">
+                        <HighlightInput
+                            {...CODE_FIELD}
+                            inputRef={patternInput}
+                            ranges={patternGroups(alias.pattern)}
+                            title="Wzorzec"
+                            value={alias.pattern}
+                            placeholder="np. zab (.+)"
+                            onChange={e => onChange({ ...alias, pattern: e.target.value })}
+                        />
+                    </InputGroup>
+                    <SnippetMenu
+                        input={patternInput}
                         value={alias.pattern}
-                        placeholder="np. zab (.+)"
-                        onChange={e => onChange({ ...alias, pattern: e.target.value })}
-                    />
-                </InputGroup>
+                        onChange={pattern => onChange({ ...alias, pattern })}
+                        kind="alias"
+                        className="popup-btn popup-btn--icon"
+                    >
+                        <Braces size={15} />
+                    </SnippetMenu>
+                </div>
                 <div className="automation-test">
                     <FlaskConical size={14} className="automation-test__ic" />
-                    <input
+                    <HighlightInput
+                        // The sample is matched trimmed; ranges are offsets into it.
+                        ranges={match ? matchRanges([match], groups).map(r => ({ ...r, start: r.start + lead, end: r.end + lead })) : []}
                         className="automation-test__input"
                         autoComplete="off"
                         {...NO_PASSWORD_MANAGER}
@@ -88,9 +119,17 @@ export function AliasEditor({ alias, onChange, sounds, onRequestSoundUpload }: {
                         onChange={e => setSample(e.target.value)}
                     />
                     {(sample.trim() || test.error) && <MatchStatus matched={!!match} error={test.error} />}
-                    {match && matchGroups(match).map(g => (
-                        <span key={g.token} className="automation-test__group">{g.token} = {g.value}</span>
-                    ))}
+                    {match && <GroupValues groups={groups} match={match} />}
+                    {sample.trim() && !match && (
+                        <button
+                            type="button"
+                            className="automation-link"
+                            title="Wpisz tę komendę jako wzorzec - potem zaznacz w nim słowo i wstaw grupę"
+                            onClick={() => onChange({ ...alias, pattern: patternFromText(sample, false) })}
+                        >
+                            <ArrowUp size={13} />jako wzorzec
+                        </button>
+                    )}
                 </div>
             </Section>
 
@@ -106,8 +145,10 @@ export function AliasEditor({ alias, onChange, sounds, onRequestSoundUpload }: {
                     onRequestSoundUpload={onRequestSoundUpload}
                     pluginMacros={[]}
                 />
+                <UnknownTokens tokens={unknown} why={missingGroupWhy(groups.length)} />
                 <div className="automation-legend">
                     <span><span className="automation-tok">$1</span>grupa z wzorca, $2 kolejna</span>
+                    <span><span className="automation-tok">{"{cel}"}</span>grupa nazwana: <code>{"(?<cel>.+)"}</code></span>
                     <span><span className="automation-tok">@1</span>obiekt: @1, @A, @@</span>
                     <span><span className="automation-tok">$i</span>zakres: <code>kok 1-7</code></span>
                     <span><span className="automation-tok">;</span>kilka komend w jednym polu</span>

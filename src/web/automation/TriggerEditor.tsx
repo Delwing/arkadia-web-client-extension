@@ -1,6 +1,6 @@
 import type { MouseEvent } from "react";
-import { useState } from "react";
-import { ChevronDown, FlaskConical } from "lucide-react";
+import { useRef, useState } from "react";
+import { ArrowUp, Braces, ChevronDown, FlaskConical } from "lucide-react";
 import { NO_PASSWORD_MANAGER, Segmented, Select } from "@web-ui/primitives/index.ts";
 import {
     LINELESS_MACRO_TYPES,
@@ -16,7 +16,18 @@ import { ActionList } from "./ActionList";
 import { CharacterScope, CharacterScopeSwitch, Section, openMenuAt } from "./EditorParts";
 import { ConditionsEditor, EventPicker, FlagToggles, GMCP_MSG_TYPES } from "./TriggerSource";
 import { MatchStatus, OutputLine } from "./AliasEditor";
-import { groupCount, matchGroups, previewTrigger, testTriggerPattern } from "./automationPreview";
+import { previewTrigger, testTriggerPattern } from "./automationPreview";
+import { GroupValues, HighlightInput, SnippetMenu, UnknownTokens } from "./GroupParts";
+import { patternFromText } from "./patternSnippets";
+import {
+    groupPlaceholders,
+    macroTexts,
+    matchRanges,
+    missingGroupWhy,
+    patternGroups,
+    unknownArgTokens,
+    unknownGroupTokens,
+} from "./regexGroups";
 
 const TYPE_OPTIONS: { value: TriggerType; label: string }[] = [
     { value: "pattern", label: "Tekst gry" },
@@ -34,6 +45,7 @@ export function TriggerEditor({ trigger, onChange, sounds, onRequestSoundUpload,
     pluginMacros: PluginTriggerMacro[];
 }) {
     const [sample, setSample] = useState("");
+    const patternInput = useRef<HTMLInputElement>(null);
     const isEvent = trigger.type === "event";
     const pattern = trigger.pattern ?? "";
     const flags = trigger.flags ?? "";
@@ -55,12 +67,18 @@ export function TriggerEditor({ trigger, onChange, sounds, onRequestSoundUpload,
 
     const test = isEvent ? { matches: [] } : testTriggerPattern(pattern, flags, sample);
     const preview = test.matches.length ? previewTrigger(sample, test.matches, trigger.macros) : null;
+    const groups = isEvent ? [] : patternGroups(pattern);
     const placeholders = isEvent
         ? eventArgs.map(a => ({ token: `{${a.name}}`, label: a.label }))
         : [
             { token: "$0", label: "Całe dopasowanie" },
-            ...Array.from({ length: groupCount(pattern) }, (_, i) => ({ token: `$${i + 1}`, label: `Grupa ${i + 1} z wzorca` })),
+            ...groupPlaceholders(groups),
         ];
+    const texts = trigger.macros.flatMap(m => macroTexts(m));
+    // An event that declares no fields may still carry some, so only declared ones are checked.
+    const unknown = isEvent
+        ? eventArgs.length ? [...new Set(texts.flatMap(t => unknownArgTokens(t, eventArgs.map(a => a.name))))] : []
+        : test.error ? [] : [...new Set(texts.flatMap(t => unknownGroupTokens(t, groups)))];
 
     const pickRecentLine = (e: MouseEvent<HTMLElement>) => {
         // Newest first, each text once, and only lines with words in them:
@@ -99,8 +117,10 @@ export function TriggerEditor({ trigger, onChange, sounds, onRequestSoundUpload,
                 ) : (
                     <>
                         <div className="automation-field">
-                            <input
+                            <HighlightInput
                                 className="automation-field__input"
+                                inputRef={patternInput}
+                                ranges={groups}
                                 autoComplete="off"
                                 {...NO_PASSWORD_MANAGER}
                                 title="Wzorzec"
@@ -109,12 +129,22 @@ export function TriggerEditor({ trigger, onChange, sounds, onRequestSoundUpload,
                                 placeholder="np. ^(\w+) atakuje cie"
                                 onChange={e => set({ pattern: e.target.value })}
                             />
+                            <SnippetMenu
+                                input={patternInput}
+                                value={pattern}
+                                onChange={p => set({ pattern: p })}
+                                kind="trigger"
+                                className="automation-flag automation-insert"
+                            >
+                                <Braces size={14} />
+                            </SnippetMenu>
                             <FlagToggles value={flags} onChange={f => set({ flags: f })} />
                         </div>
                         <div className="automation-test">
                             <FlaskConical size={14} className="automation-test__ic" />
-                            <input
+                            <HighlightInput
                                 className="automation-test__input"
+                                ranges={matchRanges(test.matches, groups)}
                                 autoComplete="off"
                                 {...NO_PASSWORD_MANAGER}
                                 title="Linia do testu"
@@ -124,9 +154,17 @@ export function TriggerEditor({ trigger, onChange, sounds, onRequestSoundUpload,
                                 onChange={e => setSample(e.target.value)}
                             />
                             {(sample || test.error) && <MatchStatus matched={test.matches.length > 0} error={test.error} />}
-                            {test.matches[0] && matchGroups(test.matches[0]).map(g => (
-                                <span key={g.token} className="automation-test__group">{g.token} = {g.value}</span>
-                            ))}
+                            {test.matches[0] && <GroupValues groups={groups} match={test.matches[0]} />}
+                            {sample.trim() && !test.matches.length && (
+                                <button
+                                    type="button"
+                                    className="automation-link"
+                                    title="Wpisz tę linię jako wzorzec - potem zaznacz w nim słowo i wstaw grupę"
+                                    onClick={() => set({ pattern: patternFromText(sample, true) })}
+                                >
+                                    <ArrowUp size={13} />jako wzorzec
+                                </button>
+                            )}
                             <button type="button" className="automation-link" onClick={pickRecentLine}>
                                 z ostatnich linii<ChevronDown size={13} />
                             </button>
@@ -158,6 +196,10 @@ export function TriggerEditor({ trigger, onChange, sounds, onRequestSoundUpload,
                     sounds={sounds}
                     onRequestSoundUpload={onRequestSoundUpload}
                     pluginMacros={pluginMacros}
+                />
+                <UnknownTokens
+                    tokens={unknown}
+                    why={isEvent ? "- tego pola nie ma w wybranym zdarzeniu." : missingGroupWhy(groups.length)}
                 />
                 {preview && (
                     <div className="automation-out">

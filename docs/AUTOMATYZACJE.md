@@ -43,7 +43,7 @@ Alias zamienia to, co wpisujesz, na komendę (albo kilka akcji). Dodajesz go prz
 
 ![Edytor aliasu](img/automatyzacje/alias.png)
 
-1. **Kiedy wpiszesz** — wzorzec (wyrażenie regularne). Nawiasy łapią fragmenty: we wzorcu `^zab (.+)$` część po `zab ` trafia do `$1`. W polu z kolbą wpisz przykładową komendę, a od razu zobaczysz, czy pasuje i co trafi do `$1`
+1. **Kiedy wpiszesz** — wzorzec (wyrażenie regularne). Nawiasy łapią fragmenty: we wzorcu `^zab (.+)$` część po `zab ` trafia do `$1`. Grupę możesz też nazwać: z `^zab (?<cel>.+)$` w akcji używasz `{cel}`. Każda grupa ma w polu swój kolor i numer nad nawiasem — ten sam kolor ma na przyciskach wstawiania, w przykładowej komendzie i przy wyniku testu. Nazwana grupa dalej ma numer: `{cel}` i `$1` znaczą to samo. Przycisk z klamrami obok wzorca wstawia gotowe kawałki: **Słowo**, **Dowolny tekst**, **Liczba**, **Zakres** (dla `$i`), **Imię**, **Krótki opis (3 słowa)** i inne — zaznaczony fragment wzorca zastępuje grupą. Wpisaną przykładową komendę, która jeszcze nie pasuje, zamienisz we wzorzec przyciskiem **jako wzorzec** W polu z kolbą wpisz przykładową komendę, a od razu zobaczysz, czy pasuje i co trafi do `$1`
 2. **Co zrobić** — lista akcji. Najczęściej **Komenda**, np. `zabij $1`. Pod listą jest ściągawka: `$1`, `$2` to grupy ze wzorca, `@1`, `@A`, `@@` to obiekty z lokacji, `$i` powtarza komendę dla każdej liczby z zakresu, który wpiszesz (np. `kok 1-7`), a `;` rozdziela kilka komend w jednym polu. Na dole widać, co alias wyśle dla przykładowej komendy
 3. **Dla kogo** — wszystkie postacie albo tylko wybrane. W **Inaczej dla postaci** możesz podać inną komendę dla konkretnej postaci
 
@@ -55,7 +55,7 @@ Wyzwalacz reaguje na to, co wypisze gra. Dodajesz go przez **+ → Wyzwalacz**.
 
 ![Edytor wyzwalacza tekstu gry](img/automatyzacje/wyzwalacz.png)
 
-1. **Kiedy** — przełącznik **Tekst gry** / **Zdarzenie**. Dla tekstu podajesz wzorzec; przyciski `i`, `g`, `m` po prawej to flagi (bez rozróżniania wielkości liter, globalnie, wieloliniowo)
+1. **Kiedy** — przełącznik **Tekst gry** / **Zdarzenie**. Dla tekstu podajesz wzorzec; przyciski `i`, `g`, `m` po prawej to flagi (bez rozróżniania wielkości liter, globalnie, wieloliniowo). Grupy w nawiasach są pokolorowane jak w aliasach, a przycisk z klamrami wstawia gotowe kawałki, także **Początek linii**, **Koniec linii** i **Kropka na końcu**. Najprościej: wklej linię z gry do testu, kliknij **jako wzorzec**, zaznacz we wzorcu np. imię i wstaw w jego miejsce **Słowo** albo **Tekst do...**. `$3` albo `{nazwa}`, których wzorzec nie ma, edytor podświetla na czerwono pod akcjami
 2. **Linia do testu** — wpisz albo wybierz **z ostatnich linii** gry tekst, a zobaczysz, czy wzorzec pasuje, co jest w `$1` i jak linia będzie wyglądać po akcjach (**Wynik dla linii z testu**)
 3. **Tylko w** — zawęża wyzwalacz do jednego rodzaju wiadomości: walki, rozmów, opisów lokacji, poczty i ponad 20 innych
 4. **Co zrobić** — dowolnie wiele akcji, wykonywanych po kolei. Kolejność zmienisz, przeciągając za uchwyt po lewej
