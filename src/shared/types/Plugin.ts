@@ -19,6 +19,13 @@ export interface PluginInfo {
  */
 export interface Plugin {
   /**
+   * Optional stable id (`export const stableId = 'zielarz'`): the plugin's
+   * storage and windows are kept under it instead of its URL, so they survive
+   * the plugin moving to another address. 1-64 letters, digits, '.', '_', '-'.
+   */
+  stableId?: string
+
+  /**
    * Initialize the plugin with the Plugin API
    * @param api - The Plugin API instance providing controlled access to client functionality
    * @returns Promise resolving to plugin information
@@ -52,6 +59,8 @@ export interface LoadedPlugin {
   instance?: Plugin
   /** Plugin API instance provided to the plugin */
   apiInstance?: any // PluginApiImpl, but avoiding circular dependency
+  /** The plugin's accepted stableId, which its saved state is kept under */
+  stableId?: string
   /** Script element (for legacy scripts loaded via URL) */
   scriptElement?: HTMLScriptElement
   /** Timestamp when plugin was loaded */

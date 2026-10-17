@@ -3580,9 +3580,17 @@ export class PluginApiImpl implements PluginApi {
   private roomMenuEntryIds: Set<string> = new Set();
   public AnsiAwareBuffer: typeof AnsiAwareBuffer;
 
-  constructor(client: Client, pluginId: string = 'unknown') {
+  /**
+   * What the plugin's saved state (storage, persistent windows) is kept under:
+   * its declared `stableId`, else its id. The id is the plugin's URL, so state
+   * kept under it is lost when the plugin moves to another address.
+   */
+  private readonly stateKey: string;
+
+  constructor(client: Client, pluginId: string = 'unknown', options: { stableId?: string } = {}) {
     this.client = client;
     this.pluginId = pluginId;
+    this.stateKey = options.stableId ?? pluginId;
 
     // Initialize namespaced APIs
     this.triggers = this.createTriggersApi();
@@ -4480,18 +4488,18 @@ export class PluginApiImpl implements PluginApi {
     };
   }
 
-  // Every plugin's values live in one storage key, under the plugin's id.
+  // Every plugin's values live in one storage key, under the plugin's state key.
   private createKeyValueStore(
     read: () => Record<string, Record<string, unknown>> | undefined,
     write: (data: Record<string, Record<string, unknown>>) => void,
     subscribe: (listener: (data: Record<string, Record<string, unknown>> | undefined) => void) => () => void,
   ): PluginKeyValueStore {
-    const own = (): Record<string, unknown> => read()?.[this.pluginId] ?? {};
+    const own = (): Record<string, unknown> => read()?.[this.stateKey] ?? {};
     const update = (change: (values: Record<string, unknown>) => void) => {
       const data = { ...(read() ?? {}) };
-      const values = { ...(data[this.pluginId] ?? {}) };
+      const values = { ...(data[this.stateKey] ?? {}) };
       change(values);
-      data[this.pluginId] = values;
+      data[this.stateKey] = values;
       write(data);
     };
     const get = (key: string, defaultValue?: unknown) => {
@@ -4506,7 +4514,7 @@ export class PluginApiImpl implements PluginApi {
       onChange: (key, listener) => {
         let last = JSON.stringify(get(key));
         const unsubscribe = subscribe((data) => {
-          const value = data?.[this.pluginId]?.[key];
+          const value = data?.[this.stateKey]?.[key];
           const serialized = JSON.stringify(value);
           if (serialized === last) return;
           last = serialized;
@@ -4896,7 +4904,7 @@ export class PluginApiImpl implements PluginApi {
 
   private async registerPersistentPopup(config: PersistentPopupConfig): Promise<PersistentPopupHandle> {
     // Generate stable popup ID from plugin ID and user-provided ID
-    const popupType = `plugin:${this.pluginId}:${config.id}` as const;
+    const popupType = `plugin:${this.stateKey}:${config.id}` as const;
     const popupId = `popup:${popupType}`;
 
     // Get persisted pinned state from storage (for restoring after reload)

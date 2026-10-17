@@ -4,6 +4,8 @@ import {PluginApiImpl} from '@client/PluginApi'
 import eventBus from '@modules/core/eventBus'
 import {getPluginScript, isStoredPluginId, updatePluginScript} from '@client/utils/pluginStorage'
 
+const STABLE_ID_PATTERN = /^[A-Za-z0-9._-]{1,64}$/
+
 /**
  * Manages external plugins and scripts
  */
@@ -49,7 +51,9 @@ export class PluginManager {
         // It's a proper plugin with init method
         try {
           // Create a PluginApi instance for this plugin
-          const apiInstance = new PluginApiImpl(this.client, identifier)
+          const stableId = this.claimStableId(module, identifier)
+          plugin.stableId = stableId
+          const apiInstance = new PluginApiImpl(this.client, identifier, { stableId })
           plugin.apiInstance = apiInstance
 
           // Initialize plugin with the API
@@ -254,6 +258,27 @@ export class PluginManager {
   /**
    * Type guard to check if module implements Plugin interface
    */
+  /**
+   * The plugin's declared `stableId`, when it is well formed and no other
+   * loaded plugin uses it - two plugins sharing one would share saved state
+   * and windows. Otherwise undefined: the plugin's state stays under its URL.
+   */
+  private claimStableId(module: Plugin, identifier: string): string | undefined {
+    const id = module.stableId
+    if (id === undefined) return undefined
+    if (typeof id !== 'string' || !STABLE_ID_PATTERN.test(id)) {
+      console.warn(`[PluginManager] Ignoring stableId of ${identifier}: use 1-64 letters, digits, '.', '_' or '-'`)
+      return undefined
+    }
+    for (const [url, other] of this.plugins) {
+      if (url !== identifier && other.stableId === id) {
+        console.warn(`[PluginManager] stableId "${id}" of ${identifier} is already used by ${url}; keeping state under the URL`)
+        return undefined
+      }
+    }
+    return id
+  }
+
   private isPlugin(module: any): module is Plugin {
     return (
       module &&

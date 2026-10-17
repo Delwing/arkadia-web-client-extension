@@ -47,6 +47,16 @@ export async function destroy(): Promise<void> {
 }
 ```
 
+### Stały identyfikator (`stableId`)
+
+Plugin jest rozpoznawany po adresie, z którego go załadowano. Dane z `api.storage` i stan okien (`registerPersistentPopup`: położenie, przypięcie, ustawienia ⚙) są zapisywane pod tym adresem, więc po przeniesieniu pluginu pod inny URL zaczynałyby od zera. Żeby tego uniknąć, wyeksportuj stały identyfikator:
+
+```typescript
+export const stableId = 'zielarz';   // 1-64 znaki: litery, cyfry, '.', '_', '-'
+```
+
+Dane i okna są wtedy zapisywane pod `stableId`. Nie zmieniaj go między wersjami. Gdy inny załadowany plugin używa już tego samego `stableId`, klient go pomija (z ostrzeżeniem w konsoli) i zostaje przy adresie.
+
 ## Podstawowy Przykład
 
 Oto minimalny plugin, który rejestruje trigger:

@@ -224,6 +224,15 @@ export interface PluginInfo {
  */
 export interface Plugin {
   /**
+   * Optional stable id, exported from the plugin module:
+   * \`export const stableId = 'zielarz';\`
+   * The plugin's storage (api.storage) and persistent windows are kept under it
+   * instead of its URL, so they survive the plugin moving to another address.
+   * 1-64 letters, digits, '.', '_' or '-'; ignored when another loaded plugin uses it.
+   */
+  stableId?: string;
+
+  /**
    * Initialize the plugin with access to the Plugin API
    * @param api - The Plugin API instance
    * @returns Promise resolving to plugin metadata
