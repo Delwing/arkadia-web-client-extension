@@ -6,6 +6,7 @@ import { defaultSettings } from "@modules/core/defaultSettings";
 import { AttackChip, ClockChip, ConnectionChip, CoverChip, WeaponChip } from "@web-ui/footer/chips";
 import { CHIP_LONG_PRESS_MS } from "@web-ui/footer/Chip";
 import { TOOLTIP_DELAY_MS } from "@shared/dom/tooltip";
+import { sunHour } from "@client/scripts/sunModel";
 
 // The stock footer used to have its own components for these; it now renders the
 // shared chips, so their behaviour is pinned here.
@@ -155,6 +156,28 @@ describe("footer chips", () => {
       expect(tooltip.classList.contains("show")).toBe(true);
       act(() => { document.body.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true })); });
       expect(tooltip.classList.contains("show")).toBe(false);
+    });
+
+    test("the sun times also say when the next sunrise and sunset happen in real time", () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date(2026, 9, 17, 14, 0, 0));
+      try {
+        mount(<ClockChip />);
+        emit("clock.domain.active", { domain: "Empire" });
+        const sunrise = sunHour("Empire", 10, "sunrise");
+        const sunset = sunHour("Empire", 10, "sunset");
+        emit("clock.update", { domain: "Empire", dayOfYear: 10, hours: 12, minutes: 0, daylight: true, season: 0, sunrise, sunset, dayLabel: "10 Pflugzeit" });
+        // A game hour is two real minutes. Today's sunset is still ahead; the next
+        // sunrise is tomorrow's.
+        const sunsetIn = (sunset - 12) * 2;
+        const sunriseIn = (24 - 12 + sunHour("Empire", 11, "sunrise")) * 2;
+        const at = (minutes: number) => `14:${String(minutes).padStart(2, "0")}`;
+        const rows = hoverTip().rows;
+        expect(rows).toContain(`Zachód: ${sunset}:00 · ${at(sunsetIn)} (za ${sunsetIn} min)`);
+        expect(rows).toContain(`Wschód: 0${sunrise}:00 · ${at(sunriseIn)} (za ${sunriseIn} min)`);
+      } finally {
+        vi.useRealTimers();
+      }
     });
   });
 

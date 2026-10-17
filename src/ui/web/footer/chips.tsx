@@ -4,6 +4,7 @@ import { characterStorage } from "@modules/core/storage";
 import { defaultSettings, type Settings } from "@modules/core/defaultSettings";
 import type { PackageStatus } from "@shared/events/clientEvents";
 import { TRANSPORT_SOON_SECONDS } from "@client/types/transport.ts";
+import { nextSunEvents, type SunEventType } from "@client/scripts/sunModel.ts";
 import { useAttentionBlink, useClientEvent } from "../hooks";
 import type { TooltipPart } from "@shared/dom/tooltip.ts";
 import { Chip, type ChipTone } from "./Chip";
@@ -290,6 +291,7 @@ type ClockReading = {
   dayLabel?: string;
   daylight?: boolean;
   season?: number;
+  dayOfYear?: number;
   sunrise?: number;
   sunset?: number;
 };
@@ -316,6 +318,26 @@ const DUSK_COLOR = "var(--popup-data-orange-light)";
 function hhmm(hour: number): string {
   const h = Math.floor(hour);
   return `${String(h).padStart(2, "0")}:${String(Math.round((hour - h) * 60)).padStart(2, "0")}`;
+}
+
+/** A real-world epoch as local HH:MM. */
+function realHhmm(ms: number): string {
+  const d = new Date(ms);
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
+
+/**
+ * A sun row: the game hour in its colour, then the real-world time of the next such
+ * event and how far off it is - a game day is 48 real minutes, so never more than that.
+ */
+function sunTime(hour: number, color: string, realMs: number | undefined): Node {
+  const span = document.createElement("span");
+  span.append(tinted(hhmm(hour), color));
+  if (realMs !== undefined) {
+    const minutes = Math.max(0, Math.round((realMs - Date.now()) / 60_000));
+    span.append(` · ${realHhmm(realMs)} (za ${minutes} min)`);
+  }
+  return span;
 }
 
 /** Tooltip text in a colour (the hover tooltip takes DOM, not JSX). */
@@ -380,9 +402,15 @@ export function ClockChip() {
   if (season) rows.push({ label: "Pora roku", content: tinted(season, SEASON_COLORS[clock.season!]) });
   if (dayPart) rows.push({ label: "Pora dnia", content: tinted(dayPart, iconColor) });
   if (sunrise !== undefined && sunset !== undefined) {
+    // In-game time against the real clock, for when each next happens out here.
+    const real: Partial<Record<SunEventType, number>> = {};
+    if (active && clock.dayOfYear !== undefined) {
+      const anchor = { domain: active, dayOfYear: clock.dayOfYear, hours: clock.hours, minutes: clock.minutes, realMs: Date.now() };
+      for (const event of nextSunEvents(anchor)) real[event.type] = event.realMs;
+    }
     rows.push(dayBar(now, sunrise, sunset));
-    rows.push({ label: "Wschód", content: tinted(hhmm(sunrise), DAWN_COLOR) });
-    rows.push({ label: "Zachód", content: tinted(hhmm(sunset), DUSK_COLOR) });
+    rows.push({ label: "Wschód", content: sunTime(sunrise, DAWN_COLOR, real.sunrise) });
+    rows.push({ label: "Zachód", content: sunTime(sunset, DUSK_COLOR, real.sunset) });
   }
   return (
     <Chip
