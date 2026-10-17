@@ -10,7 +10,7 @@ import {OTHER_OWNER_WORDS_ALT} from "./otherOwner";
 // noun, excluded by only allowing lowercase words there; the leading capital is
 // optional so a bare "lampa wypala sie i gasnie." still matches.
 const LAMP_BURN_OUT = new RegExp(
-    `^(?!.*\\b(?:${OTHER_OWNER_WORDS_ALT})\\b)(?:[A-Z][a-z]+(?: [a-z]+)* )?[Ll]amp[a-z]+(?: [a-z]+)* wypala sie i gasnie\\.$`,
+    `^(?!.*\\b(?:${OTHER_OWNER_WORDS_ALT})\\b)(?:[A-Z][a-z-]+(?: [a-z-]+)* )?[Ll]amp[a-z]+(?: [a-z-]+)* wypala sie i gasnie\\.$`,
 );
 
 export default function initLamp(client: Client) {
@@ -72,23 +72,23 @@ export default function initLamp(client: Client) {
         client.sendCommand('napelnij lampe olejem')
     }
 
-    const startPattern = /^[ >]*Zapalasz(?: [a-z ]+)? lampe/
+    const startPattern = /^[ >]*Zapalasz(?: [a-z -]+)? lampe/
     const offPatterns = [
-        /^Gasisz(?: [a-z ]+)? lampe/,
+        /^Gasisz(?: [a-z -]+)? lampe/,
         /nie jest zapalona\.$/,
-        /^[ >]*Probujesz zapalic [a-z ]+ jest wyczerpana\.$/,
+        /^[ >]*Probujesz zapalic [a-z -]+ jest wyczerpana\.$/,
         LAMP_BURN_OUT,
         /^[ >]*Woda szybko gasi(?: .*)? lampe\.$/
     ]
-    const refillPattern = /^[ >]*Dopelniasz(?: [a-z ]+)? [a-z]+ oleju/
+    const refillPattern = /^[ >]*Dopelniasz(?: [a-z -]+)? [a-z]+ oleju/
     // The vessel noun varies (butelka, butla, flaszeczka, ...) and so
     // does its gender ("pusta" / "pusty"), so match on the oil phrase itself
     // instead of listing every container.
     const emptyPatterns = [
-        /oprozniajac zupelnie(?: [a-z ]+)? [a-z]+ oleju\./,
+        /oprozniajac zupelnie(?: [a-z -]+)? [a-z]+ oleju\./,
         /\boleju jest pust[ay]\./
     ]
-    const noBottlePattern = /^Czym chcesz napelnic(?: [a-z ]+)? lampe/
+    const noBottlePattern = /^Czym chcesz napelnic(?: [a-z -]+)? lampe/
 
     client.Triggers.registerTrigger(startPattern, (line) => {
         startTimer()

@@ -10,7 +10,7 @@ type AliasEntry = { pattern: RegExp; callback: Function };
 // burning out is shown to the whole room, so the negative lookahead drops lines
 // naming another character as the owner (see otherOwner.ts).
 const PIPE_BURN_OUT = new RegExp(
-    `^(?!.*\\b(?:${OTHER_OWNER_WORDS_ALT})\\b)[A-Z][a-z]+(?: [a-z]+)* fajka(?: [a-z]+)* wypala sie i gasnie\\.$`,
+    `^(?!.*\\b(?:${OTHER_OWNER_WORDS_ALT})\\b)[A-Z][a-z-]+(?: [a-z-]+)* fajka(?: [a-z-]+)* wypala sie i gasnie\\.$`,
 );
 
 /**
@@ -34,7 +34,7 @@ export default function initPipe(client: Client, aliases?: AliasEntry[]) {
 
     // "Zapalasz stara podniszczona fajke kilkakrotnie pykajac przy tym, aby podtrzymac zar."
     client.Triggers.registerTrigger(
-        /^Zapalasz [a-z]+(?: [a-z]+)* fajke(?: [a-z]+)* kilkakrotnie pykajac przy tym, aby podtrzymac zar\.$/,
+        /^Zapalasz [a-z-]+(?: [a-z-]+)* fajke(?: [a-z-]+)* kilkakrotnie pykajac przy tym, aby podtrzymac zar\.$/,
         (line) => {
             client.sendEvent("pipeLit", true);
             zapalPending = false;
@@ -60,7 +60,7 @@ export default function initPipe(client: Client, aliases?: AliasEntry[]) {
     // "Nabijasz stara podniszczona fajke <zielem>." (you load the pipe — the
     // authoritative signal that it is now filled, however it was triggered)
     client.Triggers.registerTrigger(
-        /^Nabijasz [a-z]+(?: [a-z]+)* fajke\b/,
+        /^Nabijasz [a-z-]+(?: [a-z-]+)* fajke\b/,
         (line) => {
             characterStorage.set("pipe_filled", true);
             return line;
@@ -71,7 +71,7 @@ export default function initPipe(client: Client, aliases?: AliasEntry[]) {
     // "Stara podniszczona fajke musisz pierw wypalic, badz oproznic, nim bedziesz
     // mogl nabic ja nowym zielem." (you tried to fill an already-filled pipe)
     client.Triggers.registerTrigger(
-        /^[A-Z][a-z]+(?: [a-z]+)* fajke(?: [a-z]+)* musisz pierw wypalic, badz oproznic, nim bedziesz mogl nabic ja nowym zielem\.$/,
+        /^[A-Z][a-z-]+(?: [a-z-]+)* fajke(?: [a-z-]+)* musisz pierw wypalic, badz oproznic, nim bedziesz mogl nabic ja nowym zielem\.$/,
         (line) => {
             characterStorage.set("pipe_filled", true);
             return line;
@@ -94,7 +94,7 @@ export default function initPipe(client: Client, aliases?: AliasEntry[]) {
 
     // "Gasisz stara podniszczona fajke." (you put it out)
     client.Triggers.registerTrigger(
-        /^Gasisz [a-z]+(?: [a-z]+)* fajke(?: [a-z]+)*\.$/,
+        /^Gasisz [a-z-]+(?: [a-z-]+)* fajke(?: [a-z-]+)*\.$/,
         (line) => {
             client.sendEvent("pipeLit", false);
             return line;
@@ -105,7 +105,7 @@ export default function initPipe(client: Client, aliases?: AliasEntry[]) {
     // "W starej podniszczonej fajce nie ma dostatecznie duzo ziela." (lighting
     // failed because the pipe is not (sufficiently) filled)
     client.Triggers.registerTrigger(
-        /^W (?:[a-z]+ )*fajce(?: [a-z]+)* nie ma dostatecznie duzo ziela\.$/,
+        /^W (?:[a-z-]+ )*fajce(?: [a-z-]+)* nie ma dostatecznie duzo ziela\.$/,
         (line) => {
             characterStorage.set("pipe_filled", false);
             zapalPending = false;
@@ -117,7 +117,7 @@ export default function initPipe(client: Client, aliases?: AliasEntry[]) {
     // "Dokladnie ostukujac i czyszczac stara podniszczona fajke oprozniasz ja z
     // resztek znajdujacego sie w srodku ziela." (you empty the pipe)
     client.Triggers.registerTrigger(
-        /^Dokladnie ostukujac i czyszczac (?:[a-z]+ )*fajke(?: [a-z]+)* oprozniasz ja z resztek znajdujacego sie w srodku ziela\.$/,
+        /^Dokladnie ostukujac i czyszczac (?:[a-z-]+ )*fajke(?: [a-z-]+)* oprozniasz ja z resztek znajdujacego sie w srodku ziela\.$/,
         (line) => {
             characterStorage.set("pipe_filled", false);
             return line;

@@ -30,6 +30,15 @@ describe('pipe', () => {
     expect(sendEvent).toHaveBeenCalledWith('pipeLit', false);
   });
 
+  test('matches hyphenated pipe descriptions', () => {
+    feed('Zapalasz bialo-kremowa smocza fajke kilkakrotnie pykajac przy tym, aby podtrzymac zar.');
+    expect(sendEvent).toHaveBeenLastCalledWith('pipeLit', true);
+    feed('Gasisz bialo-kremowa smocza fajke.');
+    expect(sendEvent).toHaveBeenLastCalledWith('pipeLit', false);
+    feed('Bialo-kremowa smocza fajka wypala sie i gasnie.');
+    expect(sendEvent).toHaveBeenCalledTimes(3);
+  });
+
   test('matches regardless of the pipe description', () => {
     feed('Zapalasz krotka gliniana fajke kilkakrotnie pykajac przy tym, aby podtrzymac zar.');
     feed('Krotka gliniana fajka wypala sie i gasnie.');

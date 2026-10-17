@@ -85,6 +85,17 @@ describe('lamp triggers', () => {
     expect(stopped()).toBe(true);
   });
 
+  test('handles hyphenated lamp descriptions', () => {
+    parse('Zapalasz mosiezno-zlota lampe.');
+    expect(client.sendEvent).toHaveBeenCalledWith('lampTimer', expect.anything());
+    jest.clearAllMocks();
+    parse('Mosiezno-zlota lampa wypala sie i gasnie.');
+    expect(stopped()).toBe(true);
+    startLamp();
+    parse('Gasisz mosiezno-zlota lampe.');
+    expect(stopped()).toBe(true);
+  });
+
   test("keeps running when another person's pipe burns out (unintroduced race)", () => {
     startLamp();
     parse('Stara wygieta fajka krzepkiego lysego krasnoluda wypala sie i gasnie.');
