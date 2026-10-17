@@ -2143,6 +2143,14 @@ export interface PluginKeyActionOptions {
     onPress: (event: KeyboardEvent) => void;
 }
 
+/** Handle for a registered key action, see {@link KeysApi.register} */
+
+export interface PluginKeyHandle {
+    /** The key the action listens on now (the player's choice or the default), or null */
+    getKey(): PluginKeyBind | null;
+    remove(): void;
+}
+
 /**
  * Keys API - plugin key actions, listed and rebindable in Klawisze
  */
@@ -2166,7 +2174,7 @@ export interface KeysApi {
      * });
      * ```
      */
-    register(action: PluginKeyActionOptions): PluginKeyJandle | null;
+    register(action: PluginKeyActionOptions): PluginKeyHandle | null;
 }
 
 /**

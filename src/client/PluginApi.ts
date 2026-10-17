@@ -986,7 +986,7 @@ export interface PluginKeyActionOptions {
 }
 
 /** Handle for a registered key action, see {@link KeysApi.register} */
-export interface PluginKeyJandle {
+export interface PluginKeyHandle {
   /** The key the action listens on now (the player's choice or the default), or null */
   getKey(): PluginKeyBind | null;
   remove(): void;
@@ -1014,7 +1014,7 @@ export interface KeysApi {
    * });
    * ```
    */
-  register(action: PluginKeyActionOptions): PluginKeyJandle | null;
+  register(action: PluginKeyActionOptions): PluginKeyHandle | null;
 }
 
 /**
