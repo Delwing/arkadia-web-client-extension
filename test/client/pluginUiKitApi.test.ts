@@ -39,10 +39,10 @@ describe('plugin UI kit and popup settings', () => {
         };
         setPluginHostPort(port);
 
-        const fields = [{ type: 'toggle' as const, key: 'altH', label: 'Alt+H szuka', default: true }];
-        const api = new PluginApiImpl({} as never, 'zielarz');
+        const fields = [{ type: 'toggle' as const, key: 'ceny', label: 'Pokazuj ceny', default: true }];
+        const api = new PluginApiImpl({} as never, 'jubiler');
         const popup = await api.ui.registerPersistentPopup({
-            id: 'main', title: 'Zielarz', createContent: () => 'x', settingsFields: fields,
+            id: 'main', title: 'Jubiler', createContent: () => 'x', settingsFields: fields,
         });
 
         expect(registered[0].settingsFields).toBe(fields);
@@ -50,10 +50,10 @@ describe('plugin UI kit and popup settings', () => {
 
         const changes: unknown[] = [];
         popup.onSettingChange('tab', v => changes.push(v));
-        popup.setSetting('tab', 'trasy');
-        expect(popup.getSetting('tab', 'szukanie')).toBe('trasy');
-        expect(settings.get('popup:plugin:zielarz:main/tab')).toBe('trasy');
-        expect(changes).toEqual(['trasy']);
+        popup.setSetting('tab', 'lista');
+        expect(popup.getSetting('tab', 'szukanie')).toBe('lista');
+        expect(settings.get('popup:plugin:jubiler:main/tab')).toBe('lista');
+        expect(changes).toEqual(['lista']);
 
         api.cleanup();
         expect(listeners.size).toBe(0);

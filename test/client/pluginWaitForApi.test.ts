@@ -15,11 +15,11 @@ describe('api.triggers.waitFor', () => {
 
     test('resolves with the first alternative that matches and leaves the line alone', async () => {
         const { api, push } = setup();
-        const wait = api.triggers.waitFor([/^Nie znajdujesz zadnych ziol\.$/, /^Znajdujesz (?!sie )(.*)\.$/]);
-        const out = push('Znajdujesz kilka zoltych kwiatkow.');
-        await expect(wait).resolves.toMatchObject({ index: 1, line: 'Znajdujesz kilka zoltych kwiatkow.' });
-        expect((await wait).match[1]).toBe('kilka zoltych kwiatkow');
-        expect(out?.text).toBe('Znajdujesz kilka zoltych kwiatkow.');
+        const wait = api.triggers.waitFor([/^Drzwi sa zamkniete na klucz\.$/, /^Otwierasz (.*)\.$/]);
+        const out = push('Otwierasz ciezkie debowe drzwi.');
+        await expect(wait).resolves.toMatchObject({ index: 1, line: 'Otwierasz ciezkie debowe drzwi.' });
+        expect((await wait).match[1]).toBe('ciezkie debowe drzwi');
+        expect(out?.text).toBe('Otwierasz ciezkie debowe drzwi.');
     });
 
     test('removes all its triggers once settled', async () => {

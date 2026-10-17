@@ -294,31 +294,31 @@ describe("temp bind slots", () => {
 });
 
 describe("plugin key actions", () => {
-    const search = { id: "zielarz.searchHere", label: "Szukaj ziół tutaj", pluginName: "Zielarz", defaultBind: { key: "KeyH", alt: true } };
+    const search = { id: "jubiler.appraise", label: "Wyceń kamienie", pluginName: "Jubiler", defaultBind: { key: "KeyJ", alt: true } };
     const pluginEntry = (b: BindSettings) => buildEntries(b, [], [search]).find(e => e.ref.kind === "plugin")!;
 
     it("are listed with their default key until the player picks one", () => {
         const e = pluginEntry(binds());
-        expect(e).toMatchObject({ id: "plugin:zielarz.searchHere", group: "plugin", owner: "Zielarz", overridden: false, reach: "client" });
-        expect(e.combo).toEqual(combo("KeyH", { alt: true }));
+        expect(e).toMatchObject({ id: "plugin:jubiler.appraise", group: "plugin", owner: "Jubiler", overridden: false, reach: "client" });
+        expect(e.combo).toEqual(combo("KeyJ", { alt: true }));
     });
 
     it("follow the keymap: another key, or none when switched off", () => {
-        expect(pluginEntry(binds({ pluginKeys: { "zielarz.searchHere": { key: "F7" } } }))).toMatchObject({ combo: combo("F7"), overridden: true });
-        expect(pluginEntry(binds({ pluginKeys: { "zielarz.searchHere": { key: "" } } }))).toMatchObject({ combo: null, overridden: true });
+        expect(pluginEntry(binds({ pluginKeys: { "jubiler.appraise": { key: "F7" } } }))).toMatchObject({ combo: combo("F7"), overridden: true });
+        expect(pluginEntry(binds({ pluginKeys: { "jubiler.appraise": { key: "" } } }))).toMatchObject({ combo: null, overridden: true });
     });
 
     it("clash with a built-in on the same key", () => {
-        const b = binds({ lamp: { key: "KeyH", alt: true } });
+        const b = binds({ lamp: { key: "KeyJ", alt: true } });
         const byCombo = entriesByCombo(mergeEntries(buildEntries(b, [], [search])).list);
-        expect(byCombo.get(comboId(combo("KeyH", { alt: true })))!.map(e => e.id)).toEqual(["slot:lamp", "plugin:zielarz.searchHere"]);
-        expect(conflicts(byCombo, false)).toContain(comboId(combo("KeyH", { alt: true })));
+        expect(byCombo.get(comboId(combo("KeyJ", { alt: true })))!.map(e => e.id)).toEqual(["slot:lamp", "plugin:jubiler.appraise"]);
+        expect(conflicts(byCombo, false)).toContain(comboId(combo("KeyJ", { alt: true })));
     });
 
     it("never fold into a helper hotkey and are found by their plugin's name", () => {
-        const helper: StoredBind = { id: "h1", key: "alt+h", mode: "global", action: "command", command: "" } as StoredBind;
+        const helper: StoredBind = { id: "h1", key: "alt+j", mode: "global", action: "command", command: "" } as StoredBind;
         const { list } = mergeEntries(buildEntries(binds(), [helper], [search]));
         expect(list.find(e => e.ref.kind === "plugin")!.twinId).toBeUndefined();
-        expect(matchesSearch(pluginEntry(binds()), "zielarz")).toBe(true);
+        expect(matchesSearch(pluginEntry(binds()), "jubiler")).toBe(true);
     });
 });

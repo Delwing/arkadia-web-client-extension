@@ -310,12 +310,12 @@ export interface TriggersApi {
    *
    * @example
    * ```typescript
-   * api.command.send('szukaj ziol');
+   * api.command.send('otworz drzwi');
    * const r = await api.triggers.waitFor(
-   *   [/^Znajdujesz (?!sie )(.*)\.$/, /^Nie znajdujesz zadnych ziol\./],
+   *   [/^Otwierasz (.*)\.$/, /^Drzwi sa zamkniete na klucz\./],
    *   { timeout: 15000, signal }
    * );
-   * if (r.index === 0) console.log('found', r.match[1]);
+   * if (r.index === 0) console.log('opened', r.match[1]);
    * ```
    */
   waitFor(patterns: TriggerSubPattern | TriggerSubPattern[], options?: WaitForOptions): Promise<WaitForResult>;
@@ -944,7 +944,7 @@ export interface MapApi {
    *
    * @example
    * ```typescript
-   * api.map.addRoomMenuEntry("Zielarz: ustaw teren", (roomId) => openTerrainPicker(roomId));
+   * api.map.addRoomMenuEntry("Jubiler: oznacz sklep", (roomId) => markShop(roomId));
    * ```
    */
   addRoomMenuEntry(label: string, action: (roomId: number) => void): RoomMenuEntryHandle;
@@ -962,7 +962,7 @@ export interface PluginKeyBind {
   /**
    * The key: a letter or digit ("h", "4"), or a KeyboardEvent.code for other
    * keys ("F6", "Backquote", "Numpad5"). Letters and digits match the physical
-   * key, so Alt+H also works on layouts where Alt changes the character.
+   * key, so Alt+J also works on layouts where Alt changes the character.
    */
   key: string;
   ctrl?: boolean;
@@ -974,10 +974,10 @@ export interface PluginKeyBind {
 export interface PluginKeyActionOptions {
   /**
    * Stable id; the player's key is stored under it, so keep it the same across
-   * versions. Prefix it with the plugin's name: "zielarz.searchHere".
+   * versions. Prefix it with the plugin's name: "jubiler.appraise".
    */
   id: string;
-  /** What the action does, as shown in Klawisze: "Szukaj ziół tutaj" */
+  /** What the action does, as shown in Klawisze: "Wyceń kamienie" */
   label: string;
   /** The key suggested until the player picks one; leave out for no key */
   defaultKey?: PluginKeyBind;
@@ -986,7 +986,7 @@ export interface PluginKeyActionOptions {
 }
 
 /** Handle for a registered key action, see {@link KeysApi.register} */
-export interface PluginKeyHandle {
+export interface PluginKeyJandle {
   /** The key the action listens on now (the player's choice or the default), or null */
   getKey(): PluginKeyBind | null;
   remove(): void;
@@ -1007,14 +1007,14 @@ export interface KeysApi {
    * @example
    * ```typescript
    * api.keys.register({
-   *   id: 'zielarz.searchHere',
-   *   label: 'Szukaj ziół tutaj',
-   *   defaultKey: { key: 'h', alt: true },
-   *   onPress: () => searchHere(),
+   *   id: 'jubiler.appraise',
+   *   label: 'Wyceń kamienie',
+   *   defaultKey: { key: 'j', alt: true },
+   *   onPress: () => appraise(),
    * });
    * ```
    */
-  register(action: PluginKeyActionOptions): PluginKeyHandle | null;
+  register(action: PluginKeyActionOptions): PluginKeyJandle | null;
 }
 
 /**
@@ -2553,7 +2553,7 @@ export interface ContainersApi {
    *
    * @example
    * ```typescript
-   * const box = api.containers.getCommandForms("zielarz-robocza");
+   * const box = api.containers.getCommandForms("jubiler-kamienie");
    * if (box) api.command.send(`wez otwarty woreczek ${box.from} ${box.dopelniacz}`);
    * ```
    */
@@ -2687,8 +2687,8 @@ export interface HerbsApi {
    *
    * @example
    * ```typescript
-   * api.triggers.register(/^Znajdujesz (?!sie )(.*)\.$/, (line, m) => {
-   *   api.herbs.resolve(m[1]).then(id => id && found.push(id));
+   * api.triggers.register(/^Dostajesz (.*) od /, (line, m) => {
+   *   api.herbs.resolve(m[1]).then(id => id && received.push(id));
    *   return line;
    * });
    * ```
@@ -2717,7 +2717,7 @@ export interface HerbsApi {
    * @example
    * ```typescript
    * const bag = await api.herbs.inspectBag("swojego zamknietego woreczka");
-   * if (bag && bag.total + found.length > 44) { ... take a new bag ... }
+   * if (bag && bag.total > 40) { ... use another bag ... }
    * ```
    */
   inspectBag(target: string, options?: { timeout?: number; signal?: AbortSignal }): Promise<HerbBagInspection | null>;

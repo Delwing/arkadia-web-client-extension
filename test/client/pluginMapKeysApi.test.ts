@@ -17,7 +17,7 @@ function fakeClient() {
 describe('plugin map additions', () => {
     test('look up rooms, distances and lead through the map', () => {
         const client = fakeClient();
-        const api = new PluginApiImpl(client as never, 'zielarz');
+        const api = new PluginApiImpl(client as never, 'jubiler');
 
         expect(api.map.getRoomIdByInternalId('i385831173')).toBe(4120);
         expect(api.map.getRoomIdByInternalId('nope')).toBeNull();
@@ -31,16 +31,16 @@ describe('plugin map additions', () => {
     });
 
     test('room menu entries can change and go when the plugin unloads', () => {
-        const api = new PluginApiImpl(fakeClient() as never, 'zielarz');
+        const api = new PluginApiImpl(fakeClient() as never, 'jubiler');
         const first = jest.fn();
         const second = jest.fn();
-        const entry = api.map.addRoomMenuEntry('Teren', first);
+        const entry = api.map.addRoomMenuEntry('Sklep', first);
         api.map.addRoomMenuEntry('Inne', jest.fn());
 
-        entry.setLabel('Zielarz: teren');
+        entry.setLabel('Jubiler: sklep');
         entry.setAction(second);
         const [registered] = getRoomMenuEntries();
-        expect(registered.label).toBe('Zielarz: teren');
+        expect(registered.label).toBe('Jubiler: sklep');
         registered.action(9);
         expect(second).toHaveBeenCalledWith(9);
         expect(first).not.toHaveBeenCalled();
@@ -56,20 +56,20 @@ describe('plugin keys', () => {
     beforeEach(() => localStorage.clear());
 
     test('registers a named action with its normalised default key, listed under the plugin name', () => {
-        const api = new PluginApiImpl(fakeClient() as never, 'https://example.com/zielarz.js');
+        const api = new PluginApiImpl(fakeClient() as never, 'https://example.com/jubiler.js');
         const onPress = jest.fn();
-        const handle = api.keys.register({ id: 'zielarz.searchHere', label: 'Szukaj ziół tutaj', defaultKey: { key: 'h', alt: true }, onPress });
+        const handle = api.keys.register({ id: 'jubiler.appraise', label: 'Wyceń kamienie', defaultKey: { key: 'j', alt: true }, onPress });
 
         const [action] = getPluginKeyActions();
-        expect(action).toMatchObject({ id: 'zielarz.searchHere', label: 'Szukaj ziół tutaj', defaultBind: { key: 'KeyH', alt: true } });
-        expect(handle!.getKey()).toEqual({ key: 'KeyH', ctrl: false, alt: true, shift: false });
+        expect(action).toMatchObject({ id: 'jubiler.appraise', label: 'Wyceń kamienie', defaultBind: { key: 'KeyJ', alt: true } });
+        expect(handle!.getKey()).toEqual({ key: 'KeyJ', ctrl: false, alt: true, shift: false });
 
-        api.setPluginName('Zielarz');
-        expect(getPluginKeyActions()[0].pluginName).toBe('Zielarz');
+        api.setPluginName('Jubiler');
+        expect(getPluginKeyActions()[0].pluginName).toBe('Jubiler');
 
-        globalStorage.set('binds', { pluginKeys: { 'zielarz.searchHere': { key: 'F7' } } } as never);
+        globalStorage.set('binds', { pluginKeys: { 'jubiler.appraise': { key: 'F7' } } } as never);
         expect(handle!.getKey()).toEqual({ key: 'F7', ctrl: false, alt: false, shift: false });
-        globalStorage.set('binds', { pluginKeys: { 'zielarz.searchHere': { key: '' } } } as never);
+        globalStorage.set('binds', { pluginKeys: { 'jubiler.appraise': { key: '' } } } as never);
         expect(handle!.getKey()).toBeNull();
 
         api.cleanup();
@@ -77,13 +77,13 @@ describe('plugin keys', () => {
     });
 
     test('another plugin cannot take an id, the owner can replace its own', () => {
-        const zielarz = new PluginApiImpl(fakeClient() as never, 'zielarz');
+        const jubiler = new PluginApiImpl(fakeClient() as never, 'jubiler');
         const other = new PluginApiImpl(fakeClient() as never, 'other');
         const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
 
-        const first = zielarz.keys.register({ id: 'zielarz.searchHere', label: 'a', onPress: jest.fn() });
-        expect(other.keys.register({ id: 'zielarz.searchHere', label: 'b', onPress: jest.fn() })).toBeNull();
-        zielarz.keys.register({ id: 'zielarz.searchHere', label: 'c', onPress: jest.fn() });
+        const first = jubiler.keys.register({ id: 'jubiler.appraise', label: 'a', onPress: jest.fn() });
+        expect(other.keys.register({ id: 'jubiler.appraise', label: 'b', onPress: jest.fn() })).toBeNull();
+        jubiler.keys.register({ id: 'jubiler.appraise', label: 'c', onPress: jest.fn() });
         expect(getPluginKeyActions().map(a => a.label)).toEqual(['c']);
 
         // The replaced handle no longer removes the newer registration
@@ -91,7 +91,7 @@ describe('plugin keys', () => {
         expect(getPluginKeyActions()).toHaveLength(1);
 
         warn.mockRestore();
-        zielarz.cleanup();
+        jubiler.cleanup();
         expect(getPluginKeyActions()).toEqual([]);
     });
 });

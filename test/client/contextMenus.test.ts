@@ -181,12 +181,12 @@ describe("openMapContextMenu", () => {
 
     it("plugin entries come under Pluginy, before the windows, with the room", () => {
         const action = jest.fn();
-        registerRoomMenuEntry("t1", "Zielarz: teren", action);
+        registerRoomMenuEntry("t1", "Jubiler: sklep", action);
         openMapContextMenu(7, 0, 0);
         const items = shown()[0];
         unregisterRoomMenuEntry("t1");
 
-        const entry = items.find((item: { label?: unknown }) => item.label === "Zielarz: teren");
+        const entry = items.find((item: { label?: unknown }) => item.label === "Jubiler: sklep");
         expect(entry.section).toBe("Pluginy");
         expect(labels(items.slice(-2))).toEqual(["Informacje o lokacji", "Otwórz w oknie mapy"]);
         entry.action();

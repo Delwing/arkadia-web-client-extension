@@ -26,29 +26,29 @@ describe('plugin herbs and containers', () => {
     });
 
     test('resolves herb names and builds count forms', async () => {
-        const api = new PluginApiImpl({} as never, 'zielarz');
+        const api = new PluginApiImpl({} as never, 'jubiler');
         await expect(api.herbs.resolve('zolte jasne kwiaty')).resolves.toBe('deliona');
         await expect(api.herbs.resolve('trawa')).resolves.toBeNull();
         await expect(api.herbs.form('deliona', 5)).resolves.toBe('zoltych jasnych kwiatow');
     });
 
     test('a plugin sets bags only for its own types', () => {
-        const zielarz = new PluginApiImpl({} as never, 'zielarz');
+        const jubiler = new PluginApiImpl({} as never, 'jubiler');
         const other = new PluginApiImpl({} as never, 'other');
-        zielarz.containers.registerType('zielarz-robocza', { label: 'Zielarz: robocza', fallback: 'other' });
+        jubiler.containers.registerType('jubiler-kamienie', { label: 'Jubiler: kamienie', fallback: 'other' });
 
-        expect(other.containers.setContainer('zielarz-robocza', 'torba')).toBe(false);
-        expect(zielarz.containers.setContainer('gems', 'torba')).toBe(false);
-        expect(zielarz.containers.setContainer('zielarz-robocza', 'torba')).toBe(true);
-        expect(zielarz.containers.getCommandForms('zielarz-robocza')).toEqual({ biernik: 'swoja torbe', dopelniacz: 'swojej torby', from: 'ze' });
-        expect(zielarz.containers.listBags()).toContain('worek');
+        expect(other.containers.setContainer('jubiler-kamienie', 'torba')).toBe(false);
+        expect(jubiler.containers.setContainer('gems', 'torba')).toBe(false);
+        expect(jubiler.containers.setContainer('jubiler-kamienie', 'torba')).toBe(true);
+        expect(jubiler.containers.getCommandForms('jubiler-kamienie')).toEqual({ biernik: 'swoja torbe', dopelniacz: 'swojej torby', from: 'ze' });
+        expect(jubiler.containers.listBags()).toContain('worek');
 
         // Unloading forgets the type but keeps the player's choice for the next load
-        zielarz.cleanup();
-        expect(zielarz.containers.setContainer('zielarz-robocza', 'worek')).toBe(false);
-        const reloaded = new PluginApiImpl({} as never, 'zielarz');
-        reloaded.containers.registerType('zielarz-robocza', { fallback: 'other' });
-        expect(getContainer('zielarz-robocza')).toBe('torba');
+        jubiler.cleanup();
+        expect(jubiler.containers.setContainer('jubiler-kamienie', 'worek')).toBe(false);
+        const reloaded = new PluginApiImpl({} as never, 'jubiler');
+        reloaded.containers.registerType('jubiler-kamienie', { fallback: 'other' });
+        expect(getContainer('jubiler-kamienie')).toBe('torba');
         reloaded.cleanup();
     });
 });

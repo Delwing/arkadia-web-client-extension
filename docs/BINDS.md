@@ -46,7 +46,7 @@ się od razu, nie ma przycisku "Zapisz".
   kierunkach na strzałkach jest oznaczony jako kolizja. Przełącznik trybu ruchu (`` ` ``) działa
   jak dotąd, niezależnie od tych modyfikatorów.
 - **Pluginy** - akcje, które wtyczki podpinają pod klawisze (`api.keys.register`),
-  np. "Szukaj ziół tutaj" na Alt+H. Wtyczka tylko proponuje klawisz: można go
+  np. "Wyceń kamienie" na Alt+J. Wtyczka tylko proponuje klawisz: można go
   zmienić albo zdjąć jak każdy inny, a "domyślny" przywraca propozycję wtyczki.
   Wybór zapisuje się w mapie klawiszy. Akcje wtyczek działają tylko w kliencie
   (nie przez helpera). Sekcja pojawia się, gdy któraś wtyczka doda akcję.

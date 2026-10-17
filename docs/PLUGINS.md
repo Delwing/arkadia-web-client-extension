@@ -52,7 +52,7 @@ export async function destroy(): Promise<void> {
 Plugin jest rozpoznawany po adresie, z którego go załadowano. Dane z `api.storage` i stan okien (`registerPersistentPopup`: położenie, przypięcie, ustawienia ⚙) są zapisywane pod tym adresem, więc po przeniesieniu pluginu pod inny URL zaczynałyby od zera. Żeby tego uniknąć, wyeksportuj stały identyfikator:
 
 ```typescript
-export const stableId = 'zielarz';   // 1-64 znaki: litery, cyfry, '.', '_', '-'
+export const stableId = 'jubiler';   // 1-64 znaki: litery, cyfry, '.', '_', '-'
 ```
 
 Dane i okna są wtedy zapisywane pod `stableId`. Nie zmieniaj go między wersjami. Gdy inny załadowany plugin używa już tego samego `stableId`, klient go pomija (z ostrzeżeniem w konsoli) i zostaje przy adresie.
@@ -422,13 +422,13 @@ api.triggers.removeByTag(tag);
 ```typescript
 const stop = new AbortController();   // stop.abort() np. z przycisku „Stop”
 
-api.command.send('szukaj ziol');
+api.command.send('otworz drzwi');
 try {
   const r = await api.triggers.waitFor(
-    [/^Znajdujesz (?!sie )(.*)\.$/, /^Nie znajdujesz zadnych ziol\./],
+    [/^Otwierasz (.*)\.$/, /^Drzwi sa zamkniete na klucz\./],
     { timeout: 15000, signal: stop.signal }
   );
-  if (r.index === 0) api.output.print(`Znalezione: ${r.match[1]}`);
+  if (r.index === 0) api.output.print(`Otwarte: ${r.match[1]}`);
 } catch (e) {
   // e.name === 'TimeoutError' po upływie czasu, 'AbortError' po stop.abort()
 }
@@ -519,8 +519,8 @@ api.map.leadTo(roomId);
 api.map.clearLeadTo();
 
 // Własny wpis w menu lokacji (prawy klik na mapie albo linku lokacji), w sekcji „Pluginy”
-const entry = api.map.addRoomMenuEntry('Zielarz: ustaw teren', (roomId) => { /* ... */ });
-entry.setLabel('Zielarz: zmień teren');
+const entry = api.map.addRoomMenuEntry('Jubiler: oznacz sklep', (roomId) => { /* ... */ });
+entry.setLabel('Jubiler: zmień oznaczenie');
 entry.remove();
 ```
 
@@ -594,7 +594,7 @@ api.storage.global.keys();                                // klucze zapisane prz
 // Zmiana wartości — także po przełączeniu postaci
 api.storage.character.onChange('kolejka', (value) => { /* ... */ });
 
-api.character.getName();                                  // 'Ziolko' albo null przed zalogowaniem
+api.character.getName();                                  // 'Bodrin' albo null przed zalogowaniem
 api.character.onChange((name) => { /* ... */ });
 ```
 
@@ -622,17 +622,17 @@ const bag = await api.herbs.inspectBag('swojego zamknietego woreczka');
 Plugin rejestruje własne typy pojemników, a gracz (albo plugin) przypisuje im worek, torbę itp.:
 
 ```typescript
-api.containers.registerType('zielarz-magazyn', { label: 'Zielarz: magazyn', fallback: 'other' });
+api.containers.registerType('jubiler-kamienie', { label: 'Jubiler: kamienie', fallback: 'other' });
 
 api.containers.listBags();                               // ['plecak', 'torba', 'worek', ...] - np. do listy wyboru
-api.containers.setContainer('zielarz-magazyn', 'worek'); // jak /pojemnik; '2. torba' dla drugiej; null = jak typ zapasowy
+api.containers.setContainer('jubiler-kamienie', 'worek'); // jak /pojemnik; '2. torba' dla drugiej; null = jak typ zapasowy
 
-const box = api.containers.getCommandForms('zielarz-magazyn');
+const box = api.containers.getCommandForms('jubiler-kamienie');
 // { biernik: 'swoj worek', dopelniacz: 'swojego worka', from: 'ze' }
 api.command.send(`wez zamkniety woreczek ${box.from} ${box.dopelniacz}`);
 
-api.containers.put('zielarz-magazyn', 'woreczek');       // otworz / wloz / zamknij wg ustawień
-await api.containers.inspect('zielarz-magazyn');         // lista przedmiotów albo null
+api.containers.put('jubiler-kamienie', 'woreczek');       // otworz / wloz / zamknij wg ustawień
+await api.containers.inspect('jubiler-kamienie');         // lista przedmiotów albo null
 ```
 
 `setContainer` działa tylko dla typów zarejestrowanych przez ten plugin. Wybór gracza zostaje zapisany i wraca po ponownym załadowaniu pluginu.
@@ -728,19 +728,19 @@ const label = api.bind.getLabel();
 Plugin rejestruje **akcję** z proponowanym klawiszem. Akcja pojawia się w oknie Klawisze w sekcji „Pluginy”, gdzie gracz może przenieść ją na inny klawisz, zdjąć klawisz albo wrócić do domyślnego. Wybór gracza zapisuje się w jego zestawie klawiszy (synchronizuje się razem z nim).
 
 ```typescript
-const search = api.keys.register({
-  id: 'zielarz.searchHere',          // stały identyfikator - pod nim zapisuje się klawisz gracza
-  label: 'Szukaj ziół tutaj',        // nazwa w oknie Klawisze
-  defaultKey: { key: 'h', alt: true },
-  onPress: () => searchHere(),
+const appraiseKey = api.keys.register({
+  id: 'jubiler.appraise',          // stały identyfikator - pod nim zapisuje się klawisz gracza
+  label: 'Wyceń kamienie',        // nazwa w oknie Klawisze
+  defaultKey: { key: 'j', alt: true },
+  onPress: () => appraise(),
 });
 
-search?.getKey();    // { key: 'KeyH', alt: true, ... } - aktualny klawisz (gracza albo domyślny), null gdy brak
-search?.remove();
+appraiseKey?.getKey();// { key: 'KeyJ', alt: true, ... } - aktualny klawisz (gracza albo domyślny), null gdy brak
+appraiseKey?.remove();
 ```
 
 - `id` nie zmieniaj między wersjami pluginu i poprzedź go nazwą pluginu. Nie zależy od adresu pluginu, więc klawisz gracza przetrwa przeniesienie pluginu pod inny URL. Gdy inny plugin zajął już to `id`, `register` zwraca `null`.
-- `key` to litera lub cyfra (`'h'`, `'4'`) albo `KeyboardEvent.code` dla pozostałych klawiszy (`'F6'`, `'Backquote'`, `'Numpad5'`). Litery i cyfry są dopasowywane po fizycznym klawiszu, więc Alt+H działa także w układzie polskim.
+- `key` to litera lub cyfra (`'j'`, `'4'`) albo `KeyboardEvent.code` dla pozostałych klawiszy (`'F6'`, `'Backquote'`, `'Numpad5'`). Litery i cyfry są dopasowywane po fizycznym klawiszu, więc Alt+J działa także w układzie polskim.
 - Bez `defaultKey` akcja nie ma klawisza, dopóki gracz go nie przypisze.
 - Domyślna akcja klawisza jest blokowana. Klawisze pokazują konflikt, gdy na tym samym klawiszu jest też inny bind.
 - Akcje znikają z okna przy wyładowaniu pluginu; zapisany klawisz gracza wraca, gdy plugin się znowu załaduje.
@@ -1462,11 +1462,11 @@ Podaj komponent w `createContent` raz; potem przerysowuje się sam ze swojego st
 
 ```typescript
 const popup = await api.ui.registerPersistentPopup({
-  id: 'zielarz',
-  title: 'Zielarz',
+  id: 'jubiler',
+  title: 'Jubiler',
   createContent,
   settingsFields: [
-    { type: 'toggle', key: 'altH', label: 'Alt+H szuka', default: true },
+    { type: 'toggle', key: 'ceny', label: 'Pokazuj ceny', default: true },
     { type: 'number', key: 'pauza', label: 'Przerwa (ms)', default: 300, min: 0, max: 2000, step: 50 },
     { type: 'select', key: 'smieci', label: 'Śmieci', default: 'odloz', options: [
       { value: 'odloz', label: 'Odkładaj' }, { value: 'zostaw', label: 'Zostawiaj' } ] },
@@ -1474,8 +1474,8 @@ const popup = await api.ui.registerPersistentPopup({
 });
 
 popup.getSetting('pauza', 300);
-popup.setSetting('zakladka', 'trasy');        // dowolny klucz, nie tylko z settingsFields
-const off = popup.onSettingChange('altH', (on) => { /* ... */ });
+popup.setSetting('zakladka', 'lista');        // dowolny klucz, nie tylko z settingsFields
+const off = popup.onSettingChange('ceny', (on) => { /* ... */ });
 ```
 
 ### Stopka

@@ -10,7 +10,7 @@ import type { Bind, BindSettings } from "./keymapTypes";
  * being reloaded from another address.
  */
 export interface PluginKeyAction {
-  /** Stable id chosen by the plugin ("zielarz.searchHere"); the player's key is stored under it. */
+  /** Stable id chosen by the plugin ("jubiler.appraise"); the player's key is stored under it. */
   id: string;
   label: string;
   /** Whose action it is, for the Klawisze list. */

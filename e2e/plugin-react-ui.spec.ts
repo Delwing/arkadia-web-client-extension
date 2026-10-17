@@ -53,7 +53,7 @@ export async function init(pluginApi) {
   api.keys.register({
     id: 'rxtest.ping',
     label: 'Ping testowy',
-    defaultKey: { key: 'h', alt: true },
+    defaultKey: { key: 'j', alt: true },
     onPress: () => api.output.print('alt-h pressed'),
   });
   api.aliases.register(/^\\/rx-wait$/, async () => {
@@ -137,7 +137,7 @@ test.describe('Plugin React UI', () => {
 
     test('runs its own key binding', async ({page}) => {
         await page.locator('#message-input').focus();
-        await page.keyboard.press('Alt+KeyH');
+        await page.keyboard.press('Alt+KeyJ');
         await waitForOutputContaining(page, 'alt-h pressed');
     });
 
@@ -146,14 +146,14 @@ test.describe('Plugin React UI', () => {
         const section = page.locator('#binds-modal [data-section="plugin"]');
         await expect(section.getByText('Ping testowy')).toBeVisible();
         await expect(section.getByText(PLUGIN_NAME)).toBeVisible();
-        await expect(bindKey(page, 'plugin:rxtest.ping')).toHaveText('Alt+H');
+        await expect(bindKey(page, 'plugin:rxtest.ping')).toHaveText('Alt+J');
 
         await captureKey(page, 'plugin:rxtest.ping', 'F7');
         await expect(bindKey(page, 'plugin:rxtest.ping')).toHaveText('F7');
         await closeKeysWindow(page);
 
         await page.locator('#message-input').focus();
-        await page.keyboard.press('Alt+KeyH');
+        await page.keyboard.press('Alt+KeyJ');
         await page.keyboard.press('F7');
         await waitForOutputContaining(page, 'alt-h pressed');
         const output = await getRecentOutput(page);
@@ -161,7 +161,7 @@ test.describe('Plugin React UI', () => {
 
         await openKeysWindow(page);
         await section.getByRole('button', {name: 'domyślny'}).click();
-        await expect(bindKey(page, 'plugin:rxtest.ping')).toHaveText('Alt+H');
+        await expect(bindKey(page, 'plugin:rxtest.ping')).toHaveText('Alt+J');
     });
 
     test('waits for a game line', async ({page}) => {

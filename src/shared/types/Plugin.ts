@@ -19,7 +19,7 @@ export interface PluginInfo {
  */
 export interface Plugin {
   /**
-   * Optional stable id (`export const stableId = 'zielarz'`): the plugin's
+   * Optional stable id (`export const stableId = 'jubiler'`): the plugin's
    * storage and windows are kept under it instead of its URL, so they survive
    * the plugin moving to another address. 1-64 letters, digits, '.', '_', '-'.
    */

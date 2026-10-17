@@ -142,43 +142,43 @@ describe('KeyBindingManager', () => {
   test('plugin key actions fire on their default key, by key code', () => {
     new Client((global as any).clientAdapterMock as any);
     const onPress = jest.fn();
-    registerPluginKeyAction({ id: 't.search', label: 'Szukaj', defaultBind: { key: 'KeyH', alt: true }, onPress });
+    registerPluginKeyAction({ id: 't.appraise', label: 'Wyceń', defaultBind: { key: 'KeyJ', alt: true }, onPress });
 
-    // Polish layout: Alt+H can carry another character, the code stays KeyH
-    const event = new KeyboardEvent('keydown', { code: 'KeyH', key: 'ħ', altKey: true, cancelable: true });
+    // Polish layout: Alt+J can carry another character, the code stays KeyJ
+    const event = new KeyboardEvent('keydown', { code: 'KeyJ', key: '∆', altKey: true, cancelable: true });
     window.dispatchEvent(event);
     const calls = onPress.mock.calls.length;
     expect(calls).toBeGreaterThan(0);
     expect(event.defaultPrevented).toBe(true);
 
-    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyH', key: 'h' }));
+    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyJ', key: 'j' }));
     expect(onPress.mock.calls.length).toBe(calls);
 
-    unregisterPluginKeyAction('t.search');
-    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyH', altKey: true }));
+    unregisterPluginKeyAction('t.appraise');
+    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyJ', altKey: true }));
     expect(onPress.mock.calls.length).toBe(calls);
   });
 
   test("the player's key from the keymap replaces the default, and an empty one switches it off", () => {
     new Client((global as any).clientAdapterMock as any);
     const onPress = jest.fn();
-    registerPluginKeyAction({ id: 't.search', label: 'Szukaj', defaultBind: { key: 'KeyH', alt: true }, onPress });
+    registerPluginKeyAction({ id: 't.appraise', label: 'Wyceń', defaultBind: { key: 'KeyJ', alt: true }, onPress });
     const binds = globalStorage.get('binds');
 
-    globalStorage.set('binds', { ...binds, pluginKeys: { 't.search': { key: 'F7' } } } as any);
-    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyH', altKey: true }));
+    globalStorage.set('binds', { ...binds, pluginKeys: { 't.appraise': { key: 'F7' } } } as any);
+    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyJ', altKey: true }));
     expect(onPress).not.toHaveBeenCalled();
     window.dispatchEvent(new KeyboardEvent('keydown', { code: 'F7' }));
     expect(onPress).toHaveBeenCalled();
 
     onPress.mockClear();
-    globalStorage.set('binds', { ...binds, pluginKeys: { 't.search': { key: '' } } } as any);
+    globalStorage.set('binds', { ...binds, pluginKeys: { 't.appraise': { key: '' } } } as any);
     window.dispatchEvent(new KeyboardEvent('keydown', { code: 'F7' }));
-    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyH', altKey: true }));
+    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyJ', altKey: true }));
     expect(onPress).not.toHaveBeenCalled();
 
     globalStorage.set('binds', binds as any);
-    unregisterPluginKeyAction('t.search');
+    unregisterPluginKeyAction('t.appraise');
   });
 
   test('a failing plugin key action does not stop the others', () => {
