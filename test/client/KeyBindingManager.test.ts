@@ -4,6 +4,8 @@ vi.mock('@client/main', () => ({
 }));
 
 import Client from '@client/Client';
+import { globalStorage } from '@modules/core/storage';
+import { registerPluginKeyAction, unregisterPluginKeyAction } from '@modules/core/pluginKeyRegistry';
 
 vi.mock('@client/sounds', () => ({
   __esModule: true,
@@ -136,34 +138,60 @@ describe('KeyBindingManager', () => {
     expect(sendSpy).toHaveBeenCalledWith('custom command');
   });
 
-  test('plugin binds run their callback by key code, and stop once removed', () => {
-    const client = new Client((global as any).clientAdapterMock as any);
-    const callback = jest.fn();
-    client.keyBindingManager.registerPluginBind('p1', { key: 'h', alt: true }, callback);
+  // Every Client in this file keeps its window listener, so these compare call counts.
+  test('plugin key actions fire on their default key, by key code', () => {
+    new Client((global as any).clientAdapterMock as any);
+    const onPress = jest.fn();
+    registerPluginKeyAction({ id: 't.search', label: 'Szukaj', defaultBind: { key: 'KeyH', alt: true }, onPress });
 
     // Polish layout: Alt+H can carry another character, the code stays KeyH
     const event = new KeyboardEvent('keydown', { code: 'KeyH', key: 'ħ', altKey: true, cancelable: true });
     window.dispatchEvent(event);
-    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyH', key: 'h' }));
-    expect(callback).toHaveBeenCalledTimes(1);
+    const calls = onPress.mock.calls.length;
+    expect(calls).toBeGreaterThan(0);
     expect(event.defaultPrevented).toBe(true);
 
-    client.keyBindingManager.unregisterPluginBind('p1');
+    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyH', key: 'h' }));
+    expect(onPress.mock.calls.length).toBe(calls);
+
+    unregisterPluginKeyAction('t.search');
     window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyH', altKey: true }));
-    expect(callback).toHaveBeenCalledTimes(1);
+    expect(onPress.mock.calls.length).toBe(calls);
   });
 
-  test('a failing plugin bind does not stop the others', () => {
-    const client = new Client((global as any).clientAdapterMock as any);
+  test("the player's key from the keymap replaces the default, and an empty one switches it off", () => {
+    new Client((global as any).clientAdapterMock as any);
+    const onPress = jest.fn();
+    registerPluginKeyAction({ id: 't.search', label: 'Szukaj', defaultBind: { key: 'KeyH', alt: true }, onPress });
+    const binds = globalStorage.get('binds');
+
+    globalStorage.set('binds', { ...binds, pluginKeys: { 't.search': { key: 'F7' } } } as any);
+    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyH', altKey: true }));
+    expect(onPress).not.toHaveBeenCalled();
+    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'F7' }));
+    expect(onPress).toHaveBeenCalled();
+
+    onPress.mockClear();
+    globalStorage.set('binds', { ...binds, pluginKeys: { 't.search': { key: '' } } } as any);
+    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'F7' }));
+    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyH', altKey: true }));
+    expect(onPress).not.toHaveBeenCalled();
+
+    globalStorage.set('binds', binds as any);
+    unregisterPluginKeyAction('t.search');
+  });
+
+  test('a failing plugin key action does not stop the others', () => {
+    new Client((global as any).clientAdapterMock as any);
     const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
     const second = jest.fn();
-    client.keyBindingManager.registerPluginBind('p1', { key: 'F6' }, () => { throw new Error('boom'); });
-    client.keyBindingManager.registerPluginBind('p2', { key: 'F6' }, second);
+    registerPluginKeyAction({ id: 't.a', label: 'a', defaultBind: { key: 'F6' }, onPress: () => { throw new Error('boom'); } });
+    registerPluginKeyAction({ id: 't.b', label: 'b', defaultBind: { key: 'F6' }, onPress: second });
     window.dispatchEvent(new KeyboardEvent('keydown', { code: 'F6' }));
     expect(second).toHaveBeenCalled();
     errorSpy.mockRestore();
-    client.keyBindingManager.unregisterPluginBind('p1');
-    client.keyBindingManager.unregisterPluginBind('p2');
+    unregisterPluginKeyAction('t.a');
+    unregisterPluginKeyAction('t.b');
   });
 
   test('tempBinds trigger commands on keydown when set', () => {

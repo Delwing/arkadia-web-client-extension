@@ -4,6 +4,7 @@ import { ChevronDown, ChevronRight, Download, Globe, MoreHorizontal, Pencil, Plu
 import { Button, DeleteButton, Input, Segmented } from "@web-ui/primitives/index.ts";
 import type { BindSettings, Keymap, WalkModifiers } from "@modules/core/keymapTypes";
 import { effectiveWalkModifiers, getWalkModes, subscribeWalkModes, walkModifiersOf } from "@modules/core/walkModeRegistry";
+import { getPluginKeyActions, subscribePluginKeyActions } from "@modules/core/pluginKeyRegistry";
 import {
     createKeymap,
     defaultBinds,
@@ -36,6 +37,7 @@ import {
     type SlotList,
     bindOf,
     buildEntries,
+    comboOf,
     mergeEntries,
     comboId,
     comboInLayer,
@@ -216,7 +218,8 @@ export default function Keys({ helperConnection, headerSlot }: KeysProps) {
     // ── Derived ─────────────────────────────────────────────────────────
     // One row per binding: a helper hotkey that only carries a binding outside
     // the client is folded into it, and shows up as its "gdzie działa".
-    const merged = useMemo(() => mergeEntries(buildEntries(binds, helperBinds)), [binds, helperBinds]);
+    const pluginActions = useSyncExternalStore(subscribePluginKeyActions, getPluginKeyActions);
+    const merged = useMemo(() => mergeEntries(buildEntries(binds, helperBinds, pluginActions)), [binds, helperBinds, pluginActions]);
     const entries = merged.list;
     const focusEntry = merged.focus;
     const byCombo = useMemo(() => entriesByCombo(entries), [entries]);
@@ -330,6 +333,15 @@ export default function Keys({ helperConnection, headerSlot }: KeysProps) {
     const assign = (entry: KeyEntry, combo: Combo | null) => {
         const ref = entry.ref;
         const reserved = combo ? isBrowserReserved(combo) : false;
+        if (ref.kind === "plugin") {
+            // A plugin action runs in the page, so a key the browser keeps cannot reach it.
+            if (combo && reserved) {
+                setNotice(`${comboLabel(combo)} zajmuje przeglądarka, a akcje pluginów działają tylko w kliencie.`);
+                return;
+            }
+            commit({ ...binds, pluginKeys: { ...binds.pluginKeys, [ref.id]: combo ? bindOf(combo) : { key: "" } } });
+            return;
+        }
         const twinFollow = followWithTwin(entry.twinId, combo);
         if (twinFollow) commitHelper(twinFollow);
         if (ref.kind === "helper") {
@@ -465,9 +477,17 @@ export default function Keys({ helperConnection, headerSlot }: KeysProps) {
      * whose key the browser keeps has no client side at all, so it lives in the
      * helper alone and only moves between its two helper modes.
      */
+    /** A plugin action goes back to the key its plugin suggests. */
+    const resetPluginKey = (entry: KeyEntry) => {
+        if (entry.ref.kind !== "plugin" || !binds.pluginKeys) return;
+        const { [entry.ref.id]: _dropped, ...rest } = binds.pluginKeys;
+        commit({ ...binds, pluginKeys: rest });
+    };
+
     const setReach = (entry: KeyEntry, reach: Reach) => {
         if (!entry.combo || entry.reach === reach) return;
         const ref = entry.ref;
+        if (ref.kind === "plugin") return;
 
         // A helper-only binding (a key the browser keeps, or a second key).
         if (ref.kind === "helper") {
@@ -904,6 +924,44 @@ export default function Keys({ helperConnection, headerSlot }: KeysProps) {
         </section>
     );
 
+    // Plugin key actions: the plugin suggests a key, the player can move it or switch it off.
+    const pluginEntries = entries.filter(e => e.ref.kind === "plugin");
+    const pluginDefault = (e: KeyEntry) => {
+        const action = pluginActions.find(a => a.id === (e.ref as Extract<EntryRef, { kind: "plugin" }>).id);
+        const combo = comboOf(action?.defaultBind);
+        return combo ? comboLabel(combo) : "brak";
+    };
+    const pluginSection = () => pluginEntries.length > 0 && (
+        <section className="keys-section" data-section="plugin">
+            {sectionHead("plugin", undefined, pluginEntries.length)}
+            {pluginEntries.map(e => (
+                <div
+                    key={e.id}
+                    className={`keys-row${e.combo ? " is-pickable" : ""}${visible(e) ? "" : " is-hidden"}`}
+                    data-bind={e.id}
+                    title={e.combo ? `Pokaż klawisz ${comboLabel(e.combo)}` : undefined}
+                    onClick={() => selectEntry(e)}
+                >
+                    <span className="keys-row__label">
+                        {e.label}
+                        {e.owner && <span className="keys-muted">{e.owner}</span>}
+                    </span>
+                    {e.overridden && (
+                        <Button
+                            size="sm"
+                            variant="ghost"
+                            title={`Przywróć klawisz pluginu: ${pluginDefault(e)}`}
+                            onClick={ev => { ev.stopPropagation(); resetPluginKey(e); }}
+                        >
+                            domyślny
+                        </Button>
+                    )}
+                    {kc(e)}
+                </div>
+            ))}
+        </section>
+    );
+
     const notWorking = entries.filter(e => e.reach !== "client" && !helperConnected).length;
     const download = getDownloadUrl();
 
@@ -969,7 +1027,7 @@ export default function Keys({ helperConnection, headerSlot }: KeysProps) {
 
 
     const sections: Record<Group | "helper", () => ReactNode> = {
-        basic: basicSection, enemy: enemySection, temp: tempSection, multi: multiSection, dir: dirSection, own: ownSection, helper: helperSection,
+        basic: basicSection, enemy: enemySection, temp: tempSection, multi: multiSection, dir: dirSection, own: ownSection, plugin: pluginSection, helper: helperSection,
     };
 
     // ── Keyboard ────────────────────────────────────────────────────────
@@ -1148,7 +1206,7 @@ export default function Keys({ helperConnection, headerSlot }: KeysProps) {
                                     <div className="keys-act__text">
                                         <span className={e.command !== undefined ? "keys-mono" : undefined}>{e.label}</span>
                                         <span className={works || shadowed ? "keys-muted" : "keys-danger"}>
-                                            {e.ref.kind === "slot" ? "wbudowane" : e.ref.kind === "custom" ? "własny" : "helper"} · {note}
+                                            {e.ref.kind === "slot" ? "wbudowane" : e.ref.kind === "custom" ? "własny" : e.ref.kind === "plugin" ? `plugin${e.owner ? ` ${e.owner}` : ""}` : "helper"} · {note}
                                         </span>
                                     </div>
                                     <Button size="sm" onClick={() => startCapture({ kind: "entry", entry: e })}>
@@ -1157,7 +1215,7 @@ export default function Keys({ helperConnection, headerSlot }: KeysProps) {
                                     {/* A built-in bind cannot be deleted, but it can be left
                                         without a key; an own shortcut goes altogether. */}
                                     <DeleteButton
-                                        title={e.ref.kind === "slot" ? "Zdejmij klawisz" : "Usuń skrót"}
+                                        title={e.ref.kind === "slot" || e.ref.kind === "plugin" ? "Zdejmij klawisz" : "Usuń skrót"}
                                         onClick={() => removeEntry(e)}
                                     />
                                 </div>
@@ -1207,7 +1265,8 @@ export default function Keys({ helperConnection, headerSlot }: KeysProps) {
 
     const reachChoice = (e: KeyEntry) => {
         const reserved = !!e.combo && isBrowserReserved(e.combo);
-        const helperOk = !!e.combo && toHelperKey(e.combo) !== null;
+        // A plugin action runs in the page only.
+        const helperOk = !!e.combo && e.ref.kind !== "plugin" && toHelperKey(e.combo) !== null;
         const isBindAction = e.targetLabel !== undefined || (e.ref.kind === "helper" && e.command === undefined);
         const options: { reach: Reach; short: string; hint: string; disabled: boolean }[] = [
             {
@@ -1386,7 +1445,8 @@ export default function Keys({ helperConnection, headerSlot }: KeysProps) {
         </div>
     );
 
-    const listOrder: (Group | "helper")[] = ["dir", "basic", "enemy", "temp", "multi", "own", "helper"];
+    // "Pluginy" only once a plugin offers a key action.
+    const listOrder: (Group | "helper")[] = ["dir", "basic", "enemy", "temp", "multi", "own", ...(pluginEntries.length ? ["plugin" as const] : []), "helper"];
     const tabCount = (g: Group | "helper") => g === "helper" ? 0 : entries.filter(e => e.group === g && e.combo).length;
 
     let body: ReactNode;
@@ -1410,6 +1470,7 @@ export default function Keys({ helperConnection, headerSlot }: KeysProps) {
                     <div className="keys-lists__stack">{enemySection()}{tempSection()}{multiSection()}</div>
                     {dirSection()}
                     {ownSection()}
+                    {pluginSection()}
                 </div>
                 {helperSection()}
             </>
@@ -1480,6 +1541,7 @@ export default function Keys({ helperConnection, headerSlot }: KeysProps) {
                 {enemySection()}
                 {multiSection()}
                 {ownSection()}
+                {pluginSection()}
                 {helperSection()}
             </>
         );

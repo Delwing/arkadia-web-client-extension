@@ -83,6 +83,12 @@ export interface BindSettings {
      * entry uses its own default; an entry with no modifier switches it off.
      */
     walkModes?: Record<string, WalkModifiers>;
+    /**
+     * Keys the player picked for plugin key actions, keyed by action id. An
+     * action with no entry uses its own default; an entry with an empty key
+     * switches it off. See @modules/core/pluginKeyRegistry.
+     */
+    pluginKeys?: Record<string, Bind>;
     custom: CustomBind[];
     temp: Bind[];
     enemy: Bind[];

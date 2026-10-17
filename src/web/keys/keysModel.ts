@@ -8,6 +8,7 @@
 
 import { MAX_MULTIBIND_SLOTS, MAX_TEMP_BIND_SLOTS, type Bind, type BindSettings, type DirectionBinds, type WalkModifiers } from "@modules/core/keymapTypes";
 import { directionModifiers, hasWalkModifier, sameWalkModifiers } from "@modules/core/walkModeRegistry";
+import { isPluginKeyOverridden, pluginKeyBindOf, type PluginKeyAction } from "@modules/core/pluginKeyRegistry";
 import type { StoredBind } from "@modules/helper/helperBinds";
 import type { BindMode } from "@modules/helper/helperProtocol";
 import { KEYBOARD, keyDistance } from "./keyboardLayout";
@@ -42,7 +43,7 @@ export function normalizeCode(key: string): string {
     return key;
 }
 
-export function comboOf(bind: Bind | undefined | null): Combo | null {
+export function comboOf(bind?: Bind | null): Combo | null {
     if (!bind || !bind.key) return null;
     return { code: normalizeCode(bind.key), ctrl: !!bind.ctrl, alt: !!bind.alt, shift: !!bind.shift };
 }
@@ -189,7 +190,7 @@ export function fromHelperKey(helperKey: string): Combo | null {
 
 // ── Entries ─────────────────────────────────────────────────────────────
 
-export type Group = "basic" | "enemy" | "temp" | "multi" | "dir" | "own";
+export type Group = "basic" | "enemy" | "temp" | "multi" | "dir" | "own" | "plugin";
 
 export const GROUPS: readonly { id: Group; label: string }[] = [
     { id: "basic", label: "Podstawowe" },
@@ -198,6 +199,7 @@ export const GROUPS: readonly { id: Group; label: string }[] = [
     { id: "multi", label: "Multibindy" },
     { id: "dir", label: "Kierunki" },
     { id: "own", label: "Własne" },
+    { id: "plugin", label: "Pluginy" },
 ];
 
 /** Where a keystroke is heard: by the page, by the helper while the client is in front, or system-wide. */
@@ -325,7 +327,9 @@ export const FOCUS_HELPER_TARGET = "focus";
 export type EntryRef =
     | { kind: "slot"; path: string }
     | { kind: "custom"; index: number }
-    | { kind: "helper"; id: string };
+    | { kind: "helper"; id: string }
+    /** A plugin key action, by its action id */
+    | { kind: "plugin"; id: string };
 
 export interface KeyEntry {
     /** Stable id: `slot:attack`, `custom:2`, `helper:helper_123`. */
@@ -352,11 +356,16 @@ export interface KeyEntry {
     twinId?: string;
     /** A Funkcyjny situation without its own key: it uses the Funkcyjny key. */
     inherits?: boolean;
+    /** For a plugin key action: the plugin it belongs to. */
+    owner?: string;
+    /** For a plugin key action: the player moved it off the plugin's default. */
+    overridden?: boolean;
 }
 
 export function entryId(ref: EntryRef): string {
     if (ref.kind === "slot") return `slot:${ref.path}`;
     if (ref.kind === "custom") return `custom:${ref.index}`;
+    if (ref.kind === "plugin") return `plugin:${ref.id}`;
     return `helper:${ref.id}`;
 }
 
@@ -412,8 +421,12 @@ function helperEntry(b: StoredBind): KeyEntry {
     return { id: entryId(ref), ref, group: "own", label: command, short: command, combo, reach, command };
 }
 
-/** Every binding the window shows, in list order: slots, own shortcuts, helper hotkeys. */
-export function buildEntries(binds: BindSettings, helperBinds: readonly StoredBind[]): KeyEntry[] {
+/** Every binding the window shows, in list order: slots, own shortcuts, plugin actions, helper hotkeys. */
+export function buildEntries(
+    binds: BindSettings,
+    helperBinds: readonly StoredBind[],
+    pluginActions: readonly Pick<PluginKeyAction, "id" | "label" | "pluginName" | "defaultBind">[] = [],
+): KeyEntry[] {
     const entries: KeyEntry[] = [];
     for (const slot of SLOTS) {
         const ref: EntryRef = { kind: "slot", path: slot.path };
@@ -437,6 +450,14 @@ export function buildEntries(binds: BindSettings, helperBinds: readonly StoredBi
             combo: comboOf(b), reach: "client", command: b.command,
         });
     });
+    for (const action of pluginActions) {
+        const ref: EntryRef = { kind: "plugin", id: action.id };
+        entries.push({
+            id: entryId(ref), ref, group: "plugin", label: action.label, short: action.label,
+            combo: comboOf(pluginKeyBindOf(binds, action)), reach: "client",
+            owner: action.pluginName, overridden: isPluginKeyOverridden(binds, action.id),
+        });
+    }
     for (const b of helperBinds) entries.push(helperEntry(b));
     return entries;
 }
@@ -465,7 +486,8 @@ export function mergeEntries(entries: readonly KeyEntry[]): MergedEntries {
     let focus: KeyEntry | undefined;
 
     const twinFor = (entry: KeyEntry): KeyEntry | undefined => {
-        if (!entry.combo) return undefined;
+        // A plugin action runs in the page only; no helper hotkey stands for it.
+        if (!entry.combo || entry.ref.kind === "plugin") return undefined;
         const twin = helpers.find(h => {
             if (taken.has(h.id) || !sameCombo(h.combo, entry.combo)) return false;
             if (entry.ref.kind === "slot") {
@@ -558,7 +580,7 @@ export function conflicts(byCombo: Map<string, KeyEntry[]>, helperConnected: boo
 export function matchesSearch(entry: KeyEntry, query: string): boolean {
     const q = foldText(query.trim());
     if (!q) return true;
-    const hay = [entry.label, entry.short, entry.command ?? "", entry.combo ? comboLabel(entry.combo) : ""].join(" ");
+    const hay = [entry.label, entry.short, entry.command ?? "", entry.owner ?? "", entry.combo ? comboLabel(entry.combo) : ""].join(" ");
     return foldText(hay).includes(q);
 }
 

@@ -45,6 +45,11 @@ się od razu, nie ma przycisku "Zapisz".
   macOS Ctrl+strzałki zajmuje system (Mission Control), więc tryb na Ctrl przy
   kierunkach na strzałkach jest oznaczony jako kolizja. Przełącznik trybu ruchu (`` ` ``) działa
   jak dotąd, niezależnie od tych modyfikatorów.
+- **Pluginy** - akcje, które wtyczki podpinają pod klawisze (`api.keys.register`),
+  np. "Szukaj ziół tutaj" na Alt+H. Wtyczka tylko proponuje klawisz: można go
+  zmienić albo zdjąć jak każdy inny, a "domyślny" przywraca propozycję wtyczki.
+  Wybór zapisuje się w mapie klawiszy. Akcje wtyczek działają tylko w kliencie
+  (nie przez helpera). Sekcja pojawia się, gdy któraś wtyczka doda akcję.
 - W menu `...`: nowa mapa klawiszy, zmiana nazwy, import bazy multibindów,
   przywrócenie domyślnych bindów, usunięcie mapy.
 

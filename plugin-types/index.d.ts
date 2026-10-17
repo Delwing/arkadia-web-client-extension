@@ -2118,31 +2118,54 @@ export interface PluginKeyBind {
     shift?: boolean;
 }
 
-/** Handle for a registered key, see {@link KeysApi.register} */
+/** A key action for {@link KeysApi.register} */
+
+export interface PluginKeyActionOptions {
+    /**
+     * Stable id; the player's key is stored under it, so keep it the same across
+     * versions. Prefix it with the plugin's name: "zielarz.searchHere".
+     */
+    id: string;
+    /** What the action does, as shown in Klawisze: "Szukaj ziół tutaj" */
+    label: string;
+    /** The key suggested until the player picks one; leave out for no key */
+    defaultKey?: PluginKeyBind;
+    /** Runs when the action's key is pressed; the key's default action is prevented */
+    onPress: (event: KeyboardEvent) => void;
+}
+
+/** Handle for a registered key action, see {@link KeysApi.register} */
 
 export interface PluginKeyHandle {
+    /** The key the action listens on now (the player's choice or the default), or null */
+    getKey(): PluginKeyBind | null;
     remove(): void;
 }
 
 /**
- * Keys API - plugin-owned keyboard shortcuts
+ * Keys API - plugin key actions, listed and rebindable in Klawisze
  */
 
 export interface KeysApi {
     /**
-     * Run a callback when a key combination is pressed anywhere in the client.
-     * The key's default action is prevented. Removed when the plugin unloads.
+     * Register an action the player can trigger with a key. It is listed in
+     * Klawisze under "Pluginy", where the player can move it to another key or
+     * switch it off; that choice is stored in their keymap. Until then the
+     * action listens on `defaultKey`. Removed when the plugin unloads.
      *
-     * Pick combinations the player is unlikely to use already; a player's own
-     * bind on the same keys fires as well.
+     * @returns null when another plugin already registered this id
      *
      * @example
      * ```typescript
-     * const searchKey = api.keys.register({ key: "h", alt: true }, () => searchHere());
-     * // later: searchKey.remove();
+     * api.keys.register({
+     *   id: 'zielarz.searchHere',
+     *   label: 'Szukaj ziół tutaj',
+     *   defaultKey: { key: 'h', alt: true },
+     *   onPress: () => searchHere(),
+     * });
      * ```
      */
-    register(bind: PluginKeyBind, callback: (event: KeyboardEvent) => void): PluginKeyHandle;
+    register(action: PluginKeyActionOptions): PluginKeyHandle | null;
 }
 
 /**

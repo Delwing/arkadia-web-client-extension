@@ -2,7 +2,8 @@ import {expect, test} from './support/fixtures';
 import type {Page} from '@playwright/test';
 import {createRequire} from 'node:module';
 import * as esbuild from 'esbuild';
-import {ensureGameSocket, pushText, submitCommand, waitForCommandInput, waitForOutputContaining} from './support/mocks';
+import {ensureGameSocket, getRecentOutput, pushText, submitCommand, waitForCommandInput, waitForOutputContaining} from './support/mocks';
+import {bindKey, captureKey, closeKeysWindow, openKeysWindow} from './support/keys';
 
 /**
  * A plugin written in TSX and bundled with the published `arkadiaHostUi()`
@@ -49,7 +50,12 @@ export async function init(pluginApi) {
     createContent: () => <Counter />,
   });
   api.aliases.register(/^\\/rx$/, () => { popup.open(); });
-  api.keys.register({ key: 'h', alt: true }, () => api.output.print('alt-h pressed'));
+  api.keys.register({
+    id: 'rxtest.ping',
+    label: 'Ping testowy',
+    defaultKey: { key: 'h', alt: true },
+    onPress: () => api.output.print('alt-h pressed'),
+  });
   api.aliases.register(/^\\/rx-wait$/, async () => {
     const r = await api.triggers.waitFor(/^Ping (\\w+)$/, { timeout: 5000 });
     api.output.print('pong ' + r.match[1]);
@@ -133,6 +139,29 @@ test.describe('Plugin React UI', () => {
         await page.locator('#message-input').focus();
         await page.keyboard.press('Alt+KeyH');
         await waitForOutputContaining(page, 'alt-h pressed');
+    });
+
+    test('its key action is listed in Klawisze, where the player can move it and reset it', async ({page}) => {
+        await openKeysWindow(page);
+        const section = page.locator('#binds-modal [data-section="plugin"]');
+        await expect(section.getByText('Ping testowy')).toBeVisible();
+        await expect(section.getByText(PLUGIN_NAME)).toBeVisible();
+        await expect(bindKey(page, 'plugin:rxtest.ping')).toHaveText('Alt+H');
+
+        await captureKey(page, 'plugin:rxtest.ping', 'F7');
+        await expect(bindKey(page, 'plugin:rxtest.ping')).toHaveText('F7');
+        await closeKeysWindow(page);
+
+        await page.locator('#message-input').focus();
+        await page.keyboard.press('Alt+KeyH');
+        await page.keyboard.press('F7');
+        await waitForOutputContaining(page, 'alt-h pressed');
+        const output = await getRecentOutput(page);
+        expect(output.split('alt-h pressed').length - 1, 'only the new key should fire').toBe(1);
+
+        await openKeysWindow(page);
+        await section.getByRole('button', {name: 'domyślny'}).click();
+        await expect(bindKey(page, 'plugin:rxtest.ping')).toHaveText('Alt+H');
     });
 
     test('waits for a game line', async ({page}) => {

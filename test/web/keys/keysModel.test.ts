@@ -292,3 +292,33 @@ describe("temp bind slots", () => {
         expect(hot.group).toBe("temp");
     });
 });
+
+describe("plugin key actions", () => {
+    const search = { id: "zielarz.searchHere", label: "Szukaj ziół tutaj", pluginName: "Zielarz", defaultBind: { key: "KeyH", alt: true } };
+    const pluginEntry = (b: BindSettings) => buildEntries(b, [], [search]).find(e => e.ref.kind === "plugin")!;
+
+    it("are listed with their default key until the player picks one", () => {
+        const e = pluginEntry(binds());
+        expect(e).toMatchObject({ id: "plugin:zielarz.searchHere", group: "plugin", owner: "Zielarz", overridden: false, reach: "client" });
+        expect(e.combo).toEqual(combo("KeyH", { alt: true }));
+    });
+
+    it("follow the keymap: another key, or none when switched off", () => {
+        expect(pluginEntry(binds({ pluginKeys: { "zielarz.searchHere": { key: "F7" } } }))).toMatchObject({ combo: combo("F7"), overridden: true });
+        expect(pluginEntry(binds({ pluginKeys: { "zielarz.searchHere": { key: "" } } }))).toMatchObject({ combo: null, overridden: true });
+    });
+
+    it("clash with a built-in on the same key", () => {
+        const b = binds({ lamp: { key: "KeyH", alt: true } });
+        const byCombo = entriesByCombo(mergeEntries(buildEntries(b, [], [search])).list);
+        expect(byCombo.get(comboId(combo("KeyH", { alt: true })))!.map(e => e.id)).toEqual(["slot:lamp", "plugin:zielarz.searchHere"]);
+        expect(conflicts(byCombo, false)).toContain(comboId(combo("KeyH", { alt: true })));
+    });
+
+    it("never fold into a helper hotkey and are found by their plugin's name", () => {
+        const helper: StoredBind = { id: "h1", key: "alt+h", mode: "global", action: "command", command: "" } as StoredBind;
+        const { list } = mergeEntries(buildEntries(binds(), [helper], [search]));
+        expect(list.find(e => e.ref.kind === "plugin")!.twinId).toBeUndefined();
+        expect(matchesSearch(pluginEntry(binds()), "zielarz")).toBe(true);
+    });
+});

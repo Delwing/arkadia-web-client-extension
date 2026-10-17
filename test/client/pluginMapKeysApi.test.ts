@@ -1,5 +1,7 @@
 import { PluginApiImpl } from '@client/PluginApi';
 import { getRoomMenuEntries } from '@modules/core/pluginUiRegistry';
+import { getPluginKeyActions } from '@modules/core/pluginKeyRegistry';
+import { globalStorage } from '@modules/core/storage';
 
 function fakeClient() {
     return {
@@ -8,10 +10,6 @@ function fakeClient() {
             getRoomDistances: jest.fn(() => new Map([[5, 3], [6, null]])),
             leadTo: jest.fn(),
             clearLeadTo: jest.fn(),
-        },
-        keyBindingManager: {
-            registerPluginBind: jest.fn(),
-            unregisterPluginBind: jest.fn(),
         },
     };
 }
@@ -55,21 +53,45 @@ describe('plugin map additions', () => {
 });
 
 describe('plugin keys', () => {
-    test('register through the key manager and unregister on remove and unload', () => {
-        const client = fakeClient();
-        const api = new PluginApiImpl(client as never, 'zielarz');
-        const callback = jest.fn();
+    beforeEach(() => localStorage.clear());
 
-        const handle = api.keys.register({ key: 'h', alt: true }, callback);
-        api.keys.register({ key: 'F6' }, jest.fn());
-        const [[firstId, bind, cb]] = client.keyBindingManager.registerPluginBind.mock.calls as unknown as [string, unknown, unknown][];
-        expect(bind).toEqual({ key: 'h', alt: true });
-        expect(cb).toBe(callback);
+    test('registers a named action with its normalised default key, listed under the plugin name', () => {
+        const api = new PluginApiImpl(fakeClient() as never, 'https://example.com/zielarz.js');
+        const onPress = jest.fn();
+        const handle = api.keys.register({ id: 'zielarz.searchHere', label: 'Szukaj ziół tutaj', defaultKey: { key: 'h', alt: true }, onPress });
 
-        handle.remove();
-        expect(client.keyBindingManager.unregisterPluginBind).toHaveBeenCalledWith(firstId);
+        const [action] = getPluginKeyActions();
+        expect(action).toMatchObject({ id: 'zielarz.searchHere', label: 'Szukaj ziół tutaj', defaultBind: { key: 'KeyH', alt: true } });
+        expect(handle!.getKey()).toEqual({ key: 'KeyH', ctrl: false, alt: true, shift: false });
+
+        api.setPluginName('Zielarz');
+        expect(getPluginKeyActions()[0].pluginName).toBe('Zielarz');
+
+        globalStorage.set('binds', { pluginKeys: { 'zielarz.searchHere': { key: 'F7' } } } as never);
+        expect(handle!.getKey()).toEqual({ key: 'F7', ctrl: false, alt: false, shift: false });
+        globalStorage.set('binds', { pluginKeys: { 'zielarz.searchHere': { key: '' } } } as never);
+        expect(handle!.getKey()).toBeNull();
 
         api.cleanup();
-        expect(client.keyBindingManager.unregisterPluginBind).toHaveBeenCalledTimes(2);
+        expect(getPluginKeyActions()).toEqual([]);
+    });
+
+    test('another plugin cannot take an id, the owner can replace its own', () => {
+        const zielarz = new PluginApiImpl(fakeClient() as never, 'zielarz');
+        const other = new PluginApiImpl(fakeClient() as never, 'other');
+        const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+        const first = zielarz.keys.register({ id: 'zielarz.searchHere', label: 'a', onPress: jest.fn() });
+        expect(other.keys.register({ id: 'zielarz.searchHere', label: 'b', onPress: jest.fn() })).toBeNull();
+        zielarz.keys.register({ id: 'zielarz.searchHere', label: 'c', onPress: jest.fn() });
+        expect(getPluginKeyActions().map(a => a.label)).toEqual(['c']);
+
+        // The replaced handle no longer removes the newer registration
+        first!.remove();
+        expect(getPluginKeyActions()).toHaveLength(1);
+
+        warn.mockRestore();
+        zielarz.cleanup();
+        expect(getPluginKeyActions()).toEqual([]);
     });
 });

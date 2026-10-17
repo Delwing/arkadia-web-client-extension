@@ -8,6 +8,7 @@
   --keys-multi: color-mix(in oklab, #d98bb4 85%, var(--popup-text));
   --keys-dir: color-mix(in oklab, #62b8be 85%, var(--popup-text));
   --keys-own: color-mix(in oklab, #a898dc 85%, var(--popup-text));
+  --keys-plugin: color-mix(in oklab, #9cc46a 85%, var(--popup-text));
   --keys-helper: var(--popup-accent);
   --keys-global: var(--popup-success);
   position: relative;
@@ -28,6 +29,7 @@
 .keys [data-group="multi"] { --g: var(--keys-multi); }
 .keys [data-group="dir"] { --g: var(--keys-dir); }
 .keys [data-group="own"] { --g: var(--keys-own); }
+.keys [data-group="plugin"] { --g: var(--keys-plugin); }
 
 /* ── Small parts ───────────────────────────────────────────────────── */
 

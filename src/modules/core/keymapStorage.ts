@@ -1,5 +1,5 @@
 import { globalStorage } from './storage';
-import type { BindSettings, Keymap, KeymapStore, WalkModifiers } from './keymapTypes';
+import type { Bind, BindSettings, Keymap, KeymapStore, WalkModifiers } from './keymapTypes';
 import {
     ACTIVE_KEYMAP_STORAGE_KEY,
     DEFAULT_KEYMAP_ID,
@@ -349,6 +349,7 @@ function mergeBindSettings(raw: any): BindSettings {
             ? raw.multibinds.map((b: any) => (b && typeof b === 'object' && typeof b.key === 'string' ? b : { key: '' }))
             : defaultBinds.multibinds!.map(b => ({ ...b })),
         walkModes: mergeWalkModes(raw.walkModes),
+        pluginKeys: mergePluginKeys(raw.pluginKeys),
         custom: Array.isArray(raw.custom) ? raw.custom : [],
     };
 }
@@ -361,6 +362,18 @@ function mergeWalkModes(raw: unknown): Record<string, WalkModifiers> | undefined
         if (!value || typeof value !== 'object') continue;
         const mods = value as WalkModifiers;
         out[id] = { ctrl: !!mods.ctrl, alt: !!mods.alt, shift: !!mods.shift };
+    }
+    return out;
+}
+
+/** Keeps only well-formed plugin keys; an empty key is kept on purpose (action off). */
+function mergePluginKeys(raw: unknown): Record<string, Bind> | undefined {
+    if (!raw || typeof raw !== 'object') return undefined;
+    const out: Record<string, Bind> = {};
+    for (const [id, value] of Object.entries(raw as Record<string, unknown>)) {
+        if (!value || typeof value !== 'object' || typeof (value as Bind).key !== 'string') continue;
+        const bind = value as Bind;
+        out[id] = { key: bind.key, ...(bind.ctrl && { ctrl: true }), ...(bind.alt && { alt: true }), ...(bind.shift && { shift: true }) };
     }
     return out;
 }

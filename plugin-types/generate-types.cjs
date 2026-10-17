@@ -102,6 +102,7 @@ function shouldExport(node) {
         name === 'HerbBagInspection' ||
         name === 'ContainerCommandForms' ||
         name === 'PluginKeyBind' ||
+        name === 'PluginKeyActionOptions' ||
         name === 'PluginInfo' ||
         name === 'Plugin' ||
         name === 'PopupContent' ||

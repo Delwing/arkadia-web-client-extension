@@ -715,12 +715,25 @@ const label = api.bind.getLabel();
 
 #### `api.keys` - Własne Skróty Klawiszowe
 
+Plugin rejestruje **akcję** z proponowanym klawiszem. Akcja pojawia się w oknie Klawisze w sekcji „Pluginy”, gdzie gracz może przenieść ją na inny klawisz, zdjąć klawisz albo wrócić do domyślnego. Wybór gracza zapisuje się w jego zestawie klawiszy (synchronizuje się razem z nim).
+
 ```typescript
-const key = api.keys.register({ key: 'h', alt: true }, () => searchHere());
-key.remove();
+const search = api.keys.register({
+  id: 'zielarz.searchHere',          // stały identyfikator - pod nim zapisuje się klawisz gracza
+  label: 'Szukaj ziół tutaj',        // nazwa w oknie Klawisze
+  defaultKey: { key: 'h', alt: true },
+  onPress: () => searchHere(),
+});
+
+search?.getKey();    // { key: 'KeyH', alt: true, ... } - aktualny klawisz (gracza albo domyślny), null gdy brak
+search?.remove();
 ```
 
-`key` to litera lub cyfra (`'h'`, `'4'`) albo `KeyboardEvent.code` dla pozostałych klawiszy (`'F6'`, `'Backquote'`, `'Numpad5'`). Litery i cyfry są dopasowywane po fizycznym klawiszu, więc Alt+H działa także w układzie polskim. Domyślna akcja klawisza jest blokowana. Wybieraj kombinacje, których gracz raczej nie używa — jego własny bind na tych samych klawiszach też się wykona. Skróty znikają przy wyładowaniu pluginu.
+- `id` nie zmieniaj między wersjami pluginu i poprzedź go nazwą pluginu. Nie zależy od adresu pluginu, więc klawisz gracza przetrwa przeniesienie pluginu pod inny URL. Gdy inny plugin zajął już to `id`, `register` zwraca `null`.
+- `key` to litera lub cyfra (`'h'`, `'4'`) albo `KeyboardEvent.code` dla pozostałych klawiszy (`'F6'`, `'Backquote'`, `'Numpad5'`). Litery i cyfry są dopasowywane po fizycznym klawiszu, więc Alt+H działa także w układzie polskim.
+- Bez `defaultKey` akcja nie ma klawisza, dopóki gracz go nie przypisze.
+- Domyślna akcja klawisza jest blokowana. Klawisze pokazują konflikt, gdy na tym samym klawiszu jest też inny bind.
+- Akcje znikają z okna przy wyładowaniu pluginu; zapisany klawisz gracza wraca, gdy plugin się znowu załaduje.
 
 #### `api.multibinds` - Tymczasowe Multibindy
 
