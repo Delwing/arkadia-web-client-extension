@@ -86,6 +86,41 @@ export async function exportNotes(): Promise<LocationNote[]> {
     return getAllNotes();
 }
 
+/**
+ * Make the store hold exactly `notes` (sync apply): notes missing from the list
+ * are deleted, so a deletion on another device propagates. Emits
+ * locationNote.changed for every room whose note was added, changed or removed.
+ */
+export async function replaceAllNotes(notes: LocationNote[]): Promise<void> {
+    if (!Array.isArray(notes)) return;
+    const existing = new Map((await getAllNotes()).map(note => [note.id, note]));
+    const incoming = new Map(notes.map(note => [note.id, note]));
+    const changed = new Set<number>();
+    for (const id of existing.keys()) {
+        if (!incoming.has(id)) changed.add(id);
+    }
+    for (const [id, note] of incoming) {
+        if (JSON.stringify(existing.get(id)) !== JSON.stringify(note)) changed.add(id);
+    }
+    if (changed.size === 0) return;
+
+    const db = await openDB();
+    await new Promise<void>((resolve, reject) => {
+        const tx = db.transaction(['notes'], 'readwrite');
+        const store = tx.objectStore('notes');
+        for (const id of changed) {
+            const note = incoming.get(id);
+            if (note) store.put(note);
+            else store.delete(id);
+        }
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(new Error('Failed to replace notes'));
+    });
+    for (const roomId of changed) {
+        eventBus.emit('locationNote.changed', { roomId });
+    }
+}
+
 export async function importNotes(notes: LocationNote[]): Promise<void> {
     if (!Array.isArray(notes)) return;
     if (notes.length === 0) return;

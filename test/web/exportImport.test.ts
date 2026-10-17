@@ -16,6 +16,7 @@ vi.mock('@web/dataStores/multibindStore', () => ({
 vi.mock('@web/options/locationNotesStorage', () => ({
     exportNotes: jest.fn().mockResolvedValue([]),
     importNotes: jest.fn().mockResolvedValue(undefined),
+    replaceAllNotes: jest.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('@client/scripts/killLifetimeStorage.ts', () => ({
@@ -1239,5 +1240,22 @@ describe('legacy backup restore', () => {
         // Alice migrated while her local totals were still there; Bob too
         expect(order).toEqual(['migrate:Alice:{"orka":3}', 'migrate:Bob:null']);
         expect(localStorage.getItem('Alice:kill_counter')).toBe(JSON.stringify({ orka: 9 }));
+    });
+});
+
+describe('locationNotes sync category', () => {
+    beforeEach(() => {
+        localStorage.clear();
+    });
+
+    it('exports nothing when there are no notes and notes never synced', async () => {
+        expect(await exportCategory('locationNotes', [])).toBeNull();
+    });
+
+    it('exports an empty list once notes have synced, so deleting the last note propagates', async () => {
+        localStorage.setItem('arkadia.firebaseSettings', JSON.stringify({
+            categorySyncChecksums: { locationNotes: 'abc' },
+        }));
+        expect(await exportCategory('locationNotes', [])).toBe('[]');
     });
 });

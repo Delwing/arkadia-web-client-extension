@@ -166,6 +166,8 @@ class FirebaseSyncEngine {
         this.storageUnsubs = [
             characterStorage.onAnyChange(onChange),
             globalStorage.onAnyChange(onChange),
+            // Location notes live in IndexedDB, outside the storage listeners
+            eventBus.on('locationNote.changed', () => onChange('locationNotes')),
         ];
 
         this.pushPassphraseToListener();

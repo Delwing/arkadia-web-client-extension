@@ -1,6 +1,6 @@
 import { getSnapshot as getMultibindsSnapshot, replaceAll as replaceMultibinds, type StoredMultibindRecord } from "../dataStores/multibindStore";
 import type { RecordedEvent } from "@web/recordingStorage.ts";
-import { exportNotes, importNotes, type LocationNote } from "./locationNotesStorage";
+import { exportNotes, importNotes, replaceAllNotes, type LocationNote } from "./locationNotesStorage";
 import { exportAllKillRecords, importAllKillRecords, migrateFromLocalStorage, type KillRecord } from "@client/scripts/killLifetimeStorage.ts";
 import { mergeProfessionStates } from "@client/scripts/profession";
 import { getKnowledgeStore, type KnowledgeProgressByCharacter, type KnowledgeBookProgressByCharacter } from "@modules/data/dataStores/knowledgeStore";
@@ -532,6 +532,7 @@ import {
     DEVICE_SCOPED_SYNC_CATEGORIES,
     getCategoryDefinition,
 } from '@modules/firebase/categoryRegistry';
+import { loadFirebaseSettings } from '@modules/firebase/firebaseTypes';
 
 export interface CategoryData {
     // Device-scoped settings bundle: interface settings + layout + trip routes
@@ -707,7 +708,12 @@ export async function exportCategory(
             }
             case 'locationNotes': {
                 const locationNotes = await exportNotes();
-                return locationNotes.length > 0 ? JSON.stringify(locationNotes) : null;
+                if (locationNotes.length > 0) return JSON.stringify(locationNotes);
+                // Deleting the last note must still sync as an empty list — with
+                // no data the sync treats this device as fresh and pulls the
+                // deleted notes back. A device that never synced notes exports
+                // nothing, so it takes the cloud notes instead of conflicting.
+                return loadFirebaseSettings().categorySyncChecksums.locationNotes !== undefined ? '[]' : null;
             }
             case 'killCounts': {
                 const selectedSet = new Set(selectedCharacters);
@@ -923,7 +929,7 @@ export async function importCategory(
                 break;
             }
             case 'locationNotes': {
-                await importNotes(Array.isArray(data) ? data : []);
+                await replaceAllNotes(Array.isArray(data) ? data : []);
                 break;
             }
             case 'killCounts': {
