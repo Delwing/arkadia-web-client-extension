@@ -3596,6 +3596,41 @@ export interface ContainersApi {
         name: string;
         count: string | number;
     }[] | null>;
+    /**
+     * Bag nouns the client can build commands for ("plecak", "torba", "worek", ...),
+     * e.g. to offer them in a dropdown.
+     */
+    listBags(): string[];
+    /**
+     * Assign a bag to one of this plugin's types, as the player would with /pojemnik.
+     * Pass `"2. torba"` for the second of several same bags, or null to go back to
+     * the fallback type's bag. The choice is stored per character.
+     * @returns false for a bag the client does not know or a type this plugin did not register
+     */
+    setContainer(type: string, bag: string | null): boolean;
+    /**
+     * Ready-to-send forms of the type's bag, with pronoun and ordinal:
+     * `{ biernik: "swoj plecak", dopelniacz: "swojego plecaka", from: "ze" }`.
+     * Null when the type has no known bag.
+     *
+     * @example
+     * ```typescript
+     * const box = api.containers.getCommandForms("zielarz-robocza");
+     * if (box) api.command.send(`wez otwarty woreczek ${box.from} ${box.dopelniacz}`);
+     * ```
+     */
+    getCommandForms(type: ContainerType): ContainerCommandForms | null;
+}
+
+/** See {@link ContainersApi.getCommandForms} */
+
+export interface ContainerCommandForms {
+    /** After otworz / zamknij / ob: "swoj plecak", "2. swoja sakiewke" */
+    biernik: string;
+    /** After do / z: "swojego plecaka" */
+    dopelniacz: string;
+    /** Preposition for taking out: "ze" before "swojego", "z" before an ordinal */
+    from: 'z' | 'ze';
 }
 
 /**
@@ -3704,6 +3739,61 @@ export interface HerbsApi {
      * ```
      */
     getData(): Promise<HerbsData | null>;
+    /**
+     * Herb id for a description as the game prints it, in any case form, with or
+     * without a count: "zolty jasny kwiat", "dwa zolte jasne kwiaty". Null when it
+     * is not a herb.
+     *
+     * @example
+     * ```typescript
+     * api.triggers.register(/^Znajdujesz (?!sie )(.*)\.$/, (line, m) => {
+     *   api.herbs.resolve(m[1]).then(id => id && found.push(id));
+     *   return line;
+     * });
+     * ```
+     */
+    resolve(text: string): Promise<string | null>;
+    /**
+     * The herb's form that follows a count in a command: `form("deliona", 1)` gives
+     * the accusative, 2-4 the plural accusative, 5+ the plural genitive. Unknown
+     * herbs return the id unchanged.
+     *
+     * @example
+     * ```typescript
+     * api.command.send(`wez 5 ${await api.herbs.form("deliona", 5)} z 2. swojego woreczka`);
+     * ```
+     */
+    form(herbId: string, count: number): Promise<string>;
+    /**
+     * Look into one herb bag and read what is in it. `target` is the rest of the
+     * `zajrzyj do` command: "swojego woreczka", "2. swojego woreczka",
+     * "swojego zamknietego woreczka". The bag must be at hand, not inside a container.
+     * Resolves with null when there is no such bag or no listing within the
+     * timeout (5 s by default); rejects with the signal's reason when aborted.
+     *
+     * @example
+     * ```typescript
+     * const bag = await api.herbs.inspectBag("swojego zamknietego woreczka");
+     * if (bag && bag.total + found.length > 44) { ... take a new bag ... }
+     * ```
+     */
+    inspectBag(target: string, options?: {
+        timeout?: number;
+        signal?: AbortSignal;
+    }): Promise<HerbBagInspection | null>;
+}
+
+/** Result of {@link HerbsApi.inspectBag} */
+
+export interface HerbBagInspection {
+    /** Herbs by id; names that are not known herbs are under their own name */
+    herbs: Record<string, number>;
+    /** All herbs in the bag ("wiele" counts as the player's herb setting, 25 by default) */
+    total: number;
+    /** True when the bag holds nothing */
+    empty: boolean;
+    /** Names in the bag that are not known herbs */
+    unknown: string[];
 }
 
 /**

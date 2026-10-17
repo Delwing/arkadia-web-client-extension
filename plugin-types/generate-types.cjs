@@ -99,6 +99,8 @@ function shouldExport(node) {
         name === 'PluginWindowSettingField' ||
         name === 'PluginKeyValueStore' ||
         name === 'WaitForResult' ||
+        name === 'HerbBagInspection' ||
+        name === 'ContainerCommandForms' ||
         name === 'PluginInfo' ||
         name === 'Plugin' ||
         name === 'PopupContent' ||

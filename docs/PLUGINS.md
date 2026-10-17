@@ -575,6 +575,43 @@ api.character.onChange((name) => { /* ... */ });
 
 Trzymaj tu małe dane (ustawienia, listy). Rosnące dane, np. dziennik, zapisuj w IndexedDB z nazwą postaci w kluczu. Nasłuchy znikają przy wyładowaniu pluginu.
 
+#### `api.herbs` - Zioła
+
+```typescript
+await api.herbs.getData();                          // odmiany i działanie wszystkich ziół
+api.herbs.getBags();                                // stan woreczków z /ziola_buduj
+await api.herbs.take('deliona', 3);                 // wyjmij z woreczków (jak /wezz)
+
+await api.herbs.resolve('dwa zolte jasne kwiaty');  // 'deliona' (null, gdy to nie zioło)
+await api.herbs.form('deliona', 5);                 // 'zoltych jasnych kwiatow' - forma po liczbie
+
+// Zajrzyj do jednego woreczka i odczytaj zawartość
+const bag = await api.herbs.inspectBag('swojego zamknietego woreczka');
+// { herbs: { deliona: 2, ... }, total: 31, empty: false, unknown: [] } albo null
+```
+
+`inspectBag` wysyła `zajrzyj do <cel>` i czeka na opis woreczka. Woreczek musi być pod ręką (nie w plecaku). Zwraca `null`, gdy takiego woreczka nie ma albo opis nie przyjdzie w czasie (`timeout`, domyślnie 5 s); „wiele” liczy jak ustawienie ziół gracza (domyślnie 25).
+
+#### `api.containers` - Pojemniki
+
+Plugin rejestruje własne typy pojemników, a gracz (albo plugin) przypisuje im worek, torbę itp.:
+
+```typescript
+api.containers.registerType('zielarz-magazyn', { label: 'Zielarz: magazyn', fallback: 'other' });
+
+api.containers.listBags();                               // ['plecak', 'torba', 'worek', ...] - np. do listy wyboru
+api.containers.setContainer('zielarz-magazyn', 'worek'); // jak /pojemnik; '2. torba' dla drugiej; null = jak typ zapasowy
+
+const box = api.containers.getCommandForms('zielarz-magazyn');
+// { biernik: 'swoj worek', dopelniacz: 'swojego worka', from: 'ze' }
+api.command.send(`wez zamkniety woreczek ${box.from} ${box.dopelniacz}`);
+
+api.containers.put('zielarz-magazyn', 'woreczek');       // otworz / wloz / zamknij wg ustawień
+await api.containers.inspect('zielarz-magazyn');         // lista przedmiotów albo null
+```
+
+`setContainer` działa tylko dla typów zarejestrowanych przez ten plugin. Wybór gracza zostaje zapisany i wraca po ponownym załadowaniu pluginu.
+
 #### `api.team` - Drużyna
 
 ```typescript

@@ -3,7 +3,7 @@ import type { ClientAdapter } from '@client/Client';
 import { characterStorage } from '@modules/core/storage';
 import Triggers from '@client/Triggers';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
-import initBagManager, { containerAction, getContainer, getContainerForms, registerContainerType, unregisterContainerType } from '@client/scripts/bagManager';
+import initBagManager, { assignContainer, containerAction, getContainer, getContainerCommandForms, getContainerForms, listKnownBags, registerContainerType, unregisterContainerType } from '@client/scripts/bagManager';
 import { setTestSettings } from '../helpers/testSettings';
 
 describe('bagManager containerAction', () => {
@@ -125,6 +125,33 @@ describe('bagManager plugin container types', () => {
     test('unknown type has no bag', () => {
         expect(getContainer('test-missing')).toBe('');
         expect(getContainerForms('test-missing')).toBeNull();
+        expect(getContainerCommandForms('test-missing')).toBeNull();
+    });
+
+    test('assigns a bag to a plugin type without printing, and stores it', () => {
+        registerContainerType('test-sockets', { fallback: 'gems' });
+        expect(assignContainer('test-sockets', 'torba')).toBe(true);
+        expect(getContainerCommandForms('test-sockets')).toEqual({ biernik: 'swoja torbe', dopelniacz: 'swojej torby', from: 'ze' });
+        expect(characterStorage.get('containers')['test-sockets']).toBe('torba');
+        expect(sentCommands()).toEqual([]);
+
+        expect(assignContainer('test-sockets', '2.Sakiewka')).toBe(true);
+        expect(getContainerCommandForms('test-sockets')).toEqual({ biernik: '2. swoja sakiewke', dopelniacz: '2. swojej sakiewki', from: 'z' });
+
+        expect(assignContainer('test-sockets', null)).toBe(true);
+        expect(getContainer('test-sockets')).toBe(getContainer('gems'));
+    });
+
+    test('refuses unknown bags, built-in and unregistered types', () => {
+        registerContainerType('test-sockets', { fallback: 'gems' });
+        expect(assignContainer('test-sockets', 'kufer')).toBe(false);
+        expect(assignContainer('gems', 'torba')).toBe(false);
+        expect(assignContainer('test-missing', 'torba')).toBe(false);
+        expect(getContainer('gems')).toBe('plecak');
+    });
+
+    test('lists the bags it can build commands for', () => {
+        expect(listKnownBags()).toEqual(expect.arrayContaining(['plecak', 'torba', 'worek', 'sakiewka']));
     });
 });
 

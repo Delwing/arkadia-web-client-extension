@@ -172,6 +172,45 @@ export function getContainerForms(type: ContainerType): ContainerForms | null {
     };
 }
 
+/** Bag nouns the client can build commands for, in the nominative ("plecak", "torba", ...) */
+export function listKnownBags(): string[] {
+    return Object.keys(bagPronouns);
+}
+
+export interface ContainerCommandForms {
+    /** "swoj plecak", "2. swoja sakiewke" - after otworz / zamknij / ob */
+    biernik: string;
+    /** "swojego plecaka" - after do / z */
+    dopelniacz: string;
+    /** The preposition for taking out: "ze" before "swojego", "z" before an ordinal */
+    from: "z" | "ze";
+}
+
+/** Ready-to-send forms of the bag assigned to a type, with its pronoun and ordinal */
+export function getContainerCommandForms(type: ContainerType): ContainerCommandForms | null {
+    const bag = resolveBag(type);
+    const forms = bag ? getBagForms(bag) : null;
+    return forms ? { biernik: forms.biernik, dopelniacz: forms.dopelniacz, from: forms.from } : null;
+}
+
+/**
+ * Assigns a bag ("plecak", "2. sakiewka") to a plugin type without printing,
+ * or with null returns the type to its fallback's bag. False for an unknown bag
+ * or a type that is not a registered plugin type.
+ */
+export function assignContainer(type: string, bag: string | null): boolean {
+    if (!customTypes.has(type)) return false;
+    if (bag === null) {
+        delete containerConfig[type];
+    } else {
+        const normalized = bag.trim().toLowerCase().replace(/^(\d+)\.\s*/, '$1. ');
+        if (!bagPronouns[parseBag(normalized).noun]) return false;
+        containerConfig[type] = normalized;
+    }
+    characterStorage.set(STORAGE_KEY, containerConfig);
+    return true;
+}
+
 /** Command forms of a known bag, with the ordinal of the chosen one ("2. swoja sakiewke") */
 function getBagForms(bag: string) {
     const { noun, index } = parseBag(bag);
@@ -182,7 +221,7 @@ function getBagForms(bag: string) {
         biernik: `${ordinal}${bagPronouns[noun].biernik} ${bagInBiernik[noun]}`,
         dopelniacz: `${ordinal}${bagPronouns[noun].dopelniacz} ${bagInDopelniacz[noun]}`,
         // "ze swojej", but "z 2. swojej"
-        from: ordinal ? "z" : "ze",
+        from: (ordinal ? "z" : "ze") as "z" | "ze",
     };
 }
 

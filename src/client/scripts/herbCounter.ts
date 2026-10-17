@@ -1,5 +1,10 @@
 import Client from "../Client";
-import {parseItems} from "./prettyContainers";
+import {
+    HERB_BAG_CONTENT_PATTERNS,
+    HERB_BAG_EMPTY_PATTERNS,
+    herbFormForCount as getHerbCase,
+    parseHerbBagContent,
+} from "./herbBags";
 import loadHerbs, {HerbsData, isHerbSmokable} from "./herbsLoader";
 import {colorString, createColorFormat, mudletColorLine} from "@modules/core/Colors";
 import {openHerbContextMenu} from "@modules/core/contextMenus";
@@ -22,33 +27,9 @@ const STORAGE_KEY = "herb_counts";
 const SMOKE_GLYPH_CLASS = 'herb-smoke-glyph';
 const SMOKE_GLYPH_TEXT = '  ';
 
-const biernikDigits = new Set([2, 3, 4]);
-
-function getHerbCase(herbId: string, amount: number, herbsData?: HerbsData | null): string {
-    const forms = herbsData?.herb_id_to_odmiana[herbId];
-    if (!forms) return herbId;
-    const num = Number(amount);
-    if (num < 22) {
-        if (num === 1) {
-            return forms.biernik;
-        }
-        if (biernikDigits.has(num)) {
-            return forms.mnoga_biernik;
-        }
-        return forms.mnoga_dopelniacz;
-    }
-    if (num % 10 > 1 && num % 10 < 5) {
-        return forms.mnoga_biernik;
-    }
-    return forms.mnoga_dopelniacz;
-}
-
-
-
 export default async function initHerbCounter(client: Client, aliases?: { pattern: RegExp; callback: Function }[]) {
     let herbs: HerbsData | null = null;
     let loading: Promise<void> | null = null;
-    const herbMap: Record<string, string> = {};
     let width = client.contentWidth;
     client.on('contentWidth', (value) => {
         width = value;
@@ -123,13 +104,6 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
             if (!loading) {
                 loading = loadHerbs().then(data => {
                     herbs = data;
-                    if (herbs) {
-                        Object.entries(herbs.herb_id_to_odmiana).forEach(([id, forms]) => {
-                            Object.values(forms).forEach(f => {
-                                herbMap[f.toLowerCase()] = id;
-                            });
-                        });
-                    }
                 }).finally(() => {
                     loading = null;
                 });
@@ -141,10 +115,8 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
     }
 
     const countRegex = /^Doliczyl(?:es|as) sie (?<num>[0-9a-z ]+) sztuki?\.$/;
-    const contentRegex1 = /^Rozwiazujesz na chwile rzemyk, sprawdzajac zawartosc swojego.*woreczka.* W srodku dostrzegasz (?<content>.*)\.$/;
-    const contentRegex2 = /^[> ]*Uwaznie ogladasz zawartosc[a-zA-Z -]*woreczka[a-z ]*\. W srodku dostrzegasz (?<content>[a-zA-Z0-9, -]+)\.$/;
-    const emptyRegex = /^Rozwiazujesz na chwile rzemyk, sprawdzajac zawartosc swojego.*woreczka.* W jego srodku nic jednak nie ma\.$/;
-    const emptyRegex2 = /^[> ]*Uwaznie ogladasz zawartosc[a-zA-Z -]*woreczka[a-z ]*\. W jego srodku nic jednak nie ma\.$/;
+    const [contentRegex1, contentRegex2] = HERB_BAG_CONTENT_PATTERNS;
+    const [emptyRegex, emptyRegex2] = HERB_BAG_EMPTY_PATTERNS;
     // Detects start of woreczek evaluation (to filter out plecak etc.)
     const woreczekEvalStartRegex = /^Oceniasz starannie[^.]*woreczek/i;
     const bagConditionRegex = /^Ten element ekwipunku wyglada na (?<desc>.+)$/i;
@@ -500,20 +472,9 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
     function extractHerbs(matches: RegExpMatchArray) {
         if (!awaiting) return
         currentBag += 1;
-        const items = parseItems(matches.groups?.content || '');
-        const bag: Record<string, number> = {};
-        items.forEach(it => {
-            const key = herbMap[it.name.toLowerCase()] || it.name.toLowerCase();
-            let count: number;
-            if (typeof it.count === 'number') {
-                count = it.count;
-            } else if (it.count === 'wie') {
-                count = wieleCount;
-            } else {
-                count = polishWordToNumber(String(it.count));
-            }
+        const bag = parseHerbBagContent(matches.groups?.content || '', herbs, wieleCount);
+        Object.entries(bag).forEach(([key, count]) => {
             totals[key] = (totals[key] || 0) + count;
-            bag[key] = (bag[key] || 0) + count;
         });
         bagTotals[currentBag] = {herbs: bag};
         left -= 1;
