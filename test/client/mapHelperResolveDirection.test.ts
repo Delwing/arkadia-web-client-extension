@@ -30,4 +30,11 @@ describe('MapHelper resolveDirection', () => {
   test('a stub elsewhere does not block the fallback', () => {
     expect(mapIn({ ...rooms[1], stubs: [1] }).resolveDirection('s')).toBe('w');
   });
+
+  // Room 19034: a sw stub, while "zejdz na dol" lands on 19032 drawn south-west of it (y-down).
+  test('a special exit drawn that way wins over a stub', () => {
+    rooms[3] = { id: 3, area: 1, x: 95, y: 123, z: 0, exits: {}, specialExits: { 'zejdz na dol': 4 }, stubs: [8] };
+    rooms[4] = { id: 4, area: 1, x: 93, y: 125, z: 0, exits: {}, specialExits: { 'wejdz na gore': 3 }, stubs: [] };
+    expect(mapIn(rooms[3]).resolveDirection('sw')).toBe('zejdz na dol');
+  });
 });

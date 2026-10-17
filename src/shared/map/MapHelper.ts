@@ -937,7 +937,9 @@ export default class MapHelper {
      * preferred, then any exit whose target sits that way — so "w" still works in a room whose
      * only westward exit is recorded as "nw" or as a special-exit command. Returns `direction`
      * unchanged when nothing better is known, or when the room has an unexplored stub that way:
-     * the game says that exit exists, so a room merely drawn in that direction must not steal it.
+     * the game says that exit exists, so a regular exit merely drawn in that direction must not
+     * steal it. A special exit drawn that way still wins over the stub, as in Mudlet (19034: sw
+     * stub, "zejdz na dol" lands south-west).
      *
      * Split out of move() so callers that must not advance the mapper (driving a carriage, where
      * the ride is asynchronous and GMCP is the authority) can still resolve the direction.
@@ -946,8 +948,6 @@ export default class MapHelper {
         if (!this.mapReader || this.paused || !this.currentRoom) return direction;
         const potentialExit = getLongDir(direction);
         if (this.currentRoom.exits?.[potentialExit]) return direction;
-        const stub = directionToStub(potentialExit);
-        if (stub !== undefined && this.currentRoom.stubs?.includes(stub)) return direction;
 
         const leadsThatWay = ([, id]: [string, number]) =>
             this.findRoomByExit(this.currentRoom, this.mapReader.getRoom(id), potentialExit);
@@ -956,6 +956,9 @@ export default class MapHelper {
             .filter(leadsThatWay)
             .map(([exit]) => exit);
         if (specialExitMatch.length > 0) return getShortDir(specialExitMatch[0]);
+
+        const stub = directionToStub(potentialExit);
+        if (stub !== undefined && this.currentRoom.stubs?.includes(stub)) return direction;
 
         const allExits = Object.assign({}, this.currentRoom.exits ?? {}, this.currentRoom.specialExits ?? {});
         const exits = Object.entries(allExits).filter(leadsThatWay).map(([exit]) => exit);
