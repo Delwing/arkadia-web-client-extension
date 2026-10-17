@@ -41,7 +41,10 @@ import {
   unregisterContextMenuEntry,
   unregisterPopupMenuEntry,
   updateContextMenuEntry,
-  updatePopupMenuEntryLabel
+  updatePopupMenuEntryLabel,
+  registerRoomMenuEntry,
+  unregisterRoomMenuEntry,
+  updateRoomMenuEntry
 } from "@modules/core/pluginUiRegistry";
 import {
   registerFooterButton,
@@ -900,6 +903,95 @@ export interface MapApi {
    * api.map.replaceMap(mapData, colors);
    */
   replaceMap(mapData: MapData.Map, colors?: MapData.Env[]): boolean;
+
+  /**
+   * Room id for a room's `internal_id` (its user data), the id that stays the
+   * same across map versions and the Mudlet mapper. Null when no room has it.
+   *
+   * @example
+   * ```typescript
+   * const roomId = api.map.getRoomIdByInternalId("i385831173");
+   * ```
+   */
+  getRoomIdByInternalId(internalId: string): number | null;
+
+  /**
+   * Walking distance in steps from one room to each of several others, in one
+   * search (the same weights as findPath). Unreachable rooms map to null.
+   *
+   * @example
+   * ```typescript
+   * const here = api.map.getRoom()?.id;
+   * const steps = api.map.getRoomDistances(here, foundRooms);
+   * ```
+   */
+  getRoomDistances(fromId: number, toIds: number[]): Map<number, number | null>;
+
+  /**
+   * Lead the player to a room, as the map's "Prowadź" does: the route is drawn
+   * on the map and followed by the direction keys.
+   */
+  leadTo(roomId: number): void;
+
+  /** Stop leading (clears the drawn route) */
+  clearLeadTo(): void;
+
+  /**
+   * Add an entry to the room menu (right click on the map or on a room link),
+   * under "Pluginy". The action gets the room the menu was opened for.
+   * Removed when the plugin unloads.
+   *
+   * @example
+   * ```typescript
+   * api.map.addRoomMenuEntry("Zielarz: ustaw teren", (roomId) => openTerrainPicker(roomId));
+   * ```
+   */
+  addRoomMenuEntry(label: string, action: (roomId: number) => void): RoomMenuEntryHandle;
+}
+
+/** Handle for a room menu entry, see {@link MapApi.addRoomMenuEntry} */
+export interface RoomMenuEntryHandle {
+  setLabel(label: string): void;
+  setAction(action: (roomId: number) => void): void;
+  remove(): void;
+}
+
+/** A key combination for {@link KeysApi.register} */
+export interface PluginKeyBind {
+  /**
+   * The key: a letter or digit ("h", "4"), or a KeyboardEvent.code for other
+   * keys ("F6", "Backquote", "Numpad5"). Letters and digits match the physical
+   * key, so Alt+H also works on layouts where Alt changes the character.
+   */
+  key: string;
+  ctrl?: boolean;
+  alt?: boolean;
+  shift?: boolean;
+}
+
+/** Handle for a registered key, see {@link KeysApi.register} */
+export interface PluginKeyHandle {
+  remove(): void;
+}
+
+/**
+ * Keys API - plugin-owned keyboard shortcuts
+ */
+export interface KeysApi {
+  /**
+   * Run a callback when a key combination is pressed anywhere in the client.
+   * The key's default action is prevented. Removed when the plugin unloads.
+   *
+   * Pick combinations the player is unlikely to use already; a player's own
+   * bind on the same keys fires as well.
+   *
+   * @example
+   * ```typescript
+   * const searchKey = api.keys.register({ key: "h", alt: true }, () => searchHere());
+   * // later: searchKey.remove();
+   * ```
+   */
+  register(bind: PluginKeyBind, callback: (event: KeyboardEvent) => void): PluginKeyHandle;
 }
 
 /**
@@ -3384,6 +3476,8 @@ export interface PluginApi {
   storage: StorageApi;
   /** The active character */
   character: CharacterApi;
+  /** Keys - plugin-owned keyboard shortcuts */
+  keys: KeysApi;
   /**
    * AnsiAwareBuffer class for creating formatted text buffers
    *
@@ -3458,6 +3552,9 @@ export class PluginApiImpl implements PluginApi {
   public walkModes: WalkModesApi;
   public storage: StorageApi;
   public character: CharacterApi;
+  public keys: KeysApi;
+  private keyBindIds: Set<string> = new Set();
+  private roomMenuEntryIds: Set<string> = new Set();
   public AnsiAwareBuffer: typeof AnsiAwareBuffer;
 
   constructor(client: Client, pluginId: string = 'unknown') {
@@ -3497,6 +3594,7 @@ export class PluginApiImpl implements PluginApi {
     this.walkModes = this.createWalkModesApi();
     this.storage = this.createStorageApi();
     this.character = this.createCharacterApi();
+    this.keys = this.createKeysApi();
 
     // Expose AnsiAwareBuffer class
     this.AnsiAwareBuffer = AnsiAwareBuffer;
@@ -3641,6 +3739,36 @@ export class PluginApiImpl implements PluginApi {
 
       setLocation: (roomId: number) => {
         this.client.Map.setMapRoomById(roomId);
+      },
+
+      getRoomIdByInternalId: (internalId: string) => {
+        return this.client.Map.getRoomIdByInternalId(internalId);
+      },
+
+      getRoomDistances: (fromId: number, toIds: number[]) => {
+        return this.client.Map.getRoomDistances(fromId, toIds);
+      },
+
+      leadTo: (roomId: number) => {
+        this.client.Map.leadTo(roomId);
+      },
+
+      clearLeadTo: () => {
+        this.client.Map.clearLeadTo();
+      },
+
+      addRoomMenuEntry: (label: string, action: (roomId: number) => void): RoomMenuEntryHandle => {
+        const id = this.generateId("room-menu");
+        registerRoomMenuEntry(id, label, action);
+        this.roomMenuEntryIds.add(id);
+        return {
+          setLabel: (value) => updateRoomMenuEntry(id, { label: value }),
+          setAction: (callback) => updateRoomMenuEntry(id, { action: callback }),
+          remove: () => {
+            unregisterRoomMenuEntry(id);
+            this.roomMenuEntryIds.delete(id);
+          },
+        };
       },
 
       stepBack: () => {
@@ -4362,6 +4490,22 @@ export class PluginApiImpl implements PluginApi {
     };
   }
 
+  private createKeysApi(): KeysApi {
+    return {
+      register: (bind, callback) => {
+        const id = this.generateId("key");
+        this.client.keyBindingManager.registerPluginBind(id, bind, callback);
+        this.keyBindIds.add(id);
+        return {
+          remove: () => {
+            this.client.keyBindingManager.unregisterPluginBind(id);
+            this.keyBindIds.delete(id);
+          },
+        };
+      },
+    };
+  }
+
   private createCharacterApi(): CharacterApi {
     return {
       getName: () => characterStorage.getCharacter(),
@@ -4524,6 +4668,16 @@ export class PluginApiImpl implements PluginApi {
     for (const unsubscribe of Array.from(this.peopleUnsubscribers)) {
       unsubscribe();
     }
+
+    for (const id of Array.from(this.roomMenuEntryIds)) {
+      unregisterRoomMenuEntry(id);
+    }
+    this.roomMenuEntryIds.clear();
+
+    for (const id of Array.from(this.keyBindIds)) {
+      this.client.keyBindingManager.unregisterPluginBind(id);
+    }
+    this.keyBindIds.clear();
 
     for (const id of Array.from(this.contextMenuEntryIds)) {
       unregisterContextMenuEntry(id);

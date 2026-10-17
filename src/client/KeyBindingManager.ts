@@ -16,6 +16,13 @@ type BindConfig = {
     shift?: boolean;
 };
 
+// Matching on the code keeps Alt+letter working on layouts where Alt changes ev.key.
+function normalizeBindKey(key: string): string {
+    if (/^[a-z]$/i.test(key)) return `Key${key.toUpperCase()}`;
+    if (/^[0-9]$/.test(key)) return `Digit${key}`;
+    return key;
+}
+
 export default class KeyBindingManager {
     lampBind: BindConfig = { key: "Digit4", ctrl: true };
     attackBind: BindConfig = { key: "Digit1", ctrl: true };
@@ -28,8 +35,20 @@ export default class KeyBindingManager {
         { key: 'F5', command: null },
     ];
 
+    /** Keys plugins registered (api.keys.register), by registration id */
+    private pluginBinds = new Map<string, BindConfig & { callback: (ev: KeyboardEvent) => void }>();
+
     private client: Client;
     private lastDoubleKPress = Number.NEGATIVE_INFINITY;
+
+    /** Run `callback` on a key press; a plain letter or digit stands for its key code ("h" is KeyH). */
+    registerPluginBind(id: string, bind: BindConfig, callback: (ev: KeyboardEvent) => void): void {
+        this.pluginBinds.set(id, { ...bind, key: normalizeBindKey(bind.key), callback });
+    }
+
+    unregisterPluginBind(id: string): void {
+        this.pluginBinds.delete(id);
+    }
 
     constructor(client: Client, helperConnection?: HelperConnection) {
         this.client = client;
@@ -180,6 +199,16 @@ export default class KeyBindingManager {
                 if (bindMatches(ev, tb)) {
                     this.client.sendCommand(tb.command);
                     ev.preventDefault();
+                }
+            });
+            this.pluginBinds.forEach(pb => {
+                if (bindMatches(ev, pb)) {
+                    ev.preventDefault();
+                    try {
+                        pb.callback(ev);
+                    } catch (error) {
+                        console.error('[KeyBindingManager] Plugin key callback failed:', error);
+                    }
                 }
             });
         });

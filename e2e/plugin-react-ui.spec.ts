@@ -49,6 +49,7 @@ export async function init(pluginApi) {
     createContent: () => <Counter />,
   });
   api.aliases.register(/^\\/rx$/, () => { popup.open(); });
+  api.keys.register({ key: 'h', alt: true }, () => api.output.print('alt-h pressed'));
   api.aliases.register(/^\\/rx-wait$/, async () => {
     const r = await api.triggers.waitFor(/^Ping (\\w+)$/, { timeout: 5000 });
     api.output.print('pong ' + r.match[1]);
@@ -126,6 +127,12 @@ test.describe('Plugin React UI', () => {
         });
         const values = Object.values(stored ?? {}) as Record<string, unknown>[];
         expect(values.map(v => v.clicks), 'click count should be in plugin storage').toContain(2);
+    });
+
+    test('runs its own key binding', async ({page}) => {
+        await page.locator('#message-input').focus();
+        await page.keyboard.press('Alt+KeyH');
+        await waitForOutputContaining(page, 'alt-h pressed');
     });
 
     test('waits for a game line', async ({page}) => {

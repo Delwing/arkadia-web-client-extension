@@ -101,6 +101,7 @@ function shouldExport(node) {
         name === 'WaitForResult' ||
         name === 'HerbBagInspection' ||
         name === 'ContainerCommandForms' ||
+        name === 'PluginKeyBind' ||
         name === 'PluginInfo' ||
         name === 'Plugin' ||
         name === 'PopupContent' ||

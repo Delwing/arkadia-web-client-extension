@@ -4,6 +4,7 @@ import {getBindableUses, isHerbSmokable} from "@modules/data/dataStores/herbsSto
 import {showContextMenu, type ContextMenuEntry} from "@web/contextMenu";
 import {getEmbeddedMap} from "@web/embedRegistry";
 import {characterStorage} from "./storage";
+import {getRoomMenuEntries} from "./pluginUiRegistry";
 import eventBus from "@modules/core/eventBus";
 import {Flame, Footprints, Info, Leaf, Map as MapIcon, MapPin, Navigation, Route, StickyNote, Zap} from "lucide-react";
 
@@ -163,6 +164,11 @@ export function openMapContextMenu(roomId: number, x: number, y: number, extraIt
             action: () => eventBus.emit('tripPlanner.addStop', { roomId }),
             opensWindow: true,
         },
+        ...getRoomMenuEntries().map((entry): ContextMenuItem => ({
+            section: 'Pluginy',
+            label: entry.label,
+            action: () => entry.action(roomId),
+        })),
         {
             separator: true,
             label: 'Informacje o lokacji',

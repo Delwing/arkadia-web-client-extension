@@ -84,3 +84,37 @@ export function unregisterContextMenuEntry(id: string): void {
 export function getContextMenuEntries(): ContextMenuEntryRecord[] {
   return Array.from(contextMenuEntries.values());
 }
+
+export type RoomMenuEntryRecord = {
+  id: string;
+  label: string;
+  action: (roomId: number) => void;
+};
+
+const roomMenuEntries = new Map<string, RoomMenuEntryRecord>();
+
+/** Plugin entries of the room menu (right click on the map or a room link) */
+export function registerRoomMenuEntry(id: string, label: string, action: (roomId: number) => void): void {
+  roomMenuEntries.set(id, { id, label, action });
+}
+
+export function updateRoomMenuEntry(id: string, updates: Partial<Pick<RoomMenuEntryRecord, "label" | "action">>): void {
+  const entry = roomMenuEntries.get(id);
+  if (!entry) {
+    return;
+  }
+  if (updates.label !== undefined) {
+    entry.label = updates.label;
+  }
+  if (typeof updates.action === "function") {
+    entry.action = updates.action;
+  }
+}
+
+export function unregisterRoomMenuEntry(id: string): void {
+  roomMenuEntries.delete(id);
+}
+
+export function getRoomMenuEntries(): RoomMenuEntryRecord[] {
+  return Array.from(roomMenuEntries.values());
+}

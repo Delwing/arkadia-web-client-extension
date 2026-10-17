@@ -497,6 +497,21 @@ api.map.setLocation(roomId);
 
 // Cofnij się do poprzedniego pokoju
 api.map.stepBack();
+
+// Pokój po internal_id (stały między wersjami mapy i zgodny z mapperem Mudleta)
+const roomId = api.map.getRoomIdByInternalId('i385831173');   // albo null
+
+// Odległość w krokach do kilku pokoi naraz (null = nie da się dojść)
+const steps = api.map.getRoomDistances(api.map.getRoom()!.id, [roomId, 4121]);
+
+// Prowadź jak „Prowadź” z mapy; clearLeadTo() kończy
+api.map.leadTo(roomId);
+api.map.clearLeadTo();
+
+// Własny wpis w menu lokacji (prawy klik na mapie albo linku lokacji), w sekcji „Pluginy”
+const entry = api.map.addRoomMenuEntry('Zielarz: ustaw teren', (roomId) => { /* ... */ });
+entry.setLabel('Zielarz: zmień teren');
+entry.remove();
 ```
 
 ##### Własne rysowanie na mapie (`addOverlay`)
@@ -697,6 +712,15 @@ if (api.bind.get() !== "otul sie plaszczem") {
 // Pobierz etykietę bindu
 const label = api.bind.getLabel();
 ```
+
+#### `api.keys` - Własne Skróty Klawiszowe
+
+```typescript
+const key = api.keys.register({ key: 'h', alt: true }, () => searchHere());
+key.remove();
+```
+
+`key` to litera lub cyfra (`'h'`, `'4'`) albo `KeyboardEvent.code` dla pozostałych klawiszy (`'F6'`, `'Backquote'`, `'Numpad5'`). Litery i cyfry są dopasowywane po fizycznym klawiszu, więc Alt+H działa także w układzie polskim. Domyślna akcja klawisza jest blokowana. Wybieraj kombinacje, których gracz raczej nie używa — jego własny bind na tych samych klawiszach też się wykona. Skróty znikają przy wyładowaniu pluginu.
 
 #### `api.multibinds` - Tymczasowe Multibindy
 

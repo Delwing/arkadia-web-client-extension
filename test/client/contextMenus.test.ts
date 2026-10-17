@@ -1,5 +1,6 @@
 import { buildHerbContextMenuItems, openHerbContextMenu, openMapContextMenu, roomContextMenuHandler } from "@modules/core/contextMenus";
 import { showContextMenu } from "@web/contextMenu";
+import { registerRoomMenuEntry, unregisterRoomMenuEntry } from "@modules/core/pluginUiRegistry";
 import { characterStorage } from "@modules/core/storage";
 import eventBus from "@modules/core/eventBus";
 
@@ -176,6 +177,20 @@ describe("openMapContextMenu", () => {
 
         expect(items[3].label).toBe("Pokaz w tym oknie");
         expect(items[3].separator).toBe(true);
+    });
+
+    it("plugin entries come under Pluginy, before the windows, with the room", () => {
+        const action = jest.fn();
+        registerRoomMenuEntry("t1", "Zielarz: teren", action);
+        openMapContextMenu(7, 0, 0);
+        const items = shown()[0];
+        unregisterRoomMenuEntry("t1");
+
+        const entry = items.find((item: { label?: unknown }) => item.label === "Zielarz: teren");
+        expect(entry.section).toBe("Pluginy");
+        expect(labels(items.slice(-2))).toEqual(["Informacje o lokacji", "Otwórz w oknie mapy"]);
+        entry.action();
+        expect(action).toHaveBeenCalledWith(7);
     });
 
     it("without the map loaded, the header is the room number", () => {
