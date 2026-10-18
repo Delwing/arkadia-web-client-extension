@@ -173,8 +173,11 @@ class MudClient implements ClientAdapter {
                 // and it is replayed and recorded like any other output, so its listeners
                 // need the same event clock the text pipeline gets.
                 runWithEventTime(this.currentEventTime, () => {
-                    this.emit(`gmcp.${path}`, value);
+                    // The generic event goes first: the gmcp mirror is merged from it,
+                    // and a `gmcp.<path>` listener that reads the mirror must see this
+                    // message, not the one before it.
                     this.emit('gmcp', {path, value});
+                    this.emit(`gmcp.${path}`, value);
                 });
             },
             onMessage: (text, type) => {

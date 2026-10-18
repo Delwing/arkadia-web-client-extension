@@ -247,7 +247,13 @@ const CechyPopup: React.FC = () => {
         }
     }, [isOpen, refreshModifiers]);
 
-    useEffect(() => eventBus.on('gmcp.char.options', refreshModifiers), [refreshModifiers]);
+    // The mirror is merged on the generic `gmcp` event, which fires after this one,
+    // so read the payload. It can be partial — an update without the key changes nothing.
+    useEffect(() => eventBus.on('gmcp.char.options', (options) => {
+        if (options && 'state_modifiers' in options) {
+            setModifiersEnabled(options.state_modifiers === 1);
+        }
+    }), []);
 
     useEffect(() => {
         return eventBus.on('cechy.history.updated', () => {
