@@ -199,7 +199,7 @@ export function MacroEditor({
                             </div>
                         </>
                     ) : (
-                        <div className="popup-field__warning">Nie ma jeszcze skryptów. Dodaj skrypt przyciskiem + w oknie Automatyzacja.</div>
+                        <div className="popup-field__warning">Nie ma jeszcze skryptów. Dodaj skrypt przyciskiem + w oknie Skrypty.</div>
                     );
                 })()}
                 {macro.type === 'group' && (() => {

@@ -1172,14 +1172,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
     const builtins: [string, string, MainMenuGroup, string, () => void, string?, string[]?][] = [
-        ['automation-button', 'Automatyzacja', 'gra', 'zap', () => automationModal?.show(), undefined, ['aliasy', 'triggery', 'wyzwalacze']],
+        ['automation-button', 'Skrypty', 'gra', 'zap', () => automationModal?.show(), undefined, ['aliasy', 'triggery', 'wyzwalacze', 'automatyzacja']],
         ['binds-button', 'Klawisze', 'gra', 'keyboard', () => bindsModal?.show()],
         ['places-button', 'Miejsca', 'gra', 'map-pin', () => placesModal?.show()],
         ['recordings-button', 'Nagrania', 'gra', 'record', () => recordingsModal?.show()],
         ['people-browser-button', 'Baza postaci', 'gra', 'users', () => eventBus.emit('peopleBrowser.popup.open')],
         ['npc-button', 'Odbiorcy paczek', 'gra', 'package', () => eventBus.emit('packageReceiver.popup.open')],
         ['share-location-button', 'Kod QR lokacji', 'gra', 'qr-code', shareLocation, 'Kod QR'],
-        ['scripts-button', 'Skrypty (wtyczki)', 'narzedzia', 'code', () => scriptsModal?.show(), 'Skrypty'],
+        ['scripts-button', 'Wtyczki', 'narzedzia', 'code', () => scriptsModal?.show(), undefined, ['skrypty', 'pluginy']],
         ['data-sources-button', 'Źródła danych', 'narzedzia', 'database', () => eventBus.emit('dataSources.popup.open')],
         ['helper-button', 'Helper', 'narzedzia', 'plug', () => helperModal?.show()],
     ];

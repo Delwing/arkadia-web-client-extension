@@ -17,7 +17,7 @@ import {
 } from "./ScriptsAddDialogs";
 
 /**
- * "Skrypty" — the plugin manager.
+ * "Wtyczki" — the plugin manager.
  *
  * Two tabs over one search box: what is installed, and the public catalogue
  * (arkadia-plugin-marketplace) it can be installed from. Everything that used to

@@ -146,7 +146,7 @@ function PushNotificationsSection({ draft, update }: PushNotificationsSectionPro
         <div className="ui-settings-stack">
             <p className="popup-field__hint">
                 Nic nie jest wysyłane samo z siebie. Żeby dostać alert na telefon, dodaj makro
-                „Powiadomienie na telefon" do triggera lub zdarzenia (Automatyzacja → wyzwalacz na zdarzenia takie
+                „Powiadomienie na telefon" do triggera lub zdarzenia (Skrypty → trigger na zdarzenia takie
                 jak Niskie życie, Pełne życie czy Atak wroga). Wysyłka działa niezależnie od
                 tego, czy karta klienta jest aktywna, i jest ograniczona do jednego alertu na
                 minutę — chyba że w makrze zaznaczysz „Wysyłaj zawsze".

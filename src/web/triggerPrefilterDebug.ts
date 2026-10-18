@@ -5,7 +5,7 @@ const SUMMARY_INTERVAL_MS = 30_000;
 
 /**
  * Debug hooks for the trigger prefilter's verify mode (Ustawienia > Inne > Filtr
- * wyzwalaczy > Weryfikacja). Each miss is already a console error; this keeps them in
+ * triggerÃ³w > Weryfikacja). Each miss is already a console error; this keeps them in
  * `window.triggerPrefilterMisses` for copying out, and while verify is on logs how many
  * matches have been checked, so a quiet console reads as "verified" rather than "idle".
  */

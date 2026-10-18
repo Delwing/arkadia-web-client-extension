@@ -41,6 +41,7 @@ import { useCustomSounds, usePluginMacros } from "./useCustomSounds";
 import { LIBRARY, recipeItems, recipePack, type LibraryRecipe } from "./automationLibrary";
 import {
     KIND_LABEL,
+    buildItemPack,
     buildPack,
     createGroup,
     deleteGroup,
@@ -86,9 +87,9 @@ interface DropAt {
 
 const KIND_ICON = { alias: SquareTerminal, trigger: Zap, script: Code2 } as const;
 
-const KIND_NAV: Record<AutomationKind, string> = { alias: "Aliasy", trigger: "Wyzwalacze", script: "Skrypty" };
-const NEW_NAME: Record<AutomationKind, string> = { alias: "Nowy alias", trigger: "Nowy wyzwalacz", script: "Nowy skrypt" };
-const THIS_ONE: Record<AutomationKind, string> = { alias: "ten alias", trigger: "ten wyzwalacz", script: "ten skrypt" };
+const KIND_NAV: Record<AutomationKind, string> = { alias: "Aliasy", trigger: "Triggery", script: "Skrypty" };
+const NEW_NAME: Record<AutomationKind, string> = { alias: "Nowy alias", trigger: "Nowy trigger", script: "Nowy skrypt" };
+const THIS_ONE: Record<AutomationKind, string> = { alias: "ten alias", trigger: "ten trigger", script: "ten skrypt" };
 
 function KindIcon({ kind, size = 14 }: { kind: AutomationKind; size?: number }) {
     const Icon = KIND_ICON[kind];
@@ -106,14 +107,14 @@ function download(name: string, text: string) {
 
 function packFileName(label: string) {
     const date = new Date().toISOString().slice(0, 10);
-    const slug = label.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "grupa";
-    return `automatyzacja-${slug}-${date}.json`;
+    const slug = label.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "eksport";
+    return `skrypty-${slug}-${date}.json`;
 }
 
 function countLabel(aliases: number, triggers: number, scripts = 0) {
     const parts: string[] = [];
     if (aliases) parts.push(`${aliases} ${aliases === 1 ? "alias" : "aliasów"}`);
-    if (triggers) parts.push(`${triggers} ${triggers === 1 ? "wyzwalacz" : "wyzwalaczy"}`);
+    if (triggers) parts.push(`${triggers} ${triggers === 1 ? "trigger" : "triggerÃ³w"}`);
     if (scripts) parts.push(`${scripts} ${scripts === 1 ? "skrypt" : "skryptów"}`);
     return parts.join(" i ") || "nic nowego";
 }
@@ -181,7 +182,7 @@ function GroupHeader({ group, count, collapsed, onToggleCollapse, onMenu, renami
     );
 }
 
-/** Automatyzacja: aliases and triggers in one list, grouped, with an editor beside it. */
+/** Skrypty: aliases and triggers in one list, grouped, with an editor beside it. */
 export default function AutomationWindow() {
     const [items, setItems] = useState<AutomationItem[]>([]);
     const [groups, setGroups] = useState<AutomationGroup[]>(getAutomationGroups);
@@ -415,6 +416,10 @@ export default function AutomationWindow() {
     }
 
     /** Right-click on a row: what the editor and the list offer, without opening it. */
+    function exportItem(item: AutomationItem) {
+        download(packFileName(itemTitle(item).text), JSON.stringify(buildItemPack(item), null, 2));
+    }
+
     function rowMenu(e: MouseEvent<HTMLElement>, item: AutomationItem) {
         e.preventDefault();
         const current = effectiveGroup(item, groups);
@@ -423,6 +428,7 @@ export default function AutomationWindow() {
         const entries: ContextMenuEntry[] = [
             { label: "Edytuj", action: () => select(item.id) },
             { label: "Duplikuj", action: () => duplicateOf(drafts[item.id] ?? draftFromItem(item)) },
+            { label: "Eksportuj", action: () => exportItem(item) },
             { label: off ? "Włącz" : "Wyłącz", action: () => toggleItem(item, off) },
             ...groups.filter(g => g.id !== current).map(g => ({ label: g.name, section: move, action: () => moveItem(item.kind, item.id, g.id) })),
             ...(current ? [{ label: "Bez grupy", section: move, action: () => moveItem(item.kind, item.id, undefined) }] : []),
@@ -512,7 +518,7 @@ export default function AutomationWindow() {
         e.preventDefault();
         openMenuAt(e, [
             { label: "Nowy alias w grupie", action: () => create("alias", group.id) },
-            { label: "Nowy wyzwalacz w grupie", action: () => create("trigger", group.id) },
+            { label: "Nowy trigger w grupie", action: () => create("trigger", group.id) },
             { label: "Nowy skrypt w grupie", action: () => create("script", group.id) },
             { label: "Zmień nazwę", action: () => setRenamingGroup(group.id) },
             { label: "Eksportuj grupę", action: () => download(packFileName(group.name), JSON.stringify(buildPack(group.id), null, 2)) },
@@ -529,7 +535,7 @@ export default function AutomationWindow() {
     function addMenu(e: MouseEvent<HTMLElement>) {
         const kinds: ContextMenuEntry[] = [
             { label: "Alias - gdy wpiszesz komendę", icon: SquareTerminal, action: () => create("alias") },
-            { label: "Wyzwalacz - gdy gra wypisze linię lub zajdzie zdarzenie", icon: Zap, action: () => create("trigger") },
+            { label: "Trigger - gdy gra wypisze linię lub zajdzie zdarzenie", icon: Zap, action: () => create("trigger") },
             { label: "Skrypt - kod JavaScript uruchamiany akcją lub komendą", icon: Code2, action: () => create("script") },
         ];
         // Filtered to one kind, only that one is offered; a group always is.
@@ -769,8 +775,8 @@ export default function AutomationWindow() {
                 })}
                 {listEmpty && (
                     <p className="automation-empty">
-                        Nie masz jeszcze aliasów ani wyzwalaczy. Alias zamienia wpisaną komendę na inne, np.{" "}
-                        <code>zab (.+)</code> → <code>zabij $1</code>. Wyzwalacz reaguje na linie z gry albo zdarzenie
+                        Nie masz jeszcze aliasów ani triggerÃ³w. Alias zamienia wpisaną komendę na inne, np.{" "}
+                        <code>zab (.+)</code> → <code>zabij $1</code>. Trigger reaguje na linie z gry albo zdarzenie
                         i wykonuje akcje: koloruje, wysyła komendę, gra dźwięk... Kliknij + żeby dodać.
                     </p>
                 )}
@@ -860,6 +866,7 @@ export default function AutomationWindow() {
                     title="Więcej"
                     onClick={e => openMenuAt(e, [
                         { label: "Duplikuj", action: duplicate },
+                        ...(selectedItem ? [{ label: "Eksportuj", action: () => exportItem(selectedItem) }] : []),
                         { label: selectedDraft.isNew ? "Odrzuć" : "Usuń", action: remove },
                     ])}
                 >
@@ -905,11 +912,11 @@ export default function AutomationWindow() {
     ) : (
         <section className="automation-editor automation-editor--empty">
             <Zap size={22} strokeWidth={1.6} />
-            <p>Wybierz alias, wyzwalacz lub skrypt z listy albo dodaj nowy przyciskiem +.</p>
+            <p>Wybierz alias, trigger lub skrypt z listy albo dodaj nowy przyciskiem +.</p>
             {items.length === 0 && (
                 <div className="automation-editor__starters">
                     <Button onClick={() => create("alias")}><SquareTerminal size={15} />Nowy alias</Button>
-                    <Button onClick={() => create("trigger")}><Zap size={15} />Nowy wyzwalacz</Button>
+                    <Button onClick={() => create("trigger")}><Zap size={15} />Nowy trigger</Button>
                 </div>
             )}
         </section>

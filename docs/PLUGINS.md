@@ -1269,7 +1269,7 @@ api.triggerMacros.register({
 
 **Uwagi:**
 - ID makra zostanie automatycznie poprzedzone `plugin:` (np. `plugin:alertZWalki`)
-- Makra triggerów działają w kontekście triggerów użytkownika (Menu → Automatyzacja)
+- Makra triggerów działają w kontekście triggerów użytkownika (Menu → Skrypty)
 - Jeśli plugin jest wyładowany, triggery z jego makrami wykonają się jako no-op (bez akcji)
 
 ### Popularne Kolory
@@ -1531,7 +1531,7 @@ const off = popup.onSettingChange('ceny', (on) => { /* ... */ });
 
 ### Przez UI
 
-1. Kliknij przycisk "Skrypty" w kliencie
+1. Kliknij przycisk "Wtyczki" w kliencie
 2. Zakładka "Katalog" — znajdź plugin i kliknij "Zainstaluj". Plugin śledzi najnowsze wydanie,
    więc nowe wersje wczytują się same przy kolejnym uruchomieniu. Konkretną wersję (np. żeby
    cofnąć się do starszej) wybierzesz z listy "Wersje" w szczegółach pluginu

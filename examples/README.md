@@ -34,7 +34,7 @@ Serwer uruchomi się na `http://localhost:3030`
 2. Zobaczysz listę dostępnych pluginów z ich opisami
 3. Kliknij "Kopiuj URL" przy wybranym pluginie
 4. Otwórz Arkadia Web Client
-5. Kliknij przycisk "Skrypty"
+5. Kliknij przycisk "Wtyczki"
 6. Wklej skopiowany URL (np. `http://localhost:3030/plugins/example-plugin.js`)
 7. Kliknij "Dodaj"
 8. Plugin zostanie załadowany i zainicjalizowany

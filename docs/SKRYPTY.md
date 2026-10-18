@@ -1,12 +1,12 @@
-# Skrypty i wtyczki — co możesz robić
+# Wtyczki — co możesz robić
 
 Podsumowanie możliwości systemu skryptów i pluginów dostępnych dla graczy.
 
 ---
 
-Aliasy, wyzwalacze i skrypty z okna **Menu → Automatyzacja** opisuje strona **Automatyzacje**. Tu są bindy, edytor i system wtyczek oraz wbudowane skrypty.
+Aliasy, triggery i skrypty z okna **Menu → Skrypty** opisuje strona **Skrypty**. Tu są bindy, edytor i system wtyczek oraz wbudowane skrypty.
 
-## Skrypty w Automatyzacji — dla zaawansowanych
+## Własne skrypty JavaScript — dla zaawansowanych
 
 ```js
 const hp = gmcp.char?.state?.hp;
@@ -50,7 +50,7 @@ Rozszerzasz klienta o własne funkcje — lub instalujesz pluginy innych graczy.
 
 ### Instalacja
 
-Panel **Skrypty** ma dwie zakładki: *Zainstalowane* (co masz) i *Katalog* (co możesz mieć).
+Panel **Wtyczki** ma dwie zakładki: *Zainstalowane* (co masz) i *Katalog* (co możesz mieć).
 
 - **Z katalogu** — zakładka "Katalog" pokazuje pluginy innych graczy: szukaj, filtruj po tagach,
   zajrzyj w opis i historię wersji, a potem kliknij "Zainstaluj". Klient zapamiętuje konkretną

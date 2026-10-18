@@ -138,7 +138,7 @@ const CONSTRAINTS: Record<string, Constraint> = {
 
     // --- behavior slice -----------------------------------------------------
     teamNumberingMode: { type: 'enum', enumValues: ['letters', 'numbers'] },
-    triggerPrefilter: { type: 'enum', enumValues: ['on', 'off', 'verify'], label: 'Filtr wyzwalaczy' },
+    triggerPrefilter: { type: 'enum', enumValues: ['on', 'off', 'verify'], label: 'Filtr triggerÃ³w' },
 };
 
 /**

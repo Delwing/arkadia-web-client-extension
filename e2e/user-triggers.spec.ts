@@ -206,7 +206,7 @@ test('exports a group and imports it back as a pack', async ({page}) => {
     await page.getByRole('button', {name: 'Plik automatyzacji (.json)'}).click();
     await (await chooser).setFiles(file!);
 
-    await expect(modal.locator('.automation-notice'), 'should report what came in').toContainText('1 wyzwalacz');
+    await expect(modal.locator('.automation-notice'), 'should report what came in').toContainText('1 trigger');
     const group = modal.locator('.automation-section').filter({has: page.locator('.automation-group', {hasText: 'Paczka'})});
     await expect(group.locator('.automation-item'), 'should restore the trigger into its group').toContainText('Pakiet test');
 });

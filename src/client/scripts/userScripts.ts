@@ -7,7 +7,7 @@ import { appendScriptLog } from "@modules/core/scriptConsole";
 import { SCRIPT_API_NAMES } from "./scriptScope";
 
 /**
- * A script in Automatyzacja: JavaScript that runs when an alias, trigger or
+ * A script in Skrypty: JavaScript that runs when an alias, trigger or
  * event calls it ("Uruchom skrypt"), when its own command is typed, or from
  * the editor.
  *
@@ -47,7 +47,7 @@ export interface ScriptContext {
     line?: string;
     /** The event payload, for an event trigger. */
     event?: unknown;
-    /** Writes to the script's console in Automatyzacja. */
+    /** Writes to the script's console in Skrypty. */
     log: (...values: unknown[]) => void;
     /** Shared by every script, so one can leave data for another. See `sharedVars`. */
     vars: Record<string, any>;

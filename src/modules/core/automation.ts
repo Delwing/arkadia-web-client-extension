@@ -21,7 +21,7 @@ export interface AutomationMeta {
     enabled?: boolean;
     /** Characters the element applies to. Absent or empty means all of them. */
     characters?: string[];
-    /** Place within its group in the Automatyzacja list; shared by all kinds. */
+    /** Place within its group in the Skrypty list; shared by all kinds. */
     order?: number;
 }
 

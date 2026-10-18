@@ -1,5 +1,5 @@
 /**
- * Monaco for the Automatyzacja script editor: highlighting, and completion
+ * Monaco for the Skrypty script editor: highlighting, and completion
  * from the plugin API types. Loaded only when a script is opened on a device
  * with a fine pointer (see ScriptCodeEditor); the client never pulls it in.
  */
@@ -18,16 +18,16 @@ const SCRIPT_GLOBALS = `import type { PluginApi } from "plugin-api";
 declare global {
     /** API wtyczek: komendy, wyjscie, GMCP, mapa, triggery... */
     const api: PluginApi;
-    /** Grupy z wzorca aliasu lub wyzwalacza ($1 to args[0]) albo slowa po komendzie skryptu. */
+    /** Grupy z wzorca aliasu lub triggera ($1 to args[0]) albo slowa po komendzie skryptu. */
     const args: string[];
     /** Skad przyszlo uruchomienie. */
     const ctx: {
         source: "alias" | "trigger" | "event" | "command" | "manual";
         /** Wzorzec, zdarzenie albo komenda, ktore go uruchomily. */
         label?: string;
-        /** Linia z gry, dla wyzwalacza. */
+        /** Linia z gry, dla triggera. */
         line?: string;
-        /** Dane zdarzenia, dla wyzwalacza na zdarzenie. */
+        /** Dane zdarzenia, dla triggera na zdarzenie. */
         event?: any;
         /** Pisze do konsoli skryptu. */
         log(...values: unknown[]): void;

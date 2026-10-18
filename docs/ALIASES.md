@@ -4,22 +4,22 @@ Pozostałe aliasy i funkcje klienta.
 
 ## Własne aliasy
 
-Własne aliasy tworzysz w oknie **Automatyzacja** (Menu → Automatyzacja), razem z triggerami (wyzwalaczami):
+Własne aliasy tworzysz w oknie **Skrypty** (Menu → Skrypty), razem z triggerami:
 - **Wzorzec** - wyrażenie regularne dopasowujące komendę
 - **Akcje** - co ma się stać, po kolei: komenda wysyłana do serwera, dźwięk, powiadomienie (także na telefon), czytanie na głos, funkcyjny bind, uruchomienie skryptu, włączenie lub wyłączenie grupy. W tekstach akcji `$1`, `$2` itp. wstawiają grupy z dopasowania
 - **Skróty obiektów** - `@1`, `@A`, `@@` zostaną zamienione na identyfikatory obiektów, `@>` na następny cel z kolejki ataku (ten, którego zaatakuje `/nn`), a `@nazwa` na obiekt nazwany przez `/ref`
 - **Kilka komend** - średnik rozdziela kilka komend w jednym polu
 - **Inaczej dla postaci** - dla wybranej postaci alias może wysyłać inną komendę; zastępuje ona wszystkie komendy z akcji
 
-### Okno Automatyzacja
+### Okno Skrypty
 
-- **Lista** - aliasy i wyzwalacze razem, podzielone na grupy. Po lewej wybierasz rodzaj (Wszystko, Aliasy, Wyzwalacze) i to, co pokazać (wyłączone, tylko to, co działa na tej postaci). Przełącznik przy każdym wierszu włącza i wyłącza element od razu
-- **Grupy** - `+` → Grupa (albo przycisk z folderem obok) tworzy nową grupę; od razu wpisujesz jej nazwę. Elementy przeciągasz na grupę albo między innymi elementami, żeby zmienić kolejność - aliasy, wyzwalacze i skrypty mogą być w grupie wymieszane. Grupy też można przeciągać. Przełącznik przy grupie włącza lub wyłącza wszystko, co w niej jest. Menu grupy (`...` albo prawy przycisk) pozwala dodać do niej nowy element, zmienić nazwę, wyeksportować ją do pliku albo usunąć razem ze wszystkim, co w niej jest
+- **Lista** - aliasy i triggery razem, podzielone na grupy. Po lewej wybierasz rodzaj (Wszystko, Aliasy, Triggery) i to, co pokazać (wyłączone, tylko to, co działa na tej postaci). Przełącznik przy każdym wierszu włącza i wyłącza element od razu
+- **Grupy** - `+` → Grupa (albo przycisk z folderem obok) tworzy nową grupę; od razu wpisujesz jej nazwę. Elementy przeciągasz na grupę albo między innymi elementami, żeby zmienić kolejność - aliasy, triggery i skrypty mogą być w grupie wymieszane. Grupy też można przeciągać. Przełącznik przy grupie włącza lub wyłącza wszystko, co w niej jest. Menu grupy (`...` albo prawy przycisk) pozwala dodać do niej nowy element, zmienić nazwę, wyeksportować ją do pliku albo usunąć razem ze wszystkim, co w niej jest
 - **Prawy przycisk na elemencie** - edycja, duplikat, włączenie/wyłączenie, przeniesienie do grupy (także do nowej; tak przenosisz elementy na telefonie) i usunięcie
 - **Edytor** - krok 1 *Kiedy* (wzorzec i linia testowa, która od razu pokazuje, czy wzorzec pasuje i co trafi do `$1`), krok 2 *Co zrobić* (akcje po kolei; kolejność zmienisz, przeciągając za uchwyt, a pod spodem widać, co zostanie wysłane), krok 3 *Dla kogo*. Zmiany zapisuje **Zapisz** (albo `Ctrl+Enter`); kropka przy wierszu oznacza niezapisane zmiany
-- **Włączony** - wyłączony alias lub wyzwalacz zostaje zapisany, ale nie działa
+- **Włączony** - wyłączony alias lub trigger zostaje zapisany, ale nie działa
 - **Dla kogo** - wszystkie postacie albo tylko wybrane; na innej postaci element nie działa
-- **Eksport i import** - "Eksportuj wszystko" albo eksport jednej grupy zapisuje plik `.json`, który ktoś inny wczyta przez "Importuj" → "Plik automatyzacji". Import niczego nie nadpisuje: alias o istniejącym wzorcu i identyczny wyzwalacz zostają pominięte
+- **Eksport i import** - "Eksportuj wszystko" albo eksport jednej grupy zapisuje plik `.json`, który ktoś inny wczyta przez "Importuj" → "Plik automatyzacji". Import niczego nie nadpisuje: alias o istniejącym wzorcu i identyczny trigger zostają pominięte
 
 ### Zakresy ($i)
 

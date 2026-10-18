@@ -200,7 +200,7 @@ app.get('/', (req, res) => {
       <ol>
         <li>Kliknij "Kopiuj URL" przy wybranym pluginie</li>
         <li>Otwórz klienta Arkadia Web</li>
-        <li>Kliknij przycisk "Skrypty"</li>
+        <li>Kliknij przycisk "Wtyczki"</li>
         <li>Wklej skopiowany URL</li>
         <li>Kliknij "Dodaj"</li>
       </ol>

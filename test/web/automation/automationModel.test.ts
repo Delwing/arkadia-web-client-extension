@@ -3,6 +3,7 @@ import { getAutomationGroups } from '@modules/core/automation';
 import type { UserAlias } from '@client/scripts/userAliases';
 import type { UserTrigger } from '@client/scripts/userTriggers';
 import {
+    buildItemPack,
     buildPack,
     createGroup,
     deleteGroup,
@@ -299,6 +300,23 @@ describe('automationModel', () => {
             const [run, group] = aliases()[0].macros!;
             expect(run.scriptId).toBe(script.id);
             expect(group.groupId).toBe(getAutomationGroups()[0].id);
+        });
+
+        it('exports one item with the scripts it runs', () => {
+            globalStorage.set('automationScripts', [
+                { id: 's', name: 'leczenie', code: 'x', group: 'h' },
+                { id: 'other', name: 'inny', code: 'y' },
+            ]);
+            globalStorage.set('aliases', [{ id: 'a', pattern: 'lecz', command: '', group: 'g', macros: [{ type: 'script', scriptId: 's' }] }]);
+            const alias = loadItems().find(i => i.id === 'a')!;
+            const pack = buildItemPack(alias);
+            expect(pack.aliases.map(a => a.id)).toEqual(['a']);
+            expect(pack.triggers).toEqual([]);
+            expect(pack.scripts!.map(s => s.id)).toEqual(['s']);
+            expect(pack.groups.map(g => g.name)).toEqual(['Walka', 'Handel']);
+
+            const script = loadItems().find(i => i.id === 'other')!;
+            expect(buildItemPack(script)).toMatchObject({ aliases: [], triggers: [], groups: [], scripts: [{ id: 'other' }] });
         });
 
         it('refuses a file that is not a pack', () => {

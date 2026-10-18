@@ -16,7 +16,7 @@ Klient dodaje wiele przydatnych funkcji do gry w Arkadię w przeglądarce, w tym
 | **Połączenie** | Tryby połączenia: bezpośrednio, pomocnik, proxy |
 | **Dane** | Gdzie klient przechowuje dane i jak ich nie stracić |
 | **Synchronizacja** | Synchronizacja ustawień przez Firebase |
-| **Skrypty i automatyzacja** | Aliasy, triggery, bindy, edytor i pluginy — przegląd możliwości |
+| **Skrypty i wtyczki** | Aliasy, triggery, bindy, edytor i pluginy — przegląd możliwości |
 | **Inne** | Pozostałe aliasy i funkcje |
 
 ## Własne aliasy

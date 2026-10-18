@@ -1,5 +1,5 @@
 /**
- * The Automatyzacja window's view of the stored aliases and triggers: one list
+ * The Skrypty window's view of the stored aliases and triggers: one list
  * of items with a stable id, the drafts the editor works on, and the writes
  * back to the `aliases` / `triggers` keys.
  *
@@ -41,7 +41,7 @@ export type AutomationItem =
 
 type AutomationData = UserAlias | UserTrigger | UserScript;
 
-export const KIND_LABEL: Record<AutomationKind, string> = { alias: "Alias", trigger: "Wyzwalacz", script: "Skrypt" };
+export const KIND_LABEL: Record<AutomationKind, string> = { alias: "Alias", trigger: "Trigger", script: "Skrypt" };
 
 /** A script's command: letters, digits, _ and -, typed after a slash. */
 const SCRIPT_COMMAND = /^[A-Za-z0-9_-]+$/;
@@ -537,6 +537,23 @@ export function buildPack(groupId?: string): AutomationPack {
     const aliases = storedAliases().filter(inScope);
     const triggers = storedTriggers().filter(inScope);
     const scripts = storedScripts().filter(inScope);
+    const used = new Set([...aliases, ...triggers, ...scripts].map(i => i.group).filter(Boolean));
+    return {
+        format: PACK_FORMAT,
+        version: 1,
+        groups: getAutomationGroups().filter(g => used.has(g.id)),
+        aliases,
+        triggers,
+        scripts,
+    };
+}
+
+/** One alias, trigger or script, with the scripts it runs so the import works on its own. */
+export function buildItemPack(item: AutomationItem): AutomationPack {
+    const runs = new Set(itemActions(item).flatMap(m => (m.type === "script" && m.scriptId ? [m.scriptId] : [])));
+    const aliases = item.kind === "alias" ? [item.data] : [];
+    const triggers = item.kind === "trigger" ? [item.data] : [];
+    const scripts = storedScripts().filter(s => (item.kind === "script" ? s.id === item.id : s.id !== undefined && runs.has(s.id)));
     const used = new Set([...aliases, ...triggers, ...scripts].map(i => i.group).filter(Boolean));
     return {
         format: PACK_FORMAT,

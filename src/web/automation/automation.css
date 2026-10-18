@@ -1,4 +1,4 @@
-/* Automatyzacja: kinds and filters on the left, the grouped list, the editor. */
+/* Skrypty: kinds and filters on the left, the grouped list, the editor. */
 .automation {
   display: grid;
   grid-template-columns: 12.5rem minmax(20rem, 26rem) minmax(0, 1fr);

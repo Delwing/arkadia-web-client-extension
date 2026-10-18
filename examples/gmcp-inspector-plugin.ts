@@ -19,7 +19,7 @@
  * Jak uzyc:
  * 1. Zbuduj: `yarn build:examples`
  * 2. Uruchom serwer: `yarn serve:examples`
- * 3. W sekcji "Skrypty" w kliencie: "Dodaj plugin" -> "Z adresu URL", wpisz
+ * 3. W oknie "Wtyczki" w kliencie: "Dodaj plugin" -> "Z adresu URL", wpisz
  *    `http://localhost:3030/plugins/gmcp-inspector-plugin.js`
  */
 

@@ -1,21 +1,21 @@
 import type {Locator, Page} from '@playwright/test';
 import {expect} from './fixtures';
 
-/** Opens Automatyzacja from the main menu. */
+/** Opens Skrypty from the main menu. */
 export async function openAutomation(page: Page): Promise<Locator> {
     await page.click('#menu-button');
     await page.click('#automation-button');
     const modal = page.locator('#automation-modal');
-    await expect(modal, 'should display the Automatyzacja window').toBeVisible();
+    await expect(modal, 'should display the Skrypty window').toBeVisible();
     return modal;
 }
 
 export async function closeAutomation(modal: Locator): Promise<void> {
     await modal.locator('.app-modal__close').first().click();
-    await expect(modal, 'should close the Automatyzacja window').not.toBeVisible();
+    await expect(modal, 'should close the Skrypty window').not.toBeVisible();
 }
 
-const NEW_ITEM = {alias: /^Alias - /, trigger: /^Wyzwalacz - /, script: /^Skrypt - /};
+const NEW_ITEM = {alias: /^Alias - /, trigger: /^Trigger - /, script: /^Skrypt - /};
 
 /** Starts a new alias, trigger or script through the + button. */
 export async function startNew(page: Page, modal: Locator, kind: 'alias' | 'trigger' | 'script'): Promise<void> {
@@ -81,7 +81,7 @@ export async function addGroup(modal: Locator, name: string): Promise<void> {
     await expect(modal.locator('.automation-group', {hasText: name}), 'should list the new group').toBeVisible();
 }
 
-const NEW_IN_GROUP = {alias: 'Nowy alias w grupie', trigger: 'Nowy wyzwalacz w grupie', script: 'Nowy skrypt w grupie'};
+const NEW_IN_GROUP = {alias: 'Nowy alias w grupie', trigger: 'Nowy trigger w grupie', script: 'Nowy skrypt w grupie'};
 
 /** Starts a new element inside a group, from the group's menu. */
 export async function startNewInGroup(page: Page, modal: Locator, group: string, kind: 'alias' | 'trigger' | 'script'): Promise<void> {

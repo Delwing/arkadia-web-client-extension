@@ -29,18 +29,18 @@ test.describe('forge menu', () => {
         await page.locator('.forge-menu__button').click();
         const list = page.locator('.forge-menu__list');
         await expect(list).toBeVisible();
-        await expect(list.getByRole('button', { name: 'Automatyzacja' })).toBeVisible();
         await expect(list.getByRole('button', { name: 'Skrypty' })).toBeVisible();
+        await expect(list.getByRole('button', { name: 'Wtyczki' })).toBeVisible();
         await expect(list.getByRole('button', { name: 'Dokumentacja' })).toBeVisible();
         await expect(list.getByRole('button', { name: 'Ustawienia' })).toBeVisible();
     });
 
-    test('opens Automatyzacja in a forged modal', async ({ page }) => {
+    test('opens Skrypty in a forged modal', async ({ page }) => {
         await page.locator('.forge-menu__button').click();
-        await page.locator('.forge-menu__list').getByRole('button', { name: 'Automatyzacja' }).click();
+        await page.locator('.forge-menu__list').getByRole('button', { name: 'Skrypty' }).click();
         const modal = page.locator('.forge-menu-modal');
         await expect(modal).toBeVisible();
-        await expect(modal.locator('.panel__title')).toHaveText('Automatyzacja');
+        await expect(modal.locator('.panel__title')).toHaveText('Skrypty');
         await expect(modal.locator('.automation-nav')).toBeVisible();
         // Backdrop click dismisses it.
         await page.locator('.forge-menu-backdrop').click({ position: { x: 5, y: 5 } });
@@ -151,7 +151,7 @@ test.describe('forge menu', () => {
         // renders them itself, as inline overlays (not portaled react-bootstrap
         // dialogs, which lose their inputs to a focus fight — see Scripts.tsx).
         await page.locator('.forge-menu__button').click();
-        await page.locator('.forge-menu__list').getByRole('button', { name: 'Skrypty' }).click();
+        await page.locator('.forge-menu__list').getByRole('button', { name: 'Wtyczki' }).click();
         const modal = page.locator('.forge-menu-modal');
         await expect(modal).toBeVisible();
 

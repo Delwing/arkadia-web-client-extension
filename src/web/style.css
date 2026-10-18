@@ -333,7 +333,7 @@ body.app-modal-open {
 .app-modal__dialog--xl { max-width: 1140px; }
 /* Klawisze: a whole keyboard beside the selected key. */
 .app-modal__dialog--keys { max-width: 1400px; }
-/* Automatyzacja: kinds, the grouped list and the editor side by side. */
+/* Skrypty: kinds, the grouped list and the editor side by side. */
 .app-modal__dialog--automation { max-width: 1400px; }
 /* Controls a panel puts in the header, between the title and ×. */
 .app-modal__header-slot {

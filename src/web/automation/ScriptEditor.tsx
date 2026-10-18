@@ -136,7 +136,7 @@ export function ScriptEditor({ id, script, users, onChange, onSelect, onSave }: 
                         const title = itemTitle(u);
                         return (
                             <button key={u.id} type="button" className="automation-user" title="Pokaż ten element" onClick={() => onSelect(u.id)}>
-                                <span className={`automation-user__kind automation-user__kind--${u.kind}`}>{u.kind === "alias" ? "alias" : "wyzwalacz"}</span>
+                                <span className={`automation-user__kind automation-user__kind--${u.kind}`}>{u.kind === "alias" ? "alias" : "trigger"}</span>
                                 <span className={title.mono ? "is-mono" : undefined}>{title.prefix ? `${title.prefix} ` : ""}{title.text}</span>
                             </button>
                         );
@@ -152,7 +152,7 @@ export function ScriptEditor({ id, script, users, onChange, onSelect, onSave }: 
                     </InputGroup>
                 </div>
                 <p className="automation-hint">
-                    Dodajesz go jako akcję „Uruchom skrypt” w dowolnym aliasie lub wyzwalaczu. Z komendą uruchomisz go też sam,
+                    Dodajesz go jako akcję „Uruchom skrypt” w dowolnym aliasie lub triggerze. Z komendą uruchomisz go też sam,
                     np. <code>/{script.command?.trim() || "leczenie"} goblin</code> — słowa po komendzie trafiają do <code>args</code>.
                 </p>
             </Section>

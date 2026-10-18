@@ -991,7 +991,7 @@ select.popup-input optgroup {
   border-color: transparent;
 }
 
-/* Actions and conditions in the Automatyzacja editor (automation/MacroEditor.tsx,
+/* Actions and conditions in the Skrypty editor (automation/MacroEditor.tsx,
    automation/TriggerSource.tsx). */
 .trigger-section {
   display: flex;

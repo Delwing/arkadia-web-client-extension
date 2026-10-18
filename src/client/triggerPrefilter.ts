@@ -1,6 +1,6 @@
 /**
  * Literal prefilter for regex triggers. On by default; the `triggerPrefilter`
- * behaviour setting (Ustawienia > Inne > Filtr wyzwalaczy) switches it off or to verify.
+ * behaviour setting (Ustawienia > Inne > Filtr triggerÃ³w) switches it off or to verify.
  *
  * Every line runs every regex trigger, and most of those regexes (~95% of what the
  * stock scripts and the Mudlet-synced gags register) contain a run of plain text that

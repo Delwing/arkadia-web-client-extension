@@ -50,7 +50,7 @@ Synchronizowane są zawsze wszystkie poniższe kategorie - nie trzeba (i nie da 
 | **Triggery** | Triggery reagujące na tekst z gry |
 | **Aliasy** | Aliasy komend |
 | **Grupy automatyzacji** | Grupy aliasów i triggerów oraz to, czy są włączone |
-| **Skrypty automatyzacji** | Skrypty JavaScript z okna Automatyzacja |
+| **Skrypty automatyzacji** | Skrypty JavaScript z okna Skrypty |
 | **Multibindy** | Wielokrotne przypisania klawiszy |
 | **Przyciski** | Konfiguracja przycisków na ekranie |
 | **Menu radialne** | Ustawienia menu radialnego |
