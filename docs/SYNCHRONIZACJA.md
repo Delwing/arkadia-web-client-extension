@@ -14,6 +14,7 @@ Klient umożliwia synchronizację ustawień między urządzeniami za pomocą Fir
 - [Grupy synchronizacji](#grupy-synchronizacji)
 - [Przejęcie sesji na innym urządzeniu](#przejęcie-sesji-na-innym-urządzeniu)
 - [Usuwanie danych z chmury](#usuwanie-danych-z-chmury)
+- [Własny projekt Firebase](#własny-projekt-firebase)
 - [Rozwiązywanie problemów](#rozwiązywanie-problemów)
 
 ---
@@ -242,6 +243,57 @@ Gdy zalogujesz się postacią na drugim urządzeniu, gra rozłącza pierwsze. Je
 - Nic nie jest zapisywane, gdy karta była w tle (np. telefon w kieszeni) albo mapa zgubiła pozycję - klient nie wie wtedy na pewno, gdzie jest postać, więc lepiej nie zgadywać.
 - Lokacja nie zostanie ustawiona, jeśli na nowym urządzeniu zdążysz się już ruszyć.
 - Lokacja jest ustawiana tylko wtedy, gdy postać wciąż była w świecie gry (przejęcie albo powrót przed rozłączeniem przez grę). Po wyjściu z gry, rozłączeniu za bezczynność lub restarcie gry postać pojawia się w innym miejscu i zapisana lokacja jest pomijana.
+
+## Własny projekt Firebase
+
+Domyślnie ustawienia i lokacja z [przejęcia sesji](#przejęcie-sesji-na-innym-urządzeniu) trafiają do wspólnego projektu Firebase klienta. Jeśli wolisz, żeby nikt poza Tobą nie miał do nich dostępu, możesz użyć własnego, darmowego projektu Firebase (plan Spark wystarczy). Niezależnie od tego możesz włączyć [szyfrowanie](#szyfrowanie) ustawień.
+
+### Zakładanie projektu
+
+1. W [konsoli Firebase](https://console.firebase.google.com/) utwórz nowy projekt.
+2. **Authentication** → **Sign-in method**: włącz "E-mail/hasło" i/lub "Google".
+3. **Authentication** → **Settings** → **Authorized domains**: dodaj domenę, z której otwierasz klienta (np. `delwing.github.io`) - bez tego logowanie przez Google nie zadziała.
+4. **Firestore Database**: utwórz bazę i w zakładce **Rules** wklej:
+
+   ```
+   rules_version = '2';
+   service cloud.firestore {
+     match /databases/{database}/documents {
+       match /users/{uid}/{document=**} {
+         allow read, write: if request.auth != null && request.auth.uid == uid;
+       }
+     }
+   }
+   ```
+
+5. **Realtime Database** (potrzebna tylko do przejęcia sesji z lokacją): utwórz bazę i w zakładce **Rules** wklej:
+
+   ```json
+   {
+     "rules": {
+       "sessionHandoff": {
+         "$uid": {
+           ".read": "auth != null && auth.uid === $uid",
+           ".write": "auth != null && auth.uid === $uid",
+           "$character": {
+             ".validate": "newData.hasChildren(['session', 'device', 'claimedAt'])"
+           }
+         }
+       }
+     }
+   }
+   ```
+
+6. **Ustawienia projektu** → **Twoje aplikacje**: dodaj aplikację webową i skopiuj obiekt `firebaseConfig`. Jeśli utworzyłeś Realtime Database po dodaniu aplikacji, upewnij się, że konfiguracja zawiera `databaseURL` (adres bazy znajdziesz na górze zakładki Realtime Database).
+
+### Przełączanie projektu
+
+1. Otwórz **Ustawienia → Dane → Synchronizacja**
+2. W sekcji "Projekt Firebase" kliknij "Użyj własnego projektu"
+3. Wklej skopiowany `firebaseConfig` (fragment kodu z konsoli albo JSON) i kliknij "Zapisz i przeładuj"
+4. Po przeładowaniu zarejestruj konto w swoim projekcie i zaloguj się
+
+Konfiguracja projektu **nie jest synchronizowana** - wklej ją na każdym urządzeniu, które ma korzystać z Twojego projektu. Dane ze wspólnego projektu nie są przenoszone: po zalogowaniu wyślij ustawienia z urządzenia, na którym są aktualne. Przyciskiem "Przywróć wspólny projekt" wrócisz do domyślnej konfiguracji.
 
 ## Rozwiązywanie problemów
 

@@ -41,6 +41,9 @@ export {
     saveFirebaseConfig,
     clearFirebaseConfig,
     validateFirebaseConfig,
+    DEFAULT_FIREBASE_CONFIG,
+    isDefaultFirebaseConfig,
+    parseFirebaseConfig,
 } from './firebaseTypes';
 
 // Config

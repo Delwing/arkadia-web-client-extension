@@ -7,6 +7,7 @@ import {
     INITIAL_AUTH_STATE,
     SYNC_CATEGORIES,
     FIREBASE_ERRORS,
+    DEFAULT_FIREBASE_CONFIG,
     loadFirebaseConfig,
     saveFirebaseConfig,
     loadFirebaseSettings,
@@ -35,6 +36,7 @@ import {
 import eventBus from "@modules/core/eventBus";
 import { importCategories } from "./exportUtils";
 import ConflictResolutionModal from "./ConflictResolutionModal";
+import FirebaseProjectSection from "./FirebaseProjectSection";
 import { SyncActivityLog, SyncTimers } from "./SyncActivity";
 import {
     isSyncV2Enabled,
@@ -79,18 +81,6 @@ const GoogleLogo = ({ size = 18 }: { size?: number }) => (
         <path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002l6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z" />
     </svg>
 );
-
-// Default Firebase config - will be used if not overridden
-const DEFAULT_FIREBASE_CONFIG = {
-    apiKey: "AIzaSyCLzwBiOJQQ8KoKEeVn6XUksa1pvqtrQsw",
-    authDomain: "dargoth-client.firebaseapp.com",
-    projectId: "dargoth-client",
-    storageBucket: "dargoth-client.firebasestorage.app",
-    databaseURL: "https://dargoth-client-default-rtdb.europe-west1.firebasedatabase.app",
-    messagingSenderId: "297724157458",
-    appId: "1:297724157458:web:02a8c5258caedbad4642cb",
-    measurementId: "G-0WGG26XZB2"
-};
 
 interface FirebaseTabProps {
     onImportComplete?: () => void;
@@ -382,6 +372,13 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
         }
     };
 
+    // The account belongs to the old project; leaving it signed in there
+    // would keep its handoff and sync listeners alive until the reload.
+    const signOutBeforeProjectSwitch = async () => {
+        syncEngine.stop();
+        await signOut();
+    };
+
     const handleSignOut = async () => {
         setAuthError(null);
         setIsAuthBusy(true);
@@ -617,6 +614,7 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                         'Spróbuj ponownie'
                     )}
                 </Button>
+                <FirebaseProjectSection />
             </div>
         );
     }
@@ -756,6 +754,8 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                         {authError}
                     </div>
                 )}
+
+                <FirebaseProjectSection />
             </div>
         );
     }
@@ -1019,6 +1019,8 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                             )}
                         </section>
                     )}
+
+                    <FirebaseProjectSection onBeforeSwitch={signOutBeforeProjectSwitch} />
                     </div>
                 </div>
             </div>

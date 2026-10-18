@@ -8417,6 +8417,9 @@ select.popup-input optgroup {
   user-select: all;
   word-break: break-all;
 }
+.firebase-project__id {
+  word-break: break-all;
+}
 .firebase-sync__actions {
   flex-shrink: 0;
   padding-top: 8px;

@@ -7,6 +7,9 @@ import {
     saveFirebaseConfig,
     clearFirebaseConfig,
     validateFirebaseConfig,
+    parseFirebaseConfig,
+    isDefaultFirebaseConfig,
+    DEFAULT_FIREBASE_CONFIG,
     FIREBASE_CONFIG_KEY,
     FIREBASE_SETTINGS_KEY,
     FIREBASE_DEVICE_ID_KEY,
@@ -508,5 +511,59 @@ describe('isEncryptedData', () => {
         // The guard only checks typeof === 'string', not length
         const data = { ciphertext: '', iv: '', salt: '' };
         expect(isEncryptedData(data)).toBe(true);
+    });
+});
+
+describe('parseFirebaseConfig', () => {
+    const expected = {
+        apiKey: 'key-123',
+        authDomain: 'mine.firebaseapp.com',
+        databaseURL: 'https://mine-default-rtdb.europe-west1.firebasedatabase.app',
+        projectId: 'mine',
+        appId: '1:42:web:abc',
+    };
+
+    test('reads plain JSON', () => {
+        expect(parseFirebaseConfig(JSON.stringify(expected))).toEqual(expected);
+    });
+
+    test('reads the Firebase console snippet', () => {
+        const snippet = `// Your web app's Firebase configuration
+const firebaseConfig = {
+  apiKey: "key-123",
+  authDomain: 'mine.firebaseapp.com', // auth
+  databaseURL: "https://mine-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "mine",
+  appId: "1:42:web:abc",
+};`;
+        expect(parseFirebaseConfig(snippet)).toEqual(expected);
+    });
+
+    test('drops unknown fields and trims values', () => {
+        const parsed = parseFirebaseConfig(JSON.stringify({ ...expected, projectId: ' mine ', extra: 'x' }));
+        expect(parsed).toEqual(expected);
+    });
+
+    test('returns null when required fields are missing', () => {
+        expect(parseFirebaseConfig('{ apiKey: "a", projectId: "p" }')).toBeNull();
+    });
+
+    test('returns null for text that is not a config', () => {
+        expect(parseFirebaseConfig('hello')).toBeNull();
+        expect(parseFirebaseConfig('{ not valid')).toBeNull();
+    });
+});
+
+describe('isDefaultFirebaseConfig', () => {
+    test('treats a missing config as the default project', () => {
+        expect(isDefaultFirebaseConfig(null)).toBe(true);
+    });
+
+    test('recognises the shipped project', () => {
+        expect(isDefaultFirebaseConfig(DEFAULT_FIREBASE_CONFIG)).toBe(true);
+    });
+
+    test('recognises a custom project', () => {
+        expect(isDefaultFirebaseConfig({ ...DEFAULT_FIREBASE_CONFIG, projectId: 'mine' })).toBe(false);
     });
 });

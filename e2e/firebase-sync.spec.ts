@@ -534,6 +534,51 @@ test.describe('Firebase Sync', () => {
 
             await closeModal(page);
         });
+
+        test('user can switch to their own Firebase project and back', async ({ page }) => {
+            await page.goto('/');
+            await waitForCommandInput(page);
+            await ensureGameSocket(page);
+
+            const modal = await openFirebaseTab(page);
+            const section = modal.locator('.firebase-project');
+            await expect(section).toContainText('wspólnego projektu');
+
+            await section.getByRole('button', { name: 'Użyj własnego projektu' }).click();
+            const textarea = section.locator('#firebase-project-config');
+
+            await textarea.fill('{ apiKey: "only-key" }');
+            await section.getByRole('button', { name: 'Zapisz i przeładuj' }).click();
+            await expect(section.locator('.popup-field__error')).toContainText('Nie rozpoznano konfiguracji');
+
+            await textarea.fill(`const firebaseConfig = {
+  apiKey: "my-key",
+  authDomain: "my-project.firebaseapp.com",
+  databaseURL: "https://my-project-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "my-project",
+  appId: "1:1:web:1",
+};`);
+            await Promise.all([
+                page.waitForEvent('load'),
+                section.getByRole('button', { name: 'Zapisz i przeładuj' }).click(),
+            ]);
+
+            const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('arkadia.firebaseConfig') ?? 'null'));
+            expect(saved).toMatchObject({ projectId: 'my-project', databaseURL: 'https://my-project-default-rtdb.europe-west1.firebasedatabase.app' });
+
+            await waitForCommandInput(page);
+            await ensureGameSocket(page);
+            const reopened = await openFirebaseTab(page);
+            const customSection = reopened.locator('.firebase-project');
+            await expect(customSection).toContainText('my-project');
+
+            await Promise.all([
+                page.waitForEvent('load'),
+                customSection.getByRole('button', { name: 'Przywróć wspólny projekt' }).click(),
+            ]);
+            await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('arkadia.firebaseConfig') ?? '{}').projectId))
+                .toBe('dargoth-client');
+        });
     });
 
     test.describe('Checksum Calculation', () => {

@@ -198,6 +198,66 @@ export function saveFirebaseSettings(settings: Partial<FirebaseSettings>): void 
     }
 }
 
+/**
+ * The project the client ships with. Anyone who prefers to keep their data in
+ * a Firebase project of their own pastes its config in the sync settings; see
+ * docs/SYNCHRONIZACJA.md for the rules that project needs.
+ */
+export const DEFAULT_FIREBASE_CONFIG: FirebaseUserConfig = {
+    apiKey: "AIzaSyCLzwBiOJQQ8KoKEeVn6XUksa1pvqtrQsw",
+    authDomain: "dargoth-client.firebaseapp.com",
+    projectId: "dargoth-client",
+    storageBucket: "dargoth-client.firebasestorage.app",
+    databaseURL: "https://dargoth-client-default-rtdb.europe-west1.firebasedatabase.app",
+    messagingSenderId: "297724157458",
+    appId: "1:297724157458:web:02a8c5258caedbad4642cb",
+    measurementId: "G-0WGG26XZB2"
+};
+
+export function isDefaultFirebaseConfig(config: FirebaseUserConfig | null): boolean {
+    return !config || config.projectId === DEFAULT_FIREBASE_CONFIG.projectId;
+}
+
+const CONFIG_FIELDS = [
+    'apiKey', 'authDomain', 'projectId', 'storageBucket',
+    'messagingSenderId', 'appId', 'measurementId', 'databaseURL',
+] as const;
+
+/**
+ * A config from what the user pasted: plain JSON, or the snippet the Firebase
+ * console shows (`const firebaseConfig = { apiKey: "...", ... };`) with its
+ * unquoted keys, single quotes and trailing commas. Unknown fields are dropped.
+ */
+export function parseFirebaseConfig(text: string): FirebaseUserConfig | null {
+    const start = text.indexOf('{');
+    const end = text.lastIndexOf('}');
+    if (start < 0 || end < start) return null;
+    const literal = text.slice(start, end + 1);
+    let parsed: unknown;
+    try {
+        parsed = JSON.parse(literal);
+    } catch {
+        const json = literal
+            .replace(/\/\/[^\n]*/g, (comment, offset, all: string) => (all[offset - 1] === ':' ? comment : ''))
+            .replace(/'([^'\n]*)'/g, (_, value: string) => JSON.stringify(value))
+            .replace(/([{,]\s*)([A-Za-z_$][\w$]*)\s*:/g, '$1"$2":')
+            .replace(/,\s*}/g, '}');
+        try {
+            parsed = JSON.parse(json);
+        } catch {
+            return null;
+        }
+    }
+    if (!validateFirebaseConfig(parsed)) return null;
+    const source = parsed as unknown as Record<string, unknown>;
+    const config: Record<string, string> = {};
+    for (const field of CONFIG_FIELDS) {
+        const value = source[field];
+        if (typeof value === 'string' && value.trim()) config[field] = value.trim();
+    }
+    return config as unknown as FirebaseUserConfig;
+}
+
 // Load Firebase config from localStorage
 export function loadFirebaseConfig(): FirebaseUserConfig | null {
     try {
