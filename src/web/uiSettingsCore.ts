@@ -277,7 +277,7 @@ export function apply(settings: UiSettings) {
     // Apply color theme
     removeCustomTheme();
     if (document.body) {
-        document.body.classList.remove('theme-fantasy', 'theme-forest', 'theme-icy', 'theme-gray', 'theme-dark-neutral', 'theme-light-parchment', 'theme-light-silver', 'theme-custom-dark');
+        document.body.classList.remove('theme-fantasy', 'theme-forest', 'theme-icy', 'theme-gray', 'theme-dark-neutral', 'theme-light-parchment', 'theme-light-silver', 'theme-forged', 'theme-custom-dark');
         if (settings.colorTheme === 'custom-dark') {
             if (!settings.customThemeColor) {
                 settings.customThemeColor = generateRandomColor();
@@ -625,7 +625,7 @@ export function load(): UiSettings {
             const outputMaxElements = typeof parsed.outputMaxElements === 'number' && parsed.outputMaxElements >= 100
                 ? Math.floor(parsed.outputMaxElements)
                 : defaultUiSettings.outputMaxElements;
-            const colorTheme = (['default', 'fantasy', 'forest', 'icy', 'gray', 'dark-neutral', 'light-parchment', 'light-silver', 'custom-dark'].includes(parsed.colorTheme))
+            const colorTheme = (['default', 'fantasy', 'forest', 'icy', 'gray', 'dark-neutral', 'light-parchment', 'light-silver', 'forged', 'custom-dark'].includes(parsed.colorTheme))
                 ? parsed.colorTheme as ColorTheme
                 : defaultUiSettings.colorTheme;
             const customThemeColor = (typeof parsed.customThemeColor === 'string' && /^#[0-9a-f]{6}$/i.test(parsed.customThemeColor))

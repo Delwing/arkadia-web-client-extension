@@ -21,7 +21,7 @@ export type MapHighlightShape = 'match' | 'rectangle' | 'roundedRectangle' | 'ci
 
 export type PathFindingAlgorithm = 'dijkstra' | 'astar';
 
-export type ColorTheme = 'default' | 'fantasy' | 'forest' | 'icy' | 'gray' | 'dark-neutral' | 'light-parchment' | 'light-silver' | 'custom-dark';
+export type ColorTheme = 'default' | 'fantasy' | 'forest' | 'icy' | 'gray' | 'dark-neutral' | 'light-parchment' | 'light-silver' | 'forged' | 'custom-dark';
 
 export interface FooterComponentConfig {
     id: string;

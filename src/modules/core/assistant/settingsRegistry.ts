@@ -107,7 +107,7 @@ const CONSTRAINTS: Record<string, Constraint> = {
         type: 'enum',
         enumValues: [
             'default', 'fantasy', 'forest', 'icy', 'gray',
-            'dark-neutral', 'light-parchment', 'light-silver', 'custom-dark',
+            'dark-neutral', 'light-parchment', 'light-silver', 'forged', 'custom-dark',
         ],
     },
     customThemeColor: { type: 'color', },

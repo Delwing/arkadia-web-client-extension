@@ -1,0 +1,140 @@
+/* Kuźnia (forged) - parchment on iron, bronze accents, weathered stone */
+/* Inputs for palette.css, the forged material tokens the skin in
+   themes/forged/ paints with, and the popup palette set by hand: the derived
+   one can't reach the warm, muted hues the plates need. */
+.theme-forged {
+  --theme-ground: #12100d;
+  --theme-text: #cdbfa3;
+  --theme-accent: #b8965a;
+  --theme-line: #b8965a;
+  --theme-tint: #8f836c;
+  --theme-success: #8fa15f;
+  --theme-warning: #c79a4c;
+  --theme-danger: #b35d45;
+  --theme-data-shift: 30%;
+  --theme-input: #1c1a17;
+  --theme-footer: #0f0d0b;
+
+  --void:      #0a0908;
+  --void-2:    #12100d;
+  --iron:      #1c1a17;
+  --iron-hi:   #3a352b;
+  --iron-lo:   #0c0b09;
+  --bronze:    #b8965a;
+  --bronze-dim:#8a6d3b;
+  --parchment: #cdbfa3;
+  --parchment-dim: #8f836c;
+
+  /* Rim for interactive controls — text inputs, selects, checkboxes, radios,
+     switches, neutral buttons. NOT --iron-lo: that is the *panel edge* colour,
+     read as a shadow gap against the lit backdrop, which is right for a frame
+     but leaves a control's own dark fill with no visible edge when it sits on
+     an equally dark card. This is a low-alpha warm bronze — it composites to
+     roughly --iron-hi over any forged surface (so it still reads as forged iron,
+     not a drawn outline), stays in the bronze family that focus/hover escalate
+     into, and survives translucent panel backgrounds. */
+  --control-rim: rgba(184, 150, 90, .30);
+  --control-rim-hover: rgba(184, 150, 90, .5);
+
+  --blood: #5c221b;
+  --moss:  #3c4626;
+  --slate: #26333f;
+  --rust:  #6f3b1f;
+  --amber: #6e5620;
+  --steel: #223c49;
+  --mana:  #352a4d;
+  --gold:  #665422;
+  --wine:  #46212f;
+  --panic: #6f2f15;
+  --ash:   #363129;
+
+  --bar-h: 36px;
+  --gem-dark: #1a1713;
+
+  --tex-fine: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' seed='3' stitchTiles='stitch' result='t'/%3E%3CfeColorMatrix in='t' type='saturate' values='0' result='g'/%3E%3CfeComponentTransfer in='g'%3E%3CfeFuncA type='table' tableValues='1 1'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+  --tex-metal: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='120'%3E%3Cfilter id='m'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.55 0.035' numOctaves='3' seed='5' stitchTiles='stitch' result='t'/%3E%3CfeColorMatrix in='t' type='saturate' values='0' result='g'/%3E%3CfeComponentTransfer in='g'%3E%3CfeFuncA type='table' tableValues='1 1'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='260' height='120' filter='url(%23m)'/%3E%3C/svg%3E");
+  --tex-stone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='s'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.42' numOctaves='3' seed='11' stitchTiles='stitch' result='t'/%3E%3CfeColorMatrix in='t' type='saturate' values='0' result='g'/%3E%3CfeComponentTransfer in='g'%3E%3CfeFuncA type='table' tableValues='1 1'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23s)'/%3E%3C/svg%3E");
+  /* larger, softer stone mottle for wide surfaces (popups). The gem's
+     --tex-stone is high-frequency: crisp at 42px gem size, but it tiles into
+     TV-static on a big card. This one is low-frequency (broad cloudy blotches)
+     with a couple of finer octaves and a gentle alpha ramp, over a big tile so
+     it barely repeats — it reads as weathered rock, not noise. */
+  --tex-stone-soft: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='ss'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.015' numOctaves='4' seed='7' stitchTiles='stitch' result='t'/%3E%3CfeColorMatrix in='t' type='saturate' values='0' result='g'/%3E%3CfeComponentTransfer in='g'%3E%3CfeFuncA type='table' tableValues='0 0.5'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23ss)'/%3E%3C/svg%3E");
+
+  /* The popup palette, over the derived one. */
+  --popup-section-bg: rgba(10, 9, 8, 0.55);
+  --popup-subtle-bg: rgba(255, 255, 255, 0.03);
+  --popup-hover-bg: rgba(184, 150, 90, 0.10);
+  --popup-control-bg: rgba(28, 26, 23, 0.8);
+  --popup-control-hover-bg: rgba(42, 37, 28, 0.9);
+  --popup-control-active-bg: rgba(42, 37, 28, 1);
+  --popup-control-pressed-bg: rgba(52, 46, 34, 1);
+  --popup-border: var(--iron-lo);
+  --popup-border-subtle: var(--iron-lo);
+  /* Controls keep a rim you can actually see. --iron-lo suits the frame and the
+     dividers above, but the shared inputs, checkboxes, radios and neutral
+     buttons read this token, and a near-black rim around a dark fill on a dark
+     card erased them. */
+  --popup-border-control: var(--control-rim);
+  --popup-border-strong: var(--bronze-dim);
+  --popup-border-stronger: var(--bronze-dim);
+  --popup-text: var(--parchment);
+  --popup-text-strong: var(--parchment);
+  --popup-text-bright: var(--parchment);
+  --popup-text-subtle: #c2b596;
+  --popup-text-medium: #b7aa8b;
+  --popup-text-dim: #ac9f80;
+  --popup-text-dimmer: #a09374;
+  --popup-text-faint: #94886f;
+  --popup-accent: var(--bronze);
+  --popup-accent-bg: rgba(110, 86, 32, 0.28);
+  --popup-accent-hover-bg: rgba(110, 86, 32, 0.45);
+  --popup-accent-subtle-bg: rgba(110, 86, 32, 0.18);
+  --popup-accent-border: var(--bronze-dim);
+  --popup-accent-dim-bg: rgba(110, 86, 32, 0.14);
+  --popup-accent-strong-bg: rgba(110, 86, 32, 0.22);
+  --popup-accent-strong-hover-bg: rgba(110, 86, 32, 0.34);
+  --popup-accent-strong-active-bg: rgba(110, 86, 32, 0.5);
+  --popup-accent-team-bg: rgba(110, 86, 32, 0.12);
+  --popup-accent-team-hover-bg: rgba(110, 86, 32, 0.2);
+  --popup-input-bg: rgba(28, 26, 23, 0.8);
+  --popup-input-text: var(--parchment);
+  --popup-input-focus-border: var(--bronze-dim);
+  /* status + data hues, re-tinted for the forged world */
+  --popup-success: #8fa15f;
+  --popup-success-light: #aebd85;
+  --popup-success-bg: rgba(96, 116, 58, 0.22);
+  --popup-success-hover-bg: rgba(96, 116, 58, 0.34);
+  --popup-success-border: rgba(120, 140, 80, 0.42);
+  --popup-success-subtle-bg: rgba(96, 116, 58, 0.13);
+  --popup-success-active-bg: rgba(96, 116, 58, 0.42);
+  --popup-warning: #c79a4c;
+  --popup-warning-light: #dcb972;
+  --popup-warning-border: rgba(160, 122, 52, 0.42);
+  --popup-warning-bg: rgba(150, 112, 42, 0.22);
+  --popup-warning-hover-bg: rgba(150, 112, 42, 0.34);
+  --popup-danger: #b35d45;
+  --popup-danger-light: #c67e66;
+  --popup-danger-soft: #c67e66;
+  --popup-danger-bg: rgba(140, 52, 36, 0.24);
+  --popup-danger-hover-bg: rgba(140, 52, 36, 0.36);
+  --popup-danger-subtle-bg: rgba(140, 52, 36, 0.13);
+  --popup-danger-border: rgba(160, 72, 52, 0.42);
+  --popup-danger-active-bg: rgba(140, 52, 36, 0.44);
+  --popup-data-yellow: #cbb35a;
+  --popup-data-gold: #c9a94e;
+  --popup-data-green: #8fa15f;
+  --popup-data-green-light: #aebd85;
+  --popup-data-blue: #7f96a4;
+  --popup-data-orange: #c0894c;
+  --popup-data-orange-warm: #c0904e;
+  --popup-data-orange-light: #c99a5e;
+  --popup-data-pink: #c096a1;
+  --popup-data-purple: #9384a2;
+  --popup-data-purple-light: #a698b6;
+  --popup-data-gray: #8f836c;
+  --popup-data-gray-light: #a89a80;
+  --popup-data-tomato: #c06a54;
+  --popup-data-magic-green: #92ab7c;
+  --popup-data-spring-green: #92ab7c;
+}

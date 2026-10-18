@@ -31,6 +31,7 @@
 @import './themes/dark-neutral.css';
 @import './themes/light-parchment.css';
 @import './themes/light-silver.css';
+@import './themes/forged.css';
 @import './layout/layout.css';
 /* Phone footer — last, so its narrow-viewport block wins over the stock
    footer rules it reshapes. */

@@ -1,0 +1,585 @@
+/* ============================================================
+   Kuźnia (forged) theme · windows
+   ============================================================
+
+   Every docked / floating window becomes a forged panel: a matte iron
+   plate, an inner bronze bevel ring, a romb ornament and a Cinzel title in
+   the header. Overrides of src/web/layout/layout.css and popups.css, scoped
+   to `.theme-forged` (themes/forged.css holds the tokens and the popup
+   palette). Imported after popups.css in main.ts so equal selectors win.
+
+   Deliberately NOT styled yet: the header control buttons (pin / lock /
+   reset / popout / close). */
+
+/* ── Accent / surface tokens the shared dock CSS reads ───────────────────── */
+body.theme-forged {
+  --surface-ground: var(--void);   /* dock zones: the dark between the plates */
+  --surface-border: transparent;   /* no hard grid lines; splitters bronze on hover */
+  /* Splitters / resize handles / drop previews / active tab underline. */
+  --layout-accent: var(--bronze);
+  /* Empty-leaf placeholder text. */
+  --layout-muted: var(--parchment-dim);
+  /* --layout-warning (drag hint) keeps layout.css's #ffc107 fallback. */
+}
+
+/* ── The plate — every managed window becomes a forged panel ──────────── */
+.theme-forged .managed-panel {
+  position: relative;
+  overflow: hidden;
+  background-color: #0a0a09;
+  background-image:
+    var(--tex-fine),
+    linear-gradient(180deg, #111110 0%, #0a0a09 55%, #070706 100%);
+  background-blend-mode: soft-light, normal;
+  background-size: 130px 130px, 100% 100%;
+  color: var(--parchment);
+  border: 1px solid var(--iron-lo);
+  border-radius: 9px;
+}
+
+/* A translucent window background (settings cog) still lets what is under the
+   window show through - the plate would otherwise outrank layout.css here. */
+.theme-forged .managed-panel:has([data-window-bg="translucent"]) {
+  background: transparent;
+}
+
+/* `.docked-panel` forces `box-shadow:none !important`, so re-assert with
+   !important; floating inherits from the base rule. */
+.theme-forged .managed-panel.docked-panel,
+.theme-forged .managed-panel.tab-group-panel,
+.theme-forged .managed-panel.floating-panel {
+  box-shadow:
+    inset 0 1px 0 rgba(184, 150, 90, 0.16),
+    inset 0 -3px 6px rgba(0, 0, 0, 0.72),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.5),
+    0 3px 10px rgba(0, 0, 0, 0.6),
+    0 12px 30px rgba(0, 0, 0, 0.45) !important;
+}
+
+.theme-forged .managed-panel.floating-panel {
+  /* Re-assert `position: fixed` from layout.css's `.floating-panel`: the
+     plate's `position: relative` above outranks it, and would offset a floating
+     window's `left/top` from its normal-flow position inside
+     `.floating-window-root` instead of the viewport - a second floating window
+     gets shoved down by the first one's box, and dragging jumps by that offset. */
+  position: fixed;
+  border: 1px solid var(--iron-lo);
+  border-radius: 9px;
+}
+
+/* The inner bronze bevel ring. */
+.theme-forged .managed-panel::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border-radius: 5px;
+  border: 1px solid rgba(184, 150, 90, 0.2);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+  z-index: 3;
+}
+
+/* ── Header — ornament + Cinzel title + divider ────────────────────────────
+   Override the docked/floating header specifics (fixed height, tight padding,
+   and — crucially — the floating header's `justify-content:space-between`, which
+   otherwise spreads ornament/title/actions apart). Compound
+   `.managed-panel .managed-panel__header` so it also outranks layout.css's
+   `.docked-panel--popup .docked-panel__header` — otherwise docked popups keep
+   the compact stock header. */
+/* Pin the header to a fixed height so every window's chrome is identical
+   regardless of which controls it carries. With `height:auto` the row grew to
+   its tallest child, so a panel whose actions include a taller control (e.g. the
+   map's 22px copy-as-image button) rendered a 40px header while a panel
+   with only the 20px icon buttons (e.g. "W poblizu") rendered 38px. 38px matches
+   the tab-bar parity height below, unifying single, tabbed and floating headers.
+   align-items:center keeps every control vertically centred within it. */
+.theme-forged .managed-panel .managed-panel__header {
+  height: 38px;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 9px;
+  padding: 5px 12px 0 15px;
+  background: transparent;
+  border: none;
+  box-shadow:
+    inset 0 -1px 0 rgba(0, 0, 0, 0.55),
+    inset 0 -2px 0 rgba(184, 150, 90, 0.06);
+}
+
+/* Bronze romb ornament, prepended as the first flex item. */
+.theme-forged .managed-panel .managed-panel__header::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  transform: rotate(45deg);
+  background: linear-gradient(135deg, var(--bronze), var(--bronze-dim));
+  box-shadow: 0 0 6px rgba(184, 150, 90, 0.4);
+}
+
+/* Title. Compound selector outranks layout.css's
+   `.docked-panel--popup .docked-panel__title`. */
+.theme-forged .managed-panel__header .managed-panel__title {
+  flex: 0 0 auto;
+  font-family: "Cinzel", serif;
+  font-weight: 600;
+  font-size: 10.5px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--bronze);
+}
+
+/* Controls sit at the right. */
+.theme-forged .managed-panel__header-actions {
+  margin-left: auto;
+}
+
+/* ── Tab bar height parity ─────────────────────────────────────────────────
+   A tab group's tab bar carries `.managed-panel__header`, so it inherited the
+   forged header's tall 11/7 padding wrapped AROUND the 28px tab items — making a
+   tabbed window's chrome noticeably taller than a single window's header. Pin the
+   bar to the single forged header height and let the tabs fill it (no vertical
+   padding), so tabbed and single docked windows take the same space. The 8px
+   ornament keeps its fixed size (align-items:stretch only stretches auto-height
+   items); the tabs (height:auto) stretch to the bar. */
+.theme-forged .managed-panel .managed-panel__header.tab-group-tabbar {
+  height: 38px;
+  min-height: 0;
+  padding: 0 12px;
+  gap: 9px;
+  align-items: stretch;
+}
+.theme-forged .managed-panel .tab-group-tabbar .tab-group-tab {
+  height: auto;
+}
+/* align-items:stretch would top-align the fixed-height ornament — re-center it. */
+.theme-forged .managed-panel .managed-panel__header.tab-group-tabbar::before {
+  align-self: center;
+}
+
+/* Unified forged voice for custom header ACTION buttons — one style every
+   text action button reuses (the objectList "Lista" mode toggle, chat team
+   toggle, popup headerActions…), rather than each carrying its own stock CSS.
+   Keyed on HeaderButton (.popup-header-btn), so it spares the icon toggles
+   (.popup-menu__toggle + its dropdown items) and the window buttons. */
+.theme-forged .managed-panel__header .popup-header-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: "Cinzel", serif;
+  font-size: 8.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--parchment-dim);
+  background-color: rgba(28, 26, 23, 0.8);
+  border: 1px solid var(--iron-lo);
+  border-radius: 4px;
+  padding: 3px 6px;
+  margin: 0;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+}
+.theme-forged .managed-panel__header .popup-header-btn:hover {
+  color: var(--parchment);
+  border-color: var(--bronze-dim);
+  background-color: rgba(42, 37, 28, 0.9);
+}
+/* toggled/active state (e.g. objectList non-list mode) reads as bronze */
+.theme-forged .managed-panel__header .popup-header-btn.is-active {
+  color: var(--bronze);
+  border-color: var(--bronze-dim);
+  background-color: rgba(110, 86, 32, 0.28);
+}
+
+/* Content fills the plate below the header, above the bevel ring. */
+.theme-forged .managed-panel__content {
+  position: relative;
+  z-index: 1;
+}
+
+/* Let the docked map sit on the forged plate rather than a hard black box. */
+.theme-forged .map-panel-container {
+  background: transparent;
+}
+
+/* The map canvas paints edge-to-edge, so without this it bleeds into the 4px
+   band under the bevel ring — square corners poking past the rounded ring. Inset
+   the map content inside the ring (ring is at inset 4px, radius 5px) and clip the
+   canvas to a matching radius so it stays cleanly within the border. Scoped to
+   the map panel via :has() so other panels' content is untouched. The container
+   is width/height:100% of the content box, so padding here shrinks it and the
+   renderer's ResizeObserver re-centers at the new size. */
+.theme-forged .managed-panel__content:has(.map-panel-container) {
+  padding: 5px;
+}
+.theme-forged .map-panel-container {
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+/* ── Gaps between docked windows ─────────────────────────────────────────── */
+/* Tab-group panels are `.managed-panel` but NOT `.docked-panel`, so without this
+   they'd miss the 3px inset and fill their dock cell edge-to-edge — reading as a
+   wider/taller box than a single docked window. Match the inset. */
+.theme-forged .managed-panel.docked-panel,
+.theme-forged .managed-panel.tab-group-panel {
+  margin: 3px;
+}
+
+/* Window content is see-through: the plate above paints the window. */
+.theme-forged .managed-panel {
+  --popup-bg: transparent;
+}
+
+/* The log viewer writes on its accent buttons in `--popup-bg`, which is
+   transparent here (panels sit on the forged plate) - give it the plate's ink. */
+.theme-forged .managed-panel .lv {
+  --lv-accent-contrast: #15120d;
+}
+
+/* A portaled overlay floats over arbitrary content → needs an OPAQUE surface. */
+.theme-forged [data-popup-overlay] {
+  --popup-bg: #211d16;
+  --popup-section-bg: #211d16;
+}
+
+/* Header popovers (the shared `.popup-popover`: the ☰ menus of the map,
+   object-list/"kondycje" and static-map windows, and every window's settings
+   cog) render INLINE inside the panel — not through a body portal — so they
+   inherit the panel's transparent `--popup-bg`. They float (position: fixed) over arbitrary content,
+   so like a portaled overlay they need an OPAQUE surface; without it the menu
+   shows straight through to whatever sits behind the popup. */
+.theme-forged .popup-popover {
+  --popup-bg: #211d16;
+}
+
+/* Mute the (intentionally kept) data hues into the forged world. */
+.theme-forged .managed-panel .dockable-popup-body {
+  filter: saturate(0.7);
+}
+
+/* Give popup bodies breathing room inside the bevel ring. */
+.theme-forged .docked-panel--popup .docked-panel__content,
+.theme-forged .floating-panel .floating-panel__content {
+  padding: 2px 6px 6px;
+}
+
+/* Thin iron scrollbars. */
+.theme-forged .managed-panel,
+.theme-forged .managed-panel *,
+.theme-forged [data-popup-overlay],
+.theme-forged [data-popup-overlay] * {
+  scrollbar-width: thin;
+  scrollbar-color: var(--iron-hi) transparent;
+}
+.theme-forged .managed-panel ::-webkit-scrollbar,
+.theme-forged [data-popup-overlay] ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.theme-forged .managed-panel ::-webkit-scrollbar-thumb,
+.theme-forged [data-popup-overlay] ::-webkit-scrollbar-thumb {
+  background: var(--iron-hi);
+  border-radius: 4px;
+}
+.theme-forged .managed-panel ::-webkit-scrollbar-track,
+.theme-forged [data-popup-overlay] ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ============================================================================
+   SPLIT CONTEXT MENU — right-clicking a docked titlebar. It portals straight to
+   <body> (outside .managed-panel), so it gets no plate; give it the forged look
+   explicitly. Compound selectors outrank the stock
+   .dropdown-menu / .dropdown-item base rules.
+   ============================================================================ */
+.theme-forged .layout-split-menu.dropdown-menu {
+  background-color: #211d16;
+  background-image:
+    var(--tex-fine),
+    linear-gradient(180deg, #26221a 0%, #1b1811 100%);
+  background-blend-mode: soft-light, normal;
+  background-size: 130px 130px, 100% 100%;
+  border: 1px solid var(--iron-lo);
+  border-radius: 7px;
+  padding: 5px;
+  box-shadow:
+    inset 0 1px 0 rgba(184, 150, 90, 0.14),
+    0 3px 10px rgba(0, 0, 0, 0.6),
+    0 12px 30px rgba(0, 0, 0, 0.45);
+}
+.theme-forged .layout-split-menu .dropdown-item.layout-split-menu__item {
+  color: var(--parchment-dim);
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  padding: 6px 10px;
+  width: 100%;
+  font-family: "Cinzel", serif;
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 0.12s ease, background-color 0.12s ease;
+}
+.theme-forged .layout-split-menu .dropdown-item.layout-split-menu__item:hover,
+.theme-forged .layout-split-menu .dropdown-item.layout-split-menu__item:focus {
+  color: var(--parchment);
+  background: rgba(184, 150, 90, 0.12);
+}
+.theme-forged .layout-split-menu .layout-split-menu__icon {
+  color: var(--bronze);
+}
+.theme-forged .layout-split-menu .layout-split-menu__sep {
+  height: 1px;
+  margin: 5px 6px;
+  background: var(--iron-lo);
+}
+
+/* ============================================================================
+   PEOPLE BROWSER — the add/edit person dialog (Baza postaci → + Dodaj / edit).
+   It portals to <body> (see PersonEditModal), so `[data-popup-overlay]` above
+   already hands it the forged `--popup-*` palette and the shared rules in
+   popups.css give it structure. What that can't supply is CHROME: left alone the
+   dialog is a flat token-coloured box. These rules dress it like a window — same
+   plate, bevel ring, bronze ornament, Cinzel title — over a dimming blurred
+   backdrop.
+   ============================================================================ */
+.theme-forged .people-modal {
+  background: rgba(6, 5, 4, 0.62);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
+/* The plate — matte fine-grain over a vertical iron gradient. */
+.theme-forged .people-modal__dialog {
+  position: relative;
+  border: 1px solid var(--iron-lo);
+  border-radius: 10px;
+  background-color: #0a0a09;
+  background-image:
+    var(--tex-fine),
+    linear-gradient(180deg, #15120d 0%, #0c0b09 55%, #070605 100%);
+  background-blend-mode: soft-light, normal;
+  background-size: 130px 130px, 100% 100%;
+  box-shadow:
+    inset 0 1px 0 rgba(184, 150, 90, 0.16),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.5),
+    0 18px 60px rgba(0, 0, 0, 0.6);
+  color: var(--parchment);
+}
+
+/* The bevel ring, as on the windows. */
+.theme-forged .people-modal__dialog::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border: 1px solid rgba(184, 150, 90, 0.2);
+  border-radius: 5px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+}
+
+/* Header: no rule line, a shadowed lip instead. */
+.theme-forged .people-modal__header {
+  gap: 9px;
+  padding: 11px 14px 7px;
+  border-bottom: 0;
+  box-shadow:
+    inset 0 -1px 0 rgba(0, 0, 0, 0.55),
+    inset 0 -2px 0 rgba(184, 150, 90, 0.06);
+}
+
+/* Title with the bronze romb ornament carried on ::before, so the shared
+   markup needs no theme-only element. */
+.theme-forged .people-modal__title {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-family: "Cinzel", serif;
+  font-weight: 600;
+  font-size: 10.5px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--bronze);
+}
+
+.theme-forged .people-modal__title::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  transform: rotate(45deg);
+  background: linear-gradient(135deg, var(--bronze), var(--bronze-dim));
+  box-shadow: 0 0 6px rgba(184, 150, 90, 0.4);
+}
+
+/* Close glyph. */
+.theme-forged .people-modal__close {
+  width: 22px;
+  height: 22px;
+  font-family: "Cinzel", serif;
+  color: var(--parchment-dim);
+  transition: color 0.15s ease, text-shadow 0.15s ease;
+}
+
+.theme-forged .people-modal__close:hover {
+  color: var(--bronze);
+  text-shadow: 0 0 8px rgba(184, 150, 90, 0.5);
+}
+
+/* Field captions speak the display voice, like every label in the menu modals
+   (see menu.css `.form-label`) — engraved caption over a Garamond value. */
+.theme-forged .people-modal__label {
+  font-family: "Cinzel", serif;
+  font-size: 0.88em;
+  letter-spacing: 0.01em;
+  color: var(--parchment-dim);
+}
+
+.theme-forged .people-modal__body {
+  padding: 12px 14px;
+}
+
+.theme-forged .people-modal__footer {
+  padding: 8px 14px 10px;
+  border-top-color: var(--iron-lo);
+}
+
+/* ============================================================
+   Object List "W poblizu" (nearby) flavor — forged re-skin.
+   The shared structural + neutral base lives in src/web/popups/
+   popups.css; these rules restyle it to the forged voice: Cinzel
+   names, the bronze key diamond, the blood HP hue and the
+   side-coloured attacker chips.
+   ============================================================ */
+/* --- objects (W poblizu) --- */
+.theme-forged .obj {
+  position: relative;
+  padding: 5px 1px;
+  border-bottom: 1px solid rgba(255,255,255,.035);
+}
+.theme-forged .obj:last-child { border-bottom: 0; }
+.theme-forged .obj__main { display: flex; align-items: center; gap: 9px; }
+/* leader's marked targets — a forged glow edge on the left of the row:
+   red = marked attack target (/wa), green = marked defense target (/wz). */
+.theme-forged .obj--attack-target::before,
+.theme-forged .obj--defense-target::before {
+  content: "";
+  /* sit in the body gutter, clear of the bronze key diamond */
+  position: absolute; left: -6px; top: 3px; bottom: 3px; width: 2px;
+  border-radius: 1px;
+}
+.theme-forged .obj--attack-target::before {
+  background: linear-gradient(180deg, rgba(215,88,50,.95), rgba(140,50,30,.55));
+  box-shadow: 0 0 6px rgba(200,80,44,.5);
+}
+.theme-forged .obj--defense-target::before {
+  background: linear-gradient(180deg, rgba(150,200,90,.9), rgba(90,130,50,.5));
+  box-shadow: 0 0 6px rgba(140,180,70,.45);
+}
+.theme-forged .obj__key {
+  flex: 0 0 auto; width: 20px; height: 20px;
+  display: grid; place-items: center; position: relative;
+  font-family: "JetBrains Mono", monospace; font-size: 10px; color: var(--bronze-dim);
+}
+.theme-forged .obj__key i { font-style: normal; position: relative; z-index: 1; }
+.theme-forged .obj__key::before {                 /* bronze diamond, echoes the panel-header romb */
+  content: "";
+  position: absolute; inset: 2px;
+  transform: rotate(45deg);
+  border-radius: 2px;
+  background: rgba(0,0,0,.3);
+  box-shadow: inset 0 0 0 1px rgba(184,150,90,.2);
+}
+.theme-forged .obj__key.you { color: var(--bronze); }
+.theme-forged .obj__key.you::before { box-shadow: inset 0 0 0 1px rgba(184,150,90,.4); }
+/* next enemy in the attack queue — the base paints a gold box behind the key;
+   here the diamond itself takes the gold so the romb motif is preserved. */
+.theme-forged .obj--next-queued {
+  background: rgba(255,215,0,.045);
+  box-shadow: none;
+}
+.theme-forged .obj__key.next-target::after { display: none; }
+.theme-forged .obj__key.next-target::before {
+  background: rgba(255,215,0,.12);
+  box-shadow: inset 0 0 0 1px rgba(255,215,0,.5), 0 0 6px rgba(255,215,0,.25);
+}
+/* object names share the location-header voice: Cinzel, uppercase, spaced */
+.theme-forged .obj__name {
+  flex: 1 1 auto; min-width: 0;
+  font-family: "Cinzel", serif; text-transform: uppercase;
+  font-size: 10.5px; letter-spacing: .12em; color: var(--parchment);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.theme-forged .obj__name.target { color: #c68c84; }
+.theme-forged .obj__name.enemy  { color: #9a8fae; }
+.theme-forged .obj__name.ally   { color: #8fae7a; }
+.theme-forged .obj__name.item   { color: var(--parchment-dim); }
+/* status marks (ogluch, przelamana obrona, plugin flags). Same shape as the
+   next-target wash above, one notch quieter and in the filter's own hue; the name
+   lifts toward parchment rather than taking the filter's literal colour, which was
+   picked for contrast against a solid fill. Placed after the .obj__name.* colours
+   so a marked target/ally still reads as marked. */
+.theme-forged .obj.obj--marked {
+  background: color-mix(in srgb, var(--mark-bg) 7%, transparent);
+}
+.theme-forged .obj--marked .obj__name {
+  color: color-mix(in srgb, var(--mark-bg) 70%, var(--parchment));
+}
+.theme-forged .obj__hp {
+  --hp: 60%;
+  --hue: var(--blood);
+  flex: 0 0 auto;
+  width: 42px; height: 6px;
+  border-radius: 3px; overflow: hidden;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.6);
+  /* HP is a discrete 1..7 scale; overlay thin tick marks at every 1/7 boundary
+     so the exact level is readable, then the fill gradient underneath. Mirrors
+     the stock base in popups.css (this override otherwise replaces `background`
+     wholesale and would drop the dividers). */
+  background:
+    repeating-linear-gradient(90deg,
+      transparent 0, transparent calc(100% / 7 - 1px),
+      rgba(0, 0, 0, .5) calc(100% / 7 - 1px), rgba(0, 0, 0, .5) calc(100% / 7)),
+    linear-gradient(90deg,
+      var(--hue) 0%, var(--hue) var(--hp),
+      color-mix(in srgb, var(--hue) 26%, #0c0906) var(--hp),
+      color-mix(in srgb, var(--hue) 26%, #0c0906) 100%);
+  filter: saturate(.6);
+}
+/* clickable object parts — number attacks, name guards, HP bar breaks/pulls back
+   (matches the stock object list). A quiet bronze lift signals the affordance. */
+.theme-forged .obj__key.is-clickable,
+.theme-forged .obj__name.is-clickable,
+.theme-forged .obj__hp.is-clickable { cursor: pointer; }
+.theme-forged .obj__key.is-clickable:hover { color: var(--bronze); }
+.theme-forged .obj__key.is-clickable:hover::before { box-shadow: inset 0 0 0 1px rgba(184,150,90,.5); }
+.theme-forged .obj__name.is-clickable:hover { color: var(--bronze); }
+.theme-forged .obj__hp.is-clickable:hover { filter: saturate(1) brightness(1.2); }
+/* attackers (.obj__atks) sit inline at the right end of the row; the chip
+   colours below carry the "who's on it" read (red = threat, green = handled).
+   Layout comes from the shared base. */
+.theme-forged .atk {
+  flex: 0 0 auto;
+  min-width: 15px; height: 15px; padding: 0 3px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-family: "JetBrains Mono", monospace; font-size: 9.5px; line-height: 1;
+  border-radius: 3px;
+  color: var(--parchment-dim);
+  background: rgba(0,0,0,.32);
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.5);
+}
+.theme-forged .atk--enemy { color: #d0897f; background: rgba(92,34,27,.34); box-shadow: inset 0 0 0 1px rgba(150,60,50,.55); }
+.theme-forged .atk--ally  { color: #97b478; background: rgba(60,70,38,.32); box-shadow: inset 0 0 0 1px rgba(80,110,60,.5); }
+.theme-forged .atk--you   { color: var(--bronze); background: rgba(184,150,90,.13); box-shadow: inset 0 0 0 1px rgba(184,150,90,.5); }
+
+.theme-forged .obj--empty {
+  padding: 4px 2px; font-family: "EB Garamond", serif; font-style: italic;
+  font-size: 12.5px; color: var(--parchment-dim); opacity: .6;
+}

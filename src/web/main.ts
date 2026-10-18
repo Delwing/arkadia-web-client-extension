@@ -7,6 +7,9 @@ import '@web-ui/buttons/desktopButtons.css'
 import '@web-ui/buttons/mobileCommandRadial.css'
 import '@web-ui/buttons/mobileDirectionButtons.css'
 import '@web-ui/buttons/mobileJoysticks.css'
+// The Kuźnia theme's skin, after the window and button sheets it re-skins.
+import './themes/forged/windows.css'
+import './themes/forged/buttons.css'
 import mudClient from "./MudClient.ts";
 import {
     DEFAULT_SESSION_PROXY_URL,
