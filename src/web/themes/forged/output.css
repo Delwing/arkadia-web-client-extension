@@ -177,3 +177,9 @@ body.theme-forged .plaque__gv {
   color: var(--parchment);
 }
 
+
+/* Over the backdrop the split view's pinned lines need a ground of their own,
+   or the scrollback shows through them. */
+body.theme-forged[data-backdrop] #split-bottom {
+  background-color: var(--void) !important;
+}

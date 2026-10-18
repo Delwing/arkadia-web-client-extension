@@ -28,8 +28,8 @@ export const defaultRenderSettings: RenderSettings = {
     xtermPalette: 'arkadia',
     colorTheme: 'default',
     outputBackground: '#242424',
-    outputBackgroundImage: 'theme',
-    outputBackgroundShade: 60,
+    backgroundImage: 'theme',
+    backgroundImageShade: 60,
     outputBottomPadding: 0,
     showTimestamps: false,
     highlightMessageBlocks: false,
@@ -101,7 +101,7 @@ export const shellSettingsKeys = [
 export const renderSettingsKeys = [
     'fontFamily', 'customFontUrl', 'customFontFamily', 'systemFontFamily', 'uploadedFontFamily',
     'xtermPalette', 'colorTheme', 'customThemeColor', 'outputBackground',
-    'outputBackgroundImage', 'outputBackgroundShade',
+    'backgroundImage', 'backgroundImageShade',
     'outputBottomPadding', 'showTimestamps', 'highlightMessageBlocks', 'characterPlaque', 'objectListCoverMarkers', 'commandEcho',
     'clearInputOnSend', 'autoLowercaseCommands', 'soundCategories', 'customBeepSoundKey',
 ] as const satisfies readonly (keyof RenderSettings)[];

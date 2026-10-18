@@ -29,3 +29,8 @@
     border-radius: 9px;
   }
 }
+
+/* Over a backdrop the dock zones let it through too, one stone under it all. */
+body.theme-forged[data-backdrop] {
+  --surface-ground: transparent;
+}

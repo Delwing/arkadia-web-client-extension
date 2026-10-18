@@ -112,8 +112,8 @@ const CONSTRAINTS: Record<string, Constraint> = {
     },
     customThemeColor: { type: 'color', },
     outputBackground: { type: 'color' },
-    outputBackgroundImage: { type: 'enum', enumValues: ['theme', 'none', 'uploaded'] },
-    outputBackgroundShade: { type: 'number', min: 0, max: 90, integer: true },
+    backgroundImage: { type: 'enum', enumValues: ['theme', 'none', 'uploaded'] },
+    backgroundImageShade: { type: 'number', min: 0, max: 90, integer: true },
     outputBottomPadding: { type: 'number', min: 0, max: 400, integer: true },
     soundCategories: { type: 'complex' },
 

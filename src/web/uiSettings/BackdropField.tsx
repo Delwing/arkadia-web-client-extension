@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState, type DragEvent } from "react";
 import { Button, Notice } from "@web-ui/primitives/index.ts";
-import { clearOutputImage, getUploadedOutputImage, storeOutputImage } from "../outputBackgroundImage";
+import { clearBackdrop, getUploadedBackdrop, storeBackdrop } from "../backdrop";
 
 const ACCEPT = "image/png,image/jpeg,image/webp,image/gif,image/avif";
 
 /** The image the player uploaded for under the output: pick or drop one, or remove it. */
-export function UploadedOutputImageField() {
+export function UploadedBackdropField() {
     const [fileName, setFileName] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [dragOver, setDragOver] = useState(false);
@@ -13,7 +13,7 @@ export function UploadedOutputImageField() {
 
     useEffect(() => {
         let cancelled = false;
-        void getUploadedOutputImage().then(stored => {
+        void getUploadedBackdrop().then(stored => {
             if (!cancelled) setFileName(stored?.fileName ?? null);
         });
         return () => { cancelled = true; };
@@ -27,7 +27,7 @@ export function UploadedOutputImageField() {
         }
         setError(null);
         try {
-            const stored = await storeOutputImage(file);
+            const stored = await storeBackdrop(file);
             setFileName(stored.fileName);
         } catch (e) {
             console.warn("Failed to store the output background image", e);
@@ -42,22 +42,22 @@ export function UploadedOutputImageField() {
     };
 
     return (
-        <div id="ui-output-image-settings" className="ui-settings-stack">
+        <div id="ui-backdrop-settings" className="ui-settings-stack">
             <div
-                id="ui-output-image-drop"
+                id="ui-backdrop-drop"
                 className={`ui-font-drop${dragOver ? " ui-font-drop--over" : ""}`}
                 onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
                 onDragLeave={() => setDragOver(false)}
                 onDrop={onDrop}
             >
                 <span>Przeciągnij tu obraz (PNG, JPG, WebP) albo</span>
-                <Button id="ui-output-image-upload-button" size="sm" onClick={() => inputRef.current?.click()}>
+                <Button id="ui-backdrop-upload-button" size="sm" onClick={() => inputRef.current?.click()}>
                     Wybierz plik
                 </Button>
             </div>
             <input
                 ref={inputRef}
-                id="ui-output-image-input"
+                id="ui-backdrop-input"
                 type="file"
                 accept={ACCEPT}
                 hidden
@@ -68,12 +68,12 @@ export function UploadedOutputImageField() {
             />
             {fileName && (
                 <div className="ui-font-family-row">
-                    <span className="popup-field__label">Obraz: <strong id="ui-output-image-name">{fileName}</strong></span>
+                    <span className="popup-field__label">Obraz: <strong id="ui-backdrop-name">{fileName}</strong></span>
                     <Button
-                        id="ui-output-image-clear"
+                        id="ui-backdrop-clear"
                         size="sm"
                         variant="ghost"
-                        onClick={() => void clearOutputImage().then(() => setFileName(null))}
+                        onClick={() => void clearBackdrop().then(() => setFileName(null))}
                     >
                         Usuń obraz
                     </Button>

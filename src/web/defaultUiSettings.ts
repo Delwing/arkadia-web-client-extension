@@ -9,7 +9,7 @@ export type {
     MapHighlightShape,
     PathFindingAlgorithm,
     ColorTheme,
-    OutputBackgroundImage,
+    BackgroundImage,
     FooterButtonConfig,
     FooterComponentConfig,
     UiSettings,

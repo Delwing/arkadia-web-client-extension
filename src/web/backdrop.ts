@@ -1,17 +1,19 @@
 /**
- * The image under the game output: the theme's own (Kuźnia's stone), none,
- * or one the player uploaded.
+ * The page backdrop: an image behind the whole page - the theme's own
+ * (Kuźnia's stone), none, or one the player uploaded. The output turns
+ * see-through over it, so it shows under the game text and, in a theme that
+ * stands its windows apart, between them.
  *
  * An uploaded image lives in IndexedDB on this device only (it is not part of
  * settings sync, like an uploaded font); the settings keep just the choice.
- * The output shows it through `--output-image` and the `data-output-image`
- * attribute style.css keys on, shaded by `--output-image-shade` so the text
+ * <body> shows it through `--backdrop-image` and the `data-backdrop`
+ * attribute style.css keys on, shaded by `--backdrop-shade` so the text
  * stays legible. A choice that has no image here (a theme without one, no
- * file on this device) leaves the plain background colour.
+ * file on this device) leaves the plain output background colour.
  */
-import type { OutputBackgroundImage } from '@shared/uiSettingsTypes';
+import type { BackgroundImage } from '@shared/uiSettingsTypes';
 
-export interface StoredOutputImage {
+export interface StoredBackdrop {
     fileName: string;
     blob: Blob;
 }
@@ -51,9 +53,9 @@ function request<T>(mode: IDBTransactionMode, run: (store: IDBObjectStore) => ID
     }));
 }
 
-export async function getUploadedOutputImage(): Promise<StoredOutputImage | null> {
+export async function getUploadedBackdrop(): Promise<StoredBackdrop | null> {
     try {
-        const stored = await request<StoredOutputImage | undefined>('readonly', store => store.get(KEY));
+        const stored = await request<StoredBackdrop | undefined>('readonly', store => store.get(KEY));
         return stored && stored.blob instanceof Blob ? stored : null;
     } catch {
         return null;
@@ -72,47 +74,48 @@ function urlOf(blob: Blob): string {
     return objectUrl!;
 }
 
-// The last call's target and choice, so storing or clearing the file shows at once.
-let last: { target: HTMLElement; mode: OutputBackgroundImage; shade: number } | null = null;
+// The last call's choice, so storing or clearing the file shows at once.
+let last: { mode: BackgroundImage; shade: number } | null = null;
 let generation = 0;
 
-export async function storeOutputImage(file: File): Promise<StoredOutputImage> {
-    const stored: StoredOutputImage = { fileName: file.name, blob: file };
+export async function storeBackdrop(file: File): Promise<StoredBackdrop> {
+    const stored: StoredBackdrop = { fileName: file.name, blob: file };
     await request('readwrite', store => store.put(stored, KEY));
-    if (last) applyOutputBackgroundImage(last.target, last.mode, last.shade);
+    if (last) applyBackdrop(last.mode, last.shade);
     return stored;
 }
 
-export async function clearOutputImage(): Promise<void> {
+export async function clearBackdrop(): Promise<void> {
     await request('readwrite', store => store.delete(KEY));
-    if (last) applyOutputBackgroundImage(last.target, last.mode, last.shade);
+    if (last) applyBackdrop(last.mode, last.shade);
 }
 
-function show(target: HTMLElement, image: string | null): void {
+function show(image: string | null): void {
+    const body = document.body;
     if (image) {
-        target.style.setProperty('--output-image', image);
-        target.dataset.outputImage = '';
+        body.style.setProperty('--backdrop-image', image);
+        body.dataset.backdrop = '';
     } else {
-        target.style.removeProperty('--output-image');
-        delete target.dataset.outputImage;
+        body.style.removeProperty('--backdrop-image');
+        delete body.dataset.backdrop;
     }
 }
 
-/** Puts the chosen image under `target` (the output), shaded by `shade` percent. */
-export function applyOutputBackgroundImage(target: HTMLElement, mode: OutputBackgroundImage, shade: number): void {
-    last = { target, mode, shade };
+/** Lays the chosen image behind the page, shaded by `shade` percent. */
+export function applyBackdrop(mode: BackgroundImage, shade: number): void {
+    last = { mode, shade };
     const current = ++generation;
-    target.style.setProperty('--output-image-shade', String(shade / 100));
+    document.body.style.setProperty('--backdrop-shade', String(shade / 100));
     if (mode === 'theme') {
         // The theme's class is on <body> by now; a theme without an image leaves the colour.
-        const themed = getComputedStyle(document.body).getPropertyValue('--theme-output-image').trim();
-        show(target, themed && themed !== 'none' ? 'var(--theme-output-image)' : null);
+        const themed = getComputedStyle(document.body).getPropertyValue('--theme-backdrop').trim();
+        show(themed && themed !== 'none' ? 'var(--theme-backdrop)' : null);
     } else if (mode === 'uploaded') {
-        void getUploadedOutputImage().then(stored => {
+        void getUploadedBackdrop().then(stored => {
             if (current !== generation) return;
-            show(target, stored ? `url("${urlOf(stored.blob)}")` : null);
+            show(stored ? `url("${urlOf(stored.blob)}")` : null);
         });
     } else {
-        show(target, null);
+        show(null);
     }
 }

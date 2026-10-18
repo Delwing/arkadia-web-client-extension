@@ -614,15 +614,26 @@ html body.layout-manager-enabled.layout-rails-vertical #input-area { margin-top:
   background-color: var(--popup-bg);
 }
 
-/* The image under the output (outputBackgroundImage.ts), shaded so the text
-   stays legible. It stays put while the log scrolls over it. */
-#main_text_output_msg_wrapper[data-output-image] {
-  background-image:
-    linear-gradient(rgb(0 0 0 / var(--output-image-shade, 0.6)), rgb(0 0 0 / var(--output-image-shade, 0.6))),
-    var(--output-image);
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: cover;
+/* The page backdrop (backdrop.ts): an image behind the whole page, shaded so
+   the text stays legible. The output and the ground around it turn
+   see-through over it; the output colour (set inline) gives way. */
+body[data-backdrop]::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(rgb(0 0 0 / var(--backdrop-shade, 0.6)), rgb(0 0 0 / var(--backdrop-shade, 0.6))),
+    var(--backdrop-image) center / cover no-repeat;
+  pointer-events: none;
+}
+/* The body's own ground would paint over it (html keeps its colour under it). */
+html body[data-backdrop],
+body[data-backdrop] #content-area {
+  background-color: transparent;
+}
+body[data-backdrop] #main_text_output_msg_wrapper {
+  background-color: transparent !important;
 }
 
 /* Stock Logi dialog: as wide as the screen allows and full height (the fill
