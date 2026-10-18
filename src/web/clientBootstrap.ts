@@ -147,6 +147,14 @@ export function bootstrapGameClient(opts: { installPorts: () => void }): GameCli
                 const syncV2 = localStorage.getItem('arkadia.syncV2') !== '0'
                     ? import('@web/userData/syncV2')
                     : null;
+                // A login on another device drops this connection: upload now, so
+                // the device taking over gets this session's state (/postepy) in
+                // seconds rather than at the next 5-minute upload.
+                if (syncV2) {
+                    mudClient.on('client.disconnect', () => {
+                        void syncV2.then(({ flushSyncV2 }) => flushSyncV2());
+                    });
+                }
                 onAuthStateChanged((authState) => {
                     if (authState.isAuthenticated && authState.userId) {
                         const userId = authState.userId;
