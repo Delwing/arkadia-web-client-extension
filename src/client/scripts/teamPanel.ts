@@ -41,12 +41,14 @@ export default function initTeamPanel(client: Client) {
             ? []
             : computeMissingMembers(teamMembers, client.ObjectManager.getObjectsOnLocation());
 
-        const signature = `${teamSize}|${missing.join(",")}`;
+        const leader = client.TeamManager.isLeader?.() ? "Ty" : client.TeamManager.getLeader?.();
+
+        const signature = `${teamSize}|${missing.join(",")}|${leader ?? ""}`;
         if (signature === lastSignature) {
             return;
         }
         lastSignature = signature;
-        client.sendEvent("teamPanelStatus", { teamSize, missing });
+        client.sendEvent("teamPanelStatus", { teamSize, missing, leader });
     };
 
     client.on("gmcp.objects.nums", update);

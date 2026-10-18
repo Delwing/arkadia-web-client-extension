@@ -1,6 +1,8 @@
 import { getStrategy } from '@web/objectList/strategies';
 import { buildRenderContext } from '@web/objectList/context';
 import { objectListFilters } from '@modules/core/objectListFilters';
+import { resetLayoutCache, setBuiltInPanelSetting } from '@web/layout/utils/layoutStorage';
+import { LEADER_MARK_SETTING } from '@web/layout/types';
 
 function makeClient(opts: { queue?: number[]; team?: string[]; leader?: boolean } = {}) {
   const team = opts.team ?? [];
@@ -153,5 +155,51 @@ describe('nearby ("W poblizu") strategy', () => {
     );
 
     expect(seen).toEqual({ Ork: true, Goblin: false });
+  });
+});
+
+describe('team leader crown', () => {
+  const objects = [
+    { shortcut: '@', desc: 'Ja', num: 1, hp: 6 },
+    { shortcut: 'A', desc: 'Kompan', num: 2, hp: 6 },
+    { shortcut: '1', desc: 'Ork', num: 3, hp: 4 },
+  ];
+
+  function render(mode: Parameters<typeof getStrategy>[0], leaderId: number) {
+    const client = {
+      TeamManager: {
+        isInTeam: (desc: string) => desc === 'Kompan',
+        getEnemyQueue: () => [],
+        isLeader: () => leaderId === 1,
+        getLeaderId: () => leaderId,
+      },
+    } as any;
+    document.body.innerHTML = getStrategy(mode).render(buildRenderContext(client, objects, 'zabij'));
+    return [...document.querySelectorAll('.is-team-leader')] as HTMLElement[];
+  }
+
+  afterEach(() => {
+    localStorage.clear();
+    resetLayoutCache();
+  });
+
+  test.each(['list', 'card', 'compact', 'compact-dots', 'raid', 'nearby'] as const)(
+    '%s marks only the leading teammate shortcut', (mode) => {
+      const marked = render(mode, 2);
+      expect(marked).toHaveLength(1);
+      expect(marked[0].textContent).toBe('A');
+      expect(marked[0].getAttribute('title')).toBe('Prowadzi drużynę');
+    });
+
+  test('list marks our own "@" when we lead', () => {
+    const marked = render('list', 1);
+    expect(marked).toHaveLength(1);
+    expect(marked[0].textContent).toBe('@');
+  });
+
+  test('the window setting turns the crown off', () => {
+    setBuiltInPanelSetting('objectList', LEADER_MARK_SETTING, false);
+    expect(render('list', 2)).toHaveLength(0);
+    expect(render('card', 2)).toHaveLength(0);
   });
 });

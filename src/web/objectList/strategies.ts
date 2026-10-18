@@ -25,6 +25,9 @@ import {
     attackerObjectsOf,
     coverNameClass,
     withCoverMark,
+    isTeamLeaderObj,
+    LEADER_NUM_CLASS,
+    showsLeaderMark,
 } from "./context.ts";
 
 export interface ObjectListStrategy {
@@ -80,10 +83,17 @@ export function renderListLines(ctx: RenderContext): string[] {
         if (isNextQueued) {
             numClasses.push("object-num-next-target");
         }
+        const hasLeaderMark = showsLeaderMark(obj, ctx);
+        if (hasLeaderMark) {
+            numClasses.push(LEADER_NUM_CLASS);
+        }
         const numStyle = isNextQueued ? " style=\"color:#ffd700\"" : "";
+        const playerNum = hasLeaderMark
+            ? `<span class="object-num-self ${LEADER_NUM_CLASS}" title="Prowadzisz drużynę">${num}</span>`
+            : num;
         let numLabel = isPlayer
-            ? `${prefix}${num}`
-            : `${prefix}<span class="${numClasses.join(" ")}" data-object-id="${obj.num}" data-object-num="${num}"${numStyle} title="Zaatakuj">${num}</span>`;
+            ? `${prefix}${playerNum}`
+            : `${prefix}<span class="${numClasses.join(" ")}" data-object-id="${obj.num}" data-object-num="${num}"${numStyle} title="${hasLeaderMark ? "Prowadzi drużynę" : "Zaatakuj"}">${num}</span>`;
         const rawDesc = obj.desc || "";
         const isTeammate = tm?.isInTeam?.(rawDesc);
         const isAttacking = isAttackingObj(obj);
@@ -261,6 +271,7 @@ const cardStrategy: ObjectListStrategy = {
             // Number badge classes
             const numberClasses = ['object-card__number'];
             if (isNextQueued) numberClasses.push('object-card__number--next-target');
+            if (showsLeaderMark(obj, ctx)) numberClasses.push(LEADER_NUM_CLASS);
 
             // Name classes
             const nameClasses = ['object-card__name'];
@@ -350,7 +361,7 @@ const cardStrategy: ObjectListStrategy = {
             // Simplified card structure - single container, no absolute positioning
             return `<div class="${cardClasses.join(' ')}" data-object-id="${obj.num}" data-object-num="${num}">
                 <div class="object-card__row1">
-                    <span class="${numberClasses.join(' ')}" data-object-num="${num}" data-object-id="${obj.num}" title="Zaatakuj">${num}</span>
+                    <span class="${numberClasses.join(' ')}" data-object-num="${num}" data-object-id="${obj.num}" title="${showsLeaderMark(obj, ctx) ? 'Prowadzi drużynę' : 'Zaatakuj'}">${num}</span>
                     <span class="${nameClasses.join(' ')}" data-object-num="${num}" data-object-id="${obj.num}" title="Zasłoń"${nameStyleAttr}>${withCoverMark(obj, ctx, finalDesc)}</span>
                     <span class="object-card__icons">${iconsHtml}</span>
                 </div>
@@ -411,6 +422,7 @@ const compactStrategy: ObjectListStrategy = {
             // Number badge classes
             const numberClasses = ['object-card__number'];
             if (isNextQueued) numberClasses.push('object-card__number--next-target');
+            if (showsLeaderMark(obj, ctx)) numberClasses.push(LEADER_NUM_CLASS);
 
             // Name classes
             const nameClasses = ['object-card__name'];
@@ -498,7 +510,7 @@ const compactStrategy: ObjectListStrategy = {
                 ${hpBarHtml}
                 <div class="object-card__compact-content">
                     ${targetDotHtml}
-                    <span class="${numberClasses.join(' ')}" data-object-num="${num}" data-object-id="${obj.num}" title="Zaatakuj">${num}</span>
+                    <span class="${numberClasses.join(' ')}" data-object-num="${num}" data-object-id="${obj.num}" title="${showsLeaderMark(obj, ctx) ? 'Prowadzi drużynę' : 'Zaatakuj'}">${num}</span>
                     <span class="${nameClasses.join(' ')}" data-object-num="${num}" data-object-id="${obj.num}" title="Zasłoń"${nameStyleAttr}>${withCoverMark(obj, ctx, finalDesc)}</span>
                     ${attackersHtml}
                 </div>
@@ -555,6 +567,7 @@ const compactDotsStrategy: ObjectListStrategy = {
             // Number badge classes
             const numberClasses = ['object-card__number'];
             if (isNextQueued) numberClasses.push('object-card__number--next-target');
+            if (showsLeaderMark(obj, ctx)) numberClasses.push(LEADER_NUM_CLASS);
 
             // Name classes
             const nameClasses = ['object-card__name'];
@@ -648,7 +661,7 @@ const compactDotsStrategy: ObjectListStrategy = {
             return `<div class="${cardClasses.join(' ')}" data-object-id="${obj.num}" data-object-num="${num}">
                 <div class="object-card__compact-content">
                     ${targetDotHtml}
-                    <span class="${numberClasses.join(' ')}" data-object-num="${num}" data-object-id="${obj.num}" title="Zaatakuj">${num}</span>
+                    <span class="${numberClasses.join(' ')}" data-object-num="${num}" data-object-id="${obj.num}" title="${showsLeaderMark(obj, ctx) ? 'Prowadzi drużynę' : 'Zaatakuj'}">${num}</span>
                     ${hpDotsHtml}
                     <span class="${nameClasses.join(' ')}" data-object-num="${num}" data-object-id="${obj.num}" title="Zasłoń"${nameStyleAttr}>${withCoverMark(obj, ctx, finalDesc)}</span>
                     ${attackersHtml}
@@ -702,6 +715,7 @@ const raidStrategy: ObjectListStrategy = {
 
             const numberClasses = ['object-card__number'];
             if (isNextQueued) numberClasses.push('object-card__number--next-target');
+            if (showsLeaderMark(obj, ctx)) numberClasses.push(LEADER_NUM_CLASS);
 
             const nameClasses = ['object-card__name'];
             const coverCls = coverNameClass(obj, ctx);
@@ -781,7 +795,7 @@ const raidStrategy: ObjectListStrategy = {
                 ${hpBarHtml}
                 <div class="object-card__raid-content">
                     <div class="object-card__raid-row object-card__raid-row--main">
-                        <span class="${numberClasses.join(' ')}" data-object-num="${num}" data-object-id="${obj.num}" title="Zaatakuj">${num}</span>
+                        <span class="${numberClasses.join(' ')}" data-object-num="${num}" data-object-id="${obj.num}" title="${showsLeaderMark(obj, ctx) ? 'Prowadzi drużynę' : 'Zaatakuj'}">${num}</span>
                         <span class="${nameClasses.join(' ')}" data-object-num="${num}" data-object-id="${obj.num}" title="Zasłoń"${nameStyleAttr}>${withCoverMark(obj, ctx, finalDesc)}</span>
                     </div>
                     <div class="object-card__raid-row object-card__raid-row--attackers">
@@ -807,6 +821,9 @@ const raidStrategy: ObjectListStrategy = {
         teamObjects.sort((a: any, b: any) => {
             if (a.shortcut === '@') return -1;
             if (b.shortcut === '@') return 1;
+            // The leader comes right after the player.
+            if (isTeamLeaderObj(a, ctx)) return -1;
+            if (isTeamLeaderObj(b, ctx)) return 1;
             return 0;
         });
 
@@ -910,10 +927,11 @@ const nearbyStrategy: ObjectListStrategy = {
             const keyCls =
                 'obj__key' + (isPlayer ? ' you' : '') +
                 (isNextQueued ? ' next-target' : '') +
-                (keyClickable ? ' is-clickable' : '');
+                (keyClickable ? ' is-clickable' : '') +
+                (showsLeaderMark(obj, ctx) ? ` ${LEADER_NUM_CLASS}` : '');
             const keyAttrs = keyClickable
                 ? ` data-object-num="${num}" data-object-id="${obj.num}" title="Zaatakuj"`
-                : '';
+                : showsLeaderMark(obj, ctx) ? ' title="Prowadzi drużynę"' : '';
             const keyLabel = filterResult.content?.numberLabel !== undefined
                 ? filterResult.content.numberLabel
                 : `<i>${num}</i>`;

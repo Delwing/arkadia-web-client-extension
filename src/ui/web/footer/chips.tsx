@@ -163,8 +163,8 @@ export function AttackChip() {
 
 /** Team presence on the current room. Click lists the roster. */
 export function TeamChip() {
-  const [status, setStatus] = useState<{ teamSize: number; missing: string[] }>({ teamSize: 0, missing: [] });
-  useClientEvent<{ teamSize: number; missing: string[] }>("teamPanelStatus", (next) =>
+  const [status, setStatus] = useState<{ teamSize: number; missing: string[]; leader?: string }>({ teamSize: 0, missing: [] });
+  useClientEvent<{ teamSize: number; missing: string[]; leader?: string }>("teamPanelStatus", (next) =>
     setStatus(next && typeof next.teamSize === "number" ? next : { teamSize: 0, missing: [] }));
   if (status.teamSize === 0) return null;
   const allHere = status.missing.length === 0;
@@ -178,6 +178,7 @@ export function TeamChip() {
       tip={{
         header: "Drużyna",
         rows: [
+          ...(status.leader ? [{ label: "Prowadzi", content: status.leader }] : []),
           { label: "Członkowie", content: String(status.teamSize) },
           ...(allHere ? [] : [{ label: "Brak", content: status.missing.join(", ") }]),
         ],

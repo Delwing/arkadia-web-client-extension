@@ -290,6 +290,8 @@ export const PANEL_CONFIGS: Record<string, PanelConfig> = {
 export const OBJECT_LIST_OTHERS_ID = 'objectListOthers';
 /** Kondycje setting that splits the non-team objects into their own window. */
 export const SEPARATE_OTHERS_SETTING = 'separateOthers';
+/** Kondycje setting for the crown on the team leader's shortcut (on by default). */
+export const LEADER_MARK_SETTING = 'showLeaderMark';
 
 export const MIN_DOCK_SIZE = 100;
 export const MAX_DOCK_SIZE_RATIO = 0.4; // Max 40% of viewport

@@ -13,6 +13,8 @@
 import type Client from "@client/Client";
 import {getCoverTracker} from "@client/scripts/coverTracker.ts";
 import {getRenderSettings} from "@modules/core/settings";
+import {getBuiltInPanelSetting} from "../layout/utils/layoutStorage";
+import {LEADER_MARK_SETTING} from "../layout/types";
 
 export type ObjectListViewMode =
     | 'list'
@@ -32,6 +34,10 @@ export interface RenderContext {
     tm: any;
     /** Whether the local character currently leads the team. */
     isLeader: boolean;
+    /** Object id of the team leader (us or a teammate), if there is one. */
+    leaderId: number | undefined;
+    /** The crown on the leader's shortcut is on (Kondycje "Ustawienia listy"). */
+    leaderMark: boolean;
     /** True when any teammate is attacking — drives the "not attacking" italic. */
     teamAttacking: boolean;
     /** The next enemy in the attack queue, IF it exists in the current objects. */
@@ -67,10 +73,12 @@ export function buildRenderContext(
         (o: any) => tm?.isInTeam?.(o.desc) && o.attack_num !== false && o.attack_num !== undefined,
     );
     const isLeader = !!tm?.isLeader?.();
-    const descWidth = Math.max(0, ...objects.map((o: any) => (o.desc || "").length));
+    const leaderId: number | undefined = tm?.getLeaderId?.();
+    const leaderMark = getBuiltInPanelSetting<boolean>('objectList', LEADER_MARK_SETTING, true) !== false;
+    const descWidth = descWidthOf(objects);
     const coverMarkers = getRenderSettings().objectListCoverMarkers === true;
     const coverMarks = buildCoverMarks(client, objects, tm);
-    return { objects, allObjects: objects, tm, isLeader, teamAttacking, validNextQueuedId, descWidth, attackCommand, coverMarks, coverMarkers };
+    return { objects, allObjects: objects, tm, isLeader, leaderId, leaderMark, teamAttacking, validNextQueuedId, descWidth, attackCommand, coverMarks, coverMarkers };
 }
 
 /** Which part of the location a window shows when the list is split. */
@@ -90,9 +98,30 @@ export function scopeRenderContext(ctx: RenderContext, scope: ObjectListScope): 
     if (scope === 'all') return ctx;
     const wantTeam = scope === 'team';
     const objects = ctx.allObjects.filter((o: any) => isTeamSide(o, ctx.tm) === wantTeam);
-    const descWidth = Math.max(0, ...objects.map((o: any) => (o.desc || "").length));
+    const descWidth = descWidthOf(objects);
     return { ...ctx, objects, descWidth };
 }
+
+/** Widest description, for the list view's padding column. */
+function descWidthOf(objects: any[]): number {
+    return Math.max(0, ...objects.map((o: any) => (o.desc || "").length));
+}
+
+/** Is this object the team leader (the player or a teammate)? */
+export function isTeamLeaderObj(obj: any, ctx: RenderContext): boolean {
+    return ctx.leaderId !== undefined && obj.num === ctx.leaderId;
+}
+
+/** Should this object's shortcut carry the leader crown? */
+export function showsLeaderMark(obj: any, ctx: RenderContext): boolean {
+    return ctx.leaderMark && isTeamLeaderObj(obj, ctx);
+}
+
+/**
+ * Every flavor marks the leader on its shortcut (number / "@") with this class:
+ * the crown sits over the shortcut's corner, so it never takes name width.
+ */
+export const LEADER_NUM_CLASS = 'is-team-leader';
 
 /** Is this object currently attacking someone (numeric or `true` attack_num)? */
 export function isAttackingObj(obj: any): boolean {

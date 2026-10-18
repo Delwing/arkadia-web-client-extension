@@ -66,7 +66,9 @@ const ObjectListDemoPopup: React.FC = () => {
                 desc: obj.desc,
                 hp: obj.hp,
                 avatar: isPlayer,
-                team: obj.isTeam || isPlayerLeader,
+                // A player led by a teammate is still in the team; team:false
+                // on the player would make TeamManager drop the leader again.
+                team: obj.isTeam || isPlayerLeader || (isPlayer && objects.some(o => o.isLeader)),
                 team_leader: isPlayerLeader || (obj.isLeader && !isPlayer),
                 attack_num: attackNum,
                 attack_target: obj.isAttackTarget,
@@ -206,6 +208,11 @@ const ObjectListDemoPopup: React.FC = () => {
         }]);
     }, [nextId]);
 
+    // A team has one leader: picking the player or a teammate clears the rest.
+    const makeLeader = useCallback((id: number) => {
+        setIsLeader(id === 99);
+        setObjects(prev => prev.map(obj => ({ ...obj, isLeader: obj.id === id && id !== 99 })));
+    }, []);
     const toggleAttackTarget = useCallback((id: number) => {
         setObjects(prev => prev.map(obj => ({
             ...obj,
@@ -300,11 +307,10 @@ const ObjectListDemoPopup: React.FC = () => {
                         <input
                             type="checkbox"
                             checked={isLeader}
-                            onChange={(e) => setIsLeader(e.target.checked)}
+                            onChange={(e) => (e.target.checked ? makeLeader(99) : setIsLeader(false))}
                         />
                         Jesteś liderem drużyny
-                    </label>
-                    {player && (
+                    </label>                    {player && (
                         <div className="demo-object-row">
                             <span className="demo-object-name">HP:</span>
                             <input
@@ -362,6 +368,14 @@ const ObjectListDemoPopup: React.FC = () => {
                                         onChange={() => toggleDefenseTarget(obj.id)}
                                     />
                                     Cel obrony
+                                </label>
+                                <label className="demo-checkbox demo-checkbox--small">
+                                    <input
+                                        type="checkbox"
+                                        checked={obj.isLeader}
+                                        onChange={(e) => (e.target.checked ? makeLeader(obj.id) : updateObject(obj.id, { isLeader: false }))}
+                                    />
+                                    Lider
                                 </label>
                             </div>
                             {obj.isAttacking && (

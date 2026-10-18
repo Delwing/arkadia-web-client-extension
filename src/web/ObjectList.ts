@@ -6,7 +6,7 @@ import {hideContextMenu, showContextMenu} from "@web/contextMenu";
 import eventBus from "@modules/core/eventBus";
 import {getBuiltInPanelSetting, loadLayoutState, subscribeToPanelSetting} from "./layout/utils/layoutStorage";
 import {getObjectListChrome} from "./layout/builtInChrome";
-import {SEPARATE_OTHERS_SETTING} from "./layout/types";
+import {LEADER_MARK_SETTING, SEPARATE_OTHERS_SETTING} from "./layout/types";
 import {buildRenderContext, scopeRenderContext, type ObjectListViewMode, type RenderContext} from "./objectList/context.ts";
 import {getStrategy, renderListLines} from "./objectList/strategies.ts";
 import {buildObjectContextMenu} from "./objectList/objectContextMenu.ts";
@@ -91,6 +91,8 @@ export default class ObjectList {
             this.separateOthers = value === true;
             this.scheduleRender();
         });
+        // The render context reads the setting itself; this only repaints.
+        subscribeToPanelSetting('builtIn', 'objectList', LEADER_MARK_SETTING, () => this.scheduleRender());
         // The PiP toggle lives in the panel header now (ObjectListHeaderActions);
         // it drives the window through this event and reflects the open/closed
         // state via `objectList.pipActiveChanged`.

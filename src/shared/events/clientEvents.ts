@@ -282,7 +282,7 @@ export interface KnownEvents {
     "teamLeaderTargetNoAvatar": number;
     "teamLeaderTargetAvatar": void;
     "teamChange": void;
-    "teamPanelStatus": { teamSize: number; missing: string[] };
+    "teamPanelStatus": { teamSize: number; missing: string[]; leader?: string };
     "isTeamLeader": boolean;
     "reset": void;
     /**

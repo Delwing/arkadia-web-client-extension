@@ -13,8 +13,13 @@ class FakeClient {
     locationObjects: LocObject[] = [];
     sendEvent = vi.fn();
 
+    leader: string | undefined;
+    weLead = false;
+
     TeamManager = {
         getTeamMembers: () => this.teamMembers,
+        getLeader: () => this.leader,
+        isLeader: () => this.weLead,
     };
     ObjectManager = {
         getObjectsOnLocation: () => this.locationObjects,
@@ -99,6 +104,18 @@ describe('team panel status emission', () => {
         const before = client.sendEvent.mock.calls.length;
         client.emit('gmcp.objects.data');
         expect(client.sendEvent.mock.calls.length).toBe(before);
+    });
+
+    test('names the leader, or "Ty" when we lead', () => {
+        client.teamMembers = ['Alvin'];
+        client.locationObjects = [{ num: 1, desc: 'Alvin', __category: 'team' }];
+        client.leader = 'Alvin';
+        initTeamPanel(client as unknown as any);
+        expect(lastStatus(client)).toEqual({ teamSize: 1, missing: [], leader: 'Alvin' });
+
+        client.weLead = true;
+        client.emit('teamChange');
+        expect(lastStatus(client)).toEqual({ teamSize: 1, missing: [], leader: 'Ty' });
     });
 
     test('clears the status on disconnect', () => {

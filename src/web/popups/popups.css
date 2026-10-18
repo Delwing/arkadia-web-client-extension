@@ -6757,6 +6757,25 @@ select.popup-input optgroup {
   transform: skewX(-10deg);
 }
 
+/* Team leader: a small gold crown over the top-right corner of the leader's
+   shortcut (number / "@") in every flavor, so it never takes name width.
+   ::after is free here: the next-target ::after only ever lands on enemies. */
+.is-team-leader {
+  position: relative;
+}
+.is-team-leader::after {
+  content: "";
+  position: absolute;
+  top: -0.45em;
+  right: -0.5em;
+  width: 0.75em;
+  height: 0.75em;
+  background: var(--popup-data-gold);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M11.56 3.27a.5.5 0 0 1 .88 0l2.95 5.6a1 1 0 0 0 1.52.3l4.27-3.67a.5.5 0 0 1 .8.52l-2.83 10.25a1 1 0 0 1-.96.73H5.81a1 1 0 0 1-.96-.73L2.02 6.02a.5.5 0 0 1 .8-.52l4.27 3.67a1 1 0 0 0 1.52-.3zM5 20h14v2H5z'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M11.56 3.27a.5.5 0 0 1 .88 0l2.95 5.6a1 1 0 0 0 1.52.3l4.27-3.67a.5.5 0 0 1 .8.52l-2.83 10.25a1 1 0 0 1-.96.73H5.81a1 1 0 0 1-.96-.73L2.02 6.02a.5.5 0 0 1 .8-.52l4.27 3.67a1 1 0 0 0 1.52-.3zM5 20h14v2H5z'/%3E%3C/svg%3E") center / contain no-repeat;
+  pointer-events: none;
+}
+
 /* Action icons */
 .object-card__icons {
   display: flex;
