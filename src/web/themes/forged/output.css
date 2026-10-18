@@ -1,0 +1,53 @@
+/* ============================================================
+   Kuźnia (forged) theme · output
+   ============================================================
+
+   The game log in forge's voice: parchment text, the game's colours kept
+   but at half saturation so they sit in the muted world, the log fading up
+   into the dark at its top, a quiet bronze gutter and thin iron scrollbars.
+   The player's own font, size and background stay theirs. */
+
+body.theme-forged #main_text_output_msg_wrapper {
+  color: var(--parchment-dim);
+  scrollbar-width: thin;
+  scrollbar-color: var(--iron-hi) transparent;
+  -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 6rem);
+          mask-image: linear-gradient(180deg, transparent 0, #000 6rem);
+}
+body.theme-forged #main_text_output_msg_wrapper::-webkit-scrollbar {
+  width: 8px;
+}
+body.theme-forged #main_text_output_msg_wrapper::-webkit-scrollbar-thumb {
+  background: var(--iron-hi);
+  border-radius: 4px;
+}
+
+/* xterm colours mapped as ever, rendered at half saturation. */
+body.theme-forged :is(#main_text_output_msg_wrapper, #sticky-area) .output_msg_content {
+  filter: saturate(0.5);
+}
+
+/* The gutter: timestamps in dim bronze, tabular so they form a clean left
+   rule, message types in dim parchment. */
+body.theme-forged :is(#main_text_output_msg_wrapper, #sticky-area) :is(.output-timestamp, .output-message-type) {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 0.82em;
+}
+body.theme-forged :is(#main_text_output_msg_wrapper, #sticky-area) .output-timestamp {
+  color: var(--bronze-dim);
+  font-variant-numeric: tabular-nums;
+}
+body.theme-forged :is(#main_text_output_msg_wrapper, #sticky-area) .output-message-type {
+  color: var(--parchment-dim);
+  opacity: 0.85;
+}
+
+/* The split view's handle: a bronze hairline rather than a grey bar. */
+body.theme-forged #split-handle {
+  height: 1px;
+  background-color: var(--iron-hi);
+}
+body.theme-forged #split-handle:hover,
+body.theme-forged #split-handle:active {
+  background-color: var(--bronze-dim);
+}
