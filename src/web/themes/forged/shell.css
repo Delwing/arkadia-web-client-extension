@@ -1,0 +1,31 @@
+/* ============================================================
+   Kuźnia (forged) theme · shell
+   ============================================================
+
+   The screen is framed and every window stands apart on the dark ground:
+   8px from the screen edge and 6px between windows, the docked windows'
+   3px margin (windows.css) plus as much again from the frame and the
+   output. The output reads as one more window: the same margin and radius,
+   its own background (the output background setting) inside.
+
+   Not on a phone: there every pixel goes to the game. */
+
+@media (min-width: 769px) and ((min-height: 521px) or (not (pointer: coarse))) {
+  body.theme-forged {
+    background-color: var(--void);
+  }
+
+  body.theme-forged #main-container {
+    padding: 5px;
+  }
+
+  /* The ground between the windows is the page's, not a grey content box. */
+  body.theme-forged #content-area {
+    background-color: transparent;
+  }
+
+  body.theme-forged #main_text_output_msg_wrapper {
+    margin: 3px;
+    border-radius: 9px;
+  }
+}
