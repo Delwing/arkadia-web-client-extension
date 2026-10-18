@@ -1,6 +1,7 @@
 import Client from "./Client";
 import {AnsiAwareBuffer} from "@client/ansi/FormatState.ts";
 import {mayMatch, verifyMatch} from "@client/triggerPrefilter.ts";
+import type {LineTraceRecorder} from "@client/lineTrace.ts";
 
 export type TriggerCallback = (
     line: AnsiAwareBuffer,
@@ -96,7 +97,7 @@ export class Trigger {
     }
 
     /** Human-readable identity for fault logs: the tag if there is one, plus the pattern(s). */
-    private describe(): string {
+    describe(): string {
         const patterns = Array.isArray(this.pattern) ? this.pattern : [this.pattern];
         const source = patterns
             .map(p => p instanceof RegExp ? p.source : typeof p === "function" ? "<match fn>" : String(p))
@@ -181,10 +182,17 @@ export class Trigger {
             matched = true;
         }
         if (matched) {
+            const trace = this.manager.trace;
             if (matches && this.callback) {
                 let result: AnsiAwareBuffer | null | undefined;
                 try {
-                    result = this.callback(line, matches, type, originalText ?? line.text);
+                    if (trace) {
+                        const callback = this.callback;
+                        const found = matches;
+                        result = trace.run(this, line, () => callback(line, found, type, originalText ?? line.text));
+                    } else {
+                        result = this.callback(line, matches, type, originalText ?? line.text);
+                    }
                 } catch (err) {
                     // A throwing callback costs its own effect and nothing more: the buffer
                     // travels on as the callback left it, this trigger's children still run,
@@ -198,6 +206,8 @@ export class Trigger {
                 if (result instanceof AnsiAwareBuffer) {
                     line = result;
                 }
+            } else if (matches && trace) {
+                trace.matched(this);
             }
             for (const child of this.children.values()) {
                 const childResult = child.execute(line, type, originalText, plainLine);
@@ -232,6 +242,9 @@ export default class Triggers {
      * and report loudly when it would have skipped a line that matched.
      */
     literalPrefilterVerify = false;
+
+    /** Set only while the line inspector listens (see LineTraceRecorder). */
+    trace: LineTraceRecorder | null = null;
 
     constructor(client: Client) {
         this.client = client;
@@ -375,6 +388,7 @@ export default class Triggers {
             return tokens!;
         };
 
+        if (this.trace) this.trace.pass = 'line';
         for (const trigger of this.triggers.values()) {
             const result = trigger.execute(line, type, originalText, plain);
             if (result === null) {
@@ -388,6 +402,7 @@ export default class Triggers {
         }
 
         if (this.tokenTriggers.size > 0) {
+            if (this.trace) this.trace.pass = 'token';
             const seen = new Set<string>();
             const zeroBucket = this.tokenTriggers.get(Triggers.ZERO_LENGTH_BUCKET_KEY);
             if (zeroBucket) {
@@ -453,6 +468,7 @@ export default class Triggers {
         const originalText = line.text;
         const plain = originalText.replace(/\s$/g, "");
         line.trackEditsFrom(originalText);
+        if (this.trace) this.trace.pass = 'multiline';
         for (const trigger of this.multilineTriggers.values()) {
             const result = trigger.execute(line, type, originalText, plain);
             if (result === null) {

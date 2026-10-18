@@ -195,6 +195,11 @@ export function registerScripts(client: Client) {
         pattern: /^\/blokada$/,
         callback: () => eventBus.emit("layout.toggleLock"),
     })
+    // Line inspector: each line as the MUD sent it and every trigger that matched it.
+    aliases.push({
+        pattern: /^\/linie$/,
+        callback: () => eventBus.emit("lineInspector.popup.open"),
+    })
     // Light a footer button up (Ustawienia -> Stopka), from a trigger or a script:
     // the button naming this state draws itself as on. Without on/off it toggles.
     aliases.push({

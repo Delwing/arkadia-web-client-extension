@@ -89,6 +89,7 @@ export type BuiltInPopupType =
   | 'zlom'
   | 'enemyResistances'
   | 'coverDebug'
+  | 'lineInspector'
   | 'stat'
   | 'oswajanie'
   | 'dataSources'

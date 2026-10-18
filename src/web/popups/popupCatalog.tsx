@@ -17,6 +17,7 @@ import HerbManager from '../herbs/HerbManager';
 import KnowledgeWindow from '../knowledge/KnowledgeWindow';
 import DocsWindow from '../documentation/DocsWindow';
 import LetterViewPopup from '../LetterViewPopup';
+import LineInspectorPopup from '../LineInspectorPopup';
 import LootPopup from '../LootPopup';
 import ObjectListDemoPopup from '../ObjectListDemoPopup';
 import OswajaniePopup from '../OswajaniePopup';
@@ -105,6 +106,7 @@ export const POPUP_CATALOG: PopupCatalogEntry[] = [
     { id: 'popup:zlom', Component: ZlomPopup },
     { id: 'popup:enemyResistances', Component: EnemyResistancesPopup },
     { id: 'popup:coverDebug', Component: CoverDebugPopup },
+    { id: 'popup:lineInspector', Component: LineInspectorPopup },
     { id: 'popup:stat', Component: StatPopup },
     { id: 'popup:oswajanie', Component: OswajaniePopup },
     { id: 'popup:dataSources', Component: DataSourcesPopup },

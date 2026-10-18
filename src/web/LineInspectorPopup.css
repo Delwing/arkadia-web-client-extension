@@ -1,0 +1,194 @@
+/*
+ * Line inspector: game lines as the MUD sent them and what each trigger did.
+ * Game text keeps the output's font and background so colors read as in play.
+ */
+
+.line-insp-popup-body {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-height: 0;
+    padding: 6px 8px;
+    overflow: hidden;
+}
+
+.line-insp-search {
+    flex: 0 0 auto;
+}
+
+.line-insp-list {
+    flex: 1 1 auto;
+    min-height: 60px;
+    overflow: auto;
+    background: var(--output-bg);
+    border: 1px solid var(--popup-border-subtle);
+    border-radius: var(--ui-radius);
+    font-family: var(--output-font-family);
+    font-size: var(--output-font-size);
+    color: var(--text-default);
+}
+
+.line-insp-row {
+    display: flex;
+    gap: 6px;
+    padding: 1px 6px;
+    cursor: pointer;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.line-insp-row:hover {
+    background: var(--popup-control-hover-bg);
+}
+
+.line-insp-row.is-selected {
+    background: var(--popup-accent-bg);
+}
+
+.line-insp-row.is-deleted .line-insp-text {
+    opacity: 0.55;
+    text-decoration: line-through;
+}
+
+.line-insp-mark,
+.line-insp-count {
+    flex: 0 0 auto;
+    width: 1.5em;
+    text-align: right;
+    color: var(--popup-text-dim);
+    user-select: none;
+}
+
+.line-insp-row.is-deleted .line-insp-mark {
+    color: var(--popup-danger);
+}
+
+.line-insp-text {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.line-insp-detail {
+    flex: 0 1 auto;
+    max-height: 50%;
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding-top: 4px;
+    border-top: 1px solid var(--popup-border);
+}
+
+.line-insp-detail-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: var(--ui-fs-sm);
+    color: var(--popup-text-dim);
+}
+
+.line-insp-detail-spacer {
+    flex: 1 1 auto;
+}
+
+.line-insp-type {
+    padding: 0 6px;
+    border-radius: var(--ui-radius);
+    background: var(--popup-subtle-bg);
+    color: var(--popup-text);
+}
+
+.line-insp-detail-line,
+.line-insp-step-diff > div {
+    display: flex;
+    gap: 8px;
+    align-items: baseline;
+}
+
+.line-insp-label {
+    flex: 0 0 4.5em;
+    font-size: var(--ui-fs-xs);
+    color: var(--popup-text-subtle);
+    text-align: right;
+}
+
+.line-insp-game {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 1px 6px;
+    background: var(--output-bg);
+    border-radius: var(--ui-radius);
+    font-family: var(--output-font-family);
+    font-size: var(--output-font-size);
+    color: var(--text-default);
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.line-insp-gone {
+    color: var(--popup-danger);
+    font-size: var(--ui-fs-sm);
+}
+
+.line-insp-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.line-insp-step {
+    padding: 2px 4px;
+    border-left: 2px solid var(--popup-border);
+}
+
+.line-insp-step--changed {
+    border-left-color: var(--popup-warning);
+}
+
+.line-insp-step--deleted {
+    border-left-color: var(--popup-danger);
+}
+
+.line-insp-step-head {
+    display: flex;
+    gap: 8px;
+    align-items: baseline;
+    font-size: var(--ui-fs-sm);
+}
+
+.line-insp-step-index,
+.line-insp-step-pass,
+.line-insp-step-ms {
+    flex: 0 0 auto;
+    color: var(--popup-text-dim);
+}
+
+.line-insp-step-name {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: var(--output-font-family);
+    color: var(--popup-text-strong);
+}
+
+.line-insp-step-outcome {
+    flex: 0 0 auto;
+    color: var(--popup-text-subtle);
+}
+
+.line-insp-step--changed .line-insp-step-outcome {
+    color: var(--popup-warning);
+}
+
+.line-insp-step--deleted .line-insp-step-outcome {
+    color: var(--popup-danger);
+}
+
+.line-insp-step-diff {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: 2px;
+}

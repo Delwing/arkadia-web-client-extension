@@ -32,6 +32,7 @@ import NotificationManager from "./NotificationManager";
 import KeyBindingManager from "./KeyBindingManager";
 import {AnsiAwareBuffer} from "@client/ansi/FormatState.ts";
 import {recordRecentLine} from "@modules/core/recentLines.ts";
+import {LineTraceRecorder} from "@client/lineTrace.ts";
 
 type EventKey = keyof ClientEvents;
 type EventParams<K extends EventKey> = [ClientEvents[K]] extends [void]
@@ -187,6 +188,12 @@ export default class Client {
             this.defaultColor = data?.text ?? 255;
         });
 
+        this.on('lineTrace.enable', (enabled) => {
+            this.Triggers.trace = enabled
+                ? new LineTraceRecorder(entry => this.emit('lineTrace.entry', entry))
+                : null;
+        });
+
         this.on('printLine', (text) => {
             this.println(text);
         });
@@ -333,6 +340,19 @@ export default class Client {
     }
 
     private processLine(buffer: AnsiAwareBuffer, type: string): AnsiAwareBuffer[] {
+        const trace = this.Triggers.trace
+        if (!trace) return this.runTriggers(buffer, type)
+        trace.begin(buffer, type)
+        let parts: AnsiAwareBuffer[] = []
+        try {
+            parts = this.runTriggers(buffer, type)
+            return parts
+        } finally {
+            trace.end(parts[0] ?? null)
+        }
+    }
+
+    private runTriggers(buffer: AnsiAwareBuffer, type: string): AnsiAwareBuffer[] {
         let result: AnsiAwareBuffer[]
         // Pristine text exactly as the MUD sent it, captured before any trigger runs.
         // The multiline pass may rewrite the buffer (insert markers, recolor, drop text),

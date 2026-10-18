@@ -17,6 +17,7 @@ import {AnsiAwareBuffer} from "@client/ansi/FormatState.ts";
 import {PluginInfo} from "@shared/types/Plugin.ts";
 import type {RecordedEvent} from "@shared/recorder/Recorder.ts";
 import type {Contract} from "@client/scripts/contracts.ts";
+import type {LineTraceEntry} from "@client/lineTrace.ts";
 import type {CarriageEntry} from "@client/scripts/carriage.ts";
 import type {RouteSegment} from "@shared/map/transportPathFinder.ts";
 import type {MapLostReason} from "@shared/map/MapHelper.ts";
@@ -439,6 +440,11 @@ export interface KnownEvents {
     /** One append-only line for the cover debug log. */
     "cover.event": CoverLogEntry;
     "cover.popup.open": void;
+    /** Start (true) or stop (false) recording what triggers do to each line. */
+    "lineTrace.enable": boolean;
+    /** One game line (or GMCP text group) and every trigger that matched it. */
+    "lineTrace.entry": LineTraceEntry;
+    "lineInspector.popup.open": void;
     "oswajanie.updated": void;
     "oswajanie.popup.open": { view?: "animals" | "history" | "help"; animal?: string };
     "zabici.updated": unknown;
