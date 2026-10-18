@@ -1,4 +1,5 @@
 import Client from "../Client";
+import {matchWhen} from "@client/Triggers.ts";
 import {getLongDir, isDirection, isPolishDirection, polishToEnglish} from "@shared/map/directions";
 import {stripPolishCharacters} from "../stripPolishCharacters";
 import {parseExitString} from "./shortExits";
@@ -487,7 +488,7 @@ export default function initLabyrinthMapper(client: Client, aliases: { pattern: 
 
     // Capture description lines (room.long) and detect exit line to finish
     client.Triggers.registerTrigger(
-        /.+/,
+        matchWhen((_type, line) => captureState.phase === 'capturing' && line.text !== ''),
         (line) => {
             if (captureState.phase !== 'capturing') return line;
 

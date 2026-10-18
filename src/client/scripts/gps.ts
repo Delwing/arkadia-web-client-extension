@@ -148,7 +148,7 @@ export default function initGps(client: Client) {
         }
         lineCounter++;
         return undefined;
-    });
+    }, "gps-window");
 
     function lineMatches(gpsLine: GpsLine, text: string): boolean {
         return "literal" in gpsLine ? text.includes(gpsLine.literal) : gpsLine.pattern.test(text);

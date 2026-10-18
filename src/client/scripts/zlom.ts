@@ -1,4 +1,5 @@
 import Client from "../Client";
+import {matchWhen} from "@client/Triggers.ts";
 import { characterStorage } from "@modules/core/storage";
 import { defaultSettings } from "@modules/core/defaultSettings";
 import { AnsiAwareBuffer } from "@client/ansi/FormatState";
@@ -467,10 +468,10 @@ export default function initZlom(
     );
 
     client.Triggers.registerTrigger(
-        /^(.+)$/,
-        (line, m) => {
+        matchWhen((type, line) => type === 'object.long' && !!ctx?.awaitingOpis && line.text !== ''),
+        (line) => {
             if (!ctx || !ctx.awaitingOpis) return line;
-            const text = m[1];
+            const text = line.text;
             if (
                 /^Oceniasz starannie /.test(text) ||
                 /^Oceniasz, ze /.test(text) ||

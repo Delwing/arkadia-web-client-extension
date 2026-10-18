@@ -1,4 +1,5 @@
 import Client from "../Client";
+import {matchWhen} from "@client/Triggers.ts";
 import {getLongDir, isDirection, isPolishDirection} from "@shared/map/directions";
 import {stripPolishCharacters} from "../stripPolishCharacters";
 import eventBus from "@modules/core/eventBus";
@@ -278,9 +279,8 @@ export default function initLabyrinth(client: Client, aliases: { pattern: RegExp
 
     // Mark labyrinth rooms with sword symbol when combat.avatar lines appear
     client.Triggers.registerTrigger(
-        /.*/,
-        (line, _matches, type) => {
-            if (!isActive || type !== "combat.avatar") return line;
+        matchWhen(type => isActive && type === "combat.avatar"),
+        (line) => {
             const roomId = client.Map.currentRoom?.id;
             if (!roomId || !labyrinthRooms.has(roomId) || combatRooms.has(roomId)) return line;
 

@@ -32,6 +32,19 @@ export function isType(type: string): TriggerMatchFunction {
     };
 }
 
+/**
+ * Matches every line, but only while `guard` holds. For catch-all triggers that only
+ * have work to do in some state: they stay out of the pipeline (and the line
+ * inspector) the rest of the time instead of matching and returning the line as is.
+ */
+export function matchWhen(guard: (type: string, line: AnsiAwareBuffer) => boolean): TriggerMatchFunction {
+    const matches = [] as unknown as RegExpMatchArray;
+    matches.index = 0
+    return (line, _matches, lineType) => {
+        return guard(lineType, line) ? matches : undefined;
+    };
+}
+
 export class Trigger {
     /** How many faults to report per trigger before going quiet about it. */
     private static readonly MAX_REPORTED_FAULTS = 3;

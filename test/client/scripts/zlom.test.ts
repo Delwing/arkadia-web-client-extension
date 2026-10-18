@@ -52,7 +52,7 @@ function findArmor(short: string): ArmorEntry | undefined {
 
 describe('zlom script', () => {
   let client: FakeClient;
-  let parse: (line: string) => void;
+  let parse: (line: string, type?: string) => void;
 
   beforeEach(async () => {
     localStorage.clear();
@@ -61,11 +61,11 @@ describe('zlom script', () => {
     client = new FakeClient();
     initZlom((client as unknown) as any, client.aliases);
     await ensureZlomLoaded();
-    parse = (line: string) => {
+    parse = (line: string, type = '') => {
       Triggers.prototype.parseLine.call(
         client.Triggers,
         new AnsiAwareBuffer(line),
-        '',
+        type,
       );
     };
   });
@@ -77,7 +77,7 @@ describe('zlom script', () => {
 
   function feedWeapon() {
     parse('Oceniasz starannie krasnoludzki asymetryczny topor bojowy.');
-    parse('Na trzystopowoym stylisku wykonanym z twardego drewna i wzmocnionym stalowymi okuciami zostalo osadzone ostrze o wypuklym zarysie i asymetrycznej formie.');
+    parse('Na trzystopowoym stylisku wykonanym z twardego drewna i wzmocnionym stalowymi okuciami zostalo osadzone ostrze o wypuklym zarysie i asymetrycznej formie.', 'object.long');
     parse('Wyglada na to, ze liczne walki wyryly na nim swoje pietno.');
     parse('');
     parse('Oceniasz, ze krasnoludzki asymetryczny topor bojowy wazy 5500 gramow, zas jego objetosc wynosi 980 mililitrow.');
@@ -115,7 +115,7 @@ describe('zlom script', () => {
 
   test('converts kilograms and liters to base units', async () => {
     parse('Oceniasz starannie ciezki buzdygan.');
-    parse('Stylisko z czarnego drewna.');
+    parse('Stylisko z czarnego drewna.', 'object.long');
     parse('');
     parse('Oceniasz, ze ciezki buzdygan wazy 3 kilogramy, zas jego objetosc wynosi 2 litry.');
     parse('Wydaje ci sie, ze jest wart okolo 100 miedziakow.');
@@ -135,7 +135,7 @@ describe('zlom script', () => {
 
   test('marks magic weapons', async () => {
     parse('Oceniasz starannie blyszczacy miecz.');
-    parse('Drobne znamiona swietego symbolu zdobia glownie.');
+    parse('Drobne znamiona swietego symbolu zdobia glownie.', 'object.long');
     parse('');
     parse('Oceniasz, ze blyszczacy miecz wazy 2000 gramow, zas jego objetosc wynosi 500 mililitrow.');
     parse('Wydaje ci sie, ze jest wart okolo 500 miedziakow.');
@@ -182,7 +182,7 @@ describe('zlom script', () => {
 
   test('parser captures accusative short as shortAlt', async () => {
     parse('Oceniasz starannie szeroka posrebrzana glewie.');
-    parse('Na dlugim drzewcu zamocowane jest szerokie ostrze.');
+    parse('Na dlugim drzewcu zamocowane jest szerokie ostrze.', 'object.long');
     parse('');
     parse('Oceniasz, ze szeroka posrebrzana glewia wazy 5200 gramow, zas jego objetosc wynosi 2000 mililitrow.');
     parse('Wydaje ci sie, ze jest warta okolo 460 miedziakow.');
@@ -201,7 +201,7 @@ describe('zlom script', () => {
 
   test('stores shortAlt even when biernik equals mianownik', async () => {
     parse('Oceniasz starannie gorniczy typowy oskard.');
-    parse('Typowy oskard jakich wiele mozna zobaczyc w kopalniach.');
+    parse('Typowy oskard jakich wiele mozna zobaczyc w kopalniach.', 'object.long');
     parse('Wyglada na to, ze jest w znakomitym stanie.');
     parse('Oceniasz, ze gorniczy typowy oskard wazy 5300 gramow, zas jego objetosc wynosi 2400 mililitrow.');
     parse('Wydaje ci sie, ze jest wart okolo 110 miedziakow.');
@@ -219,7 +219,7 @@ describe('zlom script', () => {
 
   test('highlight fires on the accusative form', async () => {
     parse('Oceniasz starannie szeroka posrebrzana glewie.');
-    parse('Na dlugim drzewcu zamocowane jest szerokie ostrze.');
+    parse('Na dlugim drzewcu zamocowane jest szerokie ostrze.', 'object.long');
     parse('');
     parse('Oceniasz, ze szeroka posrebrzana glewia wazy 5200 gramow, zas jego objetosc wynosi 2000 mililitrow.');
     parse('Wydaje ci sie, ze jest warta okolo 460 miedziakow.');
@@ -277,7 +277,7 @@ describe('zlom script', () => {
 
   test('parses parry-only shield (puklerz)', async () => {
     parse('Oceniasz starannie starozytny piecioboczny puklerz.');
-    parse('Bogato zdobiona powierzchnia tej malej tarczy mieni sie srebrzysto-zlotym blaskiem.');
+    parse('Bogato zdobiona powierzchnia tej malej tarczy mieni sie srebrzysto-zlotym blaskiem.', 'object.long');
     parse('Wyglada na to, ze jest w znakomitym stanie.');
     parse('');
     parse('Oceniasz, ze starozytny piecioboczny puklerz wazy 2500 gramow, zas jego objetosc wynosi 1200 mililitrow.');
@@ -297,7 +297,7 @@ describe('zlom script', () => {
 
   test('parses armor evaluation', async () => {
     parse('Oceniasz starannie lekka kolczuga.');
-    parse('Misternie zszyta kolczuga pokryta siateczka pierscieni.');
+    parse('Misternie zszyta kolczuga pokryta siateczka pierscieni.', 'object.long');
     parse('Wyglada na to, ze jest w kiepskim stanie.');
     parse('');
     parse('Oceniasz, ze lekka kolczuga wazy 4000 gramow, zas jej objetosc wynosi 3000 mililitrow.');
@@ -490,7 +490,7 @@ describe('zlom script', () => {
 
     test('getZlomFormatting skips magic items entirely', async () => {
       parse('Oceniasz starannie blyszczacy miecz.');
-      parse('Drobne znamiona swietego symbolu zdobia glownie.');
+      parse('Drobne znamiona swietego symbolu zdobia glownie.', 'object.long');
       parse('');
       parse('Oceniasz, ze blyszczacy miecz wazy 2000 gramow, zas jego objetosc wynosi 500 mililitrow.');
       parse('Wydaje ci sie, ze jest wart okolo 500 miedziakow.');
@@ -555,11 +555,11 @@ describe('zlom script', () => {
       initWeaponEvaluation((c as unknown) as any);
       await ensureZlomLoaded();
 
-      const send = (line: string) =>
-        Triggers.prototype.parseLine.call(c.Triggers, new AnsiAwareBuffer(line), '');
+      const send = (line: string, type = '') =>
+        Triggers.prototype.parseLine.call(c.Triggers, new AnsiAwareBuffer(line), type);
 
       send('Oceniasz starannie krasnoludzki asymetryczny topor bojowy.');
-      send('Na trzystopowoym stylisku wykonanym z twardego drewna.');
+      send('Na trzystopowoym stylisku wykonanym z twardego drewna.', 'object.long');
       send('Wyglada na to, ze liczne walki wyryly na nim swoje pietno.');
       send('');
       send('Oceniasz, ze krasnoludzki asymetryczny topor bojowy wazy 5500 gramow, zas jego objetosc wynosi 980 mililitrow.');
@@ -586,11 +586,11 @@ describe('zlom script', () => {
       initParryShieldEvaluation((c as unknown) as any);
       await ensureZlomLoaded();
 
-      const send = (line: string) =>
-        Triggers.prototype.parseLine.call(c.Triggers, new AnsiAwareBuffer(line), '');
+      const send = (line: string, type = '') =>
+        Triggers.prototype.parseLine.call(c.Triggers, new AnsiAwareBuffer(line), type);
 
       send('Oceniasz starannie lekka kolczuga.');
-      send('Misternie zszyta kolczuga.');
+      send('Misternie zszyta kolczuga.', 'object.long');
       send('Wyglada na to, ze jest w kiepskim stanie.');
       send('');
       send('Oceniasz, ze lekka kolczuga wazy 4000 gramow, zas jej objetosc wynosi 3000 mililitrow.');

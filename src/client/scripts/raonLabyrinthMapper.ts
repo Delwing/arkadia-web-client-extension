@@ -1,4 +1,5 @@
 import Client from "../Client";
+import {matchWhen} from "@client/Triggers.ts";
 import {directionToStub, getLongDir, isDirection, isPolishDirection, polishToEnglish} from "@shared/map/directions";
 import {stripPolishCharacters} from "../stripPolishCharacters";
 import {parseExitString} from "./shortExits";
@@ -1021,9 +1022,9 @@ export default function initRaonLabyrinthMapper(client: Client, aliases: { patte
 
     // Capture description lines and detect exit line to finish
     client.Triggers.registerTrigger(
-        /.+/,
-        (line, matches, type) => {
-            const text = matches[0]
+        matchWhen((_type, line) => (isActive || pendingLook || captureState.phase === 'capturing') && line.text !== ''),
+        (line, _matches, type) => {
+            const text = line.text
             const stripped = stripPolishCharacters(text);
 
             // Movement failed — no exit in attempted direction, abort capture
