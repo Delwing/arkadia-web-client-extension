@@ -1,8 +1,26 @@
 import {expect, test} from './support/fixtures';
-import {mockDeployedVersion} from './support/mocks';
+import type {BrowserContext, Page} from '@playwright/test';
+import {ensureGameSocket, mockDeployedVersion, waitForCommandInput} from './support/mocks';
 
-const updateNotice = (page: import('@playwright/test').Page) =>
+const updateNotice = (page: Page) =>
     page.locator('#commit-info .commit-info-update');
+
+const updateToast = (page: Page) =>
+    page.locator('#notification-center .notification', {hasText: 'Dostępna jest nowa wersja klienta'});
+
+/** Connects to the game, then has a deploy land while the app sits in the background. */
+async function deployWhilePlaying(page: Page, context: BrowserContext) {
+    await page.clock.install();
+    const firstCheck = page.waitForResponse((r) => r.url().endsWith('/version.json'));
+    await page.goto('/');
+    await firstCheck;
+    await waitForCommandInput(page);
+    await ensureGameSocket(page);
+
+    await mockDeployedVersion(context, {sha: 'zzzzzzz'});
+    await page.clock.fastForward('02:00');
+    await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
+}
 
 test.describe('Version check', () => {
     test('shows the notice on the login screen when a new version is deployed', async ({page, context}) => {
@@ -50,6 +68,23 @@ test.describe('Version check', () => {
         await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
 
         await expect(updateNotice(page), 'should show new version notice').toBeVisible();
+    });
+
+    test('does not announce the new version during play by default', async ({page, context}) => {
+        await deployWhilePlaying(page, context);
+
+        await expect(updateNotice(page)).toBeAttached();
+        await expect(updateToast(page)).toHaveCount(0);
+    });
+
+    test('announces the new version in the notification center when opted in', async ({page, context}) => {
+        await page.addInitScript(() => {
+            localStorage.setItem('shellSettings', JSON.stringify({inGameUpdateNotice: true}));
+        });
+        await deployWhilePlaying(page, context);
+
+        await expect(updateToast(page), 'should show a toast').toBeVisible();
+        await expect(updateNotice(page), 'login screen notice stays').toBeAttached();
     });
 
     test('the refresh button reloads the page', async ({page, context}) => {

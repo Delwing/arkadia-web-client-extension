@@ -55,6 +55,8 @@ export interface ShellSettings {
     wakeLock: boolean;
     fightTitleIcon: boolean;
     hapticFeedback: boolean;
+    /** Also announce a new deployment in the game output, not only on the login screen. */
+    inGameUpdateNotice: boolean;
 }
 
 /** Terminal output + input rendering — portable across UIs. */

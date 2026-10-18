@@ -613,6 +613,9 @@ export function load(): UiSettings {
             const wakeLock = typeof parsed.wakeLock === 'boolean'
                 ? parsed.wakeLock
                 : defaultUiSettings.wakeLock;
+            const inGameUpdateNotice = typeof parsed.inGameUpdateNotice === 'boolean'
+                ? parsed.inGameUpdateNotice
+                : defaultUiSettings.inGameUpdateNotice;
             const commandEcho = typeof parsed.commandEcho === 'boolean'
                 ? parsed.commandEcho
                 : defaultUiSettings.commandEcho;
@@ -698,6 +701,7 @@ export function load(): UiSettings {
                 carriageRouteBinds,
                 pushOnlyWhenHidden,
                 wakeLock,
+                inGameUpdateNotice,
                 commandEcho,
                 showTimestamps,
                 outputBottomPadding,

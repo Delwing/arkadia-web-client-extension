@@ -828,9 +828,10 @@ document.addEventListener('DOMContentLoaded', () => {
         commitInfo.textContent = '';
         commitInfo.append(line);
 
-        // Only ever reported here, on the login screen: an open PWA notices the
-        // new build when it returns to the foreground, and the player sees it the
-        // next time they are not in the middle of a game.
+        // Reported on the login screen: an open PWA notices the new build when it
+        // returns to the foreground, and the player sees it the next time they are
+        // not in the middle of a game. Opting in also shows a passing toast in the
+        // notification center, since a session can go on for days without the login.
         watchForNewVersion({
             currentSha: __COMMIT_SHA__,
             onUpdate: () => {
@@ -847,6 +848,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 warningDiv.append(reloadButton);
                 commitInfo.appendChild(warningDiv);
+
+                if (getShellSettings().inGameUpdateNotice) {
+                    client.sendEvent('notify', {
+                        text: 'Dostępna jest nowa wersja klienta. Odśwież stronę, kiedy skończysz grać.',
+                        time: 10000,
+                    });
+                }
             },
         });
     }
