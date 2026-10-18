@@ -70,11 +70,18 @@ body.theme-forged #footer-layout > :is(#multi-binds, #char-state, .footer-band) 
 body.theme-forged #footer-layout > #multi-binds:not(.active) + .hud-seam {
   display: none;
 }
-/* The gems' block hugs them, so Postępy under them is as wide as they are. */
+/* The gems' block hugs them, so Postępy under them is as wide as they are.
+   Sharing a line with chips, the gems give way first: the chips keep their
+   room rather than folding away behind a crowd of gems. */
 body.theme-forged #footer-layout .footer-vitals:has(> .gems) {
-  flex: 0 1 auto;
+  flex: 0 100 auto;
   width: max-content;
   max-width: 100%;
+}
+/* The chips take their own width as their claim (not the leftovers), so the
+   line is shared by that weighting. */
+body.theme-forged #footer-layout :has(> .footer-vitals > .gems) > .status-chips {
+  flex-basis: auto;
 }
 /* The vitals as gems need no divider beside them. */
 body.theme-forged #footer-layout .footer-vitals:not(:last-child) {
@@ -582,10 +589,11 @@ body.theme-forged #input-area .command-menu__item--danger:hover:not(:disabled) {
   position: relative;
   /* A gem's own width (a width, not a basis, so the vitals block measures to
      its gems): a few gems stay gems rather than stretching across the whole
-     plate; many share the line evenly, as forge spread them. */
+     plate; many share the line evenly, as forge spread them, as narrow as
+     the room asks. */
   flex: 0 1 auto;
   width: 180px;
-  min-width: 72px;
+  min-width: 0;
   height: var(--bar-h);
   padding: 6px;
   display: flex;
@@ -640,6 +648,10 @@ body.theme-forged #input-area .command-menu__item--danger:hover:not(:disabled) {
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
 }
 .theme-forged #footer-layout .gem .label .line { display: flex; align-items: center; gap: 3px; }
+/* A gem squeezed narrow keeps its value and cuts its name short. */
+.theme-forged #footer-layout .gem .label { max-width: 100%; min-width: 0; }
+.theme-forged #footer-layout .gem .label .line { max-width: 100%; min-width: 0; }
+.theme-forged #footer-layout .gem .label .name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .theme-forged #footer-layout .gem .label .v {
   font-family: "JetBrains Mono", monospace;
   font-size: 11.5px; letter-spacing: .02em;
