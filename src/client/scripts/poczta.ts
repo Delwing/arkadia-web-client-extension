@@ -1,4 +1,5 @@
 import Client from "../Client";
+import {matchWhen} from "@client/Triggers.ts";
 import eventBus from "@modules/core/eventBus";
 
 export interface MailEntry {
@@ -34,6 +35,14 @@ export default function initPoczta(client: Client, aliases: { pattern: RegExp; c
     let currentLetter: Partial<LetterContent> | null = null;
     let letterBodyLines: string[] = [];
     let lastHeaderField: 'from' | 'subject' | 'to' | 'cc' | 'date' | null = null;
+    /**
+     * `przeczytaj list N` leaves the game's mail reader open, and only its prompt says
+     * when it is safe to leave it with `q`. Sending the `q` up front breaks long
+     * letters: the pager (`[linia 60/68 - ENTER by przejsc dalej, q by przerwac ...]`)
+     * takes it as "stop paging", the reader stays open, and the client's auto-ENTER for
+     * the pager then lands in the reader, where ENTER means "show the next letter".
+     */
+    let closeMailer = false;
 
     /**
      * How long to wait for more of a reply before treating what arrived as all of it.
@@ -43,6 +52,12 @@ export default function initPoczta(client: Client, aliases: { pattern: RegExp; c
      * that never ends leaves the popup spinning forever and the triggers eating output.
      */
     const IDLE_FLUSH_MS = 500;
+    /**
+     * A letter longer than a page goes quiet while the auto-ENTER for the pager makes its
+     * round trip, which on a laggy link takes seconds. The pager line itself never gets
+     * here (main.ts hides it), so the letter gets the longer wait throughout.
+     */
+    const LETTER_IDLE_MS = 5000;
     /** How long a `listy` request may go unanswered before the popup is told to stop waiting. */
     const REQUEST_TIMEOUT_MS = 5000;
     let listingFlushHandle: ReturnType<typeof setTimeout> | null = null;
@@ -63,7 +78,7 @@ export default function initPoczta(client: Client, aliases: { pattern: RegExp; c
     const letterToPattern = /^Do\s*: ?(.*)$/;
     const letterCcPattern = /^DW\s*: ?(.+)$/;
     const letterDatePattern = /^Data\s*: ?(.+)$/;
-    const letterEndPattern = /^\[[\d\-]+ [^\]]+] \(aktualny: \d+\) --$/;
+    const letterEndPattern = /^\[[\d\-]+ [^\]]+] \(aktualny: \d+\) --\s*$/;
     const letterContinuationPattern = /^\s{2,}(.+)$/;
 
     const clearListingFlush = () => {
@@ -121,7 +136,8 @@ export default function initPoczta(client: Client, aliases: { pattern: RegExp; c
         letterFlushHandle = setTimeout(() => {
             letterFlushHandle = null;
             finishReadingLetter();
-        }, IDLE_FLUSH_MS);
+            closeMailer = false;
+        }, LETTER_IDLE_MS);
     };
 
     /**
@@ -249,8 +265,7 @@ export default function initPoczta(client: Client, aliases: { pattern: RegExp; c
      * the wrapped tail of a long recipient list, which stays indented) or the start of
      * whatever the game said next.
      */
-    client.Triggers.registerTrigger(/^/, (line) => {
-        if (!isCapturing) return line;
+    client.Triggers.registerTrigger(matchWhen(() => isCapturing), (line) => {
         if (line.text.trim() === '' || /^\s/.test(line.text)) {
             // Padding or the wrapped tail of the entry being read: hide it along with
             // the rest of that entry, but only while one is open, so an indented line
@@ -335,24 +350,32 @@ export default function initPoczta(client: Client, aliases: { pattern: RegExp; c
     }, tag);
 
     client.Triggers.registerTrigger(letterEndPattern, (line) => {
-        if (!isReadingLetter) return line;
+        if (!isReadingLetter && !closeMailer) return line;
 
-        finishReadingLetter();
+        if (isReadingLetter) finishReadingLetter();
+        if (closeMailer) {
+            closeMailer = false;
+            eventBus.emit('sendCommand', { command: 'q', echo: false });
+        }
         return null;
     }, tag);
 
-    client.Triggers.registerTrigger(/^/, (line) => {
-        if (!isReadingLetter) return line;
-
+    client.Triggers.registerTrigger(matchWhen(() => isReadingLetter), (line) => {
         if (!currentLetter) {
             // We've issued `przeczytaj list N` but the "List: N" header hasn't
             // arrived yet. The pager emits blank padding lines here that would
             // otherwise leak into the main game output — swallow them. A
             // non-blank line at this point means the letter isn't loading (e.g.
             // "Nie ma takiego listu."), so stop capturing and let it through.
+            // The reader may still print its prompt, so closeMailer stays set until the
+            // timer below lets it go.
             if (line.text.trim() === '') return null;
             isReadingLetter = false;
             clearLetterFlush();
+            letterFlushHandle = setTimeout(() => {
+                letterFlushHandle = null;
+                closeMailer = false;
+            }, IDLE_FLUSH_MS);
             return line;
         }
 
@@ -385,9 +408,11 @@ export default function initPoczta(client: Client, aliases: { pattern: RegExp; c
     eventBus.on("poczta.read", (payload: { number: number }) => {
         if (payload?.number) {
             isReadingLetter = true;
+            closeMailer = true;
             currentLetter = null;
             letterBodyLines = [];
-            eventBus.emit('sendCommand', { command: `przeczytaj list ${payload.number};q`, echo: false });
+            scheduleLetterFlush();
+            eventBus.emit('sendCommand', { command: `przeczytaj list ${payload.number}`, echo: false });
         }
     });
 

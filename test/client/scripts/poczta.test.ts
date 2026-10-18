@@ -50,6 +50,11 @@ describe('poczta', () => {
         eventBus.clear('poczta.fetch');
         eventBus.clear('poczta.read');
         client = { Triggers: new Triggers({} as never) };
+        // main.ts registers the pager's auto-ENTER before poczta, so poczta never sees the pager line.
+        client.Triggers.registerTrigger('ENTER by przejsc dalej', () => {
+            eventBus.emit('sendCommand', { command: '' });
+            return null;
+        });
         initPoczta(client as never, []);
         lists = [];
         letters = [];
@@ -192,9 +197,11 @@ Nadawca: Ktos                           Pn, 31 VIII 2026`;
     describe('reading a letter', () => {
         test('parses a letter wrapped in scroll art', () => {
             eventBus.emit('poczta.read', { number: 1 });
-            expect(commands).toEqual(['przeczytaj list 1;q']);
+            expect(commands).toEqual(['przeczytaj list 1']);
 
             expect(feed(LETTER_WITH_SCROLL_ART)).toEqual([]);
+            // The reader's prompt is what closes it, not a `q` sent up front.
+            expect(commands).toEqual(['przeczytaj list 1', 'q']);
 
             expect(letters).toHaveLength(1);
             expect(letters[0]).toMatchObject({
@@ -235,8 +242,35 @@ Data : Pn, 31 VIII 2026, 21:16:12
 Jaka cena?`);
             expect(letters).toEqual([]);
 
-            jest.advanceTimersByTime(500);
+            jest.advanceTimersByTime(5000);
             expect(letters[0]).toMatchObject({ number: 1, body: ['Jaka cena?'] });
+            expect(feed('Rozgladasz sie po polanie.')).toEqual(['Rozgladasz sie po polanie.']);
+        });
+
+        test('pages through a long letter before closing the reader', () => {
+            eventBus.emit('poczta.read', { number: 6 });
+            const page1 = Array.from({ length: 5 }, (_, i) => `Linia ${i + 1}`);
+            const page2 = Array.from({ length: 3 }, (_, i) => `Linia ${i + 6}`);
+            expect(feed(`
+List : 6
+Od   : Peril
+Temat: Dlugi
+Data : Pn, 31 VIII 2026, 21:16:12
+
+${page1.join('\n')}
+[linia 60/68 - ENTER by przejsc dalej, q by przerwac, ? by uzyskac pomoc]`)).toEqual([]);
+            // ENTER goes to the pager; a `q` now would stop the paging and leave the reader open.
+            expect(commands).toEqual(['przeczytaj list 6', '']);
+
+            // The next page is a round trip away; the letter must not be cut off meanwhile.
+            jest.advanceTimersByTime(2000);
+            expect(letters).toEqual([]);
+
+            expect(feed(`${page2.join('\n')}
+[1-50 adefFhHmnqrsRux.!?-+<>] (aktualny: 6) -- `)).toEqual([]);
+            expect(commands).toEqual(['przeczytaj list 6', '', 'q']);
+            expect(letters).toHaveLength(1);
+            expect(letters[0]).toMatchObject({ number: 6, subject: 'Dlugi', body: [...page1, ...page2] });
             expect(feed('Rozgladasz sie po polanie.')).toEqual(['Rozgladasz sie po polanie.']);
         });
 
