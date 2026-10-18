@@ -68,10 +68,16 @@
     min-width: 0;
 }
 
+/*
+ * The detail pane never scrolls as a whole: long game lines get a few rows each and
+ * scroll on their own, so the matched triggers always keep the rest of the pane.
+ */
 .line-insp-detail {
-    flex: 0 1 auto;
-    max-height: 50%;
-    overflow: auto;
+    /* Not shrinkable: a long list would otherwise squeeze it down to a line or two. */
+    flex: 0 0 auto;
+    max-height: 60%;
+    min-height: 0;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
     gap: 4px;
@@ -96,6 +102,11 @@
     border-radius: var(--ui-radius);
     background: var(--popup-subtle-bg);
     color: var(--popup-text);
+}
+
+.line-insp-detail-head,
+.line-insp-detail-line {
+    flex: 0 0 auto;
 }
 
 .line-insp-detail-line,
@@ -125,12 +136,26 @@
     word-break: break-word;
 }
 
+.line-insp-detail-line .line-insp-game,
+.line-insp-step-diff .line-insp-game {
+    max-height: 4lh;
+    overflow: auto;
+}
+
 .line-insp-gone {
     color: var(--popup-danger);
     font-size: var(--ui-fs-sm);
 }
 
+.line-insp-same {
+    color: var(--popup-text-subtle);
+    font-size: var(--ui-fs-sm);
+}
+
 .line-insp-steps {
+    flex: 1 1 auto;
+    min-height: 4em;
+    overflow: auto;
     display: flex;
     flex-direction: column;
     gap: 2px;

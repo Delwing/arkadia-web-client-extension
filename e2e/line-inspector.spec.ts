@@ -14,7 +14,7 @@ test.describe('Line inspector', () => {
         // Nothing is recorded while the window is closed.
         await pushText(page, 'Linia sprzed otwarcia.', {type: 'other'});
 
-        await submitCommand(page, '/linie');
+        await submitCommand(page, '/debug');
         const popup = page.locator('.line-insp-popup');
         await expect(popup).toBeVisible();
 

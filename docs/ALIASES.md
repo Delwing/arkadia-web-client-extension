@@ -197,7 +197,7 @@ Zakresy działają rosnąco (`1-7`) i malejąco (`7-1`). Maksymalnie 50 iteracji
 
 | Alias | Opis |
 |-------|------|
-| `/linie` | Otwórz inspektor linii: każda linia tak, jak przysłała ją gra, i triggery, które ją dopasowały |
+| `/debug` | Otwórz inspektor linii: każda linia tak, jak przysłała ją gra, i triggery, które ją dopasowały |
 
 > **Wskazówka:** Linie są zapisywane tylko wtedy, gdy okno jest otwarte (do 1000 ostatnich), więc zamknięte nic nie kosztuje. Domyślnie lista pokazuje linie surowe, czyli przed jakimkolwiek triggerem; przycisk **Wynik** przełącza na to, co trafiło na ekran. Znaczek `✎` oznacza linię zmienioną (tekst albo kolor), `✕` linię usuniętą, a liczba obok to liczba dopasowanych triggerów. Filtr w nagłówku zawęża listę do linii zmienionych albo usuniętych, a pole wyszukiwania szuka w tekście linii i w nazwach triggerów (tag i wzorzec) - tak znajdziesz linie, na których zadziałał dany trigger. Niektóre triggery pasują do każdej linii (np. wzorzec `^` albo `(.+)`), więc zwykle zobaczysz je przy każdej linii z wynikiem `bez zmian`. Kliknięcie linii pokazuje pod listą jej wersję surową i końcową oraz wszystkie dopasowane triggery po kolei: przebieg (`wielolinia`, `linia`, `słowo`), czy był dzieckiem innego triggera, co zrobił (`bez zmian`, `zmienił` - z linią przed i po, `usunął`) i ile trwał. Przyciski **Kopiuj surową** i **Kopiuj wynik** kopiują tekst do schowka, **Pauza** wstrzymuje zapisywanie, **Wyczyść** czyści listę. Okno można zadokować i odłączyć do osobnego okna.
 

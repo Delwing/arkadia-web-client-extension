@@ -197,7 +197,7 @@ export function registerScripts(client: Client) {
     })
     // Line inspector: each line as the MUD sent it and every trigger that matched it.
     aliases.push({
-        pattern: /^\/linie$/,
+        pattern: /^\/debug$/,
         callback: () => eventBus.emit("lineInspector.popup.open"),
     })
     // Light a footer button up (Ustawienia -> Stopka), from a trigger or a script:

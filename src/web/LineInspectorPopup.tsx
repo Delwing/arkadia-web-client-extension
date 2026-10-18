@@ -132,7 +132,10 @@ const Detail: React.FC<{ entry: LineTraceEntry }> = ({ entry }) => (
             <span className="line-insp-label">wynik</span>
             {entry.finalHtml === null
                 ? <span className="line-insp-gone">usunięta</span>
-                : <Html className="line-insp-game line-insp-final" html={entry.finalHtml} />}
+                : entry.finalHtml === entry.rawHtml
+                    // A long line shown twice would push the triggers out of the pane.
+                    ? <span className="line-insp-same">bez zmian</span>
+                    : <Html className="line-insp-game line-insp-final" html={entry.finalHtml} />}
         </div>
         {entry.steps.length === 0
             ? <div className="popup-empty">Żaden trigger nie dopasował tej linii.</div>
