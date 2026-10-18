@@ -11,6 +11,7 @@ import '@web-ui/buttons/mobileJoysticks.css'
 import './themes/forged/shell.css'
 import './themes/forged/windows.css'
 import './themes/forged/buttons.css'
+import './themes/forged/footer.css'
 import mudClient from "./MudClient.ts";
 import {
     DEFAULT_SESSION_PROXY_URL,

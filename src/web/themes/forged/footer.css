@@ -1,0 +1,555 @@
+/* ============================================================
+   Kuźnia (forged) theme · footer
+   ============================================================
+
+   The footer bands and the command line as one forged plate: the bands
+   (#footer-layout, drawn by forgedSkin.tsx with stone vital gems and an
+   engraved seam between bands) are its upper part, #input-area its lower,
+   parted by one more seam. The bands keep their stock ids, so only their
+   chrome changes here.
+
+   Not on a phone: there the stock footer keeps its own shape. */
+
+@media (min-width: 769px) and ((min-height: 521px) or (not (pointer: coarse))) {
+
+/* ── The plate ──────────────────────────────────────────────────────────── */
+body.theme-forged #footer-layout {
+  display: flex;
+  flex-direction: column;
+  margin: 3px 3px 0;
+  padding: 7px 8px 4px;
+  background-color: #0c0b09;
+  background-image:
+    var(--tex-fine),
+    linear-gradient(180deg, #16130e 0%, #0c0b09 100%);
+  background-blend-mode: soft-light, normal;
+  background-size: 130px 130px, 100% 100%;
+  border: 1px solid var(--iron-lo);
+  border-bottom: 0;
+  border-radius: 9px 9px 0 0;
+  box-shadow: inset 0 1px 0 rgba(184, 150, 90, 0.14);
+}
+
+body.theme-forged #input-area {
+  margin: 0 3px 3px;
+  padding: 6px 8px 8px;
+  background-color: #0a0907;
+  background-image:
+    var(--tex-fine),
+    linear-gradient(180deg, #0c0b09 0%, #070605 100%);
+  background-blend-mode: soft-light, normal;
+  background-size: 130px 130px, 100% 100%;
+  border: 1px solid var(--iron-lo);
+  border-top: 0;
+  border-radius: 0 0 9px 9px;
+  box-shadow:
+    inset 0 -3px 6px rgba(0, 0, 0, 0.72),
+    0 3px 10px rgba(0, 0, 0, 0.6);
+}
+
+/* The seam between the bands and the command line. */
+body.theme-forged #input-area::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 10px;
+  right: 10px;
+  border-top: 1px solid rgba(0, 0, 0, 0.6);
+  box-shadow: 0 1px 0 rgba(184, 150, 90, 0.07);
+  pointer-events: none;
+}
+
+/* The bands sit on the plate: no fill or rule of their own, the seams part them. */
+body.theme-forged #footer-layout > :is(#multi-binds, #char-state, .footer-band) {
+  min-height: 0;
+  padding: 0 2px;
+  border-top: 0;
+  background: transparent;
+}
+/* A bind row with nothing to show takes its seam with it. */
+body.theme-forged #footer-layout > #multi-binds:not(.active) + .hud-seam {
+  display: none;
+}
+/* The vitals as gems need no divider beside them. */
+body.theme-forged #footer-layout .footer-vitals:not(:last-child) {
+  border-right: 0;
+}
+
+/* ── The command line: a trough cut into the plate ────────────────────── */
+body.theme-forged #command-field {
+  border: 0;
+  border-radius: 5px;
+  background: linear-gradient(180deg, #0b0a08, #100e0b);
+  box-shadow:
+    inset 0 2px 6px rgba(0, 0, 0, 0.85),
+    inset 0 0 0 1px rgba(184, 150, 90, 0.10);
+}
+body.theme-forged #command-field:focus-within {
+  box-shadow:
+    inset 0 2px 6px rgba(0, 0, 0, 0.85),
+    inset 0 0 0 1px rgba(184, 150, 90, 0.32);
+}
+body.theme-forged .command-field__prompt {
+  color: var(--bronze);
+}
+
+/* The row's buttons as the forged iron pills (buttons.css). */
+body.theme-forged #input-area button,
+body.theme-forged #history-buttons {
+  border: 1px solid var(--iron-hi);
+  border-radius: 6px;
+  background-color: #191410;
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, .05), rgba(0, 0, 0, .12));
+  box-shadow:
+    inset 0 1px 0 rgba(184, 150, 90, .12),
+    0 1px 2px rgba(0, 0, 0, .5);
+  color: var(--parchment-dim);
+}
+body.theme-forged #input-area button:hover {
+  border-color: var(--bronze-dim);
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, .11), rgba(255, 255, 255, .02));
+  color: var(--parchment);
+}
+body.theme-forged #input-area #history-buttons button {
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+}
+body.theme-forged #input-area #history-buttons button + button {
+  border-top: 1px solid var(--iron-lo);
+}
+
+/* ── Forge's footer pieces: bind pills, stone chips, vital gems ─────────── */
+/* Engraved seam parting two bands of the plate — a dark groove lit by a hairline
+   bronze highlight along its lower edge, so the bands read as milled from one
+   piece of steel. Used between binds / footer / gems / command. */
+.theme-forged #footer-layout .hud-seam {
+  height: 0;
+  margin: 5px 2px;
+  border-top: 1px solid rgba(0,0,0,.6);
+  box-shadow: 0 1px 0 rgba(184,150,90,.07);
+}
+
+/* ---- location-bind band (top of the plate) ------------------------------- */
+/* Shown while it has binds, or always when the layout keeps it (the forge
+   layout does, so the plate height is stable); then it self-empties to the
+   placeholder. */
+.theme-forged #footer-layout #multi-binds {
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+  min-height: 21px;              /* reserve one pill-row so binds never shift the plate */
+  padding: 0 2px;
+  -webkit-user-select: none;
+  user-select: none;
+}
+/* the shared MultiBindStrip's placeholder (src/ui/web/footer) */
+.theme-forged #footer-layout .multi-bind-empty {
+  font-family: "Cinzel", serif;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  font-size: 9.5px;
+  color: var(--parchment-dim);
+  opacity: .5;
+}
+/* the shared bind pills */
+.theme-forged #footer-layout .multi-bind {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  padding: 2px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--iron-hi);
+  background: linear-gradient(180deg, #201b13, #14100b);
+  color: var(--parchment);
+  font-family: "EB Garamond", Georgia, serif;
+  font-size: 12.5px;
+  line-height: 1.15;
+  cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(184,150,90,.1);
+  transition: border-color .15s ease, background .15s ease, transform .1s ease;
+  appearance: none; -webkit-appearance: none;
+}
+.theme-forged #footer-layout .multi-bind:hover { border-color: var(--bronze-dim); background: linear-gradient(180deg, #2a2318, #181310); }
+.theme-forged #footer-layout .multi-bind:active { transform: translateY(1px); }
+.theme-forged #footer-layout .multi-bind:disabled { cursor: default; opacity: .55; }
+.theme-forged #footer-layout .multi-bind-key { font-family: ui-monospace, "JetBrains Mono", monospace; font-weight: 700; font-size: 10.5px; color: var(--bronze); }
+.theme-forged #footer-layout .multi-bind-action { color: var(--parchment-dim); }
+/* location binds read apart from the plain numbered multibinds: the room bind in
+   warm amber, the drinkable bind in a cool blue, the gate bind in rust — key
+   tinted, border echoes it */
+.theme-forged #footer-layout .multi-bind--room { border-color: #5a4423; }
+.theme-forged #footer-layout .multi-bind--room .multi-bind-key { color: #e0a94a; }
+.theme-forged #footer-layout .multi-bind--drink { border-color: #2f4a5a; }
+.theme-forged #footer-layout .multi-bind--drink .multi-bind-key { color: #79b3d6; }
+.theme-forged #footer-layout .multi-bind--gate { border-color: #5a3323; }
+.theme-forged #footer-layout .multi-bind--gate .multi-bind-key { color: #d9855a; }
+/* temporary binds (plugins) are never saved: dashed border; a highlighted slot
+   burns bronze so the step at hand stands out */
+.theme-forged #footer-layout .multi-bind--temporary { border-style: dashed; }
+.theme-forged #footer-layout .multi-bind--highlight,
+.theme-forged #footer-layout .multi-bind--highlight:hover { border-color: var(--bronze); box-shadow: inset 0 0 0 1px var(--bronze-dim), 0 0 6px rgba(184,150,90,.35); }
+
+/* ---- footer status-chip band -------------------------------------------- */
+.theme-forged #footer-layout .footer-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+  min-height: 21px;             /* fajka alone keeps this filled; reserves the row */
+  padding: 0 2px;
+  -webkit-user-select: none;
+  user-select: none;
+}
+/* ---- footer layout pieces (@web-ui/footer/layout) ------------------------
+   What a picked layout other than the plate's own brings: bands of several
+   cells, chips in a grid or as "Label: value" lines, the exit compass. */
+.theme-forged #footer-layout .footer-band { display: flex; align-items: flex-start; gap: 14px; padding: 0 2px; }
+.theme-forged #footer-layout .footer-cell { display: flex; align-items: flex-start; min-width: 0; }
+.theme-forged #footer-layout .footer-cell + .footer-cell { margin-left: 14px; }
+.theme-forged #footer-layout .footer-row { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.theme-forged #footer-layout .footer-column { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.theme-forged #footer-layout .footer-cell .gems,
+.theme-forged #footer-layout .footer-band .gems { flex-wrap: wrap; min-width: 0; }
+.theme-forged #footer-layout .footer-chip-grid {
+  display: grid;
+  flex-shrink: 0;
+  grid-template-rows: repeat(var(--chip-rows), auto);
+  grid-auto-flow: column;
+  grid-auto-columns: max-content;
+  gap: 3px 12px;
+  align-items: center;
+  min-width: 0;
+}
+.theme-forged #footer-layout .footer-chip-grid > .status-slot,
+.theme-forged #footer-layout .footer-strip > .status-slot { display: inline-flex; }
+.theme-forged #footer-layout .footer-strip > .status-slot:empty { display: none; }
+.theme-forged #footer-layout .footer-chip-grid > .status-slot:empty { display: none; }
+/* a column of chips reads as one: each as wide as the widest in it */
+.theme-forged #footer-layout .footer-chip-grid > .status-slot > .chip { flex: 1; }
+.theme-forged #footer-layout .footer-chips--text .chip { padding: 0; border-color: transparent; background: none; box-shadow: none; }
+.theme-forged #footer-layout .footer-chips--text .chip__ico { display: none; }
+.theme-forged #footer-layout .footer-chips--text .chip__lab {
+  font-family: "EB Garamond", Georgia, serif;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 12.5px;
+  color: var(--parchment-dim);
+}
+/* "Label:" before a value, not after one that leads; a fixed-width (grid) label
+   puts the colon in a second column */
+.theme-forged #footer-layout .footer-chips--text .chip:not(.chip--value-first) .chip__lab::after { content: ":"; }
+.theme-forged #footer-layout .footer-chips--text .chip__lab.chip__sized::after { grid-area: 1 / 2; }
+.theme-forged #footer-layout .footer-chips--text .chip__val { font-size: 11px; }
+.theme-forged #footer-layout .footer-compass { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.theme-forged #footer-layout .footer-compass__rose {
+  display: grid;
+  grid-template-columns: repeat(4, 20px);
+  grid-auto-rows: 20px;
+  gap: 2px;
+}
+.theme-forged #footer-layout .footer-compass__rose > :nth-child(4n) { margin-left: 6px; }
+.theme-forged #footer-layout .footer-compass__dir {
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: none;
+  color: var(--parchment-dim);
+  font-size: 12px;
+  line-height: 1;
+  opacity: .3;
+  appearance: none; -webkit-appearance: none;
+}
+.theme-forged #footer-layout .footer-compass__dir.is-open {
+  border-color: var(--iron-hi);
+  background: linear-gradient(180deg, #201b13, #14100b);
+  color: var(--bronze);
+  opacity: 1;
+  cursor: pointer;
+}
+.theme-forged #footer-layout .footer-compass__dir.is-open:hover { border-color: var(--bronze-dim); }
+.theme-forged #footer-layout .footer-compass__here { place-self: center; width: 6px; height: 6px; border-radius: 50%; background: var(--bronze-dim); }
+.theme-forged #footer-layout .footer-compass__special { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.theme-forged #footer-layout .footer-compass__exit {
+  overflow: hidden;
+  padding: 1px 7px;
+  border: 1px solid var(--iron-hi);
+  border-radius: 999px;
+  background: linear-gradient(180deg, #201b13, #14100b);
+  color: var(--parchment);
+  font-family: "EB Garamond", Georgia, serif;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+  appearance: none; -webkit-appearance: none;
+}
+.theme-forged #footer-layout .footer-compass__exit:hover { border-color: var(--bronze-dim); }
+
+.theme-forged #footer-layout .chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px 2px 6px;
+  border-radius: 6px;
+  /* Weathered stone, matching the vital gems (.gem .stone): the isotropic
+     --tex-stone speckle soft-lit over a dark iron gradient — reads as chiselled
+     rock, not the brushed/wood grain of --tex-metal. A dark scrim rides on top
+     of the speckle so soft-light can't lift the pill into a mid-tone; that keeps
+     the fill deep and the value text (and its urgency tint) high-contrast. */
+  background-color: #0c0905;
+  background-image:
+    linear-gradient(rgba(8,6,3,.5), rgba(8,6,3,.5)),
+    var(--tex-stone),
+    linear-gradient(180deg, #16110a, #070502);
+  background-blend-mode: normal, soft-light, normal;
+  background-size: 100% 100%, 90px 90px, 100% 100%;
+  border: 1px solid #33291b;
+  box-shadow: inset 0 1px 0 rgba(184,150,90,.09), inset 0 -2px 5px rgba(0,0,0,.7), 0 1px 2px rgba(0,0,0,.55);
+  white-space: nowrap;
+  color: var(--parchment);
+  font-family: "EB Garamond", Georgia, serif;
+  appearance: none; -webkit-appearance: none;
+}
+.theme-forged #footer-layout .chip--act { cursor: pointer; transition: border-color .15s ease, transform .1s ease; }
+.theme-forged #footer-layout .chip--act:hover { border-color: var(--bronze-dim); }
+.theme-forged #footer-layout .chip--act:active { transform: translateY(1px); }
+/* long-press feedback (Chip onLongPress): molten bronze pours in from the left
+   while held, then glows and fades once the hold lands */
+.theme-forged #footer-layout .chip--act { position: relative; isolation: isolate; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+.theme-forged #footer-layout .chip--holding::before, .theme-forged #footer-layout .chip--held::before {
+  content: "";
+  position: absolute; inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, rgba(184,150,90,.18), rgba(230,173,78,.38));
+  transform-origin: left center;
+  pointer-events: none;
+  z-index: -1;
+}
+.theme-forged #footer-layout .chip--holding::before { animation: forgedChipHoldFill var(--chip-hold-ms, 300ms) linear forwards; }
+.theme-forged #footer-layout .chip--held { border-color: var(--bronze); }
+.theme-forged #footer-layout .chip--held::before { animation: forgedChipHoldDone 400ms ease-out forwards; }
+@keyframes forgedChipHoldFill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes forgedChipHoldDone { from { opacity: 1; box-shadow: 0 0 8px rgba(230,173,78,.6); } to { opacity: 0; } }
+.theme-forged #footer-layout .chip__ico { flex: 0 0 auto; width: 14px; height: 14px; display: grid; place-items: center; color: var(--bronze); }
+.theme-forged #footer-layout .chip__ico svg { width: 14px; height: 14px; }
+/* Filled state (e.g. cover shield when the guard is held): a soft translucent
+   tint of the icon colour behind the crisp outline, rather than a solid block. */
+.theme-forged #footer-layout .chip__ico--fill svg { fill: color-mix(in srgb, currentColor 26%, transparent); }
+/* icon, label and value all vertically centered on one axis — line-height:1 on
+   both text spans keeps their optical centers true, so nothing rides high/low */
+.theme-forged #footer-layout .chip__text { display: inline-flex; align-items: center; gap: 5px; }
+.theme-forged #footer-layout .chip__lab {
+  font-family: "Cinzel", serif;
+  text-transform: uppercase;
+  letter-spacing: .09em;
+  font-size: 9px;
+  color: var(--bronze);
+  text-shadow: 0 1px 1px rgba(0,0,0,.6);
+  /* Cinzel caps sit high in their em-box, so metric centering floats them above
+     the monospace value; nudge down to line up their optical centers. */
+  /*transform: translateY(2px);*/
+}
+.theme-forged #footer-layout .chip__val {
+  font-family: ui-monospace, "JetBrains Mono", monospace;
+  font-size: 10px;
+  line-height: 1;
+  color: #e3d8bf;
+  text-shadow: 0 1px 1px rgba(0,0,0,.7);
+  font-variant-numeric: tabular-nums;
+}
+/* semantic urgency — tints the icon + value, never the whole chip. Explicit
+   bright hexes (NOT the dark --amber/--moss gem hues) so they carry on the deep
+   stone fill. */
+.theme-forged #footer-layout .chip--ok     .chip__val { color: #a6c46f; } .theme-forged #footer-layout .chip--ok     .chip__ico { color: #a6c46f; }
+.theme-forged #footer-layout .chip--warn   .chip__val { color: #e6ad4e; } .theme-forged #footer-layout .chip--warn   .chip__ico { color: #e6ad4e; }
+.theme-forged #footer-layout .chip--danger .chip__val { color: #e07a4f; } .theme-forged #footer-layout .chip--danger .chip__ico { color: #e07a4f; }
+
+/* fajka ember — sits where the icon would; glows and pulses while lit */
+.theme-forged #footer-layout .chip__ember {
+  flex: 0 0 auto;
+  width: 9px; height: 9px; border-radius: 50%;
+  background: radial-gradient(circle at 45% 40%, #4a3a22, #2a2114 70%);
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.5);
+}
+.theme-forged #footer-layout .chip__ember--lit {
+  background: radial-gradient(circle at 45% 40%, #fff6cc, #ffd24a 35%, #ff7a18 70%, #a52600);
+  box-shadow: 0 0 6px 1px rgba(255,140,40,.6);
+  animation: forgedChipEmber 2.4s ease-in-out infinite;
+}
+@keyframes forgedChipEmber {
+  0%, 100% { opacity: .82; box-shadow: 0 0 5px 1px rgba(255,140,40,.5); }
+  50%      { opacity: 1;   box-shadow: 0 0 9px 2px rgba(255,150,50,.7); }
+}
+@media (prefers-reduced-motion: reduce) { .theme-forged #footer-layout .chip__ember--lit { animation: none; } }
+
+/* short bursts toggled from JS (useAttentionBlink) for chips waiting on the player */
+.theme-forged #footer-layout .chip.attention-blink { animation: forgedChipAttentionBlink 1s steps(1, end) infinite; }
+@keyframes forgedChipAttentionBlink { 50% { opacity: .15; } }
+
+.theme-forged #footer-layout .gems { display: flex; gap: 4px; -webkit-user-select: none; user-select: none; }
+
+/* "Postep" lifted out of the gem row: a thin full-width exp-bar with one tick
+   per point (WoW-style), a left label, and the track spanning the vital width. */
+.theme-forged #footer-layout .improve-bar {
+  --hue: var(--gold);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  /* line up with the pills' visible fill (.stone is inset 4px), not the pill edge */
+  padding: 0 4px;
+}
+.theme-forged #footer-layout .improve-label {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 8px;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color: #f4ecd6;
+  opacity: .72;
+  white-space: nowrap;
+  text-shadow: 0 1px 2px rgba(0,0,0,.98), 0 2px 4px rgba(0,0,0,.8);
+}
+.theme-forged #footer-layout .improve-label svg {
+  width: 10px; height: 10px; stroke: #f4ecd6;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,.98));
+}
+.theme-forged #footer-layout .improve-value {
+  flex: 0 0 auto;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 9px;
+  letter-spacing: .02em;
+  color: #f4ecd6;
+  opacity: .82;
+  white-space: nowrap;
+  text-shadow: 0 1px 2px rgba(0,0,0,.98), 0 2px 4px rgba(0,0,0,.8);
+}
+/* No container box — the 15 pills sit straight on the panel so nothing reads as
+   a dark slab. Each is its own cell; the gaps just reveal the panel's brown. */
+.theme-forged #footer-layout .improve-track {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  align-self: stretch;                  /* fill the row height set by the text */
+  transform: scaleY(0.7);               /* trim ~30% visually, no layout shift */
+  gap: 2px;                             /* panel brown shows through as the divider */
+}
+.theme-forged #footer-layout .improve-seg {
+  flex: 1 1 0;
+  min-width: 0;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--hue) 20%, transparent);
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.35);
+}
+.theme-forged #footer-layout .improve-seg.on {
+  background: var(--hue);
+  filter: saturate(.7);
+  box-shadow:
+    inset 0 0 0 1px rgba(0,0,0,.4),
+    inset 0 1px 0 rgba(255,255,255,.2);
+}
+.theme-forged #footer-layout .gem {
+  --fill: 60%;
+  --hue: var(--slate);
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  height: var(--bar-h);
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border-radius: 7px;                  /* the hole */
+  /* thick lit-steel form the button is pressed into */
+  box-shadow:
+    inset 0 1px 0 rgba(184,150,90,.18),
+    inset 0 -1px 0 rgba(0,0,0,.6),
+    inset 0 0 0 1px rgba(0,0,0,.8),
+    inset 0 2px 4px rgba(0,0,0,.66);
+}
+/* the colored convex button plugging the hole. inset 4px, radius = hole − inset
+   so the corners stay concentric with the hole. */
+.theme-forged #footer-layout .gem .stone {
+  position: absolute; inset: 4px;
+  border-radius: 3px; overflow: hidden;
+  background-image:
+    var(--tex-stone),
+    linear-gradient(90deg,
+      var(--hue) 0%,
+      var(--hue) var(--fill),
+      color-mix(in srgb, var(--hue) 28%, #0c0906) var(--fill),
+      color-mix(in srgb, var(--hue) 28%, #0c0906) 100%);
+  background-blend-mode: soft-light, normal;
+  background-size: 110px 110px, 100% 100%;
+  filter: saturate(.58);
+  /* convex cap: top light, rounded body shade, drop shadow into the hole */
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.16),
+    inset 0 -4px 8px rgba(0,0,0,.5),
+    0 1px 2px rgba(0,0,0,.7);
+  transition: background-image .35s ease;
+}
+.theme-forged #footer-layout .gem .stone::after {
+  content: "";
+  position: absolute; inset: 0;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,0) 42%),
+    linear-gradient(180deg, transparent 46%, rgba(0,0,0,.55));
+}
+/* value on top; icon sits next to the name beneath it, sized to the text */
+.theme-forged #footer-layout .gem .niche { display: grid; place-items: center; }
+.theme-forged #footer-layout .gem .niche svg {
+  width: 10px; height: 10px; stroke: #f4ecd6;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,.98)) drop-shadow(0 2px 5px rgba(0,0,0,.8));
+}
+.theme-forged #footer-layout .gem .label {
+  position: relative; z-index: 2;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+}
+.theme-forged #footer-layout .gem .label .line { display: flex; align-items: center; gap: 3px; }
+.theme-forged #footer-layout .gem .label .v {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11.5px; letter-spacing: .02em;
+  color: #f4ecd6; white-space: nowrap; opacity: .97;
+  text-shadow: 0 1px 2px rgba(0,0,0,.98), 0 2px 5px rgba(0,0,0,.8);
+}
+.theme-forged #footer-layout .gem .label .name {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 8px; letter-spacing: .05em; text-transform: uppercase;
+  color: #f4ecd6; white-space: nowrap; opacity: .72;
+  text-shadow: 0 1px 2px rgba(0,0,0,.98), 0 2px 4px rgba(0,0,0,.8);
+}
+/* Level signal lives inside the button: a hot bottom-shade recolouring the cap's
+   own base — no rim, so every button keeps identical geometry. Sits under the
+   gloss (::after) as a separately-animatable layer: danger breathes, and the
+   opposite-of-default extreme (fully encumbered, starving) breathes harder. */
+.theme-forged #footer-layout .gem.lvl-warn .stone::before,
+.theme-forged #footer-layout .gem.lvl-danger .stone::before,
+.theme-forged #footer-layout .gem.highlight .stone::before {
+  content: "";
+  position: absolute; inset: 0;
+  pointer-events: none;
+}
+.theme-forged #footer-layout .gem.lvl-warn .stone::before {
+  background: linear-gradient(180deg, transparent 36%, rgba(196,152,72,.55));
+}
+.theme-forged #footer-layout .gem.lvl-danger .stone::before {
+  background: linear-gradient(180deg, transparent 30%, rgba(208,76,52,.72));
+  animation: forgedDangerBreath 1.8s ease-in-out infinite;
+}
+.theme-forged #footer-layout .gem.highlight .stone::before {
+  background: linear-gradient(180deg, transparent 24%, rgba(226,84,54,.82));
+  animation: forgedDangerBreath 1.15s ease-in-out infinite;
+}
+@keyframes forgedDangerBreath { 50% { opacity: .45; } }
+@media (prefers-reduced-motion: reduce) { .theme-forged #footer-layout .gem .stone::before { animation: none !important; } }
+
+}

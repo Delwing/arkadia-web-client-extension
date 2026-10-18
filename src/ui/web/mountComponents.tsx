@@ -5,6 +5,7 @@ import { ContextMenuHost } from "@web/contextMenu";
 import StockFooter from "./footer/layout/StockFooter";
 import { setFooterPreviewHost } from "./footer/layout/previewHost";
 import { stockFooterSkin } from "./footer/layout/stockSkin";
+import { forgedFooterSkin, isForgedTheme } from "./footer/layout/forgedSkin";
 import { registerBuiltinFooterItems } from "./footer/builtinItems";
 
 type MountResult = {
@@ -23,9 +24,12 @@ export const mountMigratedComponents = (): MountResult => {
   // as they come), as the footer layout arranges them. Rendered synchronously:
   // setupMobileFooter wires the status line's expander right after this returns.
   registerBuiltinFooterItems();
-  // The layout editor draws its preview the way this footer is drawn.
+  // The layout editor draws its preview the way this footer is drawn, in the
+  // theme on when it opens.
   setFooterPreviewHost({
-    skin: stockFooterSkin,
+    get skin() {
+      return isForgedTheme() ? forgedFooterSkin : stockFooterSkin;
+    },
     Frame: ({ children }) => <div id="footer-layout" className="footer-preview-frame">{children}</div>,
   });
   const footerContainer = document.getElementById("footer-layout");

@@ -1,7 +1,7 @@
 import type { FooterSkin } from '@web-ui/footer/layout/FooterLayout';
 import type { FooterPreviewHost } from '@web-ui/footer/layout/previewHost';
 import { bandHas } from '@web-ui/footer/layout/layoutTree';
-import VitalGems from './VitalGems';
+import VitalGems from '@web-ui/footer/VitalGems.tsx';
 import ReconnectChip from './ReconnectChip';
 import { useFooterPreview } from '@web-ui/footer/layout/previewContext';
 

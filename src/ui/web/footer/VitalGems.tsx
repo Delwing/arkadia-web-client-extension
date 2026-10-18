@@ -1,13 +1,13 @@
 import type { CSSProperties } from 'react';
 import { getColorLevel } from '@web/colors';
-import { useCharForm, useCharState } from '@web-ui/footer/charStateStore';
-import { PREVIEW_CHAR_STATE, useFooterPreview } from '@web-ui/footer/layout/previewContext';
+import { useCharForm, useCharState } from '@web-ui/footer/charStateStore.ts';
+import { PREVIEW_CHAR_STATE, useFooterPreview } from '@web-ui/footer/layout/previewContext.ts';
+import { VitalIcon } from './vitalIcons';
 
-// Config mirrors the stock CharState DEFAULT_CONFIG; hue + icon are HUD styling.
+// Config mirrors the stock CharState DEFAULT_CONFIG; hue is the gem's colour.
 interface VitalCfg {
     key: string;
     name: string;
-    icon: string;
     hue: string;
     max: number;
     default?: number;
@@ -17,17 +17,17 @@ interface VitalCfg {
 
 // Names match the stock UI's ASCII transliterations (BarOrderSettings DISPLAY_NAMES).
 const VITALS: VitalCfg[] = [
-    { key: 'hp', name: 'HP', icon: 'i-hp', hue: '--blood', max: 6, transform: (v, m) => ({ value: v + 1, max: m + 1 }) },
-    { key: 'fatigue', name: 'Zmęczenie', icon: 'i-zm', hue: '--slate', max: 9, flip: true },
-    { key: 'stuffed', name: 'Głód', icon: 'i-hun', hue: '--amber', max: 3, default: 3 },
-    { key: 'encumbrance', name: 'Obciążenie', icon: 'i-obc', hue: '--rust', max: 6, default: 0 },
-    { key: 'soaked', name: 'Pragnienie', icon: 'i-thi', hue: '--steel', max: 3, default: 3 },
-    { key: 'mana', name: 'Mana', icon: 'i-mana', hue: '--mana', max: 8, default: 8 },
-    { key: 'improve', name: 'Postęp', icon: 'i-pos', hue: '--gold', max: 15, default: 0 },
-    { key: 'form', name: 'Forma', icon: 'i-for', hue: '--moss', max: 3, default: 3 },
-    { key: 'intox', name: 'Upojenie', icon: 'i-upi', hue: '--wine', max: 9, default: 0 },
-    { key: 'headache', name: 'Kac', icon: 'i-kac', hue: '--ash', max: 6, default: 0 },
-    { key: 'panic', name: 'Panika', icon: 'i-pan', hue: '--panic', max: 4, default: 0 },
+    { key: 'hp', name: 'HP', hue: '--blood', max: 6, transform: (v, m) => ({ value: v + 1, max: m + 1 }) },
+    { key: 'fatigue', name: 'Zmęczenie', hue: '--slate', max: 9, flip: true },
+    { key: 'stuffed', name: 'Głód', hue: '--amber', max: 3, default: 3 },
+    { key: 'encumbrance', name: 'Obciążenie', hue: '--rust', max: 6, default: 0 },
+    { key: 'soaked', name: 'Pragnienie', hue: '--steel', max: 3, default: 3 },
+    { key: 'mana', name: 'Mana', hue: '--mana', max: 8, default: 8 },
+    { key: 'improve', name: 'Postęp', hue: '--gold', max: 15, default: 0 },
+    { key: 'form', name: 'Forma', hue: '--moss', max: 3, default: 3 },
+    { key: 'intox', name: 'Upojenie', hue: '--wine', max: 9, default: 0 },
+    { key: 'headache', name: 'Kac', hue: '--ash', max: 6, default: 0 },
+    { key: 'panic', name: 'Panika', hue: '--panic', max: 4, default: 0 },
 ];
 
 /** `improveBar`: Postępy as the full-width bar over the gems, or a gem among them. */
@@ -93,7 +93,7 @@ export default function VitalGems({ improveBar = true }: { improveBar?: boolean 
                                 <span className="v">{value}/{max}</span>
                                 <span className="line">
                                     <span className="niche">
-                                        <svg viewBox="0 0 20 20"><use href={`#${cfg.icon}`} stroke="currentColor" /></svg>
+                                        <VitalIcon vital={cfg.key} />
                                     </span>
                                     <span className="name">{cfg.name}</span>
                                 </span>
@@ -109,7 +109,7 @@ export default function VitalGems({ improveBar = true }: { improveBar?: boolean 
                     title={`${improveCfg.name} ${improveValue}/${improveCfg.max}`}
                 >
                     <span className="improve-label">
-                        <svg viewBox="0 0 20 20"><use href={`#${improveCfg.icon}`} stroke="currentColor" /></svg>
+                        <VitalIcon vital="improve" />
                         Postępy
                     </span>
                     <span className="improve-track">
