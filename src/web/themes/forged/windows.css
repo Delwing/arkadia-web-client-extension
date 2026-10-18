@@ -583,3 +583,42 @@ body.theme-forged {
   padding: 4px 2px; font-family: "EB Garamond", serif; font-style: italic;
   font-size: 12.5px; color: var(--parchment-dim); opacity: .6;
 }
+
+/* ── Dialogs: forged plates that stand off the dark ─────────────────────
+   Page-level windows (appModal.ts) and the shared Dialog sit over a scrim
+   as dark as they are, so they carry a delicate bronze outline and the
+   windows' inner bevel ring, over the same iron plate. */
+.theme-forged :is(.app-modal__dialog, .popup-dialog) {
+  position: relative;
+  border: 1px solid rgba(184, 150, 90, 0.28);
+  border-radius: 9px;
+  background-color: #0c0b09;
+  background-image:
+    var(--tex-fine),
+    linear-gradient(180deg, #15120d 0%, #0c0b09 55%, #070605 100%);
+  background-blend-mode: soft-light, normal;
+  background-size: 130px 130px, 100% 100%;
+  box-shadow:
+    inset 0 1px 0 rgba(184, 150, 90, 0.16),
+    0 0 0 1px rgba(0, 0, 0, 0.6),
+    0 18px 60px rgba(0, 0, 0, 0.7);
+}
+.theme-forged :is(.app-modal__dialog, .popup-dialog)::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border: 1px solid rgba(184, 150, 90, 0.12);
+  border-radius: 5px;
+  pointer-events: none;
+  z-index: 3;
+}
+/* A dialog that is the whole phone screen has no edge to draw. */
+@media (max-width: 767.98px) {
+  .theme-forged .app-modal__dialog--phone-full {
+    border: 0;
+    border-radius: 0;
+  }
+  .theme-forged .app-modal__dialog--phone-full::after {
+    content: none;
+  }
+}
