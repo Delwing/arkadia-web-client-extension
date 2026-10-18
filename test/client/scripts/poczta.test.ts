@@ -36,7 +36,7 @@ Data : Pn, 31 VIII 2026, 19:36:55
 [1-50 adefFhHmnqrsRux.!?-+<>] (aktualny: 2) -- `;
 
 describe('poczta', () => {
-    let client: { Triggers: Triggers; FunctionalBind: { set: jest.Mock } };
+    let client: { Triggers: Triggers };
     let lists: { type: MailType; mails: MailEntry[] }[];
     let letters: LetterContent[];
     let commands: string[];
@@ -49,7 +49,7 @@ describe('poczta', () => {
         // several times over. The real client only ever registers its scripts once.
         eventBus.clear('poczta.fetch');
         eventBus.clear('poczta.read');
-        client = { Triggers: new Triggers({} as never), FunctionalBind: { set: jest.fn() } };
+        client = { Triggers: new Triggers({} as never) };
         // main.ts registers the pager's auto-ENTER before poczta, so poczta never sees the pager line.
         client.Triggers.registerTrigger('ENTER by przejsc dalej', () => {
             eventBus.emit('sendCommand', { command: '' });
@@ -297,37 +297,38 @@ Nadawca: Lindra                          S, 17 X 2026, 20:45:02`;
         const linkOf = (line: AnsiAwareBuffer | null) =>
             line?.getSegments().find(segment => segment.state?.hyperlink)?.state?.hyperlink;
 
-        test('stays visible and links each entry to its letter', () => {
+        /** The `[przeczytaj]` button at the end of a line. */
+        const buttonOf = (line: AnsiAwareBuffer | null) => {
+            const last = line?.getSegments().at(-1);
+            return last?.text === '[przeczytaj]' ? last.state?.hyperlink : undefined;
+        };
+
+        test('stays visible and gives each entry a button for its letter', () => {
             const lines = parse(UNREAD);
-            expect(lines.map(line => line?.text)).toEqual(UNREAD.split('\n'));
+            expect(lines.map(line => line?.text)).toEqual(UNREAD.split('\n').map(text =>
+                text.includes('Temat:') ? `${text} [przeczytaj]` : text));
             expect(lists).toEqual([]);
 
-            const links = lines.map(linkOf);
-            expect(links.map(link => link?.title)).toEqual([
+            const buttons = lines.map(buttonOf);
+            expect(buttons.map(button => button?.title)).toEqual([
                 undefined, 'przeczytaj list 3', undefined, 'przeczytaj list 2', undefined, 'przeczytaj list 1', undefined,
             ]);
 
-            links[3]!.onClick!(new MouseEvent('click'));
+            buttons[3]!.onClick!(new MouseEvent('click'));
             expect(commands).toEqual(['przeczytaj list 2']);
         });
 
-        test('binds the oldest unread letter', () => {
-            parse(UNREAD);
-            expect(client.FunctionalBind.set).toHaveBeenCalledTimes(1);
-            const [label, callback, clearAfterUse] = client.FunctionalBind.set.mock.calls[0];
-            expect(label).toBe('przeczytaj list 3');
-            expect(clearAfterUse).toBe(true);
-
-            callback();
+        test('the subject opens the letter too', () => {
+            const [, entry] = parse(UNREAD);
+            linkOf(entry)!.onClick!(new MouseEvent('click'));
             expect(commands).toEqual(['przeczytaj list 3']);
         });
 
-        test('received mail gets links but no bind', () => {
+        test('received mail gets buttons as well', () => {
             const lines = parse(`Listy odebrane:
    2. *R* Temat: Pergamin.
 Nadawca: Zutzer                         Pn, 31 VIII 2026`);
-            expect(linkOf(lines[1])?.title).toBe('przeczytaj list 2');
-            expect(client.FunctionalBind.set).not.toHaveBeenCalled();
+            expect(buttonOf(lines[1])?.title).toBe('przeczytaj list 2');
         });
 
         test('an entry-like line after the index is left alone', () => {

@@ -1,6 +1,7 @@
 import Client from "../Client";
 import {matchWhen} from "@client/Triggers.ts";
 import eventBus from "@modules/core/eventBus";
+import {createColorFormat} from "@modules/core/Colors";
 
 export interface MailEntry {
     number: number;
@@ -23,6 +24,7 @@ export interface LetterContent {
 export type MailType = 'nieprzeczytane' | 'odebrane' | 'wyslane' | 'niewyslane';
 
 const tag = "poczta";
+const READ_BUTTON_COLOR = createColorFormat("#ff6347");
 
 export default function initPoczta(client: Client, aliases: { pattern: RegExp; callback: Function }[]) {
     let currentMailType: MailType | null = null;
@@ -32,11 +34,10 @@ export default function initPoczta(client: Client, aliases: { pattern: RegExp; c
     let popupRequestActive = false;
     /**
      * An index the player listed themselves (`listy`) stays in the output, and its
-     * entries become links that open the letter popup. Set from the header until the
-     * first line that is not part of the index.
+     * entries get a `[przeczytaj]` link that opens the letter popup. Set from the header
+     * until the first line that is not part of the index.
      */
     let visibleListing: MailType | null = null;
-    let unreadBindSet = false;
 
     let isReadingLetter = false;
     let currentLetter: Partial<LetterContent> | null = null;
@@ -203,7 +204,6 @@ export default function initPoczta(client: Client, aliases: { pattern: RegExp; c
     client.Triggers.registerTrigger(headerPattern, (line, matches) => {
         if (!popupRequestActive) {
             visibleListing = matches[1] as MailType;
-            unreadBindSet = false;
             return line;
         }
 
@@ -222,16 +222,14 @@ export default function initPoczta(client: Client, aliases: { pattern: RegExp; c
             if (!visibleListing) return line;
 
             const number = parseInt(matches[1], 10);
-            line.createLink([line.text.search(/\d/), line.text.length], {
+            const link = {
                 onClick: () => readLetter(number),
                 title: `przeczytaj list ${number}`,
-            });
-            // Unread mail is listed oldest first, so the bind follows reading order.
-            if (visibleListing === 'nieprzeczytane' && !unreadBindSet) {
-                unreadBindSet = true;
-                client.FunctionalBind.set(`przeczytaj list ${number}`, () => readLetter(number), true);
-            }
-            return line;
+            };
+            line.createLink([line.text.search(/\d/), line.text.length], link);
+            const buttonStart = line.text.length + 1;
+            line.suffix(" [przeczytaj]", READ_BUTTON_COLOR);
+            return line.createLink([buttonStart, line.text.length], link);
         }
 
         if (pendingEntry && pendingEntry.number !== undefined) {
