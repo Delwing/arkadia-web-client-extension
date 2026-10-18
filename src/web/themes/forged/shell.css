@@ -34,3 +34,26 @@
 body.theme-forged[data-backdrop] {
   --surface-ground: transparent;
 }
+
+/* The backdrop as forge lit it: the image a little desaturated, then the
+   room around it - a hearth glow at the foot of the screen, a few static
+   embers, the edges falling away into the dark. Over the player's shade, so
+   the slider still darkens or lightens the whole. */
+body.theme-forged[data-backdrop]::before {
+  filter: saturate(.73) contrast(1.05);
+}
+body.theme-forged[data-backdrop]::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(130% 80% at 50% 128%, rgba(158, 78, 34, .22), transparent 55%),
+    radial-gradient(120% 125% at 50% 44%, rgba(0, 0, 0, .16) 8%, rgba(0, 0, 0, .5) 55%, rgba(0, 0, 0, .82) 100%),
+    radial-gradient(1.5px 1.5px at 20% 82%, rgba(206, 116, 58, .5), transparent 60%),
+    radial-gradient(1.5px 1.5px at 68% 74%, rgba(206, 116, 58, .38), transparent 60%),
+    radial-gradient(1px 1px at 44% 90%, rgba(206, 116, 58, .3), transparent 60%),
+    radial-gradient(1px 1px at 82% 88%, rgba(206, 116, 58, .26), transparent 60%),
+    linear-gradient(rgba(0, 0, 0, .38), rgba(0, 0, 0, .38));
+  pointer-events: none;
+}

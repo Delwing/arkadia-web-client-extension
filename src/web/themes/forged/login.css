@@ -41,10 +41,9 @@ body.theme-forged #auth-overlay {
   color: var(--parchment);
   font-family: "EB Garamond", Georgia, serif;
 }
+/* Over the backdrop the page already lays that light (shell.css). */
 body.theme-forged[data-backdrop] #auth-overlay {
-  background:
-    radial-gradient(130% 80% at 50% 128%, rgba(158, 78, 34, .22), transparent 55%),
-    radial-gradient(120% 125% at 50% 44%, rgba(0, 0, 0, .16) 8%, rgba(0, 0, 0, .5) 55%, rgba(0, 0, 0, .82) 100%);
+  background: none;
 }
 
 /* ── The forge behind the glass ────────────────────────────────────────── */
