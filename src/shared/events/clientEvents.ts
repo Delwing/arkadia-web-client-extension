@@ -180,6 +180,12 @@ export type EnemyStatusPayload = {
     name: string;
 };
 
+/** One measured round trip: when it came back (epoch ms) and how long it took. */
+export interface PingSample {
+    at: number;
+    ms: number;
+}
+
 export interface KnownEvents {
     "enemy.paralyzed": EnemyStatusPayload;
     "enemy.paralyzed.end": EnemyStatusPayload;
@@ -251,6 +257,8 @@ export interface KnownEvents {
     "moveModeChanged": number;
     "carriageModeChanged": boolean;
     "ping": number | null;
+    /** The last five minutes of round trips, oldest first; re-sent with every new `ping`. */
+    "pingHistory": { samples: PingSample[] };
     "transportTimer": TransportTimerPayload | null;
     "transportRoute": TransportRoutePayload | null;
     "transportDebug": TransportDebugState | null;

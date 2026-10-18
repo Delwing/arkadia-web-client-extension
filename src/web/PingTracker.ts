@@ -1,6 +1,9 @@
 import eventBus from "@modules/core/eventBus";
+import type { PingSample } from "@shared/events/clientEvents";
 
 const PING_INTERVAL_MS = 3000;
+/** How far back the history behind the connection chip's graph reaches. */
+const PING_HISTORY_MS = 5 * 60_000;
 
 type SendPing = () => void;
 
@@ -8,6 +11,8 @@ class PingTracker {
     private timer: number | null = null;
     private lastSentAt: number | null = null;
     private lastDuration: number | null = null;
+    // Kept across reconnects: a drop shows as a gap in the graph rather than wiping it.
+    private history: PingSample[] = [];
 
     constructor(private readonly sendPingCommand: SendPing) {
         eventBus.on("gmcp.core.ping", this.handlePingResponse);
@@ -46,7 +51,10 @@ class PingTracker {
         const duration = performance.now() - this.lastSentAt;
         this.lastSentAt = null;
         this.lastDuration = duration;
+        const at = Date.now();
+        this.history = [...this.history.filter((sample) => at - sample.at <= PING_HISTORY_MS), { at, ms: duration }];
         eventBus.emit("ping", duration);
+        eventBus.emit("pingHistory", { samples: this.history });
     };
 }
 

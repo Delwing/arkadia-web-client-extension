@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import eventBus from "@modules/core/eventBus";
 import { characterStorage } from "@modules/core/storage";
 import { defaultSettings, type Settings } from "@modules/core/defaultSettings";
-import type { PackageStatus } from "@shared/events/clientEvents";
+import type { PackageStatus, PingSample } from "@shared/events/clientEvents";
 import { TRANSPORT_SOON_SECONDS } from "@client/types/transport.ts";
 import { nextSunEvents, type SunEventType } from "@client/scripts/sunModel.ts";
 import { useAttentionBlink, useClientEvent } from "../hooks";
@@ -519,6 +519,55 @@ export function CoverChip() {
   );
 }
 
+// The ping the chip turns amber at, drawn into the graph as a dashed line.
+const PING_WARN_MS = 400;
+const PING_GRAPH_SPAN_MS = 5 * 60_000;
+// Pings come every 3s; a longer silence was a disconnect, drawn as a break in the line.
+const PING_GAP_MS = 10_000;
+
+/**
+ * The last five minutes of ping for the connection tooltip: one line, broken where
+ * the connection was down, over a scale from zero to a round ceiling above the peak.
+ */
+function pingGraph(samples: PingSample[], peak: number): Node {
+  const W = 300;
+  const H = 60;
+  const top = Math.max(100, Math.ceil(peak / 50) * 50);
+  const end = samples[samples.length - 1].at;
+  const x = (at: number) => (W * (1 - (end - at) / PING_GRAPH_SPAN_MS)).toFixed(1);
+  const y = (ms: number) => (H * (1 - Math.min(ms, top) / top)).toFixed(1);
+  const runs: PingSample[][] = [];
+  samples.forEach((sample, i) => {
+    if (i === 0 || sample.at - samples[i - 1].at > PING_GAP_MS) runs.push([]);
+    runs[runs.length - 1].push(sample);
+  });
+  const ns = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(ns, "svg");
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  svg.setAttribute("preserveAspectRatio", "none");
+  const path = (className: string, d: string) => {
+    const el = document.createElementNS(ns, "path");
+    el.setAttribute("class", className);
+    el.setAttribute("d", d);
+    svg.appendChild(el);
+  };
+  if (top > PING_WARN_MS) path("chip-tip-ping__warn", `M0 ${y(PING_WARN_MS)}H${W}`);
+  for (const run of runs) {
+    const line = run.map((s, i) => `${i ? "L" : "M"}${x(s.at)} ${y(s.ms)}`).join("");
+    // A lone sample still needs a visible mark, so the line gets a sliver of length.
+    const d = run.length > 1 ? line : `${line}h1`;
+    path("chip-tip-ping__area", `${d}V${H}H${x(run[0].at)}Z`);
+    path("chip-tip-ping__line", d);
+  }
+  const graph = document.createElement("div");
+  graph.className = "chip-tip-ping";
+  const scale = document.createElement("span");
+  scale.className = "chip-tip-ping__scale";
+  scale.textContent = `${top} ms`;
+  graph.append(svg, scale);
+  return graph;
+}
+
 /**
  * Round-trip time to the game, plus how far the session proxy's clock sits from ours.
  *
@@ -531,7 +580,9 @@ export function CoverChip() {
 export function ConnectionChip() {
   const [ping, setPing] = useState<number | null>(null);
   const [offset, setOffset] = useState<number | null>(null);
+  const [history, setHistory] = useState<PingSample[]>([]);
   useClientEvent<number | null>("ping", (v) => setPing(typeof v === "number" ? v : null));
+  useClientEvent<{ samples: PingSample[] }>("pingHistory", ({ samples }) => setHistory(samples));
   useClientEvent<number>("proxy.clockOffset", (v) => setOffset(typeof v === "number" ? v : null));
   if (ping == null && offset == null) return null;
   const drift = offset == null ? null : offset / 1000;
@@ -547,19 +598,23 @@ export function ConnectionChip() {
   const parts: string[] = [];
   if (ping != null) parts.push(`${Math.round(ping)}ms`);
   if (drift != null) parts.push(`${drift >= 0 ? "+" : ""}${drift.toFixed(1)}s`);
+  const rows: TooltipPart[] = [];
+  if (ping != null) rows.push({ label: "Ping", content: `${Math.round(ping)} ms` });
+  if (ping != null && history.length > 0) {
+    const values = history.map((s) => s.ms);
+    const peak = Math.max(...values);
+    const mean = values.reduce((sum, v) => sum + v, 0) / values.length;
+    rows.push(pingGraph(history, peak));
+    rows.push({ label: "5 min", content: `min ${Math.round(Math.min(...values))} · śr. ${Math.round(mean)} · maks. ${Math.round(peak)} ms` });
+  }
+  if (drift != null) rows.push({ label: "Zegar proxy", content: `${drift >= 0 ? "+" : ""}${drift.toFixed(1)} s względem tego komputera` });
   return (
     <Chip
       icon={<ChipIcon name="signal" />}
       label=""
       value={parts.join(" ")}
       tone={tone}
-      tip={{
-        header: "Połączenie",
-        rows: [
-          ...(ping != null ? [{ label: "Ping", content: `${Math.round(ping)} ms` }] : []),
-          ...(drift != null ? [{ label: "Zegar proxy", content: `${drift >= 0 ? "+" : ""}${drift.toFixed(1)} s względem tego komputera` }] : []),
-        ],
-      }}
+      tip={{ header: "Połączenie", rows }}
     />
   );
 }
