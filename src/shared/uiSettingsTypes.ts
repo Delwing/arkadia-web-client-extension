@@ -21,6 +21,8 @@ export type MapHighlightShape = 'match' | 'rectangle' | 'roundedRectangle' | 'ci
 
 export type PathFindingAlgorithm = 'dijkstra' | 'astar';
 
+export type OutputBackgroundImage = 'theme' | 'none' | 'uploaded';
+
 export type ColorTheme = 'default' | 'fantasy' | 'forest' | 'icy' | 'gray' | 'dark-neutral' | 'light-parchment' | 'light-silver' | 'forged' | 'custom-dark';
 
 export interface FooterComponentConfig {
@@ -70,6 +72,10 @@ export interface RenderSettings {
     colorTheme: ColorTheme;
     customThemeColor?: string;
     outputBackground: string;
+    /** Image under the output: the theme's (Kuźnia's stone), none, or one uploaded on this device (not synced). */
+    outputBackgroundImage: OutputBackgroundImage;
+    /** How dark the image is shaded, 0-90 (%), so the text stays legible. */
+    outputBackgroundShade: number;
     outputBottomPadding: number;
     showTimestamps: boolean;
     /** Set apart whole reply blocks (inventory, loot, descriptions, …). */

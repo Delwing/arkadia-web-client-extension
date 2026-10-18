@@ -4,9 +4,10 @@ import { guessFontFamilyFromStylesheet, guessFontFamilyFromUrl } from "../../uiS
 import { computeAccentHex, generateRandomColor } from "../../themes/randomTheme";
 import { defaultUiSettings } from "../../defaultUiSettings";
 import { Button, Field, Input, Select } from "@web-ui/primitives/index.ts";
-import { CheckboxRow, ColorField, NumberField, SelectField, SettingsSection } from "../fields";
+import { CheckboxRow, ColorField, NumberField, RangeField, SelectField, SettingsSection } from "../fields";
 import PalettePreviewDialog from "../PalettePreviewDialog";
 import { SystemFontField, UploadedFontField } from "../FontSourceFields";
+import { UploadedOutputImageField } from "../OutputImageField";
 
 interface AppearanceSectionProps {
     draft: UiSettings;
@@ -109,6 +110,21 @@ function AppearanceSection({ draft, update, commitCustomDark }: AppearanceSectio
             <NumberField id="ui-content-font" label="Rozmiar czcionki treści (rem)" value={draft.contentFontSize} step={0.1} onChange={(n) => update({ contentFontSize: n })} />
             <NumberField id="ui-objects-font" label="Rozmiar czcionki listy obiektów (rem)" value={draft.objectsFontSize} step={0.1} onChange={(n) => update({ objectsFontSize: n })} />
             <ColorField id="ui-output-background" label="Kolor tła okna głównego" value={draft.outputBackground} onChange={(v) => update({ outputBackground: v })} onReset={() => update({ outputBackground: defaultUiSettings.outputBackground })} />
+            <SelectField
+                id="ui-output-image"
+                label="Obraz tła okna głównego"
+                hint="Z motywu: kamień w Kuźni, w innych motywach sam kolor."
+                value={draft.outputBackgroundImage}
+                onChange={(v) => update({ outputBackgroundImage: v as UiSettings['outputBackgroundImage'] })}
+            >
+                <option value="theme">Z motywu</option>
+                <option value="none">Brak</option>
+                <option value="uploaded">Własny</option>
+            </SelectField>
+            {draft.outputBackgroundImage === 'uploaded' && <UploadedOutputImageField />}
+            {draft.outputBackgroundImage !== 'none' && (
+                <RangeField id="ui-output-image-shade" label="Przyciemnienie obrazu (%)" value={draft.outputBackgroundShade} min={0} max={90} step={5} onChange={(n) => update({ outputBackgroundShade: n })} />
+            )}
             <CheckboxRow id="ui-highlight-message-blocks" label="Wyróżniaj bloki wiadomości" checked={draft.highlightMessageBlocks} onChange={(v) => update({ highlightMessageBlocks: v })} />
             <Field label="Paleta kolorów" htmlFor="ui-xterm-palette">
                 <div className="popup-inline">

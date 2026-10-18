@@ -1,5 +1,6 @@
 import {ensureFontLoaded, isUiFontSelection, resolveOutputFontFamily, selectedFontName} from "./fontLoader";
 import {setUploadedFontActive} from "./fonts/uploadedFont";
+import {applyOutputBackgroundImage} from "./outputBackgroundImage";
 import type { SoundCategory } from '@shared/events/clientEvents.ts';
 import type { SoundCategories } from './defaultUiSettings';
 import {
@@ -10,6 +11,7 @@ import {
     type FooterComponentConfig,
     type MapHighlightShape,
     type MapRoomShape,
+    type OutputBackgroundImage,
     type PathFindingAlgorithm,
     type UiSettings
 } from "./defaultUiSettings";
@@ -311,6 +313,7 @@ export function apply(settings: UiSettings) {
         content.style.fontSize = settings.contentFontSize + 'rem';
         content.style.backgroundColor = settings.outputBackground;
         document.body.style.setProperty('--output-bg', settings.outputBackground);
+        applyOutputBackgroundImage(content, settings.outputBackgroundImage, settings.outputBackgroundShade);
         content.style.paddingBottom = settings.outputBottomPadding > 0 ? settings.outputBottomPadding + 'px' : '';
     }
     if (document.body) {
@@ -472,6 +475,12 @@ export function load(): UiSettings {
                 && /^#[0-9a-f]{6}$/i.test(parsed.outputBackground.trim())
                     ? parsed.outputBackground.trim()
                     : defaultUiSettings.outputBackground;
+            const outputBackgroundImage = (['theme', 'none', 'uploaded'].includes(parsed.outputBackgroundImage))
+                ? parsed.outputBackgroundImage as OutputBackgroundImage
+                : defaultUiSettings.outputBackgroundImage;
+            const outputBackgroundShade = typeof parsed.outputBackgroundShade === 'number'
+                ? Math.min(90, Math.max(0, Math.round(parsed.outputBackgroundShade)))
+                : defaultUiSettings.outputBackgroundShade;
             const fontFamily = isUiFontSelection(parsed.fontFamily)
                 ? parsed.fontFamily
                 : defaultUiSettings.fontFamily;
@@ -656,6 +665,8 @@ export function load(): UiSettings {
                 transparentLabels,
                 labelRenderMode: effectiveLabelRenderMode,
                 outputBackground,
+                outputBackgroundImage,
+                outputBackgroundShade,
                 clearInputOnSend,
                 fontFamily,
                 customFontUrl: normalizedCustomFontUrl,

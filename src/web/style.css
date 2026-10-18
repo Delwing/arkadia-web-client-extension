@@ -614,6 +614,17 @@ html body.layout-manager-enabled.layout-rails-vertical #input-area { margin-top:
   background-color: var(--popup-bg);
 }
 
+/* The image under the output (outputBackgroundImage.ts), shaded so the text
+   stays legible. It stays put while the log scrolls over it. */
+#main_text_output_msg_wrapper[data-output-image] {
+  background-image:
+    linear-gradient(rgb(0 0 0 / var(--output-image-shade, 0.6)), rgb(0 0 0 / var(--output-image-shade, 0.6))),
+    var(--output-image);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
 /* Stock Logi dialog: as wide as the screen allows and full height (the fill
    and phone-full frame modifiers). The window has no header of the shell —
    the viewer's own header is the header, and it carries the close control

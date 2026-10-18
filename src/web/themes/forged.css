@@ -14,6 +14,8 @@
   --theme-data-shift: 30%;
   --theme-input: #1c1a17;
   --theme-footer: #0f0d0b;
+  /* Under the output, unless the player picks another (outputBackgroundImage.ts). */
+  --theme-output-image: url("./forged/stone.jpg");
 
   --void:      #0a0908;
   --void-2:    #12100d;
