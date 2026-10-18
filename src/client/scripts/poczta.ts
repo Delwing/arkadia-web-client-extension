@@ -30,6 +30,13 @@ export default function initPoczta(client: Client, aliases: { pattern: RegExp; c
     let pendingEntry: Partial<MailEntry> | null = null;
     let isCapturing = false;
     let popupRequestActive = false;
+    /**
+     * An index the player listed themselves (`listy`) stays in the output, and its
+     * entries become links that open the letter popup. Set from the header until the
+     * first line that is not part of the index.
+     */
+    let visibleListing: MailType | null = null;
+    let unreadBindSet = false;
 
     let isReadingLetter = false;
     let currentLetter: Partial<LetterContent> | null = null;
@@ -194,7 +201,11 @@ export default function initPoczta(client: Client, aliases: { pattern: RegExp; c
     };
 
     client.Triggers.registerTrigger(headerPattern, (line, matches) => {
-        if (!popupRequestActive) return line;
+        if (!popupRequestActive) {
+            visibleListing = matches[1] as MailType;
+            unreadBindSet = false;
+            return line;
+        }
 
         currentMailType = matches[1] as MailType;
         currentMails = [];
@@ -204,8 +215,24 @@ export default function initPoczta(client: Client, aliases: { pattern: RegExp; c
         return null;
     }, tag);
 
+    const readLetter = (number: number) => eventBus.emit("poczta.read", { number });
+
     client.Triggers.registerTrigger(entryPattern, (line, matches) => {
-        if (!isCapturing) return line;
+        if (!isCapturing) {
+            if (!visibleListing) return line;
+
+            const number = parseInt(matches[1], 10);
+            line.createLink([line.text.search(/\d/), line.text.length], {
+                onClick: () => readLetter(number),
+                title: `przeczytaj list ${number}`,
+            });
+            // Unread mail is listed oldest first, so the bind follows reading order.
+            if (visibleListing === 'nieprzeczytane' && !unreadBindSet) {
+                unreadBindSet = true;
+                client.FunctionalBind.set(`przeczytaj list ${number}`, () => readLetter(number), true);
+            }
+            return line;
+        }
 
         if (pendingEntry && pendingEntry.number !== undefined) {
             if (!pendingEntry.sender) {
@@ -265,6 +292,15 @@ export default function initPoczta(client: Client, aliases: { pattern: RegExp; c
      * the wrapped tail of a long recipient list, which stays indented) or the start of
      * whatever the game said next.
      */
+    /** Ends a visible index on the same rule as a captured one; its own lines pass by. */
+    client.Triggers.registerTrigger(matchWhen(() => visibleListing !== null && !isCapturing), (line) => {
+        const text = line.text;
+        const partOfIndex = text.trim() === '' || /^\s/.test(text) || headerPattern.test(text)
+            || entryPattern.test(text) || senderPattern.test(text) || recipientPattern.test(text);
+        if (!partOfIndex) visibleListing = null;
+        return line;
+    }, tag);
+
     client.Triggers.registerTrigger(matchWhen(() => isCapturing), (line) => {
         if (line.text.trim() === '' || /^\s/.test(line.text)) {
             // Padding or the wrapped tail of the entry being read: hide it along with

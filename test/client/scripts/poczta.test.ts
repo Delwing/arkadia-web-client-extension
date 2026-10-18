@@ -36,7 +36,7 @@ Data : Pn, 31 VIII 2026, 19:36:55
 [1-50 adefFhHmnqrsRux.!?-+<>] (aktualny: 2) -- `;
 
 describe('poczta', () => {
-    let client: { Triggers: Triggers };
+    let client: { Triggers: Triggers; FunctionalBind: { set: jest.Mock } };
     let lists: { type: MailType; mails: MailEntry[] }[];
     let letters: LetterContent[];
     let commands: string[];
@@ -49,7 +49,7 @@ describe('poczta', () => {
         // several times over. The real client only ever registers its scripts once.
         eventBus.clear('poczta.fetch');
         eventBus.clear('poczta.read');
-        client = { Triggers: new Triggers({} as never) };
+        client = { Triggers: new Triggers({} as never), FunctionalBind: { set: jest.fn() } };
         // main.ts registers the pager's auto-ENTER before poczta, so poczta never sees the pager line.
         client.Triggers.registerTrigger('ENTER by przejsc dalej', () => {
             eventBus.emit('sendCommand', { command: '' });
@@ -279,6 +279,62 @@ ${page1.join('\n')}
             expect(feed('Nie ma takiego listu.')).toEqual(['Nie ma takiego listu.']);
             expect(feed('Rozgladasz sie po polanie.')).toEqual(['Rozgladasz sie po polanie.']);
             expect(letters).toEqual([]);
+        });
+    });
+
+    describe('index listed by the player', () => {
+        const UNREAD = `Listy nieprzeczytane:
+ 3. Temat: wyprawa
+Nadawca: Borwin                         Pt, 16 X 2026, 09:12:40
+ 2. Temat: Zbroja
+Nadawca: Lindra                         Pt, 16 X 2026, 18:03:11
+ 1. Temat: spotkanie
+Nadawca: Lindra                          S, 17 X 2026, 20:45:02`;
+
+        const parse = (block: string) => block
+            .split('\n')
+            .map(text => client.Triggers.parseLine(new AnsiAwareBuffer(text), ''));
+        const linkOf = (line: AnsiAwareBuffer | null) =>
+            line?.getSegments().find(segment => segment.state?.hyperlink)?.state?.hyperlink;
+
+        test('stays visible and links each entry to its letter', () => {
+            const lines = parse(UNREAD);
+            expect(lines.map(line => line?.text)).toEqual(UNREAD.split('\n'));
+            expect(lists).toEqual([]);
+
+            const links = lines.map(linkOf);
+            expect(links.map(link => link?.title)).toEqual([
+                undefined, 'przeczytaj list 3', undefined, 'przeczytaj list 2', undefined, 'przeczytaj list 1', undefined,
+            ]);
+
+            links[3]!.onClick!(new MouseEvent('click'));
+            expect(commands).toEqual(['przeczytaj list 2']);
+        });
+
+        test('binds the oldest unread letter', () => {
+            parse(UNREAD);
+            expect(client.FunctionalBind.set).toHaveBeenCalledTimes(1);
+            const [label, callback, clearAfterUse] = client.FunctionalBind.set.mock.calls[0];
+            expect(label).toBe('przeczytaj list 3');
+            expect(clearAfterUse).toBe(true);
+
+            callback();
+            expect(commands).toEqual(['przeczytaj list 3']);
+        });
+
+        test('received mail gets links but no bind', () => {
+            const lines = parse(`Listy odebrane:
+   2. *R* Temat: Pergamin.
+Nadawca: Zutzer                         Pn, 31 VIII 2026`);
+            expect(linkOf(lines[1])?.title).toBe('przeczytaj list 2');
+            expect(client.FunctionalBind.set).not.toHaveBeenCalled();
+        });
+
+        test('an entry-like line after the index is left alone', () => {
+            parse(UNREAD);
+            const [after, numbered] = parse('Rozgladasz sie po polanie.\n 1. Temat: cos');
+            expect(linkOf(after)).toBeUndefined();
+            expect(linkOf(numbered)).toBeUndefined();
         });
     });
 });
