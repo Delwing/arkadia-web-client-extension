@@ -246,6 +246,13 @@ describe('automationModel', () => {
                 data: { type: 'event', event: 'gmcp.char.state', conditions: [{ arg: 'hp', op: 'lte', value: '2' }], macros: [] },
             })).toBe('gdy hp <= 2 brak akcji');
         });
+
+        it('says what starts a script, and only "nieużywany" when nothing does', () => {
+            const script = (data: object) => itemSummary({ kind: 'script', id: 's', data: { name: 'x', code: '', ...data } });
+            expect(script({})).toBe('nieużywany');
+            expect(script({ onLogin: true })).toBe('przy zalogowaniu');
+            expect(script({ command: 'start', onLogin: true })).toBe('/start · przy zalogowaniu');
+        });
     });
 
     describe('packs', () => {

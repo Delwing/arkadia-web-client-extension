@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { Play } from "lucide-react";
-import { Button, Input, InputGroup, NO_PASSWORD_MANAGER } from "@web-ui/primitives/index.ts";
+import { Button, Check, Input, InputGroup, NO_PASSWORD_MANAGER } from "@web-ui/primitives/index.ts";
 import eventBus from "@modules/core/eventBus";
 import { clearScriptLog, getScriptLog, onScriptLog, type ScriptLogEntry } from "@modules/core/scriptConsole";
 import type { UserScript } from "@client/scripts/userScripts";
@@ -130,8 +130,13 @@ export function ScriptEditor({ id, script, users, onChange, onSelect, onSave }: 
 
     return (
         <>
-            <Section step={1} title="Kiedy uruchamiany przez">
+            <Section step={1} title="Uruchamiany przez">
                 <div className="automation-users">
+                    <Check
+                        label="Zalogowanie postaci"
+                        checked={!!script.onLogin}
+                        onChange={e => onChange({ ...script, onLogin: e.target.checked || undefined })}
+                    />
                     {users.map(u => {
                         const title = itemTitle(u);
                         return (
@@ -154,6 +159,7 @@ export function ScriptEditor({ id, script, users, onChange, onSelect, onSave }: 
                 <p className="automation-hint">
                     Dodajesz go jako akcję „Uruchom skrypt” w dowolnym aliasie lub triggerze. Z komendą uruchomisz go też sam,
                     np. <code>/{script.command?.trim() || "leczenie"} goblin</code> — słowa po komendzie trafiają do <code>args</code>.
+                    Z „Zalogowaniem postaci” rusza raz po każdym wejściu do gry postacią, dla której jest włączony.
                 </p>
             </Section>
 

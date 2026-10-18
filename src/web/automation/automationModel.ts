@@ -486,8 +486,12 @@ export function itemSummary(
 ): string {
     if (item.kind === "script") {
         const users = scriptUsers(item.id, items).length;
-        const used = users ? `używany przez ${users} ${users === 1 ? "element" : users < 5 ? "elementy" : "elementów"}` : "nieużywany";
-        return item.data.command ? `/${item.data.command} \u00b7 ${used}` : used;
+        const parts = [
+            item.data.command ? `/${item.data.command}` : "",
+            item.data.onLogin ? "przy zalogowaniu" : "",
+            users ? `używany przez ${users} ${users === 1 ? "element" : users < 5 ? "elementy" : "elementów"}` : "",
+        ].filter(Boolean);
+        return parts.length ? parts.join(" · ") : "nieużywany";
     }
     const actions = itemActions(item).map(m => actionShort(m, pluginLabel));
     let does = actions.length ? `→ ${actions.join(item.kind === "alias" ? " ; " : ", ")}` : "brak akcji";

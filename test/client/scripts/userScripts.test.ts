@@ -91,6 +91,26 @@ describe('userScripts', () => {
         expect(client.aliases.some(a => a.pattern.test('/leczeniex'))).toBe(false);
     });
 
+    it('runs login scripts once per login, for the characters they apply to', async () => {
+        const client = new FakeClient();
+        initUserScripts(client as never, client.aliases);
+        setScripts([
+            { id: 's1', name: 'start', onLogin: true, code: "ctx.log(ctx.source)" },
+            { id: 's2', name: 'inny', onLogin: true, characters: ['Borin'], code: "ctx.log('borin')" },
+        ]);
+        const on = (event: string) => client.on.mock.calls.find(([name]) => name === event)![1];
+
+        on('gmcp.char.info')({ name: 'Arel' });
+        on('gmcp.char.info')({ name: 'Arel' });
+        await vi.waitFor(() => expect(log('s1')).toEqual(['run: uruchomiony przez zalogowanie', 'log: login']));
+        expect(log('s2')).toEqual([]);
+
+        on('client.connect')();
+        on('gmcp.char.info')({ name: 'Borin' });
+        await vi.waitFor(() => expect(log('s2').at(-1)).toBe('log: borin'));
+        expect(log('s1').filter(l => l === 'log: login')).toHaveLength(2);
+    });
+
     it('drops the compiled code and registrations of a changed script', async () => {
         const client = new FakeClient();
         initUserScripts(client as never, client.aliases);

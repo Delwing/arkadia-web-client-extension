@@ -22,7 +22,7 @@ declare global {
     const args: string[];
     /** Skad przyszlo uruchomienie. */
     const ctx: {
-        source: "alias" | "trigger" | "event" | "command" | "manual";
+        source: "alias" | "trigger" | "event" | "command" | "login" | "manual";
         /** Wzorzec, zdarzenie albo komenda, ktore go uruchomily. */
         label?: string;
         /** Linia z gry, dla triggera. */

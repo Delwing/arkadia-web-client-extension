@@ -2,14 +2,14 @@ import Client from "../Client";
 import { PluginApiImpl } from "../PluginApi";
 import eventBus from "@modules/core/eventBus";
 import { globalStorage } from "@modules/core/storage";
-import { isAutomationActiveNow, onAutomationScopeChange, type AutomationMeta } from "@modules/core/automation";
+import { getAutomationGroups, isAutomationActive, isAutomationActiveNow, onAutomationScopeChange, type AutomationMeta } from "@modules/core/automation";
 import { appendScriptLog } from "@modules/core/scriptConsole";
 import { SCRIPT_API_NAMES } from "./scriptScope";
 
 /**
  * A script in Skrypty: JavaScript that runs when an alias, trigger or
- * event calls it ("Uruchom skrypt"), when its own command is typed, or from
- * the editor.
+ * event calls it ("Uruchom skrypt"), when its own command is typed, when a
+ * character logs in (`onLogin`), or from the editor.
  *
  * The player writes only the body; it runs as an async function with these
  * in scope (see `toModuleSource`):
@@ -35,9 +35,11 @@ export interface UserScript extends AutomationMeta {
     code: string;
     /** Typed as `/command args` it runs the script. */
     command?: string;
+    /** Runs once each time a character it applies to logs in. */
+    onLogin?: boolean;
 }
 
-export type ScriptSource = "alias" | "trigger" | "event" | "command" | "manual";
+export type ScriptSource = "alias" | "trigger" | "event" | "command" | "login" | "manual";
 
 export interface ScriptContext {
     source: ScriptSource;
@@ -295,6 +297,23 @@ export default function initUserScripts(client: Client, aliases?: { pattern: Reg
     apply();
     globalStorage.onChange(SCRIPTS_KEY, apply);
     onAutomationScopeChange(apply);
+
+    // Char.Info opens every game session; the first one after a connection (or
+    // the page load) is a login, a later one re-announces the same character.
+    let loggedIn = false;
+    client.on("client.connect", () => { loggedIn = false; });
+    client.on("gmcp.char.info", info => {
+        const name = info?.name;
+        if (!name || loggedIn) return;
+        loggedIn = true;
+        // Judged here against the name itself (and forced past runUserScript's own
+        // check): whether storage has switched to it yet depends on which
+        // Char.Info listener ran first.
+        const groups = getAutomationGroups();
+        getUserScripts()
+            .filter(s => s.id && s.onLogin && isAutomationActive(s, groups, name))
+            .forEach(s => void runUserScript(client, s.id!, [], { source: "login", label: "zalogowanie", force: true }));
+    });
 
     eventBus.on("automation.runScript", ({ id, code }) => {
         void runUserScript(client, id, [], { source: "manual", label: "edytor", code, force: true });
