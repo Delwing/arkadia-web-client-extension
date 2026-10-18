@@ -192,4 +192,40 @@ test.describe('Mobile button settings migration (macro → macroType)', () => {
             { message: 'migrated button should halt the carriage', timeout: 5000 }
         ).toEqual(expect.arrayContaining(['zatrzymaj woz']));
     });
+
+    test('three v1 layouts are stored as v2, with only the differences per mode and a backup', async ({ page }) => {
+        await page.addInitScript(() => {
+            const layout = (label: string) => ({
+                buttons: {
+                    'button-1': { macroType: 'command', label, color: '#6EB4DC', fontColor: '#f1f5f9', command: 'ekwipunek' },
+                },
+                order: ['button-1'],
+                cols: 1,
+                background: 'rgba(135, 206, 235, 0.7)',
+            });
+            localStorage.setItem('mobileButtonSettings', JSON.stringify({
+                solo: layout('Solo'),
+                team: layout('Druzyna'),
+                leader: layout('Druzyna'),
+                locked: true,
+                radial: { enabled: true, commands: [] },
+            }));
+        });
+
+        await page.goto('/');
+        await waitForCommandInput(page);
+
+        await expect(page.locator('#button-1')).toHaveText('Solo');
+
+        const stored = await page.evaluate(() => ({
+            settings: JSON.parse(localStorage.getItem('mobileButtonSettings')!),
+            backup: JSON.parse(localStorage.getItem('mobileButtonSettingsV1Backup')!),
+        }));
+        expect(stored.settings.version).toBe(2);
+        expect(stored.settings.modes.team.buttons['button-1'].label).toBe('Druzyna');
+        expect(stored.settings.modes.leader.buttons).toEqual({});
+        // The v1 mirror, for clients that haven't updated yet.
+        expect(stored.settings.leader.buttons['button-1'].label).toBe('Druzyna');
+        expect(stored.backup.team.buttons['button-1'].label).toBe('Druzyna');
+    });
 });

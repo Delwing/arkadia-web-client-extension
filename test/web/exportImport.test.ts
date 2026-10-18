@@ -810,6 +810,24 @@ describe('exportCategory and importCategory', () => {
             expect(merged.count).toBe(5);
         });
 
+        it('lets a v1 import replace stored v2 layouts instead of being shadowed by them', async () => {
+            localStorage.setItem('mobileButtonSettings', JSON.stringify({
+                version: 2, modes: { solo: {} }, styles: {}, styleOrder: [], radial: { slots: [1] },
+            }));
+
+            const importData = JSON.stringify({
+                mobileButtonSettings: JSON.stringify({ solo: { buttons: {} }, team: { buttons: {} }, leader: { buttons: {} } }),
+            });
+            const result = await importCategory('buttons', importData);
+            expect(result.success).toBe(true);
+
+            const merged = JSON.parse(localStorage.getItem('mobileButtonSettings')!);
+            expect(merged).not.toHaveProperty('version');
+            expect(merged).not.toHaveProperty('modes');
+            expect(merged).toHaveProperty('solo');
+            expect(merged.radial).toEqual({ slots: [1] });
+        });
+
         it('should return null when neither mobile nor desktop settings are stored', async () => {
             const exported = await exportCategory('buttons', []);
             expect(exported).toBeNull();

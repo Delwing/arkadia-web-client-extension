@@ -1,6 +1,6 @@
 # Mobile buttons v2: data model and migration
 
-Status: spec, nothing implemented yet.
+Status: phase 1 (model, migration, mirror) implemented; editor not yet.
 Mockup (phone + desktop, interactive): https://claude.ai/artifact/D347XfT8c7wyVKZx5i8wYH
 
 ## Why
@@ -226,14 +226,17 @@ Properties the tests must pin:
 - **On read** (`loadSettings`): no `version: 2` → migrate in memory. This is
   the self-heal path for v1 data arriving later from sync, a device bundle or
   an old backup.
-- **Startup pass**: migration entry `12` ("Mobile buttons v2, handled by
-  migrateMobileButtonsV2") in `settingsMigrations.ts`, called from
-  `clientBootstrap` next to `migrateMobileButtonMacroField`; persists the
-  result once. Before overwriting, it stores the raw v1 string under
-  `mobileButtonSettingsV1Backup` (global, **not** synced, added to
-  `storageSchema`) so a bad conversion can be rolled back by hand.
-- **Import** (`migrateImportedValue('mobileButtonSettings', raw)`): migrate
-  v1 → v2 there too.
+- **Startup pass**: `migrateMobileButtonsToV2()` in `mobileButtonSettings.ts`,
+  called from `clientBootstrap` right after the v1 field renames it relies
+  on. It is idempotent (skips v2 data), so it is not gated by the
+  migrations version counter. Before the first write it copies the raw v1
+  value to the plain localStorage key `mobileButtonSettingsV1Backup` (not a
+  schema key, so never synced or exported), once, so a bad conversion can be
+  rolled back by hand.
+- **Import** (`migrateImportedValue`) does **not** convert: it lives in
+  `@modules/core` and the model lives in `@web`. Imported v1 values are
+  converted by the read path the moment anything loads them, and persisted
+  on the next save or startup.
 - **`buttons` category import** (`exportUtils.ts`): it currently shallow-merges
   `{ ...existing, ...incoming }`. With v2 existing + v1 incoming that would
   keep `version: 2`/`modes` from existing and silently ignore the incoming
@@ -261,6 +264,15 @@ buttons with colours). Effects:
   v2-only structure (style names, which buttons were overrides) is
   re-derived, which the lossless property makes visually identical.
 - v2 readers ignore the mirror whenever `version === 2`.
+
+In memory the views are always there: `Settings` extends the v1 shape, so
+the renderer, the radial menu and the current editor keep reading
+`settings.solo/team/leader` unchanged. `saveSettings` compares the views
+with `resolveMode(modes)`; if a caller edited a view (the current editor, a
+v1 object from a device bundle) it re-derives `modes` from the views with
+`modesFromLayouts(views, existingStyles)`, which reuses a style's id and name
+where its colours still match and drops styles nothing uses any more.
+Colours are stored lower-cased and without whitespace.
 
 Remove the mirror (and the v1 branch of `computeButtonVisual`) once telemetry
 or a few months make stale clients unlikely; keep `migrateV1` itself
@@ -313,10 +325,9 @@ breakpoint:
 | `src/ui/web/buttons/MobileDirectionButtons.tsx` | `activeSet` via `resolveMode`; drop `syncWithDirections` branch |
 | `src/ui/web/buttons/MobileCommandRadial.tsx`, `MobileJoysticks.tsx` | type only (radial/joysticks unchanged) |
 | `src/web/options/MobileButtons.tsx`, `ButtonGrid.tsx` | rewritten editor |
-| `src/modules/core/settingsMigrations.ts` | entry 12, `migrateMobileButtonsV2`, `migrateImportedValue` branch |
-| `src/web/clientBootstrap.ts` | call the startup migration |
+| `src/web/clientBootstrap.ts` | call `migrateMobileButtonsToV2` |
 | `src/web/options/exportUtils.ts` | `buttons` category merge fix |
-| `src/modules/core/storageSchema.ts` | `mobileButtonSettings` type → v2, add `mobileButtonSettingsV1Backup` |
+| `src/modules/core/storageSchema.ts` | none: `Settings` is now the v2 type |
 | `src/modules/device/*` | type only |
 
 ## Tests
@@ -336,8 +347,8 @@ Unit (`test/web/mobileButtons/`):
   add/remove at each side keeps ids and deletes only local empties, swap,
   placeHidden with and without a free slot, assignStyle counts, deleteStyle
   reassignment, last style undeletable, `newStyleForButton`.
-- `test/client/settingsMigrations.test.ts`: entry 12 + backup key;
-  `migrateImportedValue` for v1 and v2.
+- `test/web/mobileButtonSettings.test.ts`: read-time migration, startup pass
+  and backup, save keeping vs re-deriving modes, v1 objects, broken v2.
 - `test/web/exportImport.test.ts`: `buttons` import of v1 into a v2 store.
 
 E2E:

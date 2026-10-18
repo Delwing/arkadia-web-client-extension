@@ -21,6 +21,7 @@ import {
     migrateZerknijButtonMacro,
     runAllSettingsMigrations,
 } from "@modules/core/settingsMigrations";
+import { migrateMobileButtonsToV2 } from "./mobileButtonSettings";
 import { bridgeSendCommand, bridgeNpcStore } from "./clientBootstrapBridges";
 import { registerEnemyStatusFilter } from "./filters/enemyStatusFilter";
 import { installAltCodeGuard } from "@shared/dom/altCodeGuard.ts";
@@ -55,6 +56,8 @@ export function bootstrapGameClient(opts: { installPorts: () => void }): GameCli
     // bumps the version counter past this migration's gate.
     migrateUiSettingsSplit();
     migrateZerknijButtonMacro();
+    // After the v1 field renames above, which it relies on.
+    migrateMobileButtonsToV2();
     migrateCoverMarkersOn();
     migrateCharacterPlaqueOff();
     runAllSettingsMigrations();

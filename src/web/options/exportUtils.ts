@@ -901,6 +901,12 @@ export async function importCategory(
                     }
                     try {
                         const incoming = JSON.parse(data.mobileButtonSettings);
+                        if (incoming?.version !== 2) {
+                            // A v1 export: drop the local v2 data, or it would win over the
+                            // incoming layouts and the import would silently do nothing.
+                            const { version: _version, modes: _modes, styles: _styles, styleOrder: _styleOrder, ...rest } = merged;
+                            merged = rest;
+                        }
                         merged = { ...merged, ...incoming };
                     } catch {
                         // Invalid incoming data

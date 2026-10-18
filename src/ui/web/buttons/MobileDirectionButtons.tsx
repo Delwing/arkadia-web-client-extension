@@ -8,6 +8,7 @@ import eventBus from '@modules/core/eventBus';
 import { getButtonMacroDisplayInfo, isStatefulMacro } from '@modules/core/pluginButtonMacroRegistry';
 import {
     loadSettings as loadMobileButtonSettings,
+    parseSettings as parseMobileButtonSettings,
     computeBoxShadow,
     defaultButtonSize,
     defaultButtonGap,
@@ -235,8 +236,9 @@ export default function MobileDirectionButtons({ client, messageInputId = 'messa
         hapticEnabledRef.current = shell.hapticFeedback !== false;
     }), []);
 
+    // Re-parse rather than use the raw value: it may be v1 from a peer that hasn't migrated.
     useEffect(() => globalStorage.onChange('mobileButtonSettings', (next) => {
-        if (next) setSettings(next);
+        if (next) setSettings(parseMobileButtonSettings(next));
     }), []);
 
     useEffect(() => globalStorage.onChange('uiSettings', (next) => {
