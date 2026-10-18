@@ -224,13 +224,16 @@
                 <div id="connecting-spinner"><span class="auth-spinner"></span>Łączenie…</div>
                 <div id="system-login-message"></div>
                 <form id="login-form">
+                    <!-- .auth-rule and .auth-prompt draw the Kuźnia theme's ruled fields; elsewhere they are not there. -->
                     <label class="auth-field"><span class="auth-label">Postać albo e-mail konta</span>
-                        <input id="login-character" class="auth-input" type="text" autocomplete="username" spellcheck="false" autofocus></label>
+                        <span class="auth-rule"><span class="auth-prompt">&gt;</span>
+                        <input id="login-character" class="auth-input" type="text" autocomplete="username" spellcheck="false" autofocus></span></label>
                     <label class="auth-field"><span class="auth-label">Hasło</span>
+                        <span class="auth-rule"><span class="auth-prompt">&gt;</span>
                         <span class="auth-pass">
                             <input id="login-password" type="password" autocomplete="current-password">
                             <button id="login-password-toggle" type="button" class="auth-ib" title="Pokaż hasło"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>
-                        </span></label>
+                        </span></span></label>
                     <button id="login-submit" class="auth-btn auth-btn--solid auth-btn--lg" type="submit">Zaloguj</button>
                 </form>
                 <div id="create-account-row"><span class="auth-dim">Nie masz konta?</span><button id="create-account-link" type="button" class="auth-btn auth-btn--link">Załóż konto</button></div>
@@ -241,6 +244,8 @@
                     <span>Połącz bez logowania</span><span class="auth-muted">nowa postać albo logowanie w grze</span>
                 </button>
             </div>
+            <!-- Kuźnia folds the connection under a named hairline (loginFire.ts); elsewhere it is not there. -->
+            <button id="auth-conn-fold" type="button" class="auth-fold"><span class="auth-fold__name">Połączenie<svg class="auth-fold__chev" viewBox="0 0 10 6"><path d="M1 1.2 5 4.8 9 1.2"/></svg></span></button>
             <div id="proxy-controls-root" class="auth-conn"></div>
         </section>
         <div class="auth-meta">

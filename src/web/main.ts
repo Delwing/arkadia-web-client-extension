@@ -13,6 +13,7 @@ import './themes/forged/windows.css'
 import './themes/forged/buttons.css'
 import './themes/forged/footer.css'
 import './themes/forged/output.css'
+import './themes/forged/login.css'
 import mudClient from "./MudClient.ts";
 import {
     DEFAULT_SESSION_PROXY_URL,
@@ -72,6 +73,7 @@ import {applyDefaultLayoutMode, LayoutManagerWrapper, setRailSpanSupported} from
 import {globalStorage} from "@modules/core/storage"
 import {setOutputTimestampVisibility, setupOutputMessageHandler} from "@shared/dom/outputMessageHandler";
 import {createCharPlaqueFeed} from "@shared/dom/charPlaque";
+import {setupLoginFire} from "./loginFire";
 import {isLikelyTouchDevice, isMobileLikeViewport, isTouchPointerType} from "@shared/dom/pointerEnvironment.ts";
 import CommandLine from "./commandInput/CommandLine";
 import {installOutputSearch} from "./outputSearch/installOutputSearch";
@@ -523,7 +525,10 @@ function updateConnectButtons() {
         // Leaving an account keeps the card up through the close: there is no game
         // under it to show for the moment the socket takes to go.
         const accountUp = accountSession.isActive() || (accountLeaving && isDisconnecting);
-        authOverlay.style.display = ((!isConnected || accountUp) && !playbackMode && !authClosed) ? 'flex' : 'none';
+        const authShown = (!isConnected || accountUp) && !playbackMode && !authClosed;
+        authOverlay.style.display = authShown ? 'flex' : 'none';
+        // What a theme that takes the screen for the login keys on (Kuźnia hides the game under it).
+        document.body.classList.toggle('auth-open', authShown);
     }
 
     updateMainMenuItem('disconnect-button', isConnected
@@ -548,7 +553,10 @@ function renderSystemLoginMessage(message: string | null) {
     const password = document.getElementById('login-password') as HTMLInputElement | null;
     if (password) {
         password.placeholder = aboutPassword ? 'Wpisz ponownie' : '';
-        if (aboutPassword) password.value = '';
+        if (aboutPassword) {
+            password.value = '';
+            password.dispatchEvent(new Event('input'));
+        }
     }
     if (!message) return;
     const text = document.createElement('div');
@@ -1340,6 +1348,8 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     connectButton?.addEventListener('click', handleConnect);
     setReconnectHandler(handleConnect);
+
+    setupLoginFire();
 
     // The login screen's password field: the eye shows what was typed.
     const passwordToggle = document.getElementById('login-password-toggle');

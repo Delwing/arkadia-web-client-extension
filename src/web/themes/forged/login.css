@@ -1,0 +1,708 @@
+/* ============================================================
+   Kuźnia (forged) theme · login
+   ============================================================
+
+   Forge's login gate on the stock login screen. No card: the game is taken
+   off the screen, the page backdrop (the stone) fills it, a forge burns
+   behind it (loginFire.ts: a hearth glow and rising embers), and the emblem
+   is the one lit object. Every other element is a hairline. Fields are RULES
+   with a `>` prompt, heated by focus; the password cools into its dots as it
+   is typed; the action is an engraved word with a hot rule under it; the
+   connection waits folded under a named hairline.
+
+   The stock ids, the form and its behaviour are untouched - only the look. */
+
+/* ── The screen ─────────────────────────────────────────────────────────
+   While the login is up the game is hidden, not overlaid: `visibility` keeps
+   its layout box, so nothing re-measures on the way back in. The runtime
+   buttons live on <body>, outside #main-container, and do nothing offline. */
+body.theme-forged.auth-open #main-container {
+  visibility: hidden;
+}
+/* The login lives inside it, and takes its visibility back. */
+body.theme-forged.auth-open #auth-overlay {
+  visibility: visible;
+}
+body.theme-forged.auth-open :is(.desktop-buttons-container, .mobile-direction-buttons, .mobile-command-radial) {
+  display: none !important;
+}
+
+/* The page backdrop shows through; over it, the hearth's glow at the foot of
+   the screen and the vignette that closes the edges. */
+body.theme-forged #auth-overlay {
+  justify-content: center;
+  padding: 72px 24px 72px;
+  background:
+    radial-gradient(130% 80% at 50% 128%, rgba(158, 78, 34, .22), transparent 55%),
+    radial-gradient(120% 125% at 50% 44%, rgba(0, 0, 0, .16) 8%, rgba(0, 0, 0, .5) 55%, rgba(0, 0, 0, .82) 100%),
+    var(--void);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  color: var(--parchment);
+  font-family: "EB Garamond", Georgia, serif;
+}
+body.theme-forged[data-backdrop] #auth-overlay {
+  background:
+    radial-gradient(130% 80% at 50% 128%, rgba(158, 78, 34, .22), transparent 55%),
+    radial-gradient(120% 125% at 50% 44%, rgba(0, 0, 0, .16) 8%, rgba(0, 0, 0, .5) 55%, rgba(0, 0, 0, .82) 100%);
+}
+
+/* ── The forge behind the glass ────────────────────────────────────────── */
+body.theme-forged .auth-hearth,
+body.theme-forged .auth-embers {
+  position: fixed;
+  inset: 0;
+  display: block;
+  overflow: hidden;
+  pointer-events: none;
+}
+body.theme-forged .auth-hearth i {
+  position: absolute;
+  inset: 0;
+  display: block;
+  will-change: opacity, transform;
+}
+/* Two coals, not one: 11.3s and 7.1s share no small multiple, so the glow
+   never settles into a beat. Each also slides a little, as firelight does. */
+body.theme-forged .auth-hearth i:nth-child(1) {
+  background: radial-gradient(128% 78% at 50% 128%, rgba(168, 84, 36, .13), transparent 56%);
+  animation: forgedHearthSlow 11.3s ease-in-out infinite alternate;
+}
+body.theme-forged .auth-hearth i:nth-child(2) {
+  background: radial-gradient(86% 56% at 43% 126%, rgba(206, 116, 58, .10), transparent 58%);
+  animation: forgedHearthFast 7.1s ease-in-out infinite alternate;
+}
+@keyframes forgedHearthSlow {
+  from { opacity: .40; transform: translateX(-1.6%) scaleX(.96); }
+  to   { opacity: 1;   transform: translateX(1.2%)  scaleX(1.07); }
+}
+@keyframes forgedHearthFast {
+  from { opacity: .22; transform: translateX(2.6%)  scaleX(1.06); }
+  to   { opacity: .88; transform: translateX(-2.1%) scaleX(.94); }
+}
+
+/* One ember (its numbers are in loginFire.ts). The box is the glow, five
+   times the coal: a hard 1px dot is a dead pixel, not an ember. Rise and burn
+   share a clock, so its brightness is tied to its height. */
+body.theme-forged .auth-ember {
+  position: absolute;
+  left: var(--x);
+  bottom: -14px;
+  width: calc(var(--size) * 5);
+  height: calc(var(--size) * 5);
+  margin-left: calc(var(--size) * -2.5);
+  animation:
+    forgedEmberRise var(--dur) linear var(--delay) infinite,
+    forgedEmberBurn var(--dur) ease-out var(--delay) infinite;
+  will-change: transform, opacity;
+}
+body.theme-forged .auth-ember i {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle,
+    rgba(255, 214, 162, .95) 0 14%,
+    rgba(228, 136, 70, .60) 30%,
+    rgba(206, 116, 58, .20) 50%,
+    rgba(206, 116, 58, 0) 76%);
+  animation: forgedEmberWander var(--sway) ease-in-out var(--delay) infinite alternate;
+}
+@keyframes forgedEmberRise {
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(0, calc(var(--rise) * -1), 0); }
+}
+/* Out at 84% of the climb; the dip at 58% is the ash cooling on the way up. */
+@keyframes forgedEmberBurn {
+  0%        { opacity: 0; }
+  14%       { opacity: var(--peak); }
+  58%       { opacity: calc(var(--peak) * .55); }
+  84%, 100% { opacity: 0; }
+}
+@keyframes forgedEmberWander {
+  from { transform: translateX(calc(var(--drift) * -1)); }
+  to   { transform: translateX(var(--drift)); }
+}
+
+/* ── Around the column ─────────────────────────────────────────────────── */
+/* The escape hatch, quiet but findable. */
+body.theme-forged #auth-overlay .auth-top .auth-btn {
+  z-index: 2;
+  color: var(--parchment-dim);
+  font-family: "Cinzel", serif;
+  font-size: 8.5px;
+  font-weight: 600;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  opacity: .72;
+}
+body.theme-forged #auth-overlay .auth-top .auth-btn:hover {
+  background: none;
+  color: var(--parchment);
+  opacity: 1;
+}
+
+body.theme-forged .auth-notify {
+  z-index: 2;
+  border: 1px solid var(--iron-lo);
+  background: rgba(12, 11, 9, .9);
+  box-shadow: inset 0 1px 0 rgba(184, 150, 90, .12), 0 6px 18px rgba(0, 0, 0, .6);
+  color: var(--parchment-dim);
+}
+body.theme-forged #auth-overlay .auth-notify .auth-btn {
+  border-color: var(--iron-hi);
+  background: transparent;
+  color: var(--parchment);
+}
+
+body.theme-forged .auth-meta {
+  z-index: 2;
+  opacity: .55;
+}
+
+/* ── The column ────────────────────────────────────────────────────────── */
+body.theme-forged #auth-panel {
+  z-index: 1;
+  width: 430px;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+
+/* The emblem carries the client's name, so nothing else on the screen says it. */
+body.theme-forged .auth-logo {
+  width: 312px;
+  height: 312px;
+  margin: 0 auto 30px;
+  filter:
+    saturate(.88)
+    drop-shadow(0 12px 30px rgba(0, 0, 0, .85))
+    drop-shadow(0 0 46px rgba(206, 116, 58, .10));
+}
+body.theme-forged #auth-overlay .auth-title-main {
+  display: none;
+}
+body.theme-forged #auth-overlay .auth-title {
+  color: var(--bronze);
+  font-family: "Cinzel", serif;
+  font-size: 15px;
+  letter-spacing: .2em;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+body.theme-forged .auth-body {
+  gap: 26px;
+  padding: 0;
+}
+body.theme-forged #login-form {
+  gap: 26px;
+}
+body.theme-forged .auth-field {
+  gap: 9px;
+}
+body.theme-forged .auth-label {
+  color: var(--bronze);
+  font-family: "Cinzel", serif;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: .22em;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, .7);
+  text-transform: uppercase;
+}
+
+/* Why we are back here - the server's own words. */
+body.theme-forged #system-login-message {
+  border: 0;
+  background: none;
+  padding: 0;
+}
+body.theme-forged #system-login-message strong {
+  color: #e07a4f;
+  font-size: 14px;
+  font-weight: 400;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, .9);
+}
+body.theme-forged #system-login-message > svg {
+  color: #e07a4f;
+}
+
+/* ── The fields: rules, not boxes ───────────────────────────────────────── */
+body.theme-forged .auth-rule {
+  position: relative;
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding-bottom: 9px;
+}
+/* The hairline, drawn at all times. A pseudo-element, not a border, so the
+   entrance can score it in from the left. */
+body.theme-forged .auth-rule::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: rgba(184, 150, 90, .30);
+  transform-origin: left center;
+}
+/* The heat focus brings: it lands on the `>` and runs out along the rule,
+   painted into its own box as a falloff (a box-shadow cannot be revealed a
+   bit at a time), revealed by sliding a mask four rules wide. It cools
+   uniformly and slower than it heated, the way metal does. */
+body.theme-forged .auth-rule::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -8px;
+  height: 17px;
+  pointer-events: none;
+  transform-origin: left center;
+  background-image:
+    linear-gradient(180deg, transparent 8px, var(--bronze) 8px, var(--bronze) 9px, transparent 9px),
+    linear-gradient(180deg, rgba(206, 116, 58, 0), rgba(206, 116, 58, .085) 8.5px, rgba(206, 116, 58, 0));
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  -webkit-mask-image: linear-gradient(90deg, rgba(0,0,0,.94) 0 25%, #000 28%, transparent 30%);
+          mask-image: linear-gradient(90deg, rgba(0,0,0,.94) 0 25%, #000 28%, transparent 30%);
+  -webkit-mask-repeat: no-repeat;
+          mask-repeat: no-repeat;
+  -webkit-mask-size: 400% 100%;
+          mask-size: 400% 100%;
+  -webkit-mask-position: 40% 0;
+          mask-position: 40% 0;
+  opacity: 0;
+  transition:
+    opacity 900ms cubic-bezier(.25, .55, .4, 1),
+    -webkit-mask-position 0s 900ms, mask-position 0s 900ms;
+}
+body.theme-forged .auth-rule:focus-within::before {
+  opacity: 1;
+  -webkit-mask-position: 0% 0;
+          mask-position: 0% 0;
+  transition:
+    opacity 100ms linear,
+    -webkit-mask-position 560ms cubic-bezier(.4, .3, .5, 1),
+    mask-position 560ms cubic-bezier(.4, .3, .5, 1);
+}
+body.theme-forged .auth-prompt {
+  display: inline;
+  color: var(--parchment);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 13px;
+  opacity: .6;
+  transition: opacity 900ms cubic-bezier(.25, .55, .4, 1);
+}
+body.theme-forged .auth-rule:focus-within .auth-prompt {
+  opacity: .8;
+  transition-duration: 160ms;
+}
+
+/* The account screens' fields carry no rule element: the hairline is their border. */
+body.theme-forged #auth-overlay input.auth-input:not(.auth-rule *) {
+  height: 34px;
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid rgba(184, 150, 90, .30);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--parchment);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 13.5px;
+}
+body.theme-forged #auth-overlay input.auth-input:not(.auth-rule *):focus {
+  border-bottom-color: var(--bronze);
+  background: transparent;
+  box-shadow: 0 6px 10px -8px rgba(206, 116, 58, .45);
+}
+
+body.theme-forged #auth-overlay .auth-rule :is(input.auth-input, .auth-pass) {
+  flex: 1 1 auto;
+  height: auto;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+body.theme-forged #auth-overlay .auth-rule :is(input.auth-input, .auth-pass):is(:focus, :focus-within) {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+body.theme-forged #auth-overlay .auth-rule .auth-pass {
+  position: relative;
+  overflow: visible;
+}
+body.theme-forged #auth-overlay .auth-rule input {
+  min-width: 0;
+  padding: 0;
+  color: var(--parchment);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 13.5px;
+  letter-spacing: .04em;
+}
+body.theme-forged #auth-overlay .auth-rule input:disabled {
+  opacity: .5;
+}
+body.theme-forged #auth-overlay .auth-rule .auth-ib {
+  width: 26px;
+  height: 18px;
+  align-self: center;
+  background: none;
+  color: var(--parchment-dim);
+  opacity: .7;
+}
+body.theme-forged #auth-overlay .auth-rule .auth-ib:hover,
+body.theme-forged #auth-overlay .auth-rule .auth-ib.is-on {
+  color: var(--bronze);
+  opacity: 1;
+}
+body.theme-forged #auth-panel.has-password-error .auth-rule::after {
+  background: rgba(224, 122, 79, .55);
+}
+
+/* ── The password cools into its dots ──────────────────────────────────
+   The input only loses its ink - and keeps its caret, which defaults to the
+   now transparent text colour. The dots are loginFire.ts's, over it. */
+body.theme-forged #auth-overlay #login-password[type="password"] {
+  color: transparent;
+  caret-color: var(--parchment);
+}
+body.theme-forged .auth-pass:has(#login-password[type="password"]) .auth-mask {
+  position: absolute;
+  z-index: 1;
+  display: block;
+  overflow: hidden;
+  white-space: pre;
+  pointer-events: none;
+}
+body.theme-forged .auth-glyph {
+  position: relative;
+  color: var(--parchment);
+}
+/* White-hot barely exists, then ember holds the longest - the part of
+   cooling steel the eye reads - landing on the same parchment as every dot. */
+@keyframes forgedGlyphForge {
+  0%   { color: #fff6e8; text-shadow: 0 0 6px rgba(255,224,175,.95), 0 0 15px rgba(255,138,48,.75); }
+  14%  { color: #ffdfab; text-shadow: 0 0 5px rgba(255,205,140,.80), 0 0 12px rgba(255,124,40,.58); }
+  38%  { color: #f4a45c; text-shadow: 0 0 4px rgba(240,150,80,.52), 0 0 9px rgba(224,105,40,.36); }
+  68%  { color: #c26c35; text-shadow: 0 0 3px rgba(200,100,45,.22); }
+  88%  { color: #c69169; text-shadow: none; }
+  100% { color: var(--parchment); text-shadow: none; }
+}
+/* The bloom of heat, larger than the dot and shrinking into it; out of flow,
+   so the glyph's advance (and the caret over it) never moves. */
+@keyframes forgedGlyphBloom {
+  0%   { opacity: .95; transform: translate(-50%, -50%) scale(2.5); }
+  55%  { opacity: .45; transform: translate(-50%, -50%) scale(1.15); }
+  100% { opacity: 0;   transform: translate(-50%, -50%) scale(.5); }
+}
+body.theme-forged .auth-glyph.is-hot {
+  animation: forgedGlyphForge 175ms linear both;
+}
+body.theme-forged .auth-glyph.is-hot::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  width: .58em;
+  height: .58em;
+  border-radius: 50%;
+  background: radial-gradient(circle,
+    rgba(255,246,228,.95) 0%,
+    rgba(255,178,86,.62) 40%,
+    rgba(226,96,32,0) 72%);
+  mix-blend-mode: screen;
+  animation: forgedGlyphBloom 175ms cubic-bezier(.2,.8,.3,1) both;
+}
+/* Paste and autofill: the row warms once, together, and only to ember. */
+@keyframes forgedGlyphQuench {
+  0%   { color: #f2a763; text-shadow: 0 0 5px rgba(236,140,70,.55); }
+  45%  { color: #cb7a3e; text-shadow: 0 0 3px rgba(200,100,45,.28); }
+  100% { color: var(--parchment); text-shadow: none; }
+}
+body.theme-forged .auth-glyph.is-bulk {
+  animation: forgedGlyphQuench 270ms linear both;
+}
+body.theme-forged .auth-pass:has(#login-password:disabled) .auth-mask {
+  opacity: .5;
+}
+
+/* ── The actions ───────────────────────────────────────────────────────── */
+/* The action is a word with a hot rule struck under it - the login's, and
+   the account screens' main ones. */
+body.theme-forged #auth-overlay :is(#login-submit, .auth-btn--solid.auth-btn--lg) {
+  align-self: flex-start;
+  height: auto;
+  padding: 0 2px 10px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-image: linear-gradient(90deg, #ce743a, rgba(206, 116, 58, .15)) 1;
+  border-radius: 0;
+  background: none;
+  color: #f4ecd6;
+  font-family: "Cinzel", serif;
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: .34em;
+  text-indent: .34em;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, .98), 0 0 18px rgba(206, 116, 58, .35);
+  text-transform: uppercase;
+  filter: none;
+}
+body.theme-forged #auth-overlay :is(#login-submit, .auth-btn--solid.auth-btn--lg):hover:not(:disabled) {
+  color: #fff;
+}
+
+/* Connecting: the line of text breathes rather than a spinner turning. */
+body.theme-forged #connecting-spinner {
+  color: var(--parchment-dim);
+  font-family: "Cinzel", serif;
+  font-size: 13px;
+  letter-spacing: .3em;
+  text-transform: uppercase;
+  animation: forgedLoginBreath 1.5s ease-in-out infinite;
+}
+body.theme-forged .auth-spinner {
+  display: none;
+}
+@keyframes forgedLoginBreath { 50% { opacity: .5; } }
+
+/* The quiet ways: words with a hairline, no boxes. */
+body.theme-forged #create-account-row {
+  justify-content: flex-start;
+  font-size: 13.5px;
+}
+body.theme-forged #auth-overlay .auth-btn--link {
+  padding: 0 0 2px;
+  border-bottom: 1px solid rgba(184, 150, 90, .28);
+  border-radius: 0;
+  color: var(--parchment-dim);
+  font-weight: 400;
+}
+body.theme-forged #auth-overlay .auth-btn--link:hover {
+  border-bottom-color: var(--bronze-dim);
+  color: var(--parchment);
+  text-decoration: none;
+}
+body.theme-forged .auth-or {
+  display: none;
+}
+body.theme-forged #auth-overlay #connect-button {
+  align-items: flex-start;
+  align-self: flex-start;
+  height: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--parchment-dim);
+  font-size: 13.5px;
+  font-weight: 400;
+}
+body.theme-forged #auth-overlay #connect-button > span:first-child {
+  padding-bottom: 2px;
+  border-bottom: 1px solid rgba(184, 150, 90, .28);
+}
+body.theme-forged #auth-overlay #connect-button:hover:not(:disabled) {
+  color: var(--parchment);
+}
+body.theme-forged #auth-overlay #connect-button:hover:not(:disabled) > span:first-child {
+  border-bottom-color: var(--bronze-dim);
+}
+body.theme-forged #auth-overlay #connect-button .auth-muted {
+  margin-top: 3px;
+  color: var(--parchment-dim);
+  font-size: 12px;
+  opacity: .7;
+}
+
+/* ── The connection, folded under a hairline that names itself ──────────── */
+body.theme-forged #auth-overlay .auth-fold {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin-top: 30px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--parchment-dim);
+  font-family: "Cinzel", serif;
+  font-size: 8.5px;
+  font-weight: 600;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color .15s ease;
+}
+body.theme-forged #auth-overlay .auth-fold:hover {
+  color: var(--bronze);
+}
+body.theme-forged .auth-fold::before,
+body.theme-forged .auth-fold::after {
+  content: "";
+  flex: 1 1 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(184, 150, 90, .22), transparent);
+}
+body.theme-forged .auth-fold__name {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+body.theme-forged .auth-fold__chev {
+  width: 9px;
+  height: auto;
+  margin-left: -.22em;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform .2s ease;
+}
+body.theme-forged .auth-fold.is-open .auth-fold__chev {
+  transform: rotate(180deg);
+}
+
+/* Out of flow, hanging under the fold: the column is centred, so a panel in
+   flow would slide the emblem and the fields up every time it opened. */
+body.theme-forged .auth-conn {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+}
+body.theme-forged .auth-conn:not(.is-open) > .proxy-controls {
+  display: none;
+}
+body.theme-forged .auth-conn .auth-cap {
+  display: none;
+}
+/* The modes as the footer chip's stone, at chip scale. */
+body.theme-forged .proxy-seg {
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+body.theme-forged #auth-overlay .proxy-seg button,
+body.theme-forged #auth-overlay .proxy-controls .auth-ib--box {
+  border: 1px solid #33291b;
+  border-radius: 6px;
+  background-color: #0c0905;
+  background-image:
+    linear-gradient(rgba(8, 6, 3, .5), rgba(8, 6, 3, .5)),
+    var(--tex-stone),
+    linear-gradient(180deg, #16110a, #070502);
+  background-blend-mode: normal, soft-light, normal;
+  background-size: 100% 100%, 90px 90px, 100% 100%;
+  box-shadow: inset 0 1px 0 rgba(184, 150, 90, .09), inset 0 -2px 5px rgba(0, 0, 0, .7);
+  color: var(--parchment-dim);
+}
+body.theme-forged #auth-overlay .proxy-seg button {
+  font-family: "Cinzel", serif;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+body.theme-forged #auth-overlay .proxy-seg button:hover,
+body.theme-forged #auth-overlay .proxy-controls .auth-ib--box:hover {
+  border-color: var(--bronze-dim);
+  color: var(--parchment);
+}
+body.theme-forged #auth-overlay .proxy-seg button.is-on,
+body.theme-forged #auth-overlay .proxy-controls .auth-ib--box.is-on {
+  border-color: var(--bronze);
+  color: #f4ecd6;
+  font-weight: 600;
+}
+body.theme-forged .auth-settings {
+  border: 1px solid var(--iron-lo);
+  border-radius: 9px;
+  background-color: #0c0b09;
+  background-image:
+    var(--tex-fine),
+    linear-gradient(180deg, #17130e 0%, #0c0b09 55%, #070605 100%);
+  background-blend-mode: soft-light, normal;
+  background-size: 130px 130px, 100% 100%;
+}
+
+/* ── Entrance ───────────────────────────────────────────────────────────
+   One ~700ms sequence: the emblem strikes in, each rule is scored left to
+   right like a line cut into metal, the actions rise last. */
+@keyframes forgedLoginStrike { from { opacity: 0; transform: scale(.965); } to { opacity: 1; transform: none; } }
+@keyframes forgedLoginRise   { from { opacity: 0; transform: translateY(9px); } to { opacity: 1; transform: none; } }
+@keyframes forgedLoginDraw   { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+body.theme-forged .auth-logo { animation: forgedLoginStrike .55s ease-out both; }
+body.theme-forged #login-form .auth-field:nth-of-type(1) { animation: forgedLoginRise .45s .16s ease-out both; }
+body.theme-forged #login-form .auth-field:nth-of-type(2) { animation: forgedLoginRise .45s .26s ease-out both; }
+body.theme-forged #login-form .auth-field:nth-of-type(1) .auth-rule::after,
+body.theme-forged #login-form .auth-field:nth-of-type(1) .auth-rule::before { animation: forgedLoginDraw .5s .26s ease-out both; }
+body.theme-forged #login-form .auth-field:nth-of-type(2) .auth-rule::after,
+body.theme-forged #login-form .auth-field:nth-of-type(2) .auth-rule::before { animation: forgedLoginDraw .5s .36s ease-out both; }
+body.theme-forged #login-submit { animation: forgedLoginRise .45s .44s ease-out both; }
+body.theme-forged :is(#create-account-row, #connect-button) { animation: forgedLoginRise .45s .5s ease-out both; }
+body.theme-forged .auth-fold { animation: forgedLoginRise .45s .54s ease-out both; }
+
+/* Motion is atmosphere here, never information - all of it can go. */
+@media (prefers-reduced-motion: reduce) {
+  body.theme-forged :is(.auth-logo, #login-form .auth-field, #login-submit, #create-account-row, #connect-button, .auth-fold, #connecting-spinner),
+  body.theme-forged #login-form .auth-rule::after,
+  body.theme-forged #login-form .auth-rule::before {
+    animation: none;
+  }
+  /* The forge stops but stays: each ember freezes at its own height. */
+  body.theme-forged :is(.auth-hearth i, .auth-ember, .auth-ember i) {
+    animation: none;
+  }
+  body.theme-forged .auth-ember {
+    transform: translate3d(0, calc(var(--rise) * -1 * var(--settle)), 0);
+    opacity: calc(var(--peak) * .75);
+  }
+  body.theme-forged .auth-hearth i:nth-child(1) { opacity: .78; }
+  body.theme-forged .auth-hearth i:nth-child(2) { opacity: .5; }
+  /* Heat that travels is motion; heat that is simply there says where the
+     cursor is, and stays. */
+  body.theme-forged .auth-rule::before { display: none; }
+  body.theme-forged .auth-rule:focus-within::after {
+    background: var(--bronze);
+    box-shadow: 0 0 10px rgba(206, 116, 58, .45);
+  }
+  body.theme-forged .auth-glyph:is(.is-hot, .is-bulk) {
+    animation: none;
+    color: var(--parchment);
+    text-shadow: none;
+  }
+  body.theme-forged .auth-glyph.is-hot::after { content: none; }
+}
+
+/* ── Smaller screens: the emblem gives up the room, the form stays usable ── */
+@media (max-width: 720px) {
+  body.theme-forged #auth-panel { width: min(430px, calc(100vw - 48px)); }
+  body.theme-forged .auth-logo { width: min(230px, 62vw); height: min(230px, 62vw); }
+}
+@media (max-height: 820px) {
+  body.theme-forged .auth-logo { width: 232px; height: 232px; margin-bottom: 24px; }
+}
+@media (max-height: 680px) {
+  body.theme-forged .auth-logo { width: 168px; height: 168px; margin-bottom: 20px; }
+}
+/* The phone's login is the whole screen and stacks its pieces with `order`:
+   the fold and the connection under the form, in flow. */
+@media (max-width: 560px) {
+  body.theme-forged #auth-overlay { padding: 0 0 12px; }
+  body.theme-forged .auth-body { padding: 0 20px; }
+  body.theme-forged #auth-overlay .auth-fold { order: 4; width: auto; margin: 8px 20px 0; }
+  body.theme-forged .auth-conn { position: static; margin-top: 0; }
+}

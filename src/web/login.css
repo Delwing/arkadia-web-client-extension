@@ -257,6 +257,16 @@
   outline: none;
 }
 #auth-overlay .auth-pass .auth-ib { height: auto; border-radius: 0; }
+/* The Kuźnia theme's pieces (themes/forged/login.css, loginFire.ts): the ruled
+   field with its prompt, the cooling password dots, the ember field and the
+   fold over the connection. Elsewhere the rule is no box and the rest is not
+   there. */
+.auth-rule { display: contents; }
+.auth-prompt,
+.auth-mask,
+.auth-hearth,
+.auth-embers,
+#auth-overlay .auth-fold { display: none; }
 
 .auth-or {
   display: flex;
