@@ -93,8 +93,9 @@ body.theme-forged .command-field__prompt {
   color: var(--bronze);
 }
 
-/* The row's buttons as the forged iron pills (buttons.css). */
-body.theme-forged #input-area button,
+/* The row's buttons as the forged iron pills (buttons.css); the ⋯ menu's
+   items are rows of their own, below. */
+body.theme-forged #input-area button:not(.command-menu__panel *),
 body.theme-forged #history-buttons {
   border: 1px solid var(--iron-hi);
   border-radius: 6px;
@@ -105,7 +106,7 @@ body.theme-forged #history-buttons {
     0 1px 2px rgba(0, 0, 0, .5);
   color: var(--parchment-dim);
 }
-body.theme-forged #input-area button:hover {
+body.theme-forged #input-area button:not(.command-menu__panel *):hover {
   border-color: var(--bronze-dim);
   background-image: linear-gradient(180deg, rgba(255, 255, 255, .11), rgba(255, 255, 255, .02));
   color: var(--parchment);
@@ -117,6 +118,120 @@ body.theme-forged #input-area #history-buttons button {
 }
 body.theme-forged #input-area #history-buttons button + button {
   border-top: 1px solid var(--iron-lo);
+}
+
+/* Send and the open menu keep their pill, the bronze only in the glyph and rim. */
+body.theme-forged #input-area #send-button {
+  border-color: var(--iron-hi);
+  background-color: #191410;
+  color: var(--bronze);
+}
+body.theme-forged #input-area #send-button:hover,
+body.theme-forged #input-area #menu-button.is-active {
+  border-color: var(--bronze-dim);
+  background-color: rgba(110, 86, 32, 0.28);
+  color: var(--bronze);
+}
+
+/* ── The ⋯ menu: a forged plate of engraved rows ────────────────────────── */
+body.theme-forged .popup-popover.command-menu__panel {
+  border: 1px solid var(--iron-lo);
+  border-radius: 9px;
+  background-color: #0c0b09;
+  background-image:
+    var(--tex-fine),
+    linear-gradient(180deg, #17130e 0%, #0c0b09 55%, #070605 100%);
+  background-blend-mode: soft-light, normal;
+  background-size: 130px 130px, 100% 100%;
+  box-shadow:
+    inset 0 1px 0 rgba(184, 150, 90, 0.14),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.5),
+    0 18px 48px rgba(0, 0, 0, 0.7);
+}
+/* The search field is a trough, like the command field. */
+body.theme-forged .command-menu__filter {
+  border: 0;
+  border-radius: 5px;
+  background: linear-gradient(180deg, #0b0a08, #100e0b);
+  box-shadow:
+    inset 0 2px 6px rgba(0, 0, 0, 0.85),
+    inset 0 0 0 1px rgba(184, 150, 90, 0.10);
+}
+body.theme-forged .command-menu__filter:focus-within {
+  box-shadow:
+    inset 0 2px 6px rgba(0, 0, 0, 0.85),
+    inset 0 0 0 1px rgba(184, 150, 90, 0.32);
+}
+body.theme-forged .command-menu__caption {
+  color: var(--bronze-dim);
+  font-family: "Cinzel", serif;
+  font-size: 9px;
+  letter-spacing: 0.22em;
+}
+body.theme-forged .command-menu__section[data-group="wtyczki"] {
+  border-top-color: var(--iron-lo);
+}
+/* Rows engraved in the plate: Cinzel caps, a hairline under each, a bronze
+   wash under the pointer. */
+body.theme-forged .command-menu__items {
+  gap: 0;
+}
+body.theme-forged #input-area .command-menu__sections .command-menu__item {
+  height: 29px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.035);
+  border-radius: 0;
+  color: var(--parchment);
+  font-family: "Cinzel", serif;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+body.theme-forged #input-area .command-menu__item:hover:not(:disabled),
+body.theme-forged #input-area .command-menu__item:focus-visible,
+body.theme-forged #input-area .command-menu__item.is-first {
+  background-color: rgba(184, 150, 90, 0.10);
+  color: var(--parchment);
+}
+body.theme-forged .command-menu__icon {
+  color: var(--bronze-dim);
+}
+body.theme-forged #input-area .command-menu__sections .command-menu__item:hover:not(:disabled) .command-menu__icon,
+body.theme-forged #input-area .command-menu__sections .command-menu__item.is-first .command-menu__icon {
+  color: var(--bronze);
+}
+/* The bottom bar: below an engraved seam, its actions as quiet engraved words. */
+body.theme-forged .command-menu__bar {
+  border-top: 1px solid rgba(0, 0, 0, 0.6);
+  box-shadow: inset 0 1px 0 rgba(184, 150, 90, 0.07);
+  background: transparent;
+}
+body.theme-forged .command-menu__status-name {
+  color: var(--parchment-dim);
+}
+body.theme-forged #input-area .command-menu__item--bar {
+  border: 1px solid var(--iron-hi);
+  border-radius: 5px;
+  background: transparent;
+  color: var(--parchment-dim);
+  font-family: "Cinzel", serif;
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+body.theme-forged #input-area .command-menu__item--bar:hover:not(:disabled) {
+  border-color: var(--bronze-dim);
+  background-color: rgba(184, 150, 90, 0.10);
+}
+body.theme-forged #input-area .command-menu__item--danger {
+  border-color: rgba(160, 72, 52, 0.42);
+  color: #c67e66;
+}
+body.theme-forged #input-area .command-menu__item--danger:hover:not(:disabled) {
+  border-color: rgba(160, 72, 52, 0.7);
+  background-color: rgba(140, 52, 36, 0.24);
+  color: #d99a82;
 }
 
 /* ── Forge's footer pieces: bind pills, stone chips, vital gems ─────────── */
