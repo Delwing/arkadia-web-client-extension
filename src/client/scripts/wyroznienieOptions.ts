@@ -28,24 +28,18 @@ export default function initWyroznienieOptions(client: Client) {
         currentTitle = matches[3].trim();
         collectingOptions = false;
 
+        // Recolor the title in place so the label keeps its original game color
+        const titleStart = label.length + spacing.length;
+        const titleEnd = titleStart + currentTitle.length;
+        line.color([titleStart, titleEnd], OPTION_COLOR);
+
         // For "Niewidoczny", just recolor without adding disable button
         if (currentTitle.toLowerCase() === "niewidoczny") {
-            const titleStart = label.length + spacing.length;
-            const titleEnd = titleStart + currentTitle.length;
-            line.color([titleStart, titleEnd], OPTION_COLOR);
             return line;
         }
 
-        // Make the line with current title clickable to disable
-        const lineBuffer = new AnsiAwareBuffer();
-        lineBuffer.append(label + spacing);
-
-        const titleText = currentTitle;
-        const titleBuffer = colorString(titleText, OPTION_COLOR);
-        lineBuffer.appendBuffer(titleBuffer);
-
         // Add clickable disable option
-        lineBuffer.append(" [ ", {});
+        line.suffix(" [ ");
         const disableText = "wylacz";
         const disableBuffer = new AnsiAwareBuffer();
         disableBuffer.append(disableText, DISABLE_COLOR);
@@ -55,10 +49,10 @@ export default function initWyroznienieOptions(client: Client) {
             },
             title: "Wyłącz wyróżnienie"
         });
-        lineBuffer.appendBuffer(disableBuffer);
-        lineBuffer.append(" ]", {});
+        line.appendBuffer(disableBuffer);
+        line.suffix(" ]");
 
-        return lineBuffer;
+        return line;
     }, TAG);
 
     // Trigger for "Do wyboru sa:" line - starts collecting
