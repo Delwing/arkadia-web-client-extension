@@ -70,6 +70,12 @@ body.theme-forged #footer-layout > :is(#multi-binds, #char-state, .footer-band) 
 body.theme-forged #footer-layout > #multi-binds:not(.active) + .hud-seam {
   display: none;
 }
+/* The gems' block hugs them, so Postępy under them is as wide as they are. */
+body.theme-forged #footer-layout .footer-vitals:has(> .gems) {
+  flex: 0 1 auto;
+  width: max-content;
+  max-width: 100%;
+}
 /* The vitals as gems need no divider beside them. */
 body.theme-forged #footer-layout .footer-vitals:not(:last-child) {
   border-right: 0;
@@ -326,7 +332,7 @@ body.theme-forged #input-area .command-menu__item--danger:hover:not(:disabled) {
 .theme-forged #footer-layout .footer-row { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .theme-forged #footer-layout .footer-column { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .theme-forged #footer-layout .footer-cell .gems,
-.theme-forged #footer-layout .footer-band .gems { flex-wrap: wrap; min-width: 0; }
+.theme-forged #footer-layout .footer-band .gems { min-width: 0; }
 .theme-forged #footer-layout .footer-chip-grid {
   display: grid;
   flex-shrink: 0;
@@ -574,8 +580,12 @@ body.theme-forged #input-area .command-menu__item--danger:hover:not(:disabled) {
   --fill: 60%;
   --hue: var(--slate);
   position: relative;
-  flex: 1 1 0;
-  min-width: 0;
+  /* A gem's own width (a width, not a basis, so the vitals block measures to
+     its gems): a few gems stay gems rather than stretching across the whole
+     plate; many share the line evenly, as forge spread them. */
+  flex: 0 1 auto;
+  width: 180px;
+  min-width: 72px;
   height: var(--bar-h);
   padding: 6px;
   display: flex;
