@@ -4716,3 +4716,108 @@ body.layout-manager-enabled #notification-center {
   flex: 1 1 12rem;
   min-width: 0;
 }
+
+/* -- Character plaque (@shared/dom/charPlaque): the card in the output on login --
+   The character's guild emblem in a medallion, name, race and guild lines. */
+.plaque {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  width: fit-content;
+  max-width: min(560px, 100%);
+  margin: 12px 0 10px;
+  padding: 12px 16px;
+  border: 1px solid var(--popup-border);
+  border-radius: 8px;
+  background-color: var(--popup-section-bg);
+  color: var(--popup-text);
+  font-family: var(--font-ui);
+  white-space: normal;
+}
+.plaque__crest {
+  position: relative;
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border: 1px solid var(--popup-accent-border);
+  border-radius: 50%;
+  background-color: var(--popup-accent-dim-bg);
+}
+.plaque__crest svg {
+  width: 34px;
+  height: 34px;
+  color: var(--popup-accent);
+}
+.plaque__crest--war {
+  border-color: var(--popup-danger-border);
+}
+.plaque__crest--war svg {
+  color: var(--popup-danger-light);
+}
+.plaque__crest--civ {
+  border-color: var(--popup-success-border);
+}
+.plaque__crest--civ svg {
+  color: var(--popup-success-light);
+}
+.plaque__pip {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  display: grid;
+  place-items: center;
+  width: 19px;
+  height: 19px;
+  border: 1px solid var(--popup-border-strong);
+  border-radius: 50%;
+  background-color: var(--popup-bg);
+  color: var(--popup-accent);
+  font-size: 12px;
+  line-height: 1;
+}
+.plaque__main {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.plaque__name {
+  display: block;
+  color: var(--popup-text-strong);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+.plaque__sub {
+  display: block;
+  margin-top: 3px;
+  color: var(--popup-accent);
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.plaque__guilds {
+  display: flex;
+  flex: 1 1 200px;
+  flex-direction: column;
+  gap: 4px;
+  padding-left: 16px;
+  border-left: 1px solid var(--popup-border);
+}
+.plaque__guild {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.plaque__gk {
+  color: var(--popup-text-dim);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.plaque__gv {
+  color: var(--popup-text);
+  font-size: 13px;
+  line-height: 1.2;
+}

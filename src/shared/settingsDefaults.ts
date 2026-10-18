@@ -33,6 +33,7 @@ export const defaultRenderSettings: RenderSettings = {
     outputBottomPadding: 0,
     showTimestamps: false,
     highlightMessageBlocks: false,
+    characterPlaque: true,
     objectListCoverMarkers: true,
     commandEcho: true,
     clearInputOnSend: false,
@@ -101,7 +102,7 @@ export const renderSettingsKeys = [
     'fontFamily', 'customFontUrl', 'customFontFamily', 'systemFontFamily', 'uploadedFontFamily',
     'xtermPalette', 'colorTheme', 'customThemeColor', 'outputBackground',
     'outputBackgroundImage', 'outputBackgroundShade',
-    'outputBottomPadding', 'showTimestamps', 'highlightMessageBlocks', 'objectListCoverMarkers', 'commandEcho',
+    'outputBottomPadding', 'showTimestamps', 'highlightMessageBlocks', 'characterPlaque', 'objectListCoverMarkers', 'commandEcho',
     'clearInputOnSend', 'autoLowercaseCommands', 'soundCategories', 'customBeepSoundKey',
 ] as const satisfies readonly (keyof RenderSettings)[];
 

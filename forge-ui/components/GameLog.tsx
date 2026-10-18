@@ -10,7 +10,7 @@ import {
     setupOutputMessageHandler,
 } from '@shared/dom/outputMessageHandler';
 import { decodeOutputEntities, plainTextOf as textOf } from '@shared/dom/outputText';
-import { buildCharPlaque } from './charPlaque';
+import { createCharPlaqueFeed } from '@shared/dom/charPlaque.ts';
 
 // How many trailing lines the split-view sticky area mirrors while scrolled up.
 const STICKY_LINES = 50;
@@ -138,14 +138,12 @@ export default function GameLog() {
         // gender/guild changes (same character) and on a fresh login as a
         // different character (new object_num); we show the plaque once per
         // distinct character, so a re-login as someone else shows it again.
-        let plaqueCharId: string | undefined;
-        const offPlaque = eventBus.on('gmcp.char.info', (info) => {
-            if (!info?.name) return;
-            const id = info.object_num !== undefined ? String(info.object_num) : info.name.trim().toLowerCase();
-            if (id === plaqueCharId) return;
-            plaqueCharId = id;
-            handler.appendNode(buildCharPlaque(info), () => buildCharPlaque(info));
-        });
+        const forged = (node: HTMLElement) => {
+            node.classList.add('forged');
+            return node;
+        };
+        const showPlaque = createCharPlaqueFeed((node, rebuild) => handler.appendNode(forged(node), () => forged(rebuild())));
+        const offPlaque = eventBus.on('gmcp.char.info', showPlaque);
 
         return () => {
             teardownContextMenu();

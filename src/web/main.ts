@@ -71,6 +71,7 @@ import HelperSettings from "./options/HelperSettings.tsx"
 import {applyDefaultLayoutMode, LayoutManagerWrapper, setRailSpanSupported} from "@web/layout"
 import {globalStorage} from "@modules/core/storage"
 import {setOutputTimestampVisibility, setupOutputMessageHandler} from "@shared/dom/outputMessageHandler";
+import {createCharPlaqueFeed} from "@shared/dom/charPlaque";
 import {isLikelyTouchDevice, isMobileLikeViewport, isTouchPointerType} from "@shared/dom/pointerEnvironment.ts";
 import CommandLine from "./commandInput/CommandLine";
 import {installOutputSearch} from "./outputSearch/installOutputSearch";
@@ -235,6 +236,12 @@ const outputMessageHandler = setupOutputMessageHandler(mudClient, {
             globalStorage.set('uiSettings', settings);
         }
     },
+});
+
+// The character's plaque, once per character on login (Wygląd -> wizytówka).
+const showCharPlaque = createCharPlaqueFeed(outputMessageHandler.appendNode);
+eventBus.on('gmcp.char.info', (info) => {
+    if (getRenderSettings().characterPlaque) showCharPlaque(info);
 });
 
 // Multibinds appearing or disappearing is stock-only layout churn, so its

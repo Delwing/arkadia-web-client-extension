@@ -126,6 +126,7 @@ function AppearanceSection({ draft, update, commitCustomDark }: AppearanceSectio
                 <RangeField id="ui-output-image-shade" label="Przyciemnienie obrazu (%)" value={draft.outputBackgroundShade} min={0} max={90} step={5} onChange={(n) => update({ outputBackgroundShade: n })} />
             )}
             <CheckboxRow id="ui-highlight-message-blocks" label="Wyróżniaj bloki wiadomości" checked={draft.highlightMessageBlocks} onChange={(v) => update({ highlightMessageBlocks: v })} />
+            <CheckboxRow id="ui-character-plaque" label="Wizytówka postaci po zalogowaniu" checked={draft.characterPlaque} onChange={(v) => update({ characterPlaque: v })} />
             <Field label="Paleta kolorów" htmlFor="ui-xterm-palette">
                 <div className="popup-inline">
                     <Select

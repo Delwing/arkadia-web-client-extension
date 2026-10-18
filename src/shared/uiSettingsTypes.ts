@@ -80,6 +80,8 @@ export interface RenderSettings {
     showTimestamps: boolean;
     /** Set apart whole reply blocks (inventory, loot, descriptions, …). */
     highlightMessageBlocks: boolean;
+    /** A card with the character's name, race and guilds in the output on login. */
+    characterPlaque: boolean;
     /** Shield after enemies covered against us / against teammates in the object list. */
     objectListCoverMarkers: boolean;
     commandEcho: boolean;
