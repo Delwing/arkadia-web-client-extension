@@ -179,6 +179,20 @@ describe('prettyContainers with real Client', () => {
       expect(tableText).toMatch(/tarcze/);
     });
 
+    test.each([
+      'Otwarty praktyczny plecak ze skory echinopsa zawiera zloty miecz, srebrna tarcze.',
+      'Otwierasz na chwile praktyczny plecak ze skory echinopsa, sprawdzajac zawartosc. W srodku dostrzegasz zloty miecz, srebrna tarcze.',
+    ])('handles containers with "ze" material suffix: %s', (input) => {
+      const results = client.onLine(input, '');
+      client.sendEvent('output-sent', 1);
+
+      expect(results).toHaveLength(0);
+      const tableText = getEmittedTable();
+
+      expect(tableText).toMatch(/miecz/);
+      expect(tableText).toMatch(/tarcze/);
+    });
+
     test('handles "zawiera" patterns with multiple containers', () => {
       const input = 'W skrzyniach zauwazasz miedzy innymi zlocisty piryt, srebrna monete.';
 

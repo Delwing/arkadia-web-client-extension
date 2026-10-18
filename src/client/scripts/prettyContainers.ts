@@ -303,9 +303,9 @@ export function prettyPrintContainer(
 
 
 const defaultContainerPatterns: RegExp[] = [
-    /^Otwart[yae] (?<container>.+? (?:plecak|torba|sakwa|sakiewka|szkatulka|wor|worek))(?: z .*?)? zawiera (?<content>.*)\.$/i,
+    /^Otwart[yae] (?<container>.+? (?:plecak|torba|sakwa|sakiewka|szkatulka|wor|worek))(?: ze? .*?)? zawiera (?<content>.*)\.$/i,
     /^Otwarty .+? (?<container>kosz(?:|yk)) zawiera (?<content>.*)\.$/i,
-    /^Otwierasz na chwile (?<container>.+? (?:plecak|torbe|sakwe|sakiewke|szkatulke|wor|worek)), sprawdzajac zawartosc\. W srodku dostrzegasz (?<content>.*)\.$/i,
+    /^Otwierasz na chwile (?<container>.+? (?:plecak|torbe|sakwe|sakiewke|szkatulke|wor|worek))(?: ze? [^,]*?)?, sprawdzajac zawartosc\. W srodku dostrzegasz (?<content>.*)\.$/i,
     /^Uwaznie ogladasz zawartosc (?<container>.+?)\. W srodku dostrzegasz (?<content>.*)\.$/,
     /^Rozwiazujesz na chwile rzemyk, sprawdzajac zawartosc swojej (?<container>.+? sakiewki).+?\. W srodku dostrzegasz (?<content>.*)\.$/,
     /^W (?<container>skrzyniach) zauwazasz miedzy innymi (?<content>.*)\.$/,
