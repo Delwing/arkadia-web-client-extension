@@ -22,10 +22,6 @@ const PocztaPopup: React.FC = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [hasFetched, setHasFetched] = useState(false);
 
-    const {wrapperProps} = usePopup(POPUP_ID, {
-        openEvent: 'poczta.popup.open',
-    });
-
     const isConnected = Boolean(gmcp.char?.info);
 
     const fetchMails = useCallback((type: MailType) => {
@@ -42,6 +38,14 @@ const PocztaPopup: React.FC = () => {
         setActiveTab(type);
         fetchMails(type);
     }, [setActiveTab, fetchMails]);
+
+    // /poczta is how players check for new mail, so it opens on a fresh Odebrane list.
+    const handleOpen = useCallback(() => handleTabChange('odebrane'), [handleTabChange]);
+
+    const {wrapperProps} = usePopup(POPUP_ID, {
+        openEvent: 'poczta.popup.open',
+        onOpen: handleOpen,
+    });
 
     const handleRefresh = useCallback(() => {
         fetchMails(activeTab);
