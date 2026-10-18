@@ -183,3 +183,36 @@ body.theme-forged .plaque__gv {
 body.theme-forged[data-backdrop] #split-bottom {
   background-color: var(--void) !important;
 }
+
+/* ── room.short: the location name as forge's heading ───────────────────
+   Cinzel caps in dim bronze between two hairlines, set off from the text
+   around it; the game's own colours give way to it. */
+body.theme-forged :is(#main_text_output_msg_wrapper, #sticky-area) .output_msg.room\.short .output_msg_text {
+  align-items: center;
+  gap: 12px;
+  margin: 12px 0 2px;
+  color: var(--bronze);
+  opacity: .7;
+}
+body.theme-forged :is(#main_text_output_msg_wrapper, #sticky-area) .output_msg.room\.short .output_msg_text::before,
+body.theme-forged :is(#main_text_output_msg_wrapper, #sticky-area) .output_msg.room\.short .output_msg_text::after {
+  content: "";
+  flex: 0 0 42px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--bronze-dim));
+}
+body.theme-forged :is(#main_text_output_msg_wrapper, #sticky-area) .output_msg.room\.short .output_msg_text::after {
+  transform: scaleX(-1);
+}
+body.theme-forged :is(#main_text_output_msg_wrapper, #sticky-area) .output_msg.room\.short .output_msg_content {
+  flex: 0 1 auto;
+  filter: none;
+  font-family: "Cinzel", serif;
+  font-size: 13px;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+}
+body.theme-forged :is(#main_text_output_msg_wrapper, #sticky-area) .output_msg.room\.short .output_msg_content * {
+  background: none !important;
+  color: inherit !important;
+}

@@ -1,5 +1,5 @@
 import {expect, test} from './support/fixtures';
-import {ensureGameSocket, pushGmcp, waitForCommandInput} from './support/mocks';
+import {ensureGameSocket, pushGmcp, pushText, waitForCommandInput} from './support/mocks';
 import {openSettings, saveSettings} from './support/settings';
 
 test.describe('Kuźnia theme', () => {
@@ -47,5 +47,23 @@ test.describe('Kuźnia theme', () => {
         await expect(footer.locator('#char-state')).toBeVisible();
         await expect(footer).toHaveCSS('border-top-left-radius', '9px');
         await expect(page.locator('#input-area')).toHaveCSS('border-bottom-left-radius', '9px');
+    });
+
+    test('the location name reads as the forge heading, in bronze whatever the game coloured it', async ({page}) => {
+        await page.addInitScript(() => {
+            const raw = localStorage.getItem('uiSettings');
+            const settings = raw ? JSON.parse(raw) : {};
+            localStorage.setItem('uiSettings', JSON.stringify({...settings, colorTheme: 'forged'}));
+        });
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+        await pushText(page, '\x1b[1;33mTrakt przy mlynie.\x1b[0m', {type: 'room.short'});
+
+        const heading = page.locator('#main_text_output_msg_wrapper .output_msg.room\\.short .output_msg_content');
+        await expect(heading).toHaveText('Trakt przy mlynie.');
+        await expect(heading).toHaveCSS('font-family', /Cinzel/);
+        await expect(heading).toHaveCSS('text-transform', 'uppercase');
+        await expect(heading.locator('span').first()).toHaveCSS('color', 'rgb(184, 150, 90)');
     });
 });
