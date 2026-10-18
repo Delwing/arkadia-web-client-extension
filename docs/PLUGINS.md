@@ -600,6 +600,24 @@ api.character.onChange((name) => { /* ... */ });
 
 Trzymaj tu małe dane (ustawienia, listy). Rosnące dane, np. dziennik, zapisuj w IndexedDB z nazwą postaci w kluczu. Nasłuchy znikają przy wyładowaniu pluginu.
 
+#### `api.sqlite` - Odczyt Baz SQLite
+
+Czyta plik SQLite wskazany przez gracza, np. bazę skryptu z Mudleta (`Database_<nazwa>.db` w folderze profilu), żeby zaimportować z niej dane:
+
+```typescript
+// file: z <input type="file" accept=".db,.sqlite"> w oknie pluginu
+const { notes, total } = await api.sqlite.read(file, {
+  notes: 'SELECT character, room, text FROM notes',
+  total: 'SELECT COUNT(*) AS n FROM notes',
+});
+notes[0];   // { character: 'Bodrin', room: 12, text: 'sklep' }
+total[0].n; // 3
+```
+
+- Zapytania mają dowolne nazwy; wynik to wiersze każdego zapytania pod jego nazwą, każdy wiersz jako obiekt z kolumnami.
+- Plik jest otwierany w pamięci, w osobnym wątku: zapytania go nie zmieniają, a duża baza nie blokuje okna.
+- Gdy plik nie jest bazą SQLite albo zapytanie się nie uda (np. brak tabeli), obietnica jest odrzucana z opisem błędu.
+
 #### `api.herbs` - Zioła
 
 ```typescript

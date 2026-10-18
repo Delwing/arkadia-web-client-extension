@@ -47,6 +47,9 @@ export interface PluginHostPort {
     getWindowSetting<T>(popupId: string, key: string, defaultValue: T): T;
     setWindowSetting<T>(popupId: string, key: string, value: T): void;
     subscribeToWindowSetting(popupId: string, key: string, listener: (value: unknown) => void): () => void;
+
+    /** Run named queries against a SQLite file; rows of each query by its name. */
+    readSqlite(buffer: ArrayBuffer, queries: Record<string, string>): Promise<Record<string, Record<string, unknown>[]>>;
 }
 
 const noopPluginHostPort: PluginHostPort = {
@@ -66,6 +69,7 @@ const noopPluginHostPort: PluginHostPort = {
     getWindowSetting: (_popupId, _key, defaultValue) => defaultValue,
     setWindowSetting: () => {},
     subscribeToWindowSetting: () => () => {},
+    readSqlite: () => Promise.reject(new Error('SQLite files cannot be read without a UI host')),
 };
 
 let current: PluginHostPort = noopPluginHostPort;

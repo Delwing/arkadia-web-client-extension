@@ -1018,6 +1018,31 @@ export interface KeysApi {
 }
 
 /**
+ * SQLite API - read a SQLite file the player picks, such as a Mudlet database
+ * (Database_<nazwa>.db in the Mudlet profile folder), to import its data.
+ */
+export interface SqliteApi {
+  /**
+   * Run named queries against a SQLite file. The file is opened in memory, so
+   * nothing a query does reaches it.
+   *
+   * @param file - The file (e.g. from an `<input type="file">`) or its bytes
+   * @param queries - SQL by a name of your choice
+   * @returns The rows of each query under its name, every row an object keyed by column
+   * @throws When the file is not a SQLite database or a query fails
+   *
+   * @example
+   * ```typescript
+   * const { notes } = await api.sqlite.read(file, {
+   *   notes: 'SELECT character, room, text FROM notes',
+   * });
+   * for (const row of notes) console.log(row.character, row.room, row.text);
+   * ```
+   */
+  read(file: Blob | ArrayBuffer, queries: Record<string, string>): Promise<Record<string, Record<string, unknown>[]>>;
+}
+
+/**
  * Output API - Print to game window
  */
 export interface OutputApi {
@@ -3501,6 +3526,8 @@ export interface PluginApi {
   character: CharacterApi;
   /** Keys - plugin-owned keyboard shortcuts */
   keys: KeysApi;
+  /** Read SQLite files, e.g. to import a Mudlet database */
+  sqlite: SqliteApi;
   /**
    * AnsiAwareBuffer class for creating formatted text buffers
    *
@@ -3576,6 +3603,7 @@ export class PluginApiImpl implements PluginApi {
   public storage: StorageApi;
   public character: CharacterApi;
   public keys: KeysApi;
+  public sqlite: SqliteApi;
   private keyActions: Map<string, PluginKeyAction> = new Map();
   private roomMenuEntryIds: Set<string> = new Set();
   public AnsiAwareBuffer: typeof AnsiAwareBuffer;
@@ -3626,6 +3654,7 @@ export class PluginApiImpl implements PluginApi {
     this.storage = this.createStorageApi();
     this.character = this.createCharacterApi();
     this.keys = this.createKeysApi();
+    this.sqlite = this.createSqliteApi();
 
     // Expose AnsiAwareBuffer class
     this.AnsiAwareBuffer = AnsiAwareBuffer;
@@ -4522,6 +4551,16 @@ export class PluginApiImpl implements PluginApi {
         });
         this.stateChangeUnsubscribers.push(unsubscribe);
         return unsubscribe;
+      },
+    };
+  }
+
+  private createSqliteApi(): SqliteApi {
+    return {
+      read: async (file, queries) => {
+        // A copy: the worker takes the buffer it is sent
+        const buffer = file instanceof ArrayBuffer ? file.slice(0) : await file.arrayBuffer();
+        return getPluginHostPort().readSqlite(buffer, queries);
       },
     };
   }

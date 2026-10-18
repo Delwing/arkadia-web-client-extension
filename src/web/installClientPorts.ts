@@ -24,6 +24,7 @@ import {
 } from './layout/pluginPopupRegistry';
 import { getWindowSetting, setWindowSetting, subscribeToWindowSetting } from './layout/windowSettings';
 import { getPluginUiKit, publishPluginUiKit } from './pluginUiKit';
+import { readPluginSqlite } from './pluginSqlite';
 
 export function installClientPorts(): void {
     publishPluginUiKit();
@@ -53,5 +54,6 @@ export function installClientPorts(): void {
         getWindowSetting,
         setWindowSetting,
         subscribeToWindowSetting,
+        readSqlite: readPluginSqlite,
     });
 }
