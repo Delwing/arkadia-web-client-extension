@@ -47,6 +47,40 @@ export function toButtonSetting(data: ButtonModes, button: StoredMobileButton): 
     return { ...rest, color: style.color, fontColor: style.fontColor, activeColor: style.activeColor };
 }
 
+/** Stored in `mode` itself, as an override of its parent or a slot of its own layout; never on solo. */
+export function isOwnButton(data: ButtonModes, mode: ButtonMode, id: string): boolean {
+    const parent = PARENT_MODE[mode];
+    const button = data.modes[mode].buttons[id];
+    if (!parent || !button) return false;
+    return !!resolveButton(data, parent, id) || button.macroType !== 'empty';
+}
+
+/** What the mode tab badge counts. */
+export function ownCount(data: ButtonModes, mode: ButtonMode): number {
+    return Object.keys(data.modes[mode].buttons).filter(id => isOwnButton(data, mode, id)).length;
+}
+
+/** Buttons `mode` has (its own or inherited) that its layout doesn't place: "Poza układem". */
+export function hiddenIds(data: ButtonModes, mode: ButtonMode): string[] {
+    const placed = new Set(resolveLayout(data, mode).layout.order);
+    const ids: string[] = [];
+    for (let m: ButtonMode | null = mode; m; m = PARENT_MODE[m]) {
+        for (const id of Object.keys(data.modes[m].buttons)) {
+            if (placed.has(id) || ids.includes(id)) continue;
+            if (resolveButton(data, mode, id)?.button.macroType !== 'empty') ids.push(id);
+        }
+    }
+    return ids;
+}
+
+/** How many buttons placed in `mode` use the style. */
+export function styleUsage(data: ButtonModes, mode: ButtonMode, styleId: string): number {
+    return resolveLayout(data, mode).layout.order.filter(id => {
+        const button = resolveButton(data, mode, id)?.button;
+        return !!button && button.macroType !== 'empty' && styleOf(data, button) === data.styles[styleId];
+    }).length;
+}
+
 const missingButton: StoredMobileButton = { macroType: 'empty', label: '' };
 
 /** One mode, fully resolved into the v1 `LayoutSettings` shape: only placed buttons. */

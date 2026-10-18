@@ -1,6 +1,13 @@
 # Mobile buttons v2: data model and migration
 
-Status: phase 1 (model, migration, mirror) implemented; editor not yet.
+Status: phases 1 (model, migration, mirror) and 2 (editor: modes,
+inheritance, Edytuj, Układ, background, style chips) implemented; the Style
+tab and Zaznacz (phase 3) not yet.
+
+Phase 2 deviations from the mockup: Rozmiar/Odstęp stay visible under the
+panel in both tools rather than inside Układ; the Układ tool uses the +/− on
+the grid edges, without extra steppers; "Domyślne" on Drużyna/Prowadzący is
+"Dziedzicz wszystko" (clears the mode's own buttons, layout and background).
 Mockup (phone + desktop, interactive): https://claude.ai/artifact/D347XfT8c7wyVKZx5i8wYH
 
 ## Why

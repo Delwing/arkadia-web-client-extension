@@ -153,7 +153,8 @@ export function modesFromLayouts(
         names.add(name);
         return name;
     };
-    let idNumber = nextNumber(used.filter(c => c.id).map(c => c.id!), 'style-');
+    // Past every existing id, used or not: callers may merge the result back into the existing styles.
+    let idNumber = nextNumber(Object.keys(existing?.styles ?? {}), 'style-');
     let plainNumber = 1;
     for (const candidate of used) {
         if (!candidate.id) {

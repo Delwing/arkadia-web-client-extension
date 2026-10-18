@@ -58,7 +58,8 @@ test.describe('Mobile buttons color and command configuration', () => {
         const labelInput = configPanel.locator('.mobile-button-label');
         await expect(labelInput, 'label input should be visible').toBeVisible();
 
-        // Check that color input is visible (in the "Wyglad" section)
+        // Colours live in styles: give this button a style of its own, which opens its colours
+        await configPanel.getByRole('button', { name: '+ Nowy styl' }).click();
         const colorRow = configPanel.locator('.mobile-button-color-row').first();
         await expect(colorRow, 'color row should be visible').toBeVisible();
         const colorInput = colorRow.locator('input[type="color"]');
@@ -67,12 +68,9 @@ test.describe('Mobile buttons color and command configuration', () => {
         // Change the button color
         await colorInput.fill('#ff0000');
 
-        // Verify the button color changed in the preview
-        const buttonStyle = await button2.evaluate((el) => {
-            return window.getComputedStyle(el).backgroundColor;
-        });
-        // RGB value of #ff0000 is rgb(255, 0, 0)
-        expect(buttonStyle, 'button background color should be red in preview').toBe('rgb(255, 0, 0)');
+        // Verify the button color changed in the preview, and only for this button
+        await expect(button2, 'button background color should be red in preview').toHaveCSS('background-color', 'rgb(255, 0, 0)');
+        await expect(button3, 'a button sharing the old style keeps its colour').not.toHaveCSS('background-color', 'rgb(255, 0, 0)');
 
         // Change the macro type to "command"
         await macroSelect.selectOption('command');
@@ -174,6 +172,7 @@ test.describe('Mobile buttons color and command configuration', () => {
         expect(labelValue, 'label should still be Test Button after reload').toBe('Test Button');
 
         // Verify the color is still set
+        await configPanelAfterReload.getByRole('button', { name: 'Zmień kolory stylu ›' }).click();
         const colorRowAfterReload = configPanelAfterReload.locator('.mobile-button-color-row').first();
         const colorInputAfterReload = colorRowAfterReload.locator('input[type="color"]');
         const colorValue = await colorInputAfterReload.inputValue();
@@ -239,9 +238,9 @@ test.describe('Mobile buttons color and command configuration', () => {
         await expect(modal).toBeVisible();
 
         // Check that mode toggle buttons exist
-        const soloButton = page.getByRole('button', { name: 'Bez drużyny' });
-        const teamButton = page.getByRole('button', { name: 'W drużynie' });
-        const leaderButton = page.getByRole('button', { name: 'Prowadzący' });
+        const soloButton = page.getByRole('button', { name: 'Solo', exact: true });
+        const teamButton = page.getByRole('button', { name: 'Drużyna', exact: true });
+        const leaderButton = page.getByRole('button', { name: 'Prowadzący', exact: true });
 
         await expect(soloButton, 'solo mode button should be visible').toBeVisible();
         await expect(teamButton, 'team mode button should be visible').toBeVisible();

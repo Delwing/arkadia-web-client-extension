@@ -1562,65 +1562,216 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
   flex-direction: column;
   gap: 12px;
 }
-/* Wide screens: the settings in a narrow column, the grid beside them —
-   stretched across the card the sliders were all track and blank space. */
+/* Wide screens: the preview on the left, the panel for the selected tool on
+   the right. A phone stacks them, the panel under the grid. */
 @media (min-width: 900px) {
   .mobile-buttons-editor {
     display: grid;
-    grid-template-columns: minmax(0, 26rem) auto;
-    justify-content: start;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 26rem);
     grid-template-areas:
-      "top grid"
-      "sliders grid"
-      "footer grid";
-    grid-template-rows: auto auto 1fr;
+      "top top"
+      "chain chain"
+      "stage panel"
+      "footer panel";
+    grid-template-rows: auto auto auto 1fr;
     align-items: start;
-    gap: 12px 32px;
+    gap: 12px 24px;
   }
   .mobile-buttons-editor > .mobile-buttons-top-row { grid-area: top; }
-  .mobile-buttons-editor > .mobile-buttons-background-section { grid-area: sliders; }
+  .mobile-buttons-editor > .mobile-buttons-chain { grid-area: chain; }
+  .mobile-buttons-editor > .mobile-buttons-stage { grid-area: stage; }
+  .mobile-buttons-editor > .mobile-buttons-panel { grid-area: panel; }
   .mobile-buttons-editor > .mobile-buttons-footer { grid-area: footer; }
-  .mobile-buttons-editor > .mobile-buttons-grid-editor {
-    grid-area: grid;
-    align-self: center;
-  }
 }
 
-/* Button config: a popover under the clicked button; a bottom sheet on a phone. */
+/* Where the shown mode inherits from, and what it changes. */
+.mobile-buttons-chain {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 12px;
+  color: var(--popup-text-dim);
+  font-size: var(--ui-fs-sm, 13px);
+}
+.mobile-buttons-chain__current {
+  color: var(--popup-text);
+  font-weight: 600;
+}
+.mobile-buttons-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  overflow-x: auto;
+}
+/* A phone stacks the panel under the grid: while a button is being edited the
+   grid shrinks and stays in view, so a change shows as it is made and another
+   button is one tap away. */
+@media (max-width: 899px) {
+  .mobile-buttons-stage.is-editing {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    padding: 6px 0;
+    background-color: var(--popup-section-bg);
+  }
+  .mobile-buttons-stage.is-editing .mobile-direction-buttons.preview {
+    zoom: 0.72;
+  }
+}
+.mobile-buttons-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+.mobile-buttons-notice {
+  padding: 8px 12px;
+  border-radius: var(--ui-radius, 6px);
+  background-color: var(--popup-accent);
+  color: var(--popup-bg);
+  font-size: var(--ui-fs-sm, 13px);
+  font-weight: 500;
+}
+.mobile-buttons-hint {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: var(--popup-text-subtle);
+  font-size: var(--ui-fs-sm, 13px);
+  line-height: 1.45;
+}
+.mobile-buttons-hint p,
+.mobile-buttons-note {
+  margin: 0;
+}
+.mobile-buttons-note {
+  color: var(--popup-text-dim);
+  font-size: var(--ui-fs-sm, 13px);
+  line-height: 1.4;
+}
+.mobile-buttons-swap-hint.is-active {
+  color: var(--popup-accent);
+}
+.mobile-buttons-own-dot,
+.mobile-direction-buttons.preview .mobile-button.own::after {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background-color: var(--popup-warning, #de9822);
+}
+.mobile-buttons-layout-panel,
+.mobile-buttons-layout-source {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.mobile-buttons-section-title {
+  color: var(--popup-text-dim);
+  font-size: var(--ui-fs-xs, 12px);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* Inherited cells dimmed, a mode's own ones marked, the swap source outlined. */
+.mobile-direction-buttons.preview .mobile-button {
+  position: relative;
+}
+.mobile-direction-buttons.preview .mobile-button.inherited {
+  opacity: 0.5;
+}
+.mobile-direction-buttons.preview .mobile-button.own::after {
+  content: '';
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  box-shadow: 0 0 0 2px var(--popup-bg);
+}
+.mobile-direction-buttons.preview .mobile-button.empty {
+  border: 1px dashed var(--popup-border-strong);
+}
+.mobile-direction-buttons.preview .mobile-button.swap-source {
+  outline: 2px dashed var(--popup-accent);
+  outline-offset: 2px;
+}
+
+/* Where the selected button comes from. */
+.mobile-button-origin {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--popup-border-subtle);
+  border-radius: var(--ui-radius, 6px);
+}
+.mobile-button-origin.is-own,
+.mobile-button-config-section.is-own {
+  border-color: color-mix(in srgb, var(--popup-warning, #de9822) 55%, transparent);
+}
+.mobile-button-origin__text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  font-size: var(--ui-fs-sm, 13px);
+}
+.mobile-button-origin__text > span {
+  color: var(--popup-text-dim);
+}
+.mobile-button-styles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.mobile-button-style {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+.mobile-button-style.is-active {
+  border-color: var(--popup-accent);
+  background-color: var(--popup-accent);
+  color: var(--popup-bg);
+}
+.mobile-button-style--new {
+  border-style: dashed;
+}
+.mobile-button-style__swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+}
+.mobile-button-style-toggle {
+  align-self: flex-start;
+}
+.mobile-button-style-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.mobile-button-style-usage {
+  margin: 0;
+  color: var(--popup-text-dim);
+  font-size: var(--ui-fs-sm, 13px);
+}
+.mobile-button-style-usage.is-shared {
+  color: var(--popup-warning, #de9822);
+}
+
+/* The selected button's settings, in the panel. */
 .mobile-button-config {
-  position: fixed;
-  z-index: 1060;
-  width: 380px;
-  max-height: 70vh;
-  overflow-x: hidden;
-  overflow-y: auto;
   border: 1px solid var(--popup-border);
   border-radius: var(--ui-radius-lg, 10px);
   background-color: var(--popup-bg);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
-}
-@media (max-width: 767px) {
-  .mobile-button-config {
-    top: auto;
-    right: 0;
-    bottom: 0;
-    left: 0;
-    width: auto;
-    max-height: 85vh;
-    padding-bottom: env(safe-area-inset-bottom, 0);
-    border-radius: 14px 14px 0 0;
-    transform: translateY(100%);
-    transition: transform 0.3s ease-out;
-  }
-  .mobile-button-config.open {
-    transform: translateY(0);
-  }
 }
 /* Same header as the shared dialog: 40px, spaced capitals. */
 .mobile-button-config-header {
-  position: sticky;
-  top: 0;
-  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1637,34 +1788,11 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
-@media (max-width: 767px) {
-  /* Drag-handle hint on the sheet. */
-  .mobile-button-config-header::before {
-    content: '';
-    position: absolute;
-    top: 6px;
-    left: 50%;
-    width: 2.5rem;
-    height: 4px;
-    border-radius: 2px;
-    background-color: var(--popup-border);
-    transform: translateX(-50%);
-  }
-  .mobile-button-config-header {
-    padding-top: 12px;
-  }
-}
 .mobile-button-config-body {
   display: flex;
   flex-direction: column;
   gap: 12px;
   padding: 12px 14px 14px;
-}
-@media (max-width: 767px) {
-  .mobile-button-config-body {
-    max-height: calc(85vh - 3.5rem);
-    overflow-y: auto;
-  }
 }
 .mobile-button-config-section {
   display: flex;
@@ -1693,25 +1821,6 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
   color: var(--popup-text);
   font-size: var(--ui-fs, 14px);
   font-weight: 400;
-}
-.mobile-button-config-backdrop {
-  display: none;
-}
-@media (max-width: 767px) {
-  .mobile-button-config-backdrop {
-    position: fixed;
-    inset: 0;
-    z-index: 1049;
-    display: block;
-    background-color: rgba(0, 0, 0, 0.5);
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.3s ease;
-  }
-  .mobile-button-config-backdrop.open {
-    opacity: 1;
-    pointer-events: auto;
-  }
 }
 
 /* Mode toggle (segmented) and lock. */

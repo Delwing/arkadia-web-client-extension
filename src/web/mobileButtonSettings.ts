@@ -443,7 +443,8 @@ function parseButtonModes(raw: any): ButtonModes | null {
     return { modes, styles, styleOrder };
 }
 
-function withViews(base: Omit<Settings, ButtonMode>): Settings {
+/** Recompute the per-mode views; an editor working on `modes` calls this after each change. */
+export function withViews(base: Omit<Settings, ButtonMode>): Settings {
     return {
         ...base,
         solo: resolveMode(base, 'solo'),
@@ -470,6 +471,12 @@ export function parseSettings(raw: any): Settings {
     const legacy = parseLegacySettings(raw);
     const modes = parseButtonModes(raw) ?? modesFromLayouts(legacy);
     return withViews({ version: 2, ...sharedSettings(raw, legacy), ...modes });
+}
+
+/** Solo back to the stock layout, reusing `existing` styles whose colours match. */
+export function defaultSoloModes(existing: ButtonModes): ButtonModes {
+    const stock = createDefaultLayout();
+    return modesFromLayouts({ solo: stock, team: stock, leader: stock }, existing);
 }
 
 export function loadSettings(): Settings {

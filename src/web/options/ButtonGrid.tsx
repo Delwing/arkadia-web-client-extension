@@ -1,56 +1,52 @@
-import { RefObject, MouseEvent, CSSProperties } from "react";
-import { Settings, defaultSettings, defaultBackground, defaultButtonSize, defaultButtonGap, computeBoxShadow } from "../mobileButtonSettings";
-import type { MobileButtonSetting } from "../buttonSettings";
+import type { CSSProperties } from "react";
+import { computeBoxShadow, type LayoutSettings } from "../mobileButtonSettings";
 import { defaultFontColor } from "../buttonSettings";
 
-export type Mode = 'solo' | 'team' | 'leader';
-
-interface Props {
-    mode: Mode;
-    view: Mode;
-    settings: Settings;
-    notEditable: string[];
-    emptySetting: MobileButtonSetting;
-    openConfig: (setName: Mode, id: string, ev: MouseEvent<HTMLButtonElement>) => void;
-    gridRef: RefObject<HTMLDivElement>;
-    activeButtonId?: string | null;
+export interface CellState {
+    /** Shown dimmed: the mode takes it from its parent. */
+    inherited: boolean;
+    /** Marked: stored in this mode (an override or a slot of its own). */
+    own: boolean;
+    selected: boolean;
+    swapSource: boolean;
 }
 
-export default function ButtonGrid({ mode, view, settings, notEditable, emptySetting, openConfig, gridRef, activeButtonId }: Props) {
-    const set = settings[mode];
-    const bgColor = set.background || defaultBackground;
-    const buttonSize = settings.buttonSize ?? defaultButtonSize;
-    const buttonGap = settings.buttonGap ?? defaultButtonGap;
+interface Props {
+    id: string;
+    layout: LayoutSettings;
+    buttonSize: number;
+    buttonGap: number;
+    cellState: (id: string, index: number) => CellState;
+    onCellClick: (id: string, index: number) => void;
+}
+
+/** The editor's preview of one mode, at the real button size. */
+export default function ButtonGrid({ id, layout, buttonSize, buttonGap, cellState, onCellClick }: Props) {
     return (
         <div
-            ref={gridRef}
-            id={`mobile-buttons-preview-${mode}`}
+            id={id}
             className="mobile-direction-buttons preview"
             style={{
-                // Only the mode being edited shows; the others stay mounted for their refs.
-                display: view === mode ? undefined : 'none',
-                gridTemplateColumns: `repeat(${set.cols}, auto)`,
-                backgroundColor: bgColor,
-                boxShadow: computeBoxShadow(bgColor),
+                gridTemplateColumns: `repeat(${layout.cols}, auto)`,
+                backgroundColor: layout.background,
+                boxShadow: computeBoxShadow(layout.background),
                 gap: buttonGap + 'px',
             }}
         >
-            {set.order.map(id => {
-                const cfg = set.buttons[id] || defaultSettings[id] || emptySetting;
-                let classes = 'mobile-button';
+            {layout.order.map((buttonId, index) => {
+                const cfg = layout.buttons[buttonId];
                 const isText = cfg.macroType !== 'kierunek';
-                if (cfg.macroType === 'kierunek') {
-                    classes += ' direction-button';
-                } else {
-                    classes += ' mobile-button-text';
-                }
                 const isEmpty = cfg.macroType === 'empty' || !cfg.label;
-                if (isEmpty) classes += ' empty';
-                const isActive = activeButtonId === id;
-                if (isActive) classes += ' editing';
-                const handle = notEditable.includes(id)
-                    ? undefined
-                    : (ev: React.MouseEvent<HTMLButtonElement>) => openConfig(mode, id, ev);
+                const state = cellState(buttonId, index);
+                const classes = [
+                    'mobile-button',
+                    isText ? 'mobile-button-text' : 'direction-button',
+                    isEmpty && 'empty',
+                    state.selected && 'editing',
+                    state.inherited && 'inherited',
+                    state.own && 'own',
+                    state.swapSource && 'swap-source',
+                ].filter(Boolean).join(' ');
                 // Font size scales with button size: direction ~35%, text ~20% to ensure fit
                 const fontSize = isText ? Math.max(6, Math.round(buttonSize * 0.20)) : Math.round(buttonSize * 0.35);
                 const style: CSSProperties = {
@@ -66,11 +62,13 @@ export default function ButtonGrid({ mode, view, settings, notEditable, emptySet
                 }
                 return (
                     <button
-                        key={id}
-                        data-button-id={id}
+                        key={`${buttonId}-${index}`}
+                        type="button"
+                        data-button-id={buttonId}
                         className={classes}
                         style={style}
-                        onClick={handle}
+                        title={isEmpty ? 'Puste pole' : undefined}
+                        onClick={() => onCellClick(buttonId, index)}
                     >
                         {isEmpty ? '' : cfg.label}
                     </button>
