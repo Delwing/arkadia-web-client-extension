@@ -1,7 +1,6 @@
 import Client from "../Client";
 import {matchWhen} from "@client/Triggers.ts";
 import eventBus from "@modules/core/eventBus";
-import {createColorFormat} from "@modules/core/Colors";
 
 export interface MailEntry {
     number: number;
@@ -24,7 +23,6 @@ export interface LetterContent {
 export type MailType = 'nieprzeczytane' | 'odebrane' | 'wyslane' | 'niewyslane';
 
 const tag = "poczta";
-const READ_BUTTON_COLOR = createColorFormat("#ff6347");
 
 export default function initPoczta(client: Client, aliases: { pattern: RegExp; callback: Function }[]) {
     let currentMailType: MailType | null = null;
@@ -34,7 +32,7 @@ export default function initPoczta(client: Client, aliases: { pattern: RegExp; c
     let popupRequestActive = false;
     /**
      * An index the player listed themselves (`listy`) stays in the output, and its
-     * entries get a `[przeczytaj]` link that opens the letter popup. Set from the header
+     * subjects become links that open the letter popup. Set from the header
      * until the first line that is not part of the index.
      */
     let visibleListing: MailType | null = null;
@@ -222,14 +220,11 @@ export default function initPoczta(client: Client, aliases: { pattern: RegExp; c
             if (!visibleListing) return line;
 
             const number = parseInt(matches[1], 10);
-            const link = {
+            // The subject ends the line, so it is the last matches[3].length characters.
+            return line.createLink([line.text.length - matches[3].length, line.text.length], {
                 onClick: () => readLetter(number),
                 title: `przeczytaj list ${number}`,
-            };
-            line.createLink([line.text.search(/\d/), line.text.length], link);
-            const buttonStart = line.text.length + 1;
-            line.suffix(" [przeczytaj]", READ_BUTTON_COLOR);
-            return line.createLink([buttonStart, line.text.length], link);
+            });
         }
 
         if (pendingEntry && pendingEntry.number !== undefined) {

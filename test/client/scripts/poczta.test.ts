@@ -297,38 +297,31 @@ Nadawca: Lindra                          S, 17 X 2026, 20:45:02`;
         const linkOf = (line: AnsiAwareBuffer | null) =>
             line?.getSegments().find(segment => segment.state?.hyperlink)?.state?.hyperlink;
 
-        /** The `[przeczytaj]` button at the end of a line. */
-        const buttonOf = (line: AnsiAwareBuffer | null) => {
-            const last = line?.getSegments().at(-1);
-            return last?.text === '[przeczytaj]' ? last.state?.hyperlink : undefined;
-        };
+        /** The text under the line's link. */
+        const linkedTextOf = (line: AnsiAwareBuffer | null) =>
+            line?.getSegments().find(segment => segment.state?.hyperlink)?.text;
 
-        test('stays visible and gives each entry a button for its letter', () => {
+        test('stays visible and links each subject to its letter', () => {
             const lines = parse(UNREAD);
-            expect(lines.map(line => line?.text)).toEqual(UNREAD.split('\n').map(text =>
-                text.includes('Temat:') ? `${text} [przeczytaj]` : text));
+            expect(lines.map(line => line?.text)).toEqual(UNREAD.split('\n'));
             expect(lists).toEqual([]);
 
-            const buttons = lines.map(buttonOf);
-            expect(buttons.map(button => button?.title)).toEqual([
+            const links = lines.map(linkOf);
+            expect(links.map(link => link?.title)).toEqual([
                 undefined, 'przeczytaj list 3', undefined, 'przeczytaj list 2', undefined, 'przeczytaj list 1', undefined,
             ]);
+            expect(linkedTextOf(lines[1])).toBe('wyprawa');
 
-            buttons[3]!.onClick!(new MouseEvent('click'));
+            links[3]!.onClick!(new MouseEvent('click'));
             expect(commands).toEqual(['przeczytaj list 2']);
         });
 
-        test('the subject opens the letter too', () => {
-            const [, entry] = parse(UNREAD);
-            linkOf(entry)!.onClick!(new MouseEvent('click'));
-            expect(commands).toEqual(['przeczytaj list 3']);
-        });
-
-        test('received mail gets buttons as well', () => {
+        test('received mail gets links as well', () => {
             const lines = parse(`Listy odebrane:
    2. *R* Temat: Pergamin.
 Nadawca: Zutzer                         Pn, 31 VIII 2026`);
-            expect(buttonOf(lines[1])?.title).toBe('przeczytaj list 2');
+            expect(linkOf(lines[1])?.title).toBe('przeczytaj list 2');
+            expect(linkedTextOf(lines[1])).toBe('Pergamin.');
         });
 
         test('an entry-like line after the index is left alone', () => {
