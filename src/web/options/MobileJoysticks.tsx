@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Button, Check, DeleteButton, Input } from "@web-ui/primitives/index.ts";
+import { Button, Check, ColorInput, DeleteButton, Input } from "@web-ui/primitives/index.ts";
 import { globalStorage } from "@modules/core/storage";
 import { loadSettings, saveSettings } from "../mobileButtonSettings";
 import {
@@ -89,13 +89,13 @@ function JoystickCard({ item, disabled, onChange, onRemove }: {
                 </label>
                 <label className="joystick-editor__color">
                     <span className="popup-field__label">Kolor</span>
-                    <input type="color" className="popup-color" value={item.color} disabled={disabled}
-                        onChange={e => onChange({ ...item, color: e.target.value })} />
+                    <ColorInput value={item.color} disabled={disabled}
+                        onChange={v => onChange({ ...item, color: v })} />
                 </label>
                 <label className="joystick-editor__color">
                     <span className="popup-field__label">Tekst</span>
-                    <input type="color" className="popup-color" value={item.fontColor} disabled={disabled}
-                        onChange={e => onChange({ ...item, fontColor: e.target.value })} />
+                    <ColorInput value={item.fontColor} disabled={disabled}
+                        onChange={v => onChange({ ...item, fontColor: v })} />
                 </label>
             </div>
         </div>

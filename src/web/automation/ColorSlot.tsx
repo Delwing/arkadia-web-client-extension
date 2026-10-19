@@ -1,5 +1,5 @@
 import { X } from 'lucide-react';
-import { Button } from '@web-ui/primitives/index.ts';
+import { Button, ColorInput } from '@web-ui/primitives/index.ts';
 
 /**
  * A colour that may be left unset: a labelled swatch that is the native colour
@@ -18,11 +18,9 @@ export function ColorSlot({ label, value, fallback, onChange }: {
     return (
         <span className={`color-slot${empty ? ' is-empty' : ''}`}>
             <span className="color-slot__label">{label}</span>
-            <input
-                type="color"
-                className="popup-color"
+            <ColorInput
                 value={value ?? fallback}
-                onChange={e => onChange(e.target.value)}
+                onChange={onChange}
                 title={empty ? `${label}: bez zmiany` : `${label}: ${value}`}
             />
             {empty ? <span className="color-slot__clear" /> : (

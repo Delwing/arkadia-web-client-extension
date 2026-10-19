@@ -6,7 +6,7 @@
 // forge's whole base UI. forge instead provides the modal chrome via its scoped
 // bootstrap-compat.css. Re-adding this import would reintroduce that leak.
 import {useState} from "react";
-import {Button as UiButton, Check, DeleteButton, Field, Input, Select} from "@web-ui/primitives/index.ts";
+import {Button as UiButton, Check, ColorInput, DeleteButton, Field, Input, Select} from "@web-ui/primitives/index.ts";
 import {CircleHelp} from "lucide-react";
 import {defaultSettings} from "./defaultSettings";
 import type {SunAnnouncement} from "@modules/core/defaultSettings";
@@ -154,24 +154,20 @@ export function ExitsSection({settings, onChangeSetting}: GeneralSettingsSection
                         </Field>
                         <Field label="Kolor tekstu" htmlFor="exits-color">
                             <div className="popup-inline">
-                                <input
-                                    type="color"
+                                <ColorInput
                                     id="exits-color"
-                                    className="popup-color"
                                     value={settings.shortExitsColor ?? '#ffa500'}
-                                    onChange={e => onChangeSetting(s => s.shortExitsColor = e.target.value)}
+                                    onChange={v => onChangeSetting(s => s.shortExitsColor = v)}
                                 />
                                 <UiButton size="sm" variant="ghost" onClick={() => onChangeSetting(s => s.shortExitsColor = '#ffa500')} title="Przywróć domyślny kolor">↺</UiButton>
                             </div>
                         </Field>
                         <Field label="Kolor tła" htmlFor="exits-bg-color">
                             <div className="popup-inline">
-                                <input
-                                    type="color"
+                                <ColorInput
                                     id="exits-bg-color"
-                                    className="popup-color"
                                     value={settings.shortExitsBackgroundColor ?? 'transparent'}
-                                    onChange={e => onChangeSetting(s => s.shortExitsBackgroundColor = e.target.value)}
+                                    onChange={v => onChangeSetting(s => s.shortExitsBackgroundColor = v)}
                                 />
                                 <UiButton size="sm" variant="ghost" onClick={() => onChangeSetting(s => s.shortExitsBackgroundColor = 'transparent')} title="Przywróć domyślny kolor tła">↺</UiButton>
                             </div>

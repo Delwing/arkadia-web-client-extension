@@ -1,5 +1,5 @@
 import {ChangeEvent, useEffect, useState} from "react";
-import {Check} from "@web-ui/primitives/index.ts";
+import {Check, ColorInput} from "@web-ui/primitives/index.ts";
 
 interface Props {
     guild: string;
@@ -37,8 +37,7 @@ export default function GuildRow({guild, selected, enemySelected, allySelected, 
         onAllyChange(guild, ev.target.checked);
     }
 
-    function handleColorChange(ev: ChangeEvent<HTMLInputElement>) {
-        const newColor = ev.target.value;
+    function handleColorChange(newColor: string) {
         setPickerColor(newColor);
         if (color !== undefined) {
             onColorChange(guild, newColor);
@@ -91,10 +90,8 @@ export default function GuildRow({guild, selected, enemySelected, allySelected, 
                         onChange={handleColorToggle}
                         disabled={enemySelected}
                     />
-                    <input
-                        type="color"
+                    <ColorInput
                         id={`guild-color-${guild}`}
-                        className="popup-color"
                         value={pickerColor}
                         onChange={handleColorChange}
                         disabled={enemySelected}

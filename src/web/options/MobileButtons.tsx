@@ -1,5 +1,5 @@
 import {RefObject, useEffect, useRef, useState} from "react";
-import {Button, Check, Field, Input, Select} from "@web-ui/primitives/index.ts";
+import {Button, Check, ColorInput, Field, Input, Select} from "@web-ui/primitives/index.ts";
 import {
     applySettings,
     createDefaultLayout,
@@ -369,7 +369,7 @@ function MobileButtons({ registerSave }: { registerSave: (save: () => void) => v
         return (
             <div className="mobile-button-color-row">
                 <span className="popup-field__label">{label}</span>
-                <input type="color" className="popup-color" value={value} onChange={e => onChange(e.target.value)} />
+                <ColorInput value={value} onChange={onChange} />
                 <Button size="sm" variant="ghost" title="Przywróć domyślny kolor" onClick={onReset}>↺</Button>
             </div>
         );
@@ -456,12 +456,9 @@ function MobileButtons({ registerSave }: { registerSave: (save: () => void) => v
                     <div className="mobile-buttons-slider-row">
                         <span className="popup-field__label">Kolor tła</span>
                         <div className="popup-inline">
-                            <input
-                                type="color"
-                                className="popup-color"
+                            <ColorInput
                                 value={backgroundHex}
-                                onChange={e => {
-                                    const hex = e.target.value;
+                                onChange={hex => {
                                     setSettings(prev => {
                                         const bg = prev[view].background || defaultBackground;
                                         const { alpha } = parseBackgroundColor(bg);

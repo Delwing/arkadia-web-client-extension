@@ -1,4 +1,4 @@
-import { Button, Check, DeleteButton, Field, Input, Select, TextArea } from "@web-ui/primitives/index.ts";
+import { Button, Check, ColorInput, DeleteButton, Field, Input, Select, TextArea } from "@web-ui/primitives/index.ts";
 import { directionOptions } from "../buttonSettings";
 import type { MacroType, ButtonMacroConfig } from "../buttonSettings";
 import {
@@ -255,13 +255,11 @@ function PluginStateConfig({ macroType, pluginConfig, onChange, color }: PluginS
                                     onChange({ ...config, stateLabels: newStateLabels });
                                 }}
                             />
-                            <input
-                                type="color"
-                                className="popup-color"
+                            <ColorInput
                                 value={stateColors[state.id] || state.color || color || '#6EB4DC'}
-                                onChange={e => {
+                                onChange={v => {
                                     const newStateColors = { ...stateColors };
-                                    newStateColors[state.id] = e.target.value;
+                                    newStateColors[state.id] = v;
                                     onChange({ ...config, stateColors: newStateColors });
                                 }}
                             />

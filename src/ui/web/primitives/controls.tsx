@@ -1,4 +1,4 @@
-import { useId } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { Trash2 } from 'lucide-react';
 import type {
     Ref,
@@ -145,6 +145,66 @@ export function TextArea({ mono, className, ...rest }: TextareaHTMLAttributes<HT
 
 export function Select({ className, ...rest }: SelectHTMLAttributes<HTMLSelectElement>) {
     return <select className={cx('popup-input popup-input--control', className)} {...rest} />;
+}
+
+/** How often a dragged colour reaches the owner (ms). */
+const COLOR_COMMIT_MS = 50;
+
+export interface ColorInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type' | 'value' | 'onChange'> {
+    value: string;
+    onChange: (color: string) => void;
+    ref?: Ref<HTMLInputElement>;
+}
+
+/**
+ * A native colour picker that shows the dragged colour at once but hands it on
+ * at most every COLOR_COMMIT_MS: the picker fires on every pixel of a drag, and
+ * owners re-apply settings, save or re-render a list on each one. The first
+ * pick goes through at once and the last one is never dropped.
+ */
+export function ColorInput({ value, onChange, className, ...rest }: ColorInputProps) {
+    // The colour under the cursor while a drag is ahead of the owner.
+    const [live, setLive] = useState<string | null>(null);
+    const pending = useRef<string | null>(null);
+    const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+    const onChangeRef = useRef(onChange);
+    useLayoutEffect(() => { onChangeRef.current = onChange; });
+
+    const commit = () => {
+        const color = pending.current;
+        pending.current = null;
+        if (color !== null) onChangeRef.current(color);
+    };
+    const tick = () => {
+        if (pending.current === null) {
+            timer.current = undefined;
+            setLive(null);
+            return;
+        }
+        commit();
+        timer.current = setTimeout(tick, COLOR_COMMIT_MS);
+    };
+    useEffect(() => () => {
+        clearTimeout(timer.current);
+        commit();
+    }, []);
+
+    return (
+        <input
+            type="color"
+            className={className ?? 'popup-color'}
+            value={live ?? value}
+            onChange={(e) => {
+                setLive(e.target.value);
+                pending.current = e.target.value;
+                if (timer.current === undefined) {
+                    commit();
+                    timer.current = setTimeout(tick, COLOR_COMMIT_MS);
+                }
+            }}
+            {...rest}
+        />
+    );
 }
 
 /** Fixed text before/after an input, e.g. ^ … $ around a regex. */

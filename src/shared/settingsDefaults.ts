@@ -107,7 +107,7 @@ export const shellSettingsKeys = [
 
 export const renderSettingsKeys = [
     'fontFamily', 'customFontUrl', 'customFontFamily', 'systemFontFamily', 'uploadedFontFamily',
-    'xtermPalette', 'colorTheme', 'customThemeColor', 'outputBackground',
+    'xtermPalette', 'colorTheme', 'customThemeColor', 'outputBackground', 'outputTextColor',
     'backgroundImage', 'backgroundImageShade',
     'outputBottomPadding', 'showTimestamps', 'highlightMessageBlocks', 'characterPlaque', 'objectListCoverMarkers', 'commandEcho',
     'clearInputOnSend', 'autoLowercaseCommands', 'soundCategories', 'customBeepSoundKey',

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Button, Check, Field, Input } from "@web-ui/primitives/index.ts";
+import { Button, Check, ColorInput, Field, Input } from "@web-ui/primitives/index.ts";
 import { characterStorage } from "@modules/core/storage";
 import { defaultSettings } from "./defaultSettings";
 import type { Settings as BaseSettings } from "./defaultSettings";
@@ -106,7 +106,7 @@ function MagikiSettings({ registerSave }: MagikiSettingsProps) {
         <div className="settings-row">
             <label className="popup-field__label" htmlFor={id}>{label}</label>
             <div className="popup-inline">
-                <input type="color" id={id} className="popup-color" value={value} onChange={(e) => set(e.target.value)}/>
+                <ColorInput id={id} value={value} onChange={set}/>
                 <Button size="sm" variant="ghost" onClick={() => set(fallback)} title="Przywróć domyślny kolor">↺</Button>
             </div>
         </div>

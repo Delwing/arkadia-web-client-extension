@@ -119,6 +119,7 @@ const CONSTRAINTS: Record<string, Constraint> = {
     },
     customThemeColor: { type: 'color', },
     outputBackground: { type: 'color' },
+    outputTextColor: { type: 'color' },
     backgroundImage: { type: 'enum', enumValues: ['theme', 'none', 'uploaded'] },
     backgroundImageShade: { type: 'number', min: 0, max: 90, integer: true },
     outputBottomPadding: { type: 'number', min: 0, max: 400, integer: true },
@@ -222,6 +223,7 @@ const OPTIONAL_EXTRA_FIELDS: { scope: SettingScope; field: string }[] = [
     { scope: 'settings', field: 'shortExitsSeparator' },
     { scope: 'settings', field: 'shortExitsBackgroundColor' },
     { scope: 'renderSettings', field: 'customThemeColor' },
+    { scope: 'renderSettings', field: 'outputTextColor' },
     { scope: 'renderSettings', field: 'customBeepSoundKey' },
 ];
 

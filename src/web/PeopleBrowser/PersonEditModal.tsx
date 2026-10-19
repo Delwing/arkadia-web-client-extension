@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import type { PersonEntry, PersonListEntry } from '@client/types/people';
 import { GUILD_CODES_BY_ID } from '@modules/data/peopleGuilds';
 import { Check as CheckIcon } from 'lucide-react';
-import { Button, Check, Dialog, Field, Input, Notice, Select, TextArea } from '@web-ui/primitives';
+import { Button, Check, ColorInput, Dialog, Field, Input, Notice, Select, TextArea } from '@web-ui/primitives';
 
 const ALL_GUILD_CODES = Object.values(GUILD_CODES_BY_ID).sort();
 
@@ -242,11 +242,10 @@ const PersonEditModal: React.FC<PersonEditModalProps> = ({
                                 </Button>
                                 <span className="people-modal__marks-sep" />
                                 <label className="people-modal__color-label" title="Kolor indywidualny">
-                                    <input
-                                        type="color"
+                                    <ColorInput
                                         className="people-modal__color"
                                         value={currentColor || '#ffff5f'}
-                                        onChange={(e) => onSetColor?.(e.target.value)}
+                                        onChange={v => onSetColor?.(v)}
                                     />
                                     <span>{currentColor ? 'Kolor własny' : 'Kolor gildii'}</span>
                                 </label>

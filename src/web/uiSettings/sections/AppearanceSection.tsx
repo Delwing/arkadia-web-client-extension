@@ -3,7 +3,7 @@ import type { UiSettings } from "../../uiSettingsCore";
 import { guessFontFamilyFromStylesheet, guessFontFamilyFromUrl } from "../../uiSettingsCore";
 import { computeAccentHex, generateRandomColor } from "../../themes/randomTheme";
 import { defaultUiSettings } from "../../defaultUiSettings";
-import { Button, Field, Input, Select } from "@web-ui/primitives/index.ts";
+import { Button, ColorInput, Field, Input, Select } from "@web-ui/primitives/index.ts";
 import { CheckboxRow, ColorField, NumberField, RangeField, SelectField, SettingsSection } from "../fields";
 import PalettePreviewDialog from "../PalettePreviewDialog";
 import { SystemFontField, UploadedFontField } from "../FontSourceFields";
@@ -13,6 +13,19 @@ interface AppearanceSectionProps {
     draft: UiSettings;
     update: (patch: Partial<UiSettings>) => void;
     commitCustomDark: (color: string) => void;
+}
+
+/** What the theme paints uncoloured game text in, for the picker while no colour of the player's own is set. */
+function themeTextColor(): string {
+    const output = document.getElementById('main_text_output_msg_wrapper');
+    if (!output) return '#c0c0c0';
+    // The live preview may still carry the colour just reset; look past it.
+    const inline = output.style.color;
+    output.style.removeProperty('color');
+    const match = getComputedStyle(output).color.match(/\d+/g);
+    output.style.color = inline;
+    if (!match || match.length < 3) return '#c0c0c0';
+    return '#' + match.slice(0, 3).map(n => Number(n).toString(16).padStart(2, '0')).join('');
 }
 
 function AppearanceSection({ draft, update, commitCustomDark }: AppearanceSectionProps) {
@@ -110,6 +123,14 @@ function AppearanceSection({ draft, update, commitCustomDark }: AppearanceSectio
             <NumberField id="ui-content-font" label="Rozmiar czcionki treści (rem)" value={draft.contentFontSize} step={0.1} onChange={(n) => update({ contentFontSize: n })} />
             <NumberField id="ui-objects-font" label="Rozmiar czcionki listy obiektów (rem)" value={draft.objectsFontSize} step={0.1} onChange={(n) => update({ objectsFontSize: n })} />
             <ColorField id="ui-output-background" label="Kolor tła okna głównego" value={draft.outputBackground} onChange={(v) => update({ outputBackground: v })} onReset={() => update({ outputBackground: defaultUiSettings.outputBackground })} />
+            <ColorField
+                id="ui-output-text-color"
+                label="Domyślny kolor tekstu"
+                hint={draft.outputTextColor ? "Tekst bez własnego koloru ANSI." : "Tekst bez własnego koloru ANSI. Teraz z motywu."}
+                value={draft.outputTextColor ?? themeTextColor()}
+                onChange={(v) => update({ outputTextColor: v })}
+                onReset={() => update({ outputTextColor: undefined })}
+            />
             <SelectField
                 id="ui-backdrop"
                 label="Obraz tła"
@@ -159,7 +180,7 @@ function AppearanceSection({ draft, update, commitCustomDark }: AppearanceSectio
                 </SelectField>
                 {isCustomDark && (
                     <div id="ui-random-theme-controls" className="popup-inline" data-settings-ignore>
-                        <input id="ui-random-theme-color" type="color" className="popup-color" value={draft.customThemeColor ? computeAccentHex(draft.customThemeColor) : '#000000'} onChange={(e) => commitCustomDark(e.target.value)} />
+                        <ColorInput id="ui-random-theme-color" value={draft.customThemeColor ? computeAccentHex(draft.customThemeColor) : '#000000'} onChange={commitCustomDark} />
                         <Button id="ui-randomize-theme" size="sm" onClick={() => commitCustomDark(generateRandomColor())}>Losuj</Button>
                     </div>
                 )}

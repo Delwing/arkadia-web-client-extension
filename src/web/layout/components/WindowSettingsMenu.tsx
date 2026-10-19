@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { ColorInput } from '@web-ui/primitives/index.ts';
 import { useWindowSetting } from '../../hooks/useWindowSetting';
 import { ensureFontLoaded, resolveOutputFontFamily } from '../../fontLoader';
 import { usePopover } from '../hooks/usePopover';
@@ -168,13 +169,12 @@ function BackgroundRow({ windowId }: { windowId: string }) {
       <div className="window-settings__row">
         <label className="window-settings__label" htmlFor={colorId}>Tło</label>
         <div className="window-settings__size">
-          <input
+          <ColorInput
             ref={inputRef}
             id={colorId}
-            type="color"
             className="popup-color window-settings__color"
             value={color}
-            onChange={e => setStored(joinWindowBackground(e.target.value, alpha))}
+            onChange={v => setStored(joinWindowBackground(v, alpha))}
             title={override === null ? 'Domyślne' : color}
           />
           <span className={`window-settings__bg-value${override ? '' : ' window-settings__size-value--inherit'}`}>

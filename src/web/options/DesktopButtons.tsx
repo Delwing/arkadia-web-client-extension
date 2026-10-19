@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Button, Check, DeleteButton, Field, Input, Select } from "@web-ui/primitives/index.ts";
+import { Button, Check, ColorInput, DeleteButton, Field, Input, Select } from "@web-ui/primitives/index.ts";
 import {
     applySettings,
     createDefaultButton,
@@ -286,11 +286,9 @@ function DesktopButtons({ registerSave }: { registerSave: (save: () => void) => 
         return (
             <Field label={label}>
                 <div className="popup-inline">
-                    <input
-                        type="color"
-                        className="popup-color"
+                    <ColorInput
                         value={btn[key]}
-                        onChange={e => updateButton(btn.id, { [key]: e.target.value })}
+                        onChange={v => updateButton(btn.id, { [key]: v })}
                     />
                     <Button size="sm" variant="ghost" title="Przywróć domyślny kolor" onClick={() => updateButton(btn.id, { [key]: fallback })}>↺</Button>
                 </div>

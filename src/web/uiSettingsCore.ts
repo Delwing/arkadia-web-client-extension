@@ -262,6 +262,12 @@ function applyObjectListBackgrounds(): void {
     }
 }
 
+const THEME_CLASSES = ['theme-fantasy', 'theme-forest', 'theme-icy', 'theme-gray', 'theme-dark-neutral', 'theme-light-parchment', 'theme-light-silver', 'theme-forged', 'theme-custom-dark'];
+/** The custom theme colour whose stylesheet is in the page, if any. */
+let appliedCustomThemeColor: string | undefined;
+/** The map instance and the settings last pushed into it (see apply). */
+let appliedMap: { map: object; key: string } | undefined;
+
 export function apply(settings: UiSettings) {
     const customHref = settings.customFontUrl?.trim();
     const normalizedHref = customHref && /^https?:\/\//i.test(customHref) ? customHref : undefined;
@@ -277,19 +283,28 @@ export function apply(settings: UiSettings) {
     if (document?.body) {
         document.body.dataset.mapPosition = settings.mapPosition;
     }
-    // Apply color theme
-    removeCustomTheme();
+    // Apply color theme — only when it changed: swapping the classes and the
+    // custom theme's stylesheet restyles the whole page, and the settings
+    // dialog's live preview lands here on every tick of a colour drag.
     if (document.body) {
-        document.body.classList.remove('theme-fantasy', 'theme-forest', 'theme-icy', 'theme-gray', 'theme-dark-neutral', 'theme-light-parchment', 'theme-light-silver', 'theme-forged', 'theme-custom-dark');
-        if (settings.colorTheme === 'custom-dark') {
-            if (!settings.customThemeColor) {
-                settings.customThemeColor = generateRandomColor();
-                save(settings);
+        if (settings.colorTheme === 'custom-dark' && !settings.customThemeColor) {
+            settings.customThemeColor = generateRandomColor();
+            save(settings);
+        }
+        const wanted = settings.colorTheme && settings.colorTheme !== 'default' ? `theme-${settings.colorTheme}` : null;
+        const present = THEME_CLASSES.filter(c => document.body.classList.contains(c));
+        const customColor = settings.colorTheme === 'custom-dark' ? settings.customThemeColor : undefined;
+        const upToDate = (wanted ? present.length === 1 && present[0] === wanted : present.length === 0)
+            && customColor === appliedCustomThemeColor;
+        if (!upToDate) {
+            removeCustomTheme();
+            appliedCustomThemeColor = undefined;
+            document.body.classList.remove(...THEME_CLASSES);
+            if (customColor) {
+                applyCustomTheme(customColor);
+                appliedCustomThemeColor = customColor;
             }
-            applyCustomTheme(settings.customThemeColor);
-            document.body.classList.add('theme-custom-dark');
-        } else if (settings.colorTheme && settings.colorTheme !== 'default') {
-            document.body.classList.add(`theme-${settings.colorTheme}`);
+            if (wanted) document.body.classList.add(wanted);
         }
     }
     // Set CSS custom properties for font settings (used by chat popup and other components)
@@ -314,6 +329,12 @@ export function apply(settings: UiSettings) {
         content.style.fontSize = settings.contentFontSize + 'rem';
         content.style.backgroundColor = settings.outputBackground;
         document.body.style.setProperty('--output-bg', settings.outputBackground);
+        // Unset: the theme's own text colour (Kuźnia's parchment, the light themes' ink).
+        if (settings.outputTextColor) {
+            content.style.color = settings.outputTextColor;
+        } else {
+            content.style.removeProperty('color');
+        }
         applyBackdrop(settings.backgroundImage, settings.backgroundImageShade);
         content.style.paddingBottom = settings.outputBottomPadding > 0 ? settings.outputBottomPadding + 'px' : '';
     }
@@ -360,6 +381,11 @@ export function apply(settings: UiSettings) {
     const splitBottom = document.getElementById('split-bottom');
     if (splitBottom) {
         splitBottom.style.backgroundColor = settings.outputBackground;
+        if (settings.outputTextColor) {
+            splitBottom.style.color = settings.outputTextColor;
+        } else {
+            splitBottom.style.removeProperty('color');
+        }
         if (settings.splitViewHeight && settings.splitViewHeight >= 60) {
             splitBottom.style.height = settings.splitViewHeight + 'px';
         }
@@ -378,13 +404,37 @@ export function apply(settings: UiSettings) {
     if (content && (!splitBottom || splitBottom.classList.contains('split-hidden'))) {
         content.scrollTop = content.scrollHeight;
     }
+    // The map only hears about map settings that changed: every push redraws
+    // it (lens, labels, marker, background), and the settings dialog's live
+    // preview lands here on every tick of a colour drag.
     const embedded = getEmbeddedMap();
-    if (embedded?.renderer) {
+    const isLayoutManagerEnabled = loadLayoutState().enabled;
+    const mapKey = JSON.stringify([
+        mapScale, isLayoutManagerEnabled, settings.mapPosition, settings.explorationMode, settings.transparentLabels,
+        settings.labelRenderMode, settings.instantMove, settings.highlightCurrentRoom, settings.mapRoomSize, settings.mapLineWidth,
+        settings.mapPlayerMarkerStrokeColor, settings.mapPlayerMarkerStrokeAlpha, settings.mapPlayerMarkerFillColor,
+        settings.mapPlayerMarkerFillAlpha, settings.mapPlayerMarkerStrokeWidth, settings.mapPlayerMarkerSizeFactor,
+        settings.mapPlayerMarkerDashEnabled, settings.mapHighlightStrokeAlpha, settings.mapHighlightFillAlpha,
+        settings.mapHighlightStrokeWidth, settings.mapHighlightSizeFactor, settings.mapHighlightDashEnabled,
+        settings.mapHighlightShape, settings.mapRoomShape, settings.mapLineColor, settings.mapCurrentRoomColor,
+        settings.mapBackgroundColor, settings.pathFindingAlgorithm,
+    ]);
+    if (embedded && (appliedMap?.map !== embedded || appliedMap.key !== mapKey)) {
+        appliedMap = { map: embedded, key: mapKey };
+        applyToMap(embedded, settings, mapScale, isLayoutManagerEnabled);
+    }
+    if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('map-position-change'));
+    }
+}
+
+function applyToMap(embedded: NonNullable<ReturnType<typeof getEmbeddedMap>>, settings: UiSettings, mapScale: number, isLayoutManagerEnabled: boolean) {
+    if (embedded.renderer) {
         embedded.setZoom?.(mapScale);
         embedded.setExplorationMode?.(settings.explorationMode);
         embedded.refresh();
     }
-    const mapSettings = embedded?.settings;
+    const mapSettings = embedded.settings;
     if (mapSettings) {
         mapSettings.transparentLabels = settings.transparentLabels;
         mapSettings.labelRenderMode = settings.transparentLabels ? 'data' : settings.labelRenderMode;
@@ -410,24 +460,20 @@ export function apply(settings: UiSettings) {
         mapSettings.roomShape = settings.mapRoomShape;
         mapSettings.lineColor = settings.mapLineColor;
         mapSettings.currentRoomColor = settings.mapCurrentRoomColor;
-        const isLayoutManagerEnabled = loadLayoutState().enabled;
         mapSettings.backgroundColor = (settings.mapPosition.includes('overlay') && !isLayoutManagerEnabled)
             ? 'transparent'
             : settings.mapBackgroundColor;
         embedded.renderer?.updateBackground?.();
     }
-    const pathFinder = embedded?.pathFinder;
+    const pathFinder = embedded.pathFinder;
     if (pathFinder?.setAlgorithm) {
         pathFinder.setAlgorithm(settings.pathFindingAlgorithm);
     }
-    embedded?.setTransparentLabels?.(settings.transparentLabels);
-    embedded?.setLabelRenderMode?.(settings.transparentLabels ? 'data' : settings.labelRenderMode);
-    embedded?.setInstantMove?.(settings.instantMove);
-    embedded?.setHighlightCurrentRoom?.(settings.highlightCurrentRoom);
-    embedded?.refresh();
-    if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('map-position-change'));
-    }
+    embedded.setTransparentLabels?.(settings.transparentLabels);
+    embedded.setLabelRenderMode?.(settings.transparentLabels ? 'data' : settings.labelRenderMode);
+    embedded.setInstantMove?.(settings.instantMove);
+    embedded.setHighlightCurrentRoom?.(settings.highlightCurrentRoom);
+    embedded.refresh();
 }
 
 export function load(): UiSettings {
@@ -476,6 +522,10 @@ export function load(): UiSettings {
                 && /^#[0-9a-f]{6}$/i.test(parsed.outputBackground.trim())
                     ? parsed.outputBackground.trim()
                     : defaultUiSettings.outputBackground;
+            const outputTextColor = typeof parsed.outputTextColor === 'string'
+                && /^#[0-9a-f]{6}$/i.test(parsed.outputTextColor.trim())
+                    ? parsed.outputTextColor.trim()
+                    : undefined;
             const backgroundImage = (['theme', 'none', 'uploaded'].includes(parsed.backgroundImage))
                 ? parsed.backgroundImage as BackgroundImage
                 : defaultUiSettings.backgroundImage;
@@ -670,6 +720,7 @@ export function load(): UiSettings {
                 transparentLabels,
                 labelRenderMode: effectiveLabelRenderMode,
                 outputBackground,
+                outputTextColor,
                 backgroundImage,
                 backgroundImageShade,
                 clearInputOnSend,

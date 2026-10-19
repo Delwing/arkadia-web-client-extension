@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { Button, Check, Field, Input, Select } from "@web-ui/primitives/index.ts";
+import { Button, Check, ColorInput, Field, Input, Select } from "@web-ui/primitives/index.ts";
 
 /**
  * One card on a settings page. `full` spans every masonry column, for content
@@ -103,13 +103,13 @@ export function RangeField({ id, label, value, min, max, step, onChange }: {
     );
 }
 
-export function ColorField({ id, label, value, onChange, onReset }: {
-    id: string; label: ReactNode; value: string; onChange: (value: string) => void; onReset?: () => void;
+export function ColorField({ id, label, hint, value, onChange, onReset }: {
+    id: string; label: ReactNode; hint?: ReactNode; value: string; onChange: (value: string) => void; onReset?: () => void;
 }) {
     return (
-        <Field label={label} htmlFor={id}>
+        <Field label={label} hint={hint} htmlFor={id}>
             <div className="popup-inline">
-                <input id={id} type="color" className="popup-color" value={value} onChange={(e) => onChange(e.target.value)} />
+                <ColorInput id={id} value={value} onChange={onChange} />
                 {onReset && (
                     <Button size="sm" variant="ghost" onClick={onReset}>Przywróć domyślny</Button>
                 )}

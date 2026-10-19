@@ -22,7 +22,7 @@ import {
 import { defaultSettings } from '@modules/core/defaultSettings';
 import { openSettingsPage } from '@web/settings/categories.ts';
 import type { ZlomDbResult } from '@modules/data/zlomDbImport.shared';
-import { HeaderButton } from '@web-ui/primitives';
+import { ColorInput, HeaderButton } from '@web-ui/primitives';
 
 const POPUP_ID = 'popup:zlom';
 const PAGE_SIZE = 100;
@@ -239,11 +239,10 @@ const ZlomPopup: React.FC = () => {
 
     const renderColorCell = (kind: ZlomKind, entry: WeaponEntry | ShieldEntry | ArmorEntry) => (
         <td className="zlom-cell zlom-cell--color">
-            <input
-                type="color"
+            <ColorInput
                 className="zlom-color-input"
                 value={entry.color ?? '#ffffff'}
-                onChange={(e) => handleColorChange(kind, entry.opis, e.target.value)}
+                onChange={v => handleColorChange(kind, entry.opis, v)}
                 title={entry.color ? `Kolor: ${entry.color}` : 'Ustaw kolor'}
             />
             <button
@@ -421,14 +420,13 @@ const ZlomPopup: React.FC = () => {
                     <label className="zlom-toggle" title="Kolor dla broni ze srebrem (x aby wyłączyć)">
                         <span>Srebro</span>
                         <span className="zlom-silver-swatch">
-                            <input
-                                type="color"
+                            <ColorInput
                                 className="zlom-color-input"
                                 value={silver.color}
                                 onMouseDown={() => {
                                     if (silver.off) updateSilver({ off: false });
                                 }}
-                                onChange={(e) => updateSilver({ color: e.target.value, off: false })}
+                                onChange={v => updateSilver({ color: v, off: false })}
                                 style={silver.off ? { opacity: 0.4 } : undefined}
                             />
                             {silver.off && <span className="zlom-silver-swatch__cross">×</span>}

@@ -1,5 +1,5 @@
 import {useCallback, useEffect, useMemo, useState} from "react";
-import {Button, Input, Select} from "@web-ui/primitives/index.ts";
+import {Button, ColorInput, Input, Select} from "@web-ui/primitives/index.ts";
 import {characterStorage} from "@modules/core/storage";
 import {
     DEFAULT_LUA_GAGS_DELETE_LINES,
@@ -165,12 +165,10 @@ function LuaGagsSettings({registerSave}: { registerSave: RegisterSave }) {
                                         </option>
                                     ))}
                                 </Select>
-                                <input
-                                    type="color"
+                                <ColorInput
                                     id={`luaGag-${key}-color`}
-                                    className="popup-color"
                                     value={colors[key]}
-                                    onChange={event => handleColorChange(key, event.target.value)}
+                                    onChange={v => handleColorChange(key, v)}
                                     title="Kolor prefixu"
                                 />
                                 <Button

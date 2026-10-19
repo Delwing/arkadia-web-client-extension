@@ -86,6 +86,8 @@ export interface RenderSettings {
     colorTheme: ColorTheme;
     customThemeColor?: string;
     outputBackground: string;
+    /** Colour of game text that carries no ANSI colour of its own; unset follows the theme. */
+    outputTextColor?: string;
     /** Image under the output: the theme's (Kuźnia's stone), none, or one uploaded on this device (not synced). */
     backgroundImage: BackgroundImage;
     /** How dark the image is shaded, 0-90 (%), so the text stays legible. */
