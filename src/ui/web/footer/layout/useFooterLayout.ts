@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { globalStorage } from "@modules/core/storage";
 import { sanitizeFooterLayout } from "@shared/footerLayoutSanitize";
-import type { FooterLayout, FooterLayoutChoice, FooterLayoutTweakSet } from "@shared/footerLayoutTypes";
+import type { FooterLayout, FooterLayoutChoice, FooterLayoutTweakSet, FooterPresetId } from "@shared/footerLayoutTypes";
 import { FOOTER_PRESETS, STOCK_FOOTER_LAYOUT } from "./presets";
 import { tweakLayout } from "./layoutTree";
 
@@ -26,25 +26,24 @@ function readPick(): Pick {
   };
 }
 
-function resolve(pick: Pick): FooterLayout {
+function resolve(pick: Pick, unpicked: FooterPresetId): FooterLayout {
   if (pick.choice === "custom") return sanitizeFooterLayout(pick.custom) ?? STOCK_FOOTER_LAYOUT;
-  // Nothing picked is the classic layout.
-  const preset = pick.choice ?? "stock";
+  const preset = pick.choice ?? unpicked;
   return tweakLayout(FOOTER_PRESETS[preset], pick.tweaks?.[preset]);
 }
 
 /**
  * The footer layout the player picked (`uiSettings.footerLayout`): a preset
- * with their tweaks to it (`footerLayoutTweaks`) - the classic one when
- * nothing is picked - or their own layout (`footerCustomLayout`). Every UI
- * draws the same. Follows the settings live.
+ * with their tweaks to it (`footerLayoutTweaks`) - `unpicked` when nothing is
+ * picked (the classic one, or the theme's own) - or their own layout
+ * (`footerCustomLayout`). Every UI draws the same. Follows the settings live.
  */
-export function useFooterLayout(): FooterLayout {
+export function useFooterLayout(unpicked: FooterPresetId = "stock"): FooterLayout {
   const [pick, setPick] = useState(readPick);
   // The settings are written often; only a different pick, tweak or layout redraws the footer.
   useEffect(() => globalStorage.onChange("uiSettings", () => {
     const next = readPick();
     setPick((prev) => (JSON.stringify(prev) === JSON.stringify(next) ? prev : next));
   }), []);
-  return useMemo(() => resolve(pick), [pick]);
+  return useMemo(() => resolve(pick, unpicked), [pick, unpicked]);
 }

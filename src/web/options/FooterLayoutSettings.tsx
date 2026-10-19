@@ -10,6 +10,7 @@ import {
 } from "@shared/footerLayoutTypes";
 import { Button } from "@web-ui/primitives/index.ts";
 import { FOOTER_PRESETS } from "@web-ui/footer/layout/presets.ts";
+import { useForgedTheme } from "@web-ui/footer/layout/forgedSkin.tsx";
 import { layoutTweaks, tweakLayout } from "@web-ui/footer/layout/layoutTree.ts";
 import { CheckboxRow, RangeField, SelectField } from "../uiSettings/fields";
 import FooterLayoutDialog from "./footerEditor/FooterLayoutDialog";
@@ -28,7 +29,7 @@ interface FooterLayoutSettingsProps {
 
 const PRESET_NAMES: Record<FooterPresetId, string> = {
     stock: "Klasyczny",
-    forge: "Piętrowy",
+    forge: "Forge",
     arkadia: "Mudlet",
 };
 
@@ -44,8 +45,9 @@ const presetAsTweaked = (preset: FooterPresetId, tweaks: FooterLayoutTweakSet | 
  * to build the player's own from; their own is kept while they try presets.
  */
 export default function FooterLayoutSettings({ value, onChange }: FooterLayoutSettingsProps) {
-    // Nothing picked is the classic layout.
-    const choice = value.footerLayout ?? "stock";
+    // Nothing picked is the classic layout, or Forge under the Kuźnia theme (StockFooter).
+    const forged = useForgedTheme();
+    const choice = value.footerLayout ?? (forged ? "forge" : "stock");
     const tweaks = value.footerLayoutTweaks;
     const layout = choice !== "custom" ? choice : undefined;
     const own = layout ? tweaks?.[layout] : undefined;

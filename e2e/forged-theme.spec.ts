@@ -49,6 +49,31 @@ test.describe('Kuźnia theme', () => {
         await expect(page.locator('#input-area')).toHaveCSS('border-bottom-left-radius', '9px');
     });
 
+    test('with no footer layout picked it brings the Forge one; a pick of the classic one stays', async ({page}) => {
+        await page.setViewportSize({width: 1280, height: 800});
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+        await pushGmcp(page, 'char.state', {hp: 5, fatigue: 2, improve: 5});
+        const footer = page.locator('#footer-layout');
+        await expect(footer.locator('.improve-bar')).toHaveCount(0);
+
+        const modal = await openSettings(page, 'ui-appearance');
+        await modal.locator('#ui-color-theme').selectOption('forged');
+        await saveSettings(page);
+
+        // Forge's plate: the bind row always there, Postępy as a bar under the gems.
+        await expect(footer.locator('#multi-binds')).toContainText('Brak akcji');
+        await expect(footer.locator('.footer-vitals .improve-bar')).toBeVisible();
+        await openSettings(page, 'ui-footer');
+        await expect(modal.locator('#ui-footer-layout')).toHaveValue('forge');
+
+        await modal.locator('#ui-footer-layout').selectOption('stock');
+        await saveSettings(page);
+        await expect(footer.locator('.improve-bar')).toHaveCount(0);
+        await expect(footer.locator('.gem').first()).toBeVisible();
+    });
+
     test('the location name reads as the forge heading, in bronze whatever the game coloured it', async ({page}) => {
         await page.addInitScript(() => {
             const raw = localStorage.getItem('uiSettings');
