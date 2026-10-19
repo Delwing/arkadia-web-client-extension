@@ -3,7 +3,7 @@ import {Circle, Download, HardDriveDownload, Play, Search, Square, Upload} from 
 import {Button, DeleteButton, Input, InputGroup, MenuButton, Notice} from '@web-ui/primitives/index.ts';
 import {deleteRecording, getRecordingSummaries, saveRecording, type RecordedEvent, type RecordingSummary} from '@web/recordingStorage.ts';
 import eventBus from "@modules/core/eventBus";
-import recordingManager from "../RecordingManager";
+import recordingManager, {defaultRecordingName} from "../RecordingManager";
 import { MODAL_EVENT } from "@web/modals/appModal.ts";
 import { foldText } from "@web/settings/settingsSearch.ts";
 
@@ -48,11 +48,6 @@ function summaryMeta(r: RecordingSummary) {
         formatLength(r.end - r.start),
         eventsLabel(r.events),
     ].join(' · ');
-}
-
-function defaultRecordingName() {
-    const d = new Date();
-    return `${pad(d.getDate())}.${pad(d.getMonth() + 1)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 /** Activity over the recording's length: taller bars where more happened. */

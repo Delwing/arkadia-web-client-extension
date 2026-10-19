@@ -274,6 +274,17 @@ Zakresy działają rosnąco (`1-7`) i malejąco (`7-1`). Maksymalnie 50 iteracji
 
 > **Wskazówka:** Hasło z wiadomości ("aktualnie to: 1-9-5-2") zapamiętuje się samo. Po odpowiedzi drzwi kolejna grupa puknięć trafia na funkcjonalny bind (domyślnie `]`).
 
+## Nagrania
+
+| Komenda | Opis |
+|---------|------|
+| `/nagrywaj` | Zacznij nagrywać sesję (nazwa to data i godzina) |
+| `/nagrywaj <nazwa>` | Zacznij nagrywać sesję pod podaną nazwą |
+| `/nagrywaj_stop` | Zakończ nagrywanie i zapisz nagranie |
+| `/nagrywaj_anuluj` | Zakończ nagrywanie bez zapisywania |
+
+> **Wskazówka:** To samo nagranie, co w oknie Nagrania — zapisane pojawia się na liście i można je tam odtworzyć. Gdy nagrywanie już trwa, `/nagrywaj` go nie przerywa, tylko o nim przypomina.
+
 ## Odświeżanie danych
 
 | Komenda | Opis |

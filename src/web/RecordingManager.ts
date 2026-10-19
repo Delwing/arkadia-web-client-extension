@@ -1,10 +1,18 @@
 import {RecordedEvent, getRecording, saveRecording, getRecordingNames, deleteRecording} from './recordingStorage';
 import {Recorder} from "@shared/recorder";
 import eventBus from "@modules/core/eventBus";
-import type {ClientEvents} from "@shared/events";
+import type {ClientEvents, RecordingRequest} from "@shared/events";
 import {CommandOptions} from "@client/scripts/commandPreserveCaseMode";
 
 const LAST_SESSION_RECORDING_NAME = 'Ostatnia sesja (auto)';
+
+const pad = (n: number) => String(n).padStart(2, '0');
+
+/** A fresh recording's name when none is given: `19.10 14:05`. */
+export function defaultRecordingName() {
+    const d = new Date();
+    return `${pad(d.getDate())}.${pad(d.getMonth() + 1)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
 
 class RecordingManager {
     private recorder: Recorder<CommandOptions>;
@@ -43,6 +51,23 @@ class RecordingManager {
             this.connected = false;
             void this.stopAutoRecording(true);
         });
+
+        eventBus.on('recording.request', (request) => {
+            void this.handleRequest(request);
+        });
+    }
+
+    /** `/nagrywaj` and `/nagrywaj_stop`: never replace a recording in progress, report back what happened. */
+    private async handleRequest(request: RecordingRequest) {
+        const active = this.getActiveRecordingName();
+        let started: string | null = null;
+        if (request.action === 'start' && !active) {
+            started = request.name?.trim() || defaultRecordingName();
+            this.startRecording(started);
+        } else if (request.action === 'stop' && active) {
+            await this.stopRecording(request.save);
+        }
+        eventBus.emit('recording.request.done', { request, active, started });
     }
 
     getRecorder(): Recorder {

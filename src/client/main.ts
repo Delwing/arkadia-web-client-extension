@@ -132,6 +132,7 @@ import {initClock} from "@client/scripts/clock.ts";
 import initSunTracker from "@client/scripts/sunTracker.ts";
 import initSunCalc from "@client/scripts/sunCalc.ts";
 import initCalendar from "@client/scripts/calendar.ts";
+import initRecordingAliases from "@client/scripts/recordingAliases.ts";
 import initCutting from './scripts/cutting'
 import initWyroznienieOptions from './scripts/wyroznienieOptions'
 import initContracts from './scripts/contracts'
@@ -396,6 +397,7 @@ export function registerScripts(client: Client) {
     initSunTracker(client)
     initSunCalc(client, aliases)
     initCalendar(client, aliases)
+    initRecordingAliases(client, aliases)
     initWyroznienieOptions(client)
     initContracts(client, aliases)
     initFishing(client, aliases)

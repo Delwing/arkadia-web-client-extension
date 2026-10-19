@@ -110,6 +110,10 @@ type MultibindList = {
 type MessageEventPayload = [text: string | AnsiAwareBuffer, type?: string, timestamp?: number];
 
 type RecordingAutoStopPayload = [name: string | null, save?: boolean];
+/** A manual recording asked for by an alias; the UI owns the recorder. */
+export type RecordingRequest = { action: 'start'; name?: string } | { action: 'stop'; save: boolean };
+/** The UI's answer to a {@link RecordingRequest}: `active` is the recording in progress before it, `started` the one it began. */
+export type RecordingRequestResult = { request: RecordingRequest; active: string | null; started: string | null };
 
 type PlaybackIndexPayload = [current: number, total: number];
 
@@ -403,6 +407,8 @@ export interface KnownEvents {
     "recording.loaded": { name: string; length: number };
     "recording.auto.start": string | null | undefined;
     "recording.auto.stop": RecordingAutoStopPayload;
+    "recording.request": RecordingRequest;
+    "recording.request.done": RecordingRequestResult;
     "playback.stop": void;
     "playback.pause": void;
     "playback.resume": void;
