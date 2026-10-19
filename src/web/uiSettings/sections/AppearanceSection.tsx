@@ -125,7 +125,7 @@ function AppearanceSection({ draft, update, commitCustomDark }: AppearanceSectio
             {draft.backgroundImage !== 'none' && (
                 <RangeField id="ui-backdrop-shade" label="Przyciemnienie obrazu (%)" value={draft.backgroundImageShade} min={0} max={90} step={5} onChange={(n) => update({ backgroundImageShade: n })} />
             )}
-            <CheckboxRow id="ui-highlight-message-blocks" label="Wyróżniaj bloki wiadomości" checked={draft.highlightMessageBlocks} onChange={(v) => update({ highlightMessageBlocks: v })} />
+            <CheckboxRow id="ui-highlight-message-blocks" label="Wyróżniaj bloki wiadomości" hint="Ekwipunek, opisy postaci i łup dostają tło, pasek z boku i ikonę, by odróżniały się od reszty tekstu gry." checked={draft.highlightMessageBlocks} onChange={(v) => update({ highlightMessageBlocks: v })} />
             <CheckboxRow id="ui-character-plaque" label="Wizytówka postaci po zalogowaniu" checked={draft.characterPlaque} onChange={(v) => update({ characterPlaque: v })} />
             <Field label="Paleta kolorów" htmlFor="ui-xterm-palette">
                 <div className="popup-inline">
