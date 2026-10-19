@@ -15,8 +15,9 @@ const EXPORT_IMPORT_MODAL = '#settings-modal';
 const LOCAL_FILE_INPUT = '#settings-modal .settings-page[data-settings-category="data-backup"] input[type="file"][accept="application/json"]';
 
 async function openExportImportModal(page: Page) {
-    // Restoring asks for confirmation; accept it.
-    page.on('dialog', dialog => void dialog.accept());
+    // Restoring asks for confirmation (in-app dialog); accept it whenever it shows.
+    const restoreConfirm = page.locator('.popup-confirm-host .popup-dialog');
+    await page.addLocatorHandler(restoreConfirm, () => restoreConfirm.getByRole('button', {name: 'Przywróć'}).click());
     await page.click(MENU_BUTTON);
     await page.click(SETTINGS_BUTTON);
     const modal = page.locator(EXPORT_IMPORT_MODAL);

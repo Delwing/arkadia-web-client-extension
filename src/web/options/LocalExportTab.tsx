@@ -65,7 +65,7 @@ function LocalExportTab() {
     };
 
     const restore = async (payload: Parameters<typeof restoreBackup>[0]) => {
-        if (!confirmRestore()) return;
+        if (!await confirmRestore()) return;
         const result = await restoreBackup(payload);
         await publishRestore();
         let msg = "Import zakończony sukcesem. Niektóre ustawienia mogą wymagać odświeżenia strony.";

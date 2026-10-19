@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { SHOW_SETTINGS_EVENT } from "@web/settings/categories.ts";
 import { Button } from "@web-ui/primitives/index.ts";
+import { confirmDialog } from "@web-ui/primitives/confirmDialog.tsx";
 import { buildBackup, isRestorableBackup, restoreBackup } from "./exportUtils";
 import { confirmRestore, publishRestore } from "./restoreFlow";
 
@@ -457,7 +458,7 @@ function GoogleDriveTab({ onImportComplete }: GoogleDriveTabProps = {}) {
             if (!isRestorableBackup(parsed)) {
                 throw new Error("invalid");
             }
-            if (!confirmRestore()) return;
+            if (!await confirmRestore()) return;
             const result = await restoreBackup(parsed);
             await publishRestore();
             onImportComplete?.();
@@ -477,7 +478,7 @@ function GoogleDriveTab({ onImportComplete }: GoogleDriveTabProps = {}) {
 
     const handleDriveDelete = async (fileSummary: DriveFileSummary) => {
         if (!tokenClientRef.current) return;
-        const confirmed = window.confirm(`Czy na pewno chcesz usunąć kopię "${fileSummary.name}" z Google Drive?`);
+        const confirmed = await confirmDialog({ title: "Usuń kopię", message: `Czy na pewno chcesz usunąć kopię "${fileSummary.name}" z Google Drive?`, confirmLabel: "Usuń", danger: true });
         if (!confirmed) {
             return;
         }

@@ -1,6 +1,7 @@
 import {useState, useEffect} from 'react';
 import {characterStorage} from '@modules/core/storage';
 import {DeleteButton} from '@web-ui/primitives/index.ts';
+import {confirmDialog} from '@web-ui/primitives/confirmDialog.tsx';
 
 const IGNORED_CHARACTER_KEY_PREFIXES = new Set([
     "firebase",
@@ -98,10 +99,13 @@ export default function CharacterManagement() {
         setKeyCounts(counts);
     }
 
-    function handleDelete(characterName: string) {
-        const confirmed = window.confirm(
-            `Czy na pewno chcesz usunąć wszystkie dane postaci "${characterName}"?\n\nTa operacja jest nieodwracalna!`
-        );
+    async function handleDelete(characterName: string) {
+        const confirmed = await confirmDialog({
+            title: "Usuń postać",
+            message: `Czy na pewno chcesz usunąć wszystkie dane postaci "${characterName}"?\n\nTa operacja jest nieodwracalna!`,
+            confirmLabel: "Usuń",
+            danger: true,
+        });
         if (!confirmed) return;
 
         deleteCharacterData(characterName);

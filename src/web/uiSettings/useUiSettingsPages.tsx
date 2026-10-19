@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import eventBus from "@modules/core/eventBus";
 import { globalStorage } from "@modules/core/storage";
+import { alertDialog } from "@web-ui/primitives/confirmDialog.tsx";
 import { getCustomSounds, saveCustomSounds, type CustomSound } from "@modules/core/customSounds";
 import { loadLayoutState, resetLayoutState, saveLayoutState } from "@web/layout";
 import type { SettingsCategoryKey } from "@web/settings/categories.ts";
@@ -266,7 +267,7 @@ export function useUiSettingsPages({ soundManager, onEnableNotifications }: UiSe
             })
             .catch(error => {
                 console.error("Failed to delete custom sound", error);
-                alert("Nie udało się usunąć dźwięku");
+                void alertDialog("Nie udało się usunąć dźwięku");
             });
     };
 

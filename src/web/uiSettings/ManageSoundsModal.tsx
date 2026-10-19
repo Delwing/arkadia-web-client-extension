@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { CustomSound } from "@modules/core/customSounds";
 import { Button, DeleteButton } from "@web-ui/primitives/index.ts";
+import { confirmDialog } from "@web-ui/primitives/confirmDialog.tsx";
 import SubDialog from "../SubDialog";
 import { calculateBase64Size, formatBytes } from "../uiSettingsCore";
 
@@ -50,8 +51,8 @@ function ManageSoundsModal({ show, onHide, customSounds, onDelete, previewKey }:
                         <div className="popup-inline">
                             <Button size="sm" variant="ghost" title="Odtwórz" onClick={() => previewKey(sound.key)}>{'▶'}</Button>
                             <DeleteButton
-                                onClick={() => {
-                                    if (confirm(`Czy na pewno chcesz usunąć dźwięk "${sound.name}"?`)) {
+                                onClick={async () => {
+                                    if (await confirmDialog({ title: "Usuń dźwięk", message: `Czy na pewno chcesz usunąć dźwięk "${sound.name}"?`, confirmLabel: "Usuń", danger: true })) {
                                         onDelete(sound);
                                     }
                                 }}

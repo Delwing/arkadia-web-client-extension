@@ -19,6 +19,7 @@ import {
     Zap,
 } from "lucide-react";
 import { Button, Check, Input, InputGroup, NO_PASSWORD_MANAGER } from "@web-ui/primitives/index.ts";
+import { confirmDialog } from "@web-ui/primitives/confirmDialog.tsx";
 import { characterStorage, globalStorage } from "@modules/core/storage";
 import {
     AUTOMATION_GROUPS_KEY,
@@ -351,19 +352,18 @@ export default function AutomationWindow() {
         setSaveError(null);
     }
 
-    /** Deletes a stored element after asking; false when the player said no. */
-    function confirmRemove(kind: AutomationKind, id: string): boolean {
+    /** Deletes a stored element after asking. */
+    async function confirmRemove(kind: AutomationKind, id: string) {
         const users = kind === "script" ? scriptUsers(id, items).length : 0;
         const warning = users ? ` Używa go ${users} ${users === 1 ? "element" : "elementów"} - ich akcja przestanie działać.` : "";
-        if (!confirm(`Czy na pewno chcesz usunąć ${THIS_ONE[kind]}?${warning}`)) return false;
+        if (!await confirmDialog({ title: "Usuń", message: `Czy na pewno chcesz usunąć ${THIS_ONE[kind]}?${warning}`, confirmLabel: "Usuń", danger: true })) return;
         removeItem(kind, id);
         dropDraft(id);
         setSelectedId(current => (current === id ? null : current));
-        return true;
     }
 
     /** Deletes a group with everything in it, after asking. */
-    function confirmRemoveGroup(group: AutomationGroup) {
+    async function confirmRemoveGroup(group: AutomationGroup) {
         const members = items.filter(i => i.data.group === group.id);
         const memberIds = new Set(members.map(i => i.id));
         const count = (kind: AutomationKind) => members.filter(i => i.kind === kind).length;
@@ -377,7 +377,7 @@ export default function AutomationWindow() {
             .filter(u => !memberIds.has(u.id))
             .map(u => u.id)).size;
         const warning = users ? ` Skrypty z tej grupy używa ${users} ${users === 1 ? "element" : "elementów"} spoza niej - ich akcja przestanie działać.` : "";
-        if (!confirm(`Usunąć grupę "${group.name}"${contents}?${warning}`)) return;
+        if (!await confirmDialog({ title: "Usuń grupę", message: `Usunąć grupę "${group.name}"${contents}?${warning}`, confirmLabel: "Usuń", danger: true })) return;
         deleteGroup(group.id);
         // Unsaved changes to what was in the group go with it.
         setDrafts(prev => Object.fromEntries(
@@ -392,7 +392,7 @@ export default function AutomationWindow() {
             setSelectedId(null);
             return;
         }
-        confirmRemove(selectedDraft.kind, selectedDraft.id);
+        void confirmRemove(selectedDraft.kind, selectedDraft.id);
     }
 
     function duplicateOf(source: Draft) {
@@ -433,7 +433,7 @@ export default function AutomationWindow() {
             ...groups.filter(g => g.id !== current).map(g => ({ label: g.name, section: move, action: () => moveItem(item.kind, item.id, g.id) })),
             ...(current ? [{ label: "Bez grupy", section: move, action: () => moveItem(item.kind, item.id, undefined) }] : []),
             { label: "Nowa grupa", section: move, icon: FolderPlus, action: () => moveItem(item.kind, item.id, addGroup()) },
-            { label: "Usuń", tone: "danger", separator: true, icon: Trash2, action: () => { confirmRemove(item.kind, item.id); } },
+            { label: "Usuń", tone: "danger", separator: true, icon: Trash2, action: () => { void confirmRemove(item.kind, item.id); } },
         ];
         showContextMenu(entries, e.clientX, e.clientY, { header: itemTitle(item).text, smallHeader: true });
     }
@@ -527,7 +527,7 @@ export default function AutomationWindow() {
                 tone: "danger",
                 separator: true,
                 icon: Trash2,
-                action: () => confirmRemoveGroup(group),
+                action: () => void confirmRemoveGroup(group),
             },
         ]);
     }

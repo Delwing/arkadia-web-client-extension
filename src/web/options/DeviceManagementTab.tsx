@@ -1,6 +1,7 @@
 import { applyDeviceSettingsFrom, flushSyncV2, isSyncV2Enabled } from "@web/userData/syncV2";
 import { useCallback, useEffect, useState } from "react";
 import { Button, DeleteButton, Input, Notice } from "@web-ui/primitives/index.ts";
+import { confirmDialog } from "@web-ui/primitives/confirmDialog.tsx";
 import {
     getDeviceInfo,
     setDeviceCustomName,
@@ -150,10 +151,10 @@ function DeviceManagementTab() {
     };
 
     // Handle copy settings from imported device
-    const handleCopyFromDevice = (entry: ImportedDeviceEntry) => {
+    const handleCopyFromDevice = async (entry: ImportedDeviceEntry) => {
         const deviceName = getDeviceDisplayName(entry.deviceInfo);
         const confirmMessage = `Czy na pewno chcesz skopiować ustawienia z urządzenia "${deviceName}"? Aktualne ustawienia tego urządzenia zostaną nadpisane.`;
-        if (!window.confirm(confirmMessage)) return;
+        if (!await confirmDialog({ title: "Kopiuj ustawienia", message: confirmMessage, confirmLabel: "Kopiuj", danger: true })) return;
 
         setError(null);
         setStatus(null);
@@ -167,9 +168,9 @@ function DeviceManagementTab() {
     };
 
     // Handle delete imported device
-    const handleDeleteImported = (entry: ImportedDeviceEntry) => {
+    const handleDeleteImported = async (entry: ImportedDeviceEntry) => {
         const deviceName = getDeviceDisplayName(entry.deviceInfo);
-        if (!window.confirm(`Czy na pewno chcesz usunąć zaimportowane urządzenie "${deviceName}"?`)) return;
+        if (!await confirmDialog({ title: "Usuń urządzenie", message: `Czy na pewno chcesz usunąć zaimportowane urządzenie "${deviceName}"?`, confirmLabel: "Usuń", danger: true })) return;
 
         deleteImportedDevice(entry.deviceInfo.id);
         refreshData();
@@ -218,7 +219,7 @@ function DeviceManagementTab() {
     // Handle leave sync group
     const handleLeaveSyncGroup = async () => {
         if (!syncGroup) return;
-        if (!window.confirm(`Czy na pewno chcesz opuścić grupę synchronizacji "${syncGroup.name}"?`)) return;
+        if (!await confirmDialog({ title: "Opuść grupę", message: `Czy na pewno chcesz opuścić grupę synchronizacji "${syncGroup.name}"?`, confirmLabel: "Opuść", danger: true })) return;
 
         setIsLeavingGroup(true);
         setError(null);
@@ -265,7 +266,7 @@ function DeviceManagementTab() {
 
         const groupName = entry.syncGroup.name;
         const deviceName = getDeviceDisplayName(entry.deviceInfo);
-        if (!window.confirm(`Czy na pewno chcesz dołączyć do grupy synchronizacji "${groupName}" z urządzenia "${deviceName}"? Ustawienia z tego urządzenia zostaną skopiowane.`)) {
+        if (!await confirmDialog({ title: "Dołącz do grupy", message: `Czy na pewno chcesz dołączyć do grupy synchronizacji "${groupName}" z urządzenia "${deviceName}"? Ustawienia z tego urządzenia zostaną skopiowane.`, confirmLabel: "Dołącz" })) {
             return;
         }
 
@@ -314,7 +315,7 @@ function DeviceManagementTab() {
     // Handle join cloud sync group (when group exists in cloud but not locally)
     const handleJoinCloudSyncGroup = async (groupToJoin: SyncGroup) => {
         const groupName = groupToJoin.name;
-        if (!window.confirm(`Czy na pewno chcesz dołączyć do grupy synchronizacji "${groupName}"? Ustawienia z chmury zostaną pobrane.`)) {
+        if (!await confirmDialog({ title: "Dołącz do grupy", message: `Czy na pewno chcesz dołączyć do grupy synchronizacji "${groupName}"? Ustawienia z chmury zostaną pobrane.`, confirmLabel: "Dołącz" })) {
             return;
         }
 
@@ -348,7 +349,7 @@ function DeviceManagementTab() {
         const confirmMessage = syncGroup
             ? `Czy na pewno chcesz skopiować ustawienia z urządzenia "${deviceName}"? Ustawienia zostaną zastosowane na tym urządzeniu i zsynchronizowane z Twoją grupą.`
             : `Czy na pewno chcesz skopiować ustawienia z urządzenia "${deviceName}"? Aktualne ustawienia tego urządzenia zostaną nadpisane.`;
-        if (!window.confirm(confirmMessage)) return;
+        if (!await confirmDialog({ title: "Kopiuj ustawienia", message: confirmMessage, confirmLabel: "Kopiuj", danger: true })) return;
 
         setCopyingFromDeviceId(deviceId);
         setError(null);
@@ -376,7 +377,7 @@ function DeviceManagementTab() {
 
     // Handle delete empty sync group
     const handleDeleteEmptyGroup = async (group: SyncGroup) => {
-        if (!window.confirm(`Czy na pewno chcesz usunąć pustą grupę "${group.name}"?`)) return;
+        if (!await confirmDialog({ title: "Usuń grupę", message: `Czy na pewno chcesz usunąć pustą grupę "${group.name}"?`, confirmLabel: "Usuń", danger: true })) return;
 
         setDeletingGroupId(group.id);
         setError(null);

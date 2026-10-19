@@ -2,6 +2,7 @@ import * as monaco from 'monaco-editor'
 import type { EditorPluginData } from '@client/utils/pluginEditorStorage.ts'
 import { getLanguageFromPath } from '@client/utils/pluginEditorStorage.ts'
 import type { StatusType } from './types'
+import { confirmDialog } from './dialogs'
 
 // Helper function to infer TypeScript type from JSON value
 function inferJsonType(value: any): string {
@@ -24,21 +25,21 @@ function inferJsonType(value: any): string {
   return 'any'
 }
 
-export function deleteFile(
+export async function deleteFile(
   filePath: string,
   plugin: EditorPluginData,
   editorModels: Map<string, monaco.editor.ITextModel>,
   currentFilePath: string | null,
   updateStatus: (message: string, type: StatusType) => void,
   switchToFile: (path: string) => void
-): boolean {
+): Promise<boolean> {
   const fileCount = Object.keys(plugin.files).length
   if (fileCount <= 1) {
     updateStatus('Cannot delete the last file', 'error')
     return false
   }
 
-  if (!confirm(`Delete file "${filePath}"?`)) return false
+  if (!await confirmDialog('Delete file', `Delete file "${filePath}"?`, 'Delete')) return false
 
   // Delete file
   delete plugin.files[filePath]
@@ -65,7 +66,7 @@ export function deleteFile(
   return true
 }
 
-export function deleteFolder(
+export async function deleteFolder(
   folderPath: string,
   plugin: EditorPluginData,
   editorModels: Map<string, monaco.editor.ITextModel>,
@@ -73,7 +74,7 @@ export function deleteFolder(
   currentFilePath: string | null,
   updateStatus: (message: string, type: StatusType) => void,
   switchToFile: (path: string) => void
-): boolean {
+): Promise<boolean> {
   // Find all files in this folder
   const filesInFolder = Object.keys(plugin.files).filter(filePath =>
     filePath.startsWith(folderPath + '/')
@@ -86,7 +87,7 @@ export function deleteFolder(
     return false
   }
 
-  if (!confirm(`Delete folder "${folderPath}" and all its contents (${filesInFolder.length} files)?`)) return false
+  if (!await confirmDialog('Delete folder', `Delete folder "${folderPath}" and all its contents (${filesInFolder.length} files)?`, 'Delete')) return false
 
   // Delete all files in the folder
   for (const filePath of filesInFolder) {

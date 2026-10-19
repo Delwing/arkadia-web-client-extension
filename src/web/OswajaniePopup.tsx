@@ -4,6 +4,7 @@ import { ChevronDown, ChevronRight, Link2, Unlink, PawPrint } from 'lucide-react
 import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
 import { usePopup } from './hooks/usePopup';
 import { usePopupSetting } from './hooks/usePopupSetting';
+import { confirmDialog } from '@web-ui/primitives/confirmDialog.tsx';
 import eventBus from '@modules/core/eventBus';
 import { characterStorage } from '@modules/core/storage';
 import { getTamingLevelInfo } from '../client/scripts/animalTaming';
@@ -470,8 +471,8 @@ const HelpView: React.FC = () => {
                 <button
                     type="button"
                     className="popup-btn popup-btn--md popup-btn--danger"
-                    onClick={() => {
-                        if (window.confirm('Import z pliku nadpisze bazę oswajania tej postaci. Kontynuować?')) {
+                    onClick={async () => {
+                        if (await confirmDialog({ title: 'Importuj bazę', message: 'Import z pliku nadpisze bazę oswajania tej postaci. Kontynuować?', confirmLabel: 'Importuj', danger: true })) {
                             void importDatabaseFromFile();
                         }
                     }}

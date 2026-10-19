@@ -102,3 +102,21 @@ export function openDialog(options: DialogOptions): Promise<DialogResult> {
     pending = resolve
   })
 }
+
+/** confirm() in the editor's frame: true when `confirmLabel` was pressed. */
+export async function confirmDialog(title: string, message: string, confirmLabel: string, kind: 'primary' | 'danger' = 'danger'): Promise<boolean> {
+  const { button } = await openDialog({
+    title,
+    message,
+    buttons: [
+      { id: 'cancel', label: 'Cancel' },
+      { id: 'confirm', label: confirmLabel, kind },
+    ],
+  })
+  return button === 'confirm'
+}
+
+/** alert() in the editor's frame. */
+export async function alertDialog(title: string, message: string): Promise<void> {
+  await openDialog({ title, message, buttons: [{ id: 'ok', label: 'OK', kind: 'primary' }] })
+}

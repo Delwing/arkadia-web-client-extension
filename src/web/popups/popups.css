@@ -287,6 +287,16 @@
   box-shadow: 0 18px 48px rgba(0, 0, 0, 0.5), 0 2px 6px rgba(0, 0, 0, 0.35);
   overflow: hidden;
 }
+/* confirmDialog / alertDialog: own root on <body>, over every window, menu
+   and popover (those reach 10500). */
+.popup-confirm-host {
+  position: relative;
+  z-index: 11000;
+}
+.popup-confirm-message {
+  margin: 0;
+  white-space: pre-line;
+}
 .popup-dialog--sm { max-width: 400px; }
 .popup-dialog--lg { max-width: 800px; }
 .popup-dialog--xl { max-width: 1140px; }

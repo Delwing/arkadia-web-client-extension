@@ -73,7 +73,7 @@ import { getDevServer, type DevServerStatus } from './devServer'
 import pluginApiTypes from '../plugin-types/index.d.ts?raw'
 import {IPosition, IRange} from "monaco-editor";
 import {CodingAgentPanel} from './codingAgentPanel';
-import {openDialog} from './dialogs'
+import {alertDialog, openDialog} from './dialogs'
 import {createPopover, type Popover} from './popover'
 import {setupPluginSwitcher} from './pluginSwitcher'
 import {renderWelcome, setWelcomeVisible} from './welcome'
@@ -291,8 +291,8 @@ function renderCurrentFileTree() {
   updateDirtyUI()
   renderFileTree(state.currentPlugin, state.currentFilePath, state.modifiedFiles, {
     onFileClick: switchToFile,
-    onFileDelete: (path) => {
-      const success = deleteFile(
+    onFileDelete: async (path) => {
+      const success = await deleteFile(
         path,
         state.currentPlugin!,
         state.editorModels,
@@ -846,7 +846,7 @@ function startFolderRename(folderPath: string, currentFolderName: string) {
 }
 
 // Context menu action handler
-function handleContextMenuAction(action: string) {
+async function handleContextMenuAction(action: string) {
   const target = getContextMenuTarget()
   if (!target || !state.currentPlugin) return
 
@@ -864,7 +864,7 @@ function handleContextMenuAction(action: string) {
       break
     case 'delete':
       if (target.isFolder) {
-        const success = deleteFolder(
+        const success = await deleteFolder(
           target.path,
           state.currentPlugin,
           state.editorModels,
@@ -875,7 +875,7 @@ function handleContextMenuAction(action: string) {
         )
         if (success) renderCurrentFileTree()
       } else {
-        const success = deleteFile(
+        const success = await deleteFile(
           target.path,
           state.currentPlugin,
           state.editorModels,
@@ -919,12 +919,12 @@ async function createNewFile() {
   const filePath = pathInput.value.trim()
 
   if (!filePath) {
-    alert('Please enter a file path')
+    await alertDialog('New file', 'Please enter a file path')
     return
   }
 
   if (state.currentPlugin.files && state.currentPlugin.files[filePath]) {
-    alert('File already exists')
+    await alertDialog('New file', 'File already exists')
     return
   }
 
@@ -1620,7 +1620,7 @@ function setupEventListeners() {
     if (target.classList.contains('context-menu-item')) {
       const action = target.dataset.action
       if (action) {
-        handleContextMenuAction(action)
+        void handleContextMenuAction(action)
       }
     }
   })

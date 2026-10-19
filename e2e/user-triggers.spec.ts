@@ -197,8 +197,9 @@ test('exports a group and imports it back as a pack', async ({page}) => {
 
     // Delete the trigger, then bring it back from the file.
     await row(modal, 'Pakiet test').locator('.automation-item__main').click();
-    page.once('dialog', dialog => dialog.accept());
     await modal.locator('.automation-editor__foot').getByRole('button', {name: 'Usuń'}).click();
+    // The in-app confirm, not the browser's (that one froze the page).
+    await page.locator('.popup-confirm-host').getByRole('button', {name: 'Usuń'}).click();
     await expect(row(modal, 'Pakiet test'), 'should delete the trigger').toHaveCount(0);
 
     await modal.getByRole('button', {name: 'Importuj'}).click();

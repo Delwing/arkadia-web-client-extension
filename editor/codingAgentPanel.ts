@@ -13,6 +13,7 @@ import { callGemini } from './aiProviders/gemini';
 import { executeFileOperations, type AgentFileOperationsContext } from './agentFileOperations';
 import { getPluginCompilationErrors } from './agentDiagnostics';
 import type { StatusType } from './types';
+import { alertDialog, confirmDialog } from './dialogs';
 
 export class CodingAgentPanel {
   private panel: HTMLElement;
@@ -104,7 +105,7 @@ export class CodingAgentPanel {
     document.getElementById('agent-settings-save')!.addEventListener('click', () => this.saveSettings());
 
     // Clear conversation
-    this.clearButton.addEventListener('click', () => this.clearConversation());
+    this.clearButton.addEventListener('click', () => void this.clearConversation());
 
     // Close panel
     this.closeButton.addEventListener('click', () => this.hide());
@@ -471,7 +472,7 @@ export class CodingAgentPanel {
     for (const file of Array.from(files)) {
       if (file.size > CodingAgentPanel.MAX_ATTACHMENT_BYTES) {
         const limitMb = Math.round(CodingAgentPanel.MAX_ATTACHMENT_BYTES / (1024 * 1024));
-        alert(`"${file.name}" is too large to attach (max ${limitMb} MB).`);
+        await alertDialog('Attach file', `"${file.name}" is too large to attach (max ${limitMb} MB).`);
         continue;
       }
 
@@ -482,7 +483,7 @@ export class CodingAgentPanel {
         const content = await file.text();
         this.attachedFiles.push({ name: file.name, content });
       } catch (_e) {
-        alert(`Failed to read "${file.name}". It may not be a text file.`);
+        await alertDialog('Attach file', `Failed to read "${file.name}". It may not be a text file.`);
       }
     }
 
@@ -669,8 +670,8 @@ export class CodingAgentPanel {
     return formatted;
   }
 
-  private clearConversation(): void {
-    if (!confirm('Clear conversation history?')) return;
+  private async clearConversation(): Promise<void> {
+    if (!await confirmDialog('Clear conversation', 'Clear conversation history?', 'Clear')) return;
 
     if (this.currentPluginId) {
       clearConversationHistory(this.currentPluginId);
@@ -915,13 +916,13 @@ export class CodingAgentPanel {
   private async showPreview(): Promise<void> {
     const prompt = this.inputTextarea.value.trim();
     if (!prompt) {
-      alert('Please enter a prompt first');
+      await alertDialog('Preview', 'Please enter a prompt first');
       return;
     }
 
     const context = this.getEditorContext();
     if (!context.plugin || !context.pluginId) {
-      alert('No plugin loaded');
+      await alertDialog('Preview', 'No plugin loaded');
       return;
     }
 
