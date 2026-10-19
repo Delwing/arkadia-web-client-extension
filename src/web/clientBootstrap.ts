@@ -11,6 +11,7 @@ import { migrateNewlyCharacterScopedKeys } from "@modules/core/storage";
 import { migrateObjectListBackground } from "@web/layout/windowSettings.ts";
 import {
     migrateButtonSizeMultiplier,
+    migrateCharacterPlaqueOff,
     migrateCoverMarkersOn,
     migrateFooterComponentVisibility,
     migrateLayoutManagerState,
@@ -52,6 +53,7 @@ export function bootstrapGameClient(opts: { installPorts: () => void }): GameCli
     migrateUiSettingsSplit();
     migrateZerknijButtonMacro();
     migrateCoverMarkersOn();
+    migrateCharacterPlaqueOff();
     runAllSettingsMigrations();
     migrateButtonSizeMultiplier();
     migrateFooterComponentVisibility();

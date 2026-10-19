@@ -39,7 +39,7 @@ export const defaultRenderSettings: RenderSettings = {
     outputBottomPadding: 0,
     showTimestamps: false,
     highlightMessageBlocks: false,
-    characterPlaque: true,
+    characterPlaque: false,
     objectListCoverMarkers: true,
     commandEcho: true,
     clearInputOnSend: false,

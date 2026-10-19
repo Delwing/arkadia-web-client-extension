@@ -2,6 +2,7 @@ import {
     migrateSettings,
     runAllSettingsMigrations,
     getLatestMigrationVersion,
+    migrateCharacterPlaqueOff,
     migrateCoverMarkersOn,
     migrateSunAnnouncement,
     migrateImportedValue,
@@ -468,6 +469,32 @@ describe('settingsMigrations', () => {
             localStorage.setItem('renderSettings', stored);
 
             migrateCoverMarkersOn();
+
+            expect(localStorage.getItem('renderSettings')).toBe(stored);
+        });
+    });
+
+    describe('migration v19: character plaque off', () => {
+        it('switches a stored true off and keeps the other render settings', () => {
+            localStorage.setItem('renderSettings', JSON.stringify({ characterPlaque: true, showTimestamps: true }));
+
+            migrateCharacterPlaqueOff();
+
+            expect(JSON.parse(localStorage.getItem('renderSettings')!))
+                .toEqual({ characterPlaque: false, showTimestamps: true });
+        });
+
+        it('leaves storage alone when there are no render settings', () => {
+            migrateCharacterPlaqueOff();
+            expect(localStorage.getItem('renderSettings')).toBeNull();
+        });
+
+        it('is skipped once the migration version is past it', () => {
+            localStorage.setItem('settingsMigrationsVersion', '19');
+            const stored = JSON.stringify({ characterPlaque: true });
+            localStorage.setItem('renderSettings', stored);
+
+            migrateCharacterPlaqueOff();
 
             expect(localStorage.getItem('renderSettings')).toBe(stored);
         });

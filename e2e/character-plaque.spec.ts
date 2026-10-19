@@ -8,10 +8,13 @@ const LEGIONISTA = {
 };
 
 test.describe('Character plaque', () => {
-    test('on login the output shows the character: emblem, name, race and guilds - once', async ({page}) => {
+    test('turned on in Wygląd, on login the output shows the character: emblem, name, race and guilds - once', async ({page}) => {
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
+        const modal = await openSettings(page, 'ui-appearance');
+        await modal.locator('#ui-character-plaque').check();
+        await saveSettings(page);
         await pushGmcp(page, 'char.info', LEGIONISTA);
 
         const plaque = page.locator('#main_text_output_msg_wrapper .plaque');
@@ -27,13 +30,10 @@ test.describe('Character plaque', () => {
         await expect(plaque).toHaveCount(2);
     });
 
-    test('turned off in Wygląd, no plaque', async ({page}) => {
+    test('off by default, no plaque', async ({page}) => {
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);
-        const modal = await openSettings(page, 'ui-appearance');
-        await modal.locator('#ui-character-plaque').uncheck();
-        await saveSettings(page);
 
         await pushGmcp(page, 'char.info', LEGIONISTA);
         // Anything after the login has landed, so the plaque would have too.

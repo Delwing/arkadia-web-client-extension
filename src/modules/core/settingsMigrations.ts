@@ -272,6 +272,11 @@ const migrations: Migration[] = [
         description: 'Sunrise/sunset frames on/off becomes a choice of notification, frame or off',
         migrate: migrateSunAnnouncement,
     },
+    {
+        version: 19,
+        description: 'Turn the character plaque off for everyone (handled by migrateCharacterPlaqueOff)',
+        migrate: settings => settings, // No-op for core Settings; actual migration is below
+    },
 ];
 
 /** The old `sunTracker` switch printed frames: on keeps the frames, off stays off. */
@@ -683,6 +688,27 @@ export function migrateCoverMarkersOn(): void {
         }
     } catch (e) {
         console.error('[SettingsMigrations] Failed to turn cover markers on:', e);
+    }
+}
+
+/**
+ * Migration v19: the character plaque became off by default. A stored `true`
+ * is almost always the old default, and anyone who had turned it off keeps
+ * it off - so switch it off once; it can be turned back on in Wygląd.
+ */
+export function migrateCharacterPlaqueOff(): void {
+    if (getMigrationsVersion() >= 19) {
+        return;
+    }
+
+    try {
+        const render = globalStorage.get('renderSettings');
+        if (render && render.characterPlaque === true) {
+            globalStorage.set('renderSettings', { ...render, characterPlaque: false });
+            console.log('[SettingsMigrations] Turned the character plaque off');
+        }
+    } catch (e) {
+        console.error('[SettingsMigrations] Failed to turn the character plaque off:', e);
     }
 }
 
