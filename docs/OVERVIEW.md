@@ -1,6 +1,6 @@
 # Klient Arkadia
 
-Klient dodaje wiele przydatnych funkcji do gry w Arkadię w przeglądarce, w tym aliasy, bindy, zarządzanie pojemnikami i automatyzację.
+Klient dodaje wiele przydatnych funkcji do gry w Arkadię w przeglądarce, w tym aliasy, bindy, zarządzanie pojemnikami, triggery i skrypty.
 
 ## Kategorie dokumentacji
 

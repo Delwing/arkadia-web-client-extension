@@ -1483,7 +1483,7 @@ function buildSchemas(): { schemas: SchemaCatalog; events: EventEntry[]; macroTy
             pattern: 'Wyrazenie regularne dopasowywane do linii z gry. W przeciwienstwie do aliasow NIE jest kotwiczone — dopasowanie czesciowe wystarczy.',
             event: `Identyfikator zdarzenia — tylko z listy SUPPORTED_EVENTS: ${events.map(e => e.id).join(', ')}.`,
             flags: 'Podzbior "gim": g = wszystkie dopasowania w linii, i = ignoruj wielkosc liter, m = trigger wieloliniowy.',
-            gmcpMsgType: 'Ogranicza trigger do konkretnego typu wiadomosci GMCP.',
+            gmcpMsgType: 'Ogranicza trigger do typu wiadomosci GMCP (tekst) albo do kilku typow (lista tekstow). Np. ["living.long", "object.long"]: opis jednej istoty przychodzi jako living.long, kilku naraz jako object.long.',
             conditions: 'Tylko triggery zdarzeniowe. Lista warunkow { arg, op, value } — wszystkie musza byc spelnione. `arg` to nazwa pola z `args` zdarzenia — zdarzenia bez `args` nie obsluguja warunkow. `op`: eq/neq (liczbowo, gdy obie strony sa liczbami, inaczej tekstowo bez wielkosci liter), like/notLike (regex bez wielkosci liter), gt/gte/lt/lte (tylko liczby). `value` zawsze jako tekst. Brak pola w zdarzeniu = warunek niespelniony.',
             macros: 'Lista akcji do wykonania (UserMacro[]).',
         }),

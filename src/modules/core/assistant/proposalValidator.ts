@@ -1174,10 +1174,12 @@ export function validateTrigger(input: Record<string, unknown>): ValidationResul
         proposal.pattern = sanitized.pattern;
         if (flags) proposal.flags = flags;
         if (input.gmcpMsgType !== undefined) {
-            if (typeof input.gmcpMsgType !== 'string' || input.gmcpMsgType.trim() === '') {
-                issues.push(err('wrongValueType', 'gmcpMsgType', 'Pole "gmcpMsgType" musi być niepustym tekstem.'));
+            const raw: unknown = input.gmcpMsgType;
+            const list = Array.isArray(raw) ? raw : [raw];
+            if (!list.length || list.some(t => typeof t !== 'string' || t.trim() === '')) {
+                issues.push(err('wrongValueType', 'gmcpMsgType', 'Pole "gmcpMsgType" musi być niepustym tekstem albo listą takich tekstów.'));
             } else {
-                proposal.gmcpMsgType = input.gmcpMsgType;
+                proposal.gmcpMsgType = list.length === 1 ? list[0] as string : list as string[];
             }
         }
     }

@@ -112,10 +112,22 @@ export interface UserTrigger extends AutomationMeta {
     pattern?: string;    // for pattern triggers
     event?: string;      // for event triggers (e.g., 'kill', 'combatState')
     flags?: string;      // for pattern triggers only
-    gmcpMsgType?: string; // limit pattern trigger to specific GMCP message type
+    /**
+     * Pattern triggers only: the GMCP message types the trigger runs on, absent =
+     * every type. A single string is what triggers saved before more than one
+     * type could be picked look like; read it through {@link triggerMsgTypes}.
+     */
+    gmcpMsgType?: string | string[];
     /** Event triggers only: every condition must hold for the macros to run. */
     conditions?: TriggerCondition[];
     macros: UserMacro[];
+}
+
+/** The message types a pattern trigger is limited to; empty = every type. */
+export function triggerMsgTypes(trigger: Pick<UserTrigger, 'gmcpMsgType'>): string[] {
+    const value = trigger.gmcpMsgType;
+    if (!value) return [];
+    return (Array.isArray(value) ? value : [value]).filter(t => t);
 }
 
 export type ConditionOperator = 'eq' | 'neq' | 'like' | 'notLike' | 'gt' | 'gte' | 'lt' | 'lte';
@@ -821,8 +833,9 @@ export default function initUserTriggers(client: Client) {
                     return;
                 }
 
+                const msgTypes = triggerMsgTypes(item);
                 const callback = (line: AnsiAwareBuffer, matches: RegExpMatchArray, type: string) => {
-                    if (item.gmcpMsgType && type !== item.gmcpMsgType) return line;
+                    if (msgTypes.length && !msgTypes.includes(type)) return line;
                     if (hasGlobalFlag) {
                         // For global flag, find all matches and apply macros to each
                         const globalRegexp = new RegExp(item.pattern!, 'g' + (hasCaseInsensitiveFlag ? 'i' : ''));

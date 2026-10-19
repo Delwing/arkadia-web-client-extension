@@ -819,8 +819,8 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                     </div>
 
                     <p className="popup-field__hint">
-                        Synchronizowane są wszystkie Twoje dane: ustawienia, sterowanie, automatyzacja, dane postaci
-                        i mapy. Ustawienia interfejsu i przycisków są zapisywane osobno dla każdego urządzenia.
+                        Synchronizowane są wszystkie Twoje dane: ustawienia, sterowanie, aliasy, triggery i skrypty,
+                        dane postaci i mapy. Ustawienia interfejsu i przycisków są zapisywane osobno dla każdego urządzenia.
                     </p>
 
                     {/* Encryption */}

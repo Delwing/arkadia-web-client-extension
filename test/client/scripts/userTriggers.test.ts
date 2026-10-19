@@ -5,6 +5,7 @@ import initUserTriggers, {
   evaluateCondition,
   interpolateMatch,
   interpolateMatchGroups,
+  triggerMsgTypes,
   type TriggerCondition,
   type UserTrigger,
 } from '@client/scripts/userTriggers';
@@ -547,6 +548,28 @@ describe('userTriggers', () => {
     // Should apply when type matches
     const result2 = client.Triggers.parseLine(new AnsiAwareBuffer('bar foo baz'), 'combat.avatar');
     expect(result2?.text).toBe('bar FOO baz');
+  });
+
+  test('gmcpMsgType list runs the trigger on any of its types', () => {
+    const client = new FakeClient();
+    initUserTriggers((client as unknown) as any);
+    globalStorage.set('triggers', [{
+      pattern: 'tarcze',
+      gmcpMsgType: ['living.long', 'object.long'],
+      macros: [{ type: 'uppercase' }]
+    }]);
+
+    const line = 'Ma na sobie dluga trojkatna tarcze.';
+    expect(client.Triggers.parseLine(new AnsiAwareBuffer(line), 'living.long')?.text).toBe('Ma na sobie dluga trojkatna TARCZE.');
+    expect(client.Triggers.parseLine(new AnsiAwareBuffer(line), 'object.long')?.text).toBe('Ma na sobie dluga trojkatna TARCZE.');
+    expect(client.Triggers.parseLine(new AnsiAwareBuffer(line), 'comm')?.text).toBe(line);
+  });
+
+  test('triggerMsgTypes reads a single type, a list and none alike', () => {
+    expect(triggerMsgTypes({ gmcpMsgType: 'comm' })).toEqual(['comm']);
+    expect(triggerMsgTypes({ gmcpMsgType: ['comm', 'emotes'] })).toEqual(['comm', 'emotes']);
+    expect(triggerMsgTypes({ gmcpMsgType: [] })).toEqual([]);
+    expect(triggerMsgTypes({})).toEqual([]);
   });
 
   test('trigger without gmcpMsgType matches all types', () => {

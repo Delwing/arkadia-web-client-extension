@@ -10,6 +10,7 @@ import { characterStorage } from '@modules/core/storage.ts';
 import type { Settings } from '@modules/core/defaultSettings.ts';
 import { lookupSetting } from '@modules/core/assistant/settingsRegistry.ts';
 import type { AssistantProposal } from '@modules/core/assistant/proposalValidator.ts';
+import { triggerMsgTypes } from '@client/scripts/userTriggers.ts';
 import { getActiveBindSettings } from '@modules/core/keymapStorage.ts';
 import { describeBind, findBindConflicts, type BindConflict } from '@modules/core/bindConflicts.ts';
 import { load as loadUiSettings } from '@web/uiSettingsCore.ts';
@@ -135,7 +136,8 @@ export function describeProposal(proposal: AssistantProposal): ProposalDescripti
                 },
             ];
             if (proposal.flags) rows.push({ label: 'Flagi', value: proposal.flags });
-            if (proposal.gmcpMsgType) rows.push({ label: 'Tylko dla GMCP', value: proposal.gmcpMsgType });
+            const msgTypes = triggerMsgTypes(proposal);
+            if (msgTypes.length) rows.push({ label: 'Tylko dla GMCP', value: msgTypes.join(', ') });
             rows.push({ label: 'Wykonuje', value: proposal.macros.map(describeMacro).join('; ') });
             return { title: 'Nowy trigger', rows, warnings: [] };
         }

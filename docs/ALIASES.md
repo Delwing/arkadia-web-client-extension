@@ -19,7 +19,7 @@ Własne aliasy tworzysz w oknie **Skrypty** (Menu → Skrypty), razem z triggera
 - **Edytor** - krok 1 *Kiedy* (wzorzec i linia testowa, która od razu pokazuje, czy wzorzec pasuje i co trafi do `$1`), krok 2 *Co zrobić* (akcje po kolei; kolejność zmienisz, przeciągając za uchwyt, a pod spodem widać, co zostanie wysłane), krok 3 *Dla kogo*. Zmiany zapisuje **Zapisz** (albo `Ctrl+Enter`); kropka przy wierszu oznacza niezapisane zmiany
 - **Włączony** - wyłączony alias lub trigger zostaje zapisany, ale nie działa
 - **Dla kogo** - wszystkie postacie albo tylko wybrane; na innej postaci element nie działa
-- **Eksport i import** - "Eksportuj wszystko" albo eksport jednej grupy zapisuje plik `.json`, który ktoś inny wczyta przez "Importuj" → "Plik automatyzacji". Import niczego nie nadpisuje: alias o istniejącym wzorcu i identyczny trigger zostają pominięte
+- **Eksport i import** - "Eksportuj wszystko" albo eksport jednej grupy zapisuje plik `.json`, który ktoś inny wczyta przez "Importuj" → "Plik ze Skryptów". Import niczego nie nadpisuje: alias o istniejącym wzorcu i identyczny trigger zostają pominięte
 
 ### Zakresy ($i)
 

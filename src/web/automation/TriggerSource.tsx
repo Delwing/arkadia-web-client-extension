@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { Button, DeleteButton, Input, Select } from '@web-ui/primitives/index.ts';
+import { ChevronDown } from 'lucide-react';
+import { Button, Check, DeleteButton, Input, Select } from '@web-ui/primitives/index.ts';
+import { usePopover } from '@web/layout/hooks/usePopover.ts';
 import {
     CONDITION_OPERATORS,
     GMCP_EVENT_CATEGORY,
@@ -44,6 +46,56 @@ export const GMCP_MSG_TYPES: { id: string; label: string }[] = [
     { id: 'prompt', label: 'Znak zachęty terminala' },
     { id: 'other', label: 'Pozostałe komunikaty' },
 ];
+
+/**
+ * "Tylko w": the message types a pattern trigger runs on, none ticked = all of
+ * them. Several, because one reply can arrive as different types — looking at
+ * one creature is `living.long`, at a group of them `object.long`.
+ */
+export function MsgTypePicker({ value, onChange }: { value: string[]; onChange: (types: string[]) => void }) {
+    const menu = usePopover({ width: 300 });
+    // Types this client does not know (a newer one, or typed by hand) stay listed so they can be unticked.
+    const options = [
+        ...value.filter(id => !GMCP_MSG_TYPES.some(t => t.id === id)).map(id => ({ id, label: id })),
+        ...GMCP_MSG_TYPES,
+    ];
+    const labelOf = (id: string) => options.find(t => t.id === id)?.label ?? id;
+    const summary = value.length ? value.map(labelOf).join(', ') : 'dowolnych wiadomościach';
+    const toggle = (id: string, on: boolean) =>
+        onChange(on ? [...value, id] : value.filter(t => t !== id));
+    return (
+        <div className="popup-menu-anchor automation-msgtype" ref={menu.rootRef}>
+            <button
+                ref={menu.anchorRef}
+                type="button"
+                title={value.length ? summary : 'Typ wiadomości'}
+                className={`popup-btn popup-btn--control popup-btn--sm popup-menu-button${menu.open ? ' is-active' : ''}`}
+                onClick={menu.toggle}
+            >
+                <span className="automation-msgtype__summary">{summary}</span>
+                <ChevronDown size={14} strokeWidth={2} />
+            </button>
+            {menu.style && (
+                <div className="popup-popover automation-msgtype__panel" style={menu.style}>
+                    <Check
+                        label="Dowolne wiadomości"
+                        checked={value.length === 0}
+                        onChange={() => onChange([])}
+                    />
+                    {options.map(t => (
+                        <Check
+                            key={t.id}
+                            label={t.label}
+                            title={t.id}
+                            checked={value.includes(t.id)}
+                            onChange={e => toggle(t.id, e.target.checked)}
+                        />
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+}
 
 const FLAGS = [
     { flag: 'i', title: 'Ignoruj wielkość liter' },

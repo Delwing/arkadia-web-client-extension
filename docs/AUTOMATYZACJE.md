@@ -8,7 +8,7 @@ Aliasy, triggery i skrypty tworzysz w jednym oknie: **Menu → Skrypty**. Nie tr
 
 Okno ma trzy kolumny:
 
-- **Po lewej** — filtr rodzaju (*Wszystko*, *Aliasy*, *Triggery*, *Skrypty*) z liczbą elementów, a pod nim **Biblioteka** gotowych automatyzacji. **Wyłączone** pokazuje też to, co wyłączyłeś, a **Tylko tej postaci** chowa to, co na zalogowanej postaci nie działa. Na dole **Importuj** i **Eksportuj wszystko**
+- **Po lewej** — filtr rodzaju (*Wszystko*, *Aliasy*, *Triggery*, *Skrypty*) z liczbą elementów, a pod nim **Biblioteka** gotowych aliasów, triggerów i skryptów. **Wyłączone** pokazuje też to, co wyłączyłeś, a **Tylko tej postaci** chowa to, co na zalogowanej postaci nie działa. Na dole **Importuj** i **Eksportuj wszystko**
 - **Na środku** — lista w grupach, z polem **Szukaj** (po wzorcu, komendzie albo nazwie). Przycisk **+** dodaje alias, trigger, skrypt albo grupę; ikona folderu obok tworzy nową grupę
 - **Po prawej** — edytor zaznaczonego elementu. **Zapisz** (albo `Ctrl+Enter`) zapisuje zmiany, **Cofnij zmiany** wraca do zapisanej wersji
 
@@ -16,7 +16,7 @@ Element ze zmianami, których jeszcze nie zapisałeś, ma przy nazwie pomarańcz
 
 ## Biblioteka
 
-**Biblioteka** w lewej kolumnie zbiera gotowe automatyzacje na to, o co gracze pytają najczęściej, np.:
+**Biblioteka** w lewej kolumnie zbiera gotowe aliasy, triggery i skrypty na to, o co gracze pytają najczęściej, np.:
 
 - **Dźwięk na nieodebraną pocztę** — dźwięk, gdy na poczcie czeka list do odebrania
 - **Dźwięk na każdy atak** — dźwięk, gdy ktokolwiek cię zaatakuje, nie tylko ktoś z wrogiej gildii
@@ -24,7 +24,7 @@ Element ze zmianami, których jeszcze nie zapisałeś, ma przy nazwie pomarańcz
 - **Przyjazd transportu na głos** — czyta nazwę pojazdu, który podjechał, gdy czekasz na przystanku
 - **Rozrywanie kokonów** — alias `kok 1-5` wysyła `rozerwij 1. kokon`, `rozerwij 2. kokon`... aż do 5
 
-**Dodaj** wstawia ją na twoją listę jako zwykły element w grupie (np. *Dźwięki*), który możesz potem zmienić, wyłączyć albo usunąć. Dodana ma znaczek **Dodano**, a **Pokaż** otwiera ją w edytorze.
+**Dodaj** wstawia wybraną pozycję na twoją listę jako zwykły element w grupie (np. *Dźwięki*), który możesz potem zmienić, wyłączyć albo usunąć. Dodana ma znaczek **Dodano**, a **Pokaż** otwiera ją w edytorze.
 
 ## Grupy
 
@@ -32,7 +32,7 @@ Grupa zbiera powiązane elementy — np. wszystko, czego używasz w walce. Jej p
 
 - Elementy przenosisz między grupami, przeciągając je, albo z menu **…** przy elemencie
 - Menu **…** przy grupie dodaje do niej nowy alias, trigger lub skrypt, zmienia jej nazwę i **eksportuje grupę** do pliku `.json`. Pojedynczy alias, trigger lub skrypt eksportujesz z jego menu **…** (albo prawym przyciskiem na liście) — razem ze skryptami, które uruchamia
-- Taki plik ktoś inny wczyta przez **Importuj → Plik automatyzacji (.json)**
+- Taki plik ktoś inny wczyta przez **Importuj → Plik ze Skryptów (.json)**
 - Akcja **Włącz / wyłącz grupę** pozwala przełączać grupę z innego aliasu lub triggera — np. wejście w walkę włącza grupę "Walka", a jej koniec ją wyłącza
 
 > Paczkę od kogoś obcego przejrzyj przed importem — zwłaszcza skrypty, bo mają dostęp do całego API klienta.
@@ -57,7 +57,7 @@ Trigger reaguje na to, co wypisze gra. Dodajesz go przez **+ → Trigger**.
 
 1. **Kiedy** — przełącznik **Tekst gry** / **Zdarzenie**. Dla tekstu podajesz wzorzec; przyciski `i`, `g`, `m` po prawej to flagi (bez rozróżniania wielkości liter, globalnie, wieloliniowo). Grupy w nawiasach są pokolorowane jak w aliasach, a przycisk z klamrami wstawia gotowe kawałki, także **Początek linii**, **Koniec linii** i **Kropka na końcu**. Najprościej: wklej linię z gry do testu, kliknij **jako wzorzec**, zaznacz we wzorcu np. imię i wstaw w jego miejsce **Słowo** albo **Tekst do...**. `$3` albo `{nazwa}`, których wzorzec nie ma, edytor podświetla na czerwono pod akcjami
 2. **Linia do testu** — wpisz albo wybierz **z ostatnich linii** gry tekst, a zobaczysz, czy wzorzec pasuje, co jest w `$1` i jak linia będzie wyglądać po akcjach (**Wynik dla linii z testu**)
-3. **Tylko w** — zawęża trigger do jednego rodzaju wiadomości: walki, rozmów, opisów lokacji, poczty i ponad 20 innych
+3. **Tylko w** — zawęża trigger do wybranych rodzajów wiadomości: walki, rozmów, opisów lokacji, poczty i ponad 20 innych. Zaznacz ich tyle, ile trzeba, np. **Długi opis żywej istoty** i **Długi opis obiektu**: opis jednej istoty gra wysyła jako pierwszy, a kilku naraz (`ob krasnoludy`) jako drugi
 4. **Co zrobić** — dowolnie wiele akcji, wykonywanych po kolei. Kolejność zmienisz, przeciągając za uchwyt po lewej
 
 Akcje, które zmieniają linię na ekranie:

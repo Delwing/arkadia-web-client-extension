@@ -203,7 +203,7 @@ test('exports a group and imports it back as a pack', async ({page}) => {
 
     await modal.getByRole('button', {name: 'Importuj'}).click();
     const chooser = page.waitForEvent('filechooser');
-    await page.getByRole('button', {name: 'Plik automatyzacji (.json)'}).click();
+    await page.getByRole('button', {name: 'Plik ze Skryptów (.json)'}).click();
     await (await chooser).setFiles(file!);
 
     await expect(modal.locator('.automation-notice'), 'should report what came in').toContainText('1 trigger');

@@ -490,6 +490,16 @@ describe('trigger proposals - pattern', () => {
         expect(result.proposal!.type).toBe('pattern');
     });
 
+    it('takes one message type or a list of them', () => {
+        const withTypes = (gmcpMsgType: unknown) => validateProposal({
+            kind: 'trigger', pattern: 'abc', gmcpMsgType, macros: [{ type: 'beep' }],
+        }) as ValidationResult<TriggerProposal>;
+        expect(withTypes('comm').proposal!.gmcpMsgType).toBe('comm');
+        expect(withTypes(['living.long', 'object.long']).proposal!.gmcpMsgType).toEqual(['living.long', 'object.long']);
+        expect(errorCodes(withTypes([]))).toEqual(['wrongValueType']);
+        expect(errorCodes(withTypes(['comm', '']))).toEqual(['wrongValueType']);
+    });
+
     it('repairs Polish letters in the pattern', () => {
         const result = validateProposal({
             kind: 'trigger',

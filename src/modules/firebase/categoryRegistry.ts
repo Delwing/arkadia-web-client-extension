@@ -73,8 +73,8 @@ export const CATEGORY_REGISTRY = {
     renderSettings: { name: 'Wygląd tekstu', scope: 'shared', speed: 'hot', globalKeys: ['renderSettings'] },
     mapSettings: { name: 'Wygląd mapy', scope: 'shared', speed: 'hot', globalKeys: ['mapSettings'] },
     behaviorSettings: { name: 'Zachowanie interfejsu', scope: 'shared', speed: 'hot', globalKeys: ['behaviorSettings'] },
-    automationGroups: { name: 'Grupy automatyzacji', scope: 'shared', speed: 'hot', globalKeys: ['automationGroups'] },
-    automationScripts: { name: 'Skrypty automatyzacji', scope: 'shared', speed: 'hot', globalKeys: ['automationScripts'] },
+    automationGroups: { name: 'Grupy z okna Skrypty', scope: 'shared', speed: 'hot', globalKeys: ['automationGroups'] },
+    automationScripts: { name: 'Skrypty JavaScript', scope: 'shared', speed: 'hot', globalKeys: ['automationScripts'] },
 } as const satisfies Record<string, CategoryDefinition>;
 
 /**

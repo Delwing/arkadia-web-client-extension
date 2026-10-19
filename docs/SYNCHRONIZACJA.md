@@ -49,8 +49,8 @@ Synchronizowane są zawsze wszystkie poniższe kategorie - nie trzeba (i nie da 
 | **Ustawienia postaci** | Ustawienia rozgrywki (profesja, staż itp.) |
 | **Triggery** | Triggery reagujące na tekst z gry |
 | **Aliasy** | Aliasy komend |
-| **Grupy automatyzacji** | Grupy aliasów i triggerów oraz to, czy są włączone |
-| **Skrypty automatyzacji** | Skrypty JavaScript z okna Skrypty |
+| **Grupy z okna Skrypty** | Grupy aliasów, triggerów i skryptów oraz to, czy są włączone |
+| **Skrypty JavaScript** | Skrypty JavaScript z okna Skrypty |
 | **Multibindy** | Wielokrotne przypisania klawiszy |
 | **Przyciski** | Konfiguracja przycisków na ekranie |
 | **Menu radialne** | Ustawienia menu radialnego |
