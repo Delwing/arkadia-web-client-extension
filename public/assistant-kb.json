@@ -104,7 +104,7 @@
       "shortExitsColor | Kolor skróconych wyjść | P5 | string | #ffa500",
       "shortExitsPrefix | Przedrostek skróconych wyjść | P5 | string | -----:",
       "shortExitsSeparator | Separator skróconych wyjść | P5 | string |  ",
-      "sunTracker | Ramki wschodu/zachodu | P3 | boolean | false",
+      "sunAnnouncement | Wschód i zachód słońca | P3 | enum: notification|frame|off | off",
       "supportCommand | Komenda wsparcia | P2 | string | wesprzyj",
       "weaponChipDrawCommand | Chip Broń: klik, gdy schowana | P8 | string | /dob",
       "weaponChipHoldCommand | Chip Broń: przytrzymanie | P8 | string | \"\"",
@@ -2473,20 +2473,34 @@
       "note": "Widoczne dopiero po wlaczeniu `shortenExits`."
     },
     {
-      "path": "character.settings.sunTracker",
+      "path": "character.settings.sunAnnouncement",
       "scope": "character",
       "storageKey": "settings",
-      "key": "sunTracker",
-      "type": "boolean",
+      "key": "sunAnnouncement",
+      "type": "string",
       "optional": false,
-      "default": false,
-      "control": "checkbox",
+      "default": "off",
+      "control": "select",
       "exposedInUi": true,
       "sources": [
         "src/modules/core/defaultSettings.ts",
         "src/web/options/Settings.tsx"
       ],
-      "label": "Ramki wschodu/zachodu",
+      "options": [
+        {
+          "value": "notification",
+          "label": "Powiadomienie"
+        },
+        {
+          "value": "frame",
+          "label": "Ramka w oknie gry"
+        },
+        {
+          "value": "off",
+          "label": "Wyłączone"
+        }
+      ],
+      "label": "Wschód i zachód słońca",
       "uiLocation": "Menu (☰) → Ustawienia → Postać → Ogólne → Pozostałe opcje"
     },
     {

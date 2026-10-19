@@ -2,6 +2,8 @@ import { DEFAULT_ATTACK_COMMAND } from "@client/utils/attackCommand";
 import { DEFAULT_DRAW_WEAPON_COMMAND } from "@client/utils/drawWeaponCommand";
 import { DEFAULT_SUPPORT_COMMAND } from "@client/utils/supportCommand";
 
+export type SunAnnouncement = 'notification' | 'frame' | 'off';
+
 export interface CollectOverride {
     enemy: string;
     collectCopper: boolean;
@@ -62,7 +64,8 @@ export interface Settings {
     magicKeysColor?: string;
     cuttingPreAction?: string;
     cuttingPostAction?: string;
-    sunTracker: boolean;
+    /** How a sunrise/sunset is announced: a toast, the old frame in the output, or not at all. */
+    sunAnnouncement: SunAnnouncement;
     carriageTeamTickets: boolean;
     zlomSilver?: {
         color: string;
@@ -150,7 +153,7 @@ export const defaultSettings: Settings = {
     magicKeysColor: '#00ff87',
     cuttingPreAction: '',
     cuttingPostAction: '',
-    sunTracker: false,
+    sunAnnouncement: 'off',
     carriageTeamTickets: true,
     zlomSilver: { color: '#dadada' },
     dobCommand1: '',

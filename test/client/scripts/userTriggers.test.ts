@@ -127,7 +127,27 @@ describe('userTriggers', () => {
     globalStorage.set('triggers', list);
     const result = client.Triggers.parseLine(new AnsiAwareBuffer('foo'), '');
     expect(result?.text).toBe('foo');
-    expect(client.sendEvent).toHaveBeenCalledWith('notify', { text: 'hello', system: true });
+    expect(client.sendEvent).toHaveBeenCalledWith('notify', expect.objectContaining({ text: 'hello', system: true }));
+  });
+
+  test('notify carries its title, level, time and button into the toast', () => {
+    const client = new FakeClient();
+    initUserTriggers((client as unknown) as any);
+    const list: UserTrigger[] = [{ pattern: 'atakuje (\\w+)', macros: [{
+      type: 'notify', message: 'Atak: $1', notifyTitle: 'Walka', notifyLevel: 'error',
+      notifySeconds: 0, notifySystem: false, label: 'Uciekaj', command: 'zabij $1',
+    }] }];
+    globalStorage.set('triggers', list);
+    client.Triggers.parseLine(new AnsiAwareBuffer('Ork atakuje ciebie'), '');
+    expect(client.sendEvent).toHaveBeenCalledWith('notify', expect.objectContaining({
+      text: 'Atak: ciebie',
+      title: 'Walka',
+      level: 'error',
+      sticky: true,
+      system: false,
+      source: 'trigger',
+      actions: [expect.objectContaining({ label: 'Uciekaj', command: 'zabij ciebie' })],
+    }));
   });
 
   test('notify falls back to matched text when message is empty', () => {
@@ -137,7 +157,7 @@ describe('userTriggers', () => {
     globalStorage.set('triggers', list);
     const result = client.Triggers.parseLine(new AnsiAwareBuffer('bar foo baz'), '');
     expect(result?.text).toBe('bar foo baz');
-    expect(client.sendEvent).toHaveBeenCalledWith('notify', { text: 'foo', system: true });
+    expect(client.sendEvent).toHaveBeenCalledWith('notify', expect.objectContaining({ text: 'foo', system: true }));
   });
 
   test('push sends the given message to paired devices', () => {
@@ -624,7 +644,7 @@ describe('userTriggers', () => {
       }]);
       client.Triggers.parseLine(new AnsiAwareBuffer('Goblin atakuje cie!'), '');
       expect(client.sendCommand).toHaveBeenCalledWith('zabij Goblin');
-      expect(client.sendEvent).toHaveBeenCalledWith('notify', { text: 'Goblin cie atakuje!', system: true });
+      expect(client.sendEvent).toHaveBeenCalledWith('notify', expect.objectContaining({ text: 'Goblin cie atakuje!', system: true }));
       expect(client.FunctionalBind.set).toHaveBeenCalledWith('bij Goblin', expect.any(Function));
     });
   });

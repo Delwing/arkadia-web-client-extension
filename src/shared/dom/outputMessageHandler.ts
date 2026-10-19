@@ -288,21 +288,17 @@ export function setupOutputMessageHandler(
         // view — otherwise removing the oldest nodes would shift the content
         // they are reading. When split view closes, the accumulated excess
         // drains on the next message via the `> maxElements + trimSlack` check.
+        // Fixtures of the wrapper (the split pane, anything marked
+        // data-output-keep such as the toast strip) are never trimmed and do
+        // not count as lines.
         if (!splitView.isSplitView() && outputWrapper.childElementCount - 1 > maxElementsValue + trimSlack) {
-            while (outputWrapper.childElementCount - 1 > maxElementsValue) {
-                const first = outputWrapper.firstElementChild;
-                if (first === splitBottom) {
-                    const second = first.nextElementSibling;
-                    if (second) {
-                        outputWrapper.removeChild(second);
-                    } else {
-                        break;
-                    }
-                } else if (first) {
-                    outputWrapper.removeChild(first);
-                } else {
-                    break;
-                }
+            const keep = (el: Element) => el === splitBottom || el.hasAttribute('data-output-keep');
+            const kept = 1 + outputWrapper.querySelectorAll(':scope > [data-output-keep]').length;
+            while (outputWrapper.childElementCount - kept > maxElementsValue) {
+                let oldest = outputWrapper.firstElementChild;
+                while (oldest && keep(oldest)) oldest = oldest.nextElementSibling;
+                if (!oldest) break;
+                outputWrapper.removeChild(oldest);
             }
         }
 

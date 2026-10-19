@@ -1,5 +1,7 @@
 import {expect, test} from './support/fixtures';
-import {ensureGameSocket, GMCP_PATHS, pushGmcp, pushText, submitCommand, waitForCommandInput} from './support/mocks';
+import type {Page} from '@playwright/test';
+import {ensureGameSocket, GMCP_PATHS, primeCharInfo, pushGmcp, pushText, submitCommand, waitForCommandInput} from './support/mocks';
+import {openSettings, saveSettings} from './support/settings';
 
 test.describe('Clock System', () => {
     test.beforeEach(async ({context}) => {
@@ -412,5 +414,59 @@ test.describe('Clock System', () => {
 
         await page.locator('.wt-domain-switch').getByText('Bieżąca').click();
         await expect(page.locator('.world-time-popup .wt-time')).toHaveCount(1);
+    });
+
+    async function chooseSunAnnouncement(page: Page, value: 'notification' | 'frame' | 'off') {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+        await primeCharInfo(page, {name: 'SunHero'});
+        await page.waitForFunction(() => localStorage.getItem('currentCharacter') === 'SunHero');
+
+        const modal = await openSettings(page, 'character-general');
+        await modal.locator('#sunAnnouncement').selectOption(value);
+        await saveSettings(page);
+    }
+
+    async function watchSunset(page: Page) {
+        await pushGmcp(page, 'room.info', { map: { domain: 'Imperium' } });
+        await pushGmcp(page, 'room.time', { daylight: true });
+        await pushGmcp(page, 'room.time', { daylight: false });
+    }
+
+    test('sunset notification shows a moon without a czas first', async ({page}) => {
+        await chooseSunAnnouncement(page, 'notification');
+        await watchSunset(page);
+
+        const toast = page.locator('#notification-center .toast', {hasText: 'Zachód słońca'});
+        await expect(toast).toBeVisible();
+        await expect(toast).toHaveClass(/toast--moon/);
+        await expect(toast).toContainText('Imperium');
+        await expect(toast.locator('.toast__actions')).toHaveCount(0);
+    });
+
+    test('the frame choice prints the frame instead, also without a czas', async ({page}) => {
+        await chooseSunAnnouncement(page, 'frame');
+        await watchSunset(page);
+
+        await expect(page.locator('#main_text_output_msg_wrapper')).toContainText('ZACHOD');
+        await expect(page.locator('#notification-center .toast')).toHaveCount(0);
+    });
+
+    test('frames that were on before stay on as the frame choice', async ({page}) => {
+        await page.addInitScript(() => {
+            if (localStorage.getItem('settingsMigrationsVersion') === null) {
+                localStorage.setItem('settingsMigrationsVersion', '17');
+                localStorage.setItem('SunHero:settings', JSON.stringify({sunTracker: true}));
+            }
+        });
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+        await primeCharInfo(page, {name: 'SunHero'});
+        await page.waitForFunction(() => localStorage.getItem('currentCharacter') === 'SunHero');
+
+        const modal = await openSettings(page, 'character-general');
+        await expect(modal.locator('#sunAnnouncement')).toHaveValue('frame');
     });
 });

@@ -28,6 +28,7 @@ import {loadLayoutState} from "@web/layout";
 import {OBJECT_LIST_OTHERS_ID} from "@web/layout/types.ts";
 import {getWindowBackground, subscribeToWindowSetting, WINDOW_BACKGROUND_KEY, windowBackgroundRgba} from "@web/layout/windowSettings.ts";
 import {applyCustomTheme, generateRandomColor, removeCustomTheme} from "./themes/randomTheme";
+import {normalizeToastSettings} from "@web/notifications/toastSettings.ts";
 
 // Re-export for backwards compatibility
 export { defaultUiSettings, defaultFooterComponents, type UiSettings, type FooterComponentConfig, type MapHighlightShape, type MapRoomShape, type PathFindingAlgorithm, type ColorTheme } from "./defaultUiSettings";
@@ -616,6 +617,7 @@ export function load(): UiSettings {
             const inGameUpdateNotice = typeof parsed.inGameUpdateNotice === 'boolean'
                 ? parsed.inGameUpdateNotice
                 : defaultUiSettings.inGameUpdateNotice;
+            const toasts = normalizeToastSettings(parsed);
             const commandEcho = typeof parsed.commandEcho === 'boolean'
                 ? parsed.commandEcho
                 : defaultUiSettings.commandEcho;
@@ -702,6 +704,7 @@ export function load(): UiSettings {
                 pushOnlyWhenHidden,
                 wakeLock,
                 inGameUpdateNotice,
+                ...toasts,
                 commandEcho,
                 showTimestamps,
                 outputBottomPadding,

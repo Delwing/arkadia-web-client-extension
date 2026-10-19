@@ -456,7 +456,7 @@ export interface EventsApi {
    *
    * @example
    * ```typescript
-   * // Emit an in-app notification (toast in the notification center)
+   * // Emit an in-app notification (a toast; see also api.notifications)
    * api.events.emit("notify", { text: "Hello!", time: 5000 });
    *
    * // Also fire an OS/browser notification (when the user granted permission)
@@ -3528,6 +3528,8 @@ export interface PluginApi {
   keys: KeysApi;
   /** Read SQLite files, e.g. to import a Mudlet database */
   sqlite: SqliteApi;
+  /** Toasts over the game output */
+  notifications: NotificationsApi;
   /**
    * AnsiAwareBuffer class for creating formatted text buffers
    *
@@ -3542,6 +3544,69 @@ export interface PluginApi {
   AnsiAwareBuffer: typeof AnsiAwareBuffer;
 }
 
+/** A button on a toast. */
+export interface NotificationButton {
+  label: string;
+  /** Sent like a typed command when clicked. */
+  command?: string;
+  onClick?: () => void;
+  /** Drawn as the main button. */
+  primary?: boolean;
+  /** Leave the toast up after the click. */
+  keepOpen?: boolean;
+}
+
+export interface NotificationOptions {
+  text: string;
+  /** Bold first line; `text` then reads as the body under it. */
+  title?: string;
+  /** Defaults to 'info'. Warnings and errors still show under "do not disturb". */
+  level?: 'info' | 'success' | 'warning' | 'error';
+  /** Milliseconds on screen (scaled by the player's setting). */
+  time?: number;
+  /** Stays until closed or dismissed. */
+  sticky?: boolean;
+  /** A progress bar, e.g. `{ value: 3, max: 10 }`. */
+  progress?: { value: number; max: number };
+  actions?: NotificationButton[];
+  /** Also fire an OS/browser notification (when the user granted permission). */
+  system?: boolean;
+}
+
+export interface NotificationHandle {
+  /** Change the toast in place; if the player already closed it, nothing shows. */
+  update(patch: Partial<NotificationOptions>): void;
+  /** Show it again as a repeat (counts ×2, ×3…) and restart its timer. */
+  repeat(patch?: Partial<NotificationOptions>): void;
+  dismiss(): void;
+}
+
+/**
+ * Notifications API - toasts over the game output. The player can mute all
+ * plugin toasts in the settings.
+ */
+export interface NotificationsApi {
+  /**
+   * Show a toast.
+   *
+   * @example
+   * ```typescript
+   * api.notifications.show("Zapisano");
+   *
+   * const task = api.notifications.show({
+   *   title: "Liczę zioła",
+   *   text: "0 z 12",
+   *   sticky: true,
+   *   progress: { value: 0, max: 12 },
+   *   actions: [{ label: "Przerwij", command: "/stop-ziola" }],
+   * });
+   * task.update({ text: "5 z 12", progress: { value: 5, max: 12 } });
+   * task.dismiss();
+   * ```
+   */
+  show(options: NotificationOptions | string): NotificationHandle;
+}
+
 /**
  * Plugin API Implementation
  *
@@ -3554,6 +3619,9 @@ export class PluginApiImpl implements PluginApi {
   private aliasMap: Map<string, PluginAlias> = new Map();
   private popupHandles: Set<PopupHandle> = new Set();
   private popupMenuEntryIds: Set<string> = new Set();
+  /** Keys of this plugin's toasts, closed when it unloads. */
+  private notificationKeys: Set<string> = new Set();
+  private notificationSeq = 0;
   private peopleUnsubscribers: Set<() => void> = new Set();
   private contextMenuEntryIds: Set<string> = new Set();
   private buttonMacroIds: Set<string> = new Set();
@@ -3598,6 +3666,7 @@ export class PluginApiImpl implements PluginApi {
   public attackController: AttackControllerApi;
   public combat: CombatApi;
   public locationNotes: LocationNotesApi;
+  public notifications: NotificationsApi;
   public people: PeopleApi;
   public walkModes: WalkModesApi;
   public storage: StorageApi;
@@ -3655,6 +3724,7 @@ export class PluginApiImpl implements PluginApi {
     this.character = this.createCharacterApi();
     this.keys = this.createKeysApi();
     this.sqlite = this.createSqliteApi();
+    this.notifications = this.createNotificationsApi();
 
     // Expose AnsiAwareBuffer class
     this.AnsiAwareBuffer = AnsiAwareBuffer;
@@ -3767,8 +3837,51 @@ export class PluginApiImpl implements PluginApi {
       },
 
       emit: (event, ...args) => {
+        if (event === 'notify' && args[0]) {
+          // So the player can mute plugin toasts as a group.
+          const payload = args[0] as ClientEvents['notify'];
+          this.client.sendEvent('notify', { ...payload, source: payload.source ?? 'plugin' });
+          return;
+        }
         this.client.sendEvent(event, ...args);
       }
+    };
+  }
+
+  // ============================================================================
+  // Notifications API
+  // ============================================================================
+
+  private createNotificationsApi(): NotificationsApi {
+    return {
+      show: (options) => {
+        const key = `plugin:${this.pluginId}:${++this.notificationSeq}`;
+        let current: NotificationOptions = typeof options === 'string' ? { text: options } : { ...options };
+        const send = (update: boolean) => {
+          this.notificationKeys.add(key);
+          this.client.sendEvent('notify', {
+            ...current,
+            key,
+            update,
+            source: 'plugin',
+          });
+        };
+        send(false);
+        return {
+          update: (patch) => {
+            current = { ...current, ...patch };
+            send(true);
+          },
+          repeat: (patch) => {
+            current = { ...current, ...patch };
+            send(false);
+          },
+          dismiss: () => {
+            this.notificationKeys.delete(key);
+            this.client.sendEvent('notify.dismiss', { key });
+          },
+        };
+      },
     };
   }
 
@@ -4756,6 +4869,12 @@ export class PluginApiImpl implements PluginApi {
       unregisterPopupMenuEntry(id);
     }
     this.popupMenuEntryIds.clear();
+
+    // A sticky toast from an unloaded plugin would have nobody to close it.
+    for (const key of this.notificationKeys) {
+      this.client.sendEvent('notify.dismiss', { key });
+    }
+    this.notificationKeys.clear();
 
     for (const unsubscribe of Array.from(this.peopleUnsubscribers)) {
       unsubscribe();

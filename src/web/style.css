@@ -3053,33 +3053,14 @@ select.popup-input.popup-input--control.is-warning {
   /* Sticky (not absolute): the wrapper is the scroll container, so an absolutely
      positioned child anchors to the content top and scrolls out of view as game
      text accumulates. Sticky keeps it pinned to the visible top of the scrollport
-     across every map-position layout. */
+     across every map-position layout. Zero height so it never pushes the game
+     text; the toast stack inside (notifications/toasts.css) is absolutely placed. */
   position: sticky;
-  top: 3rem;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.5rem;
-  padding-left: 0.5rem;
+  top: 0;
+  height: 0;
   /* Overlay only — never intercept clicks/selection over the text below it. */
   pointer-events: none;
   z-index: 1104;
-}
-
-body.layout-manager-enabled #notification-center {
-  top: 0.5rem;
-}
-
-#notification-center .notification {
-  background-color: rgba(0, 0, 0, 0.6);
-  color: #fff;
-  padding: 0.25rem 0.5rem;
-  border-radius: 0.5rem;
-  backdrop-filter: blur(2px);
-  -webkit-backdrop-filter: blur(2px);
-  font-size: 0.8rem;
-  pointer-events: none;
-  border: 1px solid #fff;
 }
 
 /* Right-click menus: one surface, rows of icon / label / key hint, captioned

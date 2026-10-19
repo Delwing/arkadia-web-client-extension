@@ -111,6 +111,7 @@ import initMountain from './scripts/mountain'
 import initDrowning from './scripts/drowning'
 import initLanguage from './scripts/language'
 import initIdleFullHp from './scripts/idleFullHp'
+import initIdleLogout from './scripts/idleLogout'
 import initFullHpTimer from './scripts/fullHpTimer'
 import initTeamPanel from './scripts/teamPanel'
 import initNoExitHighlight from './scripts/noExitHighlight'
@@ -354,6 +355,7 @@ export function registerScripts(client: Client) {
     initPipe(client, aliases)
     initHpAlert(client)
     initIdleFullHp(client)
+    initIdleLogout(client)
     initFullHpTimer(client)
     initTeamPanel(client)
     initNoWeaponAlert(client)

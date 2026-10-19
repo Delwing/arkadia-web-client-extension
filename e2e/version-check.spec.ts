@@ -6,7 +6,7 @@ const updateNotice = (page: Page) =>
     page.locator('#commit-info .commit-info-update');
 
 const updateToast = (page: Page) =>
-    page.locator('#notification-center .notification', {hasText: 'Dostępna jest nowa wersja klienta'});
+    page.locator('#notification-center .toast', {hasText: 'Dostępna nowa wersja'});
 
 /** Connects to the game, then has a deploy land while the app sits in the background. */
 async function deployWhilePlaying(page: Page, context: BrowserContext) {

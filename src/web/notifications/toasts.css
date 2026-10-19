@@ -1,0 +1,282 @@
+/* Toasts over the game output. #notification-center is a zero-height sticky
+   strip pinned to the top of the output's scrollport; the stack inside it is
+   placed in one of its corners (bottom ones reach down by the scrollport's
+   height, measured into --toast-viewport-h). */
+
+.toast-stack {
+  --toast-edge: 0.75rem;
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: min(22rem, calc(100% - 2 * var(--toast-edge)));
+  font-family: var(--font-ui);
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--popup-text);
+  /* Only the cards take the pointer; the gaps between them leave the game
+     text clickable and selectable. */
+  pointer-events: none;
+}
+
+.toast-stack--top-left,
+.toast-stack--top-right {
+  top: var(--toast-top, 3rem);
+}
+
+.toast-stack--top-left { left: var(--toast-edge); }
+.toast-stack--top-right { right: var(--toast-edge); }
+
+.toast-stack--bottom-right,
+.toast-stack--bottom-center {
+  top: calc(var(--toast-viewport-h, 100vh) - var(--toast-edge));
+  transform: translateY(-100%);
+}
+
+.toast-stack--bottom-right { right: var(--toast-edge); }
+.toast-stack--bottom-center {
+  left: 50%;
+  translate: -50% 0;
+}
+
+body.layout-manager-enabled .toast-stack {
+  --toast-top: 0.5rem;
+}
+
+.toast {
+  pointer-events: auto;
+  position: relative;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--popup-bg) 88%, var(--theme-tint) 12%);
+  border: 1px solid var(--popup-border-strong);
+  border-radius: 10px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+  animation: toast-in 0.16s ease-out;
+}
+
+.toast--warning { border-color: color-mix(in srgb, var(--theme-warning) 50%, transparent); }
+.toast--error { border-color: color-mix(in srgb, var(--theme-danger) 55%, transparent); }
+
+.toast { --toast-tone: var(--popup-accent); }
+.toast--success { --toast-tone: var(--theme-success); }
+.toast--warning { --toast-tone: var(--theme-warning); }
+.toast--error { --toast-tone: var(--theme-danger); }
+/* The sun in the gold and the moon in the blue of the old sunrise/sunset frames. */
+.toast--sun { --toast-tone: #ffd700; }
+.toast--moon { --toast-tone: #6495ed; }
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(-4px); }
+}
+
+.toast__main {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.45rem 0.6rem 0.45rem 0.7rem;
+}
+
+.toast--rich .toast__main {
+  align-items: flex-start;
+  padding: 0.65rem 0.7rem;
+}
+
+.toast__icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  color: var(--toast-tone);
+  background: color-mix(in srgb, var(--toast-tone) 16%, transparent);
+}
+
+.toast--rich .toast__icon {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+}
+
+.toast__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+/* The first line of a rich toast: its title (or its text when it has none),
+   then the count, pin and tools on the right. */
+.toast__head {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 26px;
+}
+
+.toast__head > .toast__title,
+.toast__head > .toast__text {
+  min-width: 0;
+}
+
+.toast__text--lead {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--popup-text);
+}
+
+.toast__age {
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--popup-text-dim);
+}
+
+.toast__spacer { flex: 1; }
+
+.toast__title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--popup-text);
+}
+
+.toast__text {
+  font-size: 12.5px;
+  color: var(--popup-text-subtle);
+  overflow-wrap: anywhere;
+}
+
+.toast__text--line {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--popup-text);
+}
+
+.toast__count {
+  flex-shrink: 0;
+  padding: 0 0.45rem;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--toast-tone);
+  background: color-mix(in srgb, var(--toast-tone) 15%, transparent);
+}
+
+.toast__pinned {
+  flex-shrink: 0;
+  color: var(--popup-text-dim);
+}
+
+/* Copy / pin / close: close always there on rich toasts, the rest on hover. */
+.toast__tools {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  flex-shrink: 0;
+}
+
+.toast:not(.toast--rich) .toast__tools { display: none; }
+.toast:not(.toast--rich):hover .toast__tools,
+.toast:not(.toast--rich):focus-within .toast__tools { display: flex; }
+.toast--rich .toast__tool:not(.toast__close) { opacity: 0; }
+.toast--rich:hover .toast__tool,
+.toast--rich:focus-within .toast__tool { opacity: 1; }
+
+.toast__tool {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  background: none;
+  color: var(--popup-text-dim);
+  cursor: pointer;
+}
+
+.toast__tool:hover {
+  background: var(--popup-control-hover-bg);
+  color: var(--popup-text);
+}
+
+.toast__progress {
+  height: 5px;
+  margin-top: 0.3rem;
+  border-radius: 3px;
+  background: var(--popup-control-bg);
+  overflow: hidden;
+}
+
+.toast__progress-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--toast-tone);
+  transition: width 0.3s ease;
+}
+
+.toast__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.4rem;
+}
+
+.toast__timer {
+  height: 2px;
+  background: var(--popup-control-bg);
+}
+
+.toast__timer-fill {
+  height: 100%;
+  transform-origin: left;
+  background: color-mix(in srgb, var(--toast-tone) 70%, transparent);
+}
+
+.toast__timer-fill.is-running {
+  animation-name: toast-timer;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+.toast-stack:hover .toast__timer-fill {
+  background: var(--popup-text-dimmer);
+}
+
+@keyframes toast-timer {
+  from { transform: scaleX(var(--toast-from)); }
+  to { transform: scaleX(0); }
+}
+
+.toast-stack__more {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.35rem;
+}
+
+.toast-stack--top-left .toast-stack__more { justify-content: flex-start; }
+.toast-stack--bottom-center .toast-stack__more { justify-content: center; }
+
+.toast-pill {
+  pointer-events: auto;
+  padding: 0.2rem 0.75rem;
+  border: 1px solid var(--popup-border-strong);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--popup-bg) 88%, var(--theme-tint) 12%);
+  color: var(--popup-text-subtle);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.toast-pill:hover { color: var(--popup-text); }
+
+@media (prefers-reduced-motion: reduce) {
+  .toast { animation: none; }
+}

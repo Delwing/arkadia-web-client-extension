@@ -700,6 +700,7 @@ class MudClient implements ClientAdapter {
 
         try {
             this.socket.send(this.codec.encode(message + "\r\n"));
+            this.emit('socket.sent');
         } catch (error) {
             console.error('Error sending message:', error);
             this.emit('error', error);

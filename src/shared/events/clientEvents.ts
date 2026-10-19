@@ -45,9 +45,47 @@ export type SendCommandEvent = {
     options?: CommandOptions;
 };
 
-type NotificationPayload = {
+export type NotificationLevel = 'info' | 'success' | 'warning' | 'error';
+
+export type NotificationIcon = 'sun' | 'moon';
+
+/** Who raised a toast; the player can mute each one in the settings. */
+export type NotificationSource = 'walk' | 'map' | 'clock' | 'sync' | 'trigger' | 'plugin' | 'client';
+
+export type NotificationAction = {
+    label: string;
+    /** Sent like a typed command when clicked. */
+    command?: string;
+    onClick?: () => void;
+    /** Drawn as the main button. */
+    primary?: boolean;
+    /** Leave the toast up after the click (its owner updates or closes it). */
+    keepOpen?: boolean;
+};
+
+export type NotificationPayload = {
     text: string;
+    /** Bold first line; `text` then reads as the body under it. */
+    title?: string;
+    /** Defaults to info. Warnings and errors still show under "do not disturb". */
+    level?: NotificationLevel;
+    /** In place of the level's icon, tinted to match. */
+    icon?: NotificationIcon;
+    /** Not shown; lets the player mute a whole kind of toast. */
+    source?: NotificationSource;
+    /**
+     * A toast already on screen under the same key is replaced instead of a new
+     * one stacking up, and counts the repeats (×3).
+     */
+    key?: string;
+    /** With `key`: refresh the toast in place, without counting it as a repeat. */
+    update?: boolean;
+    /** Milliseconds on screen; scaled by the player's duration setting. */
     time?: number;
+    /** Stays until closed (or replaced under its key). */
+    sticky?: boolean;
+    progress?: { value: number; max: number };
+    actions?: NotificationAction[];
     /** Also fire an OS/browser notification (when permission allows). Defaults to false: in-app toast only. */
     system?: boolean;
 };
@@ -228,6 +266,8 @@ export interface KnownEvents {
     "requestMapCarriageBlocks": void;
     "requestMapPath": void;
     "notify": NotificationPayload;
+    /** Closes the toast shown under this key, if any. */
+    "notify.dismiss": { key: string };
     "lampTimer": number | null;
     /** The spells we are under that have warned how long they have left, soonest first. */
     "spellEffects": { name: string; seconds: number }[];
@@ -389,6 +429,12 @@ export interface KnownEvents {
     "clock.domain.active": ClockDomainActivePayload;
     "clock.popup.open": { domain?: "Empire" | "Ishtar" };
     "clock.mismatch": ClockMismatchPayload;
+    /**
+     * The sky changed in our domain while we watched. Fires even when the clock
+     * is unset or too far off for `clock.sunrise`/`clock.sunset`, which only
+     * fire once the flip can be placed on the clock.
+     */
+    "clock.daylightChange": { domain: "Empire" | "Ishtar"; type: "sunrise" | "sunset" };
     "clock.sunrise": ClockSunEventPayload;
     "clock.sunset": ClockSunEventPayload;
     "clock.parsedTime": { domain: "Empire" | "Ishtar"; hour: number; dayOfYear: number };
@@ -551,6 +597,8 @@ export interface KnownEvents {
      */
     "proxy.clockOffset": number;
     "socket.outgoing": string;
+    /** A line of input went out to the game (passwords included) - what the game's idle timer counts. */
+    "socket.sent": void;
     "telnet.echo": boolean;
     "playback.incomingData": [data: string, options?: { timestamp?: number }];
     "helperHotkey": [id: string, key: string];

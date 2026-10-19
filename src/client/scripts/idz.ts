@@ -1,7 +1,7 @@
 import Client from "../Client";
 import { longToShort } from "@shared/map/directions";
 import { getShortcut } from "./shortcuts";
-import type { WalkerState } from "@shared/events/clientEvents";
+import type { NotificationPayload, WalkerState } from "@shared/events/clientEvents";
 import { characterStorage } from "@modules/core/storage";
 
 
@@ -29,8 +29,46 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
         delay,
     });
 
+    const roomLabel = (id: number) => client.Map.getRoomById(id)?.name || `lokacja ${id}`;
+    const formatDelay = (d: number) => `${d.toFixed(2).replace('.', ',')} s`;
+
+    // One toast follows the walk: progress while it runs, then how it ended.
+    const WALK_TOAST = 'walk';
+
+    const walkToast = (update: boolean) => {
+        if (target === null || path.length < 2) return;
+        const steps = path.length - 1;
+        client.sendEvent('notify', {
+            key: WALK_TOAST,
+            update,
+            source: 'walk',
+            sticky: true,
+            title: `Idę do: ${roomLabel(target)}`,
+            text: paused ? 'Wstrzymane' : `Krok ${index} z ${steps} · ${formatDelay(delay)}`,
+            progress: { value: index, max: steps },
+            actions: [
+                { label: 'Stop', command: '/stop', keepOpen: true },
+                { label: 'Wolniej', command: '/wolniej', keepOpen: true },
+                { label: 'Szybciej', command: '/szybciej', keepOpen: true },
+            ],
+        });
+    };
+
+    /** Replaces the walk toast with a fresh one (not counted as a repeat). */
+    const endWalkToast = (payload: Omit<NotificationPayload, 'key' | 'source'>) => {
+        client.sendEvent('notify.dismiss', { key: WALK_TOAST });
+        client.sendEvent('notify', { key: WALK_TOAST, source: 'walk', ...payload });
+    };
+
+    const announceDelay = () => {
+        // While walking the walk toast shows the delay itself.
+        if (isWalking()) return;
+        client.sendEvent('notify', { key: 'walk-delay', source: 'walk', text: `Opóźnienie chodzenia: ${formatDelay(lastDelay)}` });
+    };
+
     const emitUpdate = () => {
         client.sendEvent('walker.update', getState());
+        if (!paused || pausedByPauser) walkToast(true);
     };
 
     const applySettings = (payload: any) => {
@@ -59,7 +97,9 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
         client.sendEvent('clearLeadTo');
         emitUpdate();
         if (reached !== null) {
-            client.sendEvent('notify', { text: `[WALK] reached ${reached}` });
+            endWalkToast({ level: 'success', text: `Dotarłem do: ${roomLabel(reached)}` });
+        } else {
+            endWalkToast({ level: 'warning', text: 'Prowadzenie przerwane: brak drogi dalej' });
         }
     };
 
@@ -122,7 +162,7 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
         }, time);
     };
 
-    const startWalk = (targetId: number, d?: number, info: string = 'start') => {
+    const startWalk = (targetId: number, d?: number) => {
         const room: any = client.Map.currentRoom;
         if (!room) return;
         const p = client.Map.findPath(room.id, targetId);
@@ -145,7 +185,8 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
         target = targetId;
         client.sendEvent('leadTo', targetId);
         clearTimer();
-        client.sendEvent('notify', { text: `[WALK] ${info} → ${targetId} (${delay.toFixed(2)}s)` });
+        client.sendEvent('notify.dismiss', { key: WALK_TOAST });
+        walkToast(false);
         emitUpdate();
         scheduleStep();
     };
@@ -156,7 +197,7 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
         clearTimer();
         if (wasWalking) {
             client.sendEvent('clearLeadTo');
-            client.sendEvent('notify', { text: `[WALK] stopped` });
+            endWalkToast({ text: 'Prowadzenie zatrzymane', actions: [{ label: 'Dalej', command: '/dalej', primary: true }] });
         }
         emitUpdate();
     };
@@ -176,7 +217,7 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
             index = 0;
             target = dest;
         }
-        startWalk(target, d, 'resume');
+        startWalk(target, d);
     };
 
     client.on('stepBack', stopWalk);
@@ -206,7 +247,7 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
         delay = lastDelay;
         settings.autoWalkDelay = lastDelay;
         characterStorage.set('settings', settings as any);
-        client.sendEvent('notify', { text: `[WALK] delay ${lastDelay.toFixed(2)}s` });
+        announceDelay();
         emitUpdate();
     });
     client.on('walker.faster', () => {
@@ -214,7 +255,7 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
         delay = Math.max(0.5, delay - 0.5);
         settings.autoWalkDelay = lastDelay;
         characterStorage.set('settings', settings as any);
-        client.sendEvent('notify', { text: `[WALK] delay ${lastDelay.toFixed(2)}s` });
+        announceDelay();
         emitUpdate();
     });
     client.on('walker.slower', () => {
@@ -222,7 +263,7 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
         delay += 0.5;
         settings.autoWalkDelay = lastDelay;
         characterStorage.set('settings', settings as any);
-        client.sendEvent('notify', { text: `[WALK] delay ${lastDelay.toFixed(2)}s` });
+        announceDelay();
         emitUpdate();
     });
 
@@ -277,7 +318,7 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
             delay = lastDelay;
             settings.autoWalkDelay = lastDelay;
             characterStorage.set('settings', settings as any);
-            client.sendEvent('notify', { text: `[WALK] delay ${lastDelay.toFixed(2)}s` });
+            announceDelay();
             emitUpdate();
         }
     });
@@ -289,7 +330,7 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
             delay = Math.max(0.5, delay - 0.5);
             settings.autoWalkDelay = lastDelay;
             characterStorage.set('settings', settings as any);
-            client.sendEvent('notify', { text: `[WALK] delay ${lastDelay.toFixed(2)}s` });
+            announceDelay();
             emitUpdate();
         }
     });
@@ -301,7 +342,7 @@ export default function initIdz(client: Client, aliases?: { pattern: RegExp; cal
             delay += 0.5;
             settings.autoWalkDelay = lastDelay;
             characterStorage.set('settings', settings as any);
-            client.sendEvent('notify', { text: `[WALK] delay ${lastDelay.toFixed(2)}s` });
+            announceDelay();
             emitUpdate();
         }
     });

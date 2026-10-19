@@ -444,7 +444,7 @@ export async function uploadCategories(
         if ((err as { code?: string } | null)?.code === 'permission-denied') {
             // After the move to sync v2 the security rules lock the v1 document.
             import('@modules/core/eventBus').then(({ default: eventBus }) => {
-                eventBus.emit('notify', { text: SYNC_V1_LOCKED_NOTICE, time: 60_000 });
+                eventBus.emit('notify', { text: SYNC_V1_LOCKED_NOTICE, level: 'warning', source: 'sync', time: 60_000 });
             }).catch(() => undefined);
         }
         return { success: false, errors: { uiSettings: FIREBASE_ERRORS.SYNC_FAILED }, timestamps, checksums, conflicts };

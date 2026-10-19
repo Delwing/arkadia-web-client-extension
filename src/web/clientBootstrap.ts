@@ -1,5 +1,6 @@
 import mudClient from "./MudClient.ts";
 import Client from "@client/Client";
+import type { NotificationLevel } from "@shared/events/clientEvents.ts";
 import { registerScripts } from "@client/main";
 import { HelperConnection } from "@modules/helper/HelperConnection";
 import { setupHelperResync } from "@modules/helper/helperResync";
@@ -88,11 +89,11 @@ export function bootstrapGameClient(opts: { installPorts: () => void }): GameCli
                 // the player can see, and the permission prompt that enabling
                 // raises does not settle while it sits unanswered — so waiting
                 // would make an ignored prompt look like a silent failure.
-                const notify = (text: string) =>
-                    client.sendEvent('notify', { text, time: 10000 });
+                const notify = (text: string, level: NotificationLevel = 'info') =>
+                    client.sendEvent('notify', { text, level, source: 'client', key: 'push.pair', time: 10000 });
 
                 if (outcome.status === 'expired') {
-                    notify('Kod parowania wygasł lub został już użyty. Wygeneruj nowy na drugim urządzeniu.');
+                    notify('Kod parowania wygasł lub został już użyty. Wygeneruj nowy na drugim urządzeniu.', 'warning');
                     return;
                 }
 
@@ -102,17 +103,17 @@ export function bootstrapGameClient(opts: { installPorts: () => void }): GameCli
                 // not left for the player to find in a settings screen.
                 const enabled = await enablePush();
                 if (enabled.ok) {
-                    notify('Gotowe. To urządzenie będzie dostawać powiadomienia.');
+                    notify('Gotowe. To urządzenie będzie dostawać powiadomienia.', 'success');
                 } else if (enabled.error === 'denied') {
-                    notify('Powiadomienia są zablokowane dla tej strony. Odblokuj je w ustawieniach przeglądarki — sama strona nie może poprosić ponownie.');
+                    notify('Powiadomienia są zablokowane dla tej strony. Odblokuj je w ustawieniach przeglądarki — sama strona nie może poprosić ponownie.', 'warning');
                 } else if (enabled.error === 'not_granted') {
                     // Includes browsers that will not prompt without a click,
                     // which this page-load path cannot provide.
-                    notify('Sparowano. Potwierdź zgodę: Ustawienia interfejsu → Powiadomienia → Odbieraj na tym urządzeniu.');
+                    notify('Sparowano. Potwierdź zgodę: Ustawienia interfejsu → Powiadomienia systemowe → Odbieraj na tym urządzeniu.');
                 } else if (enabled.error === 'unsupported') {
-                    notify('Ta przeglądarka nie obsługuje powiadomień push. Na iPhone dodaj stronę do ekranu głównego.');
+                    notify('Ta przeglądarka nie obsługuje powiadomień push. Na iPhone dodaj stronę do ekranu głównego.', 'warning');
                 } else {
-                    notify('Sparowano, ale nie udało się włączyć odbierania. Spróbuj w Ustawieniach interfejsu → Powiadomienia.');
+                    notify('Sparowano, ale nie udało się włączyć odbierania. Spróbuj w Ustawieniach interfejsu → Powiadomienia systemowe.', 'error');
                 }
             })
             .catch(() => {});

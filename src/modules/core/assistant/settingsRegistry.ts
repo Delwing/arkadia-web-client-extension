@@ -100,6 +100,13 @@ const CONSTRAINTS: Record<string, Constraint> = {
     collectOverrides: { type: 'complex' },
     languageAliases: { type: 'complex' },
 
+    // --- shell slice --------------------------------------------------------
+    toastPosition: { type: 'enum', enumValues: ['top-left', 'top-right', 'bottom-right', 'bottom-center'], label: 'Pozycja powiadomień' },
+    toastDurationScale: { type: 'number', min: 0.5, max: 3, label: 'Czas wyświetlania powiadomień (mnożnik)' },
+    toastMaxVisible: { type: 'number', min: 1, max: 8, integer: true, label: 'Najwięcej powiadomień naraz' },
+    toastMutedSources: { type: 'stringArray', label: 'Wyciszone źródła powiadomień (walk, map, clock, sync, trigger, plugin, client)' },
+    toastDoNotDisturb: { type: 'boolean', label: 'Nie przeszkadzać: tylko ostrzeżenia i błędy' },
+
     // --- render slice -------------------------------------------------------
     fontFamily: { type: 'enum', enumValues: ['default', 'fira-code', 'jetbrains-mono', 'cascadia-mono', 'vera-sans-mono', 'custom', 'system', 'uploaded'] },
     xtermPalette: { type: 'enum', enumValues: ['arkadia', 'proper'] },
@@ -138,6 +145,7 @@ const CONSTRAINTS: Record<string, Constraint> = {
 
     // --- behavior slice -----------------------------------------------------
     teamNumberingMode: { type: 'enum', enumValues: ['letters', 'numbers'] },
+    sunAnnouncement: { type: 'enum', enumValues: ['notification', 'frame', 'off'], label: 'Wschód i zachód słońca: powiadomienie, ramka w oknie gry albo wyłączone' },
     triggerPrefilter: { type: 'enum', enumValues: ['on', 'off', 'verify'], label: 'Filtr triggerÃ³w' },
 };
 

@@ -154,7 +154,7 @@ export function unknownGroupTokens(text: string, groups: RegexGroup[]): string[]
 
 /** The text fields of an action that may hold `$1` / `{name}` tokens. */
 export function macroTexts(m: UserMacro): string[] {
-    return [m.command, m.message, m.label, m.to, m.wrapPrefix, m.wrapSuffix].filter((t): t is string => !!t);
+    return [m.command, m.message, m.label, m.to, m.wrapPrefix, m.wrapSuffix, m.notifyTitle].filter((t): t is string => !!t);
 }
 
 /** Why a group token points at nothing, for a pattern with `n` groups. */

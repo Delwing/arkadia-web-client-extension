@@ -232,9 +232,20 @@
       "label": "Wibracje (haptyka) na urządzeniach mobilnych",
       "control": "checkbox"
     },
+    "ui.shellSettings.toastPosition": {
+      "label": "Pozycja powiadomień w grze",
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Dźwięk i powiadomienia → Powiadomienia w grze",
+      "control": "select"
+    },
+    "ui.shellSettings.toastMutedSources": {
+      "label": "Źródła powiadomień w grze, które są wyciszone",
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Dźwięk i powiadomienia → Powiadomienia w grze",
+      "control": "list",
+      "note": "Wartosci: walk (prowadzenie), map, clock (wschod/zachod slonca), sync, trigger, plugin, client."
+    },
     "ui.behaviorSettings.pushOnlyWhenHidden": {
       "label": "Wysylaj powiadomienia push tylko gdy karta jest ukryta",
-      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Dźwięk i powiadomienia → Powiadomienia",
+      "uiLocation": "Menu (☰) → Ustawienia → Interfejs → Dźwięk i powiadomienia → Powiadomienia systemowe",
       "control": "checkbox",
       "note": "Domyslnie wylaczone, czyli powiadomienia na sparowane urzadzenia sa wysylane niezaleznie od tego, czy karta klienta jest aktywna. Wlaczenie wstrzymuje je, gdy gracz patrzy na klienta."
     }

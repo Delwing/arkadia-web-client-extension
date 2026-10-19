@@ -72,7 +72,7 @@ describe('validateProposal - envelope', () => {
 
     it('validates a batch independently', () => {
         const results = validateProposals([
-            { kind: 'settingChange', key: 'settings.sunTracker', value: true },
+            { kind: 'settingChange', key: 'settings.fullHpMessage', value: true },
             { kind: 'settingChange', key: 'nieIstnieje', value: true },
         ]);
         expect(results.map(r => r.ok)).toEqual([true, false]);
@@ -111,7 +111,7 @@ describe('settingChange proposals', () => {
     });
 
     it('rejects the wrong value type', () => {
-        const result = validateProposal({ kind: 'settingChange', key: 'settings.sunTracker', value: 'tak' });
+        const result = validateProposal({ kind: 'settingChange', key: 'settings.fullHpMessage', value: 'tak' });
         expect(result.ok).toBe(false);
         expect(errorCodes(result)).toEqual(['wrongValueType']);
     });
@@ -693,6 +693,25 @@ describe('trigger proposals - event', () => {
         expect(validateProposal({
             kind: 'trigger', type: 'event', event: 'zask.ready', macros: [{ type: 'notify', message: 'Zask gotowy' }],
         }).ok).toBe(true);
+    });
+
+    it('accepts the toast options of a notify macro', () => {
+        const result = validateProposal({
+            kind: 'trigger', type: 'event', event: 'zask.ready', macros: [{
+                type: 'notify', message: 'Zask gotowy', notifyTitle: 'Zask', notifyLevel: 'warning',
+                notifySeconds: 0, notifySystem: false, label: 'Uzyj', command: 'uzyj zaska',
+            }],
+        });
+        expect(result.ok).toBe(true);
+    });
+
+    it('rejects a bad notify level and a button without its command', () => {
+        expect(errorCodes(validateProposal({
+            kind: 'trigger', type: 'event', event: 'zask.ready', macros: [{ type: 'notify', message: 'x', notifyLevel: 'loud' }],
+        }))).toEqual(['invalidEnumValue']);
+        expect(errorCodes(validateProposal({
+            kind: 'trigger', type: 'event', event: 'zask.ready', macros: [{ type: 'notify', message: 'x', label: 'Uzyj' }],
+        }))).toEqual(['incompleteNotifyButton']);
     });
 
     it('warns about fields an event trigger ignores', () => {

@@ -74,6 +74,7 @@ import {harvestOutputLines} from "./commandInput/outputWords";
 import {installClientPorts} from "./installClientPorts";
 import {installContentWidthMeasurer} from "./contentWidthMeasurer";
 import {bootstrapGameClient} from "./clientBootstrap";
+import {mountToasts} from "@web/notifications/mountToasts.tsx";
 import {initTextToSpeech} from "./voice/textToSpeech.ts";
 import {reloadToLatest, watchForNewVersion} from "./versionCheck";
 
@@ -851,8 +852,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (getShellSettings().inGameUpdateNotice) {
                     client.sendEvent('notify', {
-                        text: 'Dostępna jest nowa wersja klienta. Odśwież stronę, kiedy skończysz grać.',
-                        time: 10000,
+                        title: 'Dostępna nowa wersja',
+                        text: 'Odśwież stronę, kiedy skończysz grać.',
+                        source: 'client',
+                        key: 'client.update',
+                        time: 15000,
+                        actions: [{ label: 'Odśwież', primary: true, onClick: () => void reloadToLatest() }],
                     });
                 }
             },
@@ -1038,18 +1043,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initTextToSpeech(client);
 
     if (notificationCenter) {
-        client.on('notify', (payload) => {
-            const detail = (payload ?? {}) as { text?: string; time?: number; system?: boolean };
-            const div = document.createElement('div');
-            div.className = 'notification';
-            div.textContent = detail.text ?? '';
-            notificationCenter.appendChild(div);
-            const timeout = typeof detail.time === 'number' ? detail.time : 2000;
-            setTimeout(() => div.remove(), timeout);
-            if (detail.system && detail.text) {
-                client.notify(detail.text);
-            }
-        });
+        mountToasts(notificationCenter, outputWrapper, client);
     }
 
     const toggleConnection = () => {

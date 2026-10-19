@@ -7,6 +7,7 @@ import { globalStorage } from "@modules/core/storage";
 import { sendPush } from "@modules/push/pushClient";
 import { isAutomationActiveNow, onAutomationScopeChange, setAutomationGroupEnabled, type AutomationMeta } from "@modules/core/automation";
 import { runUserScript, type RunOptions } from "./userScripts";
+import type { NotificationLevel } from "@shared/events/clientEvents";
 
 export type BuiltInMacroType = 'uppercase' | 'color' | 'replace' | 'beep' | 'mute' | 'unmute' | 'command' | 'slowBlink' | 'rapidBlink' | 'dim' | 'functionalBind' | 'wrap' | 'notify' | 'push' | 'speak' | 'echo' | 'script' | 'group';
 
@@ -20,9 +21,9 @@ export interface UserMacro {
     underline?: boolean;
     strikethrough?: boolean;
     to?: string;
-    command?: string;
+    command?: string;  // notify: what the toast's button sends
     soundKey?: string;
-    label?: string;
+    label?: string;  // notify: the toast's button label
     message?: string;  // notify/push/speak/echo text; empty falls back to matched text for pattern triggers (not echo)
     /**
      * push only: send even if another push went out within the rate-limit
@@ -31,6 +32,14 @@ export interface UserMacro {
      * extra buzz.
      */
     bypassCooldown?: boolean;
+    // Notify options
+    /** Bold first line above the message. */
+    notifyTitle?: string;
+    notifyLevel?: NotificationLevel;
+    /** Seconds on screen; 0 = until closed; absent = the default. */
+    notifySeconds?: number;
+    /** Also a system (OS) notification; absent = yes, as before these options. */
+    notifySystem?: boolean;
     pluginConfig?: Record<string, any>;
     /** script: the automation script to run. */
     scriptId?: string;
@@ -532,7 +541,7 @@ function applyMacrosToMatch(
                 break;
             case 'notify': {
                 const text = interpolateMatch(macro.message ?? '', match) || line.text.substring(matchRange[0], matchRange[1]);
-                client.sendEvent("notify", { text, system: true });
+                notifyFromMacro(client, macro, text, (s) => interpolateMatch(s, match));
                 break;
             }
             case 'push': {
@@ -658,6 +667,25 @@ export function evaluateCondition(condition: TriggerCondition, payload: unknown)
     }
 }
 
+/** Raise the toast a `notify` action describes; `fill` resolves its placeholders. */
+function notifyFromMacro(client: Client, macro: UserMacro, text: string, fill: (text: string) => string): void {
+    const title = macro.notifyTitle ? fill(macro.notifyTitle) : '';
+    const label = macro.label ? fill(macro.label) : '';
+    const command = macro.command ? fill(macro.command) : '';
+    const seconds = macro.notifySeconds;
+    client.sendEvent("notify", {
+        text,
+        title: title || undefined,
+        level: macro.notifyLevel,
+        source: 'trigger',
+        // Keyed by content: a trigger firing in a burst counts up instead of stacking.
+        key: `trigger:${title}:${text}`,
+        ...(seconds === 0 ? { sticky: true } : seconds ? { time: seconds * 1000 } : {}),
+        actions: label && command ? [{ label, command, primary: true }] : undefined,
+        system: macro.notifySystem !== false,
+    });
+}
+
 /**
  * Run one action that needs no line of text (see `LINELESS_MACRO_TYPES`).
  *
@@ -700,7 +728,7 @@ export function applyLinelessMacro(
             break;
         case 'notify':
             if (message) {
-                client.sendEvent("notify", { text: message, system: true });
+                notifyFromMacro(client, macro, message, interpolate);
             }
             break;
         case 'push':

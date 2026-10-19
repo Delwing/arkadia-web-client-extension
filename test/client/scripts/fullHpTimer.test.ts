@@ -41,7 +41,7 @@ describe('full hp timer', () => {
     const color = createColorFormat('#00ff7f');
     const msg = colorString('Jestes w pelni zdrowia.', color);
     expect(client.println).toHaveBeenCalledWith(msg);
-    expect(client.sendEvent).toHaveBeenCalledWith('notify', { text: 'Jestes w pelni zdrowia.', system: true });
+    expect(client.sendEvent).toHaveBeenCalledWith('notify', expect.objectContaining({ text: 'Jesteś w pełni zdrowia', system: true }));
   });
 
   test('does not print message when reaching full hp from zero', () => {

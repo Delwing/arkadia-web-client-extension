@@ -554,6 +554,18 @@ describe('ArkadiaTime - Clock System', () => {
             eventBus.off("clock.sunrise", sunriseHandler);
         });
 
+        test('announces the sky change at once, before any czas', () => {
+            display.observeDomain("Empire");
+            const changeHandler = jest.fn();
+            eventBus.on("clock.daylightChange", changeHandler);
+
+            (clock as any).handleGmcp(true);
+            (clock as any).handleGmcp(false);
+
+            expect(changeHandler).toHaveBeenCalledWith({ domain: "Empire", type: "sunset" });
+            eventBus.off("clock.daylightChange", changeHandler);
+        });
+
         test('expired transition (>120s) falls back to precision 60', () => {
             display.setActiveDomain("Empire");
 

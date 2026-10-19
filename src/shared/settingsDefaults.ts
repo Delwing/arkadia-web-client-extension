@@ -18,6 +18,11 @@ export const defaultShellSettings: ShellSettings = {
     fightTitleIcon: true,
     hapticFeedback: true,
     inGameUpdateNotice: false,
+    toastPosition: 'top-right',
+    toastDurationScale: 1,
+    toastMaxVisible: 4,
+    toastMutedSources: [],
+    toastDoNotDisturb: false,
 };
 
 export const defaultRenderSettings: RenderSettings = {
@@ -94,6 +99,7 @@ export const defaultBehaviorSettings: BehaviorSettings = {
 // stored blob even when the default omits them).
 export const shellSettingsKeys = [
     'wakeLock', 'fightTitleIcon', 'hapticFeedback', 'inGameUpdateNotice',
+    'toastPosition', 'toastDurationScale', 'toastMaxVisible', 'toastMutedSources', 'toastDoNotDisturb',
 ] as const satisfies readonly (keyof ShellSettings)[];
 
 export const renderSettingsKeys = [

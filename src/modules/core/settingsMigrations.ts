@@ -267,7 +267,19 @@ const migrations: Migration[] = [
         description: 'Turn enemy cover markers on for everyone (handled by migrateCoverMarkersOn)',
         migrate: settings => settings, // No-op for core Settings; actual migration is below
     },
+    {
+        version: 18,
+        description: 'Sunrise/sunset frames on/off becomes a choice of notification, frame or off',
+        migrate: migrateSunAnnouncement,
+    },
 ];
+
+/** The old `sunTracker` switch printed frames: on keeps the frames, off stays off. */
+export function migrateSunAnnouncement(settings: Partial<Settings>): Partial<Settings> {
+    const { sunTracker, ...rest } = settings as Partial<Settings> & { sunTracker?: unknown };
+    if (sunTracker === undefined) return settings;
+    return { ...rest, sunAnnouncement: rest.sunAnnouncement ?? (sunTracker === true ? 'frame' : 'off') };
+}
 
 /**
  * Get the current migrations version from storage.

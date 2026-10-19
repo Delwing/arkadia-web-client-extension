@@ -1,8 +1,8 @@
 import Client from "../Client";
+import {characterStorage} from "@modules/core/storage";
 import {AnsiAwareBuffer} from "@client/ansi/FormatState.ts";
 import {createColorFormat} from "@modules/core/Colors.ts";
-import {characterStorage} from "@modules/core/storage";
-import {defaultSettings} from "@modules/core/defaultSettings";
+import {defaultSettings, type SunAnnouncement} from "@modules/core/defaultSettings";
 
 type Domain = "Empire" | "Ishtar";
 type SunEventType = "sunrise" | "sunset";
@@ -173,9 +173,10 @@ export async function importEvents(events: ConfirmedSunEvent[]): Promise<number>
 const CONFIRM_TIMEOUT = 105_000;
 const SUNRISE_COLOR = createColorFormat('#ffd700');
 const SUNSET_COLOR = createColorFormat('#6495ed');
+const DOMAIN_NAMES: Record<Domain, string> = { Empire: "Imperium", Ishtar: "Ishtar" };
 
 export default function initSunTracker(client: Client) {
-    let enabled = false;
+    let mode: SunAnnouncement = "off";
     let pendingEvent: PendingSunEvent | null = null;
     let pendingTimer: number | null = null;
     function clearPending(): void {
@@ -216,17 +217,28 @@ export default function initSunTracker(client: Client) {
         client.sendEvent("sunTracker.updated", { domain: confirmedDomain });
     }
 
+    function notifySun(domain: Domain, type: SunEventType): void {
+        const isSunrise = type === "sunrise";
+        client.sendEvent("notify", {
+            key: `clock.${type}`,
+            source: "clock",
+            icon: isSunrise ? "sun" : "moon",
+            title: isSunrise ? "Wschód słońca" : "Zachód słońca",
+            text: DOMAIN_NAMES[domain],
+        });
+    }
+
     function printSunMessage(type: SunEventType): void {
         const isSunrise = type === "sunrise";
         const color = isSunrise ? SUNRISE_COLOR : SUNSET_COLOR;
-        const icon = isSunrise ? "\u2600" : "\u263E";
+        const icon = isSunrise ? "☀" : "☾";
         const label = isSunrise ? "WSCHOD" : "ZACHOD";
         const inner = ` ${icon} ${label}  [czas] `;
-        const border = "\u2550".repeat(inner.length + 1);
+        const border = "═".repeat(inner.length + 1);
 
-        const top = new AnsiAwareBuffer(`\u2554${border}\u2557`).colorWords(`\u2554${border}\u2557`, color);
-        const mid = new AnsiAwareBuffer(`\u2551${inner}\u2551`).colorWords(`\u2551${inner}\u2551`, color);
-        const bot = new AnsiAwareBuffer(`\u255A${border}\u255D`).colorWords(`\u255A${border}\u255D`, color);
+        const top = new AnsiAwareBuffer(`╔${border}╗`).colorWords(`╔${border}╗`, color);
+        const mid = new AnsiAwareBuffer(`║${inner}║`).colorWords(`║${inner}║`, color);
+        const bot = new AnsiAwareBuffer(`╚${border}╝`).colorWords(`╚${border}╝`, color);
 
         const iconStart = mid.text.indexOf(icon);
         if (iconStart !== -1) {
@@ -246,15 +258,13 @@ export default function initSunTracker(client: Client) {
         client.print(bot);
     }
 
-    const initialSettings = characterStorage.get('settings');
-    if (initialSettings) {
-        const settings = (initialSettings ?? defaultSettings) as { sunTracker?: boolean };
-        enabled = !!settings.sunTracker;
-    }
-    characterStorage.onChange('settings', (payload) => {
-        const settings = (payload ?? defaultSettings) as { sunTracker?: boolean };
-        enabled = !!settings.sunTracker;
-    });
+    const applySettings = (payload: unknown) => {
+        const settings = (payload ?? defaultSettings) as { sunAnnouncement?: SunAnnouncement; sunTracker?: boolean };
+        // `sunTracker` is what settings synced from a device not yet migrated still say.
+        mode = settings.sunAnnouncement ?? (settings.sunTracker ? "frame" : "off");
+    };
+    applySettings(characterStorage.get('settings'));
+    characterStorage.onChange('settings', applySettings);
 
     client.on("reset", () => {
         clearPending();
@@ -264,13 +274,18 @@ export default function initSunTracker(client: Client) {
         clearPending();
     });
 
+    client.on("clock.daylightChange", ({ domain, type }) => {
+        if (mode === "notification") notifySun(domain, type);
+        else if (mode === "frame") printSunMessage(type);
+    });
+
+    // The clock speaks once it can place the flip - possibly only after a
+    // later `czas` - and that opens the observation.
     client.on("clock.sunrise", (data) => {
-        if (enabled) printSunMessage("sunrise");
         setPending(data.domain, "sunrise", data.dayOfYear, data.observedHour);
     });
 
     client.on("clock.sunset", (data) => {
-        if (enabled) printSunMessage("sunset");
         setPending(data.domain, "sunset", data.dayOfYear, data.observedHour);
     });
 
@@ -286,15 +301,6 @@ export default function initSunTracker(client: Client) {
         pattern: /^\/slonce$/,
         callback: () => {
             client.sendEvent("sunTracker.popup.open");
-        }
-    });
-
-    // TEMP: test alias for sun/moon box alignment
-    client.aliases.push({
-        pattern: /^\/testbox$/,
-        callback: () => {
-            printSunMessage("sunrise");
-            printSunMessage("sunset");
         }
     });
 }
