@@ -29,7 +29,7 @@ interface FooterLayoutSettingsProps {
 
 const PRESET_NAMES: Record<FooterPresetId, string> = {
     stock: "Klasyczny",
-    forge: "Forge",
+    forge: "Piętrowy",
     arkadia: "Mudlet",
 };
 
@@ -45,7 +45,7 @@ const presetAsTweaked = (preset: FooterPresetId, tweaks: FooterLayoutTweakSet | 
  * to build the player's own from; their own is kept while they try presets.
  */
 export default function FooterLayoutSettings({ value, onChange }: FooterLayoutSettingsProps) {
-    // Nothing picked is the classic layout, or Forge under the Kuźnia theme (StockFooter).
+    // Nothing picked is the classic layout, or the forge one under the Kuźnia theme (StockFooter).
     const forged = useForgedTheme();
     const choice = value.footerLayout ?? (forged ? "forge" : "stock");
     const tweaks = value.footerLayoutTweaks;
