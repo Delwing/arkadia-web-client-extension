@@ -147,7 +147,6 @@ const WIEDZA_TOTAL_LEVEL_PATTERN =
     /^(.+?):\s{2,}(.+)$/;
 
 const KNOWLEDGE_COMMANDS = KNOWLEDGE_CATEGORY_CONFIG.map((config) => config.command);
-const KNOWLEDGE_COMMAND_SEQUENCE = KNOWLEDGE_COMMANDS.join(';');
 const KNOWLEDGE_TYPE_IDENTIFIERS: Record<KnowledgeDetailsType, string[]> = {
     fight: ['walki', 'walkach'],
     books: ['ksiazek i bibliotek', 'ksiazkach i bibliotekach', 'bibliotekach i ksiazkach'],
@@ -184,7 +183,10 @@ const KNOWLEDGE_HEADER_PATTERN = /^Wiedza o (.+?):?$/;
 const KNOWLEDGE_SUMMARY_PATTERN = /^\s*z\s+(.+?)\s*-\s*(.+)$/i;
 const KNOWLEDGE_SECTION_HEADER_PATTERN = /^Szczegoly(?:\s+z)?\s+(.+?):$/i;
 const KNOWLEDGE_ENTRY_PATTERN = /^\s*[*]\s*(.+)$/;
+/** How long to wait for a category's reply, or the next page of one, to start. */
 const KNOWLEDGE_REPORT_INACTIVITY_TIMEOUT = 1500;
+/** A reply comes in one burst: once its lines stop for this long, it is over. */
+const KNOWLEDGE_REPORT_REPLY_GAP = 500;
 const KNOWLEDGE_REPORT_HARD_TIMEOUT = 15000;
 
 function normalizeKnowledgeEntry(value: string): string {
@@ -2387,6 +2389,12 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
         const normalizedDefinitions = buildNormalizedDefinitions(definitions);
         const results = new Map<KnowledgeCategoryBaseName, KnowledgeRunCategoryState>();
         const categoriesRemaining = new Set<KnowledgeCategoryBaseName>(KNOWLEDGE_CATEGORY_ORDER);
+        /**
+         * One category at a time: a long reply is cut by the game's pager, and every command
+         * already queued behind it lands in the pager instead of the game - it only reprints
+         * "[linia 60/71 - ENTER by przejsc dalej ...]" and the category is never asked for.
+         */
+        const pendingCommands = [...KNOWLEDGE_COMMANDS];
         let currentCategory: KnowledgeCategoryBaseName | null = null;
         let currentSection: KnowledgeDetailsType | null = null;
 
@@ -2399,7 +2407,7 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
             return state;
         }
 
-        function scheduleInactivity() {
+        function scheduleInactivity(delay = KNOWLEDGE_REPORT_INACTIVITY_TIMEOUT) {
             if (!activeKnowledgeRun || activeKnowledgeRun.tag !== runTag) {
                 return;
             }
@@ -2407,10 +2415,34 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
                 window.clearTimeout(activeKnowledgeRun.inactivityTimer);
             }
             activeKnowledgeRun.inactivityTimer = window.setTimeout(
-                () => finishRun(false),
-                KNOWLEDGE_REPORT_INACTIVITY_TIMEOUT,
+                sendNextCommand,
+                delay,
             );
         }
+
+        /** The previous reply has gone quiet: ask for the next category, or wrap up. */
+        function sendNextCommand() {
+            if (!activeKnowledgeRun || activeKnowledgeRun.tag !== runTag) {
+                return;
+            }
+            const command = pendingCommands.shift();
+            if (!command) {
+                finishRun(false);
+                return;
+            }
+            window.clearTimeout(activeKnowledgeRun.abortTimer);
+            activeKnowledgeRun.abortTimer = window.setTimeout(() => finishRun(true), KNOWLEDGE_REPORT_HARD_TIMEOUT);
+            scheduleInactivity();
+            client.sendCommand(command);
+        }
+
+        // The pager's line is hidden before the run's triggers see it, but the automatic
+        // ENTER it answers with comes by here: the next page is on its way, keep waiting.
+        const stopWatchingPager = client.on('command', (command = '') => {
+            if (command === '') {
+                scheduleInactivity();
+            }
+        });
 
         function finishRun(dueToTimeout: boolean) {
             if (!activeKnowledgeRun || activeKnowledgeRun.tag !== runTag) {
@@ -2423,6 +2455,7 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
             }
             activeKnowledgeRun = null;
             suppressEntryHighlighting = false;
+            stopWatchingPager();
             client.Triggers.removeByTag(runTag);
 
             if (results.size === 0) {
@@ -2545,15 +2578,14 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
         suppressEntryHighlighting = true;
         activeKnowledgeRun = {
             tag: runTag,
-            abortTimer: window.setTimeout(() => finishRun(true), KNOWLEDGE_REPORT_HARD_TIMEOUT),
+            abortTimer: 0,
             inactivityTimer: null,
         };
-        scheduleInactivity();
 
         client.Triggers.registerTrigger(
             KNOWLEDGE_HEADER_PATTERN,
             (line, matches) => {
-                scheduleInactivity();
+                scheduleInactivity(KNOWLEDGE_REPORT_REPLY_GAP);
                 const base = getBaseCategoryFromName(matches[1]);
                 if (!base) {
                     currentCategory = null;
@@ -2582,7 +2614,7 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
                     return line;
                 }
 
-                scheduleInactivity();
+                scheduleInactivity(KNOWLEDGE_REPORT_REPLY_GAP);
                 const state = ensureCategoryState(currentCategory);
                 state.levels[type] = matches[2].trim();
                 return line;
@@ -2593,7 +2625,7 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
         client.Triggers.registerTrigger(
             KNOWLEDGE_SECTION_HEADER_PATTERN,
             (line, matches) => {
-                scheduleInactivity();
+                scheduleInactivity(KNOWLEDGE_REPORT_REPLY_GAP);
                 currentSection = detectKnowledgeDetailsType(matches[1]) ?? null;
                 return line;
             },
@@ -2612,7 +2644,7 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
                     return line;
                 }
 
-                scheduleInactivity();
+                scheduleInactivity(KNOWLEDGE_REPORT_REPLY_GAP);
                 const normalized = normalizeKnowledgeEntry(entry);
                 const state = ensureCategoryState(currentCategory);
                 const definitionMap = normalizedDefinitions[currentCategory]?.[currentSection];
@@ -2629,7 +2661,7 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
             runTag,
         );
 
-        client.sendCommand(KNOWLEDGE_COMMAND_SEQUENCE);
+        sendNextCommand();
     }
 
     function showLibrariesReport() {
