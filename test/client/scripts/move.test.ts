@@ -2,7 +2,12 @@ import initMove, { extractFollowDirection } from '@client/scripts/move';
 
 function makeHarness(followMove: (direction: string, full?: string) => string | undefined) {
     const triggers: { pattern: RegExp | RegExp[]; cb: (line: { text: string }, matches: RegExpMatchArray) => unknown }[] = [];
-    const Map = { followMove: jest.fn(followMove), refresh: jest.fn() };
+    const Map = {
+        paused: false,
+        setPaused: jest.fn((paused: boolean) => { Map.paused = paused; }),
+        followMove: jest.fn(followMove),
+        refresh: jest.fn(),
+    };
     const client = {
         Map,
         Triggers: {
@@ -54,5 +59,23 @@ describe('follow trigger', () => {
         const h = makeHarness((dir) => (dir === 'gestwine' ? 'gestwina' : undefined));
         h.feed('Podazasz za woznica w lesna gestwine.');
         expect(h.Map.followMove).toHaveBeenCalledWith('gestwine', 'woznica w lesna gestwine');
+    });
+});
+
+describe('swim behind pushed object', () => {
+    test('moves through the paralysis pause and restores it', () => {
+        let pausedDuringMove: boolean | undefined;
+        const h = makeHarness(() => { pausedDuringMove = h.Map.paused; return 'polnoc'; });
+        h.Map.paused = true;
+        h.feed('Skryty za gnijacymi nabrzmialymi zwlokami zaczynasz plynac na polnoc.');
+        expect(h.Map.followMove).toHaveBeenCalledWith('polnoc');
+        expect(pausedDuringMove).toBe(false);
+        expect(h.Map.paused).toBe(true);
+    });
+
+    test('accepts diagonal directions', () => {
+        const h = makeHarness(() => undefined);
+        h.feed('Skryty za omszalym pniem zaczynasz plynac na polnocny-wschod.');
+        expect(h.Map.followMove).toHaveBeenCalledWith('polnocny-wschod');
     });
 });
