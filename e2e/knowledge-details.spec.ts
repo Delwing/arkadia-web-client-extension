@@ -56,6 +56,9 @@ async function waitForCommand(page: Page, command: string): Promise<void> {
     }, command);
 }
 
+const output = (page: Page) => page.locator('#main_text_output_msg_wrapper');
+const reportToast = (page: Page) => page.locator('#notification-center .toast', {hasText: 'raport'});
+
 async function hasSent(page: Page, command: string): Promise<boolean> {
     return (await getCommandLog(page)).includes(command);
 }
@@ -67,8 +70,8 @@ async function answerCategories(page: Page, replies: Partial<Record<string, stri
         const reply = replies[command] ?? [`W${command.slice(1)}:`, 'z walki - brak'];
         await pushText(page, reply.join('\n'));
     }
-    await expect(page.locator('#main_text_output_msg_wrapper'), 'should confirm knowledge report update')
-        .toContainText('Zaktualizowano dane raportu wiedzy');
+    await expect(reportToast(page), 'should confirm knowledge report update')
+        .toContainText('Zaktualizowano raport wiedzy');
 }
 
 async function buildReport(page: Page): Promise<void> {
@@ -88,6 +91,7 @@ test.describe('/wiedza_buduj', () => {
         await submitCommand(page, '/wiedza_buduj');
         await waitForCommand(page, 'wiedza o chaosie i jego tworach');
         await pushText(page, [...CHAOS_REPLY.slice(0, 7), PAGER_PROMPT].join('\n'));
+        await expect(reportToast(page), 'a toast follows the progress').toContainText('1 z 14: Chaos i jego twory');
 
         // Anything sent now would land in the pager and be lost: only the automatic ENTER may go.
         await page.waitForTimeout(1000);
@@ -98,7 +102,14 @@ test.describe('/wiedza_buduj', () => {
             'wiedza o chaosie i jego tworach': [],
             'wiedza o goblinoidach': GOBLINS_REPLY,
         });
-        await expect(page.locator('#main_text_output_msg_wrapper')).not.toContainText('Nie odebrano danych dla kategorii');
+        await expect(reportToast(page)).not.toContainText('Brak odpowiedzi');
+
+        // The report goes to the window; the output keeps none of it.
+        await expect(output(page)).not.toContainText('Wiedza o Chaosie');
+        await expect(output(page)).not.toContainText(CHAOS_PRIMARY_ENTRY);
+        await expect(output(page)).not.toContainText('Wiedza o Goblinoidach');
+        await expect(output(page)).not.toContainText('linia 60/71');
+        await expect(output(page)).not.toContainText('wiedza o golemach');
     });
 });
 

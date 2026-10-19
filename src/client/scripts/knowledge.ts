@@ -1,6 +1,7 @@
 import Client from '../Client';
 import {colorString, createColorFormat, mudletColorLine} from '@modules/core/Colors';
 import type {KnowledgeReportAction} from '@shared/events';
+import type {NotificationPayload} from '@shared/events/clientEvents';
 import {
     DEFAULT_KNOWLEDGE_CHARACTER_KEY,
     getKnowledgeStore,
@@ -146,7 +147,6 @@ const KNOWLEDGE_BOOK_COMPLETE_PATTERN =
 const WIEDZA_TOTAL_LEVEL_PATTERN =
     /^(.+?):\s{2,}(.+)$/;
 
-const KNOWLEDGE_COMMANDS = KNOWLEDGE_CATEGORY_CONFIG.map((config) => config.command);
 const KNOWLEDGE_TYPE_IDENTIFIERS: Record<KnowledgeDetailsType, string[]> = {
     fight: ['walki', 'walkach'],
     books: ['ksiazek i bibliotek', 'ksiazkach i bibliotekach', 'bibliotekach i ksiazkach'],
@@ -188,6 +188,7 @@ const KNOWLEDGE_REPORT_INACTIVITY_TIMEOUT = 1500;
 /** A reply comes in one burst: once its lines stop for this long, it is over. */
 const KNOWLEDGE_REPORT_REPLY_GAP = 500;
 const KNOWLEDGE_REPORT_HARD_TIMEOUT = 15000;
+const KNOWLEDGE_REPORT_TOAST = 'knowledge-report';
 
 function normalizeKnowledgeEntry(value: string): string {
     return stripPolishCharacters(
@@ -2394,7 +2395,7 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
          * already queued behind it lands in the pager instead of the game - it only reprints
          * "[linia 60/71 - ENTER by przejsc dalej ...]" and the category is never asked for.
          */
-        const pendingCommands = [...KNOWLEDGE_COMMANDS];
+        const pendingCategories = [...KNOWLEDGE_CATEGORY_CONFIG];
         let currentCategory: KnowledgeCategoryBaseName | null = null;
         let currentSection: KnowledgeDetailsType | null = null;
 
@@ -2425,15 +2426,25 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
             if (!activeKnowledgeRun || activeKnowledgeRun.tag !== runTag) {
                 return;
             }
-            const command = pendingCommands.shift();
-            if (!command) {
+            const config = pendingCategories.shift();
+            if (!config) {
                 finishRun(false);
                 return;
             }
             window.clearTimeout(activeKnowledgeRun.abortTimer);
             activeKnowledgeRun.abortTimer = window.setTimeout(() => finishRun(true), KNOWLEDGE_REPORT_HARD_TIMEOUT);
             scheduleInactivity();
-            client.sendCommand(command);
+            const asked = KNOWLEDGE_CATEGORY_CONFIG.length - pendingCategories.length;
+            client.sendEvent('notify', {
+                key: KNOWLEDGE_REPORT_TOAST,
+                update: asked > 1,
+                source: 'client',
+                sticky: true,
+                title: 'Budowanie raportu wiedzy',
+                text: `${asked} z ${KNOWLEDGE_CATEGORY_CONFIG.length}: ${config.base}`,
+                progress: {value: asked - 1, max: KNOWLEDGE_CATEGORY_CONFIG.length},
+            });
+            client.sendCommand(config.command, false);
         }
 
         // The pager's line is hidden before the run's triggers see it, but the automatic
@@ -2459,7 +2470,10 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
             client.Triggers.removeByTag(runTag);
 
             if (results.size === 0) {
-                client.println(dueToTimeout ? 'Nie odebrano odpowiedzi raportu wiedzy.' : 'Brak danych o wiedzy.');
+                endReportToast({
+                    level: 'error',
+                    text: dueToTimeout ? 'Nie odebrano odpowiedzi raportu wiedzy.' : 'Brak danych o wiedzy.',
+                });
                 return;
             }
 
@@ -2548,31 +2562,24 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
                     console.error('Failed to store knowledge details report:', error);
                 });
 
-            const messages: string[] = [];
+            const problems: string[] = [];
             if (dueToTimeout) {
-                messages.push(
-                    'Raport zakonczyl sie z powodu przekroczenia czasu – zebrano dostepne dane.',
-                );
+                problems.push('Przekroczono czas – zebrano dostępne dane.');
             }
             if (categoriesRemaining.size > 0) {
-                messages.push(
-                    `Nie odebrano danych dla kategorii: ${Array.from(categoriesRemaining).join(', ')}.`,
-                );
+                problems.push(`Brak odpowiedzi dla: ${Array.from(categoriesRemaining).join(', ')}.`);
             }
-            messages.push(
-                'Zaktualizowano dane raportu wiedzy. Uzyj /wiedza, aby wyswietlic raport w oknie.',
-            );
+            endReportToast({
+                level: problems.length > 0 ? 'warning' : 'success',
+                text: ['Zaktualizowano raport wiedzy.', ...problems].join(' '),
+                actions: [{label: 'Pokaż', command: '/wiedza', primary: true}],
+            });
+        }
 
-            const msgText = messages.join('\n');
-            const msg = new AnsiAwareBuffer(msgText);
-            const cmdStart = msg.text.indexOf('/wiedza');
-            if (cmdStart >= 0) {
-                msg.createLink([cmdStart, cmdStart + 7], {
-                    onClick: () => client.sendCommand('/wiedza'),
-                    title: 'Kliknij aby otworzyć raport wiedzy'
-                });
-            }
-            client.println(msg);
+        /** Replaces the progress toast with how the run ended. */
+        function endReportToast(payload: Omit<NotificationPayload, 'key' | 'source'>) {
+            client.sendEvent('notify.dismiss', {key: KNOWLEDGE_REPORT_TOAST});
+            client.sendEvent('notify', {key: KNOWLEDGE_REPORT_TOAST, source: 'client', ...payload});
         }
 
         suppressEntryHighlighting = true;
@@ -2582,22 +2589,30 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
             inactivityTimer: null,
         };
 
+        // The reply goes to the knowledge window, not the output: every line of it is
+        // hidden while a toast follows the progress.
+        client.Triggers.registerTrigger(
+            /^s*$/,
+            (line) => (currentCategory ? null : line),
+            runTag,
+        );
+
         client.Triggers.registerTrigger(
             KNOWLEDGE_HEADER_PATTERN,
-            (line, matches) => {
+            (_line, matches) => {
                 scheduleInactivity(KNOWLEDGE_REPORT_REPLY_GAP);
                 const base = getBaseCategoryFromName(matches[1]);
                 if (!base) {
                     currentCategory = null;
                     currentSection = null;
-                    return line;
+                    return null;
                 }
 
                 currentCategory = base;
                 currentSection = null;
                 categoriesRemaining.delete(base);
                 ensureCategoryState(base);
-                return line;
+                return null;
             },
             runTag,
         );
@@ -2611,13 +2626,13 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
 
                 const type = detectKnowledgeDetailsType(matches[1]);
                 if (!type) {
-                    return line;
+                    return null;
                 }
 
                 scheduleInactivity(KNOWLEDGE_REPORT_REPLY_GAP);
                 const state = ensureCategoryState(currentCategory);
                 state.levels[type] = matches[2].trim();
-                return line;
+                return null;
             },
             runTag,
         );
@@ -2625,9 +2640,12 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
         client.Triggers.registerTrigger(
             KNOWLEDGE_SECTION_HEADER_PATTERN,
             (line, matches) => {
+                if (!currentCategory) {
+                    return line;
+                }
                 scheduleInactivity(KNOWLEDGE_REPORT_REPLY_GAP);
                 currentSection = detectKnowledgeDetailsType(matches[1]) ?? null;
-                return line;
+                return null;
             },
             runTag,
         );
@@ -2635,13 +2653,16 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
         client.Triggers.registerTrigger(
             KNOWLEDGE_ENTRY_PATTERN,
             (line, matches) => {
-                if (!currentCategory || !currentSection) {
+                if (!currentCategory) {
                     return line;
+                }
+                if (!currentSection) {
+                    return null;
                 }
 
                 const entry = matches[1].trim();
                 if (entry.length === 0) {
-                    return line;
+                    return null;
                 }
 
                 scheduleInactivity(KNOWLEDGE_REPORT_REPLY_GAP);
@@ -2656,7 +2677,7 @@ export default function initKnowledge(client: Client, aliases?: AliasEntry[]) {
                 } else {
                     state.unknownEntries[currentSection].add(entry);
                 }
-                return line;
+                return null;
             },
             runTag,
         );
