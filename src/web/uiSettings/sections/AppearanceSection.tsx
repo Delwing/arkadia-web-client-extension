@@ -113,7 +113,7 @@ function AppearanceSection({ draft, update, commitCustomDark }: AppearanceSectio
             <SelectField
                 id="ui-backdrop"
                 label="Obraz tła"
-                hint="Za całą stroną, pod tekstem gry. Z motywu: kamień w Forge, w innych motywach brak."
+                hint="Za całą stroną, pod tekstem gry."
                 value={draft.backgroundImage}
                 onChange={(v) => update({ backgroundImage: v as UiSettings['backgroundImage'] })}
             >
