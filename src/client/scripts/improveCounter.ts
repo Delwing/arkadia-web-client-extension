@@ -228,6 +228,13 @@ export default class ImproveCounter extends BaseCounter {
         this.client.on("client.disconnect", () => {
             this.initialized = false;
         });
+        // ...but a proxy resume replays everything since we dropped, levels
+        // included, and sends no fresh level of its own: the next one is live
+        this.client.on("proxy.session", (info) => {
+            if (info?.resumed && !info.upstreamClosed && !info.droppedBytes && this.level >= 0) {
+                this.initialized = true;
+            }
+        });
 
         this.client.on("combatState", (inCombat: boolean) => {
             if (inCombat && this.waitingForFirstCombat) {

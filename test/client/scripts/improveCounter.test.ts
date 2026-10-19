@@ -310,6 +310,34 @@ describe('improve counter', () => {
     expect(improveLines()).toEqual(['\tWlasnie wbiles postepy: znaczne (czas:   0:00)']);
   });
 
+  test('keeps announcing improvements after a proxy resume', () => {
+    const improveLines = () => client.println.mock.calls
+      .map((c: any[]) => c[0]?.text as string)
+      .filter((t) => t?.includes('postep') || t?.includes('Postep'));
+    client.dispatch('gmcp.char.state', { improve: 3 });
+    client.println.mockClear();
+
+    // The phone blinked: the proxy hands back the same session, no level resent
+    client.dispatch('client.disconnect');
+    client.dispatch('proxy.session', { type: 'session', resumed: true });
+    jest.advanceTimersByTime(60000);
+    client.dispatch('gmcp.char.state', { improve: 4 });
+    expect(improveLines()).toEqual(['\tWlasnie wbiles postepy: nieduze (czas:   1:00)']);
+  });
+
+  test('catches up after a proxy resume that lost output', () => {
+    const improveLines = () => client.println.mock.calls
+      .map((c: any[]) => c[0]?.text as string)
+      .filter((t) => t?.includes('postep') || t?.includes('Postep'));
+    client.dispatch('gmcp.char.state', { improve: 3 });
+    client.println.mockClear();
+
+    client.dispatch('client.disconnect');
+    client.dispatch('proxy.session', { type: 'session', resumed: true, droppedBytes: 512 });
+    client.dispatch('gmcp.char.state', { improve: 5 });
+    expect(improveLines()).toEqual(['\tPostepy od ostatniego polaczenia: male -> zadowalajace']);
+  });
+
   test('an improvement ends the wait for the first fight', () => {
     client.dispatch('gmcp.char.state', { improve: 1 });
     // A reset mid-session waits for combat; none is seen
