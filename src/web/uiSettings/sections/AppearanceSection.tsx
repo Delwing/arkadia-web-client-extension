@@ -154,7 +154,7 @@ function AppearanceSection({ draft, update, commitCustomDark }: AppearanceSectio
                     <option value="dark-neutral">Neutralny (ciemny)</option>
                     <option value="light-parchment">Pergamin (jasny)</option>
                     <option value="light-silver">Srebrny (jasny)</option>
-                    <option value="forged">Kuźnia</option>
+                    <option value="forged">Forge</option>
                     <option value="custom-dark">Własny (ciemny)</option>
                 </SelectField>
                 {isCustomDark && (
