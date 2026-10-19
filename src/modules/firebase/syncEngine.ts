@@ -276,8 +276,17 @@ class FirebaseSyncEngine {
         // UI is mounted — otherwise the modal is already on screen.
         if (fresh.length > 0 && !this.conflictUiActive) {
             eventBus.emit('notify', {
-                text: 'Wykryto konflikt synchronizacji ustawień. Otwórz Eksport / Import, aby go rozwiązać.',
-                time: 8000,
+                title: 'Konflikt synchronizacji ustawień',
+                text: 'Ustawienia różnią się od wersji w chmurze.',
+                level: 'warning',
+                source: 'sync',
+                key: 'sync.conflict',
+                sticky: true,
+                actions: [
+                    // The stock UI opens its sync page on this request.
+                    { label: 'Rozwiąż', primary: true, onClick: () => window.dispatchEvent(new Event('show-export-import')) },
+                    { label: 'Później' },
+                ],
             });
         }
     }

@@ -192,7 +192,7 @@ export default function initGps(client: Client) {
         syncedAtLine = lineCounter;
         if (client.Map.currentRoom?.id !== entry.roomId) {
             client.Map.setMapRoomById(entry.roomId);
-            client.sendEvent('notify', {text: `Map Sync: gps ${entry.id}`});
+            client.sendEvent('notify', {text: `Pozycja z GPS: ${entry.id}`, source: 'map', key: 'map.gps'});
         } else {
             // The marker may have stayed put while we wandered off the map (into a forest
             // and back out the same way), so standing where it already is still confirms

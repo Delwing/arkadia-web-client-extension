@@ -1709,7 +1709,7 @@ export interface EventsApi {
      *
      * @example
      * ```typescript
-     * // Emit an in-app notification (toast in the notification center)
+     * // Emit an in-app notification (a toast; see also api.notifications)
      * api.events.emit("notify", { text: "Hello!", time: 5000 });
      *
      * // Also fire an OS/browser notification (when the user granted permission)
@@ -4712,6 +4712,8 @@ export interface PluginApi {
     keys: KeysApi;
     /** Read SQLite files, e.g. to import a Mudlet database */
     sqlite: SqliteApi;
+    /** Toasts over the game output */
+    notifications: NotificationsApi;
     /**
      * AnsiAwareBuffer class for creating formatted text buffers
      *
@@ -4724,6 +4726,61 @@ export interface PluginApi {
      * api.output.print(buffer);
      */
     AnsiAwareBuffer: typeof AnsiAwareBuffer;
+}
+
+export interface NotificationOptions {
+    text: string;
+    /** Bold first line; `text` then reads as the body under it. */
+    title?: string;
+    /** Defaults to 'info'. Warnings and errors still show under "do not disturb". */
+    level?: 'info' | 'success' | 'warning' | 'error';
+    /** Milliseconds on screen (scaled by the player's setting). */
+    time?: number;
+    /** Stays until closed or dismissed. */
+    sticky?: boolean;
+    /** A progress bar, e.g. `{ value: 3, max: 10 }`. */
+    progress?: {
+        value: number;
+        max: number;
+    };
+    actions?: NotificationButton[];
+    /** Also fire an OS/browser notification (when the user granted permission). */
+    system?: boolean;
+}
+
+export interface NotificationHandle {
+    /** Change the toast in place; if the player already closed it, nothing shows. */
+    update(patch: Partial<NotificationOptions>): void;
+    /** Show it again as a repeat (counts ×2, ×3…) and restart its timer. */
+    repeat(patch?: Partial<NotificationOptions>): void;
+    dismiss(): void;
+}
+
+/**
+ * Notifications API - toasts over the game output. The player can mute all
+ * plugin toasts in the settings.
+ */
+
+export interface NotificationsApi {
+    /**
+     * Show a toast.
+     *
+     * @example
+     * ```typescript
+     * api.notifications.show("Zapisano");
+     *
+     * const task = api.notifications.show({
+     *   title: "Liczę zioła",
+     *   text: "0 z 12",
+     *   sticky: true,
+     *   progress: { value: 0, max: 12 },
+     *   actions: [{ label: "Przerwij", command: "/stop-ziola" }],
+     * });
+     * task.update({ text: "5 z 12", progress: { value: 5, max: 12 } });
+     * task.dismiss();
+     * ```
+     */
+    show(options: NotificationOptions | string): NotificationHandle;
 }
 
 // ============================================================================

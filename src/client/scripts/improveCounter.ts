@@ -223,6 +223,19 @@ export default class ImproveCounter extends BaseCounter {
             }
         });
 
+        // A reconnect (e.g. back from another device) may report levels gained
+        // elsewhere: treat the next level like the first one after a load
+        this.client.on("client.disconnect", () => {
+            this.initialized = false;
+        });
+        // ...but a proxy resume replays everything since we dropped, levels
+        // included, and sends no fresh level of its own: the next one is live
+        this.client.on("proxy.session", (info) => {
+            if (info?.resumed && !info.upstreamClosed && !info.droppedBytes && this.level >= 0) {
+                this.initialized = true;
+            }
+        });
+
         this.client.on("combatState", (inCombat: boolean) => {
             if (inCombat && this.waitingForFirstCombat) {
                 this.waitingForFirstCombat = false;
@@ -335,17 +348,19 @@ export default class ImproveCounter extends BaseCounter {
                 }
                 this.level = level;
             } else if (level > this.level) {
+                // Levels reached while this client wasn't connected (page reload,
+                // or played on another device): their times are unknown here, so
+                // catch up silently - sync brings the other device's entries.
+                const from = this.level;
+                for (let l = from + 1; l <= level; l++) {
+                    this.recordInitial(l);
+                }
                 if (!isFreshLogin) {
-                    // Same session (same obj_num), reconnected after page reload
-                    // Track as real improvements
-                    for (let l = this.level + 1; l <= level; l++) {
-                        this.record(l);
-                    }
-                } else {
-                    // Different session - silently catch up
-                    for (let l = this.level + 1; l <= level; l++) {
-                        this.recordInitial(l);
-                    }
+                    this.client.println(colorString(
+                        `\tPostepy od ostatniego polaczenia: ${STATES[from] ?? from} -> ${STATES[level] ?? level}`,
+                        SECTION_COLOR,
+                    ));
+                    this.emitUpdate();
                 }
                 this.level = level;
             } else if (isFreshLogin && level < this.level) {

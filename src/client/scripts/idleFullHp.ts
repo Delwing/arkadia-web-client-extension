@@ -10,7 +10,7 @@ export default function initIdleFullHp(client: Client) {
         const hp = state?.hp;
         if (typeof hp !== 'number') return;
         if (hp === FULL_HP && prevHp < FULL_HP && idleTimer.isIdle()) {
-            client.sendEvent('notify', { text: 'Masz pełne życie', system: true });
+            client.sendEvent('notify', { text: 'Masz pełne życie', level: 'success', source: 'client', key: 'hp.full', system: true });
             client.sendEvent('hp.idleFull', { text: 'Masz pełne życie' });
         }
         prevHp = hp;

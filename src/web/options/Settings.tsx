@@ -9,6 +9,7 @@ import {useState} from "react";
 import {Button as UiButton, Check, DeleteButton, Field, Input, Select} from "@web-ui/primitives/index.ts";
 import {CircleHelp} from "lucide-react";
 import {defaultSettings} from "./defaultSettings";
+import type {SunAnnouncement} from "@modules/core/defaultSettings";
 import {CollectOverridesModal} from "./CollectOverridesModal";
 import type {GeneralSettingsSectionProps} from "./useGeneralSettingsForm";
 
@@ -242,18 +243,24 @@ export function OtherOptionsSection({settings, onChangeSetting}: GeneralSettings
                         onChange={e => onChangeSetting(s => s.fullHpMessage = e.target.checked)}
                     />
                     <Check
-                        id="sunTracker"
-                        label={<>Ramki wschodu/zachodu <HelpHint text="Wyświetla kolorowe ramki przy wschodach/zachodach słońca. Obserwacje są rejestrowane zawsze. Użyj /slonce, aby otworzyć kalendarz."/></>}
-                        checked={settings.sunTracker}
-                        onChange={e => onChangeSetting(s => s.sunTracker = e.target.checked)}
-                    />
-                    <Check
                         id="carriageTeamTickets"
                         label={<>Bilety dla drużyny przy wjeździe wozem <HelpHint text="Gdy wjeżdżasz wozem na statek, bind wejścia kupuje bilety także dla członków drużyny na lokacji i wręcza im je (jak /bilety). Wyłączone: kupuje tylko twój bilet."/></>}
                         checked={settings.carriageTeamTickets}
                         onChange={e => onChangeSetting(s => s.carriageTeamTickets = e.target.checked)}
                     />
                 </div>
+                <Field label={<>Wschód i zachód słońca <HelpHint text="Jak oznajmiać wschody i zachody słońca: powiadomieniem albo ramką w oknie gry. Użyj /slonce, aby otworzyć kalendarz."/></>} htmlFor="sunAnnouncement">
+                    <Select
+                        id="sunAnnouncement"
+                        className="settings-narrow"
+                        value={settings.sunAnnouncement}
+                        onChange={e => onChangeSetting(s => s.sunAnnouncement = e.target.value as SunAnnouncement)}
+                    >
+                        <option value="notification">Powiadomienie</option>
+                        <option value="frame">Ramka w oknie gry</option>
+                        <option value="off">Wyłączone</option>
+                    </Select>
+                </Field>
                 <Field label="Domyślna szerokość linii listu" htmlFor="letterLineWidth" hint="Można ją zmienić dla pojedynczego listu w edytorze (/list)">
                     <Input
                         type="number"

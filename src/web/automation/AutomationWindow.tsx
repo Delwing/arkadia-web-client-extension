@@ -548,7 +548,7 @@ export default function AutomationWindow() {
 
     function importMenu(e: MouseEvent<HTMLElement>) {
         openMenuAt(e, [
-            { label: "Plik automatyzacji (.json)", action: () => fileRef.current?.click() },
+            { label: "Plik ze Skryptów (.json)", action: () => fileRef.current?.click() },
             { label: "Aliasy z klienta Arkadii (.json)", action: () => openSettingsPage("data-import", "import-aliases-arkadia") },
             { label: "Aliasy z Blowtorch (.xml)", action: () => openSettingsPage("data-import", "import-aliases-blowtorch") },
         ]);
@@ -670,7 +670,7 @@ export default function AutomationWindow() {
             <button
                 type="button"
                 className={`automation-nav__kind automation-nav__library${view === "library" ? " is-active" : ""}`}
-                title="Gotowe automatyzacje do dodania jednym kliknięciem"
+                title="Gotowe aliasy, triggery i skrypty do dodania jednym kliknięciem"
                 onClick={() => setView("library")}
             >
                 <span className="automation-kind automation-kind--library"><BookOpen size={14} /></span>
@@ -791,8 +791,8 @@ export default function AutomationWindow() {
             <header className="automation-library__head">
                 <h3>Biblioteka</h3>
                 <p className="automation-hint">
-                    Gotowe automatyzacje na to, o co gracze pytają najczęściej. Dodana trafia na twoją listę jako
-                    zwykły element - możesz ją zmienić, wyłączyć albo usunąć.
+                    Gotowe aliasy, triggery i skrypty na to, o co gracze pytają najczęściej. Dodany trafia na twoją
+                    listę jako zwykły element - możesz go zmienić, wyłączyć albo usunąć.
                 </p>
             </header>
             {categories.map(category => (

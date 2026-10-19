@@ -8,7 +8,7 @@
  * foreground or online, and on a slow interval.
  *
  * Reporting is left to the caller: the notice belongs on the login screen, never
- * over the game while someone is playing.
+ * over the game while someone is playing (a passing toast during play is opt-in).
  */
 
 export interface DeployedVersion {

@@ -74,6 +74,24 @@ describe("footer chips", () => {
       expect(chip()?.classList.contains("chip--warn")).toBe(true);
     });
 
+    test("graphs the last minutes of ping in the tooltip, broken over a disconnect", () => {
+      mount(<ConnectionChip />);
+      emit("ping", 80);
+      emit("pingHistory", { samples: [
+        { at: 0, ms: 40 },
+        { at: 3_000, ms: 60 },
+        { at: 60_000, ms: 450 },
+        { at: 63_000, ms: 80 },
+      ] });
+      const tip = hoverTip();
+      expect(tip.rows).toContain("Ping: 80 ms");
+      expect(tip.rows).toContain("5 min: min 40 · śr. 158 · maks. 450 ms");
+      const graph = document.querySelector("#hover-tooltip .chip-tip-ping")!;
+      expect(graph.querySelectorAll(".chip-tip-ping__line")).toHaveLength(2);
+      expect(graph.querySelector(".chip-tip-ping__warn")).not.toBeNull();
+      expect(graph.querySelector(".chip-tip-ping__scale")?.textContent).toBe("450 ms");
+    });
+
     test("goes quiet again when the connection drops", () => {
       mount(<ConnectionChip />);
       emit("ping", 42);

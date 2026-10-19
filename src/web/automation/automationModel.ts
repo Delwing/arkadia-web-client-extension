@@ -23,6 +23,7 @@ import {
     SUPPORTED_EVENTS,
     TEXT_STYLES,
     canonicalEventId,
+    triggerMsgTypes,
     type TextStyle,
     type TriggerCondition,
     type UserMacro,
@@ -389,6 +390,8 @@ export function itemFromDraft(draft: Draft): AutomationItem {
 
     const trigger = meta(draft.data) as UserTrigger;
     const { pattern, event, flags, gmcpMsgType, conditions, type: _t, ...base } = trigger;
+    // One type stays a plain string, as triggers were saved before a list was possible.
+    const msgTypes = triggerMsgTypes({ gmcpMsgType });
     const data: UserTrigger = trigger.type === "event"
         ? { ...base, type: "event", event, ...(conditions?.length ? { conditions } : {}) }
         : {
@@ -396,7 +399,7 @@ export function itemFromDraft(draft: Draft): AutomationItem {
             type: "pattern",
             pattern: pattern?.trim(),
             ...(flags ? { flags } : {}),
-            ...(gmcpMsgType ? { gmcpMsgType } : {}),
+            ...(msgTypes.length ? { gmcpMsgType: msgTypes.length === 1 ? msgTypes[0] : msgTypes } : {}),
         };
     return { kind: "trigger", id: draft.id, data };
 }
@@ -515,7 +518,7 @@ export function itemSearchText(item: AutomationItem, groups: AutomationGroup[]):
         item.kind === "script" ? `/${item.data.command ?? ""}\n${item.data.code}` : "",
         item.kind === "trigger" ? eventLabel(item.data.event) : "",
         item.kind === "trigger" ? item.data.event ?? "" : "",
-        item.kind === "trigger" ? item.data.gmcpMsgType ?? "" : "",
+        item.kind === "trigger" ? triggerMsgTypes(item.data).join("\n") : "",
         ...itemActions(item).flatMap(m => [m.command ?? "", m.message ?? "", m.label ?? "", m.to ?? ""]),
         ...(item.kind === "alias" ? Object.entries(item.data.overrides ?? {}).flat() : []),
     ];
@@ -572,7 +575,7 @@ export function buildItemPack(item: AutomationItem): AutomationPack {
 export function parsePack(text: string): AutomationPack {
     const value = JSON.parse(text);
     if (!value || value.format !== PACK_FORMAT || !Array.isArray(value.aliases) || !Array.isArray(value.triggers)) {
-        throw new Error("To nie jest plik automatyzacji z tego klienta.");
+        throw new Error("To nie jest plik wyeksportowany z okna Skrypty.");
     }
     return {
         ...value,
@@ -584,7 +587,7 @@ export function parsePack(text: string): AutomationPack {
 /** What a trigger does, whatever it is called and wherever it sits: two with the same shape are duplicates. */
 export function triggerShape(t: UserTrigger): string {
     return JSON.stringify([
-        t.type ?? "pattern", t.pattern ?? "", t.event ?? "", t.flags ?? "", t.gmcpMsgType ?? "", t.conditions ?? [], t.macros,
+        t.type ?? "pattern", t.pattern ?? "", t.event ?? "", t.flags ?? "", [...triggerMsgTypes(t)].sort(), t.conditions ?? [], t.macros,
     ]);
 }
 

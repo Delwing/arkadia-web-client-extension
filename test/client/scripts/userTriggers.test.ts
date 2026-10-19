@@ -5,6 +5,7 @@ import initUserTriggers, {
   evaluateCondition,
   interpolateMatch,
   interpolateMatchGroups,
+  triggerMsgTypes,
   type TriggerCondition,
   type UserTrigger,
 } from '@client/scripts/userTriggers';
@@ -127,7 +128,27 @@ describe('userTriggers', () => {
     globalStorage.set('triggers', list);
     const result = client.Triggers.parseLine(new AnsiAwareBuffer('foo'), '');
     expect(result?.text).toBe('foo');
-    expect(client.sendEvent).toHaveBeenCalledWith('notify', { text: 'hello', system: true });
+    expect(client.sendEvent).toHaveBeenCalledWith('notify', expect.objectContaining({ text: 'hello', system: true }));
+  });
+
+  test('notify carries its title, level, time and button into the toast', () => {
+    const client = new FakeClient();
+    initUserTriggers((client as unknown) as any);
+    const list: UserTrigger[] = [{ pattern: 'atakuje (\\w+)', macros: [{
+      type: 'notify', message: 'Atak: $1', notifyTitle: 'Walka', notifyLevel: 'error',
+      notifySeconds: 0, notifySystem: false, label: 'Uciekaj', command: 'zabij $1',
+    }] }];
+    globalStorage.set('triggers', list);
+    client.Triggers.parseLine(new AnsiAwareBuffer('Ork atakuje ciebie'), '');
+    expect(client.sendEvent).toHaveBeenCalledWith('notify', expect.objectContaining({
+      text: 'Atak: ciebie',
+      title: 'Walka',
+      level: 'error',
+      sticky: true,
+      system: false,
+      source: 'trigger',
+      actions: [expect.objectContaining({ label: 'Uciekaj', command: 'zabij ciebie' })],
+    }));
   });
 
   test('notify falls back to matched text when message is empty', () => {
@@ -137,7 +158,7 @@ describe('userTriggers', () => {
     globalStorage.set('triggers', list);
     const result = client.Triggers.parseLine(new AnsiAwareBuffer('bar foo baz'), '');
     expect(result?.text).toBe('bar foo baz');
-    expect(client.sendEvent).toHaveBeenCalledWith('notify', { text: 'foo', system: true });
+    expect(client.sendEvent).toHaveBeenCalledWith('notify', expect.objectContaining({ text: 'foo', system: true }));
   });
 
   test('push sends the given message to paired devices', () => {
@@ -529,6 +550,28 @@ describe('userTriggers', () => {
     expect(result2?.text).toBe('bar FOO baz');
   });
 
+  test('gmcpMsgType list runs the trigger on any of its types', () => {
+    const client = new FakeClient();
+    initUserTriggers((client as unknown) as any);
+    globalStorage.set('triggers', [{
+      pattern: 'tarcze',
+      gmcpMsgType: ['living.long', 'object.long'],
+      macros: [{ type: 'uppercase' }]
+    }]);
+
+    const line = 'Ma na sobie dluga trojkatna tarcze.';
+    expect(client.Triggers.parseLine(new AnsiAwareBuffer(line), 'living.long')?.text).toBe('Ma na sobie dluga trojkatna TARCZE.');
+    expect(client.Triggers.parseLine(new AnsiAwareBuffer(line), 'object.long')?.text).toBe('Ma na sobie dluga trojkatna TARCZE.');
+    expect(client.Triggers.parseLine(new AnsiAwareBuffer(line), 'comm')?.text).toBe(line);
+  });
+
+  test('triggerMsgTypes reads a single type, a list and none alike', () => {
+    expect(triggerMsgTypes({ gmcpMsgType: 'comm' })).toEqual(['comm']);
+    expect(triggerMsgTypes({ gmcpMsgType: ['comm', 'emotes'] })).toEqual(['comm', 'emotes']);
+    expect(triggerMsgTypes({ gmcpMsgType: [] })).toEqual([]);
+    expect(triggerMsgTypes({})).toEqual([]);
+  });
+
   test('trigger without gmcpMsgType matches all types', () => {
     const client = new FakeClient();
     initUserTriggers((client as unknown) as any);
@@ -624,7 +667,7 @@ describe('userTriggers', () => {
       }]);
       client.Triggers.parseLine(new AnsiAwareBuffer('Goblin atakuje cie!'), '');
       expect(client.sendCommand).toHaveBeenCalledWith('zabij Goblin');
-      expect(client.sendEvent).toHaveBeenCalledWith('notify', { text: 'Goblin cie atakuje!', system: true });
+      expect(client.sendEvent).toHaveBeenCalledWith('notify', expect.objectContaining({ text: 'Goblin cie atakuje!', system: true }));
       expect(client.FunctionalBind.set).toHaveBeenCalledWith('bij Goblin', expect.any(Function));
     });
   });

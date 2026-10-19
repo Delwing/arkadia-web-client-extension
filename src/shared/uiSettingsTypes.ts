@@ -1,4 +1,4 @@
-import type { SoundCategory } from '@shared/events/clientEvents';
+import type { NotificationSource, SoundCategory } from '@shared/events/clientEvents';
 import type { FooterLayout, FooterLayoutChoice, FooterLayoutTweakSet, FooterPresetId } from '@shared/footerLayoutTypes';
 
 // UI settings type definitions.
@@ -57,7 +57,21 @@ export interface ShellSettings {
     wakeLock: boolean;
     fightTitleIcon: boolean;
     hapticFeedback: boolean;
+    /** Also announce a new deployment in the game output, not only on the login screen. */
+    inGameUpdateNotice: boolean;
+    /** Corner of the game output the toasts stack in. */
+    toastPosition: ToastPosition;
+    /** Multiplies how long a toast stays on screen. */
+    toastDurationScale: number;
+    /** Toasts shown at once; the rest wait behind a "+N" pill. */
+    toastMaxVisible: number;
+    /** Sources whose toasts are not shown at all. */
+    toastMutedSources: NotificationSource[];
+    /** Only warnings and errors pop up. */
+    toastDoNotDisturb: boolean;
 }
+
+export type ToastPosition = 'top-left' | 'top-right' | 'bottom-right' | 'bottom-center';
 
 /** Terminal output + input rendering — portable across UIs. */
 export interface RenderSettings {

@@ -83,7 +83,7 @@ describe('idz walking', () => {
 
     expect(client.Map.findPath).toHaveBeenCalledTimes(1);
     expect(client.sendCommand).toHaveBeenCalledTimes(2);
-    expect(client.sendEvent).toHaveBeenCalledWith('notify', { text: '[WALK] reached 3' });
+    expect(client.sendEvent).toHaveBeenCalledWith('notify', expect.objectContaining({ text: 'Dotarłem do: lokacja 3', level: 'success' }));
   });
 
   test('keeps the normal route and replans only when the map room differs', () => {
@@ -127,6 +127,6 @@ describe('idz walking', () => {
     const updates = client.sendEvent.mock.calls
       .filter(([event]: [string]) => event === 'walker.update');
     expect(updates.at(-1)?.[1]).toMatchObject({ active: false, paused: false, target: null });
-    expect(client.sendEvent).toHaveBeenCalledWith('notify', { text: '[WALK] reached 3' });
+    expect(client.sendEvent).toHaveBeenCalledWith('notify', expect.objectContaining({ text: 'Dotarłem do: lokacja 3', level: 'success' }));
   });
 });

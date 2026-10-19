@@ -45,9 +45,18 @@ export default function initMove(client: Client) {
         return line
     }, tag)
 
-    client.Triggers.registerTrigger(/^Skryty za .* zaczynasz plynac na (?<direction>\w+)\.$/, (line, matches) => {
+    // Pushing something across the water ("popchnij zwloki na n") paralyzes us for the swim, and
+    // the paralysis pauses the mapper before this line arrives. Unlike a plain "n", no command
+    // moved the map up front, so the step has to go through the pause or it is lost.
+    client.Triggers.registerTrigger(/^Skryty za .* zaczynasz plynac na (?<direction>[a-z-]+)\.$/, (line, matches) => {
         if (matches?.groups?.direction) {
-            client.Map.followMove((matches.groups as any).direction)
+            const paused = client.Map.paused
+            client.Map.setPaused(false)
+            try {
+                client.Map.followMove(matches.groups.direction)
+            } finally {
+                client.Map.setPaused(paused)
+            }
         }
         return line
     }, tag)

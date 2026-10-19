@@ -65,7 +65,7 @@ describe('gps triggers', () => {
     parse('l1');
     parse('l2');
     expect(client.Map.setMapRoomById).toHaveBeenCalledWith(10);
-    expect(client.sendEvent).toHaveBeenCalledWith('notify', { text: 'Map Sync: gps 10_1' });
+    expect(client.sendEvent).toHaveBeenCalledWith('notify', expect.objectContaining({ text: 'Pozycja z GPS: 10_1', source: 'map' }));
   });
 
   test('gps lines only confirm the position silently when already at location', () => {

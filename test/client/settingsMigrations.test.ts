@@ -3,6 +3,7 @@ import {
     runAllSettingsMigrations,
     getLatestMigrationVersion,
     migrateCoverMarkersOn,
+    migrateSunAnnouncement,
     migrateImportedValue,
     migrateMobileButtonMacroData,
     migrateZerknijButtonMacro,
@@ -549,6 +550,28 @@ describe('settingsMigrations', () => {
             expect(migratedGlobal.collectOverrides[0].enemy).toBe('troll');
             expect(migratedChar1.collectOverrides[0].enemy).toBe('bykocentaur');
             expect(migratedChar2.collectOverrides[0].enemy).toBe('ghoul');
+        });
+    });
+
+    describe('migration v18: sun announcement', () => {
+        it('keeps frames for a player who had them on', () => {
+            const result = migrateSunAnnouncement({ sunTracker: true } as Partial<Settings>);
+            expect(result).toEqual({ sunAnnouncement: 'frame' });
+        });
+
+        it('leaves it off for a player who had it off', () => {
+            expect(migrateSunAnnouncement({ sunTracker: false } as Partial<Settings>)).toEqual({ sunAnnouncement: 'off' });
+        });
+
+        it('does not touch a choice already made', () => {
+            const settings = { sunAnnouncement: 'notification' } as Partial<Settings>;
+            expect(migrateSunAnnouncement(settings)).toBe(settings);
+        });
+
+        it('is part of the registry', () => {
+            const { settings } = migrateSettings({ sunTracker: true } as Partial<Settings>, 17);
+            expect(settings).toMatchObject({ sunAnnouncement: 'frame' });
+            expect(settings).not.toHaveProperty('sunTracker');
         });
     });
 });

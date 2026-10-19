@@ -79,7 +79,7 @@ describe('MapHelper leading with transports', () => {
 
     map.leadTo(4711);
 
-    expect(lastEvent(client, 'notify')?.payload).toEqual({ text: 'Brak ścieżki do lokacji' });
+    expect(lastEvent(client, 'notify')?.payload).toMatchObject({ text: 'Brak ścieżki do lokacji' });
     expect(client.events.some((e) => e.type === 'routePlanned')).toBe(false);
   });
 
@@ -213,7 +213,7 @@ describe('MapHelper switching lead mode', () => {
 
     client.sendEvent('switchLeadMode', { transport: true });
 
-    expect(lastEvent(client, 'notify')?.payload).toEqual({ text: 'Nie prowadzisz nigdzie' });
+    expect(lastEvent(client, 'notify')?.payload).toMatchObject({ text: 'Nie prowadzisz nigdzie' });
     expect(client.events.some((e) => e.type === 'mapPath')).toBe(false);
   });
 });

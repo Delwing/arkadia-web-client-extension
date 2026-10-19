@@ -19,7 +19,7 @@ Własne aliasy tworzysz w oknie **Skrypty** (Menu → Skrypty), razem z triggera
 - **Edytor** - krok 1 *Kiedy* (wzorzec i linia testowa, która od razu pokazuje, czy wzorzec pasuje i co trafi do `$1`), krok 2 *Co zrobić* (akcje po kolei; kolejność zmienisz, przeciągając za uchwyt, a pod spodem widać, co zostanie wysłane), krok 3 *Dla kogo*. Zmiany zapisuje **Zapisz** (albo `Ctrl+Enter`); kropka przy wierszu oznacza niezapisane zmiany
 - **Włączony** - wyłączony alias lub trigger zostaje zapisany, ale nie działa
 - **Dla kogo** - wszystkie postacie albo tylko wybrane; na innej postaci element nie działa
-- **Eksport i import** - "Eksportuj wszystko" albo eksport jednej grupy zapisuje plik `.json`, który ktoś inny wczyta przez "Importuj" → "Plik automatyzacji". Import niczego nie nadpisuje: alias o istniejącym wzorcu i identyczny trigger zostają pominięte
+- **Eksport i import** - "Eksportuj wszystko" albo eksport jednej grupy zapisuje plik `.json`, który ktoś inny wczyta przez "Importuj" → "Plik ze Skryptów". Import niczego nie nadpisuje: alias o istniejącym wzorcu i identyczny trigger zostają pominięte
 
 ### Zakresy ($i)
 
@@ -273,6 +273,17 @@ Zakresy działają rosnąco (`1-7`) i malejąco (`7-1`). Maksymalnie 50 iteracji
 | `/lisica stop` | Przerwij wystukiwanie hasła |
 
 > **Wskazówka:** Hasło z wiadomości ("aktualnie to: 1-9-5-2") zapamiętuje się samo. Po odpowiedzi drzwi kolejna grupa puknięć trafia na funkcjonalny bind (domyślnie `]`).
+
+## Nagrania
+
+| Komenda | Opis |
+|---------|------|
+| `/nagrywaj` | Zacznij nagrywać sesję (nazwa to data i godzina) |
+| `/nagrywaj <nazwa>` | Zacznij nagrywać sesję pod podaną nazwą |
+| `/nagrywaj_stop` | Zakończ nagrywanie i zapisz nagranie |
+| `/nagrywaj_anuluj` | Zakończ nagrywanie bez zapisywania |
+
+> **Wskazówka:** To samo nagranie, co w oknie Nagrania — zapisane pojawia się na liście i można je tam odtworzyć. Gdy nagrywanie już trwa, `/nagrywaj` go nie przerywa, tylko o nim przypomina.
 
 ## Odświeżanie danych
 

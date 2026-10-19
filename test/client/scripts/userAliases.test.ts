@@ -331,7 +331,7 @@ describe('user aliases', () => {
       await run(client, 'zab goblina');
 
       expect(client.executed).toEqual(['zabij goblina', 'zapal pochodnie']);
-      expect((client as any).sendEvent).toHaveBeenCalledWith('notify', { text: 'Atakuje goblina', system: true });
+      expect((client as any).sendEvent).toHaveBeenCalledWith('notify', expect.objectContaining({ text: 'Atakuje goblina', system: true }));
     });
 
     test('a character override replaces all command actions once', async () => {

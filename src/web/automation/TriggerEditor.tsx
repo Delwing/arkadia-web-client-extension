@@ -1,10 +1,11 @@
 import type { MouseEvent } from "react";
 import { useRef, useState } from "react";
 import { ArrowUp, Braces, ChevronDown, FlaskConical } from "lucide-react";
-import { NO_PASSWORD_MANAGER, Segmented, Select } from "@web-ui/primitives/index.ts";
+import { NO_PASSWORD_MANAGER, Segmented } from "@web-ui/primitives/index.ts";
 import {
     LINELESS_MACRO_TYPES,
     SUPPORTED_EVENTS,
+    triggerMsgTypes,
     type TriggerType,
     type UserMacro,
     type UserTrigger,
@@ -14,7 +15,7 @@ import type { PluginTriggerMacro } from "@modules/core/pluginTriggerMacroRegistr
 import { getRecentLines } from "@modules/core/recentLines";
 import { ActionList } from "./ActionList";
 import { CharacterScope, CharacterScopeSwitch, Section, openMenuAt } from "./EditorParts";
-import { ConditionsEditor, EventPicker, FlagToggles, GMCP_MSG_TYPES } from "./TriggerSource";
+import { ConditionsEditor, EventPicker, FlagToggles, MsgTypePicker } from "./TriggerSource";
 import { MatchStatus, OutputLine } from "./AliasEditor";
 import { previewTrigger, testTriggerPattern } from "./automationPreview";
 import { GroupValues, HighlightInput, SnippetMenu, UnknownTokens } from "./GroupParts";
@@ -101,8 +102,6 @@ export function TriggerEditor({ trigger, onChange, sounds, onRequestSoundUpload,
         })));
     };
 
-    const msgTypeKnown = !trigger.gmcpMsgType || GMCP_MSG_TYPES.some(t => t.id === trigger.gmcpMsgType);
-
     return (
         <>
             <Section step={1} title="Kiedy" extra={<Segmented value={isEvent ? "event" : "pattern"} options={TYPE_OPTIONS} onChange={changeType} />}>
@@ -171,16 +170,10 @@ export function TriggerEditor({ trigger, onChange, sounds, onRequestSoundUpload,
                         </div>
                         <div className="automation-row">
                             <span className="automation-row__label">Tylko w</span>
-                            <Select
-                                className="automation-msgtype"
-                                title="Typ wiadomości"
-                                value={trigger.gmcpMsgType ?? ""}
-                                onChange={e => set({ gmcpMsgType: e.target.value || undefined })}
-                            >
-                                <option value="">dowolnych wiadomościach</option>
-                                {!msgTypeKnown && <option value={trigger.gmcpMsgType}>{trigger.gmcpMsgType}</option>}
-                                {GMCP_MSG_TYPES.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
-                            </Select>
+                            <MsgTypePicker
+                                value={triggerMsgTypes(trigger)}
+                                onChange={types => set({ gmcpMsgType: types.length ? types : undefined })}
+                            />
                         </div>
                     </>
                 )}

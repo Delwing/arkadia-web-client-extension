@@ -2,6 +2,7 @@ import initSunTracker, {
     clearEventsForDomain,
     getEventsForDomain,
 } from '@client/scripts/sunTracker';
+import { characterStorage } from "@modules/core/storage";
 
 /**
  * The grids in `sunModel` are fitted against what this tracker records, and the
@@ -87,4 +88,84 @@ describe('sunTracker records the game, not the model', () => {
         const patterns = client.aliases.map((a: any) => a.pattern.source);
         expect(patterns).toContain(/^\/slonce$/.source);
     });
+});
+
+describe('sunTracker announces the sky', () => {
+    function setup(settings: Record<string, unknown>) {
+        localStorage.clear();
+        characterStorage.set('settings', settings as any);
+        const handlers: Record<string, (data: any) => void> = {};
+        const client: any = {
+            on: (event: string, handler: (data: any) => void) => { handlers[event] = handler; },
+            print: jest.fn(),
+            sendCommand: jest.fn(),
+            sendEvent: jest.fn(),
+            now: () => 1_700_000_000_000,
+            aliases: [],
+        };
+        initSunTracker(client);
+        return { handlers, client };
+    }
+
+    test('as a notification with the sun, even before any czas', () => {
+        const { handlers, client } = setup({ sunAnnouncement: 'notification' });
+        handlers['clock.daylightChange']({ domain: 'Empire', type: 'sunrise' });
+
+        expect(client.sendEvent).toHaveBeenCalledWith('notify', expect.objectContaining({
+            title: 'Wschód słońca',
+            text: 'Imperium',
+            icon: 'sun',
+            source: 'clock',
+        }));
+        const payload = client.sendEvent.mock.calls.find(([e]: [string]) => e === 'notify')[1];
+        expect(payload.actions).toBeUndefined();
+        expect(client.print).not.toHaveBeenCalled();
+    });
+
+    test('a sunset gets the moon', () => {
+        const { handlers, client } = setup({ sunAnnouncement: 'notification' });
+        handlers['clock.daylightChange']({ domain: 'Ishtar', type: 'sunset' });
+        expect(client.sendEvent).toHaveBeenCalledWith('notify', expect.objectContaining({ icon: 'moon', title: 'Zachód słońca' }));
+    });
+
+    test('as the frame in the output when that is the choice', () => {
+        const { handlers, client } = setup({ sunAnnouncement: 'frame' });
+        handlers['clock.daylightChange']({ domain: 'Empire', type: 'sunset' });
+
+        expect(client.print).toHaveBeenCalledTimes(3);
+        expect(client.print.mock.calls[1][0].text).toContain('ZACHOD');
+        expect(client.sendEvent).not.toHaveBeenCalledWith('notify', expect.anything());
+    });
+
+    test('settings not yet migrated still read the old switch as frames', () => {
+        const { handlers, client } = setup({ sunTracker: true });
+        handlers['clock.daylightChange']({ domain: 'Empire', type: 'sunrise' });
+        expect(client.print).toHaveBeenCalledTimes(3);
+    });
+
+    test('the clock placing the flip later does not announce it twice', () => {
+        const { handlers, client } = setup({ sunAnnouncement: 'notification' });
+        handlers['clock.sunset']({ domain: 'Empire', dayOfYear: 100, observedHour: 20 });
+        expect(client.sendEvent).not.toHaveBeenCalledWith('notify', expect.anything());
+        expect(client.print).not.toHaveBeenCalled();
+    });
+
+    test('stays quiet when off', () => {
+        const { handlers, client } = setup({ sunAnnouncement: 'off' });
+        handlers['clock.daylightChange']({ domain: 'Ishtar', type: 'sunset' });
+        expect(client.sendEvent).not.toHaveBeenCalledWith('notify', expect.anything());
+        expect(client.print).not.toHaveBeenCalled();
+    });
+});
+
+test('sunrise and sunset are separate toasts, not repeats of one', () => {
+    localStorage.clear();
+    characterStorage.set('settings', { sunAnnouncement: 'notification' } as any);
+    const handlers: Record<string, (data: any) => void> = {};
+    const client: any = { on: (e: string, h: any) => { handlers[e] = h; }, print: jest.fn(), sendCommand: jest.fn(), sendEvent: jest.fn(), now: () => 0, aliases: [] };
+    initSunTracker(client);
+    handlers['clock.daylightChange']({ domain: 'Empire', type: 'sunrise' });
+    handlers['clock.daylightChange']({ domain: 'Empire', type: 'sunset' });
+    const keys = client.sendEvent.mock.calls.filter(([e]: [string]) => e === 'notify').map(([, p]: [string, any]) => p.key);
+    expect(new Set(keys).size).toBe(2);
 });

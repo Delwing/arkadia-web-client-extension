@@ -203,10 +203,40 @@ test('exports a group and imports it back as a pack', async ({page}) => {
 
     await modal.getByRole('button', {name: 'Importuj'}).click();
     const chooser = page.waitForEvent('filechooser');
-    await page.getByRole('button', {name: 'Plik automatyzacji (.json)'}).click();
+    await page.getByRole('button', {name: 'Plik ze Skryptów (.json)'}).click();
     await (await chooser).setFiles(file!);
 
     await expect(modal.locator('.automation-notice'), 'should report what came in').toContainText('1 trigger');
     const group = modal.locator('.automation-section').filter({has: page.locator('.automation-group', {hasText: 'Paczka'})});
     await expect(group.locator('.automation-item'), 'should restore the trigger into its group').toContainText('Pakiet test');
+});
+
+test('notify action shows a toast with its title, level and button', async ({page}) => {
+    await page.goto('/');
+    await waitForCommandInput(page);
+    await ensureGameSocket(page);
+    await primeCharInfo(page);
+
+    const modal = await openAutomation(page);
+    await addPatternTrigger(page, modal, 'Lampa gasnie', async action => {
+        await action.locator('select').first().selectOption('notify');
+        await action.getByPlaceholder('Treść powiadomienia').fill('Zaraz zgaśnie');
+        await action.getByPlaceholder('Tytuł (opcjonalnie)').fill('Lampa');
+        await action.getByLabel('Poziom').selectOption('warning');
+        await action.getByLabel('Na ekranie').selectOption('0');
+        await action.getByPlaceholder('Przycisk (opcjonalnie)').fill('Napełnij');
+        await action.getByPlaceholder('Komenda przycisku').fill('napelnij lampe');
+    });
+    await closeAutomation(modal);
+
+    await pushText(page, 'Lampa gasnie powoli.');
+    const toast = page.locator('#notification-center .toast');
+    await expect(toast).toHaveClass(/toast--warning/);
+    await expect(toast.locator('.toast__title')).toHaveText('Lampa');
+    await expect(toast.locator('.toast__text')).toHaveText('Zaraz zgaśnie');
+
+    await resetCommandLog(page);
+    await toast.getByRole('button', {name: 'Napełnij'}).click();
+    await expect.poll(() => getLastOutgoingCommand(page)).toBe('napelnij lampe');
+    await expect(toast).toHaveCount(0);
 });

@@ -1317,7 +1317,7 @@ export default class MapHelper {
     leadTo(id: number, options: LeadOptions = {}) {
         const currentId = this.currentRoom?.id;
         if (currentId === id) {
-            this.client.sendEvent("notify", { text: 'Jesteś już na miejscu' });
+            this.client.sendEvent("notify", { text: 'Jesteś już na miejscu', source: 'map', key: 'map.lead' });
             return;
         }
         if (this.leadTarget !== id) this.announcedTransfer = null;
@@ -1337,7 +1337,7 @@ export default class MapHelper {
         }
 
         if (typeof currentId !== 'number' || !this.mapReader) {
-            this.client.sendEvent("notify", { text: 'Brak ścieżki do lokacji' });
+            this.client.sendEvent("notify", { text: 'Brak ścieżki do lokacji', level: 'warning', source: 'map', key: 'map.lead' });
             return;
         }
 
@@ -1361,7 +1361,7 @@ export default class MapHelper {
         if (viaFallback) segments = plan(true);
 
         if (!segments || segments.length === 0) {
-            this.client.sendEvent("notify", { text: 'Brak ścieżki do lokacji' });
+            this.client.sendEvent("notify", { text: 'Brak ścieżki do lokacji', level: 'warning', source: 'map', key: 'map.lead' });
             return;
         }
         this.drawRoute(segments, currentId, id, { ...options, viaFallback }, blocked);
@@ -1450,7 +1450,7 @@ export default class MapHelper {
         // The trip planner draws its stops without a lead target, and a target already reached
         // is forgotten - either way there is nothing to switch.
         if (target === null || !this._destinations.includes(target)) {
-            this.client.sendEvent("notify", { text: 'Nie prowadzisz nigdzie' });
+            this.client.sendEvent("notify", { text: 'Nie prowadzisz nigdzie', source: 'map', key: 'map.lead' });
             return;
         }
         this.leadTo(target, transport ? { transport: true, aggressive } : {});

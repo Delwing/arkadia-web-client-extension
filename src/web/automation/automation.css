@@ -872,9 +872,22 @@
   color: var(--popup-text-medium);
   font-size: var(--ui-fs-sm, 13px);
 }
-select.automation-msgtype.popup-input.popup-input--control {
-  width: auto;
+.automation-msgtype {
+  min-width: 0;
   max-width: 100%;
+}
+.automation-msgtype .popup-menu-button {
+  min-width: 0;
+  max-width: 100%;
+}
+.automation-msgtype__summary {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.automation-msgtype__panel {
+  gap: 0.35rem;
 }
 .automation-event {
   display: flex;

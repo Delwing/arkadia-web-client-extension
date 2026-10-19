@@ -840,6 +840,58 @@ const DIM_EASINGS = ['linear', 'ease-in', 'ease-out', 'ease-in-out'];
 
 export const SUPPORTED_EVENT_IDS: readonly string[] = SUPPORTED_EVENTS.map(e => e.id);
 
+const NOTIFY_LEVELS = ['info', 'success', 'warning', 'error'] as const;
+
+/** The optional toast fields of a `notify` macro: title, level, time, button, system notification. */
+function validateNotifyOptions(
+    raw: Record<string, unknown>,
+    macro: UserMacro,
+    path: string,
+    issues: ValidationIssue[],
+    flags: CommandFlag[],
+): void {
+    if (raw.notifyTitle !== undefined) {
+        if (typeof raw.notifyTitle !== 'string') {
+            issues.push(err('wrongValueType', `${path}.notifyTitle`, 'Pole "notifyTitle" musi być tekstem.'));
+        } else if (raw.notifyTitle.trim()) {
+            macro.notifyTitle = raw.notifyTitle;
+        }
+    }
+    if (raw.notifyLevel !== undefined) {
+        if (!NOTIFY_LEVELS.includes(raw.notifyLevel as typeof NOTIFY_LEVELS[number])) {
+            issues.push(err('invalidEnumValue', `${path}.notifyLevel`, `Pole "notifyLevel" musi być jednym z: ${NOTIFY_LEVELS.join(', ')}.`, [...NOTIFY_LEVELS]));
+        } else {
+            macro.notifyLevel = raw.notifyLevel as UserMacro['notifyLevel'];
+        }
+    }
+    if (raw.notifySeconds !== undefined) {
+        if (typeof raw.notifySeconds !== 'number' || !Number.isFinite(raw.notifySeconds) || raw.notifySeconds < 0 || raw.notifySeconds > 600) {
+            issues.push(err('wrongValueType', `${path}.notifySeconds`, 'Pole "notifySeconds" musi być liczbą sekund od 0 do 600 (0 = do zamknięcia).'));
+        } else {
+            macro.notifySeconds = raw.notifySeconds;
+        }
+    }
+    if (raw.notifySystem !== undefined) {
+        if (typeof raw.notifySystem !== 'boolean') {
+            issues.push(err('wrongValueType', `${path}.notifySystem`, 'Pole "notifySystem" musi być true albo false.'));
+        } else {
+            macro.notifySystem = raw.notifySystem;
+        }
+    }
+    // The button: a label and the command it sends, both or neither.
+    if (raw.label !== undefined || raw.command !== undefined) {
+        if (typeof raw.label !== 'string' || !raw.label.trim() || typeof raw.command !== 'string' || !raw.command.trim()) {
+            issues.push(err('incompleteNotifyButton', path, 'Przycisk powiadomienia wymaga obu pól: "label" (napis) i "command" (komenda).'));
+            return;
+        }
+        const safety = inspectCommand(raw.command, `${path}.command`);
+        issues.push(...safety.issues);
+        flags.push(...safety.flags);
+        macro.label = raw.label;
+        macro.command = stripPolishCharacters(raw.command);
+    }
+}
+
 function validateMacro(raw: unknown, index: number, triggerType: 'pattern' | 'event'): {
     macro?: UserMacro;
     issues: ValidationIssue[];
@@ -984,6 +1036,7 @@ function validateMacro(raw: unknown, index: number, triggerType: 'pattern' | 'ev
                     `Makro "${type}" w triggerze zdarzeniowym wymaga pola "message" - nie ma linii tekstu, z której można wziąć treść.`,
                 ));
             }
+            if (type === 'notify') validateNotifyOptions(raw, macro, path, issues, flags);
             break;
         }
         case 'echo': {
@@ -1121,10 +1174,12 @@ export function validateTrigger(input: Record<string, unknown>): ValidationResul
         proposal.pattern = sanitized.pattern;
         if (flags) proposal.flags = flags;
         if (input.gmcpMsgType !== undefined) {
-            if (typeof input.gmcpMsgType !== 'string' || input.gmcpMsgType.trim() === '') {
-                issues.push(err('wrongValueType', 'gmcpMsgType', 'Pole "gmcpMsgType" musi być niepustym tekstem.'));
+            const raw: unknown = input.gmcpMsgType;
+            const list = Array.isArray(raw) ? raw : [raw];
+            if (!list.length || list.some(t => typeof t !== 'string' || t.trim() === '')) {
+                issues.push(err('wrongValueType', 'gmcpMsgType', 'Pole "gmcpMsgType" musi być niepustym tekstem albo listą takich tekstów.'));
             } else {
-                proposal.gmcpMsgType = input.gmcpMsgType;
+                proposal.gmcpMsgType = list.length === 1 ? list[0] as string : list as string[];
             }
         }
     }

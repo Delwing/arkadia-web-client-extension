@@ -189,7 +189,7 @@ class FirebaseSyncListener {
         try {
             if (data?.syncV2Since && !this.syncV2NoticeShown) {
                 this.syncV2NoticeShown = true;
-                eventBus.emit('notify', { text: SYNC_V2_STARTED_NOTICE, time: 60_000 });
+                eventBus.emit('notify', { text: SYNC_V2_STARTED_NOTICE, source: 'sync', time: 60_000 });
             }
             const cloudCategories = data?.categories || {};
 

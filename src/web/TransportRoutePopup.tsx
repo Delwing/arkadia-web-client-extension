@@ -184,7 +184,7 @@ const TransportRoutePopup: React.FC = () => {
     useEffect(() => {
         return eventBus.on('transport.destination', ({ stop }) => {
             const verb = gender === 'female' ? 'Dotarlas' : 'Dotarles';
-            eventBus.emit('notify', { text: `${verb} do: ${stop}` });
+            eventBus.emit('notify', { text: `${verb} do: ${stop}`, level: 'success', source: 'map', key: 'transport.destination' });
             eventBus.emit('printLine', colorString(`${verb} do: ${stop}`, createColorFormat('#00cc66')));
             setArrivedNodeLabel(stop);
         });

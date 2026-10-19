@@ -8,7 +8,7 @@ Dane należą do **jednej przeglądarki i jednego adresu strony**. Inna przeglą
 
 | Rodzaj | Co tam jest |
 |--------|-------------|
-| **Ustawienia** (pamięć strony) | Wygląd, bindy, skróty, aliasy, triggery, automatyzacje, przyciski, układ okien - wspólne dla wszystkich postaci |
+| **Ustawienia** (pamięć strony) | Wygląd, bindy, skróty, aliasy, triggery, skrypty, przyciski, układ okien - wspólne dla wszystkich postaci |
 | **Dane postaci** (pamięć strony) | Ustawienia rozgrywki, liczniki zabitych i postępów, depozyty, pojemniki, woreczki z ziołami, znajomi - osobno dla każdej postaci |
 | **Bazy danych** (IndexedDB) | Mapa, baza postaci i NPC, zioła, magie, wiedza, odwiedzone lokacje, notatki lokacji, statystyki, logi i nagrania sesji, wtyczki, wgrane czcionki i dźwięki |
 | **Pamięć karty** | Hasło szyfrowania synchronizacji i identyfikator sesji proxy - znikają po zamknięciu karty |

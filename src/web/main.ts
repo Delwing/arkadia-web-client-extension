@@ -83,6 +83,7 @@ import {harvestOutputLines} from "./commandInput/outputWords";
 import {installClientPorts} from "./installClientPorts";
 import {installContentWidthMeasurer} from "./contentWidthMeasurer";
 import {bootstrapGameClient} from "./clientBootstrap";
+import {mountToasts} from "@web/notifications/mountToasts.tsx";
 import {initTextToSpeech} from "./voice/textToSpeech.ts";
 import {reloadToLatest, watchForNewVersion} from "./versionCheck";
 
@@ -849,9 +850,10 @@ document.addEventListener('DOMContentLoaded', () => {
         commitInfo.textContent = '';
         commitInfo.append(line);
 
-        // Only ever reported here, on the login screen: an open PWA notices the
-        // new build when it returns to the foreground, and the player sees it the
-        // next time they are not in the middle of a game.
+        // Reported on the login screen: an open PWA notices the new build when it
+        // returns to the foreground, and the player sees it the next time they are
+        // not in the middle of a game. Opting in also shows a passing toast in the
+        // notification center, since a session can go on for days without the login.
         watchForNewVersion({
             currentSha: __COMMIT_SHA__,
             onUpdate: () => {
@@ -868,6 +870,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 warningDiv.append(reloadButton);
                 commitInfo.appendChild(warningDiv);
+
+                if (getShellSettings().inGameUpdateNotice) {
+                    client.sendEvent('notify', {
+                        title: 'Dostępna nowa wersja',
+                        text: 'Odśwież stronę, kiedy skończysz grać.',
+                        source: 'client',
+                        key: 'client.update',
+                        time: 15000,
+                        actions: [{ label: 'Odśwież', primary: true, onClick: () => void reloadToLatest() }],
+                    });
+                }
             },
         });
     }
@@ -1051,18 +1064,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initTextToSpeech(client);
 
     if (notificationCenter) {
-        client.on('notify', (payload) => {
-            const detail = (payload ?? {}) as { text?: string; time?: number; system?: boolean };
-            const div = document.createElement('div');
-            div.className = 'notification';
-            div.textContent = detail.text ?? '';
-            notificationCenter.appendChild(div);
-            const timeout = typeof detail.time === 'number' ? detail.time : 2000;
-            setTimeout(() => div.remove(), timeout);
-            if (detail.system && detail.text) {
-                client.notify(detail.text);
-            }
-        });
+        mountToasts(notificationCenter, outputWrapper, client);
     }
 
     const toggleConnection = () => {

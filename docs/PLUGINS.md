@@ -493,7 +493,30 @@ api.events.emit(eventName, payload);
 - `tts:speak` - Przeczytaj tekst na głos (głos i tempo z ustawień gracza, milknie po „Wycisz dźwięki”): `{ text: "..." }`
 - `tts:stop` - Przerwij czytanie i wyczyść kolejkę
 - `sendCommand` - Wyślij komendę: `{ command: "...", echo?: boolean }`
-- `notify` - Wyświetl powiadomienie: `{ text: "...", time?: number }`
+- `notify` - Wyświetl powiadomienie: `{ text, title?, level?, time?, sticky?, progress?, actions?, key? }` (wygodniej: `api.notifications.show(...)`)
+
+#### `api.notifications` - Powiadomienia w grze
+
+Karty nad tekstem gry. Gracz może wyciszyć wszystkie powiadomienia wtyczek w ustawieniach, a w trybie „Nie przeszkadzać” widzi tylko ostrzeżenia i błędy.
+
+```javascript
+api.notifications.show("Zapisano");
+
+const task = api.notifications.show({
+  title: "Liczę zioła",
+  text: "0 z 12",
+  level: "info",            // info | success | warning | error
+  sticky: true,             // zostaje, dopóki go nie zamkniesz
+  progress: { value: 0, max: 12 },
+  actions: [{ label: "Przerwij", command: "/stop-ziola" }],
+});
+
+task.update({ text: "5 z 12", progress: { value: 5, max: 12 } }); // w miejscu
+task.repeat();   // jeszcze raz, z licznikiem ×2
+task.dismiss();
+```
+
+Przycisk może zamiast `command` mieć `onClick`; po kliknięciu karta się zamyka, chyba że ustawisz `keepOpen: true`. Przy wyładowaniu wtyczki jej karty znikają.
 
 #### `api.map` - Mapa
 

@@ -24,7 +24,7 @@ export default function initFullHpTimer(client: Client) {
             const plain = "Jestes w pelni zdrowia.";
             const msg = colorString(plain, SPRING_GREEN);
             client.println(msg);
-            client.sendEvent("notify", { text: plain, system: true });
+            client.sendEvent("notify", { text: "Jesteś w pełni zdrowia", level: "success", source: "client", key: "hp.full", system: true });
             // Bindable in the trigger editor, so this can be forwarded to a
             // phone deliberately. See SUPPORTED_EVENTS in userTriggers.
             client.sendEvent("hp.full", { text: plain });

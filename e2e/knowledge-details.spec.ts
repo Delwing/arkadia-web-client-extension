@@ -1,6 +1,6 @@
 import {expect, test} from './support/fixtures';
 import type {Page} from '@playwright/test';
-import {ensureGameSocket, pushText, submitCommand, waitForCommandInput} from './support/mocks';
+import {ensureGameSocket, getCommandLog, pushText, submitCommand, waitForCommandInput} from './support/mocks';
 
 const CHAOS_CATEGORY_NAME = 'Chaos i jego twory';
 const GOBLINS_CATEGORY_NAME = 'goblinoidy';
@@ -8,37 +8,110 @@ const CHAOS_PRIMARY_ENTRY = 'Byles w samym sercu zamku Drachenfels';
 const CHAOS_SECONDARY_ENTRY = 'Widziales smoka przemienionego przez Chaos';
 const GOBLINS_ENTRY = 'Widziales orka';
 
-/** Answers /wiedza_buduj's questions the way the game would. */
+const PAGER_PROMPT = '[linia 60/71 - ENTER by przejsc dalej, q by przerwac, ? by uzyskac pomoc]';
+
+const CHAOS_REPLY = [
+    'Wiedza o Chaosie i jego tworach:',
+    'z walki - brak',
+    'z ksiazek i bibliotek - znikoma',
+    'z eksploracji - znikoma',
+    '',
+    'Szczegoly eksploracji:',
+    ` * ${CHAOS_PRIMARY_ENTRY}.`,
+    ` * ${CHAOS_SECONDARY_ENTRY}.`,
+];
+
+const GOBLINS_REPLY = [
+    'Wiedza o Goblinoidach:',
+    'z walki - brak',
+    'z ksiazek i bibliotek - brak',
+    'z eksploracji - znikoma',
+    '',
+    'Szczegoly eksploracji:',
+    ` * ${GOBLINS_ENTRY}.`,
+];
+
+/** Every category /wiedza_buduj asks about, in order. */
+const KNOWLEDGE_COMMANDS = [
+    'wiedza o chaosie i jego tworach',
+    'wiedza o goblinoidach',
+    'wiedza o golemach',
+    'wiedza o istotach demonicznych',
+    'wiedza o jaszczuroludziach',
+    'wiedza o magii i jej tworach',
+    'wiedza o nieumarlych',
+    'wiedza o pajakach i pajakowatych',
+    'wiedza o ryboludziach',
+    'wiedza o smokach i smokowatych',
+    'wiedza o starszych rasach',
+    'wiedza o stworach pokoniunkcyjnych',
+    'wiedza o szczuroludziach',
+    'wiedza o wampirach',
+];
+
+async function waitForCommand(page: Page, command: string): Promise<void> {
+    await page.waitForFunction((expected) => {
+        const log = (window as any).__mockCommandLog;
+        return Array.isArray(log) && log.includes(expected);
+    }, command);
+}
+
+const output = (page: Page) => page.locator('#main_text_output_msg_wrapper');
+const reportToast = (page: Page) => page.locator('#notification-center .toast', {hasText: 'raport'});
+
+async function hasSent(page: Page, command: string): Promise<boolean> {
+    return (await getCommandLog(page)).includes(command);
+}
+
+/** Answers /wiedza_buduj's questions the way the game would: one reply per question asked. */
+async function answerCategories(page: Page, replies: Partial<Record<string, string[]>>): Promise<void> {
+    for (const command of KNOWLEDGE_COMMANDS) {
+        await waitForCommand(page, command);
+        const reply = replies[command] ?? [`W${command.slice(1)}:`, 'z walki - brak'];
+        await pushText(page, reply.join('\n'));
+    }
+    await expect(reportToast(page), 'should confirm knowledge report update')
+        .toContainText('Zaktualizowano raport wiedzy');
+}
+
 async function buildReport(page: Page): Promise<void> {
     await submitCommand(page, '/wiedza_buduj');
-    await page.waitForFunction(() => {
-        const log = (window as any).__mockCommandLog;
-        return Array.isArray(log) && log.some((entry) => typeof entry === 'string' && entry.includes('wiedza o chaosie'));
+    await answerCategories(page, {
+        'wiedza o chaosie i jego tworach': CHAOS_REPLY,
+        'wiedza o goblinoidach': GOBLINS_REPLY,
     });
-    await pushText(
-        page,
-        [
-            'Wiedza o Chaosie i jego tworach:',
-            'z walki - brak',
-            'z ksiazek i bibliotek - znikoma',
-            'z eksploracji - znikoma',
-            '',
-            'Szczegoly eksploracji:',
-            ` * ${CHAOS_PRIMARY_ENTRY}.`,
-            ` * ${CHAOS_SECONDARY_ENTRY}.`,
-            '',
-            'Wiedza o Goblinoidach:',
-            'z walki - brak',
-            'z ksiazek i bibliotek - brak',
-            'z eksploracji - znikoma',
-            '',
-            'Szczegoly eksploracji:',
-            ` * ${GOBLINS_ENTRY}.`,
-        ].join('\n'),
-    );
-    await expect(page.locator('#main_text_output_msg_wrapper'), 'should confirm knowledge report update')
-        .toContainText('Zaktualizowano dane raportu wiedzy');
 }
+
+test.describe('/wiedza_buduj', () => {
+    test('a reply cut by the pager holds the next question until its last page', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+
+        await submitCommand(page, '/wiedza_buduj');
+        await waitForCommand(page, 'wiedza o chaosie i jego tworach');
+        await pushText(page, [...CHAOS_REPLY.slice(0, 7), PAGER_PROMPT].join('\n'));
+        await expect(reportToast(page), 'a toast follows the progress').toContainText('1 z 14: Chaos i jego twory');
+
+        // Anything sent now would land in the pager and be lost: only the automatic ENTER may go.
+        await page.waitForTimeout(1000);
+        expect(await hasSent(page, 'wiedza o goblinoidach'), 'next question must wait for the last page').toBe(false);
+
+        await pushText(page, CHAOS_REPLY.slice(7).join('\n'));
+        await answerCategories(page, {
+            'wiedza o chaosie i jego tworach': [],
+            'wiedza o goblinoidach': GOBLINS_REPLY,
+        });
+        await expect(reportToast(page)).not.toContainText('Brak odpowiedzi');
+
+        // The report goes to the window; the output keeps none of it.
+        await expect(output(page)).not.toContainText('Wiedza o Chaosie');
+        await expect(output(page)).not.toContainText(CHAOS_PRIMARY_ENTRY);
+        await expect(output(page)).not.toContainText('Wiedza o Goblinoidach');
+        await expect(output(page)).not.toContainText('linia 60/71');
+        await expect(output(page)).not.toContainText('wiedza o golemach');
+    });
+});
 
 const knowledgeWindow = (page: Page) => page.locator('.knowledge-window');
 const tab = (page: Page, label: string) => knowledgeWindow(page).locator('.kn-tabs button', {hasText: label});

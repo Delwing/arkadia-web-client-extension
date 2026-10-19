@@ -458,6 +458,10 @@ export class ArkadiaTime {
             return;
         }
         if (this.isDaylight !== undefined && this.isDaylight !== daylight) {
+            // What the player sees: the sky changed. Announced whatever the
+            // clock knows - setting the clock from it (below) needs a known
+            // time to check it against, telling the player does not.
+            eventBus.emit("clock.daylightChange", { domain: this.domain, type: daylight ? "sunrise" : "sunset" });
             if (this.startTime !== null) {
                 this.markObservedSunEvent(daylight ? "sunrise" : "sunset");
             } else {

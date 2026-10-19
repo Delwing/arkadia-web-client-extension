@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useId, useState } from 'react';
 import { Bold, Italic, Strikethrough, Underline } from 'lucide-react';
 import { CustomSound } from '@modules/core/customSounds';
 import {
@@ -106,6 +106,7 @@ export function MacroEditor({
     commandPlaceholder?: string;
 }) {
     const notificationsSupported = typeof Notification !== 'undefined';
+    const fieldId = useId();
     const [notifPermission, setNotifPermission] = useState<NotificationPermission | 'unsupported'>(
         notificationsSupported ? Notification.permission : 'unsupported'
     );
@@ -281,7 +282,7 @@ export function MacroEditor({
                             Wysyłane na sparowane urządzenia niezależnie od tego, czy patrzysz na klienta.
                             Domyślnie nie częściej niż raz na minutę — zaznacz powyżej dla alertów, których
                             nie chcesz stracić przez wcześniejsze powiadomienie. Wymaga sparowania
-                            w Ustawieniach interfejsu → Powiadomienia.
+                            w Ustawieniach interfejsu → Powiadomienia systemowe.
                         </div>
                     </>
                 )}
@@ -333,7 +334,59 @@ export function MacroEditor({
                             placeholders={placeholders}
                             onInsert={(token) => onChange({ ...macro, message: (macro.message ?? '') + token })}
                         />
-                        {notifPermission !== 'granted' && (
+                        <Input
+                            mono
+                            placeholder="Tytuł (opcjonalnie)"
+                            value={macro.notifyTitle || ''}
+                            onChange={e => onChange({ ...macro, notifyTitle: e.target.value || undefined })}
+                        />
+                        <div className="trigger-action__grid">
+                            <Field label="Poziom" htmlFor={`${fieldId}-level`}>
+                                <Select
+                                    id={`${fieldId}-level`}
+                                    value={macro.notifyLevel || 'info'}
+                                    onChange={e => onChange({ ...macro, notifyLevel: e.target.value === 'info' ? undefined : e.target.value as UserMacro['notifyLevel'] })}
+                                >
+                                    <option value="info">Informacja</option>
+                                    <option value="success">Sukces</option>
+                                    <option value="warning">Ostrzeżenie</option>
+                                    <option value="error">Błąd</option>
+                                </Select>
+                            </Field>
+                            <Field label="Na ekranie" htmlFor={`${fieldId}-time`}>
+                                <Select
+                                    id={`${fieldId}-time`}
+                                    value={macro.notifySeconds === undefined ? '' : String(macro.notifySeconds)}
+                                    onChange={e => onChange({ ...macro, notifySeconds: e.target.value === '' ? undefined : Number(e.target.value) })}
+                                >
+                                    <option value="">Domyślnie</option>
+                                    <option value="5">5 s</option>
+                                    <option value="10">10 s</option>
+                                    <option value="30">30 s</option>
+                                    <option value="60">1 min</option>
+                                    <option value="0">Do zamknięcia</option>
+                                </Select>
+                            </Field>
+                        </div>
+                        <div className="trigger-action__grid">
+                            <Input
+                                placeholder="Przycisk (opcjonalnie)"
+                                value={macro.label || ''}
+                                onChange={e => onChange({ ...macro, label: e.target.value || undefined })}
+                            />
+                            <Input
+                                mono
+                                placeholder="Komenda przycisku"
+                                value={macro.command || ''}
+                                onChange={e => onChange({ ...macro, command: e.target.value || undefined })}
+                            />
+                        </div>
+                        <Check
+                            label="Także powiadomienie systemowe"
+                            checked={macro.notifySystem !== false}
+                            onChange={e => onChange({ ...macro, notifySystem: e.target.checked ? undefined : false })}
+                        />
+                        {macro.notifySystem !== false && notifPermission !== 'granted' && (
                             <div className="popup-field__warning">
                                 {notifPermission === 'unsupported'
                                     ? 'Powiadomienia systemowe nie są obsługiwane w tej przeglądarce. Powiadomienie pojawi się tylko w kliencie.'

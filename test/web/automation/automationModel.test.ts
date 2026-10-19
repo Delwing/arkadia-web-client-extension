@@ -125,6 +125,17 @@ describe('automationModel', () => {
             expect(data).toEqual({ id: draft.id, type: 'event', event: 'kill', macros: [] });
         });
 
+        it('stores one message type as a string, several as a list, none as nothing', () => {
+            const save = (gmcpMsgType: string[]) => {
+                const draft = newDraft('trigger');
+                draft.data = { ...draft.data, pattern: 'tarcze', gmcpMsgType } as UserTrigger;
+                return (itemFromDraft(draft) as { data: UserTrigger }).data.gmcpMsgType;
+            };
+            expect(save(['living.long'])).toBe('living.long');
+            expect(save(['living.long', 'object.long'])).toEqual(['living.long', 'object.long']);
+            expect(save([])).toBeUndefined();
+        });
+
         it('stores a script with its command without the slash', () => {
             const draft = newDraft('script');
             draft.data = { ...draft.data, name: ' leczenie ', command: '/lecz' } as never;
@@ -327,7 +338,7 @@ describe('automationModel', () => {
         });
 
         it('refuses a file that is not a pack', () => {
-            expect(() => parsePack('{"aliases": []}')).toThrow(/automatyzacji/);
+            expect(() => parsePack('{"aliases": []}')).toThrow(/okna Skrypty/);
         });
     });
 });
