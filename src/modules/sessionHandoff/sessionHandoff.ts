@@ -55,23 +55,25 @@ export interface SessionHandoffDeps {
      */
     isTrusted(): boolean;
     /**
-     * Put the map in this room. Not `verified`: a parked room the game's
-     * description did not confirm, likely closer than whatever the map showed but
-     * to be flagged as a guess.
+     * Start noting the steps taken on the map, so a room that arrives late can
+     * have them taken again from it; stop once nothing more can arrive.
+     */
+    startTracking(): void;
+    stopTracking(): void;
+    /**
+     * Whether the map has been placed since tracking started - a GMCP fix, the
+     * GPS, /ustaw, a plugin - rather than only stepped. Any of them knows better
+     * than a handoff that arrives after it.
+     */
+    placedSinceLogin(): boolean;
+    /**
+     * Put the map in this room, then take the steps made since login again from
+     * it. Not `verified`: a parked room the game's description did not confirm,
+     * likely closer than whatever the map showed but to be flagged as a guess.
      */
     apply(roomId: number, verified: boolean): void;
     setTimer(fn: () => void, ms: number): () => void;
 }
-
-/**
- * How long a parked room waits for the description to match before it goes on
- * the map as a guess: only to the end of the batch of game output being handled,
- * where the rest of the exits would be. Any longer and a step taken in the
- * meantime would move the map from the room this device last saw, which counts
- * as the map being placed, and the guess would be lost with the map still wrong.
- * Exits that do come later can still confirm the guess.
- */
-const DESCRIPTION_SETTLE_MS = 0;
 
 /**
  * Every decision goes to the console. The handoff happens on two devices at once
@@ -95,27 +97,27 @@ export class SessionHandoff {
     private room: number | null = null;
     /** The current room's fingerprint from its description, null until one arrives. */
     private print: string | null = null;
+    /**
+     * The fingerprint of the room this connection entered the game in: the first
+     * description, sealed at the end of the batch of game output it came in. A
+     * parked room is checked against it, never against rooms stepped into since.
+     */
+    private loginPrint: string | null = null;
+    private loginSealed = false;
+    private stopSealTimer: (() => void) | null = null;
     /** What this session last parked, so switching tabs in one room writes once. */
     private parkedKey: string | null = null;
     /** A parked room waiting for the game to describe where this login stands. */
     private unverified: HandoffRoom | null = null;
     /** Whether {@link unverified} is already on the map as a guess. */
     private guessed = false;
-    private stopSettleTimer: (() => void) | null = null;
     private lost = false;
     /** The game object we are, from the latest Char.Info. */
     private body: number | null = null;
     /** The game object this login put us in. */
     private loginBody: number | null = null;
 
-    /**
-     * Whether the map has been placed since this login settled: a step, a GMCP
-     * fix, the GPS, /ustaw, a plugin. Any of them knows better than a handoff
-     * that arrives after it, even one that only confirmed the room already shown.
-     */
-    private moved = false;
-    private trackingMoves = false;
-    private applying = false;
+    private loginSettled = false;
     private offerOpen = false;
 
     private stopWatch: (() => void) | null = null;
@@ -138,6 +140,10 @@ export class SessionHandoff {
         this.gameConnected = true;
         // Whatever the last connection described is not where this one stands.
         this.print = null;
+        this.loginPrint = null;
+        this.loginSealed = false;
+        this.stopSealTimer?.();
+        this.stopSealTimer = null;
     }
 
     disconnected(): void {
@@ -154,36 +160,32 @@ export class SessionHandoff {
         this.prevSession = null;
         this.claimed = false;
         this.endedSession = null;
-        this.moved = false;
         this.loginBody = null;
         this.parkedKey = null;
         this.offerOpen = true;
         // The map restores this device's own last room from storage while the
         // login's Char.Info is handled; that is not a placement. charInfoHandled()
-        // starts counting once it is done.
-        this.trackingMoves = false;
+        // starts tracking once it is done.
+        this.loginSettled = false;
         this.claim();
     }
 
     /**
      * A Char.Info has been handled in full. For a login's, that includes the map's
-     * restore of this device's own last room, and every placement from here on is
-     * news. Later ones only keep track of which game object we are.
+     * restore of this device's own last room, and every placement or step from
+     * here on is news. Later ones only keep track of which game object we are.
      */
     charInfoHandled(objectNum: number | null): void {
         this.body = objectNum;
-        if (!this.trackingMoves) {
+        if (!this.loginSettled) {
             this.loginBody = objectNum;
-            this.trackingMoves = true;
+            this.loginSettled = true;
+            if (this.offerOpen) this.deps.startTracking();
         }
     }
 
     roomChanged(roomId: number): void {
         this.room = roomId;
-        if (this.trackingMoves && !this.applying) {
-            this.moved = true;
-            this.closeOffer();
-        }
     }
 
     lostChanged(lost: boolean): void {
@@ -192,13 +194,19 @@ export class SessionHandoff {
 
     /**
      * The game described the room we are in, or added to the description: the
-     * exits can come in more than one message. A parked room is checked against
-     * the description that follows a login.
+     * exits can come in more than one message, all in the same batch of output.
+     * A parked room is checked against the first description of a connection.
      */
     roomDescribed(print: string | null): void {
         this.print = print;
-        const parked = this.unverified;
-        if (parked && print !== null) this.offer(parked);
+        if (this.loginSealed) return;
+        this.loginPrint = print;
+        this.stopSealTimer ??= this.deps.setTimer(() => {
+            this.stopSealTimer = null;
+            this.loginSealed = true;
+            if (this.unverified) this.offer(this.unverified);
+        }, 0);
+        if (this.unverified) this.offer(this.unverified);
     }
 
     /**
@@ -311,57 +319,47 @@ export class SessionHandoff {
      * means anything.
      */
     private offer(handoff: HandoffRoom): void {
-        if (this.moved) return log(`not applying room ${handoff.roomId}: the map was placed since login`);
         if (!this.offerOpen) return log(`not applying room ${handoff.roomId}: arrived too late`);
+        if (this.deps.placedSinceLogin()) {
+            log(`not applying room ${handoff.roomId}: the map was placed since login`);
+            this.closeOffer();
+            return;
+        }
         if (this.loginBody === null || handoff.objectNum !== this.loginBody) {
             log(`not applying room ${handoff.roomId}: game object ${handoff.objectNum} left, logged in as ${this.loginBody}`);
             this.closeOffer();
             return;
         }
-        if (handoff.parked && (!handoff.print || this.print !== handoff.print)) {
-            // The rest of the description may still be in this batch. Without
-            // a match the parked room still goes on the map - likely closer than
-            // the room this device last saw - but flagged as a guess, and the offer
-            // stays open for a match, or for the room the session really ended in.
+        if (handoff.parked && (!handoff.print || this.loginPrint !== handoff.print)) {
+            // The rest of the description may still be in this batch. Without a
+            // match the parked room still goes on the map - likely closer than the
+            // room this device last saw - but flagged as a guess, and the offer
+            // stays open for the room the session really ended in.
             this.unverified = handoff;
             if (this.guessed) return;
-            if (this.print === null) return log(`parked room ${handoff.roomId} waits for the game to describe where we are`);
-            this.stopSettleTimer?.();
-            this.stopSettleTimer = this.deps.setTimer(() => {
-                this.stopSettleTimer = null;
-                this.guess('the room described does not match');
-            }, DESCRIPTION_SETTLE_MS);
+            if (this.loginPrint === null) return log(`parked room ${handoff.roomId} waits for the game to describe where we are`);
+            if (this.loginSealed) this.guess('the room described does not match');
             return;
         }
         log(`applying room ${handoff.roomId}`);
+        this.deps.apply(handoff.roomId, true);
         this.closeOffer();
-        this.place(handoff.roomId, true);
     }
 
     /** Put the parked room on the map unconfirmed, unless something placed it since. */
     private guess(why: string): void {
         const parked = this.unverified;
-        if (!parked || this.guessed || this.moved || !this.offerOpen) return;
+        if (!parked || this.guessed || !this.offerOpen || this.deps.placedSinceLogin()) return;
         log(`applying parked room ${parked.roomId} unconfirmed: ${why}`);
         this.guessed = true;
-        this.place(parked.roomId, false);
-    }
-
-    private place(roomId: number, verified: boolean): void {
-        this.applying = true;
-        try {
-            this.deps.apply(roomId, verified);
-        } finally {
-            this.applying = false;
-        }
+        this.deps.apply(parked.roomId, false);
     }
 
     private closeOffer(): void {
+        if (this.offerOpen) this.deps.stopTracking();
         this.offerOpen = false;
         this.unverified = null;
         this.guessed = false;
-        this.stopSettleTimer?.();
-        this.stopSettleTimer = null;
         this.stopOfferTimer?.();
         this.stopOfferTimer = null;
         this.refreshOnline();

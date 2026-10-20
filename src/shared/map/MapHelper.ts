@@ -3,7 +3,7 @@ import {describeCarriageRoute} from "./carriagePathFinder";
 import {planRoute, type RouteSegment} from "./transportPathFinder";
 import {roomDistances} from "./roomDistances";
 import type {TransportDef} from "@client/scripts/transports/definitions";
-import {directionToStub, getLongDir, getShortDir, isPolishDirection, longToShort} from "./directions";
+import {directionToStub, getLongDir, getShortDir, isDirection, isPolishDirection, longToShort} from "./directions";
 import {characterStorage} from "@modules/core/storage";
 
 type Position = {
@@ -148,6 +148,12 @@ const defaultStorage: MapStorage = {
  */
 export type MapLostReason = 'follow' | 'gmcp' | 'handoff';
 
+/** A step as the player took it, whatever the map made of it then. */
+type JournalStep =
+    | { kind: 'move'; direction: string; isTeamFollow: boolean }
+    | { kind: 'follow'; direction: string; fullFollow?: string }
+    | { kind: 'back' };
+
 /**
  * How long a follow the mapper could not resolve is given before it counts as a
  * loss. Following a team leader normally leaves the map a room behind for a
@@ -205,6 +211,9 @@ export default class MapHelper {
     private savedRoomId: number | null = null;
     private onTransport = false;
     private lastMoveDirection: string | null = null;
+    private journal: { steps: JournalStep[]; placed: boolean } | null = null;
+    /** Set while the mapper itself moves the map in a way that is neither step nor placement. */
+    private recordingPaused = false;
     private areas: Record<string, string> = {};
     private mapReadyCallbacks: ((mapData: MapData.Map, colors: any) => void)[] = [];
     private mapData?: MapData.Map;
@@ -946,28 +955,145 @@ export default class MapHelper {
      * Split out of move() so callers that must not advance the mapper (driving a carriage, where
      * the ride is asynchronous and GMCP is the authority) can still resolve the direction.
      */
-    resolveDirection(direction: string): string {
-        if (!this.mapReader || this.paused || !this.currentRoom) return direction;
+    resolveDirection(direction: string, room: MapData.Room | undefined = this.currentRoom): string {
+        if (!this.mapReader || this.paused || !room) return direction;
         const potentialExit = getLongDir(direction);
-        if (this.currentRoom.exits?.[potentialExit]) return direction;
+        if (room.exits?.[potentialExit]) return direction;
 
         const leadsThatWay = ([, id]: [string, number]) =>
-            this.findRoomByExit(this.currentRoom, this.mapReader.getRoom(id), potentialExit);
+            this.findRoomByExit(room, this.mapReader.getRoom(id), potentialExit);
 
-        const specialExitMatch = Object.entries(this.currentRoom.specialExits ?? {})
+        const specialExitMatch = Object.entries(room.specialExits ?? {})
             .filter(leadsThatWay)
             .map(([exit]) => exit);
         if (specialExitMatch.length > 0) return getShortDir(specialExitMatch[0]);
 
         const stub = directionToStub(potentialExit);
-        if (stub !== undefined && this.currentRoom.stubs?.includes(stub)) return direction;
+        if (stub !== undefined && room.stubs?.includes(stub)) return direction;
 
-        const allExits = Object.assign({}, this.currentRoom.exits ?? {}, this.currentRoom.specialExits ?? {});
+        const allExits = Object.assign({}, room.exits ?? {}, room.specialExits ?? {});
         const exits = Object.entries(allExits).filter(leadsThatWay).map(([exit]) => exit);
         return exits.length > 0 ? getShortDir(exits[0]) : direction;
     }
 
-    move(direction: string, isTeamFollow: boolean = false): { direction: string; moved: boolean; suppress?: boolean } {
+    /**
+     * Where a step `direction` from `room` lands, as move() would take it, without
+     * moving. A direction the map knows by another name is a step only when it is
+     * not a team follow: move() sends the right command instead, and that command
+     * is the step. Undefined when the room has no such way out.
+     */
+    private stepTarget(room: MapData.Room, direction: string, isTeamFollow: boolean): number | undefined {
+        const actual = this.resolveDirection(direction, room);
+        if (actual !== direction && isTeamFollow) return undefined;
+        const allExits: Record<string, number> = Object.assign({}, room.exits ?? {}, room.specialExits ?? {});
+        return allExits[getLongDir(actual)];
+    }
+
+    /**
+     * The exit a team follow `direction` takes from `room`, as followMove() picks
+     * it: a compass word, then a special exit named in it or by most of its name,
+     * then the room's `team_follow_link` keywords.
+     */
+    private followExit(room: MapData.Room, direction: string, fullFollow?: string): string | undefined {
+        const leads = (exit: string) => this.stepTarget(room, exit, true) !== undefined;
+        // The follow token comes from game prose, so only attempt a bare
+        // directional move when it is a full Polish direction word. Otherwise a
+        // preposition like "w" (in "w lesna gestwine") would be resolved to the
+        // short code for "west". Configured exits in specialExits /
+        // team_follow_link below are still resolved normally.
+        if (isPolishDirection(direction) && leads(direction)) return direction;
+
+        const specials = Object.keys(room.specialExits ?? {});
+        const named = specials.find(ex => direction.includes(ex) && leads(ex));
+        if (named !== undefined) return named;
+        const partly = specials.find(ex => direction.includes(ex.substring(0, Math.round(ex.length * 0.7))) && leads(ex));
+        if (partly !== undefined) return partly;
+
+        const links = room.userData?.team_follow_link;
+        if (links) {
+            for (const entry of links.split("#")) {
+                const [search, exit] = entry.split("*");
+                if (!search || !exit) continue;
+                // Either the follow token itself or the wider follow text may carry the keyword.
+                // fullFollow is optional — the carriage and boat triggers pass only a direction —
+                // so it has to be probed defensively.
+                if ((direction.includes(search) || fullFollow?.includes(search)) && leads(exit)) return exit;
+            }
+        }
+        return undefined;
+    }
+
+    /**
+     * Start writing down every step the mapper takes, as the player took it, so
+     * the steps can be walked again from another room - see {@link replayJournal}.
+     * The game's own word on where we are ends it: a GMCP fix, /ustaw, the GPS.
+     */
+    startJournal(): void {
+        this.journal = {steps: [], placed: false};
+    }
+
+    stopJournal(): void {
+        this.journal = null;
+    }
+
+    /** Whether the map has been placed - not stepped - since the journal started. */
+    get placedSinceJournal(): boolean {
+        return this.journal?.placed ?? false;
+    }
+
+    private recordStep(step: JournalStep): void {
+        if (this.journal && !this.journal.placed && !this.recordingPaused) this.journal.steps.push(step);
+    }
+
+    private recordPlacement(): void {
+        if (this.journal && !this.recordingPaused) this.journal.placed = true;
+    }
+
+    /**
+     * Put the map in `roomId` and take the journal's steps again from there: the
+     * room another device knew we were in, before the steps taken here since,
+     * which this device made from a room it only believed we were in.
+     *
+     * Each step is judged as the mapper judges it live: a move the room has no
+     * exit for stays put - the game most likely refused it too - while a follow
+     * that leads nowhere means the map has lost us. Marked as lost then, or when
+     * the room itself is `uncertain`.
+     *
+     * False, doing nothing, when there is no journal or the map has been placed
+     * since it started.
+     */
+    replayJournal(roomId: number, uncertain: boolean): boolean {
+        const journal = this.journal;
+        if (!journal || journal.placed || !this.mapReader) return false;
+        const history = [roomId];
+        let lost = uncertain;
+        for (const step of journal.steps) {
+            if (step.kind === 'back') {
+                if (history.length > 1) history.pop();
+                continue;
+            }
+            const room = this.mapReader.getRoom(history[history.length - 1]);
+            const exit = room && (step.kind === 'move' ? step.direction : this.followExit(room, step.direction, step.fullFollow));
+            const target = room && exit !== undefined
+                ? this.stepTarget(room, exit, step.kind === 'follow' || step.isTeamFollow)
+                : undefined;
+            if (target !== undefined) history.push(target);
+            else if (step.kind === 'follow') lost = true;
+        }
+        this.recordingPaused = true;
+        try {
+            this.setMapRoomById(history[history.length - 1]);
+        } finally {
+            this.recordingPaused = false;
+        }
+        this.locationHistory.length = 0;
+        this.locationHistory.push(...history);
+        if (lost) this.setLost(true, 'handoff');
+        return true;
+    }
+
+    /** @param record - false for followMove's own step, which it journals as a follow. */
+    move(direction: string, isTeamFollow: boolean = false, record = true): { direction: string; moved: boolean; suppress?: boolean } {
         if (!this.mapReader) {
             return {direction, moved: false};
         }
@@ -976,11 +1102,6 @@ export default class MapHelper {
         }
         let actualDirection = direction;
         if (this.currentRoom) {
-            const allExits = Object.assign(
-                {},
-                this.currentRoom.exits ?? {},
-                this.currentRoom.specialExits ?? {}
-            );
             actualDirection = this.resolveDirection(direction);
 
             if (actualDirection !== direction) {
@@ -989,8 +1110,20 @@ export default class MapHelper {
                 }
                 return {direction: actualDirection, moved: false, suppress: true};
             }
-
-            const locationId = allExits[getLongDir(actualDirection)];
+        }
+        const allExits: Record<string, number> = Object.assign(
+            {},
+            this.currentRoom?.exits ?? {},
+            this.currentRoom?.specialExits ?? {}
+        );
+        const locationId = allExits[getLongDir(actualDirection)];
+        // Every command passes through here. A compass direction is a step whether
+        // or not the map knows the way, since the room it shows may be the wrong
+        // one to take it from; anything else only when it is an exit of that room.
+        if (record && (isDirection(actualDirection) || locationId)) {
+            this.recordStep({kind: 'move', direction: actualDirection, isTeamFollow});
+        }
+        if (this.currentRoom) {
             if (locationId) {
                 this.locationHistory.push(locationId);
                 this.lastMoveDirection = getLongDir(actualDirection);
@@ -1021,53 +1154,12 @@ export default class MapHelper {
             return undefined;
         }
 
-        // The follow token comes from game prose, so only attempt a bare
-        // directional move when it is a full Polish direction word. Otherwise a
-        // preposition like "w" (in "w lesna gestwine") would be resolved to the
-        // short code for "west". Configured exits in specialExits /
-        // team_follow_link below are still resolved normally.
-        if (isPolishDirection(direction)) {
-            const result = this.move(direction, true);
-            if (result.moved) {
-                return result.direction;
-            }
-        }
-
-        if (this.currentRoom?.specialExits) {
-            const specials = Object.keys(this.currentRoom.specialExits);
-            for (const ex of specials) {
-                if (direction.includes(ex)) {
-                    const res = this.move(ex, true);
-                    if (res.moved) {
-                        return res.direction;
-                    }
-                }
-            }
-
-            for (const ex of specials) {
-                const part = ex.substring(0, Math.round(ex.length * 0.7));
-                if (direction.includes(part)) {
-                    const res = this.move(ex, true);
-                    if (res.moved) {
-                        return res.direction;
-                    }
-                }
-            }
-        }
-        if (this.currentRoom?.userData?.team_follow_link) {
-            const entries = this.currentRoom.userData.team_follow_link.split("#");
-            for (const entry of entries) {
-                const [search, exit] = entry.split("*");
-                if (!search || !exit) continue;
-                // Either the follow token itself or the wider follow text may carry the keyword.
-                // fullFollow is optional — the carriage and boat triggers pass only a direction —
-                // so it has to be probed defensively.
-                if (direction.includes(search) || fullFollow?.includes(search)) {
-                    const res = this.move(exit, true);
-                    if (res.moved) {
-                        return res.direction;
-                    }
-                }
+        if (this.mapReader && !this.paused) this.recordStep({kind: 'follow', direction, fullFollow});
+        const exit = this.currentRoom ? this.followExit(this.currentRoom, direction, fullFollow) : undefined;
+        if (exit !== undefined) {
+            const res = this.move(exit, true, false);
+            if (res.moved) {
+                return res.direction;
             }
         }
 
@@ -1113,6 +1205,7 @@ export default class MapHelper {
     }
 
     setMapRoomById(id: number, options?: { silent?: boolean; direction?: string | null }) {
+        this.recordPlacement();
         this.clearLost();
         if (this.currentRoom?.id === id) {
             if (!options?.silent) {
@@ -1131,6 +1224,7 @@ export default class MapHelper {
     }
 
     setMapRoom(room: number, direction?: string | null) {
+        this.recordPlacement();
         this.locationHistory.length = 0;
         this.locationHistory.push(room);
         this.lastMoveDirection = direction ?? null;
@@ -1148,6 +1242,7 @@ export default class MapHelper {
             this.client.sendEvent("stepBack");
             return;
         }
+        this.recordStep({kind: 'back'});
         this.renderRoomById(this.locationHistory[this.locationHistory.length - 1], true, {relative: true});
         this.client.sendEvent("stepBack");
         if (!this.client.getSuppressMapMoveEvent()) {
@@ -1183,6 +1278,7 @@ export default class MapHelper {
             return;
         }
         if (!options?.relative && id !== this.currentRoom?.id) {
+            this.recordPlacement();
             this.clearLost();
         }
         this.currentRoom = this.mapReader.getRoom(id);

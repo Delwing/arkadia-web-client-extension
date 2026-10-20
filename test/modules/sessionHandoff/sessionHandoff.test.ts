@@ -45,11 +45,20 @@ function device(db: FakeDatabase, name: string) {
     const applied: number[] = [];
     /** The rooms of those applied that went on the map as a guess. */
     const guesses: number[] = [];
-    const state = {trusted: true};
+    /** `placed`: the map was placed since tracking started - a GMCP fix, /ustaw. */
+    const state = {trusted: true, tracking: false, placed: false};
     const handoff = new SessionHandoff({
         deviceId: name,
         newSessionId: () => `${name}-${++sessionCounter}`,
         isTrusted: () => state.trusted,
+        startTracking: () => {
+            state.tracking = true;
+            state.placed = false;
+        },
+        stopTracking: () => {
+            state.tracking = false;
+        },
+        placedSinceLogin: () => state.tracking && state.placed,
         apply: (roomId, verified) => {
             applied.push(roomId);
             if (!verified) guesses.push(roomId);
@@ -195,7 +204,7 @@ describe('SessionHandoff', () => {
         expect(db.records.get('Alice')?.handoff).toBeNull();
     });
 
-    it('does not move a map that has already moved since login', async () => {
+    it('does not move a map that has been placed since login', async () => {
         const db = new FakeDatabase();
         const a = device(db, 'phone');
         const b = device(db, 'desktop');
@@ -203,7 +212,7 @@ describe('SessionHandoff', () => {
         await login(a, 10);
         a.store.frozen = true;
         await login(b, 500);
-        b.handoff.roomChanged(501);
+        b.state.placed = true;
 
         a.store.frozen = false;
         a.handoff.disconnected();
@@ -226,7 +235,7 @@ describe('SessionHandoff', () => {
         b.handoff.roomChanged(500);
         b.handoff.charInfoHandled(BODY);
         // The game's room.info in the same frame places the map on the same room.
-        b.handoff.roomChanged(500);
+        b.state.placed = true;
         await vi.advanceTimersByTimeAsync(0);
 
         a.store.frozen = false;
@@ -445,34 +454,19 @@ describe('SessionHandoff', () => {
             expect(b.guesses).toEqual([12]);
         });
 
-        it('is confirmed by a description that matches after the guess', async () => {
-            const db = new FakeDatabase();
-            await parkedPhone(db);
-            const b = device(db, 'desktop');
-
-            await login(b, 500);
-            // Only the first of the exits messages in this batch.
-            b.handoff.roomDescribed(print(['Jest tu jedno wyjscie: polnoc.']));
-            await vi.advanceTimersByTimeAsync(0);
-            expect(b.guesses).toEqual([12]);
-            b.handoff.roomDescribed(print(HERE));
-
-            expect(b.applied).toEqual([12, 12]);
-            expect(b.guesses).toEqual([12]);
-        });
-
-        it('is guessed before a step taken right after the description can move the map', async () => {
+        it('is checked against the room entered at login, not the ones stepped into since', async () => {
             const db = new FakeDatabase();
             await parkedPhone(db);
             const b = device(db, 'desktop');
 
             await login(b, 500);
             b.handoff.roomDescribed(print(ELSEWHERE));
-            // The batch of game output is handled; the next one is the step.
             await vi.advanceTimersByTimeAsync(0);
-            b.handoff.roomChanged(13);
-
             expect(b.guesses).toEqual([12]);
+            // A step into a room that happens to look like the parked one.
+            b.handoff.roomDescribed(print(HERE));
+
+            expect(b.applied).toEqual([12]);
         });
 
         it('is not guessed once the map has been placed some other way', async () => {
@@ -483,7 +477,7 @@ describe('SessionHandoff', () => {
             await login(b, 500);
             b.handoff.roomDescribed(print(ELSEWHERE));
             // A GMCP fix from the room's coordinates.
-            b.handoff.roomChanged(777);
+            b.state.placed = true;
             await vi.advanceTimersByTimeAsync(TAKEOVER_WINDOW_MS);
 
             expect(b.applied).toEqual([]);

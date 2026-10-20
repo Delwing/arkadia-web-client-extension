@@ -52,8 +52,14 @@ export function installSessionHandoff(client: Client): void {
         deviceId: getDeviceId(),
         newSessionId,
         isTrusted: () => hiddenSince === null || Date.now() - hiddenSince <= HIDDEN_GRACE_MS,
+        startTracking: () => client.Map.startJournal(),
+        stopTracking: () => client.Map.stopJournal(),
+        placedSinceLogin: () => client.Map.placedSinceJournal,
         apply: (roomId, verified) => {
-            client.sendEvent('map.setLocation', {roomId, uncertain: !verified});
+            // Without a journal - the map was not ready at login - just the room.
+            if (!client.Map.replayJournal(roomId, !verified)) {
+                client.sendEvent('map.setLocation', {roomId, uncertain: !verified});
+            }
             client.println(verified
                 ? 'Przejeto lokalizacje z poprzedniego urzadzenia.'
                 : 'Przejeto lokalizacje z poprzedniego urzadzenia, ale opis lokacji sie nie zgadza - sprawdz pozycje na mapie.');
