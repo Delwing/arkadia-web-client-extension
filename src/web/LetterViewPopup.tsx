@@ -1,34 +1,94 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import eventBus from '@modules/core/eventBus';
 import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
 import { usePopup } from './hooks/usePopup';
+import { gmcp } from '@client/gmcp';
 import type { LetterContent } from '@client/scripts/poczta';
 import { HeaderButton } from '@web-ui/primitives';
 
 const POPUP_ID = 'popup:letter-view';
 
+/** How long "Usuń" stays armed waiting for the confirming second click. */
+const CONFIRM_MS = 4000;
+
+/** "Gertruda, Xerks i Vesper" - the game lists recipients the way it would say them. */
+function splitNames(list: string): string[] {
+    return list.split(/,\s*|\s+i\s+/).map(name => name.trim()).filter(Boolean);
+}
+
+const replySubject = (subject: string) => subject.startsWith('Odp: ') ? subject : `Odp: ${subject}`;
+
 const LetterViewPopup: React.FC = () => {
     const [letter, setLetter] = useState<LetterContent | null>(null);
+    const [confirmDelete, setConfirmDelete] = useState(false);
+    const confirmTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const { wrapperProps, setIsOpen } = usePopup(POPUP_ID);
+
+    const disarmDelete = useCallback(() => {
+        if (confirmTimer.current !== null) clearTimeout(confirmTimer.current);
+        confirmTimer.current = null;
+        setConfirmDelete(false);
+    }, []);
 
     useEffect(() => {
         const handleLetterLoaded = (data: LetterContent) => {
             setLetter(data);
+            disarmDelete();
             setIsOpen(true);
         };
 
         return eventBus.on('poczta.letter.loaded', handleLetterLoaded);
-    }, [setIsOpen]);
+    }, [setIsOpen, disarmDelete]);
+
+    useEffect(() => eventBus.on('poczta.deleted', ({ numbers }) => {
+        if (letter && numbers.includes(letter.number)) {
+            setLetter(null);
+            setIsOpen(false);
+        }
+    }), [letter, setIsOpen]);
+
+    useEffect(() => () => {
+        if (confirmTimer.current !== null) clearTimeout(confirmTimer.current);
+    }, []);
 
     const handleReply = useCallback(() => {
         if (!letter) return;
-        const subject = letter.subject.startsWith('Odp: ') ? letter.subject : `Odp: ${letter.subject}`;
         eventBus.emit('letterComposer', {
             to: letter.from,
-            subject,
+            subject: replySubject(letter.subject),
         });
     }, [letter]);
+
+    const handleReplyAll = useCallback(() => {
+        if (!letter) return;
+        const self = gmcp.char?.info?.name?.toLowerCase();
+        const seen = new Set<string>();
+        const pick = (names: string[]) => names.filter(name => {
+            const key = name.toLowerCase();
+            if (key === self || seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        });
+        const to = pick([letter.from, ...splitNames(letter.to)]);
+        const cc = pick(splitNames(letter.cc));
+        eventBus.emit('letterComposer', {
+            to: to.join(', '),
+            cc: cc.length ? cc.join(', ') : undefined,
+            subject: replySubject(letter.subject),
+        });
+    }, [letter]);
+
+    const handleDelete = useCallback(() => {
+        if (!letter) return;
+        if (!confirmDelete) {
+            setConfirmDelete(true);
+            confirmTimer.current = setTimeout(() => setConfirmDelete(false), CONFIRM_MS);
+            return;
+        }
+        disarmDelete();
+        eventBus.emit('poczta.delete', { number: letter.number });
+    }, [letter, confirmDelete, disarmDelete]);
 
     const handleForward = useCallback(() => {
         if (!letter) return;
@@ -41,7 +101,11 @@ const LetterViewPopup: React.FC = () => {
     const headerActions = letter ? (
         <>
             <HeaderButton onClick={handleReply} title="Odpowiedz">Odpowiedz</HeaderButton>
+            <HeaderButton onClick={handleReplyAll} title="Odpowiedz nadawcy i wszystkim adresatom">Odpowiedz wszystkim</HeaderButton>
             <HeaderButton onClick={handleForward} title="Przekaż dalej">Przekaż</HeaderButton>
+            <HeaderButton danger={confirmDelete} onClick={handleDelete} title="Usuń list">
+                {confirmDelete ? 'Na pewno?' : 'Usuń'}
+            </HeaderButton>
         </>
     ) : null;
 

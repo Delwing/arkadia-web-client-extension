@@ -42,7 +42,7 @@ const PocztaPopup: React.FC = () => {
     // /poczta is how players check for new mail, so it opens on a fresh Odebrane list.
     const handleOpen = useCallback(() => handleTabChange('odebrane'), [handleTabChange]);
 
-    const {wrapperProps} = usePopup(POPUP_ID, {
+    const {wrapperProps, isOpen} = usePopup(POPUP_ID, {
         openEvent: 'poczta.popup.open',
         onOpen: handleOpen,
     });
@@ -61,6 +61,11 @@ const PocztaPopup: React.FC = () => {
 
         return eventBus.on('poczta.loaded', handleLoaded);
     }, [activeTab]);
+
+    // Deleting renumbers every letter after it, so the list on screen is stale.
+    useEffect(() => eventBus.on('poczta.deleted', () => {
+        if (isOpen) fetchMails(activeTab);
+    }), [isOpen, activeTab, fetchMails]);
 
     const handleReadLetter = useCallback((number: number) => {
         setMails(prev => prev.map(mail =>

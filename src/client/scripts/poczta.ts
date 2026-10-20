@@ -49,6 +49,12 @@ export default function initPoczta(client: Client, aliases: { pattern: RegExp; c
      * the pager then lands in the reader, where ENTER means "show the next letter".
      */
     let closeMailer = false;
+    /**
+     * Deleting goes through the reader the same way reading does: the letter is opened
+     * (and swallowed), `d` at its prompt marks it, and the `q` that closes the reader
+     * makes the game delete it. Set while that `d` is still to be sent.
+     */
+    let deleteOnPrompt = false;
 
     /**
      * How long to wait for more of a reply before treating what arrived as all of it.
@@ -86,6 +92,8 @@ export default function initPoczta(client: Client, aliases: { pattern: RegExp; c
     const letterDatePattern = /^Data\s*: ?(.+)$/;
     const letterEndPattern = /^\[[\d\-]+ [^\]]+] \(aktualny: \d+\) --\s*$/;
     const letterContinuationPattern = /^\s{2,}(.+)$/;
+    const markedForDeletionPattern = /^(?:Juz )?[Zz]aznaczono do skasowania: [\d, i]+\.$/;
+    const deletedPattern = /^Kasuje: ([\d, i]+)\.$/;
 
     const clearListingFlush = () => {
         if (listingFlushHandle) {
@@ -143,6 +151,7 @@ export default function initPoczta(client: Client, aliases: { pattern: RegExp; c
             letterFlushHandle = null;
             finishReadingLetter();
             closeMailer = false;
+            deleteOnPrompt = false;
         }, LETTER_IDLE_MS);
     };
 
@@ -191,7 +200,7 @@ export default function initPoczta(client: Client, aliases: { pattern: RegExp; c
             while (body.length && body[0].trim() === '') body.shift();
             while (body.length && body[body.length - 1].trim() === '') body.pop();
             currentLetter.body = body;
-            eventBus.emit("poczta.letter.loaded", currentLetter as LetterContent);
+            if (!deleteOnPrompt) eventBus.emit("poczta.letter.loaded", currentLetter as LetterContent);
         }
         isReadingLetter = false;
         currentLetter = null;
@@ -382,6 +391,12 @@ export default function initPoczta(client: Client, aliases: { pattern: RegExp; c
         if (!isReadingLetter && !closeMailer) return line;
 
         if (isReadingLetter) finishReadingLetter();
+        if (deleteOnPrompt) {
+            // The reader stays open for the prompt that follows the `d`, which closes it.
+            deleteOnPrompt = false;
+            eventBus.emit('sendCommand', { command: 'd', echo: false });
+            return null;
+        }
         if (closeMailer) {
             closeMailer = false;
             eventBus.emit('sendCommand', { command: 'q', echo: false });
@@ -401,6 +416,7 @@ export default function initPoczta(client: Client, aliases: { pattern: RegExp; c
             if (line.text.trim() === '') return null;
             isReadingLetter = false;
             clearLetterFlush();
+            deleteOnPrompt = false;
             letterFlushHandle = setTimeout(() => {
                 letterFlushHandle = null;
                 closeMailer = false;
@@ -413,6 +429,16 @@ export default function initPoczta(client: Client, aliases: { pattern: RegExp; c
         letterBodyLines.push(line.text);
         scheduleLetterFlush();
         return null;
+    }, tag);
+
+    /** The game's answer to our `d`; the reader's prompt right after it is hidden too. */
+    client.Triggers.registerTrigger(markedForDeletionPattern, (line) => closeMailer ? null : line, tag);
+
+    /** Printed as the reader closes, whoever marked the letters - the numbers after it shift. */
+    client.Triggers.registerTrigger(deletedPattern, (line, matches) => {
+        const numbers = matches[1].split(/,\s*|\s+i\s+/).map(n => parseInt(n, 10)).filter(n => !isNaN(n));
+        if (numbers.length) eventBus.emit("poczta.deleted", { numbers });
+        return line;
     }, tag);
 
     aliases.push({
@@ -438,6 +464,18 @@ export default function initPoczta(client: Client, aliases: { pattern: RegExp; c
         if (payload?.number) {
             isReadingLetter = true;
             closeMailer = true;
+            currentLetter = null;
+            letterBodyLines = [];
+            scheduleLetterFlush();
+            eventBus.emit('sendCommand', { command: `przeczytaj list ${payload.number}`, echo: false });
+        }
+    });
+
+    eventBus.on("poczta.delete", (payload: { number: number }) => {
+        if (payload?.number) {
+            isReadingLetter = true;
+            closeMailer = true;
+            deleteOnPrompt = true;
             currentLetter = null;
             letterBodyLines = [];
             scheduleLetterFlush();

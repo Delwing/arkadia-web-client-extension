@@ -542,6 +542,8 @@ export interface KnownEvents {
     "poczta.loaded": { type: MailType; mails: MailEntry[] };
     "poczta.read": { number: number };
     "poczta.letter.loaded": LetterContent;
+    "poczta.delete": { number: number };
+    "poczta.deleted": { numbers: number[] };
     "roomInfo.popup.open": { roomId: number };
     "staticmap.popup.open": { roomId?: number; areaId?: number; instanceId?: string };
     /** Opens the AI assistant panel; `question` (from `/pomoc <pytanie>`) is asked immediately. */

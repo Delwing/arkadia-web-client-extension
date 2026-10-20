@@ -49,6 +49,7 @@ describe('poczta', () => {
         // several times over. The real client only ever registers its scripts once.
         eventBus.clear('poczta.fetch');
         eventBus.clear('poczta.read');
+        eventBus.clear('poczta.delete');
         client = { Triggers: new Triggers({} as never) };
         // main.ts registers the pager's auto-ENTER before poczta, so poczta never sees the pager line.
         client.Triggers.registerTrigger('ENTER by przejsc dalej', () => {
@@ -279,6 +280,46 @@ ${page1.join('\n')}
             expect(feed('Nie ma takiego listu.')).toEqual(['Nie ma takiego listu.']);
             expect(feed('Rozgladasz sie po polanie.')).toEqual(['Rozgladasz sie po polanie.']);
             expect(letters).toEqual([]);
+        });
+    });
+
+    describe('deleting a letter', () => {
+        let deleted: number[][];
+
+        beforeEach(() => {
+            deleted = [];
+            offs.push(eventBus.on('poczta.deleted', ({ numbers }) => deleted.push(numbers)));
+        });
+
+        test('marks the letter at the reader prompt and closes the reader to delete it', () => {
+            eventBus.emit('poczta.delete', { number: 2 });
+            expect(commands).toEqual(['przeczytaj list 2']);
+
+            expect(feed(LETTER_WITH_RECIPIENTS)).toEqual([]);
+            expect(commands).toEqual(['przeczytaj list 2', 'd']);
+            // Deleting is not reading: the letter view must not pop open.
+            expect(letters).toEqual([]);
+
+            expect(feed(`Zaznaczono do skasowania: 2.
+[1-50 adefFhHmnqrsRux.!?-+<>] (aktualny: 2) -- `)).toEqual([]);
+            expect(commands).toEqual(['przeczytaj list 2', 'd', 'q']);
+
+            expect(feed(`Kasuje listy...
+Kasuje: 2.`)).toEqual(['Kasuje listy...', 'Kasuje: 2.']);
+            expect(deleted).toEqual([[2]]);
+            expect(feed('Rozgladasz sie po polanie.')).toEqual(['Rozgladasz sie po polanie.']);
+        });
+
+        test('reports every letter the game deletes', () => {
+            feed('Kasuje: 1, 3 i 4.');
+            expect(deleted).toEqual([[1, 3, 4]]);
+        });
+
+        test('sends nothing more when the letter does not exist', () => {
+            eventBus.emit('poczta.delete', { number: 9 });
+            expect(feed('Nie ma takiego listu.')).toEqual(['Nie ma takiego listu.']);
+            jest.advanceTimersByTime(5000);
+            expect(commands).toEqual(['przeczytaj list 9']);
         });
     });
 
