@@ -545,6 +545,8 @@ export default class ImproveCounter extends BaseCounter {
 
     private persistLifetime = () => {
         this.setStorage('improve_counter_lifetime', {entries: this.lifetime, enabled: this.lifetimeEnabled});
+        // Own writes skip onStorageChange: refresh an open postepy2 window here
+        eventBus.emit("postepy2.updated");
     };
 
     addLifetime(count: number, id?: number) {
@@ -614,7 +616,6 @@ export default class ImproveCounter extends BaseCounter {
 
         this.lifetime = demoData;
         this.persistLifetime();
-        eventBus.emit("postepy2.updated");
         this.client.println(
             colorString("Dodano dane demo do postepy2.", SECTION_COLOR)
         );
@@ -649,7 +650,6 @@ export default class ImproveCounter extends BaseCounter {
         this.lifetime = Array.from(dateMap.values())
             .sort((a, b) => lifetimeDateOrder(a.date) - lifetimeDateOrder(b.date));
         this.persistLifetime();
-        eventBus.emit("postepy2.updated");
     }
 
     editLifetimeEntry(index: number, count: number): boolean {
@@ -661,7 +661,6 @@ export default class ImproveCounter extends BaseCounter {
             day.count += count - dayTotals(day).count;
         }
         this.persistLifetime();
-        eventBus.emit("postepy2.updated");
         return true;
     }
 
@@ -669,7 +668,6 @@ export default class ImproveCounter extends BaseCounter {
         if (index < 0 || index >= this.lifetime.length) return false;
         this.lifetime.splice(index, 1);
         this.persistLifetime();
-        eventBus.emit("postepy2.updated");
         return true;
     }
 

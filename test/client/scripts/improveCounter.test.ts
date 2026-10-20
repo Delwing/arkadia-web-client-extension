@@ -5,6 +5,7 @@ import { colorString, createColorFormat } from '@modules/core/Colors';
 import { EventEmitter } from 'events';
 import { characterStorage } from '@modules/core/storage';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
+import eventBus from '@modules/core/eventBus';
 
 class FakeClient {
   private emitter = new EventEmitter();
@@ -120,6 +121,20 @@ describe('improve counter', () => {
     showLifetime();
     const printed2 = client.print.mock.calls[0][0]?.text;
     expect(printed2).toMatch(/WSZYSTKICH DO TEJ PORY: 3 postepow/);
+  });
+
+  test('a game improvement refreshes an open postepy2 window', () => {
+    client.dispatch('gmcp.char.state', { improve: 2 });
+    // Counters from earlier tests still listen to storage and would emit on
+    // this write; the live one ignores its own writes, like the only one in the app
+    (characterStorage as any).listeners.delete('improve_counter_lifetime');
+    const totals: number[] = [];
+    const unsub = eventBus.on('postepy2.updated', () => {
+      totals.push(getLifetimeData().reduce((sum, e) => sum + e.count, 0));
+    });
+    client.dispatch('gmcp.char.state', { improve: 3 });
+    unsub();
+    expect(totals).toEqual([3]);
   });
 
   test('manual lifetime aliases modify list', () => {
