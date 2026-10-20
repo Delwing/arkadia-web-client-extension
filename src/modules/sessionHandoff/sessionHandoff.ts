@@ -11,7 +11,7 @@
  * device taking over picks it up: at once if it is already there — a deliberate
  * disconnect earlier, a phone put away — or while it waits a few seconds after
  * logging in, since the takeover happens on both ends at once. A parked room
- * waits for the game's first `room.info` and is used only if it matches.
+ * waits for the game to describe the room and is used only if it matches.
  *
  * DOM- and Firebase-free: the browser wiring (src/web/sessionHandoff.ts) feeds it
  * game events and a store.
@@ -78,7 +78,7 @@ export class SessionHandoff {
     private endedSession: string | null = null;
 
     private room: number | null = null;
-    /** The current room's fingerprint from `room.info`, null until one arrives. */
+    /** The current room's fingerprint from its description, null until one arrives. */
     private print: string | null = null;
     /** What this session last parked, so switching tabs in one room writes once. */
     private parkedKey: string | null = null;
@@ -118,7 +118,8 @@ export class SessionHandoff {
 
     connected(): void {
         this.gameConnected = true;
-        this.forgetRoomInfo();
+        // Whatever the last connection described is not where this one stands.
+        this.print = null;
     }
 
     disconnected(): void {
@@ -172,18 +173,14 @@ export class SessionHandoff {
     }
 
     /**
-     * The game described the room we are in. The first description after a login
-     * is what a parked room is checked against.
+     * The game described the room we are in, or added to the description: the
+     * exits can come in more than one message. A parked room is checked against
+     * the description that follows a login.
      */
-    roomInfo(print: string | null): void {
+    roomDescribed(print: string | null): void {
         this.print = print;
         const parked = this.unverified;
         if (parked && print !== null) this.offer(parked);
-    }
-
-    /** A new connection: whatever the old one last described is no longer here. */
-    private forgetRoomInfo(): void {
-        this.print = null;
     }
 
     /**
@@ -253,13 +250,13 @@ export class SessionHandoff {
                 log(`claimed ${character}; found room ${inherited.roomId} ${inherited.parked ? 'parked' : 'left'} by the previous session`);
                 this.offer(inherited);
             }
-            // A parked room is still waiting for room.info, and the session that
+            // A parked room is still waiting for a matching description, and the session that
             // parked it may yet wake up and hand over the room it really ended in.
             if (this.offerOpen && this.prevSession) {
                 log(`claimed ${character}; waiting ${TAKEOVER_WINDOW_MS / 1000} s for the previous session to hand over`);
                 this.stopOfferTimer = this.deps.setTimer(() => {
                     this.stopOfferTimer = null;
-                    if (this.unverified) log(`not applying parked room ${this.unverified.roomId}: the game never described where we are`);
+                    if (this.unverified) log(`not applying parked room ${this.unverified.roomId}: no description matched`);
                     this.closeOffer();
                 }, TAKEOVER_WINDOW_MS);
                 this.refreshOnline();
@@ -305,13 +302,14 @@ export class SessionHandoff {
         }
         if (handoff.parked) {
             if (!handoff.print) return log(`not applying parked room ${handoff.roomId}: nothing to check it against`);
+            // Until it matches, keep waiting: the description may not be complete yet.
+            // Moving on, or the takeover window running out, ends the wait.
+            this.unverified = handoff;
             if (this.print === null) {
-                this.unverified = handoff;
                 return log(`parked room ${handoff.roomId} waits for the game to describe where we are`);
             }
             if (this.print !== handoff.print) {
-                this.unverified = null;
-                return log(`not applying parked room ${handoff.roomId}: the character is somewhere else now`);
+                return log(`parked room ${handoff.roomId} does not match the room described`);
             }
         }
         log(`applying room ${handoff.roomId}`);

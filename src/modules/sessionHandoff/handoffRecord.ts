@@ -41,7 +41,7 @@ export interface HandoffRoom {
     at: number;
     /** Written as the tab went into the background, not as the session ended. */
     parked?: boolean;
-    /** The room as the game described it; see {@link roomPrint}. */
+    /** The room as the game described it; see {@link descriptionPrint}. */
     print?: string;
 }
 
@@ -141,22 +141,20 @@ export function withParked(
 }
 
 /**
- * A room as Arkadia's `room.info` describes it: its exits and whatever else the
- * frame identifies it by. Rooms with map coordinates are placed by GMCP on arrival
- * anyway; this is for the ones without, where the exits are most of what there is.
+ * A room as the game last described it: the `room.exits` messages after a
+ * description, and its short description when the character plays in brief mode.
+ * The long description stays out - it changes with the time of day - and so does
+ * the wrapping, which follows each device's own screen width.
+ *
+ * A takeover is not announced with a GMCP `room.info`; what follows it is the
+ * description of the room the character stands in, so that is what both ends compare.
  * `null` without exits, since an empty print would match any other.
  */
-export function roomPrint(info: { exits?: unknown; hash?: unknown; map?: unknown } | null | undefined): string | null {
-    if (!info || !Array.isArray(info.exits)) return null;
-    const exits = info.exits.filter((exit): exit is string => typeof exit === 'string').sort();
-    if (exits.length === 0) return null;
-    const parts = [`exits=${exits.join(',')}`];
-    if (typeof info.hash === 'string' && info.hash) parts.push(`hash=${info.hash}`);
-    const map = info.map as Record<string, unknown> | null | undefined;
-    if (map && typeof map === 'object') {
-        parts.push(`map=${[map.domain, map.x, map.y, map.z, map.name].map(v => v ?? '').join(':')}`);
-    }
-    return parts.join(';');
+export function descriptionPrint(short: string | null, exits: readonly string[]): string | null {
+    const fold = (text: string) => text.replace(/\s+/g, ' ').trim();
+    const exitText = exits.map(fold).filter(Boolean).join(' ');
+    if (!exitText) return null;
+    return `${short ? fold(short) : ''}|${exitText}`;
 }
 
 /** The room the session a login displaced handed over after the claim, if it has. */

@@ -1,4 +1,4 @@
-import { HANDOFF_TTL_MS, roomPrint, TAKEOVER_WINDOW_MS, type SessionRecord } from '@modules/sessionHandoff/handoffRecord';
+import { descriptionPrint, HANDOFF_TTL_MS, TAKEOVER_WINDOW_MS, type SessionRecord } from '@modules/sessionHandoff/handoffRecord';
 import { SessionHandoff, type HandoffStore } from '@modules/sessionHandoff/sessionHandoff';
 
 /** One database shared by every device in a test, with a clock the test moves. */
@@ -356,15 +356,35 @@ describe('SessionHandoff', () => {
     });
 
     describe('a room parked as the tab went into the background', () => {
-        const HERE = {exits: ['polnoc', 'wschod']};
-        const ELSEWHERE = {exits: ['poludnie', 'zachod']};
+        const HERE = ['Sa tutaj dwa widoczne wyjscia: polnoc i wschod.'];
+        const ELSEWHERE = ['Sa tutaj dwa widoczne wyjscia: poludnie i zachod.'];
+        const print = (exits: string[]) => descriptionPrint(null, exits);
+
+        it('waits for the rest of a description that matches only once complete', async () => {
+            const db = new FakeDatabase();
+            const a = device(db, 'phone');
+            await login(a, 10);
+            a.handoff.roomChanged(12);
+            const withDoor = [...HERE, 'Na polnocy widzisz zamkniete drzwi.'];
+            a.handoff.roomDescribed(print(withDoor));
+            await a.handoff.park();
+            a.store.frozen = true;
+            const b = device(db, 'desktop');
+
+            await login(b, 500);
+            b.handoff.roomDescribed(print(HERE));
+            expect(b.applied).toEqual([]);
+            b.handoff.roomDescribed(print(withDoor));
+
+            expect(b.applied).toEqual([12]);
+        });
 
         /** A phone that parked room 12 and froze in a pocket. */
         async function parkedPhone(db: FakeDatabase) {
             const a = device(db, 'phone');
             await login(a, 10);
             a.handoff.roomChanged(12);
-            a.handoff.roomInfo(roomPrint(HERE));
+            a.handoff.roomDescribed(print(HERE));
             await a.handoff.park();
             a.state.trusted = false;
             a.store.frozen = true;
@@ -378,7 +398,7 @@ describe('SessionHandoff', () => {
 
             await login(b, 500);
             expect(b.applied).toEqual([]);
-            b.handoff.roomInfo(roomPrint(HERE));
+            b.handoff.roomDescribed(print(HERE));
 
             expect(b.applied).toEqual([12]);
         });
@@ -392,7 +412,7 @@ describe('SessionHandoff', () => {
             b.handoff.sessionStarted('Alice');
             b.handoff.roomChanged(500);
             b.handoff.charInfoHandled(BODY);
-            b.handoff.roomInfo(roomPrint(HERE));
+            b.handoff.roomDescribed(print(HERE));
             await vi.advanceTimersByTimeAsync(0);
 
             expect(b.applied).toEqual([12]);
@@ -404,7 +424,7 @@ describe('SessionHandoff', () => {
             const b = device(db, 'desktop');
 
             await login(b, 500);
-            b.handoff.roomInfo(roomPrint(ELSEWHERE));
+            b.handoff.roomDescribed(print(ELSEWHERE));
             await vi.advanceTimersByTimeAsync(TAKEOVER_WINDOW_MS);
 
             expect(b.applied).toEqual([]);
@@ -417,7 +437,7 @@ describe('SessionHandoff', () => {
 
             await login(b, 500);
             await vi.advanceTimersByTimeAsync(TAKEOVER_WINDOW_MS);
-            b.handoff.roomInfo(roomPrint(HERE));
+            b.handoff.roomDescribed(print(HERE));
 
             expect(b.applied).toEqual([]);
         });
@@ -443,7 +463,7 @@ describe('SessionHandoff', () => {
             const db = new FakeDatabase();
             const a = device(db, 'phone');
             await login(a, 10);
-            a.handoff.roomInfo(roomPrint(HERE));
+            a.handoff.roomDescribed(print(HERE));
             const transact = vi.spyOn(a.store, 'transact');
 
             await a.handoff.park();
@@ -451,7 +471,7 @@ describe('SessionHandoff', () => {
             expect(transact).toHaveBeenCalledTimes(1);
 
             a.handoff.roomChanged(11);
-            a.handoff.roomInfo(roomPrint(ELSEWHERE));
+            a.handoff.roomDescribed(print(ELSEWHERE));
             await a.handoff.park();
             expect(transact).toHaveBeenCalledTimes(2);
             expect(db.records.get('Alice')?.handoff).toMatchObject({roomId: 11, parked: true});
@@ -470,7 +490,7 @@ describe('SessionHandoff', () => {
             const db = new FakeDatabase();
             const a = device(db, 'phone');
             await login(a, 10);
-            a.handoff.roomInfo(roomPrint(HERE));
+            a.handoff.roomDescribed(print(HERE));
             await a.handoff.sessionEnded();
             a.handoff.roomChanged(11);
             await a.handoff.park();
@@ -487,7 +507,7 @@ describe('SessionHandoff', () => {
             a.store.frozen = true;
             await login(b, 500);
 
-            a.handoff.roomInfo(roomPrint(HERE));
+            a.handoff.roomDescribed(print(HERE));
             await a.handoff.park();
 
             expect(db.records.get('Alice')?.handoff).toBeNull();
@@ -505,12 +525,14 @@ describe('handoff records', () => {
         expect(normalizeRecord({device: 'd'})).toBeNull();
     });
 
-    it('fingerprints a room by its exits in any order, and not without them', async () => {
-        const { roomPrint } = await import('@modules/sessionHandoff/handoffRecord');
-        expect(roomPrint({exits: ['wschod', 'polnoc']})).toBe(roomPrint({exits: ['polnoc', 'wschod']}));
-        expect(roomPrint({exits: ['polnoc'], hash: 'h1'})).not.toBe(roomPrint({exits: ['polnoc'], hash: 'h2'}));
-        expect(roomPrint({exits: []})).toBeNull();
-        expect(roomPrint(null)).toBeNull();
+    it('fingerprints a room by its description, whatever the screen width wrapped', async () => {
+        const { descriptionPrint } = await import('@modules/sessionHandoff/handoffRecord');
+        expect(descriptionPrint(null, ['Sa tutaj dwa widoczne\nwyjscia: polnoc i wschod.']))
+            .toBe(descriptionPrint(null, ['Sa tutaj dwa widoczne wyjscia:\npolnoc i wschod. ']));
+        expect(descriptionPrint('Rynek.', ['Jest tu jedno wyjscie: polnoc.']))
+            .not.toBe(descriptionPrint('Brama.', ['Jest tu jedno wyjscie: polnoc.']));
+        expect(descriptionPrint('Rynek.', [])).toBeNull();
+        expect(descriptionPrint(null, [' '])).toBeNull();
     });
 
     it('makes a safe database key from a character name', async () => {
