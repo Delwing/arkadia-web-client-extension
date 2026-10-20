@@ -6,10 +6,12 @@
  * this its map would show wherever that device last was, which in a team on the
  * move is soon a long way off.
  *
- * The device being left writes its room as it sees its session end (see
- * handoffRecord for the rules), and the device taking over picks it up: at once
- * if it is already there — a deliberate disconnect earlier — or while it waits a
- * few seconds after logging in, since the takeover happens on both ends at once.
+ * The device being left writes its room as it sees its session end, or parks it
+ * as its tab goes into the background (see handoffRecord for the rules), and the
+ * device taking over picks it up: at once if it is already there — a deliberate
+ * disconnect earlier, a phone put away — or while it waits a few seconds after
+ * logging in, since the takeover happens on both ends at once. A parked room
+ * waits for the game's first `room.info` and is used only if it matches.
  *
  * DOM- and Firebase-free: the browser wiring (src/web/sessionHandoff.ts) feeds it
  * game events and a store.
@@ -21,6 +23,7 @@ import {
     takeoverRoom,
     TAKEOVER_WINDOW_MS,
     withHandoff,
+    withParked,
     type HandoffRoom,
     type SessionRecord,
 } from './handoffRecord';
@@ -75,6 +78,12 @@ export class SessionHandoff {
     private endedSession: string | null = null;
 
     private room: number | null = null;
+    /** The current room's fingerprint from `room.info`, null until one arrives. */
+    private print: string | null = null;
+    /** What this session last parked, so switching tabs in one room writes once. */
+    private parkedKey: string | null = null;
+    /** A parked room waiting for the game to describe where this login stands. */
+    private unverified: HandoffRoom | null = null;
     private lost = false;
     /** The game object we are, from the latest Char.Info. */
     private body: number | null = null;
@@ -109,13 +118,12 @@ export class SessionHandoff {
 
     connected(): void {
         this.gameConnected = true;
-        this.refreshOnline();
+        this.forgetRoomInfo();
     }
 
     disconnected(): void {
         this.gameConnected = false;
         this.closeOffer();
-        this.refreshOnline();
     }
 
     /** A login, not a resumed connection. */
@@ -129,6 +137,7 @@ export class SessionHandoff {
         this.endedSession = null;
         this.moved = false;
         this.loginBody = null;
+        this.parkedKey = null;
         this.offerOpen = true;
         // The map restores this device's own last room from storage while the
         // login's Char.Info is handled; that is not a placement. charInfoHandled()
@@ -160,6 +169,45 @@ export class SessionHandoff {
 
     lostChanged(lost: boolean): void {
         this.lost = lost;
+    }
+
+    /**
+     * The game described the room we are in. The first description after a login
+     * is what a parked room is checked against.
+     */
+    roomInfo(print: string | null): void {
+        this.print = print;
+        const parked = this.unverified;
+        if (parked && print !== null) this.offer(parked);
+    }
+
+    /** A new connection: whatever the old one last described is no longer here. */
+    private forgetRoomInfo(): void {
+        this.print = null;
+    }
+
+    /**
+     * The tab is going into the background, where it may be frozen before it sees
+     * its session end. Leave the room behind for whoever takes over.
+     */
+    async park(): Promise<void> {
+        const store = this.store;
+        const session = this.session;
+        const character = this.character;
+        const roomId = this.room;
+        const objectNum = this.body;
+        const print = this.print;
+        if (!store || !session || !character || !this.gameConnected) return;
+        if (this.endedSession === session) return;
+        if (roomId === null || objectNum === null || print === null || this.lost) return;
+        if (!this.deps.isTrusted()) return;
+        const key = `${roomId}|${objectNum}|${print}`;
+        if (this.parkedKey === key) return;
+        this.parkedKey = key;
+        const handoff: HandoffRoom = {from: session, device: this.deps.deviceId, roomId, objectNum, at: store.now(), parked: true, print};
+        const written = await this.run(store, () => store.transact(character, current => withParked(current, handoff)));
+        if (written?.handoff?.from === session && written.handoff.parked) log(`parked room ${roomId}`);
+        else if (this.parkedKey === key) this.parkedKey = null;
     }
 
     /**
@@ -202,15 +250,20 @@ export class SessionHandoff {
             this.prevSession = committed.prevSession;
             const inherited = inheritedRoom(previous, store.now());
             if (inherited) {
-                log(`claimed ${character}; found room ${inherited.roomId} left by the previous session`);
+                log(`claimed ${character}; found room ${inherited.roomId} ${inherited.parked ? 'parked' : 'left'} by the previous session`);
                 this.offer(inherited);
-            } else if (this.offerOpen && this.prevSession) {
+            }
+            // A parked room is still waiting for room.info, and the session that
+            // parked it may yet wake up and hand over the room it really ended in.
+            if (this.offerOpen && this.prevSession) {
                 log(`claimed ${character}; waiting ${TAKEOVER_WINDOW_MS / 1000} s for the previous session to hand over`);
                 this.stopOfferTimer = this.deps.setTimer(() => {
                     this.stopOfferTimer = null;
+                    if (this.unverified) log(`not applying parked room ${this.unverified.roomId}: the game never described where we are`);
                     this.closeOffer();
                 }, TAKEOVER_WINDOW_MS);
-            } else {
+                this.refreshOnline();
+            } else if (!inherited) {
                 log(`claimed ${character}; no previous session to take over from`);
                 this.closeOffer();
             }
@@ -250,6 +303,17 @@ export class SessionHandoff {
             this.closeOffer();
             return;
         }
+        if (handoff.parked) {
+            if (!handoff.print) return log(`not applying parked room ${handoff.roomId}: nothing to check it against`);
+            if (this.print === null) {
+                this.unverified = handoff;
+                return log(`parked room ${handoff.roomId} waits for the game to describe where we are`);
+            }
+            if (this.print !== handoff.print) {
+                this.unverified = null;
+                return log(`not applying parked room ${handoff.roomId}: the character is somewhere else now`);
+            }
+        }
         log(`applying room ${handoff.roomId}`);
         this.closeOffer();
         this.applying = true;
@@ -262,8 +326,10 @@ export class SessionHandoff {
 
     private closeOffer(): void {
         this.offerOpen = false;
+        this.unverified = null;
         this.stopOfferTimer?.();
         this.stopOfferTimer = null;
+        this.refreshOnline();
     }
 
     private stopWatching(): void {
@@ -286,10 +352,11 @@ export class SessionHandoff {
     }
 
     /**
-     * Online only while there is a game session or a write in flight: the database
-     * counts every open connection, and a tab left open all day is not playing.
+     * Online only while a write is in flight or a login waits for a handoff: the
+     * database counts every open connection, and the free plan allows a hundred.
+     * Holding one for a whole game session would cap how many can play at once.
      */
     private refreshOnline(): void {
-        this.store?.setOnline(this.gameConnected || this.pending > 0);
+        this.store?.setOnline(this.pending > 0 || this.stopOfferTimer !== null);
     }
 }

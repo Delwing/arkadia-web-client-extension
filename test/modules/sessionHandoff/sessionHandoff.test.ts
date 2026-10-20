@@ -1,4 +1,4 @@
-import { HANDOFF_TTL_MS, TAKEOVER_WINDOW_MS, type SessionRecord } from '@modules/sessionHandoff/handoffRecord';
+import { HANDOFF_TTL_MS, roomPrint, TAKEOVER_WINDOW_MS, type SessionRecord } from '@modules/sessionHandoff/handoffRecord';
 import { SessionHandoff, type HandoffStore } from '@modules/sessionHandoff/sessionHandoff';
 
 /** One database shared by every device in a test, with a clock the test moves. */
@@ -332,19 +332,166 @@ describe('SessionHandoff', () => {
         expect(c.applied).toEqual([]);
     });
 
-    it('stays online only while playing or writing', async () => {
+    it('stays online only while writing or waiting for a handoff', async () => {
         const db = new FakeDatabase();
         const a = device(db, 'phone');
+        const b = device(db, 'desktop');
 
         expect(a.store.online).toBe(false);
         await login(a, 10);
-        expect(a.store.online).toBe(true);
+        // Playing alone holds no connection.
+        expect(a.store.online).toBe(false);
+
+        a.store.frozen = true;
+        await login(b, 500);
+        expect(b.store.online).toBe(true);
+        await vi.advanceTimersByTimeAsync(TAKEOVER_WINDOW_MS);
+        expect(b.store.online).toBe(false);
 
         a.handoff.disconnected();
         const ended = a.handoff.sessionEnded();
         expect(a.store.online).toBe(true);
         await ended;
         expect(a.store.online).toBe(false);
+    });
+
+    describe('a room parked as the tab went into the background', () => {
+        const HERE = {exits: ['polnoc', 'wschod']};
+        const ELSEWHERE = {exits: ['poludnie', 'zachod']};
+
+        /** A phone that parked room 12 and froze in a pocket. */
+        async function parkedPhone(db: FakeDatabase) {
+            const a = device(db, 'phone');
+            await login(a, 10);
+            a.handoff.roomChanged(12);
+            a.handoff.roomInfo(roomPrint(HERE));
+            await a.handoff.park();
+            a.state.trusted = false;
+            a.store.frozen = true;
+            return a;
+        }
+
+        it('is applied when the game describes the same room', async () => {
+            const db = new FakeDatabase();
+            await parkedPhone(db);
+            const b = device(db, 'desktop');
+
+            await login(b, 500);
+            expect(b.applied).toEqual([]);
+            b.handoff.roomInfo(roomPrint(HERE));
+
+            expect(b.applied).toEqual([12]);
+        });
+
+        it('is applied at once when the room was described before the claim settled', async () => {
+            const db = new FakeDatabase();
+            await parkedPhone(db);
+            const b = device(db, 'desktop');
+
+            b.handoff.connected();
+            b.handoff.sessionStarted('Alice');
+            b.handoff.roomChanged(500);
+            b.handoff.charInfoHandled(BODY);
+            b.handoff.roomInfo(roomPrint(HERE));
+            await vi.advanceTimersByTimeAsync(0);
+
+            expect(b.applied).toEqual([12]);
+        });
+
+        it('is ignored when the character has moved on since', async () => {
+            const db = new FakeDatabase();
+            await parkedPhone(db);
+            const b = device(db, 'desktop');
+
+            await login(b, 500);
+            b.handoff.roomInfo(roomPrint(ELSEWHERE));
+            await vi.advanceTimersByTimeAsync(TAKEOVER_WINDOW_MS);
+
+            expect(b.applied).toEqual([]);
+        });
+
+        it('is ignored when the game never describes the room', async () => {
+            const db = new FakeDatabase();
+            await parkedPhone(db);
+            const b = device(db, 'desktop');
+
+            await login(b, 500);
+            await vi.advanceTimersByTimeAsync(TAKEOVER_WINDOW_MS);
+            b.handoff.roomInfo(roomPrint(HERE));
+
+            expect(b.applied).toEqual([]);
+        });
+
+        it('gives way to the room handed over as the session really ended', async () => {
+            const db = new FakeDatabase();
+            const a = await parkedPhone(db);
+            // Still awake after all, and it walked on in the background.
+            a.state.trusted = true;
+            a.store.frozen = false;
+            a.handoff.roomChanged(13);
+            const b = device(db, 'desktop');
+
+            await login(b, 500);
+            a.handoff.disconnected();
+            await a.handoff.sessionEnded();
+            await vi.advanceTimersByTimeAsync(0);
+
+            expect(b.applied).toEqual([13]);
+        });
+
+        it('is written once per room, however often the tab is hidden', async () => {
+            const db = new FakeDatabase();
+            const a = device(db, 'phone');
+            await login(a, 10);
+            a.handoff.roomInfo(roomPrint(HERE));
+            const transact = vi.spyOn(a.store, 'transact');
+
+            await a.handoff.park();
+            await a.handoff.park();
+            expect(transact).toHaveBeenCalledTimes(1);
+
+            a.handoff.roomChanged(11);
+            a.handoff.roomInfo(roomPrint(ELSEWHERE));
+            await a.handoff.park();
+            expect(transact).toHaveBeenCalledTimes(2);
+            expect(db.records.get('Alice')?.handoff).toMatchObject({roomId: 11, parked: true});
+        });
+
+        it('is not written without a description of the room to check it by', async () => {
+            const db = new FakeDatabase();
+            const a = device(db, 'phone');
+            await login(a, 10);
+            await a.handoff.park();
+
+            expect(db.records.get('Alice')?.handoff).toBeNull();
+        });
+
+        it('does not replace the room handed over as the session ended', async () => {
+            const db = new FakeDatabase();
+            const a = device(db, 'phone');
+            await login(a, 10);
+            a.handoff.roomInfo(roomPrint(HERE));
+            await a.handoff.sessionEnded();
+            a.handoff.roomChanged(11);
+            await a.handoff.park();
+
+            expect(db.records.get('Alice')?.handoff).toMatchObject({roomId: 10});
+            expect(db.records.get('Alice')?.handoff?.parked).toBeUndefined();
+        });
+
+        it('is not written into the record of the login that took over', async () => {
+            const db = new FakeDatabase();
+            const a = device(db, 'phone');
+            const b = device(db, 'desktop');
+            await login(a, 10);
+            a.store.frozen = true;
+            await login(b, 500);
+
+            a.handoff.roomInfo(roomPrint(HERE));
+            await a.handoff.park();
+
+            expect(db.records.get('Alice')?.handoff).toBeNull();
+        });
     });
 });
 
@@ -356,6 +503,14 @@ describe('handoff records', () => {
         });
         expect(normalizeRecord(null)).toBeNull();
         expect(normalizeRecord({device: 'd'})).toBeNull();
+    });
+
+    it('fingerprints a room by its exits in any order, and not without them', async () => {
+        const { roomPrint } = await import('@modules/sessionHandoff/handoffRecord');
+        expect(roomPrint({exits: ['wschod', 'polnoc']})).toBe(roomPrint({exits: ['polnoc', 'wschod']}));
+        expect(roomPrint({exits: ['polnoc'], hash: 'h1'})).not.toBe(roomPrint({exits: ['polnoc'], hash: 'h2'}));
+        expect(roomPrint({exits: []})).toBeNull();
+        expect(roomPrint(null)).toBeNull();
     });
 
     it('makes a safe database key from a character name', async () => {

@@ -36,6 +36,7 @@ import eventBus from "@modules/core/eventBus";
 import { importCategories } from "./exportUtils";
 import ConflictResolutionModal from "./ConflictResolutionModal";
 import { SyncActivityLog, SyncTimers } from "./SyncActivity";
+import { setSessionHandoffEnabled } from "../sessionHandoff";
 import {
     isSyncV2Enabled,
     nudgeSyncV2,
@@ -116,6 +117,7 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
     const [syncV2] = useState(isSyncV2Enabled);
     const [encryptionEnabled, setEncryptionEnabled] = useState(() => loadFirebaseSettings().encryptionEnabled);
     const [autoSyncEnabled, setAutoSyncEnabled] = useState(() => loadFirebaseSettings().autoSyncEnabled);
+    const [locationHandoffEnabled, setLocationHandoffEnabled] = useState(() => loadFirebaseSettings().locationHandoffEnabled);
     const [passphrase, setPassphrase] = useState(() => syncEngine.getPassphrase() ?? '');
     const [isSyncing, setIsSyncing] = useState(false);
     const [syncStatus, setSyncStatus] = useState<string | null>(null);
@@ -318,6 +320,12 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
         // Auto-sync switched on (start v2 now) or off (stop it), or encryption changed.
         if (syncV2) nudgeSyncV2();
     }, [encryptionEnabled, autoSyncEnabled, syncV2]);
+
+    const toggleLocationHandoff = (enabled: boolean) => {
+        setLocationHandoffEnabled(enabled);
+        saveFirebaseSettings({ locationHandoffEnabled: enabled });
+        setSessionHandoffEnabled(enabled);
+    };
 
     const handleEmailAuth = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -962,6 +970,21 @@ function FirebaseTab({ onImportComplete }: FirebaseTabProps) {
                             )}
                         </div>
                         {autoSyncEnabled && <SyncTimers syncV2={syncV2} />}
+                    </section>
+
+                    {/* Location handoff */}
+                    <section className="character-settings-section">
+                        <Check
+                            id="location-handoff-toggle"
+                            label="Przekazuj lokalizację między urządzeniami"
+                            checked={locationHandoffEnabled}
+                            onChange={e => toggleLocationHandoff(e.target.checked)}
+                        />
+                        <div className="popup-muted popup-small">
+                            Gdy zalogujesz się na postać grającą na innym urządzeniu, mapa przejmie jej
+                            lokalizację. Urządzenie zapisuje w chmurze pomieszczenie, w którym jesteś, gdy
+                            kończy się sesja albo karta przechodzi w tło - nie każdy krok.
+                        </div>
                     </section>
 
                     {/* Delete cloud data */}

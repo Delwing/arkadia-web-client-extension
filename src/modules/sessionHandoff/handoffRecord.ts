@@ -13,11 +13,17 @@
  *                itself in that same object (a takeover, or a return to a
  *                character still standing in the world)
  *
- * The handoff is written only by a device that sees its session end — the game
- * dropping it for a login elsewhere, or the player disconnecting — and only while
- * it is awake enough to trust its own map. It is never written ahead of time: a
- * room kept up to date "just in case" would be stale exactly when it matters, from
- * a phone frozen in a pocket while its character followed the team. No handoff
+ * The handoff is written by a device that sees its session end — the game
+ * dropping it for a login elsewhere, or the player disconnecting — while it is
+ * awake enough to trust its own map.
+ *
+ * A device also *parks* its room as its tab goes into the background, once per
+ * room rather than on every step. That covers the phone put away in a pocket,
+ * which is frozen by the time another device takes over and never sees its
+ * session end. A parked room may have gone stale meanwhile - the character can
+ * follow its team while the phone sleeps - so it carries a fingerprint of the room
+ * as the game described it, and the device taking over uses it only when the game
+ * describes the room it finds itself in the same way. No handoff, or no match,
  * means no guess, and the new device keeps whatever it knew.
  *
  * Every login claims the record, which drops any handoff left in it. That is what
@@ -33,6 +39,10 @@ export interface HandoffRoom {
     objectNum: number | null;
     /** Server time. */
     at: number;
+    /** Written as the tab went into the background, not as the session ended. */
+    parked?: boolean;
+    /** The room as the game described it; see {@link roomPrint}. */
+    print?: string;
 }
 
 export interface SessionRecord {
@@ -114,6 +124,41 @@ export function withHandoff(
     return undefined;
 }
 
+/**
+ * The record with a session's parked room in it, or `undefined` when it may not
+ * write. Only ever into the session's own record: once another login has claimed
+ * the character, the session it displaced is over and has nothing to park.
+ */
+export function withParked(
+    current: SessionRecord | null,
+    handoff: HandoffRoom,
+): SessionRecord | null | undefined {
+    if (!current) return null;
+    if (current.session !== handoff.from) return undefined;
+    // The room a session handed over as it ended is better than one it parked.
+    if (current.handoff?.from === handoff.from && !current.handoff.parked) return undefined;
+    return {...current, handoff};
+}
+
+/**
+ * A room as Arkadia's `room.info` describes it: its exits and whatever else the
+ * frame identifies it by. Rooms with map coordinates are placed by GMCP on arrival
+ * anyway; this is for the ones without, where the exits are most of what there is.
+ * `null` without exits, since an empty print would match any other.
+ */
+export function roomPrint(info: { exits?: unknown; hash?: unknown; map?: unknown } | null | undefined): string | null {
+    if (!info || !Array.isArray(info.exits)) return null;
+    const exits = info.exits.filter((exit): exit is string => typeof exit === 'string').sort();
+    if (exits.length === 0) return null;
+    const parts = [`exits=${exits.join(',')}`];
+    if (typeof info.hash === 'string' && info.hash) parts.push(`hash=${info.hash}`);
+    const map = info.map as Record<string, unknown> | null | undefined;
+    if (map && typeof map === 'object') {
+        parts.push(`map=${[map.domain, map.x, map.y, map.z, map.name].map(v => v ?? '').join(':')}`);
+    }
+    return parts.join(';');
+}
+
 /** The room the session a login displaced handed over after the claim, if it has. */
 export function takeoverRoom(
     value: SessionRecord | null,
@@ -146,6 +191,8 @@ export function normalizeRecord(raw: unknown): SessionRecord | null {
                 roomId: handoff.roomId,
                 objectNum: typeof handoff.objectNum === 'number' ? handoff.objectNum : null,
                 at: handoff.at,
+                ...(handoff.parked === true ? {parked: true} : {}),
+                ...(typeof handoff.print === 'string' ? {print: handoff.print} : {}),
             }
             : null,
     };

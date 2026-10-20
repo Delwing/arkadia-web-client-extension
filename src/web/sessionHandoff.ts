@@ -10,8 +10,12 @@ import mudClient from "./MudClient.ts";
 import { shouldReattachAfterClose } from "./proxySession.ts";
 import { SessionHandoff } from "@modules/sessionHandoff/sessionHandoff.ts";
 import { RtdbHandoffStore } from "@modules/sessionHandoff/rtdbHandoffStore.ts";
+import { roomPrint } from "@modules/sessionHandoff/handoffRecord.ts";
 import { getRealtimeDatabase } from "@modules/firebase/firebaseConfig.ts";
-import { getDeviceId } from "@modules/firebase/firebaseTypes.ts";
+import { getDeviceId, loadFirebaseSettings } from "@modules/firebase/firebaseTypes.ts";
+
+/** What the game tells the device being left when a login elsewhere takes the character. */
+const TAKEN_OVER = /^Nowe interaktywne polaczenie do twej postaci\./;
 
 /**
  * How long a tab may have been in the background and still vouch for its map.
@@ -23,6 +27,7 @@ let handoff: SessionHandoff | null = null;
 let store: RtdbHandoffStore | null = null;
 let storeUser: string | null = null;
 let storeToken = 0;
+let enabled = true;
 
 function newSessionId(): string {
     const bytes = new Uint8Array(12);
@@ -32,10 +37,13 @@ function newSessionId(): string {
 
 export function installSessionHandoff(client: Client): void {
     if (handoff) return;
+    enabled = loadFirebaseSettings().locationHandoffEnabled;
 
     let hiddenSince: number | null = document.visibilityState === 'visible' ? null : 0;
     document.addEventListener('visibilitychange', () => {
         hiddenSince = document.visibilityState === 'visible' ? null : Date.now();
+        // The last chance to speak for the map before the tab may be frozen.
+        if (hiddenSince !== null) void handoff?.park();
     });
 
     const instance = new SessionHandoff({
@@ -81,6 +89,13 @@ export function installSessionHandoff(client: Client): void {
         const num = Number(info?.object_num);
         instance.charInfoHandled(Number.isInteger(num) && num > 0 ? num : null);
     });
+    // Registered after the map's own handler, so a room.info that places the map
+    // has already counted as a move by the time its fingerprint arrives here.
+    client.on('gmcp.room.info', info => instance.roomInfo(roomPrint(info)));
+    client.Triggers.registerTrigger(TAKEN_OVER, (line) => {
+        void instance.sessionEnded();
+        return line;
+    }, 'sessionHandoff');
     client.on('enterLocation', location => instance.roomChanged(location.id));
     client.on('mapPositionLost', state => instance.lostChanged(state.lost));
     client.on('client.disconnect', () => {
@@ -113,8 +128,15 @@ export function setSessionHandoffUser(userId: string | null): void {
         .then(database => {
             if (!database || token !== storeToken) return;
             store = new RtdbHandoffStore(database.api, database.db, userId);
-            handoff?.setStore(store);
+            if (enabled) handoff?.setStore(store);
             console.info('[SessionHandoff] ready, Realtime Database', database.url ?? '(SDK default URL)');
         })
         .catch(error => console.warn('[SessionHandoff] Realtime Database unavailable:', error));
+}
+
+/** The player's opt-out from the Synchronizacja tab. Off, nothing is read or written. */
+export function setSessionHandoffEnabled(value: boolean): void {
+    if (value === enabled) return;
+    enabled = value;
+    handoff?.setStore(enabled ? store : null);
 }

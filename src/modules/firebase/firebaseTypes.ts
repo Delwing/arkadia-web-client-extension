@@ -82,6 +82,8 @@ export type CategorySyncChecksums = Partial<Record<SyncCategory, string>>;
 export interface FirebaseSettings {
     encryptionEnabled: boolean;
     autoSyncEnabled: boolean;
+    /** Carry the map location over when another device takes the character over. */
+    locationHandoffEnabled: boolean;
     categorySyncTimes: CategorySyncTimes;
     categorySyncChecksums: CategorySyncChecksums;
     deviceId: string;
@@ -162,6 +164,7 @@ export function loadFirebaseSettings(): FirebaseSettings {
     const defaults: FirebaseSettings = {
         encryptionEnabled: false,
         autoSyncEnabled: false,
+        locationHandoffEnabled: true,
         categorySyncTimes: {},
         categorySyncChecksums: {},
         deviceId: getDeviceId(),
@@ -174,6 +177,7 @@ export function loadFirebaseSettings(): FirebaseSettings {
         return {
             encryptionEnabled: typeof parsed.encryptionEnabled === 'boolean' ? parsed.encryptionEnabled : false,
             autoSyncEnabled: typeof parsed.autoSyncEnabled === 'boolean' ? parsed.autoSyncEnabled : false,
+            locationHandoffEnabled: typeof parsed.locationHandoffEnabled === 'boolean' ? parsed.locationHandoffEnabled : true,
             categorySyncTimes: parsed.categorySyncTimes && typeof parsed.categorySyncTimes === 'object'
                 ? parsed.categorySyncTimes
                 : {},
