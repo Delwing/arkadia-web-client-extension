@@ -146,7 +146,7 @@ const defaultStorage: MapStorage = {
  * Why the mapper believes its position is wrong. A closed set, so a UI can word
  * the warning without re-deriving anything.
  */
-export type MapLostReason = 'follow' | 'gmcp';
+export type MapLostReason = 'follow' | 'gmcp' | 'handoff';
 
 /**
  * How long a follow the mapper could not resolve is given before it counts as a
@@ -307,8 +307,10 @@ export default class MapHelper {
             this.client.sendEvent("refreshPositionWhenAble");
         })
 
-        this.client.on("map.setLocation", (data: { roomId: number }) => {
+        this.client.on("map.setLocation", (data: { roomId: number; uncertain?: boolean }) => {
             this.setMapRoomById(data.roomId);
+            // Placing the room clears any doubt, so a guess is marked after it.
+            if (data.uncertain) this.setLost(true, 'handoff');
         });
 
         this.client.on("leadTo", (target: number) => {

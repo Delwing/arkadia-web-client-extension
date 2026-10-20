@@ -6,6 +6,7 @@ import { useClientEvent } from "../../hooks";
 const REASONS: Record<MapLostReason, string> = {
     follow: "Nie udało się odtworzyć ruchu za drużyną - pozycja na mapie jest nieaktualna.",
     gmcp: "Gra podaje lokację, której nie ma na mapie - pozycja na mapie jest nieaktualna.",
+    handoff: "Lokalizacja przejęta z poprzedniego urządzenia nie zgadza się z opisem lokacji - pozycja na mapie może być nieaktualna.",
 };
 
 const FALLBACK = "Mapper zgubił pozycję.";

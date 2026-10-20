@@ -43,13 +43,16 @@ let sessionCounter = 0;
 
 function device(db: FakeDatabase, name: string) {
     const applied: number[] = [];
+    /** The rooms of those applied that went on the map as a guess. */
+    const guesses: number[] = [];
     const state = {trusted: true};
     const handoff = new SessionHandoff({
         deviceId: name,
         newSessionId: () => `${name}-${++sessionCounter}`,
         isTrusted: () => state.trusted,
-        apply: roomId => {
+        apply: (roomId, verified) => {
             applied.push(roomId);
+            if (!verified) guesses.push(roomId);
             handoff.roomChanged(roomId);
         },
         setTimer: (fn, ms) => {
@@ -59,7 +62,7 @@ function device(db: FakeDatabase, name: string) {
     });
     const store = db.store();
     handoff.setStore(store);
-    return {handoff, applied, state, store};
+    return {handoff, applied, guesses, state, store};
 }
 
 /** The game object the character is while it stays in the world. */
@@ -418,7 +421,7 @@ describe('SessionHandoff', () => {
             expect(b.applied).toEqual([12]);
         });
 
-        it('is ignored when the character has moved on since', async () => {
+        it('goes on the map as a guess when the character has moved on since', async () => {
             const db = new FakeDatabase();
             await parkedPhone(db);
             const b = device(db, 'desktop');
@@ -427,17 +430,45 @@ describe('SessionHandoff', () => {
             b.handoff.roomDescribed(print(ELSEWHERE));
             await vi.advanceTimersByTimeAsync(TAKEOVER_WINDOW_MS);
 
-            expect(b.applied).toEqual([]);
+            expect(b.applied).toEqual([12]);
+            expect(b.guesses).toEqual([12]);
         });
 
-        it('is ignored when the game never describes the room', async () => {
+        it('goes on the map as a guess when the game never describes the room', async () => {
             const db = new FakeDatabase();
             await parkedPhone(db);
             const b = device(db, 'desktop');
 
             await login(b, 500);
             await vi.advanceTimersByTimeAsync(TAKEOVER_WINDOW_MS);
+
+            expect(b.guesses).toEqual([12]);
+        });
+
+        it('is confirmed by a description that matches after the guess', async () => {
+            const db = new FakeDatabase();
+            await parkedPhone(db);
+            const b = device(db, 'desktop');
+
+            await login(b, 500);
+            await vi.advanceTimersByTimeAsync(2000);
+            expect(b.guesses).toEqual([12]);
             b.handoff.roomDescribed(print(HERE));
+
+            expect(b.applied).toEqual([12, 12]);
+            expect(b.guesses).toEqual([12]);
+        });
+
+        it('is not guessed once the map has been placed some other way', async () => {
+            const db = new FakeDatabase();
+            await parkedPhone(db);
+            const b = device(db, 'desktop');
+
+            await login(b, 500);
+            b.handoff.roomDescribed(print(ELSEWHERE));
+            // A GMCP fix from the room's coordinates.
+            b.handoff.roomChanged(777);
+            await vi.advanceTimersByTimeAsync(TAKEOVER_WINDOW_MS);
 
             expect(b.applied).toEqual([]);
         });

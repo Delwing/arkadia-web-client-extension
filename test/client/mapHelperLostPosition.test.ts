@@ -172,6 +172,19 @@ describe('MapHelper lost position', () => {
     expect(map.isLost).toBe(true);
   });
 
+  test('a location set as a guess is shown and marked lost; a sure one clears it', () => {
+    const { map, client } = newMap();
+
+    client.fire('map.setLocation', { roomId: 2, uncertain: true });
+    expect(map.currentRoom.id).toBe(2);
+    expect(map.isLost).toBe(true);
+    expect(lostEvents(client).at(-1)?.payload).toEqual({ lost: true, reason: 'handoff' });
+
+    client.fire('map.setLocation', { roomId: 1 });
+    expect(map.currentRoom.id).toBe(1);
+    expect(map.isLost).toBe(false);
+  });
+
   test('the state is served on request, for a view that mounts later', () => {
     const { client } = newMap();
     client.events.length = 0;

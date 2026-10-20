@@ -22,9 +22,9 @@
  * which is frozen by the time another device takes over and never sees its
  * session end. A parked room may have gone stale meanwhile - the character can
  * follow its team while the phone sleeps - so it carries a fingerprint of the room
- * as the game described it, and the device taking over uses it only when the game
- * describes the room it finds itself in the same way. No handoff, or no match,
- * means no guess, and the new device keeps whatever it knew.
+ * as the game described it. The device taking over checks it against the room the
+ * game describes there: a match is taken as fact, anything else goes on the map as
+ * a guess, with the map marked as lost. No handoff means the device keeps what it knew.
  *
  * Every login claims the record, which drops any handoff left in it. That is what
  * keeps an old one from outliving the session that came after it.

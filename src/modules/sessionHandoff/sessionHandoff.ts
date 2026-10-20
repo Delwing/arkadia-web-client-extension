@@ -10,8 +10,9 @@
  * as its tab goes into the background (see handoffRecord for the rules), and the
  * device taking over picks it up: at once if it is already there — a deliberate
  * disconnect earlier, a phone put away — or while it waits a few seconds after
- * logging in, since the takeover happens on both ends at once. A parked room
- * waits for the game to describe the room and is used only if it matches.
+ * logging in, since the takeover happens on both ends at once. A parked room is
+ * checked against the game's description of the room; one that does not match
+ * still goes on the map, with the map marked as lost.
  *
  * DOM- and Firebase-free: the browser wiring (src/web/sessionHandoff.ts) feeds it
  * game events and a store.
@@ -53,10 +54,20 @@ export interface SessionHandoffDeps {
      * it is a guess this would pass off as fact.
      */
     isTrusted(): boolean;
-    /** Put the map in this room. */
-    apply(roomId: number): void;
+    /**
+     * Put the map in this room. Not `verified`: a parked room the game's
+     * description did not confirm, likely closer than whatever the map showed but
+     * to be flagged as a guess.
+     */
+    apply(roomId: number, verified: boolean): void;
     setTimer(fn: () => void, ms: number): () => void;
 }
+
+/**
+ * How long a parked room waits for the description to match before it goes on
+ * the map as a guess. The exits can come in more than one message.
+ */
+const DESCRIPTION_SETTLE_MS = 1500;
 
 /**
  * Every decision goes to the console. The handoff happens on two devices at once
@@ -84,6 +95,9 @@ export class SessionHandoff {
     private parkedKey: string | null = null;
     /** A parked room waiting for the game to describe where this login stands. */
     private unverified: HandoffRoom | null = null;
+    /** Whether {@link unverified} is already on the map as a guess. */
+    private guessed = false;
+    private stopSettleTimer: (() => void) | null = null;
     private lost = false;
     /** The game object we are, from the latest Char.Info. */
     private body: number | null = null;
@@ -256,7 +270,6 @@ export class SessionHandoff {
                 log(`claimed ${character}; waiting ${TAKEOVER_WINDOW_MS / 1000} s for the previous session to hand over`);
                 this.stopOfferTimer = this.deps.setTimer(() => {
                     this.stopOfferTimer = null;
-                    if (this.unverified) log(`not applying parked room ${this.unverified.roomId}: no description matched`);
                     this.closeOffer();
                 }, TAKEOVER_WINDOW_MS);
                 this.refreshOnline();
@@ -300,23 +313,34 @@ export class SessionHandoff {
             this.closeOffer();
             return;
         }
-        if (handoff.parked) {
-            if (!handoff.print) return log(`not applying parked room ${handoff.roomId}: nothing to check it against`);
-            // Until it matches, keep waiting: the description may not be complete yet.
-            // Moving on, or the takeover window running out, ends the wait.
+        if (handoff.parked && (!handoff.print || this.print !== handoff.print)) {
+            // The description may not be complete yet, so give it a moment. Without
+            // a match the parked room still goes on the map - likely closer than
+            // the room this device last saw - but flagged as a guess, and the offer
+            // stays open for a match, or for the room the session really ended in.
             this.unverified = handoff;
-            if (this.print === null) {
-                return log(`parked room ${handoff.roomId} waits for the game to describe where we are`);
-            }
-            if (this.print !== handoff.print) {
-                return log(`parked room ${handoff.roomId} does not match the room described`);
-            }
+            if (this.guessed) return;
+            log(`parked room ${handoff.roomId} ${this.print === null ? 'waits for the game to describe where we are' : 'does not match the room described yet'}`);
+            this.stopSettleTimer?.();
+            this.stopSettleTimer = this.deps.setTimer(() => {
+                this.stopSettleTimer = null;
+                const parked = this.unverified;
+                if (!parked || this.guessed || this.moved || !this.offerOpen) return;
+                log(`applying parked room ${parked.roomId} unconfirmed: the room described does not match`);
+                this.guessed = true;
+                this.place(parked.roomId, false);
+            }, DESCRIPTION_SETTLE_MS);
+            return;
         }
         log(`applying room ${handoff.roomId}`);
         this.closeOffer();
+        this.place(handoff.roomId, true);
+    }
+
+    private place(roomId: number, verified: boolean): void {
         this.applying = true;
         try {
-            this.deps.apply(handoff.roomId);
+            this.deps.apply(roomId, verified);
         } finally {
             this.applying = false;
         }
@@ -325,6 +349,9 @@ export class SessionHandoff {
     private closeOffer(): void {
         this.offerOpen = false;
         this.unverified = null;
+        this.guessed = false;
+        this.stopSettleTimer?.();
+        this.stopSettleTimer = null;
         this.stopOfferTimer?.();
         this.stopOfferTimer = null;
         this.refreshOnline();

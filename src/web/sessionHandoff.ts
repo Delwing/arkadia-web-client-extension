@@ -52,9 +52,11 @@ export function installSessionHandoff(client: Client): void {
         deviceId: getDeviceId(),
         newSessionId,
         isTrusted: () => hiddenSince === null || Date.now() - hiddenSince <= HIDDEN_GRACE_MS,
-        apply: roomId => {
-            client.sendEvent('map.setLocation', {roomId});
-            client.println('Przejeto lokalizacje z poprzedniego urzadzenia.');
+        apply: (roomId, verified) => {
+            client.sendEvent('map.setLocation', {roomId, uncertain: !verified});
+            client.println(verified
+                ? 'Przejeto lokalizacje z poprzedniego urzadzenia.'
+                : 'Przejeto lokalizacje z poprzedniego urzadzenia, ale opis lokacji sie nie zgadza - sprawdz pozycje na mapie.');
         },
         setTimer: (fn, ms) => {
             const id = window.setTimeout(fn, ms);

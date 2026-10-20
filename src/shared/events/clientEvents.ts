@@ -517,7 +517,8 @@ export interface KnownEvents {
     "peopleBrowser.popup.open": void;
     "dataSources.popup.open": void;
     "map.centerOn": { roomId: number };
-    "map.setLocation": { roomId: number };
+    /** `uncertain`: a best guess, so the map goes there marked as lost. */
+    "map.setLocation": { roomId: number; uncertain?: boolean };
     "mapLabelVisibility": boolean;
     "mapAlwaysShowNote": boolean;
     "mapShowGrid": boolean;
