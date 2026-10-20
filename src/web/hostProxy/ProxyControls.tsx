@@ -2,7 +2,7 @@ import {useEffect, useRef, useState} from 'react';
 import {ChevronRight, SlidersHorizontal, TriangleAlert, X} from 'lucide-react';
 import type {ProxyMode} from '../MudClient';
 import type {HelperConnection} from '@modules/helper/HelperConnection';
-import {getDownloadUrl} from '@web/helperDownload.ts';
+import {getDownloadUrl, isHelperSupported} from '@web/helperDownload.ts';
 import {HostProxyModal} from './HostProxyModal';
 
 const MODES: {value: ProxyMode; label: string; about: string}[] = [
@@ -119,6 +119,7 @@ export function ProxyControls({
         onBlockedChange(blocked);
     }, [blocked, onBlockedChange]);
 
+    const modes = isHelperSupported() ? MODES : MODES.filter((m) => m.value !== 'helper');
     const current = MODES.find((m) => m.value === mode) ?? MODES[0];
     const download = getDownloadUrl();
 
@@ -127,7 +128,7 @@ export function ProxyControls({
             <span className="auth-cap">Połączenie</span>
             <div className="proxy-controls__row">
                 <div className="proxy-seg">
-                    {MODES.map(({value, label}) => (
+                    {modes.map(({value, label}) => (
                         <button
                             key={value}
                             id={`proxy-mode-${value}`}

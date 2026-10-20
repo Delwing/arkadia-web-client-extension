@@ -4,6 +4,7 @@ import { getCustomSound, getCustomSounds } from "@modules/core/customSounds";
 import type Client from "./Client";
 import type { SoundCategory } from '@shared/events/clientEvents.ts';
 import type { SoundCategories } from '@shared/uiSettingsTypes';
+import { isIOS } from '@shared/dom/mobileOs.ts';
 
 export type SoundKey = string;
 
@@ -84,14 +85,7 @@ function buildKeepaliveSrc(): string {
 // so the keepalive loop — designed to be inaudible at -60 dB — would play
 // the beep at full hardware volume on a loop. iOS also doesn't enforce
 // Chrome's ~5s transient-activation expiration, so the keepalive isn't
-// needed there. Detect iPhone/iPod plus iPadOS 13+ (which reports as
-// MacIntel but has multi-touch).
-function isIOS(): boolean {
-    if (typeof navigator === 'undefined') return false;
-    const ua = navigator.userAgent;
-    if (/iPad|iPhone|iPod/.test(ua)) return true;
-    return navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
-}
+// needed there.
 
 export default class SoundManager {
     private elements = new Map<SoundKey, HTMLAudioElement>();

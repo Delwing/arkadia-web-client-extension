@@ -1,3 +1,5 @@
+import {isMobileOs} from '@shared/dom/mobileOs.ts';
+
 /** The helper build for this machine, from the site that serves the client. */
 const HELPER_BASE_PATH = `${import.meta.env.BASE_URL}helper/arkadia-helper`;
 
@@ -26,9 +28,19 @@ function isAppleSilicon(): boolean {
     return appleSilicon;
 }
 
+/**
+ * The helper is a desktop app (hotkeys, window focus, a local telnet bridge),
+ * so a phone or tablet gets no trace of it: no mode, menu entry or download.
+ */
+export function isHelperSupported(): boolean {
+    return !isMobileOs();
+}
+
 export function getDownloadUrl(): { url: string; label: string; os: HelperOs } | null {
+    // An Android user agent says "Linux" and an iPad's says "Mac".
+    if (!isHelperSupported()) return null;
     const ua = navigator.userAgent.toLowerCase();
-    const isArm = /arm|aarch64/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const isArm = /arm|aarch64/.test(ua);
     if (ua.includes('win')) {
         const arch = isArm ? 'arm64' : 'amd64';
         return { url: `${HELPER_BASE_PATH}-windows-${arch}.exe`, label: `Windows (${arch})`, os: 'win' };

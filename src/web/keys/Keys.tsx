@@ -21,7 +21,7 @@ import type { HelperConnection, HelperState } from "@modules/helper/HelperConnec
 import { loadBinds as loadHelperBinds, saveBinds as saveHelperBinds, toHelperBind, type StoredBind } from "@modules/helper/helperBinds";
 import { usePopover } from "@web/layout/hooks/usePopover.ts";
 import { MODAL_EVENT } from "@web/modals/appModal.ts";
-import { getDownloadUrl } from "@web/helperDownload.ts";
+import { getDownloadUrl, isHelperSupported } from "@web/helperDownload.ts";
 import { isStandaloneWindow } from "@modules/helper/helperResync";
 import SubDialog from "@web/SubDialog.tsx";
 import { openSettingsPage } from "@web/settings/categories.ts";
@@ -131,6 +131,8 @@ export default function Keys({ helperConnection, headerSlot }: KeysProps) {
     const pendingHelper = useRef<{ next: StoredBind[]; gone: StoredBind[] } | null>(null);
     const helperRef = useRef<HelperConnection | null>(null);
     helperRef.current = helperConnection ?? null;
+    // No helper builds for phones and tablets: no tab, section or helper-only shortcut.
+    const helperSupported = isHelperSupported();
 
     const flushHelper = useCallback(() => {
         window.clearTimeout(helperTimer.current);
@@ -912,14 +914,16 @@ export default function Keys({ helperConnection, headerSlot }: KeysProps) {
                 <button type="button" className="keys-add" onClick={() => addOwnCommand("client")}>
                     <Plus size={14} strokeWidth={2.2} />Komenda
                 </button>
-                <button
-                    type="button"
-                    className="keys-add"
-                    title="Skrót, którego słucha helper — działa też poza klientem"
-                    onClick={() => addOwnCommand("global")}
-                >
-                    <Plus size={14} strokeWidth={2.2} />Komenda przez helpera<Globe size={12} className="keys-global-icon" />
-                </button>
+                {helperSupported && (
+                    <button
+                        type="button"
+                        className="keys-add"
+                        title="Skrót, którego słucha helper — działa też poza klientem"
+                        onClick={() => addOwnCommand("global")}
+                    >
+                        <Plus size={14} strokeWidth={2.2} />Komenda przez helpera<Globe size={12} className="keys-global-icon" />
+                    </button>
+                )}
             </div>
         </section>
     );
@@ -1240,8 +1244,8 @@ export default function Keys({ helperConnection, headerSlot }: KeysProps) {
                         </div>
                     );
                 })()}
-                {single && reachChoice(single)}
-                {single && single.ref.kind === "slot" && helperIdOf(single) && (
+                {helperSupported && single && reachChoice(single)}
+                {helperSupported && single && single.ref.kind === "slot" && helperIdOf(single) && (
                     <button
                         type="button"
                         className="keys-add"
@@ -1250,7 +1254,7 @@ export default function Keys({ helperConnection, headerSlot }: KeysProps) {
                         <Plus size={14} strokeWidth={2.2} />Drugi klawisz przez helpera (np. globalny)
                     </button>
                 )}
-                {list.length === 0 && (
+                {list.length === 0 && (helperSupported || !reserved) && (
                     <button
                         type="button"
                         className="keys-add"
@@ -1266,7 +1270,7 @@ export default function Keys({ helperConnection, headerSlot }: KeysProps) {
     const reachChoice = (e: KeyEntry) => {
         const reserved = !!e.combo && isBrowserReserved(e.combo);
         // A plugin action runs in the page only.
-        const helperOk = !!e.combo && e.ref.kind !== "plugin" && toHelperKey(e.combo) !== null;
+        const helperOk = helperSupported && !!e.combo && e.ref.kind !== "plugin" && toHelperKey(e.combo) !== null;
         const isBindAction = e.targetLabel !== undefined || (e.ref.kind === "helper" && e.command === undefined);
         const options: { reach: Reach; short: string; hint: string; disabled: boolean }[] = [
             {
@@ -1446,7 +1450,7 @@ export default function Keys({ helperConnection, headerSlot }: KeysProps) {
     );
 
     // "Pluginy" only once a plugin offers a key action.
-    const listOrder: (Group | "helper")[] = ["dir", "basic", "enemy", "temp", "multi", "own", ...(pluginEntries.length ? ["plugin" as const] : []), "helper"];
+    const listOrder: (Group | "helper")[] = ["dir", "basic", "enemy", "temp", "multi", "own", ...(pluginEntries.length ? ["plugin" as const] : []), ...(helperSupported ? ["helper" as const] : [])];
     const tabCount = (g: Group | "helper") => g === "helper" ? 0 : entries.filter(e => e.group === g && e.combo).length;
 
     let body: ReactNode;
@@ -1472,7 +1476,7 @@ export default function Keys({ helperConnection, headerSlot }: KeysProps) {
                     {ownSection()}
                     {pluginSection()}
                 </div>
-                {helperSection()}
+                {helperSupported && helperSection()}
             </>
         );
     } else if (size === "medium") {
@@ -1542,7 +1546,7 @@ export default function Keys({ helperConnection, headerSlot }: KeysProps) {
                 {multiSection()}
                 {ownSection()}
                 {pluginSection()}
-                {helperSection()}
+                {helperSupported && helperSection()}
             </>
         );
     }

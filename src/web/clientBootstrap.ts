@@ -4,6 +4,7 @@ import type { NotificationLevel } from "@shared/events/clientEvents.ts";
 import { registerScripts } from "@client/main";
 import { HelperConnection } from "@modules/helper/HelperConnection";
 import { setupHelperResync } from "@modules/helper/helperResync";
+import { isHelperSupported } from "@web/helperDownload.ts";
 import initSessionLogger from "./sessionLogger";
 import initLogFileSaver from "./logFileSaver";
 import { migrateLegacyLogs } from "./logsMigration";
@@ -192,7 +193,7 @@ export function bootstrapGameClient(opts: { installPorts: () => void }): GameCli
     setupHelperResync(helperConnection);
 
     // Auto-connect: probe first, launch if not running.
-    if (localStorage.getItem('arkadia.helperAutoLaunch') === 'true') {
+    if (isHelperSupported() && localStorage.getItem('arkadia.helperAutoLaunch') === 'true') {
         helperConnection.probe().then(status => {
             if (status) {
                 helperConnection.connect();

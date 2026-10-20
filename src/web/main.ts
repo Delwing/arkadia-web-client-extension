@@ -61,6 +61,7 @@ import {LocationLabel} from "@web-ui/components/map/LocationLabel"
 import {PauseIcon} from "@web-ui/components/map/PauseIcon"
 import {MapLostBadge} from "@web-ui/components/map/MapLostBadge"
 import Keys from "./keys/Keys.tsx"
+import { isHelperSupported } from "./helperDownload"
 import Scripts from "./options/Scripts.tsx"
 import AutomationWindow from "./automation/AutomationWindow.tsx"
 import Recordings from "./options/Recordings.tsx"
@@ -1206,7 +1207,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ['data-sources-button', 'Źródła danych', 'narzedzia', 'database', () => eventBus.emit('dataSources.popup.open')],
         ['helper-button', 'Helper', 'narzedzia', 'plug', () => helperModal?.show()],
     ];
-    builtins.forEach(([id, label, group, icon, onSelect, shortLabel, keywords], index) => {
+    builtins.filter(([id]) => id !== 'helper-button' || isHelperSupported()).forEach(([id, label, group, icon, onSelect, shortLabel, keywords], index) => {
         registerMainMenuItem({id, label, shortLabel, keywords, group, icon, order: (index + 1) * 10, onSelect, source: 'builtin'});
     });
     // One entry for the whole dialog: it opens where it was left (page, unsaved edits).
@@ -1474,7 +1475,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const bindsRoot = document.getElementById('binds-options');
     if (bindsRoot) {
         createRoot(bindsRoot).render(createElement(Keys, {
-            helperConnection,
+            helperConnection: isHelperSupported() ? helperConnection : null,
             headerSlot: document.getElementById('binds-header-slot'),
         }));
     }

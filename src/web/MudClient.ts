@@ -12,6 +12,7 @@ import {eventNow, runWithEventTime} from "@shared/eventClock";
 import type {ClientEvents} from "@shared/events";
 import {getRenderSettings, onRenderSettingsChange} from "@modules/core/settings";
 import {HELPER_TELNET_URL} from "@modules/helper/helperProtocol";
+import {isHelperSupported} from "./helperDownload";
 import {CommandOptions, normalizeCommand} from "@client/scripts/commandPreserveCaseMode";
 import PingTracker from "./PingTracker";
 import {OFFSET_REPORT_STEP_MS, ProxyClockOffset} from "./proxyClockOffset";
@@ -310,6 +311,10 @@ class MudClient implements ClientAdapter {
      */
     private static loadProxyMode(): ProxyMode {
         const stored = localStorage.getItem(PROXY_MODE_STORAGE_KEY);
+        // A phone has no helper to reach, so a helper mode would only block logging in.
+        if (stored === 'helper' && !isHelperSupported()) {
+            return 'direct';
+        }
         if (stored === 'direct' || stored === 'helper' || stored === 'proxy') {
             return stored;
         }
