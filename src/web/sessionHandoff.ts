@@ -55,14 +55,20 @@ export function installSessionHandoff(client: Client): void {
         startTracking: () => client.Map.startJournal(),
         stopTracking: () => client.Map.stopJournal(),
         placedSinceLogin: () => client.Map.placedSinceJournal,
-        apply: (roomId, verified) => {
+        apply: (roomId, verified, sameDevice) => {
             // Without a journal - the map was not ready at login - just the room.
             if (!client.Map.replayJournal(roomId, !verified)) {
                 client.sendEvent('map.setLocation', {roomId, uncertain: !verified});
             }
-            client.println(verified
-                ? 'Przejeto lokalizacje z poprzedniego urzadzenia.'
-                : 'Przejeto lokalizacje z poprzedniego urzadzenia, ale opis lokacji sie nie zgadza - sprawdz pozycje na mapie.');
+            // The map simply carrying on where this device left it is no news.
+            if (verified && sameDevice) return;
+            const from = sameDevice ? 'z poprzedniej sesji' : 'z poprzedniego urządzenia';
+            client.sendEvent('notify', verified
+                ? {text: `Przejęto lokalizację ${from}.`, source: 'map', key: 'map.handoff'}
+                : {
+                    text: `Przejęto lokalizację ${from}, ale opis lokacji się nie zgadza - sprawdź pozycję na mapie.`,
+                    level: 'warning', source: 'map', key: 'map.handoff',
+                });
         },
         setTimer: (fn, ms) => {
             const id = window.setTimeout(fn, ms);

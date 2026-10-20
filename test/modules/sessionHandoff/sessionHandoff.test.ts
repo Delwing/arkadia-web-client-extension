@@ -45,6 +45,8 @@ function device(db: FakeDatabase, name: string) {
     const applied: number[] = [];
     /** The rooms of those applied that went on the map as a guess. */
     const guesses: number[] = [];
+    /** The rooms of those applied that this device itself handed over. */
+    const own: number[] = [];
     /** `placed`: the map was placed since tracking started - a GMCP fix, /ustaw. */
     const state = {trusted: true, tracking: false, placed: false};
     const handoff = new SessionHandoff({
@@ -59,9 +61,10 @@ function device(db: FakeDatabase, name: string) {
             state.tracking = false;
         },
         placedSinceLogin: () => state.tracking && state.placed,
-        apply: (roomId, verified) => {
+        apply: (roomId, verified, sameDevice) => {
             applied.push(roomId);
             if (!verified) guesses.push(roomId);
+            if (sameDevice) own.push(roomId);
             handoff.roomChanged(roomId);
         },
         setTimer: (fn, ms) => {
@@ -71,7 +74,7 @@ function device(db: FakeDatabase, name: string) {
     });
     const store = db.store();
     handoff.setStore(store);
-    return {handoff, applied, guesses, state, store};
+    return {handoff, applied, guesses, own, state, store};
 }
 
 /** The game object the character is while it stays in the world. */
@@ -138,6 +141,23 @@ describe('SessionHandoff', () => {
         await login(b, 500);
 
         expect(b.applied).toEqual([42]);
+        expect(b.own).toEqual([]);
+    });
+
+    it('says when the room comes back to the device that handed it over', async () => {
+        const db = new FakeDatabase();
+        const before = device(db, 'desktop');
+        const after = device(db, 'desktop');
+
+        await login(before, 10);
+        before.handoff.roomChanged(42);
+        await before.handoff.sessionEnded();
+        before.handoff.disconnected();
+
+        await login(after, 10);
+
+        expect(after.applied).toEqual([42]);
+        expect(after.own).toEqual([42]);
     });
 
     it('ignores a handoff older than the idle timeout', async () => {

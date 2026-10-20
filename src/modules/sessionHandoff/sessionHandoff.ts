@@ -70,8 +70,10 @@ export interface SessionHandoffDeps {
      * Put the map in this room, then take the steps made since login again from
      * it. Not `verified`: a parked room the game's description did not confirm,
      * likely closer than whatever the map showed but to be flagged as a guess.
+     * `sameDevice`: written by this device's earlier session (a reload, a
+     * reconnect), so there is no other device to tell the player about.
      */
-    apply(roomId: number, verified: boolean): void;
+    apply(roomId: number, verified: boolean, sameDevice: boolean): void;
     setTimer(fn: () => void, ms: number): () => void;
 }
 
@@ -342,7 +344,7 @@ export class SessionHandoff {
             return;
         }
         log(`applying room ${handoff.roomId}`);
-        this.deps.apply(handoff.roomId, true);
+        this.deps.apply(handoff.roomId, true, handoff.device === this.deps.deviceId);
         this.closeOffer();
     }
 
@@ -352,7 +354,7 @@ export class SessionHandoff {
         if (!parked || this.guessed || !this.offerOpen || this.deps.placedSinceLogin()) return;
         log(`applying parked room ${parked.roomId} unconfirmed: ${why}`);
         this.guessed = true;
-        this.deps.apply(parked.roomId, false);
+        this.deps.apply(parked.roomId, false, parked.device === this.deps.deviceId);
     }
 
     private closeOffer(): void {
