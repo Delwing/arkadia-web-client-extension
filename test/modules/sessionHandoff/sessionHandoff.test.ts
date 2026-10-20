@@ -358,7 +358,7 @@ describe('SessionHandoff', () => {
     describe('a room parked as the tab went into the background', () => {
         const HERE = ['Sa tutaj dwa widoczne wyjscia: polnoc i wschod.'];
         const ELSEWHERE = ['Sa tutaj dwa widoczne wyjscia: poludnie i zachod.'];
-        const print = (exits: string[]) => descriptionPrint(null, exits);
+        const print = (exits: string[]) => descriptionPrint(exits);
 
         it('waits for the rest of a description that matches only once complete', async () => {
             const db = new FakeDatabase();
@@ -525,14 +525,14 @@ describe('handoff records', () => {
         expect(normalizeRecord({device: 'd'})).toBeNull();
     });
 
-    it('fingerprints a room by its description, whatever the screen width wrapped', async () => {
+    it('fingerprints a room by its exits, whatever the screen width wrapped', async () => {
         const { descriptionPrint } = await import('@modules/sessionHandoff/handoffRecord');
-        expect(descriptionPrint(null, ['Sa tutaj dwa widoczne\nwyjscia: polnoc i wschod.']))
-            .toBe(descriptionPrint(null, ['Sa tutaj dwa widoczne wyjscia:\npolnoc i wschod. ']));
-        expect(descriptionPrint('Rynek.', ['Jest tu jedno wyjscie: polnoc.']))
-            .not.toBe(descriptionPrint('Brama.', ['Jest tu jedno wyjscie: polnoc.']));
-        expect(descriptionPrint('Rynek.', [])).toBeNull();
-        expect(descriptionPrint(null, [' '])).toBeNull();
+        expect(descriptionPrint(['Sa tutaj dwa widoczne\nwyjscia: polnoc i wschod.']))
+            .toBe(descriptionPrint(['Sa tutaj dwa widoczne wyjscia:\npolnoc i wschod. ']));
+        expect(descriptionPrint(['Jest tu jedno wyjscie: polnoc.']))
+            .not.toBe(descriptionPrint(['Jest tu jedno wyjscie: poludnie.']));
+        expect(descriptionPrint([])).toBeNull();
+        expect(descriptionPrint([' '])).toBeNull();
     });
 
     it('makes a safe database key from a character name', async () => {

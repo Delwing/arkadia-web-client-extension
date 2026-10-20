@@ -142,19 +142,18 @@ export function withParked(
 
 /**
  * A room as the game last described it: the `room.exits` messages after a
- * description, and its short description when the character plays in brief mode.
- * The long description stays out - it changes with the time of day - and so does
- * the wrapping, which follows each device's own screen width.
+ * description, without the wrapping, which follows each device's own screen width.
  *
  * A takeover is not announced with a GMCP `room.info`; what follows it is the
- * description of the room the character stands in, so that is what both ends compare.
+ * description of the room the character stands in, so that is what both ends
+ * compare. Only the exits, though: entering the game always brings the long
+ * description, even to a character in brief mode whose last room got the short
+ * one, and the long one changes with the time of day besides.
  * `null` without exits, since an empty print would match any other.
  */
-export function descriptionPrint(short: string | null, exits: readonly string[]): string | null {
-    const fold = (text: string) => text.replace(/\s+/g, ' ').trim();
-    const exitText = exits.map(fold).filter(Boolean).join(' ');
-    if (!exitText) return null;
-    return `${short ? fold(short) : ''}|${exitText}`;
+export function descriptionPrint(exits: readonly string[]): string | null {
+    const exitText = exits.map(text => text.replace(/\s+/g, ' ').trim()).filter(Boolean).join(' ');
+    return exitText || null;
 }
 
 /** The room the session a login displaced handed over after the claim, if it has. */

@@ -91,29 +91,21 @@ export function installSessionHandoff(client: Client): void {
         const num = Number(info?.object_num);
         instance.charInfoHandled(Number.isInteger(num) && num > 0 ? num : null);
     });
-    // The room as the game describes it, from the raw messages rather than the
-    // lines on screen, which scripts may have shortened or recoloured. A message
-    // split into several lines comes once per line, all with the same text.
-    let short: string | null = null;
+    // The room's exits as the game describes them, from the raw messages rather
+    // than the lines on screen, which scripts may have shortened or recoloured. A
+    // message split into several lines comes once per line, all with the same text.
     let exits: string[] = [];
-    let describingShort = false;
-    const describe = (part: AnsiAwareBuffer, kind: 'short' | 'long' | 'exits') => {
-        const text = stripAnsiCodes(part.originalText ?? part);
-        if (kind === 'exits') {
-            describingShort = false;
-            if (exits[exits.length - 1] === text) return;
-            exits.push(text);
-            instance.roomDescribed(descriptionPrint(short, exits));
-            return;
-        }
-        // A long description straight after a short one describes the same room.
-        if (kind === 'short' || !describingShort) short = kind === 'short' ? text : null;
-        describingShort = kind === 'short';
+    const startDescription = () => {
         exits = [];
     };
-    client.on('gmcp_msg.room.short', part => describe(part, 'short'));
-    client.on('gmcp_msg.room.long', part => describe(part, 'long'));
-    client.on('gmcp_msg.room.exits', part => describe(part, 'exits'));
+    client.on('gmcp_msg.room.short', startDescription);
+    client.on('gmcp_msg.room.long', startDescription);
+    client.on('gmcp_msg.room.exits', (part: AnsiAwareBuffer) => {
+        const text = stripAnsiCodes(part.originalText ?? part);
+        if (exits[exits.length - 1] === text) return;
+        exits.push(text);
+        instance.roomDescribed(descriptionPrint(exits));
+    });
     client.Triggers.registerTrigger(TAKEN_OVER, (line) => {
         void instance.sessionEnded();
         return line;
