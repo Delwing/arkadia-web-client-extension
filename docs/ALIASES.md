@@ -263,6 +263,13 @@ Zakresy działają rosnąco (`1-7`) i malejąco (`7-1`). Maksymalnie 50 iteracji
 | `/labirynt_mapa` | Przełącz mapper Labiryntu Rinde |
 | `/raon_mapa` | Przełącz mapper Labiryntu Raon |
 | `/taragorn` | Rozpoznaj ponownie lokację w labiryncie pod świątynią Taragorna |
+| `/mgla` | Mgła w Parravonie: wyślij podpowiadany krok (zawęża, gdzie jesteś, i prowadzi do najbliższego schronienia). W mgle jest też pod bindem funkcyjnym i czeka w linii komend - wystarczy Enter |
+| `/mgla stan` | Mgła w Parravonie: pokaż liczbę możliwych lokacji i podpowiedź |
+| `/mgla start` | Włącz szukanie ręcznie (normalnie startuje samo, gdy mgła cię zgubi) |
+| `/mgla stop` | Wyłącz szukanie i odwieś mapę |
+| `/mgla tryb [srednio\|bezpiecznie]` | Pokaż lub zmień tryb podpowiedzi: `srednio` - najmniej kroków przeciętnie, `bezpiecznie` (domyślny) - najmniej kroków w najgorszym razie |
+
+> **Wskazówka:** W mgle nazwy lokacji są losowe i GMCP milczy - pozycję zdradzają tylko odpowiedzi na kroki („Nie widzisz żadnego wyjścia…”, złapanie za kostkę, przejście). Możliwe lokacje są podświetlone na mapie; gdy zostanie jedna, mapa staje na niej i dostajesz całą drogę do schronienia. Schronienia: 26657, 26808 (drzwi na zachód z 26645), okno w 26613 (`wespnij sie do okna`) i 26810 (na południowy zachód z 26634, nie zawsze otwarte - próbowane tylko, gdy i tak tam stoisz).
 
 ## Skarbce
 

@@ -150,6 +150,12 @@ export default function CommandLine({ deps }: { deps: CommandLineDeps }) {
 
   // The server asks for a password by taking echo away.
   useEffect(() => eventBus.on("telnet.echo", (echoing: boolean) => setPasswordMode(echoing)), []);
+  // A script can offer the next command (e.g. /mgla in the Parravon fog) for a plain Enter.
+  // Deferred: the offer often comes from a command just submitted from this line,
+  // and the submit clears (or selects) the line only after the command has run.
+  useEffect(() => eventBus.on("commandInput.fill", (text: string) => {
+    setTimeout(() => controllerRef.current?.offerLine(text), 0);
+  }), []);
   // After the swap is on screen, so focus lands on the visible field. Not on mount:
   // the login form owns focus then.
   const shownPasswordMode = useRef(passwordMode);

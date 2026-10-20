@@ -107,6 +107,8 @@ export interface GlobalStorageSchema {
     last_world_rebirth: number;
     /** Rooms a carriage cannot enter, gathered by the player. Shared across characters. */
     carriage_blocked_rooms: number[];
+    /** Parravon fog advice: shortest on average, or shortest in the unluckiest case. */
+    parravon_fog_mode: 'average' | 'safe';
     /**
      * Push account credential minted by the push Worker. See @modules/push.
      *
@@ -225,6 +227,7 @@ export const globalStorageKeys = [
     'letter_templates',
     'last_world_rebirth',
     'carriage_blocked_rooms',
+    'parravon_fog_mode',
     'pushCredentials',
     'plugin_global_data',
 ] as const satisfies readonly (keyof GlobalStorageSchema)[];

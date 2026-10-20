@@ -65,6 +65,8 @@ export class CommandLineEngine {
     private tabCompletionCount = -1;
     private tabCompletionOld = '';
     private userKeptOnTyping = false;
+    /** The last command a script put on the line (offerLine), so the next one may replace it. */
+    private offered: string | null = null;
 
     // Which candidate the hint shows ('word'/'whole' modes), for the line it was
     // picked on; typing anything else puts the hint back on the best one.
@@ -417,6 +419,20 @@ export class CommandLineEngine {
         this.resetHistoryBrowsing();
         if (!this.field.isFocused()) this.field.focus();
         this.moveCursorToEnd();
+    }
+
+    /**
+     * Put a command a script suggests on the line, ready for Enter. Never over
+     * something the player is typing: only on an empty line, over the previous
+     * suggestion, or over a line left fully selected after sending.
+     */
+    offerLine(text: string): void {
+        const current = this.field.value;
+        const allSelected = current !== ''
+            && this.field.selectionStart === 0 && this.field.selectionEnd === current.length;
+        if (current !== '' && current !== this.offered && !allSelected) return;
+        this.offered = text;
+        this.loadHistoryEntry(text);
     }
 
     // ── Editing-state transitions ──────────────────────────────────────

@@ -609,6 +609,8 @@ export interface KnownEvents {
     /** A line of input went out to the game (passwords included) - what the game's idle timer counts. */
     "socket.sent": void;
     "telnet.echo": boolean;
+    /** A script suggests a command for the command line; it lands only on an empty line or over its own earlier suggestion. */
+    "commandInput.fill": string;
     "playback.incomingData": [data: string, options?: { timestamp?: number }];
     "helperHotkey": [id: string, key: string];
     /** Helper system only */

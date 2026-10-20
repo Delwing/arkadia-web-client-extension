@@ -383,3 +383,33 @@ describe('localStorageHistoryStore', () => {
         expect(store.load()).toEqual([]);
     });
 });
+
+describe('CommandLineEngine offerLine', () => {
+    it('fills an empty line, ready for Enter', () => {
+        const h = makeEngine();
+        h.engine.offerLine('/mgla');
+        expect(h.field.value).toBe('/mgla');
+        h.engine.submit();
+        expect(h.sent.at(-1)?.command).toBe('/mgla');
+    });
+
+    it('never overwrites what the player is typing', () => {
+        const h = makeEngine();
+        h.field.type('kup chl');
+        h.engine.offerLine('/mgla');
+        expect(h.field.value).toBe('kup chl');
+    });
+
+    it('replaces its own suggestion and a line left selected after sending', () => {
+        const h = makeEngine({ clearInputOnSend: false });
+        h.engine.offerLine('/mgla');
+        h.engine.offerLine('/mgla stan');
+        expect(h.field.value).toBe('/mgla stan');
+
+        h.field.type('wschod');
+        h.engine.submit();
+        h.field.selectAll();
+        h.engine.offerLine('/mgla');
+        expect(h.field.value).toBe('/mgla');
+    });
+});

@@ -160,6 +160,7 @@ import initLabyrinth from './scripts/labyrinth'
 import initLabyrinthMapper from './scripts/rindeLabyrinthMapper'
 import initRaonLabyrinthMapper from './scripts/raonLabyrinthMapper'
 import initTaragornLabyrinth from './scripts/taragornLabyrinth'
+import initParravonFog from './scripts/parravonFog'
 import initDataRefresh from './scripts/dataRefresh'
 import initTcolor from './scripts/tcolor'
 import initOpal from './scripts/opal'
@@ -418,6 +419,7 @@ export function registerScripts(client: Client) {
     initLabyrinthMapper(client, aliases)
     initRaonLabyrinthMapper(client, aliases)
     initTaragornLabyrinth(client)
+    initParravonFog(client, aliases)
     initLootParser(client)
     // After lootParser: it rewrites the body/loot lines (colours, click-to-take),
     // and this only tags the result.

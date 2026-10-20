@@ -370,6 +370,12 @@ export class CommandInputController {
         this.engine.loadHistoryEntry(entry);
     }
 
+    /** A command a script suggests, put on the line only if the player is not typing (see the engine). */
+    offerLine(text: string): void {
+        if (this.deps.isPasswordMode()) return;
+        this.engine.offerLine(text);
+    }
+
     /** What the next Tab would append to the current line (see the engine). */
     peekTabCompletion(): string | null {
         return this.engine.peekTabCompletion(this.input.value);
