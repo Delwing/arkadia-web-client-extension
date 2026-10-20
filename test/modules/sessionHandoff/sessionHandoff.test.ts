@@ -451,11 +451,27 @@ describe('SessionHandoff', () => {
             const b = device(db, 'desktop');
 
             await login(b, 500);
-            await vi.advanceTimersByTimeAsync(2000);
+            // Only the first of the exits messages in this batch.
+            b.handoff.roomDescribed(print(['Jest tu jedno wyjscie: polnoc.']));
+            await vi.advanceTimersByTimeAsync(0);
             expect(b.guesses).toEqual([12]);
             b.handoff.roomDescribed(print(HERE));
 
             expect(b.applied).toEqual([12, 12]);
+            expect(b.guesses).toEqual([12]);
+        });
+
+        it('is guessed before a step taken right after the description can move the map', async () => {
+            const db = new FakeDatabase();
+            await parkedPhone(db);
+            const b = device(db, 'desktop');
+
+            await login(b, 500);
+            b.handoff.roomDescribed(print(ELSEWHERE));
+            // The batch of game output is handled; the next one is the step.
+            await vi.advanceTimersByTimeAsync(0);
+            b.handoff.roomChanged(13);
+
             expect(b.guesses).toEqual([12]);
         });
 

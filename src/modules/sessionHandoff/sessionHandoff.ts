@@ -65,9 +65,13 @@ export interface SessionHandoffDeps {
 
 /**
  * How long a parked room waits for the description to match before it goes on
- * the map as a guess. The exits can come in more than one message.
+ * the map as a guess: only to the end of the batch of game output being handled,
+ * where the rest of the exits would be. Any longer and a step taken in the
+ * meantime would move the map from the room this device last saw, which counts
+ * as the map being placed, and the guess would be lost with the map still wrong.
+ * Exits that do come later can still confirm the guess.
  */
-const DESCRIPTION_SETTLE_MS = 1500;
+const DESCRIPTION_SETTLE_MS = 0;
 
 /**
  * Every decision goes to the console. The handoff happens on two devices at once
@@ -270,6 +274,7 @@ export class SessionHandoff {
                 log(`claimed ${character}; waiting ${TAKEOVER_WINDOW_MS / 1000} s for the previous session to hand over`);
                 this.stopOfferTimer = this.deps.setTimer(() => {
                     this.stopOfferTimer = null;
+                    this.guess('the game never described where we are');
                     this.closeOffer();
                 }, TAKEOVER_WINDOW_MS);
                 this.refreshOnline();
@@ -314,27 +319,32 @@ export class SessionHandoff {
             return;
         }
         if (handoff.parked && (!handoff.print || this.print !== handoff.print)) {
-            // The description may not be complete yet, so give it a moment. Without
+            // The rest of the description may still be in this batch. Without
             // a match the parked room still goes on the map - likely closer than
             // the room this device last saw - but flagged as a guess, and the offer
             // stays open for a match, or for the room the session really ended in.
             this.unverified = handoff;
             if (this.guessed) return;
-            log(`parked room ${handoff.roomId} ${this.print === null ? 'waits for the game to describe where we are' : 'does not match the room described yet'}`);
+            if (this.print === null) return log(`parked room ${handoff.roomId} waits for the game to describe where we are`);
             this.stopSettleTimer?.();
             this.stopSettleTimer = this.deps.setTimer(() => {
                 this.stopSettleTimer = null;
-                const parked = this.unverified;
-                if (!parked || this.guessed || this.moved || !this.offerOpen) return;
-                log(`applying parked room ${parked.roomId} unconfirmed: the room described does not match`);
-                this.guessed = true;
-                this.place(parked.roomId, false);
+                this.guess('the room described does not match');
             }, DESCRIPTION_SETTLE_MS);
             return;
         }
         log(`applying room ${handoff.roomId}`);
         this.closeOffer();
         this.place(handoff.roomId, true);
+    }
+
+    /** Put the parked room on the map unconfirmed, unless something placed it since. */
+    private guess(why: string): void {
+        const parked = this.unverified;
+        if (!parked || this.guessed || this.moved || !this.offerOpen) return;
+        log(`applying parked room ${parked.roomId} unconfirmed: ${why}`);
+        this.guessed = true;
+        this.place(parked.roomId, false);
     }
 
     private place(roomId: number, verified: boolean): void {
