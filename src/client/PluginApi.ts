@@ -93,6 +93,7 @@ import {
   enemyBindResolvers
 } from "@client/scripts/enemyBindResolvers";
 import { temporaryMultibinds } from "@client/scripts/temporaryMultibinds";
+import { getCoverTracker } from "@client/scripts/coverTracker";
 import {
   type ButtonMacroClickContext,
   getButtonMacroById,
@@ -3193,6 +3194,24 @@ export interface CombatApi {
    * ```
    */
   drawWeapon(): void;
+
+  /**
+   * Whether `coveredId` is covered (zaslona) against `attackerId` - attacks from
+   * `attackerId` land on the coverer instead. Covers are inferred from game text
+   * and GMCP; false when nothing is known.
+   *
+   * @example
+   * ```typescript
+   * const me = api.team.getPlayerNum();
+   * if (me !== undefined && api.combat.isCoveredFor(targetId, me)) {
+   *   // attacking targetId is wasted until the cover is broken
+   * }
+   * ```
+   */
+  isCoveredFor(coveredId: number, attackerId: number): boolean;
+
+  /** Everyone `attackerId` currently cannot reach because of a cover */
+  getCoveredForAttacker(attackerId: number): number[];
 }
 
 /**
@@ -4587,6 +4606,14 @@ export class PluginApiImpl implements PluginApi {
     return {
       drawWeapon: (): void => {
         this.client.drawWeapon();
+      },
+
+      isCoveredFor: (coveredId: number, attackerId: number): boolean => {
+        return getCoverTracker()?.isCoveredFor(coveredId, attackerId) ?? false;
+      },
+
+      getCoveredForAttacker: (attackerId: number): number[] => {
+        return getCoverTracker()?.getCoveredForAttacker(attackerId) ?? [];
       }
     };
   }

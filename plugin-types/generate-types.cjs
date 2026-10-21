@@ -1277,6 +1277,12 @@ export interface ClientEvents {
     attackerId?: number;
     raw: string;
   };
+  /** The cover graph changed; query it with api.combat.isCoveredFor */
+  "cover.state": {
+    at: number;
+    edges: { coveredId: number; covererId: number; attackerId: number; since: number; lastSeen: number; confidence: "confirmed" | "suspected" }[];
+    playerNum?: number;
+  };
   /** GMCP Char.Info - the player's name, race, guilds */
   "gmcp.char.info": { name?: string; race?: string; gender?: string; [key: string]: unknown };
   /** Plugin loaded successfully */

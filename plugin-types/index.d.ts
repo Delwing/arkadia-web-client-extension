@@ -1415,6 +1415,12 @@ export interface ClientEvents {
     attackerId?: number;
     raw: string;
   };
+  /** The cover graph changed; query it with api.combat.isCoveredFor */
+  "cover.state": {
+    at: number;
+    edges: { coveredId: number; covererId: number; attackerId: number; since: number; lastSeen: number; confidence: "confirmed" | "suspected" }[];
+    playerNum?: number;
+  };
   /** GMCP Char.Info - the player's name, race, guilds */
   "gmcp.char.info": { name?: string; race?: string; gender?: string; [key: string]: unknown };
   /** Plugin loaded successfully */
@@ -4365,6 +4371,22 @@ export interface CombatApi {
      * ```
      */
     drawWeapon(): void;
+    /**
+     * Whether `coveredId` is covered (zaslona) against `attackerId` - attacks from
+     * `attackerId` land on the coverer instead. Covers are inferred from game text
+     * and GMCP; false when nothing is known.
+     *
+     * @example
+     * ```typescript
+     * const me = api.team.getPlayerNum();
+     * if (me !== undefined && api.combat.isCoveredFor(targetId, me)) {
+     *   // attacking targetId is wasted until the cover is broken
+     * }
+     * ```
+     */
+    isCoveredFor(coveredId: number, attackerId: number): boolean;
+    /** Everyone `attackerId` currently cannot reach because of a cover */
+    getCoveredForAttacker(attackerId: number): number[];
 }
 
 /**
