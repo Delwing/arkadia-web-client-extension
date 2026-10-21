@@ -23,17 +23,13 @@
 
 import type { EditorPluginData, PluginFile } from '@client/utils/pluginEditorStorage'
 import {
-  storeEditorPlugin,
   getEditorPlugin,
   getAllEditorPlugins,
-  getLanguageFromPath,
   generateEditorPluginId,
 } from '@client/utils/pluginEditorStorage'
-import {
-  storePluginScript,
-  updatePluginScript,
-} from '@client/utils/pluginStorage'
-import { updateLocalStorageList } from './pluginManagement'
+import { applyFileUpdate, applyFullSync, type FileUpdate } from './externalSync'
+
+export type { FileUpdate } from './externalSync'
 
 export type DevServerStatus = 'disconnected' | 'connecting' | 'connected' | 'error'
 
@@ -42,11 +38,6 @@ export interface DevServerConfig {
   port: number
   autoReconnect: boolean
   reconnectInterval: number
-}
-
-export interface FileUpdate {
-  path: string
-  content: string
 }
 
 export interface DevServerMessage {
@@ -334,43 +325,9 @@ export class DevServerClient {
       return
     }
 
-    const plugin = await getEditorPlugin(message.pluginId)
-    if (!plugin) {
-      console.error('[DevServer] Plugin not found:', message.pluginId)
-      return
-    }
-
-    // Update files
     const fileUpdates = Array.isArray(message.files) ? message.files : Object.values(message.files)
-    for (const file of fileUpdates) {
-      if (plugin.files[file.path]) {
-        plugin.files[file.path].content = file.content
-      } else {
-        plugin.files[file.path] = {
-          path: file.path,
-          content: file.content,
-          language: getLanguageFromPath(file.path),
-        }
-      }
-    }
-
-    plugin.updatedAt = Date.now()
-
-    // Recompile if bundler is available
-    if (this.bundlePlugin) {
-      try {
-        plugin.compiled = await this.bundlePlugin(plugin.files, plugin.entryPoint)
-        plugin.lastCompiledAt = Date.now()
-
-        // Update plugin storage with compiled code
-        await updatePluginScript(plugin.id, plugin.compiled, plugin.metadata)
-      } catch (error) {
-        console.error('[DevServer] Failed to compile plugin:', error)
-      }
-    }
-
-    // Store updated plugin
-    await storeEditorPlugin(plugin)
+    const plugin = await applyFileUpdate(message.pluginId, fileUpdates, this.bundlePlugin)
+    if (!plugin) return
 
     this.onPluginUpdate?.(message.pluginId, plugin, fileUpdates.map(f => f.path))
   }
@@ -381,64 +338,13 @@ export class DevServerClient {
       return
     }
 
-    const existingPlugin = await getEditorPlugin(message.pluginId)
-    const now = Date.now()
-
-    // Convert files to proper format
-    const files: Record<string, PluginFile> = {}
-    const messageFiles = message.files as Record<string, { path: string; content: string; language?: string }>
-    for (const [path, file] of Object.entries(messageFiles)) {
-      files[path] = {
-        path: file.path || path,
-        content: file.content,
-        language: (file.language as PluginFile['language']) || getLanguageFromPath(path),
-      }
-    }
-
-    let compiled = ''
-    if (this.bundlePlugin) {
-      try {
-        compiled = await this.bundlePlugin(files, message.entryPoint)
-      } catch (error) {
-        console.error('[DevServer] Failed to compile plugin:', error)
-      }
-    }
-
-    const plugin: EditorPluginData = {
-      id: message.pluginId,
-      name: message.name || existingPlugin?.name || 'Synced Plugin',
-      // A failed build keeps the last good bundle rather than blanking it.
-      compiled: compiled || existingPlugin?.compiled || '',
-      files,
-      folders: message.folders || [],
+    const plugin = await applyFullSync({
+      pluginId: message.pluginId,
+      name: message.name,
       entryPoint: message.entryPoint,
-      metadata: existingPlugin?.metadata || {
-        name: message.name || 'Synced Plugin',
-        version: '1.0.0',
-        author: 'Dev Server',
-        description: 'Synced from IDE',
-      },
-      createdAt: existingPlugin?.createdAt || now,
-      updatedAt: now,
-      lastCompiledAt: compiled ? now : (existingPlugin?.lastCompiledAt || now),
-      // The IDE knows nothing of the catalogue link; dropping it would make
-      // the next publish a brand new plugin instead of an update.
-      ...(existingPlugin?.registrySlug ? { registrySlug: existingPlugin.registrySlug } : {}),
-    }
-
-    // Store plugin
-    await storeEditorPlugin(plugin)
-
-    // Update plugin storage if compiled
-    if (compiled) {
-      if (existingPlugin) {
-        await updatePluginScript(plugin.id, compiled, plugin.metadata)
-      } else {
-        await storePluginScript(plugin.id, compiled, plugin.metadata)
-        updateLocalStorageList(plugin.id)
-        localStorage.setItem('stored_scripts_updated', Date.now().toString())
-      }
-    }
+      files: message.files as Record<string, { path: string; content: string; language?: string }>,
+      folders: message.folders,
+    }, this.bundlePlugin)
 
     this.onPluginUpdate?.(message.pluginId, plugin, 'all')
   }

@@ -63,6 +63,29 @@ These live in the **⋯** menu next to Save. Renaming saves the plugin.
 Deleting asks for confirmation and removes the plugin from both the editor
 storage and main plugin storage.
 
+### Editing in an IDE: Link to local folder
+
+**⋯ → Link to local folder…** mirrors the open plugin to a folder on disk, so
+any IDE can edit it, no IDE plugin needed (Chrome/Edge only: it uses the
+File System Access API).
+
+- An empty folder gets the plugin's files. A folder that already has files
+  asks which side wins: **Use folder files** replaces the plugin's files,
+  **Overwrite folder** writes the plugin and deletes the folder's other
+  source files.
+- The folder is checked every second (and on returning to the tab). Files
+  your IDE saves there are bundled and passed to the game client, as if
+  saved in the editor; deleting a file there deletes it from the plugin.
+- Saving in the editor writes the plugin back to the folder.
+- Only source files are mirrored (`.ts`, `.js`, `.json`, `.md`, `.css`,
+  `.html`, …); `node_modules`, `dist`, `build`, `out`, dot-folders and
+  `package-lock.json` are ignored.
+- The link is remembered per plugin. After a reload the browser may ask for
+  access again: click **Reconnect** in the status bar. Opening a linked
+  plugin takes in folder files changed since its last save and writes the
+  rest from the plugin. Click the folder chip to unlink or change folders;
+  unlinking leaves the files on disk.
+
 ### Editor Settings
 
 The gear at the top right holds the editor theme, font size, minimap and the

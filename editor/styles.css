@@ -920,6 +920,39 @@ kbd {
 #status-bar.error #status-dot { background: var(--ed-danger); }
 #status-bar.error #status-text { color: var(--ed-danger-text); }
 
+#app #folder-link-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    height: 20px;
+    padding: 0 8px;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--ed-text-medium);
+    font-size: var(--fs-xs);
+    white-space: nowrap;
+}
+
+#app #folder-link-status[hidden] {
+    display: none;
+}
+
+#app #folder-link-status:hover {
+    background: var(--ed-hover-bg);
+    color: var(--ed-text);
+}
+
+#app #folder-link-status.needs-access {
+    background: var(--ed-warning-bg);
+    color: var(--ed-warning-text);
+}
+
+#app #folder-link-status.error {
+    background: var(--ed-danger-bg);
+    color: var(--ed-danger-text);
+}
+
 #dev-server-status {
     display: flex;
     align-items: center;
