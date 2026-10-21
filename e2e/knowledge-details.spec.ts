@@ -1,6 +1,6 @@
 import {expect, test} from './support/fixtures';
 import type {Page} from '@playwright/test';
-import {ensureGameSocket, getCommandLog, pushText, submitCommand, waitForCommandInput} from './support/mocks';
+import {ensureGameSocket, getCommandLog, mockWiedzaDownload, pushText, submitCommand, waitForCommandInput} from './support/mocks';
 
 const CHAOS_CATEGORY_NAME = 'Chaos i jego twory';
 const GOBLINS_CATEGORY_NAME = 'goblinoidy';
@@ -237,4 +237,34 @@ test.describe('Wiedza window', () => {
         await submitCommand(page, '/biblioteki');
         await expect(tab(page, 'Biblioteki')).toBeInViewport({ratio: 1});
     });
+});
+
+test('Raport: a category chip scrolls to its section in one click', async ({page, context}) => {
+    // Long entries wrap to several lines, far taller than the size rows out of view are laid out at.
+    const long = 'Widziales cos bardzo dalekiego i dziwnego, o czym pisza w starych ksiegach tylko najstarsi uczeni';
+    await mockWiedzaDownload(context, {
+        success: true,
+        data: {data: KNOWLEDGE_COMMANDS.map((_, c) => Array.from({length: 40}, (_, i) => `${long} ${c}-${i}`))},
+    });
+    await page.goto('/');
+    await waitForCommandInput(page);
+    await ensureGameSocket(page);
+    await submitCommand(page, '/wiedza_buduj');
+    await answerCategories(page, {});
+
+    await submitCommand(page, '/wiedza');
+    await tab(page, 'Raport').click();
+    const win = knowledgeWindow(page);
+    const chips = win.locator('.kn-report__summary .kn-chip--btn');
+    await expect(chips).toHaveCount(14);
+    const last = chips.last();
+    const name = (await last.evaluate((el) => el.firstChild!.textContent!)).trim();
+    await last.click();
+
+    const list = win.locator('.kn-report__list');
+    const section = win.locator(`.kn-report-sec[data-category="${name}"]`);
+    await expect.poll(async () => {
+        const [listBox, secBox] = [await list.boundingBox(), await section.boundingBox()];
+        return Math.round(secBox!.y - listBox!.y);
+    }, {message: 'the section lands at the top of the list'}).toBe(8);
 });

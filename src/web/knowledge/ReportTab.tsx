@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { Check } from 'lucide-react';
 import { EntryRow } from './knowledgeUi';
 import {
@@ -35,6 +35,7 @@ function levelsLine(row: CategoryRow): string {
  */
 export function ReportTab({ rows, query, filter, hints, distance }: ReportTabProps) {
     const listRef = useRef<HTMLDivElement>(null);
+    const jumpFrame = useRef(0);
     const searching = fold(query.trim()) !== '';
 
     const withEntries = rows.filter((row) => row.total > 0);
@@ -48,9 +49,47 @@ export function ReportTab({ rows, query, filter, hints, distance }: ReportTabPro
     [rows, filter, query, hints]);
 
     const jumpTo = (name: string) => {
-        const section = listRef.current?.querySelector<HTMLElement>(`[data-category="${CSS.escape(name)}"]`);
-        section?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+        const list = listRef.current;
+        const section = list?.querySelector<HTMLElement>(`[data-category="${CSS.escape(name)}"]`);
+        if (!list || !section) return;
+        // Rows skip layout off screen (content-visibility) and grow to their real height once
+        // scrolled past, pushing the section down. A native smooth scroll aims at where the
+        // section was; this one re-aims every frame, easing toward wherever it is now.
+        cancelAnimationFrame(jumpFrame.current);
+        const margin = parseFloat(getComputedStyle(section).scrollMarginTop) || 0;
+        let last = performance.now();
+        const step = (now: number) => {
+            const delta = section.getBoundingClientRect().top - list.getBoundingClientRect().top - margin;
+            const before = list.scrollTop;
+            if (Math.abs(delta) < 1) {
+                list.scrollTop += delta;
+                return;
+            }
+            const ease = 1 - Math.pow(0.82, (now - last) / 16.7);
+            last = now;
+            list.scrollTop += Math.sign(delta) * Math.max(1, Math.abs(delta) * ease);
+            // At the end of the list it can't get any closer.
+            if (list.scrollTop === before) return;
+            jumpFrame.current = requestAnimationFrame(step);
+        };
+        jumpFrame.current = requestAnimationFrame(step);
     };
+
+    // Scrolling by hand takes over from a jump still on its way.
+    useEffect(() => {
+        const list = listRef.current;
+        if (!list) return;
+        const stop = () => cancelAnimationFrame(jumpFrame.current);
+        list.addEventListener('wheel', stop, { passive: true });
+        list.addEventListener('pointerdown', stop);
+        list.addEventListener('touchstart', stop, { passive: true });
+        return () => {
+            stop();
+            list.removeEventListener('wheel', stop);
+            list.removeEventListener('pointerdown', stop);
+            list.removeEventListener('touchstart', stop);
+        };
+    }, []);
 
     return (
         <div className="kn-report">
