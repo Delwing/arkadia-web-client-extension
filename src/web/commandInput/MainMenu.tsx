@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type ComponentType, type KeyboardEvent } from "react";
 import {
-  Book, Circle, Code, Crosshair, Database, FileText, Keyboard, LayoutGrid, MapPin, Maximize, Menu, Package,
+  Book, Circle, Code, Crosshair, Database, FileText, Keyboard, LayoutDashboard, LayoutGrid, MapPin, Maximize, Menu, Package,
   PanelsTopLeft, Plug, Power, Puzzle, QrCode, Search, Settings, Terminal, Upload, Users, Zap, type LucideProps,
 } from "lucide-react";
 import { characterStorage } from "@modules/core/storage";
@@ -22,6 +22,7 @@ const ICONS: Record<string, ComponentType<LucideProps>> = {
   settings: Settings,
   layout: PanelsTopLeft,
   grid: LayoutGrid,
+  widgets: LayoutDashboard,
   radial: Crosshair,
   upload: Upload,
   code: Code,

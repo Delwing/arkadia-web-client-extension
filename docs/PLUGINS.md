@@ -1545,6 +1545,17 @@ const off = popup.onSettingChange('ceny', (on) => { /* ... */ });
 - **Przycisk** (`registerFooterButton`) — gdy chodzi o wysłanie komendy. `tone: 'accent'` tylko dla trybu lub ważnej akcji, `'danger'` dla ryzykownych; `state` zapala go, gdy tryb jest włączony.
 - Stopka jest wąska — jeden, najwyżej dwa elementy na plugin.
 
+### Widżety
+
+- **Widżet** (`registerWidget`) — mały element bez ramki, który gracz kładzie nad tekstem gry tam, gdzie chce (Menu → Widżety → Dodaj albo `/widzety`). Plugin daje tylko treść; ustawienie, rozmiar, krycie i usunięcie należą do gracza, a miejsce jest zapamiętywane, więc widżet wraca tam przy każdym wczytaniu pluginu.
+
+  ```js
+  const widget = api.ui.registerWidget('licznik', '<b>0</b> zabitych', { label: 'Licznik zabitych', corner: 'tl' });
+  widget.setContent('<b>3</b> zabitych');   // HTML, węzeł DOM albo element React
+  ```
+
+  Widżet leży na półprzezroczystym tle — zwięźle, kilka linii. Pusty element jest ukryty, dopóki nie ma czego pokazać. Widżet pluginu to jeden element, więc na ekranie może być tylko raz.
+
 ### Menu
 
 - `addPopupMenuEntry` (⋮) — do otwierania okien i akcji pluginu; `addContextMenuEntry` — do akcji na tekście gry.

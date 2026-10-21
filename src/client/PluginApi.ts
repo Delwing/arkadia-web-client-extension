@@ -64,6 +64,13 @@ import {
   setFooterComponentVisible,
   type FooterContent
 } from "@modules/core/pluginFooterRegistry";
+import {
+  registerPluginWidget,
+  unregisterPluginWidget,
+  updatePluginWidget,
+  updateWidgetPluginName,
+  type WidgetContent
+} from "@modules/core/pluginWidgetRegistry";
 import type { ReactElement } from "react";
 import {
   addGroupDefinition,
@@ -1290,6 +1297,29 @@ export interface FooterComponentHandle {
   remove(): void;
 }
 
+/** Options for {@link UiApi.registerWidget}. */
+export interface WidgetOptions {
+  /** Name in the "Dodaj widżet" list and the widget's right-click menu; defaults to the plugin's name. */
+  label?: string;
+  /** Corner of the game output a newly added copy lands in: top/bottom + left/right. Defaults to 'tr'. */
+  corner?: 'tl' | 'tr' | 'bl' | 'br';
+}
+
+/** Handle for a widget registered with {@link UiApi.registerWidget}. */
+export interface WidgetHandle {
+  /**
+   * The widget's DOM element. Every placed copy shows this one element (only
+   * one copy of a plugin widget is drawn at a time).
+   */
+  readonly element: HTMLDivElement;
+
+  /** Replace the content: HTML string, DOM node, or React element. */
+  setContent(content: string | Node | ReactElement): void;
+
+  /** Withdraw the widget. Where the player placed it is kept for next time. */
+  remove(): void;
+}
+
 /**
  * A field in a plugin popup's settings cog (⚙ in the window header), shown
  * under the shared font settings. The value is kept in the window's settings
@@ -1582,6 +1612,25 @@ export interface UiApi {
     content: string | Node | ReactElement,
     position?: 'start' | 'end' | number
   ): FooterComponentHandle;
+
+  /**
+   * Offer a widget: a small frameless piece the player can lay over the game
+   * output wherever they like (Menu → Widżety → Dodaj, or `/widzety`). The
+   * plugin only provides the content; placing, moving, sizing and removing it
+   * is the player's, and where they put it is remembered, so it comes back there
+   * whenever the plugin loads. Widgets are withdrawn with the plugin.
+   *
+   * The content is drawn on a soft see-through plate; keep it small. A widget
+   * whose element is empty is hidden until it has something to show.
+   *
+   * @example
+   * ```typescript
+   * const widget = api.ui.registerWidget('licznik', '<b>0</b> zabitych', { label: 'Licznik zabitych', corner: 'tl' });
+   * let kills = 0;
+   * api.on('allEnemiesKilled', () => widget.setContent(`<b>${++kills}</b> zabitych`));
+   * ```
+   */
+  registerWidget(id: string, content: string | Node | ReactElement, options?: WidgetOptions): WidgetHandle;
 
   /**
    * Add a button beside the command line, alongside the player's own
@@ -3649,6 +3698,7 @@ export class PluginApiImpl implements PluginApi {
   private containerTypes: Set<string> = new Set();
   private footerComponentIds: Set<string> = new Set();
   private footerButtonIds: Set<string> = new Set();
+  private widgetIds: Set<string> = new Set();
   private tooltipHandles: Set<PluginTooltipHandle> = new Set();
   private mapOverlayIds: Set<string> = new Set();
   private walkModeRecords: Map<string, Omit<WalkMode, "source" | "prefix">> = new Map();
@@ -3762,6 +3812,8 @@ export class PluginApiImpl implements PluginApi {
     updatePluginNotesName(this.pluginId, name);
     // And any footer components, which the settings panel lists by plugin name
     updateFooterComponentPluginName(this.pluginId, name);
+    // And widgets, which "Dodaj widżet" lists by plugin name
+    updateWidgetPluginName(this.pluginId, name);
     // And walk modes and key actions, which Klawisze lists by plugin name
     for (const mode of this.walkModeRecords.values()) registerWalkMode({ ...mode, pluginName: name });
     for (const [id, action] of this.keyActions) {
@@ -4057,6 +4109,7 @@ export class PluginApiImpl implements PluginApi {
       addPopupMenuEntry: (label, onSelect) => this.addPopupMenuEntry(label, onSelect),
       addContextMenuEntry: (label, action) => this.addContextMenuEntry(label, action),
       registerFooterComponent: (id, content, position) => this.registerFooterComponent(id, content, position),
+      registerWidget: (id, content, options) => this.registerWidget(id, content, options),
       registerFooterButton: (id, button) => this.registerFooterButton(id, button),
       setFooterButtonState: (name, on) => setFooterButtonState(name, on),
       setTooltip: (element, tooltip) => this.setTooltip(element, tooltip)
@@ -4928,6 +4981,12 @@ export class PluginApiImpl implements PluginApi {
     }
     this.footerComponentIds.clear();
 
+    // Withdraw this plugin's widgets (the player's placements stay for next time)
+    for (const id of Array.from(this.widgetIds)) {
+      unregisterPluginWidget(id);
+    }
+    this.widgetIds.clear();
+
     // Remove all footer buttons registered by this plugin
     for (const id of Array.from(this.footerButtonIds)) {
       unregisterFooterButton(id);
@@ -5268,6 +5327,23 @@ export class PluginApiImpl implements PluginApi {
       remove: () => {
         unregisterFooterComponent(fullId);
         this.footerComponentIds.delete(fullId);
+      }
+    };
+  }
+
+  private registerWidget(id: string, content: WidgetContent, options?: WidgetOptions): WidgetHandle {
+    const fullId = `plugin:${this.pluginId}:${id}`;
+    const record = registerPluginWidget(fullId, content, options, { pluginId: this.pluginId, localId: id });
+    this.widgetIds.add(fullId);
+    if (this._pluginName) updateWidgetPluginName(this.pluginId, this._pluginName);
+    return {
+      get element(): HTMLDivElement {
+        return record.element;
+      },
+      setContent: (next: WidgetContent) => updatePluginWidget(fullId, next),
+      remove: () => {
+        unregisterPluginWidget(fullId);
+        this.widgetIds.delete(fullId);
       }
     };
   }

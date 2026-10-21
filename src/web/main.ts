@@ -39,6 +39,9 @@ import MobileDirectionButtons from "@web-ui/buttons/MobileDirectionButtons";
 import DesktopButtons from "@web-ui/buttons/DesktopButtons";
 import MobileCommandRadial from "@web-ui/buttons/MobileCommandRadial";
 import MobileJoysticks from "@web-ui/buttons/MobileJoysticks";
+import { WidgetLayer } from "@web-ui/widgets/WidgetLayer";
+import { registerBuiltinWidgets } from "@web-ui/widgets/builtinWidgets";
+import { setWidgetEditMode } from "@modules/core/widgetLayout";
 import SettingsDialog from "./settings/SettingsDialog";
 import {
     getRenderSettings,
@@ -1215,6 +1218,10 @@ document.addEventListener('DOMContentLoaded', () => {
         id: 'settings-button', label: 'Ustawienia', group: 'ustawienia', icon: 'settings', order: 5, onSelect: () => { requestSettingsResume(); settingsModal?.show(); }, source: 'builtin',
         keywords: ['opcje', 'postać', 'interfejs', 'przyciski', 'menu kołowe', 'eksport', 'import', 'synchronizacja', 'kopia'],
     });
+    registerMainMenuItem({
+        id: 'widgets-button', label: 'Widżety', group: 'narzedzia', icon: 'widgets', order: 160, onSelect: () => setWidgetEditMode(true), source: 'builtin',
+        keywords: ['zegar', 'kompas', 'witalne', 'transport', 'nakładka', 'hud'],
+    });
     // Logi (170) registers itself in Narzędzia.
     registerMainMenuItem({id: 'docs-button', label: 'Dokumentacja', shortLabel: 'Pomoc', group: 'narzedzia', icon: 'book', order: 180, onSelect: () => eventBus.emit('docs.popup.open'), source: 'builtin'});
     registerMainMenuItem({id: 'fullscreen-button', label: 'Pełny ekran', group: 'sesja', icon: 'fullscreen', order: 900, onSelect: toggleFullscreen, source: 'builtin'});
@@ -1447,6 +1454,14 @@ document.addEventListener('DOMContentLoaded', () => {
     createRoot(document.createElement('div')).render(createElement(DesktopButtons, { client }));
     createRoot(document.createElement('div')).render(createElement(MobileCommandRadial, { client }));
     createRoot(document.createElement('div')).render(createElement(MobileJoysticks, { client }));
+
+    // Widgets over the game output (Zegar, Witalne…); portals itself to document.body.
+    // Rendered once, so the inline getArea stays one function.
+    registerBuiltinWidgets();
+    eventBus.on('widgets.edit', ({ on }) => setWidgetEditMode(on));
+    createRoot(document.createElement('div')).render(createElement(WidgetLayer, {
+        getArea: () => document.getElementById('main_text_output_msg_wrapper'),
+    }));
 
     // Boss key: Pause / ScrollLock drops a fake Word window over the whole
     // client. Same detached-root pattern as the buttons above — it portals to

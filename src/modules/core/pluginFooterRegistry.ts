@@ -109,9 +109,9 @@ function getContentType(content: FooterContent): "html" | "node" | "react" {
   return "node";
 }
 
-/** Render content into the plugin's span, managing its React root if any. */
-function renderContent(
-  element: HTMLSpanElement,
+/** Render content into a plugin-owned element, managing its React root if any. */
+export function renderContent(
+  element: HTMLElement,
   content: FooterContent,
   existingRoot: Root | null
 ): Root | null {

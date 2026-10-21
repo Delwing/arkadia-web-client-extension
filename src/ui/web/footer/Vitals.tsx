@@ -62,7 +62,11 @@ function Meter({ reading, mode }: { reading: VitalReading; mode: VitalsMode }) {
  * so the row only speaks up when something changed. `withoutImprove` leaves
  * Postępy to an ImproveBar of its own.
  */
-export default function Vitals({ withoutImprove = false }: { withoutImprove?: boolean }) {
+export default function Vitals({ withoutImprove = false, showAll = false }: {
+  withoutImprove?: boolean;
+  /** Every vital, resting or not (the vitals widget's "Wszystkie"). */
+  showAll?: boolean;
+}) {
   const live = useCharState();
   const liveFormDisabled = useFormDisabled();
   // The layout editor's preview shows every vital, as the game might.
@@ -78,7 +82,7 @@ export default function Vitals({ withoutImprove = false }: { withoutImprove?: bo
     return () => { offChrome(); offMap(); };
   }, []);
 
-  const vitals = visibleVitals(state, layout.order, preview ? DEFAULT_VITAL_ORDER : layout.always, formDisabled)
+  const vitals = visibleVitals(state, layout.order, preview || showAll ? DEFAULT_VITAL_ORDER : layout.always, formDisabled)
     .filter((reading) => !withoutImprove || reading.key !== "improve");
   return (
     <>

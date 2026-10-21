@@ -10,6 +10,7 @@ import type { BindSettings, KeymapStore } from './keymapTypes';
 import type { CustomSound } from './customSounds';
 import type { UiSettings, ShellSettings, RenderSettings, MapSettings, BehaviorSettings } from '@shared/uiSettingsTypes';
 import type { LayoutState } from '@web/layout/types';
+import type { WidgetInstance } from './widgetLayout';
 import type { DesktopButtonsSettings } from '@web/desktopButtonSettings';
 import type { Settings as MobileButtonsSettings } from '@web/mobileButtonSettings';
 import type { DeviceInfo } from '@modules/device/deviceTypes';
@@ -94,6 +95,8 @@ export interface GlobalStorageSchema {
     active_keymap_id: string;
     currentCharacter: string;
     layoutManagerState: LayoutState;
+    /** Widgets placed over the game output. See @modules/core/widgetLayout. */
+    widgetLayout: WidgetInstance[];
     deviceInfo: DeviceInfo;
     objectsListPosition: any; // TODO: type position data
     mobileButtonsPosition: any; // TODO: type position data
@@ -218,6 +221,7 @@ export const globalStorageKeys = [
     'active_keymap_id',
     'currentCharacter',
     'layoutManagerState',
+    'widgetLayout',
     'deviceInfo',
     'objectsListPosition',
     'mobileButtonsPosition',

@@ -1,0 +1,130 @@
+/* Widgets (@web-ui/widgets): frameless pieces laid over the game output. Above
+   the output, below the docks' resizers and the floating windows (1040). */
+.widget-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+/* A soft, see-through plate: enough to read the widget over scrolling text,
+   no window chrome. */
+.widget-frame {
+  position: absolute;
+  pointer-events: auto;
+  padding: 6px 9px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--popup-bg, #15171c) 72%, transparent);
+  backdrop-filter: blur(3px);
+  color: var(--popup-text);
+  user-select: none;
+}
+/* Nothing to show right now (no journey, vitals at rest): no plate either. */
+.widget-frame:has(> .widget-frame__body:empty, .widget-vitals:empty) {
+  display: none;
+}
+
+.widget-layer.is-editing .widget-frame {
+  display: block;
+  border-style: dashed;
+  border-color: var(--popup-accent);
+  cursor: grab;
+}
+.widget-layer.is-editing .widget-frame.is-dragging {
+  cursor: grabbing;
+  box-shadow: 0 6px 18px rgb(0 0 0 / 0.45);
+}
+.widget-layer.is-editing .widget-frame__body > * {
+  pointer-events: none;
+}
+/* An empty widget in edit mode still needs something to grab: its name. */
+.widget-layer.is-editing .widget-frame__body:empty::before {
+  content: attr(data-label);
+  color: var(--popup-text-dim);
+  font-size: 12px;
+}
+.widget-frame.is-missing {
+  border-color: var(--popup-danger);
+}
+
+.widget-outline {
+  position: absolute;
+  border: 1px dashed var(--popup-accent-border, var(--popup-border));
+  border-radius: 4px;
+}
+
+.widget-toolbar {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 6px 5px 10px;
+  border: 1px solid var(--popup-border);
+  border-radius: 8px;
+  background: var(--popup-bg);
+  box-shadow: 0 6px 18px rgb(0 0 0 / 0.35);
+  transform: translateX(-50%);
+  pointer-events: auto;
+}
+.widget-toolbar__title {
+  margin-right: 4px;
+  color: var(--popup-text-strong);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Zegar: the Czas window's clocks, a touch tighter. */
+.widget-clock {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 170px;
+}
+
+/* Witalne: one vital per row, labels in a column. */
+.widget-vitals {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 3px 8px;
+  align-items: center;
+}
+.widget-vitals .vital {
+  display: contents;
+}
+
+/* Transport: where to, the countdown, and how far along the leg. */
+.widget-transport {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 140px;
+}
+.widget-transport__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+.widget-transport__label {
+  color: var(--popup-text-dim);
+  font-size: 12px;
+}
+.widget-transport__time {
+  color: var(--popup-text-bright);
+  font-family: var(--output-font-family, ui-monospace, monospace);
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.widget-transport__track {
+  height: 3px;
+  border-radius: 2px;
+  background: var(--popup-control-active-bg, var(--popup-control-bg));
+}
+.widget-transport__fill {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--popup-accent);
+}

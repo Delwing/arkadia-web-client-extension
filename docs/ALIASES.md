@@ -75,6 +75,12 @@ Zakresy działają rosnąco (`1-7`) i malejąco (`7-1`). Maksymalnie 50 iteracji
 | `/czas imperium <godzina> [<dzien>]` | Ustaw czas w Imperium (godzina 0-23, opcjonalnie dzień roku 1-400) |
 | `/czas ishtar <godzina> [<dzien>]` | Ustaw czas w Ishtar (godzina 0-23, opcjonalnie dzień roku 1-360) |
 
+## Widżety
+
+| Komenda | Opis |
+|---------|------|
+| `/widzety` | Włącz lub wyłącz układanie widżetów (to samo co Menu → Widżety): widżety dostają obramowanie i można je przeciągać, a pasek u góry dodaje nowe (Zegar, Witalne, Kompas, Transport i widżety pluginów). Esc albo „Gotowe” kończy. Prawy klik na widżecie: jego ustawienia, rozmiar, krycie i Usuń. Widżet trzyma się najbliższego rogu okna gry, więc zostaje na miejscu po zmianie rozmiaru okna lub doków |
+
 ## Język
 
 | Komenda | Opis |

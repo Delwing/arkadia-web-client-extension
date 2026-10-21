@@ -434,6 +434,8 @@ export interface KnownEvents {
     "clock.update": ClockUpdatePayload;
     "clock.domain.active": ClockDomainActivePayload;
     "clock.popup.open": { domain?: "Empire" | "Ishtar" };
+    /** Widget edit mode on or off; without `on`, toggle it (/widzety). */
+    "widgets.edit": { on?: boolean };
     "clock.mismatch": ClockMismatchPayload;
     /**
      * The sky changed in our domain while we watched. Fires even when the clock
