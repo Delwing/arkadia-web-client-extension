@@ -535,13 +535,14 @@ import {
 import { loadFirebaseSettings } from '@modules/firebase/firebaseTypes';
 
 export interface CategoryData {
-    // Device-scoped settings bundle: interface settings + layout + trip routes
-    // + keymap. Button settings live in the buttons / radial categories.
+    // Device-scoped settings bundle: interface settings + layout + widgets +
+    // trip routes + keymap. Button settings live in the buttons / radial categories.
     uiSettings?: {
         uiSettings?: string;
         loggingEnabled?: string;
         layoutManagerState?: string;
         tripRoutes?: string;
+        widgetLayout?: string;
         activeKeymap?: string;
     };
     binds?: { binds?: string; keymaps?: string };
@@ -626,8 +627,8 @@ export async function exportCategory(
 
         switch (category) {
             case 'uiSettings': {
-                // Device-scoped settings bundle: interface settings + layout + trip
-                // routes + keymap. Button settings have their own categories
+                // Device-scoped settings bundle: interface settings + layout + widgets
+                // + trip routes + keymap. Button settings have their own categories
                 // (buttons / radial), so they are intentionally not bundled here.
                 const data: CategoryData['uiSettings'] = {};
                 const uiSettings = localStorage.getItem('uiSettings');
@@ -638,6 +639,8 @@ export async function exportCategory(
                 if (layoutManagerState) data.layoutManagerState = layoutManagerState;
                 const tripRoutes = localStorage.getItem('tripRoutes');
                 if (tripRoutes) data.tripRoutes = tripRoutes;
+                const widgetLayout = localStorage.getItem('widgetLayout');
+                if (widgetLayout) data.widgetLayout = widgetLayout;
                 // Canonical active keymap lives under 'active_keymap_id'
                 // (arkadia.activeKeymap is a legacy key migrated away at startup).
                 const activeKeymap = globalStorage.get('active_keymap_id');
@@ -815,8 +818,8 @@ export async function importCategory(
             }
         } else switch (category) {
             case 'uiSettings': {
-                // Device-scoped settings bundle: interface settings + layout + trip
-                // routes + keymap. Button settings come from the buttons / radial
+                // Device-scoped settings bundle: interface settings + layout + widgets
+                // + trip routes + keymap. Button settings come from the buttons / radial
                 // categories; older payloads may still carry desktop/mobile button
                 // fields, which are ignored here.
                 const skipDevice = options?.skipDeviceScoped ?? false;
@@ -828,6 +831,7 @@ export async function importCategory(
                     trackingSetItem('layoutManagerState', await migrateImportedLayoutState(data.layoutManagerState));
                 }
                 if (data.tripRoutes && !skipDevice) trackingSetItem('tripRoutes', data.tripRoutes);
+                if (data.widgetLayout && !skipDevice) trackingSetItem('widgetLayout', data.widgetLayout);
                 if (data.activeKeymap && !skipDevice) {
                     // Persist the canonical key so the selection survives even if
                     // the keymap itself isn't loaded yet (e.g. binds imported later).
@@ -1177,6 +1181,7 @@ function importedDeviceSettings(categories: Partial<Record<BackupCategory, strin
     const ui = parse(categories.uiSettings);
     if (typeof ui.uiSettings === "string") settings.uiSettings = ui.uiSettings;
     if (typeof ui.layoutManagerState === "string") settings.layoutManagerState = ui.layoutManagerState;
+    if (typeof ui.widgetLayout === "string") settings.widgetLayout = ui.widgetLayout;
     const buttons = parse(categories.buttons);
     if (typeof buttons.desktopButtonSettings === "string") settings.desktopButtonSettings = buttons.desktopButtonSettings;
     if (typeof buttons.mobileButtonSettings === "string") {

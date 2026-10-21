@@ -268,6 +268,16 @@ export async function triggerSettingsReload(): Promise<void> {
         console.error('Failed to reload uiSettings', err);
     }
 
+    // 2b. Widget placements, written straight to localStorage by the apply step
+    try {
+        const widgets = globalStorage.get('widgetLayout');
+        if (widgets) {
+            globalStorage.fireListeners('widgetLayout', widgets, widgets);
+        }
+    } catch (err) {
+        console.error('Failed to reload widget layout', err);
+    }
+
     // 3. Reload mobile button settings
     try {
         const { loadSettings, applySettings } = await import('@web/mobileButtonSettings');
@@ -303,6 +313,9 @@ export function applyImportedDeviceSettings(deviceId: string): boolean {
     try {
         if (entry.settings.layoutManagerState) {
             localStorage.setItem('layoutManagerState', entry.settings.layoutManagerState);
+        }
+        if (entry.settings.widgetLayout) {
+            localStorage.setItem('widgetLayout', entry.settings.widgetLayout);
         }
         if (entry.settings.uiSettings) {
             localStorage.setItem('uiSettings', entry.settings.uiSettings);

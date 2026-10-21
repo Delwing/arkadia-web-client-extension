@@ -1,4 +1,5 @@
 import type { LayoutState } from '@web/layout/types';
+import type { WidgetInstance } from '@modules/core/widgetLayout';
 import type { UiSettings } from '@web/defaultUiSettings';
 import type { DesktopButtonsSettings } from '@web/desktopButtonSettings';
 import type { Settings as MobileButtonsSettings } from '@web/mobileButtonSettings';
@@ -38,6 +39,8 @@ export interface DeviceSettings {
     updatedAt: string;
     /** Window manager layout state */
     layoutManagerState?: LayoutState;
+    /** Widgets placed over the game output */
+    widgetLayout?: WidgetInstance[];
     /** UI settings (fonts, map, display) */
     uiSettings?: UiSettings;
     /** Desktop button settings */
@@ -72,6 +75,7 @@ export interface ImportedDeviceEntry {
     /** The device settings data (raw localStorage keys) */
     settings: {
         layoutManagerState?: string;
+        widgetLayout?: string;
         uiSettings?: string;
         desktopButtonSettings?: string;
         mobileButtonSettings?: string;

@@ -1135,6 +1135,28 @@ describe('uiSettings category with tripRoutes and activeKeymap', () => {
         expect(globalStorage.get('active_keymap_id')).toBe('keymap-2');
     });
 
+    it('should carry the widget layout with the device settings', async () => {
+        const layout = '[{"id":"w1","type":"clock","corner":"tr","dx":12,"dy":12}]';
+        localStorage.setItem('widgetLayout', layout);
+        const parsed = JSON.parse((await exportCategory('uiSettings', []))!);
+        expect(parsed.widgetLayout).toBe(layout);
+
+        localStorage.clear();
+        const result = await importCategory('uiSettings', JSON.stringify({ widgetLayout: layout }));
+        expect(result.success).toBe(true);
+        expect(globalStorage.get('widgetLayout')).toEqual(JSON.parse(layout));
+    });
+
+    it('should leave the widget layout alone when skipDeviceScoped is set', async () => {
+        const result = await importCategory(
+            'uiSettings',
+            JSON.stringify({ widgetLayout: '[]' }),
+            { skipDeviceScoped: true },
+        );
+        expect(result.success).toBe(true);
+        expect(localStorage.getItem('widgetLayout')).toBeNull();
+    });
+
     it('should skip tripRoutes and activeKeymap when skipDeviceScoped is set', async () => {
         const result = await importCategory(
             'uiSettings',

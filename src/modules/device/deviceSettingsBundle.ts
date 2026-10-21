@@ -55,6 +55,7 @@ export function exportDeviceSettings(): DeviceSettings {
     // Persisted, not overridden: a shell that forces layout mode on for itself
     // (forge) must not export that choice to the user's other devices.
     const layoutManagerState = loadPersistedLayoutState();
+    const widgetLayout = globalStorage.get('widgetLayout');
     const desktopButtonSettings = loadDesktopButtonSettings();
     const mobileButtonSettings = loadMobileButtonSettings();
 
@@ -65,6 +66,7 @@ export function exportDeviceSettings(): DeviceSettings {
         version: 1,
         updatedAt: new Date().toISOString(),
         layoutManagerState,
+        ...(widgetLayout ? { widgetLayout } : {}),
         uiSettings,
         desktopButtonSettings,
         mobileButtonSettings,
@@ -81,6 +83,11 @@ export function importDeviceSettings(settings: DeviceSettings): void {
         saveLayoutState(settings.layoutManagerState);
         // Notify React context
         eventBus.emit('layoutManagerStateChanged', { type: 'import' });
+    }
+
+    // Apply widget placements (the widget layer follows the storage key)
+    if (settings.widgetLayout) {
+        globalStorage.set('widgetLayout', settings.widgetLayout);
     }
 
     // Apply UI settings
