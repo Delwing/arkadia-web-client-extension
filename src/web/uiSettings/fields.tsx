@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { Button, Check, ColorInput, Field, Input, Select } from "@web-ui/primitives/index.ts";
 
 /**
@@ -44,12 +44,12 @@ export function CheckboxRow({ id, label, hint, checked, onChange, disabled, clas
     );
 }
 
-export function SelectField({ id, label, hint, value, onChange, disabled, children }: {
-    id: string; label?: ReactNode; hint?: ReactNode; value: string; onChange: (value: string) => void; disabled?: boolean; children: ReactNode;
+export function SelectField({ id, label, hint, value, onChange, disabled, style, children }: {
+    id: string; label?: ReactNode; hint?: ReactNode; value: string; onChange: (value: string) => void; disabled?: boolean; style?: CSSProperties; children: ReactNode;
 }) {
     return (
         <Field label={label} hint={hint} htmlFor={id}>
-            <Select id={id} className="settings-narrow" value={value} disabled={disabled} onChange={(e) => onChange(e.target.value)}>
+            <Select id={id} className="settings-narrow" value={value} disabled={disabled} style={style} onChange={(e) => onChange(e.target.value)}>
                 {children}
             </Select>
         </Field>

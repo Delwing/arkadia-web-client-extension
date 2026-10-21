@@ -61,8 +61,8 @@ test.describe('UI settings', () => {
 
         // Wygląd page
         await selectPage(modal, 'ui-appearance');
-        await modal.locator('#ui-content-font').fill('1.5');
-        await modal.locator('#ui-objects-font').fill('1.25');
+        await modal.locator('#ui-content-font').fill('24');
+        await modal.locator('#ui-objects-font').fill('20');
         await modal.locator('#ui-output-background').fill('#123456');
         await modal.locator('#ui-xterm-palette').selectOption('proper');
         await modal.locator('#ui-font-family').selectOption('cascadia-mono');
