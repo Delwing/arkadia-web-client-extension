@@ -31,7 +31,15 @@ export type ImproveSessionData = {
     clearedAt?: number;
 };
 
-export type LifeCount = { count: number; noFormCount?: number };
+export type LifeCount = {
+    count: number;
+    noFormCount?: number;
+    /**
+     * When the life's count was cleared (/postepy2_reset, a deleted day). A
+     * maximum can't go down, so the newer clear wins whole instead.
+     */
+    clearedAt?: number;
+};
 
 /** One day of /postepy2 (character key `improve_counter_lifetime`). */
 export type LifetimeDay = {
@@ -92,14 +100,18 @@ export function mergeImproveSessions(a: ImproveSessionData, b: ImproveSessionDat
     // A side still waiting for its first fight hasn't started counting.
     let timeSide: ImproveSessionData;
     let lastTime: number;
+    let candidates = [a, b];
     if (entries.length > 0) {
         const last = entries[entries.length - 1];
         lastTime = last.time;
         const owns = (s: ImproveSessionData): boolean => (s.entries ?? []).some(e => e.time === last.time && e.state === last.state);
         timeSide = owns(a) && owns(b) ? (canonical(a.lastKills) >= canonical(b.lastKills) ? a : b) : owns(a) ? a : b;
     } else {
-        const started = [a, b].filter(s => !s.waitingForFirstCombat);
-        const pool = started.length > 0 ? started : [a, b];
+        // A side whose time is from before /postepy_reset measures what was cleared
+        const current = [a, b].filter(s => (s.lastTime ?? 0) >= clearedAt);
+        if (current.length > 0) candidates = current;
+        const started = candidates.filter(s => !s.waitingForFirstCombat);
+        const pool = started.length > 0 ? started : candidates;
         timeSide = pool.reduce((x, y) => {
             const tx = x.lastTime ?? 0;
             const ty = y.lastTime ?? 0;
@@ -114,7 +126,7 @@ export function mergeImproveSessions(a: ImproveSessionData, b: ImproveSessionDat
         lastTime,
         level: Math.max(a.level ?? -1, b.level ?? -1),
         lastObjNum: objA,
-        waitingForFirstCombat: !!a.waitingForFirstCombat && !!b.waitingForFirstCombat && entries.length === 0,
+        waitingForFirstCombat: entries.length === 0 && candidates.every(s => !!s.waitingForFirstCombat),
         obj: objA,
         since: Math.min(a.since ?? Infinity, b.since ?? Infinity),
     };
@@ -124,12 +136,25 @@ export function mergeImproveSessions(a: ImproveSessionData, b: ImproveSessionDat
     return merged;
 }
 
-/** Field-wise maximum: every device counting the same life's levels counts the same improvements. */
+/**
+ * Field-wise maximum: every device counting the same life's levels counts the
+ * same improvements. A newer clear wins over whatever was counted before it.
+ */
 export function mergeLifeCounts(a: LifeCount, b: LifeCount): LifeCount {
+    const clearedA = a.clearedAt ?? 0;
+    const clearedB = b.clearedAt ?? 0;
+    if (clearedA !== clearedB) return clearedA > clearedB ? a : b;
     const merged: LifeCount = { count: Math.max(a.count ?? 0, b.count ?? 0) };
     const noForm = Math.max(a.noFormCount ?? 0, b.noFormCount ?? 0);
     if (noForm > 0) merged.noFormCount = noForm;
+    if (clearedA > 0) merged.clearedAt = clearedA;
     return merged;
+}
+
+/** A day with nothing counted: kept after a clear, so sync doesn't bring it back. */
+export function isEmptyDay(day: LifetimeDay): boolean {
+    const totals = dayTotals(day);
+    return totals.count === 0 && totals.noFormCount === 0;
 }
 
 /** A day's totals: manual counts plus every life's. */

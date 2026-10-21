@@ -409,6 +409,30 @@ describe('improvements tied to a life (object number)', () => {
         expect(lifetime().entries).toEqual([{ date: '2026/9/27', count: 1, lives: { 7: { count: 5 }, 8: { count: 1 } } }]);
     });
 
+    it('keeps a cleared /postepy2 cleared, here and on a device that still had the counts', async () => {
+        const counted = JSON.stringify({ entries: [{ date: '2026/9/27', count: 2, lives: { 7: { count: 3 } } }] });
+        localStorage.setItem('Alice:improve_counter_lifetime', counted);
+        const a = tracker('a');
+        await a.capture();
+        const before = await a.outbox();
+        // /postepy2_reset: the day stays, emptied, its life cleared
+        const cleared = { entries: [{ date: '2026/9/27', count: 0, lives: { 7: { count: 0, clearedAt: 5_000 } } }] };
+        localStorage.setItem('Alice:improve_counter_lifetime', JSON.stringify(cleared));
+        await a.capture();
+        expect(lifetime()).toEqual(cleared);
+        await a.apply(before);
+        expect(lifetime()).toEqual(cleared);
+
+        // Device b had the counts from a
+        localStorage.removeItem('Alice:improve_counter_lifetime');
+        const b = tracker('b');
+        await b.apply(before);
+        await b.capture();
+        expect(lifetime()).toEqual(JSON.parse(counted));
+        await b.apply(await a.outbox());
+        expect(lifetime()).toEqual(cleared);
+    });
+
     it('keeps the entries and times of the same life recorded on another device', async () => {
         const entry = { state: 'nieznaczne', time: 1_000, delta: 500, killsMy: 1, killsTeam: 0 };
         localStorage.setItem('Alice:improve_counter', JSON.stringify({

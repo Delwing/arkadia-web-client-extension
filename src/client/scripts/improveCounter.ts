@@ -8,6 +8,7 @@ import {BaseCounter} from "./BaseCounter";
 import {createPad, createHeader, wrapPieces} from "./counterTableUtils";
 import {
     dayTotals,
+    isEmptyDay,
     lifeTotal,
     lifetimeDateOrder,
     mergeLifeCounts,
@@ -184,8 +185,12 @@ export default class ImproveCounter extends BaseCounter {
         this.lifetimeLoaded = true;
 
         this.onStorageChange('improve_counter', (value) => {
+            const obj = this.obj;
             this.load(value ?? {});
-            this.initialized = false;
+            // Sync merging this device's own life back in brings no levels
+            // gained elsewhere: keep counting live, or every next level would
+            // be caught up quietly instead of recorded
+            if (obj === null || this.obj !== obj) this.initialized = false;
             this.loaded = true;
             if (this.pendingLevel !== undefined) {
                 const level = this.pendingLevel;
@@ -261,8 +266,25 @@ export default class ImproveCounter extends BaseCounter {
         };
     }
 
+    /**
+     * Days listed and addressed by number. A cleared day stays stored, empty:
+     * sync restores accumulated data that goes missing.
+     */
+    private visibleDays(): LifetimeDay[] {
+        return this.lifetime.filter((day) => !isEmptyDay(day));
+    }
+
+    /** Empty a day: counts to zero, and its lives cleared so the max merge lets them go. */
+    private clearDay(day: LifetimeDay, at: number) {
+        day.count = 0;
+        delete day.noFormCount;
+        for (const obj of Object.keys(day.lives ?? {})) {
+            day.lives![obj] = {count: 0, clearedAt: at};
+        }
+    }
+
     getLifetimeData(): LifetimeEntry[] {
-        return this.lifetime.map((day) => {
+        return this.visibleDays().map((day) => {
             const totals = dayTotals(day);
             return totals.noFormCount
                 ? {date: day.date, count: totals.count, noFormCount: totals.noFormCount}
@@ -283,15 +305,17 @@ export default class ImproveCounter extends BaseCounter {
      * for its object number. Otherwise the user cleared the current list.
      */
     reset(newLife = false) {
+        const now = Date.now();
         this.entries = [];
         if (newLife) {
             this.obj = null;
-            this.since = Date.now();
+            this.since = now;
+            this.level = -1;
         } else {
-            this.clearedAt = Date.now();
+            // Same life, same level: the next improvement is recorded as usual
+            this.clearedAt = now;
         }
-        this.level = -1;
-        this.lastTime = Date.now();
+        this.lastTime = now;
         this.lastKills = this.getKills();
         this.waitingForFirstCombat = true;
         this.persist();
@@ -553,9 +577,9 @@ export default class ImproveCounter extends BaseCounter {
         const toAdd = Math.min(Math.max(0, count), 15);
         if (toAdd <= 0) return;
         if (typeof id === "number") {
-            const idx = id - 1;
-            if (idx < 0 || idx >= this.lifetime.length) return;
-            this.lifetime[idx].count += toAdd;
+            const day = this.visibleDays()[id - 1];
+            if (!day) return;
+            day.count += toAdd;
         } else {
             this.lifetimeDay(dateKey(Date.now())).count += toAdd;
         }
@@ -567,23 +591,22 @@ export default class ImproveCounter extends BaseCounter {
     }
 
     removeLifetime(id: number, count?: number) {
-        const idx = id - 1;
-        if (idx < 0 || idx >= this.lifetime.length) return;
+        const day = this.visibleDays()[id - 1];
+        if (!day) return;
         let removed: number;
+        const totals = dayTotals(day);
         if (typeof count === "number") {
-            const day = this.lifetime[idx];
-            const totals = dayTotals(day);
             const n = Math.min(Math.max(1, count), totals.count);
             // Counted lives are kept as they are (they sync by maximum); the
             // manual part of the day takes the correction.
             day.count -= n;
             removed = n;
             if (totals.count - n === 0 && totals.noFormCount === 0) {
-                this.lifetime.splice(idx, 1);
+                this.clearDay(day, Date.now());
             }
         } else {
-            removed = dayTotals(this.lifetime[idx]).count;
-            this.lifetime.splice(idx, 1);
+            removed = totals.count;
+            this.clearDay(day, Date.now());
         }
         this.persistLifetime();
         const total = this.lifetimeTotal();
@@ -593,7 +616,8 @@ export default class ImproveCounter extends BaseCounter {
     }
 
     resetLifetime() {
-        this.lifetime = [];
+        const now = Date.now();
+        for (const day of this.lifetime) this.clearDay(day, now);
         this.persistLifetime();
         this.client.println(
             colorString("Zresetowano globalny licznik postepow.", SECTION_COLOR)
@@ -602,19 +626,18 @@ export default class ImproveCounter extends BaseCounter {
 
     addDemoData() {
         const now = new Date();
-        const demoData: { date: string; count: number; noFormCount?: number }[] = [];
+        for (const day of this.lifetime) this.clearDay(day, now.getTime());
 
         // Add 10 days of demo data
         for (let i = 9; i >= 0; i--) {
             const d = new Date(now);
             d.setDate(d.getDate() - i);
-            const date = `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
-            const count = Math.floor(Math.random() * 20) + 5; // 5-25 normal
+            const day = this.lifetimeDay(`${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`);
+            day.count = Math.floor(Math.random() * 20) + 5; // 5-25 normal
             const noFormCount = Math.random() > 0.5 ? Math.floor(Math.random() * 10) + 1 : 0; // 0-10 noform
-            demoData.push({ date, count, noFormCount: noFormCount || undefined });
+            if (noFormCount) day.noFormCount = noFormCount;
         }
 
-        this.lifetime = demoData;
         this.persistLifetime();
         this.client.println(
             colorString("Dodano dane demo do postepy2.", SECTION_COLOR)
@@ -653,11 +676,11 @@ export default class ImproveCounter extends BaseCounter {
     }
 
     editLifetimeEntry(index: number, count: number): boolean {
-        if (index < 0 || index >= this.lifetime.length) return false;
+        const day = this.visibleDays()[index];
+        if (!day) return false;
         if (count <= 0) {
-            this.lifetime.splice(index, 1);
+            this.clearDay(day, Date.now());
         } else {
-            const day = this.lifetime[index];
             day.count += count - dayTotals(day).count;
         }
         this.persistLifetime();
@@ -665,8 +688,9 @@ export default class ImproveCounter extends BaseCounter {
     }
 
     deleteLifetimeEntry(index: number): boolean {
-        if (index < 0 || index >= this.lifetime.length) return false;
-        this.lifetime.splice(index, 1);
+        const day = this.visibleDays()[index];
+        if (!day) return false;
+        this.clearDay(day, Date.now());
         this.persistLifetime();
         return true;
     }
@@ -806,7 +830,7 @@ export default class ImproveCounter extends BaseCounter {
 
         lines.push(pad());
 
-        this.lifetime.forEach((day, idx) => {
+        this.visibleDays().forEach((day, idx) => {
             const e = {date: day.date, count: dayTotals(day).count};
             if (narrow) {
                 const id = `[${String(idx + 1).padStart(4, " ")}] `;

@@ -47,10 +47,25 @@ describe('mergeImproveSessions', () => {
         const waiting: ImproveSessionData = { entries: [], lastTime: 900, level: 0, obj: 7, since: 2, waitingForFirstCombat: true };
         expect(mergeImproveSessions(started, waiting)).toMatchObject({ lastTime: 400, waitingForFirstCombat: false });
     });
+
+    it('measures from /postepy_reset, not from a time it cleared', () => {
+        const stale: ImproveSessionData = { entries: [], lastTime: 400, level: 8, obj: 7, since: 1 };
+        const reset: ImproveSessionData = { entries: [], lastTime: 900, level: 8, obj: 7, since: 1, clearedAt: 900, waitingForFirstCombat: true };
+        const merged = mergeImproveSessions(stale, reset);
+        expect(merged).toMatchObject({ lastTime: 900, waitingForFirstCombat: true, clearedAt: 900 });
+        expect(mergeImproveSessions(reset, stale)).toEqual(merged);
+    });
 });
 
 describe('mergeLifeCounts', () => {
     it('takes the higher count per field', () => {
         expect(mergeLifeCounts({ count: 3 }, { count: 2, noFormCount: 1 })).toEqual({ count: 3, noFormCount: 1 });
+    });
+
+    it('lets a newer clear win, then counts on from it', () => {
+        const cleared = { count: 0, clearedAt: 500 };
+        expect(mergeLifeCounts({ count: 7, noFormCount: 2 }, cleared)).toBe(cleared);
+        expect(mergeLifeCounts(cleared, { count: 7 })).toBe(cleared);
+        expect(mergeLifeCounts({ count: 1, clearedAt: 500 }, { count: 2, clearedAt: 500 })).toEqual({ count: 2, clearedAt: 500 });
     });
 });

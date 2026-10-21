@@ -6,6 +6,7 @@ import { EventEmitter } from 'events';
 import { characterStorage } from '@modules/core/storage';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 import eventBus from '@modules/core/eventBus';
+import { mergeImproveSessions, mergeLifeCounts } from '@shared/improveProgress';
 
 class FakeClient {
   private emitter = new EventEmitter();
@@ -421,6 +422,36 @@ describe('improve counter', () => {
       expect(stored.entries).toEqual([]);
       expect(stored.obj).toBe(1);
       expect(stored.clearedAt).toBe(Date.now());
+    });
+
+    test('records the next improvement after /postepy_reset, also once sync merges the session back', () => {
+      const improveLines = () => client.println.mock.calls
+        .map((c: any[]) => c[0]?.text as string)
+        .filter((t) => t?.includes('postep') || t?.includes('Postep'));
+      client.dispatch('gmcp.char.state', { improve: 8 });
+      const synced = characterStorage.get('improve_counter') as any;
+      jest.advanceTimersByTime(60000);
+      reset();
+      client.println.mockClear();
+      // Sync merges what it last saw of this life with the reset, and writes it back
+      characterStorage.set('improve_counter', mergeImproveSessions(characterStorage.get('improve_counter') as any, synced) as any);
+      client.dispatch('gmcp.char.state', { improve: 9 });
+      expect(improveLines()).toEqual([expect.stringMatching(/Wlasnie wbiles postepy: duze/)]);
+      expect((characterStorage.get('improve_counter') as any).entries.map((e: any) => e.state)).toEqual(['duze']);
+    });
+
+    test('/postepy2_reset survives sync: days stay, empty, and the lives are cleared', () => {
+      client.dispatch('gmcp.char.state', { improve: 2 });
+      const before = lifetime().entries[0].lives[1];
+      aliases.find((a) => a.pattern.source.includes('postepy2_reset'))!.callback();
+      const day = lifetime().entries[0];
+      expect(day).toMatchObject({ date: today, count: 0, lives: { 1: { count: 0, clearedAt: Date.now() } } });
+      // The count synced before the reset loses to the clear
+      expect(mergeLifeCounts(before, day.lives[1])).toEqual(day.lives[1]);
+      expect(getLifetimeData()).toEqual([]);
+
+      client.dispatch('gmcp.char.state', { improve: 3 });
+      expect(getLifetimeData()).toEqual([{ date: today, count: 1 }]);
     });
 
     test('edits of a day keep its lives and correct the manual part', () => {
