@@ -19,7 +19,7 @@ import Triggers from '@client/Triggers';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 import { characterStorage } from '@modules/core/storage';
 import { setTestSettings } from '../helpers/testSettings';
-import { setBehaviorSettings } from '@modules/core/settings';
+import { getBehaviorSettings, setBehaviorSettings } from '@modules/core/settings';
 import { __resetOdmianaStoreForTests, saveOdmiana } from '@modules/data/odmianaStore';
 
 async function resetStoreModule(): Promise<void> {
@@ -315,6 +315,21 @@ describe('zlom script', () => {
     reset!.callback('/zlom-reset'.match(reset!.pattern)!);
     await flush();
     expect(getZlomSnapshot().bronie).toHaveLength(0);
+  });
+
+  test('/zlom-wspolny opts in and out of the crowd list', () => {
+    setBehaviorSettings({ crowdContribute: false });
+    const alias = client.aliases.find(a => a.pattern.test('/zlom-wspolny'))!;
+    expect(alias).toBeDefined();
+
+    alias.callback('/zlom-wspolny'.match(alias.pattern)!);
+    expect(getBehaviorSettings().crowdContribute).toBe(true);
+
+    alias.callback('/zlom-wspolny nie'.match(alias.pattern)!);
+    expect(getBehaviorSettings().crowdContribute).toBe(false);
+
+    alias.callback('/zlom-wspolny stan'.match(alias.pattern)!);
+    expect(getBehaviorSettings().crowdContribute).toBe(false);
   });
 
   test('parses parry-only shield (puklerz)', async () => {

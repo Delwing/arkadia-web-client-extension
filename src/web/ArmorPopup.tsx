@@ -1,4 +1,5 @@
 import React, { useCallback, useId, useLayoutEffect, useRef, useState } from 'react';
+import { ChevronRight } from 'lucide-react';
 import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
 import { usePopup } from './hooks/usePopup';
 import { usePopupData } from './hooks/usePopupData';
@@ -247,7 +248,8 @@ const ArmorPopup: React.FC = () => {
                                                 className="armor-popup__todo-piece"
                                                 onClick={() => setPicking({ type: 'piece', name })}
                                             >
-                                                {name}
+                                                <span>{name}</span>
+                                                <span className="armor-popup__todo-piece-action">wskaż <ChevronRight size={12} /></span>
                                             </button>
                                         </li>
                                     ))}

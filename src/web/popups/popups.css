@@ -9313,15 +9313,24 @@ body.inventory-dragging * {
   user-select: text;
 }
 
+.armor-popup__todo-list--lines {
+  padding-left: 0;
+  list-style: none;
+}
+
 .armor-popup__todo-list--lines li {
+  margin-top: 0.15rem;
+  padding: 0.1rem 0.4rem;
   font-family: var(--output-font-family), monospace;
   font-size: 0.9em;
-  cursor: text;
+  cursor: pointer;
+  border-left: 2px solid var(--popup-accent-border);
   border-radius: 3px;
 }
 
 .armor-popup__todo-list--lines li:hover,
-.armor-popup__todo-line--picking {
+.armor-popup__todo-list--lines .armor-popup__todo-line--picking {
+  border-left-color: var(--popup-accent);
   background: var(--popup-hover-bg);
 }
 
@@ -9339,21 +9348,39 @@ body.inventory-dragging * {
   font-size: 0.9em;
 }
 
+.armor-popup__todo-list--unplaced {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  padding-left: 0;
+  list-style: none;
+}
+
 .armor-popup__todo-piece {
-  padding: 0 0.2rem;
-  border: none;
-  border-radius: 3px;
-  background: none;
-  color: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.15rem 0.3rem 0.15rem 0.5rem;
+  border: 1px solid var(--popup-accent-border);
+  border-radius: 4px;
+  background: var(--popup-accent-subtle-bg);
+  color: var(--popup-text);
   font: inherit;
   text-align: left;
-  text-decoration: underline dotted;
-  text-underline-offset: 3px;
   cursor: pointer;
 }
 
-.armor-popup__todo-piece:hover {
-  background: var(--popup-hover-bg);
+.armor-popup__todo-piece-action {
+  display: inline-flex;
+  align-items: center;
+  color: var(--popup-accent);
+  font-size: 0.85em;
+}
+
+.armor-popup__todo-piece:hover,
+.armor-popup__todo-line--picking .armor-popup__todo-piece {
+  border-color: var(--popup-accent);
+  background: var(--popup-accent-hover-bg);
 }
 
 /* Giving an unrecognised i line to a piece of the złom list */

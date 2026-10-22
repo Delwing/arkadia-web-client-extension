@@ -6,7 +6,7 @@ import { AnsiAwareBuffer } from "@client/ansi/FormatState";
 import { ARMOR_QUALITY, BALANCE, EFFECTIVENESS } from "./evaluationConstants";
 import eventBus from "@modules/core/eventBus";
 import { createColorFormat } from "@modules/core/Colors";
-import { getBehaviorSettings } from "@modules/core/settings";
+import { getBehaviorSettings, setBehaviorSettings } from "@modules/core/settings";
 import { ensureOdmianaLoaded, getOdmiana } from "@modules/data/odmianaStore";
 import {
     ensureZlomLoaded,
@@ -735,6 +735,23 @@ export default function initZlom(
             callback: () => {
                 void clearZlomData();
                 client.println('Baza zlomu wyczyszczona.');
+            },
+        });
+
+        aliases.push({
+            pattern: /^\/zlom-wspolny(?:\s+(nie|stan))?$/,
+            callback: (m: RegExpMatchArray) => {
+                if (m[1] === 'stan') {
+                    client.println(getBehaviorSettings().crowdContribute
+                        ? 'Udostepniasz spis zlomu i odmiany we wspolnym spisie. Wylaczysz to: /zlom-wspolny nie'
+                        : 'Nie udostepniasz spisu zlomu. Wlaczysz to: /zlom-wspolny');
+                    return;
+                }
+                const on = m[1] !== 'nie';
+                setBehaviorSettings({ crowdContribute: on });
+                client.println(on
+                    ? 'Dzieki! Twoj spis zlomu i odmiany trafia teraz anonimowo do wspolnego spisu (bez wagi, ceny, ocen, lokacji i nazwy postaci). Wylaczysz to: /zlom-wspolny nie'
+                    : 'Nie udostepniasz juz spisu zlomu.');
             },
         });
     }
