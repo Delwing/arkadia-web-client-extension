@@ -17,6 +17,7 @@ import {AnsiAwareBuffer} from "@client/ansi/FormatState.ts";
 import {PluginInfo} from "@shared/types/Plugin.ts";
 import type {RecordedEvent} from "@shared/recorder/Recorder.ts";
 import type {Contract} from "@client/scripts/contracts.ts";
+import type {InventoryAction} from "@client/scripts/inventoryActions.ts";
 import type {LineTraceEntry} from "@client/lineTrace.ts";
 import type {CarriageEntry} from "@client/scripts/carriage.ts";
 import type {RouteSegment} from "@shared/map/transportPathFinder.ts";
@@ -582,6 +583,21 @@ export interface KnownEvents {
     "loot.ground.open": { items: GroundItem[] };
     // Container contents seen in game output - fires whether or not pretty containers is on
     "containers.listed": { container: string; items: { name: string; count: string | number }[] };
+    /** The tracked inventory changed - read it with getInventoryState() */
+    "inventory.updated": void;
+    "inventory.popup.open": void;
+    /** Ask for a hidden `i` */
+    "inventory.refresh": void;
+    /** Look into one carried container, by its InventoryEntry.key */
+    "inventory.inspect": { key: string };
+    /** Ask the game with `ocen` which number it gives each bag of a kind (plecak, ...), hidden */
+    "inventory.verify": { noun: string };
+    /** Something done from the inventory window: drop, open, close, or move into or out of a bag */
+    "inventory.action": InventoryAction;
+    /** The game refused something the window asked for, in its own words */
+    "inventory.failed": { text: string };
+    /** The game confirmed something went into or out of a bag */
+    "inventory.moved": { kind: "put" | "take" };
     "profession.popup.open": void;
     "profession.updated": void;
     "sunTracker.popup.open": { domain?: "Empire" | "Ishtar" } | void;

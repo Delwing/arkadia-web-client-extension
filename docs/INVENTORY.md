@@ -2,6 +2,28 @@
 
 Zarządzanie pojemnikami, zbieranie łupów i depozyty.
 
+## Okno ekwipunku
+
+`/ekwipunek` (albo **Ekwipunek** w menu pod prawym przyciskiem myszy) otwiera okno z tym, co masz przy sobie, w podziale na to, co trzymasz w rękach, nosisz na sobie, na plecach, przy pasie i przy sobie.
+
+- Stan ekwipunku jest zapamiętywany osobno dla każdej postaci i synchronizowany między urządzeniami razem z innymi ustawieniami postaci. Na dole okna widać, z kiedy jest
+- Okno wysyła ukryte `i` tylko po kliknięciu przycisku odświeżania albo przy pierwszym otwarciu dla postaci, której ekwipunku jeszcze nie znamy — ani komenda, ani odpowiedź nie pojawiają się w oknie gry. Okno nigdy nie wysyła `i` samo z siebie
+- Gdy bierzesz, odkładasz, dajesz lub wkładasz przedmiot do pojemnika albo ktoś coś ci daje, okno od razu dopisuje go do listy, usuwa go albo zmienia liczbę (odłożenie jednego z dwóch woreczków zostawia jeden)
+- Gdy nie da się dopasować przedmiotu, a także po założeniu lub zdjęciu przedmiotu oraz po dobyciu, opuszczeniu albo wytrąceniu broni, nad listą pojawia się ostrzeżenie z linkiem **Odśwież**. Otwarcie i zamknięcie pojemnika okno śledzi samo
+- Lista aktualizuje się też, gdy sam wpiszesz `i`
+- Pojemniki (plecak, torba, sakwa, sakiewka, woreczek, …) da się rozwinąć. Kilka takich samych pojemników (`dwa woreczki`) to osobne wiersze, każdy z własnym numerem (`zajrzyj do 2. swojego woreczka`). Zamknięte mają ikonę kłódki. Ikona oka zagląda do środka bez wypisywania niczego w oknie gry, a zawartość uzupełnia się też, gdy sam zajrzysz do pojemnika. Po włożeniu lub wyjęciu czegoś pod zawartością pojawia się ostrzeżenie, że mogła się zmienić
+- Woreczki należą do menedżera ziół: po rozwinięciu pokazują zioła, które policzył w woreczku o tym numerze (`/ziola_buduj`), a ikona liścia otwiera okno Ziół. Nie są proponowane jako miejsce do wkładania przedmiotów
+- Pochwy i temblaki pokazują broń, która w nich tkwi, pod sobą; pusta pochwa ma znaczek „pusta”
+
+### Pojemniki z `/pojemnik`
+
+Pojemniki ustawione w `/pojemnik` mają w oknie własną kolumnę (obok listy, gdy okno jest dość szerokie, nad nią, gdy wąskie). Każdy pokazuje, na co jest (monety, kamienie, jedzenie, inne) i co w nim jest.
+
+- **Przeciąganie** działa między „Przy sobie” a tymi pojemnikami: przedmiot przeciągnięty na pojemnik zostaje do niego włożony, przeciągnięty z pojemnika na listę — wyjęty, a z jednego pojemnika na drugi — przełożony. Przedmiot w trakcie przeciągania znika ze swojego miejsca, a tam, gdzie wyląduje, robi się dla niego miejsce. Po upuszczeniu czeka przygaszony, aż gra potwierdzi
+- **Prawy przycisk** na przedmiocie: **Odłóż**, **Oceń**, **Włóż do…**, a na pojemniku także **Zajrzyj** i **Otwórz** / **Zamknij**. Na przedmiocie w pojemniku: **Wyjmij** i **Przełóż do…**. Woreczki nie są proponowane jako miejsce do wkładania — to woreczki na zioła
+- Wkładanie i wyjmowanie idzie przez menedżer pojemników, tak jak `/wdp` i `/wzp`, więc pojemnik jest otwierany i zamykany zgodnie z jego ustawieniami. Inne pojemniki (spoza `/pojemnik`) okno otwiera przed i zamyka po, gdy są zamknięte
+- Gdy gra odmówi (`… nie chce wejsc.`), przedmiot od razu wraca na swoje miejsce, a okno na chwilę pokazuje powód
+
 ## Menedżer pojemników
 
 Menedżer pojemników pozwala przypisać wybrane torby, plecaki i inne pojemniki do określonych typów przedmiotów. Dzięki temu możesz szybko odkładać i wyjmować rzeczy z odpowiedniego miejsca.
@@ -13,7 +35,11 @@ Menedżer pojemników pozwala przypisać wybrane torby, plecaki i inne pojemniki
 3. Wybierz `wszystkie`, by używać pojemnika dla wszystkich kategorii
 4. Sprawdź aktualne przypisania komendą `/pojemniki`
 
-Jeśli nosisz kilka pojemników tego samego rodzaju (np. dwie sakiewki), lista je numeruje — `1. sakiewka (otwarta runiczna)`, `2. sakiewka (skórzana)` — a komendy trafiają do wybranego (`otworz 2. swoja sakiewke`). Numer to kolejność w ekwipunku, więc po zdobyciu lub oddaniu innej sakiewki uruchom `/pojemnik` ponownie.
+Pojemnik noszony na plecach albo przytroczony do pasa jest „założony” — lista pokazuje go jako `zalozony plecak`, a komendy mówią `otworz zalozony plecak`, `wloz … do zalozonego plecaka`. Pozostałe (przy sobie, przewieszone przez ramię) są „swoje”: `otworz swoja sakiewke`.
+
+Jeśli masz kilka pojemników tego samego rodzaju, lista numeruje je osobno wśród założonych i osobno wśród pozostałych — `1. zalozona sakiewka (otwarta runiczna)`, `2. zalozona sakiewka (skórzana)` — a komendy trafiają do wybranego (`otworz 2. zalozona sakiewke`). Numer to kolejność w ekwipunku, więc po zdobyciu lub oddaniu innej sakiewki uruchom `/pojemnik` ponownie.
+
+Gdy masz pojemniki tego samego rodzaju i noszone, i przy sobie (np. plecak na plecach i drugi w ekwipunku), nie wiadomo, który gra liczy jako pierwszy. Okno ekwipunku pokazuje wtedy ostrzeżenie z linkiem **Sprawdź** — po kliknięciu wysyła ukryte `ocen 1. plecak`, `ocen 2. plecak`… i z odpowiedzi ustala numery. Od tej pory i okno, i komendy pojemników (`/wdp`, `/wzp`) używają tych numerów (`wloz … do 2. swojego plecaka`), dopóki plecaki się nie zmienią. Bez kliknięcia nic nie jest wysyłane.
 
 > Ustawienia są zapisywane w pamięci przeglądarki.
 

@@ -41,6 +41,8 @@ import initChatHistory from './scripts/chatHistory'
 import initCombatWindow from './scripts/combatWindow'
 import initCombatStats from './scripts/combatStats'
 import initBagManager from './scripts/bagManager'
+import initInventory from './scripts/inventory'
+import initInventoryActions from './scripts/inventoryActions'
 import initDeposits from './scripts/deposits'
 import initHerbShop from './scripts/herbShop'
 import initArmorShop from './scripts/armorShop'
@@ -337,6 +339,8 @@ export function registerScripts(client: Client) {
     initItemCollector(client, aliases);
     initContainers(client)
     initBagManager(client, aliases)
+    initInventory(client, aliases)
+    initInventoryActions(client)
     initCutting(client, aliases)
     initDeposits(client, aliases)
     initHerbShop(client)

@@ -185,8 +185,58 @@ describe('bagManager /pojemnik', () => {
             'Na plecach nosisz prawie pusta otwarta pakowna kruczoczarna sakwe.',
             'Masz przy sobie dlugi klucz, zamkniety skorzany woreczek i otwarta ciemnoniebieska runiczna sakiewke.',
         );
-        expect(printed).toContain('Ustaw sakwa jako:');
+        // On the back: worn
+        expect(printed).toContain('Ustaw zalozona sakwa jako:');
         expect(printed).toContain('Ustaw sakiewka jako:');
+    });
+
+    test('offers bags on the back and at the belt as worn, numbered among the worn ones', () => {
+        const printed = scanInventory(
+            'Na plecach nosisz prawie pusty otwarty skorzany plecak.',
+            'Do pasa masz przytroczone otwarta runiczna sakiewke i dwie zamkniete skorzane sakiewki.',
+            'Masz przewieszona przez ramie skorzana torbe.',
+            'Masz przy sobie zamkniety prosty plecak i otwarta prosta sakiewke.',
+        );
+        expect(printed).toContain('Ustaw zalozony plecak jako:');
+        expect(printed).toContain('Ustaw 1. zalozona sakiewka (otwarta runiczna) jako:');
+        expect(printed).toContain('Ustaw 3. zalozona sakiewka (zamkniete skorzane) jako:');
+        // Slung over a shoulder is not known to be "zalozona": it stays "swoja"
+        expect(printed).toContain('Ustaw torba jako:');
+        // Carried ones are numbered only among the carried: where the worn ones fall is not known
+        expect(printed).toContain('Ustaw plecak jako:');
+        expect(printed).toContain('Ustaw sakiewka jako:');
+    });
+
+    test('says when a worn and a carried bag of one kind may be numbered either way, with a link to check', () => {
+        // Verbatim from the game
+        const printed = scanInventory(
+            'Trzymasz krasnoludzki asymetryczny topor bojowy w prawej rece.',
+            'Przy lewym boku masz przypiety kunsztowny skorzany temblak.',
+            'Na plecach nosisz prawie pusty zamkniety zolty podrozny plecak.',
+            'Do pasa masz przytroczone gornicza lampe i skorzany buklak.',
+            'Masz przewieszony przez ramie brazowy krety rog - symbol rozpoznawczy pocztylionow.',
+            'Nosisz zamkniete skromne zawiniatko.',
+            'Masz przy sobie Kartoflaka, zamkniety skorzany plecak, stara podniszczona fajke, maly cynowy kubek, zelazna lyzeczke, zelazny widelec i drewniana lyzke.',
+        );
+        expect(printed).toContain('Ustaw zalozony plecak jako:');
+        expect(printed).toContain('Ustaw plecak jako:');
+        expect(printed).toContain('plecak: zalozony i przy sobie - gra moze liczyc je inaczej. [ sprawdz ]');
+    });
+
+    test('a worn bag is addressed as worn', () => {
+        characterStorage.set('containers', { money: '2. zalozona sakiewka', gems: 'zalozony plecak', food: 'plecak', other: 'plecak' });
+        initBagManager((client as unknown) as any);
+        containerAction(client as any, 'money', 'take', 'monety');
+        containerAction(client as any, 'gems', 'put', 'rubin');
+        expect(client.sendCommand.mock.calls.map(([cmd]) => cmd)).toEqual([
+            'otworz 2. zalozona sakiewke',
+            'wez monety z 2. zalozonej sakiewki',
+            'zamknij 2. zalozona sakiewke',
+            'otworz zalozony plecak',
+            'wloz rubin do zalozonego plecaka',
+            'zamknij zalozony plecak',
+        ]);
+        expect(getContainerForms('gems')).toEqual({ mianownik: 'plecak', dopelniacz: 'plecaka', biernik: 'plecak', worn: true });
     });
 
     test('numbers several bags of the same kind, plural ones included', () => {

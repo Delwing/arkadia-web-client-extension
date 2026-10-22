@@ -79,6 +79,7 @@ export type BuiltInPopupType =
   | 'staticmap'
   | 'tripPlanner'
   | 'deposits'
+  | 'inventory'
   | 'packageReceiver'
   | 'profession'
   | 'sunTracker'

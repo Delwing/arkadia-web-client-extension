@@ -51,12 +51,16 @@ const defaultFilter: (item: ContainerItem) => boolean = () => true;
 let filter = defaultFilter;
 let magicAndKeysFilter = defaultFilter;
 
-export function parseItems(content: string): ContainerItem[] {
+/** The items of a game list ("a, b i c.") as they are written, count words included */
+export function splitItemList(content: string): string[] {
     let rest = content.trim();
     rest = rest.replace(/\s+i\s+([^,]+)(\.)?$/, ', $1');
     rest = rest.replace(/\.$/, '');
-    const parts = rest.split(/,\s*/).map(p => p.trim()).filter(p => p.length > 0);
-    return parts.map(p => {
+    return rest.split(/,\s*/).map(p => p.trim()).filter(p => p.length > 0);
+}
+
+export function parseItems(content: string): ContainerItem[] {
+    return splitItemList(content).map(p => {
         // Try to match Polish numbers first (including compound numbers)
         const polishMatch = p.match(new RegExp(`^(wiele|${polishNumberPattern}|\\d+)\\s+(.*)`, 'i'));
         if (polishMatch) {
@@ -730,6 +734,18 @@ async function loadMagicAndKeysFilter(client: Client) {
 }
 
 
+type ListingObserver = (listing: ParsedContainer) => boolean;
+const listingObservers: ListingObserver[] = [];
+
+/** Sees every container listing; returning true hides the listing line */
+export function onContainerListing(observer: ListingObserver): () => void {
+    listingObservers.push(observer);
+    return () => {
+        const idx = listingObservers.indexOf(observer);
+        if (idx >= 0) listingObservers.splice(idx, 1);
+    };
+}
+
 export default function initContainers(client: Client) {
     loadMagicAndKeysFilter(client);
     const tag = 'prettyContainers';
@@ -751,7 +767,9 @@ export default function initContainers(client: Client) {
                 items: parseItems(matches.groups?.content ?? ''),
             };
             client.sendEvent('containers.listed', listing);
-            if (handleContainerListing(listing)) return null;
+            // Every observer sees the listing, even when an earlier one hides it
+            const hidden = listingObservers.reduce((hide, observer) => observer(listing) || hide, false);
+            if (handleContainerListing(listing) || hidden) return null;
             if (!enabled) return line;
             const output = prettyPrintContainer(matches, columns, 'POJEMNIK', 5, width);
             client.print(output);
