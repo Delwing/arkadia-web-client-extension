@@ -2,7 +2,8 @@ vi.mock('@client/scripts/magicKeyLoader', () => ({ default: vi.fn().mockResolved
 vi.mock('@client/scripts/magicsLoader', () => ({ default: vi.fn().mockResolvedValue([]) }));
 
 import { describe, test, expect, vi } from 'vitest';
-import { itemCategory, splitName } from '@web/inventoryView';
+import { itemCategory, splitName, zlomName } from '@web/inventoryView';
+import type { ArmorEntry, ZlomSnapshot } from '@modules/data/zlomStore';
 
 describe('splitName', () => {
     test('finds the noun after the adjectives', () => {
@@ -34,5 +35,24 @@ describe('itemCategory', () => {
         expect(itemCategory('zlote monety', false)).toBe('coins');
         expect(itemCategory('krysztalowa olejna lampe', false)).toBe('light');
         expect(itemCategory('maly cynowy kubek', false)).toBe('other');
+    });
+});
+
+describe('zlomName', () => {
+    const helm = { short: 'garnczkowy helm z jelenim porozem', iLine: 'garnczkowy helm zdobiony majestatycznym jelenim porozem' } as ArmorEntry;
+    const luska = { short: 'lsniaca mithrilowa luska', iLine: 'Twoje cialo spowija lsniaca mithrilowa luska' } as ArmorEntry;
+    const zlom = { bronie: [], zbroje: [helm, luska], tarcze: [] } as unknown as ZlomSnapshot;
+
+    test('names a piece by its złom entry when `i` names it as the entry\'s i line', () => {
+        expect(zlomName('garnczkowy helm zdobiony majestatycznym jelenim porozem', zlom)).toBe('garnczkowy helm z jelenim porozem');
+    });
+
+    test('leaves alone what the list already names, or does not know', () => {
+        expect(zlomName('garnczkowy helm z jelenim porozem', zlom)).toBeNull();
+        expect(zlomName('szarawy skorzany woreczek', zlom)).toBeNull();
+    });
+
+    test('takes no part of a prose i line for a name', () => {
+        expect(zlomName('mithrilowa luska', zlom)).toBeNull();
     });
 });

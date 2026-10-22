@@ -12,7 +12,8 @@ import eventBus from '@modules/core/eventBus';
 import { getInventoryState, type InventoryEntry, type InventoryState } from '@client/scripts/inventory';
 import { getTransformDefinitions, type ContainerItem } from '@client/scripts/prettyContainers';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
-import { containerTypeLabel, itemCategory, splitName, type ItemCategory } from './inventoryView';
+import { containerTypeLabel, itemCategory, splitName, zlomName, type ItemCategory } from './inventoryView';
+import { getZlomView, subscribeZlomView, type ZlomView } from '@modules/crowd/crowdView';
 import {
     dropListRows, useInventoryDrag, type DragItem, type DragSource, type DropRow, type InventoryDrag, type Pending,
 } from './inventoryDrag';
@@ -42,6 +43,8 @@ const CATEGORY_ICONS: Record<ItemCategory, LucideIcon> = {
 interface WindowState {
     bags: InventoryEntry[];
     drag: InventoryDrag;
+    /** Names the pieces `i` words its own way */
+    zlom: ZlomView;
 }
 
 const WindowContext = createContext<WindowState | null>(null);
@@ -117,8 +120,11 @@ function transformedHtml(item: ContainerItem, text: string): string | null {
 }
 
 function ItemName({ item, text }: { item: ContainerItem; text: string }) {
-    const html = useMemo(() => transformedHtml(item, text), [item, text]);
-    const parts = useMemo(() => splitName(text), [text]);
+    const { zlom } = useWindow();
+    // A piece `i` names its own way shows as the złom list names it, the game's words on hover
+    const shown = useMemo(() => zlomName(text, zlom) ?? text, [text, zlom]);
+    const html = useMemo(() => transformedHtml(item, shown), [item, shown]);
+    const parts = useMemo(() => splitName(shown), [shown]);
     if (html) {
         return <span className="inventory-popup__name inventory-popup__name--colored" dangerouslySetInnerHTML={{ __html: html }} />;
     }
@@ -433,6 +439,8 @@ const InventoryPopup: React.FC = () => {
         updateEvent: 'inventory.updated',
         transformUpdate: useCallback(() => getInventoryState(), []),
     });
+    const [zlom, setZlom] = useState(getZlomView);
+    useEffect(() => subscribeZlomView(setZlom), []);
 
     const [filterText, setFilterText] = useState('');
     const filter = normalizeFilter(filterText);
@@ -478,9 +486,11 @@ const InventoryPopup: React.FC = () => {
     // Bags from /pojemniki live in their own column, not in the carried list
     const sections = state.sections
         .map(section => ({ ...section, entries: section.entries.filter(entry => !entry.assigned && matches(entry, filter)) }))
-        .filter(section => section.entries.length > 0 || (!filter && section.label === CARRIED));
+        .filter(section => section.entries.length > 0 || (!filter && section.label === CARRIED))
+        // What is carried first, what is worn below it; the game lists it the other way round
+        .sort((a, b) => Number(b.label === CARRIED) - Number(a.label === CARRIED));
 
-    const windowState = useMemo(() => ({ bags, drag }), [bags, drag]);
+    const windowState = useMemo(() => ({ bags, drag, zlom }), [bags, drag, zlom]);
 
     const renderEntry = (entry: InventoryEntry, draggable: boolean) => entry.container ? (
         <BagRow

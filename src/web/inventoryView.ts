@@ -1,7 +1,29 @@
 import { getGroupDefinitions } from '@client/scripts/prettyContainers';
 import { splitName } from '@client/scripts/inventoryActions';
+import { sameItem } from '@client/scripts/armor';
+import { iLineMatcher, type ZlomSnapshot } from '@modules/data/zlomStore';
 
 export { splitName, type NameParts } from '@client/scripts/inventoryActions';
+
+/** An `i` line that is a whole name, "garnczkowy helm zdobiony majestatycznym jelenim porozem", or a /regexp/ */
+function namedBy(iLine: string | undefined, name: string): boolean {
+    const raw = iLine?.trim();
+    if (!raw) return false;
+    if (/^\/.+\/[a-z]*$/.test(raw)) return iLineMatcher(raw)?.(name) ?? false;
+    return sameItem(raw.replace(/\.$/, ''), name);
+}
+
+/**
+ * The złom name of a piece `i` names its own way: "garnczkowy helm z jelenim
+ * porozem" for "garnczkowy helm zdobiony majestatycznym jelenim porozem",
+ * through the entry's `i` line or other name. Null for anything else.
+ */
+export function zlomName(name: string, zlom: ZlomSnapshot): string | null {
+    const entries = [...zlom.zbroje, ...zlom.tarcze];
+    const entry = entries.find(e => !sameItem(e.short, name)
+        && ((e.shortAlt && sameItem(e.shortAlt, name)) || namedBy(e.iLine, name)));
+    return entry?.short ?? null;
+}
 
 export type ItemCategory =
     | 'bag' | 'coins' | 'light'
