@@ -5,7 +5,18 @@ import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
 import initInventory from '@client/scripts/inventory';
 import Client from '@client/Client';
 import { characterStorage } from '@modules/core/storage';
-import initArmor, { getWornArmor, parseSlots, parseWear, slotsFromWorn, unplacedPieces } from '@client/scripts/armor';
+import initArmor, {
+    assignILine,
+    assignPiece,
+    getWornArmor,
+    parseSlots,
+    parseWear,
+    previewILine,
+    rankILineCandidates,
+    slotsFromWorn,
+    undeclinedPieces,
+    unplacedPieces,
+} from '@client/scripts/armor';
 import {
     __resetZlomStoreForTests,
     ensureZlomLoaded,
@@ -413,5 +424,200 @@ describe('armour the i reply words in its own way', () => {
             'Masz przy sobie 34 miedziane monety.',
         ].join('\n'), 'text');
         expect(getWornArmor().slots).toEqual({ dlonie: 'czarne rekawice' });
+    });
+});
+
+describe('giving an unrecognised i line to a piece', () => {
+    let client: Client;
+    let disposeArmor: () => void;
+    let disposeInventory: () => void;
+
+    const LINE = 'Twoje cialo spowija lsniaca mithrilowa luska.';
+    const armour = (short: string, oslona: string, iLine?: string): ArmorEntry => ({
+        short, typ: '', klute: 0, obuch: 0, ciete: 0, magik: 0, opis: `${short} - opis`, waga: 0, obj: 0, cena: 0, oslona, roomId: null,
+        ...(iLine ? { iLine } : {}),
+    });
+
+    beforeEach(async () => {
+        localStorage.clear();
+        characterStorage.setCharacter('TestChar');
+        await __resetZlomStoreForTests();
+        await ensureZlomLoaded();
+        await updateZlomSnapshot(snapshot => ({
+            ...snapshot,
+            zbroje: [
+                armour('stalowa dluga kolczuga', 'korpus, nogi i ramiona'),
+                armour('lsniaca mithrilowa luska', 'korpus i ramiona'),
+                armour('mithrilowe nagolenniki', ''),
+            ],
+            tarcze: [],
+        }));
+        client = new Client({
+            send: () => {},
+            output: () => {},
+            sendGmcp: () => {},
+            flushMessageBuffer: () => {},
+            emit: () => {},
+            shouldEchoCommand: () => true,
+        });
+        disposeInventory = initInventory(client);
+        disposeArmor = initArmor(client);
+        client.onLine([
+            'Masz na sobie stalowa dluga kolczuge.',
+            LINE,
+            'Masz przy sobie 34 miedziane monety.',
+        ].join('\n'), 'text');
+    });
+
+    afterEach(() => {
+        disposeArmor();
+        disposeInventory();
+    });
+
+    test('puts the piece the line names first', () => {
+        const ranked = rankILineCandidates(LINE, getZlomSnapshot());
+        expect(ranked[0]!.entry.short).toBe('lsniaca mithrilowa luska');
+        expect(ranked[1]!.entry.short).toBe('mithrilowe nagolenniki');
+    });
+
+    test('previews what the fragment matches and where the piece goes', () => {
+        const luska = getZlomSnapshot().zbroje[1]!;
+        expect(previewILine('mithrilowa luska', [LINE], getZlomSnapshot(), 'zbroje', luska))
+            .toEqual({ valid: true, matched: [LINE], clashes: [], slots: ['korpus', 'lewe ramie', 'prawe ramie'] });
+        expect(previewILine('/(/', [LINE], getZlomSnapshot(), 'zbroje', luska).valid).toBe(false);
+        // No cover known yet: it would match, but take no slot
+        const nagolenniki = getZlomSnapshot().zbroje[2]!;
+        expect(previewILine('mithrilowa', [LINE], getZlomSnapshot(), 'zbroje', nagolenniki).slots).toEqual([]);
+    });
+
+    test('warns when another piece already claims the line', async () => {
+        await updateZlomSnapshot(snapshot => ({
+            ...snapshot,
+            zbroje: snapshot.zbroje.map(e => e.short === 'mithrilowe nagolenniki' ? { ...e, iLine: 'mithrilowa' } : e),
+        }));
+        const luska = getZlomSnapshot().zbroje[1]!;
+        expect(previewILine('luska', [LINE], getZlomSnapshot(), 'zbroje', luska).clashes).toEqual(['mithrilowe nagolenniki']);
+    });
+
+    test('saves the fragment and places the piece without another i', async () => {
+        expect(getWornArmor().unknownLines).toEqual([LINE]);
+        await assignILine('zbroje', 'lsniaca mithrilowa luska - opis', 'mithrilowa luska');
+
+        expect(getZlomSnapshot().zbroje[1]!.iLine).toBe('mithrilowa luska');
+        const armor = getWornArmor();
+        expect(armor.unknownLines).toEqual([]);
+        expect(armor.slots.korpus).toBe('lsniaca mithrilowa luska');
+        expect(armor.slots['lewe ramie']).toBe('lsniaca mithrilowa luska');
+        // What the reply placed by name stays
+        expect(armor.slots.nogi).toBe('stalowa dluga kolczuge');
+    });
+
+    test('the next i places it by its line', async () => {
+        await assignILine('zbroje', 'lsniaca mithrilowa luska - opis', 'mithrilowa luska');
+        client.onLine([
+            'Masz na sobie stalowa dluga kolczuge.',
+            LINE,
+            'Masz przy sobie 34 miedziane monety.',
+        ].join('\n'), 'text');
+        expect(getWornArmor().unknownLines).toEqual([]);
+        expect(getWornArmor().slots.korpus).toBe('lsniaca mithrilowa luska');
+    });
+});
+
+describe('tying a piece i lists by name to its złom entry', () => {
+    let client: Client;
+    let disposeArmor: (() => void) | undefined;
+    let disposeInventory: (() => void) | undefined;
+
+    const HELM = 'garnczkowy helm zdobiony majestatycznym jelenim porozem';
+    const helm = (oslona: string): ArmorEntry => ({
+        short: 'garnczkowy helm z jelenim porozem', typ: '', klute: 0, obuch: 0, ciete: 0, magik: 0,
+        opis: 'Helm z porozem.', waga: 0, obj: 0, cena: 0, oslona, roomId: null,
+    });
+    const reply = () => client.onLine([
+        `Na glowie masz ${HELM}.`,
+        'Masz przy sobie 34 miedziane monety.',
+    ].join('\n'), 'text');
+
+    async function setup(oslona: string) {
+        localStorage.clear();
+        characterStorage.setCharacter('TestChar');
+        await __resetZlomStoreForTests();
+        await ensureZlomLoaded();
+        await updateZlomSnapshot(snapshot => ({ ...snapshot, zbroje: [helm(oslona)], tarcze: [] }));
+        client = new Client({
+            send: () => {},
+            output: () => {},
+            sendGmcp: () => {},
+            flushMessageBuffer: () => {},
+            emit: () => {},
+            shouldEchoCommand: () => true,
+        });
+        disposeInventory = initInventory(client);
+        disposeArmor = initArmor(client);
+        reply();
+    }
+
+    afterEach(() => {
+        disposeArmor?.();
+        disposeInventory?.();
+        disposeArmor = disposeInventory = undefined;
+    });
+
+    test('a piece named differently takes its slot, and the next i knows it', async () => {
+        await setup('glowe');
+        expect(getWornArmor().unplaced).toEqual([HELM]);
+
+        await assignPiece(HELM, 'zbroje', 'Helm z porozem.');
+        expect(getZlomSnapshot().zbroje[0]!.iLine).toBe(HELM);
+        expect(getWornArmor().slots.glowa).toBe(HELM);
+        expect(getWornArmor().unplaced).toEqual([]);
+
+        reply();
+        expect(getWornArmor().slots.glowa).toBe('garnczkowy helm z jelenim porozem');
+        expect(getWornArmor().unplaced).toEqual([]);
+    });
+
+    test('a piece whose cover ocen has not told stays to be filled in', async () => {
+        await setup('');
+        await assignPiece(HELM, 'zbroje', 'Helm z porozem.');
+        expect(getZlomSnapshot().zbroje[0]!.oslona).toBe('');
+        expect(getWornArmor().slots).toEqual({});
+        reply();
+        expect(getWornArmor().unplaced).toEqual([HELM]);
+    });
+});
+
+describe('undeclinedPieces', () => {
+    const piece = (short: string, extra: Partial<ArmorEntry> = {}): ArmorEntry => ({
+        short, typ: '', klute: 0, obuch: 0, ciete: 0, magik: 0, opis: short, waga: 0, obj: 0, cena: 0,
+        oslona: 'glowe', roomId: null, ...extra,
+    });
+    const snapshot = {
+        bronie: [],
+        tarcze: [{ ...piece('drewniana okuta tarcza'), parowanie: 0 }],
+        zbroje: [
+            piece('stalowa dluga kolczuga'),
+            piece('garnczkowy helm z jelenim porozem', { iLine: 'garnczkowy helm zdobiony' }),
+        ],
+    };
+    const plecak = {
+        mianownik: 'stalowa dluga kolczuga', dopelniacz: 'x', celownik: 'x', biernik: 'x', narzednik: 'x', miejscownik: 'x',
+    };
+
+    test('names worn pieces by their złom nominative, once each, unless already declined', () => {
+        const slots = {
+            korpus: 'stalowa dluga kolczuge',
+            nogi: 'stalowa dluga kolczuge',
+            glowa: 'garnczkowy helm zdobiony majestatycznym jelenim porozem',
+            tarcza: 'drewniana okuta tarcze',
+            stopy: 'nieznane buty',
+        };
+        expect(undeclinedPieces(slots, snapshot, {})).toEqual([
+            'stalowa dluga kolczuga',
+            'garnczkowy helm z jelenim porozem',
+            'drewniana okuta tarcza',
+        ]);
+        expect(undeclinedPieces(slots, snapshot, { 'stalowa dluga kolczuga': plecak })).not.toContain('stalowa dluga kolczuga');
     });
 });

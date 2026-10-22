@@ -3,6 +3,8 @@ import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
 import { usePopup } from './hooks/usePopup';
 import { usePopupData } from './hooks/usePopupData';
 import { getWornArmor, type WornArmor } from '@client/scripts/armor';
+import ArmorILinePicker, { type ILineSubject } from './ArmorILinePicker';
+import ArmorOdmianaHint from './ArmorOdmianaHint';
 
 const POPUP_ID = 'popup:armor';
 
@@ -144,6 +146,25 @@ const ArmorPopup: React.FC = () => {
     });
 
     const [hovered, setHovered] = useState<Slot | null>(null);
+    // The unrecognised line, or unplaced piece, being given to a złom entry
+    const [picking, setPicking] = useState<ILineSubject | null>(null);
+    // Placed or gone with a newer reply: nothing left to pick from
+    const subject = picking && (picking.type === 'line'
+        ? armor.unknownLines.includes(picking.line)
+        : armor.unplaced.includes(picking.name)) ? picking : null;
+    const picker = subject && (
+        <ArmorILinePicker subject={subject} lines={armor.unknownLines} onClose={() => setPicking(null)} />
+    );
+
+    /** The text selected inside this line, or the whole line when nothing is */
+    const pickFrom = (line: string, element: HTMLElement) => {
+        // The element's own document: popped out, the window runs this code in the opener's realm
+        const selection = element.ownerDocument.getSelection();
+        const selected = selection && !selection.isCollapsed && element.contains(selection.anchorNode) && element.contains(selection.focusNode)
+            ? selection.toString().trim()
+            : '';
+        setPicking({ type: 'line', line, fragment: selected || line });
+    };
     const covered = new Set(Object.keys(armor.slots));
     // A piece over several slots lights up all of them
     const hoveredItem = hovered ? armor.slots[hovered] : undefined;
@@ -213,25 +234,50 @@ const ArmorPopup: React.FC = () => {
                         {armor.unplaced.length > 0 && (
                             <>
                                 <div className="armor-popup__todo-hint">
-                                    Noszone, ale bez miejsca: uzupełnij w złomie osłonę albo nazwę, pod jaką podaje je <code>i</code>.
+                                    Noszone, ale bez miejsca, bo w złomie występuje pod inną nazwą albo nie ma go wcale. Kliknij, żeby wskazać, który to przedmiot ze złomu.
                                 </div>
                                 <ul className="armor-popup__todo-list armor-popup__todo-list--unplaced">
-                                    {armor.unplaced.map((name, i) => <li key={i}>{name}</li>)}
+                                    {armor.unplaced.map((name, i) => (
+                                        <li
+                                            key={i}
+                                            className={subject?.type === 'piece' && subject.name === name ? 'armor-popup__todo-line--picking' : undefined}
+                                        >
+                                            <button
+                                                type="button"
+                                                className="armor-popup__todo-piece"
+                                                onClick={() => setPicking({ type: 'piece', name })}
+                                            >
+                                                {name}
+                                            </button>
+                                        </li>
+                                    ))}
                                 </ul>
+                                {subject?.type === 'piece' && picker}
                             </>
                         )}
                         {armor.unknownLines.length > 0 && (
                             <>
                                 <div className="armor-popup__todo-hint">
-                                    Linie, których klient nie rozpoznaje: dla zbroi wpisz w złomie, jak ją opisuje <code>i</code>.
+                                    Linie, których klient nie rozpoznaje. Jeśli to zbroja, zaznacz fragment, który ją wyróżnia (albo kliknij całą linię), i wskaż przedmiot ze złomu.
                                 </div>
                                 <ul className="armor-popup__todo-list armor-popup__todo-list--lines">
-                                    {armor.unknownLines.map((line, i) => <li key={i}>{line}</li>)}
+                                    {armor.unknownLines.map((line, i) => (
+                                        <li
+                                            key={i}
+                                            className={subject?.type === 'line' && subject.line === line ? 'armor-popup__todo-line--picking' : undefined}
+                                            title="Zaznacz fragment albo kliknij całą linię"
+                                            onMouseUp={e => pickFrom(line, e.currentTarget)}
+                                        >
+                                            {line}
+                                        </li>
+                                    ))}
                                 </ul>
+                                {subject?.type === 'line' && picker}
                             </>
                         )}
                     </div>
                 )}
+                <ArmorOdmianaHint slots={armor.slots} />
                 {armor.updatedAt === null && (
                     <div className="armor-popup__hint">
                         Okno uczy się z zakładania i zdejmowania — załóż coś, a pojawi się tutaj.

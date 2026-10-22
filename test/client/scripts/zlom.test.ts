@@ -19,6 +19,8 @@ import Triggers from '@client/Triggers';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 import { characterStorage } from '@modules/core/storage';
 import { setTestSettings } from '../helpers/testSettings';
+import { setBehaviorSettings } from '@modules/core/settings';
+import { __resetOdmianaStoreForTests, saveOdmiana } from '@modules/data/odmianaStore';
 
 async function resetStoreModule(): Promise<void> {
     await __resetZlomStoreForTests();
@@ -88,6 +90,46 @@ describe('zlom script', () => {
     parse('Twoje doswiadczenie i umiejetnosci podpowiadaja ci, ze jak na topor jest on bardzo dobrze wywazony i niezwykle skuteczny.');
     parse('Do wykonania tej broni uzyto srebra, bedzie wiec ona skuteczna przeciw wrogom odpornym na zwykle obrazenia.');
   }
+
+  describe('offering odmien after an evaluation', () => {
+    const offers = () => client.println.mock.calls
+      .map(([line]) => (line as AnsiAwareBuffer).text)
+      .filter(text => text.startsWith('Brak odmiany'));
+    const settle = () => new Promise(resolve => setTimeout(resolve, 0));
+
+    afterEach(async () => {
+      setBehaviorSettings({ crowdContribute: false });
+      await __resetOdmianaStoreForTests();
+    });
+
+    test('offers it once, after the evaluation, to a player who shares', async () => {
+      setBehaviorSettings({ crowdContribute: true });
+      feedWeapon();
+      await settle();
+      expect(offers()).toEqual(['Brak odmiany w spisie: odmien krasnoludzki asymetryczny topor bojowy']);
+
+      feedWeapon();
+      await settle();
+      expect(offers()).toHaveLength(1);
+    });
+
+    test('says nothing to a player who does not share', async () => {
+      feedWeapon();
+      await settle();
+      expect(offers()).toEqual([]);
+    });
+
+    test('says nothing when the declension is already known', async () => {
+      setBehaviorSettings({ crowdContribute: true });
+      await saveOdmiana({
+        mianownik: 'krasnoludzki asymetryczny topor bojowy',
+        dopelniacz: 'a', celownik: 'a', biernik: 'a', narzednik: 'a', miejscownik: 'a',
+      });
+      feedWeapon();
+      await settle();
+      expect(offers()).toEqual([]);
+    });
+  });
 
   test('parses weapon evaluation and stores entry', async () => {
     feedWeapon();

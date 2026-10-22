@@ -9124,8 +9124,9 @@ body.inventory-dragging * {
 /* Cards in a column either side of the figure, each with a line to the part it covers */
 .armor-popup__doll {
   position: relative;
-  flex: 1;
-  min-height: 0;
+  /* Grows into spare room but never below its cards: a long list under it
+     scrolls the window instead of sliding over the figure */
+  flex: 1 0 auto;
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(90px, 0.62fr) minmax(0, 1fr);
   column-gap: 1.75rem;
@@ -9315,6 +9316,124 @@ body.inventory-dragging * {
 .armor-popup__todo-list--lines li {
   font-family: var(--output-font-family), monospace;
   font-size: 0.9em;
+  cursor: text;
+  border-radius: 3px;
+}
+
+.armor-popup__todo-list--lines li:hover,
+.armor-popup__todo-line--picking {
+  background: var(--popup-hover-bg);
+}
+
+.armor-popup__odmiana {
+  margin-top: 0.75rem;
+  padding: 0 0.6rem;
+}
+
+.armor-popup__odmiana-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+  margin-top: 0.25rem;
+  font-family: var(--output-font-family), monospace;
+  font-size: 0.9em;
+}
+
+.armor-popup__todo-piece {
+  padding: 0 0.2rem;
+  border: none;
+  border-radius: 3px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.armor-popup__todo-piece:hover {
+  background: var(--popup-hover-bg);
+}
+
+/* Giving an unrecognised i line to a piece of the złom list */
+.armor-iline {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  border: 1px solid var(--popup-border);
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.armor-iline__line {
+  font-family: var(--output-font-family), monospace;
+  font-size: 0.9em;
+  color: var(--popup-text-dim);
+}
+
+.armor-iline__empty {
+  color: var(--popup-text-faint);
+  font-size: 0.85em;
+}
+
+.armor-iline__candidates {
+  list-style: none;
+  margin: 0.35rem 0 0;
+  padding: 0;
+  max-height: 12rem;
+  overflow-y: auto;
+}
+
+.armor-iline__candidate {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.25rem 0.4rem;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.armor-iline__candidate:hover {
+  background: var(--popup-hover-bg);
+}
+
+.armor-iline__candidate--active {
+  border-color: var(--popup-accent);
+}
+
+.armor-iline__candidate-meta {
+  color: var(--popup-text-faint);
+  font-size: 0.85em;
+  white-space: nowrap;
+}
+
+.armor-iline__preview {
+  font-size: 0.9em;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.armor-iline__warn {
+  color: var(--popup-warning);
+}
+
+.armor-iline__warn--error {
+  color: var(--popup-danger);
+}
+
+.armor-iline__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
 }
 
 .armor-popup__hint {

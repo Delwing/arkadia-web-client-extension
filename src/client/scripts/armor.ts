@@ -1,7 +1,17 @@
 import Client from "../Client";
 import eventBus from "@modules/core/eventBus";
 import { characterStorage } from "@modules/core/storage";
-import { getZlomSnapshot, iLineEntries, updateZlomSnapshot, type ArmorEntry, type ShieldEntry } from "@modules/data/zlomStore";
+import {
+    getZlomSnapshot,
+    iLineEntries,
+    iLineMatcher,
+    updateZlomSnapshot,
+    type ArmorEntry,
+    type ShieldEntry,
+    type ZlomSnapshot,
+} from "@modules/data/zlomStore";
+import { setZlomILine } from "./zlom";
+import type { OdmianaSnapshot } from "@modules/data/odmianaStore";
 import { getInventoryState } from "./inventory";
 import { splitName } from "./inventoryActions";
 
@@ -202,6 +212,143 @@ export function slotsFromLines(
     return slots;
 }
 
+export type ILineKind = "zbroje" | "tarcze";
+
+export interface ILineCandidate {
+    kind: ILineKind;
+    entry: ArmorEntry | ShieldEntry;
+    /** Words of the line the entry's name or description shares, in any case */
+    score: number;
+}
+
+function words(text: string): string[] {
+    return text.toLowerCase().split(/[^a-z]+/).filter(word => word.length >= 3);
+}
+
+/**
+ * The złom armour and shields an `i` line may be describing, likeliest first:
+ * by how many of the line's words appear, in any case, in the entry's name or
+ * description. "Twoje cialo spowija lsniaca mithrilowa luska" puts the
+ * "lsniaca mithrilowa luska" first.
+ */
+export function rankILineCandidates(line: string, snapshot: ZlomSnapshot): ILineCandidate[] {
+    const lineWords = words(line);
+    const score = (entry: ArmorEntry | ShieldEntry) => {
+        const own = words(`${entry.short} ${entry.shortAlt ?? ""} ${entry.opis}`);
+        return lineWords.filter(word => own.some(other => sameWord(word, other))).length;
+    };
+    const all: ILineCandidate[] = [
+        ...snapshot.zbroje.map(entry => ({ kind: "zbroje" as const, entry, score: score(entry) })),
+        ...snapshot.tarcze.map(entry => ({ kind: "tarcze" as const, entry, score: score(entry) })),
+    ];
+    return all.sort((a, b) => b.score - a.score || a.entry.short.localeCompare(b.entry.short));
+}
+
+export interface ILinePreview {
+    /** False when the fragment is empty or a /regexp/ that does not compile */
+    valid: boolean;
+    /** Lines of the last reply it would match */
+    matched: string[];
+    /** Other entries whose own `i` line already matches one of those lines */
+    clashes: string[];
+    /** The slots the entry would take: none when its cover is not known yet */
+    slots: string[];
+}
+
+/** What giving `entry` this fragment as its `i` line would do to the last reply */
+export function previewILine(
+    fragment: string,
+    lines: string[],
+    snapshot: ZlomSnapshot,
+    kind: ILineKind,
+    entry: ArmorEntry | ShieldEntry,
+): ILinePreview {
+    const matches = iLineMatcher(fragment);
+    const slots = kind === "tarcze" ? ["tarcza"] : parseSlots(entry.oslona);
+    if (!matches) return { valid: false, matched: [], clashes: [], slots };
+    const matched = lines.filter(matches);
+    const clashes = iLineEntries(snapshot)
+        .filter(other => other.entry.opis !== entry.opis && matched.some(other.matches))
+        .map(other => other.entry.shortAlt || other.entry.short);
+    return { valid: true, matched, clashes, slots };
+}
+
+function findPiece(kind: ILineKind, opis: string): ArmorEntry | ShieldEntry | undefined {
+    return (getZlomSnapshot()[kind] as (ArmorEntry | ShieldEntry)[]).find(e => e.opis === opis);
+}
+
+/**
+ * The slots a złom piece takes. Only ever from what the game said about it
+ * (`ocen`, or putting it on): a shield is held on an arm, armour covers what
+ * its "Oslona" says. Empty when that is not known yet.
+ */
+export function coveredBy(kind: ILineKind, entry: ArmorEntry | ShieldEntry): string[] {
+    return kind === "tarcze" ? ["tarcza"] : parseSlots(entry.oslona);
+}
+
+/**
+ * Give a złom armour or shield the fragment of an `i` line that is how the
+ * game describes it, and place it from the last reply straight away: the lines
+ * it matches stop being unknown and it takes its slots, without waiting for the
+ * next `i`.
+ */
+export async function assignILine(kind: ILineKind, opis: string, fragment: string): Promise<void> {
+    await setZlomILine(kind, opis, fragment);
+    const entry = findPiece(kind, opis);
+    const matches = iLineMatcher(fragment);
+    if (!entry || !matches || !armor.unknownLines.some(matches)) return;
+    const slots = { ...armor.slots };
+    coveredBy(kind, entry).forEach(slot => { slots[slot] = entry.shortAlt || entry.short; });
+    store({
+        ...armor,
+        slots,
+        unknownLines: armor.unknownLines.filter(line => !matches(line)),
+        updatedAt: Date.now(),
+    });
+}
+
+/**
+ * Tie a piece the `i` reply lists by name, but on no slot, to its złom entry.
+ * When `i` names it differently from the entry ("garnczkowy helm zdobiony
+ * majestatycznym jelenim porozem" for "garnczkowy helm z jelenim porozem"),
+ * that name becomes the entry's `i` line, so the next reply knows it too.
+ * The piece takes its slots straight away.
+ */
+export async function assignPiece(name: string, kind: ILineKind, opis: string): Promise<void> {
+    const entry = findPiece(kind, opis);
+    if (!entry) return;
+    if (!sameItem(entry.short, name) && !(entry.shortAlt && sameItem(entry.shortAlt, name))) {
+        await setZlomILine(kind, opis, name);
+    }
+    const covered = coveredBy(kind, entry);
+    if (!covered.length) return;
+    const slots = { ...armor.slots };
+    covered.forEach(slot => { slots[slot] = name; });
+    store({
+        ...armor,
+        slots,
+        unplaced: armor.unplaced.filter(piece => piece !== name),
+        updatedAt: Date.now(),
+    });
+}
+
+/**
+ * The złom names of worn pieces whose declension nobody has seen yet, ready to
+ * be sent as `odmien <name>`: a slot holds the piece as `i` or putting it on
+ * names it, its złom entry has the nominative the command wants.
+ */
+export function undeclinedPieces(slots: Record<string, string>, snapshot: ZlomSnapshot, odmiany: OdmianaSnapshot): string[] {
+    const entries = [...snapshot.zbroje, ...snapshot.tarcze];
+    const names = new Set<string>();
+    new Set(Object.values(slots)).forEach(worn => {
+        const entry = entries.find(e =>
+            sameItem(e.short, worn) || (e.shortAlt && sameItem(e.shortAlt, worn)) || iLineMatcher(e.iLine)?.(worn));
+        const name = entry?.short.trim().toLowerCase();
+        if (name && !odmiany[name]) names.add(name);
+    });
+    return [...names];
+}
+
 export default function initArmor(client: Client, aliases?: { pattern: RegExp; callback: Function }[]) {
     const load = (value: WornArmor | undefined) => {
         // Stored before what is still to learn was kept: none of it known yet
@@ -257,11 +404,17 @@ export default function initArmor(client: Client, aliases?: { pattern: RegExp; c
             .filter(section => WORN_SECTIONS.has(section.label))
             .flatMap(section => section.entries.map(entry => entry.name));
         const { zbroje, tarcze } = getZlomSnapshot();
+        const byLine = iLineEntries(getZlomSnapshot());
         const slots = {
             ...slotsFromWorn(worn, [...zbroje, ...tarcze.map(entry => ({ ...entry, shield: true }))]),
-            ...slotsFromLines(lines, iLineEntries(getZlomSnapshot())),
+            ...slotsFromLines(lines, byLine),
         };
-        const next = { slots, unplaced: unplacedPieces(worn, slots), unknownLines: unknown };
+        // A piece listed by a name its złom entry knows as its i line is placed, under the entry's
+        // name - when that entry has slots to take
+        const placedByLine = byLine.filter(({ entry, shield, matches }) =>
+            (shield || parseSlots(entry.oslona).length > 0) && lines.some(matches));
+        const unplaced = unplacedPieces(worn, slots).filter(name => !placedByLine.some(({ matches }) => matches(name)));
+        const next = { slots, unplaced, unknownLines: unknown };
         if (JSON.stringify(next) === JSON.stringify({ slots: armor.slots, unplaced: armor.unplaced, unknownLines: armor.unknownLines })) return;
         store({ ...next, updatedAt: Date.now() });
     });

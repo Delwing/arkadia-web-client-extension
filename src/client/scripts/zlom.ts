@@ -5,6 +5,9 @@ import { defaultSettings } from "@modules/core/defaultSettings";
 import { AnsiAwareBuffer } from "@client/ansi/FormatState";
 import { ARMOR_QUALITY, BALANCE, EFFECTIVENESS } from "./evaluationConstants";
 import eventBus from "@modules/core/eventBus";
+import { createColorFormat } from "@modules/core/Colors";
+import { getBehaviorSettings } from "@modules/core/settings";
+import { ensureOdmianaLoaded, getOdmiana } from "@modules/data/odmianaStore";
 import {
     ensureZlomLoaded,
     getZlomSnapshot,
@@ -32,6 +35,9 @@ export type {
 
 const HIGHLIGHT_TAG = "zlom-highlight";
 const PARSER_TAG = "zlom-parser";
+
+const ODMIANA_HINT = createColorFormat("#9a9a9a");
+const ODMIANA_LINK = createColorFormat("#7fb2ff");
 
 const SILVER_TYP_TOOLTIP = "srebro";
 const COMBAT_LINE_TYPES = new Set(["combat.avatar", "combat.team", "combat.others"]);
@@ -410,6 +416,36 @@ export default function initZlom(
 
     const roomId = (): number | null => client.Map?.currentRoom?.id ?? null;
 
+    // Offered once a session per item: an evaluation saves more than once, and an item
+    // evaluated again while the offer stood unanswered needs no second one
+    const offeredOdmiana = new Set<string>();
+    void ensureOdmianaLoaded();
+
+    /**
+     * For a player who shares with the crowd list: an item just evaluated whose declension
+     * is not known yet gets a one-click `odmien`. Printed after the frame, so it follows
+     * the whole evaluation rather than landing in the middle of it.
+     */
+    const offerOdmiana = (short: string) => {
+        const name = short.trim().toLowerCase();
+        if (!name || offeredOdmiana.has(name) || getOdmiana(name)) return;
+        if (!getBehaviorSettings().crowdContribute) return;
+        offeredOdmiana.add(name);
+        setTimeout(() => {
+            if (getOdmiana(name)) return;
+            const command = `odmien ${name}`;
+            const line = new AnsiAwareBuffer();
+            line.append("Brak odmiany w spisie: ", ODMIANA_HINT);
+            const start = line.length;
+            line.append(command, ODMIANA_LINK);
+            line.createLink([start, start + command.length], {
+                onClick: () => void client.sendCommand(command),
+                title: "Kliknij, aby sprawdzic odmiane i dodac ja do wspolnego spisu",
+            });
+            client.println(line);
+        }, 0);
+    };
+
     // Kept verbatim even when it equals `short`: masculine inanimate and neuter
     // nouns share mianownik/biernik, so collapsing identical forms would make a
     // fully parsed entry indistinguishable from one whose biernik was never seen.
@@ -437,6 +473,7 @@ export default function initZlom(
             roomId: roomId(),
         };
         void updateZlomSnapshot(s => ({ ...s, bronie: upsertByOpis(s.bronie, entry) }));
+        offerOdmiana(entry.short);
     };
 
     const persistZbroja = () => {
@@ -457,6 +494,7 @@ export default function initZlom(
             roomId: roomId(),
         };
         void updateZlomSnapshot(s => ({ ...s, zbroje: upsertByOpis(s.zbroje, entry) }));
+        offerOdmiana(entry.short);
     };
 
     const persistTarcza = () => {
@@ -477,6 +515,7 @@ export default function initZlom(
             roomId: roomId(),
         };
         void updateZlomSnapshot(s => ({ ...s, tarcze: upsertByOpis(s.tarcze, entry) }));
+        offerOdmiana(entry.short);
     };
 
     client.Triggers.registerTrigger(
