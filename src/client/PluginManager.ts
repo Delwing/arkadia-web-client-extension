@@ -2,6 +2,8 @@ import type Client from '@client/Client'
 import type {LoadedPlugin, Plugin} from '@shared/types/Plugin'
 import {PluginApiImpl} from '@client/PluginApi'
 import eventBus from '@modules/core/eventBus'
+import {colorString, createColorFormat} from '@modules/core/Colors'
+import type {AnsiAwareBuffer} from '@client/ansi/FormatState.ts'
 import {getPluginScript, isStoredPluginId, updatePluginScript} from '@client/utils/pluginStorage'
 
 const STABLE_ID_PATTERN = /^[A-Za-z0-9._-]{1,64}$/
@@ -10,6 +12,17 @@ const STABLE_ID_PATTERN = /^[A-Za-z0-9._-]{1,64}$/
 const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]'])
 // EventSource retries every few seconds; about a minute covers a dev server restart.
 const LIVE_RELOAD_RETRIES = 20
+
+const NOTICE_COLOR = createColorFormat('#5fafff')
+const NOTICE_ERROR_COLOR = createColorFormat('#ff6347')
+
+/**
+ * A client message about plugins, tagged so it does not read as game text.
+ * The text is appended as is, so a plugin name or error cannot inject colour tags.
+ */
+export function pluginNotice(text: string, error = false): AnsiAwareBuffer {
+  return colorString('[ PLUGIN ] ', error ? NOTICE_ERROR_COLOR : NOTICE_COLOR).append(text)
+}
 
 /**
  * Manages external plugins and scripts
@@ -362,8 +375,8 @@ export class PluginManager {
       const reloaded = await this.reloadPlugin(url)
       const name = reloaded.info?.name ?? url
       this.client.print?.(reloaded.status === 'error'
-        ? `Blad przeladowania ${name}: ${reloaded.error}`
-        : `Przeladowano ${name}.`)
+        ? pluginNotice(`Blad przeladowania ${name}: ${reloaded.error}`, true)
+        : pluginNotice(`Przeladowano ${name}.`))
     } finally {
       this.liveReloading.delete(url)
       if (this.liveReloadPending.delete(url)) void this.liveReload(url)

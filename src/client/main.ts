@@ -89,6 +89,7 @@ import initCoinColors from './scripts/coinColors'
 import initWeaponColors from './scripts/weaponColors'
 import initNewMail from './scripts/newMail'
 import initExternalScripts from './scripts/externalScripts'
+import {pluginNotice} from './PluginManager'
 import initUserAliases from './scripts/userAliases'
 import initUserTriggers from './scripts/userTriggers'
 import initUserScripts from './scripts/userScripts'
@@ -227,7 +228,7 @@ export function registerScripts(client: Client) {
         callback: async (matches: RegExpMatchArray) => {
             const manager = getPluginManager();
             if (!manager) {
-                client.print('Nie mozna przeladowac pluginow: menedzer nie jest gotowy.');
+                client.print(pluginNotice('Nie mozna przeladowac pluginow: menedzer nie jest gotowy.', true));
                 return;
             }
 
@@ -237,20 +238,20 @@ export function registerScripts(client: Client) {
                 const found = manager.getLoadedPlugins().filter(plugin =>
                     plugin.info?.name?.toLowerCase().includes(needle) || plugin.url.toLowerCase().includes(needle));
                 if (found.length !== 1) {
-                    client.print(found.length === 0
+                    client.print(pluginNotice(found.length === 0
                         ? `Nie ma pluginu pasujacego do "${matches[1].trim()}".`
-                        : `Pasuje kilka pluginow: ${found.map(plugin => plugin.info?.name ?? plugin.url).join(', ')}.`);
+                        : `Pasuje kilka pluginow: ${found.map(plugin => plugin.info?.name ?? plugin.url).join(', ')}.`, true));
                     return;
                 }
                 const reloaded = await manager.reloadPlugin(found[0].url);
                 client.print(reloaded.status === 'error'
-                    ? `Blad przeladowania ${reloaded.info?.name ?? reloaded.url}: ${reloaded.error}`
-                    : `Przeladowano ${reloaded.info?.name ?? reloaded.url}.`);
+                    ? pluginNotice(`Blad przeladowania ${reloaded.info?.name ?? reloaded.url}: ${reloaded.error}`, true)
+                    : pluginNotice(`Przeladowano ${reloaded.info?.name ?? reloaded.url}.`));
                 return;
             }
 
             await manager.reloadAll();
-            client.print('Przeladowano pluginy.');
+            client.print(pluginNotice('Przeladowano pluginy.'));
         },
     })
     initSoundAliases(client, aliases)

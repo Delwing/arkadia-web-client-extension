@@ -1,4 +1,4 @@
-import { PluginManager } from '@client/PluginManager';
+import { PluginManager, pluginNotice } from '@client/PluginManager';
 import Client from '@client/Client';
 import eventBus from '@modules/core/eventBus';
 
@@ -119,6 +119,12 @@ describe('PluginManager', () => {
 
       expect(eventBus.emit).toHaveBeenCalledWith('plugin:destroyed', { url });
       expect(pluginManager.isLoaded(url)).toBe(false);
+    });
+  });
+
+  describe('pluginNotice', () => {
+    it('tags the message and keeps the text as given', () => {
+      expect(pluginNotice('Przeladowano <red>Konfetti.').text).toBe('[ PLUGIN ] Przeladowano <red>Konfetti.');
     });
   });
 
