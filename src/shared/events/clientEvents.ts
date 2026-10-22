@@ -586,7 +586,7 @@ export interface KnownEvents {
     /** The tracked inventory changed - read it with getInventoryState() */
     "inventory.updated": void;
     /** An `i` reply was just read in full: what is worn, held and carried is as it says */
-    "inventory.read": void;
+    "inventory.read": { lines: string[] };
     /** The worn armour changed - read it with getWornArmor() */
     "armor.updated": void;
     "armor.popup.open": void;

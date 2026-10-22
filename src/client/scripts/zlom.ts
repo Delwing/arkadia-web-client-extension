@@ -12,6 +12,7 @@ import {
     updateZlomSnapshot,
     clearZlomStore,
     upsertByOpis,
+    keepILine,
     type WeaponEntry,
     type ArmorEntry,
     type ShieldEntry,
@@ -204,6 +205,7 @@ export async function mergeZlomData(
                     const merged: T = { ...e };
                     if (!merged.color && prev.color) merged.color = prev.color;
                     if (!merged.shortAlt && prev.shortAlt) merged.shortAlt = prev.shortAlt;
+                    keepILine(merged, prev);
                     list[idx] = merged;
                 } else {
                     list.push(e);
@@ -256,6 +258,25 @@ export async function setZlomNote(
             if (trimmed) return { ...e, note: trimmed };
             const { note: _, ...rest } = e;
             return rest as ZlomEntry;
+        });
+        return { ...current, [kind]: list } as ZlomSnapshot;
+    });
+    eventBus.emit('zlom.snapshotReplaced');
+}
+
+/** How the `i` reply words an armour or shield (ArmorEntry.iLine); empty clears it */
+export async function setZlomILine(
+    kind: 'tarcze' | 'zbroje',
+    opis: string,
+    iLine: string | undefined,
+): Promise<void> {
+    const trimmed = iLine?.trim();
+    await updateZlomSnapshot(current => {
+        const list = (current[kind] as (ArmorEntry | ShieldEntry)[]).map(e => {
+            if (e.opis !== opis) return e;
+            if (trimmed) return { ...e, iLine: trimmed };
+            const { iLine: _, ...rest } = e;
+            return rest;
         });
         return { ...current, [kind]: list } as ZlomSnapshot;
     });

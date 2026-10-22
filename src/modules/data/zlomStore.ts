@@ -43,6 +43,8 @@ export interface ArmorEntry {
     roomId: number | null;
     color?: string;
     note?: string;
+    /** How the `i` reply words it when not by name: text of its line, or a /regexp/ */
+    iLine?: string;
 }
 
 export interface ShieldEntry {
@@ -61,6 +63,8 @@ export interface ShieldEntry {
     roomId: number | null;
     color?: string;
     note?: string;
+    /** How the `i` reply words it when not by name: text of its line, or a /regexp/ */
+    iLine?: string;
 }
 
 export type ZlomEntry = WeaponEntry | ShieldEntry | ArmorEntry;
@@ -204,9 +208,55 @@ export function upsertByOpis<T extends ZlomEntry>(list: T[], entry: T): T[] {
         if (!merged.color && prev.color) merged.color = prev.color;
         if (!merged.note && prev.note) merged.note = prev.note;
         if (!merged.shortAlt && prev.shortAlt) merged.shortAlt = prev.shortAlt;
+        keepILine(merged, prev);
         const next = list.slice();
         next[idx] = merged;
         return next;
     }
     return [...list, entry];
+}
+
+/** A re-evaluated or imported entry keeps the `i` line it was given by hand */
+export function keepILine(next: ZlomEntry, prev: ZlomEntry): void {
+    const prevLine = (prev as ArmorEntry).iLine;
+    if (prevLine && !(next as ArmorEntry).iLine) (next as ArmorEntry).iLine = prevLine;
+}
+
+/** Polish letters folded to ASCII, as the game's lines come */
+function fold(text: string): string {
+    return text.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/ł/g, 'l').replace(/Ł/g, 'L');
+}
+
+/**
+ * What an `iLine` matches in one line of an `i` reply. "/.../flags" is a
+ * regular expression; anything else is text the line must contain, whatever
+ * the case, full stop or not. Null when there is none, or the regular
+ * expression does not compile.
+ */
+export function iLineMatcher(iLine: string | undefined): ((line: string) => boolean) | null {
+    const raw = iLine?.trim();
+    if (!raw) return null;
+    const regex = raw.match(/^\/(.+)\/([a-z]*)$/);
+    if (regex) {
+        try {
+            const pattern = new RegExp(regex[1], regex[2].replace(/[gy]/g, ''));
+            return line => pattern.test(line) || pattern.test(fold(line));
+        } catch {
+            return null;
+        }
+    }
+    const needle = fold(raw).toLowerCase().replace(/\.$/, '').replace(/\s+/g, ' ');
+    return line => fold(line).toLowerCase().replace(/\s+/g, ' ').includes(needle);
+}
+
+/** The armour and shields that have an `i` line, each with its matcher */
+export function iLineEntries(snapshot: ZlomSnapshot): { entry: ArmorEntry | ShieldEntry; shield: boolean; matches: (line: string) => boolean }[] {
+    const result: { entry: ArmorEntry | ShieldEntry; shield: boolean; matches: (line: string) => boolean }[] = [];
+    const add = (list: (ArmorEntry | ShieldEntry)[], shield: boolean) => list.forEach(entry => {
+        const matches = iLineMatcher(entry.iLine);
+        if (matches) result.push({ entry, shield, matches });
+    });
+    add(snapshot.zbroje, false);
+    add(snapshot.tarcze, true);
+    return result;
 }

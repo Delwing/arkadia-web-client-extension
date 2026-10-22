@@ -7,6 +7,7 @@ import {
     mergeZlomData,
     setZlomColor,
     setZlomNote,
+    setZlomILine,
     ZlomSnapshot,
     WeaponEntry,
     ShieldEntry,
@@ -17,6 +18,7 @@ import {
 import {
     ensureZlomLoaded,
     getZlomSnapshot,
+    iLineMatcher,
     subscribeZlom,
 } from '@modules/data/zlomStore';
 import { defaultSettings } from '@modules/core/defaultSettings';
@@ -28,6 +30,13 @@ const POPUP_ID = 'popup:zlom';
 const PAGE_SIZE = 100;
 
 type TabType = 'bronie' | 'tarcze' | 'zbroje';
+
+/** What a row's popover edits: the note, or how the `i` reply words the piece */
+type NoteField = 'note' | 'iLine';
+
+function noteValue(entry: WeaponEntry | ShieldEntry | ArmorEntry, field: NoteField): string | undefined {
+    return field === 'iLine' ? (entry as ArmorEntry).iLine : entry.note;
+}
 
 function emptySnapshot(): ZlomSnapshot {
     return { bronie: [], tarcze: [], zbroje: [] };
@@ -166,7 +175,7 @@ const ZlomPopup: React.FC = () => {
     }, []);
 
     const [noteEditor, setNoteEditor] = useState<
-        | { kind: ZlomKind; opis: string; value: string }
+        | { kind: ZlomKind; opis: string; field: NoteField; value: string }
         | null
     >(null);
     const noteEditorRef = useRef<HTMLDivElement>(null);
@@ -184,27 +193,35 @@ const ZlomPopup: React.FC = () => {
         return () => document.removeEventListener('mousedown', onDown);
     }, [noteEditor]);
 
-    const openNoteEditor = useCallback((kind: ZlomKind, entry: WeaponEntry | ShieldEntry | ArmorEntry) => {
-        setNoteEditor({ kind, opis: entry.opis, value: entry.note ?? '' });
+    const openNoteEditor = useCallback((kind: ZlomKind, entry: WeaponEntry | ShieldEntry | ArmorEntry, field: NoteField) => {
+        setNoteEditor({ kind, opis: entry.opis, field, value: noteValue(entry, field) ?? '' });
     }, []);
 
     const saveNoteEditor = useCallback(() => {
         if (!noteEditor) return;
-        void setZlomNote(noteEditor.kind, noteEditor.opis, noteEditor.value || undefined);
+        if (noteEditor.field === 'iLine') {
+            void setZlomILine(noteEditor.kind as 'tarcze' | 'zbroje', noteEditor.opis, noteEditor.value || undefined);
+        } else {
+            void setZlomNote(noteEditor.kind, noteEditor.opis, noteEditor.value || undefined);
+        }
         setNoteEditor(null);
     }, [noteEditor]);
 
-    const renderNoteCell = (kind: ZlomKind, entry: WeaponEntry | ShieldEntry | ArmorEntry) => {
-        const hasNote = !!entry.note;
-        const isOpen = noteEditor?.kind === kind && noteEditor.opis === entry.opis;
+    const renderNoteCell = (kind: ZlomKind, entry: WeaponEntry | ShieldEntry | ArmorEntry, field: NoteField = 'note') => {
+        const value = noteValue(entry, field);
+        const hasNote = !!value;
+        const isOpen = noteEditor?.kind === kind && noteEditor.opis === entry.opis && noteEditor.field === field;
+        const isILine = field === 'iLine';
+        // Text is always fine; a /regexp/ only when it compiles
+        const invalid = isOpen && isILine && noteEditor!.value.trim() !== '' && !iLineMatcher(noteEditor!.value);
         return (
             <td className="zlom-cell zlom-cell--note">
                 <div className="zlom-note-wrap">
                     <button
                         type="button"
                         className={`zlom-note-btn${hasNote ? ' zlom-note-btn--has' : ''}`}
-                        onClick={() => openNoteEditor(kind, entry)}
-                        title={hasNote ? entry.note : 'Dodaj notatkę'}
+                        onClick={() => openNoteEditor(kind, entry, field)}
+                        title={hasNote ? value : isILine ? 'Jak opisuje go i, gdy nie z nazwy' : 'Dodaj notatkę'}
                     >
                         {hasNote ? '●' : '+'}
                     </button>
@@ -219,16 +236,23 @@ const ZlomPopup: React.FC = () => {
                                     if (e.key === 'Escape') {
                                         e.preventDefault();
                                         setNoteEditor(null);
-                                    } else if ((e.key === 'Enter' && (e.ctrlKey || e.metaKey))) {
+                                    } else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey) && !invalid) {
                                         e.preventDefault();
                                         saveNoteEditor();
                                     }
                                 }}
-                                placeholder="Notatka..."
+                                placeholder={isILine ? 'Linia z i albo /regexp/' : 'Notatka...'}
                             />
+                            {isILine && (
+                                <div className={`zlom-note-hint${invalid ? ' zlom-note-hint--error' : ''}`}>
+                                    {invalid
+                                        ? 'Błędny regexp'
+                                        : 'Tekst, który zawiera linia z i, albo /regexp/. Sprawdzane tylko w odpowiedzi na i.'}
+                                </div>
+                            )}
                             <div className="zlom-note-popover__actions">
                                 <button type="button" className="popup-btn" onClick={() => setNoteEditor(null)}>Anuluj</button>
-                                <button type="button" className="popup-btn" onClick={saveNoteEditor}>Zapisz</button>
+                                <button type="button" className="popup-btn" onClick={saveNoteEditor} disabled={invalid}>Zapisz</button>
                             </div>
                         </div>
                     )}
@@ -334,6 +358,7 @@ const ZlomPopup: React.FC = () => {
             <td className="zlom-cell zlom-cell--num">{e.parowanie || ''}</td>
             <td className="zlom-cell zlom-cell--num">{e.cena}</td>
             <td className="zlom-cell zlom-cell--num">{e.waga}</td>
+            {renderNoteCell('tarcze', e, 'iLine')}
             {renderColorCell('tarcze', e)}
             {renderNoteCell('tarcze', e)}
         </tr>
@@ -351,6 +376,7 @@ const ZlomPopup: React.FC = () => {
             <td className="zlom-cell">{protectionText(e.klute, e.obuch, e.ciete)}</td>
             <td className="zlom-cell zlom-cell--num">{e.cena}</td>
             <td className="zlom-cell zlom-cell--num">{e.waga}</td>
+            {renderNoteCell('zbroje', e, 'iLine')}
             {renderColorCell('zbroje', e)}
             {renderNoteCell('zbroje', e)}
         </tr>
@@ -362,11 +388,11 @@ const ZlomPopup: React.FC = () => {
         </tr>
     ) : activeTab === 'tarcze' ? (
         <tr>
-            <th>Short</th><th>Osłona</th><th>K/O/C</th><th>Par.</th><th>Cena</th><th>Waga</th><th>Kolor</th><th>Notatka</th>
+            <th>Short</th><th>Osłona</th><th>K/O/C</th><th>Par.</th><th>Cena</th><th>Waga</th><th title="Jak opisuje go i, gdy nie z nazwy">W i</th><th>Kolor</th><th>Notatka</th>
         </tr>
     ) : (
         <tr>
-            <th>Short</th><th>Typ</th><th>Osłona</th><th>K/O/C</th><th>Cena</th><th>Waga</th><th>Kolor</th><th>Notatka</th>
+            <th>Short</th><th>Typ</th><th>Osłona</th><th>K/O/C</th><th>Cena</th><th>Waga</th><th title="Jak opisuje go i, gdy nie z nazwy">W i</th><th>Kolor</th><th>Notatka</th>
         </tr>
     );
 

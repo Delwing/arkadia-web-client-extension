@@ -4,6 +4,7 @@ import { characterStorage } from "@modules/core/storage";
 import { onContainerListing, parseItems, splitItemList, type ContainerItem, type ParsedContainer } from "./prettyContainers";
 import { getAssignedBags, setCarriedBagOrdinals } from "./bagManager";
 import { normalizeHerbBagsState } from "../types/herbs";
+import { getZlomSnapshot, iLineEntries, type ZlomSnapshot } from "@modules/data/zlomStore";
 
 /**
  * Tracks what the character carries for the inventory window.
@@ -246,6 +247,14 @@ const SECTIONS: { pattern: RegExp; label: string; worn?: true; items?: (match: R
 
 /** The `i` reply ends with what is carried */
 const LAST_LINE = /^(?:Masz przy sobie |Nie masz przy sobie niczego)/;
+
+/** The złom pieces with an `i` line, compiled once per version of the list */
+let iLinesOf: { snapshot: ZlomSnapshot; entries: ReturnType<typeof iLineEntries> } | null = null;
+function iLines(): ReturnType<typeof iLineEntries> {
+    const snapshot = getZlomSnapshot();
+    if (iLinesOf?.snapshot !== snapshot) iLinesOf = { snapshot, entries: iLineEntries(snapshot) };
+    return iLinesOf.entries;
+}
 
 type ActionKind = "take" | "drop" | "give" | "put" | "open" | "close" | "change";
 
@@ -980,6 +989,7 @@ export default function initInventory(
     const pendingActions: { kind: ActionKind; reply: RegExp; fail?: RegExp; until: number; fromSource: boolean; bag?: string }[] = [];
 
     const commit = () => {
+        const lines = block;
         sections = parseInventory(block);
         block = [];
         updatedAt = Date.now();
@@ -989,7 +999,7 @@ export default function initInventory(
         clearTimeout(replyTimer);
         emitUpdate();
         // A full reply, not a change followed from the game's messages
-        eventBus.emit("inventory.read");
+        eventBus.emit("inventory.read", { lines });
     };
 
     const sendHidden = () => {
@@ -1116,7 +1126,10 @@ export default function initInventory(
                 blockAt = now;
                 return hidden ? null : line;
             }
-            if (SECTIONS.some(({ pattern }) => pattern.test(text))) {
+            // A line of the reply only the złom list knows, by the `i` line given to a piece,
+            // tried only while a reply is being read
+            const custom = (fresh || hidden) && iLines().some(({ matches }) => matches(text));
+            if (custom || SECTIONS.some(({ pattern }) => pattern.test(text))) {
                 // A line the patterns do not know yet must not lose the rest of
                 // the reply, so a block ends only when it gets old
                 if (!fresh) block = [];

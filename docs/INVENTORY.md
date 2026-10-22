@@ -35,6 +35,19 @@ Gdy zakładany przedmiot jest w bazie złomu, a nie ma jeszcze wpisanej osłony,
 
 Stan jest zapamiętywany osobno dla każdej postaci i synchronizowany między urządzeniami. Okno uczy się też z `i`: przedmiot, który masz na sobie, a baza złomu zna jego osłonę, trafia od razu na swoje miejsca — nawet jeśli nie widziało, jak go zakładasz. Miejsce zajęte przez zakładanie zostaje, dopóki nosisz coś tego rodzaju (np. hełm opisany w `i` dokładniej niż przy zakładaniu), a znika, gdy `i` go już nie wymienia. Przedmioty na plecach i przy pasie się nie liczą.
 
+Niektóre zbroje `i` opisuje po swojemu, a nie nazwą, np.:
+
+```
+Od stop do glow zakuty jestes w stalowe plyty krwistoczerwonego pelnego pancerza, na ktorego naramiennikach wygrawerowano symbole twego Pana - Khorna.
+```
+
+Dla takiego przedmiotu wpisz w oknie złomu (zakładki Zbroje i Tarcze, kolumna **W i**), jak go opisuje `i`:
+
+- zwykły tekst — linia z `i` musi go zawierać (wielkość liter i kropka na końcu nie mają znaczenia), np. `plyty krwistoczerwonego pelnego pancerza`
+- `/regexp/` — wyrażenie regularne, z flagami po ukośniku, np. `/^Od stop do glow zakut\S* jestes w .+ Khorna/`
+
+Gdy linia z `i` pasuje, przedmiot zajmuje miejsca ze swojej osłony. Wpis sprawdzany jest tylko na liniach odpowiedzi na `i`, nigdy na reszcie tekstu z gry. Linia, której okno ekwipunku nie zna, liczy się tylko w środku odpowiedzi, a nie jako jej pierwsza linia. Ponowna ocena przedmiotu i import bazy zostawiają wpisany opis.
+
 ## Menedżer pojemników
 
 Menedżer pojemników pozwala przypisać wybrane torby, plecaki i inne pojemniki do określonych typów przedmiotów. Dzięki temu możesz szybko odkładać i wyjmować rzeczy z odpowiedniego miejsca.

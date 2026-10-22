@@ -5317,6 +5317,16 @@ select.popup-input optgroup {
   resize: vertical;
 }
 
+.zlom-note-hint {
+  color: var(--popup-text-dim);
+  font-size: 0.9em;
+  max-width: 20rem;
+}
+
+.zlom-note-hint--error {
+  color: var(--popup-danger, #e06c75);
+}
+
 .zlom-note-popover__actions {
   display: flex;
   justify-content: flex-end;

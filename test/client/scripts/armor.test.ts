@@ -246,3 +246,73 @@ describe('armour from an i reply', () => {
         expect(getWornArmor().slots).toEqual({});
     });
 });
+
+describe('armour the i reply words in its own way', () => {
+    let client: Client;
+    let disposeArmor: () => void;
+    let disposeInventory: () => void;
+
+    const armour = (short: string, oslona: string, iLine: string): ArmorEntry => ({
+        short, typ: '', klute: 0, obuch: 0, ciete: 0, magik: 0, opis: short, waga: 0, obj: 0, cena: 0, oslona, roomId: null, iLine,
+    });
+
+    beforeEach(async () => {
+        localStorage.clear();
+        characterStorage.setCharacter('TestChar');
+        await __resetZlomStoreForTests();
+        await ensureZlomLoaded();
+        await updateZlomSnapshot(snapshot => ({
+            ...snapshot,
+            zbroje: [
+                armour('krwistoczerwony pelny pancerz', 'glowe, korpus, nogi i ramiona', 'krwistoczerwonego pelnego pancerza'),
+                armour('czarne rekawice', 'dlonie', String.raw`/^Mrok oplata twe dlonie\b/`),
+            ],
+            tarcze: [{ ...armour('lsniaca plomienista tarcza', 'jedno z ramion', ''), parowanie: 0 }],
+        }));
+        client = new Client({
+            send: () => {},
+            output: () => {},
+            sendGmcp: () => {},
+            flushMessageBuffer: () => {},
+            emit: () => {},
+            shouldEchoCommand: () => true,
+        });
+        disposeInventory = initInventory(client);
+        disposeArmor = initArmor(client);
+    });
+
+    afterEach(() => {
+        disposeArmor();
+        disposeInventory();
+    });
+
+    test('a piece known by its line takes the slots it covers', () => {
+        client.onLine([
+            'Trzymasz w rekach dlugi krwisty miecz.',
+            // Verbatim from the game
+            'Od stop do glow zakuty jestes w stalowe plyty krwistoczerwonego pelnego pancerza, na ktorego naramiennikach wygrawerowano symbole twego Pana - Khorna. Ponadto masz na sobie lsniaca plomienista tarcze.',
+            'Masz przy sobie 34 miedziane monety.',
+        ].join('\n'), 'text');
+
+        expect(getWornArmor().slots).toEqual({
+            glowa: 'krwistoczerwony pelny pancerz',
+            korpus: 'krwistoczerwony pelny pancerz',
+            nogi: 'krwistoczerwony pelny pancerz',
+            'lewe ramie': 'krwistoczerwony pelny pancerz',
+            'prawe ramie': 'krwistoczerwony pelny pancerz',
+            tarcza: 'lsniaca plomienista tarcze',
+        });
+    });
+
+    test('a line no part of the reply knows counts while the reply is read, and only then', () => {
+        client.onLine('Mrok oplata twe dlonie niczym rekawice.', 'text');
+        expect(getWornArmor().slots).toEqual({});
+
+        client.onLine([
+            'Trzymasz w rekach dlugi krwisty miecz.',
+            'Mrok oplata twe dlonie niczym rekawice.',
+            'Masz przy sobie 34 miedziane monety.',
+        ].join('\n'), 'text');
+        expect(getWornArmor().slots).toEqual({ dlonie: 'czarne rekawice' });
+    });
+});

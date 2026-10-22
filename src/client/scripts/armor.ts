@@ -1,7 +1,7 @@
 import Client from "../Client";
 import eventBus from "@modules/core/eventBus";
 import { characterStorage } from "@modules/core/storage";
-import { getZlomSnapshot, updateZlomSnapshot, type ArmorEntry, type ShieldEntry } from "@modules/data/zlomStore";
+import { getZlomSnapshot, iLineEntries, updateZlomSnapshot, type ArmorEntry, type ShieldEntry } from "@modules/data/zlomStore";
 import { getInventoryState } from "./inventory";
 import { splitName } from "./inventoryActions";
 
@@ -165,6 +165,24 @@ export function slotsFromWorn(
     return slots;
 }
 
+/**
+ * Slots of the pieces an `i` reply words in its own way, which the złom list
+ * knows by the line given to them ("Od stop do glow zakuty jestes w stalowe
+ * plyty ..."). Each takes what it covers, under its name as the game lists it.
+ */
+export function slotsFromLines(
+    lines: string[],
+    known: { entry: { short: string; shortAlt?: string; oslona: string }; shield: boolean; matches: (line: string) => boolean }[],
+): Record<string, string> {
+    const slots: Record<string, string> = {};
+    known.forEach(({ entry, shield, matches }) => {
+        if (!lines.some(matches)) return;
+        const covered = shield ? ["tarcza"] : parseSlots(entry.oslona);
+        covered.forEach(slot => { slots[slot] = entry.shortAlt || entry.short; });
+    });
+    return slots;
+}
+
 export default function initArmor(client: Client, aliases?: { pattern: RegExp; callback: Function }[]) {
     const load = (value: WornArmor | undefined) => {
         armor = value && typeof value === "object" && value.slots ? value : { slots: {}, updatedAt: null };
@@ -208,13 +226,17 @@ export default function initArmor(client: Client, aliases?: { pattern: RegExp; c
         return line;
     }, "armor");
 
-    // A full `i` reply: what is worn now, with the złom list saying what each piece covers
-    const removeReadListener = eventBus.on("inventory.read", () => {
+    // A full `i` reply: what is worn now, with the złom list saying what each piece covers,
+    // and which of its lines are pieces it words in its own way
+    const removeReadListener = eventBus.on("inventory.read", ({ lines }) => {
         const worn = getInventoryState().sections
             .filter(section => WORN_SECTIONS.has(section.label))
             .flatMap(section => section.entries.map(entry => entry.name));
         const { zbroje, tarcze } = getZlomSnapshot();
-        const slots = slotsFromWorn(worn, armor.slots, [...zbroje, ...tarcze.map(entry => ({ ...entry, shield: true }))]);
+        const slots = {
+            ...slotsFromWorn(worn, armor.slots, [...zbroje, ...tarcze.map(entry => ({ ...entry, shield: true }))]),
+            ...slotsFromLines(lines, iLineEntries(getZlomSnapshot())),
+        };
         if (JSON.stringify(slots) === JSON.stringify(armor.slots)) return;
         store({ slots, updatedAt: Date.now() });
     });
