@@ -2601,8 +2601,8 @@ export interface ContainersApi {
    * @param type - Container type ("money", "gems", "food", "other")
    * @param options.silent - Hide the command echo and the listing line
    * @param options.timeout - Milliseconds to wait for the listing (default 5000)
-   * @returns Items in the bag, or null when no listing arrived in time
-   *   (empty bag, bag not carried, no bag assigned)
+   * @returns Items in the bag (empty for an empty bag), or null when no listing
+   *   arrived in time (bag not carried, no bag assigned)
    *
    * @example
    * ```typescript

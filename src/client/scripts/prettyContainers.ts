@@ -326,6 +326,13 @@ const defaultContainerPatterns: RegExp[] = [
     /^(?:\w+ ){1,2}(?<container>sekretarzyk|kabinet) zawiera (?<content>.*)\.$/
 ];
 
+// An empty bag says so instead of listing anything: still a look inside
+const emptyContainerPatterns: RegExp[] = [
+    /^Otwierasz na chwile (?<container>.+? (?:plecak|torbe|sakwe|sakiewke|szkatulke|wor|worek))(?: ze? [^,]*?)?, sprawdzajac zawartosc. W (?:jego|jej) srodku nic jednak nie ma.$/i,
+    /^Uwaznie ogladasz zawartosc (?<container>.+?). W (?:jego|jej) srodku nic jednak nie ma.$/,
+    /^Rozwiazujesz na chwile rzemyk, sprawdzajac zawartosc swojej (?<container>.+? sakiewki)[^.]*. W (?:jego|jej) srodku nic jednak nie ma.$/,
+];
+
 const weapons = ["darda", "dardy", "multon", "kord", "puginal", "gladius", "topor", "berdysz", "siekier", "czekan",
     "oskard", "kilof", "tasak", "tabar", "nadziak", "macan", "miecz", "sihill", "drannach", "szabl", "szabel", "rapier",
     "scimitar", "katzbalger", "stilett", "pal", "sztylet", "halabard", "falchion", "mlot", "obusz", "wloczni", "pik[ei]",
@@ -759,6 +766,13 @@ export default function initContainers(client: Client) {
 
     // Registered once and always on: every listing is announced as containers.listed (unfiltered),
     // and only pretty-printed when the setting is enabled.
+    const announce = (listing: ParsedContainer) => {
+        client.sendEvent('containers.listed', listing);
+        // Every observer sees the listing, even when an earlier one hides it
+        const hidden = listingObservers.reduce((hide, observer) => observer(listing) || hide, false);
+        return handleContainerListing(listing) || hidden;
+    };
+
     defaultContainerPatterns.forEach(pattern => {
         client.Triggers.registerTrigger(pattern, (line, matches) => {
             if (!matches) return line;
@@ -766,14 +780,19 @@ export default function initContainers(client: Client) {
                 container: matches.groups?.container?.trim() ?? '',
                 items: parseItems(matches.groups?.content ?? ''),
             };
-            client.sendEvent('containers.listed', listing);
-            // Every observer sees the listing, even when an earlier one hides it
-            const hidden = listingObservers.reduce((hide, observer) => observer(listing) || hide, false);
-            if (handleContainerListing(listing) || hidden) return null;
+            if (announce(listing)) return null;
             if (!enabled) return line;
             const output = prettyPrintContainer(matches, columns, 'POJEMNIK', 5, width);
             client.print(output);
             return null;
+        }, tag);
+    });
+
+    // Nothing to pretty-print, so the line stays as it came
+    emptyContainerPatterns.forEach(pattern => {
+        client.Triggers.registerTrigger(pattern, (line, matches) => {
+            if (!matches) return line;
+            return announce({ container: matches.groups?.container?.trim() ?? '', items: [] }) ? null : line;
         }, tag);
     });
 

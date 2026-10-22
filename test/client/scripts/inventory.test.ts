@@ -423,6 +423,15 @@ describe('inventory tracking', () => {
         expect(updated.container?.contents?.items).toEqual([{ name: 'lampe', count: 1 }, { name: 'monety', count: 2 }]);
     });
 
+    test('an empty bag counts as looked into', () => {
+        reply(CARRIED);
+        const plecak = getInventoryState().sections[0].entries.find(e => e.name.endsWith('plecak'))!;
+
+        reply('Otwierasz na chwile prosty skorzany plecak, sprawdzajac zawartosc. W jego srodku nic jednak nie ma.');
+        const updated = getInventoryState().sections[0].entries.find(e => e.key === plecak.key)!;
+        expect(updated.container?.contents).toMatchObject({ items: [], stale: false });
+    });
+
     test('numbers bags of the same kind', () => {
         reply(CARRIED);
         const bags = getInventoryState().sections[0].entries.filter(e => e.container && e.name.includes('woreczek'));
