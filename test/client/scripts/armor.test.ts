@@ -5,7 +5,7 @@ import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
 import initInventory from '@client/scripts/inventory';
 import Client from '@client/Client';
 import { characterStorage } from '@modules/core/storage';
-import initArmor, { getWornArmor, parseSlots, parseWear, slotsFromWorn } from '@client/scripts/armor';
+import initArmor, { getWornArmor, parseSlots, parseWear, slotsFromWorn, unplacedPieces } from '@client/scripts/armor';
 import {
     __resetZlomStoreForTests,
     ensureZlomLoaded,
@@ -159,7 +159,7 @@ describe('slotsFromWorn', () => {
     ];
 
     test('places what the złom list knows the cover of', () => {
-        expect(slotsFromWorn(['stalowa dluga kolczuge', 'drewniana okuta tarcze'], {}, known)).toEqual({
+        expect(slotsFromWorn(['stalowa dluga kolczuge', 'drewniana okuta tarcze'], known)).toEqual({
             korpus: 'stalowa dluga kolczuge',
             nogi: 'stalowa dluga kolczuge',
             'lewe ramie': 'stalowa dluga kolczuge',
@@ -168,17 +168,76 @@ describe('slotsFromWorn', () => {
         });
     });
 
-    test('keeps a slot put on by hand while the same kind of thing is still worn', () => {
-        const previous = { glowa: 'garnczkowy helm z jelenim porozem' };
-        // The reply describes the helmet more fully than putting it on did
-        expect(slotsFromWorn(['garnczkowy helm zdobiony majestatycznym jelenim porozem'], previous, known))
-            .toEqual(previous);
+    test('places nothing the złom list has no cover for', () => {
+        expect(slotsFromWorn(['skorzany kaftan'], known)).toEqual({});
+    });
+});
+
+describe('unplacedPieces', () => {
+    test('leaves out jewellery, insignia and a map case', () => {
+        // Verbatim from the game
+        expect(unplacedPieces([
+            'masywny szczerozloty sygnet z herbem Rodziny Alderazzi', 'misterne smocze pierscienie',
+            'mosiezna bransolete w ksztalcie smoka', 'gruba czarna opaske z kolcami',
+            'masywny amulet z czarnym opalem (rozkazy)', 'dziesiecioramienny talizman ze srebra',
+            'mosiezna duza broszka w ksztalcie liscia debu', 'masywna zlocona spinka', 'maske',
+            'pasiasta wytarta chuste', 'zamkniety niepowtarzalny wysluzony mapnik',
+            'zlocista ciezka przylbice',
+        ], {})).toEqual(['zlocista ciezka przylbice']);
     });
 
-    test('drops what is no longer worn, and what has no known cover', () => {
-        const previous = { glowa: 'garnczkowy helm z jelenim porozem', korpus: 'skorzany kaftan' };
-        expect(slotsFromWorn(['skorzany kaftan'], previous, known)).toEqual({ korpus: 'skorzany kaftan' });
-        expect(slotsFromWorn([], previous, known)).toEqual({});
+    test('leaves out clothes worn over the armour, in any case', () => {
+        expect(unplacedPieces(
+            ['zwiewny upiorny calun', 'dluga czarna szate', 'gruby welniany plaszcz', 'skorzany kaftan'],
+            {},
+        )).toEqual(['skorzany kaftan']);
+    });
+
+    test('leaves out what is on a slot', () => {
+        expect(unplacedPieces(['stalowa dluga kolczuge', 'skorzany kaftan'], { korpus: 'stalowa dluga kolczuge' }))
+            .toEqual(['skorzany kaftan']);
+    });
+});
+
+describe('a slot learned from putting a piece on', () => {
+    let client: Client;
+    let disposeArmor: () => void;
+    let disposeInventory: () => void;
+
+    beforeEach(async () => {
+        localStorage.clear();
+        characterStorage.setCharacter('TestChar');
+        await __resetZlomStoreForTests();
+        await ensureZlomLoaded();
+        client = new Client({
+            send: () => {},
+            output: () => {},
+            sendGmcp: () => {},
+            flushMessageBuffer: () => {},
+            emit: () => {},
+            shouldEchoCommand: () => true,
+        });
+        disposeInventory = initInventory(client);
+        disposeArmor = initArmor(client);
+    });
+
+    afterEach(() => {
+        disposeArmor();
+        disposeInventory();
+    });
+
+    test('is gone once i names the piece in words the złom list does not know', () => {
+        client.onLine('Zakladasz garnczkowy helm z jelenim porozem na glowe.', 'text');
+        expect(getWornArmor().slots.glowa).toBe('garnczkowy helm z jelenim porozem');
+
+        // Verbatim from the game
+        client.onLine([
+            'Na glowie masz garnczkowy helm zdobiony majestatycznym jelenim porozem. Z otaczajacego go zawoju wyrastaja wyciete w pasy labry o purpurowo-bialej barwie, ktore opadaja ci swobodnie na ramiona.',
+            'Masz przy sobie 34 miedziane monety.',
+        ].join('\n'), 'text');
+
+        expect(getWornArmor().slots).toEqual({});
+        expect(getWornArmor().unplaced).toEqual(['garnczkowy helm zdobiony majestatycznym jelenim porozem']);
     });
 });
 

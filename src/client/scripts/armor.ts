@@ -135,22 +135,16 @@ function store(next: WornArmor) {
 /** Parts of the `i` reply that are worn as armour; the back and the belt only carry */
 const WORN_SECTIONS = new Set(["Na sobie", "Na głowie", "Na rękach", "Na szyi", "Noszone"]);
 
-/** The word an item is (its noun): "garnczkowy helm z jelenim porozem" -> "helm" */
-function nounOf(name: string): string {
-    return splitName(name).noun.toLowerCase();
-}
-
 /**
- * Slots from what an `i` reply lists as worn. A piece the złom list knows,
- * with what it covers ("Oslona"), takes those slots. A slot learned from
- * putting something on stays while something of the same kind is still worn:
- * the reply may describe it more fully than the line that put it on did
- * ("garnczkowy helm zdobiony majestatycznym jelenim porozem"). Anything else
- * is no longer worn.
+ * Slots from what an `i` reply lists as worn. Only a piece the złom list
+ * knows by the name `i` gives it, with what it covers ("Oslona"), takes
+ * slots. Anything else loses its slot, even one learned from putting it on:
+ * `i` may name it differently ("garnczkowy helm zdobiony majestatycznym
+ * jelenim porozem" for "garnczkowy helm z jelenim porozem"), and that is
+ * for the złom list to learn, not to be guessed.
  */
 export function slotsFromWorn(
     worn: string[],
-    previous: Record<string, string>,
     known: { short: string; shortAlt?: string; oslona: string; shield?: boolean }[],
 ): Record<string, string> {
     const slots: Record<string, string> = {};
@@ -161,27 +155,33 @@ export function slotsFromWorn(
         const covered = entry.shield ? ["tarcza"] : parseSlots(entry.oslona);
         covered.forEach(slot => { slots[slot] = name; });
     });
-    // Any word of a worn piece will do: "helm" is in "garnczkowy helm zdobiony ... porozem"
-    const wornWords = worn.flatMap(name => name.toLowerCase().split(/\s+/));
-    Object.entries(previous).forEach(([slot, item]) => {
-        if (slots[slot]) return;
-        const noun = nounOf(item);
-        if (wornWords.some(word => sameWord(word, noun))) slots[slot] = item;
-    });
     return slots;
 }
 
 /**
- * The worn pieces no slot holds, by name or by the word a slot kept from
- * putting the piece on: a cloak or a ring, or armour the złom list has no
- * cover for yet. Listed so it is known what is still to be filled in.
+ * Worn, but never armour: clothes over it, jewellery, insignia, a map case.
+ * No slot to fill. Any case or number of the noun counts ("pierscienie").
+ */
+const NOT_ARMOUR = [
+    "plaszcz", "szata", "calun", "chusta", "maska",
+    "pierscien", "sygnet", "bransoleta", "opaska", "amulet", "talizman", "broszka", "spinka",
+    "mapnik",
+];
+
+/** "zwiewny upiorny calun", "masywny amulet z czarnym opalem (rozkazy)" */
+function isNotArmour(name: string): boolean {
+    const noun = splitName(name).noun.toLowerCase();
+    return NOT_ARMOUR.some(word => sameWord(noun, word));
+}
+
+/**
+ * The worn pieces no slot holds: armour the złom list has no cover for yet,
+ * or knows by another name. Listed so it is known what is still to be filled
+ * in; a cloak or a ring is not.
  */
 export function unplacedPieces(worn: string[], slots: Record<string, string>): string[] {
     const held = Object.values(slots);
-    return worn.filter(name => {
-        const words = name.toLowerCase().split(/\s+/);
-        return !held.some(item => sameItem(item, name) || words.some(word => sameWord(word, nounOf(item))));
-    });
+    return worn.filter(name => !isNotArmour(name) && !held.some(item => sameItem(item, name)));
 }
 
 /**
@@ -258,7 +258,7 @@ export default function initArmor(client: Client, aliases?: { pattern: RegExp; c
             .flatMap(section => section.entries.map(entry => entry.name));
         const { zbroje, tarcze } = getZlomSnapshot();
         const slots = {
-            ...slotsFromWorn(worn, armor.slots, [...zbroje, ...tarcze.map(entry => ({ ...entry, shield: true }))]),
+            ...slotsFromWorn(worn, [...zbroje, ...tarcze.map(entry => ({ ...entry, shield: true }))]),
             ...slotsFromLines(lines, iLineEntries(getZlomSnapshot())),
         };
         const next = { slots, unplaced: unplacedPieces(worn, slots), unknownLines: unknown };

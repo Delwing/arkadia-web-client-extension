@@ -108,7 +108,7 @@ const ArmorPopup: React.FC = () => {
                         {armor.unplaced.length > 0 && (
                             <>
                                 <div className="armor-popup__todo-hint">
-                                    Noszone, ale bez miejsca: wpis w złomie z osłoną albo założenie rzeczy pokaże, co zakrywa.
+                                    Noszone, ale bez miejsca: uzupełnij w złomie osłonę albo nazwę, pod jaką podaje je <code>i</code>.
                                 </div>
                                 <ul className="armor-popup__todo-list armor-popup__todo-list--unplaced">
                                     {armor.unplaced.map((name, i) => <li key={i}>{name}</li>)}

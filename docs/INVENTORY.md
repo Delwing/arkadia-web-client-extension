@@ -33,7 +33,7 @@ Pojemniki ustawione w `/pojemnik` mają w oknie własną kolumnę (obok listy, g
 
 Gdy zakładany przedmiot jest w bazie złomu, a nie ma jeszcze wpisanej osłony, okno ją uzupełnia (`tulow` jako `korpus`, np. `korpus, nogi i ramiona`). Osłona, która już jest, zostaje bez zmian.
 
-Stan jest zapamiętywany osobno dla każdej postaci i synchronizowany między urządzeniami. Okno uczy się też z `i`: przedmiot, który masz na sobie, a baza złomu zna jego osłonę, trafia od razu na swoje miejsca — nawet jeśli nie widziało, jak go zakładasz. Miejsce zajęte przez zakładanie zostaje, dopóki nosisz coś tego rodzaju (np. hełm opisany w `i` dokładniej niż przy zakładaniu), a znika, gdy `i` go już nie wymienia. Przedmioty na plecach i przy pasie się nie liczą.
+Stan jest zapamiętywany osobno dla każdej postaci i synchronizowany między urządzeniami. Okno uczy się też z `i`: przedmiot, który masz na sobie, a baza złomu zna jego osłonę, trafia od razu na swoje miejsca — nawet jeśli nie widziało, jak go zakładasz. Każde `i` układa miejsca od nowa: miejsce zajęte przez zakładanie znika, jeśli baza złomu nie zna przedmiotu pod nazwą, jaką podaje `i` (np. hełm opisany w `i` dokładniej niż przy zakładaniu). Taki przedmiot trafia wtedy na listę **Do uzupełnienia** — dopisz w złomie tę nazwę albo linię w kolumnie **W i**. Przedmioty na plecach i przy pasie się nie liczą.
 
 Niektóre zbroje `i` opisuje po swojemu, a nie nazwą, np.:
 
@@ -50,7 +50,7 @@ Gdy linia z `i` pasuje, przedmiot zajmuje miejsca ze swojej osłony. Wpis sprawd
 
 Pod sylwetką okno pokazuje **Do uzupełnienia** z ostatniego `i`:
 
-- noszone, ale bez miejsca — przedmioty z `i`, dla których nic nie mówi, co zakrywają (np. płaszcz, pierścień albo zbroja bez osłony w bazie złomu). Wystarczy je założyć albo uzupełnić osłonę w złomie.
+- noszone, ale bez miejsca — przedmioty z `i`, dla których nic nie mówi, co zakrywają (np. zbroja bez osłony w bazie złomu albo zapisana tam pod inną nazwą). Wystarczy uzupełnić osłonę lub nazwę w złomie. Nie pojawiają się tu rzeczy, które zbroją nie są: ubrania na zbroi (płaszcz, szata, całun, chusta, maska), biżuteria i insygnia (pierścień, sygnet, bransoleta, opaska, amulet, talizman, broszka, spinka) ani mapnik.
 - linie, których klient nie rozpoznaje — sposób opisu w `i`, którego okno ekwipunku jeszcze nie zna. Jeśli to zbroja, wpisz tę linię w kolumnie **W i**; jeśli coś innego, warto ją zgłosić, żeby dodać nowy wzorzec.
 
 Lista zmienia się przy każdym `i`, a przedmiot, który zakładasz albo zdejmujesz, od razu z niej znika.
