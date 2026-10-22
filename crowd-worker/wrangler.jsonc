@@ -39,8 +39,7 @@
     "ALLOWED_ORIGINS": "https://delwing.github.io",
     "MAX_ITEMS_PER_DAY": "20000",
     "MAX_CONFIRMATIONS": "5",
-    "MAX_REGISTRATIONS_PER_IP": "5",
-    "SNAPSHOT_MAX_AGE_SECONDS": "3600"
+    "MAX_REGISTRATIONS_PER_IP": "5"
   }
 
   // No secrets: contributor credentials are minted here and stored hashed in D1.

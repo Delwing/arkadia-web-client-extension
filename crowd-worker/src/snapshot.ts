@@ -97,7 +97,6 @@ export async function exportSnapshot(db: D1Database, kv: KVNamespace, now: numbe
 export async function serveSnapshot(
     request: Request,
     kv: KVNamespace,
-    maxAgeSeconds: number,
 ): Promise<Response> {
     const headers: Record<string, string> = {
         'content-type': 'application/json; charset=utf-8',
@@ -111,7 +110,10 @@ export async function serveSnapshot(
             headers: { ...headers, 'cache-control': 'no-store' },
         });
     }
-    headers['cache-control'] = `public, max-age=${maxAgeSeconds}`;
+    // Kept, but checked every time: the export can change any hour, and checking
+    // a copy the browser has is a 304 that costs one KV read and no D1. A max-age
+    // here once kept pages on an hour-old export.
+    headers['cache-control'] = 'public, no-cache';
     const etag = metadata?.etag;
     if (etag) {
         headers.etag = etag;

@@ -12,7 +12,6 @@ export interface RuntimeConfig {
     maxItemsPerDay: number;
     maxConfirmations: number;
     maxRegistrationsPerIp: number;
-    snapshotMaxAgeSeconds: number;
 }
 
 const DEFAULTS = {
@@ -23,9 +22,6 @@ const DEFAULTS = {
     // bad source without spending a write per player forever.
     maxConfirmations: 5,
     maxRegistrationsPerIp: 5,
-    // Matches the hourly export: a copy older than that may be out of date,
-    // and revalidating it is a 304 that costs one KV read and no D1.
-    snapshotMaxAgeSeconds: 60 * 60,
 } as const;
 
 function parseList(value: string | undefined): string[] {
@@ -47,7 +43,6 @@ export function loadConfig(env: Env): RuntimeConfig {
         maxItemsPerDay: parseNumber(env.MAX_ITEMS_PER_DAY, DEFAULTS.maxItemsPerDay),
         maxConfirmations: parseNumber(env.MAX_CONFIRMATIONS, DEFAULTS.maxConfirmations),
         maxRegistrationsPerIp: parseNumber(env.MAX_REGISTRATIONS_PER_IP, DEFAULTS.maxRegistrationsPerIp),
-        snapshotMaxAgeSeconds: parseNumber(env.SNAPSHOT_MAX_AGE_SECONDS, DEFAULTS.snapshotMaxAgeSeconds),
     };
 }
 

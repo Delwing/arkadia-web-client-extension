@@ -17,8 +17,6 @@ export interface Env {
     MAX_CONFIRMATIONS?: string;
     /** New contributors one IP may register per UTC day. */
     MAX_REGISTRATIONS_PER_IP?: string;
-    /** Seconds a browser or proxy may reuse the snapshot without revalidating. */
-    SNAPSHOT_MAX_AGE_SECONDS?: string;
 }
 
 /** Minimal D1 shape, so the project typechecks without workers-types. */

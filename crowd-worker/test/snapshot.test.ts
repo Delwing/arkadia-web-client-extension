@@ -29,7 +29,7 @@ async function submit(at: number, mianownik = 'plecak'): Promise<void> {
 }
 
 function get(headers: Record<string, string> = {}): Promise<Response> {
-    return serveSnapshot(new Request('https://crowd.test/crowd/snapshot', { headers }), kv, 3600);
+    return serveSnapshot(new Request('https://crowd.test/crowd/snapshot', { headers }), kv);
 }
 
 describe('exportSnapshot', () => {
@@ -77,7 +77,7 @@ describe('serveSnapshot', () => {
         expect(first.status).toBe(200);
         const etag = first.headers.get('etag')!;
         expect(etag).toMatch(/^".+"$/);
-        expect(first.headers.get('cache-control')).toBe('public, max-age=3600');
+        expect(first.headers.get('cache-control')).toBe('public, no-cache');
         expect((await first.json()).odmiany).toHaveLength(1);
 
         expect((await get({ 'if-none-match': etag })).status).toBe(304);

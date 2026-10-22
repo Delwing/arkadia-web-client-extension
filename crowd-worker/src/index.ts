@@ -78,7 +78,7 @@ export default {
             if (!env.SNAPSHOTS) {
                 return errorResponse('unavailable', 'Snapshot bucket not bound', 503, origin, allowed);
             }
-            return serveSnapshot(request, env.SNAPSHOTS, config.snapshotMaxAgeSeconds);
+            return serveSnapshot(request, env.SNAPSHOTS);
         }
 
         const db = env.DB;
