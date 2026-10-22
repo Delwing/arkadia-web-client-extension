@@ -1,0 +1,47 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "arkadia-crowd-worker",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-22",
+  // Everything here is Web-standard (crypto.subtle, fetch).
+  "compatibility_flags": [],
+
+  "observability": {
+    "enabled": true
+  },
+
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "arkadia-crowd",
+      "database_id": "98a4309c-0fd5-40ab-841e-abf688141dd6",
+      "migrations_dir": "migrations"
+    }
+  ],
+
+  // The exported snapshot. Downloads read it here, never from D1. KV, not R2:
+  // R2 needs enabling with a payment method on file. See src/snapshot.ts.
+  "kv_namespaces": [
+    {
+      "binding": "SNAPSHOTS",
+      "id": "a362c5b0e2e841b2962d23d82ceb9e35"
+    }
+  ],
+
+  // Hourly export to KV. It reads only the tiny `meta` table unless something
+  // was submitted since the last run (or a day has passed). See src/snapshot.ts.
+  "triggers": {
+    "crons": ["17 * * * *"]
+  },
+
+  "vars": {
+    // Write routes only. The snapshot is public and answers any origin.
+    "ALLOWED_ORIGINS": "https://delwing.github.io",
+    "MAX_ITEMS_PER_DAY": "20000",
+    "MAX_CONFIRMATIONS": "5",
+    "MAX_REGISTRATIONS_PER_IP": "5",
+    "SNAPSHOT_MAX_AGE_SECONDS": "3600"
+  }
+
+  // No secrets: contributor credentials are minted here and stored hashed in D1.
+}

@@ -1,0 +1,113 @@
+# Cloudflare Worker (crowd spis zlomu / odmiany) — test on PRs, deploy from master.
+#
+# Separate from the other Worker workflows so that no Worker can break another's
+# rollout. See crowd-worker/README.md.
+#
+# Required repository secrets:
+#   CLOUDFLARE_API_TOKEN   — needs Workers Scripts:Edit, D1:Edit and Workers KV Storage:Edit
+#   CLOUDFLARE_ACCOUNT_ID  — the account the Worker lives in
+name: Crowd Worker
+
+on:
+  push:
+    branches: [ master ]
+    paths:
+      - 'crowd-worker/**'
+      - '.github/workflows/crowd-worker.yml'
+  pull_request:
+    paths:
+      - 'crowd-worker/**'
+      - '.github/workflows/crowd-worker.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: crowd-worker-deploy
+  cancel-in-progress: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: crowd-worker
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: yarn
+          cache-dependency-path: crowd-worker/yarn.lock
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+      - name: Typecheck
+        run: yarn typecheck
+      - name: Run worker tests
+        run: yarn test
+      - name: Build bundle (dry run)
+        run: yarn build
+
+  deploy:
+    needs: test
+    if: github.ref == 'refs/heads/master' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    environment:
+      name: cloudflare-crowd-worker
+      url: https://arkadia-crowd-worker.delwing.workers.dev
+    defaults:
+      run:
+        working-directory: crowd-worker
+    steps:
+      - uses: actions/checkout@v6
+      - name: Check the database is configured
+        id: configured
+        # Until `wrangler d1 create` has been run and its id committed, there is
+        # nothing to deploy to. Skip rather than fail, so master stays green.
+        run: |
+          if grep -q REPLACE_WITH_D1_DATABASE_ID wrangler.jsonc; then
+            echo "::warning::crowd-worker/wrangler.jsonc still has the placeholder D1 id; skipping deploy"
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/setup-node@v6
+        if: steps.configured.outputs.ready == 'true'
+        with:
+          node-version: 24
+          cache: yarn
+          cache-dependency-path: crowd-worker/yarn.lock
+      - name: Install dependencies
+        if: steps.configured.outputs.ready == 'true'
+        run: yarn install --frozen-lockfile
+      - name: Apply database migrations
+        # Before the deploy, so new code never runs against an old schema.
+        # Migrations must therefore stay additive.
+        if: steps.configured.outputs.ready == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx wrangler d1 migrations apply arkadia-crowd --remote
+      - name: Deploy
+        if: steps.configured.outputs.ready == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx wrangler deploy
+      - name: Verify the database and KV bindings
+        if: steps.configured.outputs.ready == 'true'
+        run: |
+          for attempt in $(seq 1 10); do
+            live=$(curl -fsS "https://arkadia-crowd-worker.delwing.workers.dev/health?cb=$attempt" || true)
+            db=$(echo "$live" | node -p "JSON.parse(require('fs').readFileSync(0,'utf8')).database" 2>/dev/null || true)
+            kv=$(echo "$live" | node -p "JSON.parse(require('fs').readFileSync(0,'utf8')).snapshots" 2>/dev/null || true)
+            if [ "$db" = "true" ] && [ "$kv" = "true" ]; then
+              echo "health ok"
+              exit 0
+            fi
+            echo "attempt $attempt: database=$db snapshots=$kv, retrying"
+            sleep 6
+          done
+          echo "::error::Deployed crowd worker reports database=$db snapshots=$kv"
+          exit 1
