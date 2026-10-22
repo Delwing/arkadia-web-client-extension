@@ -5,7 +5,7 @@ import type {Page} from '@playwright/test';
 const OUTPUT_SELECTOR = '#main_text_output_msg_wrapper';
 const SPLIT_BOTTOM_SELECTOR = '#split-bottom';
 
-// Default maxElements in setupOutputMessageHandler is 1000. Pushing past it
+// The buffer is pinned to 1000 lines (the setting defaults higher). Pushing past it
 // exercises the trim path that used to shift the user's view when scrolled up.
 const BUFFER_LIMIT = 1000;
 
@@ -85,6 +85,9 @@ async function getLineRange(page: Page): Promise<{min: number; max: number; coun
 
 test.describe('Sticky scroll during buffer overflow', () => {
     test.beforeEach(async ({page}) => {
+        await page.addInitScript((limit) => {
+            localStorage.setItem('uiSettings', JSON.stringify({outputMaxElements: limit}));
+        }, BUFFER_LIMIT);
         await page.goto('/');
         await waitForCommandInput(page);
         await ensureGameSocket(page);

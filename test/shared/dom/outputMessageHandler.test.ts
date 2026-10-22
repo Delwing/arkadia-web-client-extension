@@ -319,6 +319,29 @@ describe('setupOutputMessageHandler', () => {
         expect(remaining[remaining.length - 1]).toBe('line 16');
     });
 
+    test('trims to maxElements even after lines were removed behind its back', () => {
+        const { outputWrapper, splitBottom, splitHandle, stickyArea } = setupDom();
+        const client = makeFakeClient();
+
+        handler = setupOutputMessageHandler(client, {
+            outputWrapper, splitBottom, splitHandle, stickyArea, stickyLines: 3,
+            maxElements: 10, trimSlack: 5,
+        });
+
+        for (let i = 1; i <= 14; i++) client.emit(`old ${i}`, 'comm');
+        // Something else clears the output (only the split pane stays).
+        outputWrapper.querySelectorAll('.output_msg').forEach(el => el.remove());
+
+        for (let i = 1; i <= 15; i++) client.emit(`line ${i}`, 'comm');
+        expect(outputWrapper.querySelectorAll('.output_msg').length).toBe(15);
+
+        client.emit('line 16', 'comm');
+        const remaining = Array.from(outputWrapper.querySelectorAll('.output_msg_content')).map(el => el.textContent);
+        expect(remaining).toHaveLength(10);
+        expect(remaining[0]).toBe('line 7');
+        expect(outputWrapper.lastElementChild).toBe(splitBottom);
+    });
+
     test('appendNode without a rebuild is not mirrored into the sticky area', () => {
         const { outputWrapper, splitBottom, splitHandle, stickyArea } = setupDom();
         const client = makeFakeClient();

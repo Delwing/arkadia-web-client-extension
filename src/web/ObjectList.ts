@@ -759,6 +759,7 @@ export default class ObjectList {
                 this.pipContent.addEventListener("contextmenu", this.onContextMenu);
             }
             this.injectPictureInPictureStyles();
+            this.updateLastOutputLineFromDom();
             this.rebuildPictureInPictureHtml();
             this.observePictureInPictureStyles();
             this.updatePictureInPictureButton(true);
@@ -1023,6 +1024,8 @@ html, body {
     }
 
     private handleOutputUpdate = () => {
+        // Only the Picture-in-Picture footer shows it; opening PiP reads it afresh.
+        if (!this.pipContent) return;
         this.updateLastOutputLineFromDom();
     };
 
@@ -1054,9 +1057,10 @@ html, body {
             return;
         }
         const outputs: string[] = [];
-        for (let i = wrapper.children.length - 1; i >= 0 && outputs.length < 2; i--) {
-            const child = wrapper.children[i] as HTMLElement;
-            if (child && child.classList && child.classList.contains("output_msg")) {
+        // Walk back from the end: indexing `children` from the back after each
+        // append re-counts the whole buffer.
+        for (let child = wrapper.lastElementChild; child && outputs.length < 2; child = child.previousElementSibling) {
+            if (child.classList.contains("output_msg")) {
                 const textEl = child.querySelector<HTMLElement>(".output_msg_text");
                 if (textEl) {
                     const content = textEl.querySelector<HTMLElement>('.output_msg_content');

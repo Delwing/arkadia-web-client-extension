@@ -1,4 +1,4 @@
-import { findInOutput } from '@web/outputSearch/outputSearch';
+import { findInLines, findInOutput, liveRange } from '@web/outputSearch/outputSearch';
 
 /** A stock output line: timestamp + type columns, then the game text in coloured spans. */
 function line(...parts: string[]): string {
@@ -21,7 +21,7 @@ describe('findInOutput', () => {
         const { wrapper, split } = output(line('Widzisz Goblina.') + line('Nic.') + line('goblin i gobliń'));
         const hits = findInOutput(wrapper, 'goblin', new Set([split]));
 
-        expect(hits.map(h => h.range.toString())).toEqual(['Goblin', 'goblin', 'gobliń']);
+        expect(hits.map(h => liveRange(h).toString())).toEqual(['Goblin', 'goblin', 'gobliń']);
         expect(hits[0].line).toBe(wrapper.children[0]);
         expect(hits[1].line).toBe(wrapper.children[2]);
         expect(hits.map(h => h.start)).toEqual([8, 0, 9]);
@@ -32,7 +32,7 @@ describe('findInOutput', () => {
         const hits = findInOutput(wrapper, 'goblin stoi', new Set([split]));
 
         expect(hits).toHaveLength(1);
-        expect(hits[0].range.toString()).toBe('goblin stoi');
+        expect(liveRange(hits[0]).toString()).toBe('goblin stoi');
     });
 
     it('skips the timestamp and message-type columns and the skipped nodes', () => {
@@ -44,5 +44,23 @@ describe('findInOutput', () => {
     it('finds nothing for a blank query', () => {
         const { wrapper, split } = output(line('tekst'));
         expect(findInOutput(wrapper, '   ', new Set([split]))).toEqual([]);
+    });
+
+    it('hands out static ranges, which DOM changes leave alone', () => {
+        const { wrapper, split } = output(line('goblin'));
+        const [hit] = findInOutput(wrapper, 'goblin', new Set([split]));
+        expect(hit.range).toBeInstanceOf(StaticRange);
+    });
+});
+
+describe('findInLines', () => {
+    it('searches only the given lines, in their order', () => {
+        const { wrapper, split } = output(line('goblin 1') + line('nic') + line('goblin 2'));
+        const lines = Array.from(wrapper.children);
+        const hits = findInLines([lines[1], lines[2], split], 'goblin', new Set([split]));
+
+        expect(hits).toHaveLength(1);
+        expect(hits[0].line).toBe(lines[2]);
+        expect(liveRange(hits[0]).toString()).toBe('goblin');
     });
 });

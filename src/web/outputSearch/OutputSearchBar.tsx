@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type KeyboardEvent } from "react";
 import { ChevronDown, ChevronUp, ScrollText, Search, X } from "lucide-react";
 import { canSearchLogs, requestLogSearch } from "@web/logSearchRequest.ts";
-import { clearMatches, findInOutput, paintMatches, revealMatch, type OutputMatch } from "./outputSearch";
+import { clearMatches, findInLines, findInOutput, paintMatches, revealMatch, type OutputMatch } from "./outputSearch";
 import { closeOutputSearch, getOutputSearchRequest, subscribeOutputSearch } from "./outputSearchState";
 
 interface OutputSearchBarProps {
@@ -23,6 +23,9 @@ function placeOver(outputWrapper: HTMLElement): { top: number; right: number } {
 
 /** How often, at most, output arriving meanwhile re-runs the search. */
 const RESCAN_MS = 250;
+
+/** How long typing settles before the output is searched. */
+const SEARCH_DELAY_MS = 150;
 
 /**
  * Ctrl+F over the game output: a bar at the output's top right. Hits are painted
@@ -47,14 +50,19 @@ export default function OutputSearchBar({ outputWrapper, splitBottom, skip, comm
 
 function SearchBar({ initialQuery, outputWrapper, splitBottom, skip, commandInput }: OutputSearchBarProps & { initialQuery: string }) {
     const [query, setQuery] = useState(initialQuery);
-    const [matches, setMatches] = useState<OutputMatch[]>([]);
+    // What is actually searched: the typed query once typing settles.
+    const [searchQuery, setSearchQuery] = useState(initialQuery);
+    // The hits, with the query they were found for, so a rescan never mixes
+    // the hits of two queries.
+    const [found, setFound] = useState<{ query: string; matches: OutputMatch[] }>({ query: "", matches: [] });
+    const matches = found.matches;
     const [current, setCurrent] = useState(-1);
     // Placed on the first render already: a bar still hidden while it measures
     // could not take focus.
     const [position, setPosition] = useState(() => placeOver(outputWrapper));
     const inputRef = useRef<HTMLInputElement>(null);
-    const stateRef = useRef({ query, matches, current });
-    stateRef.current = { query, matches, current };
+    const stateRef = useRef({ searchQuery, found, current });
+    stateRef.current = { searchQuery, found, current };
 
     const skipSet = useRef(new Set<Element>());
     skipSet.current = new Set([splitBottom, ...skip]);
@@ -65,28 +73,54 @@ function SearchBar({ initialQuery, outputWrapper, splitBottom, skip, commandInpu
         revealMatch(outputWrapper, match, covered);
     }, [outputWrapper, splitBottom]);
 
+    // Each search walks the whole output, so typing settles first.
+    useEffect(() => {
+        if (query === searchQuery) return;
+        const timer = setTimeout(() => setSearchQuery(query), query.trim() ? SEARCH_DELAY_MS : 0);
+        return () => clearTimeout(timer);
+    }, [query, searchQuery]);
+
     // A new query starts from the newest hit.
     useEffect(() => {
-        const found = findInOutput(outputWrapper, query, skipSet.current);
-        setMatches(found);
-        setCurrent(found.length - 1);
-        reveal(found[found.length - 1]);
-    }, [query, outputWrapper, reveal]);
+        const hits = findInOutput(outputWrapper, searchQuery, skipSet.current);
+        setFound({ query: searchQuery, matches: hits });
+        setCurrent(hits.length - 1);
+        reveal(hits[hits.length - 1]);
+    }, [searchQuery, outputWrapper, reveal]);
 
     // Output keeps arriving (and old lines get trimmed) while the bar is open:
-    // search again, staying on the same hit if it is still there.
+    // drop the hits on trimmed lines and search only the lines that arrived,
+    // staying on the same hit if it is still there.
     useEffect(() => {
         let timer: ReturnType<typeof setTimeout> | null = null;
+        let added: Element[] = [];
         const rescan = () => {
             timer = null;
-            const { query: q, matches: before, current: index } = stateRef.current;
-            const anchor = before[index];
-            const found = findInOutput(outputWrapper, q, skipSet.current);
-            const kept = anchor ? found.findIndex(m => m.line === anchor.line && m.start === anchor.start) : -1;
-            setMatches(found);
-            setCurrent(kept !== -1 ? kept : index < 0 ? found.length - 1 : Math.min(index, found.length - 1));
+            const arrived = added.filter(line => line.parentNode === outputWrapper)
+                .sort((a, b) => (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1));
+            added = [];
+            const { searchQuery: q, found: before, current: index } = stateRef.current;
+            const anchor = before.matches[index];
+            let hits: OutputMatch[];
+            const kept = before.matches.filter(m => m.line.parentNode === outputWrapper);
+            const last = kept[kept.length - 1]?.line;
+            const inOrder = !last || arrived.every(line => line !== last &&
+                (last.compareDocumentPosition(line) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0);
+            if (before.query === q && inOrder) {
+                hits = arrived.length > 0 ? kept.concat(findInLines(arrived, q, skipSet.current)) : kept;
+            } else {
+                hits = findInOutput(outputWrapper, q, skipSet.current);
+            }
+            const keptIndex = anchor ? hits.findIndex(m => m.line === anchor.line && m.start === anchor.start) : -1;
+            setFound({ query: q, matches: hits });
+            setCurrent(keptIndex !== -1 ? keptIndex : index < 0 ? hits.length - 1 : Math.min(index, hits.length - 1));
         };
-        const observer = new MutationObserver(() => {
+        const observer = new MutationObserver((records) => {
+            for (const record of records) {
+                record.addedNodes.forEach(node => {
+                    if (node instanceof Element) added.push(node);
+                });
+            }
             timer ??= setTimeout(rescan, RESCAN_MS);
         });
         observer.observe(outputWrapper, { childList: true });
@@ -131,14 +165,16 @@ function SearchBar({ initialQuery, outputWrapper, splitBottom, skip, commandInpu
     const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
         if (event.key === "Enter") {
             event.preventDefault();
-            step(!event.shiftKey);
+            // Typed but not searched yet: search now (landing on the newest hit).
+            if (query !== searchQuery) setSearchQuery(query);
+            else step(!event.shiftKey);
         } else if (event.key === "Escape") {
             event.preventDefault();
             close();
         }
     };
 
-    const count = !query.trim() ? "" : matches.length === 0 ? "brak" : `${current + 1} z ${matches.length}`;
+    const count = !searchQuery.trim() ? "" : matches.length === 0 ? "brak" : `${current + 1} z ${matches.length}`;
 
     return (
         <div className="output-search" style={position}>

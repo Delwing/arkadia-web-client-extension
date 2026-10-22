@@ -82,7 +82,7 @@ export const defaultMapSettings: MapSettings = {
 export const defaultDeviceViewSettings: DeviceViewSettings = {
     contentFontSize: 0.775,
     mapScale: 0.30,
-    outputMaxElements: 1000,
+    outputMaxElements: 5000,
 };
 
 export const defaultBehaviorSettings: BehaviorSettings = {

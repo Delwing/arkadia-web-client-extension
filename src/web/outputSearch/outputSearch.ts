@@ -1,8 +1,12 @@
 import { foldText } from "@shared/foldText.ts";
 
-/** One hit in the game output: its range, and the line it sits on (for keeping the place). */
+/**
+ * One hit in the game output: its range, and the line it sits on (for keeping
+ * the place). The range is static: a live Range is updated by the browser on
+ * every DOM change, and thousands of them made each appended line slow.
+ */
 export interface OutputMatch {
-    range: Range;
+    range: StaticRange;
     line: Element;
     /** Offset of the hit in the line's text. */
     start: number;
@@ -18,12 +22,17 @@ const CHROME_SELECTOR = ".output-timestamp, .output-message-type";
  * across lines. Case and Polish letters don't matter, as in the other searches.
  */
 export function findInOutput(wrapper: HTMLElement, query: string, skip: ReadonlySet<Element>): OutputMatch[] {
+    return findInLines(Array.from(wrapper.children), query, skip);
+}
+
+/** Like `findInOutput`, over just the given lines (e.g. the ones that arrived since). */
+export function findInLines(lines: readonly Element[], query: string, skip: ReadonlySet<Element>): OutputMatch[] {
     const needle = foldText(query.trim());
     if (!needle) return [];
-    const doc = wrapper.ownerDocument;
     const matches: OutputMatch[] = [];
-    for (const line of Array.from(wrapper.children)) {
+    for (const line of lines) {
         if (skip.has(line)) continue;
+        const doc = line.ownerDocument;
         const nodes: Text[] = [];
         const starts: number[] = [];
         let text = "";
@@ -43,13 +52,25 @@ export function findInOutput(wrapper: HTMLElement, query: string, skip: Readonly
             let endNode = node;
             const end = at + needle.length;
             while (endNode + 1 < nodes.length && starts[endNode + 1] < end) endNode++;
-            const range = doc.createRange();
-            range.setStart(nodes[node], at - starts[node]);
-            range.setEnd(nodes[endNode], end - starts[endNode]);
+            const range = new StaticRange({
+                startContainer: nodes[node],
+                startOffset: at - starts[node],
+                endContainer: nodes[endNode],
+                endOffset: end - starts[endNode],
+            });
             matches.push({ range, line, start: at });
         }
     }
     return matches;
+}
+
+/** A live Range over the hit, for measuring it or reading its text. */
+export function liveRange(match: OutputMatch): Range {
+    const { startContainer, startOffset, endContainer, endOffset } = match.range;
+    const range = startContainer.ownerDocument!.createRange();
+    range.setStart(startContainer, startOffset);
+    range.setEnd(endContainer, endOffset);
+    return range;
 }
 
 interface HighlightRegistry {
@@ -57,9 +78,9 @@ interface HighlightRegistry {
     delete(name: string): void;
 }
 
-function highlightApi(): { registry: HighlightRegistry; Highlight: new (...ranges: Range[]) => unknown } | null {
+function highlightApi(): { registry: HighlightRegistry; Highlight: new (...ranges: AbstractRange[]) => unknown } | null {
     const css = (globalThis as { CSS?: { highlights?: HighlightRegistry } }).CSS;
-    const Highlight = (globalThis as { Highlight?: new (...ranges: Range[]) => unknown }).Highlight;
+    const Highlight = (globalThis as { Highlight?: new (...ranges: AbstractRange[]) => unknown }).Highlight;
     if (!css?.highlights || !Highlight) return null;
     return { registry: css.highlights, Highlight };
 }
@@ -98,7 +119,7 @@ export function clearMatches(names = OUTPUT_NAMES): void {
  */
 export function revealMatch(wrapper: HTMLElement, match: OutputMatch, coveredBottom: number): void {
     const box = wrapper.getBoundingClientRect();
-    const hit = match.range.getBoundingClientRect();
+    const hit = liveRange(match).getBoundingClientRect();
     const margin = 24;
     const visibleBottom = box.bottom - coveredBottom;
     if (hit.top >= box.top + margin && hit.bottom <= visibleBottom - margin) return;

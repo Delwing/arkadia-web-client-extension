@@ -273,9 +273,17 @@ export function setupOutputMessageHandler(
     });
     const detachHandle = splitView.attachHandle(splitHandle);
 
+    // Children of the wrapper besides the split pane, as last counted plus one
+    // per append since. Reading `childElementCount` walks every child, which on
+    // a big buffer made each appended line cost O(buffer); the exact count is
+    // only taken when this estimate says the trim threshold may be crossed.
+    // Anything else adding or removing lines only skews it until that recount.
+    let estimatedLines = outputWrapper.childElementCount - 1;
+
     const appendNode = (node: HTMLElement, rebuild?: () => HTMLElement) => {
         // Keep splitBottom last: insert output before it, never after.
         outputWrapper.insertBefore(node, splitBottom);
+        estimatedLines++;
 
         if (rebuild) {
             recent.push(rebuild);
@@ -291,14 +299,22 @@ export function setupOutputMessageHandler(
         // Fixtures of the wrapper (the split pane, anything marked
         // data-output-keep such as the toast strip) are never trimmed and do
         // not count as lines.
-        if (!splitView.isSplitView() && outputWrapper.childElementCount - 1 > maxElementsValue + trimSlack) {
-            const keep = (el: Element) => el === splitBottom || el.hasAttribute('data-output-keep');
-            const kept = 1 + outputWrapper.querySelectorAll(':scope > [data-output-keep]').length;
-            while (outputWrapper.childElementCount - kept > maxElementsValue) {
+        if (!splitView.isSplitView() && estimatedLines > maxElementsValue + trimSlack) {
+            estimatedLines = outputWrapper.childElementCount - 1;
+            if (estimatedLines > maxElementsValue + trimSlack) {
+                const keep = (el: Element) => el === splitBottom || el.hasAttribute('data-output-keep');
+                const kept = 1 + outputWrapper.querySelectorAll(':scope > [data-output-keep]').length;
+                let excess = estimatedLines + 1 - kept - maxElementsValue;
                 let oldest = outputWrapper.firstElementChild;
-                while (oldest && keep(oldest)) oldest = oldest.nextElementSibling;
-                if (!oldest) break;
-                outputWrapper.removeChild(oldest);
+                while (excess > 0 && oldest) {
+                    const next = oldest.nextElementSibling;
+                    if (!keep(oldest)) {
+                        outputWrapper.removeChild(oldest);
+                        estimatedLines--;
+                        excess--;
+                    }
+                    oldest = next;
+                }
             }
         }
 
