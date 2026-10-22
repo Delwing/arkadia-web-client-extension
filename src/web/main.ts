@@ -28,6 +28,8 @@ import {AccountScreen} from "./account/AccountScreen";
 import recordingManager from "./RecordingManager.ts";
 import eventBus from "@modules/core/eventBus";
 import {setupOutputContextMenu} from "./outputContextMenu";
+import {installLongPressContextMenu} from "@shared/dom/longPressContextMenu.ts";
+import {isIOS} from "@shared/dom/mobileOs.ts";
 import {AppModal} from './modals/appModal';
 import ObjectList from "./ObjectList";
 import {mountMigratedComponents} from "@web-ui/mountComponents.tsx";
@@ -280,6 +282,8 @@ if (footerLayoutElement) {
 }
 
 setupOutputContextMenu(outputWrapper);
+// iOS has no long-press contextmenu of its own; every right-click menu needs one.
+if (isIOS()) installLongPressContextMenu();
 
 
 function closeHistoryScrollback() {

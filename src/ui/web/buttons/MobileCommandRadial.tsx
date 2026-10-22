@@ -205,6 +205,8 @@ export default function MobileCommandRadial({ client }: { client: Client }) {
             const element = document.elementFromPoint(touch.clientX, touch.clientY);
             if (!element) return false;
             if (element instanceof Element && element.closest('[data-mobile-command-radial-ignore]')) return false;
+            // Holding an output link asks for that link's own menu.
+            if (element instanceof Element && element.closest('[data-output-clickable]')) return false;
             return contentArea.contains(element);
         }
 

@@ -153,6 +153,11 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Holding an output link opens its menu (longPressContextMenu), not iOS's link callout. */
+[data-output-clickable] {
+  -webkit-touch-callout: none;
+}
+
 @media (max-width: 768px) {
   body {
     -webkit-touch-callout: none;

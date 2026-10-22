@@ -18,6 +18,8 @@
   background: color-mix(in srgb, var(--popup-bg, #15171c) 72%, transparent);
   backdrop-filter: blur(3px);
   color: var(--popup-text);
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
   user-select: none;
 }
 /* Nothing to show right now (no journey, vitals at rest): no plate either. */
