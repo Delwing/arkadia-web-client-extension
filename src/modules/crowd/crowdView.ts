@@ -223,3 +223,27 @@ export function subscribeKnownOdmiany(listener: (view: OdmianaSnapshot) => void)
 export function isDeclined(name: string): boolean {
     return !!getOdmiana(name) || !!getKnownOdmiany()[key(name)];
 }
+
+export type ZlomGroup = 'bronie' | 'zbroje' | 'tarcze';
+
+/**
+ * What an entry still lacks, as "brak ..." words: what a player carrying it
+ * could fill in, by declining its name (odmien) or evaluating it (ocen).
+ * Optional fields - the i line, the name evaluating gives - never count.
+ * Mirrors the gaps the public spis zlomu page shows.
+ */
+export function entryGaps(group: ZlomGroup, entry: ViewWeapon | ViewArmour | ViewShield, odmiany: OdmianaSnapshot): string[] {
+    const gaps: string[] = [];
+    if (!odmiany[key(entry.short)]) gaps.push('odmiany');
+    if (group === 'bronie') {
+        const w = entry as ViewWeapon;
+        if (blank(w.typ)) gaps.push('typu');
+        if (blank(w.rodzaj)) gaps.push('rodzaju');
+        if (blank(w.chwyt)) gaps.push('chwytu');
+        if (!w.klute && !w.obuch && !w.ciete) gaps.push('obrażeń');
+    } else {
+        if (group === 'zbroje' && blank((entry as ViewArmour).typ)) gaps.push('typu');
+        if (blank((entry as ViewArmour | ViewShield).oslona)) gaps.push('osłony');
+    }
+    return gaps;
+}

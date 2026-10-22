@@ -14,7 +14,8 @@ import {openSettings, saveSettings} from './support/settings';
 const SNAPSHOT = {
     generatedAt: '2026-10-22T20:17:00.000Z',
     bronie: [],
-    tarcze: [],
+    // Known, but nobody has said what it covers or how it declines
+    tarcze: [{ short: 'okragla tarcza', magik: 0, opis: 'Okragla tarcza.', oslona: '', confirmations: 1 }],
     zbroje: [{
         short: 'lsniaca mithrilowa luska', typ: 'lekka', magik: 0, opis: 'Drobne mithrilowe luski.',
         oslona: 'korpus i ramiona', iLine: 'spowija lsniaca mithrilowa luska', confirmations: 3,
@@ -73,6 +74,20 @@ test.describe('Crowd list for a player who shares', () => {
         await page.getByRole('button', {name: 'Wspólny'}).click();
         await expect(page.locator('.zlom-row--crowd')).toHaveCount(0);
         await expect(page.getByRole('button', {name: /Zbroje \(0\)/})).toBeVisible();
+    });
+
+    test('underlines a carried piece the list knows only in part, saying what is missing', async ({page}) => {
+        await shareWithCrowd(page);
+        await submitCommand(page, 'i');
+        await pushText(page, 'Masz przy sobie okragla tarcze i 34 miedziane monety.');
+
+        await pushText(page, 'Twoja okragla tarcza blyszczy w sloncu.');
+        const output = page.locator('#main_text_output_msg_wrapper');
+        const hint = output.locator('[title*="We wspólnym spisie brak"]').last();
+        await expect(hint).toHaveText('okragla tarcza');
+        await expect(hint).toHaveAttribute('title', /brak odmiany, osłony.*odmien okragla tarcza, ocen okragla tarcza/);
+        // Coins are no złom: nothing to fill in
+        await expect(output.locator('[title*="We wspólnym spisie"]', {hasText: 'monety'})).toHaveCount(0);
     });
 
     test('downloads nothing for a player who does not share', async ({page}) => {

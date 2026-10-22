@@ -105,7 +105,7 @@ function sameWord(a: string, b: string): boolean {
 }
 
 /** "stalowa dluga kolczuge" (put on) is the złom entry "stalowa dluga kolczuga" */
-function sameItem(a: string, b: string): boolean {
+export function sameItem(a: string, b: string): boolean {
     const wordsA = a.toLowerCase().split(/\s+/);
     const wordsB = b.toLowerCase().split(/\s+/);
     return wordsA.length === wordsB.length && wordsA.every((word, i) => sameWord(word, wordsB[i]));
