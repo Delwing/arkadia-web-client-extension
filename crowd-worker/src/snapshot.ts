@@ -46,12 +46,24 @@ function emptySnapshot(now: number): Snapshot {
     return { generatedAt: new Date(now).toISOString(), bronie: [], tarcze: [], zbroje: [], odmiany: [] };
 }
 
+/**
+ * One entry per item name (or mianownik): the version most players agree on.
+ * The others are kept under its `alternatives`, so two different items that
+ * share a name both stay visible rather than the rarer one vanishing.
+ */
 export async function buildSnapshot(db: D1Database, now: number): Promise<Snapshot> {
     const snapshot = emptySnapshot(now);
+    let leading: Record<string, unknown> | null = null;
     for (const row of await readSnapshot(db)) {
         const group = GROUPS[row.kind];
         if (!group) continue;
-        snapshot[group].push({ ...JSON.parse(row.payload), confirmations: row.confirmations });
+        const version = { ...JSON.parse(row.payload), confirmations: row.confirmations };
+        if (row.rank === 1) {
+            leading = version;
+            snapshot[group].push(version);
+        } else if (leading) {
+            ((leading.alternatives ??= []) as unknown[]).push(version);
+        }
     }
     return snapshot;
 }

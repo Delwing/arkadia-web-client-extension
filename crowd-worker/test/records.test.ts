@@ -31,7 +31,7 @@ describe('canonicalize', () => {
         expect(Object.keys(result.record.payload)).toEqual([
             'short', 'shortAlt', 'typ', 'rodzaj', 'klute', 'obuch', 'ciete', 'chwyt', 'magik', 'srebro', 'opis',
         ]);
-        expect(result.record.key).toBe(AXE.opis);
+        expect(result.record.key).toBe(AXE.short);
     });
 
     it('keeps iLine for armour', () => {
@@ -53,6 +53,22 @@ describe('canonicalize', () => {
 
     it('rejects a record with no key', () => {
         expect(canonicalize('odmiana', { mianownik: ' ', dopelniacz: 'a', celownik: 'a', biernik: 'a', narzednik: 'a', miejscownik: 'a' }).ok).toBe(false);
+    });
+
+    it('keys an item by its name, in lower case', () => {
+        const result = canonicalize('bron', { ...AXE, short: 'Krasnoludzki asymetryczny topor bojowy' });
+        expect(result.ok && result.record.key).toBe('krasnoludzki asymetryczny topor bojowy');
+    });
+
+    it('leaves the description out of the hash, as one item words it differently copy to copy', async () => {
+        const empty = canonicalize('bron', { ...AXE, opis: 'Laska z czaszka, pomiedzy ktorej rogami pozostawiono miejsce na wprawienie klejnotu.' });
+        const set = canonicalize('bron', { ...AXE, opis: 'Laska z czaszka, pomiedzy ktorej rogami wprawiono bardzo maly bezbarwny klejnot.' });
+        const other = canonicalize('bron', { ...AXE, magik: 1 });
+        if (!empty.ok || !set.ok || !other.ok) throw new Error('not canonical');
+        expect(await hashRecord(empty.record)).toBe(await hashRecord(set.record));
+        expect(await hashRecord(other.record)).not.toBe(await hashRecord(set.record));
+        // Still carried, as a sample
+        expect(set.record.payload.opis).toContain('wprawiono');
     });
 
     it('omits an empty optional field rather than hashing it', async () => {

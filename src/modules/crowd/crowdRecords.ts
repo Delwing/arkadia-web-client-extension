@@ -72,11 +72,20 @@ const FIELDS: Record<CrowdKind, readonly FieldSpec[]> = {
 
 /** What versions of a record compete over: one item, one noun phrase. */
 const KEY_FIELD: Record<CrowdKind, string> = {
-    bron: 'opis',
-    tarcza: 'opis',
-    zbroja: 'opis',
+    bron: 'short',
+    tarcza: 'short',
+    zbroja: 'short',
     odmiana: 'mianownik',
 };
+
+/**
+ * Carried along but kept out of the hash. One item's description changes with
+ * what is set into it ("pozostawiono miejsce na wprawienie" / "wprawiono
+ * bardzo maly bezbarwny ..."), so hashing it would split one item into a
+ * version per copy, each with one vote. A version keeps the first description
+ * sent for it, as a sample.
+ */
+const SAMPLE_FIELDS = new Set(['opis']);
 
 /** Game text reaches the client ASCII-folded, so anything else did not come from the game. */
 const PRINTABLE_ASCII = /^[\x20-\x7e]*$/;
@@ -119,14 +128,19 @@ export function canonicalize(kind: CrowdKind, raw: unknown): CanonicalResult {
             payload[field.name] = value;
         }
     }
+    // Names come lower case from the game; an import may not
     const key = payload[KEY_FIELD[kind]];
     if (typeof key !== 'string' || !key) return { ok: false, reason: 'empty key' };
-    return { ok: true, record: { kind, key, payload } };
+    return { ok: true, record: { kind, key: key.toLowerCase(), payload } };
 }
 
-/** SHA-256 over kind and payload, hex. Field order is fixed by FIELDS, so JSON is stable. */
+/**
+ * SHA-256 over kind and payload without the sample fields, hex. Field order is
+ * fixed by FIELDS, so JSON is stable.
+ */
 export async function hashRecord(record: CrowdRecord): Promise<string> {
-    const text = `${record.kind}\n${JSON.stringify(record.payload)}`;
+    const voted = Object.fromEntries(Object.entries(record.payload).filter(([name]) => !SAMPLE_FIELDS.has(name)));
+    const text = `${record.kind}\n${JSON.stringify(voted)}`;
     const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
     return [...new Uint8Array(digest)].map(b => b.toString(16).padStart(2, '0')).join('');
 }

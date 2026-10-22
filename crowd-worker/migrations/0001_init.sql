@@ -23,8 +23,9 @@ CREATE TABLE contributors (
 CREATE INDEX contributors_registered_from ON contributors (registered_from);
 
 -- One row per distinct version of a record. `key` is what versions compete
--- over: an item's opis, or a mianownik. The hash covers kind and payload, so
--- two players who saw the same thing produce the same row. No index on
+-- over: an item's name, or a mianownik. The hash covers kind and payload but
+-- not the description, which changes copy to copy (records.ts), so two
+-- players who saw the same thing produce the same row. No index on
 -- (kind, key): only the export groups by it, and it reads the whole table.
 CREATE TABLE variants (
     hash TEXT PRIMARY KEY,

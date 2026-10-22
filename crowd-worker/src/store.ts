@@ -129,14 +129,17 @@ export async function setMeta(db: D1Database, key: MetaKey, value: number): Prom
 
 export interface SnapshotRow {
     kind: CrowdKind;
+    key: string;
     payload: string;
     confirmations: number;
+    /** 1 for the leading version of its key, then the others in order */
+    rank: number;
 }
 
 /**
- * The leading version of every record: most distinct contributors, earliest
- * seen on a tie. Banned contributors count for nothing, so banning one drops
- * whatever only they vouched for.
+ * Every version of every record, ranked within its key: most distinct
+ * contributors first, earliest seen on a tie. Banned contributors count for
+ * nothing, so banning one drops whatever only they vouched for.
  */
 export async function readSnapshot(db: D1Database): Promise<SnapshotRow[]> {
     const { results } = await db
@@ -148,12 +151,11 @@ export async function readSnapshot(db: D1Database): Promise<SnapshotRow[]> {
                  JOIN confirmations c ON c.hash = v.hash
                  JOIN contributors p ON p.id = c.contributor AND p.banned = 0
                  GROUP BY v.hash
-             ), ranked AS (
-                 SELECT kind, payload, confirmations,
-                        ROW_NUMBER() OVER (PARTITION BY kind, key ORDER BY confirmations DESC, first_seen ASC) AS rank
-                 FROM counted
              )
-             SELECT kind, payload, confirmations FROM ranked WHERE rank = 1 ORDER BY kind, payload`,
+             SELECT kind, key, payload, confirmations,
+                    ROW_NUMBER() OVER (PARTITION BY kind, key ORDER BY confirmations DESC, first_seen ASC) AS rank
+             FROM counted
+             ORDER BY kind, key, rank`,
         )
         .all<SnapshotRow>();
     return results;

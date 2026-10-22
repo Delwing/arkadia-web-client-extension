@@ -32,8 +32,16 @@ Observations, not truth:
 
 - `variants`: one row per distinct version of a record (hash of kind + canonical payload).
 - `confirmations`: which contributor sent which variant, capped at `MAX_CONFIRMATIONS` per variant.
-- The snapshot picks, per item (`opis`) or noun (`mianownik`), the variant with
+- The snapshot picks, per item name (`short`) or noun (`mianownik`), the variant with
   the most confirmations from non-banned contributors, and reports that count.
+  The other variants of that name are listed under its `alternatives`, so two
+  different items sharing a name both stay visible.
+
+The description (`opis`) is carried but left out of the hash: one item's
+description changes with what is set into it ("pozostawiono miejsce na
+wprawienie" / "wprawiono bardzo maly bezbarwny ..."), and hashing it would
+split one item into a version per copy. A variant keeps the first description
+sent for it, as a sample.
 
 Clients call `POST /crowd/have` with hashes first and upload only what is
 wanted, so re-syncing a mostly known list costs D1 reads, not writes.

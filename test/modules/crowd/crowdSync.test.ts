@@ -113,3 +113,14 @@ test('stops on a refusal and retries what it did not send', async () => {
     });
     expect(await syncOnce()).toEqual({ status: 'done', sent: 3 });
 });
+
+test('sends copies of one item worded differently once', async () => {
+    await updateZlomSnapshot(() => ({
+        bronie: [SWORD, { ...SWORD, opis: 'Dlugi stalowy miecz z wprawionym klejnotem.' }],
+        tarcze: [],
+        zbroje: [],
+    }));
+    await syncOnce();
+    const sent = calls.find(c => c.path === '/crowd/submit')!.body.items as { kind: string }[];
+    expect(sent.filter(item => item.kind === 'bron')).toHaveLength(1);
+});

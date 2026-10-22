@@ -162,7 +162,26 @@ describe('snapshot', () => {
         await post('/crowd/submit', { items: [{ kind: 'odmiana', record: plecak() }] }, c);
 
         const { odmiany } = await snapshot();
-        expect(odmiany).toEqual([{ ...plecak(), confirmations: 2 }]);
+        // The other version stays, under the leading one
+        expect(odmiany).toEqual([{ ...plecak(), confirmations: 2, alternatives: [{ ...plecak('zly'), confirmations: 1 }] }]);
+    });
+
+    it('counts copies of one item worded differently as one version', async () => {
+        const laska = (opis: string) => ({
+            short: 'dluga ciemna laska', typ: 'bron drzewcowa', rodzaj: 'laska', klute: 1, obuch: 1, ciete: 0,
+            chwyt: 'oburecz', magik: 1, srebro: 0, opis,
+        });
+        const a = await register('10.4.0.1');
+        const b = await register('10.4.0.2');
+        await post('/crowd/submit', { items: [{ kind: 'bron', record: laska('Laska, w ktorej pozostawiono miejsce na wprawienie.') }] }, a);
+        await post('/crowd/submit', { items: [{ kind: 'bron', record: laska('Laska, w ktorej wprawiono bardzo maly bezbarwny klejnot.') }] }, b);
+
+        const { bronie } = await snapshot();
+        expect(bronie).toHaveLength(1);
+        expect(bronie[0]).toMatchObject({ short: 'dluga ciemna laska', confirmations: 2 });
+        // The first description sent is the sample
+        expect(bronie[0]!.opis).toBe('Laska, w ktorej pozostawiono miejsce na wprawienie.');
+        expect(bronie[0]).not.toHaveProperty('alternatives');
     });
 
     it('drops what only a banned contributor vouched for', async () => {
