@@ -1,0 +1,33 @@
+{
+  "name": "@dargoth-client/plugin-types",
+  "version": "1.0.0",
+  "description": "Types and dev tools for Arkadia Web Client plugins, always matching the deployed client",
+  "keywords": [
+    "arkadia",
+    "mud",
+    "plugin",
+    "types",
+    "typescript"
+  ],
+  "author": "Dargoth",
+  "license": "MIT",
+  "types": "index.d.ts",
+  "bin": {
+    "arkadia-plugin": "bin/arkadia-plugin.cjs"
+  },
+  "scripts": {
+    "postinstall": "node bin/fetch.cjs",
+    "prepack": "node bin/fetch.cjs"
+  },
+  "dependencies": {
+    "esbuild": "^0.28.0"
+  },
+  "files": [
+    "bin",
+    "latest",
+    "index.d.ts",
+    "ui.d.ts",
+    "esbuild.cjs",
+    "README.md"
+  ]
+}

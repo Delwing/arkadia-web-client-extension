@@ -28,3 +28,7 @@ coverage/
 
 # Visual brainstorm sessions
 .superpowers/
+
+# npm wrapper: downloaded types snapshot
+/plugin-types/npm/latest/
+/plugin-types/npm/latest.tmp/

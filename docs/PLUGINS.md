@@ -14,6 +14,7 @@ Klient Arkadia Web wspiera zewnętrzne pluginy jako moduły ES. Pluginy mogą ro
 - [Wygląd Interfejsu (UI)](#wygląd-interfejsu-ui)
 - [Ładowanie Pluginów](#ładowanie-pluginów)
 - [Typy TypeScript](#typy-typescript)
+- [Pisanie Pluginu Lokalnie](#pisanie-pluginu-lokalnie)
 - [Kompatybilność Wsteczna](#kompatybilność-wsteczna)
 
 ## Struktura Pluginu
@@ -1575,7 +1576,7 @@ const off = popup.onSettingChange('ceny', (on) => { /* ... */ });
 
 ### Przeładowanie bez odświeżania strony
 
-Po zmianie kodu pluginu wpisz w kliencie `/reload-plugin <nazwa>`. Plugin jest zamykany (jego triggery, aliasy, okna itp. znikają) i ładowany od nowa z tego samego adresu. Wystarczy fragment nazwy albo adresu pluginu; gdy pasuje kilka, klient je wypisze. Samo `/reload-plugins` przeładuje wszystkie.
+Po zmianie kodu pluginu wpisz w kliencie `/reload-plugin <nazwa>`. Plugin jest zamykany — klient wywołuje jego `destroy()` i sam usuwa aliasy, okna, wpisy menu i elementy stopki — i ładowany od nowa z tego samego adresu. Triggery, nasłuchy `api.events.on` i timery usuń sam w `destroy()`, inaczej po każdym przeładowaniu będzie ich o komplet więcej. Wystarczy fragment nazwy albo adresu pluginu; gdy pasuje kilka, klient je wypisze. Samo `/reload-plugins` przeładuje wszystkie. Plugin serwowany lokalnie przez `arkadia-plugin dev` przeładowuje się sam po każdym zapisie — zob. [Pisanie Pluginu Lokalnie](#pisanie-pluginu-lokalnie).
 
 ### Publikacja w katalogu (z edytora)
 
@@ -1649,11 +1650,15 @@ export async function init(api: PluginApi): Promise<PluginInfo> {
 
 ## Typy TypeScript
 
-Dla pełnego wsparcia TypeScript zainstaluj pakiet z typami:
+Typy i narzędzia do pisania pluginów są w pakiecie `@dargoth-client/plugin-types`. Instaluj go pod nazwą `@arkadia/plugin-types` — pod tą nazwą importują go wszystkie pluginy i przykłady:
 
 ```bash
-npm install http://delwing.github.io/arkadia-web-client-extension/arkadia-plugin-types.tgz
+npm i -D @arkadia/plugin-types@npm:@dargoth-client/plugin-types typescript
+# albo
+yarn add -D @arkadia/plugin-types@npm:@dargoth-client/plugin-types typescript
 ```
+
+Pakiet nie ma wersji do pilnowania: przy każdej instalacji pobiera typy z aktualnie wdrożonego klienta, więc zawsze pasują do tego, co gracze mają u siebie. Odświeżysz je bez reinstalacji komendą `npx arkadia-plugin types`. Gdy pobranie się nie uda (brak sieci), zostaje poprzednia kopia.
 
 Następnie importuj typy w swoim pluginie:
 
@@ -1680,9 +1685,11 @@ export async function init(api: PluginApi): Promise<PluginInfo> {
 
 Zobacz `plugin-types/README.md` i `plugin-types/index.d.ts` dla pełnej dokumentacji typów.
 
+> Wcześniej typy instalowało się wprost z adresu `…/arkadia-plugin-types.tgz`. Taki wpis psuje instalację po każdym wdrożeniu klienta (zmienia się suma kontrolna w `yarn.lock` / `package-lock.json`) — zamień go na polecenie powyżej.
+
 ### Plugin w TSX (React)
 
-Pakiet zawiera plugin esbuild `arkadiaHostUi()`, który podmienia `react`, `react/jsx-runtime` i `@arkadia/ui` na React i komponenty klienta (zob. [Okna w React](#okna-w-react)):
+`arkadia-plugin dev` i `arkadia-plugin build` (zob. [Pisanie Pluginu Lokalnie](#pisanie-pluginu-lokalnie)) obsługują `.tsx` bez konfiguracji. Jeśli budujesz plugin własnym skryptem, pakiet zawiera plugin esbuild `arkadiaHostUi()`, który podmienia `react`, `react/jsx-runtime` i `@arkadia/ui` na React i komponenty klienta (zob. [Okna w React](#okna-w-react)):
 
 ```js
 // build.mjs
@@ -1700,6 +1707,106 @@ await build({
 ```
 
 Typy dla `@arkadia/ui`: dodaj `"@arkadia/plugin-types/ui"` do `types` w `tsconfig.json`. Dla `react` zainstaluj `@types/react` jako zależność deweloperską. Edytor pluginów robi to samo bez konfiguracji — wystarczy plik `.tsx`.
+
+## Pisanie Pluginu Lokalnie
+
+Większy plugin wygodniej pisać we własnym edytorze (VS Code, WebStorm…) niż w edytorze pluginów. Pakiet z typami ma do tego komendę `arkadia-plugin`: buduje plugin do jednego pliku, serwuje go na `localhost` i po każdym zapisie pliku przeładowuje go w kliencie — bez odświeżania strony i bez wpisywania czegokolwiek.
+
+### Nowy plugin
+
+```bash
+mkdir moj-plugin && cd moj-plugin
+npm init -y
+npm i -D @arkadia/plugin-types@npm:@dargoth-client/plugin-types typescript
+npx arkadia-plugin init
+```
+
+`init` tworzy brakujące pliki (niczego nie nadpisuje):
+
+```
+moj-plugin/
+├── package.json     # skrypty: dev, build, typecheck, types
+├── plugin.json      # metadane do publikacji w katalogu; entryPoint wskazuje plik startowy
+├── plugin.ts        # punkt wejścia: init() / destroy()
+├── tsconfig.json
+└── .gitignore
+```
+
+Plugin może mieć dowolnie wiele plików — importuj je względnie (`import { x } from './ui/okno'`), wszystko trafia do jednego `dist/plugin.js`.
+
+### Cykl pracy
+
+1. `npm run dev` (albo `yarn dev`) — zostaw działające w terminalu. Wypisze adres pluginu i gotowy link do klienta
+2. W kliencie: **Wtyczki** → **Dodaj plugin** → **Z adresu URL** → `http://localhost:5177/plugin.js` (albo otwórz wypisany link z `?add-script=`). Wystarczy raz — adres zostaje zapamiętany
+3. Zmieniasz kod i zapisujesz — plugin przebudowuje się, a klient sam go przeładowuje i wypisuje „Przeladowano …” w oknie gry
+
+Klient sam przeładowuje każdy plugin z `localhost`, którego serwer to obsługuje — także serwer `esbuild --serve` z własnego `build.mjs`. Gdy serwer nie działa, plugin ładuje się normalnie, a ręcznie przeładujesz go komendą `/reload-plugin`.
+
+**Port.** Domyślnie 5177. Jeśli jest zajęty (np. pracujesz nad dwoma pluginami naraz), serwer bierze kolejny wolny i ostrzega o tym. Inny port to inny adres, więc klient traktuje go jak osobny plugin — trzeba go dodać jeszcze raz. Opcje:
+
+```bash
+npx arkadia-plugin dev --port 5180        # inny port startowy
+npx arkadia-plugin dev --strict-port      # zajęty port = błąd zamiast kolejnego
+```
+
+Żeby przeładowanie było czyste, `destroy()` musi zdjąć wszystko, czego klient nie sprząta sam:
+
+```typescript
+const TAG = 'mojPlugin';
+let timer: ReturnType<typeof setInterval> | undefined;
+let pluginApi: PluginApi | undefined;
+const onMove = () => { /* ... */ };
+
+export async function init(api: PluginApi): Promise<PluginInfo> {
+  pluginApi = api;
+  api.triggers.register(/wzorzec/, (line) => line, TAG);
+  api.events.on('mapMove', onMove);
+  timer = setInterval(() => { /* ... */ }, 1000);
+  return { name: 'Mój Plugin', version: '1.0.0' };
+}
+
+export async function destroy(): Promise<void> {
+  pluginApi?.triggers.removeByTag(TAG);
+  pluginApi?.events.off('mapMove', onMove);
+  clearInterval(timer);
+}
+```
+
+Uwagi:
+
+- **Wersja z katalogu i lokalna naraz** — jeśli masz zainstalowany ten sam plugin z katalogu, wyłącz go na czas pracy, inaczej oba będą reagować na te same linie
+- **Dane pluginu** (`api.storage`, położenie okien) są zapisywane pod adresem pluginu, więc wersja z `localhost` startuje z pustymi danymi — chyba że plugin eksportuje [`stableId`](#stały-identyfikator-stableid). Wtedy obie wersje dzielą dane (gdy obie są włączone naraz, druga z nich wraca do danych spod swojego adresu)
+- **Typy** sprawdza `npm run typecheck` — budowanie ich nie sprawdza, tylko je usuwa, więc błąd typu nie zatrzyma `dev`
+
+### Komendy `arkadia-plugin`
+
+| Komenda | Co robi |
+|---------|---------|
+| `arkadia-plugin dev` | Przebudowuje plugin przy każdej zmianie i serwuje `dist/` na `localhost`; klient przeładowuje plugin sam |
+| `arkadia-plugin build` | Buduje `dist/plugin.js` |
+| `arkadia-plugin init` | Tworzy brakujące pliki projektu i skrypty w `package.json` |
+| `arkadia-plugin types` | Pobiera aktualne typy (i same narzędzia) z wdrożonego klienta |
+| `arkadia-plugin skill` | Kopiuje instrukcję dla asystenta AI do `.claude/skills/` |
+
+Plik startowy to `entryPoint` z `plugin.json` (domyślnie `plugin.ts`). Narzędzia przychodzą razem z typami, więc też aktualizują się z klientem. Własny skrypt budujący nadal zadziała — wtedy przyda się `arkadiaHostUi()` opisany wyżej.
+
+### Debugowanie
+
+- **Konsola przeglądarki (F12)** — tu trafiają błędy z `init()` i z callbacków triggerów oraz Twoje `console.log`. Dzięki mapom źródeł ślady stosu wskazują na pliki `.ts`, a w zakładce *Sources* możesz stawiać breakpointy w swoim kodzie
+- **`/fake tekst`** — przepuszcza podany tekst przez triggery tak, jakby przyszedł z gry. Tak sprawdzisz wzorzec bez czekania na sytuację w grze. Opcja `--type=` ustawia typ wiadomości GMCP, który dostaje callback triggera (domyślnie `combat.avatar`), np. `/fake --type=room.short Na trakcie.`
+- **`api.output.print(...)`** — szybki podgląd wartości prosto w oknie gry
+- **Podgląd GMCP** — przykładowy plugin `examples/gmcp-inspector-plugin.ts` pokazuje na żywo wszystkie zdarzenia GMCP, z których możesz korzystać w `api.gmcp`
+- **Status w oknie Wtyczki** — plugin, którego `init()` rzucił błąd, ma tam status błędu z komunikatem; po poprawce i zapisie przeładuje się sam
+
+### Gdzie szukać API
+
+- Ten dokument — opis wszystkich przestrzeni `api.*` z przykładami
+- `node_modules/@arkadia/plugin-types/latest/index.d.ts` — pełne typy, generowane z kodu klienta, więc zawsze aktualne. Twój edytor podpowiada je sam
+- [`examples/`](../examples/) — kompletne przykładowe pluginy
+
+### Praca z asystentem AI
+
+Pakiet zawiera instrukcję dla asystentów AI (Claude Code, Codex, Cursor…): jak zbudowany jest plugin, gdzie szukać API, jak go uruchomić i debugować. `npx arkadia-plugin skill` kopiuje ją do `.claude/skills/arkadia-plugin/` — Claude Code wczyta ją sam, gdy zajmiesz się pluginem. Inne narzędzia: dopisz w swoim `AGENTS.md` (albo odpowiedniku) zdanie „Przed pracą nad pluginem przeczytaj `node_modules/@arkadia/plugin-types/latest/skills/arkadia-plugin/SKILL.md`”.
 
 ## Kompatybilność Wsteczna
 

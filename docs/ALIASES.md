@@ -55,7 +55,7 @@ Zakresy działają rosnąco (`1-7`) i malejąco (`7-1`). Maksymalnie 50 iteracji
 
 | Komenda | Opis |
 |---------|------|
-| `/fake tekst` | Wyświetl podany tekst jak zwykłą wiadomość klienta |
+| `/fake tekst` | Przepuść tekst przez triggery i wyświetl go tak, jakby przyszedł z gry (przydatne przy pisaniu pluginów) |
 | `/chat` | Wyświetl ostatnie 20 wiadomości z czatu GMCP |
 | `/chatw` lub `/chat okno` | Otwórz okno czatu z historią 100 wiadomości |
 | `/list` | Otwórz edytor pisania listów w kliencie |

@@ -4,3 +4,6 @@ generate-types.cjs
 
 # Distribution directory (nested tarball)
 dist/
+
+# The npm wrapper is published on its own
+npm/
