@@ -2,14 +2,15 @@
  * The public snapshot: built by the cron trigger, stored in KV, served from KV.
  *
  * Building it reads every variant and confirmation, so it must not happen per
- * request. The scheduled export rebuilds only when something was written since
- * the last export, plus once a day regardless — that daily pass is what picks
+ * request. The scheduled export (every five minutes) rebuilds only when something
+ * was written since the last export and the uploads have gone quiet - or have
+ * waited an hour, so steady uploads still show - plus once a day regardless — that daily pass is what picks
  * up a ban made without touching `meta`. Downloads then cost one KV read and no
  * D1 at all, and a client that already has the current version gets a 304.
  *
  * KV rather than R2: R2 needs enabling in the dashboard with a payment method
- * on file. KV's free tier allows 1k writes a day (an hourly export writes at
- * most 24) and 100k reads; past that, R2 is the move, and only this file and
+ * on file. KV's free tier allows 1k writes a day (an export writes once, and
+ * only when something changed) and 100k reads; past that, R2 is the move, and only this file and
  * the binding change.
  */
 
@@ -21,6 +22,16 @@ export const SNAPSHOT_KEY = 'snapshot.json';
 
 /** Rebuild at least this often, even with no new submissions. */
 export const FORCED_EXPORT_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Wait for uploads to go quiet this long before exporting. A first sync sends
+ * a whole list in batches over several minutes; exporting in the middle of it
+ * publishes a fraction of the list for the next hour.
+ */
+export const QUIET_MS = 5 * 60 * 1000;
+
+/** But never hold back new data longer than this, however steady the uploads. */
+export const MAX_WAIT_MS = 60 * 60 * 1000;
 
 const GROUPS: Partial<Record<CrowdKind, 'bronie' | 'tarcze' | 'zbroje' | 'odmiany'>> = {
     bron: 'bronie',
@@ -96,14 +107,21 @@ async function etagOf(text: string): Promise<string> {
     return `"${hex.slice(0, 32)}"`;
 }
 
-export type ExportOutcome = 'exported' | 'unchanged';
+export type ExportOutcome = 'exported' | 'unchanged' | 'settling';
 
 /** The cron trigger's job. Reads only `meta` when nothing changed. */
 export async function exportSnapshot(db: D1Database, kv: KVNamespace, now: number): Promise<ExportOutcome> {
     const meta = await readMeta(db);
     const lastExport = meta.last_export ?? 0;
-    const stale = (meta.last_write ?? 0) >= lastExport || now - lastExport >= FORCED_EXPORT_MS;
-    if (!stale) return 'unchanged';
+    const lastWrite = meta.last_write ?? 0;
+    const forced = now - lastExport >= FORCED_EXPORT_MS;
+    if (!forced) {
+        if (lastWrite < lastExport) return 'unchanged';
+        const waitingSince = (meta.dirty_since ?? 0) > lastExport ? meta.dirty_since! : lastWrite;
+        const quiet = now - lastWrite >= QUIET_MS;
+        const waitedEnough = now - waitingSince >= MAX_WAIT_MS;
+        if (!quiet && !waitedEnough) return 'settling';
+    }
 
     const text = JSON.stringify(await buildSnapshot(db, now));
     const metadata: SnapshotMetadata = { etag: await etagOf(text) };

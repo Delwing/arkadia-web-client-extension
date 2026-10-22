@@ -65,7 +65,7 @@ npx wrangler d1 execute arkadia-crowd --remote \
   --command "UPDATE contributors SET banned = 1 WHERE id = '<contributorId>'; UPDATE meta SET value = 0 WHERE key = 'last_export'"
 ```
 
-The second statement makes the next hourly export rebuild; without it the ban
+The second statement makes the next export rebuild; without it the ban
 shows within a day, at the forced daily export. A banned contributor is not
 told; its uploads are ignored. Registration is
 limited per IP per day, and the IP is stored only as `sha256(ip + day)`.
@@ -100,11 +100,14 @@ Workers.
 - Writes: tables are `WITHOUT ROWID` with no index beyond the key, because D1
   counts every index entry as a row written. A new record costs about three
   rows (variant, confirmation, `meta`); a record the Worker already has costs none.
-- Reads: downloads never touch D1. An hourly cron (`src/snapshot.ts`) exports
-  the snapshot to KV, and reads the big tables only if something was submitted
-  since the last export, or once a day regardless. Downloads are one KV read
-  (100k a day free; R2 is the next step past that), and a client sending
-  `If-None-Match` gets a 304 when nothing changed.
+- Reads: downloads never touch D1. A cron every five minutes (`src/snapshot.ts`)
+  exports the snapshot to KV, but reads the big tables only when something was
+  submitted and the uploads have gone quiet for 5 minutes, so a first sync sent
+  in batches is never published half done. Steady uploads are exported anyway
+  once the oldest has waited an hour, and everything once a day. An idle run
+  reads only `meta`. Downloads are one KV read (100k a day free; R2 is the next
+  step past that), and a client sending `If-None-Match` gets a 304 when nothing
+  changed.
 
 ## Local
 

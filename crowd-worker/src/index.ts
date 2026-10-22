@@ -15,8 +15,8 @@
  *    the ones worth uploading, so a full sync of a list the Worker mostly
  *    knows costs reads, not writes — D1's free plan allows far more of those.
  *
- * 3. Reading costs no D1. An hourly cron trigger exports the snapshot to KV,
- *    and only when something was written since. See snapshot.ts.
+ * 3. Reading costs no D1. A cron trigger exports the snapshot to KV once new
+ *    uploads have settled. See snapshot.ts.
  *
  * 4. There is no identity provider. See auth.ts.
  */
@@ -124,7 +124,7 @@ export default {
         }
     },
 
-    /** Hourly (wrangler.jsonc `triggers`). A no-op beyond one tiny read when nothing changed. */
+    /** Every five minutes (wrangler.jsonc `triggers`). A no-op beyond one tiny read when nothing is due. */
     async scheduled(_controller: unknown, env: Env): Promise<void> {
         if (!env.DB || !env.SNAPSHOTS) return;
         const outcome = await exportSnapshot(env.DB, env.SNAPSHOTS, Date.now());

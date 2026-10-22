@@ -111,9 +111,20 @@ export async function storeItems(
         .bind(batch, contributorId, now, maxConfirmations)
         .run();
     await setMeta(db, 'last_write', now);
+    // The first write since the last export, so the export can tell how long the
+    // list has waited: kept while unexported, reset by the first write after one
+    await db
+        .prepare(
+            `INSERT INTO meta (key, value) VALUES ('dirty_since', ?1)
+             ON CONFLICT (key) DO UPDATE SET value = CASE
+                 WHEN meta.value <= COALESCE((SELECT value FROM meta WHERE key = 'last_export'), 0)
+                 THEN excluded.value ELSE meta.value END`,
+        )
+        .bind(now)
+        .run();
 }
 
-export type MetaKey = 'last_write' | 'last_export';
+export type MetaKey = 'last_write' | 'last_export' | 'dirty_since';
 
 export async function readMeta(db: D1Database): Promise<Partial<Record<MetaKey, number>>> {
     const { results } = await db.prepare('SELECT key, value FROM meta').all<{ key: MetaKey; value: number }>();

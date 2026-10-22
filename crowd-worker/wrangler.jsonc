@@ -28,10 +28,11 @@
     }
   ],
 
-  // Hourly export to KV. It reads only the tiny `meta` table unless something
-  // was submitted since the last run (or a day has passed). See src/snapshot.ts.
+  // Export to KV. Every five minutes, but a run reads only the tiny `meta` table
+  // unless something was submitted and uploads have gone quiet (or waited an
+  // hour, or a day has passed). See src/snapshot.ts.
   "triggers": {
-    "crons": ["17 * * * *"]
+    "crons": ["*/5 * * * *"]
   },
 
   "vars": {
