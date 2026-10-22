@@ -29,17 +29,26 @@ describe('canonicalize', () => {
         expect(result.ok).toBe(true);
         if (!result.ok) return;
         expect(Object.keys(result.record.payload)).toEqual([
-            'short', 'shortAlt', 'typ', 'rodzaj', 'klute', 'obuch', 'ciete', 'chwyt', 'magik', 'srebro', 'opis',
+            'short', 'typ', 'rodzaj', 'klute', 'obuch', 'ciete', 'chwyt', 'magik', 'srebro', 'opis',
         ]);
         expect(result.record.key).toBe(AXE.short);
     });
 
-    it('keeps iLine for armour', () => {
+    it('keeps the i line and the evaluated name out of the item', () => {
         const result = canonicalize('zbroja', {
-            short: 'lekka kolczuga', typ: 'tulow', klute: 3, obuch: 2, ciete: 4, magik: 0,
-            opis: 'Kolczuga.', waga: 8000, obj: 6000, cena: 300, oslona: 'tulow', iLine: '/kolczug/',
+            short: 'lekka kolczuga', shortAlt: 'lekka kolczuge', typ: 'lekka', klute: 3, obuch: 2, ciete: 4, magik: 0,
+            opis: 'Kolczuga.', waga: 8000, obj: 6000, cena: 300, oslona: 'korpus', iLine: '/kolczug/',
         });
-        expect(result.ok && result.record.payload.iLine).toBe('/kolczug/');
+        expect(result.ok && result.record.payload).not.toHaveProperty('iLine');
+        expect(result.ok && result.record.payload).not.toHaveProperty('shortAlt');
+    });
+
+    it('takes an i line as a record of its own, for armour and shields only', () => {
+        const line = canonicalize('iline', { item: 'zbroja', short: 'Lekka kolczuga', iLine: '/kolczug/' });
+        expect(line.ok && line.record.key).toBe('zbroja:lekka kolczuga');
+        expect(canonicalize('iline', { item: 'bron', short: 'miecz', iLine: 'x' })).toEqual({ ok: false, reason: 'item unknown' });
+        const alt = canonicalize('altname', { item: 'bron', short: 'dlugi miecz', shortAlt: 'dlugi miecz' });
+        expect(alt.ok && alt.record.key).toBe('bron:dlugi miecz');
     });
 
     it('rejects text that did not come from the game', () => {

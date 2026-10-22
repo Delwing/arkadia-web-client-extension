@@ -22,11 +22,17 @@ export const SNAPSHOT_KEY = 'snapshot.json';
 /** Rebuild at least this often, even with no new submissions. */
 export const FORCED_EXPORT_MS = 24 * 60 * 60 * 1000;
 
-const GROUPS: Record<CrowdKind, 'bronie' | 'tarcze' | 'zbroje' | 'odmiany'> = {
+const GROUPS: Partial<Record<CrowdKind, 'bronie' | 'tarcze' | 'zbroje' | 'odmiany'>> = {
     bron: 'bronie',
     tarcza: 'tarcze',
     zbroja: 'zbroje',
     odmiana: 'odmiany',
+};
+
+/** Records that are a field of an item, and the field they fill */
+const ATTACHED: Partial<Record<CrowdKind, string>> = {
+    iline: 'iLine',
+    altname: 'shortAlt',
 };
 
 export interface Snapshot {
@@ -50,20 +56,36 @@ function emptySnapshot(now: number): Snapshot {
  * One entry per item name (or mianownik): the version most players agree on.
  * The others are kept under its `alternatives`, so two different items that
  * share a name both stay visible rather than the rarer one vanishing.
+ *
+ * An item's `i` line and evaluated name are voted on as records of their own
+ * (records.ts says why); the leading one of each is set on the item here, on
+ * the leading version and on its alternatives alike.
  */
 export async function buildSnapshot(db: D1Database, now: number): Promise<Snapshot> {
     const snapshot = emptySnapshot(now);
     let leading: Record<string, unknown> | null = null;
+    const items = new Map<string, Record<string, unknown>[]>();
+    const attached: { key: string; field: string; value: unknown }[] = [];
     for (const row of await readSnapshot(db)) {
+        const field = ATTACHED[row.kind];
+        if (field) {
+            if (row.rank === 1) attached.push({ key: row.key, field, value: JSON.parse(row.payload)[field] });
+            continue;
+        }
         const group = GROUPS[row.kind];
         if (!group) continue;
         const version = { ...JSON.parse(row.payload), confirmations: row.confirmations };
+        const itemKey = `${row.kind}:${row.key}`;
+        items.set(itemKey, [...(items.get(itemKey) ?? []), version]);
         if (row.rank === 1) {
             leading = version;
             snapshot[group].push(version);
         } else if (leading) {
             ((leading.alternatives ??= []) as unknown[]).push(version);
         }
+    }
+    for (const { key, field, value } of attached) {
+        for (const version of items.get(key) ?? []) version[field] = value;
     }
     return snapshot;
 }

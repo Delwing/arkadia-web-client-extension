@@ -35,7 +35,7 @@ beforeEach(async () => {
     localStorage.clear();
     await __resetZlomStoreForTests();
     await __resetOdmianaStoreForTests();
-    await clearIndexedDB({ dbName: 'ArkadiaCrowd', storeName: 'crowd', key: 'sent-2' }).catch(() => {});
+    await clearIndexedDB({ dbName: 'ArkadiaCrowd', storeName: 'crowd', key: 'sent-3' }).catch(() => {});
     vi.mocked(getBehaviorSettings).mockReturnValue({ crowdContribute: true } as ReturnType<typeof getBehaviorSettings>);
     calls = [];
     wantedFilter = hashes => hashes;
@@ -123,4 +123,18 @@ test('sends copies of one item worded differently once', async () => {
     await syncOnce();
     const sent = calls.find(c => c.path === '/crowd/submit')!.body.items as { kind: string }[];
     expect(sent.filter(item => item.kind === 'bron')).toHaveLength(1);
+});
+
+test('sends an i line and the evaluated name as records of their own', async () => {
+    await updateZlomSnapshot(() => ({
+        bronie: [{ ...SWORD, shortAlt: 'dlugi miecz' }],
+        tarcze: [],
+        zbroje: [{ ...KOLCZUGA, iLine: 'kolczuga z zelaza' }],
+    }));
+    await syncOnce();
+    const items = calls.find(c => c.path === '/crowd/submit')!.body.items as { kind: string; record: Record<string, unknown> }[];
+    expect(items.find(i => i.kind === 'iline')!.record).toEqual({ item: 'zbroja', short: 'kolczuga', iLine: 'kolczuga z zelaza' });
+    expect(items.find(i => i.kind === 'altname')!.record).toEqual({ item: 'bron', short: 'dlugi miecz', shortAlt: 'dlugi miecz' });
+    // Not part of the items themselves any more
+    expect(items.find(i => i.kind === 'zbroja')!.record).not.toHaveProperty('iLine');
 });

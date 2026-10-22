@@ -6,13 +6,17 @@
  * Worker about hashes it never stores and re-sends everything. Both test
  * suites pin the same hash for the same fixture — change one, change both.
  */
-export type CrowdKind = 'bron' | 'tarcza' | 'zbroja' | 'odmiana';
+export type CrowdKind = 'bron' | 'tarcza' | 'zbroja' | 'odmiana' | 'iline' | 'altname';
 
-export const CROWD_KINDS: readonly CrowdKind[] = ['bron', 'tarcza', 'zbroja', 'odmiana'];
+export const CROWD_KINDS: readonly CrowdKind[] = ['bron', 'tarcza', 'zbroja', 'odmiana', 'iline', 'altname'];
+
+/** The item kinds an `altname` record can be about; an `iline` only armour and shields */
+const ITEM_KINDS = ['bron', 'tarcza', 'zbroja'] as const;
 
 type FieldSpec =
     | { name: string; type: 'text'; max: number; optional?: boolean }
-    | { name: string; type: 'int'; max: number };
+    | { name: string; type: 'int'; max: number }
+    | { name: string; type: 'oneOf'; values: readonly string[] };
 
 const SHORT = 200;
 const WORD = 100;
@@ -27,11 +31,18 @@ const OPIS = 2000;
  * come from the evaluating character's skill, so two players describe the same
  * item differently and each would split it into a new version. What is kept is
  * what the item is, not how well someone judged it.
+ *
+ * How `i` words a piece and the name evaluating gives it are records of their
+ * own (`iline`, `altname`), not fields of the item. Many players evaluate a
+ * piece; few wear it and teach the client its `i` line, and imported lists
+ * lack the evaluated name. As fields, the many without them would outvote the
+ * few with them, splitting the item over what is an addition, not a
+ * disagreement. As records, each is voted on by those who know it, and the
+ * snapshot attaches the leading one to the item.
  */
 const FIELDS: Record<CrowdKind, readonly FieldSpec[]> = {
     bron: [
         { name: 'short', type: 'text', max: SHORT },
-        { name: 'shortAlt', type: 'text', max: SHORT, optional: true },
         { name: 'typ', type: 'text', max: WORD },
         { name: 'rodzaj', type: 'text', max: WORD },
         // Damage types, 0 or 1 each: what the weapon does, not a rating.
@@ -45,20 +56,16 @@ const FIELDS: Record<CrowdKind, readonly FieldSpec[]> = {
     ],
     tarcza: [
         { name: 'short', type: 'text', max: SHORT },
-        { name: 'shortAlt', type: 'text', max: SHORT, optional: true },
         { name: 'magik', type: 'int', max: 1 },
         { name: 'opis', type: 'text', max: OPIS },
         { name: 'oslona', type: 'text', max: WORD },
-        { name: 'iLine', type: 'text', max: SHORT, optional: true },
     ],
     zbroja: [
         { name: 'short', type: 'text', max: SHORT },
-        { name: 'shortAlt', type: 'text', max: SHORT, optional: true },
         { name: 'typ', type: 'text', max: WORD },
         { name: 'magik', type: 'int', max: 1 },
         { name: 'opis', type: 'text', max: OPIS },
         { name: 'oslona', type: 'text', max: WORD },
-        { name: 'iLine', type: 'text', max: SHORT, optional: true },
     ],
     odmiana: [
         { name: 'mianownik', type: 'text', max: SHORT },
@@ -68,15 +75,28 @@ const FIELDS: Record<CrowdKind, readonly FieldSpec[]> = {
         { name: 'narzednik', type: 'text', max: SHORT },
         { name: 'miejscownik', type: 'text', max: SHORT },
     ],
+    iline: [
+        { name: 'item', type: 'oneOf', values: ['tarcza', 'zbroja'] },
+        { name: 'short', type: 'text', max: SHORT },
+        { name: 'iLine', type: 'text', max: SHORT },
+    ],
+    altname: [
+        { name: 'item', type: 'oneOf', values: ITEM_KINDS },
+        { name: 'short', type: 'text', max: SHORT },
+        { name: 'shortAlt', type: 'text', max: SHORT },
+    ],
 };
 
-/** What versions of a record compete over: one item, one noun phrase. */
-const KEY_FIELD: Record<CrowdKind, string> = {
-    bron: 'short',
-    tarcza: 'short',
-    zbroja: 'short',
-    odmiana: 'mianownik',
-};
+/**
+ * What versions of a record compete over: one item, one noun phrase, or one
+ * item's `i` line or evaluated name ("zbroja:stalowa dluga kolczuga"). Names
+ * come lower case from the game; an import may not.
+ */
+function keyOf(kind: CrowdKind, payload: Record<string, string | number>): string {
+    const name = String((kind === 'odmiana' ? payload.mianownik : payload.short) ?? '').toLowerCase();
+    if (!name) return '';
+    return kind === 'iline' || kind === 'altname' ? `${payload.item}:${name}` : name;
+}
 
 /**
  * Carried along but kept out of the hash. One item's description changes with
@@ -121,6 +141,11 @@ export function canonicalize(kind: CrowdKind, raw: unknown): CanonicalResult {
             if (text.length > field.max) return { ok: false, reason: `${field.name} too long` };
             if (!PRINTABLE_ASCII.test(text)) return { ok: false, reason: `${field.name} not ascii` };
             payload[field.name] = text;
+        } else if (field.type === 'oneOf') {
+            if (typeof value !== 'string' || !field.values.includes(value)) {
+                return { ok: false, reason: `${field.name} unknown` };
+            }
+            payload[field.name] = value;
         } else {
             if (typeof value !== 'number' || !Number.isInteger(value) || value < 0 || value > field.max) {
                 return { ok: false, reason: `${field.name} out of range` };
@@ -128,10 +153,9 @@ export function canonicalize(kind: CrowdKind, raw: unknown): CanonicalResult {
             payload[field.name] = value;
         }
     }
-    // Names come lower case from the game; an import may not
-    const key = payload[KEY_FIELD[kind]];
-    if (typeof key !== 'string' || !key) return { ok: false, reason: 'empty key' };
-    return { ok: true, record: { kind, key: key.toLowerCase(), payload } };
+    const key = keyOf(kind, payload);
+    if (!key) return { ok: false, reason: 'empty key' };
+    return { ok: true, record: { kind, key, payload } };
 }
 
 /**

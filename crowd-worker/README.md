@@ -13,10 +13,18 @@ the player.
 
 | kind      | fields |
 |-----------|--------|
-| `bron`    | short, shortAlt, typ, rodzaj, klute/obuch/ciete (damage types, 0/1), chwyt, magik, srebro, opis |
-| `tarcza`  | short, shortAlt, magik, opis, oslona, iLine |
-| `zbroja`  | short, shortAlt, typ, magik, opis, oslona, iLine |
+| `bron`    | short, typ, rodzaj, klute/obuch/ciete (damage types, 0/1), chwyt, magik, srebro, opis |
+| `tarcza`  | short, magik, opis, oslona |
+| `zbroja`  | short, typ, magik, opis, oslona |
 | `odmiana` | mianownik, dopelniacz, celownik, biernik, narzednik, miejscownik |
+| `iline`   | item (`zbroja`/`tarcza`), short, iLine: how `i` words the piece |
+| `altname` | item, short, shortAlt: the name as evaluating gives it |
+
+`iline` and `altname` are records of their own, keyed `item:short`, rather
+than fields of the item. Many players evaluate a piece but few wear it and
+teach the client its `i` line, and imported lists lack the evaluated name: as
+item fields, the many without them would outvote the few with them. Voted on
+separately, the leading one of each is set on the item in the snapshot.
 
 Weight, volume, price and quality ratings are excluded: they depend on the
 evaluating character's skill, so they would split every item into versions.

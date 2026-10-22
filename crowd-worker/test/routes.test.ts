@@ -199,7 +199,7 @@ describe('snapshot', () => {
                 record: {
                     short: 'okragla tarcza', klute: 2, obuch: 2, ciete: 2, magik: 0, opis: 'Tarcza.',
                     waga: 3000, obj: 2000, cena: 100, parowanie: 4, oslona: 'lewa reka',
-                    roomId: 5, color: '#fff', iLine: 'okragla tarcza',
+                    roomId: 5, color: '#fff',
                 },
             }],
         }, auth);
@@ -209,7 +209,35 @@ describe('snapshot', () => {
         expect(tarcze[0]).not.toHaveProperty('roomId');
         expect(tarcze[0]).not.toHaveProperty('color');
         expect(tarcze[0]).not.toHaveProperty('waga');
-        expect(tarcze[0]!.iLine).toBe('okragla tarcza');
+    });
+
+    it('adds the i line one player taught to the version many evaluated, without splitting it', async () => {
+        const pancerz = {
+            short: 'krwistoczerwony pelny pancerz', typ: 'ciezka', magik: 0, opis: 'Pancerz.',
+            oslona: 'glowe, korpus, nogi, ramiona, stopy i dlonie',
+        };
+        // Two only evaluate it
+        for (const ip of ['10.5.0.1', '10.5.0.2']) {
+            await post('/crowd/submit', { items: [{ kind: 'zbroja', record: pancerz }] }, await register(ip));
+        }
+        // One wears it too, and says how i words it
+        await post('/crowd/submit', {
+            items: [
+                { kind: 'zbroja', record: pancerz },
+                { kind: 'iline', record: { item: 'zbroja', short: pancerz.short, iLine: 'stalowe plyty krwistoczerwonego pelnego pancerza' } },
+                { kind: 'altname', record: { item: 'zbroja', short: pancerz.short, shortAlt: 'krwistoczerwony pelny pancerz' } },
+            ],
+        }, await register('10.5.0.3'));
+
+        const { zbroje } = await snapshot();
+        expect(zbroje).toHaveLength(1);
+        expect(zbroje[0]).toMatchObject({
+            short: pancerz.short,
+            confirmations: 3,
+            iLine: 'stalowe plyty krwistoczerwonego pelnego pancerza',
+            shortAlt: 'krwistoczerwony pelny pancerz',
+        });
+        expect(zbroje[0]).not.toHaveProperty('alternatives');
     });
 
     it('answers any origin', async () => {

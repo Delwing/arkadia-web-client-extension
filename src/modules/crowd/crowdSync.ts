@@ -40,7 +40,7 @@ const BACKOFF_MS = 60 * 60_000;
  * costs reads. A record whose hash did not change with the reset (an odmiana,
  * when items moved to being keyed by name) would otherwise never be re-sent.
  */
-const SENT_CONFIG: IndexedDBConfig = { dbName: 'ArkadiaCrowd', storeName: 'crowd', key: 'sent-2' };
+const SENT_CONFIG: IndexedDBConfig = { dbName: 'ArkadiaCrowd', storeName: 'crowd', key: 'sent-3' };
 
 const PRINTABLE_ASCII = /^[\x20-\x7e]*$/;
 
@@ -74,7 +74,15 @@ export async function prepareItems(): Promise<PreparedItem[]> {
     const sources: [CrowdKind, unknown][] = [];
     const zlom = getZlomSnapshot();
     for (const [group, kind] of ZLOM_KINDS) {
-        for (const entry of zlom[group]) sources.push([kind, shareable(entry)]);
+        for (const entry of zlom[group]) {
+            const item = shareable(entry);
+            sources.push([kind, item]);
+            // Voted on apart from the item, so knowing them adds to it rather than
+            // splitting it from the players who do not (crowdRecords.ts says more)
+            if (item.shortAlt) sources.push(['altname', { item: kind, short: item.short, shortAlt: item.shortAlt }]);
+            const iLine = (item as { iLine?: string }).iLine;
+            if (iLine && kind !== 'bron') sources.push(['iline', { item: kind, short: item.short, iLine }]);
+        }
     }
     for (const odmiana of Object.values(getOdmianaSnapshot())) sources.push(['odmiana', odmiana]);
 
