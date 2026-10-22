@@ -34,7 +34,13 @@ const DEBOUNCE_MS = 30_000;
 /** After a refusal (quota, rate limit, Worker down), wait this long before trying again. */
 const BACKOFF_MS = 60 * 60_000;
 
-const SENT_CONFIG: IndexedDBConfig = { dbName: 'ArkadiaCrowd', storeName: 'crowd', key: 'sent' };
+/**
+ * What this browser has sent, by hash. The key carries a generation: when the
+ * Worker's data is reset, bumping it makes every client ask again once, which
+ * costs reads. A record whose hash did not change with the reset (an odmiana,
+ * when items moved to being keyed by name) would otherwise never be re-sent.
+ */
+const SENT_CONFIG: IndexedDBConfig = { dbName: 'ArkadiaCrowd', storeName: 'crowd', key: 'sent-2' };
 
 const PRINTABLE_ASCII = /^[\x20-\x7e]*$/;
 

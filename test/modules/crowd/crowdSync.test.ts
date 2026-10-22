@@ -35,7 +35,7 @@ beforeEach(async () => {
     localStorage.clear();
     await __resetZlomStoreForTests();
     await __resetOdmianaStoreForTests();
-    await clearIndexedDB({ dbName: 'ArkadiaCrowd', storeName: 'crowd', key: 'sent' }).catch(() => {});
+    await clearIndexedDB({ dbName: 'ArkadiaCrowd', storeName: 'crowd', key: 'sent-2' }).catch(() => {});
     vi.mocked(getBehaviorSettings).mockReturnValue({ crowdContribute: true } as ReturnType<typeof getBehaviorSettings>);
     calls = [];
     wantedFilter = hashes => hashes;
