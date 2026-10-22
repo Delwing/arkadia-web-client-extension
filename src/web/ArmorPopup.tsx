@@ -1,4 +1,4 @@
-import React, { useCallback, useId, useLayoutEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { ChevronRight } from 'lucide-react';
 import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
 import { usePopup } from './hooks/usePopup';
@@ -153,9 +153,6 @@ const ArmorPopup: React.FC = () => {
     const subject = picking && (picking.type === 'line'
         ? armor.unknownLines.includes(picking.line)
         : armor.unplaced.includes(picking.name)) ? picking : null;
-    const picker = subject && (
-        <ArmorILinePicker subject={subject} lines={armor.unknownLines} onClose={() => setPicking(null)} />
-    );
 
     /** The text selected inside this line, or the whole line when nothing is */
     const pickFrom = (line: string, element: HTMLElement) => {
@@ -177,6 +174,13 @@ const ArmorPopup: React.FC = () => {
     const figure = useRef<SVGSVGElement>(null);
     const cards = useRef<Partial<Record<Slot, HTMLDivElement | null>>>({});
     const lines = useLines(doll, figure, cards, armor);
+
+    // Listed under the doll, so it can turn up out of sight: bring it in when it appears
+    const todo = useRef<HTMLDivElement>(null);
+    const hasTodo = armor.unplaced.length > 0 || armor.unknownLines.length > 0;
+    useEffect(() => {
+        if (hasTodo && isOpen) todo.current?.scrollIntoView({ block: 'nearest' });
+    }, [hasTodo, isOpen]);
 
     const column = (side: 'left' | 'right') => (
         <div className={`armor-popup__column armor-popup__column--${side}`}>
@@ -229,8 +233,8 @@ const ArmorPopup: React.FC = () => {
                         })}
                     </svg>
                 </div>
-                {(armor.unplaced.length > 0 || armor.unknownLines.length > 0) && (
-                    <div className="armor-popup__todo">
+                {hasTodo && (
+                    <div className="armor-popup__todo" ref={todo}>
                         <div className="armor-popup__todo-title">Do uzupełnienia (z ostatniego <code>i</code>)</div>
                         {armor.unplaced.length > 0 && (
                             <>
@@ -254,7 +258,6 @@ const ArmorPopup: React.FC = () => {
                                         </li>
                                     ))}
                                 </ul>
-                                {subject?.type === 'piece' && picker}
                             </>
                         )}
                         {armor.unknownLines.length > 0 && (
@@ -274,10 +277,12 @@ const ArmorPopup: React.FC = () => {
                                         </li>
                                     ))}
                                 </ul>
-                                {subject?.type === 'line' && picker}
                             </>
                         )}
                     </div>
+                )}
+                {subject && (
+                    <ArmorILinePicker subject={subject} lines={armor.unknownLines} onClose={() => setPicking(null)} />
                 )}
                 <ArmorOdmianaHint slots={armor.slots} />
                 {armor.updatedAt === null && (

@@ -9396,20 +9396,19 @@ body.inventory-dragging * {
 }
 
 /* Giving an unrecognised i line to a piece of the złom list */
-.armor-iline {
-  margin-top: 0.5rem;
-  padding: 0.5rem;
-  border: 1px solid var(--popup-border);
-  border-radius: 6px;
+.armor-iline .popup-dialog__body {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
 
 .armor-iline__line {
+  padding: 0.4rem 0.6rem;
+  border-left: 3px solid var(--popup-accent);
+  border-radius: 4px;
+  background: var(--popup-hover-bg);
   font-family: var(--output-font-family), monospace;
-  font-size: 0.9em;
-  color: var(--popup-text-dim);
+  font-weight: 600;
 }
 
 .armor-iline__empty {
@@ -9467,12 +9466,6 @@ body.inventory-dragging * {
 
 .armor-iline__warn--error {
   color: var(--popup-danger);
-}
-
-.armor-iline__actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.5rem;
 }
 
 .armor-popup__hint {

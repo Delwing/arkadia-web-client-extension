@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Button, Field, Input } from '@web-ui/primitives/index.ts';
+import { Button, Dialog, Field, Input } from '@web-ui/primitives/index.ts';
 import { getZlomSnapshot, subscribeZlom, type ZlomSnapshot } from '@modules/data/zlomStore';
 import {
     assignILine,
@@ -97,15 +97,26 @@ const ArmorILinePicker: React.FC<{
     };
 
     return (
-        <div className="armor-iline">
-            <div className="armor-iline__line">{text}</div>
+        <Dialog
+            title="Wskaż przedmiot ze złomu"
+            onClose={onClose}
+            className="armor-iline"
+            footer={(
+                <>
+                    <Button onClick={onClose}>Anuluj</Button>
+                    <Button variant="solid" onClick={() => void save()} disabled={!canSave}>Zapisz</Button>
+                </>
+            )}
+        >
+            <Field label={subject.type === 'line' ? 'Linia z i' : 'Przedmiot z i'}>
+                <div className="armor-iline__line">{text}</div>
+            </Field>
             {subject.type === 'line' && (
                 <Field label="Fragment" hint="Tekst, który zawiera linia z i, albo /regexp/.">
                     <Input
                         mono
                         value={fragment}
                         onChange={e => setFragment(e.target.value)}
-                        onKeyDown={e => { if (e.key === 'Escape') onClose(); }}
                     />
                 </Field>
             )}
@@ -178,11 +189,7 @@ const ArmorILinePicker: React.FC<{
                     )}
                 </div>
             )}
-            <div className="armor-iline__actions">
-                <Button onClick={onClose}>Anuluj</Button>
-                <Button variant="solid" onClick={() => void save()} disabled={!canSave}>Zapisz</Button>
-            </div>
-        </div>
+        </Dialog>
     );
 };
 
