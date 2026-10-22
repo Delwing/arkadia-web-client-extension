@@ -16,6 +16,7 @@ import {
     clearZlomStore,
     upsertByOpis,
     keepILine,
+    normalizeArmorType,
     type WeaponEntry,
     type ArmorEntry,
     type ShieldEntry,
@@ -222,7 +223,7 @@ export async function mergeZlomData(
         };
         const b = merge(current.bronie, data.bronie);
         const t = merge(current.tarcze, data.tarcze);
-        const z = merge(current.zbroje, data.zbroje);
+        const z = merge(current.zbroje, data.zbroje.map(e => ({ ...e, typ: normalizeArmorType(e.typ ?? "") })));
         counts = { bronie: b.count, tarcze: t.count, zbroje: z.count };
         return { bronie: b.list, tarcze: t.list, zbroje: z.list };
     });

@@ -389,6 +389,16 @@ describe('zlom script', () => {
       };
     }
 
+    test('an imported armour keeps only its weight class', async () => {
+      // The Mudlet zlom database says "srednia zbroje"; evaluating says "srednia"
+      const armour: ArmorEntry = {
+        short: 'stalowa dluga kolczuga', typ: 'srednia zbroje', klute: 0, obuch: 0, ciete: 0, magik: 0,
+        opis: 'Kolczuga.', waga: 0, obj: 0, cena: 0, oslona: 'korpus', roomId: null,
+      };
+      await mergeZlomData({ bronie: [], tarcze: [], zbroje: [armour] });
+      expect(findArmor('stalowa dluga kolczuga')!.typ).toBe('srednia');
+    });
+
     test('replace mode overwrites entries with same opis and adds new', async () => {
       feedWeapon();
       await flush();

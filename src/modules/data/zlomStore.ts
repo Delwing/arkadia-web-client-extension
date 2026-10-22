@@ -91,12 +91,28 @@ let loaded = false;
 let loadingPromise: Promise<void> | null = null;
 const listeners = new Set<(snap: ZlomSnapshot) => void>();
 
+/**
+ * An armour's weight class as evaluating it says: "lekka", "srednia" or
+ * "ciezka". Lists imported from the Mudlet zlom database carry the phrase
+ * around it ("srednia zbroje"), which would make one class look like two.
+ */
+export function normalizeArmorType(typ: string): string {
+    return typ.trim().toLowerCase().replace(/\s+zbroj\w*$/, '');
+}
+
+function normalizeArmor(list: ArmorEntry[]): ArmorEntry[] {
+    return list.map(entry => {
+        const typ = normalizeArmorType(entry.typ ?? '');
+        return typ === entry.typ ? entry : { ...entry, typ };
+    });
+}
+
 function normalize(raw: unknown): ZlomSnapshot {
     const s = (raw ?? {}) as Partial<ZlomSnapshot>;
     return {
         bronie: Array.isArray(s.bronie) ? s.bronie : [],
         tarcze: Array.isArray(s.tarcze) ? s.tarcze : [],
-        zbroje: Array.isArray(s.zbroje) ? s.zbroje : [],
+        zbroje: Array.isArray(s.zbroje) ? normalizeArmor(s.zbroje) : [],
     };
 }
 
@@ -114,6 +130,9 @@ export function ensureZlomLoaded(): Promise<void> {
         try {
             const raw = await getFromIndexedDB<ZlomSnapshot>(CONFIG);
             cache = normalize(raw);
+            // An entry stored before normalizing was fixed on the way in: keep the fix
+            const stored = Array.isArray(raw?.zbroje) ? raw.zbroje : [];
+            if (cache.zbroje.some((entry, i) => entry !== stored[i])) void persist();
         } catch {
             cache = emptySnapshot();
         }
