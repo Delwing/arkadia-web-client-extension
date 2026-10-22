@@ -45,8 +45,6 @@ function device(db: FakeDatabase, name: string) {
     const applied: number[] = [];
     /** The rooms of those applied that went on the map as a guess. */
     const guesses: number[] = [];
-    /** The rooms of those applied that this device itself handed over. */
-    const own: number[] = [];
     /** `placed`: the map was placed since tracking started - a GMCP fix, /ustaw. */
     const state = {trusted: true, tracking: false, placed: false};
     const handoff = new SessionHandoff({
@@ -61,10 +59,9 @@ function device(db: FakeDatabase, name: string) {
             state.tracking = false;
         },
         placedSinceLogin: () => state.tracking && state.placed,
-        apply: (roomId, verified, sameDevice) => {
+        apply: (roomId, verified) => {
             applied.push(roomId);
             if (!verified) guesses.push(roomId);
-            if (sameDevice) own.push(roomId);
             handoff.roomChanged(roomId);
         },
         setTimer: (fn, ms) => {
@@ -74,7 +71,7 @@ function device(db: FakeDatabase, name: string) {
     });
     const store = db.store();
     handoff.setStore(store);
-    return {handoff, applied, guesses, own, state, store};
+    return {handoff, applied, guesses, state, store};
 }
 
 /** The game object the character is while it stays in the world. */
@@ -141,10 +138,9 @@ describe('SessionHandoff', () => {
         await login(b, 500);
 
         expect(b.applied).toEqual([42]);
-        expect(b.own).toEqual([]);
     });
 
-    it('says when the room comes back to the device that handed it over', async () => {
+    it('leaves a reload to the room the map restored itself', async () => {
         const db = new FakeDatabase();
         const before = device(db, 'desktop');
         const after = device(db, 'desktop');
@@ -154,10 +150,29 @@ describe('SessionHandoff', () => {
         await before.handoff.sessionEnded();
         before.handoff.disconnected();
 
-        await login(after, 10);
+        await login(after, 42);
 
-        expect(after.applied).toEqual([42]);
-        expect(after.own).toEqual([42]);
+        expect(after.applied).toEqual([]);
+    });
+
+    it('does not take a room this device parked before walking on', async () => {
+        const db = new FakeDatabase();
+        const before = device(db, 'desktop');
+        const after = device(db, 'desktop');
+
+        await login(before, 10);
+        before.handoff.roomDescribed('polnoc i poludnie');
+        await vi.advanceTimersByTimeAsync(0);
+        await before.handoff.park();
+        // Walks on with the tab in view; the write as the page unloads never lands.
+        before.handoff.roomChanged(42);
+        before.handoff.disconnected();
+
+        await login(after, 42);
+        after.handoff.roomDescribed('polnoc i poludnie');
+        await vi.advanceTimersByTimeAsync(TAKEOVER_WINDOW_MS);
+
+        expect(after.applied).toEqual([]);
     });
 
     it('ignores a handoff older than the idle timeout', async () => {

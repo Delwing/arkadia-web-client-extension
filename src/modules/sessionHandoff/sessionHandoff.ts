@@ -70,10 +70,8 @@ export interface SessionHandoffDeps {
      * Put the map in this room, then take the steps made since login again from
      * it. Not `verified`: a parked room the game's description did not confirm,
      * likely closer than whatever the map showed but to be flagged as a guess.
-     * `sameDevice`: written by this device's earlier session (a reload, a
-     * reconnect), so there is no other device to tell the player about.
      */
-    apply(roomId: number, verified: boolean, sameDevice: boolean): void;
+    apply(roomId: number, verified: boolean): void;
     setTimer(fn: () => void, ms: number): () => void;
 }
 
@@ -322,6 +320,14 @@ export class SessionHandoff {
      */
     private offer(handoff: HandoffRoom): void {
         if (!this.offerOpen) return log(`not applying room ${handoff.roomId}: arrived too late`);
+        // A reload or reconnect here. The map has restored the room it saves on
+        // every step, which is never older than what this device wrote - and the
+        // write as a page unloads rarely lands, leaving a room parked long before.
+        if (handoff.device === this.deps.deviceId) {
+            log(`not applying room ${handoff.roomId}: left by this device, whose map knows its own last room`);
+            this.closeOffer();
+            return;
+        }
         if (this.deps.placedSinceLogin()) {
             log(`not applying room ${handoff.roomId}: the map was placed since login`);
             this.closeOffer();
@@ -344,7 +350,7 @@ export class SessionHandoff {
             return;
         }
         log(`applying room ${handoff.roomId}`);
-        this.deps.apply(handoff.roomId, true, handoff.device === this.deps.deviceId);
+        this.deps.apply(handoff.roomId, true);
         this.closeOffer();
     }
 
@@ -354,7 +360,7 @@ export class SessionHandoff {
         if (!parked || this.guessed || !this.offerOpen || this.deps.placedSinceLogin()) return;
         log(`applying parked room ${parked.roomId} unconfirmed: ${why}`);
         this.guessed = true;
-        this.deps.apply(parked.roomId, false, parked.device === this.deps.deviceId);
+        this.deps.apply(parked.roomId, false);
     }
 
     private closeOffer(): void {
