@@ -6,12 +6,21 @@ import {getPluginScript, isStoredPluginId, updatePluginScript} from '@client/uti
 
 const STABLE_ID_PATTERN = /^[A-Za-z0-9._-]{1,64}$/
 
+// Hosts whose plugins are taken to come from a dev server on this machine.
+const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]'])
+// EventSource retries every few seconds; about a minute covers a dev server restart.
+const LIVE_RELOAD_RETRIES = 20
+
 /**
  * Manages external plugins and scripts
  */
 export class PluginManager {
   private plugins: Map<string, LoadedPlugin> = new Map()
   private client: Client
+  /** Rebuild streams of plugins served from localhost, by plugin URL. */
+  private liveReloads: Map<string, EventSource> = new Map()
+  private liveReloading: Set<string> = new Set()
+  private liveReloadPending: Set<string> = new Set()
 
   constructor(client: Client) {
     this.client = client
@@ -123,17 +132,24 @@ export class PluginManager {
     }
 
     this.plugins.set(identifier, plugin)
+    // Watched even when init failed: the fix arrives as the next rebuild.
+    this.watchDevServer(identifier)
     return plugin
   }
 
   /**
    * Unload a plugin
    */
-  async unloadPlugin(url: string): Promise<void> {
+  async unloadPlugin(url: string, reloading = false): Promise<void> {
     const plugin = this.plugins.get(url)
     if (!plugin) {
       console.warn(`[PluginManager] Plugin not found: ${url}`)
       return
+    }
+
+    if (!reloading) {
+      this.liveReloads.get(url)?.close()
+      this.liveReloads.delete(url)
     }
 
     // Call destroy if available
@@ -295,9 +311,63 @@ export class PluginManager {
    */
   async reloadPlugin(identifier: string): Promise<LoadedPlugin> {
     if (this.plugins.has(identifier)) {
-      await this.unloadPlugin(identifier)
+      await this.unloadPlugin(identifier, true)
     }
     return this.loadPlugin(identifier)
+  }
+
+  /**
+   * A plugin served from localhost is reloaded whenever its dev server says it
+   * rebuilt. The stream is esbuild's live-reload endpoint (`/esbuild`, `change`
+   * events), which both `esbuild --serve` and `arkadia-plugin dev` provide.
+   * A stream that never connects (no dev server, or one without the endpoint)
+   * is dropped at once; one that did connect gets a minute to come back, so a
+   * restarted dev server is picked up again. Either way the next load retries.
+   */
+  private watchDevServer(url: string): void {
+    if (this.liveReloads.has(url) || typeof EventSource === 'undefined') return
+    let endpoint: URL
+    try {
+      endpoint = new URL('/esbuild', url)
+    } catch {
+      return
+    }
+    if (!LOCAL_HOSTS.has(endpoint.hostname)) return
+
+    const source = new EventSource(endpoint)
+    let opened = false
+    let failures = 0
+    source.addEventListener('open', () => {
+      opened = true
+      failures = 0
+    })
+    source.addEventListener('error', () => {
+      if (opened && source.readyState !== EventSource.CLOSED && ++failures <= LIVE_RELOAD_RETRIES) return
+      source.close()
+      if (this.liveReloads.get(url) === source) this.liveReloads.delete(url)
+    })
+    source.addEventListener('change', () => void this.liveReload(url))
+    this.liveReloads.set(url, source)
+  }
+
+  /** One reload at a time per plugin; a rebuild during it queues one more. */
+  private async liveReload(url: string): Promise<void> {
+    if (!this.plugins.has(url)) return
+    if (this.liveReloading.has(url)) {
+      this.liveReloadPending.add(url)
+      return
+    }
+    this.liveReloading.add(url)
+    try {
+      const reloaded = await this.reloadPlugin(url)
+      const name = reloaded.info?.name ?? url
+      this.client.print?.(reloaded.status === 'error'
+        ? `Blad przeladowania ${name}: ${reloaded.error}`
+        : `Przeladowano ${name}.`)
+    } finally {
+      this.liveReloading.delete(url)
+      if (this.liveReloadPending.delete(url)) void this.liveReload(url)
+    }
   }
 
   /**

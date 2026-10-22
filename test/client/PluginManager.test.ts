@@ -121,4 +121,98 @@ describe('PluginManager', () => {
       expect(pluginManager.isLoaded(url)).toBe(false);
     });
   });
+
+  describe('dev server live reload', () => {
+    class FakeEventSource {
+      static CLOSED = 2;
+      static instances: FakeEventSource[] = [];
+      listeners: Record<string, (() => void)[]> = {};
+      readyState = 0;
+      closed = false;
+      constructor(public url: URL) {
+        FakeEventSource.instances.push(this);
+      }
+      addEventListener(type: string, listener: () => void) {
+        (this.listeners[type] ??= []).push(listener);
+      }
+      close() {
+        this.closed = true;
+      }
+      fire(type: string) {
+        this.listeners[type]?.forEach(listener => listener());
+      }
+    }
+
+    const load = (url: string) => {
+      jest.spyOn(document, 'createElement').mockImplementation(() => makeAutoLoadingScript());
+      return pluginManager.loadPlugin(url);
+    };
+
+    beforeEach(() => {
+      FakeEventSource.instances = [];
+      vi.stubGlobal('EventSource', FakeEventSource);
+    });
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+      vi.restoreAllMocks();
+    });
+
+    it('listens to the esbuild endpoint of a plugin served from localhost', async () => {
+      await load('http://localhost:5177/plugin.js');
+
+      expect(FakeEventSource.instances).toHaveLength(1);
+      expect(FakeEventSource.instances[0].url.href).toBe('http://localhost:5177/esbuild');
+    });
+
+    it('does not listen to plugins from other hosts', async () => {
+      await load('https://example.com/plugin.js');
+
+      expect(FakeEventSource.instances).toHaveLength(0);
+    });
+
+    it('reloads the plugin on a change and keeps the same stream', async () => {
+      const url = 'http://127.0.0.1:5177/plugin.js';
+      await load(url);
+      const reload = jest.spyOn(pluginManager, 'reloadPlugin');
+
+      FakeEventSource.instances[0].fire('change');
+      await vi.waitFor(() => expect(reload).toHaveBeenCalledWith(url));
+      await reload.mock.results[0].value;
+
+      expect(FakeEventSource.instances).toHaveLength(1);
+      expect(FakeEventSource.instances[0].closed).toBe(false);
+    });
+
+    it('drops a stream that never connects and tries again on the next reload', async () => {
+      const url = 'http://localhost:8080/plugin.js';
+      await load(url);
+
+      FakeEventSource.instances[0].fire('error');
+      expect(FakeEventSource.instances[0].closed).toBe(true);
+
+      await pluginManager.reloadPlugin(url);
+      expect(FakeEventSource.instances).toHaveLength(2);
+      expect(FakeEventSource.instances[1].closed).toBe(false);
+    });
+
+    it('keeps retrying a stream that was connected, so a restarted dev server is found', async () => {
+      await load('http://localhost:5177/plugin.js');
+      const source = FakeEventSource.instances[0];
+
+      source.fire('open');
+      source.fire('error');
+
+      expect(source.closed).toBe(false);
+    });
+
+    it('closes the stream when the plugin is removed', async () => {
+      const url = 'http://localhost:5177/plugin.js';
+      await load(url);
+
+      await pluginManager.unloadPlugin(url);
+
+      expect(FakeEventSource.instances[0].closed).toBe(true);
+    });
+  });
 });
