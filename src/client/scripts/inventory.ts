@@ -41,7 +41,7 @@ export interface InventoryEntry {
     state?: "open" | "closed";
     /** Bag noun in the accusative ("woreczek", "torbe"), for a single bag */
     noun?: string;
-    /** On the back or at the belt, where a bag answers to "zalozony" */
+    /** On the back, at the belt or on a shoulder, where a bag answers to "zalozony" */
     worn?: boolean;
     /** The bag's number in the game among all of its kind, checked with `ocen` */
     ordinal?: number;
@@ -161,8 +161,9 @@ const ARMOUR_PROSE: RegExp[] = [
 
 // Patterns are ASCII-only: the game output is normalized before matching.
 /**
- * `worn`: what the line lists answers to "zalozony" - on the back and at the
- * belt. Elsewhere (slung over a shoulder, ...) that is not known, so "swoj".
+ * `worn`: what the line lists answers to "zalozony" / "zalozona" - on the back,
+ * at the belt, and a bag worn on a shoulder ("Na prawym ramieniu nosisz ...
+ * torbe"). Elsewhere (slung over a shoulder, ...) that is not known, so "swoj".
  */
 const SECTIONS: { pattern: RegExp; label: string; worn?: true; items?: (match: RegExpMatchArray) => (string | Listed)[] }[] = [
     { pattern: /^(?:Trzymasz w rekach|W rekach trzymasz|Trzymasz oburacz) (.+)$/, label: IN_HANDS },
@@ -228,7 +229,7 @@ const SECTIONS: { pattern: RegExp; label: string; worn?: true; items?: (match: R
     { pattern: /^Na plecach nosisz (.+)$/, label: "Na plecach", worn: true },
     { pattern: /^Na plecach masz przypiet\S* (.+)$/, label: "Na plecach" },
     { pattern: /^Na plecy masz zarzucon\S* (.+)$/, label: "Na plecach" },
-    { pattern: /^Na (?:lewym|prawym) ramieniu nosisz (.+)$/, label: "Przez ramię" },
+    { pattern: /^Na (?:lewym|prawym) ramieniu nosisz (.+)$/, label: "Przez ramię", worn: true },
     { pattern: /^Masz przewieszon\S* (?:przez ramie )?(.+)$/, label: "Przez ramię" },
     { pattern: /^Na ramie zarzucon\S* masz (.+)$/, label: "Przez ramię" },
     { pattern: /^Ponad twoim (?:lewym|prawym) ramieniem widac przypiet\S* (.+)$/, label: "Przez ramię" },
@@ -359,7 +360,7 @@ interface Entry {
     noun?: string;
     /** The weapon in a sheath or sling */
     held?: string[];
-    /** On the back or at the belt: a bag there is "zalozony" */
+    /** On the back, at the belt or on a shoulder: a bag there is "zalozony" */
     worn?: boolean;
 }
 

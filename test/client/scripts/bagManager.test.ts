@@ -190,6 +190,15 @@ describe('bagManager /pojemnik', () => {
         expect(printed).toContain('Ustaw sakiewka jako:');
     });
 
+    test('a bag worn on a shoulder is worn', () => {
+        // Verbatim from the game
+        const printed = scanInventory(
+            'Na prawym ramieniu nosisz prawie pusta otwarta pakowna ciemnoniebieska torbe.',
+            'Masz przy sobie Ventusa i drewniana lyzke.',
+        );
+        expect(printed).toContain('Ustaw zalozona torba jako:');
+    });
+
     test('offers bags on the back and at the belt as worn, numbered among the worn ones', () => {
         const printed = scanInventory(
             'Na plecach nosisz prawie pusty otwarty skorzany plecak.',

@@ -66,7 +66,7 @@ Menedżer pojemników pozwala przypisać wybrane torby, plecaki i inne pojemniki
 3. Wybierz `wszystkie`, by używać pojemnika dla wszystkich kategorii
 4. Sprawdź aktualne przypisania komendą `/pojemniki`
 
-Pojemnik noszony na plecach albo przytroczony do pasa jest „założony” — lista pokazuje go jako `zalozony plecak`, a komendy mówią `otworz zalozony plecak`, `wloz … do zalozonego plecaka`. Pozostałe (przy sobie, przewieszone przez ramię) są „swoje”: `otworz swoja sakiewke`.
+Pojemnik noszony na plecach, przytroczony do pasa albo noszony na ramieniu (`Na prawym ramieniu nosisz … torbe`) jest „założony” — lista pokazuje go jako `zalozony plecak`, a komendy mówią `otworz zalozony plecak`, `wloz … do zalozonego plecaka`. Pozostałe (przy sobie, przewieszone albo zarzucone na ramię) są „swoje”: `otworz swoja sakiewke`.
 
 Jeśli masz kilka pojemników tego samego rodzaju, lista numeruje je osobno wśród założonych i osobno wśród pozostałych — `1. zalozona sakiewka (otwarta runiczna)`, `2. zalozona sakiewka (skórzana)` — a komendy trafiają do wybranego (`otworz 2. zalozona sakiewke`). Numer to kolejność w ekwipunku, więc po zdobyciu lub oddaniu innej sakiewki uruchom `/pojemnik` ponownie.
 

@@ -175,7 +175,7 @@ export interface ContainerForms {
     biernik: string;
     /** Which of several same-named bags; absent means the first one */
     index?: number;
-    /** Worn (on the back, at the belt): addressed as "zalozonego", numbered among the worn ones */
+    /** Worn (on the back, at the belt, on a shoulder): addressed as "zalozonego", numbered among the worn ones */
     worn?: boolean;
 }
 
@@ -517,10 +517,11 @@ function showConfig(client: Client) {
 }
 
 /**
- * Lines of the `i` reply whose bags answer to "zalozony": on the back and at the
- * belt. Anything else (slung over a shoulder, ...) is not known to, and stays "swoj".
+ * Lines of the `i` reply whose bags answer to "zalozony": on the back, at the belt
+ * and worn on a shoulder. Anything else (slung over a shoulder, ...) is not known
+ * to, and stays "swoj".
  */
-const WORN_LINE = /^(?:na plecach nosisz|do pasa masz przytroczon)/;
+const WORN_LINE = /^(?:na plecach nosisz|do pasa masz przytroczon|na (?:lewym|prawym) ramieniu nosisz)/;
 
 /** A bag in the `i` reply, worn when its line is one of WORN_LINE */
 type FoundBag = { noun: string; description: string; worn: boolean };
@@ -551,7 +552,7 @@ function findBags(line: string, worn = false): FoundBag[] {
 }
 
 /**
- * Bags to offer: worn ones (on the back, at the belt) as "zalozony plecak",
+ * Bags to offer: worn ones (on the back, at the belt, on a shoulder) as "zalozony plecak",
  * the rest as plain "plecak", which commands make "swoj". Each is numbered only
  * among its own kind of the same noun, and only when there are several: where
  * a worn bag falls in the game's count of all of them is not known, so a carried
