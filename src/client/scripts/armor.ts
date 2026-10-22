@@ -42,16 +42,22 @@ export const ARMOR_SLOTS = ["glowa", "korpus", "lewe ramie", "prawe ramie", "dlo
 export interface WornArmor {
     /** Slot -> what is on it, as the game names it ("stalowa dluga kolczuge") */
     slots: Record<string, string>;
+    /** Worn in the last `i` reply, but on no slot: nothing yet says what it covers */
+    unplaced: string[];
+    /** Lines of the last `i` reply nothing knows: a way of wording it still to be learned */
+    unknownLines: string[];
     updatedAt: number | null;
 }
 
 const WEAR = /^Zakladasz (.+) na (.+)\.$/;
 const TAKE_OFF = /^Zdejmujesz z siebie (.+)\.$/;
 
-let armor: WornArmor = { slots: {}, updatedAt: null };
+const NOTHING: WornArmor = { slots: {}, unplaced: [], unknownLines: [], updatedAt: null };
+
+let armor: WornArmor = NOTHING;
 
 export function getWornArmor(): WornArmor {
-    return { slots: { ...armor.slots }, updatedAt: armor.updatedAt };
+    return { ...armor, slots: { ...armor.slots }, unplaced: [...armor.unplaced], unknownLines: [...armor.unknownLines] };
 }
 
 /**
@@ -166,6 +172,19 @@ export function slotsFromWorn(
 }
 
 /**
+ * The worn pieces no slot holds, by name or by the word a slot kept from
+ * putting the piece on: a cloak or a ring, or armour the złom list has no
+ * cover for yet. Listed so it is known what is still to be filled in.
+ */
+export function unplacedPieces(worn: string[], slots: Record<string, string>): string[] {
+    const held = Object.values(slots);
+    return worn.filter(name => {
+        const words = name.toLowerCase().split(/\s+/);
+        return !held.some(item => sameItem(item, name) || words.some(word => sameWord(word, nounOf(item))));
+    });
+}
+
+/**
  * Slots of the pieces an `i` reply words in its own way, which the złom list
  * knows by the line given to them ("Od stop do glow zakuty jestes w stalowe
  * plyty ..."). Each takes what it covers, under its name as the game lists it.
@@ -185,7 +204,8 @@ export function slotsFromLines(
 
 export default function initArmor(client: Client, aliases?: { pattern: RegExp; callback: Function }[]) {
     const load = (value: WornArmor | undefined) => {
-        armor = value && typeof value === "object" && value.slots ? value : { slots: {}, updatedAt: null };
+        // Stored before what is still to learn was kept: none of it known yet
+        armor = value && typeof value === "object" && value.slots ? { ...NOTHING, ...value } : NOTHING;
         // Stored before the slots were "korpus" and one per arm
         const { tulow, ramiona, ...rest } = armor.slots;
         if (tulow || ramiona) {
@@ -212,23 +232,27 @@ export default function initArmor(client: Client, aliases?: { pattern: RegExp; c
             fillZlomCoverage(worn.item, worn.where);
             const slots = { ...armor.slots };
             worn.slots.forEach(slot => { slots[slot] = worn.item; });
-            store({ slots, updatedAt: Date.now() });
+            // Put on, so now it has its slots
+            const unplaced = armor.unplaced.filter(name => !sameItem(name, worn.item));
+            store({ ...armor, slots, unplaced, updatedAt: Date.now() });
         }
         return line;
     }, "armor");
 
     client.Triggers.registerTrigger(TAKE_OFF, (line, matches) => {
         const item = matches[1];
-        if (Object.values(armor.slots).includes(item)) {
+        const unplaced = armor.unplaced.filter(name => !sameItem(name, item));
+        if (Object.values(armor.slots).includes(item) || unplaced.length !== armor.unplaced.length) {
             const slots = Object.fromEntries(Object.entries(armor.slots).filter(([, on]) => on !== item));
-            store({ slots, updatedAt: Date.now() });
+            store({ ...armor, slots, unplaced, updatedAt: Date.now() });
         }
         return line;
     }, "armor");
 
     // A full `i` reply: what is worn now, with the złom list saying what each piece covers,
-    // and which of its lines are pieces it words in its own way
-    const removeReadListener = eventBus.on("inventory.read", ({ lines }) => {
+    // and which of its lines are pieces it words in its own way. What it could not place
+    // is kept too, as the list of what is still to be filled in.
+    const removeReadListener = eventBus.on("inventory.read", ({ lines, unknown }) => {
         const worn = getInventoryState().sections
             .filter(section => WORN_SECTIONS.has(section.label))
             .flatMap(section => section.entries.map(entry => entry.name));
@@ -237,8 +261,9 @@ export default function initArmor(client: Client, aliases?: { pattern: RegExp; c
             ...slotsFromWorn(worn, armor.slots, [...zbroje, ...tarcze.map(entry => ({ ...entry, shield: true }))]),
             ...slotsFromLines(lines, iLineEntries(getZlomSnapshot())),
         };
-        if (JSON.stringify(slots) === JSON.stringify(armor.slots)) return;
-        store({ slots, updatedAt: Date.now() });
+        const next = { slots, unplaced: unplacedPieces(worn, slots), unknownLines: unknown };
+        if (JSON.stringify(next) === JSON.stringify({ slots: armor.slots, unplaced: armor.unplaced, unknownLines: armor.unknownLines })) return;
+        store({ ...next, updatedAt: Date.now() });
     });
 
     if (aliases) {
@@ -249,6 +274,6 @@ export default function initArmor(client: Client, aliases?: { pattern: RegExp; c
         removeStorageListener();
         removeReadListener();
         client.Triggers.removeByTag("armor");
-        armor = { slots: {}, updatedAt: null };
+        armor = NOTHING;
     };
 }

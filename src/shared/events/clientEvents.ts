@@ -588,7 +588,8 @@ export interface KnownEvents {
     /** The tracked inventory changed - read it with getInventoryState() */
     "inventory.updated": void;
     /** An `i` reply was just read in full: what is worn, held and carried is as it says */
-    "inventory.read": { lines: string[] };
+    /** A full `i` reply; `unknown` are its lines no pattern or złom `i` line knows */
+    "inventory.read": { lines: string[]; unknown: string[] };
     /** The worn armour changed - read it with getWornArmor() */
     "armor.updated": void;
     "armor.popup.open": void;

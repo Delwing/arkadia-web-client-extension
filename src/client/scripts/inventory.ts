@@ -985,6 +985,8 @@ export default function initInventory(
     };
     let blockAt = 0;
     let hiddenUntil = 0;
+    // The player typed `i`: its reply may start with a line no pattern knows
+    let typedUntil = 0;
     let replyTimer: ReturnType<typeof setTimeout> | undefined;
     const pendingActions: { kind: ActionKind; reply: RegExp; fail?: RegExp; until: number; fromSource: boolean; bag?: string }[] = [];
 
@@ -996,10 +998,15 @@ export default function initInventory(
         stale = false;
         refreshing = false;
         hiddenUntil = 0;
+        typedUntil = 0;
         clearTimeout(replyTimer);
         emitUpdate();
-        // A full reply, not a change followed from the game's messages
-        eventBus.emit("inventory.read", { lines });
+        // A full reply, not a change followed from the game's messages, with the
+        // lines of it nothing knows yet, so they can be told and learned
+        const custom = iLines();
+        const unknown = lines.filter(line =>
+            !SECTIONS.some(({ pattern }) => pattern.test(line)) && !custom.some(({ matches }) => matches(line)));
+        eventBus.emit("inventory.read", { lines, unknown });
     };
 
     const sendHidden = () => {
@@ -1063,6 +1070,7 @@ export default function initInventory(
 
     const removeCommandListener = client.on("command", (command = "") => {
         const normalized = command.trim().toLowerCase() + " ";
+        if (normalized === "i ") typedUntil = Date.now() + REPLY_TIMEOUT_MS;
         const action = ACTIONS.find(a => a.command.test(normalized));
         // The window's transfer is the next `wloz` / `wez`: the bag manager opens the bag first
         const transfers = action?.kind === "put" || action?.kind === "take";
@@ -1106,6 +1114,8 @@ export default function initInventory(
         (line) => {
             const text = line.text.replace(/^[> ]+/, "").trim();
             const hidden = hiddenUntil > Date.now();
+            // A reply is on its way, so even its first line may be one no pattern knows
+            const expected = hidden || typedUntil > Date.now();
             if (ocenLine(text)) return null;
 
             const now = Date.now();
@@ -1120,7 +1130,7 @@ export default function initInventory(
             }
             // The start of a wrapped line no pattern knows yet in its half:
             // "Nasuniety na ... palec twej prawej dloni ... sygnet ... odznacza cie"
-            if ((fresh || hidden) && !text.endsWith(".")) {
+            if ((fresh || expected) && !text.endsWith(".")) {
                 if (!fresh) block = [];
                 block.push(text);
                 blockAt = now;
@@ -1128,7 +1138,7 @@ export default function initInventory(
             }
             // A line of the reply only the złom list knows, by the `i` line given to a piece,
             // tried only while a reply is being read
-            const custom = (fresh || hidden) && iLines().some(({ matches }) => matches(text));
+            const custom = (fresh || expected) && iLines().some(({ matches }) => matches(text));
             if (custom || SECTIONS.some(({ pattern }) => pattern.test(text))) {
                 // A line the patterns do not know yet must not lose the rest of
                 // the reply, so a block ends only when it gets old
@@ -1157,6 +1167,13 @@ export default function initInventory(
                 const given = text.match(GIVEN)?.[1];
                 if (given && given !== "nowy zapal do walki" && !given.startsWith("sie ")) {
                     applyAction("take", given);
+                } else if (text && (fresh || expected)) {
+                    // A whole line of the reply no pattern knows: kept with it, so the
+                    // windows can say what is still to be learned. Shown even when the
+                    // reply is hidden, as it may be something else that came in meanwhile.
+                    if (!fresh) block = [];
+                    block.push(text);
+                    blockAt = now;
                 }
             }
             return line;

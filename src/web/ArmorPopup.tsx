@@ -102,6 +102,31 @@ const ArmorPopup: React.FC = () => {
                         );
                     })}
                 </div>
+                {(armor.unplaced.length > 0 || armor.unknownLines.length > 0) && (
+                    <div className="armor-popup__todo">
+                        <div className="armor-popup__todo-title">Do uzupełnienia (z ostatniego <code>i</code>)</div>
+                        {armor.unplaced.length > 0 && (
+                            <>
+                                <div className="armor-popup__todo-hint">
+                                    Noszone, ale bez miejsca: wpis w złomie z osłoną albo założenie rzeczy pokaże, co zakrywa.
+                                </div>
+                                <ul className="armor-popup__todo-list armor-popup__todo-list--unplaced">
+                                    {armor.unplaced.map((name, i) => <li key={i}>{name}</li>)}
+                                </ul>
+                            </>
+                        )}
+                        {armor.unknownLines.length > 0 && (
+                            <>
+                                <div className="armor-popup__todo-hint">
+                                    Linie, których klient nie rozpoznaje: dla zbroi wpisz w złomie, jak ją opisuje <code>i</code>.
+                                </div>
+                                <ul className="armor-popup__todo-list armor-popup__todo-list--lines">
+                                    {armor.unknownLines.map((line, i) => <li key={i}>{line}</li>)}
+                                </ul>
+                            </>
+                        )}
+                    </div>
+                )}
                 {armor.updatedAt === null && (
                     <div className="armor-popup__hint">
                         Okno uczy się z zakładania i zdejmowania — załóż coś, a pojawi się tutaj.

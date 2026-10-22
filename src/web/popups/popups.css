@@ -9223,6 +9223,36 @@ body.inventory-dragging * {
   font-style: italic;
 }
 
+/* What the last i reply had that nothing could place: the list of what is still to learn */
+.armor-popup__todo {
+  margin-top: 0.75rem;
+  padding: 0.5rem 0.6rem;
+  border: 1px dashed var(--popup-border);
+  border-radius: 6px;
+}
+
+.armor-popup__todo-title {
+  font-weight: 600;
+  color: var(--popup-text-dim);
+}
+
+.armor-popup__todo-hint {
+  margin-top: 0.4rem;
+  color: var(--popup-text-faint);
+  font-size: 0.85em;
+}
+
+.armor-popup__todo-list {
+  margin: 0.25rem 0 0;
+  padding-left: 1.1rem;
+  user-select: text;
+}
+
+.armor-popup__todo-list--lines li {
+  font-family: var(--output-font-family), monospace;
+  font-size: 0.9em;
+}
+
 .armor-popup__hint {
   margin-top: 0.75rem;
   padding: 0 0.5rem;

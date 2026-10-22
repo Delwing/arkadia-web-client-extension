@@ -46,7 +46,14 @@ Dla takiego przedmiotu wpisz w oknie złomu (zakładki Zbroje i Tarcze, kolumna 
 - zwykły tekst — linia z `i` musi go zawierać (wielkość liter i kropka na końcu nie mają znaczenia), np. `plyty krwistoczerwonego pelnego pancerza`
 - `/regexp/` — wyrażenie regularne, z flagami po ukośniku, np. `/^Od stop do glow zakut\S* jestes w .+ Khorna/`
 
-Gdy linia z `i` pasuje, przedmiot zajmuje miejsca ze swojej osłony. Wpis sprawdzany jest tylko na liniach odpowiedzi na `i`, nigdy na reszcie tekstu z gry. Linia, której okno ekwipunku nie zna, liczy się tylko w środku odpowiedzi, a nie jako jej pierwsza linia. Ponowna ocena przedmiotu i import bazy zostawiają wpisany opis.
+Gdy linia z `i` pasuje, przedmiot zajmuje miejsca ze swojej osłony. Wpis sprawdzany jest tylko na liniach odpowiedzi na `i`, nigdy na reszcie tekstu z gry. Linia, której okno ekwipunku nie zna, liczy się w środku odpowiedzi, a jako jej pierwsza linia tylko wtedy, gdy `i` zostało wpisane ręcznie albo okno samo o nie zapytało. Ponowna ocena przedmiotu i import bazy zostawiają wpisany opis.
+
+Pod sylwetką okno pokazuje **Do uzupełnienia** z ostatniego `i`:
+
+- noszone, ale bez miejsca — przedmioty z `i`, dla których nic nie mówi, co zakrywają (np. płaszcz, pierścień albo zbroja bez osłony w bazie złomu). Wystarczy je założyć albo uzupełnić osłonę w złomie.
+- linie, których klient nie rozpoznaje — sposób opisu w `i`, którego okno ekwipunku jeszcze nie zna. Jeśli to zbroja, wpisz tę linię w kolumnie **W i**; jeśli coś innego, warto ją zgłosić, żeby dodać nowy wzorzec.
+
+Lista zmienia się przy każdym `i`, a przedmiot, który zakładasz albo zdejmujesz, od razu z niej znika.
 
 ## Menedżer pojemników
 

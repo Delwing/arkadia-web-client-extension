@@ -238,6 +238,46 @@ describe('armour from an i reply', () => {
         });
     });
 
+    test('lists what is worn but on no slot, and the lines nothing knows', () => {
+        client.onLine([
+            'Na glowie masz garnczkowy helm zdobiony majestatycznym jelenim porozem.',
+            'Masz na sobie stalowa dluga kolczuge.',
+            'Twoje cialo spowija lsniaca mithrilowa luska.',
+            'Masz przy sobie 34 miedziane monety.',
+        ].join('\n'), 'text');
+
+        const armor = getWornArmor();
+        expect(armor.slots.korpus).toBe('stalowa dluga kolczuge');
+        expect(armor.unplaced).toEqual(['garnczkowy helm zdobiony majestatycznym jelenim porozem']);
+        expect(armor.unknownLines).toEqual(['Twoje cialo spowija lsniaca mithrilowa luska.']);
+    });
+
+    test('a reply the player asked for may start with a line nothing knows', async () => {
+        await client.sendCommand('i');
+        client.onLine([
+            'Twoje cialo spowija lsniaca mithrilowa luska.',
+            'Masz przy sobie 34 miedziane monety.',
+        ].join('\n'), 'text');
+        expect(getWornArmor().unknownLines).toEqual(['Twoje cialo spowija lsniaca mithrilowa luska.']);
+    });
+
+    test('a line nothing knows outside a reply is not taken for one', () => {
+        client.onLine('Twoje cialo spowija lsniaca mithrilowa luska.', 'text');
+        client.onLine('Masz przy sobie 34 miedziane monety.', 'text');
+        expect(getWornArmor().unknownLines).toEqual([]);
+    });
+
+    test('putting a listed piece on takes it off the list', () => {
+        client.onLine([
+            'Na glowie masz garnczkowy helm z jelenim porozem.',
+            'Masz przy sobie 34 miedziane monety.',
+        ].join('\n'), 'text');
+        expect(getWornArmor().unplaced).toEqual(['garnczkowy helm z jelenim porozem']);
+        client.onLine('Zakladasz garnczkowy helm z jelenim porozem na glowe.', 'text');
+        expect(getWornArmor().unplaced).toEqual([]);
+        expect(getWornArmor().slots.glowa).toBe('garnczkowy helm z jelenim porozem');
+    });
+
     test('a shield on the back is carried, not held on an arm', () => {
         client.onLine([
             'Na plecy masz zarzucona drewniana okuta tarcze.',
