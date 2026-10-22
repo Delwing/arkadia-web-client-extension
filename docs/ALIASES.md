@@ -177,9 +177,7 @@ Zakresy działają rosnąco (`1-7`) i malejąco (`7-1`). Maksymalnie 50 iteracji
 | `/zlom zbroje` | Wyświetl zapisane zbroje |
 | `/zlomw` | Otwórz okno złomu z tabelami i importem bazy z Mudleta |
 | `/zlom-reset` | Wyczyść bazę i zdejmij podświetlenia shortów |
-| `/zlom-wspolny` | Udostępniaj swój spis złomu i odmiany we wspólnym spisie (to samo co opcja w ustawieniach) |
-| `/zlom-wspolny nie` | Przestań udostępniać |
-| `/zlom-wspolny stan` | Pokaż, czy udostępniasz |
+| `/pomagam` | Udostępniaj swój spis złomu i odmiany we wspólnym spisie (wyłączysz to w ustawieniach) |
 
 > **Wskazówka:** Baza automatycznie zapisuje wyniki komendy `ocen <przedmiot>` i podświetla rozpoznane shorty w tekście (pogrubienie + podkreślenie dla broni ze srebrem, dymek z typem). Kolory shortów ustawiasz w oknie `/zlomw` (kolumna "Kolor") — te same kolory stosowane są w listach łupu (`loot`) i w pojemnikach (`pretty containers`). Przełącznik "Srebro" w nagłówku okna kontroluje podkreślanie broni ze srebra. Okno pozwala też zaimportować plik `.db` z profilu Mudleta (tabele `bronie`, `tarcze`, `zbroje`).
 

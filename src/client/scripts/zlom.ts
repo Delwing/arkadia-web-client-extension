@@ -739,19 +739,10 @@ export default function initZlom(
         });
 
         aliases.push({
-            pattern: /^\/zlom-wspolny(?:\s+(nie|stan))?$/,
-            callback: (m: RegExpMatchArray) => {
-                if (m[1] === 'stan') {
-                    client.println(getBehaviorSettings().crowdContribute
-                        ? 'Udostepniasz spis zlomu i odmiany we wspolnym spisie. Wylaczysz to: /zlom-wspolny nie'
-                        : 'Nie udostepniasz spisu zlomu. Wlaczysz to: /zlom-wspolny');
-                    return;
-                }
-                const on = m[1] !== 'nie';
-                setBehaviorSettings({ crowdContribute: on });
-                client.println(on
-                    ? 'Dzieki! Twoj spis zlomu i odmiany trafia teraz anonimowo do wspolnego spisu (bez wagi, ceny, ocen, lokacji i nazwy postaci). Wylaczysz to: /zlom-wspolny nie'
-                    : 'Nie udostepniasz juz spisu zlomu.');
+            pattern: /^\/pomagam$/,
+            callback: () => {
+                setBehaviorSettings({ crowdContribute: true });
+                client.println('Dzieki! Twoj spis zlomu i odmiany trafia teraz anonimowo do wspolnego spisu. Wylaczysz to w ustawieniach.');
             },
         });
     }

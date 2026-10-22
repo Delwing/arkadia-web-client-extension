@@ -317,19 +317,13 @@ describe('zlom script', () => {
     expect(getZlomSnapshot().bronie).toHaveLength(0);
   });
 
-  test('/zlom-wspolny opts in and out of the crowd list', () => {
+  test('/pomagam opts in to the crowd list', () => {
     setBehaviorSettings({ crowdContribute: false });
-    const alias = client.aliases.find(a => a.pattern.test('/zlom-wspolny'))!;
+    const alias = client.aliases.find(a => a.pattern.test('/pomagam'))!;
     expect(alias).toBeDefined();
 
-    alias.callback('/zlom-wspolny'.match(alias.pattern)!);
+    alias.callback('/pomagam'.match(alias.pattern)!);
     expect(getBehaviorSettings().crowdContribute).toBe(true);
-
-    alias.callback('/zlom-wspolny nie'.match(alias.pattern)!);
-    expect(getBehaviorSettings().crowdContribute).toBe(false);
-
-    alias.callback('/zlom-wspolny stan'.match(alias.pattern)!);
-    expect(getBehaviorSettings().crowdContribute).toBe(false);
   });
 
   test('parses parry-only shield (puklerz)', async () => {
