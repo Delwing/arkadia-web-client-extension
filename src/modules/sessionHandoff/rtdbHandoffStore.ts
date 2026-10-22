@@ -9,7 +9,7 @@
  */
 
 import type { Database } from 'firebase/database';
-import { characterKey, normalizeRecord, type SessionRecord } from './handoffRecord';
+import { characterKey, normalizeRecord, type HandoffRoom, type SessionRecord } from './handoffRecord';
 import type { HandoffStore } from './sessionHandoff';
 
 type DatabaseApi = typeof import('firebase/database');
@@ -23,6 +23,8 @@ export class RtdbHandoffStore implements HandoffStore {
         private readonly api: DatabaseApi,
         private readonly db: Database,
         private readonly userId: string,
+        /** The signed-in user's current ID token, kept at hand for a closing page. */
+        private readonly idToken: () => string | null,
     ) {
         // Claims and handoffs from different devices are compared by time, so each
         // uses the server's clock rather than its own.
@@ -58,6 +60,21 @@ export class RtdbHandoffStore implements HandoffStore {
             snapshot => listener(normalizeRecord(snapshot.val())),
             error => console.warn('[SessionHandoff] watch failed:', error),
         );
+    }
+
+    /**
+     * Through the REST API: the SDK's connection is offline between writes, and
+     * a closing page will not wait for it to reconnect. Chrome refuses a keepalive
+     * request that needs a CORS preflight, so a POST with a text body and the
+     * method overridden in the query rather than a PUT.
+     */
+    sendUnloading(character: string, handoff: HandoffRoom): void {
+        const token = this.idToken();
+        if (!token) return;
+        const url = `${this.ref(character).toString()}/handoff.json`
+            + `?x-http-method-override=PUT&auth=${encodeURIComponent(token)}`;
+        fetch(url, {method: 'POST', body: JSON.stringify(handoff), keepalive: true})
+            .catch(() => undefined);
     }
 
     setOnline(online: boolean): void {

@@ -1,4 +1,4 @@
-import { descriptionPrint, HANDOFF_TTL_MS, TAKEOVER_WINDOW_MS, type SessionRecord } from '@modules/sessionHandoff/handoffRecord';
+import { descriptionPrint, HANDOFF_TTL_MS, TAKEOVER_WINDOW_MS, type HandoffRoom, type SessionRecord } from '@modules/sessionHandoff/handoffRecord';
 import { SessionHandoff, type HandoffStore } from '@modules/sessionHandoff/sessionHandoff';
 
 /** One database shared by every device in a test, with a clock the test moves. */
@@ -7,11 +7,15 @@ class FakeDatabase {
     listeners = new Map<string, Set<(value: SessionRecord | null) => void>>();
     time = 1_000_000;
 
-    store(): HandoffStore & { online: boolean; frozen: boolean } {
+    store(): HandoffStore & { online: boolean; frozen: boolean; unloading: HandoffRoom[] } {
         const db = this;
         return {
             online: false,
             frozen: false,
+            unloading: [],
+            sendUnloading(_character, handoff) {
+                this.unloading.push(handoff);
+            },
             now: () => db.time,
             async transact(character, update) {
                 await Promise.resolve();
@@ -138,6 +142,29 @@ describe('SessionHandoff', () => {
         await login(b, 500);
 
         expect(b.applied).toEqual([42]);
+    });
+
+    it('sends the room in a request that outlives a closing page', async () => {
+        const db = new FakeDatabase();
+        const a = device(db, 'phone');
+
+        await login(a, 10);
+        a.handoff.roomChanged(42);
+        await a.handoff.sessionEnded(true);
+        // Once per session: a disconnect heard after the page went changes nothing.
+        await a.handoff.sessionEnded(true);
+
+        expect(a.store.unloading.map(h => h.roomId)).toEqual([42]);
+    });
+
+    it('keeps an ordinary session end to the transaction', async () => {
+        const db = new FakeDatabase();
+        const a = device(db, 'phone');
+
+        await login(a, 10);
+        await a.handoff.sessionEnded();
+
+        expect(a.store.unloading).toEqual([]);
     });
 
     it('leaves a reload to the room the map restored itself', async () => {

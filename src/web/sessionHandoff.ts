@@ -13,7 +13,7 @@ import { RtdbHandoffStore } from "@modules/sessionHandoff/rtdbHandoffStore.ts";
 import { descriptionPrint } from "@modules/sessionHandoff/handoffRecord.ts";
 import type { AnsiAwareBuffer } from "@client/ansi/FormatState.ts";
 import { stripAnsiCodes } from "@client/stripAnsiCodes.ts";
-import { getRealtimeDatabase } from "@modules/firebase/firebaseConfig.ts";
+import { getFirebaseAuth, getRealtimeDatabase } from "@modules/firebase/firebaseConfig.ts";
 import { getDeviceId, loadFirebaseSettings } from "@modules/firebase/firebaseTypes.ts";
 
 /** What the game tells the device being left when a login elsewhere takes the character. */
@@ -29,6 +29,8 @@ let handoff: SessionHandoff | null = null;
 let store: RtdbHandoffStore | null = null;
 let storeUser: string | null = null;
 let storeToken = 0;
+let idToken: string | null = null;
+let stopIdToken: (() => void) | null = null;
 let enabled = true;
 
 function newSessionId(): string {
@@ -132,10 +134,10 @@ export function installSessionHandoff(client: Client): void {
         if (!willResume) void instance.sessionEnded();
         instance.disconnected();
     });
-    // Closing the tab: the transaction is sent on the open connection straight
-    // away, and may or may not land before the page is gone.
+    // Closing the tab: the transaction will not land before the page is gone,
+    // so the room also goes out in a request that outlives it.
     window.addEventListener('pagehide', event => {
-        if (!event.persisted) void instance.sessionEnded();
+        if (!event.persisted) void instance.sessionEnded(true);
     });
 }
 
@@ -148,15 +150,41 @@ export function setSessionHandoffUser(userId: string | null): void {
     store = null;
     handoff?.setStore(null);
     previous?.dispose();
+    stopIdToken?.();
+    stopIdToken = null;
+    idToken = null;
     if (!userId) return;
     void getRealtimeDatabase()
         .then(database => {
             if (!database || token !== storeToken) return;
-            store = new RtdbHandoffStore(database.api, database.db, userId);
+            store = new RtdbHandoffStore(database.api, database.db, userId, () => idToken);
             if (enabled) handoff?.setStore(store);
             console.info('[SessionHandoff] ready, Realtime Database', database.url ?? '(SDK default URL)');
         })
         .catch(error => console.warn('[SessionHandoff] Realtime Database unavailable:', error));
+    keepIdToken(token).catch(error => console.warn('[SessionHandoff] ID token unavailable:', error));
+}
+
+/**
+ * Keep the user's ID token at hand: a closing page has no time to ask for one.
+ * The SDK refreshes it before it expires, and says so here.
+ */
+async function keepIdToken(token: number): Promise<void> {
+    const auth = getFirebaseAuth();
+    if (!auth) return;
+    const { onIdTokenChanged } = await import('firebase/auth');
+    if (token !== storeToken) return;
+    stopIdToken = onIdTokenChanged(auth, user => {
+        if (!user) {
+            idToken = null;
+            return;
+        }
+        user.getIdToken()
+            .then(value => {
+                if (token === storeToken) idToken = value;
+            })
+            .catch(() => undefined);
+    });
 }
 
 /** The player's opt-out from the Synchronizacja tab. Off, nothing is read or written. */

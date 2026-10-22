@@ -41,6 +41,11 @@ export interface HandoffStore {
         update: (current: SessionRecord | null) => SessionRecord | null | undefined,
     ): Promise<SessionRecord | null>;
     watch(character: string, listener: (value: SessionRecord | null) => void): () => void;
+    /**
+     * Write a handoff with a request that outlives the page, for a page being
+     * closed: no transaction, which could not finish in time, and no answer.
+     */
+    sendUnloading(character: string, handoff: HandoffRoom): void;
     /** Hold the database connection open, or let it go. */
     setOnline(online: boolean): void;
 }
@@ -237,8 +242,10 @@ export class SessionHandoff {
      * This device saw its session end. Hand the room over if it can vouch for it.
      *
      * Safe to call more than once for the same session; the first call wins.
+     * `unloading`: the page is going away, and only a request sent at once
+     * will make it; a session taken over earlier has already handed over.
      */
-    async sessionEnded(): Promise<void> {
+    async sessionEnded(unloading = false): Promise<void> {
         const store = this.store;
         const session = this.session;
         const character = this.character;
@@ -252,6 +259,7 @@ export class SessionHandoff {
         if (!this.deps.isTrusted()) return log('session ended, not handing over: tab was in the background');
         this.endedSession = session;
         const handoff = {from: session, device: this.deps.deviceId, roomId, objectNum, at: store.now()};
+        if (unloading) store.sendUnloading(character, handoff);
         const written = await this.run(store, () => store.transact(character, current => withHandoff(current, handoff, store.now())));
         if (written?.handoff?.from === session) log(`handed over room ${roomId} (object ${objectNum})`);
         else log('session ended, handoff refused: another login claimed the character too long ago');
