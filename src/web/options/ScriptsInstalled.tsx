@@ -1,6 +1,6 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { Button, LinkButton } from "@web-ui/primitives/index.ts";
-import { ArrowUpCircle, ExternalLink, PackageOpen, Pencil, Store, Trash2 } from "lucide-react";
+import { ArrowUpCircle, ExternalLink, PackageOpen, Pencil, RotateCw, Store, Trash2 } from "lucide-react";
 import PluginCard, { SourceChip, type CardStatus } from "./PluginCard";
 import type { InstalledPlugin, PluginSource } from "./useInstalledPlugins";
 import { registryPageUrl } from "@shared/marketplace/registryClient.ts";
@@ -67,6 +67,7 @@ export interface ScriptsInstalledProps {
     catalogError: string | null;
     onUpdate: (slug: string, version: string) => void;
     onRemove: (id: string) => void;
+    onReload: (id: string) => void;
     onBrowseCatalog: () => void;
 }
 
@@ -76,6 +77,7 @@ function ScriptsInstalled({
     catalogError,
     onUpdate,
     onRemove,
+    onReload,
     onBrowseCatalog,
 }: ScriptsInstalledProps) {
     const [filter, setFilter] = useState<Filter>("all");
@@ -205,6 +207,13 @@ function ScriptsInstalled({
                                 }
                                 actions={
                                     <>
+                                        {plugin.status !== "loading" && plugin.status !== "unknown" && (
+                                            <CardAction
+                                                icon={<RotateCw size={15} />}
+                                                label="Przeładuj"
+                                                onClick={() => onReload(plugin.id)}
+                                            />
+                                        )}
                                         {plugin.source === "local" && (
                                             <CardAction
                                                 icon={<Pencil size={15} />}

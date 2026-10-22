@@ -218,11 +218,29 @@ export function registerScripts(client: Client) {
         },
     })
     aliases.push({
-        pattern: /^\/reload-plugins$/,
-        callback: async () => {
+        pattern: /^\/reload-plugins?(?:\s+(.+))?$/,
+        callback: async (matches: RegExpMatchArray) => {
             const manager = getPluginManager();
             if (!manager) {
                 client.print('Nie mozna przeladowac pluginow: menedzer nie jest gotowy.');
+                return;
+            }
+
+            // With a name, reload just the plugin whose name or URL contains it.
+            const needle = matches[1]?.trim().toLowerCase();
+            if (needle) {
+                const found = manager.getLoadedPlugins().filter(plugin =>
+                    plugin.info?.name?.toLowerCase().includes(needle) || plugin.url.toLowerCase().includes(needle));
+                if (found.length !== 1) {
+                    client.print(found.length === 0
+                        ? `Nie ma pluginu pasujacego do "${matches[1].trim()}".`
+                        : `Pasuje kilka pluginow: ${found.map(plugin => plugin.info?.name ?? plugin.url).join(', ')}.`);
+                    return;
+                }
+                const reloaded = await manager.reloadPlugin(found[0].url);
+                client.print(reloaded.status === 'error'
+                    ? `Blad przeladowania ${reloaded.info?.name ?? reloaded.url}: ${reloaded.error}`
+                    : `Przeladowano ${reloaded.info?.name ?? reloaded.url}.`);
                 return;
             }
 

@@ -324,6 +324,20 @@ export function useInstalledPlugins() {
         [storedIds, urls, saveUrls, refreshStored]
     );
 
+    /** Destroy and load one plugin again, picking up a new build without a page reload. */
+    const reload = useCallback(
+        async (id: string) => {
+            const manager = getPluginManager();
+            if (!manager) return;
+            const pending = manager.reloadPlugin(id);
+            // The card shows the spinner while the plugin loads again.
+            refreshLoaded();
+            await pending;
+            refreshLoaded();
+        },
+        [refreshLoaded]
+    );
+
     /** Called after a plugin is written straight to IndexedDB (paste, ZIP import). */
     const reloadStored = useCallback(async () => {
         await refreshStored();
@@ -339,6 +353,7 @@ export function useInstalledPlugins() {
         updateFromRegistry,
         uninstallFromRegistry,
         remove,
+        reload,
         reloadStored,
     };
 }

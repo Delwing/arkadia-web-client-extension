@@ -44,6 +44,7 @@ function Scripts() {
         updateFromRegistry,
         uninstallFromRegistry,
         remove,
+        reload,
         reloadStored,
     } = useInstalledPlugins();
 
@@ -185,6 +186,7 @@ function Scripts() {
                         catalogError={catalogError}
                         onUpdate={updateFromRegistry}
                         onRemove={remove}
+                        onReload={reload}
                         onBrowseCatalog={openCatalog}
                     />
                 ) : (

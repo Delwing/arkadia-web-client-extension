@@ -288,6 +288,19 @@ export class PluginManager {
   }
 
   /**
+   * Reload one plugin in place: destroy it, then load it again from its URL
+   * (cache-busted) or its stored code. Works for a plugin that failed to load,
+   * too. A legacy script is re-injected, but whatever globals it set up before
+   * stay behind - it has no destroy to undo them.
+   */
+  async reloadPlugin(identifier: string): Promise<LoadedPlugin> {
+    if (this.plugins.has(identifier)) {
+      await this.unloadPlugin(identifier)
+    }
+    return this.loadPlugin(identifier)
+  }
+
+  /**
    * Reload all plugins (useful after client restart)
    */
   async reloadAll(): Promise<void> {

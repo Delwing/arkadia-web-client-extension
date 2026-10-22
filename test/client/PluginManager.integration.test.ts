@@ -342,6 +342,22 @@ describe('PluginManager integration — plugin lifecycle', () => {
       });
     });
 
+    it('reloadPlugin() destroys the old instance and inits a fresh one', async () => {
+      const first = makePlugin();
+      const second = makePlugin();
+      jest.spyOn(pluginManager as any, 'loadAsModule')
+        .mockResolvedValueOnce(first)
+        .mockResolvedValueOnce(second);
+      await pluginManager.loadPlugin(PLUGIN_URL);
+
+      const reloaded = await pluginManager.reloadPlugin(PLUGIN_URL);
+
+      expect(first.destroy).toHaveBeenCalledTimes(1);
+      expect(second.init).toHaveBeenCalledTimes(1);
+      expect(reloaded.instance).toBe(second);
+      expect(pluginManager.getLoadedPlugins()).toHaveLength(1);
+    });
+
     it('removes the plugin from getLoadedPlugins() after unload', async () => {
       const plugin = makePlugin();
       jest.spyOn(pluginManager as any, 'loadAsModule').mockResolvedValue(plugin);
