@@ -299,6 +299,15 @@ Zakresy działają rosnąco (`1-7`) i malejąco (`7-1`). Maksymalnie 50 iteracji
 
 > **Wskazówka:** To samo nagranie, co w oknie Nagrania — zapisane pojawia się na liście i można je tam odtworzyć. Gdy nagrywanie już trwa, `/nagrywaj` go nie przerywa, tylko o nim przypomina.
 
+## Pluginy
+
+| Komenda | Opis |
+|---------|------|
+| `/reload-plugin <nazwa>` | Przeładuj jeden plugin — wystarczy fragment nazwy albo adresu (np. `/reload-plugin moj-plugin`) |
+| `/reload-plugins` | Przeładuj wszystkie pluginy |
+
+> **Wskazówka:** Gdy fragment pasuje do kilku pluginów, klient wypisze ich nazwy i nic nie przeładuje — podaj dłuższy fragment.
+
 ## Odświeżanie danych
 
 | Komenda | Opis |

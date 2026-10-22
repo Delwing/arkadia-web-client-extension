@@ -1573,6 +1573,10 @@ const off = popup.onSettingChange('ceny', (on) => { /* ... */ });
 3. Własny plugin dodasz przyciskiem "Dodaj plugin" → "Z adresu URL" (albo ZIP / wklejony kod)
 4. Plugin zostanie załadowany i zainicjalizowany
 
+### Przeładowanie bez odświeżania strony
+
+Po zmianie kodu pluginu wpisz w kliencie `/reload-plugin <nazwa>`. Plugin jest zamykany (jego triggery, aliasy, okna itp. znikają) i ładowany od nowa z tego samego adresu. Wystarczy fragment nazwy albo adresu pluginu; gdy pasuje kilka, klient je wypisze. Samo `/reload-plugins` przeładuje wszystkie.
+
 ### Publikacja w katalogu (z edytora)
 
 W edytorze pluginów przycisk **Publish** wysyła plugin do katalogu pluginów.
