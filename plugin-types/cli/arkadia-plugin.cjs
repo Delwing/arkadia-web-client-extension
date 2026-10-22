@@ -19,7 +19,10 @@ const DEFAULT_PORT = 5177;
 const PORT_ATTEMPTS = 20;
 const OUTDIR = 'dist';
 const OUTFILE = 'plugin.js';
-const CLIENT_URL = 'https://delwing.github.io/arkadia-web-client-extension/';
+const CLIENT_URLS = [
+  'https://delwing.github.io/arkadia-web-client-extension/',
+  'https://arkadia-web-client-extension.vercel.app/',
+];
 const ENTRY_CANDIDATES = ['plugin.ts', 'plugin.tsx', 'plugin.js', 'src/index.ts', 'src/index.tsx', 'index.ts'];
 
 const CONTENT_TYPES = {
@@ -228,7 +231,9 @@ async function dev(flags) {
   console.log('');
   console.log(`  Plugin:  ${url}`);
   console.log(`  Add it once in the client (Wtyczki -> Dodaj plugin -> Z adresu URL) or open:`);
-  console.log(`           ${CLIENT_URL}?add-script=${encodeURIComponent(url)}`);
+  for (const client of CLIENT_URLS) {
+    console.log(`           ${client}?add-script=${encodeURIComponent(url)}`);
+  }
   console.log('  The client reloads the plugin after every rebuild.');
   if (port !== requested) {
     console.log('');
