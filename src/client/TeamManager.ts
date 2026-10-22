@@ -59,6 +59,13 @@ export default class TeamManager {
     }
 
     private registerEventListeners() {
+        // Letters stick to object ids for the life of a team; once it is gone the
+        // next team starts again from A.
+        this.client.on('teamChange', () => {
+            if (!this.isInAnyTeam()) {
+                this.client.ObjectManager.resetTeamShortcuts();
+            }
+        });
         this.client.on('clearAttackQueue', () => {
             this.clearEnemyQueue();
         });

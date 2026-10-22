@@ -8,7 +8,7 @@ class FakeClient {
   Triggers = new Triggers({} as any);
   println = jest.fn();
   sendGMCP = jest.fn();
-  ObjectManager = { getObjectsOnLocation: jest.fn().mockReturnValue([]) };
+  ObjectManager = { getObjectsOnLocation: jest.fn().mockReturnValue([]), resetTeamShortcuts: jest.fn() };
   on(event: string, cb: any) {
     this.emitter.on(event, cb);
     return () => this.emitter.off(event, cb);
@@ -80,6 +80,30 @@ describe('TeamManager', () => {
     });
     client.Triggers.parseLine(new AnsiAwareBuffer('Nie jestes w zadnej druzynie.'), '');
     expect(manager.getTeamMembers()).toEqual([]);
+  });
+
+  test('restarts team letters from A once the team is disbanded', () => {
+    client.sendEvent('gmcp.objects.data', {
+      '1': { desc: 'Bob', living: true, team: true },
+    });
+    expect(client.ObjectManager.resetTeamShortcuts).not.toHaveBeenCalled();
+    client.Triggers.parseLine(new AnsiAwareBuffer('Bob rozwiazuje druzyne.'), '');
+    expect(client.ObjectManager.resetTeamShortcuts).toHaveBeenCalled();
+  });
+
+  test.each([
+    'Vesper zmusza cie do opuszczenia druzyny.',
+    '[Vesper] zmusza cie do opuszczenia druzyny.',
+  ])('forgets the team when thrown out: %s', (line) => {
+    client.sendEvent('gmcp.objects.data', {
+      '1': { desc: 'Vesper', living: true, team: true, team_leader: true },
+      '2': { desc: 'Bob', living: true, team: true },
+    });
+    expect(manager.isInAnyTeam()).toBe(true);
+    client.Triggers.parseLine(new AnsiAwareBuffer(line), '');
+    expect(manager.getTeamMembers()).toEqual([]);
+    expect(manager.isInAnyTeam()).toBe(false);
+    expect(client.ObjectManager.resetTeamShortcuts).toHaveBeenCalled();
   });
 
   test('clears the team, leader and targets on a new life (relog)', () => {
