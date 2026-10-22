@@ -22,6 +22,30 @@ async function readTarball(source) {
   return Buffer.from(await res.arrayBuffer());
 }
 
+// Files under `dir`, relative to it.
+function listFiles(dir, prefix = '') {
+  return fs.readdirSync(path.join(dir, prefix), { withFileTypes: true }).flatMap(entry => {
+    const rel = path.join(prefix, entry.name);
+    return entry.isDirectory() ? listFiles(dir, rel) : [rel];
+  });
+}
+
+// Copy the new files over DIR, then drop the ones the new version no longer
+// has. DIR itself is never renamed or removed: on Windows an editor's file
+// watcher or a virus scan holds folders open, and renaming one fails (EPERM).
+function replaceDir(staging) {
+  fs.cpSync(staging, DIR, { recursive: true, force: true });
+  const fresh = new Set(listFiles(staging));
+  for (const file of listFiles(DIR)) {
+    if (!fresh.has(file)) fs.rmSync(path.join(DIR, file), { force: true });
+  }
+  try {
+    fs.rmSync(staging, { recursive: true, force: true, maxRetries: 5 });
+  } catch {
+    // A held staging folder is harmless; the next run clears it first.
+  }
+}
+
 async function fetchTypes() {
   const source = process.env.ARKADIA_PLUGIN_TYPES_URL || DEFAULT_URL;
   try {
@@ -32,8 +56,7 @@ async function fetchTypes() {
     fs.writeFileSync(path.join(staging, 'types.tgz'), tarball);
     execFileSync('tar', ['-xzf', 'types.tgz', '--strip-components=1'], { cwd: staging });
     fs.rmSync(path.join(staging, 'types.tgz'));
-    fs.rmSync(DIR, { recursive: true, force: true });
-    fs.renameSync(staging, DIR);
+    replaceDir(staging);
     console.log(`Arkadia plugin types updated from ${source}`);
   } catch (error) {
     if (!fs.existsSync(path.join(DIR, 'index.d.ts'))) throw error;
