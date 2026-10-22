@@ -1,6 +1,6 @@
 {
   "name": "@dargoth-client/plugin-types",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Types and dev tools for Arkadia Web Client plugins, always matching the deployed client",
   "keywords": [
     "arkadia",
