@@ -126,6 +126,8 @@ export interface GlobalStorageSchema {
      * receives alerts for whichever character is being played.
      */
     pushCredentials: { pushId: string; pushSecret: string };
+    /** Anonymous contributor credential minted by the crowd Worker. See @modules/crowd. */
+    crowdCredentials: { contributorId: string; secret: string };
     /**
      * Data plugins keep through `api.storage.global`, by plugin id then key.
      * Named apart from the character key `plugin_data`: the first-character
@@ -243,5 +245,6 @@ export const globalStorageKeys = [
     'carriage_blocked_rooms',
     'parravon_fog_mode',
     'pushCredentials',
+    'crowdCredentials',
     'plugin_global_data',
 ] as const satisfies readonly (keyof GlobalStorageSchema)[];

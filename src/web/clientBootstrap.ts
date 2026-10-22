@@ -26,6 +26,7 @@ import { registerEnemyStatusFilter } from "./filters/enemyStatusFilter";
 import { installAltCodeGuard } from "@shared/dom/altCodeGuard.ts";
 import { installSessionHandoff, setSessionHandoffUser } from "./sessionHandoff";
 import { installTriggerPrefilterDebug } from "./triggerPrefilterDebug";
+import { startCrowdSync } from "@modules/crowd/crowdSync.ts";
 
 export interface GameClientBootstrap {
     client: Client;
@@ -77,6 +78,9 @@ export function bootstrapGameClient(opts: { installPorts: () => void }): GameCli
     // than in a single UI's entry point — otherwise the flavors render it in the
     // stock UI and silently drop it everywhere else.
     registerEnemyStatusFilter(client);
+
+    // Shared spis zlomu / odmiany upload. Idle unless the player opted in.
+    startCrowdSync();
 
     // A push pairing code arrives in the URL fragment, from a QR scanned on
     // another device. The cheap synchronous test comes first on purpose: this

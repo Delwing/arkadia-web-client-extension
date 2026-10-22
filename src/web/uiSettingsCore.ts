@@ -670,6 +670,9 @@ export function load(): UiSettings {
             const pushOnlyWhenHidden = typeof parsed.pushOnlyWhenHidden === 'boolean'
                 ? parsed.pushOnlyWhenHidden
                 : defaultUiSettings.pushOnlyWhenHidden;
+            const crowdContribute = typeof parsed.crowdContribute === 'boolean'
+                ? parsed.crowdContribute
+                : defaultUiSettings.crowdContribute;
             const wakeLock = typeof parsed.wakeLock === 'boolean'
                 ? parsed.wakeLock
                 : defaultUiSettings.wakeLock;
@@ -767,6 +770,7 @@ export function load(): UiSettings {
                 dismountOnRefusedRide,
                 carriageRouteBinds,
                 pushOnlyWhenHidden,
+                crowdContribute,
                 wakeLock,
                 inGameUpdateNotice,
                 ...toasts,

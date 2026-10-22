@@ -38,3 +38,17 @@ export function OtherSection({ draft, update }: OtherSectionsProps) {
         </SettingsSection>
     );
 }
+
+export function CrowdSection({ draft, update }: OtherSectionsProps) {
+    return (
+        <SettingsSection title="Wspólny spis złomu">
+            <CheckboxRow
+                id="ui-crowd-contribute"
+                label="Udostępniaj mój spis złomu i odmiany"
+                hint="Wysyła anonimowo nazwy, opisy i rodzaje ocenionych broni, zbroi i tarcz, wpisane linie z „i” oraz odmiany przedmiotów sprawdzone komendą odmień. Bez wagi, ceny, ocen jakości, lokacji, kolorów i notatek, bez nazwy postaci. Wspólny spis jest publiczny."
+                checked={draft.crowdContribute}
+                onChange={(v) => update({ crowdContribute: v })}
+            />
+        </SettingsSection>
+    );
+}

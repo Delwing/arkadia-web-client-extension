@@ -160,6 +160,11 @@ export interface BehaviorSettings {
      */
     pushOnlyWhenHidden: boolean;
     /**
+     * Send this player's zlom list and the odmiany they saw to the shared
+     * crowd database (@modules/crowd). Off until the player opts in.
+     */
+    crowdContribute: boolean;
+    /**
      * Literal prefilter for regex triggers (src/client/triggerPrefilter.ts): 'on'
      * skips a regex when the line lacks text every match must contain, 'off' runs
      * every regex, 'verify' runs every regex and reports loudly when the prefilter

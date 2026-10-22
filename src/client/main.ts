@@ -173,6 +173,7 @@ import initCytadela from './scripts/cytadela'
 import initWrak from './scripts/wrak'
 import initLastSeen from './scripts/lastSeen'
 import initZlom from './scripts/zlom'
+import initOdmiana from './scripts/odmiana'
 import initEnemyResistances from './scripts/enemyResistances'
 import initCoverTracker from './scripts/coverTracker'
 import initBilety from './scripts/bilety'
@@ -404,6 +405,7 @@ export function registerScripts(client: Client) {
     initUserTriggers(client)
     initUserScripts(client, aliases)
     initZlom(client, aliases)
+    initOdmiana(client)
     initEnemyResistances(client, aliases)
     initCoverTracker(client, aliases)
     initWeaponEvaluation(client)
