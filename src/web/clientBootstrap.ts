@@ -27,6 +27,7 @@ import { installAltCodeGuard } from "@shared/dom/altCodeGuard.ts";
 import { installSessionHandoff, setSessionHandoffUser } from "./sessionHandoff";
 import { installTriggerPrefilterDebug } from "./triggerPrefilterDebug";
 import { startCrowdSync } from "@modules/crowd/crowdSync.ts";
+import { startCrowdSnapshot } from "@modules/crowd/crowdSnapshot.ts";
 
 export interface GameClientBootstrap {
     client: Client;
@@ -81,6 +82,8 @@ export function bootstrapGameClient(opts: { installPorts: () => void }): GameCli
 
     // Shared spis zlomu / odmiany upload. Idle unless the player opted in.
     startCrowdSync();
+    // ...and, for the same players, the merged list from everyone, read-only
+    startCrowdSnapshot();
 
     // A push pairing code arrives in the URL fragment, from a QR scanned on
     // another device. The cheap synchronous test comes first on purpose: this

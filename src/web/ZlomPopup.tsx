@@ -25,6 +25,8 @@ import { defaultSettings } from '@modules/core/defaultSettings';
 import { openSettingsPage } from '@web/settings/categories.ts';
 import type { ZlomDbResult } from '@modules/data/zlomDbImport.shared';
 import { ColorInput, HeaderButton } from '@web-ui/primitives';
+import { getCrowdSnapshot, subscribeCrowdSnapshot, type CrowdSnapshot } from '@modules/crowd/crowdSnapshot';
+import { buildZlomView, type CrowdMarks, type ViewArmour, type ViewShield, type ViewWeapon, type ZlomView } from '@modules/crowd/crowdView';
 
 const POPUP_ID = 'popup:zlom';
 const PAGE_SIZE = 100;
@@ -54,6 +56,10 @@ const ZlomPopup: React.FC = () => {
     const [activeTab, setActiveTab] = usePopupSetting<TabType>(POPUP_ID, 'activeTab', 'bronie');
     const [filter, setFilter] = useState('');
     const [page, setPage] = useState(0);
+    // Present only for a player who shares: crowdSnapshot downloads it for them alone
+    const [crowd, setCrowd] = useState<CrowdSnapshot | null>(getCrowdSnapshot);
+    useEffect(() => subscribeCrowdSnapshot(setCrowd), []);
+    const [showCrowd, setShowCrowd] = usePopupSetting<boolean>(POPUP_ID, 'showCrowd', true);
 
     useEffect(() => {
         setPage(0);
@@ -281,15 +287,22 @@ const ZlomPopup: React.FC = () => {
         </td>
     );
 
+    // The player's list, completed from other players' when they share and want to see it.
+    // Only for looking at: export, colours and notes stay on the player's own entries.
+    const view: ZlomView = useMemo(
+        () => (showCrowd && crowd ? buildZlomView(snap, crowd) : snap),
+        [snap, crowd, showCrowd],
+    );
+
     const entries = useMemo(() => {
-        const raw: (WeaponEntry | ShieldEntry | ArmorEntry)[] =
-            activeTab === 'bronie' ? snap.bronie
-                : activeTab === 'tarcze' ? snap.tarcze
-                    : snap.zbroje;
+        const raw: (ViewWeapon | ViewShield | ViewArmour)[] =
+            activeTab === 'bronie' ? view.bronie
+                : activeTab === 'tarcze' ? view.tarcze
+                    : view.zbroje;
         const needle = filter.trim().toLowerCase();
         const filtered = needle ? raw.filter(e => e.short.toLowerCase().includes(needle)) : raw;
         return [...filtered].sort((a, b) => a.short.localeCompare(b.short));
-    }, [snap, activeTab, filter]);
+    }, [view, activeTab, filter]);
 
     const totalPages = Math.max(1, Math.ceil(entries.length / PAGE_SIZE));
     const currentPage = Math.min(page, totalPages - 1);
@@ -299,10 +312,49 @@ const ZlomPopup: React.FC = () => {
     );
 
     const total = {
-        bronie: snap.bronie.length,
-        tarcze: snap.tarcze.length,
-        zbroje: snap.zbroje.length,
+        bronie: view.bronie.length,
+        tarcze: view.tarcze.length,
+        zbroje: view.zbroje.length,
     };
+
+    /** A crowd row knows no weight, price or ratings: blank, not a misleading 0 */
+    const own = (e: CrowdMarks, value: React.ReactNode) => (e.fromCrowd ? '' : value);
+
+    const renderCrowdTag = (e: CrowdMarks) => {
+        if (e.fromCrowd) {
+            return (
+                <span
+                    className="zlom-tag zlom-tag--crowd"
+                    title={`Ze wspólnego spisu (potwierdzeń: ${e.confirmations ?? 1}). Nie oceniłeś go sam: waga, cena i oceny są nieznane.`}
+                >
+                    W
+                </span>
+            );
+        }
+        if (e.crowdFilled?.length) {
+            return (
+                <span className="zlom-tag zlom-tag--crowd-filled" title={`Uzupełnione ze wspólnego spisu: ${e.crowdFilled.join(', ')}`}>
+                    +W
+                </span>
+            );
+        }
+        return null;
+    };
+
+    /** Colour and note belong to the player's own entries; a crowd row has neither */
+    const ownCells = (kind: ZlomKind, e: ViewWeapon | ViewShield | ViewArmour, withILine: boolean) => e.fromCrowd ? (
+        <>
+            {withILine && <td className="zlom-cell zlom-cell--note" title={(e as ViewArmour).iLine}>{(e as ViewArmour).iLine ? '●' : ''}</td>}
+            <td className="zlom-cell" />
+            <td className="zlom-cell" />
+        </>
+    ) : (
+        <>
+            {withILine && renderNoteCell(kind, e, 'iLine')}
+            {renderColorCell(kind, e)}
+            {renderNoteCell(kind, e)}
+        </>
+    );
 
     const effectiveSilverColor = silver.off ? undefined : silver.color;
 
@@ -319,66 +371,67 @@ const ZlomPopup: React.FC = () => {
         );
     };
 
-    const renderWeapon = (e: WeaponEntry, i: number) => {
+    const rowClass = (e: CrowdMarks, i: number) =>
+        `zlom-row${i % 2 ? ' zlom-row--alt' : ''}${e.fromCrowd ? ' zlom-row--crowd' : ''}`;
+
+    const renderWeapon = (e: ViewWeapon, i: number) => {
         const effectiveColor = e.magik
             ? undefined
             : e.color ?? (e.srebro && effectiveSilverColor ? effectiveSilverColor : undefined);
         return (
-        <tr key={e.opis || `${e.short}-${i}`} className={i % 2 ? 'zlom-row zlom-row--alt' : 'zlom-row'}>
+        <tr key={`${e.fromCrowd ? 'w:' : ''}${e.opis || `${e.short}-${i}`}`} className={rowClass(e, i)}>
             <td
                 className="zlom-cell zlom-cell--short"
                 style={effectiveColor ? { color: effectiveColor } : undefined}
             >
                 {e.short}
-                {renderAltWarning(e)}
+                {!e.fromCrowd && renderAltWarning(e)}
+                {renderCrowdTag(e)}
                 {e.srebro ? <span className="zlom-tag zlom-tag--silver" title="srebro">Ag</span> : null}
                 {e.magik ? <span className="zlom-tag zlom-tag--magic" title="magia">M</span> : null}
             </td>
             <td className="zlom-cell">{e.typ}</td>
             <td className="zlom-cell">{protectionText(e.klute, e.obuch, e.ciete)}</td>
-            <td className="zlom-cell zlom-cell--num">{e.wywazenie || ''}</td>
-            <td className="zlom-cell zlom-cell--num">{e.parowanie || ''}</td>
-            <td className="zlom-cell zlom-cell--num">{e.cena}</td>
-            <td className="zlom-cell zlom-cell--num">{e.waga}</td>
-            {renderColorCell('bronie', e)}
-            {renderNoteCell('bronie', e)}
+            <td className="zlom-cell zlom-cell--num">{own(e, e.wywazenie || '')}</td>
+            <td className="zlom-cell zlom-cell--num">{own(e, e.parowanie || '')}</td>
+            <td className="zlom-cell zlom-cell--num">{own(e, e.cena)}</td>
+            <td className="zlom-cell zlom-cell--num">{own(e, e.waga)}</td>
+            {ownCells('bronie', e, false)}
         </tr>
         );
     };
 
-    const renderShield = (e: ShieldEntry, i: number) => (
-        <tr key={e.opis || `${e.short}-${i}`} className={i % 2 ? 'zlom-row zlom-row--alt' : 'zlom-row'}>
+    const renderShield = (e: ViewShield, i: number) => (
+        <tr key={`${e.fromCrowd ? 'w:' : ''}${e.opis || `${e.short}-${i}`}`} className={rowClass(e, i)}>
             <td className="zlom-cell zlom-cell--short" style={!e.magik && e.color ? { color: e.color } : undefined}>
                 {e.short}
-                {renderAltWarning(e)}
+                {!e.fromCrowd && renderAltWarning(e)}
+                {renderCrowdTag(e)}
                 {e.magik ? <span className="zlom-tag zlom-tag--magic" title="magia">M</span> : null}
             </td>
             <td className="zlom-cell">{e.oslona}</td>
-            <td className="zlom-cell">{protectionText(e.klute, e.obuch, e.ciete)}</td>
-            <td className="zlom-cell zlom-cell--num">{e.parowanie || ''}</td>
-            <td className="zlom-cell zlom-cell--num">{e.cena}</td>
-            <td className="zlom-cell zlom-cell--num">{e.waga}</td>
-            {renderNoteCell('tarcze', e, 'iLine')}
-            {renderColorCell('tarcze', e)}
-            {renderNoteCell('tarcze', e)}
+            <td className="zlom-cell">{own(e, protectionText(e.klute, e.obuch, e.ciete))}</td>
+            <td className="zlom-cell zlom-cell--num">{own(e, e.parowanie || '')}</td>
+            <td className="zlom-cell zlom-cell--num">{own(e, e.cena)}</td>
+            <td className="zlom-cell zlom-cell--num">{own(e, e.waga)}</td>
+            {ownCells('tarcze', e, true)}
         </tr>
     );
 
-    const renderArmor = (e: ArmorEntry, i: number) => (
-        <tr key={e.opis || `${e.short}-${i}`} className={i % 2 ? 'zlom-row zlom-row--alt' : 'zlom-row'}>
+    const renderArmor = (e: ViewArmour, i: number) => (
+        <tr key={`${e.fromCrowd ? 'w:' : ''}${e.opis || `${e.short}-${i}`}`} className={rowClass(e, i)}>
             <td className="zlom-cell zlom-cell--short" style={!e.magik && e.color ? { color: e.color } : undefined}>
                 {e.short}
-                {renderAltWarning(e)}
+                {!e.fromCrowd && renderAltWarning(e)}
+                {renderCrowdTag(e)}
                 {e.magik ? <span className="zlom-tag zlom-tag--magic" title="magia">M</span> : null}
             </td>
             <td className="zlom-cell">{e.typ}</td>
             <td className="zlom-cell">{e.oslona}</td>
-            <td className="zlom-cell">{protectionText(e.klute, e.obuch, e.ciete)}</td>
-            <td className="zlom-cell zlom-cell--num">{e.cena}</td>
-            <td className="zlom-cell zlom-cell--num">{e.waga}</td>
-            {renderNoteCell('zbroje', e, 'iLine')}
-            {renderColorCell('zbroje', e)}
-            {renderNoteCell('zbroje', e)}
+            <td className="zlom-cell">{own(e, protectionText(e.klute, e.obuch, e.ciete))}</td>
+            <td className="zlom-cell zlom-cell--num">{own(e, e.cena)}</td>
+            <td className="zlom-cell zlom-cell--num">{own(e, e.waga)}</td>
+            {ownCells('zbroje', e, true)}
         </tr>
     );
 
@@ -398,6 +451,15 @@ const ZlomPopup: React.FC = () => {
 
     const headerActions = (
         <>
+            {crowd && (
+                <HeaderButton
+                    active={showCrowd}
+                    onClick={() => setShowCrowd(!showCrowd)}
+                    title="Pokaż też przedmioty i dane innych graczy ze wspólnego spisu"
+                >
+                    Wspólny
+                </HeaderButton>
+            )}
             <HeaderButton
                 onClick={handleExport}
                 title="Zapisz bazę do pliku JSON"

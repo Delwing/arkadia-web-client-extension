@@ -5215,6 +5215,18 @@ select.popup-input optgroup {
   cursor: help;
 }
 
+/* Other players' data: a whole entry ("W"), or blanks filled in one of the player's own ("+W") */
+.zlom-tag--crowd,
+.zlom-tag--crowd-filled {
+  color: var(--popup-accent);
+  background-color: var(--popup-accent-subtle-bg);
+  cursor: help;
+}
+
+.zlom-row--crowd .zlom-cell {
+  color: var(--popup-text-dim);
+}
+
 .zlom-cell--color {
   width: 4rem;
   white-space: nowrap;

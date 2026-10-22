@@ -4,7 +4,8 @@ import { characterStorage } from "@modules/core/storage";
 import { onContainerListing, parseItems, splitItemList, type ContainerItem, type ParsedContainer } from "./prettyContainers";
 import { getAssignedBags, setCarriedBagOrdinals } from "./bagManager";
 import { normalizeHerbBagsState } from "../types/herbs";
-import { getZlomSnapshot, iLineEntries, type ZlomSnapshot } from "@modules/data/zlomStore";
+import { iLineEntries, type ZlomSnapshot } from "@modules/data/zlomStore";
+import { getZlomView } from "@modules/crowd/crowdView";
 
 /**
  * Tracks what the character carries for the inventory window.
@@ -249,10 +250,10 @@ const SECTIONS: { pattern: RegExp; label: string; worn?: true; items?: (match: R
 /** The `i` reply ends with what is carried */
 const LAST_LINE = /^(?:Masz przy sobie |Nie masz przy sobie niczego)/;
 
-/** The złom pieces with an `i` line, compiled once per version of the list */
+/** The złom pieces with an `i` line, other players' included, compiled once per version of the list */
 let iLinesOf: { snapshot: ZlomSnapshot; entries: ReturnType<typeof iLineEntries> } | null = null;
 function iLines(): ReturnType<typeof iLineEntries> {
-    const snapshot = getZlomSnapshot();
+    const snapshot = getZlomView();
     if (iLinesOf?.snapshot !== snapshot) iLinesOf = { snapshot, entries: iLineEntries(snapshot) };
     return iLinesOf.entries;
 }

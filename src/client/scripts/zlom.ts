@@ -7,7 +7,8 @@ import { ARMOR_QUALITY, BALANCE, EFFECTIVENESS } from "./evaluationConstants";
 import eventBus from "@modules/core/eventBus";
 import { createColorFormat } from "@modules/core/Colors";
 import { getBehaviorSettings, setBehaviorSettings } from "@modules/core/settings";
-import { ensureOdmianaLoaded, getOdmiana } from "@modules/data/odmianaStore";
+import { ensureOdmianaLoaded } from "@modules/data/odmianaStore";
+import { isDeclined } from "@modules/crowd/crowdView";
 import {
     ensureZlomLoaded,
     getZlomSnapshot,
@@ -429,11 +430,12 @@ export default function initZlom(
      */
     const offerOdmiana = (short: string) => {
         const name = short.trim().toLowerCase();
-        if (!name || offeredOdmiana.has(name) || getOdmiana(name)) return;
+        // Declined by anyone is enough: no need to ask this player for it again
+        if (!name || offeredOdmiana.has(name) || isDeclined(name)) return;
         if (!getBehaviorSettings().crowdContribute) return;
         offeredOdmiana.add(name);
         setTimeout(() => {
-            if (getOdmiana(name)) return;
+            if (isDeclined(name)) return;
             const command = `odmien ${name}`;
             const line = new AnsiAwareBuffer();
             line.append("Brak odmiany w spisie: ", ODMIANA_HINT);

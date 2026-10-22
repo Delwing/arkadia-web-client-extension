@@ -11,6 +11,7 @@ import {
     type ZlomSnapshot,
 } from "@modules/data/zlomStore";
 import { setZlomILine } from "./zlom";
+import { getZlomView } from "@modules/crowd/crowdView";
 import type { OdmianaSnapshot } from "@modules/data/odmianaStore";
 import { getInventoryState } from "./inventory";
 import { splitName } from "./inventoryActions";
@@ -403,8 +404,10 @@ export default function initArmor(client: Client, aliases?: { pattern: RegExp; c
         const worn = getInventoryState().sections
             .filter(section => WORN_SECTIONS.has(section.label))
             .flatMap(section => section.entries.map(entry => entry.name));
-        const { zbroje, tarcze } = getZlomSnapshot();
-        const byLine = iLineEntries(getZlomSnapshot());
+        // Other players' covers and i lines place pieces too; the list itself stays the player's
+        const view = getZlomView();
+        const { zbroje, tarcze } = view;
+        const byLine = iLineEntries(view);
         const slots = {
             ...slotsFromWorn(worn, [...zbroje, ...tarcze.map(entry => ({ ...entry, shield: true }))]),
             ...slotsFromLines(lines, byLine),

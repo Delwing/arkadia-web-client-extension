@@ -1,25 +1,26 @@
 import React, { useEffect, useState } from 'react';
 import eventBus from '@modules/core/eventBus';
 import { getBehaviorSettings, onBehaviorSettingsChange } from '@modules/core/settings';
-import { getZlomSnapshot, subscribeZlom } from '@modules/data/zlomStore';
-import { ensureOdmianaLoaded, getOdmianaSnapshot, subscribeOdmiana } from '@modules/data/odmianaStore';
+import { ensureOdmianaLoaded } from '@modules/data/odmianaStore';
+import { getKnownOdmiany, getZlomView, subscribeKnownOdmiany, subscribeZlomView } from '@modules/crowd/crowdView';
 import { undeclinedPieces } from '@client/scripts/armor';
 
 /**
  * For a player who shares with the crowd list: the worn pieces whose
- * declension is still missing, one click from `odmien`. The reply is read
+ * declension nobody has sent yet - this player or another - one click from
+ * `odmien`. The reply is read
  * passively (odmiana.ts), so a piece drops off the list once it arrives.
  */
 const ArmorOdmianaHint: React.FC<{ slots: Record<string, string> }> = ({ slots }) => {
     const [contributing, setContributing] = useState(() => getBehaviorSettings().crowdContribute);
-    const [zlom, setZlom] = useState(getZlomSnapshot);
-    const [odmiany, setOdmiany] = useState(getOdmianaSnapshot);
+    const [zlom, setZlom] = useState(getZlomView);
+    const [odmiany, setOdmiany] = useState(getKnownOdmiany);
 
     useEffect(() => onBehaviorSettingsChange(settings => setContributing(settings.crowdContribute)), []);
-    useEffect(() => subscribeZlom(setZlom), []);
+    useEffect(() => subscribeZlomView(setZlom), []);
     useEffect(() => {
-        void ensureOdmianaLoaded().then(() => setOdmiany(getOdmianaSnapshot()));
-        return subscribeOdmiana(setOdmiany);
+        void ensureOdmianaLoaded().then(() => setOdmiany(getKnownOdmiany()));
+        return subscribeKnownOdmiany(setOdmiany);
     }, []);
 
     if (!contributing) return null;
