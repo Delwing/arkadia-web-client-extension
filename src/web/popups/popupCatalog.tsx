@@ -15,6 +15,7 @@ import EnemyResistancesPopup from '../EnemyResistancesPopup';
 import FishingPopup from '../FishingPopup';
 import HerbManager from '../herbs/HerbManager';
 import InventoryPopup from '../InventoryPopup';
+import ArmorPopup from '../ArmorPopup';
 import KnowledgeWindow from '../knowledge/KnowledgeWindow';
 import DocsWindow from '../documentation/DocsWindow';
 import LetterViewPopup from '../LetterViewPopup';
@@ -97,6 +98,7 @@ export const POPUP_CATALOG: PopupCatalogEntry[] = [
     { id: 'popup:roomInfo', Component: RoomInfoPopup },
     { id: 'popup:deposits', Component: DepositsPopup },
     { id: 'popup:inventory', Component: InventoryPopup },
+    { id: 'popup:armor', Component: ArmorPopup },
     { id: 'popup:packageReceiver', Component: PackageReceiverPopup },
     { id: 'popup:loot', Component: LootPopup },
     { id: 'popup:profession', Component: ProfessionPopup },

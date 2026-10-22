@@ -585,6 +585,11 @@ export interface KnownEvents {
     "containers.listed": { container: string; items: { name: string; count: string | number }[] };
     /** The tracked inventory changed - read it with getInventoryState() */
     "inventory.updated": void;
+    /** An `i` reply was just read in full: what is worn, held and carried is as it says */
+    "inventory.read": void;
+    /** The worn armour changed - read it with getWornArmor() */
+    "armor.updated": void;
+    "armor.popup.open": void;
     "inventory.popup.open": void;
     /** Ask for a hidden `i` */
     "inventory.refresh": void;

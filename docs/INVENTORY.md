@@ -24,6 +24,17 @@ Pojemniki ustawione w `/pojemnik` mają w oknie własną kolumnę (obok listy, g
 - Wkładanie i wyjmowanie idzie przez menedżer pojemników, tak jak `/wdp` i `/wzp`, więc pojemnik jest otwierany i zamykany zgodnie z jego ustawieniami. Inne pojemniki (spoza `/pojemnik`) okno otwiera przed i zamyka po, gdy są zamknięte
 - Gdy gra odmówi (`… nie chce wejsc.`), przedmiot od razu wraca na swoje miejsce, a okno na chwilę pokazuje powód
 
+## Okno zbroi
+
+`/zbroja` (albo **Zbroja** w menu pod prawym przyciskiem myszy) pokazuje sylwetkę z miejscami na zbroję: głowa, korpus, lewe i prawe ramię, dłonie, nogi, stopy i tarcza (to, co zakładasz `na lewa reke` albo `na prawa reke`). `ramiona` zajmuje oba ramiona naraz. Okno uczy się z komunikatów gry przy zakładaniu i zdejmowaniu:
+
+- `Zakladasz stalowa dluga kolczuge na tulow, nogi i ramiona.` — kolczuga zajmuje wszystkie trzy miejsca, a zakryte części sylwetki się podświetlają
+- `Zdejmujesz z siebie stalowa dluga kolczuge.` — zwalnia każde miejsce, które zajmowała
+
+Gdy zakładany przedmiot jest w bazie złomu, a nie ma jeszcze wpisanej osłony, okno ją uzupełnia (`tulow` jako `korpus`, np. `korpus, nogi i ramiona`). Osłona, która już jest, zostaje bez zmian.
+
+Stan jest zapamiętywany osobno dla każdej postaci i synchronizowany między urządzeniami. Okno uczy się też z `i`: przedmiot, który masz na sobie, a baza złomu zna jego osłonę, trafia od razu na swoje miejsca — nawet jeśli nie widziało, jak go zakładasz. Miejsce zajęte przez zakładanie zostaje, dopóki nosisz coś tego rodzaju (np. hełm opisany w `i` dokładniej niż przy zakładaniu), a znika, gdy `i` go już nie wymienia. Przedmioty na plecach i przy pasie się nie liczą.
+
 ## Menedżer pojemników
 
 Menedżer pojemników pozwala przypisać wybrane torby, plecaki i inne pojemniki do określonych typów przedmiotów. Dzięki temu możesz szybko odkładać i wyjmować rzeczy z odpowiedniego miejsca.

@@ -9099,3 +9099,124 @@ body.inventory-dragging * {
   font-size: 0.78em;
   font-variant-numeric: tabular-nums;
 }
+
+/* ── armour (ArmorPopup.tsx) ─────────────────────────────────────────── */
+.armor-popup__content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.75rem 0.5rem;
+  font-size: calc(0.8125rem * var(--window-font-scale, 1));
+  line-height: 1.3;
+}
+
+/* Slot cards on either side of the figure, each beside the part it covers */
+.armor-popup__doll {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 110px minmax(0, 1fr);
+  grid-template-rows: repeat(5, minmax(58px, auto));
+  row-gap: 0.25rem;
+  column-gap: 0.5rem;
+  align-items: center;
+}
+
+.armor-popup__body {
+  grid-column: 2;
+  grid-row: 1 / span 5;
+  display: flex;
+  justify-content: center;
+}
+
+.armor-popup__figure {
+  width: 100%;
+  height: auto;
+}
+
+.armor-popup__part {
+  fill: var(--popup-subtle-bg);
+  stroke: var(--popup-border);
+  stroke-width: 1.5;
+  transition: fill 0.12s ease, stroke 0.12s ease;
+}
+
+.armor-popup__part--covered {
+  fill: var(--popup-accent-bg);
+  stroke: var(--popup-accent);
+}
+
+.armor-popup__part--hovered {
+  stroke: var(--popup-accent);
+  stroke-width: 2.5;
+}
+
+.armor-popup__slot {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+  padding: 0.35rem 0.45rem;
+  border-radius: 0.4rem;
+  border: 1px dashed var(--popup-border);
+  color: var(--popup-text-faint);
+}
+
+.armor-popup__slot--left {
+  grid-column: 1;
+  flex-direction: row-reverse;
+  text-align: right;
+}
+
+.armor-popup__slot--right {
+  grid-column: 3;
+}
+
+.armor-popup__slot--filled {
+  border-style: solid;
+  border-color: var(--popup-accent-border);
+  background-color: var(--popup-accent-subtle-bg);
+  color: var(--popup-text);
+}
+
+.armor-popup__slot-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: var(--popup-text-dim);
+}
+
+.armor-popup__slot--filled .armor-popup__slot-icon {
+  color: var(--popup-accent);
+}
+
+.armor-popup__slot-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.armor-popup__slot-label {
+  font-size: 0.72em;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--popup-text-dim);
+}
+
+/* Two lines at most; the whole name is in the card's tooltip */
+.armor-popup__slot-item {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+
+.armor-popup__slot:not(.armor-popup__slot--filled) .armor-popup__slot-item {
+  font-style: italic;
+}
+
+.armor-popup__hint {
+  margin-top: 0.75rem;
+  padding: 0 0.5rem;
+  color: var(--popup-text-faint);
+  font-size: 0.85em;
+  text-align: center;
+}

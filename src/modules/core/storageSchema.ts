@@ -25,6 +25,7 @@ import type { CharGender } from '@shared/events/gmcpTypes';
 import type { CechyHistoryEntry } from '@client/scripts/cechyHistory';
 import type { CarriageRecord } from '@client/scripts/carriage';
 import type { StoredInventory } from '@client/scripts/inventory';
+import type { WornArmor } from '@client/scripts/armor';
 import type { CustomLetterTemplate } from '@client/types/letter';
 
 /**
@@ -43,6 +44,8 @@ export interface CharacterStorageSchema {
     containers: any; // TODO: type when containers structure is defined
     /** Last known inventory, for the inventory window */
     inventory: StoredInventory;
+    /** Armour worn, slot by slot, for the armour window */
+    worn_armor: WornArmor;
     herb_counts: any; // HerbBagsState
     herbs_data: any; // TODO: type when herbs data structure is defined
     mapperRoomId: number;
@@ -152,6 +155,7 @@ export const CHARACTER_KEY_OPTIONS: Partial<Record<keyof CharacterStorageSchema,
     containers: { notifyOnNull: true },
     deposits: { notifyOnNull: true },
     inventory: { notifyOnNull: true },
+    worn_armor: { notifyOnNull: true },
     herb_counts: { notifyOnNull: true },
     improve_counter: { notifyOnNull: true },
     improve_counter_lifetime: { notifyOnNull: true },
@@ -180,6 +184,7 @@ export const characterStorageKeys = [
     'deposits',
     'containers',
     'inventory',
+    'worn_armor',
     'herb_counts',
     'herbs_data',
     'mapperRoomId',

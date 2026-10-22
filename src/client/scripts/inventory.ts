@@ -988,6 +988,8 @@ export default function initInventory(
         hiddenUntil = 0;
         clearTimeout(replyTimer);
         emitUpdate();
+        // A full reply, not a change followed from the game's messages
+        eventBus.emit("inventory.read");
     };
 
     const sendHidden = () => {

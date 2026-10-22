@@ -43,6 +43,7 @@ import initCombatStats from './scripts/combatStats'
 import initBagManager from './scripts/bagManager'
 import initInventory from './scripts/inventory'
 import initInventoryActions from './scripts/inventoryActions'
+import initArmor from './scripts/armor'
 import initDeposits from './scripts/deposits'
 import initHerbShop from './scripts/herbShop'
 import initArmorShop from './scripts/armorShop'
@@ -341,6 +342,7 @@ export function registerScripts(client: Client) {
     initBagManager(client, aliases)
     initInventory(client, aliases)
     initInventoryActions(client)
+    initArmor(client, aliases)
     initCutting(client, aliases)
     initDeposits(client, aliases)
     initHerbShop(client)

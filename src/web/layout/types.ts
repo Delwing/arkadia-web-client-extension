@@ -80,6 +80,7 @@ export type BuiltInPopupType =
   | 'tripPlanner'
   | 'deposits'
   | 'inventory'
+  | 'armor'
   | 'packageReceiver'
   | 'profession'
   | 'sunTracker'
