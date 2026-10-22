@@ -68,11 +68,12 @@ test.describe('Context menu', () => {
         const menu = page.locator(CONTEXT_MENU_SELECTOR);
         await expect(menu.locator('.context-menu__caption')).toHaveText(['Widok', 'Okna']);
         await expect(menu.locator('.context-menu__item')).toHaveText(['Znaczniki czasu', 'Typy wiadomości']);
-        // All of them, always: no search and no "+N".
+        // All of them, always, alphabetically: no count here, so a new window needs no edit
         const tiles = menu.locator('.context-menu__tiles .context-menu__tile');
-        await expect(tiles).toHaveCount(24);
-        await expect(tiles.first()).toHaveText('Cechy');
-        await expect(tiles.last()).toHaveText('Złom');
+        await expect(tiles.first()).toBeVisible();
+        const names = await tiles.allTextContents();
+        expect(names).toEqual([...names].sort((a, b) => a.localeCompare(b, 'pl')));
+        expect(names).toEqual(expect.arrayContaining(['Cechy', 'Ekwipunek', 'Wiedza', 'Zbroja', 'Złom']));
         const columns = await menu.locator('.context-menu__tiles').evaluate(
             (el) => getComputedStyle(el).gridTemplateColumns.split(' ').length,
         );
