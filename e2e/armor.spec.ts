@@ -34,7 +34,7 @@ test.describe('Armour window', () => {
             await expect(slot(label)).toContainText('stalowa dluga kolczuge');
         }
         await expect(slot('Tarcza')).toContainText('drewniana okuta tarcze');
-        await expect(popup.locator('.armor-popup__part--covered')).toHaveCount(7);
+        await expect(popup.locator('.armor-popup__part--covered')).toHaveCount(6);
         if (process.env.ARMOR_SCREENSHOT) {
             await popup.screenshot({path: process.env.ARMOR_SCREENSHOT});
         }

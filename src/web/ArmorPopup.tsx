@@ -1,5 +1,4 @@
-import React, { useCallback, useState } from 'react';
-import { BicepsFlexed, Footprints, Hand, HardHat, PersonStanding, Shield, Shirt, type LucideIcon } from 'lucide-react';
+import React, { useCallback, useId, useLayoutEffect, useRef, useState } from 'react';
 import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
 import { usePopup } from './hooks/usePopup';
 import { usePopupData } from './hooks/usePopupData';
@@ -10,41 +9,127 @@ const POPUP_ID = 'popup:armor';
 type Slot = 'glowa' | 'korpus' | 'lewe ramie' | 'prawe ramie' | 'dlonie' | 'nogi' | 'stopy' | 'tarcza';
 
 /**
- * Each slot: its name, icon, and where its card sits around the figure. The
- * figure faces the viewer: its right arm is on the left of the window.
+ * Each slot: its name, the column its card sits in, and where its line meets
+ * the figure (in the figure's 200x420 drawing). The figure faces the viewer:
+ * its right arm is on the left of the window.
  */
-const SLOTS: { slot: Slot; label: string; icon: LucideIcon; side: 'left' | 'right'; row: number }[] = [
-    { slot: 'glowa', label: 'Głowa', icon: HardHat, side: 'right', row: 1 },
-    { slot: 'prawe ramie', label: 'Prawe ramię', icon: BicepsFlexed, side: 'left', row: 2 },
-    { slot: 'lewe ramie', label: 'Lewe ramię', icon: BicepsFlexed, side: 'right', row: 2 },
-    { slot: 'dlonie', label: 'Dłonie', icon: Hand, side: 'left', row: 3 },
-    { slot: 'korpus', label: 'Korpus', icon: Shirt, side: 'right', row: 3 },
-    { slot: 'nogi', label: 'Nogi', icon: PersonStanding, side: 'left', row: 4 },
-    { slot: 'tarcza', label: 'Tarcza', icon: Shield, side: 'right', row: 4 },
-    { slot: 'stopy', label: 'Stopy', icon: Footprints, side: 'left', row: 5 },
+const SLOTS: { slot: Slot; label: string; side: 'left' | 'right'; x: number; y: number }[] = [
+    { slot: 'glowa', label: 'Głowa', side: 'left', x: 86, y: 30 },
+    { slot: 'prawe ramie', label: 'Prawe ramię', side: 'left', x: 49, y: 120 },
+    { slot: 'dlonie', label: 'Dłonie', side: 'left', x: 37, y: 232 },
+    { slot: 'nogi', label: 'Nogi', side: 'left', x: 80, y: 290 },
+    { slot: 'lewe ramie', label: 'Lewe ramię', side: 'right', x: 151, y: 112 },
+    { slot: 'korpus', label: 'Korpus', side: 'right', x: 116, y: 140 },
+    { slot: 'tarcza', label: 'Tarcza', side: 'right', x: 172, y: 194 },
+    { slot: 'stopy', label: 'Stopy', side: 'right', x: 124, y: 400 },
 ];
 
-/** The body: a part lights up when its slot is covered, and stronger while its card is pointed at */
-function Figure({ covered, hovered }: { covered: Set<string>; hovered: Slot | null }) {
+/** The figure's right half; the left is the same, mirrored */
+const HALF = 'M100 8 C88 8 79 17 79 32 C79 43 82 52 87 58 C89 61 91 63 91 66 L91 74 C86 78 76 80 66 82 C56 84 49 89 47 98 '
+    + 'C45 106 44 116 43 126 C41 140 38 156 36 170 C34 186 31 202 30 214 C29 222 28 230 30 238 C32 246 40 248 43 242 '
+    + 'C45 236 44 226 44 218 C45 206 48 192 50 178 C52 166 54 152 56 140 C58 132 60 128 62 126 C63 140 64 156 66 170 '
+    + 'C67 182 66 192 65 200 C64 210 63 222 63 232 C62 250 63 270 65 290 C66 304 67 316 68 326 C67 340 66 356 68 372 '
+    + 'C69 380 70 386 70 392 C66 396 60 400 60 404 L60 408 L94 408 L94 396 C94 384 95 372 95 360 C95 346 94 334 95 324 '
+    + 'C96 300 98 276 99 256 L100 248 Z';
+/** Collarbone, ribs, belt and knee */
+const DETAIL = 'M100 88 C92 90 80 90 70 87 M66 168 C80 175 92 177 100 177 M64 202 C80 207 92 209 100 209 '
+    + 'M71 318 C77 326 87 326 93 318 M58 132 C54 150 50 165 47 176';
+const MIRROR = 'matrix(-1 0 0 1 200 0)';
+
+/** Each slot's band of the figure, cut to its outline */
+const PARTS: { slot: Slot; x: number; y: number; width: number; height: number }[] = [
+    { slot: 'glowa', x: 70, y: 0, width: 60, height: 70 },
+    { slot: 'korpus', x: 60, y: 70, width: 80, height: 165 },
+    { slot: 'prawe ramie', x: 20, y: 78, width: 40, height: 128 },
+    { slot: 'lewe ramie', x: 140, y: 78, width: 40, height: 128 },
+    { slot: 'dlonie', x: 20, y: 206, width: 40, height: 50 },
+    { slot: 'dlonie', x: 140, y: 206, width: 40, height: 50 },
+    { slot: 'nogi', x: 55, y: 235, width: 90, height: 153 },
+    { slot: 'stopy', x: 55, y: 388, width: 90, height: 24 },
+];
+
+/** The body: a part lights up when its slot is covered, and stronger while the piece on it is pointed at */
+const Figure = React.forwardRef<SVGSVGElement, { covered: Set<string>; lit: Set<string> }>(({ covered, lit }, ref) => {
+    const id = useId().replace(/:/g, '');
     const part = (slot: Slot) =>
-        `armor-popup__part${covered.has(slot) ? ' armor-popup__part--covered' : ''}${hovered === slot ? ' armor-popup__part--hovered' : ''}`;
+        `armor-popup__part${covered.has(slot) ? ' armor-popup__part--covered' : ''}${lit.has(slot) ? ' armor-popup__part--lit' : ''}`;
     return (
-        <svg className="armor-popup__figure" viewBox="0 0 120 280">
-            <circle className={part('glowa')} cx="60" cy="26" r="18" />
-            <rect className={part('korpus')} x="36" y="48" width="48" height="86" rx="10" />
-            {/* Its right arm on the viewer's left */}
-            <rect className={part('prawe ramie')} x="14" y="52" width="18" height="74" rx="9" />
-            <rect className={part('lewe ramie')} x="88" y="52" width="18" height="74" rx="9" />
-            <circle className={part('dlonie')} cx="23" cy="136" r="8" />
-            <circle className={part('dlonie')} cx="97" cy="136" r="8" />
-            <rect className={part('nogi')} x="38" y="138" width="20" height="108" rx="9" />
-            <rect className={part('nogi')} x="62" y="138" width="20" height="108" rx="9" />
-            <ellipse className={part('stopy')} cx="45" cy="258" rx="13" ry="7" />
-            <ellipse className={part('stopy')} cx="75" cy="258" rx="13" ry="7" />
-            {/* On the left arm: drawn over it, so it shows whether the arm is covered or not */}
-            <path className={part('tarcza')} d="M92 76 h24 v18 c0 14 -8 22 -12 25 c-4 -3 -12 -11 -12 -25 z" />
+        <svg ref={ref} className="armor-popup__figure" viewBox="0 0 200 420">
+            <defs>
+                <path id={`${id}-half`} d={HALF} />
+                {/* Both halves, and a strip down the middle so no hairline shows where they meet */}
+                <clipPath id={`${id}-body`}>
+                    <use href={`#${id}-half`} />
+                    <use href={`#${id}-half`} transform={MIRROR} />
+                    <rect x="98" y="10" width="4" height="236" />
+                </clipPath>
+                {/* Everything but the body: the outline shows only outside it, as the skin is see-through */}
+                <mask id={`${id}-outside`} maskUnits="userSpaceOnUse" x="-10" y="-10" width="220" height="440">
+                    <rect x="-10" y="-10" width="220" height="440" fill="white" />
+                    <g clipPath={`url(#${id}-body)`}>
+                        <rect x="0" y="0" width="200" height="420" fill="black" />
+                    </g>
+                </mask>
+            </defs>
+            <g mask={`url(#${id}-outside)`}>
+                <use className="armor-popup__outline" href={`#${id}-half`} />
+                <use className="armor-popup__outline" href={`#${id}-half`} transform={MIRROR} />
+            </g>
+            <g clipPath={`url(#${id}-body)`}>
+                <rect className="armor-popup__skin" x="0" y="0" width="200" height="420" />
+                {PARTS.map(({ slot, ...rect }, i) => <rect key={i} className={part(slot)} {...rect} />)}
+                <path className="armor-popup__detail" d={DETAIL} />
+                <path className="armor-popup__detail" d={DETAIL} transform={MIRROR} />
+            </g>
+            {/* On the left forearm: drawn over it, so it shows whether the arm is covered or not */}
+            <path className={`${part('tarcza')} armor-popup__shield`} d="M150 166 h32 v22 c0 20 -9 30 -16 34 c-7 -4 -16 -14 -16 -34 z" />
         </svg>
     );
+});
+
+interface Line { slot: Slot; points: string; x: number; y: number }
+
+/**
+ * A line from each card to its part. Cards grow with the names on them, so
+ * where they end up is measured, again whenever the window resizes.
+ */
+function useLines(doll: React.RefObject<HTMLDivElement | null>, figure: React.RefObject<SVGSVGElement | null>,
+    cards: React.RefObject<Partial<Record<Slot, HTMLDivElement | null>>>, armor: WornArmor) {
+    const [lines, setLines] = useState<Line[]>([]);
+    useLayoutEffect(() => {
+        const root = doll.current;
+        if (!root) return;
+        const measure = () => {
+            const fig = figure.current;
+            if (!fig || !root.offsetWidth) return;
+            const base = root.getBoundingClientRect();
+            // Undo any zoom the window sits under
+            const zoom = base.width / root.offsetWidth || 1;
+            const rel = (el: Element) => {
+                const b = el.getBoundingClientRect();
+                return { x: (b.left - base.left) / zoom, y: (b.top - base.top) / zoom, w: b.width / zoom, h: b.height / zoom };
+            };
+            const f = rel(fig);
+            const scale = f.w / 200;
+            const next = SLOTS.flatMap(({ slot, side, x, y }) => {
+                const card = cards.current[slot];
+                if (!card) return [];
+                const c = rel(card);
+                const ax = f.x + x * scale;
+                const ay = f.y + y * scale;
+                const ex = side === 'left' ? c.x + c.w : c.x;
+                const ey = c.y + Math.min(16, c.h / 2);
+                const elbow = side === 'left' ? ex + 10 : ex - 10;
+                return [{ slot, points: `${ex},${ey} ${elbow},${ey} ${ax},${ay}`, x: ax, y: ay }];
+            });
+            setLines(prev => JSON.stringify(prev) === JSON.stringify(next) ? prev : next);
+        };
+        measure();
+        const observer = new ResizeObserver(measure);
+        observer.observe(root);
+        return () => observer.disconnect();
+    }, [doll, figure, cards, armor]);
+    return lines;
 }
 
 const ArmorPopup: React.FC = () => {
@@ -60,47 +145,67 @@ const ArmorPopup: React.FC = () => {
 
     const [hovered, setHovered] = useState<Slot | null>(null);
     const covered = new Set(Object.keys(armor.slots));
+    // A piece over several slots lights up all of them
+    const hoveredItem = hovered ? armor.slots[hovered] : undefined;
+    const lit = new Set<string>(hoveredItem
+        ? SLOTS.filter(({ slot }) => armor.slots[slot] === hoveredItem).map(({ slot }) => slot)
+        : hovered ? [hovered] : []);
+
+    const doll = useRef<HTMLDivElement>(null);
+    const figure = useRef<SVGSVGElement>(null);
+    const cards = useRef<Partial<Record<Slot, HTMLDivElement | null>>>({});
+    const lines = useLines(doll, figure, cards, armor);
+
+    const column = (side: 'left' | 'right') => (
+        <div className={`armor-popup__column armor-popup__column--${side}`}>
+            {SLOTS.filter(entry => entry.side === side).map(({ slot, label }) => {
+                const item = armor.slots[slot];
+                return (
+                    <div
+                        key={slot}
+                        ref={el => { cards.current[slot] = el; }}
+                        className={`armor-popup__slot${item ? ' armor-popup__slot--filled' : ''}${lit.has(slot) ? ' armor-popup__slot--lit' : ''}`}
+                        onMouseEnter={() => setHovered(slot)}
+                        onMouseLeave={() => setHovered(null)}
+                    >
+                        <span className="armor-popup__slot-label">{label}</span>
+                        <span className="armor-popup__slot-item">{item ?? 'pusto'}</span>
+                    </div>
+                );
+            })}
+        </div>
+    );
 
     return (
         <DockablePopupWrapper
             {...wrapperProps}
             popupType="armor"
             title="Zbroja"
-            minWidth={320}
-            minHeight={340}
-            initialWidth={400}
-            initialHeight={440}
+            minWidth={360}
+            minHeight={380}
+            initialWidth={480}
+            initialHeight={520}
             className="armor-popup"
             bodyClassName="popup-body"
         >
             <div className="armor-popup__content">
-                <div className="armor-popup__doll">
+                <div className="armor-popup__doll" ref={doll}>
+                    {column('left')}
                     <div className="armor-popup__body">
-                        <Figure covered={covered} hovered={hovered} />
+                        <Figure ref={figure} covered={covered} lit={lit} />
                     </div>
-                    {SLOTS.map(({ slot, label, icon: Icon, side, row }) => {
-                        const item = armor.slots[slot];
-                        // A piece over several slots shows on each: say which others
-                        const alsoOn = item
-                            ? SLOTS.filter(other => other.slot !== slot && armor.slots[other.slot] === item).map(other => other.label)
-                            : [];
-                        return (
-                            <div
-                                key={slot}
-                                className={`armor-popup__slot armor-popup__slot--${side}${item ? ' armor-popup__slot--filled' : ''}`}
-                                style={{ gridRow: row }}
-                                onMouseEnter={() => setHovered(slot)}
-                                onMouseLeave={() => setHovered(null)}
-                                title={item ? [item, alsoOn.length ? `Także: ${alsoOn.join(', ')}` : ''].filter(Boolean).join('\n') : undefined}
-                            >
-                                <span className="armor-popup__slot-icon"><Icon size={14} /></span>
-                                <span className="armor-popup__slot-text">
-                                    <span className="armor-popup__slot-label">{label}</span>
-                                    <span className="armor-popup__slot-item">{item ?? 'pusto'}</span>
-                                </span>
-                            </div>
-                        );
-                    })}
+                    {column('right')}
+                    <svg className="armor-popup__lines">
+                        {lines.map(({ slot, points, x, y }) => {
+                            const cls = `armor-popup__line${covered.has(slot) ? ' armor-popup__line--covered' : ''}${lit.has(slot) ? ' armor-popup__line--lit' : ''}`;
+                            return (
+                                <g key={slot} className={cls}>
+                                    <polyline points={points} />
+                                    <circle cx={x} cy={y} r={3} />
+                                </g>
+                            );
+                        })}
+                    </svg>
                 </div>
                 {(armor.unplaced.length > 0 || armor.unknownLines.length > 0) && (
                     <div className="armor-popup__todo">

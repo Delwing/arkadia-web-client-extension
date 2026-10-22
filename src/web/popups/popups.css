@@ -9113,93 +9113,160 @@ body.inventory-dragging * {
 /* ── armour (ArmorPopup.tsx) ─────────────────────────────────────────── */
 .armor-popup__content {
   flex: 1;
+  display: flex;
+  flex-direction: column;
   overflow-y: auto;
-  padding: 0.75rem 0.5rem;
+  padding: 0.75rem 0.6rem;
   font-size: calc(0.8125rem * var(--window-font-scale, 1));
   line-height: 1.3;
 }
 
-/* Slot cards on either side of the figure, each beside the part it covers */
+/* Cards in a column either side of the figure, each with a line to the part it covers */
 .armor-popup__doll {
+  position: relative;
+  flex: 1;
+  min-height: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 110px minmax(0, 1fr);
-  grid-template-rows: repeat(5, minmax(58px, auto));
-  row-gap: 0.25rem;
-  column-gap: 0.5rem;
-  align-items: center;
+  grid-template-columns: minmax(0, 1fr) minmax(90px, 0.62fr) minmax(0, 1fr);
+  column-gap: 1.75rem;
+}
+
+.armor-popup__column {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 0.6rem;
 }
 
 .armor-popup__body {
-  grid-column: 2;
-  grid-row: 1 / span 5;
+  min-height: 0;
   display: flex;
+  align-items: center;
   justify-content: center;
 }
 
+/* Scales with the window, keeping its proportions */
 .armor-popup__figure {
+  display: block;
   width: 100%;
   height: auto;
+  max-height: 100%;
+}
+
+.armor-popup__outline {
+  fill: none;
+  stroke: var(--popup-text-faint);
+  stroke-width: 2.8;
+  stroke-linejoin: round;
+}
+
+.armor-popup__skin {
+  fill: var(--popup-control-bg);
+}
+
+.armor-popup__detail {
+  fill: none;
+  stroke: var(--popup-bg);
+  stroke-width: 1.2;
+  stroke-linecap: round;
+  opacity: 0.55;
 }
 
 .armor-popup__part {
-  fill: var(--popup-subtle-bg);
-  stroke: var(--popup-border);
-  stroke-width: 1.5;
-  transition: fill 0.12s ease, stroke 0.12s ease;
+  fill: transparent;
+  transition: fill 0.12s ease;
 }
 
 .armor-popup__part--covered {
   fill: var(--popup-accent-bg);
+}
+
+.armor-popup__part--lit {
+  fill: var(--popup-accent-border);
+}
+
+.armor-popup__shield {
+  stroke: transparent;
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+}
+
+.armor-popup__shield.armor-popup__part--covered {
+  stroke: var(--popup-accent-border);
+}
+
+.armor-popup__shield.armor-popup__part--lit {
   stroke: var(--popup-accent);
 }
 
-.armor-popup__part--hovered {
-  stroke: var(--popup-accent);
-  stroke-width: 2.5;
+.armor-popup__lines {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  overflow: visible;
+  pointer-events: none;
 }
 
+.armor-popup__line {
+  fill: none;
+  stroke: var(--popup-border);
+  stroke-width: 1;
+  stroke-linejoin: round;
+}
+
+.armor-popup__line circle {
+  fill: var(--popup-border);
+  stroke: none;
+}
+
+.armor-popup__line--covered {
+  stroke: var(--popup-text-faint);
+}
+
+.armor-popup__line--covered circle {
+  fill: var(--popup-text-faint);
+}
+
+.armor-popup__line--lit {
+  stroke: var(--popup-accent);
+  stroke-width: 1.6;
+}
+
+.armor-popup__line--lit circle {
+  fill: var(--popup-accent);
+}
+
+/* The whole name, however long */
 .armor-popup__slot {
   display: flex;
-  align-items: center;
-  gap: 0.4rem;
+  flex-direction: column;
+  gap: 0.15rem;
   min-width: 0;
-  padding: 0.35rem 0.45rem;
+  padding: 0.4rem 0.55rem;
   border-radius: 0.4rem;
   border: 1px dashed var(--popup-border);
+  background-color: var(--popup-bg);
   color: var(--popup-text-faint);
+  transition: border-color 0.12s ease, box-shadow 0.12s ease;
 }
 
-.armor-popup__slot--left {
-  grid-column: 1;
-  flex-direction: row-reverse;
+.armor-popup__column--left .armor-popup__slot {
+  align-items: flex-end;
   text-align: right;
-}
-
-.armor-popup__slot--right {
-  grid-column: 3;
 }
 
 .armor-popup__slot--filled {
   border-style: solid;
-  border-color: var(--popup-accent-border);
-  background-color: var(--popup-accent-subtle-bg);
   color: var(--popup-text);
 }
 
-.armor-popup__slot-icon {
-  display: inline-flex;
-  flex-shrink: 0;
-  color: var(--popup-text-dim);
-}
-
-.armor-popup__slot--filled .armor-popup__slot-icon {
-  color: var(--popup-accent);
-}
-
-.armor-popup__slot-text {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
+.armor-popup__slot--lit {
+  border-color: var(--popup-accent);
+  box-shadow: 0 0 0 3px var(--popup-accent-subtle-bg);
 }
 
 .armor-popup__slot-label {
@@ -9210,16 +9277,13 @@ body.inventory-dragging * {
   color: var(--popup-text-dim);
 }
 
-/* Two lines at most; the whole name is in the card's tooltip */
 .armor-popup__slot-item {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  font-weight: 600;
   overflow-wrap: anywhere;
 }
 
 .armor-popup__slot:not(.armor-popup__slot--filled) .armor-popup__slot-item {
+  font-weight: normal;
   font-style: italic;
 }
 
