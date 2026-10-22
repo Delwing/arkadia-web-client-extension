@@ -180,6 +180,12 @@ export interface DeviceViewSettings {
     contentFontSize: number;
     mapScale: number;
     outputMaxElements: number;
+    /**
+     * Seconds between latency pings (the connection chip's number and graph); 0 turns
+     * them off. Per device because on mobile data a ping every few seconds keeps the
+     * modem from ever dropping back to idle, while on a desktop it costs nothing.
+     */
+    pingInterval: number;
 }
 
 /** Stock-UI chrome — layout/panels specific to the bundled web UI. */

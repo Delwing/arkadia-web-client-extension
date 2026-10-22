@@ -227,6 +227,8 @@ export type EnemyStatusPayload = {
 export interface PingSample {
     at: number;
     ms: number;
+    /** The first round trip after (re)connecting; the graph breaks its line before it. */
+    restart?: true;
 }
 
 export interface KnownEvents {

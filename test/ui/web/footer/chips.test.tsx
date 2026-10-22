@@ -78,9 +78,9 @@ describe("footer chips", () => {
       mount(<ConnectionChip />);
       emit("ping", 80);
       emit("pingHistory", { samples: [
-        { at: 0, ms: 40 },
+        { at: 0, ms: 40, restart: true },
         { at: 3_000, ms: 60 },
-        { at: 60_000, ms: 450 },
+        { at: 60_000, ms: 450, restart: true },
         { at: 63_000, ms: 80 },
       ] });
       const tip = hoverTip();

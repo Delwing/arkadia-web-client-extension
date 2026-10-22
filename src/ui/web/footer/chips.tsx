@@ -522,8 +522,6 @@ export function CoverChip() {
 // The ping the chip turns amber at, drawn into the graph as a dashed line.
 const PING_WARN_MS = 400;
 const PING_GRAPH_SPAN_MS = 5 * 60_000;
-// Pings come every 3s; a longer silence was a disconnect, drawn as a break in the line.
-const PING_GAP_MS = 10_000;
 
 /**
  * The last five minutes of ping for the connection tooltip: one line, broken where
@@ -538,7 +536,7 @@ function pingGraph(samples: PingSample[], peak: number): Node {
   const y = (ms: number) => (H * (1 - Math.min(ms, top) / top)).toFixed(1);
   const runs: PingSample[][] = [];
   samples.forEach((sample, i) => {
-    if (i === 0 || sample.at - samples[i - 1].at > PING_GAP_MS) runs.push([]);
+    if (i === 0 || sample.restart) runs.push([]);
     runs[runs.length - 1].push(sample);
   });
   const ns = "http://www.w3.org/2000/svg";

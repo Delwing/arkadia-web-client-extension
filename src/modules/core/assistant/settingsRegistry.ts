@@ -161,6 +161,7 @@ const CHROME_FIELDS: Record<string, Constraint & { optional?: boolean }> = {
     contentFontSize: { type: 'number', min: 0.3, max: 3, label: 'Rozmiar czcionki okna gry' },
     mapScale: { type: 'number', min: 0.05, max: 3, label: 'Powiększenie mapy' },
     outputMaxElements: { type: 'number', min: 100, max: 100000, integer: true, label: 'Rozmiar bufora wyjścia' },
+    pingInterval: { type: 'number', min: 0, max: 600, integer: true, label: 'Odstęp pingu w sekundach (0 = wyłączony)' },
     objectsFontSize: { type: 'number', min: 0.3, max: 3 },
     buttonSize: { type: 'number', min: 0.1, max: 10, optional: true },
     showButtons: { type: 'boolean' },

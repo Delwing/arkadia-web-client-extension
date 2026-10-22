@@ -689,6 +689,9 @@ export function load(): UiSettings {
             const outputMaxElements = typeof parsed.outputMaxElements === 'number' && parsed.outputMaxElements >= 100
                 ? Math.floor(parsed.outputMaxElements)
                 : defaultUiSettings.outputMaxElements;
+            const pingInterval = typeof parsed.pingInterval === 'number' && parsed.pingInterval >= 0
+                ? Math.floor(parsed.pingInterval)
+                : defaultUiSettings.pingInterval;
             const colorTheme = (['default', 'fantasy', 'forest', 'icy', 'gray', 'dark-neutral', 'light-parchment', 'light-silver', 'forged', 'custom-dark'].includes(parsed.colorTheme))
                 ? parsed.colorTheme as ColorTheme
                 : defaultUiSettings.colorTheme;
@@ -771,6 +774,7 @@ export function load(): UiSettings {
                 showTimestamps,
                 outputBottomPadding,
                 outputMaxElements,
+                pingInterval,
                 splitViewHeight,
                 colorTheme,
                 customThemeColor,

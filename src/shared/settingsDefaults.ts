@@ -83,6 +83,7 @@ export const defaultDeviceViewSettings: DeviceViewSettings = {
     contentFontSize: 0.775,
     mapScale: 0.30,
     outputMaxElements: 5000,
+    pingInterval: 3,
 };
 
 export const defaultBehaviorSettings: BehaviorSettings = {
@@ -133,14 +134,14 @@ export const behaviorSettingsKeys = [
 // distinct from the portable slices so they never move out of `uiSettings`
 // during the v10 split migration (they are absent from the slice key-lists).
 export const deviceViewSettingsKeys = [
-    'contentFontSize', 'mapScale', 'outputMaxElements',
+    'contentFontSize', 'mapScale', 'outputMaxElements', 'pingInterval',
 ] as const satisfies readonly (keyof DeviceViewSettings)[];
 
 // Stock-UI chrome stays in the `uiSettings` key. This list drives the save()
 // fan-out (which writes chrome fields back to `uiSettings`). It includes the
 // device-scoped view prefs above, so save() persists them to `uiSettings`.
 export const chromeSettingsKeys = [
-    'contentFontSize', 'mapScale', 'outputMaxElements',
+    'contentFontSize', 'mapScale', 'outputMaxElements', 'pingInterval',
     'objectsFontSize', 'buttonSize', 'showButtons', 'showVoiceButton', 'tabCompletionHint', 'tabCompletionMode', 'mapHeight', 'mapPosition',
     'footerMode', 'footerLayout', 'footerLayoutTweaks', 'footerCustomLayout', 'footerCustomBase', 'footerComponents', 'footerButtons', 'footerUrgentChipsFirst', 'footerBindsScale', 'footerStatusScale', 'mobileFooterCompact', 'mobileFooterExpand', 'keepMultibindsVisible', 'multibindKeyHints', 'splitViewHeight',
     'showCombatTimer', 'showTransportLabel',

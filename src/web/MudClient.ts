@@ -10,7 +10,12 @@ import {
 import eventBus from "@modules/core/eventBus";
 import {eventNow, runWithEventTime} from "@shared/eventClock";
 import type {ClientEvents} from "@shared/events";
-import {getRenderSettings, onRenderSettingsChange} from "@modules/core/settings";
+import {
+    getDeviceViewSettings,
+    getRenderSettings,
+    onDeviceViewSettingsChange,
+    onRenderSettingsChange,
+} from "@modules/core/settings";
 import {HELPER_TELNET_URL} from "@modules/helper/helperProtocol";
 import {isHelperSupported} from "./helperDownload";
 import {CommandOptions, normalizeCommand} from "@client/scripts/commandPreserveCaseMode";
@@ -167,7 +172,8 @@ class MudClient implements ClientAdapter {
     private clockOffsetWarned = false;
 
     constructor() {
-        this.pingTracker = new PingTracker(() => this.sendGmcp('core.ping'));
+        this.pingTracker = new PingTracker(() => this.sendGmcp('core.ping'), getDeviceViewSettings().pingInterval);
+        onDeviceViewSettingsChange((view) => this.pingTracker.setInterval(view.pingInterval));
         this.gmcpStream = createGmcpStream({
             onEnvelope: ({path, value}) => {
                 // GMCP carries most of what the client reacts to — vitals, room, comms —
