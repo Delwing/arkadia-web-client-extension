@@ -670,8 +670,15 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
         return {targetFound: true, given, missing};
     }
 
+    // Replaces the whole state, e.g. a plugin restoring a set it saved earlier.
+    function setBags(bags: HerbBagsState) {
+        storedBags = normalizeHerbBagsState(structuredClone(bags));
+        persistBags();
+    }
+
     const herbManagerApi: HerbManagerApi = {
         getBags: cloneBags,
+        setBags,
         take,
         put,
         move,

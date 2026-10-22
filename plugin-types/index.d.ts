@@ -2441,6 +2441,29 @@ export interface FooterComponentHandle {
     remove(): void;
 }
 
+/** Options for {@link UiApi.registerWidget}. */
+
+export interface WidgetOptions {
+    /** Name in the "Dodaj widżet" list and the widget's right-click menu; defaults to the plugin's name. */
+    label?: string;
+    /** Corner of the game output a newly added copy lands in: top/bottom + left/right. Defaults to 'tr'. */
+    corner?: 'tl' | 'tr' | 'bl' | 'br';
+}
+
+/** Handle for a widget registered with {@link UiApi.registerWidget}. */
+
+export interface WidgetHandle {
+    /**
+     * The widget's DOM element. Every placed copy shows this one element (only
+     * one copy of a plugin widget is drawn at a time).
+     */
+    readonly element: HTMLDivElement;
+    /** Replace the content: HTML string, DOM node, or React element. */
+    setContent(content: string | Node | ReactElement): void;
+    /** Withdraw the widget. Where the player placed it is kept for next time. */
+    remove(): void;
+}
+
 /**
  * A field in a plugin popup's settings cog (⚙ in the window header), shown
  * under the shared font settings. The value is kept in the window's settings
@@ -2763,6 +2786,24 @@ export interface UiApi {
      * ```
      */
     registerFooterComponent(id: string, content: string | Node | ReactElement, position?: 'start' | 'end' | number): FooterComponentHandle;
+    /**
+     * Offer a widget: a small frameless piece the player can lay over the game
+     * output wherever they like (Menu → Widżety → Dodaj, or `/widzety`). The
+     * plugin only provides the content; placing, moving, sizing and removing it
+     * is the player's, and where they put it is remembered, so it comes back there
+     * whenever the plugin loads. Widgets are withdrawn with the plugin.
+     *
+     * The content is drawn on a soft see-through plate; keep it small. A widget
+     * whose element is empty is hidden until it has something to show.
+     *
+     * @example
+     * ```typescript
+     * const widget = api.ui.registerWidget('licznik', '<b>0</b> zabitych', { label: 'Licznik zabitych', corner: 'tl' });
+     * let kills = 0;
+     * api.on('allEnemiesKilled', () => widget.setContent(`<b>${++kills}</b> zabitych`));
+     * ```
+     */
+    registerWidget(id: string, content: string | Node | ReactElement, options?: WidgetOptions): WidgetHandle;
     /**
      * Add a button beside the command line, alongside the player's own
      * (Ustawienia -> Stopka). The button sends `command` when clicked; give it a
@@ -3630,6 +3671,11 @@ export interface ContainerForms {
     /** Accusative form (biernik) - e.g., "plecak", "torbe" */
     biernik: string;
     /**
+     * Worn on the back or at the belt - address it as `zalozonego ${dopelniacz}`
+     * (`zalozonej` for a feminine bag), numbered among the worn ones when several are.
+     */
+    worn?: boolean;
+    /**
      * Which of several same-named bags, when the player carries more than one -
      * address it as `${index}. swojej ${dopelniacz}`. Absent means the first one.
      */
@@ -3732,8 +3778,8 @@ export interface ContainersApi {
      * @param type - Container type ("money", "gems", "food", "other")
      * @param options.silent - Hide the command echo and the listing line
      * @param options.timeout - Milliseconds to wait for the listing (default 5000)
-     * @returns Items in the bag, or null when no listing arrived in time
-     *   (empty bag, bag not carried, no bag assigned)
+     * @returns Items in the bag (empty for an empty bag), or null when no listing
+     *   arrived in time (bag not carried, no bag assigned)
      *
      * @example
      * ```typescript
@@ -3811,6 +3857,20 @@ export interface HerbsApi {
      * ```
      */
     getBags(): HerbBagsState;
+    /**
+     * Replace the whole herb bag state, as if `/ziola_buduj` had just counted it.
+     * Saved for the character and shown in the "Ziola" window right away; no
+     * game commands are sent. Bags missing from `bags` are dropped.
+     *
+     * @example
+     * ```typescript
+     * // Keep the counted state as "magazyn" and bring it back later
+     * const magazyn = api.herbs.getBags();
+     * // ... /ziola_buduj counts another set ...
+     * api.herbs.setBags(magazyn);
+     * ```
+     */
+    setBags(bags: HerbBagsState): void;
     /**
      * Take herbs from bags
      * Removes herbs from inventory and executes appropriate game commands

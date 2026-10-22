@@ -2677,6 +2677,21 @@ export interface HerbsApi {
   getBags(): HerbBagsState;
 
   /**
+   * Replace the whole herb bag state, as if `/ziola_buduj` had just counted it.
+   * Saved for the character and shown in the "Ziola" window right away; no
+   * game commands are sent. Bags missing from `bags` are dropped.
+   *
+   * @example
+   * ```typescript
+   * // Keep the counted state as "magazyn" and bring it back later
+   * const magazyn = api.herbs.getBags();
+   * // ... /ziola_buduj counts another set ...
+   * api.herbs.setBags(magazyn);
+   * ```
+   */
+  setBags(bags: HerbBagsState): void;
+
+  /**
    * Take herbs from bags
    * Removes herbs from inventory and executes appropriate game commands
    *
@@ -4406,6 +4421,14 @@ export class PluginApiImpl implements PluginApi {
     return {
       getBags: () => {
         return this.client.herbManager?.getBags() ?? {};
+      },
+
+      setBags: (bags: HerbBagsState) => {
+        if (!this.client.herbManager) {
+          console.warn('Herb manager not initialized');
+          return;
+        }
+        this.client.herbManager.setBags(bags);
       },
 
       take: async (herbId: string, amount: number, fromBag?: number) => {

@@ -183,6 +183,17 @@ describe('herb counter', () => {
     expect(stored).toEqual({ 1: { herbs: {} }, 2: { herbs: { deliona: 1 } } });
   });
 
+  test('herb manager setBags replaces the whole state without game commands', () => {
+    initHerbClient((client as unknown) as any, { 1: { deliona: 1 }, 2: {} });
+    const manager = (client as unknown as any).herbManager;
+    client.sendEvent.mockClear();
+    manager.setBags({ 3: { herbs: { deliona: 7 }, condition: 4 } });
+    expect(client.sendCommand).not.toHaveBeenCalled();
+    expect(manager.getBags()).toEqual({ 3: { herbs: { deliona: 7 }, condition: 4 } });
+    expect(characterStorage.get('herb_counts')).toEqual({ 3: { herbs: { deliona: 7 }, condition: 4 } });
+    expect(client.sendEvent).toHaveBeenCalledWith('herbCounts', { 3: { herbs: { deliona: 7 }, condition: 4 } });
+  });
+
   test('herb manager put adds herbs to bag', async () => {
     initHerbClient((client as unknown) as any, { 1: {} });
     const manager = (client as unknown as any).herbManager;

@@ -646,6 +646,7 @@ total[0].n; // 3
 ```typescript
 await api.herbs.getData();                          // odmiany i działanie wszystkich ziół
 api.herbs.getBags();                                // stan woreczków z /ziola_buduj
+api.herbs.setBags(zapisanyStan);                    // podmień cały stan (bez komend do gry)
 await api.herbs.take('deliona', 3);                 // wyjmij z woreczków (jak /wezz)
 
 await api.herbs.resolve('dwa zolte jasne kwiaty');  // 'deliona' (null, gdy to nie zioło)

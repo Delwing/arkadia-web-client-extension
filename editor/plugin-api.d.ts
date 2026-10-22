@@ -34,6 +34,13 @@ interface PluginInfo {
  */
 interface Plugin {
   /**
+   * Optional stable id (`export const stableId = 'jubiler'`): the plugin's
+   * storage and windows are kept under it instead of its URL, so they survive
+   * the plugin moving to another address. 1-64 letters, digits, '.', '_', '-'.
+   */
+  stableId?: string
+
+  /**
    * Initialize the plugin with the Plugin API
    * @param api - The Plugin API instance providing controlled access to client functionality
    * @returns Promise resolving to plugin information
@@ -59,6 +66,8 @@ interface LoadedPlugin {
   instance?: Plugin
   /** Plugin API instance provided to the plugin */
   apiInstance?: any // PluginApiImpl, but avoiding circular dependency
+  /** The plugin's accepted stableId, which its saved state is kept under */
+  stableId?: string
   /** Script element (for legacy scripts loaded via URL) */
   scriptElement?: HTMLScriptElement
   /** Timestamp when plugin was loaded */
@@ -300,6 +309,95 @@ interface TriggersApi {
    * @param tag - Tag to filter by
    */
   removeByTag(tag: string): void;
+
+  /**
+   * Wait for the first game line that matches one of the patterns.
+   *
+   * The temporary triggers are removed as soon as one matches, the timeout
+   * passes, or the signal aborts. Lines are not changed or gagged.
+   *
+   * @param patterns - One pattern, or alternatives; the first to match wins
+   * @param options - Timeout in ms (none by default), abort signal, trigger tag
+   * @returns Which pattern matched, its match and the line text
+   * @throws An Error named `TimeoutError` when the timeout passes, and the
+   *         signal's reason (an `AbortError` by default) when it aborts
+   *
+   * @example
+   * ```typescript
+   * api.command.send('otworz drzwi');
+   * const r = await api.triggers.waitFor(
+   *   [/^Otwierasz (.*)\.$/, /^Drzwi sa zamkniete na klucz\./],
+   *   { timeout: 15000, signal }
+   * );
+   * if (r.index === 0) console.log('opened', r.match[1]);
+   * ```
+   */
+  waitFor(patterns: TriggerSubPattern | TriggerSubPattern[], options?: WaitForOptions): Promise<WaitForResult>;
+}
+
+/** Options for {@link TriggersApi.waitFor} */
+interface WaitForOptions {
+  /** Give up after this many milliseconds */
+  timeout?: number;
+  /** Abort the wait (e.g. when the user presses Stop) */
+  signal?: AbortSignal;
+  /**
+   * Tag for the temporary triggers. Note that removeByTag only removes them;
+   * use `signal` to cancel the wait itself.
+   */
+  tag?: string;
+}
+
+/** Result of {@link TriggersApi.waitFor} */
+interface WaitForResult {
+  /** Index of the pattern that matched */
+  index: number;
+  /** The match (capture groups for regex patterns) */
+  match: RegExpMatchArray;
+  /** Plain text of the matched line */
+  line: string;
+}
+
+/**
+ * A plugin's own key-value store. Values are JSON and stay in this browser,
+ * namespaced by plugin id. Keep it small (settings, lists); use IndexedDB for
+ * large or growing data.
+ */
+interface PluginKeyValueStore {
+  /** Read a value, or `defaultValue` when there is none */
+  get<T>(key: string, defaultValue: T): T;
+  get<T = unknown>(key: string): T | undefined;
+  /** Store a JSON-serialisable value */
+  set<T>(key: string, value: T): void;
+  /** Remove a value */
+  remove(key: string): void;
+  /** All keys this plugin has stored here */
+  keys(): string[];
+  /**
+   * Listen for changes to one key, including the character switching
+   * (for the character store).
+   * @returns Function that removes the listener
+   */
+  onChange<T = unknown>(key: string, listener: (value: T | undefined) => void): () => void;
+}
+
+/** Plugin storage, see {@link PluginKeyValueStore} */
+interface StorageApi {
+  /** Values kept per character; reads follow the active character */
+  character: PluginKeyValueStore;
+  /** Values shared by all characters in this browser */
+  global: PluginKeyValueStore;
+}
+
+/** The active character */
+interface CharacterApi {
+  /** Name of the active character, or null before one has logged in */
+  getName(): string | null;
+  /**
+   * Listen for the active character changing
+   * @returns Function that removes the listener
+   */
+  onChange(listener: (name: string | null) => void): () => void;
 }
 
 /**
@@ -372,7 +470,7 @@ interface EventsApi {
    *
    * @example
    * ```typescript
-   * // Emit an in-app notification (toast in the notification center)
+   * // Emit an in-app notification (a toast; see also api.notifications)
    * api.events.emit("notify", { text: "Hello!", time: 5000 });
    *
    * // Also fire an OS/browser notification (when the user granted permission)
@@ -786,7 +884,9 @@ interface MapApi {
    * (`{ areaId, areaName, rooms, labels }`) with coordinates in source
    * orientation; y is flipped for you, exactly as when the map first loads.
    * Areas the map does not already contain are skipped, since adding one needs a
-   * full reload.
+   * full reload. Leave `labels` out to keep the area's current labels - handy
+   * when adding rooms to an area read through {@link getAreas}, which returns
+   * rooms only (with y already flipped: negate it back before passing them in).
    *
    * Changes live in memory only: they are lost when the map data reloads.
    *
@@ -818,6 +918,142 @@ interface MapApi {
    * api.map.replaceMap(mapData, colors);
    */
   replaceMap(mapData: MapData.Map, colors?: MapData.Env[]): boolean;
+
+  /**
+   * Room id for a room's `internal_id` (its user data), the id that stays the
+   * same across map versions and the Mudlet mapper. Null when no room has it.
+   *
+   * @example
+   * ```typescript
+   * const roomId = api.map.getRoomIdByInternalId("i385831173");
+   * ```
+   */
+  getRoomIdByInternalId(internalId: string): number | null;
+
+  /**
+   * Walking distance in steps from one room to each of several others, in one
+   * search (the same weights as findPath). Unreachable rooms map to null.
+   *
+   * @example
+   * ```typescript
+   * const here = api.map.getRoom()?.id;
+   * const steps = api.map.getRoomDistances(here, foundRooms);
+   * ```
+   */
+  getRoomDistances(fromId: number, toIds: number[]): Map<number, number | null>;
+
+  /**
+   * Lead the player to a room, as the map's "Prowadź" does: the route is drawn
+   * on the map and followed by the direction keys.
+   */
+  leadTo(roomId: number): void;
+
+  /** Stop leading (clears the drawn route) */
+  clearLeadTo(): void;
+
+  /**
+   * Add an entry to the room menu (right click on the map or on a room link),
+   * under "Pluginy". The action gets the room the menu was opened for.
+   * Removed when the plugin unloads.
+   *
+   * @example
+   * ```typescript
+   * api.map.addRoomMenuEntry("Jubiler: oznacz sklep", (roomId) => markShop(roomId));
+   * ```
+   */
+  addRoomMenuEntry(label: string, action: (roomId: number) => void): RoomMenuEntryHandle;
+}
+
+/** Handle for a room menu entry, see {@link MapApi.addRoomMenuEntry} */
+interface RoomMenuEntryHandle {
+  setLabel(label: string): void;
+  setAction(action: (roomId: number) => void): void;
+  remove(): void;
+}
+
+/** A key combination for {@link KeysApi.register} */
+interface PluginKeyBind {
+  /**
+   * The key: a letter or digit ("h", "4"), or a KeyboardEvent.code for other
+   * keys ("F6", "Backquote", "Numpad5"). Letters and digits match the physical
+   * key, so Alt+J also works on layouts where Alt changes the character.
+   */
+  key: string;
+  ctrl?: boolean;
+  alt?: boolean;
+  shift?: boolean;
+}
+
+/** A key action for {@link KeysApi.register} */
+interface PluginKeyActionOptions {
+  /**
+   * Stable id; the player's key is stored under it, so keep it the same across
+   * versions. Prefix it with the plugin's name: "jubiler.appraise".
+   */
+  id: string;
+  /** What the action does, as shown in Klawisze: "Wyceń kamienie" */
+  label: string;
+  /** The key suggested until the player picks one; leave out for no key */
+  defaultKey?: PluginKeyBind;
+  /** Runs when the action's key is pressed; the key's default action is prevented */
+  onPress: (event: KeyboardEvent) => void;
+}
+
+/** Handle for a registered key action, see {@link KeysApi.register} */
+interface PluginKeyHandle {
+  /** The key the action listens on now (the player's choice or the default), or null */
+  getKey(): PluginKeyBind | null;
+  remove(): void;
+}
+
+/**
+ * Keys API - plugin key actions, listed and rebindable in Klawisze
+ */
+interface KeysApi {
+  /**
+   * Register an action the player can trigger with a key. It is listed in
+   * Klawisze under "Pluginy", where the player can move it to another key or
+   * switch it off; that choice is stored in their keymap. Until then the
+   * action listens on `defaultKey`. Removed when the plugin unloads.
+   *
+   * @returns null when another plugin already registered this id
+   *
+   * @example
+   * ```typescript
+   * api.keys.register({
+   *   id: 'jubiler.appraise',
+   *   label: 'Wyceń kamienie',
+   *   defaultKey: { key: 'j', alt: true },
+   *   onPress: () => appraise(),
+   * });
+   * ```
+   */
+  register(action: PluginKeyActionOptions): PluginKeyHandle | null;
+}
+
+/**
+ * SQLite API - read a SQLite file the player picks, such as a Mudlet database
+ * (Database_<nazwa>.db in the Mudlet profile folder), to import its data.
+ */
+interface SqliteApi {
+  /**
+   * Run named queries against a SQLite file. The file is opened in memory, so
+   * nothing a query does reaches it.
+   *
+   * @param file - The file (e.g. from an `<input type="file">`) or its bytes
+   * @param queries - SQL by a name of your choice
+   * @returns The rows of each query under its name, every row an object keyed by column
+   * @throws When the file is not a SQLite database or a query fails
+   *
+   * @example
+   * ```typescript
+   * const { notes } = await api.sqlite.read(file, {
+   *   notes: 'SELECT character, room, text FROM notes',
+   * });
+   * for (const row of notes) console.log(row.character, row.room, row.text);
+   * ```
+   */
+  read(file: Blob | ArrayBuffer, queries: Record<string, string>): Promise<Record<string, Record<string, unknown>[]>>;
 }
 
 /**
@@ -937,6 +1173,12 @@ interface PersistentPopupConfig extends PopupSizeOptions {
    * When pinned, popup will be restored on page reload.
    */
   pinned?: boolean;
+
+  /**
+   * Fields for the popup's settings cog. Pass the same array every time.
+   * Read and write the values with the handle's getSetting / setSetting.
+   */
+  settingsFields?: PluginWindowSettingField[];
 }
 
 /**
@@ -971,6 +1213,22 @@ interface PersistentPopupHandle extends PopupHandle {
    * @param actions - DOM node or React element for header actions
    */
   setHeaderActions(actions: Node | React.ReactNode): void;
+
+  /**
+   * Read a value from the popup's settings, kept with its window layout
+   * (the keys of `settingsFields`, or any other key the plugin chooses).
+   */
+  getSetting<T>(key: string, defaultValue: T): T;
+
+  /** Store a value in the popup's settings. */
+  setSetting<T>(key: string, value: T): void;
+
+  /**
+   * Listen for changes to one setting - from the settings cog, another
+   * setSetting call, or a layout import.
+   * @returns Function that removes the listener
+   */
+  onSettingChange<T>(key: string, listener: (value: T) => void): () => void;
 }
 
 /**
@@ -1045,10 +1303,159 @@ interface FooterComponentHandle {
   remove(): void;
 }
 
+/** Options for {@link UiApi.registerWidget}. */
+interface WidgetOptions {
+  /** Name in the "Dodaj widżet" list and the widget's right-click menu; defaults to the plugin's name. */
+  label?: string;
+  /** Corner of the game output a newly added copy lands in: top/bottom + left/right. Defaults to 'tr'. */
+  corner?: 'tl' | 'tr' | 'bl' | 'br';
+}
+
+/** Handle for a widget registered with {@link UiApi.registerWidget}. */
+interface WidgetHandle {
+  /**
+   * The widget's DOM element. Every placed copy shows this one element (only
+   * one copy of a plugin widget is drawn at a time).
+   */
+  readonly element: HTMLDivElement;
+
+  /** Replace the content: HTML string, DOM node, or React element. */
+  setContent(content: string | Node | ReactElement): void;
+
+  /** Withdraw the widget. Where the player placed it is kept for next time. */
+  remove(): void;
+}
+
+/**
+ * A field in a plugin popup's settings cog (⚙ in the window header), shown
+ * under the shared font settings. The value is kept in the window's settings
+ * and read back with {@link PersistentPopupHandle.getSetting}.
+ */
+type PluginWindowSettingField =
+  | { type: 'toggle'; key: string; label: string; default: boolean; /** The stored flag is the opposite of the label */ inverted?: boolean }
+  | { type: 'select'; key: string; label: string; default: string; options: { value: string; label: string }[] }
+  | { type: 'number'; key: string; label: string; default: number; min?: number; max?: number; step?: number };
+
+/**
+ * The host's React, as handed to plugins on `api.ui.react`.
+ * Use it (or a bundler mapping of `react` to it) instead of bundling React.
+ */
+type PluginReact = typeof import('react');
+
+/** @experimental Props may change between client versions. */
+interface PluginButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  /** solid = the one main action; secondary = default; ghost = quiet; danger = destructive */
+  variant?: 'solid' | 'secondary' | 'ghost' | 'danger';
+  size?: 'sm' | 'md';
+}
+
+/** @experimental Props may change between client versions. */
+interface PluginHeaderButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  /** A toggle that is on */
+  active?: boolean;
+  /** Destructive, or arming one (a second click confirms) */
+  danger?: boolean;
+}
+
+/** @experimental Props may change between client versions. */
+interface PluginSegmentedProps<T extends string = string> {
+  value: T;
+  options: { value: T; label: React.ReactNode }[];
+  onChange: (value: T) => void;
+  name?: string;
+  /** sm = window header size */
+  size?: 'sm' | 'md';
+}
+
+/** @experimental Props may change between client versions. */
+interface PluginFieldProps {
+  label?: React.ReactNode;
+  htmlFor?: string;
+  hint?: React.ReactNode;
+  error?: React.ReactNode;
+  children: React.ReactNode;
+  className?: string;
+}
+
+/** @experimental Props may change between client versions. */
+interface PluginCheckProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type'> {
+  label?: React.ReactNode;
+  type?: 'checkbox' | 'radio';
+}
+
+/** @experimental Props may change between client versions. */
+interface PluginInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+  /** Monospace with typing aids off - for patterns and commands */
+  mono?: boolean;
+}
+
+/** @experimental Props may change between client versions. */
+interface PluginNoticeProps {
+  variant?: 'success' | 'warning' | 'danger';
+  onClose?: () => void;
+  className?: string;
+  children: React.ReactNode;
+}
+
+/** @experimental Props may change between client versions. */
+interface PluginMenuButtonProps {
+  label: React.ReactNode;
+  items: { label: React.ReactNode; hint?: React.ReactNode; onSelect: () => void; disabled?: boolean }[];
+  size?: 'sm' | 'md';
+  title?: string;
+  /** Makes it a split button: the label runs this, the chevron opens the list */
+  onClick?: () => void;
+  menuWidth?: number;
+  disabled?: boolean;
+}
+
+/**
+ * The client's own UI components, styled like its built-in windows in every theme.
+ *
+ * @experimental This set and its props may change between client versions.
+ * Only components rendered inside a plugin popup or footer are supported.
+ */
+interface PluginUiComponents {
+  Button: React.ComponentType<PluginButtonProps>;
+  HeaderButton: React.ComponentType<PluginHeaderButtonProps>;
+  Segmented: <T extends string>(props: PluginSegmentedProps<T>) => React.ReactElement;
+  Select: React.ComponentType<React.SelectHTMLAttributes<HTMLSelectElement>>;
+  Input: React.ComponentType<PluginInputProps>;
+  Field: React.ComponentType<PluginFieldProps>;
+  Check: React.ComponentType<PluginCheckProps>;
+  MenuButton: React.ComponentType<PluginMenuButtonProps>;
+  Notice: React.ComponentType<PluginNoticeProps>;
+}
+
 /**
  * UI helpers for plugins
  */
 interface UiApi {
+  /**
+   * The host's React. Build popup content with it so hooks work: a plugin
+   * that bundles its own React gets a second copy, and hooks then fail.
+   * Throws when no UI host is running.
+   *
+   * @example
+   * ```typescript
+   * const { createElement: h, useState } = api.ui.react;
+   * function Counter() {
+   *   const [n, setN] = useState(0);
+   *   return h(api.ui.components.Button, { onClick: () => setN(n + 1) }, `Klik ${n}`);
+   * }
+   * await api.ui.registerPersistentPopup({ id: 'counter', title: 'Licznik', createContent: () => h(Counter) });
+   * ```
+   */
+  readonly react: PluginReact;
+
+  /**
+   * The client's own UI components (Button, HeaderButton, Segmented, …).
+   * Throws when no UI host is running.
+   *
+   * @experimental This set and its props may change between client versions.
+   */
+  readonly components: PluginUiComponents;
+
   /**
    * Create a draggable popup window.
    *
@@ -1213,6 +1620,25 @@ interface UiApi {
   ): FooterComponentHandle;
 
   /**
+   * Offer a widget: a small frameless piece the player can lay over the game
+   * output wherever they like (Menu → Widżety → Dodaj, or `/widzety`). The
+   * plugin only provides the content; placing, moving, sizing and removing it
+   * is the player's, and where they put it is remembered, so it comes back there
+   * whenever the plugin loads. Widgets are withdrawn with the plugin.
+   *
+   * The content is drawn on a soft see-through plate; keep it small. A widget
+   * whose element is empty is hidden until it has something to show.
+   *
+   * @example
+   * ```typescript
+   * const widget = api.ui.registerWidget('licznik', '<b>0</b> zabitych', { label: 'Licznik zabitych', corner: 'tl' });
+   * let kills = 0;
+   * api.on('allEnemiesKilled', () => widget.setContent(`<b>${++kills}</b> zabitych`));
+   * ```
+   */
+  registerWidget(id: string, content: string | Node | ReactElement, options?: WidgetOptions): WidgetHandle;
+
+  /**
    * Add a button beside the command line, alongside the player's own
    * (Ustawienia -> Stopka). The button sends `command` when clicked; give it a
    * `state` name and it lights up whenever {@link UiApi.setFooterButtonState}
@@ -1237,6 +1663,52 @@ interface UiApi {
    * player's own - whose state carries this name draws itself as on.
    */
   setFooterButtonState(name: string, on: boolean): void;
+
+  /**
+   * Give an element a hover card in the client's own tooltip, the one the
+   * built-in footer chips, herbs and books use, instead of a browser `title`.
+   * Shown above the element once the mouse rests on it for about half a second,
+   * like a `title`; clicking the element leaves it up. Pass a string for one line, or a card with a header,
+   * label/value rows and click / hold hints.
+   *
+   * The card is redrawn at once when you call `update()` while it is shown, so
+   * a ticking value can follow along. Tooltips are removed with the plugin.
+   *
+   * @example
+   * ```typescript
+   * const chip = api.ui.registerFooterComponent('timer', '<span class="chip">…</span>');
+   * const tip = api.ui.setTooltip(chip.element, {
+   *   header: 'Mój licznik',
+   *   rows: [{ label: 'Pozostało', content: '0:42' }],
+   *   click: 'zresetuj licznik',
+   * });
+   * tip.update({ header: 'Mój licznik', rows: [{ label: 'Pozostało', content: '0:41' }] });
+   * ```
+   */
+  setTooltip(element: Element, tooltip: string | PluginTooltip | null): PluginTooltipHandle;
+}
+
+/** A hover card for {@link UiApi.setTooltip}. */
+interface PluginTooltip {
+  /** Bold first line. */
+  header?: string;
+  /**
+   * Rows of the card: a grey label beside its content (text, or a DOM node for
+   * colour or icons), or a bare DOM node laid out full width (a bar, a chart).
+   */
+  rows?: Array<{ label: string; content: string | Node } | Node>;
+  /** What a click does, dimmed at the foot after "kliknij". */
+  click?: string;
+  /** What a long press does, after "przytrzymaj". */
+  hold?: string;
+}
+
+/** Handle for a tooltip set with {@link UiApi.setTooltip}. */
+interface PluginTooltipHandle {
+  /** Replace the card; null leaves the element without one. */
+  update(tooltip: string | PluginTooltip | null): void;
+  /** Take the tooltip off the element. */
+  remove(): void;
 }
 
 /** What a plugin's footer button is. */
@@ -2024,6 +2496,11 @@ interface ContainerForms {
   /** Accusative form (biernik) - e.g., "plecak", "torbe" */
   biernik: string;
   /**
+   * Worn on the back or at the belt - address it as `zalozonego ${dopelniacz}`
+   * (`zalozonej` for a feminine bag), numbered among the worn ones when several are.
+   */
+  worn?: boolean;
+  /**
    * Which of several same-named bags, when the player carries more than one -
    * address it as `${index}. swojej ${dopelniacz}`. Absent means the first one.
    */
@@ -2130,8 +2607,8 @@ interface ContainersApi {
    * @param type - Container type ("money", "gems", "food", "other")
    * @param options.silent - Hide the command echo and the listing line
    * @param options.timeout - Milliseconds to wait for the listing (default 5000)
-   * @returns Items in the bag, or null when no listing arrived in time
-   *   (empty bag, bag not carried, no bag assigned)
+   * @returns Items in the bag (empty for an empty bag), or null when no listing
+   *   arrived in time (bag not carried, no bag assigned)
    *
    * @example
    * ```typescript
@@ -2140,6 +2617,43 @@ interface ContainersApi {
    * ```
    */
   inspect(type: ContainerType, options?: { silent?: boolean; timeout?: number }): Promise<{ name: string; count: string | number }[] | null>;
+
+  /**
+   * Bag nouns the client can build commands for ("plecak", "torba", "worek", ...),
+   * e.g. to offer them in a dropdown.
+   */
+  listBags(): string[];
+
+  /**
+   * Assign a bag to one of this plugin's types, as the player would with /pojemnik.
+   * Pass `"2. torba"` for the second of several same bags, or null to go back to
+   * the fallback type's bag. The choice is stored per character.
+   * @returns false for a bag the client does not know or a type this plugin did not register
+   */
+  setContainer(type: string, bag: string | null): boolean;
+
+  /**
+   * Ready-to-send forms of the type's bag, with pronoun and ordinal:
+   * `{ biernik: "swoj plecak", dopelniacz: "swojego plecaka", from: "ze" }`.
+   * Null when the type has no known bag.
+   *
+   * @example
+   * ```typescript
+   * const box = api.containers.getCommandForms("jubiler-kamienie");
+   * if (box) api.command.send(`wez otwarty woreczek ${box.from} ${box.dopelniacz}`);
+   * ```
+   */
+  getCommandForms(type: ContainerType): ContainerCommandForms | null;
+}
+
+/** See {@link ContainersApi.getCommandForms} */
+interface ContainerCommandForms {
+  /** After otworz / zamknij / ob: "swoj plecak", "2. swoja sakiewke" */
+  biernik: string;
+  /** After do / z: "swojego plecaka" */
+  dopelniacz: string;
+  /** Preposition for taking out: "ze" before "swojego", "z" before an ordinal */
+  from: 'z' | 'ze';
 }
 
 /**
@@ -2167,6 +2681,21 @@ interface HerbsApi {
    * ```
    */
   getBags(): HerbBagsState;
+
+  /**
+   * Replace the whole herb bag state, as if `/ziola_buduj` had just counted it.
+   * Saved for the character and shown in the "Ziola" window right away; no
+   * game commands are sent. Bags missing from `bags` are dropped.
+   *
+   * @example
+   * ```typescript
+   * // Keep the counted state as "magazyn" and bring it back later
+   * const magazyn = api.herbs.getBags();
+   * // ... /ziola_buduj counts another set ...
+   * api.herbs.setBags(magazyn);
+   * ```
+   */
+  setBags(bags: HerbBagsState): void;
 
   /**
    * Take herbs from bags
@@ -2251,6 +2780,60 @@ interface HerbsApi {
    * ```
    */
   getData(): Promise<HerbsData | null>;
+
+  /**
+   * Herb id for a description as the game prints it, in any case form, with or
+   * without a count: "zolty jasny kwiat", "dwa zolte jasne kwiaty". Null when it
+   * is not a herb.
+   *
+   * @example
+   * ```typescript
+   * api.triggers.register(/^Dostajesz (.*) od /, (line, m) => {
+   *   api.herbs.resolve(m[1]).then(id => id && received.push(id));
+   *   return line;
+   * });
+   * ```
+   */
+  resolve(text: string): Promise<string | null>;
+
+  /**
+   * The herb's form that follows a count in a command: `form("deliona", 1)` gives
+   * the accusative, 2-4 the plural accusative, 5+ the plural genitive. Unknown
+   * herbs return the id unchanged.
+   *
+   * @example
+   * ```typescript
+   * api.command.send(`wez 5 ${await api.herbs.form("deliona", 5)} z 2. swojego woreczka`);
+   * ```
+   */
+  form(herbId: string, count: number): Promise<string>;
+
+  /**
+   * Look into one herb bag and read what is in it. `target` is the rest of the
+   * `zajrzyj do` command: "swojego woreczka", "2. swojego woreczka",
+   * "swojego zamknietego woreczka". The bag must be at hand, not inside a container.
+   * Resolves with null when there is no such bag or no listing within the
+   * timeout (5 s by default); rejects with the signal's reason when aborted.
+   *
+   * @example
+   * ```typescript
+   * const bag = await api.herbs.inspectBag("swojego zamknietego woreczka");
+   * if (bag && bag.total > 40) { ... use another bag ... }
+   * ```
+   */
+  inspectBag(target: string, options?: { timeout?: number; signal?: AbortSignal }): Promise<HerbBagInspection | null>;
+}
+
+/** Result of {@link HerbsApi.inspectBag} */
+interface HerbBagInspection {
+  /** Herbs by id; names that are not known herbs are under their own name */
+  herbs: Record<string, number>;
+  /** All herbs in the bag ("wiele" counts as the player's herb setting, 25 by default) */
+  total: number;
+  /** True when the bag holds nothing */
+  empty: boolean;
+  /** Names in the bag that are not known herbs */
+  unknown: string[];
 }
 
 /**
@@ -2686,6 +3269,24 @@ interface CombatApi {
    * ```
    */
   drawWeapon(): void;
+
+  /**
+   * Whether `coveredId` is covered (zaslona) against `attackerId` - attacks from
+   * `attackerId` land on the coverer instead. Covers are inferred from game text
+   * and GMCP; false when nothing is known.
+   *
+   * @example
+   * ```typescript
+   * const me = api.team.getPlayerNum();
+   * if (me !== undefined && api.combat.isCoveredFor(targetId, me)) {
+   *   // attacking targetId is wasted until the cover is broken
+   * }
+   * ```
+   */
+  isCoveredFor(coveredId: number, attackerId: number): boolean;
+
+  /** Everyone `attackerId` currently cannot reach because of a cover */
+  getCoveredForAttacker(attackerId: number): number[];
 }
 
 /**
@@ -2876,6 +3477,13 @@ interface PeopleApi {
   findByKey(key: string): PersonListEntry | undefined;
   getAll(): PersonListEntry[];
   makeKey(name: string, description: string): string;
+  /**
+   * Called with the merged people list now (if loaded) and on every change.
+   * Returns an unsubscribe function; subscriptions end when the plugin unloads.
+   */
+  subscribe(listener: (people: PersonListEntry[]) => void): () => void;
+  /** Loads the people database if nothing has yet, or refreshes a stale copy. */
+  refresh(): Promise<void>;
 }
 
 /**
@@ -3006,6 +3614,16 @@ interface PluginApi {
   people: PeopleApi;
   /** Walk modes - walk a direction key your own way under a player-chosen modifier */
   walkModes: WalkModesApi;
+  /** Storage - the plugin's own per-character and global values */
+  storage: StorageApi;
+  /** The active character */
+  character: CharacterApi;
+  /** Keys - plugin-owned keyboard shortcuts */
+  keys: KeysApi;
+  /** Read SQLite files, e.g. to import a Mudlet database */
+  sqlite: SqliteApi;
+  /** Toasts over the game output */
+  notifications: NotificationsApi;
   /**
    * AnsiAwareBuffer class for creating formatted text buffers
    *
@@ -3018,6 +3636,69 @@ interface PluginApi {
    * api.output.print(buffer);
    */
   AnsiAwareBuffer: typeof AnsiAwareBuffer;
+}
+
+/** A button on a toast. */
+interface NotificationButton {
+  label: string;
+  /** Sent like a typed command when clicked. */
+  command?: string;
+  onClick?: () => void;
+  /** Drawn as the main button. */
+  primary?: boolean;
+  /** Leave the toast up after the click. */
+  keepOpen?: boolean;
+}
+
+interface NotificationOptions {
+  text: string;
+  /** Bold first line; `text` then reads as the body under it. */
+  title?: string;
+  /** Defaults to 'info'. Warnings and errors still show under "do not disturb". */
+  level?: 'info' | 'success' | 'warning' | 'error';
+  /** Milliseconds on screen (scaled by the player's setting). */
+  time?: number;
+  /** Stays until closed or dismissed. */
+  sticky?: boolean;
+  /** A progress bar, e.g. `{ value: 3, max: 10 }`. */
+  progress?: { value: number; max: number };
+  actions?: NotificationButton[];
+  /** Also fire an OS/browser notification (when the user granted permission). */
+  system?: boolean;
+}
+
+interface NotificationHandle {
+  /** Change the toast in place; if the player already closed it, nothing shows. */
+  update(patch: Partial<NotificationOptions>): void;
+  /** Show it again as a repeat (counts ×2, ×3…) and restart its timer. */
+  repeat(patch?: Partial<NotificationOptions>): void;
+  dismiss(): void;
+}
+
+/**
+ * Notifications API - toasts over the game output. The player can mute all
+ * plugin toasts in the settings.
+ */
+interface NotificationsApi {
+  /**
+   * Show a toast.
+   *
+   * @example
+   * ```typescript
+   * api.notifications.show("Zapisano");
+   *
+   * const task = api.notifications.show({
+   *   title: "Liczę zioła",
+   *   text: "0 z 12",
+   *   sticky: true,
+   *   progress: { value: 0, max: 12 },
+   *   actions: [{ label: "Przerwij", command: "/stop-ziola" }],
+   * });
+   * task.update({ text: "5 z 12", progress: { value: 5, max: 12 } });
+   * task.dismiss();
+   * ```
+   */
+  show(options: NotificationOptions | string): NotificationHandle;
 }
 
 // ============================================================================
