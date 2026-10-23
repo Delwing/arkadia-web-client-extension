@@ -10,6 +10,8 @@
  * needs it.
  */
 import React from 'react';
+import * as ReactDOM from 'react-dom';
+import * as ReactDOMClient from 'react-dom/client';
 import type { PluginUiKit } from '@client/ports';
 import { PLUGIN_UI_GLOBAL, type PLUGIN_UI_COMPONENT_NAMES } from '@shared/pluginUiGlobal.ts';
 import {
@@ -36,7 +38,7 @@ const components: Record<typeof PLUGIN_UI_COMPONENT_NAMES[number], unknown> = {
     Select,
 };
 
-const kit: PluginUiKit = Object.freeze({ React, components: Object.freeze({ ...components }) });
+const kit: PluginUiKit = Object.freeze({ React, ReactDOM, ReactDOMClient, components: Object.freeze({ ...components }) });
 
 export function getPluginUiKit(): PluginUiKit {
     return kit;

@@ -14,6 +14,9 @@ export type { UiSettings, PluginPopupConfig };
  */
 export interface PluginUiKit {
     React: unknown;
+    /** `react-dom` and `react-dom/client`, for bundled plugins only (not on `api.ui`) */
+    ReactDOM: unknown;
+    ReactDOMClient: unknown;
     components: Record<string, unknown>;
 }
 

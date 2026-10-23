@@ -3,7 +3,9 @@
  *
  * Shipped inside the types tarball, so it updates with every client deploy;
  * the npm wrapper (@dargoth-client/plugin-types) only forwards to it. Runs in
- * the plugin's folder and reads the entry file from `plugin.json`.
+ * the plugin's folder and reads the entry file from `plugin.json`, and extra
+ * esbuild options (define, loader, plugins) from an optional
+ * `arkadia-plugin.config.mjs`.
  *
  *   arkadia-plugin dev [--port 5177] [--strict-port]
  *   arkadia-plugin build
@@ -13,6 +15,7 @@
 const fs = require('node:fs');
 const http = require('node:http');
 const path = require('node:path');
+const { pathToFileURL } = require('node:url');
 const { arkadiaHostUi } = require('../esbuild.cjs');
 
 const DEFAULT_PORT = 5177;
@@ -24,6 +27,9 @@ const CLIENT_URLS = [
   'https://arkadia-web-client-extension.vercel.app/',
 ];
 const ENTRY_CANDIDATES = ['plugin.ts', 'plugin.tsx', 'plugin.js', 'src/index.ts', 'src/index.tsx', 'index.ts'];
+const CONFIG_FILES = ['arkadia-plugin.config.mjs', 'arkadia-plugin.config.js', 'arkadia-plugin.config.cjs'];
+// The entry comes from plugin.json and `dev` serves dist/plugin.js, so these stay ours
+const RESERVED_OPTIONS = ['entryPoints', 'stdin', 'outfile', 'outdir', 'outbase', 'write'];
 
 const CONTENT_TYPES = {
   '.js': 'text/javascript; charset=utf-8',
@@ -96,24 +102,52 @@ function findEntry() {
   return found;
 }
 
-function buildOptions() {
+/**
+ * Extra esbuild options from arkadia-plugin.config.{mjs,js,cjs}: a default
+ * export of options, or a function `({ command }) => options` (command is
+ * 'dev' or 'build').
+ */
+async function loadConfig(command) {
+  const file = CONFIG_FILES.find(name => fs.existsSync(name));
+  if (!file) return {};
+  let config;
+  try {
+    config = (await import(pathToFileURL(path.resolve(file)).href)).default;
+  } catch (e) {
+    fail(`could not load ${file}: ${e.message}`);
+  }
+  if (typeof config === 'function') config = await config({ command });
+  if (!config || typeof config !== 'object' || Array.isArray(config)) {
+    fail(`${file} must export default esbuild options, or a function returning them.`);
+  }
+  const reserved = RESERVED_OPTIONS.filter(key => key in config);
+  if (reserved.length > 0) {
+    fail(`${file} sets ${reserved.join(', ')} - the entry comes from plugin.json and the output is always ${OUTDIR}/${OUTFILE}.`);
+  }
+  return config;
+}
+
+/** Our defaults, overridden by the config; its plugins run after arkadiaHostUi(). */
+function buildOptions(config) {
   return {
-    entryPoints: [findEntry()],
     bundle: true,
     format: 'esm',
     target: 'es2022',
     jsx: 'automatic',
     sourcemap: true,
-    outfile: path.join(OUTDIR, OUTFILE),
-    plugins: [arkadiaHostUi()],
     logLevel: 'info',
+    ...config,
+    entryPoints: [findEntry()],
+    outfile: path.join(OUTDIR, OUTFILE),
+    plugins: [arkadiaHostUi(), ...(config.plugins ?? [])],
   };
 }
 
 async function build() {
   const esbuild = loadEsbuild();
+  const options = buildOptions(await loadConfig('build'));
   try {
-    await esbuild.build(buildOptions());
+    await esbuild.build(options);
   } catch {
     process.exit(1); // esbuild has already printed the errors
   }
@@ -218,7 +252,7 @@ async function dev(flags) {
       });
     },
   };
-  const options = buildOptions();
+  const options = buildOptions(await loadConfig('dev'));
   const ctx = await esbuild.context({ ...options, plugins: [...options.plugins, notify] });
   await ctx.watch();
 
@@ -351,6 +385,9 @@ const USAGE = `Usage: arkadia-plugin <command>
           the plugin after every rebuild. A taken port moves to the next free
           one; --strict-port fails instead.
   build   Bundle the plugin into dist/plugin.js.
+
+  dev and build merge extra esbuild options (define, loader, plugins, ...)
+  from arkadia-plugin.config.mjs (.js, .cjs) when there is one.
   init    Create plugin.json, the entry file, tsconfig.json and npm scripts
           (never overwrites).
   types   Download the client's current plugin types (and these tools).

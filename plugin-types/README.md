@@ -77,7 +77,7 @@ export async function destroy(): Promise<void> {
 
 ## React Plugins (TSX)
 
-Popups can be React components, but they must use the client's React (`api.ui.react`), not a bundled copy, or hooks fail. The package ships an esbuild plugin that maps `react`, `react/jsx-runtime` and `@arkadia/ui` to the client at runtime:
+Popups can be React components, but they must use the client's React (`api.ui.react`), not a bundled copy, or hooks fail. The package ships an esbuild plugin that maps `react`, `react/jsx-runtime`, `react-dom`, `react-dom/client` and `@arkadia/ui` to the client at runtime (`arkadia-plugin dev/build` apply it already; extra esbuild options such as `define` or `loader` go in `arkadia-plugin.config.mjs`):
 
 ```js
 import { build } from 'esbuild';

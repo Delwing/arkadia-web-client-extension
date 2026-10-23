@@ -52,7 +52,38 @@ describe('plugin UI shim', () => {
 
     test('the resolve filter matches exactly the mapped modules', () => {
         for (const m of PLUGIN_UI_MODULES) expect(PLUGIN_UI_MODULE_FILTER.test(m)).toBe(true);
-        for (const m of ['react-dom', 'reactx', '@arkadia/ui/x', 'preact']) expect(PLUGIN_UI_MODULE_FILTER.test(m)).toBe(false);
+        for (const m of ['react-dom/server', 'reactx', '@arkadia/ui/x', 'preact']) expect(PLUGIN_UI_MODULE_FILTER.test(m)).toBe(false);
+    });
+
+    test('react-dom and react-dom/client come from the host', async () => {
+        const { arkadiaHostUi } = require('../../plugin-types/esbuild.cjs');
+        const ReactDOM = { createPortal: () => 'host:portal', flushSync: () => {} };
+        const ReactDOMClient = { createRoot: () => 'host:root', hydrateRoot: () => {} };
+        (globalThis as Record<string, unknown>)[PLUGIN_UI_GLOBAL] = { React: {}, ReactDOM, ReactDOMClient, components: {} };
+        const result = await esbuild.build({
+            stdin: {
+                contents: `import { createRoot } from 'react-dom/client';
+                           import ReactDOMDefault, { createPortal } from 'react-dom';
+                           export const root = createRoot(null);
+                           export const portal = createPortal(null, null);
+                           export const same = ReactDOMDefault.createPortal === createPortal;`,
+                loader: 'ts',
+                resolveDir: '/',
+            },
+            bundle: true,
+            format: 'cjs',
+            write: false,
+            plugins: [arkadiaHostUi()],
+        });
+        const module = { exports: {} as Record<string, unknown> };
+        new Function('module', 'exports', result.outputFiles[0].text)(module, module.exports);
+        expect(module.exports).toEqual({ root: 'host:root', portal: 'host:portal', same: true });
+    });
+
+    test('react-dom fails with a clear error on a client that does not publish it', async () => {
+        (globalThis as Record<string, unknown>)[PLUGIN_UI_GLOBAL] = { React: {}, components: {} };
+        const code = buildPluginUiShim('react-dom/client');
+        await expect(import(`data:text/javascript,${encodeURIComponent(code)}`)).rejects.toThrow('older than this plugin');
     });
 
     test('the published @arkadia/plugin-types esbuild plugin bundles a TSX plugin against the host React', async () => {

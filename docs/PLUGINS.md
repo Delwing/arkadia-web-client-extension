@@ -1485,7 +1485,7 @@ function Licznik() {
 const popup = await api.ui.registerPersistentPopup({ id: 'licznik', title: 'Licznik', createContent: () => h(Licznik) });
 ```
 
-W TSX z bundlerem (edytor pluginów albo własny esbuild z `arkadiaHostUi()`, zob. [Typy TypeScript](#typy-typescript)) importy `react`, `react/jsx-runtime` i `@arkadia/ui` trafiają do klienta same:
+W TSX z bundlerem (edytor pluginów albo własny esbuild z `arkadiaHostUi()`, zob. [Typy TypeScript](#typy-typescript)) importy `react`, `react/jsx-runtime`, `react-dom`, `react-dom/client` i `@arkadia/ui` trafiają do klienta same:
 
 ```tsx
 import { useState } from 'react';
@@ -1689,7 +1689,7 @@ Zobacz `plugin-types/README.md` i `plugin-types/index.d.ts` dla pełnej dokument
 
 ### Plugin w TSX (React)
 
-`arkadia-plugin dev` i `arkadia-plugin build` (zob. [Pisanie Pluginu Lokalnie](#pisanie-pluginu-lokalnie)) obsługują `.tsx` bez konfiguracji. Jeśli budujesz plugin własnym skryptem, pakiet zawiera plugin esbuild `arkadiaHostUi()`, który podmienia `react`, `react/jsx-runtime` i `@arkadia/ui` na React i komponenty klienta (zob. [Okna w React](#okna-w-react)):
+`arkadia-plugin dev` i `arkadia-plugin build` (zob. [Pisanie Pluginu Lokalnie](#pisanie-pluginu-lokalnie)) obsługują `.tsx` bez konfiguracji. Jeśli budujesz plugin własnym skryptem, pakiet zawiera plugin esbuild `arkadiaHostUi()`, który podmienia `react`, `react/jsx-runtime`, `react-dom`, `react-dom/client` i `@arkadia/ui` na React, React DOM i komponenty klienta (zob. [Okna w React](#okna-w-react)):
 
 ```js
 // build.mjs
@@ -1789,6 +1789,24 @@ Uwagi:
 | `arkadia-plugin skill` | Kopiuje instrukcję dla asystenta AI do `.claude/skills/` |
 
 Plik startowy to `entryPoint` z `plugin.json` (domyślnie `plugin.ts`). Narzędzia przychodzą razem z typami, więc też aktualizują się z klientem. Własny skrypt budujący nadal zadziała — wtedy przyda się `arkadiaHostUi()` opisany wyżej.
+
+**Własne opcje esbuild.** Gdy plugin potrzebuje czegoś ponad domyślne ustawienia — stałych wstawianych przy budowaniu, importu plików `.md` jako tekstu, własnych pluginów esbuild — dodaj obok `plugin.json` plik `arkadia-plugin.config.mjs` (albo `.js`, `.cjs`). `dev` i `build` dołączają jego opcje do swoich:
+
+```js
+// arkadia-plugin.config.mjs
+import { readFileSync } from 'node:fs';
+
+const { version } = JSON.parse(readFileSync('./package.json', 'utf8'));
+
+// Zamiast obiektu może być funkcja; command to 'dev' albo 'build'
+export default ({ command }) => ({
+  define: { __VERSION__: JSON.stringify(version) },
+  loader: { '.md': 'text' },
+  minify: command === 'build',
+});
+```
+
+Plugin esbuild z `plugins` działa po `arkadiaHostUi()`. Plik startowy i wynik (`dist/plugin.js`) ustala `arkadia-plugin` — `entryPoints`, `outfile`, `outdir` itp. w konfiguracji kończą się błędem.
 
 ### Debugowanie
 

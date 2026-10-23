@@ -112,9 +112,12 @@ scripts yourself before saying a change is done.
 - **UI**: build popups with `api.ui` / `registerPersistentPopup` and the
   client's `popup-*` classes and CSS variables (guide section "Wygląd
   Interfejsu (UI)"). No Bootstrap, no hard-coded colours. For React/TSX use the
-  host React - `arkadia-plugin build/dev` do this already; a custom build needs
-  the `arkadiaHostUi()` esbuild plugin from `@arkadia/plugin-types/esbuild.cjs`.
-  A bundled copy of React breaks hooks.
+  host React (and React DOM) - `arkadia-plugin build/dev` do this already; a
+  custom build needs the `arkadiaHostUi()` esbuild plugin from
+  `@arkadia/plugin-types/esbuild.cjs`. A bundled copy of React breaks hooks.
+- **Extra esbuild options** (`define`, `loader`, plugins) go in
+  `arkadia-plugin.config.mjs` next to `plugin.json`: a default export of
+  options, or `({ command }) => options`. It cannot change the entry or output.
 - **Storage** (`api.storage`, window positions) is keyed by `stableId`, or by
   the plugin URL when there is none. Without `stableId` the localhost build and
   the published build see different data.
