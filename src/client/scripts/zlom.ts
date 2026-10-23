@@ -81,6 +81,8 @@ interface PendingEval {
     armorType?: string;
     material?: string;
     awaitingOpis?: boolean;
+    /** Shown by a shopkeeper (`pokaz`): the description is just the first line, whatever its kind */
+    shown?: boolean;
 }
 
 const DAMAGE_MAP: Record<string, keyof ArmorProtection> = {
@@ -574,8 +576,16 @@ export default function initZlom(
         PARSER_TAG,
     );
 
+    // A shopkeeper showing an item ("pokaz napiersnik") answers with the same
+    // evaluation as `ocen`, but no "Oceniasz starannie" line to start it: the
+    // description comes first, then "Oceniasz, ze ... wazy". It starts here
+    // instead, with no evaluated name, as `pokaz` gives none.
+    client.on("command", (command = "") => {
+        if (/^\s*pokaz\s+\S/i.test(command)) ctx = { awaitingOpis: true, shown: true };
+    });
+
     client.Triggers.registerTrigger(
-        matchWhen((type, line) => type === 'object.long' && !!ctx?.awaitingOpis && line.text !== ''),
+        matchWhen((type, line) => (type === 'object.long' || !!ctx?.shown) && !!ctx?.awaitingOpis && line.text.trim() !== ''),
         (line) => {
             if (!ctx || !ctx.awaitingOpis) return line;
             const text = line.text;

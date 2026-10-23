@@ -42,6 +42,15 @@ class FakeClient {
   print = jest.fn();
   println = jest.fn();
   aliases: { pattern: RegExp; callback: Function }[] = [];
+  commandListeners: ((command: string) => void)[] = [];
+  on(event: string, listener: (command: string) => void) {
+    if (event === 'command') this.commandListeners.push(listener);
+    return () => {};
+  }
+  /** As the client does for every command it sends */
+  command(text: string) {
+    this.commandListeners.forEach(listener => listener(text));
+  }
 }
 
 function findWeapon(short: string): WeaponEntry | undefined {
@@ -364,6 +373,48 @@ describe('zlom script', () => {
     expect(entry!.ciete).toBe(9);
     expect(entry!.klute).toBe(6);
     expect(entry!.obuch).toBe(9);
+  });
+
+  describe('pokaz at a shop', () => {
+    test('reads an armour a shopkeeper shows, with its description and no evaluated name', async () => {
+      // An ocen before it must not lend it anything
+      parse('Oceniasz starannie maly woreczek siarki.');
+      parse('Niewielki woreczek pelen zoltego proszku.', 'object.long');
+      client.command('pokaz napiersnik');
+      // Verbatim from the game
+      parse('Starannie polaczone plyty grubej, wytrzymalej stali tworza zapewniajacy prawie idealna ochrone napiersnik.');
+      parse('Wyglada na to, ze jest w znakomitym stanie.');
+      parse('');
+      parse('Oceniasz, ze ciemny zdobiony napiersnik wazy 21 kilogramow, zas jego objetosc wynosi 5100 mililitrow.');
+      parse('Wydaje ci sie, ze jest wart okolo 1200 miedziakow.');
+      parse('Zaklada sie go na korpus.');
+      parse('Twoje doswiadczenie i umiejetnosci podpowiadaja ci, ze jak na ciezka zbroje chroni on dobrze przed obrazeniami cietymi, klutymi i obuchowymi.');
+      await flush();
+
+      const entry = findArmor('ciemny zdobiony napiersnik');
+      expect(entry).toMatchObject({
+        opis: 'Starannie polaczone plyty grubej, wytrzymalej stali tworza zapewniajacy prawie idealna ochrone napiersnik.',
+        typ: 'ciezka', oslona: 'korpus', waga: 21000, cena: 1200, magik: 0,
+      });
+      expect(entry!.shortAlt).toBeUndefined();
+    });
+
+    test('reads clothes a shopkeeper shows', async () => {
+      client.command('pokaz plaszcz');
+      // Verbatim from the game
+      parse('Gruby, jednolicie czarny material zostal starannie skrojony i zszyty.');
+      parse('');
+      parse('Oceniasz, ze czarny podrozny plaszcz wazy 4800 gramow, zas jego objetosc wynosi 5300 mililitrow.');
+      parse('Wydaje ci sie, ze jest wart okolo 690 miedziakow.');
+      parse('Ubranie to zostalo wykonane z filcu i wyglada na calkiem nowe. [5/5]');
+      parse('Wyglada na to, ze bedzie na ciebie idealnie pasowac.');
+      await flush();
+
+      expect(getZlomSnapshot().ubrania).toEqual([expect.objectContaining({
+        short: 'czarny podrozny plaszcz', material: 'filcu',
+        opis: 'Gruby, jednolicie czarny material zostal starannie skrojony i zszyty.',
+      })]);
+    });
   });
 
   test('never gives an item the name and description of the evaluation before it', async () => {

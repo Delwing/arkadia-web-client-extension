@@ -373,7 +373,7 @@ const ZlomPopup: React.FC = () => {
         return (
             <span
                 className="zlom-tag zlom-tag--warn"
-                title="Biernik nieznany - wpis nie pochodzi z oceny (import lub stary zapis). Oceń przedmiot ponownie."
+                title="Biernik nieznany - wpis nie pochodzi z ocen (import, pokaz u sklepikarza lub stary zapis). Oceń przedmiot, żeby go poznać."
             >
                 ⚠
             </span>
