@@ -3481,6 +3481,14 @@
   },
   {
     "Rodzaj": "Wiedza o magii i jej tworach",
+    "Wiedza": "Dowiedziales sie jak aktywowac magiczne ogniwo",
+    "id": 4684,
+    "Domena": "Imperium",
+    "lokalizacja": "Nuln/Quenelles - Szpital",
+    "note": "Nieogolony zmeczony mezczyzna Halbert Birkenmoor, Medyk, mezczyzna. Najpierw \"zapytaj halberta o ogniwo\" \"daj rozdzke halbertowi\". Musisz miec klucz do skarbca do Nekromanty Marcusa, ta wlasnie rozdzke by zdobyc ta wiedze."
+  },
+  {
+    "Rodzaj": "Wiedza o magii i jej tworach",
     "Wiedza": "Zabezpieczyles wieko sarkofagu ochronnymi znakami z magicznego pergaminu",
     "id": 25494,
     "Domena": "Ishtar",
@@ -3814,6 +3822,14 @@
     "Domena": "Imperium",
     "lokalizacja": "Zamek Drachenfels - Kuchnia",
     "note": "Nie atakujcie zombiakow na wejscie to zobaczycie jak same siebie zjadaja i wpadnie wam ta wiedza."
+  },
+  {
+    "Rodzaj": "Wiedza o nieumarlych",
+    "Wiedza": "Dowiedziales sie o nieumarlych w kurhanach na bagnach Averlandu",
+    "id": 6421,
+    "Domena": "Imperium",
+    "lokalizacja": "Event - Averland i Wissenland - Trakty",
+    "note": "Zakapturzony zgarbiony mezczyzna (Aurlilius) \"zapytaj czlowieka o pomoc\" ( jesli nie masz z niego zadnej wiedzy najpierw zapytaj o kurhan a potem o pomoc bo po tym pytaniu daje klucz i znika)"
   },
   {
     "Rodzaj": "Wiedza o nieumarlych",
