@@ -262,6 +262,12 @@ describe('parseInventory', () => {
         expect(parseInventory(['Nie masz przy sobie niczego.'])).toEqual([{ label: 'Przy sobie', entries: [] }]);
     });
 
+    test('a bag carried on the back is worn', () => {
+        const [back] = parseInventory(['Na plecach dzwigasz zamkniety skorzany plecak.']);
+        expect(back.label).toBe('Na plecach');
+        expect(back.entries.map(e => [e.text, e.worn])).toEqual([['zamkniety skorzany plecak', true]]);
+    });
+
     test('keys survive the bag being opened or emptied', () => {
         const [closed] = parseInventory(['Na plecach nosisz prawie pusty zamkniety skorzany plecak.']);
         const [open] = parseInventory(['Na plecach nosisz otwarty skorzany plecak.']);

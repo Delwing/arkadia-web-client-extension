@@ -232,7 +232,7 @@ const SECTIONS: { pattern: RegExp; label: string; worn?: true; items?: (match: R
     },
     { pattern: /^Na (?:lewym|prawym) nadgarstku nosisz (.+)$/, label: "Na rękach" },
     { pattern: /^Na palce masz nasuniet\S* (.+)$/, label: "Na rękach" },
-    { pattern: /^Na plecach nosisz (.+)$/, label: "Na plecach", worn: true },
+    { pattern: /^Na plecach (?:nosisz|dzwigasz) (.+)$/, label: "Na plecach", worn: true },
     { pattern: /^Na plecach masz przypiet\S* (.+)$/, label: "Na plecach" },
     { pattern: /^Na plecy masz zarzucon\S* (.+)$/, label: "Na plecach" },
     { pattern: /^Na (?:lewym|prawym) ramieniu nosisz (.+)$/, label: "Przez ramię", worn: true },
