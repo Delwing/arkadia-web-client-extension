@@ -5119,12 +5119,12 @@ export interface KnownEvents {
     "herbManagerClose": void;
     "herbCounts": unknown;
     /** A complete /ziola_buduj scan, after persistence. */
-    "herbsDatabaseBuilt": Record<number, {
+    "herbs.build.done": Record<number, {
         herbs: Record<string, number>;
         condition?: number;
     }>;
     /** A scan ended without replacing the previous herb database. */
-    "herbsDatabaseBuildFailed": {
+    "herbs.build.failed": {
         reason: 'no-bags' | 'timeout' | 'busy' | 'disconnected' | 'character-changed' | 'error';
     };
     /** Opens the Zioła window, optionally in a given mode (`/ziola2` opens the list). */

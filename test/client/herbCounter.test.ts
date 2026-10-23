@@ -51,7 +51,7 @@ describe('herb counter', () => {
       expect(characterStorage.get('herb_counts')).toEqual(bags);
       expect((client as any).herbManager.getBags()).toEqual(bags);
     });
-    client.on('herbsDatabaseBuilt', completed);
+    client.on('herbs.build.done', completed);
     await start();
     parse('Doliczyles sie dwoch sztuk.');
     const empty = 'Uwaznie ogladasz zawartosc szarawego skorzanego woreczka. W jego srodku nic jednak nie ma.';
@@ -69,10 +69,10 @@ describe('herb counter', () => {
     (client as any).herbManager.setBags(previous);
     await start();
     parse('Nie widzisz tu niczego takiego.');
-    expect(client.sendEvent).toHaveBeenCalledWith('herbsDatabaseBuildFailed', { reason: 'no-bags' });
+    expect(client.sendEvent).toHaveBeenCalledWith('herbs.build.failed', { reason: 'no-bags' });
     expect((client as any).herbManager.getBags()).toEqual(previous);
     expect(characterStorage.get('herb_counts')).toEqual(previous);
-    expect(client.sendEvent.mock.calls.filter(([name]) => name === 'herbsDatabaseBuilt')).toHaveLength(0);
+    expect(client.sendEvent.mock.calls.filter(([name]) => name === 'herbs.build.done')).toHaveLength(0);
   });
 
   test('a missing bag midway never commits a partial database', async () => {
@@ -82,7 +82,7 @@ describe('herb counter', () => {
     parse('Doliczyles sie dwoch sztuk.');
     parse('Uwaznie ogladasz zawartosc szarawego skorzanego woreczka. W jego srodku nic jednak nie ma.');
     parse('Zajrzyj do czego?');
-    expect(client.sendEvent).toHaveBeenCalledWith('herbsDatabaseBuildFailed', { reason: 'no-bags' });
+    expect(client.sendEvent).toHaveBeenCalledWith('herbs.build.failed', { reason: 'no-bags' });
     expect(characterStorage.get('herb_counts')).toEqual(previous);
   });
 
@@ -91,10 +91,10 @@ describe('herb counter', () => {
     try {
       await start();
       await jest.advanceTimersByTimeAsync(30000);
-      expect(client.sendEvent).toHaveBeenCalledWith('herbsDatabaseBuildFailed', { reason: 'timeout' });
+      expect(client.sendEvent).toHaveBeenCalledWith('herbs.build.failed', { reason: 'timeout' });
       await start();
       parse('Doliczyles sie 0 sztuk.');
-      expect(client.sendEvent).toHaveBeenCalledWith('herbsDatabaseBuilt', {});
+      expect(client.sendEvent).toHaveBeenCalledWith('herbs.build.done', {});
       expect(jest.getTimerCount()).toBe(0);
     } finally {
       jest.useRealTimers();
@@ -105,9 +105,9 @@ describe('herb counter', () => {
     await start();
     await start();
     expect(client.sendCommand.mock.calls.filter(([cmd]) => cmd === 'policz swoje woreczki')).toHaveLength(1);
-    expect(client.sendEvent).toHaveBeenCalledWith('herbsDatabaseBuildFailed', { reason: 'busy' });
+    expect(client.sendEvent).toHaveBeenCalledWith('herbs.build.failed', { reason: 'busy' });
     parse('Doliczyles sie 0 sztuk.');
-    expect(client.sendEvent).toHaveBeenCalledWith('herbsDatabaseBuilt', {});
+    expect(client.sendEvent).toHaveBeenCalledWith('herbs.build.done', {});
   });
 
   test.each(['disconnected', 'character-changed'] as const)('reports %s without saving an incomplete scan', async reason => {
@@ -116,8 +116,8 @@ describe('herb counter', () => {
     else characterStorage.setCharacter('OtherChar');
     parse('Doliczyles sie jednej sztuki.');
     parse('Uwaznie ogladasz zawartosc szarawego skorzanego woreczka. W jego srodku nic jednak nie ma.');
-    expect(client.sendEvent).toHaveBeenCalledWith('herbsDatabaseBuildFailed', { reason });
-    expect(client.sendEvent.mock.calls.filter(([name]) => name === 'herbsDatabaseBuilt')).toHaveLength(0);
+    expect(client.sendEvent).toHaveBeenCalledWith('herbs.build.failed', { reason });
+    expect(client.sendEvent.mock.calls.filter(([name]) => name === 'herbs.build.done')).toHaveLength(0);
   });
 
   test('counts herbs from bags', async () => {

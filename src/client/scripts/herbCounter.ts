@@ -464,7 +464,7 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
     function failBuild(reason: 'no-bags' | 'timeout' | 'disconnected' | 'character-changed' | 'error') {
         if (!awaiting) return;
         resetBuild();
-        client.sendEvent('herbsDatabaseBuildFailed', {reason});
+        client.sendEvent('herbs.build.failed', {reason});
     }
 
     function finish() {
@@ -474,7 +474,7 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
         resetBuild();
         client.print(output);
         persistBags();
-        client.sendEvent('herbsDatabaseBuilt', snapshot);
+        client.sendEvent('herbs.build.done', snapshot);
     }
 
     client.Triggers.registerTrigger(countRegex, (line, matches) => {
@@ -553,7 +553,7 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
 
     async function start() {
         if (awaiting) {
-            client.sendEvent('herbsDatabaseBuildFailed', {reason: 'busy'});
+            client.sendEvent('herbs.build.failed', {reason: 'busy'});
             return;
         }
         awaiting = true;
