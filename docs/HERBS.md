@@ -16,7 +16,7 @@ Moduł licznika ziół pozwala zliczyć zawartość wszystkich noszonych woreczk
 
 Okno ma trzy tryby, przełączane w nagłówku:
 
-- **Woreczki** - zawartość każdego woreczka; zioła można przeciągać między woreczkami i przekazywać innym (przycisk **Daj**, opis niżej).
+- **Woreczki** - zawartość każdego woreczka; zioła można przeciągać między woreczkami i przekazywać innym (przycisk **Daj**, opis niżej). Ctrl+klik (Cmd+klik na Macu) zaznacza kilka ziół - przeciągnięcie dowolnego z zaznaczonych przenosi wszystkie naraz, a zwykły klik lub Esc czyści zaznaczenie. Kliknięcie nagłówka woreczka zaznacza całą jego zawartość (z Ctrl dokłada ją do zaznaczenia, ponowne kliknięcie odznacza).
 - **Lista** - zwarta lista: jedna linia na zioło z sumą ze wszystkich woreczków, każde użycie z efektem i przyciskami 1/3/5 (wysyłają `/zi akcja ziolo ilosc`; przycisków nigdy nie ma więcej niż posiadanych sztuk). Zioła do palenia mają przycisk **nabij**.
 - **Efekty** - zioła pogrupowane według tego, co robią (Leczenie, Zmęczenie, Odtrutki, Odporność, Mana, Cechy…). Zioło z kilkoma efektami pojawia się w każdej swojej grupie. Skutki uboczne są oznaczone na pomarańczowo, trucizny na czerwono - grupa **Trucizny** nie ma przycisków użycia. Gwiazdka przypina grupę na górę.
 
@@ -61,7 +61,7 @@ Przy komunikacie o chorobie lub zatruciu (np. `Cierpisz na chorobe pluc.`) klien
 W oknie `/ziola` przycisk **Daj** włącza panel przekazywania ziół:
 
 1. Wybierz cel z listy (wszystkie postacie obecne na lokacji; drużyna jest wyświetlana osobno, przycisk odświeżania obok).
-2. Przeciągnij zioła z woreczków do panelu - shift+klik dzieli stos na pół, jeśli chcesz dać tylko część.
+2. Przeciągnij zioła z woreczków do panelu - shift+klik dzieli stos na pół, jeśli chcesz dać tylko część. Zaznaczone zioła (Ctrl+klik albo klik w nagłówek woreczka) trafiają tu wszystkie naraz.
 3. Kliknięcie zioła w panelu odkłada je z powrotem do woreczka.
 4. Przycisk **Daj** wyjmuje wszystkie zebrane zioła z woreczków i przekazuje je jedną komendą `daj`.
 

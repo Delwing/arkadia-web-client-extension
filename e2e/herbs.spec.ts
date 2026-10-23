@@ -179,6 +179,74 @@ test.describe('Herb bag tracking', () => {
         await expect.poll(() => getCommandLog(page)).toContain('daj ziola ob_60106');
     });
 
+    test('ctrl+click and bag header selection move several herbs at once', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+
+        await pushGmcp(page, 'char.info', {name: 'HerbMover', object_num: 60007});
+        await waitForCharacter(page, 'HerbMover');
+
+        await simulateHerbBagScan(page, [
+            {content: 'trzy rozetkowate lancetowate liscie i dwa zlocistopomaranczowe duze kwiaty'},
+            {content: ''},
+        ]);
+
+        await submitCommand(page, '/ziola');
+        const herbPopup = page.locator('.herb-window');
+        await expect(herbPopup).toBeVisible({timeout: 5000});
+        await herbPopup.getByRole('radio', {name: 'Woreczki'}).click();
+
+        const bags = herbPopup.locator('.herb-bag');
+        const first = bags.nth(0);
+        const second = bags.nth(1);
+        await expect(first.locator('.herb-pill')).toHaveCount(2);
+        await expect(herbPopup.locator('.herb-manager__footer')).toContainText('Ctrl+klik: zaznacz');
+
+        // Select both stacks, then drag one of them: both move with one open/close per bag
+        await first.locator('.herb-pill', {hasText: 'arnika'}).click({modifiers: ['ControlOrMeta']});
+        await first.locator('.herb-pill', {hasText: 'babka'}).click({modifiers: ['ControlOrMeta']});
+        await expect(first.locator('.herb-pill--selected')).toHaveCount(2);
+        await expect(herbPopup.locator('.herb-manager__footer')).toContainText('Zaznaczono 2 (5 szt.)');
+
+        // Mid-drag the selected pills are out of their bag; a cancelled drag puts them back
+        const babkaBox = (await first.locator('.herb-pill', {hasText: 'babka'}).boundingBox())!;
+        await page.mouse.move(babkaBox.x + babkaBox.width / 2, babkaBox.y + babkaBox.height / 2);
+        await page.mouse.down();
+        await page.mouse.move(babkaBox.x + 40, babkaBox.y + 60, {steps: 5});
+        await expect(first.locator('.herb-pill:visible')).toHaveCount(0);
+        await expect(first.locator('.herb-bag-empty')).toBeVisible();
+        await page.keyboard.press('Escape');
+        await page.mouse.up();
+        await expect(first.locator('.herb-pill:visible')).toHaveCount(2);
+
+        await resetCommandLog(page);
+        await first.locator('.herb-pill', {hasText: 'babka'}).dragTo(second.locator('.herb-bag-content'));
+        await expect(second.locator('.herb-pill')).toHaveCount(2);
+        await expect(first.locator('.herb-pill')).toHaveCount(0);
+        await expect(herbPopup.locator('.herb-pill--selected')).toHaveCount(0);
+        await expect.poll(async () => (await getCommandLog(page)).filter(command => command.startsWith('otworz '))).toEqual([
+            'otworz 1. swoj woreczek',
+            'otworz 2. swoj woreczek',
+        ]);
+
+        // Clicking the bag header selects its whole content; a second click clears it
+        const header = second.locator('.herb-bag-header');
+        await header.click();
+        await expect(second.locator('.herb-pill--selected')).toHaveCount(2);
+        await expect(header).toHaveClass(/herb-bag-header--selected/);
+        await header.click();
+        await expect(second.locator('.herb-pill--selected')).toHaveCount(0);
+
+        // Select the bag again and drag one pill: the whole bag moves back
+        await header.click();
+        await resetCommandLog(page);
+        await second.locator('.herb-pill').first().dragTo(first.locator('.herb-bag-content'));
+        await expect(first.locator('.herb-pill')).toHaveCount(2);
+        await expect(second.locator('.herb-pill')).toHaveCount(0);
+        await expect.poll(async () => (await getCommandLog(page)).filter(command => command.startsWith('wez '))).toHaveLength(2);
+    });
+
     test('/ziola2 opens the list mode with use buttons per herb', async ({page}) => {
         await page.goto('/');
         await waitForCommandInput(page);

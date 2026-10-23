@@ -655,13 +655,71 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
     }
 
     async function move(options: HerbMoveOptions): Promise<void> {
-        const {herbId, amount, fromBag, toBag} = options;
-        if (!herbId || fromBag === toBag) {
-            return;
+        await moveMany([options]);
+    }
+
+    // Takes everything out bag by bag, then puts it in bag by bag, so each
+    // bag is opened and closed once however many herbs are moved.
+    async function moveMany(moves: HerbMoveOptions[]): Promise<void> {
+        await ensureData();
+        const isBag = (n: number) => Number.isInteger(n) && n > 0;
+        const merged = new Map<string, HerbMoveOptions>();
+        for (const m of moves) {
+            const amount = Math.floor(m.amount);
+            if (!m.herbId || !(amount > 0) || !isBag(m.fromBag) || !isBag(m.toBag) || m.fromBag === m.toBag) {
+                continue;
+            }
+            const key = `${m.fromBag}>${m.toBag}:${m.herbId}`;
+            const existing = merged.get(key);
+            merged.set(key, {...m, amount: (existing?.amount ?? 0) + amount});
         }
-        const taken = await take(herbId, amount, fromBag);
-        if (taken > 0) {
-            await put(herbId, taken, toBag);
+
+        const groupBy = (list: HerbMoveOptions[], key: (m: HerbMoveOptions) => number) => {
+            const groups = new Map<number, HerbMoveOptions[]>();
+            list.forEach(m => groups.set(key(m), [...(groups.get(key(m)) ?? []), m]));
+            return [...groups.entries()].sort(([a], [b]) => a - b);
+        };
+
+        const taken: HerbMoveOptions[] = [];
+        for (const [fromBag, list] of groupBy([...merged.values()], m => m.fromBag)) {
+            const contents = storedBags[fromBag]?.herbs;
+            if (!contents) continue;
+            const takes: HerbMoveOptions[] = [];
+            for (const m of list) {
+                const available = contents[m.herbId] ?? 0;
+                const amount = Math.min(available, m.amount);
+                if (amount <= 0) continue;
+                if (available > amount) {
+                    contents[m.herbId] = available - amount;
+                } else {
+                    delete contents[m.herbId];
+                }
+                takes.push({...m, amount});
+            }
+            if (takes.length === 0) continue;
+            client.sendCommand(`otworz ${fromBag}. swoj woreczek`);
+            takes.forEach(m => client.sendCommand(`wez ${m.amount} ${getHerbCase(m.herbId, m.amount, herbs)} z ${fromBag}. swojego woreczka`));
+            client.sendCommand(`zamknij ${fromBag}. swoj woreczek`);
+            taken.push(...takes);
+        }
+
+        for (const [toBag, list] of groupBy(taken, m => m.toBag)) {
+            const amounts = new Map<string, number>();
+            list.forEach(m => amounts.set(m.herbId, (amounts.get(m.herbId) ?? 0) + m.amount));
+            const bagState = ensureBagState(toBag);
+            client.sendCommand(`otworz ${toBag}. swoj woreczek`);
+            amounts.forEach((amount, herbId) => {
+                const form = getHerbCase(herbId, amount, herbs);
+                client.sendCommand(amount === 1
+                    ? `wloz ${form} do ${toBag}. swojego woreczka`
+                    : `wloz ${amount} ${form} do ${toBag}. swojego woreczka`);
+                bagState.herbs[herbId] = (bagState.herbs[herbId] || 0) + amount;
+            });
+            client.sendCommand(`zamknij ${toBag}. swoj woreczek`);
+        }
+
+        if (taken.length > 0) {
+            persistBags();
         }
     }
 
@@ -726,6 +784,7 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
         take,
         put,
         move,
+        moveMany,
         getGiveTargets,
         give,
     };

@@ -89,6 +89,8 @@ export interface HerbManagerApi {
     take(herbId: string, amount: number, fromBag?: number): Promise<number>;
     put(herbId: string, amount: number, bag: number): Promise<number>;
     move(options: HerbMoveOptions): Promise<void>;
+    /** Several moves at once, opening each bag only once. */
+    moveMany(moves: HerbMoveOptions[]): Promise<void>;
     getGiveTargets(): HerbGiveTarget[];
     give(target: string | number, items: HerbGiveItem[]): Promise<HerbGiveResult>;
 }

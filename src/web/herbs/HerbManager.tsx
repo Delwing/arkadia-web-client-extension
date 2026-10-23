@@ -12,6 +12,7 @@ import { DockablePopupWrapper } from "../layout/components/DockablePopupWrapper"
 import { useLayoutManagerOptional } from "../layout/hooks/useLayoutManager";
 import { usePopup } from "../hooks/usePopup";
 import { usePopupSetting } from "../hooks/usePopupSetting";
+import { Square, SquareCheck, SquareMinus } from 'lucide-react';
 import { HeaderButton, Segmented } from '@web-ui/primitives';
 import { HerbCopyButton, HerbEffectsView, HerbFilterBar, HerbListView } from "./HerbViews";
 import {
@@ -34,6 +35,8 @@ const MODE_OPTIONS: { value: HerbWindowMode; label: string }[] = [
 
 const EMPTY_FILTER: HerbFilter = { query: '', group: null };
 
+const NO_STACKS: ReadonlySet<string> = new Set();
+
 type ListSort = { key: 'name' | 'count'; dir: 1 | -1 };
 
 type HerbCounts = HerbBagsState | undefined;
@@ -51,10 +54,29 @@ interface HerbBag {
     condition?: number;
 }
 
-interface DragPayload {
+interface DragRef {
     bagNumber: number;
     stackId: string;
 }
+
+interface DragPayload {
+    stacks: DragRef[];
+}
+
+const parseDragPayload = (event: React.DragEvent): DragRef[] => {
+    const raw = event.dataTransfer.getData("application/json") || event.dataTransfer.getData("text/plain");
+    if (!raw) {
+        return [];
+    }
+    try {
+        const payload = JSON.parse(raw) as DragPayload;
+        return Array.isArray(payload.stacks)
+            ? payload.stacks.filter(ref => typeof ref?.bagNumber === "number" && typeof ref?.stackId === "string")
+            : [];
+    } catch {
+        return [];
+    }
+};
 
 interface GiveBasketItem {
     instanceId: string;
@@ -306,6 +328,10 @@ const HerbManager = () => {
     const [giveTarget, setGiveTarget] = useState("");
     const [basket, setBasket] = useState<GiveBasketItem[]>([]);
     const [giveDropActive, setGiveDropActive] = useState(false);
+    // Stack instance ids picked with Ctrl/Cmd+click; dragging any of them drags all.
+    const [selected, setSelected] = useState<ReadonlySet<string>>(() => new Set());
+    // Stacks out of their bags while being dragged; they return on dragend.
+    const [lifted, setLifted] = useState<ReadonlySet<string>>(NO_STACKS);
     const herbsDataRef = useRef<HerbsData | null>(null);
     const herbsDataPromiseRef = useRef<Promise<HerbsData | null> | null>(null);
 
@@ -371,6 +397,7 @@ const HerbManager = () => {
                 // Fresh counts are authoritative for the bag grid; anything held
                 // in the give basket would be double-counted, so drop it.
                 setBasket([]);
+                setSelected(new Set());
                 setBags(rebuildBags(detail as HerbCounts));
                 setCounts(normalizeHerbBagsState(detail));
             }
@@ -410,6 +437,7 @@ const HerbManager = () => {
             setGiveMode(false);
             setGiveDropActive(false);
             setBasket([]);
+            setSelected(new Set());
             setFilter(EMPTY_FILTER);
         }
     }, [isOpen]);
@@ -435,8 +463,20 @@ const HerbManager = () => {
         }
     }, [giveMode, basket.length, refreshGiveTargets]);
 
-    const handleSplit = (bagNumber: number, stack: HerbStack) => (event: React.MouseEvent) => {
+    const handlePillClick = (bagNumber: number, stack: HerbStack) => (event: React.MouseEvent) => {
+        if (event.ctrlKey || event.metaKey) {
+            event.preventDefault();
+            setSelected(prev => {
+                const next = new Set(prev);
+                if (!next.delete(stack.instanceId)) {
+                    next.add(stack.instanceId);
+                }
+                return next;
+            });
+            return;
+        }
         if (!event.shiftKey) {
+            setSelected(prev => (prev.size > 0 ? new Set() : prev));
             return;
         }
         event.preventDefault();
@@ -477,31 +517,43 @@ const HerbManager = () => {
         }));
     };
 
-    const performMove = (fromBag: number, stackId: string, toBag: number) => {
-        if (busy || fromBag === toBag) {
+    const performMove = (refs: DragRef[], toBag: number) => {
+        if (busy) {
             return;
         }
-        const moveResult = moveLocally(bags, fromBag, stackId, toBag, nextInstanceId);
-        if (!moveResult) {
+        let next = bags;
+        const payload: HerbMoveOptions[] = [];
+        for (const ref of refs) {
+            if (ref.bagNumber === toBag) {
+                continue;
+            }
+            const moveResult = moveLocally(next, ref.bagNumber, ref.stackId, toBag, nextInstanceId);
+            if (!moveResult) {
+                continue;
+            }
+            next = moveResult.next;
+            payload.push({
+                herbId: moveResult.moved.herbId,
+                amount: moveResult.moved.count,
+                fromBag: ref.bagNumber,
+                toBag,
+            });
+        }
+        if (payload.length === 0) {
             return;
         }
         setError(null);
-        setBags(moveResult.next);
+        setSelected(new Set());
+        setBags(next);
         setBusy(true);
         const manager = getHerbManager();
-        const payload: HerbMoveOptions = {
-            herbId: moveResult.moved.herbId,
-            amount: moveResult.moved.count,
-            fromBag,
-            toBag,
-        };
         if (!manager) {
             setError("Brak połączenia z licznikiem ziół.");
             setBusy(false);
             eventBus.emit('requestHerbCounts');
             return;
         }
-        Promise.resolve(manager.move(payload))
+        Promise.resolve(manager.moveMany(payload))
             .catch(err => {
                 const message = err instanceof Error ? err.message : "Nie udało się przenieść ziół.";
                 setError(message);
@@ -515,35 +567,97 @@ const HerbManager = () => {
     const handleDrop = (targetBag: number) => (event: React.DragEvent<HTMLDivElement>) => {
         event.preventDefault();
         setActiveBag(null);
-        const raw = event.dataTransfer.getData("application/json") || event.dataTransfer.getData("text/plain");
-        if (!raw) {
-            return;
-        }
-        try {
-            const payload = JSON.parse(raw) as DragPayload;
-            if (typeof payload.bagNumber === "number" && typeof payload.stackId === "string") {
-                performMove(payload.bagNumber, payload.stackId, targetBag);
-            }
-        } catch {
-            // ignore malformed payload
-        }
+        // A moved pill unmounts before its dragend could put the rest back.
+        setLifted(NO_STACKS);
+        performMove(parseDragPayload(event), targetBag);
     };
 
-    const handleDragStart = (bagNumber: number, stack: HerbStack) => (event: React.DragEvent<HTMLButtonElement>) => {
-        if (busy) {
+    // The dragged pills travel as an invisible bag: clones laid out like the
+    // bag they came from, with the grabbed pill kept under the cursor. It lives
+    // inside the manager so the clones keep the theme variables, and goes away
+    // once the browser has taken its snapshot.
+    const setDragPreview = (event: React.DragEvent<HTMLElement>, stacks: DragRef[]) => {
+        const grabbed = event.currentTarget;
+        const root = grabbed.closest(".herb-manager");
+        const content = grabbed.closest(".herb-bag-content");
+        if (!root || !content) {
+            return;
+        }
+        const preview = document.createElement("div");
+        preview.className = "herb-bag-content herb-drag-preview";
+        preview.style.width = `${content.getBoundingClientRect().width}px`;
+        let grabbedClone: HTMLElement | null = null;
+        stacks.forEach(ref => {
+            const pill = root.querySelector(`[data-stack-id="${ref.stackId}"]`);
+            if (pill) {
+                const clone = pill.cloneNode(true) as HTMLElement;
+                clone.classList.remove("herb-pill--selected", "herb-pill--dim");
+                preview.appendChild(clone);
+                if (pill === grabbed) {
+                    grabbedClone = clone;
+                }
+            }
+        });
+        root.appendChild(preview);
+        const grabbedRect = grabbed.getBoundingClientRect();
+        const previewRect = preview.getBoundingClientRect();
+        const cloneRect = (grabbedClone as HTMLElement | null)?.getBoundingClientRect() ?? previewRect;
+        event.dataTransfer.setDragImage(
+            preview,
+            cloneRect.left - previewRect.left + event.clientX - grabbedRect.left,
+            cloneRect.top - previewRect.top + event.clientY - grabbedRect.top,
+        );
+        setTimeout(() => preview.remove(), 0);
+    };
+
+    const startDrag = (event: React.DragEvent<HTMLElement>, bagNumber: number, stacks: DragRef[]) => {
+        if (busy || stacks.length === 0) {
             event.preventDefault();
             return;
         }
-        const payload: DragPayload = { bagNumber, stackId: stack.instanceId };
-        const serialized = JSON.stringify(payload);
+        const serialized = JSON.stringify({ stacks } satisfies DragPayload);
         event.dataTransfer.setData("application/json", serialized);
         event.dataTransfer.setData("text/plain", serialized);
         event.dataTransfer.effectAllowed = "move";
+        setDragPreview(event, stacks);
         setActiveBag(bagNumber);
+        // Take the pills out of their bags only after the browser has started
+        // the drag; hiding the grabbed element during dragstart cancels it.
+        const ids = new Set(stacks.map(ref => ref.stackId));
+        setTimeout(() => setLifted(ids), 0);
+    };
+
+    // A selected pill carries the whole selection along; any other pill goes alone.
+    const handleDragStart = (bagNumber: number, stack: HerbStack) => (event: React.DragEvent<HTMLButtonElement>) => {
+        const refs = selected.has(stack.instanceId)
+            ? bags.flatMap(bag => bag.items
+                .filter(item => selected.has(item.instanceId))
+                .map(item => ({ bagNumber: bag.bagNumber, stackId: item.instanceId })))
+            : [{ bagNumber, stackId: stack.instanceId }];
+        startDrag(event, bagNumber, refs);
+    };
+
+    // Clicking a bag's header selects its whole content (Ctrl/Cmd adds it to
+    // the current selection); clicking a fully selected bag deselects it.
+    const handleBagHeaderClick = (bag: HerbBag) => (event: React.MouseEvent) => {
+        if (busy || bag.items.length === 0) {
+            return;
+        }
+        const ids = bag.items.map(item => item.instanceId);
+        const allSelected = ids.every(id => selected.has(id));
+        const additive = event.ctrlKey || event.metaKey;
+        const next = new Set(additive ? selected : []);
+        if (allSelected) {
+            ids.forEach(id => next.delete(id));
+        } else {
+            ids.forEach(id => next.add(id));
+        }
+        setSelected(next);
     };
 
     const handleDragEnd = () => {
         setActiveBag(null);
+        setLifted(NO_STACKS);
     };
 
     const handleDragOver = (bagNumber: number) => (event: React.DragEvent<HTMLDivElement>) => {
@@ -563,40 +677,36 @@ const HerbManager = () => {
         event.preventDefault();
         setGiveDropActive(false);
         setActiveBag(null);
+        setLifted(NO_STACKS);
         if (busy) {
             return;
         }
-        const raw = event.dataTransfer.getData("application/json") || event.dataTransfer.getData("text/plain");
-        if (!raw) {
-            return;
-        }
-        try {
-            const payload = JSON.parse(raw) as DragPayload;
-            if (typeof payload.bagNumber !== "number" || typeof payload.stackId !== "string") {
-                return;
-            }
-            const extracted = extractLocally(bags, payload.bagNumber, payload.stackId);
+        let nextBags = bags;
+        let nextBasket = basket;
+        for (const ref of parseDragPayload(event)) {
+            const extracted = extractLocally(nextBags, ref.bagNumber, ref.stackId);
             if (!extracted) {
-                return;
+                continue;
             }
-            setBags(extracted.next);
-            setBasket(prev => {
-                const existingIndex = prev.findIndex(item => item.herbId === extracted.stack.herbId && item.fromBag === payload.bagNumber);
-                if (existingIndex >= 0) {
-                    const next = prev.slice();
-                    const existing = next[existingIndex];
-                    next[existingIndex] = { ...existing, count: existing.count + extracted.stack.count };
-                    return next;
-                }
-                return [...prev, {
+            nextBags = extracted.next;
+            const existingIndex = nextBasket.findIndex(item => item.herbId === extracted.stack.herbId && item.fromBag === ref.bagNumber);
+            if (existingIndex >= 0) {
+                const existing = nextBasket[existingIndex];
+                nextBasket = nextBasket.slice();
+                nextBasket[existingIndex] = { ...existing, count: existing.count + extracted.stack.count };
+            } else {
+                nextBasket = [...nextBasket, {
                     instanceId: nextInstanceId(),
                     herbId: extracted.stack.herbId,
                     count: extracted.stack.count,
-                    fromBag: payload.bagNumber,
+                    fromBag: ref.bagNumber,
                 }];
-            });
-        } catch {
-            // ignore malformed payload
+            }
+        }
+        if (nextBags !== bags) {
+            setSelected(new Set());
+            setBags(nextBags);
+            setBasket(nextBasket);
         }
     };
 
@@ -694,6 +804,12 @@ const HerbManager = () => {
         [bags, basket.length],
     );
     const basketTotal = useMemo(() => basket.reduce((sum, item) => sum + item.count, 0), [basket]);
+    const selectedSummary = useMemo(() => {
+        const stacks = bags.flatMap(bag => bag.items).filter(item => selected.has(item.instanceId));
+        return stacks.length > 0
+            ? { stacks: stacks.length, count: stacks.reduce((sum, item) => sum + item.count, 0) }
+            : null;
+    }, [bags, selected]);
 
     // Calculate optimal grid columns based on bag count
     const gridStyle = useMemo(() => {
@@ -746,6 +862,7 @@ const HerbManager = () => {
         if (next !== 'bags' && giveMode) {
             toggleGiveMode();
         }
+        setSelected(new Set());
         setMode(next);
     }, [giveMode, toggleGiveMode, setMode]);
 
@@ -816,12 +933,18 @@ const HerbManager = () => {
                 initialWidth={1000}
                 initialHeight={500}
                 className="herb-window"
-                bodyClassName="herb-window-body"
+                bodyClassName="popup-body herb-window-body"
                 headerActions={headerActions}
             >
                 <div
                     className={`herb-manager${busy ? " herb-manager--busy" : ""}${isCompact ? " herb-manager--compact" : ""}`}
                     onPointerDownCapture={closeContextMenu}
+                    onKeyDown={event => {
+                        if (event.key === "Escape" && selected.size > 0) {
+                            event.stopPropagation();
+                            setSelected(new Set());
+                        }
+                    }}
                 >
                     {error && (
                         <div className="popup-notice popup-notice--danger herb-manager-status">
@@ -876,7 +999,7 @@ const HerbManager = () => {
                             <div className="herb-give-basket">
                                 {basket.length === 0 ? (
                                     <span className="herb-give-hint">
-                                        Przeciągnij tu zioła z woreczków. Shift+klik dzieli stos na pół.
+                                        Przeciągnij tu zioła z woreczków.
                                     </span>
                                 ) : (
                                     basket.map(item => (
@@ -940,7 +1063,9 @@ const HerbManager = () => {
                     ) : (
                         <div className="herb-grid" style={gridStyle}>
                             {bags.map(bag => {
-                                const totalCount = bag.items.reduce((sum, item) => sum + item.count, 0);
+                                const inBag = bag.items.filter(item => !lifted.has(item.instanceId));
+                                const totalCount = inBag.reduce((sum, item) => sum + item.count, 0);
+                                const selectedInBag = bag.items.filter(item => selected.has(item.instanceId)).length;
                                 const conditionValue =
                                     typeof bag.condition === "number"
                                         ? Math.min(5, Math.max(1, Math.round(bag.condition)))
@@ -953,8 +1078,21 @@ const HerbManager = () => {
                                         onDrop={handleDrop(bag.bagNumber)}
                                         onDragLeave={handleDragLeave(bag.bagNumber)}
                                     >
-                                        <div className="herb-bag-header">
-                                            <span>Woreczek {bag.bagNumber}</span>
+                                        <div
+                                            className={`herb-bag-header${bag.items.length > 0 ? " herb-bag-header--selectable" : ""}${selectedInBag > 0 && selectedInBag === bag.items.length ? " herb-bag-header--selected" : ""}`}
+                                            onClick={handleBagHeaderClick(bag)}
+                                            title={bag.items.length > 0
+                                                ? (selectedInBag === bag.items.length ? "Odznacz woreczek" : "Zaznacz całą zawartość, potem przeciągnij dowolne zioło")
+                                                : undefined}
+                                        >
+                                            <span className="herb-bag-title">
+                                                {bag.items.length > 0 && (
+                                                    selectedInBag === 0 ? <Square className="herb-bag-check" size={14} />
+                                                        : selectedInBag === bag.items.length ? <SquareCheck className="herb-bag-check" size={14} />
+                                                            : <SquareMinus className="herb-bag-check" size={14} />
+                                                )}
+                                                Woreczek {bag.bagNumber}
+                                            </span>
                                             <div className="herb-bag-meta">
                                                 {conditionValue !== null && (
                                                     <span
@@ -968,10 +1106,11 @@ const HerbManager = () => {
                                             </div>
                                         </div>
                                         <div className="herb-bag-content">
-                                            {bag.items.length === 0 ? (
+                                            {inBag.length === 0 && (
                                                 <div className="herb-bag-empty">Pusty woreczek</div>
-                                            ) : (
-                                                bag.items.map(stack => {
+                                            )}
+                                            {/* Lifted pills stay mounted (hidden) so their dragend still fires. */}
+                                            {bag.items.map(stack => {
                                                     const effects = showEffects
                                                         ? (herbsDataRef.current?.herb_id_to_use[stack.herbId] ?? [])
                                                         : [];
@@ -979,12 +1118,13 @@ const HerbManager = () => {
                                                         <button
                                                             key={stack.instanceId}
                                                             type="button"
-                                                            className={`herb-pill${stack.isSplit ? " herb-pill-split" : ""}${showEffects ? " herb-pill--with-effects" : ""}${filterActive && !visibleSet.has(stack.herbId) ? " herb-pill--dim" : ""}`}
+                                                            className={`herb-pill${stack.isSplit ? " herb-pill-split" : ""}${showEffects ? " herb-pill--with-effects" : ""}${filterActive && !visibleSet.has(stack.herbId) ? " herb-pill--dim" : ""}${selected.has(stack.instanceId) ? " herb-pill--selected" : ""}${lifted.has(stack.instanceId) ? " herb-pill--lifted" : ""}`}
                                                             style={getHerbStyle(stack.herbId)}
+                                                            data-stack-id={stack.instanceId}
                                                             draggable={!busy}
                                                             onDragStart={handleDragStart(bag.bagNumber, stack)}
                                                             onDragEnd={handleDragEnd}
-                                                            onClick={handleSplit(bag.bagNumber, stack)}
+                                                            onClick={handlePillClick(bag.bagNumber, stack)}
                                                             onContextMenu={handleContextMenu(stack)}
                                                         >
                                                             {effects.length > 0 ? (
@@ -1020,8 +1160,7 @@ const HerbManager = () => {
                                                             })()}
                                                         </button>
                                                     );
-                                                })
-                                            )}
+                                                })}
                                         </div>
                                     </div>
                                 );
@@ -1029,6 +1168,19 @@ const HerbManager = () => {
                         </div>
                     )}
                 </div>
+                {mode === 'bags' && !emptyState && (
+                    <div className="herb-manager__footer">
+                        {selectedSummary ? (
+                            <span className="herb-manager__hint">
+                                Zaznaczono <b>{selectedSummary.stacks}</b> ({selectedSummary.count} szt.) · przeciągnij dowolne, by przenieść wszystkie · Esc: odznacz
+                            </span>
+                        ) : (
+                            <span className="herb-manager__hint">
+                                <kbd>Ctrl</kbd>+klik: zaznacz · klik w nagłówek: cały woreczek · <kbd>Shift</kbd>+klik: podziel stos na pół · prawy klik: użyj
+                            </span>
+                        )}
+                    </div>
+                )}
             </DockablePopupWrapper>
         </>
     );

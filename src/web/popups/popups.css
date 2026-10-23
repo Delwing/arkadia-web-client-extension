@@ -5911,6 +5911,37 @@ select.popup-input optgroup {
   flex-direction: column;
   gap: 0.9rem;
   padding: 0.75rem;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.herb-manager__footer {
+  flex-shrink: 0;
+  padding: 0.3rem 0.625rem;
+  color: var(--popup-text-faint);
+  font-size: 0.75em;
+  border-top: 1px solid var(--popup-border-subtle);
+}
+
+.herb-manager__footer b {
+  color: var(--popup-text-strong);
+}
+
+.herb-manager__hint {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.herb-manager__hint kbd {
+  padding: 0 0.3em;
+  border: 1px solid var(--popup-border-subtle);
+  border-radius: 0.25em;
+  background: var(--popup-subtle-bg);
+  color: var(--popup-text-medium);
+  font: inherit;
 }
 
 .herb-manager--busy {
@@ -6053,6 +6084,59 @@ select.popup-input optgroup {
   --herb-pill-border: var(--herb-pill-border-split);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 0 0 1px rgba(255, 255, 255, 0.28),
     0 12px 26px rgba(4, 6, 12, 0.5);
+}
+
+.herb-pill--selected,
+.herb-pill--selected:hover {
+  border-color: var(--popup-accent);
+  box-shadow: 0 0 0 2px var(--popup-accent), 0 8px 18px rgba(4, 7, 12, 0.35);
+}
+
+.herb-bag-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.herb-bag-check {
+  flex-shrink: 0;
+  color: var(--popup-text-subtle);
+  transition: color 0.15s ease;
+}
+
+.herb-bag-header--selectable {
+  cursor: pointer;
+  margin: -0.3rem -0.45rem calc(0.15rem - 0.3rem);
+  padding: 0.3rem 0.45rem;
+  border-radius: 0.45rem;
+  transition: background 0.15s ease;
+}
+
+.herb-bag-header--selectable:hover {
+  background: var(--popup-subtle-bg);
+}
+
+.herb-bag-header--selectable:hover .herb-bag-check,
+.herb-bag-header--selected .herb-bag-check {
+  color: var(--popup-accent);
+}
+
+.herb-bag-header--selected {
+  background: var(--popup-accent-bg);
+}
+
+/* A pill taken out of its bag while dragged. */
+.herb-pill--lifted {
+  display: none;
+}
+
+/* Off-screen frameless bag of cloned pills used as the drag image; it keeps
+   the .herb-bag-content wrap layout and the source bag's width. */
+.herb-drag-preview {
+  position: fixed;
+  top: -10000px;
+  left: -10000px;
+  pointer-events: none;
 }
 
 .herb-pill-count {
@@ -6387,6 +6471,10 @@ select.popup-input optgroup {
 .herb-manager--compact .herb-bag-header {
   margin-bottom: 0.1rem;
   font-size: calc(0.85rem * var(--window-font-scale, 1));
+}
+
+.herb-manager--compact .herb-bag-header--selectable {
+  margin-bottom: calc(0.1rem - 0.3rem);
 }
 
 .herb-manager--compact .herb-bag-content {

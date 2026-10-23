@@ -257,6 +257,37 @@ describe('herb counter', () => {
     expect(stored).toEqual({ 1: { herbs: {} }, 2: { herbs: { deliona: 1 } } });
   });
 
+  test('herb manager moveMany opens each bag once', async () => {
+    // arnika has no declension in the test data, so commands fall back to its id
+    initHerbClient((client as unknown) as any, { 1: { deliona: 3, arnika: 2 }, 2: { deliona: 1 }, 3: { arnika: 1 } });
+    const manager = (client as unknown as any).herbManager;
+    await manager.moveMany([
+      { herbId: 'deliona', amount: 2, fromBag: 1, toBag: 3 },
+      { herbId: 'arnika', amount: 2, fromBag: 1, toBag: 3 },
+      { herbId: 'deliona', amount: 1, fromBag: 1, toBag: 3 },
+      { herbId: 'deliona', amount: 1, fromBag: 2, toBag: 3 },
+      { herbId: 'deliona', amount: 5, fromBag: 3, toBag: 3 },
+    ]);
+    expect(client.sendCommand.mock.calls.map(([command]) => command)).toEqual([
+      'otworz 1. swoj woreczek',
+      'wez 3 zolte jasne kwiaty z 1. swojego woreczka',
+      'wez 2 arnika z 1. swojego woreczka',
+      'zamknij 1. swoj woreczek',
+      'otworz 2. swoj woreczek',
+      'wez 1 zolty jasny kwiat z 2. swojego woreczka',
+      'zamknij 2. swoj woreczek',
+      'otworz 3. swoj woreczek',
+      'wloz 4 zolte jasne kwiaty do 3. swojego woreczka',
+      'wloz 2 arnika do 3. swojego woreczka',
+      'zamknij 3. swoj woreczek',
+    ]);
+    expect(characterStorage.get('herb_counts')).toEqual({
+      1: { herbs: {} },
+      2: { herbs: {} },
+      3: { herbs: { arnika: 3, deliona: 4 } },
+    });
+  });
+
   test('herb manager setBags replaces the whole state without game commands', () => {
     initHerbClient((client as unknown) as any, { 1: { deliona: 1 }, 2: {} });
     const manager = (client as unknown as any).herbManager;
