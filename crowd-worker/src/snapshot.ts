@@ -80,9 +80,9 @@ function emptySnapshot(now: number): Snapshot {
  */
 export async function buildSnapshot(db: D1Database, now: number): Promise<Snapshot> {
     const snapshot = emptySnapshot(now);
-    let leading: Record<string, unknown> | null = null;
-    const items = new Map<string, Record<string, unknown>[]>();
+    const items = new Map<string, { group: NonNullable<(typeof GROUPS)[CrowdKind]>; versions: Version[] }>();
     const attached: { key: string; field: string; value: unknown }[] = [];
+    // Rows come ranked within their key; Map keeps that order
     for (const row of await readSnapshot(db)) {
         const field = ATTACHED[row.kind];
         if (field) {
@@ -91,20 +91,47 @@ export async function buildSnapshot(db: D1Database, now: number): Promise<Snapsh
         }
         const group = GROUPS[row.kind];
         if (!group) continue;
-        const version = { ...JSON.parse(row.payload), confirmations: row.confirmations };
         const itemKey = `${row.kind}:${row.key}`;
-        items.set(itemKey, [...(items.get(itemKey) ?? []), version]);
-        if (row.rank === 1) {
-            leading = version;
-            snapshot[group].push(version);
-        } else if (leading) {
-            ((leading.alternatives ??= []) as unknown[]).push(version);
-        }
+        const item = items.get(itemKey) ?? { group, versions: [] };
+        item.versions.push({ ...JSON.parse(row.payload), confirmations: row.confirmations });
+        items.set(itemKey, item);
+    }
+    for (const { group, versions } of items.values()) {
+        const [leading, ...others] = foldUnknownCover(versions);
+        if (others.length) leading!.alternatives = others;
+        snapshot[group].push(leading!);
     }
     for (const { key, field, value } of attached) {
-        for (const version of items.get(key) ?? []) version[field] = value;
+        for (const version of items.get(key)?.versions ?? []) version[field] = value;
     }
     return snapshot;
+}
+
+type Version = Record<string, unknown> & { confirmations: number };
+
+/** The same version but for its description and what it covers. */
+function sameButCover(a: Version, b: Version): boolean {
+    const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
+    return [...keys].every(k => ['opis', 'oslona', 'confirmations'].includes(k) || a[k] === b[k]);
+}
+
+/**
+ * An empty `oslona` is an evaluation that did not say what the piece covers
+ * (an entry older than the line was read), not a version that covers nothing.
+ * It counts for the most confirmed version that matches it otherwise, so it
+ * cannot outvote the ones that know. Ranked again afterwards; the sort is
+ * stable, so ties keep the order first seen.
+ */
+function foldUnknownCover(versions: Version[]): Version[] {
+    const kept = versions.filter(v => v.oslona !== '');
+    if (kept.length === versions.length || !kept.length) return versions;
+    const left: Version[] = [];
+    for (const blank of versions.filter(v => v.oslona === '')) {
+        const target = kept.find(v => sameButCover(v, blank));
+        if (target) target.confirmations += blank.confirmations;
+        else left.push(blank);
+    }
+    return [...kept, ...left].sort((a, b) => b.confirmations - a.confirmations);
 }
 
 async function etagOf(text: string): Promise<string> {

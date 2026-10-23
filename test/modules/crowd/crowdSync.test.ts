@@ -4,7 +4,8 @@ import { getBehaviorSettings } from '@modules/core/settings';
 import { __resetZlomStoreForTests, updateZlomSnapshot } from '@modules/data/zlomStore';
 import { __resetOdmianaStoreForTests, saveOdmiana } from '@modules/data/odmianaStore';
 import { clearIndexedDB } from '@client/utils/dataCache';
-import { characterStorage } from '@modules/core/storage';
+import { characterStorage, globalStorage } from '@modules/core/storage';
+import { adoptCrowdCredentials, loadCrowdCredentials, loadRetiredCrowdCredentials } from '@modules/crowd/crowdCredentials';
 
 vi.mock('@modules/core/settings', () => ({
     getBehaviorSettings: vi.fn(() => ({ crowdContribute: true })),
@@ -47,6 +48,7 @@ beforeEach(async () => {
         if (path === '/crowd/register') return respond(200, { contributorId: 'cid', secret: 'sec' });
         if (path === '/crowd/have') return respond(200, { wanted: wantedFilter(body.hashes) });
         if (path === '/crowd/submit') return respond(200, { accepted: body.items.length, rejected: [] });
+        if (path === '/crowd/merge') return respond(200, { merged: true });
         return respond(404, {});
     }));
 
@@ -59,6 +61,25 @@ beforeEach(async () => {
 
 afterEach(() => {
     vi.unstubAllGlobals();
+});
+
+test('hands the Worker a credential replaced by another device before syncing', async () => {
+    globalStorage.set('crowdCredentials', { contributorId: 'mine', secret: 's1' });
+    adoptCrowdCredentials({ contributorId: 'other', secret: 's2' });
+    expect(loadCrowdCredentials()).toEqual({ contributorId: 'other', secret: 's2' });
+
+    await syncOnce();
+    expect(calls[0]).toMatchObject({ path: '/crowd/merge', body: { contributorId: 'mine', secret: 's1' }, auth: 'Bearer other.s2' });
+    expect(calls.some(c => c.path === '/crowd/register')).toBe(false);
+    expect(loadRetiredCrowdCredentials()).toEqual([]);
+});
+
+test('keeps a replaced credential while the Worker cannot be reached', async () => {
+    globalStorage.set('crowdCredentials', { contributorId: 'mine', secret: 's1' });
+    adoptCrowdCredentials({ contributorId: 'other', secret: 's2' });
+    vi.mocked(fetch).mockImplementation(async () => respond(503, {}));
+    await syncOnce();
+    expect(loadRetiredCrowdCredentials()).toEqual([{ contributorId: 'mine', secret: 's1' }]);
 });
 
 test('does nothing until the player opts in', async () => {
@@ -130,7 +151,7 @@ test('sends copies of one item worded differently once', async () => {
 
 test('sends an i line and the evaluated name as records of their own', async () => {
     await updateZlomSnapshot(() => ({
-        bronie: [{ ...SWORD, shortAlt: 'dlugi miecz' }],
+        bronie: [{ ...SWORD, shortAlt: 'dlugiego miecza' }, { ...SWORD, short: 'krotki miecz', shortAlt: 'krotki miecz' }],
         tarcze: [],
         zbroje: [{ ...KOLCZUGA, iLine: 'kolczuga z zelaza' }],
         ubrania: [],
@@ -139,7 +160,8 @@ test('sends an i line and the evaluated name as records of their own', async () 
     await syncOnce();
     const items = calls.find(c => c.path === '/crowd/submit')!.body.items as { kind: string; record: Record<string, unknown> }[];
     expect(items.find(i => i.kind === 'iline')!.record).toEqual({ item: 'zbroja', short: 'kolczuga', iLine: 'kolczuga z zelaza' });
-    expect(items.find(i => i.kind === 'altname')!.record).toEqual({ item: 'bron', short: 'dlugi miecz', shortAlt: 'dlugi miecz' });
+    // A name the same as the short says nothing, so only the other goes
+    expect(items.filter(i => i.kind === 'altname').map(i => i.record)).toEqual([{ item: 'bron', short: 'dlugi miecz', shortAlt: 'dlugiego miecza' }]);
     // Not part of the items themselves any more
     expect(items.find(i => i.kind === 'zbroja')!.record).not.toHaveProperty('iLine');
 });

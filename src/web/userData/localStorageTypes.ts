@@ -10,6 +10,7 @@ import { triggerSettingsReload } from '@modules/device/deviceStorage';
 import { getKeymapStore, getActiveKeymapId, saveKeymapStore } from '@modules/core/keymapStorage';
 import type { Keymap, KeymapStore } from '@modules/core/keymapTypes';
 import { mergeProfessionStates, type ProfessionState } from '@client/scripts/profession';
+import { adoptCrowdCredentials, loadCrowdCredentials, type CrowdCredentials } from '@modules/crowd/crowdCredentials.ts';
 import type { PersonEditEvent, PeopleLocalEventsSnapshot } from '@client/types/people';
 import {
     lifetimeDateOrder,
@@ -164,6 +165,27 @@ export function objectEntriesType(id: string, storageKey: string, deletable: boo
         },
     };
 }
+
+// ---------------------------------------------------------------------------
+// Crowd credential: one per player, so two devices count as one contributor
+// ---------------------------------------------------------------------------
+
+/**
+ * The first device to have registered keeps its credential; the others adopt
+ * it and hand theirs to the Worker to merge (crowdCredentials.ts).
+ */
+export const crowdCredentialsType: UserDataType<CrowdCredentials> = {
+    id: 'crowdCredentials',
+    scope: 'global',
+    rule: { kind: 'earliest' },
+    read() {
+        const credentials = loadCrowdCredentials();
+        return credentials ? [{ scope: GLOBAL_SCOPE, key: 'credentials', value: credentials }] : [];
+    },
+    write(changes) {
+        for (const change of changes) if (!change.deleted && change.value) adoptCrowdCredentials(change.value);
+    },
+};
 
 // ---------------------------------------------------------------------------
 // Keymaps: one item per keymap; the flat `binds` key follows the active one

@@ -152,6 +152,43 @@ describe('have and submit', () => {
     });
 });
 
+describe('merge', () => {
+    it('counts one player behind two credentials once', async () => {
+        const a = await register('10.6.0.1');
+        const b = await register('10.6.0.2');
+        await post('/crowd/submit', { items: [{ kind: 'odmiana', record: plecak() }] }, a);
+        await post('/crowd/submit', { items: [{ kind: 'odmiana', record: plecak() }, { kind: 'odmiana', record: plecak('inny') }] }, b);
+        const [contributorId, secret] = a.slice('Bearer '.length).split('.');
+
+        const response = await post('/crowd/merge', { contributorId, secret }, b);
+        expect(await response.json()).toEqual({ merged: true });
+        // The merged credential is gone
+        expect((await post('/crowd/have', { hashes: [] }, a)).status).toBe(401);
+        const { odmiany } = await snapshot();
+        expect(odmiany[0]).toMatchObject({ confirmations: 1 });
+        expect((odmiany[0]!.alternatives as unknown[])).toHaveLength(1);
+    });
+
+    it('wants the secret of the credential it takes', async () => {
+        const a = await register('10.6.1.1');
+        const b = await register('10.6.1.2');
+        const [contributorId] = a.slice('Bearer '.length).split('.');
+        const response = await post('/crowd/merge', { contributorId, secret: 'wrong' }, b);
+        expect(await response.json()).toEqual({ merged: false });
+        expect((await post('/crowd/have', { hashes: [] }, a)).status).toBe(200);
+    });
+
+    it('keeps a ban', async () => {
+        const a = await register('10.6.2.1');
+        const b = await register('10.6.2.2');
+        const [contributorId, secret] = a.slice('Bearer '.length).split('.');
+        env.DB.raw.prepare('UPDATE contributors SET banned = 1 WHERE id = ?').run(contributorId);
+        await post('/crowd/merge', { contributorId, secret }, b);
+        const row = env.DB.raw.prepare('SELECT banned FROM contributors').get() as { banned: number };
+        expect(row.banned).toBe(1);
+    });
+});
+
 describe('snapshot', () => {
     it('serves the version most contributors agree on', async () => {
         const a = await register('10.3.0.1');
@@ -198,6 +235,17 @@ describe('snapshot', () => {
 
         const { bronie } = await snapshot();
         expect(bronie[0]).toMatchObject({ opis: 'Dluga ciemna laska.', confirmations: 2 });
+    });
+
+    it('counts a shield that did not say what it covers for the one that did', async () => {
+        const tarcza = (oslona: string) => ({ short: 'okragla tarcza', klute: 2, obuch: 2, ciete: 2, magik: 0, opis: 'Tarcza.', oslona });
+        for (const ip of ['10.7.0.1', '10.7.0.2']) {
+            await post('/crowd/submit', { items: [{ kind: 'tarcza', record: tarcza('') }] }, await register(ip));
+        }
+        await post('/crowd/submit', { items: [{ kind: 'tarcza', record: tarcza('jedno z ramion') }] }, await register('10.7.0.3'));
+        const { tarcze } = await snapshot();
+        expect(tarcze).toEqual([expect.objectContaining({ oslona: 'jedno z ramion', confirmations: 3 })]);
+        expect(tarcze[0]).not.toHaveProperty('alternatives');
     });
 
     it('drops what only a banned contributor vouched for', async () => {

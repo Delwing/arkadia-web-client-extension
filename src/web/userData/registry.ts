@@ -12,6 +12,7 @@ import type { UserDataType } from '@modules/userData/types';
 import {
     characterKeysType,
     characterValueType,
+    crowdCredentialsType,
     type DeviceTypeOptions,
     improveCountsEnabledType,
     improveCountsType,
@@ -55,6 +56,7 @@ export function createUserDataTypes(
         improveLivesType,
         improveSessionType,
         peopleEditsType,
+        crowdCredentialsType,
         ...interfaceTypes(deviceId, deviceOptions),
         ...createKnowledgeTypes(),
         ...createMapCombatTypes(),

@@ -128,6 +128,8 @@ export interface GlobalStorageSchema {
     pushCredentials: { pushId: string; pushSecret: string };
     /** Anonymous contributor credential minted by the crowd Worker. See @modules/crowd. */
     crowdCredentials: { contributorId: string; secret: string };
+    /** Credentials this browser held before sync brought another device's; handed to the Worker to merge. */
+    crowdCredentialsRetired: { contributorId: string; secret: string }[];
     /**
      * Data plugins keep through `api.storage.global`, by plugin id then key.
      * Named apart from the character key `plugin_data`: the first-character
@@ -246,5 +248,6 @@ export const globalStorageKeys = [
     'parravon_fog_mode',
     'pushCredentials',
     'crowdCredentials',
+    'crowdCredentialsRetired',
     'plugin_global_data',
 ] as const satisfies readonly (keyof GlobalStorageSchema)[];

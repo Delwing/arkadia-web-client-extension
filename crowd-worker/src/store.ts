@@ -138,6 +138,41 @@ export async function storeItems(
         .run();
 }
 
+/**
+ * Fold one contributor into another: the same player, whose devices each
+ * registered before they learned of the other's credential. What both
+ * confirmed counts once. A ban on either side carries over, so merging cannot
+ * shed one.
+ */
+export async function mergeContributor(
+    db: D1Database,
+    from: ContributorRow,
+    into: ContributorRow,
+    now: number,
+): Promise<void> {
+    await db
+        .prepare(
+            `INSERT OR IGNORE INTO confirmations (hash, contributor, created_at)
+             SELECT hash, ?2, created_at FROM confirmations WHERE contributor = ?1`,
+        )
+        .bind(from.id, into.id)
+        .run();
+    await db.prepare('DELETE FROM confirmations WHERE contributor = ?1').bind(from.id).run();
+    if (from.banned) await db.prepare('UPDATE contributors SET banned = 1 WHERE id = ?1').bind(into.id).run();
+    await db.prepare('DELETE FROM contributors WHERE id = ?1').bind(from.id).run();
+    // Counts changed, so the next export must run
+    await setMeta(db, 'last_write', now);
+    await db
+        .prepare(
+            `INSERT INTO meta (key, value) VALUES ('dirty_since', ?1)
+             ON CONFLICT (key) DO UPDATE SET value = CASE
+                 WHEN meta.value <= COALESCE((SELECT value FROM meta WHERE key = 'last_export'), 0)
+                 THEN excluded.value ELSE meta.value END`,
+        )
+        .bind(now)
+        .run();
+}
+
 export type MetaKey = 'last_write' | 'last_export' | 'dirty_since';
 
 export async function readMeta(db: D1Database): Promise<Partial<Record<MetaKey, number>>> {

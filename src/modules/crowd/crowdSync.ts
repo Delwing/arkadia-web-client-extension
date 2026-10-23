@@ -16,12 +16,14 @@ import { getBehaviorSettings, onBehaviorSettingsChange } from '@modules/core/set
 import { ensureZlomLoaded, getZlomSnapshot, subscribeZlom, type ZlomEntry } from '@modules/data/zlomStore';
 import { ensureOdmianaLoaded, getOdmianaSnapshot, subscribeOdmiana } from '@modules/data/odmianaStore';
 import { getFromIndexedDB, storeInIndexedDB, type IndexedDBConfig } from '@client/utils/dataCache';
-import { characterStorage } from '@modules/core/storage';
+import { characterStorage, globalStorage } from '@modules/core/storage';
 import { CROWD_WORKER_URL } from './crowdConfig';
 import {
     clearCrowdCredentials,
     loadCrowdCredentials,
+    loadRetiredCrowdCredentials,
     saveCrowdCredentials,
+    saveRetiredCrowdCredentials,
     type CrowdCredentials,
 } from './crowdCredentials';
 import { canonicalize, hashRecord, type CrowdKind } from './crowdRecords';
@@ -80,9 +82,9 @@ export async function prepareItems(): Promise<PreparedItem[]> {
         for (const entry of zlom[group]) {
             const item = shareable(entry);
             sources.push([kind, item]);
-            // Voted on apart from the item, so knowing them adds to it rather than
+            // Only a name that differs says anything. Voted on apart from the item, so knowing them adds to it rather than
             // splitting it from the players who do not (crowdRecords.ts says more)
-            if (item.shortAlt) sources.push(['altname', { item: kind, short: item.short, shortAlt: item.shortAlt }]);
+            if (item.shortAlt && item.shortAlt.toLowerCase() !== item.short.toLowerCase()) sources.push(['altname', { item: kind, short: item.short, shortAlt: item.shortAlt }]);
             const iLine = (item as { iLine?: string }).iLine;
             if (iLine && kind !== 'bron') sources.push(['iline', { item: kind, short: item.short, iLine }]);
         }
@@ -155,9 +157,28 @@ export type SyncOutcome =
     | { status: 'off' }
     | { status: 'failed'; reason: 'register' | 'refused' | 'network' };
 
+/**
+ * Hand the Worker the credentials this browser held before sync brought the
+ * one another device registered, so the player counts once. Kept for the next
+ * pass when the Worker cannot be reached.
+ */
+async function mergeRetired(): Promise<void> {
+    const retired = loadRetiredCrowdCredentials();
+    const credentials = loadCrowdCredentials();
+    if (!retired.length || !credentials) return;
+    const left: CrowdCredentials[] = [];
+    for (const old of retired) {
+        if (old.contributorId === credentials.contributorId) continue;
+        const result = await call('/crowd/merge', old, credentials);
+        if (!result.ok) left.push(old);
+    }
+    saveRetiredCrowdCredentials(left);
+}
+
 /** One pass: send whatever the Worker wants and this browser has not sent. */
 export async function syncOnce(): Promise<SyncOutcome> {
     if (!getBehaviorSettings().crowdContribute) return { status: 'off' };
+    await mergeRetired();
 
     const sent = await loadSent();
     const pending = (await prepareItems()).filter(item => !sent.has(item.hash));
@@ -253,6 +274,7 @@ function enable(): void {
         subscribeZlom(() => schedule()),
         subscribeOdmiana(() => schedule()),
         characterStorage.onChange('worn_armor', () => schedule()),
+        globalStorage.onChange('crowdCredentialsRetired', () => schedule()),
     ];
     // Soon after load or opt-in, but not in the middle of logging in.
     schedule(10_000);

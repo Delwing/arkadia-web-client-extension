@@ -30,6 +30,7 @@ import {
     countRegistrations,
     findWanted,
     insertContributor,
+    mergeContributor,
     readContributor,
     setQuota,
     storeItems,
@@ -119,6 +120,8 @@ export default {
                 return handleHave(db, config, contributor, body, origin);
             case '/crowd/submit':
                 return handleSubmit(db, config, contributor, body, origin);
+            case '/crowd/merge':
+                return handleMerge(db, config, contributor, body, origin);
             default:
                 return errorResponse('not_found', 'No such route', 404, origin, allowed);
         }
@@ -134,7 +137,10 @@ export default {
 
 async function authenticate(request: Request, db: D1Database): Promise<ContributorRow | null> {
     const credentials = parseBearer(request.headers.get('authorization'));
-    if (!credentials) return null;
+    return credentials ? verify(db, credentials) : null;
+}
+
+async function verify(db: D1Database, credentials: { contributorId: string; secret: string }): Promise<ContributorRow | null> {
     const row = await readContributor(db, credentials.contributorId);
     if (!row) return null;
     const presented = await sha256(credentials.secret);
@@ -238,6 +244,31 @@ async function handleSubmit(
         await setQuota(db, contributor.id, day, used + stored.length);
     }
     return json({ accepted: stored.length, rejected }, 200, origin, allowed);
+}
+
+/**
+ * A device that adopted another device's credential (the player's settings
+ * sync carries it) hands over the one it held, proving it with its secret, so
+ * one player stops counting as two.
+ */
+async function handleMerge(
+    db: D1Database,
+    config: RuntimeConfig,
+    contributor: ContributorRow,
+    body: unknown,
+    origin: string | null,
+): Promise<Response> {
+    const allowed = config.allowedOrigins;
+    const { contributorId, secret } = (body ?? {}) as { contributorId?: unknown; secret?: unknown };
+    if (typeof contributorId !== 'string' || typeof secret !== 'string') {
+        return errorResponse('bad_request', 'contributorId and secret of the credential to merge', 400, origin, allowed);
+    }
+    if (contributorId === contributor.id) return json({ merged: false }, 200, origin, allowed);
+    const from = await verify(db, { contributorId, secret });
+    // Unknown already (merged before, or the database was reset): nothing left to do
+    if (!from) return json({ merged: false }, 200, origin, allowed);
+    await mergeContributor(db, from, contributor, Date.now());
+    return json({ merged: true }, 200, origin, allowed);
 }
 
 async function readJsonBody(request: Request): Promise<unknown | 'too_large' | 'malformed'> {
