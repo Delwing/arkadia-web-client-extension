@@ -424,6 +424,112 @@ export declare namespace MapRenderer {
 
 
 // ============================================================================
+// Map Data Types (from src/client/types/MapData.d.ts)
+// ============================================================================
+
+export declare namespace MapData {
+
+    export type direction =
+        "north"
+        | "south"
+        | "east"
+        | "west"
+        | "northwest"
+        | "northeast"
+        | "southeast"
+        | "southwest"
+        | "up"
+        | "down"
+        | "in"
+        | "out"
+
+    export interface Color {
+        alpha: number;
+        r: number;
+        g: number;
+        b: number;
+    }
+
+    export interface Line {
+        points: Point[];
+        attributes: LineAttribute;
+    }
+
+    export interface Point {
+        x: number;
+        y: number;
+    }
+
+    export interface LineAttribute {
+        color: Color;
+        style: string;
+        arrow: boolean;
+    }
+
+    export interface Room {
+        id: number;
+        area: number;
+        x: number;
+        y: number;
+        z: number;
+        weight: number;
+        roomChar: string;
+        name: string;
+        userData: Record<string, string>;
+        customLines: Record<string, Line>;
+        stubs: number[];
+        hash: string;
+        env: number;
+        exits: Record<direction, number>;
+        doors: Record<direction, 1 | 2 | 3>;
+        specialExits: Record<string, number>;
+        exitLocks?: number[];
+        exitWeights?: Record<string, number>;
+        mSpecialExitLocks?: number[];
+    }
+
+    export interface Label {
+        labelId: number;
+        areaId: number;
+        pixMap: string;
+        X: number;
+        Y: number;
+        Z: number;
+        Width: number;
+        Height: number;
+        Text: string;
+        FgColor: Color;
+        BgColor: Color;
+    }
+
+    export interface Area {
+        areaName: string;
+        areaId: string;
+        rooms: Room[];
+        labels: Label[];
+    }
+
+    export type Map = Area[]
+
+    export interface Env {
+        envId: string;
+        colors: number[];
+    }
+
+}
+
+// ============================================================================
+// Internal Types
+// ============================================================================
+
+/**
+ * The client instance handed to button and trigger macros. Internal and not
+ * part of the plugin API - its shape may change between client versions.
+ */
+export type Client = any;
+
+
+// ============================================================================
 // Color Types
 // ============================================================================
 
@@ -1068,398 +1174,6 @@ export type EnemyBindResolver = (
 
 
 // ============================================================================
-// Event Types
-// ============================================================================
-
-/**
- * Send command event payload
- */
-export interface SendCommandEvent {
-  command: string;
-  echo?: boolean;
-  options?: {
-    mode?: string;
-    [key: string]: any;
-  };
-}
-
-/**
- * Notification event payload
- */
-export interface NotificationPayload {
-  text: string;
-  time?: number;
-}
-
-/**
- * Storage event payload
- */
-export interface StorageEventPayload {
-  key: string;
-  value: unknown;
-}
-
-/**
- * Multibind list event payload
- */
-export interface MultibindList {
-  list: {
-    index: number;
-    action: string;
-    /** Key label, e.g. "ALT+1". */
-    label: string;
-    /** Display name of a temporary bind - shown instead of the action when set. */
-    name?: string;
-    /** Slot filled by a temporary (plugin) bind rather than a saved one. */
-    temporary?: boolean;
-    /** Slot a temporary bind asked to highlight. */
-    highlight?: boolean;
-  }[];
-}
-
-/**
- * Message event payload (output text)
- */
-export type MessageEventPayload = [text: string | AnsiAwareBuffer, type?: string, timestamp?: number];
-
-/**
- * Recording auto-stop event payload
- */
-export type RecordingAutoStopPayload = [name: string | null, save?: boolean];
-
-/**
- * Playback index event payload
- */
-export type PlaybackIndexPayload = [current: number, total: number];
-
-/**
- * Knowledge report action
- */
-export type KnowledgeReportAction =
-  | { type: "completeLibrary"; libraryId: string }
-  | { type: "resetLibrary"; libraryId: string };
-
-/**
- * Package status event payload
- */
-export interface PackageStatus {
-  recipient: string;
-  seconds?: number;
-}
-
-/**
- * Plugin loaded event payload
- */
-export interface PluginLoadedPayload {
-  url: string;
-  info: {
-    name: string;
-    version: string;
-    author?: string;
-    description?: string;
-  };
-}
-
-/**
- * Plugin error event payload
- */
-export interface PluginErrorPayload {
-  url: string;
-  error: string;
-}
-
-/**
- * Plugin destroyed event payload
- */
-export interface PluginDestroyedPayload {
-  url: string;
-}
-
-/**
- * Clock update event payload
- */
-export interface ClockUpdatePayload {
-  domain: "Empire" | "Ishtar";
-  hours: number;
-  minutes: number;
-  precision: number;
-  sunrise: number | string | "?";
-  sunset: number | string | "?";
-  dayLabel: string;
-  dayOfMonth: number;
-  dayOfYear: number;
-  daylight?: boolean;
-  season?: number;
-}
-
-/**
- * Clock domain active event payload
- */
-export interface ClockDomainActivePayload {
-  domain: "Empire" | "Ishtar";
-}
-
-/**
- * Clock mismatch event payload
- */
-export interface ClockMismatchPayload {
-  domain: "Empire" | "Ishtar";
-  type: "sunrise" | "sunset";
-  dayOfYear: number;
-  expectedHour: number;
-  observedHour: number;
-  observedMinutes: number;
-  indicatedHour?: string;
-}
-
-/**
- * Clock sun event payload (sunrise/sunset)
- */
-export interface ClockSunEventPayload {
-  domain: "Empire" | "Ishtar";
-  dayOfYear: number;
-  observedHour: number;
-  observedMinutes: number;
-  indicatedHour?: string;
-}
-
-/**
- * Known client events with their payloads
- * Subscribe to these events using api.events.on()
- */
-export interface ClientEvents {
-  /** Command sent to the MUD server */
-  "command": string;
-  /** Port connection established */
-  "port-connected": void;
-  /** Output line sent to display */
-  "output-sent": number;
-  /** Buffer sent */
-  "buffer-sent": number;
-  /** Map position changed */
-  "mapMove": void;
-  /** Map data loaded and ready (fired once, after initial map initialization) */
-  "mapReady": void;
-  /** Step back in location history */
-  "stepBack": void;
-  /** Lead to specific room ID */
-  "leadTo": number;
-  /** Clear lead to destination */
-  "clearLeadTo": void;
-  /** Map path data emitted when destination(s) change. null when no active path. */
-  "mapPath": { segments: Array<{ path: number[]; color: string }> } | null;
-  /** Display notification */
-  "notify": NotificationPayload;
-  /** Lamp timer updated */
-  "lampTimer": number | null;
-  /** Cover timer updated */
-  "coverTimer": number | null;
-  /** Break item warning */
-  "breakItem": { text: string; command?: string } | null;
-  /** Package delivery status */
-  "packageStatus": PackageStatus | null;
-  /** Release guard status */
-  "releaseGuard": boolean;
-  /** Attack mode changed */
-  "attackMode": "A" | "AW" | "AWR";
-  /** Content width changed */
-  "contentWidth": number;
-  /** Entered a location. direction is the direction that led to this location (null when set via other means than move) */
-  "enterLocation": { id: number; room: unknown; direction: string | null };
-  /** Highlights updated */
-  "highlights": [number[]];
-  /** Multibind list updated */
-  "multibinds": MultibindList;
-  /** Letter composer state */
-  "letterComposer": { open: boolean };
-  /** Letter composer submit */
-  "letterComposer.submit": unknown;
-  /** Letter composer preview */
-  "letterComposer.preview": unknown;
-  /** NPC information */
-  "npc": unknown;
-  /** Zask timer status */
-  "zaskTimer": { seconds: number; ok: boolean } | null;
-  /** Move mode changed */
-  "moveModeChanged": number;
-  /** Ping measurement */
-  "ping": number | null;
-  /** Transport timer status */
-  "transportTimer": unknown;
-  /** Combat timer */
-  "combatTimer": number | null;
-  /** Team leader target without avatar */
-  "teamLeaderTargetNoAvatar": number;
-  /** Team leader target with avatar */
-  "teamLeaderTargetAvatar": void;
-  /** Team composition changed */
-  "teamChange": void;
-  /** Is team leader status */
-  "isTeamLeader": boolean;
-  /** Reset client state */
-  "reset": void;
-  /** Refresh map position when able */
-  "refreshPositionWhenAble": void;
-  /** Knowledge report */
-  "knowledgeReport": unknown | null;
-  /** Open knowledge report popup */
-  "knowledgeReport.popup.open": void;
-  /** Knowledge details report */
-  "knowledgeDetailsReport": unknown | null;
-  /** Open knowledge details popup */
-  "knowledgeDetails.popup.open": void;
-  /** Knowledge report action */
-  "knowledgeReportAction": KnowledgeReportAction;
-  /** Send command to server */
-  "sendCommand": SendCommandEvent;
-  /** Request herb counts */
-  "requestHerbCounts": void;
-  /** Herb manager closed */
-  "herbManagerClose": void;
-  /** Herb counts data */
-  "herbCounts": unknown;
-  /** Herb manager opened */
-  "herbManagerOpen": void;
-  /** Play sound effect */
-  "sound:play": { key: string };
-  /** Play beep sound */
-  "playBeep": void;
-  /** Line start marker */
-  "line-start": void;
-  /** Storage value changed */
-  "storage": StorageEventPayload;
-  /** Settings updated */
-  "settings": unknown;
-  /** Binds updated */
-  "binds": unknown;
-  /** UI settings updated */
-  "uiSettings": unknown;
-  /** Mobile buttons settings updated */
-  "mobileButtonsSettings": unknown;
-  /** Pauser started */
-  "pauserStart": void;
-  /** Pauser ended */
-  "pauserEnd": void;
-  /** Client connected to server */
-  "client.connect": void;
-  /** Client disconnected from server */
-  "client.disconnect": void;
-  /** WebSocket opened */
-  "open": Event;
-  /** WebSocket closed */
-  "close": CloseEvent;
-  /** Error occurred */
-  "error": unknown;
-  /** GMCP data received */
-  "gmcp": { path: string; value: unknown };
-  /** Recording started */
-  "recording.start": string;
-  /** Recording stopped */
-  "recording.stop": boolean | undefined;
-  /** Auto-recording started */
-  "recording.auto.start": string | null | undefined;
-  /** Auto-recording stopped */
-  "recording.auto.stop": RecordingAutoStopPayload;
-  /** Playback stopped */
-  "playback.stop": void;
-  /** Playback paused */
-  "playback.pause": void;
-  /** Playback resumed */
-  "playback.resume": void;
-  /** Playback started */
-  "playback.start": number | undefined;
-  /** Playback speed changed */
-  "playback.speed": number;
-  /** Playback index changed */
-  "playback.index": PlaybackIndexPayload;
-  /** Message output */
-  "message": MessageEventPayload;
-  /** Attack queue changed */
-  "attackQueueChange": string[];
-  /** Clear attack queue */
-  "clearAttackQueue": void;
-  /** Add to attack queue */
-  "addToAttackQueue": string;
-  /** Remove from attack queue */
-  "removeFromAttackQueue": string;
-  /** Objects parsed */
-  "parsedObjects": void;
-  /** Numbers parsed */
-  "parsedNums": { nums: number[] };
-  /** Kill event */
-  "kill": { killer: "ME" | "TEAM" | "OTHER" };
-  /** Enemy killed */
-  "enemyKilled": { objNum: number; killer: "ME" | "TEAM" | "OTHER"; hasBody?: boolean };
-  /** All enemies killed */
-  "allEnemiesKilled": void;
-  /**
-   * Every combat line a gag classified: gag type (moje_ciosy, innych_parowanie, ...),
-   * the prefix shown ("3/6", "FIN", a special's name) and the raw line. finisher is
-   * true when the prefix is the player's killing-blow prefix.
-   */
-  "combat.gag": { type: string; prefix: string; text: string; finisher?: boolean };
-  /** The player is stunned (ogluszenie) */
-  "stunStart": void;
-  /** The player's stun wore off */
-  "stunEnd": void;
-  /** Someone else got stunned; name as the line declined it ("orka") */
-  "enemy.paralyzed": { name: string };
-  /** Someone else's stun ended; name is '' when the object list timed it out */
-  "enemy.paralyzed.end": { name: string };
-  /** A cover (zaslona) changed; kind 'established' carries covererId/coveredId/attackerId */
-  "cover.event": {
-    at: number;
-    kind: "established" | "failed" | "blocked" | "break-failed" | "break-ok" | "released" | "retreat" | "expired" | "gmcp-suspect" | "ambiguous";
-    coveredId?: number;
-    covererId?: number;
-    attackerId?: number;
-    raw: string;
-  };
-  /** The cover graph changed; query it with api.combat.isCoveredFor */
-  "cover.state": {
-    at: number;
-    edges: { coveredId: number; covererId: number; attackerId: number; since: number; lastSeen: number; confidence: "confirmed" | "suspected" }[];
-    playerNum?: number;
-  };
-  /** GMCP Char.Info - the player's name, race, guilds */
-  "gmcp.char.info": { name?: string; race?: string; gender?: string; [key: string]: unknown };
-  /** Plugin loaded successfully */
-  "plugin:loaded": PluginLoadedPayload;
-  /** Plugin error occurred */
-  "plugin:error": PluginErrorPayload;
-  /** Plugin destroyed */
-  "plugin:destroyed": PluginDestroyedPayload;
-  /** Clock update */
-  "clock.update": ClockUpdatePayload;
-  /** Clock domain active */
-  "clock.domain.active": ClockDomainActivePayload;
-  /** Clock popup opened */
-  "clock.popup.open": { domain?: "Empire" | "Ishtar" };
-  /** Clock mismatch detected */
-  "clock.mismatch": ClockMismatchPayload;
-  /** Clock sunrise */
-  "clock.sunrise": ClockSunEventPayload;
-  /** Clock sunset */
-  "clock.sunset": ClockSunEventPayload;
-  /** Can wield weapon after knockoff */
-  "canWieldAfterKnockOff": void;
-  /**
-   * Container contents seen in game output ("Otwarty plecak zawiera ...", "W srodku dostrzegasz ...").
-   * Fires whether or not pretty containers is enabled. container is the name as the game wrote it,
-   * in whatever grammatical case the line uses - compare it against every form returned by
-   * api.containers.getContainerForms(). items is the full, unfiltered list.
-   */
-  "containers.listed": { container: string; items: { name: string; count: string | number }[] };
-  /** Team leader performed special exit follow */
-  "followSpecialExit": { exit: string };
-  /** GMCP events with dynamic paths (e.g., gmcp.room.info, gmcp.char.vitals) */
-  [key: `gmcp.${string}`]: unknown;
-  /** GMCP message events */
-  [key: `gmcp_msg.${string}`]: AnsiAwareBuffer;
-}
-
-
-// ============================================================================
 // API Namespaces
 // ============================================================================
 
@@ -1468,10 +1182,6 @@ export interface ClientEvents {
  * Valid event names from ClientEvents
  */
 
-export // Event system types
-/**
- * Valid event names from ClientEvents
- */
 export type EventKey = keyof ClientEvents;
 
 /**
@@ -2429,7 +2139,7 @@ export interface FooterComponentHandle {
      * When using React, the component will be re-rendered with the new element.
      * @param content - HTML string, DOM node, or React element
      */
-    setContent(content: string | Node | ReactElement): void;
+    setContent(content: string | Node | React.ReactElement): void;
     /**
      * Set component visibility
      * @param visible - Whether the component should be visible
@@ -2459,7 +2169,7 @@ export interface WidgetHandle {
      */
     readonly element: HTMLDivElement;
     /** Replace the content: HTML string, DOM node, or React element. */
-    setContent(content: string | Node | ReactElement): void;
+    setContent(content: string | Node | React.ReactElement): void;
     /** Withdraw the widget. Where the player placed it is kept for next time. */
     remove(): void;
 }
@@ -2785,7 +2495,7 @@ export interface UiApi {
      * api.ui.registerFooterComponent('attackStatus', <AttackStatus />);
      * ```
      */
-    registerFooterComponent(id: string, content: string | Node | ReactElement, position?: 'start' | 'end' | number): FooterComponentHandle;
+    registerFooterComponent(id: string, content: string | Node | React.ReactElement, position?: 'start' | 'end' | number): FooterComponentHandle;
     /**
      * Offer a widget: a small frameless piece the player can lay over the game
      * output wherever they like (Menu → Widżety → Dodaj, or `/widzety`). The
@@ -2803,7 +2513,7 @@ export interface UiApi {
      * api.on('allEnemiesKilled', () => widget.setContent(`<b>${++kills}</b> zabitych`));
      * ```
      */
-    registerWidget(id: string, content: string | Node | ReactElement, options?: WidgetOptions): WidgetHandle;
+    registerWidget(id: string, content: string | Node | React.ReactElement, options?: WidgetOptions): WidgetHandle;
     /**
      * Add a button beside the command line, alongside the player's own
      * (Ustawienia -> Stopka). The button sends `command` when clicked; give it a
@@ -4864,6 +4574,2369 @@ export interface NotificationsApi {
      */
     show(options: NotificationOptions | string): NotificationHandle;
 }
+
+export interface ClientEvents extends KnownEvents, GmcpMsgEvents {
+    "gmcp.objects.data": Map<number, ObjectData>;
+    "gmcp.objects.nums": [
+        number[]
+    ];
+    "gmcp.char.info": GmcpCharInfo;
+    "gmcp.char.state": GmcpCharState;
+    "gmcp.char.options": GmcpCharOptions;
+    "gmcp.char.options.info": GmcpCharOptionsInfo;
+    "gmcp.char.colors": GmcpCharColors;
+    "gmcp.room.info": GmcpRoomInfo;
+    "gmcp.room.time": GmcpRoomTime;
+    "gmcp.core.ping": void;
+    [key: `gmcp.${string}`]: unknown;
+    [key: `gmcp_msg.${string}`]: AnsiAwareBuffer;
+}
+
+/**
+ * Area information exposed via Map API
+ */
+
+export interface AreaInfo {
+    /** Numeric area ID */
+    areaId: number;
+    /** Area display name */
+    areaName: string;
+    /** Array of rooms in this area */
+    rooms: MapData.Room[];
+}
+
+/**
+ * A location highlighter that can highlight rooms on the map.
+ * Multiple highlighters can be active simultaneously with different colors.
+ */
+
+export interface LocationHighlighter {
+    /**
+     * Add room(s) to the highlight set
+     * @param roomIds - Single room ID or array of room IDs to highlight
+     *
+     * @example
+     * highlighter.add(12345);
+     * highlighter.add([100, 200, 300]);
+     */
+    add(roomIds: number | number[]): void;
+    /**
+     * Remove room(s) from the highlight set
+     * @param roomIds - Single room ID or array of room IDs to remove
+     *
+     * @example
+     * highlighter.remove(12345);
+     * highlighter.remove([100, 200]);
+     */
+    remove(roomIds: number | number[]): void;
+    /**
+     * Clear all rooms from the highlight set
+     *
+     * @example
+     * highlighter.clear();
+     */
+    clear(): void;
+    /**
+     * Enable this highlighter (shows highlights on map)
+     *
+     * @example
+     * highlighter.enable();
+     */
+    enable(): void;
+    /**
+     * Disable this highlighter (hides highlights without removing them)
+     *
+     * @example
+     * highlighter.disable();
+     */
+    disable(): void;
+    /**
+     * Check if the highlighter is currently enabled
+     * @returns true if enabled, false if disabled
+     */
+    isEnabled(): boolean;
+    /**
+     * Set the highlight color
+     * @param color - CSS color string (e.g., "red", "#FF0000", "rgb(255,0,0)")
+     *
+     * @example
+     * highlighter.setColor("#FF5500");
+     * highlighter.setColor("cyan");
+     */
+    setColor(color: string): void;
+    /**
+     * Get the current highlight color
+     * @returns The current CSS color string
+     */
+    getColor(): string;
+    /**
+     * Get all room IDs currently in the highlight set
+     * @returns Array of room IDs
+     */
+    getRoomIds(): number[];
+    /**
+     * Destroy this highlighter and remove all its highlights from the map.
+     * After calling destroy(), the highlighter should not be used.
+     *
+     * @example
+     * highlighter.destroy();
+     */
+    destroy(): void;
+}
+
+export type FooterButtonTone = "neutral" | "accent" | "danger";
+
+export type CommandHookCallback = (command: string, echo: boolean, options?: CommandOptions) => string | null | undefined;
+
+/**
+ * Combined context for onClick handler
+ */
+
+export interface ButtonMacroClickContext {
+    button: AnyButtonSetting;
+    client: Client;
+    config: Record<string, any>;
+    /** State context - only present for stateful macros */
+    stateCtx?: MacroStateContext;
+}
+
+export interface MobileButtonSetting extends BaseButtonSetting {
+    activeColor?: string;
+    syncWithDirections?: boolean;
+}
+
+export interface MacroConfigField {
+    name: string;
+    type: 'text' | 'textarea' | 'number' | 'select' | 'checkbox';
+    label: string;
+    options?: {
+        value: string;
+        label: string;
+    }[];
+    defaultValue?: string | number | boolean;
+}
+
+/**
+ * Defines a state for stateful macros (toggle/mode buttons)
+ */
+
+export interface MacroState {
+    id: string;
+    label: string;
+    color?: string;
+}
+
+export interface TriggerMacroContext {
+    client: Client;
+    line: AnsiAwareBuffer;
+    match: RegExpMatchArray;
+    matchRange: TextRange;
+    config: Record<string, any>;
+}
+
+export interface Settings {
+    packageHelper: boolean;
+    packageInContainer: boolean;
+    inlineCompassRose: number;
+    compassBackExits: boolean;
+    shortenExits: boolean;
+    shortExitsPrefix?: string;
+    shortExitsColor?: string;
+    shortExitsSeparator?: string;
+    shortExitsBackgroundColor?: string;
+    prettyContainers: boolean;
+    containerColumns: number;
+    containerOpen: boolean;
+    containerClose: boolean;
+    collectMode: number;
+    collectTiming: number;
+    collectCopper: boolean;
+    collectSilver: boolean;
+    collectGold: boolean;
+    collectGems: boolean;
+    collectExtra: string[];
+    collectOverrides: CollectOverride[];
+    language: string;
+    languageAdjective: string;
+    languageAliases: {
+        alias: string;
+        adjective: string;
+        language: string;
+    }[];
+    herbPreUseCommand: string;
+    herbPostUseCommand: string;
+    herbWieleCount: number;
+    attackCommand: string;
+    supportCommand: string;
+    drawWeaponCommand: string;
+    fullHpMessage: boolean;
+    lowHpAlert: number;
+    letterLineWidth: number;
+    guilds?: string[];
+    enemyGuilds?: string[];
+    allyGuilds?: string[];
+    guildColors?: Record<string, string | undefined>;
+    enemyBindsKeepUnchanged: boolean;
+    enemyBindsShowMode: 'always' | 'whenBound' | 'never';
+    enemyBindsEnabledSlots: [
+        boolean,
+        boolean,
+        boolean
+    ];
+    /** Command F1-F3 send instead of the usual attack; `{wrog}` is the enemy, `{atak}`/`{blok}` the built-ins, `;` separates steps. */
+    enemyBindsAttackCommand: string;
+    /** Command the block binds send instead of `zablokuj {wrog}`; same placeholders. */
+    enemyBindsBlockCommand: string;
+    favoriteMagicTypes?: string[];
+    favoriteMagicKeys?: string[];
+    magicsColor?: string;
+    magicKeysColor?: string;
+    cuttingPreAction?: string;
+    cuttingPostAction?: string;
+    /** How a sunrise/sunset is announced: a toast, the old frame in the output, or not at all. */
+    sunAnnouncement: SunAnnouncement;
+    carriageTeamTickets: boolean;
+    zlomSilver?: {
+        color: string;
+        off?: boolean;
+    };
+    dobCommand1: string;
+    dobCommand2: string;
+    dobCommand3: string;
+    opCommand1: string;
+    opCommand2: string;
+    opCommand3: string;
+    /** Sent by a click on the footer weapon chip while the weapon is sheathed. */
+    weaponChipDrawCommand: string;
+    /** Sent by a click on the footer weapon chip while the weapon is drawn. */
+    weaponChipSheatheCommand: string;
+    /** Sent by a long press on the footer weapon chip; empty = no long press. */
+    weaponChipHoldCommand: string;
+}
+
+export type UiSettings = ShellSettings & RenderSettings & MapSettings & BehaviorSettings & ChromeSettings;
+
+export interface PluginLocationNote {
+    pluginId: string;
+    pluginName: string;
+    roomId: number;
+    note: string;
+    /** Set by the client itself (e.g. the Wiedza hints), not by an installed plugin. */
+    builtin?: boolean;
+}
+
+export interface PersonListEntry extends PersonEntry {
+    source: 'remote' | 'local' | 'edited';
+    ignored: boolean;
+    isEnemy: boolean;
+    isAlly: boolean;
+    color?: string; // Individual color override (hex value)
+    note?: string;
+    showNoteOnMeet?: boolean;
+    originalEntry?: PersonEntry;
+    eventId?: string;
+}
+
+/** A button on a toast. */
+
+export interface NotificationButton {
+    label: string;
+    /** Sent like a typed command when clicked. */
+    command?: string;
+    onClick?: () => void;
+    /** Drawn as the main button. */
+    primary?: boolean;
+    /** Leave the toast up after the click. */
+    keepOpen?: boolean;
+}
+
+export interface KnownEvents {
+    "enemy.paralyzed": EnemyStatusPayload;
+    "enemy.paralyzed.end": EnemyStatusPayload;
+    "enemy.broken_defense": EnemyStatusPayload;
+    "command": string;
+    "output-sent": number;
+    "buffer-sent": number;
+    "mapMove": void;
+    "mapReady": void;
+    "renderMapLocation": {
+        locationId: number;
+    };
+    "stepBack": void;
+    "leadTo": number;
+    /** Lead somewhere, boarding ships and coaches on the way (/prowadzt). */
+    "leadToWithTransport": {
+        roomId: number;
+        aggressive?: boolean;
+    };
+    /** Lead on to the current target, switching between /prowadz and /prowadzt. */
+    "switchLeadMode": {
+        transport: boolean;
+        aggressive?: boolean;
+    };
+    /** A route worth explaining has been drawn: which ship to board, where to get off. */
+    "routePlanned": {
+        segments: RouteSegment[];
+        viaFallback: boolean;
+        aggressive: boolean;
+        driving: boolean;
+    };
+    "clearLeadTo": void;
+    "tripPlanner.leadTo": [
+        number[]
+    ];
+    "tripPlanner.addStop": {
+        roomId: number;
+    };
+    "tripPlanner.popup.open": void;
+    "mapPath": {
+        segments: Array<{
+            path: number[];
+            color: string;
+        }>;
+    } | null;
+    "mapTransportHops": [
+        Array<{
+            fromRoomId: number;
+            toRoomId: number;
+            transportName: string;
+            label?: string;
+            color: string;
+        }> | null
+    ];
+    "mapHighlights": [
+        {
+            roomId: number;
+            color: string;
+        }[]
+    ];
+    "mapLostRooms": [
+        number[]
+    ];
+    /** Object ids that lost contact with reality but stayed in the world (shown with * in the object list). */
+    "objects.linkdead": [
+        number[]
+    ];
+    "mapParkedCarriages": [
+        Array<{
+            roomId: number;
+            label: string;
+        }>
+    ];
+    "mapCarriageBlocks": [
+        number[]
+    ];
+    "mapShowCarriageBlocks": [
+        boolean
+    ];
+    "mapLocationLabel": string;
+    /** The mapper is sure the room it draws is not the room we stand in - or sure again that it is. */
+    "mapPositionLost": {
+        lost: boolean;
+        reason: MapLostReason | null;
+    };
+    "requestMapLocationLabel": void;
+    "requestMapHighlights": void;
+    "requestMapLostRooms": void;
+    "requestMapPositionLost": void;
+    "requestMapParkedCarriages": void;
+    "requestMapCarriageBlocks": void;
+    "requestMapPath": void;
+    "notify": NotificationPayload;
+    /** Closes the toast shown under this key, if any. */
+    "notify.dismiss": {
+        key: string;
+    };
+    "lampTimer": number | null;
+    /** The spells we are under that have warned how long they have left, soonest first. */
+    "spellEffects": {
+        name: string;
+        seconds: number;
+    }[];
+    "coverTimer": number | null;
+    /** A maneuver was attempted and the 5s cover cooldown started (or restarted). */
+    "cover.start": void;
+    /** The cover cooldown ran out. Fires once per cooldown, unlike the per-tick `coverTimer`. */
+    "cover.ready": void;
+    "breakItem": {
+        text: string;
+        command?: string;
+    } | null;
+    "pipeLit": boolean;
+    "packageStatus": PackageStatus | null;
+    "releaseGuard": boolean;
+    "attackMode": "A" | "AW" | "AWR";
+    "contentWidth": number;
+    "enterLocation": {
+        id: number;
+        room: unknown;
+        direction: string | null;
+    };
+    /** Visited rooms added to a character's stored set from outside the map (sync). */
+    "visitedRooms.added": {
+        character: string;
+        rooms: number[];
+    };
+    "highlights": [
+        number[]
+    ];
+    "multibinds": MultibindList;
+    "letterComposer": {
+        to?: string;
+        cc?: string;
+        udw?: string;
+        subject?: string;
+        content?: string;
+    };
+    "letterComposer.submit": LetterSubmitPayload;
+    "letterComposer.preview": LetterSubmitPayload;
+    "npc": unknown;
+    "zaskTimer": {
+        seconds: number;
+        ok: boolean;
+    } | null;
+    /** The surprise timer reached its safe threshold. Fires once per room, unlike the per-tick `zaskTimer`. */
+    "zask.ready": {
+        seconds: number;
+    };
+    "moveModeChanged": number;
+    "carriageModeChanged": boolean;
+    "ping": number | null;
+    /** The last five minutes of round trips, oldest first; re-sent with every new `ping`. */
+    "pingHistory": {
+        samples: PingSample[];
+    };
+    "transportTimer": TransportTimerPayload | null;
+    "transportRoute": TransportRoutePayload | null;
+    "transportDebug": TransportDebugState | null;
+    "transportDebug.toggle": void;
+    "transportTimesDebug": TransportTimesDebugPayload;
+    "transportTimesDebug.request": void;
+    "transportTimesDebug.popup.toggle": void;
+    "transportTimesDebug.resetLeg": TransportLegResetPayload;
+    "transportArrival": number;
+    "transportDeparture": void;
+    "transport.popup.open": void;
+    "transport.onBoard": boolean;
+    /** On board: the vehicle stopped at a stop. */
+    "transport.stop": TransportStopEventPayload;
+    /** Waiting at a dock: a vehicle you can board has just pulled in. */
+    "transport.arrived": TransportStopEventPayload;
+    /** On board: the vehicle stopped at the destination picked in the route popup. */
+    "transport.destination": TransportStopEventPayload;
+    /** On board: the current leg dropped under TRANSPORT_SOON_SECONDS. */
+    "transport.approaching": TransportApproachingPayload;
+    /** As `transport.approaching`, but only for the leg ending at the picked destination. */
+    "transport.approachingDestination": TransportApproachingPayload;
+    /** Route popup -> tracker: the stop label the player marked with the bell, or null. */
+    "transport.target": string | null;
+    "combatTimer": number | null;
+    "worldDestructionTimer": number | null;
+    "combatState": boolean;
+    "playerDeath": void;
+    "teamLeaderTargetNoAvatar": number;
+    "teamLeaderTargetAvatar": void;
+    "teamChange": void;
+    "teamPanelStatus": {
+        teamSize: number;
+        missing: string[];
+        leader?: string;
+    };
+    "isTeamLeader": boolean;
+    "reset": void;
+    /**
+     * Which object in the room is us, or undefined while that is unknown - before the
+     * first Char.Info of a session, or between a body swap and working the new id out.
+     * A disconnect does not clear it; see PlayerIdentity.
+     */
+    "player.objectNum": number | undefined;
+    /**
+     * Who we are playing, as the game spells it, fired when a life starts rather
+     * than on every Char.Info - a change of body is not a change of character.
+     * The session logger stamps it onto the log; see PlayerIdentity.
+     */
+    "player.character": string;
+    "refreshPositionWhenAble": void;
+    "knowledgeReport": unknown | null;
+    "knowledgeReport.popup.open": void;
+    "knowledgeReportCurrentLibrary": string | null;
+    "knowledgeDetailsReport": unknown | null;
+    "knowledgeDetailsUpdated": {
+        character: string;
+    };
+    "knowledgeDetails.popup.open": void;
+    /** Dokumentacja; optionally on a page (its key in docPages.ts). */
+    "docs.popup.open": void | {
+        page?: string;
+    };
+    "knowledgeReportAction": KnowledgeReportAction;
+    "requestKnowledgeReport": void | {
+        character?: string;
+    };
+    "requestKnowledgeDetailsReport": void;
+    "knowledgeHints": {
+        enabled: boolean;
+        hideCompleted: boolean;
+    };
+    "knowledgeTickEvent": {
+        category: string;
+        dative: string;
+    };
+    /** Knowledge events (ticks, level changes) written from outside the knowledge script (sync). */
+    "knowledgeEvents.changed": {
+        characters: string[];
+    };
+    "knowledgeBookReport": unknown | null;
+    "knowledgeBookReportAction": {
+        type: string;
+        bookKey: string;
+        category: string;
+    };
+    "requestKnowledgeBookReport": void | {
+        character?: string;
+    };
+    "wiedzaImportLibraries": {
+        character: string;
+        libraries: unknown[];
+    };
+    "wiedzaImportBooks": {
+        character: string;
+        books: unknown[];
+    };
+    "wiedzaImportTotalLevels": {
+        character: string;
+        levels: unknown[];
+    };
+    "leadToByInternalId": string;
+    "sendCommand": SendCommandEvent;
+    /** Run an automation script now, from its editor; `code` runs a draft instead of the saved code. */
+    "automation.runScript": {
+        id: string;
+        code?: string;
+    };
+    "printLine": string | AnsiAwareBuffer;
+    "requestHerbCounts": void;
+    "herbManagerClose": void;
+    "herbCounts": unknown;
+    /** Opens the Zioła window, optionally in a given mode (`/ziola2` opens the list). */
+    "herbManagerOpen": {
+        mode?: "bags" | "list" | "effects";
+    } | void;
+    "sound:play": {
+        key: string;
+    };
+    "sound:muted": boolean;
+    "sound:category": SoundCategory;
+    /** Read text aloud (speech synthesis). Handled by the UI; honours the TTS settings and mute. */
+    "tts:speak": {
+        text: string;
+    };
+    /** Stop reading aloud and drop anything queued. */
+    "tts:stop": void;
+    "playSound": SoundCategory;
+    "line-start": void;
+    "mobileButtonsSettings": unknown;
+    "mobileButtonsResetPosition": void;
+    "desktopButtonsSettings": unknown;
+    "orderTimer": number | null;
+    "pauserStart": void;
+    "pauserEnd": void;
+    "client.connect": void;
+    "client.disconnect": void;
+    "open": Event;
+    "close": CloseEvent;
+    "error": unknown;
+    "gmcp": {
+        path: string;
+        value: unknown;
+    };
+    "recording.start": string;
+    "recording.stop": boolean | undefined;
+    "recording.loaded": {
+        name: string;
+        length: number;
+    };
+    "recording.auto.start": string | null | undefined;
+    "recording.auto.stop": RecordingAutoStopPayload;
+    "recording.request": RecordingRequest;
+    "recording.request.done": RecordingRequestResult;
+    "playback.stop": void;
+    "playback.pause": void;
+    "playback.resume": void;
+    "playback.start": number | undefined;
+    "playback.speed": number;
+    "playback.index": PlaybackIndexPayload;
+    "playback.loop.updated": PlaybackLoopState;
+    "playback.event": RecordedEvent;
+    "playback.timer": {
+        delay: number;
+        startTime: number;
+    };
+    "message": MessageEventPayload;
+    "attackQueueChange": number[];
+    "clearAttackQueue": void;
+    "addToAttackQueue": number;
+    "removeFromAttackQueue": number;
+    "parsedObjects": void;
+    "parsedNums": {
+        nums: number[];
+    };
+    "kill": {
+        killer: "ME" | "TEAM" | "OTHER";
+    };
+    "enemyKilled": {
+        objNum: number;
+        killer: "ME" | "TEAM" | "OTHER";
+        hasBody?: boolean;
+        enemyDesc?: string;
+    };
+    "allEnemiesKilled": void;
+    "plugin:loaded": PluginLoadedPayload;
+    "plugin:error": PluginErrorPayload;
+    "plugin:destroyed": PluginDestroyedPayload;
+    "clock.update": ClockUpdatePayload;
+    "clock.domain.active": ClockDomainActivePayload;
+    "clock.popup.open": {
+        domain?: "Empire" | "Ishtar";
+    };
+    /** Widget edit mode on or off; without `on`, toggle it (/widzety). */
+    "widgets.edit": {
+        on?: boolean;
+    };
+    "clock.mismatch": ClockMismatchPayload;
+    /**
+     * The sky changed in our domain while we watched. Fires even when the clock
+     * is unset or too far off for `clock.sunrise`/`clock.sunset`, which only
+     * fire once the flip can be placed on the clock.
+     */
+    "clock.daylightChange": {
+        domain: "Empire" | "Ishtar";
+        type: "sunrise" | "sunset";
+    };
+    "clock.sunrise": ClockSunEventPayload;
+    "clock.sunset": ClockSunEventPayload;
+    "clock.parsedTime": {
+        domain: "Empire" | "Ishtar";
+        hour: number;
+        dayOfYear: number;
+    };
+    "clock.setTime": ClockSetTimePayload;
+    /** The game announced the last world rebirth ("Swiat odrodzil sie: ..."); Unix time in seconds */
+    "systemRebirth": number;
+    "contracts.popup.open": {
+        contracts: Contract[];
+        currentLocationId: number | null;
+    };
+    "contracts.updated": {
+        contracts: Contract[];
+    };
+    "contracts.remove": {
+        id: string;
+    };
+    "carriages.popup.open": {
+        carriages: CarriageEntry[];
+        currentLocationId: number | null;
+    };
+    "carriages.updated": {
+        carriages: CarriageEntry[];
+    };
+    "carriages.remove": {
+        key: string;
+    };
+    "carriages.request": void;
+    "carriageBlocks.changed": void;
+    "carriageBlocks.popup.open": void;
+    "carriageRoute": {
+        transfer: number;
+        driveRooms: number;
+        walkRooms: number;
+        destinationBlocked: boolean;
+        boarding: string | null;
+    };
+    "carriageRouteStep": {
+        nextCommand: string | null;
+        atTransfer: boolean;
+    };
+    "fishing.popup.open": FishingStatePayload;
+    "fishing.state": FishingStatePayload;
+    "fishing.cast": {
+        bait: BaitType;
+    };
+    "fishing.pull": void;
+    "fishing.strike": void;
+    "packageReceiver.popup.open": void;
+    "pluginButtonMacrosChanged": void;
+    "pluginButtonMacroStateChanged": {
+        macroType: string;
+        newState: string;
+        oldState: string | undefined;
+    };
+    "pluginTriggerMacrosChanged": void;
+    "shortcuts.addWithRoom": {
+        roomId: number;
+    };
+    "locationNote.edit": {
+        roomId: number;
+        roomName?: string;
+        areaName?: string;
+    };
+    "locationNote.open": {
+        roomId: number;
+    };
+    "locationNote.changed": {
+        roomId: number;
+    };
+    "pluginLocationNote.changed": {
+        roomId: number;
+        pluginId: string;
+    };
+    "chat.newMessage": ChatEntry;
+    "chat.cleared": void;
+    "chat.popup.open": void;
+    "combat.newMessage": CombatEntry;
+    "combat.cleared": void;
+    "combat.popup.open": void;
+    "combatStatus.popup.open": void;
+    "layout.toggleLock": void;
+    "combat.settingsChanged": Record<CombatMessageType, boolean>;
+    "stat.updated": CombatStatsSnapshot;
+    "stat.cleared": void;
+    "stat.popup.open": void;
+    "postepy.updated": unknown;
+    "postepy.popup.open": void;
+    "cechy.read": CechySnapshot;
+    "cechy.history.updated": void;
+    "cechy.popup.open": void;
+    "cechy.enableModifiers": void;
+    "postepy2.updated": void;
+    "postepy2.popup.open": void;
+    "zlom.updated": void;
+    "zlom.snapshotReplaced": void;
+    "zlom.popup.open": void;
+    "enemyResistances.popup.open": void;
+    /** Full cover-graph snapshot plus the roster it applies to - emitted on every change. */
+    "cover.state": CoverStateSnapshot;
+    /** One append-only line for the cover debug log. */
+    "cover.event": CoverLogEntry;
+    "cover.popup.open": void;
+    /** Start (true) or stop (false) recording what triggers do to each line. */
+    "lineTrace.enable": boolean;
+    /** One game line (or GMCP text group) and every trigger that matched it. */
+    "lineTrace.entry": LineTraceEntry;
+    "lineInspector.popup.open": void;
+    "oswajanie.updated": void;
+    "oswajanie.popup.open": {
+        view?: "animals" | "history" | "help";
+        animal?: string;
+    };
+    "zabici.updated": unknown;
+    "zabici.popup.open": void;
+    "zabici2.updated": unknown;
+    "zabici2.popup.open": void;
+    "deposits.updated": void;
+    "deposits.popup.open": {
+        filter?: string;
+    };
+    "skroty.popup.open": void;
+    "peopleBrowser.popup.open": void;
+    "dataSources.popup.open": void;
+    "map.centerOn": {
+        roomId: number;
+    };
+    /** `uncertain`: a best guess, so the map goes there marked as lost. */
+    "map.setLocation": {
+        roomId: number;
+        uncertain?: boolean;
+    };
+    "mapLabelVisibility": boolean;
+    "mapAlwaysShowNote": boolean;
+    "mapShowGrid": boolean;
+    "mapShowAreaExitLabels": boolean;
+    "mapShowTransportStops": boolean;
+    "objectListViewMode": "list" | "card" | "compact" | "compact-dots" | "raid" | "nearby";
+    "objectList.showWeaponState": boolean;
+    "objectList.showCoverTimer": boolean;
+    "objectList.showOrderTimer": boolean;
+    "objectList.showZaskTimer": boolean;
+    "objectList.togglePip": void;
+    "objectList.pipActiveChanged": boolean;
+    "objectListDemo.popup.open": void;
+    /** Demo popup -> client: replace the attack queue (drives the gold next-target mark). */
+    "objectListDemo.setQueue": {
+        ids: number[];
+    };
+    "layoutManagerStateChanged": {
+        type?: 'import';
+    } | void;
+    "walker.popup.open": void;
+    "walker.update": WalkerState;
+    "poczta.popup.open": void;
+    "poczta.fetch": {
+        type: MailType;
+    };
+    "poczta.loaded": {
+        type: MailType;
+        mails: MailEntry[];
+    };
+    "poczta.read": {
+        number: number;
+    };
+    "poczta.letter.loaded": LetterContent;
+    "poczta.delete": {
+        number: number;
+    };
+    "poczta.deleted": {
+        numbers: number[];
+    };
+    "roomInfo.popup.open": {
+        roomId: number;
+    };
+    "staticmap.popup.open": {
+        roomId?: number;
+        areaId?: number;
+        instanceId?: string;
+    };
+    /** Opens the AI assistant panel; `question` (from `/pomoc <pytanie>`) is asked immediately. */
+    "assistant.popup.open": {
+        question?: string;
+        seedTriggerText?: string;
+    } | void;
+    "mapDataChanged": void;
+    "walker.stop": void;
+    "walker.resume": void;
+    "walker.setDelay": number;
+    "walker.faster": void;
+    "walker.slower": void;
+    // Lua gag events - combat/blocking
+    "tryingToBlock": string;
+    "hasBlocked": string;
+    "ateamFightingWithNoWeapon": void;
+    // Lua gag events - weapon knockoff
+    "canWieldAfterKnockOff": void;
+    "weaponKnockedOff": void;
+    "weaponKnockedOffNekroTilea": void;
+    "weapon_state": boolean;
+    // Every combat gag (Lua and TS) as it is applied: gag type (moje_ciosy, ...), prefix, raw line
+    // finisher: the prefix is the killing-blow prefix the player set (FIN by default)
+    "combat.gag": {
+        type: string;
+        prefix: string;
+        text: string;
+        finisher?: boolean;
+    };
+    // Lua gag events - stun
+    "stunStart": void;
+    "stunEnd": void;
+    // Team follow events
+    "followSpecialExit": {
+        exit: string;
+    };
+    // Lua gag events - maneuver
+    "maneuverAttempted": void;
+    // Loot events
+    "loot.popup.open": LootPopupPayload;
+    "loot.popup.closed": void;
+    "loot.cleared": void;
+    "loot.ground.open": {
+        items: GroundItem[];
+    };
+    // Container contents seen in game output - fires whether or not pretty containers is on
+    "containers.listed": {
+        container: string;
+        items: {
+            name: string;
+            count: string | number;
+        }[];
+    };
+    /** The tracked inventory changed - read it with getInventoryState() */
+    "inventory.updated": void;
+    /** An `i` reply was just read in full: what is worn, held and carried is as it says */
+    /** A full `i` reply; `unknown` are its lines no pattern or złom `i` line knows */
+    "inventory.read": {
+        lines: string[];
+        unknown: string[];
+    };
+    /** The worn armour changed - read it with getWornArmor() */
+    "armor.updated": void;
+    "armor.popup.open": void;
+    "inventory.popup.open": void;
+    /** Ask for a hidden `i` */
+    "inventory.refresh": void;
+    /** Look into one carried container, by its InventoryEntry.key */
+    "inventory.inspect": {
+        key: string;
+    };
+    /** Ask the game with `ocen` which number it gives each bag of a kind (plecak, ...), hidden */
+    "inventory.verify": {
+        noun: string;
+    };
+    /** Something done from the inventory window: drop, open, close, or move into or out of a bag */
+    "inventory.action": InventoryAction;
+    /** The game refused something the window asked for, in its own words */
+    "inventory.failed": {
+        text: string;
+    };
+    /** The game confirmed something went into or out of a bag */
+    "inventory.moved": {
+        kind: "put" | "take";
+    };
+    "profession.popup.open": void;
+    "profession.updated": void;
+    "sunTracker.popup.open": {
+        domain?: "Empire" | "Ishtar";
+    } | void;
+    "sunTracker.updated": {
+        domain: "Empire" | "Ishtar";
+    } | void;
+    "sunCalc.popup.open": void;
+    "calendar.popup.open": void;
+    // Firebase real-time sync listener events
+    "firebase.sync.metadata": FirebaseSyncMetadataPayload;
+    "firebase.sync.applied": {
+        categories: SyncCategory[];
+    };
+    "firebase.sync.conflict": {
+        conflicts: CategoryConflictInfo[];
+    };
+    "firebase.sync.pendingPassphrase": {
+        categories: SyncCategory[];
+    };
+    "firebase.sync.error": {
+        message: string;
+    };
+    "firebase.sync.uploaded": {
+        categories: SyncCategory[];
+        timestamps: CategorySyncTimes;
+        encrypted: boolean;
+        auto: boolean;
+    };
+    "firebase.autosync.pending": {
+        pending: boolean;
+    };
+    "firebase.listener.status": {
+        active: boolean;
+    };
+    "flushLines": [
+        groups: {
+            text: string;
+            type: string;
+        }[],
+        options?: {
+            timestamp?: number;
+        }
+    ];
+    "socket.incoming": string;
+    /** Session metadata from the resumable proxy: whether we resumed, what was lost. */
+    "proxy.session": SessionControl;
+    /**
+     * Milliseconds the session proxy clock runs ahead of this machine (negative: behind),
+     * estimated from frame timestamps. Diagnostic - the correction itself is applied in
+     * MudClient before any script sees an event time.
+     */
+    "proxy.clockOffset": number;
+    "socket.outgoing": string;
+    /** A line of input went out to the game (passwords included) - what the game's idle timer counts. */
+    "socket.sent": void;
+    "telnet.echo": boolean;
+    /** A script suggests a command for the command line; it lands only on an empty line or over its own earlier suggestion. */
+    "commandInput.fill": string;
+    "playback.incomingData": [
+        data: string,
+        options?: {
+            timestamp?: number;
+        }
+    ];
+    "helperHotkey": [
+        id: string,
+        key: string
+    ];
+    /** Helper system only */
+    "helperBind": string;
+    "executeFunctionalBind": void;
+}
+
+export type GmcpMsgEvents = {
+    [K in GmcpMsgType as `gmcp_msg.${K}`]: AnsiAwareBuffer;
+};
+
+export interface GmcpCharInfo {
+    object_num?: number;
+    id?: number;
+    name?: string;
+    gender?: CharGender;
+    race?: string;
+    new_player?: boolean;
+    /** Occupational guild (e.g. "Korsarz"). */
+    guild_occ?: string;
+    /** Lay guild (e.g. "Kultysci Chaosu"). May be absent. */
+    guild_lay?: string;
+    /** Racial/origin guild (e.g. "Pochodzeniowka Twierdz Krasnoludzkich"). May be absent. */
+    guild_race?: string;
+    /** Religious guild (e.g. "Kult bogow Chaosu - Khorne"). May be absent. */
+    guild_rel?: string;
+}
+
+export interface GmcpCharState {
+    hp?: number;
+    mana?: number;
+    fatigue?: number;
+    improve?: number;
+    form?: number;
+    intox?: number;
+    headache?: number;
+    stuffed?: number;
+    soaked?: number;
+    encumbrance?: number;
+    panic?: number;
+    state?: string;
+}
+
+export interface GmcpCharOptions {
+    autocorrect?: number;
+    blood?: number;
+    boards_hidden?: number;
+    brief?: number;
+    colors?: number;
+    common_hidden?: number;
+    condition?: number;
+    death_startloc?: number;
+    echo?: number;
+    form?: number;
+    group_cover?: number;
+    hand?: number;
+    keepalive?: number;
+    knowledge_hidden?: number;
+    mail_hidden?: number;
+    max_idle_time?: number;
+    more_len?: number;
+    no_get_items?: number;
+    no_prompt?: number;
+    order_attack?: number;
+    order_block?: number;
+    order_break_cover?: number;
+    order_cover?: number;
+    panic?: number;
+    parsing_order?: number;
+    relations_hidden?: number;
+    screen_width?: number;
+    special?: number;
+    state_info?: number;
+    state_modifiers?: number;
+    stop_combat_escape?: number;
+    stop_combat_hide?: number;
+    title_extra?: number | string;
+    title_lay?: number;
+    title_race?: number;
+    who_presence?: number;
+    withdrawal?: number;
+}
+
+/**
+ * Char.Options.Info — sent automatically after login and on `opcje` changes.
+ * Each field is an array of allowed values for the corresponding option.
+ * `title_extra` is user-dependent (can contain dynamic strings, e.g. titles
+ * the character has earned).
+ */
+
+export interface GmcpCharOptionsInfo {
+    autocorrect?: number[];
+    blood?: number[];
+    boards_hidden?: number[];
+    brief?: number[];
+    colors?: number[];
+    common_hidden?: number[];
+    condition?: number[];
+    death_startloc?: number[];
+    echo?: number[];
+    form?: number[];
+    group_cover?: number[];
+    hand?: number[];
+    keepalive?: number[];
+    knowledge_hidden?: number[];
+    mail_hidden?: number[];
+    max_idle_time?: number[];
+    more_len?: number[];
+    no_get_items?: number[];
+    no_prompt?: number[];
+    order_attack?: number[];
+    order_block?: number[];
+    order_break_cover?: number[];
+    order_cover?: number[];
+    panic?: number[];
+    parsing_order?: number[];
+    relations_hidden?: number[];
+    screen_width?: number[];
+    special?: number[];
+    state_info?: number[];
+    state_modifiers?: number[];
+    stop_combat_escape?: number[];
+    stop_combat_hide?: number[];
+    title_extra?: Array<number | string>;
+    title_lay?: number[];
+    title_race?: number[];
+    who_presence?: number[];
+    withdrawal?: number[];
+    [key: string]: Array<number | string> | undefined;
+}
+
+export interface GmcpCharColors {
+    text?: number;
+}
+
+export interface GmcpRoomInfo {
+    map?: GmcpRoomInfoMap;
+    exits?: string[];
+    num?: number;
+    id?: number;
+    hash?: string;
+    [key: string]: unknown;
+}
+
+export interface GmcpRoomTime {
+    daylight?: boolean;
+    time?: {
+        daylight?: boolean;
+    };
+    season?: number;
+}
+
+export interface CommandOptions {
+    preserveCase?: boolean;
+}
+
+export interface CommandOptions {
+    preserveCase?: boolean;
+    autoLowercaseCommands?: boolean;
+}
+
+export type AnyButtonSetting = MobileButtonSetting | DesktopButtonSetting;
+
+/**
+ * Context passed to stateful macro onClick handlers
+ */
+
+export interface MacroStateContext {
+    /** Current state ID */
+    state: string;
+    /** Set a new state by ID */
+    setState: (stateId: string) => void;
+    /** Cycle to the next state (wraps around) */
+    cycleState: () => void;
+    /** Get the index of current state */
+    stateIndex: number;
+}
+
+export interface BaseButtonSetting extends ButtonMacroConfig {
+    label: string;
+    color: string;
+    fontColor?: string;
+    holdEnabled?: boolean;
+    hold?: ButtonMacroConfig;
+}
+
+export interface CollectOverride {
+    enemy: string;
+    collectCopper: boolean;
+    collectSilver: boolean;
+    collectGold: boolean;
+    collectGems: boolean;
+    collectExtra: string[];
+}
+
+export type SunAnnouncement = 'notification' | 'frame' | 'off';
+
+/** Document/browser-shell flags — relevant to any UI's outer frame. */
+
+export interface ShellSettings {
+    wakeLock: boolean;
+    fightTitleIcon: boolean;
+    hapticFeedback: boolean;
+    /** Also announce a new deployment in the game output, not only on the login screen. */
+    inGameUpdateNotice: boolean;
+    /** Corner of the game output the toasts stack in. */
+    toastPosition: ToastPosition;
+    /** Multiplies how long a toast stays on screen. */
+    toastDurationScale: number;
+    /** Toasts shown at once; the rest wait behind a "+N" pill. */
+    toastMaxVisible: number;
+    /** Sources whose toasts are not shown at all. */
+    toastMutedSources: NotificationSource[];
+    /** Only warnings and errors pop up. */
+    toastDoNotDisturb: boolean;
+}
+
+/** Terminal output + input rendering — portable across UIs. */
+
+export interface RenderSettings {
+    fontFamily: UiFontSelection;
+    customFontUrl: string;
+    customFontFamily: string;
+    /** Installed font picked by name (fontFamily 'system'). */
+    systemFontFamily: string;
+    /** Family of the font files uploaded on this device (fontFamily 'uploaded'); the files themselves are not synced. */
+    uploadedFontFamily: string;
+    xtermPalette: 'arkadia' | 'proper';
+    colorTheme: ColorTheme;
+    customThemeColor?: string;
+    outputBackground: string;
+    /** Colour of game text that carries no ANSI colour of its own; unset follows the theme. */
+    outputTextColor?: string;
+    /** Image under the output: the theme's (Kuźnia's stone), none, or one uploaded on this device (not synced). */
+    backgroundImage: BackgroundImage;
+    /** How dark the image is shaded, 0-90 (%), so the text stays legible. */
+    backgroundImageShade: number;
+    outputBottomPadding: number;
+    showTimestamps: boolean;
+    /** Set apart whole reply blocks (inventory, loot, descriptions, …). */
+    highlightMessageBlocks: boolean;
+    /** A card with the character's name, race and guilds in the output on login. */
+    characterPlaque: boolean;
+    /** Shield after enemies covered against us / against teammates in the object list. */
+    objectListCoverMarkers: boolean;
+    commandEcho: boolean;
+    clearInputOnSend: boolean;
+    autoLowercaseCommands: boolean;
+    soundCategories?: SoundCategories;
+    customBeepSoundKey?: string;
+}
+
+/** Map rendering — portable across UIs that draw a map. */
+
+export interface MapSettings {
+    mapRoomSize: number;
+    mapLineWidth: number;
+    mapPlayerMarkerStrokeColor: string;
+    mapPlayerMarkerStrokeAlpha: number;
+    mapPlayerMarkerFillColor: string;
+    mapPlayerMarkerFillAlpha: number;
+    mapPlayerMarkerStrokeWidth: number;
+    mapPlayerMarkerSizeFactor: number;
+    mapPlayerMarkerDashEnabled: boolean;
+    mapHighlightStrokeAlpha: number;
+    mapHighlightFillAlpha: number;
+    mapHighlightStrokeWidth: number;
+    mapHighlightSizeFactor: number;
+    mapHighlightDashEnabled: boolean;
+    mapHighlightShape: MapHighlightShape;
+    mapRoomShape: MapRoomShape;
+    mapBackgroundColor: string;
+    mapLineColor: string;
+    mapCurrentRoomColor: string;
+    pathFindingAlgorithm: PathFindingAlgorithm;
+    highlightCurrentRoom: boolean;
+    labelRenderMode: 'image' | 'data' | 'none';
+    transparentLabels: boolean;
+    emojiLabels: boolean;
+}
+
+/** Movement / command / team behaviour the client and scripts act on. */
+
+export interface BehaviorSettings {
+    explorationMode: boolean;
+    instantMove: boolean;
+    drinkableAsFunctionalBind: boolean;
+    gateAsFunctionalBind: boolean;
+    /** Repeat a refused ride to get off and walk it instead, as two commands. */
+    dismountOnRefusedRide: boolean;
+    /** Offer the next step, or the way out, on the functional bind while leading by carriage. */
+    carriageRouteBinds: boolean;
+    teamNumberingMode: 'letters' | 'numbers';
+    objectContextMenuCommands: string[];
+    /**
+     * Hold back push notifications while the client tab is on screen.
+     *
+     * Off by default: someone who paired a phone generally wants the alert
+     * whether or not a tab happens to be focused — walking to the kitchen does
+     * not hide the tab.
+     */
+    pushOnlyWhenHidden: boolean;
+    /**
+     * Send this player's zlom list and the odmiany they saw to the shared
+     * crowd database (@modules/crowd). Off until the player opts in.
+     */
+    crowdContribute: boolean;
+    /**
+     * Literal prefilter for regex triggers (src/client/triggerPrefilter.ts): 'on'
+     * skips a regex when the line lacks text every match must contain, 'off' runs
+     * every regex, 'verify' runs every regex and reports loudly when the prefilter
+     * would have skipped one that matched.
+     */
+    triggerPrefilter: TriggerPrefilterMode;
+}
+
+/** Stock-UI chrome — layout/panels specific to the bundled web UI. */
+
+export interface ChromeSettings extends DeviceViewSettings {
+    objectsFontSize: number;
+    /** @deprecated Migrated to mobileButtonSettings.buttonSize */
+    buttonSize?: number;
+    showButtons: boolean;
+    /** Mic button in the command bar. Off leaves the bar without dictation. */
+    showVoiceButton: boolean;
+    /** Dimmed hint after the caret of what Tab would complete. */
+    tabCompletionHint: boolean;
+    /** How Tab and the right arrow take a completion (see CommandLineEngine's TabCompletionMode). */
+    tabCompletionMode: 'cycle' | 'word' | 'whole';
+    mapHeight: number;
+    mapPosition: MapPosition;
+    footerMode: number;
+    /**
+     * Which footer layout every UI draws (see @shared/footerLayoutTypes). Unset,
+     * each UI keeps its own: the stock footer here, the HUD plate in forge.
+     * `custom` draws footerCustomLayout.
+     */
+    footerLayout?: FooterLayoutChoice;
+    /** The player's own layout, built in the footer layout editor. */
+    footerCustomLayout?: FooterLayout;
+    /** The preset footerCustomLayout was made from; "Przywróć" goes back to it. */
+    footerCustomBase?: FooterPresetId;
+    /** The player's adjustments to each layout (Stopka -> Układ stopki). */
+    footerLayoutTweaks?: FooterLayoutTweakSet;
+    footerComponents: FooterComponentConfig[];
+    /** The player's own buttons beside the command line; empty out of the box. */
+    footerButtons: FooterButtonConfig[];
+    /**
+     * Pull warn/danger chips to the front of the footer (danger first), each
+     * group in the configured order. Off by default: chips keep their
+     * configured slot whatever their tone, so they do not jump around.
+     */
+    footerUrgentChipsFirst: boolean;
+    /**
+     * Zoom factors for the two footer rows (1 = stock size): the location-bind
+     * pills and the status line (vitals and chips). Applied as CSS `zoom`, so
+     * text, heights, icons and padding grow together (footer.css).
+     */
+    footerBindsScale: number;
+    footerStatusScale: number;
+    /**
+     * The phone footer: two fixed-height scrolling rails plus compact stat
+     * meters, instead of the desktop footer's one wrapping row. On by default;
+     * off restores the old layout on narrow screens. Desktop is unaffected
+     * either way. See src/web/mobileFooter.ts.
+     */
+    mobileFooterCompact: boolean;
+    /**
+     * How that footer folds: 'toggle' rests folded with the expander offered,
+     * 'expanded' / 'collapsed' pin it open or shut and drop the expander.
+     */
+    mobileFooterExpand: MobileFooterExpandSetting;
+    keepMultibindsVisible: boolean;
+    /**
+     * Whether the location-bind pills lead with their keyboard shortcut.
+     * 'auto' shows them only where a physical keyboard can be found (see
+     * @shared/dom/hardwareKeyboard); 'always' / 'never' settle it by hand.
+     */
+    multibindKeyHints: MultibindKeyHints;
+    splitViewHeight?: number;
+    showCombatTimer?: boolean;
+    showTransportLabel?: boolean;
+    alwaysVisibleBars: string[];
+    barOrder: string[];
+    /**
+     * Speech synthesis for `speak` trigger macros (and `tts:speak` from plugins).
+     * Device-scoped on purpose: the installed voices differ per device, so a
+     * voice picked on the desktop means nothing on the phone.
+     */
+    ttsEnabled: boolean;
+    /** `voiceURI` of the chosen voice; empty picks a Polish voice, else the browser default. */
+    ttsVoice: string;
+    ttsRate: number;
+    ttsPitch: number;
+    ttsVolume: number;
+    /** A new message cuts off the one being read instead of queueing after it. */
+    ttsInterrupt: boolean;
+}
+
+export interface PersonEntry {
+    name: string;
+    description: string;
+    guild: string;
+}
+
+export type EnemyStatusPayload = {
+    name: string;
+};
+
+export type RouteSegment = {
+    kind: "walk";
+    rooms: number[];
+} | {
+    kind: "drive";
+    rooms: number[];
+} | ({
+    kind: "transport"; /** True when the wagon is taken aboard rather than left behind. */
+    withWagon: boolean;
+} & TransportHop);
+
+/**
+ * Why the mapper believes its position is wrong. A closed set, so a UI can word
+ * the warning without re-deriving anything.
+ */
+
+export type MapLostReason = 'follow' | 'gmcp' | 'handoff';
+
+export type NotificationPayload = {
+    text: string;
+    /** Bold first line; `text` then reads as the body under it. */
+    title?: string;
+    /** Defaults to info. Warnings and errors still show under "do not disturb". */
+    level?: NotificationLevel;
+    /** In place of the level's icon, tinted to match. */
+    icon?: NotificationIcon;
+    /** Not shown; lets the player mute a whole kind of toast. */
+    source?: NotificationSource;
+    /**
+     * A toast already on screen under the same key is replaced instead of a new
+     * one stacking up, and counts the repeats (×3).
+     */
+    key?: string;
+    /** With `key`: refresh the toast in place, without counting it as a repeat. */
+    update?: boolean;
+    /** Milliseconds on screen; scaled by the player's duration setting. */
+    time?: number;
+    /** Stays until closed (or replaced under its key). */
+    sticky?: boolean;
+    progress?: {
+        value: number;
+        max: number;
+    };
+    actions?: NotificationAction[];
+    /** Also fire an OS/browser notification (when permission allows). Defaults to false: in-app toast only. */
+    system?: boolean;
+};
+
+export type PackageStatus = {
+    recipient: string;
+    seconds?: number;
+    location?: number;
+};
+
+export type MultibindList = {
+    list: {
+        index: number;
+        action: string;
+        /** Key label, e.g. "ALT+1"; empty for a slot without a key. */
+        label: string;
+        /** The location's own bind, drink or gate bind, rather than a numbered multibind. */
+        kind?: 'room' | 'drink' | 'gate';
+        /** Display name of a temporary bind - shown instead of the action when set. */
+        name?: string;
+        /** Slot filled by a temporary (plugin) bind rather than a saved one. */
+        temporary?: boolean;
+        /** Slot a temporary bind asked to highlight. */
+        highlight?: boolean;
+    }[];
+};
+
+export interface LetterSubmitPayload {
+    to: string;
+    cc: string;
+    udw: string;
+    subject: string;
+    content: string;
+    template: LetterTemplateId;
+    /** Line width for this letter; the letterLineWidth setting when absent. */
+    lineWidth?: number;
+    /** How the body sits inside the template; justified when absent. */
+    alignment?: "justify" | "left" | "center" | "right";
+}
+
+/** One measured round trip: when it came back (epoch ms) and how long it took. */
+
+export interface PingSample {
+    at: number;
+    ms: number;
+    /** The first round trip after (re)connecting; the graph breaks its line before it. */
+    restart?: true;
+}
+
+export interface TransportTimerPayload {
+    label: string;
+    remaining: number | null;
+    total: number | null;
+}
+
+export interface TransportRoutePayload {
+    transportName: string;
+    originLabel: string;
+    stops: TransportRouteStop[];
+    activeStopIndex: number | undefined;
+    onBoard: boolean;
+    loop: boolean;
+}
+
+export interface TransportDebugState {
+    kind: string;
+    def?: string;
+    next?: string;
+    leg?: string;
+    locationId: number | null;
+    pendingDefs?: string;
+}
+
+export interface TransportTimesDebugPayload {
+    transports: TransportTimesDebugEntry[];
+}
+
+export interface TransportLegResetPayload {
+    transport: string;
+    fromId: number;
+    toId: number;
+}
+
+/** Payload of the transport trigger events (`transport.stop`, `transport.destination`...). */
+
+export interface TransportStopEventPayload {
+    /** Transport name, e.g. "Statek Nuln - Kraina Zgromadzenia". */
+    transport: string;
+    /** Label of the stop reached (or, for `approaching`, about to be reached). */
+    stop: string;
+}
+
+export interface TransportApproachingPayload extends TransportStopEventPayload {
+    /** Whole seconds left on the leg when the event fired. */
+    remaining: number;
+}
+
+export type KnowledgeReportAction = {
+    type: "completeLibrary";
+    libraryId: string;
+} | {
+    type: "resetLibrary";
+    libraryId: string;
+};
+
+export type SendCommandEvent = {
+    command: string;
+    echo?: boolean;
+    options?: CommandOptions;
+};
+
+export type SoundCategory = 'attack' | 'hp' | 'fishing' | 'lamp' | 'gear' | 'transport' | 'spell' | 'block' | 'weapon' | 'stun';
+
+export type RecordingAutoStopPayload = [
+    name: string | null,
+    save?: boolean
+];
+
+/** A manual recording asked for by an alias; the UI owns the recorder. */
+
+export type RecordingRequest = {
+    action: 'start';
+    name?: string;
+} | {
+    action: 'stop';
+    save: boolean;
+};
+
+/** The UI's answer to a {@link RecordingRequest}: `active` is the recording in progress before it, `started` the one it began. */
+
+export type RecordingRequestResult = {
+    request: RecordingRequest;
+    active: string | null;
+    started: string | null;
+};
+
+export type PlaybackIndexPayload = [
+    current: number,
+    total: number
+];
+
+export type PlaybackLoopState = {
+    start: number | null;
+    end: number | null;
+    enabled: boolean;
+};
+
+export interface RecordedEvent {
+    message: string;
+    timestamp: number;
+    direction: 'in' | 'out';
+    locationId?: number;
+    initialLocationId?: number;
+}
+
+export type MessageEventPayload = [
+    text: string | AnsiAwareBuffer,
+    type?: string,
+    timestamp?: number
+];
+
+export type PluginLoadedPayload = {
+    url: string;
+    info: PluginInfo;
+};
+
+export type PluginErrorPayload = {
+    url: string;
+    error: string;
+};
+
+export type PluginDestroyedPayload = {
+    url: string;
+};
+
+export type ClockUpdatePayload = {
+    domain: "Empire" | "Ishtar";
+    hours: number;
+    minutes: number;
+    /**
+     * Uncertainty of the emitted time, in game minutes: the real time lies within
+     * +/- this many minutes of it. 60 means only the hour is known, 0 means exact -
+     * an observed sunrise or sunset pins the clock to the minute.
+     */
+    precision: number;
+    /**
+     * Real-clock epoch (ms) of the most recent observation that constrained this
+     * clock - not when the event fired. The clock ticks twice a second, so every
+     * update is equally recent; what differs is the age of the evidence behind it.
+     * Consumers merging readings from several characters take the fresher one only
+     * when its precision is at least as good.
+     *
+     * NOT an extrapolation anchor. `hours`/`minutes` are already the in-game time
+     * as of this event, so anything carrying a reading forward measures from when
+     * the reading was taken, never from here. Advancing from `measuredAt` re-adds
+     * the gap between the last observation and now, and since an in-game hour is
+     * 120 real seconds, every stale real minute throws the result off by half an
+     * in-game day. Use this only to judge how good a reading is, never where it
+     * sits in time.
+     *
+     * 0 before the clock has seen any reading at all.
+     */
+    measuredAt: number;
+    /**
+     * Hour of sunrise and sunset on this day, from the fitted grids in `sunModel`.
+     * Not the month tables in `clock.ts` - the two schedules step independently of
+     * month boundaries, so a per-month figure is wrong on a good part of the year.
+     */
+    sunrise: number;
+    sunset: number;
+    dayLabel: string;
+    dayOfMonth: number;
+    dayOfYear: number;
+    daylight?: boolean;
+    season?: number;
+};
+
+export type ClockDomainActivePayload = {
+    domain: "Empire" | "Ishtar";
+};
+
+export type ClockMismatchPayload = {
+    domain: "Empire" | "Ishtar";
+    type: "sunrise" | "sunset";
+    dayOfYear: number;
+    expectedHour: number;
+    observedHour: number; // Corrected hour (after rounding)
+    observedMinutes: number; // Always 0 after correction
+    indicatedHour?: string; // Raw observed hour before correction (e.g., "4:59")
+};
+
+export type ClockSunEventPayload = {
+    domain: "Empire" | "Ishtar";
+    dayOfYear: number;
+    observedHour: number;
+    observedMinutes: number;
+    indicatedHour?: string; // Raw observed hour before correction (e.g., "4:59")
+};
+
+export type ClockSetTimePayload = {
+    domain: "Empire" | "Ishtar";
+    hour: number;
+    minutes?: number;
+    dayOfYear?: number;
+};
+
+export interface Contract {
+    id: string;
+    locationId: number | null;
+    location: string;
+    type: string;
+    item: string;
+    count: number;
+    unit?: string;
+    quality?: string;
+    deadlineTimestamp: number;
+    createdAt: number;
+}
+
+/** A record enriched with everything the popup needs, so the UI never touches storage or the map. */
+
+export interface CarriageEntry extends CarriageRecord {
+    /** Stable key the popup passes back to address this record. */
+    key: string;
+    /** True for the carriage being driven right now. */
+    driven: boolean;
+    /** True while that carriage is actually rolling, as opposed to standing with you aboard. */
+    moving: boolean;
+    /** Gender of the vehicle noun, so the UI can agree its adjectives with it. */
+    gender: 'm' | 'f';
+    /** Epoch ms the full deposit lapses at, or 0 when the lease was never seen. */
+    depositExpiresAt: number;
+    /** Rooms rendered for display, e.g. "Wozownia, Scala (894)". Null when the room is unknown. */
+    leasedInLabel: string | null;
+    parkedInLabel: string | null;
+}
+
+export interface FishingStatePayload {
+    state: FishingState;
+    castTimestamp: number | null;
+}
+
+export type BaitType = 'kulke' | 'rybke' | 'robaka';
+
+export type ChatEntry = {
+    timestamp: string;
+    buffer: AnsiAwareBuffer;
+    isTeamMember: boolean;
+};
+
+export type CombatEntry = {
+    buffer: AnsiAwareBuffer;
+    type: CombatMessageType;
+} | {
+    type: "separator";
+};
+
+export type CombatMessageType = "combat.avatar" | "combat.team" | "combat.others";
+
+export interface CombatStatsSnapshot {
+    total: number;
+    otrzymane: {
+        count: number;
+        parts: Record<BodyPart, number>;
+    };
+    wyparowane: {
+        count: number;
+        bron: number;
+        zbroje: {
+            count: number;
+            parts: Record<BodyPart, number>;
+        };
+        tarcze: number;
+    };
+    unikniete: number;
+}
+
+/** A full `cechy` read-out. */
+
+export interface CechySnapshot {
+    time: number;
+    readings: CechaReading[];
+    /** Sum of every reading, in subcech (includes modified traits as printed). */
+    total: number;
+    level: LevelInfo;
+    /**
+     * True when death has temporarily lowered every trait. Such a read-out shows
+     * no real value for any trait and must not be recorded.
+     */
+    weakened: boolean;
+}
+
+/**
+ * Full snapshot, emitted on every change. Carries the roster alongside the edges
+ * so the popup can render "who is reachable" without reaching into the client.
+ */
+
+export interface CoverStateSnapshot {
+    at: number;
+    edges: CoverEdge[];
+    objects: CoverStateObject[];
+    playerNum?: number;
+}
+
+export interface CoverLogEntry {
+    at: number;
+    kind: 'established' | 'failed' | 'blocked' | 'break-failed' | 'break-ok' | 'released' | 'retreat' | 'expired' | 'gmcp-suspect' | 'ambiguous';
+    coveredId?: number;
+    coveredName?: string;
+    covererId?: number;
+    covererName?: string;
+    attackerId?: number;
+    attackerName?: string;
+    source: CoverSource;
+    /** 'blocked' only - did we already hold this edge? The tracker's own grade. */
+    wasKnown?: boolean;
+    /** 'expired' only - which of the removal paths fired. */
+    reason?: CoverExpiryReason;
+    /** 'expired' with reason 'gone' - who dropped out of the room. */
+    missingIds?: number[];
+    /** The game line verbatim, '' for gmcp / expiry. */
+    raw: string;
+}
+
+export interface LineTraceEntry {
+    id: number;
+    at: number;
+    /** GMCP message type ('' when none). */
+    type: string;
+    /** Text as the MUD sent it, before any trigger; may hold several lines. */
+    raw: string;
+    rawHtml: string;
+    /** What reached the output; null when a trigger removed it. */
+    final: string | null;
+    finalHtml: string | null;
+    steps: LineTraceStep[];
+}
+
+export interface WalkerState {
+    active: boolean;
+    paused: boolean;
+    path: number[];
+    currentIndex: number;
+    target: number | null;
+    delay: number;
+}
+
+export type MailType = 'nieprzeczytane' | 'odebrane' | 'wyslane' | 'niewyslane';
+
+export interface MailEntry {
+    number: number;
+    isRead: boolean;
+    subject: string;
+    sender: string;
+    date: string;
+}
+
+export interface LetterContent {
+    number: number;
+    from: string;
+    subject: string;
+    to: string;
+    cc: string;
+    date: string;
+    body: string[];
+}
+
+export type LootPopupPayload = {
+    description: string;
+    items: LootItem[];
+    bodyNumber?: number;
+    stertyIndex?: number;
+};
+
+export type GroundItem = {
+    name: string;
+    color?: string;
+};
+
+export type InventoryAction = {
+    kind: "drop";
+    key: string;
+} | {
+    kind: "evaluate";
+    key: string;
+} | {
+    kind: "open" | "close";
+    key: string;
+} | {
+    kind: "put";
+    key: string;
+    bag: string;
+} | {
+    kind: "take";
+    bag: string;
+    item: number;
+} | {
+    kind: "move";
+    from: string;
+    item: number;
+    bag: string;
+};
+
+export type FirebaseSyncMetadataPayload = Partial<Record<SyncCategory, {
+    exists: boolean;
+    syncedAt?: string;
+    deviceId?: string;
+    encrypted?: boolean;
+}>>;
+
+export type SyncCategory = "uiSettings" | "binds" | "shortcuts" | "characterSettings" | "triggers" | "aliases" | "multibinds" | "buttons" | "radial" | "visitedRooms" | "locationNotes" | "killCounts" | "improveCounts" | "deposits" | "containers" | "peopleEdits" | "knowledge" | "shellSettings" | "renderSettings" | "mapSettings" | "behaviorSettings" | "automationGroups" | "automationScripts";
+
+export interface CategoryConflictInfo {
+    category: SyncCategory;
+    localTimestamp: number;
+    cloudTimestamp: number;
+    localChecksum: string;
+    cloudChecksum: string;
+    cloudData: CategoryPayload;
+}
+
+export type CategorySyncTimes = Partial<Record<SyncCategory, number>>;
+
+/** What the session proxy reports when a client attaches. */
+
+export interface SessionControl {
+    type: string;
+    sessionAgeMs?: number;
+    replayedBytes?: number;
+    droppedBytes?: number;
+    resumed?: boolean;
+    /**
+     * The game ended this session while nobody was attached — idled out, quit, or the
+     * server restarted. Distinct from the proxy losing the session, and the difference
+     * is the whole answer to "what happened while I was away": the replay just handed
+     * over carries the game's own parting words. Reconnecting on top of that would
+     * bury the explanation under a fresh login banner.
+     */
+    upstreamClosed?: boolean;
+    closeReason?: string;
+}
+
+export type GmcpMsgType = "combat.avatar" | "combat.team" | "combat.others" | "emotes" | "comm" | "room.combat" | "room.long" | "room.short" | "room.item" | "room.exits" | "room.contents.living" | "room.contents.object" | "room.contents" | "living.long" | "object.long" | "system" | "system.login" | "mail" | "editor.mail" | "editor" | "notification.mail" | "notification.common" | "notification.knowledge" | "notification.relations" | "notification.boards" | "notification" | "prompt" | "other";
+
+export type CharGender = 'male' | 'female';
+
+export interface GmcpRoomInfoMap {
+    domain?: string;
+    x?: number;
+    y?: number;
+    z?: number;
+    id?: string;
+    name?: string;
+}
+
+export interface DesktopButtonSetting extends BaseButtonSetting {
+    id: string;
+    command: string; // required for main action
+    fontColor: string; // required (not optional)
+    fontSize: number;
+    width: number;
+    height: number;
+    x: number;
+    y: number;
+    backgroundOpacity: number;
+    listPosition?: ListPosition;
+    listGrowDirection?: ListGrowDirection;
+    listCloseOnlyByButton?: boolean;
+}
+
+export interface ButtonMacroConfig {
+    macroType: MacroType | string; // string allows plugin macros like "plugin:..."
+    command?: string;
+    direction?: string;
+    enemySlot?: number; // For attackEnemy and blockEnemy macros (0-2)
+    exitIndex?: number; // For specialExit: which of the room's special exits (0-2), first when unset
+    pluginConfig?: Record<string, any>;
+    steps?: ButtonMacroConfig[]; // For compound macro: sequential steps to execute
+}
+
+export type ToastPosition = 'top-left' | 'top-right' | 'bottom-right' | 'bottom-center';
+
+/** Who raised a toast; the player can mute each one in the settings. */
+
+export type NotificationSource = 'walk' | 'map' | 'clock' | 'sync' | 'trigger' | 'plugin' | 'client';
+
+export type UiFontSelection = 'default' | 'fira-code' | 'jetbrains-mono' | 'cascadia-mono' | 'vera-sans-mono' | 'custom' | 'system' | 'uploaded';
+
+export type ColorTheme = 'default' | 'fantasy' | 'forest' | 'icy' | 'gray' | 'dark-neutral' | 'light-parchment' | 'light-silver' | 'forged' | 'custom-dark';
+
+export type BackgroundImage = 'theme' | 'none' | 'uploaded';
+
+export type SoundCategories = Partial<Record<SoundCategory, string | null>>;
+
+export type MapHighlightShape = 'match' | 'rectangle' | 'roundedRectangle' | 'circle';
+
+export type MapRoomShape = 'rectangle' | 'circle' | 'roundedRectangle';
+
+export type PathFindingAlgorithm = 'dijkstra' | 'astar';
+
+export type TriggerPrefilterMode = 'on' | 'off' | 'verify';
+
+/**
+ * Device-scoped view preferences. Physically stored in the device-scoped
+ * `uiSettings` blob (they are part of `ChromeSettings`), so font size, map zoom,
+ * and output-buffer size stay tuned per physical device instead of syncing
+ * across all of a user's devices like the portable render/map slices do.
+ */
+
+export interface DeviceViewSettings {
+    contentFontSize: number;
+    mapScale: number;
+    outputMaxElements: number;
+    /**
+     * Seconds between latency pings (the connection chip's number and graph); 0 turns
+     * them off. Per device because on mobile data a ping every few seconds keeps the
+     * modem from ever dropping back to idle, while on a desktop it costs nothing.
+     */
+    pingInterval: number;
+}
+
+export type MapPosition = 'top-overlay' | 'bottom-overlay' | 'right-overlay' | 'left-overlay' | 'top' | 'bottom' | 'right' | 'left';
+
+/** What `uiSettings.footerLayout` can name: a preset, or the player's own layout. */
+
+export type FooterLayoutChoice = FooterPresetId | 'custom';
+
+export interface FooterLayout {
+    /** Top to bottom. */
+    bands: FooterBand[];
+}
+
+export type FooterPresetId = 'stock' | 'forge' | 'arkadia';
+
+/** Every layout's own tweaks, kept apart so switching layouts loses nothing. */
+
+export type FooterLayoutTweakSet = Partial<Record<FooterPresetId, FooterLayoutTweaks>>;
+
+export interface FooterComponentConfig {
+    id: string;
+    visible: boolean;
+    order: number;
+}
+
+/** A button the player put next to the command line (see footerButtonRegistry). */
+
+export interface FooterButtonConfig {
+    id: string;
+    label: string;
+    /** Sent on click: a command, an alias, anything the command line accepts. */
+    command: string;
+    tone?: 'neutral' | 'accent' | 'danger';
+    /** Flag this button lights up from, flipped by a trigger, script or plugin. */
+    state?: string;
+    /** Kept in the settings list but left out of the footer. */
+    hidden?: boolean;
+    order?: number;
+}
+
+export type MobileFooterExpandSetting = 'toggle' | 'expanded' | 'collapsed';
+
+export type MultibindKeyHints = 'auto' | 'always' | 'never';
+
+export interface TransportHop {
+    transportName: string;
+    boardCommands: string[];
+    exitCommand?: string;
+    fromRoomId: number;
+    toRoomId: number;
+    label?: string;
+    timeSeconds?: number;
+    /** Intermediate stop room IDs the vehicle passes through without the user disembarking. */
+    viaStops?: Array<{
+        roomId: number;
+        label?: string;
+    }>;
+}
+
+export type NotificationLevel = 'info' | 'success' | 'warning' | 'error';
+
+export type NotificationIcon = 'sun' | 'moon';
+
+export type NotificationAction = {
+    label: string;
+    /** Sent like a typed command when clicked. */
+    command?: string;
+    onClick?: () => void;
+    /** Drawn as the main button. */
+    primary?: boolean;
+    /** Leave the toast up after the click (its owner updates or closes it). */
+    keepOpen?: boolean;
+};
+
+export type LetterTemplateId = LetterTemplate | `${"custom:"}${string}`;
+
+export interface TransportRouteStop {
+    label: string;
+    durationSeconds: number | null;
+}
+
+export interface TransportTimesDebugEntry {
+    name: string;
+    legs: TransportLegDebug[];
+}
+
+export interface CarriageRecord {
+    /** Vehicle description as the game first named it, e.g. "elegancka odkryta bryczke". */
+    name: string;
+    /** Epoch ms of the lease line, or 0 when the carriage was picked up without seeing one. */
+    leasedAt: number;
+    /** Room the carriage was leased in, or null when it was never observed. */
+    leasedIn: number | null;
+    /** Rent, worded as the game worded it - amounts arrive as words, not numbers. */
+    rent: string | null;
+    /** Deposit, worded as the game worded it. */
+    deposit: string | null;
+    /** Room the carriage was last left in, or null when it has never been seen parked. */
+    parkedIn: number | null;
+    /**
+     * True while you are aboard. Persisted rather than kept in memory: a page reload while driving
+     * would otherwise look exactly like a carriage whose parking spot we never learned.
+     */
+    driving: boolean;
+}
+
+export type FishingState = 'idle' | 'fishing' | 'biting' | 'pulling';
+
+export type BodyPart = "glowa" | "ramiona" | "korpus" | "nogi";
+
+/** A single trait as read from one `cechy` line. */
+
+export interface CechaReading {
+    /** Canonical trait key, or null when the noun was not recognized. */
+    key: CechaKey | null;
+    /** The adjective the game printed, e.g. `mocarny`. */
+    desc: string;
+    /** Trait level, 1..10. */
+    value: number;
+    /** Progress towards the next level, 0..4. */
+    step: number;
+    /** Trait value expressed in subcech. */
+    sum: number;
+    /**
+     * Raw contents of the trailing `( +cos )` annotation, present only when the
+     * `state_modifiers` GMCP option is on AND the trait is currently modified.
+     * Such a reading does not reflect the real trait and must not be recorded.
+     */
+    modifier?: string;
+}
+
+/** Where a subcech total places the character on the experience-level ladder. */
+
+export interface LevelInfo {
+    /** Index into `realLvlString` of the level the character currently holds. */
+    level: number;
+    /** Name of the current level. */
+    name: string;
+    /** Name of the next level, or null once the ladder is maxed out. */
+    nextName: string | null;
+    total: number;
+    /** Subcech total at which the current level started. */
+    from: number;
+    /** Subcech total needed for the next level, or null once maxed out. */
+    to: number | null;
+    /** Subcech still missing for the next level (0 once maxed out). */
+    missing: number;
+    /** Subcech gained past the last threshold (0 until maxed out). */
+    extra: number;
+}
+
+export interface CoverEdge {
+    /** Who is protected. */
+    coveredId: number;
+    /** Who is doing the protecting. */
+    covererId: number;
+    /** Who is blocked by it - cover is ALWAYS per-attacker. */
+    attackerId: number;
+    since: number;
+    /** Refreshed by every corroborating line. */
+    lastSeen: number;
+    /** Text => confirmed, gmcp-only => suspected. */
+    confidence: 'confirmed' | 'suspected';
+    source: CoverSource;
+    /**
+     * Set when the line named the attacker by a desc several objects share and
+     * GMCP could not yet say which one. `attackerId` is the first of them; the
+     * attacker whose `attack_num` moves from covered to coverer settles it.
+     */
+    attackerCandidates?: number[];
+}
+
+export interface CoverStateObject {
+    num: number;
+    desc: string;
+    category: 'player' | 'team' | 'rest' | 'rest-noncombat';
+}
+
+export type CoverSource = 'cover-line' | 'block-line' | 'break-fail' | 'retreat' | 'gmcp';
+
+/**
+ * Why an edge went away. Several different things used to log an indistinguishable
+ * "expired", which made the popup useless for the one question it exists to
+ * answer: was that the TTL, or did somebody vanish?
+ */
+
+export type CoverExpiryReason = 'gone' | 'death' | 'stun' | 'max-age' | 'superseded' | 'now-covering';
+
+export interface LineTraceStep {
+    /** Tag plus pattern(s), as Trigger.describe() gives it. */
+    trigger: string;
+    tag?: string;
+    pass: LineTracePass;
+    /** Ran as a child of another matched trigger. */
+    child: boolean;
+    outcome: LineTraceOutcome;
+    /** The line before and after this trigger, as HTML; only for 'changed'. */
+    beforeHtml?: string;
+    afterHtml?: string;
+    /** Callback time in ms. */
+    ms: number;
+}
+
+export type LootItem = ContainerItem & {
+    color?: string;
+    fullName: string;
+    special?: boolean;
+    title?: string;
+};
+
+export interface CategoryPayload {
+    version: 1;
+    syncedAt: string;
+    deviceId: string;
+    checksum: string;
+    encrypted: boolean;
+    data: string; // JSON string (encrypted or plain)
+}
+
+export type ListPosition = 'top' | 'bottom' | 'left' | 'right';
+
+export type ListGrowDirection = 'horizontal' | 'vertical';
+
+export type MacroType = 'functional' | 'zList' | 'zaList' | 'wList' | 'przeList' | 'idzList' | 'command' | 'specialExit' | 'kierunek' | 'zerknij' | 'wesprzyj' | 'moveMode' | 'toggleButtons' | 'attackEnemy' | 'blockEnemy' | 'attackAllEnemies' | 'mute' | 'unmute' | 'empty' | 'compound';
+
+/** One horizontal band of the footer: a row of nodes. */
+
+export interface FooterBand {
+    children: FooterNode[];
+}
+
+/**
+ * The few knobs a picked layout offers in the settings (Stopka -> Układ
+ * stopki), so a player can adjust it without building their own. Each layout
+ * offers only the ones that mean something in it (FOOTER_PRESET_TWEAKS).
+ */
+
+export interface FooterLayoutTweaks {
+    /** How the main chips read: on tiles with a glyph, or as "Label: value" lines. */
+    chipLook?: FooterChipLook;
+    /** The main chips on one line with the rest behind "+N", or on as many lines as they need. */
+    chipArrange?: 'fold' | 'wrap';
+    /** Lines in the chip grid. */
+    chipRows?: number;
+    /** Vitals per line. */
+    vitalsPerRow?: number;
+    /** Postępy as a bar under the vitals rather than one of them. */
+    improveBar?: boolean;
+    /** Show the exit compass. */
+    compass?: boolean;
+    /** Width shares, in percent of the band; the vitals take what is left. */
+    compassWidth?: number;
+    chipsWidth?: number;
+}
+
+export type LetterTemplate = "none" | "plain" | "parchment" | "parchment2" | "parchment3" | "raw";
+
+export interface TransportLegDebug {
+    fromId: number;
+    toId: number;
+    fromLabel: string;
+    toLabel: string;
+    /** Time currently used by the timer (override if recorded, otherwise JSON default). */
+    currentTime: number | null;
+    /** Original time declared in the transport JSON. */
+    originalTime: number | null;
+    /** Shortest recorded duration from IndexedDB (the active override). */
+    shortest: number | null;
+    /** Longest recorded duration from IndexedDB. */
+    longest: number | null;
+    /** Last expected duration value recorded alongside the segment. */
+    expectedDuration: number | null;
+    /** Timestamp of the last recording (ms). */
+    updatedAt: number | null;
+}
+
+export type CechaKey = "sila" | "zrecznosc" | "wytrzymalosc" | "inteligencja" | "odwaga";
+
+/** Which trigger pass ran a step: multiline sees the whole group, the others one line. */
+
+export type LineTracePass = 'multiline' | 'line' | 'token';
+
+/**
+ * What a matched trigger did to the line. 'kept' still matters: a trigger that
+ * matched and left the line alone is the answer to "why did my trigger not run"
+ * being "it did".
+ */
+
+export type LineTraceOutcome = 'kept' | 'changed' | 'deleted';
+
+export type ContainerItem = {
+    name: string;
+    count: string | number;
+};
+
+export type FooterNode = FooterBlockNode | FooterGroupNode;
+
+/**
+ * How a chip reads: `icon` - a glyph, a caps label and the value, on a tile;
+ * `text` - a plain "Label: value" line.
+ */
+
+export type FooterChipLook = 'icon' | 'text';
+
+export type FooterBlockNode = FooterChipsBlock | FooterMultibindsBlock | FooterVitalsBlock | FooterCompassBlock | FooterReconnectBlock;
+
+export interface FooterGroupNode extends FooterNodeBase {
+    type: 'row' | 'column';
+    children: FooterNode[];
+}
+
+export interface FooterChipsBlock extends FooterNodeBase {
+    type: 'block';
+    block: 'chips';
+    /**
+     * The chips this block shows: listed ids in that order, or `rest` - every
+     * registry item (built-in or plugin) no other chip block lists, in the
+     * player's configured order. A plugin's new chip lands in `rest`.
+     */
+    items: FooterChipItems;
+    arrange: FooterChipArrange;
+    /** Lines of a `grid` (4 when unset). */
+    rows?: number;
+    look?: FooterChipLook;
+    /** Set apart and dimmed - a diagnostic rather than a status (the connection). */
+    quiet?: boolean;
+}
+
+export interface FooterMultibindsBlock extends FooterNodeBase {
+    type: 'block';
+    block: 'multibinds';
+    /** Keep the row, with its placeholder, when the room has no binds. */
+    alwaysVisible?: boolean;
+}
+
+export interface FooterVitalsBlock extends FooterNodeBase {
+    type: 'block';
+    block: 'vitals';
+    /** Vitals per line, wrapping onto more lines; unset keeps them on one. */
+    perRow?: number;
+    /** Postępy left out of the vitals and drawn under them as a bar, one tick per point. */
+    improveBar?: boolean;
+}
+
+/** The current room's exits as a clickable compass rose, special exits beside it. */
+
+export interface FooterCompassBlock extends FooterNodeBase {
+    type: 'block';
+    block: 'compass';
+}
+
+/** The way back to the game after a dropped session, for UIs without one elsewhere. */
+
+export interface FooterReconnectBlock extends FooterNodeBase {
+    type: 'block';
+    block: 'reconnect';
+}
+
+/** What every node can say about its share of the band. */
+
+export interface FooterNodeBase {
+    /** Share of the row's width against its siblings (flex-grow); unset takes what it needs. */
+    grow?: number;
+}
+
+/** Chips nobody placed explicitly: every block with `items: "rest"` shares them. */
+
+export type FooterChipItems = 'rest' | string[];
+
+/**
+ * How a chip block lays its chips out.
+ * - `fold`: one line; whatever wraps past it hides behind a "+N" toggle.
+ * - `wrap`: as many lines as the chips need.
+ * - `grid`: `rows` lines, filled top to bottom and then column by column.
+ */
+
+export type FooterChipArrange = 'fold' | 'wrap' | 'grid';
 
 // ============================================================================
 // Exports

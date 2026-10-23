@@ -450,6 +450,8 @@ export interface KnownEvents {
     "clock.sunset": ClockSunEventPayload;
     "clock.parsedTime": { domain: "Empire" | "Ishtar"; hour: number; dayOfYear: number };
     "clock.setTime": ClockSetTimePayload;
+    /** The game announced the last world rebirth ("Swiat odrodzil sie: ..."); Unix time in seconds */
+    "systemRebirth": number;
     "contracts.popup.open": { contracts: Contract[]; currentLocationId: number | null };
     "contracts.updated": { contracts: Contract[] };
     "contracts.remove": { id: string };

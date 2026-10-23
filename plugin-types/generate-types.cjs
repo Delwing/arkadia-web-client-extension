@@ -2,7 +2,10 @@
  * Generate plugin-types/index.d.ts from src/client/PluginApi.ts
  *
  * This script extracts type definitions from the source code and generates
- * a standalone .d.ts file for external plugin developers.
+ * a standalone .d.ts file for external plugin developers. The API interfaces
+ * and ClientEvents (src/shared/events/clientEvents.ts) are emitted with every
+ * type they reference, and the result must compile on its own or the script
+ * fails.
  */
 
 const ts = require('typescript');
@@ -11,6 +14,7 @@ const path = require('path');
 
 const PROJECT_ROOT = path.resolve(__dirname, '..');
 const SOURCE_FILE = path.join(PROJECT_ROOT, 'src', 'client', 'PluginApi.ts');
+const EVENTS_FILE = path.join(PROJECT_ROOT, 'src', 'shared', 'events', 'clientEvents.ts');
 const OUTPUT_FILE = path.join(__dirname, 'index.d.ts');
 const TSCONFIG_PATH = path.join(PROJECT_ROOT, 'tsconfig.json');
 
@@ -28,7 +32,7 @@ const parsedConfig = ts.parseJsonConfigFileContent(
 
 // Create program
 const program = ts.createProgram({
-  rootNames: [SOURCE_FILE],
+  rootNames: [SOURCE_FILE, EVENTS_FILE],
   options: {
     ...parsedConfig.options,
     declaration: true,
@@ -151,27 +155,28 @@ function shouldExport(node) {
 
 // Helper to get JSDoc comments (only the leading JSDoc before the node)
 function getLeadingJsDoc(node) {
-  const fullText = node.getFullText(sourceFile);
-  const nodeText = node.getText(sourceFile);
+  const sf = node.getSourceFile();
+  const fullText = node.getFullText(sf);
+  const nodeText = node.getText(sf);
   const leading = fullText.substring(0, fullText.indexOf(nodeText));
 
-  // Extract JSDoc comment (/** ... */)
-  const jsDocMatch = leading.match(/\/\*\*[\s\S]*?\*\//);
-  return jsDocMatch ? jsDocMatch[0] : null;
+  // Last JSDoc comment (/** ... */) - an earlier one belongs to a section, not this node
+  const jsDocMatches = leading.match(/\/\*\*[\s\S]*?\*\//g);
+  return jsDocMatches ? jsDocMatches[jsDocMatches.length - 1] : null;
 }
 
-// Helper to convert node to string
-function nodeToString(node) {
+// Helper to convert node to string (sf: the file the node, or its original, came from)
+function nodeToString(node, sf) {
   const printer = ts.createPrinter({
     newLine: ts.NewLineKind.LineFeed,
     removeComments: false  // Keep comments for interface members
   });
 
-  let result = printer.printNode(ts.EmitHint.Unspecified, node, sourceFile);
+  let result = printer.printNode(ts.EmitHint.Unspecified, node, sf);
 
-  // Remove leading JSDoc from the result (we'll add it separately to avoid export duplication)
-  // This regex removes JSDoc comments that appear before the first non-comment token
-  result = result.replace(/^(\s*)\/\*\*[\s\S]*?\*\/\s*/, '$1');
+  // Remove leading comments from the result (the JSDoc is added separately, a
+  // stray line comment would otherwise end up between 'export' and the declaration)
+  result = result.replace(/^(\s*)(?:(?:\/\*[\s\S]*?\*\/|\/\/[^\n]*)\s*)+/, '$1');
 
   // Remove 'export ' keyword if present (TypeScript printer adds it)
   result = result.replace(/^export\s+/, '');
@@ -179,24 +184,229 @@ function nodeToString(node) {
   return result;
 }
 
-// Process the source file
-function processNode(node) {
-  if (shouldExport(node)) {
-    const name = node.name?.text;
-    if (name && !exportedTypes.has(name)) {
-      exportedTypes.add(name);
+// ----------------------------------------------------------------------------
+// Reachable types
+//
+// The roots (shouldExport in PluginApi.ts, plus ClientEvents) are emitted along
+// with every project type they reference, transitively, so a type the API
+// mentions can never be missing from the package. Types already written out by
+// hand above are skipped by name.
+// ----------------------------------------------------------------------------
 
-      const jsDoc = getLeadingJsDoc(node);
-      const declaration = nodeToString(node);
+const SRC_DIR = path.join(PROJECT_ROOT, 'src') + path.sep;
 
-      if (jsDoc) {
-        output.push('\n' + jsDoc);
+// Plugins augment these with `declare module ... { interface X {...} }`, which
+// only merges with an interface - a type alias is converted on the way out.
+const AUGMENTABLE = new Set(['ClientEvents']);
+
+// Ambient global namespaces from src/**/*.d.ts, inlined further down
+const AMBIENT_NAMESPACES = new Set(['MapData']);
+
+function isProjectSource(sf) {
+  return !sf.isDeclarationFile && path.resolve(sf.fileName).startsWith(SRC_DIR);
+}
+
+function isReactDeclaration(sf) {
+  return /[\\/]node_modules[\\/]@types[\\/]react[\\/]/.test(sf.fileName);
+}
+
+function resolveSymbol(id) {
+  let symbol = checker.getSymbolAtLocation(id);
+  if (symbol && symbol.flags & ts.SymbolFlags.Alias) symbol = checker.getAliasedSymbol(symbol);
+  return symbol;
+}
+
+function leftmostIdentifier(name) {
+  while (ts.isQualifiedName(name)) name = name.left;
+  while (ts.isPropertyAccessExpression(name)) name = name.expression;
+  return ts.isIdentifier(name) ? name : null;
+}
+
+function isEmittable(decl) {
+  return ts.isInterfaceDeclaration(decl) || ts.isTypeAliasDeclaration(decl) || ts.isEnumDeclaration(decl);
+}
+
+// Names defined by the hand-written sections already in `output`
+function handWrittenNames() {
+  const names = new Set();
+  for (const m of output.join('\n').matchAll(/^export (?:declare )?(?:interface|type|class|function|namespace|enum) (\w+)/gm)) {
+    names.add(m[1]);
+  }
+  return names;
+}
+
+let provided = new Set();
+const emitted = new Map();   // name -> symbol
+const queue = [];
+const problems = [];
+
+function describe(node) {
+  const sf = node.getSourceFile();
+  const { line } = sf.getLineAndCharacterOfPosition(node.getStart(sf));
+  return `${path.relative(PROJECT_ROOT, sf.fileName)}:${line + 1}`;
+}
+
+// A default export's symbol is called "default" - use the declared name
+function symbolName(symbol) {
+  const declared = symbol.declarations?.[0]?.name;
+  return declared && ts.isIdentifier(declared) ? declared.text : symbol.getName();
+}
+
+function enqueue(symbol, from) {
+  const name = symbolName(symbol);
+  if (provided.has(name)) return;
+  const known = emitted.get(name);
+  if (known === symbol) return;
+  if (known) {
+    problems.push(`two different types are named ${name} (${describe(known.declarations[0])}, ${describe(symbol.declarations[0])})`);
+    return;
+  }
+  const decls = symbol.declarations.filter(d => isProjectSource(d.getSourceFile()));
+  if (!decls.length || !decls.every(isEmittable)) {
+    problems.push(`${name} (${describe(symbol.declarations[0])}) is referenced from ${describe(from)} but is not an interface, type or enum - write it out by hand or change the reference`);
+    return;
+  }
+  emitted.set(name, symbol);
+  queue.push(...decls);
+}
+
+// Decide what a type reference refers to: a project type to emit (returns its
+// declared name), a React type (`React.X`), or something that needs no output.
+function classifyReference(id) {
+  const symbol = resolveSymbol(id);
+  if (!symbol || !symbol.declarations?.length) return null;
+  if (symbol.flags & ts.SymbolFlags.TypeParameter) return null;
+  const decl = symbol.declarations[0];
+  const sf = decl.getSourceFile();
+  if (isProjectSource(sf)) {
+    enqueue(symbol, id);
+    return symbolName(symbol);
+  }
+  if (isReactDeclaration(sf) && id.text !== 'React') return `React.${symbolName(symbol)}`;
+  return null;
+}
+
+function referenceIdentifiers(node) {
+  if (ts.isTypeReferenceNode(node)) return leftmostIdentifier(node.typeName);
+  if (ts.isExpressionWithTypeArguments(node)) return leftmostIdentifier(node.expression);
+  if (ts.isTypeQueryNode(node)) return leftmostIdentifier(node.exprName);
+  return null;
+}
+
+// `typeof VALUE` has no value to point at in a types-only package. Resolve the
+// smallest type around it that no longer needs the value - `keyof typeof X`,
+// `(typeof X)[number]` - to what the checker computes, e.g. a literal union.
+function valueQueryRoots(decl) {
+  const roots = new Set();
+  const visit = (node) => {
+    if (ts.isTypeQueryNode(node)) {
+      const id = leftmostIdentifier(node.exprName);
+      const symbol = id && resolveSymbol(id);
+      const sf = symbol?.declarations?.[0]?.getSourceFile();
+      if (sf && isProjectSource(sf)) {
+        let root = node;
+        while (ts.isParenthesizedTypeNode(root.parent) || ts.isIndexedAccessTypeNode(root.parent) ||
+               (ts.isTypeOperatorNode(root.parent) && root.parent.operator === ts.SyntaxKind.KeyOfKeyword)) {
+          root = root.parent;
+        }
+        roots.add(root);
       }
-      output.push('\nexport ' + declaration);
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(decl);
+  return roots;
+}
+
+function resolvedTypeNode(node) {
+  const flags = ts.NodeBuilderFlags.NoTruncation | ts.NodeBuilderFlags.InTypeAlias;
+  const resolved = checker.typeToTypeNode(checker.getTypeFromTypeNode(node), undefined, flags);
+  if (!resolved) problems.push(`could not resolve ${node.getText()} at ${describe(node)}`);
+  return resolved ?? node;
+}
+
+// Rename references to their emitted names (`import {A as B}`, React types),
+// resolve value queries, and collect the project types they point at
+function rewriteReferences(root, valueRoots) {
+  const result = ts.transform(root, [(context) => {
+    const visit = (node) => {
+      if (valueRoots.has(node)) return resolvedTypeNode(node);
+      // import("@shared/x").Name -> Name, emitted like any other reference
+      if (ts.isImportTypeNode(node) && !node.isTypeOf && node.qualifier && ts.isIdentifier(node.qualifier)) {
+        const target = classifyReference(node.qualifier);
+        if (target) {
+          const typeArguments = node.typeArguments && ts.visitNodes(node.typeArguments, visit, context);
+          return ts.factory.createTypeReferenceNode(target, typeArguments);
+        }
+      }
+      const id = referenceIdentifiers(node);
+      if (id) {
+        const target = classifyReference(id);
+        if (target && target !== id.text) {
+          const swap = (n) => n === id
+            ? ts.factory.createIdentifier(target)
+            : ts.visitEachChild(n, swap, context);
+          node = ts.visitEachChild(node, swap, context);
+        }
+      }
+      return ts.visitEachChild(node, visit, context);
+    };
+    return (n) => ts.visitEachChild(n, visit, context);
+  }]);
+  return result.transformed[0];
+}
+
+// `type X = A & B & { ... }` -> `interface X extends A, B { ... }`
+function aliasToInterface(decl) {
+  const parts = ts.isIntersectionTypeNode(decl.type) ? decl.type.types : [decl.type];
+  const heritage = [];
+  const members = [];
+  for (const part of parts) {
+    if (ts.isTypeReferenceNode(part)) {
+      heritage.push(ts.factory.createExpressionWithTypeArguments(part.typeName, part.typeArguments));
+    } else if (ts.isTypeLiteralNode(part)) {
+      members.push(...part.members);
+    } else {
+      problems.push(`${decl.name.text} (${describe(decl)}) must be an intersection of named types and type literals to become an interface`);
+      return decl;
     }
   }
+  const iface = ts.factory.createInterfaceDeclaration(
+    decl.modifiers,
+    decl.name,
+    decl.typeParameters,
+    heritage.length ? [ts.factory.createHeritageClause(ts.SyntaxKind.ExtendsKeyword, heritage)] : undefined,
+    members
+  );
+  return ts.setOriginalNode(ts.setTextRange(iface, decl), decl);
+}
 
-  ts.forEachChild(node, processNode);
+function emitDeclaration(decl) {
+  let node = decl;
+  if (ts.isTypeAliasDeclaration(node) && AUGMENTABLE.has(node.name.text)) node = aliasToInterface(node);
+  // Wrapped so the transform visits the declaration itself, heritage included
+  node = rewriteReferences(ts.factory.createBlock([node]), valueQueryRoots(decl));
+  const printed = node.statements.map((s) => nodeToString(s, decl.getSourceFile())).join('\n');
+  const jsDoc = getLeadingJsDoc(decl);
+  if (jsDoc) output.push('\n' + jsDoc);
+  output.push('\nexport ' + printed);
+}
+
+function collectRoots(node, roots) {
+  if (shouldExport(node)) roots.push(node);
+  ts.forEachChild(node, (child) => collectRoots(child, roots));
+}
+
+function emitReachableTypes(roots) {
+  provided = handWrittenNames();
+  for (const root of roots) {
+    const symbol = checker.getSymbolAtLocation(root.name);
+    if (symbol) enqueue(symbol, root);
+  }
+  for (let i = 0; i < queue.length; i++) {
+    emitDeclaration(queue[i]);
+  }
+  for (const name of emitted.keys()) exportedTypes.add(name);
 }
 
 // Add Plugin interface and PluginInfo first (from comments in original file)
@@ -273,6 +483,32 @@ output.push(`
 export declare namespace MapRenderer {
 ${rendererSettingsBody}
 }
+`);
+
+// MapData (rooms, areas) is an ambient global namespace in the client; the
+// package has to export it, since a global would clash with the plugin's own.
+const mapDataPath = path.join(PROJECT_ROOT, 'src', 'client', 'types', 'MapData.d.ts');
+const mapData = fs.readFileSync(mapDataPath, 'utf-8').replace(/\r\n/g, '\n');
+if (/^import /m.test(mapData) || !/^declare namespace MapData \{/m.test(mapData)) {
+  console.error('❌ src/client/types/MapData.d.ts changed shape - update the MapData namespace inlining');
+  process.exit(1);
+}
+output.push(`
+// ============================================================================
+// Map Data Types (from src/client/types/MapData.d.ts)
+// ============================================================================
+
+${mapData.trim().replace(/^declare namespace MapData \{/m, 'export declare namespace MapData {')}
+
+// ============================================================================
+// Internal Types
+// ============================================================================
+
+/**
+ * The client instance handed to button and trigger macros. Internal and not
+ * part of the plugin API - its shape may change between client versions.
+ */
+export type Client = any;
 `);
 
 // We need to manually add types from dependencies that are referenced
@@ -922,405 +1158,6 @@ export type EnemyBindResolver = (
 ) => EnemyBindCandidate[] | void;
 `);
 
-// Now we need to add the ClientEvents interface
-// Read the events file to get the event types
-const eventsFilePath = path.join(PROJECT_ROOT, 'src', 'shared', 'events', 'clientEvents.ts');
-if (fs.existsSync(eventsFilePath)) {
-  const eventsContent = fs.readFileSync(eventsFilePath, 'utf-8');
-
-  output.push(`
-// ============================================================================
-// Event Types
-// ============================================================================
-
-/**
- * Send command event payload
- */
-export interface SendCommandEvent {
-  command: string;
-  echo?: boolean;
-  options?: {
-    mode?: string;
-    [key: string]: any;
-  };
-}
-
-/**
- * Notification event payload
- */
-export interface NotificationPayload {
-  text: string;
-  time?: number;
-}
-
-/**
- * Storage event payload
- */
-export interface StorageEventPayload {
-  key: string;
-  value: unknown;
-}
-
-/**
- * Multibind list event payload
- */
-export interface MultibindList {
-  list: {
-    index: number;
-    action: string;
-    /** Key label, e.g. "ALT+1". */
-    label: string;
-    /** Display name of a temporary bind - shown instead of the action when set. */
-    name?: string;
-    /** Slot filled by a temporary (plugin) bind rather than a saved one. */
-    temporary?: boolean;
-    /** Slot a temporary bind asked to highlight. */
-    highlight?: boolean;
-  }[];
-}
-
-/**
- * Message event payload (output text)
- */
-export type MessageEventPayload = [text: string | AnsiAwareBuffer, type?: string, timestamp?: number];
-
-/**
- * Recording auto-stop event payload
- */
-export type RecordingAutoStopPayload = [name: string | null, save?: boolean];
-
-/**
- * Playback index event payload
- */
-export type PlaybackIndexPayload = [current: number, total: number];
-
-/**
- * Knowledge report action
- */
-export type KnowledgeReportAction =
-  | { type: "completeLibrary"; libraryId: string }
-  | { type: "resetLibrary"; libraryId: string };
-
-/**
- * Package status event payload
- */
-export interface PackageStatus {
-  recipient: string;
-  seconds?: number;
-}
-
-/**
- * Plugin loaded event payload
- */
-export interface PluginLoadedPayload {
-  url: string;
-  info: {
-    name: string;
-    version: string;
-    author?: string;
-    description?: string;
-  };
-}
-
-/**
- * Plugin error event payload
- */
-export interface PluginErrorPayload {
-  url: string;
-  error: string;
-}
-
-/**
- * Plugin destroyed event payload
- */
-export interface PluginDestroyedPayload {
-  url: string;
-}
-
-/**
- * Clock update event payload
- */
-export interface ClockUpdatePayload {
-  domain: "Empire" | "Ishtar";
-  hours: number;
-  minutes: number;
-  precision: number;
-  sunrise: number | string | "?";
-  sunset: number | string | "?";
-  dayLabel: string;
-  dayOfMonth: number;
-  dayOfYear: number;
-  daylight?: boolean;
-  season?: number;
-}
-
-/**
- * Clock domain active event payload
- */
-export interface ClockDomainActivePayload {
-  domain: "Empire" | "Ishtar";
-}
-
-/**
- * Clock mismatch event payload
- */
-export interface ClockMismatchPayload {
-  domain: "Empire" | "Ishtar";
-  type: "sunrise" | "sunset";
-  dayOfYear: number;
-  expectedHour: number;
-  observedHour: number;
-  observedMinutes: number;
-  indicatedHour?: string;
-}
-
-/**
- * Clock sun event payload (sunrise/sunset)
- */
-export interface ClockSunEventPayload {
-  domain: "Empire" | "Ishtar";
-  dayOfYear: number;
-  observedHour: number;
-  observedMinutes: number;
-  indicatedHour?: string;
-}
-
-/**
- * Known client events with their payloads
- * Subscribe to these events using api.events.on()
- */
-export interface ClientEvents {
-  /** Command sent to the MUD server */
-  "command": string;
-  /** Port connection established */
-  "port-connected": void;
-  /** Output line sent to display */
-  "output-sent": number;
-  /** Buffer sent */
-  "buffer-sent": number;
-  /** Map position changed */
-  "mapMove": void;
-  /** Map data loaded and ready (fired once, after initial map initialization) */
-  "mapReady": void;
-  /** Step back in location history */
-  "stepBack": void;
-  /** Lead to specific room ID */
-  "leadTo": number;
-  /** Clear lead to destination */
-  "clearLeadTo": void;
-  /** Map path data emitted when destination(s) change. null when no active path. */
-  "mapPath": { segments: Array<{ path: number[]; color: string }> } | null;
-  /** Display notification */
-  "notify": NotificationPayload;
-  /** Lamp timer updated */
-  "lampTimer": number | null;
-  /** Cover timer updated */
-  "coverTimer": number | null;
-  /** Break item warning */
-  "breakItem": { text: string; command?: string } | null;
-  /** Package delivery status */
-  "packageStatus": PackageStatus | null;
-  /** Release guard status */
-  "releaseGuard": boolean;
-  /** Attack mode changed */
-  "attackMode": "A" | "AW" | "AWR";
-  /** Content width changed */
-  "contentWidth": number;
-  /** Entered a location. direction is the direction that led to this location (null when set via other means than move) */
-  "enterLocation": { id: number; room: unknown; direction: string | null };
-  /** Highlights updated */
-  "highlights": [number[]];
-  /** Multibind list updated */
-  "multibinds": MultibindList;
-  /** Letter composer state */
-  "letterComposer": { open: boolean };
-  /** Letter composer submit */
-  "letterComposer.submit": unknown;
-  /** Letter composer preview */
-  "letterComposer.preview": unknown;
-  /** NPC information */
-  "npc": unknown;
-  /** Zask timer status */
-  "zaskTimer": { seconds: number; ok: boolean } | null;
-  /** Move mode changed */
-  "moveModeChanged": number;
-  /** Ping measurement */
-  "ping": number | null;
-  /** Transport timer status */
-  "transportTimer": unknown;
-  /** Combat timer */
-  "combatTimer": number | null;
-  /** Team leader target without avatar */
-  "teamLeaderTargetNoAvatar": number;
-  /** Team leader target with avatar */
-  "teamLeaderTargetAvatar": void;
-  /** Team composition changed */
-  "teamChange": void;
-  /** Is team leader status */
-  "isTeamLeader": boolean;
-  /** Reset client state */
-  "reset": void;
-  /** Refresh map position when able */
-  "refreshPositionWhenAble": void;
-  /** Knowledge report */
-  "knowledgeReport": unknown | null;
-  /** Open knowledge report popup */
-  "knowledgeReport.popup.open": void;
-  /** Knowledge details report */
-  "knowledgeDetailsReport": unknown | null;
-  /** Open knowledge details popup */
-  "knowledgeDetails.popup.open": void;
-  /** Knowledge report action */
-  "knowledgeReportAction": KnowledgeReportAction;
-  /** Send command to server */
-  "sendCommand": SendCommandEvent;
-  /** Request herb counts */
-  "requestHerbCounts": void;
-  /** Herb manager closed */
-  "herbManagerClose": void;
-  /** Herb counts data */
-  "herbCounts": unknown;
-  /** Herb manager opened */
-  "herbManagerOpen": void;
-  /** Play sound effect */
-  "sound:play": { key: string };
-  /** Play beep sound */
-  "playBeep": void;
-  /** Line start marker */
-  "line-start": void;
-  /** Storage value changed */
-  "storage": StorageEventPayload;
-  /** Settings updated */
-  "settings": unknown;
-  /** Binds updated */
-  "binds": unknown;
-  /** UI settings updated */
-  "uiSettings": unknown;
-  /** Mobile buttons settings updated */
-  "mobileButtonsSettings": unknown;
-  /** Pauser started */
-  "pauserStart": void;
-  /** Pauser ended */
-  "pauserEnd": void;
-  /** Client connected to server */
-  "client.connect": void;
-  /** Client disconnected from server */
-  "client.disconnect": void;
-  /** WebSocket opened */
-  "open": Event;
-  /** WebSocket closed */
-  "close": CloseEvent;
-  /** Error occurred */
-  "error": unknown;
-  /** GMCP data received */
-  "gmcp": { path: string; value: unknown };
-  /** Recording started */
-  "recording.start": string;
-  /** Recording stopped */
-  "recording.stop": boolean | undefined;
-  /** Auto-recording started */
-  "recording.auto.start": string | null | undefined;
-  /** Auto-recording stopped */
-  "recording.auto.stop": RecordingAutoStopPayload;
-  /** Playback stopped */
-  "playback.stop": void;
-  /** Playback paused */
-  "playback.pause": void;
-  /** Playback resumed */
-  "playback.resume": void;
-  /** Playback started */
-  "playback.start": number | undefined;
-  /** Playback speed changed */
-  "playback.speed": number;
-  /** Playback index changed */
-  "playback.index": PlaybackIndexPayload;
-  /** Message output */
-  "message": MessageEventPayload;
-  /** Attack queue changed */
-  "attackQueueChange": string[];
-  /** Clear attack queue */
-  "clearAttackQueue": void;
-  /** Add to attack queue */
-  "addToAttackQueue": string;
-  /** Remove from attack queue */
-  "removeFromAttackQueue": string;
-  /** Objects parsed */
-  "parsedObjects": void;
-  /** Numbers parsed */
-  "parsedNums": { nums: number[] };
-  /** Kill event */
-  "kill": { killer: "ME" | "TEAM" | "OTHER" };
-  /** Enemy killed */
-  "enemyKilled": { objNum: number; killer: "ME" | "TEAM" | "OTHER"; hasBody?: boolean };
-  /** All enemies killed */
-  "allEnemiesKilled": void;
-  /**
-   * Every combat line a gag classified: gag type (moje_ciosy, innych_parowanie, ...),
-   * the prefix shown ("3/6", "FIN", a special's name) and the raw line. finisher is
-   * true when the prefix is the player's killing-blow prefix.
-   */
-  "combat.gag": { type: string; prefix: string; text: string; finisher?: boolean };
-  /** The player is stunned (ogluszenie) */
-  "stunStart": void;
-  /** The player's stun wore off */
-  "stunEnd": void;
-  /** Someone else got stunned; name as the line declined it ("orka") */
-  "enemy.paralyzed": { name: string };
-  /** Someone else's stun ended; name is '' when the object list timed it out */
-  "enemy.paralyzed.end": { name: string };
-  /** A cover (zaslona) changed; kind 'established' carries covererId/coveredId/attackerId */
-  "cover.event": {
-    at: number;
-    kind: "established" | "failed" | "blocked" | "break-failed" | "break-ok" | "released" | "retreat" | "expired" | "gmcp-suspect" | "ambiguous";
-    coveredId?: number;
-    covererId?: number;
-    attackerId?: number;
-    raw: string;
-  };
-  /** The cover graph changed; query it with api.combat.isCoveredFor */
-  "cover.state": {
-    at: number;
-    edges: { coveredId: number; covererId: number; attackerId: number; since: number; lastSeen: number; confidence: "confirmed" | "suspected" }[];
-    playerNum?: number;
-  };
-  /** GMCP Char.Info - the player's name, race, guilds */
-  "gmcp.char.info": { name?: string; race?: string; gender?: string; [key: string]: unknown };
-  /** Plugin loaded successfully */
-  "plugin:loaded": PluginLoadedPayload;
-  /** Plugin error occurred */
-  "plugin:error": PluginErrorPayload;
-  /** Plugin destroyed */
-  "plugin:destroyed": PluginDestroyedPayload;
-  /** Clock update */
-  "clock.update": ClockUpdatePayload;
-  /** Clock domain active */
-  "clock.domain.active": ClockDomainActivePayload;
-  /** Clock popup opened */
-  "clock.popup.open": { domain?: "Empire" | "Ishtar" };
-  /** Clock mismatch detected */
-  "clock.mismatch": ClockMismatchPayload;
-  /** Clock sunrise */
-  "clock.sunrise": ClockSunEventPayload;
-  /** Clock sunset */
-  "clock.sunset": ClockSunEventPayload;
-  /** Can wield weapon after knockoff */
-  "canWieldAfterKnockOff": void;
-  /**
-   * Container contents seen in game output ("Otwarty plecak zawiera ...", "W srodku dostrzegasz ...").
-   * Fires whether or not pretty containers is enabled. container is the name as the game wrote it,
-   * in whatever grammatical case the line uses - compare it against every form returned by
-   * api.containers.getContainerForms(). items is the full, unfiltered list.
-   */
-  "containers.listed": { container: string; items: { name: string; count: string | number }[] };
-  /** Team leader performed special exit follow */
-  "followSpecialExit": { exit: string };
-  /** GMCP events with dynamic paths (e.g., gmcp.room.info, gmcp.char.vitals) */
-  [key: \`gmcp.\${string}\`]: unknown;
-  /** GMCP message events */
-  [key: \`gmcp_msg.\${string}\`]: AnsiAwareBuffer;
-}
-`);
-}
 
 output.push(`
 // ============================================================================
@@ -1328,8 +1165,22 @@ output.push(`
 // ============================================================================
 `);
 
-// Process source file for API interfaces
-processNode(sourceFile);
+// API interfaces and event types, with everything they reference
+const roots = [];
+collectRoots(sourceFile, roots);
+const eventsSourceFile = program.getSourceFile(EVENTS_FILE);
+const clientEvents = eventsSourceFile?.statements.find((st) => ts.isTypeAliasDeclaration(st) && st.name.text === 'ClientEvents');
+if (!clientEvents) {
+  console.error(`❌ ClientEvents not found in ${path.relative(PROJECT_ROOT, EVENTS_FILE)}`);
+  process.exit(1);
+}
+roots.push(clientEvents);
+emitReachableTypes(roots);
+if (problems.length) {
+  console.error('❌ Some referenced types cannot be emitted:');
+  for (const problem of problems) console.error(`   - ${problem}`);
+  process.exit(1);
+}
 
 // Add final exports
 output.push(`
@@ -1343,6 +1194,35 @@ export default PluginApi;
 // Write output file
 const finalOutput = output.join('\n');
 fs.writeFileSync(OUTPUT_FILE, finalOutput, 'utf-8');
+
+// The package must compile on its own: a name it uses but never declares turns
+// into `any` for plugins (skipLibCheck hides it), which is how types went missing.
+const UI_TYPES_FILE = path.join(__dirname, 'ui.d.ts');
+const check = ts.createProgram({
+  rootNames: [OUTPUT_FILE, UI_TYPES_FILE],
+  options: {
+    noEmit: true,
+    strict: true,
+    target: ts.ScriptTarget.ES2022,
+    lib: ['lib.es2022.d.ts', 'lib.dom.d.ts', 'lib.dom.iterable.d.ts'],
+    types: ['react'],
+    typeRoots: [path.join(PROJECT_ROOT, 'node_modules', '@types')],
+    module: ts.ModuleKind.ESNext,
+    moduleResolution: ts.ModuleResolutionKind.Bundler,
+    paths: { '@arkadia/plugin-types': [OUTPUT_FILE] },
+  },
+});
+const checkDiagnostics = ts.getPreEmitDiagnostics(check)
+  .filter((d) => d.file && [OUTPUT_FILE, UI_TYPES_FILE].includes(path.resolve(d.file.fileName)));
+if (checkDiagnostics.length) {
+  console.error(`❌ ${path.relative(PROJECT_ROOT, OUTPUT_FILE)} does not compile:`);
+  console.error(ts.formatDiagnostics(checkDiagnostics, {
+    getCanonicalFileName: (f) => f,
+    getCurrentDirectory: () => PROJECT_ROOT,
+    getNewLine: () => '\n',
+  }));
+  process.exit(1);
+}
 
 // The host-UI shim used by esbuild.cjs is compiled from the same module the
 // client's editor bundler uses, so both map react/@arkadia/ui identically.
