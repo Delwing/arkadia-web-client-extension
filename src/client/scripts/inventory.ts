@@ -260,15 +260,17 @@ function iLines(): ReturnType<typeof iLineEntries> {
 
 type ActionKind = "take" | "drop" | "give" | "put" | "open" | "close" | "change";
 
-/** Commands that change the inventory, and the reply confirming each */
 /**
  * Commands that change the inventory, the reply confirming each, and the
- * reply saying it did not happen ("Zamkniety skorzany plecak nie chce wejsc.")
+ * reply saying it did not happen ("Zamkniety skorzany plecak nie chce wejsc.").
+ * `many`: one command can get a reply per item ("sprzedaj wszystko").
  */
-const ACTIONS: { command: RegExp; reply: RegExp; fail?: RegExp; kind: ActionKind }[] = [
+const ACTIONS: { command: RegExp; reply: RegExp; fail?: RegExp; kind: ActionKind; many?: true }[] = [
     { command: /^(?:wez|podnies)\s/, reply: /^(?:Bierzesz|Podnosisz|Wyjmujesz) (.+)\.$/, kind: "take" },
     { command: /^(?:odloz|upusc|poloz)\s/, reply: /^Odkladasz (.+)\.$/, kind: "drop" },
     { command: /^daj\s/, reply: /^Dajesz (.+)\.$/, kind: "give" },
+    { command: /^sprzedaj\s/, reply: /^Sprzedajesz (.+?)(?: za .+)?\.$/, kind: "drop", many: true },
+    { command: /^kup\s/, reply: /^Kupujesz (.+?)(?: za .+)?\.$/, kind: "take", many: true },
     { command: /^(?:wloz|schowaj)\s/, reply: /^Wkladasz (.+)\.$/, fail: /^.+ nie chce wejsc\.$/, kind: "put" },
     { command: /^otworz\s/, reply: /^Otwierasz (.+)\.$/, kind: "open" },
     { command: /^zamknij\s/, reply: /^Zamykasz (.+)\.$/, kind: "close" },
@@ -990,7 +992,7 @@ export default function initInventory(
     // The player typed `i`: its reply may start with a line no pattern knows
     let typedUntil = 0;
     let replyTimer: ReturnType<typeof setTimeout> | undefined;
-    const pendingActions: { kind: ActionKind; reply: RegExp; fail?: RegExp; until: number; fromSource: boolean; bag?: string }[] = [];
+    const pendingActions: { kind: ActionKind; reply: RegExp; fail?: RegExp; until: number; fromSource: boolean; bag?: string; many?: true }[] = [];
 
     const commit = () => {
         const lines = block;
@@ -1083,6 +1085,7 @@ export default function initInventory(
                 kind: action.kind,
                 reply: action.reply,
                 fail: action.fail,
+                many: action.many,
                 until: Date.now() + ACTION_WINDOW_MS,
                 // "wez lampe z plecaka": the reply names where it came from too
                 fromSource: / ze? /.test(normalized.trim()),
@@ -1163,7 +1166,7 @@ export default function initInventory(
             const action = pendingActions.find(a => a.reply.test(text));
             if (action) {
                 // One reply per command: a second `wez` must meet its own reply
-                pendingActions.splice(pendingActions.indexOf(action), 1);
+                if (!action.many) pendingActions.splice(pendingActions.indexOf(action), 1);
                 applyAction(action.kind, text.match(action.reply)?.[1], action.fromSource, action.bag);
             } else {
                 const given = text.match(GIVEN)?.[1];

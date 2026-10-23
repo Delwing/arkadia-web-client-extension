@@ -343,6 +343,20 @@ describe('inventory tracking', () => {
         expect(names()).not.toContain('ciemna polyskliwa fajke');
     });
 
+    test('selling removes each item sold, buying adds it', async () => {
+        reply(CARRIED);
+        await client.sendCommand('sprzedaj wszystko');
+        reply('Sprzedajesz maly cynowy kubek.');
+        reply('Sprzedajesz kosciany widelec.');
+        expect(names()).not.toContain('maly cynowy kubek');
+        expect(names()).not.toContain('kosciany widelec');
+
+        await client.sendCommand('kup czaszke');
+        reply('Kupujesz bielejaca czaszke z jelenim porozem.');
+        expect(names()).toContain('bielejaca czaszke z jelenim porozem');
+        expect(getInventoryState().stale).toBe(false);
+    });
+
     const entry = (name: string) =>
         getInventoryState().sections.flatMap(s => s.entries).find(e => e.name.includes(name));
 
