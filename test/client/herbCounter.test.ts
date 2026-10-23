@@ -46,6 +46,80 @@ describe('herb counter', () => {
     localStorage.clear();
   });
 
+  test('emits one completion event after saving the full database', async () => {
+    const completed = jest.fn(bags => {
+      expect(characterStorage.get('herb_counts')).toEqual(bags);
+      expect((client as any).herbManager.getBags()).toEqual(bags);
+    });
+    client.on('herbs.build.done', completed);
+    await start();
+    parse('Doliczyles sie dwoch sztuk.');
+    const empty = 'Uwaznie ogladasz zawartosc szarawego skorzanego woreczka. W jego srodku nic jednak nie ma.';
+    parse(empty);
+    expect(completed).not.toHaveBeenCalled();
+    parse(empty);
+    expect(completed).toHaveBeenCalledWith({ 1: { herbs: {} }, 2: { herbs: {} } });
+    parse(empty);
+    (client as any).herbManager.setBags({ 3: { herbs: { deliona: 9 } } });
+    expect(completed).toHaveBeenCalledTimes(1);
+  });
+
+  test('missing bags report failure without replacing the old inventory', async () => {
+    const previous = { 1: { herbs: { deliona: 9 } } };
+    (client as any).herbManager.setBags(previous);
+    await start();
+    parse('Nie widzisz tu niczego takiego.');
+    expect(client.sendEvent).toHaveBeenCalledWith('herbs.build.failed', { reason: 'no-bags' });
+    expect((client as any).herbManager.getBags()).toEqual(previous);
+    expect(characterStorage.get('herb_counts')).toEqual(previous);
+    expect(client.sendEvent.mock.calls.filter(([name]) => name === 'herbs.build.done')).toHaveLength(0);
+  });
+
+  test('a missing bag midway never commits a partial database', async () => {
+    const previous = { 1: { herbs: { deliona: 9 } } };
+    (client as any).herbManager.setBags(previous);
+    await start();
+    parse('Doliczyles sie dwoch sztuk.');
+    parse('Uwaznie ogladasz zawartosc szarawego skorzanego woreczka. W jego srodku nic jednak nie ma.');
+    parse('Zajrzyj do czego?');
+    expect(client.sendEvent).toHaveBeenCalledWith('herbs.build.failed', { reason: 'no-bags' });
+    expect(characterStorage.get('herb_counts')).toEqual(previous);
+  });
+
+  test('timeout reports failure and permits a later scan', async () => {
+    jest.useFakeTimers();
+    try {
+      await start();
+      await jest.advanceTimersByTimeAsync(30000);
+      expect(client.sendEvent).toHaveBeenCalledWith('herbs.build.failed', { reason: 'timeout' });
+      await start();
+      parse('Doliczyles sie 0 sztuk.');
+      expect(client.sendEvent).toHaveBeenCalledWith('herbs.build.done', {});
+      expect(jest.getTimerCount()).toBe(0);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  test('a second build reports busy without interrupting the first', async () => {
+    await start();
+    await start();
+    expect(client.sendCommand.mock.calls.filter(([cmd]) => cmd === 'policz swoje woreczki')).toHaveLength(1);
+    expect(client.sendEvent).toHaveBeenCalledWith('herbs.build.failed', { reason: 'busy' });
+    parse('Doliczyles sie 0 sztuk.');
+    expect(client.sendEvent).toHaveBeenCalledWith('herbs.build.done', {});
+  });
+
+  test.each(['disconnected', 'character-changed'] as const)('reports %s without saving an incomplete scan', async reason => {
+    await start();
+    if (reason === 'disconnected') client.dispatch('client.disconnect', undefined);
+    else characterStorage.setCharacter('OtherChar');
+    parse('Doliczyles sie jednej sztuki.');
+    parse('Uwaznie ogladasz zawartosc szarawego skorzanego woreczka. W jego srodku nic jednak nie ma.');
+    expect(client.sendEvent).toHaveBeenCalledWith('herbs.build.failed', { reason });
+    expect(client.sendEvent.mock.calls.filter(([name]) => name === 'herbs.build.done')).toHaveLength(0);
+  });
+
   test('counts herbs from bags', async () => {
     await start();
     expect(client.sendCommand).toHaveBeenCalledWith('policz swoje woreczki');

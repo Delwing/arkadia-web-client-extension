@@ -660,6 +660,18 @@ const bag = await api.herbs.inspectBag('swojego zamknietego woreczka');
 
 `inspectBag` wysyła `zajrzyj do <cel>` i czeka na opis woreczka. Woreczek musi być pod ręką (nie w plecaku). Zwraca `null`, gdy takiego woreczka nie ma albo opis nie przyjdzie w czasie (`timeout`, domyślnie 5 s); „wiele” liczy jak ustawienie ziół gracza (domyślnie 25).
 
+Po zakończeniu istniejącego `/ziola_buduj` klient emituje `herbs.build.done`
+z kopią zapisanej bazy (`HerbBagsState`). Plugin może wykonać pre-komendy,
+uruchomić alias i po tym evencie zapisać wynik oraz wykonać post-komendy.
+Listener należy zarejestrować przed wysłaniem aliasu i usunąć po zakończeniu.
+`herbCounts` pozostaje ogólnym powiadomieniem o zmianie lub odświeżeniu danych.
+
+`herbs.build.failed` przekazuje `{ reason }`: `no-bags`, `timeout`,
+`disconnected`, `character-changed`, `error` lub `busy`. Nieudany skan zachowuje
+poprzednią bazę; po 30 sekundach bez zakończenia kończy się błędem `timeout`.
+`busy` oznacza odrzucenie kolejnego wywołania — pierwszy skan nadal trwa.
+Nie dodaje to nowej metody liczenia ani ustawień pre/post do API.
+
 #### `api.containers` - Pojemniki
 
 Plugin rejestruje własne typy pojemników, a gracz (albo plugin) przypisuje im worek, torbę itp.:

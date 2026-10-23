@@ -122,6 +122,8 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
     const bagConditionRegex = /^Ten element ekwipunku wyglada na (?<desc>.+)$/i;
 
     let awaiting = false;
+    let buildGeneration = 0;
+    let buildTimeout: ReturnType<typeof setTimeout> | undefined;
     let left = 0;
     const totals: Record<string, number> = {};
     const bagTotals: Record<number, HerbBagState> = {};
@@ -448,21 +450,44 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
         return output;
     }
 
-    function finish() {
-        storedBags = normalizeHerbBagsState(structuredClone(bagTotals));
-        const output = buildSummary(storedBags, true, false);
-        client.print(output);
-        persistBags();
+    function resetBuild() {
+        clearTimeout(buildTimeout);
+        buildTimeout = undefined;
+        buildGeneration++;
         awaiting = false;
         left = 0;
-        Object.keys(totals).forEach(k => delete totals[k]);
         currentBag = 0;
-        Object.keys(bagTotals).forEach(k => delete bagTotals[parseInt(k)]);
+        Object.keys(totals).forEach(k => delete totals[k]);
+        Object.keys(bagTotals).forEach(k => delete bagTotals[Number(k)]);
+    }
+
+    function failBuild(reason: 'no-bags' | 'timeout' | 'disconnected' | 'character-changed' | 'error') {
+        if (!awaiting) return;
+        resetBuild();
+        client.sendEvent('herbs.build.failed', {reason});
+    }
+
+    function finish() {
+        storedBags = normalizeHerbBagsState(structuredClone(bagTotals));
+        const snapshot = structuredClone(storedBags);
+        const output = buildSummary(storedBags, true, false);
+        resetBuild();
+        client.print(output);
+        persistBags();
+        client.sendEvent('herbs.build.done', snapshot);
     }
 
     client.Triggers.registerTrigger(countRegex, (line, matches) => {
-        if (!awaiting) return line;
+        if (!awaiting || left > 0) return line;
         left = polishWordToNumber(matches.groups?.num || matches[1]);
+        if (!Number.isInteger(left) || left < 0) {
+            failBuild('error');
+            return line;
+        }
+        if (left === 0) {
+            finish();
+            return line;
+        }
         for (let i = 1; i <= left; i++) {
             client.sendCommand(`zajrzyj do ${i}. swojego woreczka`);
         }
@@ -470,7 +495,7 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
     });
 
     function extractHerbs(matches: RegExpMatchArray) {
-        if (!awaiting) return
+        if (!awaiting || left <= 0) return
         currentBag += 1;
         const bag = parseHerbBagContent(matches.groups?.content || '', herbs, wieleCount);
         Object.entries(bag).forEach(([key, count]) => {
@@ -492,7 +517,7 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
     });
 
     function handleEmptyBag(triggerLine: AnsiAwareBuffer) {
-        if (!awaiting) return triggerLine;
+        if (!awaiting || left <= 0) return triggerLine;
         currentBag += 1;
         bagTotals[currentBag] = {herbs: {}};
         left -= 1;
@@ -527,13 +552,32 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
     });
 
     async function start() {
-        await ensureData();
+        if (awaiting) {
+            client.sendEvent('herbs.build.failed', {reason: 'busy'});
+            return;
+        }
         awaiting = true;
-        storedBags = {};
-        currentBag = 0;
-        Object.keys(bagTotals).forEach(k => delete bagTotals[parseInt(k)]);
-        client.sendCommand('policz swoje woreczki');
+        const generation = ++buildGeneration;
+        buildTimeout = setTimeout(() => failBuild('timeout'), 30000);
+        try {
+            await ensureData();
+            if (!awaiting || generation !== buildGeneration) return;
+            client.sendCommand('policz swoje woreczki');
+        } catch {
+            if (generation === buildGeneration) failBuild('error');
+        }
     }
+
+    client.Triggers.registerTrigger(/^Nie widzisz tu niczego takiego\.$/, line => {
+        if (awaiting && left === 0) failBuild('no-bags');
+        return line;
+    });
+    client.Triggers.registerTrigger(/^Zajrzyj do czego\?$/, line => {
+        if (awaiting && left > 0) failBuild('no-bags');
+        return line;
+    });
+    client.on('client.disconnect', () => failBuild('disconnected'));
+    characterStorage.onCharacterChange(() => failBuild('character-changed'));
 
     function evaluateBagConditions() {
         Object.keys(pendingConditions as Record<string, number>).forEach(key => {
