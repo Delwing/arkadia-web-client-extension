@@ -229,6 +229,12 @@ body.layout-locked .tab-group-tab--closable {
   margin-left: auto;
 }
 
+/* Segmented's own align-self: flex-start would pin it to the top of a tab
+   bar, whose actions row stretches to the full bar height. */
+.managed-panel__header .popup-segmented {
+  align-self: center;
+}
+
 /* The window buttons take no part in the one-row layout; the popup's own
    actions (HeaderButton, Segmented size="sm") are one group, a little apart
    from each other and further from the window buttons. */
