@@ -154,6 +154,18 @@ body.theme-forged {
 .theme-forged .managed-panel .tab-group-tabbar .tab-group-tab {
   height: auto;
 }
+/* The tab row keeps the 38px; a stacked bar grows by the actions row under it. */
+.theme-forged .managed-panel .tab-group-tabbar {
+  --tab-bar-h: 38px;
+}
+.theme-forged .managed-panel .managed-panel__header.tab-group-tabbar--stacked {
+  height: auto;
+  row-gap: 0;
+}
+.theme-forged .managed-panel .tab-group-tabbar--stacked .tab-group-custom-actions {
+  margin: 0 -12px;
+  padding: 4px 12px;
+}
 /* align-items:stretch would top-align the fixed-height ornament — re-center it. */
 .theme-forged .managed-panel .managed-panel__header.tab-group-tabbar::before {
   align-self: center;

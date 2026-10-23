@@ -925,12 +925,27 @@ body.layout-manager-enabled .compass-rose-box {
   padding: 0;
 }
 
+/* The bar gives way as it narrows (TabGroupPanel useTabBarLayout): --compact
+   folds pin/lock/reset/popout into ⋯, --stacked moves the active popup's own
+   actions to a row under the tabs, and the tabs shrink and scroll with a ▾
+   list of every tab. --tab-bar-h is the tab row's height (forged overrides). */
+.tab-group-tabbar {
+  --tab-bar-h: 28px;
+}
+.tab-group-tabbar.tab-group-tabbar--stacked {
+  flex-wrap: wrap;
+  height: auto;
+}
+
 /* Tabs scroll horizontally if there are too many, but actions stay pinned right. */
 .tab-group-tabs {
   display: flex;
   flex-direction: row;
-  flex: 1 1 auto;
+  /* Zero basis: a wrapping (stacked) bar would otherwise break the line at the
+     strip's full content width and push ▾ and the buttons down a row. */
+  flex: 1 1 0;
   min-width: 0;
+  height: var(--tab-bar-h);
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: none;
@@ -938,25 +953,95 @@ body.layout-manager-enabled .compass-rose-box {
 }
 .tab-group-tabs::-webkit-scrollbar { display: none; }
 
-.tab-group-active-actions {
+/* ▾ — every tab, once they no longer fit. */
+.tab-group-overflow {
   display: flex;
-  /* JSX order is [pin, lock, reset, headerActions] but the visual order is
-   * the original [headerActions, reset, lock, pin] left-to-right thanks to
-   * row-reverse. The benefit: with overflow:hidden, content overflows on the
-   * LEFT (main-end), so headerActions (the wide custom widget) clips first
-   * while pin/lock/reset on the right stay visible. */
-  flex-direction: row-reverse;
-  align-items: center;
-  gap: 0.2rem;
-  /* Heavy flex-shrink so actions yield space to tabs when the tabbar is
-   * narrow — tabs (flex-shrink:1) barely shrink, actions shrink ~100x faster. */
-  flex: 0 100 auto;
-  min-width: 0;
-  overflow: hidden;
-  padding: 0 0.4rem;
+  flex-shrink: 0;
+  height: var(--tab-bar-h);
 }
-.tab-group-active-actions > * {
-  flex-shrink: 0; /* individual buttons stay full-size — container clips them */
+.tab-group-overflow__toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  padding: 0;
+  border: none;
+  border-left: 1px solid var(--surface-border, #333);
+  border-right: 1px solid var(--surface-border, #333);
+  background: transparent;
+  color: var(--popup-text-medium, #888);
+  cursor: pointer;
+}
+.tab-group-overflow__toggle:hover,
+.tab-group-overflow__toggle.is-active {
+  background: var(--popup-control-hover-bg, var(--surface-ground, #1a1a1a));
+  color: var(--popup-text-bright, #ccc);
+}
+
+/* The active popup's own actions (HeaderButton, Segmented…). */
+.tab-group-custom-actions {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 4px;
+  padding-left: 8px;
+}
+.tab-group-tabbar--stacked .tab-group-custom-actions {
+  order: 1;
+  flex-basis: 100%;
+  flex-wrap: wrap;
+  box-sizing: border-box;
+  min-width: 0;
+  padding: 4px 8px;
+  border-top: 1px solid var(--popup-border-subtle, var(--surface-border, #333));
+}
+
+/* Cog + pin/lock/reset/popout, or cog + ⋯ in a compact bar. */
+.tab-group-window-buttons {
+  flex-shrink: 0;
+  height: var(--tab-bar-h);
+  padding: 0 4px 0 6px;
+}
+.tab-group-window-buttons__full {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+/* Qualified past .popup-menu-anchor's own display. */
+.tab-group-window-buttons .tab-group-window-buttons__more,
+.tab-group-tabbar--compact .tab-group-window-buttons__full {
+  display: none;
+}
+.tab-group-tabbar--compact .tab-group-window-buttons .tab-group-window-buttons__more {
+  display: flex;
+}
+.panel-button--more {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--popup-text-medium, #888);
+}
+.panel-button--more:hover,
+.panel-button--more.is-active {
+  opacity: 0.9;
+  background-color: var(--popup-control-hover-bg);
+}
+
+/* Read for a moment by useTabBarLayout: everything on one row at its natural
+   width, the full window buttons in place of ⋯. */
+.tab-group-tabbar.tab-group-tabbar--measuring {
+  flex-wrap: nowrap;
+}
+.tab-group-tabbar--measuring > *,
+.tab-group-tabbar--measuring .tab-group-tab {
+  flex-shrink: 0;
+}
+.tab-group-tabbar--measuring .tab-group-tabs {
+  flex: none;
+}
+.tab-group-tabbar--measuring .tab-group-overflow,
+.tab-group-tabbar--measuring .tab-group-window-buttons .tab-group-window-buttons__more {
+  display: none;
 }
 
 .dock-area-left   .tab-group-panel { border-right:  1px solid var(--surface-border, #333); }
@@ -974,7 +1059,11 @@ body.layout-manager-enabled .compass-rose-box {
   padding: 0 12px;
   cursor: grab;
   user-select: none;
-  flex-shrink: 0;
+  /* Inactive tabs give way to a narrow bar (title ellipsised); the active one
+     keeps its width. */
+  flex: 0 1 auto;
+  min-width: 56px;
+  box-sizing: border-box;
   border-right: 1px solid var(--surface-border, #333);
   background: transparent;
   transition: background 0.1s;
@@ -982,6 +1071,7 @@ body.layout-manager-enabled .compass-rose-box {
 .tab-group-tab:active { cursor: grabbing; }
 .tab-group-tab:hover  { background: var(--surface-ground, #1a1a1a); }
 .tab-group-tab--active {
+  flex-shrink: 0;
   background: var(--surface-ground, #1a1a1a);
   border-bottom: 2px solid var(--layout-accent, #589aff);
 }
