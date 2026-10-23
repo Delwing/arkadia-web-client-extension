@@ -371,16 +371,22 @@ const gems = ["obsydia(ny|now|n)", "labrado(ry|row|r)", "oliwi(ny|now|n)", "gaga
     "zoisy(ty|tow|t)", "grana(ty|tow|t)", "almandy(ny|now|n)", "ortokla(zy|zow|z)", "topa(zy|zow|z)", "tytani(ty|tow|t)",
     "diamen(ty|tow|t)", "szafi(ry|row|r)", "szmaragd(y|ow|u|em|zie)?( |$|,)", "chryzoberyl", "spinel", "chryzopraz", "rodochrozyt", "heliodor"]
 
+// "kolczyk w ksztalcie sztyletu" is an earring: the shape it describes must not pick the category
+function categoryFilter(patterns: string[]): (item: string) => boolean {
+    const filter = createRegexpFilter(patterns);
+    return (item: string) => filter(item.replace(/ w ksztalcie .*$/, ""));
+}
+
 const defs: GroupDefinition[] = [
-    {name: "bronie", filter: createRegexpFilter(weapons)},
-    {name: "korpus", filter: createRegexpFilter(torso)},
-    {name: "tarcze", filter: createRegexpFilter(shields)},
-    {name: "glowa", filter: createRegexpFilter(head)},
-    {name: "rece", filter: createRegexpFilter(hands)},
-    {name: "nogi", filter: createRegexpFilter(legs)},
-    {name: "ubrania", filter: createRegexpFilter(wear)},
-    {name: "bizuteria", filter: createRegexpFilter(jewelery)},
-    {name: "kamienie", filter: createRegexpFilter(gems)},
+    {name: "bronie", filter: categoryFilter(weapons)},
+    {name: "korpus", filter: categoryFilter(torso)},
+    {name: "tarcze", filter: categoryFilter(shields)},
+    {name: "glowa", filter: categoryFilter(head)},
+    {name: "rece", filter: categoryFilter(hands)},
+    {name: "nogi", filter: categoryFilter(legs)},
+    {name: "ubrania", filter: categoryFilter(wear)},
+    {name: "bizuteria", filter: categoryFilter(jewelery)},
+    {name: "kamienie", filter: categoryFilter(gems)},
     {name: "ryby", filter: (item: string) => matchFishHint(item) !== null},
 ]
 

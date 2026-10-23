@@ -461,6 +461,19 @@ describe('prettyContainers with real Client', () => {
       expect(tableText).not.toMatch(/kamienie/);
     });
 
+    test('categorizes an earring shaped like a dagger as bizuteria, not bronie', () => {
+      const input = 'Otwarty skorzany plecak zawiera srebrzysty kolczyk w ksztalcie sztyletu.';
+
+      client.onLine(input, '');
+      client.sendEvent('output-sent', 1);
+
+      const tableText = getEmittedTable();
+
+      expect(tableText).toMatch(/bizuteria/);
+      expect(tableText).toMatch(/kolczyk w ksztalcie sztyletu/);
+      expect(tableText).not.toMatch(/bronie/);
+    });
+
     test('does not categorize items with gem-colored adjectives as stones', () => {
       const input = 'Otwarty skorzany plecak zawiera szmaragdowy okragly flakonik, zielony szmaragd.';
 
