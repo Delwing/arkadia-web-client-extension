@@ -184,6 +184,22 @@ describe('snapshot', () => {
         expect(bronie[0]).not.toHaveProperty('alternatives');
     });
 
+    it('fills a sample description blanked by hand from the next one sent', async () => {
+        const laska = (opis: string) => ({
+            short: 'dluga ciemna laska', typ: 'bron drzewcowa', rodzaj: 'laska', klute: 1, obuch: 1, ciete: 0,
+            chwyt: 'oburecz', magik: 1, srebro: 0, opis,
+        });
+        const a = await register('10.5.0.1');
+        const b = await register('10.5.0.2');
+        await post('/crowd/submit', { items: [{ kind: 'bron', record: laska('Opis innego przedmiotu.') }] }, a);
+        // As the cleanup leaves one that came from another item
+        env.DB.raw.exec("UPDATE variants SET payload = json_set(payload, '$.opis', '')");
+        await post('/crowd/submit', { items: [{ kind: 'bron', record: laska('Dluga ciemna laska.') }] }, b);
+
+        const { bronie } = await snapshot();
+        expect(bronie[0]).toMatchObject({ opis: 'Dluga ciemna laska.', confirmations: 2 });
+    });
+
     it('drops what only a banned contributor vouched for', async () => {
         const auth = await register();
         await post('/crowd/submit', { items: [{ kind: 'odmiana', record: plecak() }] }, auth);

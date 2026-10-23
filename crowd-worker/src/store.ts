@@ -102,6 +102,20 @@ export async function storeItems(
         )
         .bind(batch, now)
         .run();
+    // A sample description blanked by hand (it came from another item) takes the
+    // next one sent. Writes only the rows that match, so it costs nothing otherwise.
+    await db
+        .prepare(
+            `UPDATE variants SET payload = (
+                 SELECT json_extract(j.value, '$.payload') FROM json_each(?1) j
+                 WHERE json_extract(j.value, '$.hash') = variants.hash)
+             WHERE hash IN (
+                 SELECT json_extract(j.value, '$.hash') FROM json_each(?1) j
+                 WHERE json_extract(json_extract(j.value, '$.payload'), '$.opis') <> '')
+               AND json_extract(payload, '$.opis') = ''`,
+        )
+        .bind(batch)
+        .run();
     await db
         .prepare(
             `INSERT OR IGNORE INTO confirmations (hash, contributor, created_at)
