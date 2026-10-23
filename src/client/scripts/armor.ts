@@ -7,7 +7,11 @@ import {
     iLineMatcher,
     updateZlomSnapshot,
     type ArmorEntry,
+    type ILineEntry,
+    type ILineKind,
     type ShieldEntry,
+    type WearableEntry,
+    type WearableKind,
     type ZlomSnapshot,
 } from "@modules/data/zlomStore";
 import { setZlomILine } from "./zlom";
@@ -50,25 +54,50 @@ const SLOT_WORDS: Record<string, string[]> = {
 /** The slots the window shows for now */
 export const ARMOR_SLOTS = ["glowa", "korpus", "lewe ramie", "prawe ramie", "dlonie", "nogi", "stopy", "tarcza"] as const;
 
+/** Worn, but on no slot: clothes, add-ons, and what is plainly no armour */
+export interface WornExtra {
+    /** The złom name; as the `i` reply lists it when the złom list does not know it */
+    name: string;
+    /** As the `i` reply lists it, in whatever case: "mosieznej obrozy z runa Khorna" */
+    worn?: string;
+    /** What the złom list knows it as; null when it does not know it yet */
+    kind: WearableKind | null;
+    material?: string;
+}
+
 export interface WornArmor {
     /** Slot -> what is on it, as the game names it ("stalowa dluga kolczuge") */
     slots: Record<string, string>;
+    /** Clothes and add-ons, shown apart from the slots */
+    extras: WornExtra[];
     /** Worn in the last `i` reply, but on no slot: nothing yet says what it covers */
     unplaced: string[];
     /** Lines of the last `i` reply nothing knows: a way of wording it still to be learned */
     unknownLines: string[];
+    /**
+     * Pieces and lines the player said need no filling in: a guild or club
+     * item, or anything else to leave alone. Kept across replies.
+     */
+    ignored: string[];
     updatedAt: number | null;
 }
 
 const WEAR = /^Zakladasz (.+) na (.+)\.$/;
 const TAKE_OFF = /^Zdejmujesz z siebie (.+)\.$/;
 
-const NOTHING: WornArmor = { slots: {}, unplaced: [], unknownLines: [], updatedAt: null };
+const NOTHING: WornArmor = { slots: {}, extras: [], unplaced: [], unknownLines: [], ignored: [], updatedAt: null };
 
 let armor: WornArmor = NOTHING;
 
 export function getWornArmor(): WornArmor {
-    return { ...armor, slots: { ...armor.slots }, unplaced: [...armor.unplaced], unknownLines: [...armor.unknownLines] };
+    return {
+        ...armor,
+        slots: { ...armor.slots },
+        extras: [...armor.extras],
+        unplaced: [...armor.unplaced],
+        unknownLines: [...armor.unknownLines],
+        ignored: [...armor.ignored],
+    };
 }
 
 /**
@@ -180,7 +209,7 @@ const NOT_ARMOUR = [
 ];
 
 /** "zwiewny upiorny calun", "masywny amulet z czarnym opalem (rozkazy)" */
-function isNotArmour(name: string): boolean {
+export function isNotArmour(name: string): boolean {
     const noun = splitName(name).noun.toLowerCase();
     return NOT_ARMOUR.some(word => sameWord(noun, word));
 }
@@ -200,24 +229,53 @@ export function unplacedPieces(worn: string[], slots: Record<string, string>): s
  * knows by the line given to them ("Od stop do glow zakuty jestes w stalowe
  * plyty ..."). Each takes what it covers, under its name as the game lists it.
  */
-export function slotsFromLines(
-    lines: string[],
-    known: { entry: { short: string; shortAlt?: string; oslona: string }; shield: boolean; matches: (line: string) => boolean }[],
-): Record<string, string> {
+export function slotsFromLines(lines: string[], known: ILineEntry[]): Record<string, string> {
     const slots: Record<string, string> = {};
-    known.forEach(({ entry, shield, matches }) => {
+    known.forEach(({ kind, entry, matches }) => {
         if (!lines.some(matches)) return;
-        const covered = shield ? ["tarcza"] : parseSlots(entry.oslona);
-        covered.forEach(slot => { slots[slot] = entry.shortAlt || entry.short; });
+        coveredBy(kind, entry).forEach(slot => { slots[slot] = entry.shortAlt || entry.short; });
     });
     return slots;
 }
 
-export type ILineKind = "zbroje" | "tarcze";
+const isWearable = (kind: ILineKind): kind is WearableKind => kind === "ubrania" || kind === "dodatki";
+
+/**
+ * The clothes and add-ons an `i` reply shows: listed by a name the złom list
+ * knows (or knows as its `i` line), or worded in a line of their own
+ * ("Wokol szyi masz zacisnieta mosieznej obrozy ..."). A worn piece the list
+ * does not know, but that is plainly no armour (a cloak, a ring), is shown too,
+ * without a kind.
+ */
+export function wornExtras(
+    worn: string[],
+    lines: string[],
+    snapshot: Pick<ZlomSnapshot, WearableKind>,
+    byLine: ILineEntry[],
+): WornExtra[] {
+    const extras: WornExtra[] = [];
+    const known = (["ubrania", "dodatki"] as const).flatMap(kind => snapshot[kind].map(entry => ({ kind, entry })));
+    worn.forEach(name => {
+        const match = known.find(({ entry }) =>
+            sameItem(entry.short, name) || (entry.shortAlt && sameItem(entry.shortAlt, name)) || iLineMatcher(entry.iLine)?.(name));
+        if (match) {
+            if (extras.some(extra => extra.name === match.entry.short)) return;
+            extras.push({ ...extraOf(match.kind, match.entry), worn: name });
+        } else if (isNotArmour(name)) {
+            extras.push({ name, worn: name, kind: null });
+        }
+    });
+    byLine.forEach(({ kind, entry, matches }) => {
+        if (!isWearable(kind) || !lines.some(matches)) return;
+        if (extras.some(extra => extra.name === entry.short)) return;
+        extras.push(extraOf(kind, entry as WearableEntry));
+    });
+    return extras;
+}
 
 export interface ILineCandidate {
     kind: ILineKind;
-    entry: ArmorEntry | ShieldEntry;
+    entry: ArmorEntry | ShieldEntry | WearableEntry;
     /** Words of the line the entry's name or description shares, in any case */
     score: number;
 }
@@ -234,13 +292,15 @@ function words(text: string): string[] {
  */
 export function rankILineCandidates(line: string, snapshot: ZlomSnapshot): ILineCandidate[] {
     const lineWords = words(line);
-    const score = (entry: ArmorEntry | ShieldEntry) => {
+    const score = (entry: ArmorEntry | ShieldEntry | WearableEntry) => {
         const own = words(`${entry.short} ${entry.shortAlt ?? ""} ${entry.opis}`);
         return lineWords.filter(word => own.some(other => sameWord(word, other))).length;
     };
     const all: ILineCandidate[] = [
         ...snapshot.zbroje.map(entry => ({ kind: "zbroje" as const, entry, score: score(entry) })),
         ...snapshot.tarcze.map(entry => ({ kind: "tarcze" as const, entry, score: score(entry) })),
+        ...snapshot.ubrania.map(entry => ({ kind: "ubrania" as const, entry, score: score(entry) })),
+        ...snapshot.dodatki.map(entry => ({ kind: "dodatki" as const, entry, score: score(entry) })),
     ];
     return all.sort((a, b) => b.score - a.score || a.entry.short.localeCompare(b.entry.short));
 }
@@ -262,10 +322,10 @@ export function previewILine(
     lines: string[],
     snapshot: ZlomSnapshot,
     kind: ILineKind,
-    entry: ArmorEntry | ShieldEntry,
+    entry: ArmorEntry | ShieldEntry | WearableEntry,
 ): ILinePreview {
     const matches = iLineMatcher(fragment);
-    const slots = kind === "tarcze" ? ["tarcza"] : parseSlots(entry.oslona);
+    const slots = coveredBy(kind, entry);
     if (!matches) return { valid: false, matched: [], clashes: [], slots };
     const matched = lines.filter(matches);
     const clashes = iLineEntries(snapshot)
@@ -274,17 +334,24 @@ export function previewILine(
     return { valid: true, matched, clashes, slots };
 }
 
-function findPiece(kind: ILineKind, opis: string): ArmorEntry | ShieldEntry | undefined {
-    return (getZlomSnapshot()[kind] as (ArmorEntry | ShieldEntry)[]).find(e => e.opis === opis);
+function findPiece(kind: ILineKind, opis: string): ArmorEntry | ShieldEntry | WearableEntry | undefined {
+    return (getZlomSnapshot()[kind] as (ArmorEntry | ShieldEntry | WearableEntry)[]).find(e => e.opis === opis);
 }
 
 /**
  * The slots a złom piece takes. Only ever from what the game said about it
  * (`ocen`, or putting it on): a shield is held on an arm, armour covers what
- * its "Oslona" says. Empty when that is not known yet.
+ * its "Oslona" says. Empty when that is not known yet, and always for clothes
+ * and add-ons, which take none.
  */
-export function coveredBy(kind: ILineKind, entry: ArmorEntry | ShieldEntry): string[] {
-    return kind === "tarcze" ? ["tarcza"] : parseSlots(entry.oslona);
+export function coveredBy(kind: ILineKind, entry: ArmorEntry | ShieldEntry | WearableEntry): string[] {
+    if (isWearable(kind)) return [];
+    return kind === "tarcze" ? ["tarcza"] : parseSlots((entry as ArmorEntry).oslona);
+}
+
+/** Shown apart from the slots, under the name the złom list gives it */
+function extraOf(kind: WearableKind, entry: WearableEntry, worn?: string): WornExtra {
+    return { name: entry.short, ...(worn ? { worn } : {}), kind, material: entry.material || undefined };
 }
 
 /**
@@ -298,6 +365,16 @@ export async function assignILine(kind: ILineKind, opis: string, fragment: strin
     const entry = findPiece(kind, opis);
     const matches = iLineMatcher(fragment);
     if (!entry || !matches || !armor.unknownLines.some(matches)) return;
+    if (isWearable(kind)) {
+        const extra = extraOf(kind, entry as WearableEntry);
+        store({
+            ...armor,
+            extras: [...armor.extras.filter(e => e.name !== extra.name), extra],
+            unknownLines: armor.unknownLines.filter(line => !matches(line)),
+            updatedAt: Date.now(),
+        });
+        return;
+    }
     const slots = { ...armor.slots };
     coveredBy(kind, entry).forEach(slot => { slots[slot] = entry.shortAlt || entry.short; });
     store({
@@ -321,6 +398,15 @@ export async function assignPiece(name: string, kind: ILineKind, opis: string): 
     if (!sameItem(entry.short, name) && !(entry.shortAlt && sameItem(entry.shortAlt, name))) {
         await setZlomILine(kind, opis, name);
     }
+    if (isWearable(kind)) {
+        store({
+            ...armor,
+            extras: [...armor.extras.filter(e => e.name !== entry.short && e.worn !== name), extraOf(kind, entry as WearableEntry, name)],
+            unplaced: armor.unplaced.filter(piece => piece !== name),
+            updatedAt: Date.now(),
+        });
+        return;
+    }
     const covered = coveredBy(kind, entry);
     if (!covered.length) return;
     const slots = { ...armor.slots };
@@ -331,6 +417,33 @@ export async function assignPiece(name: string, kind: ILineKind, opis: string): 
         unplaced: armor.unplaced.filter(piece => piece !== name),
         updatedAt: Date.now(),
     });
+}
+
+/** An ignored piece, in any case `i` or putting it on names it; an ignored line as it is */
+function isIgnored(ignored: string[], text: string): boolean {
+    return ignored.some(item => item === text || sameItem(item, text));
+}
+
+/**
+ * Leave a piece or line of "Do uzupelnienia" alone for good: a guild or club
+ * item, or anything else nothing needs to know about. It stays out of the list
+ * in every later reply too.
+ */
+export function ignoreTodo(text: string): void {
+    if (armor.ignored.includes(text)) return;
+    store({
+        ...armor,
+        ignored: [...armor.ignored, text],
+        unplaced: armor.unplaced.filter(piece => !sameItem(piece, text)),
+        unknownLines: armor.unknownLines.filter(line => line !== text),
+        updatedAt: Date.now(),
+    });
+}
+
+/** Back on the list from the next `i` */
+export function unignoreTodo(text: string): void {
+    if (!armor.ignored.includes(text)) return;
+    store({ ...armor, ignored: armor.ignored.filter(item => item !== text), updatedAt: Date.now() });
 }
 
 /**
@@ -412,14 +525,18 @@ export default function initArmor(client: Client, aliases?: { pattern: RegExp; c
             ...slotsFromWorn(worn, [...zbroje, ...tarcze.map(entry => ({ ...entry, shield: true }))]),
             ...slotsFromLines(lines, byLine),
         };
+        const extras = wornExtras(worn, lines, view, byLine);
         // A piece listed by a name its złom entry knows as its i line is placed, under the entry's
         // name - when that entry has slots to take
-        const placedByLine = byLine.filter(({ entry, shield, matches }) =>
-            (shield || parseSlots(entry.oslona).length > 0) && lines.some(matches));
-        const unplaced = unplacedPieces(worn, slots).filter(name => !placedByLine.some(({ matches }) => matches(name)));
-        const next = { slots, unplaced, unknownLines: unknown };
-        if (JSON.stringify(next) === JSON.stringify({ slots: armor.slots, unplaced: armor.unplaced, unknownLines: armor.unknownLines })) return;
-        store({ ...next, updatedAt: Date.now() });
+        const placedByLine = byLine.filter(({ kind, entry, matches }) =>
+            coveredBy(kind, entry).length > 0 && lines.some(matches));
+        const unplaced = unplacedPieces(worn, slots)
+            .filter(name => !placedByLine.some(({ matches }) => matches(name)) && !extras.some(extra => extra.worn === name))
+            .filter(name => !isIgnored(armor.ignored, name));
+        const unknownLines = unknown.filter(line => !armor.ignored.includes(line));
+        const next = { slots, extras, unplaced, unknownLines };
+        if (JSON.stringify(next) === JSON.stringify({ slots: armor.slots, extras: armor.extras, unplaced: armor.unplaced, unknownLines: armor.unknownLines })) return;
+        store({ ...next, ignored: armor.ignored, updatedAt: Date.now() });
     });
 
     if (aliases) {

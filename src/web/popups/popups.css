@@ -9391,6 +9391,38 @@ body.inventory-dragging * {
   font-style: italic;
 }
 
+/* Clothes and add-ons: worn, but on no slot */
+.armor-popup__extras {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.3rem;
+  margin-top: 0.5rem;
+}
+
+.armor-popup__extra {
+  font-weight: normal;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Unknown to the złom list: faint until evaluated */
+.armor-popup__extra:not(.armor-popup__extra--ubrania):not(.armor-popup__extra--dodatki) {
+  border-style: dashed;
+  color: var(--popup-text-faint);
+}
+
+.armor-popup__extra--ubrania {
+  color: var(--popup-text);
+}
+
+.armor-popup__extra--dodatki {
+  background-color: var(--popup-accent-subtle-bg);
+  color: var(--popup-accent);
+}
+
 /* What the last i reply had that nothing could place: the list of what is still to learn */
 .armor-popup__todo {
   margin-top: 0.75rem;
@@ -9422,6 +9454,9 @@ body.inventory-dragging * {
 }
 
 .armor-popup__todo-list--lines li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.3rem;
   margin-top: 0.15rem;
   padding: 0.1rem 0.4rem;
   font-family: var(--output-font-family), monospace;
@@ -9484,6 +9519,60 @@ body.inventory-dragging * {
 .armor-popup__todo-line--picking .armor-popup__todo-piece {
   border-color: var(--popup-accent);
   background: var(--popup-accent-hover-bg);
+}
+
+.armor-popup__todo-list--unplaced li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+.armor-popup__todo-line-text,
+.armor-popup__ignored-text {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Ignore (a guild or club item), or bring an ignored one back */
+.armor-popup__todo-ignore {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  padding: 0.2rem;
+  border: none;
+  border-radius: 3px;
+  background: none;
+  color: var(--popup-text-faint);
+  cursor: pointer;
+}
+
+.armor-popup__todo-ignore:hover {
+  color: var(--popup-text);
+  background: var(--popup-hover-bg);
+}
+
+.armor-popup__ignored {
+  margin-top: 0.5rem;
+  padding: 0 0.6rem;
+  color: var(--popup-text-faint);
+  font-size: 0.85em;
+}
+
+.armor-popup__ignored summary {
+  cursor: pointer;
+}
+
+.armor-popup__ignored-list {
+  margin: 0.25rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.armor-popup__ignored-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.3rem;
+  margin-top: 0.1rem;
 }
 
 /* Giving an unrecognised i line to a piece of the złom list */

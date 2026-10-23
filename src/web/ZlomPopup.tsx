@@ -12,6 +12,8 @@ import {
     WeaponEntry,
     ShieldEntry,
     ArmorEntry,
+    WearableEntry,
+    ZlomImportPayload,
     ZlomMergeMode,
     ZlomKind,
 } from '../client/scripts/zlom';
@@ -23,25 +25,35 @@ import {
 } from '@modules/data/zlomStore';
 import { defaultSettings } from '@modules/core/defaultSettings';
 import { openSettingsPage } from '@web/settings/categories.ts';
-import type { ZlomDbResult } from '@modules/data/zlomDbImport.shared';
 import { ColorInput, HeaderButton } from '@web-ui/primitives';
 import { getCrowdSnapshot, subscribeCrowdSnapshot, type CrowdSnapshot } from '@modules/crowd/crowdSnapshot';
-import { buildZlomView, type CrowdMarks, type ViewArmour, type ViewShield, type ViewWeapon, type ZlomView } from '@modules/crowd/crowdView';
+import { buildZlomView, type CrowdMarks, type ViewArmour, type ViewShield, type ViewWeapon, type ViewWearable, type ZlomView } from '@modules/crowd/crowdView';
 
 const POPUP_ID = 'popup:zlom';
 const PAGE_SIZE = 100;
 
-type TabType = 'bronie' | 'tarcze' | 'zbroje';
+type TabType = ZlomKind;
+
+const TABS: { tab: TabType; label: string }[] = [
+    { tab: 'bronie', label: 'Bronie' },
+    { tab: 'tarcze', label: 'Tarcze' },
+    { tab: 'zbroje', label: 'Zbroje' },
+    { tab: 'ubrania', label: 'Ubrania' },
+    { tab: 'dodatki', label: 'Dodatki' },
+];
+
+type AnyEntry = WeaponEntry | ShieldEntry | ArmorEntry | WearableEntry;
+type AnyViewEntry = ViewWeapon | ViewShield | ViewArmour | ViewWearable;
 
 /** What a row's popover edits: the note, or how the `i` reply words the piece */
 type NoteField = 'note' | 'iLine';
 
-function noteValue(entry: WeaponEntry | ShieldEntry | ArmorEntry, field: NoteField): string | undefined {
+function noteValue(entry: AnyEntry, field: NoteField): string | undefined {
     return field === 'iLine' ? (entry as ArmorEntry).iLine : entry.note;
 }
 
 function emptySnapshot(): ZlomSnapshot {
-    return { bronie: [], tarcze: [], zbroje: [] };
+    return { bronie: [], tarcze: [], zbroje: [], ubrania: [], dodatki: [] };
 }
 
 function protectionText(k: number, o: number, c: number): string {
@@ -69,7 +81,7 @@ const ZlomPopup: React.FC = () => {
     const [importState, setImportState] = useState<
         | { phase: 'idle' }
         | { phase: 'loading' }
-        | { phase: 'preview'; parsed: ZlomDbResult; mergeMode: ZlomMergeMode }
+        | { phase: 'preview'; parsed: ZlomImportPayload; mergeMode: ZlomMergeMode }
         | { phase: 'done'; message: string }
         | { phase: 'error'; message: string }
     >({ phase: 'idle' });
@@ -96,7 +108,7 @@ const ZlomPopup: React.FC = () => {
         if (importState.phase !== 'preview') return;
         try {
             const counts = await mergeZlomData(importState.parsed, importState.mergeMode);
-            const msg = `Zaimportowano: ${counts.bronie} broni, ${counts.tarcze} tarcz, ${counts.zbroje} zbroi.`;
+            const msg = `Zaimportowano: ${counts.bronie} broni, ${counts.tarcze} tarcz, ${counts.zbroje} zbroi, ${counts.ubrania} ubrań, ${counts.dodatki} dodatków.`;
             setImportState({ phase: 'done', message: msg });
         } catch (err) {
             setImportState({ phase: 'error', message: err instanceof Error ? err.message : 'Błąd importu.' });
@@ -112,6 +124,8 @@ const ZlomPopup: React.FC = () => {
             bronie: snap.bronie,
             tarcze: snap.tarcze,
             zbroje: snap.zbroje,
+            ubrania: snap.ubrania,
+            dodatki: snap.dodatki,
         };
         const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
@@ -135,12 +149,14 @@ const ZlomPopup: React.FC = () => {
         try {
             const text = await file.text();
             const parsed = JSON.parse(text);
-            const payload: ZlomDbResult = {
+            const payload: Required<ZlomImportPayload> = {
                 bronie: Array.isArray(parsed?.bronie) ? parsed.bronie : [],
                 tarcze: Array.isArray(parsed?.tarcze) ? parsed.tarcze : [],
                 zbroje: Array.isArray(parsed?.zbroje) ? parsed.zbroje : [],
+                ubrania: Array.isArray(parsed?.ubrania) ? parsed.ubrania : [],
+                dodatki: Array.isArray(parsed?.dodatki) ? parsed.dodatki : [],
             };
-            if (payload.bronie.length + payload.tarcze.length + payload.zbroje.length === 0) {
+            if (Object.values(payload).every(list => list.length === 0)) {
                 setImportState({ phase: 'error', message: 'Plik nie zawiera danych złomu.' });
                 return;
             }
@@ -199,21 +215,21 @@ const ZlomPopup: React.FC = () => {
         return () => document.removeEventListener('mousedown', onDown);
     }, [noteEditor]);
 
-    const openNoteEditor = useCallback((kind: ZlomKind, entry: WeaponEntry | ShieldEntry | ArmorEntry, field: NoteField) => {
+    const openNoteEditor = useCallback((kind: ZlomKind, entry: AnyEntry, field: NoteField) => {
         setNoteEditor({ kind, opis: entry.opis, field, value: noteValue(entry, field) ?? '' });
     }, []);
 
     const saveNoteEditor = useCallback(() => {
         if (!noteEditor) return;
         if (noteEditor.field === 'iLine') {
-            void setZlomILine(noteEditor.kind as 'tarcze' | 'zbroje', noteEditor.opis, noteEditor.value || undefined);
+            void setZlomILine(noteEditor.kind as Exclude<ZlomKind, 'bronie'>, noteEditor.opis, noteEditor.value || undefined);
         } else {
             void setZlomNote(noteEditor.kind, noteEditor.opis, noteEditor.value || undefined);
         }
         setNoteEditor(null);
     }, [noteEditor]);
 
-    const renderNoteCell = (kind: ZlomKind, entry: WeaponEntry | ShieldEntry | ArmorEntry, field: NoteField = 'note') => {
+    const renderNoteCell = (kind: ZlomKind, entry: AnyEntry, field: NoteField = 'note') => {
         const value = noteValue(entry, field);
         const hasNote = !!value;
         const isOpen = noteEditor?.kind === kind && noteEditor.opis === entry.opis && noteEditor.field === field;
@@ -267,7 +283,7 @@ const ZlomPopup: React.FC = () => {
         );
     };
 
-    const renderColorCell = (kind: ZlomKind, entry: WeaponEntry | ShieldEntry | ArmorEntry) => (
+    const renderColorCell = (kind: ZlomKind, entry: AnyEntry) => (
         <td className="zlom-cell zlom-cell--color">
             <ColorInput
                 className="zlom-color-input"
@@ -295,10 +311,7 @@ const ZlomPopup: React.FC = () => {
     );
 
     const entries = useMemo(() => {
-        const raw: (ViewWeapon | ViewShield | ViewArmour)[] =
-            activeTab === 'bronie' ? view.bronie
-                : activeTab === 'tarcze' ? view.tarcze
-                    : view.zbroje;
+        const raw: AnyViewEntry[] = view[activeTab] ?? [];
         const needle = filter.trim().toLowerCase();
         const filtered = needle ? raw.filter(e => e.short.toLowerCase().includes(needle)) : raw;
         return [...filtered].sort((a, b) => a.short.localeCompare(b.short));
@@ -311,11 +324,7 @@ const ZlomPopup: React.FC = () => {
         [entries, currentPage],
     );
 
-    const total = {
-        bronie: view.bronie.length,
-        tarcze: view.tarcze.length,
-        zbroje: view.zbroje.length,
-    };
+
 
     /** A crowd row knows no weight, price or ratings: blank, not a misleading 0 */
     const own = (e: CrowdMarks, value: React.ReactNode) => (e.fromCrowd ? '' : value);
@@ -342,7 +351,7 @@ const ZlomPopup: React.FC = () => {
     };
 
     /** Colour and note belong to the player's own entries; a crowd row has neither */
-    const ownCells = (kind: ZlomKind, e: ViewWeapon | ViewShield | ViewArmour, withILine: boolean) => e.fromCrowd ? (
+    const ownCells = (kind: ZlomKind, e: AnyViewEntry, withILine: boolean) => e.fromCrowd ? (
         <>
             {withILine && <td className="zlom-cell zlom-cell--note" title={(e as ViewArmour).iLine}>{(e as ViewArmour).iLine ? '●' : ''}</td>}
             <td className="zlom-cell" />
@@ -358,7 +367,7 @@ const ZlomPopup: React.FC = () => {
 
     const effectiveSilverColor = silver.off ? undefined : silver.color;
 
-    const renderAltWarning = (e: WeaponEntry | ShieldEntry | ArmorEntry) => {
+    const renderAltWarning = (e: AnyEntry) => {
         const hasAlt = !!e.shortAlt && e.shortAlt.trim() !== '';
         if (hasAlt) return null;
         return (
@@ -435,7 +444,25 @@ const ZlomPopup: React.FC = () => {
         </tr>
     );
 
-    const tableHead = activeTab === 'bronie' ? (
+    const renderWearable = (kind: 'ubrania' | 'dodatki', e: ViewWearable, i: number) => (
+        <tr key={`${e.fromCrowd ? 'w:' : ''}${e.opis || `${e.short}-${i}`}`} className={rowClass(e, i)}>
+            <td className="zlom-cell zlom-cell--short" style={e.color ? { color: e.color } : undefined}>
+                {e.short}
+                {!e.fromCrowd && renderAltWarning(e)}
+                {renderCrowdTag(e)}
+            </td>
+            <td className="zlom-cell">{e.material}</td>
+            <td className="zlom-cell zlom-cell--num">{own(e, e.cena)}</td>
+            <td className="zlom-cell zlom-cell--num">{own(e, e.waga)}</td>
+            {ownCells(kind, e, true)}
+        </tr>
+    );
+
+    const tableHead = activeTab === 'ubrania' || activeTab === 'dodatki' ? (
+        <tr>
+            <th>Short</th><th>Materiał</th><th>Cena</th><th>Waga</th><th title="Jak opisuje go i, gdy nie z nazwy">W i</th><th>Kolor</th><th>Notatka</th>
+        </tr>
+    ) : activeTab === 'bronie' ? (
         <tr>
             <th>Short</th><th>Typ</th><th>K/O/C</th><th>Wyw.</th><th>Par.</th><th>Cena</th><th>Waga</th><th>Kolor</th><th>Notatka</th>
         </tr>
@@ -559,6 +586,8 @@ const ZlomPopup: React.FC = () => {
                     </div>
                     <div className="postepy2-import-panel__info">
                         {importState.parsed.bronie.length} broni, {importState.parsed.tarcze.length} tarcz, {importState.parsed.zbroje.length} zbroi
+                        {importState.parsed.ubrania?.length ? `, ${importState.parsed.ubrania.length} ubrań` : ''}
+                        {importState.parsed.dodatki?.length ? `, ${importState.parsed.dodatki.length} dodatków` : ''}
                     </div>
                     <div className="postepy2-import-panel__actions">
                         <button type="button" className="postepy2-import-panel__btn postepy2-import-panel__btn--confirm" onClick={handleImportConfirm}>
@@ -579,27 +608,16 @@ const ZlomPopup: React.FC = () => {
             )}
 
             <div className="postepy2-tabs">
-                <button
-                    type="button"
-                    className={`popup-tab ${activeTab === 'bronie' ? 'popup-tab--active' : ''}`}
-                    onClick={() => setActiveTab('bronie')}
-                >
-                    Bronie ({total.bronie})
-                </button>
-                <button
-                    type="button"
-                    className={`popup-tab ${activeTab === 'tarcze' ? 'popup-tab--active' : ''}`}
-                    onClick={() => setActiveTab('tarcze')}
-                >
-                    Tarcze ({total.tarcze})
-                </button>
-                <button
-                    type="button"
-                    className={`popup-tab ${activeTab === 'zbroje' ? 'popup-tab--active' : ''}`}
-                    onClick={() => setActiveTab('zbroje')}
-                >
-                    Zbroje ({total.zbroje})
-                </button>
+                {TABS.map(({ tab, label }) => (
+                    <button
+                        key={tab}
+                        type="button"
+                        className={`popup-tab ${activeTab === tab ? 'popup-tab--active' : ''}`}
+                        onClick={() => setActiveTab(tab)}
+                    >
+                        {label} ({view[tab].length})
+                    </button>
+                ))}
             </div>
 
             <div className="zlom-content postepy2-content">
@@ -612,6 +630,8 @@ const ZlomPopup: React.FC = () => {
                             {activeTab === 'bronie' && pagedEntries.map((e, i) => renderWeapon(e as WeaponEntry, i))}
                             {activeTab === 'tarcze' && pagedEntries.map((e, i) => renderShield(e as ShieldEntry, i))}
                             {activeTab === 'zbroje' && pagedEntries.map((e, i) => renderArmor(e as ArmorEntry, i))}
+                            {(activeTab === 'ubrania' || activeTab === 'dodatki')
+                                && pagedEntries.map((e, i) => renderWearable(activeTab, e as ViewWearable, i))}
                         </tbody>
                     </table>
                 )}

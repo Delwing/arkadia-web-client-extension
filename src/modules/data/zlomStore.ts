@@ -67,13 +67,39 @@ export interface ShieldEntry {
     iLine?: string;
 }
 
-export type ZlomEntry = WeaponEntry | ShieldEntry | ArmorEntry;
-export type ZlomKind = 'bronie' | 'tarcze' | 'zbroje';
+/**
+ * Worn, but not armour: clothes ("Ubranie to zostalo wykonane z welny ...")
+ * and add-ons such as jewellery or a collar ("Zostala wykonana z mosiadzu.").
+ * Evaluating one says nothing of what it protects, only what it is made of.
+ */
+export interface WearableEntry {
+    short: string;
+    shortAlt?: string;
+    /** What it is made of, as evaluating says it: "welny", "mosiadzu" */
+    material: string;
+    opis: string;
+    waga: number;
+    obj: number;
+    cena: number;
+    roomId: number | null;
+    color?: string;
+    note?: string;
+    /** How the `i` reply words it when not by name: text of its line, or a /regexp/ */
+    iLine?: string;
+}
+
+export type ZlomEntry = WeaponEntry | ShieldEntry | ArmorEntry | WearableEntry;
+export type ZlomKind = 'bronie' | 'tarcze' | 'zbroje' | 'ubrania' | 'dodatki';
+/** The groups whose entries can have an `i` line: everything worn */
+export type ILineKind = 'zbroje' | 'tarcze' | 'ubrania' | 'dodatki';
+export type WearableKind = 'ubrania' | 'dodatki';
 
 export interface ZlomSnapshot {
     bronie: WeaponEntry[];
     tarcze: ShieldEntry[];
     zbroje: ArmorEntry[];
+    ubrania: WearableEntry[];
+    dodatki: WearableEntry[];
 }
 
 const CONFIG: IndexedDBConfig = {
@@ -83,7 +109,7 @@ const CONFIG: IndexedDBConfig = {
 };
 
 function emptySnapshot(): ZlomSnapshot {
-    return { bronie: [], tarcze: [], zbroje: [] };
+    return { bronie: [], tarcze: [], zbroje: [], ubrania: [], dodatki: [] };
 }
 
 let cache: ZlomSnapshot = emptySnapshot();
@@ -113,6 +139,9 @@ function normalize(raw: unknown): ZlomSnapshot {
         bronie: Array.isArray(s.bronie) ? s.bronie : [],
         tarcze: Array.isArray(s.tarcze) ? s.tarcze : [],
         zbroje: Array.isArray(s.zbroje) ? normalizeArmor(s.zbroje) : [],
+        // Absent from lists kept before clothes and add-ons were
+        ubrania: Array.isArray(s.ubrania) ? s.ubrania : [],
+        dodatki: Array.isArray(s.dodatki) ? s.dodatki : [],
     };
 }
 
@@ -268,14 +297,22 @@ export function iLineMatcher(iLine: string | undefined): ((line: string) => bool
     return line => fold(line).toLowerCase().replace(/\s+/g, ' ').includes(needle);
 }
 
-/** The armour and shields that have an `i` line, each with its matcher */
-export function iLineEntries(snapshot: ZlomSnapshot): { entry: ArmorEntry | ShieldEntry; shield: boolean; matches: (line: string) => boolean }[] {
-    const result: { entry: ArmorEntry | ShieldEntry; shield: boolean; matches: (line: string) => boolean }[] = [];
-    const add = (list: (ArmorEntry | ShieldEntry)[], shield: boolean) => list.forEach(entry => {
+export interface ILineEntry {
+    kind: ILineKind;
+    entry: ArmorEntry | ShieldEntry | WearableEntry;
+    matches: (line: string) => boolean;
+}
+
+/** Everything worn that has an `i` line, each with its matcher */
+export function iLineEntries(snapshot: ZlomSnapshot): ILineEntry[] {
+    const result: ILineEntry[] = [];
+    const add = (kind: ILineKind) => (snapshot[kind] as (ArmorEntry | ShieldEntry | WearableEntry)[]).forEach(entry => {
         const matches = iLineMatcher(entry.iLine);
-        if (matches) result.push({ entry, shield, matches });
+        if (matches) result.push({ kind, entry, matches });
     });
-    add(snapshot.zbroje, false);
-    add(snapshot.tarcze, true);
+    add('zbroje');
+    add('tarcze');
+    add('ubrania');
+    add('dodatki');
     return result;
 }

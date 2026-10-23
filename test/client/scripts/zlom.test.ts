@@ -366,6 +366,55 @@ describe('zlom script', () => {
     expect(entry!.obuch).toBe(9);
   });
 
+  test('keeps clothes apart, with what they are made of', async () => {
+    parse('Oceniasz starannie krwistoczerwony poszarpany plaszcz.');
+    parse('Material plaszcza ma instensywna, krwistoczerwona barwe.', 'object.long');
+    parse('Oceniasz, ze krwistoczerwony poszarpany plaszcz wazy 3900 gramow, zas jego objetosc wynosi 4600 mililitrow.');
+    parse('Wydaje ci sie, ze jest wart okolo 520 miedziakow.');
+    // The condition script adds its "[4/5]" to the line
+    parse('Ubranie to zostalo wykonane z welny i wyglada na w miare nowe. [4/5]');
+    parse('Wyglada na to, ze bedzie na ciebie idealnie pasowac.');
+    await flush();
+
+    expect(getZlomSnapshot().ubrania).toEqual([expect.objectContaining({
+      short: 'krwistoczerwony poszarpany plaszcz',
+      material: 'welny',
+      opis: 'Material plaszcza ma instensywna, krwistoczerwona barwe.',
+      waga: 3900,
+      cena: 520,
+    })]);
+    expect(getZlomSnapshot().dodatki).toEqual([]);
+  });
+
+  test('keeps add-ons apart: a collar says only what it is made of', async () => {
+    parse('Oceniasz starannie mosiezna obroze z runa Khorna.');
+    parse('Obroza wykonana jest z mosieznych blaszek polaczonych metalowym drucikiem.', 'object.long');
+    parse('Oceniasz, ze mosiezna obroza z runa Khorna wazy 250 gramow, zas jej objetosc wynosi 350 mililitrow.');
+    parse('Wydaje ci sie, ze jest warta okolo 630 miedziakow.');
+    parse('Zostala wykonana z mosiadzu.');
+    await flush();
+
+    expect(getZlomSnapshot().dodatki).toEqual([expect.objectContaining({
+      short: 'mosiezna obroza z runa Khorna',
+      shortAlt: 'mosiezna obroze z runa Khorna',
+      material: 'mosiadzu',
+      cena: 630,
+    })]);
+    expect(getZlomSnapshot().ubrania).toEqual([]);
+  });
+
+  test('a material line before an armour\'s own line does not make it an add-on', async () => {
+    parse('Oceniasz starannie lekka kolczuga.');
+    parse('Misternie zszyta kolczuga.', 'object.long');
+    parse('Oceniasz, ze lekka kolczuga wazy 4000 gramow, zas jej objetosc wynosi 3000 mililitrow.');
+    parse('Zostala wykonana ze stali.');
+    parse('Twoje doswiadczenie i umiejetnosci podpowiadaja ci, ze jak na lekka zbroje chroni ona dobrze przed obrazeniami cietymi, klutymi i obuchowymi.');
+    await flush();
+
+    expect(findArmor('lekka kolczuga')).toBeDefined();
+    expect(getZlomSnapshot().dodatki).toEqual([]);
+  });
+
   describe('import / merge', () => {
     function makeWeapon(partial: Partial<WeaponEntry>): WeaponEntry {
       return {

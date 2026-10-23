@@ -11,6 +11,7 @@ import {
     type ViewArmour,
     type ViewShield,
     type ViewWeapon,
+    type ViewWearable,
     type ZlomGroup,
     type ZlomView,
 } from "@modules/crowd/crowdView";
@@ -36,10 +37,12 @@ export interface CarriedGap {
  * them into the list.
  */
 export function carriedGaps(carried: string[], view: ZlomView, odmiany: OdmianaSnapshot): CarriedGap[] {
-    const groups: [ZlomGroup, (ViewWeapon | ViewArmour | ViewShield)[]][] = [
+    const groups: [ZlomGroup, (ViewWeapon | ViewArmour | ViewShield | ViewWearable)[]][] = [
         ["bronie", view.bronie],
         ["zbroje", view.zbroje],
         ["tarcze", view.tarcze],
+        ["ubrania", view.ubrania],
+        ["dodatki", view.dodatki],
     ];
     const found = new Map<string, CarriedGap>();
     for (const name of carried) {

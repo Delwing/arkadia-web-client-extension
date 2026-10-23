@@ -49,7 +49,7 @@ beforeEach(async () => {
         return respond(404, {});
     }));
 
-    await updateZlomSnapshot(() => ({ bronie: [SWORD], tarcze: [], zbroje: [KOLCZUGA] }));
+    await updateZlomSnapshot(() => ({ bronie: [SWORD], tarcze: [], zbroje: [KOLCZUGA], ubrania: [], dodatki: [] }));
     await saveOdmiana({
         mianownik: 'dlugi miecz', dopelniacz: 'dlugiego miecza', celownik: 'dlugiemu mieczowi',
         biernik: 'dlugi miecz', narzednik: 'dlugim mieczem', miejscownik: 'dlugim mieczu',
@@ -119,6 +119,8 @@ test('sends copies of one item worded differently once', async () => {
         bronie: [SWORD, { ...SWORD, opis: 'Dlugi stalowy miecz z wprawionym klejnotem.' }],
         tarcze: [],
         zbroje: [],
+        ubrania: [],
+        dodatki: [],
     }));
     await syncOnce();
     const sent = calls.find(c => c.path === '/crowd/submit')!.body.items as { kind: string }[];
@@ -130,6 +132,8 @@ test('sends an i line and the evaluated name as records of their own', async () 
         bronie: [{ ...SWORD, shortAlt: 'dlugi miecz' }],
         tarcze: [],
         zbroje: [{ ...KOLCZUGA, iLine: 'kolczuga z zelaza' }],
+        ubrania: [],
+        dodatki: [],
     }));
     await syncOnce();
     const items = calls.find(c => c.path === '/crowd/submit')!.body.items as { kind: string; record: Record<string, unknown> }[];
@@ -137,4 +141,36 @@ test('sends an i line and the evaluated name as records of their own', async () 
     expect(items.find(i => i.kind === 'altname')!.record).toEqual({ item: 'bron', short: 'dlugi miecz', shortAlt: 'dlugi miecz' });
     // Not part of the items themselves any more
     expect(items.find(i => i.kind === 'zbroja')!.record).not.toHaveProperty('iLine');
+});
+
+test('sends clothes and add-ons, and again what a Worker that did not know them refused', async () => {
+    await updateZlomSnapshot(snapshot => ({
+        ...snapshot,
+        dodatki: [{
+            short: 'mosiezna obroza z runa khorna', material: 'mosiadzu', opis: 'Obroza.',
+            waga: 250, obj: 350, cena: 630, roomId: 7, iLine: 'Wokol szyi masz zacisnieta',
+        }],
+    }));
+    // A Worker older than the client
+    vi.mocked(fetch).mockImplementation(async (url, init) => {
+        const path = new URL(String(url)).pathname;
+        const body = JSON.parse(String(init!.body));
+        calls.push({ path, body });
+        if (path === '/crowd/register') return respond(200, { contributorId: 'cid', secret: 'sec' });
+        if (path === '/crowd/have') return respond(200, { wanted: body.hashes });
+        const rejected = (body.items as { kind: string; record: { item?: string } }[])
+            .map((item, index) => ({ item, index }))
+            .filter(({ item }) => item.kind === 'dodatek' || item.record.item === 'dodatek')
+            .map(({ index }) => ({ index, reason: 'unknown kind' }));
+        return respond(200, { accepted: body.items.length - rejected.length, rejected });
+    });
+    await syncOnce();
+    const first = calls.find(c => c.path === '/crowd/submit')!.body.items as { kind: string; record: Record<string, unknown> }[];
+    expect(first.find(i => i.kind === 'dodatek')!.record).toEqual({ short: 'mosiezna obroza z runa khorna', material: 'mosiadzu', opis: 'Obroza.' });
+    expect(first.find(i => i.kind === 'iline')!.record).toEqual({ item: 'dodatek', short: 'mosiezna obroza z runa khorna', iLine: 'Wokol szyi masz zacisnieta' });
+
+    calls = [];
+    await syncOnce();
+    const again = calls.find(c => c.path === '/crowd/submit')!.body.items as { kind: string }[];
+    expect(again.map(i => i.kind).sort()).toEqual(['dodatek', 'iline']);
 });

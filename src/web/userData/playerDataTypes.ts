@@ -375,7 +375,7 @@ export const enemyResistancesType: UserDataType<EnemyResistanceEntry> = {
 // Zlom: the latest reading of each item, per kind and item `short`
 // ---------------------------------------------------------------------------
 
-const ZLOM_KINDS: ZlomKind[] = ['bronie', 'tarcze', 'zbroje'];
+const ZLOM_KINDS: ZlomKind[] = ['bronie', 'tarcze', 'zbroje', 'ubrania', 'dodatki'];
 
 function zlomKey(kind: ZlomKind, short: string): string {
     return `${kind}:${short}`;
@@ -412,7 +412,10 @@ export const zlomType: UserDataType<ZlomEntry> = {
         // Through the store, so its in-memory cache, the popup and the
         // highlight triggers (subscribeZlom) see the change.
         return updateZlomSnapshot(current => {
-            const next: ZlomSnapshot = { bronie: current.bronie.slice(), tarcze: current.tarcze.slice(), zbroje: current.zbroje.slice() };
+            const next: ZlomSnapshot = {
+                bronie: current.bronie.slice(), tarcze: current.tarcze.slice(), zbroje: current.zbroje.slice(),
+                ubrania: current.ubrania.slice(), dodatki: current.dodatki.slice(),
+            };
             for (const change of changes) {
                 const key = parseZlomKey(change.key);
                 if (!key) continue;

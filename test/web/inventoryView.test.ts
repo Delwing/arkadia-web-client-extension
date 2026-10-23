@@ -41,7 +41,7 @@ describe('itemCategory', () => {
 describe('zlomName', () => {
     const helm = { short: 'garnczkowy helm z jelenim porozem', iLine: 'garnczkowy helm zdobiony majestatycznym jelenim porozem' } as ArmorEntry;
     const luska = { short: 'lsniaca mithrilowa luska', iLine: 'Twoje cialo spowija lsniaca mithrilowa luska' } as ArmorEntry;
-    const zlom = { bronie: [], zbroje: [helm, luska], tarcze: [] } as unknown as ZlomSnapshot;
+    const zlom = { bronie: [], zbroje: [helm, luska], tarcze: [], ubrania: [], dodatki: [] } as unknown as ZlomSnapshot;
 
     test('names a piece by its złom entry when `i` names it as the entry\'s i line', () => {
         expect(zlomName('garnczkowy helm zdobiony majestatycznym jelenim porozem', zlom)).toBe('garnczkowy helm z jelenim porozem');

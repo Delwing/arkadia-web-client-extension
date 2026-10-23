@@ -217,7 +217,12 @@ const SECTIONS: { pattern: RegExp; label: string; worn?: true; items?: (match: R
         label: "Na głowie",
         items: match => [match[1]],
     },
-    { pattern: /^Wokol szyi masz zacisniet\S* (.+)$/, label: "Na szyi" },
+    {
+        // "Wokol szyi masz zacisnieta mosieznej obrozy z runa Khorna, ktorej ostre cwieki upuscily ci nieco krwi."
+        pattern: /^Wokol szyi masz zacisniet\S* (.+?)(?:, ktor\S* .*)?\.?$/,
+        label: "Na szyi",
+        items: match => [match[1]],
+    },
     { pattern: /^Na szyi masz (?:zawiazan\S* |zawieszon\S* |zapiet\S* |zacisniet\S* )?(.+)$/, label: "Na szyi" },
     {
         // "Noszony przez ciebie zloty pierscien jest symbolem przynaleznosci do ..."
@@ -419,10 +424,14 @@ function uniqueKey(entry: Entry, taken: Set<string>) {
     taken.add(entry.key);
 }
 
+const HOOD = / z naciagnietym na glowe kapturem(?=[.,]| i |$)/;
+
 /** Sections of an `i` reply, in the game's order */
 export function parseInventory(lines: string[]): Section[] {
     const sections: Section[] = [];
-    lines.forEach(line => {
+    lines.forEach(raw => {
+        // How a cloak is worn, not part of its name: "Nosisz krwistoczerwony poszarpany plaszcz z naciagnietym na glowe kapturem."
+        const line = raw.replace(HOOD, "");
         const rule = SECTIONS.find(({ pattern }) => pattern.test(line));
         if (!rule) return;
         if (!rule.label) return;

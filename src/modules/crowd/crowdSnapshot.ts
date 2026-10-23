@@ -54,6 +54,15 @@ export interface CrowdArmour extends CrowdShield {
     typ: string;
 }
 
+/** Clothes and add-ons */
+export interface CrowdWearable extends Voted {
+    short: string;
+    shortAlt?: string;
+    material: string;
+    opis: string;
+    iLine?: string;
+}
+
 export interface CrowdOdmiana extends Voted {
     mianownik: string;
     dopelniacz: string;
@@ -68,6 +77,8 @@ export interface CrowdSnapshot {
     bronie: CrowdWeapon[];
     tarcze: CrowdShield[];
     zbroje: CrowdArmour[];
+    ubrania: CrowdWearable[];
+    dodatki: CrowdWearable[];
     odmiany: CrowdOdmiana[];
 }
 
@@ -82,6 +93,9 @@ function normalize(raw: unknown): CrowdSnapshot {
         bronie: asArray(s.bronie),
         tarcze: asArray(s.tarcze),
         zbroje: asArray(s.zbroje),
+        // Absent from exports made before the Worker kept them
+        ubrania: asArray(s.ubrania),
+        dodatki: asArray(s.dodatki),
         odmiany: asArray(s.odmiany),
     };
 }

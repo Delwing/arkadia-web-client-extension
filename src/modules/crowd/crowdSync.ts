@@ -54,6 +54,8 @@ const ZLOM_KINDS: [keyof ReturnType<typeof getZlomSnapshot>, CrowdKind][] = [
     ['bronie', 'bron'],
     ['tarcze', 'tarcza'],
     ['zbroje', 'zbroja'],
+    ['ubrania', 'ubranie'],
+    ['dodatki', 'dodatek'],
 ];
 
 /**
@@ -162,6 +164,7 @@ export async function syncOnce(): Promise<SyncOutcome> {
     if (!credentials) return { status: 'failed', reason: 'register' };
 
     let total = 0;
+    const unsent = new Set<string>();
     for (let offset = 0; offset < pending.length; offset += HAVE_CHUNK) {
         const chunk = pending.slice(offset, offset + HAVE_CHUNK);
         let have = await call('/crowd/have', { hashes: chunk.map(item => item.hash) }, credentials);
@@ -188,12 +191,18 @@ export async function syncOnce(): Promise<SyncOutcome> {
                 await saveSent(sent);
                 return { status: 'failed', reason: submit.status ? 'refused' : 'network' };
             }
-            for (const item of batch) sent.add(item.hash);
-            total += batch.length;
+            // A Worker older than this client refuses a kind it does not know yet;
+            // left unsent, the record goes again once the Worker knows it
+            const refused = new Set(Array.isArray(submit.data.rejected)
+                ? (submit.data.rejected as { index?: unknown }[]).map(r => batch[r?.index as number]?.hash).filter(Boolean)
+                : []);
+            for (const item of batch) if (!refused.has(item.hash)) sent.add(item.hash);
+            total += batch.length - refused.size;
+            refused.forEach(hash => unsent.add(hash));
         }
         // What the Worker did not want it already has from us, or has enough
         // of from others; either way, asking again would not change the answer.
-        for (const item of chunk) sent.add(item.hash);
+        for (const item of chunk) if (!unsent.has(item.hash)) sent.add(item.hash);
         await saveSent(sent);
     }
     return { status: 'done', sent: total };

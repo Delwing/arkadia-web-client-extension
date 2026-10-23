@@ -21,6 +21,9 @@ import {
     type WeaponEntry,
     type ArmorEntry,
     type ShieldEntry,
+    type WearableEntry,
+    type WearableKind,
+    type ILineKind,
     type ZlomEntry,
     type ZlomKind,
     type ZlomSnapshot,
@@ -30,6 +33,7 @@ export type {
     WeaponEntry,
     ArmorEntry,
     ShieldEntry,
+    WearableEntry,
     ZlomEntry,
     ZlomKind,
     ZlomSnapshot,
@@ -51,7 +55,7 @@ function resolveSilverColor(): string | undefined {
     return color || undefined;
 }
 
-type Kind = "bron" | "zbroja" | "tarcza";
+type Kind = "bron" | "zbroja" | "tarcza" | "ubranie" | "dodatek";
 
 interface PendingEval {
     opis?: string;
@@ -74,6 +78,7 @@ interface PendingEval {
     ciete?: number;
     kind?: Kind;
     armorType?: string;
+    material?: string;
     awaitingOpis?: boolean;
 }
 
@@ -171,19 +176,24 @@ export interface ZlomImportPayload {
     bronie: WeaponEntry[];
     tarcze: ShieldEntry[];
     zbroje: ArmorEntry[];
+    /** Absent from the Mudlet database and from exports made before they were kept */
+    ubrania?: WearableEntry[];
+    dodatki?: WearableEntry[];
 }
 
 export interface ZlomImportCounts {
     bronie: number;
     tarcze: number;
     zbroje: number;
+    ubrania: number;
+    dodatki: number;
 }
 
 export async function mergeZlomData(
     data: ZlomImportPayload,
     mode: ZlomMergeMode = 'replace',
 ): Promise<ZlomImportCounts> {
-    let counts: ZlomImportCounts = { bronie: 0, tarcze: 0, zbroje: 0 };
+    let counts: ZlomImportCounts = { bronie: 0, tarcze: 0, zbroje: 0, ubrania: 0, dodatki: 0 };
     await updateZlomSnapshot(current => {
         const merge = <T extends ZlomEntry>(dst: T[], src: T[]): { list: T[]; count: number } => {
             const list = dst.slice();
@@ -225,8 +235,10 @@ export async function mergeZlomData(
         const b = merge(current.bronie, data.bronie);
         const t = merge(current.tarcze, data.tarcze);
         const z = merge(current.zbroje, data.zbroje.map(e => ({ ...e, typ: normalizeArmorType(e.typ ?? "") })));
-        counts = { bronie: b.count, tarcze: t.count, zbroje: z.count };
-        return { bronie: b.list, tarcze: t.list, zbroje: z.list };
+        const u = merge(current.ubrania, data.ubrania ?? []);
+        const d = merge(current.dodatki, data.dodatki ?? []);
+        counts = { bronie: b.count, tarcze: t.count, zbroje: z.count, ubrania: u.count, dodatki: d.count };
+        return { bronie: b.list, tarcze: t.list, zbroje: z.list, ubrania: u.list, dodatki: d.list };
     });
     eventBus.emit('zlom.snapshotReplaced');
     return counts;
@@ -272,15 +284,15 @@ export async function setZlomNote(
     eventBus.emit('zlom.snapshotReplaced');
 }
 
-/** How the `i` reply words an armour or shield (ArmorEntry.iLine); empty clears it */
+/** How the `i` reply words something worn (ArmorEntry.iLine); empty clears it */
 export async function setZlomILine(
-    kind: 'tarcze' | 'zbroje',
+    kind: ILineKind,
     opis: string,
     iLine: string | undefined,
 ): Promise<void> {
     const trimmed = iLine?.trim();
     await updateZlomSnapshot(current => {
-        const list = (current[kind] as (ArmorEntry | ShieldEntry)[]).map(e => {
+        const list = (current[kind] as (ArmorEntry | ShieldEntry | WearableEntry)[]).map(e => {
             if (e.opis !== opis) return e;
             if (trimmed) return { ...e, iLine: trimmed };
             const { iLine: _, ...rest } = e;
@@ -298,7 +310,7 @@ export interface ZlomFormatting {
 }
 
 function computeFormatting(entry: ZlomEntry, silverColor: string | undefined): ZlomFormatting | undefined {
-    if (entry.magik === 1) return undefined;
+    if ((entry as ArmorEntry).magik === 1) return undefined;
     const silver = (entry as WeaponEntry).srebro === 1;
     const autoSilver = silver ? silverColor : undefined;
     const color = entry.color ?? autoSilver;
@@ -340,7 +352,9 @@ function findEntryByShort(name: string): ZlomEntry | undefined {
     };
     return scan(snap.bronie as ZlomEntry[])
         ?? scan(snap.tarcze as ZlomEntry[])
-        ?? scan(snap.zbroje as ZlomEntry[]);
+        ?? scan(snap.zbroje as ZlomEntry[])
+        ?? scan(snap.ubrania)
+        ?? scan(snap.dodatki);
 }
 
 export function getZlomFormatting(name: string): ZlomFormatting | undefined {
@@ -385,6 +399,8 @@ function collectHighlightEntries(snap: ZlomSnapshot, silverColor: string | undef
     consider(snap.bronie as ZlomEntry[]);
     consider(snap.tarcze as ZlomEntry[]);
     consider(snap.zbroje as ZlomEntry[]);
+    consider(snap.ubrania);
+    consider(snap.dodatki);
     return Array.from(byShort.values());
 }
 
@@ -454,6 +470,33 @@ export default function initZlom(
     // fully parsed entry indistinguishable from one whose biernik was never seen.
     const altShort = (): string | undefined => ctx?.shortAlt;
 
+    /**
+     * Weapons, armour and shields are told apart by a line of their own, which may
+     * come after a material line that looked like an add-on's: the same item is
+     * then neither an add-on nor clothes.
+     */
+    const notWearable = (s: ZlomSnapshot, opis: string): ZlomSnapshot =>
+        s.ubrania.some(e => e.opis === opis) || s.dodatki.some(e => e.opis === opis)
+            ? { ...s, ubrania: s.ubrania.filter(e => e.opis !== opis), dodatki: s.dodatki.filter(e => e.opis !== opis) }
+            : s;
+
+    const persistWearable = () => {
+        if (!ctx || (ctx.kind !== "ubranie" && ctx.kind !== "dodatek") || !ctx.short || !ctx.opis) return;
+        const group: WearableKind = ctx.kind === "ubranie" ? "ubrania" : "dodatki";
+        const entry: WearableEntry = {
+            short: ctx.short,
+            shortAlt: altShort(),
+            material: ctx.material ?? "",
+            opis: ctx.opis,
+            waga: ctx.waga ?? 0,
+            obj: ctx.obj ?? 0,
+            cena: ctx.cena ?? 0,
+            roomId: roomId(),
+        };
+        void updateZlomSnapshot(s => ({ ...s, [group]: upsertByOpis(s[group], entry) }));
+        offerOdmiana(entry.short);
+    };
+
     const persistBron = () => {
         if (!ctx || ctx.kind !== "bron" || !ctx.short || !ctx.opis) return;
         const entry: WeaponEntry = {
@@ -475,7 +518,7 @@ export default function initZlom(
             parowanie: ctx.parowanie ?? 0,
             roomId: roomId(),
         };
-        void updateZlomSnapshot(s => ({ ...s, bronie: upsertByOpis(s.bronie, entry) }));
+        void updateZlomSnapshot(s => ({ ...notWearable(s, entry.opis), bronie: upsertByOpis(s.bronie, entry) }));
         offerOdmiana(entry.short);
     };
 
@@ -496,7 +539,7 @@ export default function initZlom(
             oslona: ctx.oslona ?? "",
             roomId: roomId(),
         };
-        void updateZlomSnapshot(s => ({ ...s, zbroje: upsertByOpis(s.zbroje, entry) }));
+        void updateZlomSnapshot(s => ({ ...notWearable(s, entry.opis), zbroje: upsertByOpis(s.zbroje, entry) }));
         offerOdmiana(entry.short);
     };
 
@@ -517,7 +560,7 @@ export default function initZlom(
             oslona: ctx.oslona ?? "",
             roomId: roomId(),
         };
-        void updateZlomSnapshot(s => ({ ...s, tarcze: upsertByOpis(s.tarcze, entry) }));
+        void updateZlomSnapshot(s => ({ ...notWearable(s, entry.opis), tarcze: upsertByOpis(s.tarcze, entry) }));
         offerOdmiana(entry.short);
     };
 
@@ -707,9 +750,37 @@ export default function initZlom(
         PARSER_TAG,
     );
 
+    // Clothes: "Ubranie to zostalo wykonane z welny i wyglada na w miare nowe."
+    // Not anchored at the end: the condition script adds its "[4/5]" to the line.
+    client.Triggers.registerTrigger(
+        /^Ubrani[ea] (?:to|te) zostal\w* wykonane ze? (.+?) i wyglada\w* na /,
+        (line, m) => {
+            if (!ctx || ctx.kind || !ctx.short) return line;
+            ctx.kind = "ubranie";
+            ctx.material = m[1];
+            persistWearable();
+            return line;
+        },
+        PARSER_TAG,
+    );
+
+    // Add-ons such as jewellery or a collar: "Zostala wykonana z mosiadzu.", or
+    // "Przedmiot ten zostal wykonany z ...". Nothing else in the evaluation says what it is.
+    client.Triggers.registerTrigger(
+        /^(?:Przedmiot ten z|Z)ostal\w* wykonan\w* ze? (.+?)\.$/,
+        (line, m) => {
+            if (!ctx || ctx.kind || !ctx.short) return line;
+            ctx.kind = "dodatek";
+            ctx.material = m[1];
+            persistWearable();
+            return line;
+        },
+        PARSER_TAG,
+    );
+
     if (aliases) {
         aliases.push({
-            pattern: /^\/zlom(?:\s+(bronie|tarcze|zbroje))?$/,
+            pattern: /^\/zlom(?:\s+(bronie|tarcze|zbroje|ubrania|dodatki))?$/,
             callback: (m: RegExpMatchArray) => {
                 const kind = (m[1] ?? 'bronie') as ZlomKind;
                 const entries: ZlomEntry[] = getZlomSnapshot()[kind] as ZlomEntry[];
@@ -720,9 +791,11 @@ export default function initZlom(
                 const out = new AnsiAwareBuffer();
                 out.append(`--- zlom: ${kind} (${entries.length}) ---\n`, { bold: true });
                 for (const e of entries) {
-                    const prot = `${e.klute}/${e.obuch}/${e.ciete}`;
+                    const what = "material" in e
+                        ? e.material
+                        : `${e.klute}/${e.obuch}/${e.ciete}`;
                     out.append(`${e.short}  `, { bold: true });
-                    out.append(`[${prot}] ${e.cena ?? 0}mi ${e.waga ?? 0}g\n`, {});
+                    out.append(`[${what}] ${e.cena ?? 0}mi ${e.waga ?? 0}g\n`, {});
                 }
                 client.println(out);
             },

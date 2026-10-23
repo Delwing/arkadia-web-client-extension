@@ -12,12 +12,13 @@
  * helpers: the two deploy independently.
  */
 
-export type CrowdKind = 'bron' | 'tarcza' | 'zbroja' | 'odmiana' | 'iline' | 'altname';
+export type CrowdKind = 'bron' | 'tarcza' | 'zbroja' | 'ubranie' | 'dodatek' | 'odmiana' | 'iline' | 'altname';
 
-export const CROWD_KINDS: readonly CrowdKind[] = ['bron', 'tarcza', 'zbroja', 'odmiana', 'iline', 'altname'];
+export const CROWD_KINDS: readonly CrowdKind[] = ['bron', 'tarcza', 'zbroja', 'ubranie', 'dodatek', 'odmiana', 'iline', 'altname'];
 
-/** The item kinds an `altname` record can be about; an `iline` only armour and shields */
-const ITEM_KINDS = ['bron', 'tarcza', 'zbroja'] as const;
+/** The item kinds an `altname` record can be about; an `iline` only what is worn */
+const ITEM_KINDS = ['bron', 'tarcza', 'zbroja', 'ubranie', 'dodatek'] as const;
+const WORN_KINDS = ['tarcza', 'zbroja', 'ubranie', 'dodatek'] as const;
 
 type FieldSpec =
     | { name: string; type: 'text'; max: number; optional?: boolean }
@@ -73,6 +74,17 @@ const FIELDS: Record<CrowdKind, readonly FieldSpec[]> = {
         { name: 'opis', type: 'text', max: OPIS },
         { name: 'oslona', type: 'text', max: WORD },
     ],
+    // Clothes and add-ons (jewellery, a collar): evaluating says only what they are made of
+    ubranie: [
+        { name: 'short', type: 'text', max: SHORT },
+        { name: 'material', type: 'text', max: WORD },
+        { name: 'opis', type: 'text', max: OPIS },
+    ],
+    dodatek: [
+        { name: 'short', type: 'text', max: SHORT },
+        { name: 'material', type: 'text', max: WORD },
+        { name: 'opis', type: 'text', max: OPIS },
+    ],
     odmiana: [
         { name: 'mianownik', type: 'text', max: SHORT },
         { name: 'dopelniacz', type: 'text', max: SHORT },
@@ -82,7 +94,7 @@ const FIELDS: Record<CrowdKind, readonly FieldSpec[]> = {
         { name: 'miejscownik', type: 'text', max: SHORT },
     ],
     iline: [
-        { name: 'item', type: 'oneOf', values: ['tarcza', 'zbroja'] },
+        { name: 'item', type: 'oneOf', values: WORN_KINDS },
         { name: 'short', type: 'text', max: SHORT },
         { name: 'iLine', type: 'text', max: SHORT },
     ],

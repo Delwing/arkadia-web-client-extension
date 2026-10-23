@@ -14,7 +14,7 @@ const armour: ArmorEntry = {
     short: 'stalowa dluga kolczuga', typ: 'srednia', klute: 0, obuch: 0, ciete: 0, magik: 0, opis: 'Kolczuga.',
     waga: 0, obj: 0, cena: 0, oslona: 'korpus', roomId: null,
 };
-const view: ZlomView = { bronie: [weapon], tarcze: [shield], zbroje: [{ ...armour, fromCrowd: true }] };
+const view: ZlomView = { bronie: [weapon], tarcze: [shield], zbroje: [{ ...armour, fromCrowd: true }], ubrania: [], dodatki: [] };
 
 const declined = (mianownik: string, biernik: string) => ({
     [mianownik]: { mianownik, dopelniacz: `${mianownik}-D`, celownik: `${mianownik}-C`, biernik, narzednik: `${mianownik}-N`, miejscownik: `${mianownik}-M` },

@@ -175,6 +175,8 @@ Zakresy działają rosnąco (`1-7`) i malejąco (`7-1`). Maksymalnie 50 iteracji
 | `/zlom` | Wyświetl zapisane bronie (alias `/zlom bronie`) |
 | `/zlom tarcze` | Wyświetl zapisane tarcze |
 | `/zlom zbroje` | Wyświetl zapisane zbroje |
+| `/zlom ubrania` | Wyświetl zapisane ubrania (z materiałem) |
+| `/zlom dodatki` | Wyświetl zapisane dodatki: biżuterię, obroże, insygnia |
 | `/zlomw` | Otwórz okno złomu z tabelami i importem bazy z Mudleta |
 | `/zlom-reset` | Wyczyść bazę i zdejmij podświetlenia shortów |
 | `/pomagam` | Udostępniaj swój spis złomu i odmiany we wspólnym spisie (wyłączysz to w ustawieniach) |

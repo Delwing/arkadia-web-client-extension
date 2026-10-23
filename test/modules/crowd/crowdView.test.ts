@@ -10,7 +10,7 @@ const myWeapon: WeaponEntry = {
     short: 'dlugi miecz', typ: 'miecze', rodzaj: 'miecz', klute: 0, obuch: 0, ciete: 0, chwyt: '',
     magik: 0, srebro: 0, opis: 'Miecz.', waga: 2000, obj: 1500, cena: 300, wywazenie: 9, parowanie: 7, roomId: null,
 };
-const own: ZlomSnapshot = { bronie: [myWeapon], tarcze: [myShield], zbroje: [] };
+const own: ZlomSnapshot = { bronie: [myWeapon], tarcze: [myShield], zbroje: [], ubrania: [], dodatki: [] };
 
 const crowd: CrowdSnapshot = {
     generatedAt: '2026-10-22T20:17:00.000Z',
@@ -24,6 +24,11 @@ const crowd: CrowdSnapshot = {
     zbroje: [{
         short: 'stalowa dluga kolczuga', typ: 'srednia', magik: 0, opis: 'Kolczuga.', oslona: 'korpus, nogi i ramiona',
         iLine: 'stalowa kolczuga', confirmations: 3,
+    }],
+    ubrania: [],
+    dodatki: [{
+        short: 'mosiezna obroza z runa khorna', material: 'mosiadzu', opis: 'Obroza.',
+        iLine: 'Wokol szyi masz zacisnieta', confirmations: 2,
     }],
     odmiany: [{
         mianownik: 'dlugi miecz', dopelniacz: 'dlugiego miecza', celownik: 'dlugiemu mieczowi', biernik: 'dlugi miecz',
@@ -53,6 +58,15 @@ describe('buildZlomView', () => {
         const kolczuga = buildZlomView(own, crowd).zbroje[0] as ArmorEntry & { fromCrowd?: true; confirmations?: number };
         expect(kolczuga).toMatchObject({ short: 'stalowa dluga kolczuga', fromCrowd: true, confirmations: 3, iLine: 'stalowa kolczuga' });
         expect(kolczuga).toMatchObject({ waga: 0, cena: 0, klute: 0, obuch: 0, ciete: 0, roomId: null });
+    });
+
+    test('adds clothes and add-ons from the crowd list too', () => {
+        const view = buildZlomView(own, crowd);
+        expect(view.ubrania).toEqual([]);
+        expect(view.dodatki[0]).toMatchObject({
+            short: 'mosiezna obroza z runa khorna', material: 'mosiadzu', iLine: 'Wokol szyi masz zacisnieta',
+            fromCrowd: true, confirmations: 2, waga: 0, cena: 0, roomId: null,
+        });
     });
 
     test('leaves the player\'s own list untouched', () => {

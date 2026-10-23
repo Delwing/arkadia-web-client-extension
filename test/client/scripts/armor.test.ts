@@ -9,6 +9,8 @@ import initArmor, {
     assignILine,
     assignPiece,
     getWornArmor,
+    ignoreTodo,
+    unignoreTodo,
     parseSlots,
     parseWear,
     previewILine,
@@ -23,6 +25,7 @@ import {
     getZlomSnapshot,
     updateZlomSnapshot,
     type ArmorEntry,
+    type WearableEntry,
 } from '@modules/data/zlomStore';
 
 const KOLCZUGA = ['korpus', 'nogi', 'lewe ramie', 'prawe ramie'];
@@ -585,6 +588,127 @@ describe('tying a piece i lists by name to its złom entry', () => {
         expect(getWornArmor().slots).toEqual({});
         reply();
         expect(getWornArmor().unplaced).toEqual([HELM]);
+    });
+});
+
+describe('clothes and add-ons from an i reply', () => {
+    let client: Client;
+    let disposeArmor: () => void;
+    let disposeInventory: () => void;
+
+    const wearable = (short: string, material: string, extra: Partial<WearableEntry> = {}): WearableEntry => ({
+        short, material, opis: short, waga: 0, obj: 0, cena: 0, roomId: null, ...extra,
+    });
+
+    beforeEach(async () => {
+        localStorage.clear();
+        characterStorage.setCharacter('TestChar');
+        await __resetZlomStoreForTests();
+        await ensureZlomLoaded();
+        await updateZlomSnapshot(snapshot => ({
+            ...snapshot,
+            ubrania: [wearable('krwistoczerwony poszarpany plaszcz', 'welny')],
+            dodatki: [wearable('mosiezna obroza z runa Khorna', 'mosiadzu')],
+        }));
+        client = new Client({
+            send: () => {},
+            output: () => {},
+            sendGmcp: () => {},
+            flushMessageBuffer: () => {},
+            emit: () => {},
+            shouldEchoCommand: () => true,
+        });
+        disposeInventory = initInventory(client);
+        disposeArmor = initArmor(client);
+    });
+
+    afterEach(() => {
+        disposeArmor();
+        disposeInventory();
+    });
+
+    test('shows what the złom list knows as clothes or an add-on, on no slot', () => {
+        // Verbatim from the game
+        client.onLine([
+            'Trzymasz opalizujacy runiczny topor obosieczny w prawej rece.',
+            'Wokol szyi masz zacisnieta mosieznej obrozy z runa Khorna, ktorej ostre cwieki upuscily ci nieco krwi.',
+            'Nosisz krwistoczerwony poszarpany plaszcz z naciagnietym na glowe kapturem.',
+            'Masz przy sobie tlusciutkie nikczemne licho i maly cynowy kubek.',
+        ].join('\n'), 'text');
+
+        const worn = getWornArmor();
+        // Under their złom names, whatever case `i` lists them in
+        expect(worn.extras).toEqual([
+            { name: 'mosiezna obroza z runa Khorna', worn: 'mosieznej obrozy z runa Khorna', kind: 'dodatki', material: 'mosiadzu' },
+            { name: 'krwistoczerwony poszarpany plaszcz', worn: 'krwistoczerwony poszarpany plaszcz', kind: 'ubrania', material: 'welny' },
+        ]);
+        expect(worn.slots).toEqual({});
+        expect(worn.unplaced).toEqual([]);
+        expect(worn.unknownLines).toEqual([]);
+    });
+
+    test('shows jewellery the list does not know yet, without a kind', () => {
+        // Verbatim from the game
+        client.onLine([
+            'Nasuniety na serdeczny palec twej prawej dloni masywny szczerozloty sygnet z herbem Rodziny Alderazzi jest oznaka nadanej ci pozycji Caporegime.',
+            'Na lewym nadgarstku nosisz mosiezna bransolete w ksztalcie smoka.',
+            'Na palce masz nasuniete trzy misterne smocze pierscienie.',
+            'Masz przy sobie bulke.',
+        ].join('\n'), 'text');
+
+        expect(getWornArmor().extras.map(({ name, kind }) => [name, kind])).toEqual([
+            ['masywny szczerozloty sygnet z herbem Rodziny Alderazzi', null],
+            ['mosiezna bransolete w ksztalcie smoka', null],
+            ['misterne smocze pierscienie', null],
+        ]);
+        expect(getWornArmor().unplaced).toEqual([]);
+    });
+
+    test('an add-on worded in a line of its own is shown once given that line', async () => {
+        const reply = () => client.onLine([
+            'Trzymasz w rekach dlugi krwisty miecz.',
+            'Twe ramiona oplata mglisty welon.',
+            'Masz przy sobie bulke.',
+        ].join('\n'), 'text');
+        reply();
+        expect(getWornArmor().unknownLines).toEqual(['Twe ramiona oplata mglisty welon.']);
+
+        await assignILine('dodatki', 'mosiezna obroza z runa Khorna', 'mglisty welon');
+        expect(getWornArmor().unknownLines).toEqual([]);
+        expect(getWornArmor().extras).toEqual([{ name: 'mosiezna obroza z runa Khorna', kind: 'dodatki', material: 'mosiadzu' }]);
+
+        // And the next reply knows it by itself
+        reply();
+        expect(getWornArmor().extras.map(e => e.name)).toEqual(['mosiezna obroza z runa Khorna']);
+        expect(getWornArmor().unknownLines).toEqual([]);
+    });
+
+    test('an ignored piece or line (a guild item, say) stays off the list until brought back', () => {
+        const reply = () => client.onLine([
+            'Trzymasz w rekach dlugi krwisty miecz.',
+            'Masz na sobie stalowa kolczuge klubowa.',
+            'Na twej piersi lsni znak gildii kupcow.',
+            'Masz przy sobie bulke.',
+        ].join('\n'), 'text');
+        reply();
+        expect(getWornArmor().unplaced).toEqual(['stalowa kolczuge klubowa']);
+        expect(getWornArmor().unknownLines).toEqual(['Na twej piersi lsni znak gildii kupcow.']);
+
+        ignoreTodo('stalowa kolczuge klubowa');
+        ignoreTodo('Na twej piersi lsni znak gildii kupcow.');
+        expect(getWornArmor()).toMatchObject({ unplaced: [], unknownLines: [] });
+
+        reply();
+        expect(getWornArmor()).toMatchObject({
+            unplaced: [],
+            unknownLines: [],
+            ignored: ['stalowa kolczuge klubowa', 'Na twej piersi lsni znak gildii kupcow.'],
+        });
+
+        unignoreTodo('stalowa kolczuge klubowa');
+        reply();
+        expect(getWornArmor().unplaced).toEqual(['stalowa kolczuge klubowa']);
+        expect(getWornArmor().ignored).toEqual(['Na twej piersi lsni znak gildii kupcow.']);
     });
 });
 

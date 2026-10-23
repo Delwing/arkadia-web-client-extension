@@ -80,7 +80,7 @@ describe('parseInventory', () => {
         expect(held['czarnopiory blyszczacy temblak']).toEqual(['czarnoblekitny pulsujacy morgenstern']);
         // Zawiniatka are left out
         expect(byLabel['Noszone']).toEqual([
-            'zielony luskowaty plaszcz z naciagnietym na glowe kapturem',
+            'zielony luskowaty plaszcz',
             'pojemnik na mapy',
         ]);
         expect(byLabel['Przy sobie']).toHaveLength(5);

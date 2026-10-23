@@ -19,7 +19,7 @@ function namedBy(iLine: string | undefined, name: string): boolean {
  * through the entry's `i` line or other name. Null for anything else.
  */
 export function zlomName(name: string, zlom: ZlomSnapshot): string | null {
-    const entries = [...zlom.zbroje, ...zlom.tarcze];
+    const entries = [...zlom.zbroje, ...zlom.tarcze, ...zlom.ubrania, ...zlom.dodatki];
     const entry = entries.find(e => !sameItem(e.short, name)
         && ((e.shortAlt && sameItem(e.shortAlt, name)) || namedBy(e.iLine, name)));
     return entry?.short ?? null;

@@ -48,12 +48,16 @@ Dla takiego przedmiotu wpisz w oknie złomu (zakładki Zbroje i Tarcze, kolumna 
 
 Gdy linia z `i` pasuje, przedmiot zajmuje miejsca ze swojej osłony. Wpis sprawdzany jest tylko na liniach odpowiedzi na `i`, nigdy na reszcie tekstu z gry. Linia, której okno ekwipunku nie zna, liczy się w środku odpowiedzi, a jako jej pierwsza linia tylko wtedy, gdy `i` zostało wpisane ręcznie albo okno samo o nie zapytało. Ponowna ocena przedmiotu i import bazy zostawiają wpisany opis.
 
+Ubrania i dodatki (biżuteria, obroże, insygnia) nie zajmują miejsc — okno pokazuje je pod sylwetką jako małe plakietki. Rozpoznaje je baza złomu: `ocen` zapisuje przedmiot jako **ubranie**, gdy gra mówi `Ubranie to zostalo wykonane z ...`, a jako **dodatek**, gdy mówi tylko, z czego jest (`Zostala wykonana z mosiadzu.`); oba trafiają do zakładek **Ubrania** i **Dodatki** w oknie złomu, razem z materiałem. Także i one mogą mieć w `i` własną linię (np. `Wokol szyi masz zacisnieta mosieznej obrozy ...`) — wpisz ją w kolumnie **W i**. Płaszcz, pierścień czy sygnet, których złom jeszcze nie zna, też pojawiają się jako plakietka, wyszarzona, dopóki go nie ocenisz. Dopisek `z naciagnietym na glowe kapturem` nie jest częścią nazwy płaszcza.
+
 Pod sylwetką okno pokazuje **Do uzupełnienia** z ostatniego `i`:
 
 - noszone, ale bez miejsca — przedmioty z `i`, dla których nic nie mówi, co zakrywają (np. zbroja bez osłony w bazie złomu albo zapisana tam pod inną nazwą). Wystarczy uzupełnić osłonę lub nazwę w złomie. Nie pojawiają się tu rzeczy, które zbroją nie są: ubrania na zbroi (płaszcz, szata, całun, chusta, maska), biżuteria i insygnia (pierścień, sygnet, bransoleta, opaska, amulet, talizman, broszka, spinka) ani mapnik.
-- linie, których klient nie rozpoznaje — sposób opisu w `i`, którego okno ekwipunku jeszcze nie zna. Jeśli to zbroja, wpisz tę linię w kolumnie **W i**; jeśli coś innego, warto ją zgłosić, żeby dodać nowy wzorzec.
+- linie, których klient nie rozpoznaje — sposób opisu w `i`, którego okno ekwipunku jeszcze nie zna. Jeśli to zbroja, ubranie albo dodatek, wpisz tę linię w kolumnie **W i**; jeśli coś innego, warto ją zgłosić, żeby dodać nowy wzorzec.
 
 Lista zmienia się przy każdym `i`, a przedmiot, który zakładasz albo zdejmujesz, od razu z niej znika.
+
+Przedmiot albo linię, której nie trzeba uzupełniać (np. przedmiot gildiowy lub klubowy), schowasz ikoną przekreślonego oka obok niej. Zostaje schowana także w kolejnych `i`. Schowane są pod sylwetką w zwiniętej liście **Ignorowane**, skąd można je przywrócić — wrócą na listę przy następnym `i`. Lista jest osobna dla każdej postaci.
 
 ## Menedżer pojemników
 

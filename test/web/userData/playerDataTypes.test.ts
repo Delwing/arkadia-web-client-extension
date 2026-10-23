@@ -441,7 +441,7 @@ describe('enemyResistancesType', () => {
 
 describe('zlomType', () => {
     it('keys items by kind and short and writes through the store cache', async () => {
-        await updateZlomSnapshot(() => ({ bronie: [weapon('miecz'), weapon('miecz', { opis: 'inny' })], tarcze: [], zbroje: [] }));
+        await updateZlomSnapshot(() => ({ bronie: [weapon('miecz'), weapon('miecz', { opis: 'inny' })], tarcze: [], zbroje: [], ubrania: [], dodatki: [] }));
         expect((await zlomType.read()).map(i => i.key)).toEqual(['bronie:miecz']);
 
         const listener = jest.fn();
@@ -629,7 +629,7 @@ describe('all player data types together', () => {
         await dissolveFoodGroup('ryba');
         await linkFoods('miesem', 'jajo');
         await updateEnemyResistanceSnapshot(() => ({ entries: [resistance('kikimora', 1)] }));
-        await updateZlomSnapshot(() => ({ bronie: [weapon('miecz')], tarcze: [], zbroje: [] }));
+        await updateZlomSnapshot(() => ({ bronie: [weapon('miecz')], tarcze: [], zbroje: [], ubrania: [], dodatki: [] }));
         await recordTransportSegment(segment(10, BASE + 100_000));
         await addDeliveryRecords('Alice', [delivery(1)]);
         const before = await snapshot();

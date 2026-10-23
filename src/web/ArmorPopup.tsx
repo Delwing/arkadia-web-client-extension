@@ -1,13 +1,32 @@
 import React, { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, EyeOff, Undo2 } from 'lucide-react';
 import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
 import { usePopup } from './hooks/usePopup';
 import { usePopupData } from './hooks/usePopupData';
-import { getWornArmor, type WornArmor } from '@client/scripts/armor';
+import { getWornArmor, ignoreTodo, unignoreTodo, type WornArmor } from '@client/scripts/armor';
 import ArmorILinePicker, { type ILineSubject } from './ArmorILinePicker';
 import ArmorOdmianaHint from './ArmorOdmianaHint';
 
 const POPUP_ID = 'popup:armor';
+
+const EXTRA_KINDS = { ubrania: 'Ubranie', dodatki: 'Dodatek' } as const;
+
+/** One state for all of them: a guild or club item is just one more thing to leave alone */
+const IGNORE_TITLE = 'Ignoruj (np. przedmiot gildiowy lub klubowy): nie pokazuj go tu więcej';
+
+/** Leaves a piece or line of "Do uzupełnienia" alone for good */
+const IgnoreButton: React.FC<{ text: string }> = ({ text }) => (
+    <button
+        type="button"
+        className="armor-popup__todo-ignore"
+        title={IGNORE_TITLE}
+        // Not a click on the line: that would pick it for the złom list
+        onMouseUp={e => e.stopPropagation()}
+        onClick={() => ignoreTodo(text)}
+    >
+        <EyeOff size={12} />
+    </button>
+);
 
 type Slot = 'glowa' | 'korpus' | 'lewe ramie' | 'prawe ramie' | 'dlonie' | 'nogi' | 'stopy' | 'tarcza';
 
@@ -233,6 +252,21 @@ const ArmorPopup: React.FC = () => {
                         })}
                     </svg>
                 </div>
+                {armor.extras.length > 0 && (
+                    <div className="armor-popup__extras">
+                        {armor.extras.map(({ name, kind, material }) => (
+                            <span
+                                key={name}
+                                className={`popup-badge armor-popup__extra${kind ? ` armor-popup__extra--${kind}` : ''}`}
+                                title={kind
+                                    ? `${EXTRA_KINDS[kind]}${material ? `, z ${material}` : ''}`
+                                    : 'Nie ma go w złomie. Oceń go, żeby wiedzieć, czy to ubranie, czy dodatek.'}
+                            >
+                                {name}
+                            </span>
+                        ))}
+                    </div>
+                )}
                 {hasTodo && (
                     <div className="armor-popup__todo" ref={todo}>
                         <div className="armor-popup__todo-title">Do uzupełnienia (z ostatniego <code>i</code>)</div>
@@ -255,6 +289,7 @@ const ArmorPopup: React.FC = () => {
                                                 <span>{name}</span>
                                                 <span className="armor-popup__todo-piece-action">wskaż <ChevronRight size={12} /></span>
                                             </button>
+                                            <IgnoreButton text={name} />
                                         </li>
                                     ))}
                                 </ul>
@@ -263,7 +298,7 @@ const ArmorPopup: React.FC = () => {
                         {armor.unknownLines.length > 0 && (
                             <>
                                 <div className="armor-popup__todo-hint">
-                                    Linie, których klient nie rozpoznaje. Jeśli to zbroja, zaznacz fragment, który ją wyróżnia (albo kliknij całą linię), i wskaż przedmiot ze złomu.
+                                    Linie, których klient nie rozpoznaje. Jeśli to zbroja, ubranie albo dodatek, zaznacz fragment, który go wyróżnia (albo kliknij całą linię), i wskaż przedmiot ze złomu.
                                 </div>
                                 <ul className="armor-popup__todo-list armor-popup__todo-list--lines">
                                     {armor.unknownLines.map((line, i) => (
@@ -273,13 +308,34 @@ const ArmorPopup: React.FC = () => {
                                             title="Zaznacz fragment albo kliknij całą linię"
                                             onMouseUp={e => pickFrom(line, e.currentTarget)}
                                         >
-                                            {line}
+                                            <span className="armor-popup__todo-line-text">{line}</span>
+                                            <IgnoreButton text={line} />
                                         </li>
                                     ))}
                                 </ul>
                             </>
                         )}
                     </div>
+                )}
+                {armor.ignored.length > 0 && (
+                    <details className="armor-popup__ignored">
+                        <summary>Ignorowane ({armor.ignored.length})</summary>
+                        <ul className="armor-popup__ignored-list">
+                            {armor.ignored.map(text => (
+                                <li key={text}>
+                                    <span className="armor-popup__ignored-text">{text}</span>
+                                    <button
+                                        type="button"
+                                        className="armor-popup__todo-ignore"
+                                        title="Przywróć: pokaż w Do uzupełnienia od następnego i"
+                                        onClick={() => unignoreTodo(text)}
+                                    >
+                                        <Undo2 size={12} />
+                                    </button>
+                                </li>
+                            ))}
+                        </ul>
+                    </details>
                 )}
                 {subject && (
                     <ArmorILinePicker subject={subject} lines={armor.unknownLines} onClose={() => setPicking(null)} />

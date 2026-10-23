@@ -17,6 +17,7 @@ import {
     type ArmorEntry,
     type ShieldEntry,
     type WeaponEntry,
+    type WearableEntry,
     type ZlomSnapshot,
 } from '@modules/data/zlomStore';
 import { getOdmiana, getOdmianaSnapshot, subscribeOdmiana, type OdmianaSnapshot } from '@modules/data/odmianaStore';
@@ -27,6 +28,7 @@ import {
     type CrowdShield,
     type CrowdSnapshot,
     type CrowdWeapon,
+    type CrowdWearable,
 } from './crowdSnapshot';
 
 /** How an entry of the view came to be */
@@ -42,11 +44,14 @@ export interface CrowdMarks {
 export type ViewWeapon = WeaponEntry & CrowdMarks;
 export type ViewArmour = ArmorEntry & CrowdMarks;
 export type ViewShield = ShieldEntry & CrowdMarks;
+export type ViewWearable = WearableEntry & CrowdMarks;
 
 export interface ZlomView extends ZlomSnapshot {
     bronie: ViewWeapon[];
     zbroje: ViewArmour[];
     tarcze: ViewShield[];
+    ubrania: ViewWearable[];
+    dodatki: ViewWearable[];
 }
 
 const key = (name: string) => name.trim().toLowerCase();
@@ -136,6 +141,25 @@ function mergeShields(own: ShieldEntry[], crowd: CrowdShield[]): ViewShield[] {
     return result;
 }
 
+function mergeWearables(own: WearableEntry[], crowd: CrowdWearable[]): ViewWearable[] {
+    const byName = new Map(crowd.map(c => [key(c.short), c]));
+    const result: ViewWearable[] = own.map(entry => {
+        const match = byName.get(key(entry.short));
+        return match ? fill(entry, match as unknown as Record<string, unknown>, ['shortAlt', 'material', 'iLine']) : entry;
+    });
+    const ownNames = new Set(own.map(e => key(e.short)));
+    for (const c of crowd) {
+        if (ownNames.has(key(c.short))) continue;
+        result.push({
+            short: c.short, shortAlt: c.shortAlt, material: c.material, opis: c.opis,
+            waga: 0, obj: 0, cena: 0, roomId: null,
+            ...(c.iLine ? { iLine: c.iLine } : {}),
+            fromCrowd: true, confirmations: c.confirmations,
+        });
+    }
+    return result;
+}
+
 /** The player's list completed from the crowd list; just the player's list without one */
 export function buildZlomView(own: ZlomSnapshot, crowd: CrowdSnapshot | null): ZlomView {
     if (!crowd) return own;
@@ -143,6 +167,8 @@ export function buildZlomView(own: ZlomSnapshot, crowd: CrowdSnapshot | null): Z
         bronie: mergeWeapons(own.bronie, crowd.bronie),
         zbroje: mergeArmour(own.zbroje, crowd.zbroje),
         tarcze: mergeShields(own.tarcze, crowd.tarcze),
+        ubrania: mergeWearables(own.ubrania, crowd.ubrania),
+        dodatki: mergeWearables(own.dodatki, crowd.dodatki),
     };
 }
 
@@ -224,7 +250,7 @@ export function isDeclined(name: string): boolean {
     return !!getOdmiana(name) || !!getKnownOdmiany()[key(name)];
 }
 
-export type ZlomGroup = 'bronie' | 'zbroje' | 'tarcze';
+export type ZlomGroup = 'bronie' | 'zbroje' | 'tarcze' | 'ubrania' | 'dodatki';
 
 /**
  * What an entry still lacks, as "brak ..." words: what a player carrying it
@@ -232,7 +258,7 @@ export type ZlomGroup = 'bronie' | 'zbroje' | 'tarcze';
  * Optional fields - the i line, the name evaluating gives - never count.
  * Mirrors the gaps the public spis zlomu page shows.
  */
-export function entryGaps(group: ZlomGroup, entry: ViewWeapon | ViewArmour | ViewShield, odmiany: OdmianaSnapshot): string[] {
+export function entryGaps(group: ZlomGroup, entry: ViewWeapon | ViewArmour | ViewShield | ViewWearable, odmiany: OdmianaSnapshot): string[] {
     const gaps: string[] = [];
     if (!odmiany[key(entry.short)]) gaps.push('odmiany');
     if (group === 'bronie') {
@@ -241,6 +267,8 @@ export function entryGaps(group: ZlomGroup, entry: ViewWeapon | ViewArmour | Vie
         if (blank(w.rodzaj)) gaps.push('rodzaju');
         if (blank(w.chwyt)) gaps.push('chwytu');
         if (!w.klute && !w.obuch && !w.ciete) gaps.push('obrażeń');
+    } else if (group === 'ubrania' || group === 'dodatki') {
+        if (blank((entry as ViewWearable).material)) gaps.push('materiału');
     } else {
         if (group === 'zbroje' && blank((entry as ViewArmour).typ)) gaps.push('typu');
         if (blank((entry as ViewArmour | ViewShield).oslona)) gaps.push('osłony');

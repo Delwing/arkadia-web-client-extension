@@ -33,10 +33,12 @@ export const QUIET_MS = 5 * 60 * 1000;
 /** But never hold back new data longer than this, however steady the uploads. */
 export const MAX_WAIT_MS = 60 * 60 * 1000;
 
-const GROUPS: Partial<Record<CrowdKind, 'bronie' | 'tarcze' | 'zbroje' | 'odmiany'>> = {
+const GROUPS: Partial<Record<CrowdKind, 'bronie' | 'tarcze' | 'zbroje' | 'ubrania' | 'dodatki' | 'odmiany'>> = {
     bron: 'bronie',
     tarcza: 'tarcze',
     zbroja: 'zbroje',
+    ubranie: 'ubrania',
+    dodatek: 'dodatki',
     odmiana: 'odmiany',
 };
 
@@ -51,6 +53,8 @@ export interface Snapshot {
     bronie: Record<string, unknown>[];
     tarcze: Record<string, unknown>[];
     zbroje: Record<string, unknown>[];
+    ubrania: Record<string, unknown>[];
+    dodatki: Record<string, unknown>[];
     odmiany: Record<string, unknown>[];
 }
 
@@ -60,7 +64,7 @@ interface SnapshotMetadata {
 }
 
 function emptySnapshot(now: number): Snapshot {
-    return { generatedAt: new Date(now).toISOString(), bronie: [], tarcze: [], zbroje: [], odmiany: [] };
+    return { generatedAt: new Date(now).toISOString(), bronie: [], tarcze: [], zbroje: [], ubrania: [], dodatki: [], odmiany: [] };
 }
 
 /**

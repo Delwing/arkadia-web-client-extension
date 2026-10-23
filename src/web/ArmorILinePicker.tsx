@@ -40,6 +40,8 @@ function useZlomSnapshot(): ZlomSnapshot {
 const nameOf = (candidate: ILineCandidate) => candidate.entry.shortAlt || candidate.entry.short;
 const slotsOf = (candidate: ILineCandidate) => coveredBy(candidate.kind, candidate.entry);
 const coverText = (slots: string[]) => slots.map(slot => SLOT_NAMES[slot] ?? slot).join(', ');
+/** Clothes and add-ons take no slot: they are shown apart, as badges */
+const WEARABLE: Partial<Record<ILineCandidate['kind'], string>> = { ubrania: 'ubranie', dodatki: 'dodatek' };
 
 /**
  * Match what the `i` reply says to a piece already in the złom list. For a
@@ -80,7 +82,8 @@ const ArmorILinePicker: React.FC<{
         : null;
     const coversLine = subject.type === 'piece' || !!preview?.matched.includes(subject.line);
     const fragmentOk = subject.type === 'piece' || !!preview?.valid;
-    const canSave = !!target && fragmentOk && coversLine && slots.length > 0 && !saving;
+    const wearable = target ? WEARABLE[target.kind] : undefined;
+    const canSave = !!target && fragmentOk && coversLine && (slots.length > 0 || !!wearable) && !saving;
     const renames = subject.type === 'piece' && target
         && ![target.entry.short, target.entry.shortAlt].some(n => n?.toLowerCase() === subject.name.toLowerCase());
 
@@ -123,7 +126,7 @@ const ArmorILinePicker: React.FC<{
             <Field label={needle ? 'Wyniki ze złomu' : 'Podobne w złomie'}>
                 {ranked.length === 0 ? (
                     <div className="armor-iline__empty">
-                        W złomie nie ma jeszcze zbroi ani tarcz. Oceń przedmiot, żeby móc go tu wybrać.
+                        W złomie nie ma jeszcze niczego do noszenia. Oceń przedmiot, żeby móc go tu wybrać.
                     </div>
                 ) : (
                     <>
@@ -141,7 +144,7 @@ const ArmorILinePicker: React.FC<{
                                             >
                                                 <span className="armor-iline__candidate-name">{nameOf(candidate)}</span>
                                                 <span className="armor-iline__candidate-meta">
-                                                    {covers.length ? coverText(covers) : 'osłona nieznana'}
+                                                    {WEARABLE[candidate.kind] ?? (covers.length ? coverText(covers) : 'osłona nieznana')}
                                                     {candidate.entry.iLine ? ' · ma linię i' : ''}
                                                 </span>
                                             </button>
@@ -160,7 +163,9 @@ const ArmorILinePicker: React.FC<{
             </Field>
             {target && (
                 <div className="armor-iline__preview">
-                    {slots.length > 0 ? (
+                    {wearable ? (
+                        <div>{nameOf(target)} pokaże się pod sylwetką jako {wearable}.</div>
+                    ) : slots.length > 0 ? (
                         <div>{nameOf(target)} zajmie: {coverText(slots)}</div>
                     ) : (
                         <div className="armor-iline__warn armor-iline__warn--error">
