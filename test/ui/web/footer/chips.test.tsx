@@ -202,10 +202,10 @@ describe("footer chips", () => {
   describe("WeaponChip", () => {
     const tone = () => [...chip()!.classList].filter((c) => /^chip--(warn|danger|ok)$/.test(c));
 
-    test("neutral out of combat, drawn or not", () => {
+    test("green while drawn, neutral while sheathed out of combat", () => {
       mount(<WeaponChip />);
       emit("weapon_state", true);
-      expect(tone()).toEqual([]);
+      expect(tone()).toEqual(["chip--ok"]);
       emit("weapon_state", false);
       expect(tone()).toEqual([]);
     });
@@ -214,7 +214,7 @@ describe("footer chips", () => {
       mount(<WeaponChip />);
       emit("weapon_state", true);
       emit("combatState", true);
-      expect(tone()).toEqual([]);
+      expect(tone()).toEqual(["chip--ok"]);
       emit("weapon_state", false);
       expect(tone()).toEqual(["chip--danger"]);
       emit("combatState", false);

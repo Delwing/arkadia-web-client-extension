@@ -457,7 +457,8 @@ function useWeaponChipCommands(): WeaponChipCommands {
 }
 
 /**
- * Whether a weapon is drawn. Neutral either way; red only when fighting without it.
+ * Whether a weapon is drawn. Green while drawn, neutral while sheathed, red when
+ * fighting without it.
  * Click sends the character's draw command while sheathed and the sheathe command
  * while drawn (`/dob` and `/op` by default); a long press sends the hold command.
  */
@@ -469,7 +470,7 @@ export function WeaponChip() {
   useClientEvent<boolean>("combatState", (v) => setInCombat(Boolean(v)));
   useClientEvent("client.disconnect", () => setInCombat(false));
   if (drawn === null) return null;
-  const tone: ChipTone | undefined = inCombat && !drawn ? "danger" : undefined;
+  const tone: ChipTone | undefined = drawn ? "ok" : inCombat ? "danger" : undefined;
   const click = drawn ? commands.sheathe : commands.draw;
   const send = (command: string) => eventBus.emit("sendCommand", { command });
   return (
