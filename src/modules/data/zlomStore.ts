@@ -152,17 +152,28 @@ export function sameItem(a: string, b: string): boolean {
  * The name evaluating gives an item is its own name in another case
  * ("lsniaca plomienista tarcze"). One that is another item altogether ("owalna
  * duza pawez" known as "krwistoczerwony poszarpany plaszcz") came from an
- * evaluation read across two items, and would make the one item pass for the
- * other: it is dropped.
+ * evaluation read across two items: a `pokaz`, which has no "Oceniasz starannie"
+ * line, read on as the `ocen` before it.
  */
+export function hasStrayAlt(entry: { short: string; shortAlt?: string }): boolean {
+    return !!entry.shortAlt && !!entry.short && !sameItem(entry.short, entry.shortAlt);
+}
+
+/** Without a stray evaluated name, which would make the one item pass for the other */
 export function withoutStrayAlt<T extends { short: string; shortAlt?: string }>(entry: T): T {
-    if (!entry.shortAlt || !entry.short || sameItem(entry.short, entry.shortAlt)) return entry;
+    if (!hasStrayAlt(entry)) return entry;
     const { shortAlt: _, ...rest } = entry;
     return rest as T;
 }
 
+/**
+ * An own entry with a stray evaluated name is dropped whole: the description
+ * and the magic and silver marks came from the item evaluated before it, and
+ * the description is what the entry is kept by. Evaluating the item again, or
+ * `pokaz` at a shop, brings it back right.
+ */
 function cleanList<T extends { short: string; shortAlt?: string }>(list: unknown): T[] {
-    return Array.isArray(list) ? (list as T[]).map(withoutStrayAlt) : [];
+    return Array.isArray(list) ? (list as T[]).filter(entry => !hasStrayAlt(entry)) : [];
 }
 
 function normalize(raw: unknown): ZlomSnapshot {
@@ -195,7 +206,7 @@ export function ensureZlomLoaded(): Promise<void> {
             const groups = ['bronie', 'tarcze', 'zbroje', 'ubrania', 'dodatki'] as const;
             if (groups.some(group => {
                 const stored = Array.isArray(raw?.[group]) ? raw[group] as ZlomEntry[] : [];
-                return (cache[group] as ZlomEntry[]).some((entry, i) => entry !== stored[i]);
+                return stored.length !== cache[group].length || (cache[group] as ZlomEntry[]).some((entry, i) => entry !== stored[i]);
             })) void persist();
         } catch {
             cache = emptySnapshot();

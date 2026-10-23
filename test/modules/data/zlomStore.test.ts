@@ -99,18 +99,22 @@ describe('the name evaluating gives an item', () => {
         expect(withoutStrayAlt(shield('wysoka stalowa pawez', 'olbrzymi lupkowy glaz'))).not.toHaveProperty('shortAlt');
     });
 
-    test('is dropped from a list stored with a stray one, and the fix is kept', async () => {
+    test('drops an own entry with a stray one whole, and the fix is kept', async () => {
         await ensureZlomLoaded();
         await __resetZlomStoreForTests();
         await storeInIndexedDB(
             { dbName: 'ArkadiaZlom', storeName: 'zlom', key: 'snapshot' },
-            { bronie: [], zbroje: [], tarcze: [shield('owalna duza pawez', 'krwistoczerwony poszarpany plaszcz')] },
+            { bronie: [], zbroje: [], tarcze: [
+                shield('lsniaca plomienista tarcza', 'lsniaca plomienista tarcze'),
+                // Its description and magic are the cloak's too
+                shield('owalna duza pawez', 'krwistoczerwony poszarpany plaszcz'),
+            ] },
         );
         await ensureZlomLoaded();
-        expect(getZlomSnapshot().tarcze[0]).not.toHaveProperty('shortAlt');
+        expect(getZlomSnapshot().tarcze.map(e => e.short)).toEqual(['lsniaca plomienista tarcza']);
         await new Promise(resolve => setTimeout(resolve, 0));
         const stored = await getFromIndexedDB<{ tarcze: ShieldEntry[] }>({ dbName: 'ArkadiaZlom', storeName: 'zlom', key: 'snapshot' });
-        expect(stored!.tarcze[0]).not.toHaveProperty('shortAlt');
+        expect(stored!.tarcze.map(e => e.short)).toEqual(['lsniaca plomienista tarcza']);
         await __resetZlomStoreForTests();
     });
 });
