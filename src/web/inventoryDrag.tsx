@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import eventBus from '@modules/core/eventBus';
 import type { ContainerItem } from '@client/scripts/prettyContainers';
 
@@ -11,6 +11,10 @@ import type { ContainerItem } from '@client/scripts/prettyContainers';
  *
  * Pointer events rather than HTML drag and drop: that one only ever drags a
  * picture of the row, while the row stays put.
+ *
+ * The window re-renders only when the gap moves: the row under the cursor is
+ * moved by hand on every pointer move, and where the gap goes is worked out
+ * once a frame.
  */
 
 /** Something being moved: an item carried, or one inside a bag from /pojemniki */
@@ -34,8 +38,6 @@ interface Dragging {
     /** Where in the row it was grabbed */
     offsetX: number;
     offsetY: number;
-    x: number;
-    y: number;
 }
 
 /** The opening in a list where the dragged item would land */
@@ -85,6 +87,8 @@ export interface InventoryDrag {
     pending: Pending | null;
     /** Pointer down on a row that can be dragged */
     press: (e: React.PointerEvent<HTMLElement>, source: DragSource, item: DragItem) => void;
+    /** The row following the cursor */
+    floatRef: (el: HTMLElement | null) => void;
     /** The area a zone takes drops in */
     hitRef: (zone: DropZone) => (el: HTMLElement | null) => void;
     /** The element whose `[data-drag-row]` children the gap goes between */
@@ -110,6 +114,8 @@ export function useInventoryDrag(stillThere: (pending: Pending) => boolean): Inv
     const draggingRef = useRef<Dragging | null>(null);
     const gapRef = useRef<Gap | null>(null);
     const dragged = useRef(false);
+    const pointer = useRef({ x: 0, y: 0 });
+    const float = useRef<HTMLElement | null>(null);
     const zones = useRef(new Map<DropZone, { hit?: HTMLElement; list?: HTMLElement }>());
 
     const zone = (key: DropZone) => {
@@ -119,45 +125,41 @@ export function useInventoryDrag(stillThere: (pending: Pending) => boolean): Inv
     const hitRef = useCallback((key: DropZone) => (el: HTMLElement | null) => { zone(key).hit = el ?? undefined; }, []);
     const listRef = useCallback((key: DropZone) => (el: HTMLElement | null) => { zone(key).list = el ?? undefined; }, []);
 
+    const place = () => {
+        const current = draggingRef.current;
+        if (!float.current || !current) return;
+        float.current.style.transform =
+            `translate(${pointer.current.x - current.offsetX}px, ${pointer.current.y - current.offsetY}px)`;
+    };
+    const floatRef = useCallback((el: HTMLElement | null) => {
+        float.current = el;
+        place();
+    }, []);  
+
     useEffect(() => {
         const findGap = (current: Dragging): Gap | null => {
+            const { x, y } = pointer.current;
             for (const [key, { hit, list }] of zones.current) {
                 if (!hit || !accepts(current.source, key)) continue;
                 const r = hit.getBoundingClientRect();
-                if (current.x < r.left || current.x > r.right || current.y < r.top || current.y > r.bottom) continue;
-                const rows = list ? [...list.querySelectorAll<HTMLElement>(':scope > [data-drag-row]')] : [];
-                const index = rows.filter(row => {
+                if (x < r.left || x > r.right || y < r.top || y > r.bottom) continue;
+                let index = 0;
+                // Rows go top to bottom, so the first one below the cursor ends the count
+                for (const row of list?.querySelectorAll<HTMLElement>(':scope > [data-drag-row]') ?? []) {
                     const box = row.getBoundingClientRect();
-                    return box.top + box.height / 2 < current.y;
-                }).length;
+                    if (box.top + box.height / 2 >= y) break;
+                    index += 1;
+                }
                 return { zone: key, index, height: current.height };
             }
             return null;
         };
 
-        const move = (e: PointerEvent) => {
-            const press = pressed.current;
-            if (!press) return;
-            let current = draggingRef.current;
-            if (!current) {
-                if (Math.hypot(e.clientX - press.x, e.clientY - press.y) < DRAG_THRESHOLD_PX) return;
-                const rect = press.el.getBoundingClientRect();
-                current = {
-                    source: press.source,
-                    item: press.item,
-                    width: rect.width,
-                    height: rect.height,
-                    offsetX: press.x - rect.left,
-                    offsetY: press.y - rect.top,
-                    x: e.clientX,
-                    y: e.clientY,
-                };
-                dragged.current = true;
-            } else {
-                current = { ...current, x: e.clientX, y: e.clientY };
-            }
-            draggingRef.current = current;
-            setDragging(current);
+        let frame = 0;
+        const updateGap = () => {
+            frame = 0;
+            const current = draggingRef.current;
+            if (!current) return;
             const next = findGap(current);
             const prev = gapRef.current;
             if (next?.zone !== prev?.zone || next?.index !== prev?.index) {
@@ -166,9 +168,35 @@ export function useInventoryDrag(stillThere: (pending: Pending) => boolean): Inv
             }
         };
 
+        const move = (e: PointerEvent) => {
+            const press = pressed.current;
+            if (!press) return;
+            pointer.current = { x: e.clientX, y: e.clientY };
+            if (!draggingRef.current) {
+                if (Math.hypot(e.clientX - press.x, e.clientY - press.y) < DRAG_THRESHOLD_PX) return;
+                const rect = press.el.getBoundingClientRect();
+                const current = {
+                    source: press.source,
+                    item: press.item,
+                    width: rect.width,
+                    height: rect.height,
+                    offsetX: press.x - rect.left,
+                    offsetY: press.y - rect.top,
+                };
+                dragged.current = true;
+                draggingRef.current = current;
+                setDragging(current);
+            }
+            place();
+            if (!frame) frame = requestAnimationFrame(updateGap);
+        };
+
         const end = (dropIt: boolean) => {
+            if (frame) cancelAnimationFrame(frame);
+            frame = 0;
             const current = draggingRef.current;
-            const landing = gapRef.current;
+            // A drop right after a move lands where the cursor is, not where the last frame saw it
+            const landing = current ? findGap(current) : null;
             pressed.current = null;
             draggingRef.current = null;
             gapRef.current = null;
@@ -194,8 +222,9 @@ export function useInventoryDrag(stillThere: (pending: Pending) => boolean): Inv
             window.removeEventListener('pointerup', up);
             window.removeEventListener('pointercancel', cancel);
             window.removeEventListener('keydown', key);
+            if (frame) cancelAnimationFrame(frame);
         };
-    }, []);
+    }, []);  
 
     // No selecting text and a grabbing hand anywhere while something is held
     useEffect(() => {
@@ -220,8 +249,9 @@ export function useInventoryDrag(stillThere: (pending: Pending) => boolean): Inv
         pressed.current = { source, item, el: e.currentTarget, x: e.clientX, y: e.clientY };
     }, []);
 
-    const isAway = (source: DragSource) =>
-        (!!dragging && sameSource(dragging.source, source)) || (!!pending && sameSource(pending.source, source));
+    const isAway = useCallback((source: DragSource) =>
+        (!!dragging && sameSource(dragging.source, source)) || (!!pending && sameSource(pending.source, source)),
+    [dragging, pending]);
 
     const swallowClick = useCallback(() => {
         const was = dragged.current;
@@ -231,7 +261,11 @@ export function useInventoryDrag(stillThere: (pending: Pending) => boolean): Inv
 
     const cancelPending = useCallback(() => setPending(null), []);
 
-    return { dragging, gap, pending, press, hitRef, listRef, isAway, swallowClick, cancelPending };
+    // The same object until something the window shows changes, so rows do not re-render while it is held
+    return useMemo(
+        () => ({ dragging, gap, pending, press, floatRef, hitRef, listRef, isAway, swallowClick, cancelPending }),
+        [dragging, gap, pending, press, floatRef, hitRef, listRef, isAway, swallowClick, cancelPending],
+    );
 }
 
 /** A row of a drop list: draggable ones have a source and count for the gap's place */

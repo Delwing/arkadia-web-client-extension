@@ -407,8 +407,9 @@ function DragFloat({ drag }: { drag: InventoryDrag }) {
     if (!dragging) return null;
     return (
         <div
+            ref={drag.floatRef}
             className="inventory-popup__float"
-            style={{ left: dragging.x - dragging.offsetX, top: dragging.y - dragging.offsetY, width: dragging.width }}
+            style={{ width: dragging.width }}
         >
             <ItemVisual item={dragging.item} />
         </div>
