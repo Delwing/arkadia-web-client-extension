@@ -32,17 +32,6 @@ describe('plugin herbs and containers', () => {
         await expect(api.herbs.form('deliona', 5)).resolves.toBe('zoltych jasnych kwiatow');
     });
 
-    test('forwards awaitable herb builds with cancellation and reports an uninitialized manager', async () => {
-        const bags = { 1: { herbs: { deliona: 2 } } };
-        const buildBags = vi.fn().mockResolvedValue(bags);
-        const api = new PluginApiImpl({ herbManager: { buildBags } } as never, 'zielarz');
-        const options = { signal: new AbortController().signal, timeout: 1000 };
-        await expect(api.herbs.buildBags(options)).resolves.toEqual(bags);
-        expect(buildBags).toHaveBeenCalledWith(options);
-        const unavailable = new PluginApiImpl({} as never, 'other');
-        await expect(unavailable.herbs.buildBags()).rejects.toThrow('Herb manager not initialized');
-    });
-
     test('a plugin sets bags only for its own types', () => {
         const jubiler = new PluginApiImpl({} as never, 'jubiler');
         const other = new PluginApiImpl({} as never, 'other');

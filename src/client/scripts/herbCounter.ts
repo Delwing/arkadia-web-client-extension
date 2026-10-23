@@ -122,11 +122,8 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
     const bagConditionRegex = /^Ten element ekwipunku wyglada na (?<desc>.+)$/i;
 
     let awaiting = false;
-    let build: {
-        resolve: (bags: HerbBagsState) => void;
-        reject: (error: Error) => void;
-        cleanup: () => void;
-    } | null = null;
+    let buildGeneration = 0;
+    let buildTimeout: ReturnType<typeof setTimeout> | undefined;
     let left = 0;
     const totals: Record<string, number> = {};
     const bagTotals: Record<number, HerbBagState> = {};
@@ -454,41 +451,37 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
     }
 
     function resetBuild() {
-        const pending = build;
-        build = null;
-        pending?.cleanup();
+        clearTimeout(buildTimeout);
+        buildTimeout = undefined;
+        buildGeneration++;
         awaiting = false;
         left = 0;
         currentBag = 0;
         Object.keys(totals).forEach(k => delete totals[k]);
         Object.keys(bagTotals).forEach(k => delete bagTotals[Number(k)]);
-        return pending;
     }
 
-    function failBuild(reason: 'no-bags' | 'timeout' | 'aborted' | 'disconnected' | 'character-changed' | 'error', error: Error) {
-        const pending = resetBuild();
-        if (!pending) return;
-        pending.reject(error);
+    function failBuild(reason: 'no-bags' | 'timeout' | 'disconnected' | 'character-changed' | 'error') {
+        if (!awaiting) return;
+        resetBuild();
         client.sendEvent('herbsDatabaseBuildFailed', {reason});
     }
 
     function finish() {
-        const snapshot = normalizeHerbBagsState(structuredClone(bagTotals));
-        const pending = resetBuild();
-        if (!pending) return;
-        storedBags = snapshot;
-        client.print(buildSummary(storedBags, true, false));
+        storedBags = normalizeHerbBagsState(structuredClone(bagTotals));
+        const snapshot = structuredClone(storedBags);
+        const output = buildSummary(storedBags, true, false);
+        resetBuild();
+        client.print(output);
         persistBags();
-        pending.resolve(structuredClone(snapshot));
-        // Unlike herbCounts, this fires only after a successful complete scan.
-        client.sendEvent('herbsDatabaseBuilt', structuredClone(snapshot));
+        client.sendEvent('herbsDatabaseBuilt', snapshot);
     }
 
     client.Triggers.registerTrigger(countRegex, (line, matches) => {
         if (!awaiting || left > 0) return line;
         left = polishWordToNumber(matches.groups?.num || matches[1]);
         if (!Number.isInteger(left) || left < 0) {
-            failBuild('error', new Error('Nie rozpoznano liczby woreczkow.'));
+            failBuild('error');
             return line;
         }
         if (left === 0) {
@@ -558,53 +551,33 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
         return line;
     });
 
-    function buildBags(options: { timeout?: number; signal?: AbortSignal } = {}): Promise<HerbBagsState> {
-        if (build) return Promise.reject(new Error('Budowanie bazy ziol juz trwa.'));
-        if (options.signal?.aborted) return Promise.reject(new DOMException('Przerwano budowanie bazy ziol.', 'AbortError'));
-        const timeout = options.timeout ?? 30000;
-        if (!Number.isFinite(timeout) || timeout <= 0) return Promise.reject(new Error('Nieprawidlowy limit czasu budowania bazy ziol.'));
-        return new Promise((resolve, reject) => {
-            const onAbort = () => failBuild('aborted', new DOMException('Przerwano budowanie bazy ziol.', 'AbortError'));
-            const timer = setTimeout(() => {
-                const error = new Error('Gra nie odpowiedziala podczas budowania bazy ziol.');
-                error.name = 'TimeoutError';
-                failBuild('timeout', error);
-            }, timeout);
-            const pending = {
-                resolve, reject,
-                cleanup: () => {
-                    clearTimeout(timer);
-                    options.signal?.removeEventListener('abort', onAbort);
-                },
-            };
-            build = pending;
-            options.signal?.addEventListener('abort', onAbort, {once: true});
-            void ensureData().then(() => {
-                if (build !== pending) return;
-                awaiting = true;
-                client.sendCommand('policz swoje woreczki');
-            }).catch(error => {
-                if (build === pending) failBuild('error', error instanceof Error ? error : new Error(String(error)));
-            });
-        });
-    }
-
-    // Keep the alias callback non-blocking; plugins can await buildBags instead.
     async function start() {
-        void buildBags().catch(error => client.println(error.message));
-        await ensureData();
+        if (awaiting) {
+            client.sendEvent('herbsDatabaseBuildFailed', {reason: 'busy'});
+            return;
+        }
+        awaiting = true;
+        const generation = ++buildGeneration;
+        buildTimeout = setTimeout(() => failBuild('timeout'), 30000);
+        try {
+            await ensureData();
+            if (!awaiting || generation !== buildGeneration) return;
+            client.sendCommand('policz swoje woreczki');
+        } catch {
+            if (generation === buildGeneration) failBuild('error');
+        }
     }
 
     client.Triggers.registerTrigger(/^Nie widzisz tu niczego takiego\.$/, line => {
-        if (awaiting && left === 0) failBuild('no-bags', new Error('Brak woreczkow do przeliczenia.'));
+        if (awaiting && left === 0) failBuild('no-bags');
         return line;
     });
     client.Triggers.registerTrigger(/^Zajrzyj do czego\?$/, line => {
-        if (awaiting && left > 0) failBuild('no-bags', new Error('Nie mozna zajrzec do liczonego woreczka.'));
+        if (awaiting && left > 0) failBuild('no-bags');
         return line;
     });
-    client.on('client.disconnect', () => failBuild('disconnected', new Error('Rozlaczono podczas budowania bazy ziol.')));
-    characterStorage.onCharacterChange(() => failBuild('character-changed', new Error('Zmieniono postac podczas budowania bazy ziol.')));
+    client.on('client.disconnect', () => failBuild('disconnected'));
+    characterStorage.onCharacterChange(() => failBuild('character-changed'));
 
     function evaluateBagConditions() {
         Object.keys(pendingConditions as Record<string, number>).forEach(key => {
@@ -750,7 +723,6 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
     const herbManagerApi: HerbManagerApi = {
         getBags: cloneBags,
         setBags,
-        buildBags,
         take,
         put,
         move,

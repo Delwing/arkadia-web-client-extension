@@ -3582,18 +3582,6 @@ export interface HerbsApi {
      */
     setBags(bags: HerbBagsState): void;
     /**
-     * Run the same bag scan as /ziola_buduj and resolve after saving the full database.
-     * The caller must make the bags accessible first. No pre/post commands run here.
-     * Emits herbsDatabaseBuilt on success; a failed scan keeps the previous database.
-     * Rejects when busy, no bags are accessible, disconnected, the character changes,
-     * the signal is aborted (AbortError), or the timeout expires (TimeoutError).
-     * @param options Total timeout in ms (default 30000) and optional cancellation signal.
-     */
-    buildBags(options?: {
-        timeout?: number;
-        signal?: AbortSignal;
-    }): Promise<HerbBagsState>;
-    /**
      * Take herbs from bags
      * Removes herbs from inventory and executes appropriate game commands
      *
@@ -5130,14 +5118,14 @@ export interface KnownEvents {
     "requestHerbCounts": void;
     "herbManagerClose": void;
     "herbCounts": unknown;
-    /** A complete /ziola_buduj or api.herbs.buildBags scan, after persistence. */
+    /** A complete /ziola_buduj scan, after persistence. */
     "herbsDatabaseBuilt": Record<number, {
         herbs: Record<string, number>;
         condition?: number;
     }>;
     /** A scan ended without replacing the previous herb database. */
     "herbsDatabaseBuildFailed": {
-        reason: 'no-bags' | 'timeout' | 'aborted' | 'disconnected' | 'character-changed' | 'error';
+        reason: 'no-bags' | 'timeout' | 'busy' | 'disconnected' | 'character-changed' | 'error';
     };
     /** Opens the Zioła window, optionally in a given mode (`/ziola2` opens the list). */
     "herbManagerOpen": {

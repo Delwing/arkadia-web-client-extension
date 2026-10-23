@@ -2698,16 +2698,6 @@ interface HerbsApi {
   setBags(bags: HerbBagsState): void;
 
   /**
-   * Run the same bag scan as /ziola_buduj and resolve after saving the full database.
-   * The caller must make the bags accessible first. No pre/post commands run here.
-   * Emits herbsDatabaseBuilt on success; a failed scan keeps the previous database.
-   * Rejects when busy, no bags are accessible, disconnected, the character changes,
-   * the signal is aborted (AbortError), or the timeout expires (TimeoutError).
-   * @param options Total timeout in ms (default 30000) and optional cancellation signal.
-   */
-  buildBags(options?: { timeout?: number; signal?: AbortSignal }): Promise<HerbBagsState>;
-
-  /**
    * Take herbs from bags
    * Removes herbs from inventory and executes appropriate game commands
    *

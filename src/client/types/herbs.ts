@@ -85,7 +85,6 @@ export interface HerbGiveResult {
 
 export interface HerbManagerApi {
     getBags(): HerbBagsState;
-    buildBags(options?: { timeout?: number; signal?: AbortSignal }): Promise<HerbBagsState>;
     setBags(bags: HerbBagsState): void;
     take(herbId: string, amount: number, fromBag?: number): Promise<number>;
     put(herbId: string, amount: number, bag: number): Promise<number>;
