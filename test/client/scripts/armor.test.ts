@@ -5,11 +5,13 @@ import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
 import initInventory from '@client/scripts/inventory';
 import Client from '@client/Client';
 import { characterStorage } from '@modules/core/storage';
+import { __setCrowdSnapshotForTests } from '@modules/crowd/crowdSnapshot';
 import initArmor, {
     assignILine,
     assignPiece,
     getWornArmor,
     ignoreTodo,
+    ignoredTodos,
     unignoreTodo,
     parseSlots,
     parseWear,
@@ -709,6 +711,30 @@ describe('clothes and add-ons from an i reply', () => {
         reply();
         expect(getWornArmor().unplaced).toEqual(['stalowa kolczuge klubowa']);
         expect(getWornArmor().ignored).toEqual(['Na twej piersi lsni znak gildii kupcow.']);
+    });
+
+    test('what other players ignore stays off the list too, until this character brings it back', () => {
+        __setCrowdSnapshotForTests({
+            generatedAt: 'x', bronie: [], tarcze: [], zbroje: [], ubrania: [], dodatki: [], odmiany: [],
+            ignorowane: [{ text: 'stalowa kolczuga klubowa', confirmations: 3 }],
+        });
+        try {
+            const reply = () => client.onLine([
+                'Trzymasz w rekach dlugi krwisty miecz.',
+                'Masz na sobie stalowa kolczuge klubowa.',
+                'Masz przy sobie bulke.',
+            ].join('\n'), 'text');
+            reply();
+            expect(getWornArmor().unplaced).toEqual([]);
+            expect(ignoredTodos()).toEqual([{ text: 'stalowa kolczuga klubowa', own: false, confirmations: 3 }]);
+
+            unignoreTodo('stalowa kolczuga klubowa');
+            reply();
+            expect(getWornArmor().unplaced).toEqual(['stalowa kolczuge klubowa']);
+            expect(ignoredTodos()).toEqual([]);
+        } finally {
+            __setCrowdSnapshotForTests(null);
+        }
     });
 });
 

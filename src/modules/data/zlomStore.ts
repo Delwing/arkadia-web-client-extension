@@ -133,15 +133,47 @@ function normalizeArmor(list: ArmorEntry[]): ArmorEntry[] {
     });
 }
 
+/** One word in two cases: "kolczuge" / "kolczuga", "dluga" / "dluga" */
+export function sameWord(a: string, b: string): boolean {
+    if (a === b) return true;
+    let shared = 0;
+    while (shared < a.length && shared < b.length && a[shared] === b[shared]) shared++;
+    return shared >= Math.max(3, Math.min(a.length, b.length) - 2);
+}
+
+/** "stalowa dluga kolczuge" (put on) is the złom entry "stalowa dluga kolczuga" */
+export function sameItem(a: string, b: string): boolean {
+    const wordsA = a.toLowerCase().split(/\s+/);
+    const wordsB = b.toLowerCase().split(/\s+/);
+    return wordsA.length === wordsB.length && wordsA.every((word, i) => sameWord(word, wordsB[i]));
+}
+
+/**
+ * The name evaluating gives an item is its own name in another case
+ * ("lsniaca plomienista tarcze"). One that is another item altogether ("owalna
+ * duza pawez" known as "krwistoczerwony poszarpany plaszcz") came from an
+ * evaluation read across two items, and would make the one item pass for the
+ * other: it is dropped.
+ */
+export function withoutStrayAlt<T extends { short: string; shortAlt?: string }>(entry: T): T {
+    if (!entry.shortAlt || !entry.short || sameItem(entry.short, entry.shortAlt)) return entry;
+    const { shortAlt: _, ...rest } = entry;
+    return rest as T;
+}
+
+function cleanList<T extends { short: string; shortAlt?: string }>(list: unknown): T[] {
+    return Array.isArray(list) ? (list as T[]).map(withoutStrayAlt) : [];
+}
+
 function normalize(raw: unknown): ZlomSnapshot {
     const s = (raw ?? {}) as Partial<ZlomSnapshot>;
     return {
-        bronie: Array.isArray(s.bronie) ? s.bronie : [],
-        tarcze: Array.isArray(s.tarcze) ? s.tarcze : [],
-        zbroje: Array.isArray(s.zbroje) ? normalizeArmor(s.zbroje) : [],
+        bronie: cleanList(s.bronie),
+        tarcze: cleanList(s.tarcze),
+        zbroje: normalizeArmor(cleanList(s.zbroje)),
         // Absent from lists kept before clothes and add-ons were
-        ubrania: Array.isArray(s.ubrania) ? s.ubrania : [],
-        dodatki: Array.isArray(s.dodatki) ? s.dodatki : [],
+        ubrania: cleanList(s.ubrania),
+        dodatki: cleanList(s.dodatki),
     };
 }
 
@@ -160,8 +192,11 @@ export function ensureZlomLoaded(): Promise<void> {
             const raw = await getFromIndexedDB<ZlomSnapshot>(CONFIG);
             cache = normalize(raw);
             // An entry stored before normalizing was fixed on the way in: keep the fix
-            const stored = Array.isArray(raw?.zbroje) ? raw.zbroje : [];
-            if (cache.zbroje.some((entry, i) => entry !== stored[i])) void persist();
+            const groups = ['bronie', 'tarcze', 'zbroje', 'ubrania', 'dodatki'] as const;
+            if (groups.some(group => {
+                const stored = Array.isArray(raw?.[group]) ? raw[group] as ZlomEntry[] : [];
+                return (cache[group] as ZlomEntry[]).some((entry, i) => entry !== stored[i]);
+            })) void persist();
         } catch {
             cache = emptySnapshot();
         }

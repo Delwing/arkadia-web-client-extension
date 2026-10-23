@@ -18,6 +18,7 @@
 import { getBehaviorSettings, onBehaviorSettingsChange } from '@modules/core/settings';
 import { getFromIndexedDB, storeInIndexedDB, type IndexedDBConfig } from '@client/utils/dataCache';
 import { CROWD_WORKER_URL } from './crowdConfig';
+import { withoutStrayAlt } from '@modules/data/zlomStore';
 
 const REFRESH_MS = 60 * 60_000;
 
@@ -72,6 +73,11 @@ export interface CrowdOdmiana extends Voted {
     miejscownik: string;
 }
 
+/** Worn, but nothing the armour window need place: a guild or club item, by name or line */
+export interface CrowdIgnored extends Voted {
+    text: string;
+}
+
 export interface CrowdSnapshot {
     generatedAt: string;
     bronie: CrowdWeapon[];
@@ -80,6 +86,7 @@ export interface CrowdSnapshot {
     ubrania: CrowdWearable[];
     dodatki: CrowdWearable[];
     odmiany: CrowdOdmiana[];
+    ignorowane: CrowdIgnored[];
 }
 
 function asArray<T>(value: unknown): T[] {
@@ -90,13 +97,15 @@ function normalize(raw: unknown): CrowdSnapshot {
     const s = (raw ?? {}) as Partial<CrowdSnapshot>;
     return {
         generatedAt: typeof s.generatedAt === 'string' ? s.generatedAt : '',
-        bronie: asArray(s.bronie),
-        tarcze: asArray(s.tarcze),
-        zbroje: asArray(s.zbroje),
+        // Other players' lists carry the same stray evaluated names an own list may
+        bronie: asArray<CrowdWeapon>(s.bronie).map(withoutStrayAlt),
+        tarcze: asArray<CrowdShield>(s.tarcze).map(withoutStrayAlt),
+        zbroje: asArray<CrowdArmour>(s.zbroje).map(withoutStrayAlt),
         // Absent from exports made before the Worker kept them
-        ubrania: asArray(s.ubrania),
-        dodatki: asArray(s.dodatki),
+        ubrania: asArray<CrowdWearable>(s.ubrania).map(withoutStrayAlt),
+        dodatki: asArray<CrowdWearable>(s.dodatki).map(withoutStrayAlt),
         odmiany: asArray(s.odmiany),
+        ignorowane: asArray(s.ignorowane),
     };
 }
 

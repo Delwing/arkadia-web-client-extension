@@ -17,6 +17,7 @@ import {
     clearZlomStore,
     upsertByOpis,
     keepILine,
+    sameItem,
     normalizeArmorType,
     type WeaponEntry,
     type ArmorEntry,
@@ -596,6 +597,9 @@ export default function initZlom(
         /^Oceniasz, ze (.+?) waz[ay] (\d+) (kilogram|gram)\w*, zas \w+ objetosc wynosi (\d+) (mililitr|litr)\w*\.$/,
         (line, m) => {
             if (!ctx) return line;
+            // Another item than the one "Oceniasz starannie" named: that evaluation's
+            // start was missed, and its name and description are not this item's
+            if (ctx.shortAlt && !sameItem(m[1], ctx.shortAlt)) ctx = {};
             ctx.short = m[1];
             const parsed = parseWeightObj(m[2], m[3], m[4], m[5]);
             ctx.waga = parsed.waga;

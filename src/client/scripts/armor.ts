@@ -5,6 +5,8 @@ import {
     getZlomSnapshot,
     iLineEntries,
     iLineMatcher,
+    sameItem,
+    sameWord,
     updateZlomSnapshot,
     type ArmorEntry,
     type ILineEntry,
@@ -16,6 +18,7 @@ import {
 } from "@modules/data/zlomStore";
 import { setZlomILine } from "./zlom";
 import { getZlomView } from "@modules/crowd/crowdView";
+import { getCrowdSnapshot, subscribeCrowdSnapshot } from "@modules/crowd/crowdSnapshot";
 import type { OdmianaSnapshot } from "@modules/data/odmianaStore";
 import { getInventoryState } from "./inventory";
 import { splitName } from "./inventoryActions";
@@ -79,13 +82,15 @@ export interface WornArmor {
      * item, or anything else to leave alone. Kept across replies.
      */
     ignored: string[];
+    /** Ignored only by other players (the crowd list), but wanted back on the list by this character */
+    restored: string[];
     updatedAt: number | null;
 }
 
 const WEAR = /^Zakladasz (.+) na (.+)\.$/;
 const TAKE_OFF = /^Zdejmujesz z siebie (.+)\.$/;
 
-const NOTHING: WornArmor = { slots: {}, extras: [], unplaced: [], unknownLines: [], ignored: [], updatedAt: null };
+const NOTHING: WornArmor = { slots: {}, extras: [], unplaced: [], unknownLines: [], ignored: [], restored: [], updatedAt: null };
 
 let armor: WornArmor = NOTHING;
 
@@ -97,6 +102,7 @@ export function getWornArmor(): WornArmor {
         unplaced: [...armor.unplaced],
         unknownLines: [...armor.unknownLines],
         ignored: [...armor.ignored],
+        restored: [...armor.restored],
     };
 }
 
@@ -125,20 +131,7 @@ export function parseWear(text: string): { item: string; slots: string[]; where:
     return slots.length ? { item: full.slice(0, at), slots, where } : null;
 }
 
-/** One word in two cases: "kolczuge" / "kolczuga", "dluga" / "dluga" */
-function sameWord(a: string, b: string): boolean {
-    if (a === b) return true;
-    let shared = 0;
-    while (shared < a.length && shared < b.length && a[shared] === b[shared]) shared++;
-    return shared >= Math.max(3, Math.min(a.length, b.length) - 2);
-}
-
-/** "stalowa dluga kolczuge" (put on) is the złom entry "stalowa dluga kolczuga" */
-export function sameItem(a: string, b: string): boolean {
-    const wordsA = a.toLowerCase().split(/\s+/);
-    const wordsB = b.toLowerCase().split(/\s+/);
-    return wordsA.length === wordsB.length && wordsA.every((word, i) => sameWord(word, wordsB[i]));
-}
+export { sameItem };
 
 /**
  * What a piece covers, in the złom list's words: "tulow, nogi i ramiona" from
@@ -424,26 +417,66 @@ function isIgnored(ignored: string[], text: string): boolean {
     return ignored.some(item => item === text || sameItem(item, text));
 }
 
+export interface IgnoredTodo {
+    text: string;
+    /** Ignored by this character; otherwise only by other players, in the crowd list */
+    own: boolean;
+    /** How many players of the crowd list ignore it */
+    confirmations?: number;
+}
+
+/**
+ * What "Do uzupelnienia" leaves out: this character's own ignores, and those of
+ * other players in the crowd list (a guild item is ignored by everyone who wears
+ * it), less the ones this character brought back.
+ */
+export function ignoredTodos(): IgnoredTodo[] {
+    const result: IgnoredTodo[] = armor.ignored.map(text => ({ text, own: true }));
+    for (const { text, confirmations } of getCrowdSnapshot()?.ignorowane ?? []) {
+        const mine = result.find(item => item.text.toLowerCase() === text.toLowerCase());
+        if (mine) mine.confirmations = confirmations;
+        else if (!armor.restored.some(item => item.toLowerCase() === text.toLowerCase())) {
+            result.push({ text, own: false, confirmations });
+        }
+    }
+    return result;
+}
+
+/** Every text "Do uzupelnienia" leaves out, own and the crowd's */
+function ignoredTexts(): string[] {
+    return ignoredTodos().map(item => item.text);
+}
+
 /**
  * Leave a piece or line of "Do uzupelnienia" alone for good: a guild or club
  * item, or anything else nothing needs to know about. It stays out of the list
- * in every later reply too.
+ * in every later reply too, and goes to the crowd list for players who share.
  */
 export function ignoreTodo(text: string): void {
     if (armor.ignored.includes(text)) return;
     store({
         ...armor,
         ignored: [...armor.ignored, text],
+        restored: armor.restored.filter(item => item.toLowerCase() !== text.toLowerCase()),
         unplaced: armor.unplaced.filter(piece => !sameItem(piece, text)),
         unknownLines: armor.unknownLines.filter(line => line !== text),
         updatedAt: Date.now(),
     });
 }
 
-/** Back on the list from the next `i` */
+/**
+ * Back on the list from the next `i`. One only other players ignore is brought
+ * back for this character alone.
+ */
 export function unignoreTodo(text: string): void {
-    if (!armor.ignored.includes(text)) return;
-    store({ ...armor, ignored: armor.ignored.filter(item => item !== text), updatedAt: Date.now() });
+    // Ignored by others too: without this it would stay hidden by theirs
+    const crowd = (getCrowdSnapshot()?.ignorowane ?? []).some(item => item.text.toLowerCase() === text.toLowerCase());
+    store({
+        ...armor,
+        ignored: armor.ignored.filter(item => item !== text),
+        restored: crowd && !armor.restored.includes(text) ? [...armor.restored, text] : armor.restored,
+        updatedAt: Date.now(),
+    });
 }
 
 /**
@@ -530,22 +563,27 @@ export default function initArmor(client: Client, aliases?: { pattern: RegExp; c
         // name - when that entry has slots to take
         const placedByLine = byLine.filter(({ kind, entry, matches }) =>
             coveredBy(kind, entry).length > 0 && lines.some(matches));
+        const ignored = ignoredTexts();
         const unplaced = unplacedPieces(worn, slots)
             .filter(name => !placedByLine.some(({ matches }) => matches(name)) && !extras.some(extra => extra.worn === name))
-            .filter(name => !isIgnored(armor.ignored, name));
-        const unknownLines = unknown.filter(line => !armor.ignored.includes(line));
+            .filter(name => !isIgnored(ignored, name));
+        const unknownLines = unknown.filter(line => !ignored.some(text => text.toLowerCase() === line.toLowerCase()));
         const next = { slots, extras, unplaced, unknownLines };
         if (JSON.stringify(next) === JSON.stringify({ slots: armor.slots, extras: armor.extras, unplaced: armor.unplaced, unknownLines: armor.unknownLines })) return;
-        store({ ...next, ignored: armor.ignored, updatedAt: Date.now() });
+        store({ ...next, ignored: armor.ignored, restored: armor.restored, updatedAt: Date.now() });
     });
 
     if (aliases) {
         aliases.push({ pattern: /^\/zbroja$/, callback: () => eventBus.emit("armor.popup.open") });
     }
 
+    // Other players' ignores arrive with the crowd list: the window lists them
+    const removeCrowdListener = subscribeCrowdSnapshot(() => eventBus.emit("armor.updated"));
+
     return () => {
         removeStorageListener();
         removeReadListener();
+        removeCrowdListener();
         client.Triggers.removeByTag("armor");
         armor = NOTHING;
     };

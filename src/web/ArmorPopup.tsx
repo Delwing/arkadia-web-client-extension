@@ -3,7 +3,7 @@ import { ChevronRight, EyeOff, Undo2 } from 'lucide-react';
 import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
 import { usePopup } from './hooks/usePopup';
 import { usePopupData } from './hooks/usePopupData';
-import { getWornArmor, ignoreTodo, unignoreTodo, type WornArmor } from '@client/scripts/armor';
+import { getWornArmor, ignoredTodos, ignoreTodo, unignoreTodo, type WornArmor } from '@client/scripts/armor';
 import ArmorILinePicker, { type ILineSubject } from './ArmorILinePicker';
 import ArmorOdmianaHint from './ArmorOdmianaHint';
 
@@ -182,6 +182,8 @@ const ArmorPopup: React.FC = () => {
             : '';
         setPicking({ type: 'line', line, fragment: selected || line });
     };
+    // Own and other players' ignores; armor.updated also follows a new crowd list
+    const ignored = ignoredTodos();
     const covered = new Set(Object.keys(armor.slots));
     // A piece over several slots lights up all of them
     const hoveredItem = hovered ? armor.slots[hovered] : undefined;
@@ -317,13 +319,23 @@ const ArmorPopup: React.FC = () => {
                         )}
                     </div>
                 )}
-                {armor.ignored.length > 0 && (
+                {ignored.length > 0 && (
                     <details className="armor-popup__ignored">
-                        <summary>Ignorowane ({armor.ignored.length})</summary>
+                        <summary>Ignorowane ({ignored.length})</summary>
                         <ul className="armor-popup__ignored-list">
-                            {armor.ignored.map(text => (
+                            {ignored.map(({ text, own, confirmations }) => (
                                 <li key={text}>
                                     <span className="armor-popup__ignored-text">{text}</span>
+                                    {confirmations ? (
+                                        <span
+                                            className="armor-popup__ignored-crowd"
+                                            title={own
+                                                ? `Ignorują go też inni gracze (wspólny spis: ${confirmations})`
+                                                : `Ignorowane przez innych graczy (wspólny spis: ${confirmations})`}
+                                        >
+                                            W
+                                        </span>
+                                    ) : null}
                                     <button
                                         type="button"
                                         className="armor-popup__todo-ignore"

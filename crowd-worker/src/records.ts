@@ -12,9 +12,9 @@
  * helpers: the two deploy independently.
  */
 
-export type CrowdKind = 'bron' | 'tarcza' | 'zbroja' | 'ubranie' | 'dodatek' | 'odmiana' | 'iline' | 'altname';
+export type CrowdKind = 'bron' | 'tarcza' | 'zbroja' | 'ubranie' | 'dodatek' | 'odmiana' | 'iline' | 'altname' | 'ignorowany';
 
-export const CROWD_KINDS: readonly CrowdKind[] = ['bron', 'tarcza', 'zbroja', 'ubranie', 'dodatek', 'odmiana', 'iline', 'altname'];
+export const CROWD_KINDS: readonly CrowdKind[] = ['bron', 'tarcza', 'zbroja', 'ubranie', 'dodatek', 'odmiana', 'iline', 'altname', 'ignorowany'];
 
 /** The item kinds an `altname` record can be about; an `iline` only what is worn */
 const ITEM_KINDS = ['bron', 'tarcza', 'zbroja', 'ubranie', 'dodatek'] as const;
@@ -28,6 +28,8 @@ type FieldSpec =
 const SHORT = 200;
 const WORD = 100;
 const OPIS = 2000;
+/** A whole line of an `i` reply */
+const LINE = 500;
 
 /**
  * Fields in hash order. Anything a record carries beyond these is dropped, so
@@ -103,6 +105,11 @@ const FIELDS: Record<CrowdKind, readonly FieldSpec[]> = {
         { name: 'short', type: 'text', max: SHORT },
         { name: 'shortAlt', type: 'text', max: SHORT },
     ],
+    // Something worn the armour window need not place: a guild or club item, as
+    // `i` names it or the whole line it words it in
+    ignorowany: [
+        { name: 'text', type: 'text', max: LINE },
+    ],
 };
 
 /**
@@ -111,7 +118,7 @@ const FIELDS: Record<CrowdKind, readonly FieldSpec[]> = {
  * come lower case from the game; an import may not.
  */
 function keyOf(kind: CrowdKind, payload: Record<string, string | number>): string {
-    const name = String((kind === 'odmiana' ? payload.mianownik : payload.short) ?? '').toLowerCase();
+    const name = String((kind === 'odmiana' ? payload.mianownik : kind === 'ignorowany' ? payload.text : payload.short) ?? '').toLowerCase();
     if (!name) return '';
     return kind === 'iline' || kind === 'altname' ? `${payload.item}:${name}` : name;
 }

@@ -5,6 +5,9 @@ import {
     getZlomSnapshot,
     iLineMatcher,
     normalizeArmorType,
+    sameItem,
+    withoutStrayAlt,
+    type ShieldEntry,
     upsertByOpis,
     type ArmorEntry,
 } from '@modules/data/zlomStore';
@@ -75,6 +78,39 @@ describe('armour weight class', () => {
         await new Promise(resolve => setTimeout(resolve, 0));
         const stored = await getFromIndexedDB<{ zbroje: ArmorEntry[] }>({ dbName: 'ArkadiaZlom', storeName: 'zlom', key: 'snapshot' });
         expect(stored!.zbroje[0]!.typ).toBe('srednia');
+        await __resetZlomStoreForTests();
+    });
+});
+
+describe('the name evaluating gives an item', () => {
+    const shield = (short: string, shortAlt: string): ShieldEntry => ({
+        short, shortAlt, klute: 0, obuch: 0, ciete: 0, magik: 0, opis: short, waga: 0, obj: 0, cena: 0,
+        parowanie: 0, oslona: 'jedno z ramion', roomId: null,
+    });
+
+    test('is kept when it is the same name in another case', () => {
+        expect(sameItem('lsniaca plomienista tarcza', 'lsniaca plomienista tarcze')).toBe(true);
+        expect(withoutStrayAlt(shield('lsniaca plomienista tarcza', 'lsniaca plomienista tarcze')).shortAlt)
+            .toBe('lsniaca plomienista tarcze');
+    });
+
+    test('is dropped when it names another item, as the crowd list had it', () => {
+        expect(withoutStrayAlt(shield('owalna duza pawez', 'krwistoczerwony poszarpany plaszcz'))).not.toHaveProperty('shortAlt');
+        expect(withoutStrayAlt(shield('wysoka stalowa pawez', 'olbrzymi lupkowy glaz'))).not.toHaveProperty('shortAlt');
+    });
+
+    test('is dropped from a list stored with a stray one, and the fix is kept', async () => {
+        await ensureZlomLoaded();
+        await __resetZlomStoreForTests();
+        await storeInIndexedDB(
+            { dbName: 'ArkadiaZlom', storeName: 'zlom', key: 'snapshot' },
+            { bronie: [], zbroje: [], tarcze: [shield('owalna duza pawez', 'krwistoczerwony poszarpany plaszcz')] },
+        );
+        await ensureZlomLoaded();
+        expect(getZlomSnapshot().tarcze[0]).not.toHaveProperty('shortAlt');
+        await new Promise(resolve => setTimeout(resolve, 0));
+        const stored = await getFromIndexedDB<{ tarcze: ShieldEntry[] }>({ dbName: 'ArkadiaZlom', storeName: 'zlom', key: 'snapshot' });
+        expect(stored!.tarcze[0]).not.toHaveProperty('shortAlt');
         await __resetZlomStoreForTests();
     });
 });

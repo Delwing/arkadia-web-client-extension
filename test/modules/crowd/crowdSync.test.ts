@@ -4,6 +4,7 @@ import { getBehaviorSettings } from '@modules/core/settings';
 import { __resetZlomStoreForTests, updateZlomSnapshot } from '@modules/data/zlomStore';
 import { __resetOdmianaStoreForTests, saveOdmiana } from '@modules/data/odmianaStore';
 import { clearIndexedDB } from '@client/utils/dataCache';
+import { characterStorage } from '@modules/core/storage';
 
 vi.mock('@modules/core/settings', () => ({
     getBehaviorSettings: vi.fn(() => ({ crowdContribute: true })),
@@ -173,4 +174,15 @@ test('sends clothes and add-ons, and again what a Worker that did not know them 
     await syncOnce();
     const again = calls.find(c => c.path === '/crowd/submit')!.body.items as { kind: string }[];
     expect(again.map(i => i.kind).sort()).toEqual(['dodatek', 'iline']);
+});
+
+test('sends what this character ignores in the armour window', async () => {
+    characterStorage.setCharacter('Testowy');
+    characterStorage.set('worn_armor', {
+        slots: {}, extras: [], unplaced: [], unknownLines: [], restored: [], updatedAt: 1,
+        ignored: ['Na twej piersi lsni znak gildii kupcow.'],
+    });
+    await syncOnce();
+    const items = calls.find(c => c.path === '/crowd/submit')!.body.items as { kind: string; record: Record<string, unknown> }[];
+    expect(items.find(i => i.kind === 'ignorowany')!.record).toEqual({ text: 'Na twej piersi lsni znak gildii kupcow.' });
 });

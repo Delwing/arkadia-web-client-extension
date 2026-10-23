@@ -366,6 +366,18 @@ describe('zlom script', () => {
     expect(entry!.obuch).toBe(9);
   });
 
+  test('never gives an item the name and description of the evaluation before it', async () => {
+    parse('Oceniasz starannie krwistoczerwony poszarpany plaszcz.');
+    parse('Material plaszcza ma instensywna, krwistoczerwona barwe.', 'object.long');
+    // The next item's evaluation, its "Oceniasz starannie" line missed
+    parse('Oceniasz, ze owalna duza pawez wazy 6000 gramow, zas jej objetosc wynosi 5000 mililitrow.');
+    parse('Zaklada sie ja na jedno z ramion oraz nogi i korpus.');
+    parse('Twoje doswiadczenie i umiejetnosci podpowiadaja ci, ze jest ona dobra w parowaniu ciosow.');
+    await flush();
+
+    expect(getZlomSnapshot().tarcze).toEqual([]);
+  });
+
   test('keeps clothes apart, with what they are made of', async () => {
     parse('Oceniasz starannie krwistoczerwony poszarpany plaszcz.');
     parse('Material plaszcza ma instensywna, krwistoczerwona barwe.', 'object.long');

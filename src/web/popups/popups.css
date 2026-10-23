@@ -9558,6 +9558,15 @@ body.inventory-dragging * {
   font-size: 0.85em;
 }
 
+.armor-popup__ignored-crowd {
+  flex: none;
+  padding: 0 0.25rem;
+  border-radius: 0.2rem;
+  background: var(--popup-accent-subtle-bg);
+  color: var(--popup-accent);
+  font-weight: 600;
+}
+
 .armor-popup__ignored summary {
   cursor: pointer;
 }

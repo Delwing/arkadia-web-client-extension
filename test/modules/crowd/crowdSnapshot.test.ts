@@ -48,3 +48,17 @@ test('keeps what it has when the Worker cannot be reached', async () => {
     await refreshCrowdSnapshot();
     expect(getCrowdSnapshot()?.bronie).toHaveLength(1);
 });
+
+test('drops an evaluated name that is another item, as a stray evaluation left it', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => respond(200, {
+        ...SNAPSHOT,
+        tarcze: [
+            { short: 'owalna duza pawez', shortAlt: 'krwistoczerwony poszarpany plaszcz', confirmations: 2 },
+            { short: 'lsniaca plomienista tarcza', shortAlt: 'lsniaca plomienista tarcze', confirmations: 4 },
+        ],
+    })));
+    await refreshCrowdSnapshot();
+    const [pawez, tarcza] = getCrowdSnapshot()!.tarcze;
+    expect(pawez).not.toHaveProperty('shortAlt');
+    expect(tarcza!.shortAlt).toBe('lsniaca plomienista tarcze');
+});

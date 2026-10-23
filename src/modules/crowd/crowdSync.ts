@@ -16,6 +16,7 @@ import { getBehaviorSettings, onBehaviorSettingsChange } from '@modules/core/set
 import { ensureZlomLoaded, getZlomSnapshot, subscribeZlom, type ZlomEntry } from '@modules/data/zlomStore';
 import { ensureOdmianaLoaded, getOdmianaSnapshot, subscribeOdmiana } from '@modules/data/odmianaStore';
 import { getFromIndexedDB, storeInIndexedDB, type IndexedDBConfig } from '@client/utils/dataCache';
+import { characterStorage } from '@modules/core/storage';
 import { CROWD_WORKER_URL } from './crowdConfig';
 import {
     clearCrowdCredentials,
@@ -87,6 +88,8 @@ export async function prepareItems(): Promise<PreparedItem[]> {
         }
     }
     for (const odmiana of Object.values(getOdmianaSnapshot())) sources.push(['odmiana', odmiana]);
+    // What this character told the armour window to leave alone (a guild or club item)
+    for (const text of characterStorage.get('worn_armor')?.ignored ?? []) sources.push(['ignorowany', { text }]);
 
     const items: PreparedItem[] = [];
     const seen = new Set<string>();
@@ -246,7 +249,11 @@ async function run(): Promise<void> {
 
 function enable(): void {
     if (unsubscribers.length) return;
-    unsubscribers = [subscribeZlom(() => schedule()), subscribeOdmiana(() => schedule())];
+    unsubscribers = [
+        subscribeZlom(() => schedule()),
+        subscribeOdmiana(() => schedule()),
+        characterStorage.onChange('worn_armor', () => schedule()),
+    ];
     // Soon after load or opt-in, but not in the middle of logging in.
     schedule(10_000);
 }

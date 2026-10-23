@@ -33,13 +33,14 @@ export const QUIET_MS = 5 * 60 * 1000;
 /** But never hold back new data longer than this, however steady the uploads. */
 export const MAX_WAIT_MS = 60 * 60 * 1000;
 
-const GROUPS: Partial<Record<CrowdKind, 'bronie' | 'tarcze' | 'zbroje' | 'ubrania' | 'dodatki' | 'odmiany'>> = {
+const GROUPS: Partial<Record<CrowdKind, 'bronie' | 'tarcze' | 'zbroje' | 'ubrania' | 'dodatki' | 'odmiany' | 'ignorowane'>> = {
     bron: 'bronie',
     tarcza: 'tarcze',
     zbroja: 'zbroje',
     ubranie: 'ubrania',
     dodatek: 'dodatki',
     odmiana: 'odmiany',
+    ignorowany: 'ignorowane',
 };
 
 /** Records that are a field of an item, and the field they fill */
@@ -56,6 +57,7 @@ export interface Snapshot {
     ubrania: Record<string, unknown>[];
     dodatki: Record<string, unknown>[];
     odmiany: Record<string, unknown>[];
+    ignorowane: Record<string, unknown>[];
 }
 
 /** Stored beside the value, so a 304 needs no hashing at request time. */
@@ -64,7 +66,7 @@ interface SnapshotMetadata {
 }
 
 function emptySnapshot(now: number): Snapshot {
-    return { generatedAt: new Date(now).toISOString(), bronie: [], tarcze: [], zbroje: [], ubrania: [], dodatki: [], odmiany: [] };
+    return { generatedAt: new Date(now).toISOString(), bronie: [], tarcze: [], zbroje: [], ubrania: [], dodatki: [], odmiany: [], ignorowane: [] };
 }
 
 /**
