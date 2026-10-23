@@ -122,6 +122,11 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
     const bagConditionRegex = /^Ten element ekwipunku wyglada na (?<desc>.+)$/i;
 
     let awaiting = false;
+    let build: {
+        resolve: (bags: HerbBagsState) => void;
+        reject: (error: Error) => void;
+        cleanup: () => void;
+    } | null = null;
     let left = 0;
     const totals: Record<string, number> = {};
     const bagTotals: Record<number, HerbBagState> = {};
@@ -448,21 +453,48 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
         return output;
     }
 
-    function finish() {
-        storedBags = normalizeHerbBagsState(structuredClone(bagTotals));
-        const output = buildSummary(storedBags, true, false);
-        client.print(output);
-        persistBags();
+    function resetBuild() {
+        const pending = build;
+        build = null;
+        pending?.cleanup();
         awaiting = false;
         left = 0;
-        Object.keys(totals).forEach(k => delete totals[k]);
         currentBag = 0;
-        Object.keys(bagTotals).forEach(k => delete bagTotals[parseInt(k)]);
+        Object.keys(totals).forEach(k => delete totals[k]);
+        Object.keys(bagTotals).forEach(k => delete bagTotals[Number(k)]);
+        return pending;
+    }
+
+    function failBuild(reason: 'no-bags' | 'timeout' | 'aborted' | 'disconnected' | 'character-changed' | 'error', error: Error) {
+        const pending = resetBuild();
+        if (!pending) return;
+        pending.reject(error);
+        client.sendEvent('herbsDatabaseBuildFailed', {reason});
+    }
+
+    function finish() {
+        const snapshot = normalizeHerbBagsState(structuredClone(bagTotals));
+        const pending = resetBuild();
+        if (!pending) return;
+        storedBags = snapshot;
+        client.print(buildSummary(storedBags, true, false));
+        persistBags();
+        pending.resolve(structuredClone(snapshot));
+        // Unlike herbCounts, this fires only after a successful complete scan.
+        client.sendEvent('herbsDatabaseBuilt', structuredClone(snapshot));
     }
 
     client.Triggers.registerTrigger(countRegex, (line, matches) => {
-        if (!awaiting) return line;
+        if (!awaiting || left > 0) return line;
         left = polishWordToNumber(matches.groups?.num || matches[1]);
+        if (!Number.isInteger(left) || left < 0) {
+            failBuild('error', new Error('Nie rozpoznano liczby woreczkow.'));
+            return line;
+        }
+        if (left === 0) {
+            finish();
+            return line;
+        }
         for (let i = 1; i <= left; i++) {
             client.sendCommand(`zajrzyj do ${i}. swojego woreczka`);
         }
@@ -470,7 +502,7 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
     });
 
     function extractHerbs(matches: RegExpMatchArray) {
-        if (!awaiting) return
+        if (!awaiting || left <= 0) return
         currentBag += 1;
         const bag = parseHerbBagContent(matches.groups?.content || '', herbs, wieleCount);
         Object.entries(bag).forEach(([key, count]) => {
@@ -492,7 +524,7 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
     });
 
     function handleEmptyBag(triggerLine: AnsiAwareBuffer) {
-        if (!awaiting) return triggerLine;
+        if (!awaiting || left <= 0) return triggerLine;
         currentBag += 1;
         bagTotals[currentBag] = {herbs: {}};
         left -= 1;
@@ -526,14 +558,53 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
         return line;
     });
 
-    async function start() {
-        await ensureData();
-        awaiting = true;
-        storedBags = {};
-        currentBag = 0;
-        Object.keys(bagTotals).forEach(k => delete bagTotals[parseInt(k)]);
-        client.sendCommand('policz swoje woreczki');
+    function buildBags(options: { timeout?: number; signal?: AbortSignal } = {}): Promise<HerbBagsState> {
+        if (build) return Promise.reject(new Error('Budowanie bazy ziol juz trwa.'));
+        if (options.signal?.aborted) return Promise.reject(new DOMException('Przerwano budowanie bazy ziol.', 'AbortError'));
+        const timeout = options.timeout ?? 30000;
+        if (!Number.isFinite(timeout) || timeout <= 0) return Promise.reject(new Error('Nieprawidlowy limit czasu budowania bazy ziol.'));
+        return new Promise((resolve, reject) => {
+            const onAbort = () => failBuild('aborted', new DOMException('Przerwano budowanie bazy ziol.', 'AbortError'));
+            const timer = setTimeout(() => {
+                const error = new Error('Gra nie odpowiedziala podczas budowania bazy ziol.');
+                error.name = 'TimeoutError';
+                failBuild('timeout', error);
+            }, timeout);
+            const pending = {
+                resolve, reject,
+                cleanup: () => {
+                    clearTimeout(timer);
+                    options.signal?.removeEventListener('abort', onAbort);
+                },
+            };
+            build = pending;
+            options.signal?.addEventListener('abort', onAbort, {once: true});
+            void ensureData().then(() => {
+                if (build !== pending) return;
+                awaiting = true;
+                client.sendCommand('policz swoje woreczki');
+            }).catch(error => {
+                if (build === pending) failBuild('error', error instanceof Error ? error : new Error(String(error)));
+            });
+        });
     }
+
+    // Keep the alias callback non-blocking; plugins can await buildBags instead.
+    async function start() {
+        void buildBags().catch(error => client.println(error.message));
+        await ensureData();
+    }
+
+    client.Triggers.registerTrigger(/^Nie widzisz tu niczego takiego\.$/, line => {
+        if (awaiting && left === 0) failBuild('no-bags', new Error('Brak woreczkow do przeliczenia.'));
+        return line;
+    });
+    client.Triggers.registerTrigger(/^Zajrzyj do czego\?$/, line => {
+        if (awaiting && left > 0) failBuild('no-bags', new Error('Nie mozna zajrzec do liczonego woreczka.'));
+        return line;
+    });
+    client.on('client.disconnect', () => failBuild('disconnected', new Error('Rozlaczono podczas budowania bazy ziol.')));
+    characterStorage.onCharacterChange(() => failBuild('character-changed', new Error('Zmieniono postac podczas budowania bazy ziol.')));
 
     function evaluateBagConditions() {
         Object.keys(pendingConditions as Record<string, number>).forEach(key => {
@@ -679,6 +750,7 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
     const herbManagerApi: HerbManagerApi = {
         getBags: cloneBags,
         setBags,
+        buildBags,
         take,
         put,
         move,

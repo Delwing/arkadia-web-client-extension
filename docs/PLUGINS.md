@@ -647,6 +647,7 @@ total[0].n; // 3
 ```typescript
 await api.herbs.getData();                          // odmiany i działanie wszystkich ziół
 api.herbs.getBags();                                // stan woreczków z /ziola_buduj
+await api.herbs.buildBags();                       // policz i poczekaj na pełną bazę
 api.herbs.setBags(zapisanyStan);                    // podmień cały stan (bez komend do gry)
 await api.herbs.take('deliona', 3);                 // wyjmij z woreczków (jak /wezz)
 
@@ -659,6 +660,20 @@ const bag = await api.herbs.inspectBag('swojego zamknietego woreczka');
 ```
 
 `inspectBag` wysyła `zajrzyj do <cel>` i czeka na opis woreczka. Woreczek musi być pod ręką (nie w plecaku). Zwraca `null`, gdy takiego woreczka nie ma albo opis nie przyjdzie w czasie (`timeout`, domyślnie 5 s); „wiele” liczy jak ustawienie ziół gracza (domyślnie 25).
+
+`api.herbs.buildBags({ timeout?, signal? })` wykonuje ten sam skan co
+`/ziola_buduj`: liczy dostępne woreczki, zagląda do nich i zapisuje pełną bazę.
+Zwraca `Promise<HerbBagsState>`. Domyślny limit całej operacji to 30 sekund.
+Plugin wykonuje własne pre-komendy przed wywołaniem i post-komendy po `await`;
+metoda sama nie otwiera pojemników ani nie wyjmuje z nich woreczków.
+
+Po sukcesie klient emituje `herbsDatabaseBuilt` z kopią nowej bazy. `herbCounts`
+nadal oznacza dowolne odświeżenie danych, więc nie należy traktować go jako
+potwierdzenia zakończenia budowania. Nieudany skan odrzuca Promise i emituje
+`herbsDatabaseBuildFailed` z `{ reason }`: `no-bags`, `timeout`, `aborted`,
+`disconnected`, `character-changed` lub `error`. Poprzednia baza pozostaje
+bez zmian. Próba drugiego równoległego skanu odrzuca tylko nowe wywołanie.
+Przy niszczeniu pluginu przerwij swój skan przez `AbortController.abort()`.
 
 #### `api.containers` - Pojemniki
 

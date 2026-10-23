@@ -382,6 +382,10 @@ export interface KnownEvents {
     "requestHerbCounts": void;
     "herbManagerClose": void;
     "herbCounts": unknown;
+    /** A complete /ziola_buduj or api.herbs.buildBags scan, after persistence. */
+    "herbsDatabaseBuilt": Record<number, { herbs: Record<string, number>; condition?: number }>;
+    /** A scan ended without replacing the previous herb database. */
+    "herbsDatabaseBuildFailed": { reason: 'no-bags' | 'timeout' | 'aborted' | 'disconnected' | 'character-changed' | 'error' };
     /** Opens the Zioła window, optionally in a given mode (`/ziola2` opens the list). */
     "herbManagerOpen": { mode?: "bags" | "list" | "effects" } | void;
     "sound:play": { key: string };

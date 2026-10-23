@@ -1,8 +1,10 @@
+import { vi } from 'vitest';
 import Triggers from '@client/Triggers';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 import { EventEmitter } from 'events';
 import { initHerbClient, defaultHerbData } from './helpers/herbClient';
 import { characterStorage } from '@modules/core/storage';
+import type { HerbManagerApi } from '@client/types/herbs';
 
 class FakeClient {
   private emitter = new EventEmitter();
@@ -44,6 +46,108 @@ describe('herb counter', () => {
 
   afterEach(() => {
     localStorage.clear();
+  });
+
+  const manager = () => (client as unknown as { herbManager: HerbManagerApi }).herbManager;
+  const emptyBag = () => parse('Uwaznie ogladasz zawartosc szarawego skorzanego woreczka. W jego srodku nic jednak nie ma.');
+
+  test('awaitable scan emits one built event after persistence, not after ordinary inventory updates', async () => {
+    manager().setBags({ 3: { herbs: { deliona: 9 } } });
+    expect(client.sendEvent.mock.calls.filter(([name]) => name === 'herbsDatabaseBuilt')).toHaveLength(0);
+    const completed = jest.fn(bags => {
+      expect(characterStorage.get('herb_counts')).toEqual(bags);
+      expect(manager().getBags()).toEqual(bags);
+    });
+    client.on('herbsDatabaseBuilt', completed);
+    const result = manager().buildBags();
+    await vi.waitFor(() => expect(client.sendCommand).toHaveBeenCalledWith('policz swoje woreczki'));
+    parse('Doliczyles sie dwoch sztuk.');
+    emptyBag();
+    expect(completed).not.toHaveBeenCalled();
+    emptyBag();
+    expect(await result).toEqual({ 1: { herbs: {} }, 2: { herbs: {} } });
+    emptyBag();
+    expect(completed).toHaveBeenCalledTimes(1);
+  });
+
+  test('no accessible bags rejects and preserves the previous database', async () => {
+    const previous = { 1: { herbs: { deliona: 9 } } };
+    manager().setBags(previous);
+    const result = manager().buildBags();
+    const rejected = expect(result).rejects.toThrow('Brak woreczkow');
+    await vi.waitFor(() => expect(client.sendCommand).toHaveBeenCalled());
+    parse('Nie widzisz tu niczego takiego.');
+    await rejected;
+    emptyBag();
+    expect(manager().getBags()).toEqual(previous);
+    expect(client.sendEvent).toHaveBeenCalledWith('herbsDatabaseBuildFailed', { reason: 'no-bags' });
+    expect(client.sendEvent.mock.calls.filter(([name]) => name === 'herbsDatabaseBuilt')).toHaveLength(0);
+  });
+
+  test('a missing bag midway through a scan never commits a partial database', async () => {
+    const previous = { 1: { herbs: { deliona: 9 } } };
+    manager().setBags(previous);
+    const result = manager().buildBags();
+    const rejected = expect(result).rejects.toThrow('Nie mozna zajrzec');
+    await vi.waitFor(() => expect(client.sendCommand).toHaveBeenCalled());
+    parse('Doliczyles sie dwoch sztuk.');
+    emptyBag();
+    parse('Zajrzyj do czego?');
+    await rejected;
+    emptyBag();
+    expect(manager().getBags()).toEqual(previous);
+    expect(characterStorage.get('herb_counts')).toEqual(previous);
+  });
+
+  test('rejects concurrent scans and supports cancellation before sending a command', async () => {
+    const controller = new AbortController();
+    const result = manager().buildBags({ signal: controller.signal });
+    const rejected = expect(result).rejects.toMatchObject({ name: 'AbortError' });
+    await expect(manager().buildBags()).rejects.toThrow('juz trwa');
+    controller.abort();
+    await rejected;
+    client.sendCommand.mockClear();
+    await expect(manager().buildBags({ signal: controller.signal })).rejects.toMatchObject({ name: 'AbortError' });
+    expect(client.sendCommand).not.toHaveBeenCalled();
+    expect(client.sendEvent).toHaveBeenCalledWith('herbsDatabaseBuildFailed', { reason: 'aborted' });
+  });
+
+  test('timeout clears the scan and permits another build', async () => {
+    jest.useFakeTimers();
+    try {
+      const rejected = expect(manager().buildBags({ timeout: 100 })).rejects.toMatchObject({ name: 'TimeoutError' });
+      await jest.advanceTimersByTimeAsync(100);
+      await rejected;
+      expect(client.sendEvent).toHaveBeenCalledWith('herbsDatabaseBuildFailed', { reason: 'timeout' });
+      const result = manager().buildBags();
+      await jest.advanceTimersByTimeAsync(0);
+      parse('Doliczyles sie jednej sztuki.');
+      emptyBag();
+      await expect(result).resolves.toEqual({ 1: { herbs: {} } });
+      expect(jest.getTimerCount()).toBe(0);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  test.each(['disconnected', 'character-changed'] as const)('cancels on %s without saving', async reason => {
+    const result = manager().buildBags();
+    const rejected = expect(result).rejects.toBeInstanceOf(Error);
+    await vi.waitFor(() => expect(client.sendCommand).toHaveBeenCalled());
+    if (reason === 'disconnected') client.dispatch('client.disconnect', undefined);
+    else characterStorage.setCharacter('OtherChar');
+    await rejected;
+    emptyBag();
+    expect(client.sendEvent).toHaveBeenCalledWith('herbsDatabaseBuildFailed', { reason });
+    expect(client.sendEvent.mock.calls.filter(([name]) => name === 'herbsDatabaseBuilt')).toHaveLength(0);
+  });
+
+  test('an explicit zero count completes with an empty database', async () => {
+    const result = manager().buildBags();
+    await vi.waitFor(() => expect(client.sendCommand).toHaveBeenCalled());
+    parse('Doliczyles sie 0 sztuk.');
+    await expect(result).resolves.toEqual({});
+    expect(client.sendEvent).toHaveBeenCalledWith('herbsDatabaseBuilt', {});
   });
 
   test('counts herbs from bags', async () => {
