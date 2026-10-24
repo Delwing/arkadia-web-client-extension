@@ -115,7 +115,7 @@ function HelperSettings({ helperConnection }: HelperSettingsProps) {
 
             {state === 'disconnected' && !status && (() => {
                 const dl = getDownloadUrl();
-                const fileName = dl ? dl.url.substring(dl.url.lastIndexOf('/') + 1) : '';
+                const fileName = dl?.fileName ?? '';
                 return (
                     <div className="popup-stack popup-field__hint">
                         <div>Helper nie jest uruchomiony. Skróty zostaną zarejestrowane po połączeniu.</div>
@@ -129,8 +129,8 @@ function HelperSettings({ helperConnection }: HelperSettingsProps) {
                                 {dl.os === 'mac' ? (
                                     <div className="helper-settings__box">
                                         <div>
-                                            Pobrany plik to zwykły program (nie <code>.app</code>), więc macOS go
-                                            zablokuje (komunikat: „Apple nie może sprawdzić, czy plik nie zawiera
+                                            Pobrany <code>.zip</code> rozpakuj (Safari robi to sam). W środku jest
+                                            zwykły program (nie <code>.app</code>), więc macOS go zablokuje (komunikat: „Apple nie może sprawdzić, czy plik nie zawiera
                                             złośliwego oprogramowania"). Otwórz Terminal i wykonaj:
                                         </div>
                                         <pre className="helper-settings__pre">

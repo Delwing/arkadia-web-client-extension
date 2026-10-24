@@ -1,7 +1,8 @@
 import {isMobileOs} from '@shared/dom/mobileOs.ts';
 
 /** The helper build for this machine, from the site that serves the client. */
-const HELPER_BASE_PATH = `${import.meta.env.BASE_URL}helper/arkadia-helper`;
+const HELPER_DIR = `${import.meta.env.BASE_URL}helper/`;
+const HELPER_FILE = 'arkadia-helper';
 
 export type HelperOs = 'win' | 'mac' | 'linux';
 
@@ -36,22 +37,27 @@ export function isHelperSupported(): boolean {
     return !isMobileOs();
 }
 
-export function getDownloadUrl(): { url: string; label: string; os: HelperOs } | null {
+/** `fileName` is the program itself, which on a Mac comes out of the downloaded zip. */
+export function getDownloadUrl(): { url: string; fileName: string; label: string; os: HelperOs } | null {
     // An Android user agent says "Linux" and an iPad's says "Mac".
     if (!isHelperSupported()) return null;
     const ua = navigator.userAgent.toLowerCase();
     const isArm = /arm|aarch64/.test(ua);
     if (ua.includes('win')) {
         const arch = isArm ? 'arm64' : 'amd64';
-        return { url: `${HELPER_BASE_PATH}-windows-${arch}.exe`, label: `Windows (${arch})`, os: 'win' };
+        const fileName = `${HELPER_FILE}-windows-${arch}.exe`;
+        return { url: `${HELPER_DIR}${fileName}`, fileName, label: `Windows (${arch})`, os: 'win' };
     }
     if (ua.includes('mac')) {
         const arch = isArm || isAppleSilicon() ? 'arm64' : 'amd64';
-        return { url: `${HELPER_BASE_PATH}-darwin-${arch}`, label: `macOS (${arch})`, os: 'mac' };
+        const fileName = `${HELPER_FILE}-darwin-${arch}`;
+        // Safari saves an extensionless file as "<name>.txt", so Macs get it zipped.
+        return { url: `${HELPER_DIR}${fileName}.zip`, fileName, label: `macOS (${arch})`, os: 'mac' };
     }
     if (ua.includes('linux')) {
         const arch = isArm ? 'arm64' : 'amd64';
-        return { url: `${HELPER_BASE_PATH}-linux-${arch}`, label: `Linux (${arch})`, os: 'linux' };
+        const fileName = `${HELPER_FILE}-linux-${arch}`;
+        return { url: `${HELPER_DIR}${fileName}`, fileName, label: `Linux (${arch})`, os: 'linux' };
     }
     return null;
 }

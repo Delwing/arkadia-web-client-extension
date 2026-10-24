@@ -45,6 +45,13 @@ describe('helper availability', () => {
         expect(getDownloadUrl()?.os).toBe('mac');
     });
 
+    test('a Mac downloads a zip, since Safari would name the bare binary ".txt"', () => {
+        setDevice(UA.mac, 'MacIntel', 0);
+        const dl = getDownloadUrl();
+        expect(dl?.url).toMatch(/\/arkadia-helper-darwin-(arm64|amd64)\.zip$/);
+        expect(dl?.fileName).toMatch(/^arkadia-helper-darwin-(arm64|amd64)$/);
+    });
+
     test('Android is not offered the Linux build', () => {
         setDevice(UA.android, 'Linux armv81', 5);
         expect(isHelperSupported()).toBe(false);

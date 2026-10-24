@@ -138,6 +138,10 @@ jobs:
           if [ "${{ matrix.goos }}" = "darwin" ]; then
             otool -l ../arkadia-helper-darwin-${{ matrix.goarch }} | grep -A4 LC_BUILD_VERSION | grep -q 'minos 11.0' \
               || { echo "helper minimum macOS is not 11.0"; otool -l ../arkadia-helper-darwin-${{ matrix.goarch }} | grep -A4 LC_BUILD_VERSION; exit 1; }
+            # Safari saves an extensionless download as "<name>.txt", so the
+            # browser gets a zip (which also keeps the exec bit); the updater
+            # still fetches the bare binary.
+            (cd .. && zip -j arkadia-helper-darwin-${{ matrix.goarch }}.zip arkadia-helper-darwin-${{ matrix.goarch }})
           fi
       - name: Attest helper binary
         if: github.ref == 'refs/heads/master' && github.event_name != 'pull_request'
@@ -148,7 +152,7 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: helper-${{ matrix.goos }}-${{ matrix.goarch }}
-          path: arkadia-helper-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.suffix }}
+          path: arkadia-helper-${{ matrix.goos }}-${{ matrix.goarch }}*
           retention-days: 1
 
   e2e-test:
