@@ -15,6 +15,8 @@ import type { AnsiAwareBuffer } from "@client/ansi/FormatState.ts";
 import { stripAnsiCodes } from "@client/stripAnsiCodes.ts";
 import { getFirebaseAuth, getRealtimeDatabase } from "@modules/firebase/firebaseConfig.ts";
 import { getDeviceId, loadFirebaseSettings } from "@modules/firebase/firebaseTypes.ts";
+import { characterStorage } from "@modules/core/storage.ts";
+import { mergeImproveSessions, type ImproveSessionData } from "@shared/improveProgress.ts";
 
 /** What the game tells the device being left when a login elsewhere takes the character. */
 const TAKEN_OVER = /^[ >]*Nowe interaktywne polaczenie do twej postaci\./;
@@ -68,6 +70,32 @@ export function installSessionHandoff(client: Client): void {
                     text: 'Przejęto lokalizację z poprzedniego urządzenia, ale opis lokacji się nie zgadza - sprawdź pozycję na mapie.',
                     level: 'warning', source: 'map', key: 'map.handoff',
                 });
+        },
+        progress: () => {
+            const data = characterStorage.get('improve_counter') as ImproveSessionData | undefined;
+            if (!data || typeof data !== 'object' || typeof data.obj !== 'number') return null;
+            return {objectNum: data.obj, data: JSON.stringify(data)};
+        },
+        applyProgress: data => {
+            let incoming: ImproveSessionData;
+            try {
+                incoming = JSON.parse(data);
+            } catch {
+                return;
+            }
+            if (!incoming || typeof incoming !== 'object' || Array.isArray(incoming)) return;
+            const local = characterStorage.get('improve_counter') as ImproveSessionData | undefined;
+            const merged = local && typeof local === 'object' && !Array.isArray(local)
+                ? mergeImproveSessions(local, incoming)
+                : incoming;
+            if (JSON.stringify(merged) !== JSON.stringify(local)) characterStorage.set('improve_counter', merged);
+        },
+        // The /postepy times go out through sync too: get them there before the
+        // device taking over needs them, rather than at the next scheduled upload.
+        ended: () => {
+            import('@web/userData/syncV2')
+                .then(sync => sync.flushSyncV2())
+                .catch(error => console.warn('[SessionHandoff] sync flush failed:', error));
         },
         setTimer: (fn, ms) => {
             const id = window.setTimeout(fn, ms);

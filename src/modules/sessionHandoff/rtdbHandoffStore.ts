@@ -9,7 +9,7 @@
  */
 
 import type { Database } from 'firebase/database';
-import { characterKey, normalizeRecord, type HandoffRoom, type SessionRecord } from './handoffRecord';
+import { characterKey, normalizeRecord, type HandoffProgress, type HandoffRoom, type SessionRecord } from './handoffRecord';
 import type { HandoffStore } from './sessionHandoff';
 
 type DatabaseApi = typeof import('firebase/database');
@@ -68,13 +68,17 @@ export class RtdbHandoffStore implements HandoffStore {
      * request that needs a CORS preflight, so a POST with a text body and the
      * method overridden in the query rather than a PUT.
      */
-    sendUnloading(character: string, handoff: HandoffRoom): void {
+    sendUnloading(character: string, handoff: HandoffRoom | null, progress: HandoffProgress | null): void {
         const token = this.idToken();
         if (!token) return;
-        const url = `${this.ref(character).toString()}/handoff.json`
-            + `?x-http-method-override=PUT&auth=${encodeURIComponent(token)}`;
-        fetch(url, {method: 'POST', body: JSON.stringify(handoff), keepalive: true})
-            .catch(() => undefined);
+        const send = (field: string, value: unknown) => {
+            const url = `${this.ref(character).toString()}/${field}.json`
+                + `?x-http-method-override=PUT&auth=${encodeURIComponent(token)}`;
+            fetch(url, {method: 'POST', body: JSON.stringify(value), keepalive: true})
+                .catch(() => undefined);
+        };
+        if (handoff) send('handoff', handoff);
+        if (progress) send('progress', progress);
     }
 
     setOnline(online: boolean): void {

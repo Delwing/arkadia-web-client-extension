@@ -1,4 +1,11 @@
-import { descriptionPrint, HANDOFF_TTL_MS, TAKEOVER_WINDOW_MS, type HandoffRoom, type SessionRecord } from '@modules/sessionHandoff/handoffRecord';
+import {
+    descriptionPrint,
+    HANDOFF_TTL_MS,
+    TAKEOVER_WINDOW_MS,
+    type HandoffProgress,
+    type HandoffRoom,
+    type SessionRecord,
+} from '@modules/sessionHandoff/handoffRecord';
 import { SessionHandoff, type HandoffStore } from '@modules/sessionHandoff/sessionHandoff';
 
 /** One database shared by every device in a test, with a clock the test moves. */
@@ -7,14 +14,21 @@ class FakeDatabase {
     listeners = new Map<string, Set<(value: SessionRecord | null) => void>>();
     time = 1_000_000;
 
-    store(): HandoffStore & { online: boolean; frozen: boolean; unloading: HandoffRoom[] } {
+    store(): HandoffStore & {
+        online: boolean;
+        frozen: boolean;
+        unloading: HandoffRoom[];
+        unloadingProgress: HandoffProgress[];
+    } {
         const db = this;
         return {
             online: false,
             frozen: false,
             unloading: [],
-            sendUnloading(_character, handoff) {
-                this.unloading.push(handoff);
+            unloadingProgress: [],
+            sendUnloading(_character, handoff, progress) {
+                if (handoff) this.unloading.push(handoff);
+                if (progress) this.unloadingProgress.push(progress);
             },
             now: () => db.time,
             async transact(character, update) {
@@ -51,6 +65,12 @@ function device(db: FakeDatabase, name: string) {
     const guesses: number[] = [];
     /** `placed`: the map was placed since tracking started - a GMCP fix, /ustaw. */
     const state = {trusted: true, tracking: false, placed: false};
+    /** This device's /postepy data, and what it merged in from elsewhere. */
+    const postepy = {
+        own: null as { objectNum: number; data: string } | null,
+        merged: [] as string[],
+        ended: 0,
+    };
     const handoff = new SessionHandoff({
         deviceId: name,
         newSessionId: () => `${name}-${++sessionCounter}`,
@@ -68,6 +88,13 @@ function device(db: FakeDatabase, name: string) {
             if (!verified) guesses.push(roomId);
             handoff.roomChanged(roomId);
         },
+        progress: () => postepy.own,
+        applyProgress: data => {
+            postepy.merged.push(data);
+        },
+        ended: () => {
+            postepy.ended += 1;
+        },
         setTimer: (fn, ms) => {
             const id = setTimeout(fn, ms);
             return () => clearTimeout(id);
@@ -75,7 +102,7 @@ function device(db: FakeDatabase, name: string) {
     });
     const store = db.store();
     handoff.setStore(store);
-    return {handoff, applied, guesses, state, store};
+    return {handoff, applied, guesses, state, store, postepy};
 }
 
 /** The game object the character is while it stays in the world. */
@@ -614,6 +641,120 @@ describe('SessionHandoff', () => {
             await a.handoff.park();
 
             expect(db.records.get('Alice')?.handoff).toBeNull();
+        });
+    });
+
+    describe('postepy', () => {
+        const DATA = '{"obj":7,"lastTime":123}';
+
+        it('hands the /postepy data to the device that takes the session over', async () => {
+            const db = new FakeDatabase();
+            const a = device(db, 'phone');
+            const b = device(db, 'desktop');
+            await login(a, 10);
+            a.postepy.own = {objectNum: BODY, data: DATA};
+
+            await login(b, 500);
+            a.handoff.disconnected();
+            await a.handoff.sessionEnded();
+            await vi.advanceTimersByTimeAsync(0);
+
+            expect(b.postepy.merged).toEqual([DATA]);
+            expect(a.postepy.ended).toBe(1);
+        });
+
+        it('hands it over even when the room cannot be vouched for', async () => {
+            const db = new FakeDatabase();
+            const a = device(db, 'phone');
+            const b = device(db, 'desktop');
+            await login(a, 10);
+            a.postepy.own = {objectNum: BODY, data: DATA};
+            a.handoff.lostChanged(true);
+
+            await login(b, 500);
+            await a.handoff.sessionEnded();
+            await vi.advanceTimersByTimeAsync(0);
+
+            expect(b.applied).toEqual([]);
+            expect(b.postepy.merged).toEqual([DATA]);
+        });
+
+        it('picks up what a phone parked before it froze', async () => {
+            const db = new FakeDatabase();
+            const a = device(db, 'phone');
+            const b = device(db, 'desktop');
+            await login(a, 10);
+            a.postepy.own = {objectNum: BODY, data: DATA};
+            await a.handoff.park();
+            a.store.frozen = true;
+
+            await login(b, 500);
+
+            expect(b.postepy.merged).toEqual([DATA]);
+        });
+
+        it('parks it again only once it changed', async () => {
+            const db = new FakeDatabase();
+            const a = device(db, 'phone');
+            await login(a, 10);
+            a.postepy.own = {objectNum: BODY, data: DATA};
+            await a.handoff.park();
+            const first = db.records.get('Alice')?.progress;
+            db.time += 1000;
+            await a.handoff.park();
+            expect(db.records.get('Alice')?.progress).toBe(first);
+
+            a.postepy.own = {objectNum: BODY, data: '{"obj":7,"lastTime":456}'};
+            await a.handoff.park();
+            expect(db.records.get('Alice')?.progress?.data).toBe('{"obj":7,"lastTime":456}');
+        });
+
+        it('ignores the data of another life', async () => {
+            const db = new FakeDatabase();
+            const a = device(db, 'phone');
+            const b = device(db, 'desktop');
+            await login(a, 10);
+            a.postepy.own = {objectNum: BODY, data: DATA};
+            await a.handoff.sessionEnded();
+            a.handoff.disconnected();
+
+            await login(b, 500, BODY + 1);
+
+            expect(b.postepy.merged).toEqual([]);
+        });
+
+        it('ignores what this device left itself', async () => {
+            const db = new FakeDatabase();
+            const a = device(db, 'phone');
+            await login(a, 10);
+            a.postepy.own = {objectNum: BODY, data: DATA};
+            await a.handoff.sessionEnded();
+            a.handoff.disconnected();
+
+            await login(a, 10);
+
+            expect(a.postepy.merged).toEqual([]);
+        });
+
+        it('sends it in the request that outlives a closing page', async () => {
+            const db = new FakeDatabase();
+            const a = device(db, 'phone');
+            await login(a, 10);
+            a.postepy.own = {objectNum: BODY, data: DATA};
+            await a.handoff.sessionEnded(true);
+
+            expect(a.store.unloadingProgress.map(p => p.data)).toEqual([DATA]);
+        });
+
+        it('lets everything else go out once per session, signed in or not', async () => {
+            const db = new FakeDatabase();
+            const a = device(db, 'phone');
+            a.handoff.setStore(null);
+            await login(a, 10);
+            await a.handoff.sessionEnded();
+            await a.handoff.sessionEnded();
+
+            expect(a.postepy.ended).toBe(1);
         });
     });
 });

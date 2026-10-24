@@ -20,11 +20,14 @@
 
 import {
     claimRecord,
+    inheritedProgress,
     inheritedRoom,
+    takeoverProgress,
     takeoverRoom,
     TAKEOVER_WINDOW_MS,
     withHandoff,
     withParked,
+    type HandoffProgress,
     type HandoffRoom,
     type SessionRecord,
 } from './handoffRecord';
@@ -42,10 +45,11 @@ export interface HandoffStore {
     ): Promise<SessionRecord | null>;
     watch(character: string, listener: (value: SessionRecord | null) => void): () => void;
     /**
-     * Write a handoff with a request that outlives the page, for a page being
-     * closed: no transaction, which could not finish in time, and no answer.
+     * Write a handoff and /postepy data with a request that outlives the page,
+     * for a page being closed: no transaction, which could not finish in time,
+     * and no answer.
      */
-    sendUnloading(character: string, handoff: HandoffRoom): void;
+    sendUnloading(character: string, handoff: HandoffRoom | null, progress: HandoffProgress | null): void;
     /** Hold the database connection open, or let it go. */
     setOnline(online: boolean): void;
 }
@@ -77,6 +81,12 @@ export interface SessionHandoffDeps {
      * likely closer than whatever the map showed but to be flagged as a guess.
      */
     apply(roomId: number, verified: boolean): void;
+    /** This device's /postepy data and the life it belongs to, or null with none. */
+    progress?(): { objectNum: number; data: string } | null;
+    /** Merge /postepy data the previous session left into this device's. */
+    applyProgress?(data: string): void;
+    /** The session is over: whatever else should leave this device goes now. Once per session. */
+    ended?(): void;
     setTimer(fn: () => void, ms: number): () => void;
 }
 
@@ -112,6 +122,13 @@ export class SessionHandoff {
     private stopSealTimer: (() => void) | null = null;
     /** What this session last parked, so switching tabs in one room writes once. */
     private parkedKey: string | null = null;
+    private parkedProgress: string | null = null;
+    /** The session {@link SessionHandoffDeps.ended} was called for. */
+    private endingSession: string | null = null;
+    /** The /postepy data last merged in, so a record heard twice merges once. */
+    private progressTaken: string | null = null;
+    /** /postepy data that came before the login said which game object we are. */
+    private pendingProgress: HandoffProgress | null = null;
     /** A parked room waiting for the game to describe where this login stands. */
     private unverified: HandoffRoom | null = null;
     /** Whether {@link unverified} is already on the map as a guess. */
@@ -167,6 +184,9 @@ export class SessionHandoff {
         this.endedSession = null;
         this.loginBody = null;
         this.parkedKey = null;
+        this.parkedProgress = null;
+        this.progressTaken = null;
+        this.pendingProgress = null;
         this.offerOpen = true;
         // The map restores this device's own last room from storage while the
         // login's Char.Info is handled; that is not a placement. charInfoHandled()
@@ -186,6 +206,9 @@ export class SessionHandoff {
             this.loginBody = objectNum;
             this.loginSettled = true;
             if (this.offerOpen) this.deps.startTracking();
+            const pending = this.pendingProgress;
+            this.pendingProgress = null;
+            if (pending) this.takeProgress(pending);
         }
     }
 
@@ -227,15 +250,27 @@ export class SessionHandoff {
         const print = this.print;
         if (!store || !session || !character || !this.gameConnected) return;
         if (this.endedSession === session) return;
-        if (roomId === null || objectNum === null || print === null || this.lost) return;
         if (!this.deps.isTrusted()) return;
-        const key = `${roomId}|${objectNum}|${print}`;
-        if (this.parkedKey === key) return;
-        this.parkedKey = key;
-        const handoff: HandoffRoom = {from: session, device: this.deps.deviceId, roomId, objectNum, at: store.now(), parked: true, print};
-        const written = await this.run(store, () => store.transact(character, current => withParked(current, handoff)));
-        if (written?.handoff?.from === session && written.handoff.parked) log(`parked room ${roomId}`);
-        else if (this.parkedKey === key) this.parkedKey = null;
+        const key = roomId === null || objectNum === null || print === null || this.lost
+            ? null
+            : `${roomId}|${objectNum}|${print}`;
+        const handoff: HandoffRoom | null = key !== null && this.parkedKey !== key
+            ? {from: session, device: this.deps.deviceId, roomId: roomId!, objectNum, at: store.now(), parked: true, print: print!}
+            : null;
+        let progress = this.progressOf(store, session);
+        const progressKey = progress?.data ?? null;
+        if (progressKey === this.parkedProgress) progress = null;
+        if (!handoff && !progress) return;
+        if (handoff) this.parkedKey = key;
+        if (progress) this.parkedProgress = progressKey;
+        const written = await this.run(store, () => store.transact(character, current => withParked(current, handoff, progress)));
+        if (handoff) {
+            if (written?.handoff?.from === session && written.handoff.parked) log(`parked room ${roomId}`);
+            else if (this.parkedKey === key) this.parkedKey = null;
+        }
+        if (progress && written?.progress?.from !== session && this.parkedProgress === progressKey) {
+            this.parkedProgress = null;
+        }
     }
 
     /**
@@ -252,17 +287,57 @@ export class SessionHandoff {
         const roomId = this.room;
         const objectNum = this.body;
         if (!session || !character || this.endedSession === session) return;
+        if (this.endingSession !== session) {
+            this.endingSession = session;
+            this.deps.ended?.();
+        }
         if (!store) return log('session ended, not handing over: not signed in to Firebase');
-        if (roomId === null) return log('session ended, not handing over: no room known');
-        if (objectNum === null) return log('session ended, not handing over: game object unknown');
-        if (this.lost) return log('session ended, not handing over: map position lost');
-        if (!this.deps.isTrusted()) return log('session ended, not handing over: tab was in the background');
+        const why = roomId === null ? 'no room known'
+            : objectNum === null ? 'game object unknown'
+                : this.lost ? 'map position lost'
+                    : !this.deps.isTrusted() ? 'tab was in the background'
+                        : null;
+        const handoff: HandoffRoom | null = why === null
+            ? {from: session, device: this.deps.deviceId, roomId: roomId!, objectNum, at: store.now()}
+            : null;
+        // What /postepy recorded holds however long the tab slept: it only misses the rest.
+        const progress = this.progressOf(store, session);
+        if (why !== null) log(`session ended, not handing over the room: ${why}`);
+        if (!handoff && !progress) return;
         this.endedSession = session;
-        const handoff = {from: session, device: this.deps.deviceId, roomId, objectNum, at: store.now()};
-        if (unloading) store.sendUnloading(character, handoff);
-        const written = await this.run(store, () => store.transact(character, current => withHandoff(current, handoff, store.now())));
-        if (written?.handoff?.from === session) log(`handed over room ${roomId} (object ${objectNum})`);
-        else log('session ended, handoff refused: another login claimed the character too long ago');
+        if (unloading) store.sendUnloading(character, handoff, progress);
+        const written = await this.run(store, () => store.transact(character, current => withHandoff(current, handoff, store.now(), progress)));
+        if (handoff && written?.handoff?.from === session) log(`handed over room ${roomId} (object ${objectNum})`);
+        if (progress && written?.progress?.from === session) log(`handed over postepy (object ${progress.objectNum})`);
+        if (!written) log('session ended, handoff refused: another login claimed the character too long ago');
+    }
+
+    private progressOf(store: HandoffStore, session: string): HandoffProgress | null {
+        const progress = this.deps.progress?.();
+        if (!progress) return null;
+        return {from: session, device: this.deps.deviceId, objectNum: progress.objectNum, at: store.now(), data: progress.data};
+    }
+
+    /**
+     * Merge the /postepy data the previous session left, if it is about the game
+     * object we are now (see {@link offer}). Sync brings the same data; the merge
+     * takes both in any order. Not tied to the room's offer: it is never wrong.
+     */
+    private takeProgress(progress: HandoffProgress): void {
+        if (!this.deps.applyProgress) return;
+        const key = `${progress.from}|${progress.at}`;
+        if (this.progressTaken === key) return;
+        if (!this.loginSettled) {
+            this.pendingProgress = progress;
+            return;
+        }
+        this.progressTaken = key;
+        if (progress.device === this.deps.deviceId) return log('not merging postepy: left by this device');
+        if (this.loginBody === null || progress.objectNum !== this.loginBody) {
+            return log(`not merging postepy: game object ${progress.objectNum} left, logged in as ${this.loginBody}`);
+        }
+        log(`merging postepy left by the previous session`);
+        this.deps.applyProgress(progress.data);
     }
 
     private claim(): void {
@@ -279,6 +354,8 @@ export class SessionHandoff {
             });
             if (store !== this.store || session !== this.session || !committed) return;
             this.prevSession = committed.prevSession;
+            const progress = inheritedProgress(previous, store.now());
+            if (progress) this.takeProgress(progress);
             const inherited = inheritedRoom(previous, store.now());
             if (inherited) {
                 log(`claimed ${character}; found room ${inherited.roomId} ${inherited.parked ? 'parked' : 'left'} by the previous session`);
@@ -305,6 +382,8 @@ export class SessionHandoff {
     private onRecord(value: SessionRecord | null): void {
         const session = this.session;
         if (!session) return;
+        const progress = takeoverProgress(value, session, this.prevSession);
+        if (progress) this.takeProgress(progress);
         const handoff = takeoverRoom(value, session, this.prevSession);
         if (handoff) {
             this.offer(handoff);

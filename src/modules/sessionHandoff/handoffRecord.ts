@@ -26,6 +26,12 @@
  * game describes there: a match is taken as fact, anything else goes on the map as
  * a guess, with the map marked as lost. No handoff means the device keeps what it knew.
  *
+ * The ending (or parking) session also leaves its /postepy session in `progress`,
+ * for the login that takes over to merge in. Sync carries it as well, but only
+ * as often as the device being left uploads; this is the fallback for when that
+ * upload comes late or never - a phone frozen in a pocket, a closed tab. It is
+ * taken under the same game-object rule as the room.
+ *
  * Every login claims the record, which drops any handoff left in it. That is what
  * keeps an old one from outliving the session that came after it.
  */
@@ -45,12 +51,26 @@ export interface HandoffRoom {
     print?: string;
 }
 
+/** A session's /postepy data (character key `improve_counter`), as it ended or parked. */
+export interface HandoffProgress {
+    /** The session that wrote it. */
+    from: string;
+    device: string;
+    /** The life (game object) the data belongs to. */
+    objectNum: number;
+    /** Server time. */
+    at: number;
+    /** JSON: the database would drop its empty lists and null fields. */
+    data: string;
+}
+
 export interface SessionRecord {
     session: string;
     device: string;
     claimedAt: number;
     prevSession: string | null;
     handoff: HandoffRoom | null;
+    progress?: HandoffProgress;
 }
 
 /**
@@ -96,11 +116,22 @@ export function inheritedRoom(previous: SessionRecord | null, now: number): Hand
     return handoff;
 }
 
+/** The /postepy data a new login inherits from the record it replaced; see {@link inheritedRoom}. */
+export function inheritedProgress(previous: SessionRecord | null, now: number): HandoffProgress | null {
+    const progress = previous?.progress;
+    if (!previous || !progress) return null;
+    if (progress.from !== previous.session) return null;
+    if (now - progress.at > HANDOFF_TTL_MS) return null;
+    return progress;
+}
+
 /**
- * The record with a session's handoff added, or `undefined` when it may not write.
+ * The record with a session's handoff and /postepy data added, or `undefined`
+ * when it may write neither.
  *
  * A session writes into its own record, or into the one that took the character
- * from it while that one is fresh and has not heard from it yet.
+ * from it while that one is fresh and has not heard from it yet. Its /postepy
+ * data may replace what it wrote there itself before.
  *
  * `null` in, `null` out: the Realtime Database runs a transaction on its cached
  * value first, which is `null` when nothing is cached. Aborting on that would
@@ -109,35 +140,43 @@ export function inheritedRoom(previous: SessionRecord | null, now: number): Hand
  */
 export function withHandoff(
     current: SessionRecord | null,
-    handoff: HandoffRoom,
+    handoff: HandoffRoom | null,
     now: number,
+    progress: HandoffProgress | null = null,
 ): SessionRecord | null | undefined {
     if (!current) return null;
-    if (current.session === handoff.from) return {...current, handoff};
-    if (
-        current.prevSession === handoff.from
-        && !current.handoff
-        && now - current.claimedAt <= TAKEOVER_WINDOW_MS
-    ) {
-        return {...current, handoff};
+    const from = handoff?.from ?? progress?.from;
+    if (!from) return undefined;
+    const own = current.session === from;
+    const displaced = current.prevSession === from && now - current.claimedAt <= TAKEOVER_WINDOW_MS;
+    if (!own && !displaced) return undefined;
+    let next: SessionRecord | undefined;
+    if (handoff && (own || !current.handoff)) next = {...current, handoff};
+    if (progress && (own || !current.progress || current.progress.from === from)) {
+        next = {...(next ?? current), progress};
     }
-    return undefined;
+    return next;
 }
 
 /**
- * The record with a session's parked room in it, or `undefined` when it may not
- * write. Only ever into the session's own record: once another login has claimed
- * the character, the session it displaced is over and has nothing to park.
+ * The record with a session's parked room and /postepy data in it, or `undefined`
+ * when it may write neither. Only ever into the session's own record: once another
+ * login has claimed the character, the session it displaced is over and has
+ * nothing to park.
  */
 export function withParked(
     current: SessionRecord | null,
-    handoff: HandoffRoom,
+    handoff: HandoffRoom | null,
+    progress: HandoffProgress | null = null,
 ): SessionRecord | null | undefined {
     if (!current) return null;
-    if (current.session !== handoff.from) return undefined;
+    const from = handoff?.from ?? progress?.from;
+    if (!from || current.session !== from) return undefined;
+    let next: SessionRecord | undefined;
     // The room a session handed over as it ended is better than one it parked.
-    if (current.handoff?.from === handoff.from && !current.handoff.parked) return undefined;
-    return {...current, handoff};
+    if (handoff && !(current.handoff?.from === from && !current.handoff.parked)) next = {...current, handoff};
+    if (progress) next = {...(next ?? current), progress};
+    return next;
 }
 
 /**
@@ -167,12 +206,42 @@ export function takeoverRoom(
     return handoff && handoff.from === prevSession ? handoff : null;
 }
 
+/** The /postepy data the session a login displaced handed over after the claim, if it has. */
+export function takeoverProgress(
+    value: SessionRecord | null,
+    mySession: string,
+    prevSession: string | null,
+): HandoffProgress | null {
+    if (!value || !prevSession || value.session !== mySession) return null;
+    const progress = value.progress;
+    return progress && progress.from === prevSession ? progress : null;
+}
+
+function normalizeProgress(raw: unknown): HandoffProgress | null {
+    if (!raw || typeof raw !== 'object') return null;
+    const value = raw as Record<string, unknown>;
+    if (
+        typeof value.from !== 'string'
+        || typeof value.objectNum !== 'number'
+        || typeof value.at !== 'number'
+        || typeof value.data !== 'string'
+    ) return null;
+    return {
+        from: value.from,
+        device: typeof value.device === 'string' ? value.device : '',
+        objectNum: value.objectNum,
+        at: value.at,
+        data: value.data,
+    };
+}
+
 /** A record as read back from the database, which drops null fields. */
 export function normalizeRecord(raw: unknown): SessionRecord | null {
     if (!raw || typeof raw !== 'object') return null;
     const value = raw as Record<string, unknown>;
     if (typeof value.session !== 'string') return null;
     const handoff = value.handoff as Record<string, unknown> | null | undefined;
+    const progress = normalizeProgress(value.progress);
     return {
         session: value.session,
         device: typeof value.device === 'string' ? value.device : '',
@@ -192,6 +261,7 @@ export function normalizeRecord(raw: unknown): SessionRecord | null {
                 ...(typeof handoff.print === 'string' ? {print: handoff.print} : {}),
             }
             : null,
+        ...(progress ? {progress} : {}),
     };
 }
 
