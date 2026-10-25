@@ -34,6 +34,7 @@ import {
     readContributor,
     setQuota,
     storeItems,
+    withdrawItems,
     type ContributorRow,
     type StoredItem,
 } from './store';
@@ -122,6 +123,8 @@ export default {
                 return handleSubmit(db, config, contributor, body, origin);
             case '/crowd/merge':
                 return handleMerge(db, config, contributor, body, origin);
+            case '/crowd/withdraw':
+                return handleWithdraw(db, config, contributor, body, origin);
             default:
                 return errorResponse('not_found', 'No such route', 404, origin, allowed);
         }
@@ -269,6 +272,31 @@ async function handleMerge(
     if (!from) return json({ merged: false }, 200, origin, allowed);
     await mergeContributor(db, from, contributor, Date.now());
     return json({ merged: true }, 200, origin, allowed);
+}
+
+/**
+ * A player taking back what they shared: an item they brought back in the
+ * armour window. Only their own confirmation goes, and only of a kind that is
+ * an opinion (store.ts); what they saw in the game stays.
+ */
+async function handleWithdraw(
+    db: D1Database,
+    config: RuntimeConfig,
+    contributor: ContributorRow,
+    body: unknown,
+    origin: string | null,
+): Promise<Response> {
+    const allowed = config.allowedOrigins;
+    const hashes = (body as { hashes?: unknown })?.hashes;
+    if (
+        !Array.isArray(hashes)
+        || hashes.length > MAX_HAVE_HASHES
+        || !hashes.every(h => typeof h === 'string' && HASH_PATTERN.test(h))
+    ) {
+        return errorResponse('bad_request', `hashes: up to ${MAX_HAVE_HASHES} sha-256 hex strings`, 400, origin, allowed);
+    }
+    const withdrawn = hashes.length ? await withdrawItems(db, contributor.id, hashes, Date.now()) : 0;
+    return json({ withdrawn }, 200, origin, allowed);
 }
 
 async function readJsonBody(request: Request): Promise<unknown | 'too_large' | 'malformed'> {

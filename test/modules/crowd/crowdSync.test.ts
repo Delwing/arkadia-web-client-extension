@@ -1,5 +1,5 @@
 import { vi } from 'vitest';
-import { syncOnce } from '@modules/crowd/crowdSync';
+import { syncOnce, withdrawCrowdIgnore } from '@modules/crowd/crowdSync';
 import { getBehaviorSettings } from '@modules/core/settings';
 import { __resetZlomStoreForTests, updateZlomSnapshot } from '@modules/data/zlomStore';
 import { __resetOdmianaStoreForTests, saveOdmiana } from '@modules/data/odmianaStore';
@@ -38,6 +38,7 @@ beforeEach(async () => {
     await __resetZlomStoreForTests();
     await __resetOdmianaStoreForTests();
     await clearIndexedDB({ dbName: 'ArkadiaCrowd', storeName: 'crowd', key: 'sent-3' }).catch(() => {});
+    await clearIndexedDB({ dbName: 'ArkadiaCrowd', storeName: 'crowd', key: 'withdraw' }).catch(() => {});
     vi.mocked(getBehaviorSettings).mockReturnValue({ crowdContribute: true } as ReturnType<typeof getBehaviorSettings>);
     calls = [];
     wantedFilter = hashes => hashes;
@@ -49,6 +50,7 @@ beforeEach(async () => {
         if (path === '/crowd/have') return respond(200, { wanted: wantedFilter(body.hashes) });
         if (path === '/crowd/submit') return respond(200, { accepted: body.items.length, rejected: [] });
         if (path === '/crowd/merge') return respond(200, { merged: true });
+        if (path === '/crowd/withdraw') return respond(200, { withdrawn: body.hashes.length });
         return respond(404, {});
     }));
 
@@ -207,4 +209,45 @@ test('sends what this character ignores in the armour window', async () => {
     await syncOnce();
     const items = calls.find(c => c.path === '/crowd/submit')!.body.items as { kind: string; record: Record<string, unknown> }[];
     expect(items.find(i => i.kind === 'ignorowany')!.record).toEqual({ text: 'Na twej piersi lsni znak gildii kupcow.' });
+});
+
+test('takes back an ignore the player brought back, and votes again when it is ignored again', async () => {
+    const LINE = 'Na twej piersi lsni znak gildii kupcow.';
+    const armor = (ignored: string[]) => characterStorage.set('worn_armor', {
+        slots: {}, extras: [], unplaced: [], unknownLines: [], restored: [], updatedAt: 1, ignored,
+    });
+    characterStorage.setCharacter('Testowy');
+    armor([LINE]);
+    await syncOnce();
+
+    armor([]);
+    await withdrawCrowdIgnore(LINE);
+    calls = [];
+    await syncOnce();
+    const withdraw = calls.find(c => c.path === '/crowd/withdraw')!;
+    expect(withdraw.body.hashes).toHaveLength(1);
+    expect(withdraw.auth).toBe('Bearer cid.sec');
+
+    // Sent once
+    calls = [];
+    await syncOnce();
+    expect(calls.some(c => c.path === '/crowd/withdraw')).toBe(false);
+
+    armor([LINE]);
+    await syncOnce();
+    const items = calls.find(c => c.path === '/crowd/submit')!.body.items as { kind: string }[];
+    expect(items.map(i => i.kind)).toEqual(['ignorowany']);
+});
+
+test('does not take back an ignore set again before the pass', async () => {
+    const LINE = 'Na twej piersi lsni znak gildii kupcow.';
+    characterStorage.setCharacter('Testowy');
+    characterStorage.set('worn_armor', {
+        slots: {}, extras: [], unplaced: [], unknownLines: [], restored: [], updatedAt: 1, ignored: [LINE],
+    });
+    await syncOnce();
+    await withdrawCrowdIgnore(LINE);
+    calls = [];
+    await syncOnce();
+    expect(calls.some(c => c.path === '/crowd/withdraw')).toBe(false);
 });

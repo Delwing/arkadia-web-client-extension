@@ -79,6 +79,8 @@ limited per IP per day, and the IP is stored only as `sha256(ip + day)`.
 | `POST /crowd/register` | none   | mint a contributor |
 | `POST /crowd/have`     | bearer | `{ hashes }` to `{ wanted }`, up to 5000 |
 | `POST /crowd/submit`   | bearer | `{ items: [{ kind, record }] }`, up to 500 |
+| `POST /crowd/merge`    | bearer | `{ contributorId, secret }` of a credential to fold into this one |
+| `POST /crowd/withdraw` | bearer | `{ hashes }` to `{ withdrawn }`: take back own `ignorowany` confirmations |
 
 ## First deploy
 

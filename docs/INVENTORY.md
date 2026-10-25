@@ -57,7 +57,7 @@ Pod sylwetką okno pokazuje **Do uzupełnienia** z ostatniego `i`:
 
 Lista zmienia się przy każdym `i`, a przedmiot, który zakładasz albo zdejmujesz, od razu z niej znika.
 
-Przedmiot albo linię, której nie trzeba uzupełniać (np. przedmiot gildiowy lub klubowy), schowasz ikoną przekreślonego oka obok niej. Zostaje schowana także w kolejnych `i`. Schowane są pod sylwetką w zwiniętej liście **Ignorowane**, skąd można je przywrócić — wrócą na listę przy następnym `i`. Lista jest osobna dla każdej postaci. Jeśli udostępniasz spis złomu, schowane przedmioty trafiają też do wspólnego spisu, a to, co schowali inni gracze (np. przedmiot gildiowy), jest schowane i u ciebie — na liście **Ignorowane** oznaczone literą W. Takie też możesz przywrócić; wróci tylko u ciebie.
+Przedmiot albo linię, której nie trzeba uzupełniać (np. przedmiot gildiowy lub klubowy), schowasz ikoną przekreślonego oka obok niej. Zostaje schowana także w kolejnych `i`. Schowane są pod sylwetką w zwiniętej liście **Ignorowane**, skąd można je przywrócić — wrócą na listę przy następnym `i`. Lista jest osobna dla każdej postaci. Jeśli udostępniasz spis złomu, schowane przedmioty trafiają też do wspólnego spisu, a to, co schowało co najmniej dwóch graczy (np. przedmiot gildiowy), jest schowane i u ciebie — na liście **Ignorowane** oznaczone literą W. Takie też możesz przywrócić; wróci tylko u ciebie. Gdy coś schował dopiero jeden gracz, zostaje na liście **Do uzupełnienia**, a litera W obok podpowiada, że może to przedmiot gildiowy. Przywrócenie przedmiotu, który schowałeś sam, wycofuje go też ze wspólnego spisu.
 
 ## Menedżer pojemników
 

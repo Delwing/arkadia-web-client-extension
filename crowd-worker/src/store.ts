@@ -124,18 +124,7 @@ export async function storeItems(
         )
         .bind(batch, contributorId, now, maxConfirmations)
         .run();
-    await setMeta(db, 'last_write', now);
-    // The first write since the last export, so the export can tell how long the
-    // list has waited: kept while unexported, reset by the first write after one
-    await db
-        .prepare(
-            `INSERT INTO meta (key, value) VALUES ('dirty_since', ?1)
-             ON CONFLICT (key) DO UPDATE SET value = CASE
-                 WHEN meta.value <= COALESCE((SELECT value FROM meta WHERE key = 'last_export'), 0)
-                 THEN excluded.value ELSE meta.value END`,
-        )
-        .bind(now)
-        .run();
+    await markDirty(db, now);
 }
 
 /**
@@ -161,6 +150,53 @@ export async function mergeContributor(
     if (from.banned) await db.prepare('UPDATE contributors SET banned = 1 WHERE id = ?1').bind(into.id).run();
     await db.prepare('DELETE FROM contributors WHERE id = ?1').bind(from.id).run();
     // Counts changed, so the next export must run
+    await markDirty(db, now);
+}
+
+/** Kinds a contributor may take back: an opinion, not something seen in the game */
+const WITHDRAWABLE: readonly CrowdKind[] = ['ignorowany'];
+
+/**
+ * Take back this contributor's confirmation of these hashes, of the kinds
+ * that allow it, and drop a version nobody else vouches for any more. Returns
+ * how many confirmations went.
+ */
+export async function withdrawItems(
+    db: D1Database,
+    contributorId: string,
+    hashes: string[],
+    now: number,
+): Promise<number> {
+    const batch = JSON.stringify(hashes);
+    const kinds = JSON.stringify(WITHDRAWABLE);
+    const { meta } = await db
+        .prepare(
+            `DELETE FROM confirmations
+             WHERE contributor = ?2
+               AND hash IN (SELECT v.hash FROM variants v JOIN json_each(?1) j ON j.value = v.hash
+                            WHERE v.kind IN (SELECT value FROM json_each(?3)))`,
+        )
+        .bind(batch, contributorId, kinds)
+        .run();
+    await db
+        .prepare(
+            `DELETE FROM variants
+             WHERE hash IN (SELECT value FROM json_each(?1))
+               AND kind IN (SELECT value FROM json_each(?2))
+               AND NOT EXISTS (SELECT 1 FROM confirmations c WHERE c.hash = variants.hash)`,
+        )
+        .bind(batch, kinds)
+        .run();
+    if (meta.changes) await markDirty(db, now);
+    return meta.changes;
+}
+
+/**
+ * Something the snapshot shows changed. Also keeps the first change since the
+ * last export, so the export can tell how long the list has waited: kept while
+ * unexported, reset by the first change after one.
+ */
+async function markDirty(db: D1Database, now: number): Promise<void> {
     await setMeta(db, 'last_write', now);
     await db
         .prepare(

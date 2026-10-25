@@ -44,6 +44,8 @@ const BACKOFF_MS = 60 * 60_000;
  * when items moved to being keyed by name) would otherwise never be re-sent.
  */
 const SENT_CONFIG: IndexedDBConfig = { dbName: 'ArkadiaCrowd', storeName: 'crowd', key: 'sent-3' };
+/** Ignores the player brought back in the armour window, to take back from the crowd list on the next pass. */
+const WITHDRAW_CONFIG: IndexedDBConfig = { dbName: 'ArkadiaCrowd', storeName: 'crowd', key: 'withdraw' };
 
 const PRINTABLE_ASCII = /^[\x20-\x7e]*$/;
 
@@ -175,12 +177,67 @@ async function mergeRetired(): Promise<void> {
     saveRetiredCrowdCredentials(left);
 }
 
+async function loadWithdrawals(): Promise<string[]> {
+    try {
+        const stored = await getFromIndexedDB<{ texts?: string[] }>(WITHDRAW_CONFIG);
+        return Array.isArray(stored?.texts) ? stored.texts : [];
+    } catch {
+        return [];
+    }
+}
+
+async function saveWithdrawals(texts: string[]): Promise<void> {
+    try {
+        await storeInIndexedDB(WITHDRAW_CONFIG, { texts });
+    } catch (e) {
+        console.warn('[crowd] could not remember what to take back', e);
+    }
+}
+
+/**
+ * Take an ignore back from the crowd list: the player brought it back in the
+ * armour window, so their vote should not keep it hidden for everyone else.
+ * Sent with the next pass.
+ */
+export async function withdrawCrowdIgnore(text: string): Promise<void> {
+    const texts = await loadWithdrawals();
+    if (!texts.includes(text)) await saveWithdrawals([...texts, text]);
+}
+
+/**
+ * Send the queued withdrawals. What the Worker took back is no longer sent,
+ * so ignoring it again (here or on another character) votes again.
+ */
+async function sendWithdrawals(sent: Set<string>): Promise<void> {
+    const queued = await loadWithdrawals();
+    if (!queued.length) return;
+    const ignored = characterStorage.get('worn_armor')?.ignored ?? [];
+    const credentials = loadCrowdCredentials();
+    const hashes: string[] = [];
+    // Ignored again since: the vote stands
+    for (const text of queued.filter(text => !ignored.includes(text))) {
+        const result = canonicalize('ignorowany', { text });
+        if (result.ok) hashes.push(await hashRecord(result.record));
+    }
+    if (hashes.length && credentials) {
+        const result = await call('/crowd/withdraw', { hashes }, credentials);
+        // Kept for the next pass, unless the Worker does not know this credential: then nothing of it is left to take back
+        if (!result.ok && result.status !== 401) return;
+        hashes.forEach(hash => sent.delete(hash));
+        await saveSent(sent);
+    }
+    // Queued meanwhile: left for the next pass
+    const left = (await loadWithdrawals()).filter(text => !queued.includes(text));
+    await saveWithdrawals(left);
+}
+
 /** One pass: send whatever the Worker wants and this browser has not sent. */
 export async function syncOnce(): Promise<SyncOutcome> {
     if (!getBehaviorSettings().crowdContribute) return { status: 'off' };
     await mergeRetired();
 
     const sent = await loadSent();
+    await sendWithdrawals(sent);
     const pending = (await prepareItems()).filter(item => !sent.has(item.hash));
     if (!pending.length) return { status: 'done', sent: 0 };
 

@@ -19,6 +19,7 @@ import {
 import { setZlomILine } from "./zlom";
 import { getZlomView } from "@modules/crowd/crowdView";
 import { getCrowdSnapshot, subscribeCrowdSnapshot } from "@modules/crowd/crowdSnapshot";
+import { withdrawCrowdIgnore } from "@modules/crowd/crowdSync";
 import type { OdmianaSnapshot } from "@modules/data/odmianaStore";
 import { getInventoryState } from "./inventory";
 import { splitName } from "./inventoryActions";
@@ -426,6 +427,13 @@ export interface IgnoredTodo {
 }
 
 /**
+ * Players of the crowd list who must ignore something before it is left out
+ * for everyone. A guild item is worn by many, so it gets there soon; a lone
+ * misclick does not.
+ */
+export const CROWD_IGNORE_MIN = 2;
+
+/**
  * What "Do uzupelnienia" leaves out: this character's own ignores, and those of
  * other players in the crowd list (a guild item is ignored by everyone who wears
  * it), less the ones this character brought back.
@@ -435,11 +443,22 @@ export function ignoredTodos(): IgnoredTodo[] {
     for (const { text, confirmations } of getCrowdSnapshot()?.ignorowane ?? []) {
         const mine = result.find(item => item.text.toLowerCase() === text.toLowerCase());
         if (mine) mine.confirmations = confirmations;
-        else if (!armor.restored.some(item => item.toLowerCase() === text.toLowerCase())) {
+        else if (confirmations >= CROWD_IGNORE_MIN && !armor.restored.some(item => item.toLowerCase() === text.toLowerCase())) {
             result.push({ text, own: false, confirmations });
         }
     }
     return result;
+}
+
+/**
+ * How many players of the crowd list ignore a piece or line still on "Do
+ * uzupelnienia": too few to leave it out, but a hint that it may be a guild item.
+ */
+export function crowdIgnoreVotes(text: string): number | undefined {
+    if (armor.restored.some(item => item.toLowerCase() === text.toLowerCase())) return undefined;
+    return (getCrowdSnapshot()?.ignorowane ?? []).find(item =>
+        item.confirmations < CROWD_IGNORE_MIN
+        && (item.text.toLowerCase() === text.toLowerCase() || sameItem(item.text, text)))?.confirmations;
 }
 
 /** Every text "Do uzupelnienia" leaves out, own and the crowd's */
@@ -466,9 +485,10 @@ export function ignoreTodo(text: string): void {
 
 /**
  * Back on the list from the next `i`. One only other players ignore is brought
- * back for this character alone.
+ * back for this character alone; an own one is taken back from the crowd list too.
  */
 export function unignoreTodo(text: string): void {
+    if (armor.ignored.includes(text)) void withdrawCrowdIgnore(text);
     // Ignored by others too: without this it would stay hidden by theirs
     const crowd = (getCrowdSnapshot()?.ignorowane ?? []).some(item => item.text.toLowerCase() === text.toLowerCase());
     store({

@@ -3,7 +3,7 @@ import { ChevronRight, EyeOff, Undo2 } from 'lucide-react';
 import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
 import { usePopup } from './hooks/usePopup';
 import { usePopupData } from './hooks/usePopupData';
-import { getWornArmor, ignoredTodos, ignoreTodo, unignoreTodo, type WornArmor } from '@client/scripts/armor';
+import { CROWD_IGNORE_MIN, crowdIgnoreVotes, getWornArmor, ignoredTodos, ignoreTodo, unignoreTodo, type WornArmor } from '@client/scripts/armor';
 import ArmorILinePicker, { type ILineSubject } from './ArmorILinePicker';
 import ArmorOdmianaHint from './ArmorOdmianaHint';
 
@@ -14,19 +14,32 @@ const EXTRA_KINDS = { ubrania: 'Ubranie', dodatki: 'Dodatek' } as const;
 /** One state for all of them: a guild or club item is just one more thing to leave alone */
 const IGNORE_TITLE = 'Ignoruj (np. przedmiot gildiowy lub klubowy): nie pokazuj go tu więcej';
 
-/** Leaves a piece or line of "Do uzupełnienia" alone for good */
-const IgnoreButton: React.FC<{ text: string }> = ({ text }) => (
-    <button
-        type="button"
-        className="armor-popup__todo-ignore"
-        title={IGNORE_TITLE}
-        // Not a click on the line: that would pick it for the złom list
-        onMouseUp={e => e.stopPropagation()}
-        onClick={() => ignoreTodo(text)}
-    >
-        <EyeOff size={12} />
-    </button>
-);
+/** Leaves a piece or line of "Do uzupełnienia" alone for good; says when another player already does */
+const IgnoreButton: React.FC<{ text: string }> = ({ text }) => {
+    const votes = crowdIgnoreVotes(text);
+    return (
+        <>
+            {votes ? (
+                <span
+                    className="armor-popup__ignored-crowd"
+                    title={`Ignoruje go ${votes === 1 ? '1 gracz' : `${votes} graczy`} ze wspólnego spisu. Ukryty zostanie, gdy zrobi to ${CROWD_IGNORE_MIN} graczy — może to przedmiot gildiowy lub klubowy.`}
+                >
+                    W
+                </span>
+            ) : null}
+            <button
+                type="button"
+                className="armor-popup__todo-ignore"
+                title={IGNORE_TITLE}
+                // Not a click on the line: that would pick it for the złom list
+                onMouseUp={e => e.stopPropagation()}
+                onClick={() => ignoreTodo(text)}
+            >
+                <EyeOff size={12} />
+            </button>
+        </>
+    );
+};
 
 type Slot = 'glowa' | 'korpus' | 'lewe ramie' | 'prawe ramie' | 'dlonie' | 'nogi' | 'stopy' | 'tarcza';
 

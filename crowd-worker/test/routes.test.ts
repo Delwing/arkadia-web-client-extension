@@ -189,6 +189,53 @@ describe('merge', () => {
     });
 });
 
+describe('withdraw', () => {
+    async function ignoreHash(text: string): Promise<string> {
+        const result = canonicalize('ignorowany', { text });
+        if (!result.ok) throw new Error(result.reason);
+        return hashRecord(result.record);
+    }
+
+    /** The next export, rebuilt at once as after a manual fix (README.md) */
+    async function rebuilt(): ReturnType<typeof snapshot> {
+        env.DB.raw.prepare("UPDATE meta SET value = 0 WHERE key = 'last_export'").run();
+        return snapshot();
+    }
+
+    it('takes back only the caller\'s own ignore, and drops it once nobody vouches for it', async () => {
+        const a = await register('10.7.0.1');
+        const b = await register('10.7.0.2');
+        const items = [{ kind: 'ignorowany', record: { text: 'znak gildii' } }];
+        await post('/crowd/submit', { items }, a);
+        await post('/crowd/submit', { items }, b);
+        const hash = await ignoreHash('znak gildii');
+
+        const response = await post('/crowd/withdraw', { hashes: [hash] }, a);
+        expect(await response.json()).toEqual({ withdrawn: 1 });
+        expect((await rebuilt()).ignorowane).toMatchObject([{ text: 'znak gildii', confirmations: 1 }]);
+
+        await post('/crowd/withdraw', { hashes: [hash] }, b);
+        expect((await rebuilt()).ignorowane).toEqual([]);
+        expect(env.DB.raw.prepare('SELECT COUNT(*) AS n FROM variants').get()).toEqual({ n: 0 });
+        // Sent again, it counts again
+        await post('/crowd/submit', { items }, a);
+        expect((await rebuilt()).ignorowane).toMatchObject([{ confirmations: 1 }]);
+    });
+
+    it('leaves what was seen in the game alone', async () => {
+        const auth = await register();
+        await post('/crowd/submit', { items: [{ kind: 'odmiana', record: plecak() }] }, auth);
+        const response = await post('/crowd/withdraw', { hashes: [await hashOf(plecak())] }, auth);
+        expect(await response.json()).toEqual({ withdrawn: 0 });
+        expect((await rebuilt()).odmiany).toHaveLength(1);
+    });
+
+    it('wants sha-256 hashes', async () => {
+        const auth = await register();
+        expect((await post('/crowd/withdraw', { hashes: ['nope'] }, auth)).status).toBe(400);
+    });
+});
+
 describe('snapshot', () => {
     it('serves the version most contributors agree on', async () => {
         const a = await register('10.3.0.1');

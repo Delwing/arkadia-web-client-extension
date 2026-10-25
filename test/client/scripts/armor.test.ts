@@ -10,6 +10,8 @@ import initArmor, {
     assignILine,
     assignPiece,
     getWornArmor,
+    CROWD_IGNORE_MIN,
+    crowdIgnoreVotes,
     ignoreTodo,
     ignoredTodos,
     unignoreTodo,
@@ -732,6 +734,26 @@ describe('clothes and add-ons from an i reply', () => {
             reply();
             expect(getWornArmor().unplaced).toEqual(['stalowa kolczuge klubowa']);
             expect(ignoredTodos()).toEqual([]);
+        } finally {
+            __setCrowdSnapshotForTests(null);
+        }
+    });
+
+    test('one other player ignoring something only hints at it', () => {
+        __setCrowdSnapshotForTests({
+            generatedAt: 'x', bronie: [], tarcze: [], zbroje: [], ubrania: [], dodatki: [], odmiany: [],
+            ignorowane: [{ text: 'stalowa kolczuga klubowa', confirmations: CROWD_IGNORE_MIN - 1 }],
+        });
+        try {
+            client.onLine([
+                'Trzymasz w rekach dlugi krwisty miecz.',
+                'Masz na sobie stalowa kolczuge klubowa.',
+                'Masz przy sobie bulke.',
+            ].join('\n'), 'text');
+            expect(getWornArmor().unplaced).toEqual(['stalowa kolczuge klubowa']);
+            expect(ignoredTodos()).toEqual([]);
+            expect(crowdIgnoreVotes('stalowa kolczuge klubowa')).toBe(CROWD_IGNORE_MIN - 1);
+            expect(crowdIgnoreVotes('dlugi krwisty miecz')).toBeUndefined();
         } finally {
             __setCrowdSnapshotForTests(null);
         }
