@@ -11,7 +11,7 @@ import { directionModifiers, hasWalkModifier, sameWalkModifiers } from "@modules
 import { isPluginKeyOverridden, pluginKeyBindOf, type PluginKeyAction } from "@modules/core/pluginKeyRegistry";
 import type { StoredBind } from "@modules/helper/helperBinds";
 import type { BindMode } from "@modules/helper/helperProtocol";
-import { numLockOffNavKey } from "@modules/core/numpadKeys";
+import { numLockOffBase, numLockOffCode, numLockOffNavKey } from "@modules/core/numpadKeys";
 import { KEYBOARD, keyDistance } from "./keyboardLayout";
 import { IS_MAC } from "./platform";
 import { foldText } from "@web/settings/settingsSearch.ts";
@@ -26,11 +26,27 @@ export interface Combo {
     shift: boolean;
 }
 
-/** A modifier set, e.g. `""` (none), `"ctrl"`, `"ctrl+alt"`. */
+/**
+ * A modifier set, e.g. `""` (none), `"ctrl"`, `"ctrl+alt"`. NumLock off counts
+ * as one (`"numoff"`, `"ctrl+numoff"`) once the keymap tells it apart: it is
+ * not held, but it changes what the numpad keys are, as a modifier does.
+ */
 export type Layer = string;
 
 /** The layers the window always offers, in tab order. Others appear when used. */
 export const BASE_LAYERS: readonly Layer[] = ["", "ctrl", "alt", "shift", "ctrl+alt"];
+
+/** The NumLock-off part of a layer. */
+export const NUMOFF_LAYER = "numoff";
+
+/** The layers on offer: NumLock off joins them while the keymap tells it apart. */
+export function baseLayers(numLockAware: boolean): readonly Layer[] {
+    return numLockAware ? [...BASE_LAYERS, NUMOFF_LAYER] : BASE_LAYERS;
+}
+
+function hasNumOff(layer: Layer): boolean {
+    return layer.split("+").includes(NUMOFF_LAYER);
+}
 
 const ALT_LABEL = IS_MAC ? "⌥" : "Alt";
 
@@ -57,7 +73,8 @@ export function bindOf(combo: Combo): Bind {
     return bind;
 }
 
-export function layerOf(combo: Pick<Combo, "ctrl" | "alt" | "shift">): Layer {
+/** The modifiers held, without NumLock: what a keystroke's label spells before the key. */
+function modifierLayerOf(combo: Pick<Combo, "ctrl" | "alt" | "shift">): Layer {
     const parts: string[] = [];
     if (combo.ctrl) parts.push("ctrl");
     if (combo.alt) parts.push("alt");
@@ -65,9 +82,23 @@ export function layerOf(combo: Pick<Combo, "ctrl" | "alt" | "shift">): Layer {
     return parts.join("+");
 }
 
+/** The layer a keystroke sits in; a NumLock-off numpad code (`Numpad8Off`) puts it in NumLock off. */
+export function layerOf(combo: Pick<Combo, "ctrl" | "alt" | "shift"> & { code?: string }): Layer {
+    const mods = modifierLayerOf(combo);
+    if (!combo.code || !numLockOffBase(combo.code)) return mods;
+    return mods ? `${mods}+${NUMOFF_LAYER}` : NUMOFF_LAYER;
+}
+
+/** A key in a layer: in NumLock off, a numpad digit becomes its NumLock-off code. */
 export function comboInLayer(code: string, layer: Layer): Combo {
     const mods = layer.split("+");
-    return { code, ctrl: mods.includes("ctrl"), alt: mods.includes("alt"), shift: mods.includes("shift") };
+    const key = hasNumOff(layer) ? numLockOffCode(code) ?? code : code;
+    return { code: key, ctrl: mods.includes("ctrl"), alt: mods.includes("alt"), shift: mods.includes("shift") };
+}
+
+/** Whether the key is in that layer at all: NumLock off has only the numpad keys it changes. */
+export function keyInLayer(code: string, layer: Layer): boolean {
+    return !hasNumOff(layer) || numLockOffCode(code) !== null;
 }
 
 export function comboId(combo: Combo): string {
@@ -81,7 +112,12 @@ export function sameCombo(a: Combo | null, b: Combo | null): boolean {
 
 export function layerLabel(layer: Layer, short = false): string {
     if (!layer) return short ? "Bez" : "Bez modyfikatora";
-    return layer.split("+").map(m => m === "ctrl" ? "Ctrl" : m === "alt" ? ALT_LABEL : "Shift").join("+");
+    return layer.split("+").map(m =>
+        m === "ctrl" ? "Ctrl"
+            : m === "alt" ? ALT_LABEL
+            : m === NUMOFF_LAYER ? (short ? "NumOff" : "Bez NumLocka")
+            : "Shift",
+    ).join("+");
 }
 
 const KEY_LABELS: Record<string, string> = {
@@ -121,8 +157,18 @@ export function keyLabelFor(code: string, mac: boolean): string {
 
 /** The whole keystroke: `Ctrl+Alt+=`. */
 export function comboLabel(combo: Combo): string {
-    const layer = layerOf(combo);
+    // NumLock off is spelled by the key itself (Num↑), not before it.
+    const layer = modifierLayerOf(combo);
     return layer ? `${layerLabel(layer)}+${keyLabel(combo.code)}` : keyLabel(combo.code);
+}
+
+/**
+ * What a keycap on the drawing prints in a layer: in NumLock off, the
+ * navigation key under the digit (`↑`, `PgUp`), else its usual label.
+ */
+export function capLabel(code: string, layer: Layer): string {
+    const nav = hasNumOff(layer) ? numLockOffNavKey(numLockOffCode(code) ?? "") : null;
+    return nav ? keyLabel(nav) : keyLabel(code);
 }
 
 /** Codes that are modifiers themselves; a capture waits for the real key. */
@@ -606,6 +652,7 @@ export function freeKeysNear(combo: Combo, byCombo: Map<string, KeyEntry[]>, lim
     const near = KEYBOARD
         .filter(k => !k.inert && k.code !== combo.code && !NEVER_SUGGESTED.has(k.code))
         .filter(k => layer || keyKind(k.code) !== "main")
+        .filter(k => keyInLayer(k.code, layer))
         .map(k => comboInLayer(k.code, layer))
         .filter(free)
         .sort((a, b) =>

@@ -3,6 +3,12 @@ import { defaultBinds } from "@modules/core/keymapStorage";
 import type { BindSettings } from "@modules/core/keymapTypes";
 import type { StoredBind } from "@modules/helper/helperBinds";
 import {
+    baseLayers,
+    capLabel,
+    comboInLayer,
+    keyInLayer,
+    layerLabel,
+    layerOf,
     buildEntries,
     classifyKey,
     comboId,
@@ -53,6 +59,48 @@ describe("keys and labels", () => {
         expect(isBrowserReserved(combo("KeyT", { ctrl: true, shift: true }))).toBe(true);
         expect(isBrowserReserved(combo("KeyW"))).toBe(false);
         expect(isBrowserReserved(combo("KeyQ", { ctrl: true }))).toBe(false);
+    });
+});
+
+describe("NumLock off as a layer", () => {
+    it("is offered only while the keymap tells NumLock apart", () => {
+        expect(baseLayers(false)).not.toContain("numoff");
+        expect(baseLayers(true)).toContain("numoff");
+    });
+
+    it("puts a NumLock-off numpad key in it, beside the modifiers", () => {
+        expect(layerOf(combo("Numpad8Off"))).toBe("numoff");
+        expect(layerOf(combo("Numpad8Off", { ctrl: true }))).toBe("ctrl+numoff");
+        expect(layerOf(combo("Numpad8"))).toBe("");
+        expect(comboId(combo("Numpad8Off", { ctrl: true }))).toBe("ctrl+numoff+Numpad8Off");
+    });
+
+    it("holds only the numpad keys NumLock changes", () => {
+        expect(comboInLayer("Numpad8", "numoff")).toEqual(combo("Numpad8Off"));
+        expect(comboInLayer("Numpad8", "ctrl+numoff")).toEqual(combo("Numpad8Off", { ctrl: true }));
+        expect(comboInLayer("Numpad8", "ctrl")).toEqual(combo("Numpad8", { ctrl: true }));
+        expect(keyInLayer("Numpad8", "numoff")).toBe(true);
+        expect(keyInLayer("NumpadMultiply", "numoff")).toBe(false);
+        expect(keyInLayer("KeyQ", "numoff")).toBe(false);
+        expect(keyInLayer("KeyQ", "ctrl")).toBe(true);
+        // A selected key's id reads back to the same combo.
+        expect(comboInLayer("Numpad8Off", "numoff")).toEqual(combo("Numpad8Off"));
+    });
+
+    it("prints the key, not the layer", () => {
+        expect(comboLabel(combo("Numpad8Off"))).toBe("Num↑");
+        expect(comboLabel(combo("Numpad9Off", { shift: true }))).toBe("Shift+NumPgUp");
+        expect(capLabel("Numpad8", "numoff")).toBe("↑");
+        expect(capLabel("Numpad8", "")).toBe("Num8");
+        expect(layerLabel("numoff")).toBe("Bez NumLocka");
+        expect(layerLabel("ctrl+numoff", true)).toBe("Ctrl+NumOff");
+    });
+
+    it("suggests only keys of the same layer", () => {
+        const byCombo = entriesByCombo(buildEntries(binds({ numLockAware: true }), []));
+        const near = freeKeysNear(combo("Numpad8Off"), byCombo);
+        expect(near.length).toBeGreaterThan(0);
+        for (const c of near) expect(c.shift || layerOf(c) === "numoff").toBe(true);
     });
 });
 

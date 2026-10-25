@@ -1,6 +1,6 @@
 import {expect, test} from './support/fixtures';
 import {ensureGameSocket, getLastOutgoingCommand, pushText, submitCommand, waitForCommandInput} from './support/mocks';
-import {closeKeysWindow, openKeysMenu, openKeysWindow} from './support/keys';
+import {bindKey, captureKey, closeKeysWindow, openKeysMenu, openKeysWindow} from './support/keys';
 import type {Page} from '@playwright/test';
 
 async function pressNumpadKey(page: Page, code: string): Promise<void> {
@@ -183,6 +183,13 @@ test.describe('Direction key bindings', () => {
         await openKeysMenu(page);
         await expect(page.locator('#binds-modal button[title="Rozróżniaj NumLock"]')).toHaveClass(/is-on/);
         await openKeysMenu(page); // the ⋯ button toggles the menu shut
+
+        // NumLock off joins the modifier tabs; on it only the numpad keys it changes count.
+        const modal = page.locator('#binds-modal');
+        await modal.getByRole('radio', {name: /Bez NumLocka|NumOff/}).check();
+        await expect(modal.locator('.keys-key[data-code="Numpad8"] .keys-key__cap')).toHaveText('↑');
+        await expect(modal.locator('.keys-key[data-code="Numpad8"]')).toBeEnabled();
+        await expect(modal.locator('.keys-key[data-code="KeyQ"]')).toBeDisabled();
         await closeKeysWindow(page);
 
         await submitCommand(page, 'sz');
@@ -199,5 +206,29 @@ test.describe('Direction key bindings', () => {
         await pressNumpadNumLockOn(page, 'Numpad8', '8');
         await expect.poll(() => getLastOutgoingCommand(page), {timeout: 3000}).toBe('n');
         await expect(input).toHaveValue('sz');
+    });
+
+    test('a key bound on NumLock-off Num8 shows on the "Bez NumLocka" tab and fires apart from north', async ({page}) => {
+        await openKeysWindow(page);
+        await openKeysMenu(page);
+        await page.locator('#binds-modal button[title="Rozróżniaj NumLock"]').click();
+
+        const modal = page.locator('#binds-modal');
+        await modal.locator('[data-section="own"] .keys-add').filter({hasText: /^Komenda$/}).click();
+        await modal.locator('[data-section="own"] .keys-command').fill('zaslon sie');
+        // Playwright's numpad is NumLock off.
+        await captureKey(page, 'custom:0', 'Numpad8');
+        await expect(bindKey(page, 'custom:0')).toHaveText('Num↑');
+
+        await modal.getByRole('radio', {name: /Bez NumLocka|NumOff/}).check();
+        await expect(modal.locator('.keys-key[data-code="Numpad8"]')).toHaveClass(/is-bound/);
+        await closeKeysWindow(page);
+
+        await resetCommands(page);
+        await page.locator('#message-input').focus();
+        await pressNumpadKey(page, 'Numpad8');
+        await expect.poll(() => getLastOutgoingCommand(page), {timeout: 3000}).toBe('zaslon sie');
+        await pressNumpadNumLockOn(page, 'Numpad8', '8');
+        await expect.poll(() => getLastOutgoingCommand(page), {timeout: 3000}).toBe('n');
     });
 });

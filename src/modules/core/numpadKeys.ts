@@ -48,6 +48,11 @@ export function numLockOffBase(code: string): string | null {
     return base in NUMLOCK_OFF_KEYS ? base : null;
 }
 
+/** `Numpad8` → `Numpad8Off`, or null for a key NumLock leaves alone. */
+export function numLockOffCode(code: string): string | null {
+    return code in NUMLOCK_OFF_KEYS ? code + NUMLOCK_OFF_SUFFIX : null;
+}
+
 /** The navigation key a NumLock-off numpad code stands for: `Numpad8Off` → `ArrowUp`. */
 export function numLockOffNavKey(code: string): string | null {
     const base = numLockOffBase(code);

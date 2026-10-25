@@ -28,7 +28,9 @@ import SubDialog from "@web/SubDialog.tsx";
 import { openSettingsPage } from "@web/settings/categories.ts";
 import { KEYBOARD, KEYBOARD_HEIGHT, KEYBOARD_WIDTH, type KeyCap } from "./keyboardLayout";
 import {
-    BASE_LAYERS,
+    baseLayers,
+    capLabel,
+    keyInLayer,
     FOCUS_HELPER_TARGET,
     GROUPS,
     MODIFIER_CODES,
@@ -50,7 +52,6 @@ import {
     freeKeysNear,
     fromHelperKey,
     isBrowserReserved,
-    keyLabel,
     layerLabel,
     layerOf,
     matchesSearch,
@@ -246,15 +247,20 @@ export default function Keys({ helperConnection, headerSlot }: KeysProps) {
 
     const layers = useMemo(() => {
         const extra = new Set<Layer>();
-        for (const e of entries) if (e.combo && !BASE_LAYERS.includes(layerOf(e.combo))) extra.add(layerOf(e.combo));
-        return [...BASE_LAYERS, ...[...extra].sort()];
-    }, [entries]);
+        const base = baseLayers(!!binds.numLockAware);
+        for (const e of entries) if (e.combo && !base.includes(layerOf(e.combo))) extra.add(layerOf(e.combo));
+        return [...base, ...[...extra].sort()];
+    }, [entries, binds.numLockAware]);
 
     // ── View state ──────────────────────────────────────────────────────
     const [size, setSize] = useState<Size>("wide");
     const [kbWidth, setKbWidth] = useState(0);
     const kbRef = useRef<HTMLDivElement>(null);
     const [layer, setLayer] = useState<Layer>("");
+    // Switching NumLock apart off takes its tab away: back to no modifier.
+    useEffect(() => {
+        if (!layers.includes(layer)) setLayer("");
+    }, [layers, layer]);
     const [selected, setSelected] = useState<string | null>(null);
     const [detailOpen, setDetailOpen] = useState(false);
     const [search, setSearch] = useState("");
@@ -1042,8 +1048,10 @@ export default function Keys({ helperConnection, headerSlot }: KeysProps) {
     const keyCell = (cap: KeyCap, mini: boolean) => {
         const combo = comboInLayer(cap.code, layer);
         const id = comboId(combo);
-        const list = cap.inert ? [] : byCombo.get(id) ?? [];
-        const reserved = !cap.inert && isBrowserReserved(combo);
+        // NumLock off has only the numpad keys it changes: the rest sit greyed out.
+        const inert = cap.inert || !keyInLayer(cap.code, layer);
+        const list = inert ? [] : byCombo.get(id) ?? [];
+        const reserved = !inert && isBrowserReserved(combo);
         const state = classifyKey(list, helperConnected);
         const conflict = state.conflict;
         const group = groupOf(state.active.length ? state.active : list);
@@ -1056,7 +1064,7 @@ export default function Keys({ helperConnection, headerSlot }: KeysProps) {
             "keys-key",
             // A Mac arrow key is half a row tall: cap and function go side by side.
             (cap.h ?? 1) < 1 && "is-half",
-            cap.inert && "is-inert",
+            inert && "is-inert",
             list.length && "is-bound",
             conflict && "is-conflict",
             reserved && "is-reserved",
@@ -1074,7 +1082,7 @@ export default function Keys({ helperConnection, headerSlot }: KeysProps) {
         // A key the helper takes over still names its one function, not "2 bindy".
         const label = conflict ? bindsWord(state.active.length) : (state.active[0] ?? list[0])?.short;
         const onClick = () => {
-            if (cap.inert) return;
+            if (inert) return;
             if (capture) {
                 finishCapture(combo);
                 return;
@@ -1097,11 +1105,11 @@ export default function Keys({ helperConnection, headerSlot }: KeysProps) {
                 style={style}
                 data-code={cap.code}
                 data-group={group}
-                disabled={cap.inert}
-                title={cap.inert ? undefined : `${comboLabel(combo)}${list.length ? `: ${list.map(e => e.label).join(", ")}` : ""}`}
+                disabled={inert}
+                title={inert ? undefined : `${comboLabel(combo)}${list.length ? `: ${list.map(e => e.label).join(", ")}` : ""}`}
                 onClick={onClick}
             >
-                {!mini && <span className="keys-key__cap">{keyLabel(cap.code)}</span>}
+                {!mini && <span className="keys-key__cap">{capLabel(cap.code, layer)}</span>}
                 {!mini && label && <span className="keys-key__fn">{label}</span>}
                 {!mini && (helperIcon || globalIcon) && (
                     <span className="keys-key__badge">{globalIcon ? <Globe size={10} /> : <Plug size={10} />}</span>
