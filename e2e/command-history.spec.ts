@@ -7,7 +7,10 @@ import {
     pushGmcp,
     waitForCharacter,
     GMCP_PATHS,
+    getLastOutgoingCommand,
+    resetCommandLog,
 } from './support/mocks';
+import {bindKey, captureKey, closeKeysWindow, openKeysWindow} from './support/keys';
 
 const MESSAGE_INPUT = '#message-input';
 const HISTORY_UP_BUTTON = '#history-up-button';
@@ -317,5 +320,23 @@ test.describe('Command history — Mudlet-style', () => {
         const value = await getInputValue(page);
         expect(value).toContain('first line');
         expect(value).toContain('second line');
+    });
+
+    test('a bind on the up arrow wins over history', async ({page}) => {
+        await openKeysWindow(page);
+        const modal = page.locator('#binds-modal');
+        await modal.locator('[data-section="own"] .keys-add').filter({hasText: /^Komenda$/}).click();
+        await modal.locator('[data-section="own"] .keys-command').fill('zaslon sie');
+        await captureKey(page, 'custom:0', 'ArrowUp');
+        await expect(bindKey(page, 'custom:0')).toHaveText('↑');
+        await closeKeysWindow(page);
+
+        await submitCommand(page, 'sz');
+        await setInputValue(page, '');
+        await resetCommandLog(page);
+
+        await pressArrowUp(page);
+        await expect.poll(() => getLastOutgoingCommand(page), {timeout: 3000}).toBe('zaslon sie');
+        expect(await getInputValue(page)).toBe('');
     });
 });

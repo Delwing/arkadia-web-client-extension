@@ -94,14 +94,9 @@ export function useCommandLine({ inputRef, passwordRef, getOutputElement }: UseC
 
         input.addEventListener('keydown', (e) => {
             if (e.key === 'Shift') shiftDown = true;
-            // Num8 with NumLock off reports ArrowUp: a direction key, not history.
-            if (isNumpadNotNavigation(e)) return;
-            if (e.key === 'ArrowUp' && !e.ctrlKey) {
-                e.preventDefault();
-                engine.historyMove('up');
-            } else if (e.key === 'ArrowDown' && !e.ctrlKey) {
-                e.preventDefault();
-                engine.historyMove('down');
+            if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && !e.ctrlKey) {
+                // History, on window below.
+                return;
             } else if (e.key === 'Tab') {
                 e.preventDefault();
                 engine.handleTabCompletion(!e.shiftKey);
@@ -117,6 +112,15 @@ export function useCommandLine({ inputRef, passwordRef, getOutputElement }: UseC
         }, o);
         input.addEventListener('keyup', (e) => {
             if (e.key === 'Shift') shiftDown = false;
+        }, o);
+        // ↑/↓ history on window, added after the client's keybinds: a bind on an
+        // arrow (or a numpad direction with NumLock off) wins by cancelling the event.
+        window.addEventListener('keydown', (e) => {
+            if (e.defaultPrevented || e.ctrlKey) return;
+            if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+            if (document.activeElement !== input || isNumpadNotNavigation(e)) return;
+            e.preventDefault();
+            engine.historyMove(e.key === 'ArrowUp' ? 'up' : 'down');
         }, o);
         input.addEventListener('input', () => {
             engine.onInput();

@@ -125,6 +125,7 @@ export class CommandInputController {
             e.preventDefault();
             this.deps.onHistorySearch();
         }, o);
+        window.addEventListener('keydown', (e) => this.handleHistoryKey(e), o);
         this.input.addEventListener('keydown', (e) => this.handleKeyDown(e), o);
         this.input.addEventListener('input', () => this.engine.onInput(), o);
 
@@ -299,6 +300,19 @@ export class CommandInputController {
         }
     }
 
+    /**
+     * ↑/↓ browse the history. On window, after the client's keybinds, like
+     * Ctrl+R: a player's bind on an arrow runs first and wins by cancelling the
+     * event, and so does a direction key on the numpad with NumLock off.
+     */
+    private handleHistoryKey(e: KeyboardEvent): void {
+        if (e.defaultPrevented || e.ctrlKey) return;
+        if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+        if (document.activeElement !== this.input || isNumpadNotNavigation(e)) return;
+        e.preventDefault();
+        this.engine.historyMove(e.key === 'ArrowUp' ? 'up' : 'down');
+    }
+
     private handleKeyDown(e: KeyboardEvent): void {
         // Num8 with NumLock off reports ArrowUp, Num9 PageUp: still a numpad
         // (direction) key, not history browsing or scrolling.
@@ -318,12 +332,9 @@ export class CommandInputController {
             wrapper.scrollTop += e.key === 'PageUp' ? -delta : delta;
             return;
         }
-        if (e.key === 'ArrowUp' && !e.ctrlKey) {
-            e.preventDefault();
-            this.engine.historyMove('up');
-        } else if (e.key === 'ArrowDown' && !e.ctrlKey) {
-            e.preventDefault();
-            this.engine.historyMove('down');
+        if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && !e.ctrlKey) {
+            // History, on window: see handleHistoryKey.
+            return;
         } else if (e.key === 'Tab') {
             e.preventDefault();
             this.engine.handleTabKey(e.shiftKey);
