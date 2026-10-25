@@ -3,6 +3,7 @@ import { globalStorage } from "@modules/core/storage";
 import { shouldIgnoreGlobalKeybind } from "../keybindGuard";
 import type { WalkModifiers } from "@modules/core/keymapTypes";
 import { isDrivableExit } from "@shared/map/exitCommands";
+import { bindCodeOf } from "@modules/core/numpadKeys";
 import {
     directionModifiers,
     effectiveWalkModifiers,
@@ -89,7 +90,7 @@ function buildDirectionBindings(
 }
 
 function matchesDirectionBinding(event: KeyboardEvent, binding: DirectionBinding): boolean {
-    return event.code === binding.code &&
+    return bindCodeOf(event) === binding.code &&
         event.ctrlKey === !!binding.ctrl &&
         event.altKey === !!binding.alt &&
         event.shiftKey === !!binding.shift;
@@ -121,7 +122,7 @@ export function specialExitAt(client: Client, index = 0): string | null {
  * effectiveWalkModifiers), or the two could not be told apart.
  */
 function matchesWalkMode(event: KeyboardEvent, binding: DirectionBinding, mods: WalkModifiers): boolean {
-    if (event.code !== binding.code) return false;
+    if (bindCodeOf(event) !== binding.code) return false;
     return event.ctrlKey === (!!binding.ctrl || !!mods.ctrl) &&
         event.altKey === (!!binding.alt || !!mods.alt) &&
         event.shiftKey === (!!binding.shift || !!mods.shift);

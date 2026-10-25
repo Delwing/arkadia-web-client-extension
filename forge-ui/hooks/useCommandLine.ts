@@ -1,6 +1,7 @@
 import { useEffect, useState, type RefObject } from 'react';
 import mudClient from '@web/MudClient';
 import { getRenderSettings } from '@modules/core/settings';
+import { isNumpadNotNavigation } from '@modules/core/numpadKeys';
 import { CommandLineEngine } from '@web/commandInput/CommandLineEngine';
 import { domEditableField } from '@web/commandInput/editableField';
 import { localStorageHistoryStore } from '@web/commandInput/commandHistoryStore';
@@ -93,6 +94,8 @@ export function useCommandLine({ inputRef, passwordRef, getOutputElement }: UseC
 
         input.addEventListener('keydown', (e) => {
             if (e.key === 'Shift') shiftDown = true;
+            // Num8 with NumLock off reports ArrowUp: a direction key, not history.
+            if (isNumpadNotNavigation(e)) return;
             if (e.key === 'ArrowUp' && !e.ctrlKey) {
                 e.preventDefault();
                 engine.historyMove('up');

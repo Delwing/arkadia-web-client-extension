@@ -11,6 +11,7 @@ import { directionModifiers, hasWalkModifier, sameWalkModifiers } from "@modules
 import { isPluginKeyOverridden, pluginKeyBindOf, type PluginKeyAction } from "@modules/core/pluginKeyRegistry";
 import type { StoredBind } from "@modules/helper/helperBinds";
 import type { BindMode } from "@modules/helper/helperProtocol";
+import { numLockOffNavKey } from "@modules/core/numpadKeys";
 import { KEYBOARD, keyDistance } from "./keyboardLayout";
 import { IS_MAC } from "./platform";
 import { foldText } from "@web/settings/settingsSearch.ts";
@@ -109,6 +110,9 @@ export function keyLabel(code: string): string {
 export function keyLabelFor(code: string, mac: boolean): string {
     if (mac && MAC_KEY_LABELS[code]) return MAC_KEY_LABELS[code];
     if (KEY_LABELS[code]) return KEY_LABELS[code];
+    // A numpad key with NumLock off, told apart: what its keycap prints under the digit.
+    const nav = numLockOffNavKey(code);
+    if (nav) return `Num${KEY_LABELS[nav] ?? nav}`;
     if (code.startsWith("Key")) return code.slice(3);
     if (code.startsWith("Digit")) return code.slice(5);
     if (code.startsWith("Numpad")) return `Num${code.slice(6)}`;

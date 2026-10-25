@@ -5,6 +5,7 @@ import { Button, DeleteButton, Input, Segmented } from "@web-ui/primitives/index
 import type { BindSettings, Keymap, WalkModifiers } from "@modules/core/keymapTypes";
 import { effectiveWalkModifiers, getWalkModes, subscribeWalkModes, walkModifiersOf } from "@modules/core/walkModeRegistry";
 import { getPluginKeyActions, subscribePluginKeyActions } from "@modules/core/pluginKeyRegistry";
+import { bindCodeOf } from "@modules/core/numpadKeys";
 import {
     createKeymap,
     defaultBinds,
@@ -442,7 +443,7 @@ export default function Keys({ helperConnection, headerSlot }: KeysProps) {
                 finishRef.current(null);
                 return;
             }
-            finishRef.current({ code: ev.code, ctrl: ev.ctrlKey, alt: ev.altKey, shift: ev.shiftKey });
+            finishRef.current({ code: bindCodeOf(ev, !!binds.numLockAware), ctrl: ev.ctrlKey, alt: ev.altKey, shift: ev.shiftKey });
         };
         const onKeyUp = (ev: KeyboardEvent) => setLiveMods({ ctrl: ev.ctrlKey, alt: ev.altKey, shift: ev.shiftKey });
         window.addEventListener("keydown", onKey, true);
@@ -451,7 +452,7 @@ export default function Keys({ helperConnection, headerSlot }: KeysProps) {
             window.removeEventListener("keydown", onKey, true);
             window.removeEventListener("keyup", onKeyUp, true);
         };
-    }, [capture]);
+    }, [capture, binds.numLockAware]);
 
     // The helper listens: it hears keys the browser keeps (Ctrl+W).
     useEffect(() => {
@@ -1323,10 +1324,17 @@ export default function Keys({ helperConnection, headerSlot }: KeysProps) {
     // ── Toolbar ─────────────────────────────────────────────────────────
 
     const more = usePopover({ width: 240 });
-    const moreItems: { label: string; onSelect: () => void; disabled?: boolean; danger?: boolean }[] = [
+    const moreItems: { label: string; onSelect: () => void; disabled?: boolean; danger?: boolean; checked?: boolean }[] = [
         { label: "Zmień nazwę mapy", onSelect: startRename },
         ...(size === "wide" ? [] : [{ label: "Nowa mapa", onSelect: handleCreateKeymap }]),
         { label: "Importuj bazę multibindów…", onSelect: importMultibinds },
+        // Off: the numpad is the numpad either way. On: with NumLock off it acts as
+        // arrows and its keys can be bound apart (Num↑, NumHome…).
+        {
+            label: "Rozróżniaj NumLock",
+            checked: !!binds.numLockAware,
+            onSelect: () => commit({ ...binds, numLockAware: binds.numLockAware ? undefined : true }),
+        },
         { label: "Przywróć domyślne", onSelect: () => setConfirm("restore") },
         { label: "Usuń mapę klawiszy", onSelect: () => setConfirm("delete"), disabled: keymapList.length <= 1, danger: true },
     ];
@@ -1387,11 +1395,12 @@ export default function Keys({ helperConnection, headerSlot }: KeysProps) {
                             <button
                                 key={item.label}
                                 type="button"
-                                className={`popup-menu__item${item.danger ? " keys-menu-danger" : ""}`}
+                                className={`popup-menu__item${item.danger ? " keys-menu-danger" : ""}${item.checked ? " is-on" : ""}`}
                                 title={item.label}
                                 disabled={item.disabled}
                                 onClick={() => { more.close(); item.onSelect(); }}
                             >
+                                {item.checked !== undefined && <span className="popup-menu__check" />}
                                 {item.label}
                             </button>
                         ))}

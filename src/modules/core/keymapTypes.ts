@@ -13,6 +13,8 @@
  * - `localStorage['arkadia.activeKeymap']` → string     (keymap ID, per-device)
  */
 
+import { bindCodeOf } from "./numpadKeys";
+
 export interface Bind {
     key: string;
     ctrl?: boolean;
@@ -89,6 +91,13 @@ export interface BindSettings {
      * switches it off. See @modules/core/pluginKeyRegistry.
      */
     pluginKeys?: Record<string, Bind>;
+    /**
+     * Tell the numpad with NumLock off apart: its keys then stop firing the
+     * numpad binds and become keys of their own (`Numpad8Off`), acting as the
+     * navigation keys they report until something is bound on them. Off by
+     * default: the numpad is the numpad either way. See @modules/core/numpadKeys.
+     */
+    numLockAware?: boolean;
     custom: CustomBind[];
     temp: Bind[];
     enemy: Bind[];
@@ -135,7 +144,7 @@ export const DEFAULT_KEYMAP_NAME = 'Domyślna';
  * Check whether a KeyboardEvent matches a Bind.
  */
 export function bindMatches(ev: KeyboardEvent, bind: Bind): boolean {
-    const matchesKey = ev.code === bind.key || ev.key === bind.key.toLowerCase()
+    const matchesKey = bindCodeOf(ev) === bind.key || ev.key === bind.key.toLowerCase()
     if (!matchesKey) return false
     return !!bind.ctrl === ev.ctrlKey && !!bind.alt === ev.altKey && !!bind.shift === ev.shiftKey
 }

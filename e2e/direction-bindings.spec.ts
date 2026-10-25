@@ -1,10 +1,25 @@
 import {expect, test} from './support/fixtures';
-import {ensureGameSocket, getLastOutgoingCommand, pushText, waitForCommandInput} from './support/mocks';
+import {ensureGameSocket, getLastOutgoingCommand, pushText, submitCommand, waitForCommandInput} from './support/mocks';
+import {closeKeysWindow, openKeysMenu, openKeysWindow} from './support/keys';
 import type {Page} from '@playwright/test';
 
 async function pressNumpadKey(page: Page, code: string): Promise<void> {
     await page.keyboard.down(code);
     await page.keyboard.up(code);
+}
+
+/**
+ * Playwright's numpad is a numpad with NumLock off: its `Numpad8` reports
+ * `key: "ArrowUp"`. A digit with NumLock on goes in through Chromium's input
+ * pipeline instead, the way the OS hands it over.
+ */
+async function pressNumpadNumLockOn(page: Page, code: string, digit: string): Promise<void> {
+    const cdp = await page.context().newCDPSession(page);
+    const keyCode = 96 + Number(digit);
+    const base = {code, key: digit, text: digit, windowsVirtualKeyCode: keyCode, nativeVirtualKeyCode: keyCode, location: 3};
+    await cdp.send('Input.dispatchKeyEvent', {type: 'rawKeyDown', ...base});
+    await cdp.send('Input.dispatchKeyEvent', {type: 'keyUp', ...base});
+    await cdp.detach();
 }
 
 async function resetCommands(page: Page): Promise<void> {
@@ -141,5 +156,48 @@ test.describe('Direction key bindings', () => {
 
         const lastCommand = await getLastOutgoingCommand(page);
         expect(lastCommand).toBe('e');
+    });
+
+    test('with NumLock off, Num8 still walks north and leaves the command history alone', async ({page}) => {
+        await submitCommand(page, 'sz');
+        const input = page.locator('#message-input');
+        await input.fill('');
+        await resetCommands(page);
+
+        await input.focus();
+        await pressNumpadKey(page, 'Numpad8');
+        await expect.poll(() => getLastOutgoingCommand(page), {timeout: 3000}).toBe('n');
+        await expect(input).toHaveValue('');
+
+        // Num2 is ArrowDown: it must not clear what is being typed.
+        await input.fill('zerk');
+        await pressNumpadKey(page, 'Numpad2');
+        await expect.poll(() => getLastOutgoingCommand(page), {timeout: 3000}).toBe('s');
+        await expect(input).toHaveValue('zerk');
+    });
+
+    test('with "Rozróżniaj NumLock" on, NumLock-off Num8 is free: no step, history up', async ({page}) => {
+        await openKeysWindow(page);
+        await openKeysMenu(page);
+        await page.locator('#binds-modal button[title="Rozróżniaj NumLock"]').click();
+        await openKeysMenu(page);
+        await expect(page.locator('#binds-modal button[title="Rozróżniaj NumLock"]')).toHaveClass(/is-on/);
+        await openKeysMenu(page); // the ⋯ button toggles the menu shut
+        await closeKeysWindow(page);
+
+        await submitCommand(page, 'sz');
+        const input = page.locator('#message-input');
+        await input.fill('');
+        await resetCommands(page);
+
+        await input.focus();
+        await pressNumpadKey(page, 'Numpad8');
+        await expect(input).toHaveValue('sz');
+        expect(await getLastOutgoingCommand(page)).toBeNull();
+
+        // NumLock on: still the north key, and no digit lands in the field.
+        await pressNumpadNumLockOn(page, 'Numpad8', '8');
+        await expect.poll(() => getLastOutgoingCommand(page), {timeout: 3000}).toBe('n');
+        await expect(input).toHaveValue('sz');
     });
 });

@@ -350,6 +350,7 @@ function mergeBindSettings(raw: any): BindSettings {
             : defaultBinds.multibinds!.map(b => ({ ...b })),
         walkModes: mergeWalkModes(raw.walkModes),
         pluginKeys: mergePluginKeys(raw.pluginKeys),
+        numLockAware: raw.numLockAware === true ? true : undefined,
         custom: Array.isArray(raw.custom) ? raw.custom : [],
     };
 }

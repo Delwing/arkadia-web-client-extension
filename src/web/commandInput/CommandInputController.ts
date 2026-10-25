@@ -6,6 +6,7 @@ import {harvestOutputWords} from "./outputWords";
 import {type ActiveCommandLine, setActiveCommandLine} from "./activeCommandLine";
 import {isAnyModalOpen} from "@web/modals/appModal.ts";
 import {globalStorage} from "@modules/core/storage";
+import {isNumpadNotNavigation} from "@modules/core/numpadKeys";
 
 export interface CommandInputDeps {
     messageInput: HTMLTextAreaElement;
@@ -299,6 +300,12 @@ export class CommandInputController {
     }
 
     private handleKeyDown(e: KeyboardEvent): void {
+        // Num8 with NumLock off reports ArrowUp, Num9 PageUp: still a numpad
+        // (direction) key, not history browsing or scrolling.
+        if (isNumpadNotNavigation(e)) {
+            this.engine.resetTabCompletionState();
+            return;
+        }
         if (e.key === 'PageUp' || e.key === 'PageDown') {
             const wrapper = this.deps.outputWrapper;
             if (wrapper.scrollHeight <= wrapper.clientHeight) return;
