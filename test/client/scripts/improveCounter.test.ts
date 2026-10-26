@@ -7,9 +7,11 @@ import { characterStorage } from '@modules/core/storage';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 import eventBus from '@modules/core/eventBus';
 import { mergeImproveSessions, mergeLifeCounts } from '@shared/improveProgress';
+import { eventNow, runWithEventTime } from '@shared/eventClock';
 
 class FakeClient {
   private emitter = new EventEmitter();
+  now = () => eventNow();
   Triggers = new Triggers(({} as unknown) as any);
   TeamManager = { isInTeam: jest.fn() };
   prefix = (line: string, prefix: string) => prefix + line;
@@ -341,7 +343,22 @@ describe('improve counter', () => {
     expect(improveLines()).toEqual(['\tWlasnie wbiles postepy: nieduze (czas:   1:00)']);
   });
 
-  test('catches up after a proxy resume that lost output', () => {
+  test('keeps the time after a proxy resume that lost a few bytes', () => {
+    const improveLines = () => client.println.mock.calls
+      .map((c: any[]) => c[0]?.text as string)
+      .filter((t) => t?.includes('postep') || t?.includes('Postep'));
+    client.dispatch('gmcp.char.state', { improve: 3 });
+    client.println.mockClear();
+
+    // A phone socket dying with output in flight: same session, same device
+    client.dispatch('client.disconnect');
+    client.dispatch('proxy.session', { type: 'session', resumed: true, droppedBytes: 512 });
+    jest.advanceTimersByTime(60000);
+    client.dispatch('gmcp.char.state', { improve: 4 });
+    expect(improveLines()).toEqual(['\tWlasnie wbiles postepy: nieduze (czas:   1:00)']);
+  });
+
+  test('catches up when the game session ended while away', () => {
     const improveLines = () => client.println.mock.calls
       .map((c: any[]) => c[0]?.text as string)
       .filter((t) => t?.includes('postep') || t?.includes('Postep'));
@@ -349,9 +366,24 @@ describe('improve counter', () => {
     client.println.mockClear();
 
     client.dispatch('client.disconnect');
-    client.dispatch('proxy.session', { type: 'session', resumed: true, droppedBytes: 512 });
+    client.dispatch('proxy.session', { type: 'session', resumed: false });
     client.dispatch('gmcp.char.state', { improve: 5 });
     expect(improveLines()).toEqual(['\tPostepy od ostatniego polaczenia: male -> zadowalajace']);
+  });
+
+  test('times a replayed improvement by when the server sent it', () => {
+    const improveLines = () => client.println.mock.calls
+      .map((c: any[]) => c[0]?.text as string)
+      .filter((t) => t?.includes('postep') || t?.includes('Postep'));
+    client.dispatch('gmcp.char.state', { improve: 3 });
+    client.println.mockClear();
+
+    client.dispatch('client.disconnect');
+    jest.advanceTimersByTime(5 * 60000);
+    client.dispatch('proxy.session', { type: 'session', resumed: true });
+    // Gained two minutes in, replayed five minutes in
+    runWithEventTime(Date.now() - 3 * 60000, () => client.dispatch('gmcp.char.state', { improve: 4 }));
+    expect(improveLines()).toEqual(['\tWlasnie wbiles postepy: nieduze (czas:   2:00)']);
   });
 
   test('an improvement ends the wait for the first fight', () => {

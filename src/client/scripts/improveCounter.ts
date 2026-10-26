@@ -233,10 +233,12 @@ export default class ImproveCounter extends BaseCounter {
         this.client.on("client.disconnect", () => {
             this.initialized = false;
         });
-        // ...but a proxy resume replays everything since we dropped, levels
-        // included, and sends no fresh level of its own: the next one is live
+        // ...but a proxy resume is the same game session on this same device: it
+        // replays every level since we dropped, stamped with when it happened, so the
+        // next one is live. Lost bytes don't change that - a phone socket dying with
+        // output in flight reports a few - the next Char.State still names the level.
         this.client.on("proxy.session", (info) => {
-            if (info?.resumed && !info.upstreamClosed && !info.droppedBytes && this.level >= 0) {
+            if (info?.resumed && !info.upstreamClosed && this.level >= 0) {
                 this.initialized = true;
             }
         });
@@ -466,7 +468,8 @@ export default class ImproveCounter extends BaseCounter {
 
     private record(level: number) {
         const state = STATES[level] ?? String(level);
-        const now = Date.now();
+        // A level replayed by the proxy happened when the server sent it, not now
+        const now = this.client.now();
         const kills = this.getKills();
         const entry: ImproveEntry = {
             state,
@@ -493,7 +496,7 @@ export default class ImproveCounter extends BaseCounter {
     }
 
     private recordInitial(level: number) {
-        const now = Date.now();
+        const now = this.client.now();
         this.countLevel(level, now);
         this.lastTime = now;
         this.lastKills = this.getKills();
