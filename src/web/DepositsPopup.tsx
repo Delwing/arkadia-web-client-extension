@@ -6,6 +6,8 @@ import { getDepositsData, getTotalCopper, type DepositInfo } from '@client/scrip
 import { splitCurrency } from '@client/scripts/priceEvaluation';
 import { getTransformDefinitions, type ContainerItem } from '@client/scripts/prettyContainers';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
+import { HeaderButton } from '@web-ui/primitives';
+import { openSettingsPage } from '@web/settings/categories.ts';
 
 const POPUP_ID = 'popup:deposits';
 
@@ -85,13 +87,21 @@ const DepositsPopup: React.FC = () => {
     const totalCopper = useMemo(() => getTotalCopper(deposits), [deposits]);
 
     const headerActions = (
-        <input
-            type="text"
-            className="deposits-popup__filter"
-            placeholder="Filtruj..."
-            value={filter}
-            onChange={e => setFilter(e.target.value)}
-        />
+        <>
+            <HeaderButton
+                onClick={() => openSettingsPage('data-import', 'import-depozyty')}
+                title="Import z Mudleta (Ustawienia → Import z innych klientów)"
+            >
+                Import
+            </HeaderButton>
+            <input
+                type="text"
+                className="deposits-popup__filter"
+                placeholder="Filtruj..."
+                value={filter}
+                onChange={e => setFilter(e.target.value)}
+            />
+        </>
     );
 
     return (

@@ -7,6 +7,7 @@ import eventBus from "@modules/core/eventBus";
 import { characterStorage } from "@modules/core/storage";
 import { defaultSettings } from "@modules/core/defaultSettings";
 import { wrapItemLine } from "./counterTableUtils";
+import { getRoomInfo } from "@modules/core/roomInfoProvider";
 
 const BANK_NAME_COLOR = createColorFormat('#ff6347');
 
@@ -58,6 +59,50 @@ export function getTotalCopper(deposits: Record<number, DepositInfo>): number {
         }
     }
     return totalCopper;
+}
+
+export type DepositMergeMode = "missing" | "replace";
+
+/**
+ * Store deposits imported from another client for `character`: "missing"
+ * keeps every bank already saved here, "replace" overwrites them. `content`
+ * is the item list as the game prints it, "" for an empty deposit and null
+ * when none is bought. Returns how many banks were written.
+ */
+export function mergeImportedDeposits(
+    character: string,
+    imported: { roomId: number; bank: string; content: string | null }[],
+    mode: DepositMergeMode,
+): number {
+    const current = character === characterStorage.getCharacter();
+    let stored: Record<number, DepositInfo> | undefined;
+    if (current) {
+        stored = characterStorage.get(STORAGE_KEY) as Record<number, DepositInfo> | undefined;
+    } else {
+        try {
+            stored = JSON.parse(localStorage.getItem(`${character}:${STORAGE_KEY}`) ?? "null") ?? undefined;
+        } catch {
+            stored = undefined;
+        }
+    }
+    const next = cloneDeposits(stored);
+    let written = 0;
+    for (const { roomId, bank, content } of imported) {
+        if (mode === "missing" && next[roomId]) continue;
+        next[roomId] = {
+            name: getRoomInfo(roomId)?.roomName || `Bank ${bank}`,
+            items: content === null ? null : content ? parseItems(content) : [],
+        };
+        written++;
+    }
+    if (written === 0) return 0;
+    if (current) {
+        // Through characterStorage: the deposits script reloads on change.
+        characterStorage.set(STORAGE_KEY, next);
+    } else {
+        localStorage.setItem(`${character}:${STORAGE_KEY}`, JSON.stringify(next));
+    }
+    return written;
 }
 
 export default function initDeposits(client: Client, aliases?: { pattern: RegExp; callback: Function }[]) {

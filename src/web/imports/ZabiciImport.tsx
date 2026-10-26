@@ -6,6 +6,7 @@ import { Check, Field, Select } from "@web-ui/primitives/index.ts";
 import { collectCharacters } from "@web/options/exportUtils.ts";
 import { parseInWorker } from "./parseInWorker";
 import { ImportActions, ImportRow, type ImportResult } from "./ImportRow";
+import { localCharacter } from "./localCharacter";
 
 interface Target {
     /** The character's name in Mudlet (scripts.character_name). */
@@ -14,15 +15,6 @@ interface Target {
     local: string;
     entries: KillDbEntry[];
     selected: boolean;
-}
-
-/**
- * The character a Mudlet name belongs to here: a known one with the same name
- * in any case, else the name in lower case, the way the game announces it.
- */
-function localCharacter(mudlet: string, known: string[]): string {
-    const lower = mudlet.toLowerCase();
-    return known.find(c => c.toLowerCase() === lower) ?? lower;
 }
 
 const totalOf = (entries: KillDbEntry[]) => entries.reduce((s, e) => s + e.count, 0);
@@ -115,7 +107,7 @@ export default function ZabiciImport() {
         >
             {preview && (
                 <>
-                    <div className="import-zabici__targets">
+                    <div className="import-targets">
                         {preview.targets.map(t => (
                             <Check
                                 key={t.mudlet}
