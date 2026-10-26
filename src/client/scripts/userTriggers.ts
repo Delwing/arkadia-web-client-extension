@@ -223,7 +223,7 @@ export const SUPPORTED_EVENTS: SupportedEvent[] = [
         label: 'Atak wroga (ten z beepem)',
         category: 'Walka',
         description:
-            'Gdy atakuje cię ktoś z gildii oznaczonej jako wroga — dokładnie w tym samym momencie, w którym odzywa się beep.',
+            'Dokładnie w tym samym momencie, w którym odzywa się beep: gdy atakuje cię ktoś z gildii oznaczonej jako wroga albo ktokolwiek atakiem specjalnym (np. okrzyk bojowy, „rzuca się na ciebie”).',
         args: [{ name: 'attacker', label: 'Nazwa atakującego', type: 'string' }],
     },
 

@@ -116,6 +116,21 @@ describe('attack beep triggers', () => {
     expect(client.sendEvent).toHaveBeenCalledWith('enemy.attack', { attacker: 'Wysoki mezczyzna' });
   });
 
+  test('special attack lines beep for anyone, even with no enemy guilds', () => {
+    setTestSettings({ enemyGuilds: [] });
+    parse('Nieznajomy z pelnym przebieglosci blyskiem w oku rzuca sie na ciebie!');
+    parse('Nieznajomy z pierwotna wsciekloscia rzuca sie na ciebie, rozpoczynajac walke!');
+    parse('Nieznajomy atakuje cie!');
+    const beepCalls = client.sendEvent.mock.calls.filter(call => call[0] === 'sound:category');
+    expect(beepCalls).toHaveLength(2);
+    const enemyCalls = client.sendEvent.mock.calls.filter(call => call[0] === 'enemy.attack');
+    expect(enemyCalls).toEqual([
+      ['enemy.attack', { attacker: 'Nieznajomy' }],
+      ['enemy.attack', { attacker: 'Nieznajomy' }],
+    ]);
+    expect(client.sendEvent).toHaveBeenCalledWith('attack', { attacker: 'Nieznajomy', enemy: false });
+  });
+
   test('raises attack event for every attacker, enemy.attack only for enemies', () => {
     parse('Intia atakuje cie!');
     parse('Nieznajomy atakuje cie!');

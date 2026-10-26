@@ -68,7 +68,7 @@ export default function initAttackBeep(client: Client) {
         return !!guild && enemyGuilds.includes(guild);
     }
 
-    const beep = (line: AnsiAwareBuffer, matches: RegExpMatchArray): AnsiAwareBuffer => {
+    const handleAttack = (line: AnsiAwareBuffer, matches: RegExpMatchArray, always: boolean): AnsiAwareBuffer => {
         const attackerName = matches?.groups?.name
         const isEnemy = !!attackerName && shouldBeep(attackerName);
 
@@ -76,12 +76,11 @@ export default function initAttackBeep(client: Client) {
         // unconditional counterpart of "enemy.attack" below.
         client.sendEvent("attack", { attacker: attackerName ?? "", enemy: isEnemy });
 
-        if (attackerName && isEnemy) {
+        if (always || (attackerName && isEnemy)) {
             client.sendEvent("sound:category", "attack");
-            // Fires under exactly the same condition as the beep — an attacker
-            // whose guild the player marked hostile — so binding this event in
-            // the trigger editor means what it says on the label.
-            client.sendEvent("enemy.attack", { attacker: attackerName });
+            // Fires under exactly the same condition as the beep, so binding
+            // this event in the trigger editor means what it says on the label.
+            client.sendEvent("enemy.attack", { attacker: attackerName ?? "" });
         }
 
         const upper = matches?.groups?.upper
@@ -101,17 +100,22 @@ export default function initAttackBeep(client: Client) {
         applySettings(settings);
     });
 
+    // Plain attack lines beep only for enemy guilds
     [
         /(?<name>.*) atakuje cie!/,
         /(?<name>.*) atakuje cie nie dajac ci czasu na skontrowanie swojego ataku!/,
         /^Ku twojemu zdumieniu, (?<name>.*) pojawil sie nagle tuz obok ciebie!/,
         /^Oczy (?<name>.*) zachodza woalem rytualnego transu, gdy jak blyskawica rzuca sie on na ciebie, rozniecajac burze Tanca Smierci!/,
+    ].forEach(p => client.Triggers.registerTrigger(p, (line, matches) => handleAttack(line, matches, false), tag));
+
+    // Special attacks only players can make beep for anyone, as in Mudlet
+    [
         /^W oczach (?<name>.*) rozpala sie swiety ogien nienawisci i z imieniem Morra na ustach (?<upper>rzuca sie do walki z toba)!/,
         /^(?<name>\w+(?: \w+){0,4}) z determinacja i pewnoscia siebie unosi swoja bron i (?<upper>naciera na ciebie)!/,
         /^(?<name>\w+(?: \w+){0,4}) z pierwotna wsciekloscia (?<upper>rzuca sie na ciebie), rozpoczynajac walke!/,
         /^(?<name>\w+(?: \w+){0,4}) z pelnym przebieglosci blyskiem w oku (?<upper>rzuca sie na ciebie)!/,
         /^Przy ogluszajacym akompaniamencie okrzyku bojowego '[^']*' (?<name>\w+(?: \w+){0,4}) (?<upper>rzuca sie na ciebie), wiazac cie/
-    ].forEach(p => client.Triggers.registerTrigger(p, beep, tag));
+    ].forEach(p => client.Triggers.registerTrigger(p, (line, matches) => handleAttack(line, matches, true), tag));
 
     client.Triggers.registerTrigger('atakuje cie!', (line) => {
         return highlightPhrase(line);
