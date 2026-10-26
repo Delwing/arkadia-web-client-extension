@@ -44,7 +44,7 @@ Liczniki zabitych, postępów, stażu i zleceń.
 | Komenda | Opis |
 |---------|------|
 | `/postepy2` | Wyświetl globalny licznik postępów |
-| `/postepy2w` | Otwórz okno z globalnym licznikiem postępów (zakładki: dni, miesiące, lata, wykresy) |
+| `/postepy2w` | Otwórz okno z globalnym licznikiem postępów (zakładki: dni, miesiące, lata, zakres dat, bez formy, wykresy) |
 | `/postepy2+` | Dodaj jeden postęp do globalnego licznika |
 | `/postepy2+ ile` | Dodaj *ile* postępów (maksymalnie 15) |
 | `/postepy2+ id ile` | Kopiuj *ile* postępów z wpisu o numerze *id* |

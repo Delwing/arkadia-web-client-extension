@@ -152,4 +152,30 @@ test.describe('Improve counter', () => {
         output = await getRecentOutput(page, 20);
         expect(output, 'should keep lifetime Dzisiaj count after respawn').toMatch(/Dzisiaj:\s*2/);
     });
+
+    test('/postepy2w Zakres tab counts improvements between two dates', async ({page}) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+        await ensureGameSocket(page);
+
+        await loginWithChar(page, 'RangeHero', 55555);
+        await submitCommand(page, '/postepy2+ 3');
+
+        await submitCommand(page, '/postepy2w');
+        const popup = page.locator('.postepy2-popup');
+        await popup.getByRole('button', {name: 'Zakres', exact: true}).click();
+
+        const summary = popup.locator('.postepy2-range__summary');
+        await expect(summary).toContainText('Postępy:3');
+        await expect(summary).toContainText('Dni z postępami:1 z');
+
+        // A range that ends before today leaves today's improvements out
+        await popup.locator('input[type="date"]').first().fill('2020-01-01');
+        await popup.locator('input[type="date"]').nth(1).fill('2020-12-31');
+        await expect(summary).toContainText('Postępy:0');
+        await expect(popup.locator('.postepy2-range')).toContainText('Brak postępów w tym okresie.');
+
+        await popup.getByRole('button', {name: 'Wszystko'}).click();
+        await expect(summary).toContainText('Postępy:3');
+    });
 });

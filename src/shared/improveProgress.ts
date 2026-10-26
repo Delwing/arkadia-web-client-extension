@@ -179,6 +179,31 @@ export function lifeTotal(days: LifetimeDay[], obj: number): number {
 }
 
 export function lifetimeDateOrder(date: string): number {
-    const [y, m, d] = date.split('/').map(Number);
+    const [y, m, d] = date.split(/[/-]/).map(Number);
     return (y || 0) * 10_000 + (m || 0) * 100 + (d || 0);
+}
+
+/**
+ * Improvements of the days between `from` and `to`, both included and in
+ * either order. Dates are `YYYY/M/D` (stored) or `YYYY-MM-DD` (date input).
+ */
+export function sumLifetimeRange(
+    days: { date: string; count: number; noFormCount?: number }[],
+    from: string,
+    to: string,
+): { count: number; noFormCount: number; activeDays: number } {
+    let start = lifetimeDateOrder(from);
+    let end = lifetimeDateOrder(to);
+    if (start > end) [start, end] = [end, start];
+    let count = 0;
+    let noFormCount = 0;
+    let activeDays = 0;
+    for (const day of days) {
+        const order = lifetimeDateOrder(day.date);
+        if (order < start || order > end) continue;
+        count += day.count ?? 0;
+        noFormCount += day.noFormCount ?? 0;
+        if ((day.count ?? 0) > 0 || (day.noFormCount ?? 0) > 0) activeDays++;
+    }
+    return { count, noFormCount, activeDays };
 }

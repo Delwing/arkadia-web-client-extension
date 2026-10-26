@@ -2585,6 +2585,66 @@ select.popup-input optgroup {
   color: var(--popup-text-bright);
 }
 
+.postepy2-range {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.postepy2-range__controls,
+.postepy2-range__presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.postepy2-range__presets {
+  gap: 0.25rem;
+}
+
+.postepy2-range__field {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin: 0;
+}
+
+.postepy2-range__field .popup-input {
+  width: auto;
+}
+
+.postepy2-range__label {
+  color: var(--popup-text-dim);
+}
+
+.postepy2-range__summary {
+  display: flex;
+  flex-direction: column;
+  padding: 0.375rem 0.25rem;
+  border-top: 1px solid var(--popup-border);
+  border-bottom: 1px solid var(--popup-border);
+}
+
+.postepy2-range__row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.postepy2-range__key {
+  color: var(--popup-data-pink);
+  min-width: 9rem;
+}
+
+.postepy2-range__value {
+  color: var(--popup-text-bright);
+}
+
+.postepy2-range__value--total {
+  color: var(--popup-data-green-light);
+  font-weight: 500;
+}
+
 .postepy2-noform-total {
   margin-top: 1rem;
   padding-top: 0.5rem;

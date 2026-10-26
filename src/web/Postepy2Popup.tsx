@@ -11,11 +11,13 @@ import {
     formatCount,
 } from '../client/scripts/improveCounter';
 import { characterStorage } from '@modules/core/storage';
+import { lifetimeDateOrder, sumLifetimeRange } from '@shared/improveProgress.ts';
+import { Button, Input } from '@web-ui/primitives/index.ts';
 import { openSettingsPage } from '@web/settings/categories.ts';
 
 const POPUP_ID = 'popup:postepy2';
 
-type TabType = 'daily' | 'monthly' | 'yearly' | 'noform' | 'graphs';
+type TabType = 'daily' | 'monthly' | 'yearly' | 'range' | 'noform' | 'graphs';
 
 type MonthlyEntry = {
     year: number;
@@ -44,6 +46,40 @@ function formatDateLabel(dateStr: string): string {
     const parsed = parseDate(dateStr);
     if (!parsed) return dateStr;
     return `${parsed.day.toString().padStart(2, '0')}/${parsed.month.toString().padStart(2, '0')}/${parsed.year}`;
+}
+
+/** `YYYY-MM-DD`, the value of a date input. */
+function toInputDate(date: Date): string {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+function lifetimeToInputDate(dateStr: string): string {
+    const parsed = parseDate(dateStr);
+    return parsed ? toInputDate(new Date(parsed.year, parsed.month - 1, parsed.day)) : '';
+}
+
+function daysAgo(days: number): string {
+    const date = new Date();
+    date.setDate(date.getDate() - days);
+    return toInputDate(date);
+}
+
+function startOfMonth(): string {
+    const now = new Date();
+    return toInputDate(new Date(now.getFullYear(), now.getMonth(), 1));
+}
+
+function startOfYear(): string {
+    return toInputDate(new Date(new Date().getFullYear(), 0, 1));
+}
+
+/** Calendar days from `from` to `to`, both included. */
+function daysInRange(from: string, to: string): number {
+    const toDate = (value: string) => {
+        const [y, m, d] = value.split(/[/-]/).map(Number);
+        return new Date(y, (m || 1) - 1, d || 1).getTime();
+    };
+    return Math.round(Math.abs(toDate(to) - toDate(from)) / 86_400_000) + 1;
 }
 
 function getMonthName(month: number): string {
@@ -296,6 +332,107 @@ const Postepy2Popup: React.FC = () => {
         </div>
     );
 
+    // Not kept between openings: a stored range would go stale the next day
+    const [rangeFrom, setRangeFrom] = useState(startOfMonth);
+    const [rangeTo, setRangeTo] = useState(() => toInputDate(new Date()));
+    const rangeValid = !!rangeFrom && !!rangeTo;
+    const rangeSum = useMemo(
+        () => rangeValid ? sumLifetimeRange(data, rangeFrom, rangeTo) : null,
+        [data, rangeFrom, rangeTo, rangeValid],
+    );
+    const rangeDays = useMemo(() => {
+        if (!rangeValid) return [];
+        const [start, end] = [lifetimeDateOrder(rangeFrom), lifetimeDateOrder(rangeTo)].sort((a, b) => a - b);
+        return data.filter(e => {
+            const order = lifetimeDateOrder(e.date);
+            return order >= start && order <= end && (e.count > 0 || (e.noFormCount ?? 0) > 0);
+        });
+    }, [data, rangeFrom, rangeTo, rangeValid]);
+
+    const setRange = useCallback((from: string) => {
+        setRangeFrom(from);
+        setRangeTo(toInputDate(new Date()));
+    }, []);
+
+    const renderRangeTab = () => {
+        const calendarDays = rangeValid ? daysInRange(rangeFrom, rangeTo) : 0;
+        return (
+            <div className="postepy2-range">
+                <div className="postepy2-range__controls">
+                    <label className="postepy2-range__field">
+                        <span className="postepy2-range__label">Od</span>
+                        <Input type="date" value={rangeFrom} onChange={(e) => setRangeFrom(e.target.value)} />
+                    </label>
+                    <label className="postepy2-range__field">
+                        <span className="postepy2-range__label">Do</span>
+                        <Input type="date" value={rangeTo} onChange={(e) => setRangeTo(e.target.value)} />
+                    </label>
+                </div>
+                <div className="postepy2-range__presets">
+                    <Button size="sm" onClick={() => setRange(daysAgo(6))}>7 dni</Button>
+                    <Button size="sm" onClick={() => setRange(daysAgo(29))}>30 dni</Button>
+                    <Button size="sm" onClick={() => setRange(startOfMonth())}>Ten miesiąc</Button>
+                    <Button size="sm" onClick={() => setRange(startOfYear())}>Ten rok</Button>
+                    <Button
+                        size="sm"
+                        disabled={data.length === 0}
+                        onClick={() => data.length > 0 && setRange(lifetimeToInputDate(data[0].date))}
+                    >
+                        Wszystko
+                    </Button>
+                </div>
+                {rangeSum ? (
+                    <div className="postepy2-range__summary">
+                        <div className="postepy2-range__row">
+                            <span className="postepy2-range__key">Postępy:</span>
+                            <span className="postepy2-range__value postepy2-range__value--total">{rangeSum.count}</span>
+                        </div>
+                        {rangeSum.noFormCount > 0 && (
+                            <div className="postepy2-range__row">
+                                <span className="postepy2-range__key">Bez formy:</span>
+                                <span className="postepy2-range__value">{rangeSum.noFormCount}</span>
+                            </div>
+                        )}
+                        <div className="postepy2-range__row">
+                            <span className="postepy2-range__key">Dni z postępami:</span>
+                            <span className="postepy2-range__value">{rangeSum.activeDays} z {calendarDays}</span>
+                        </div>
+                        <div className="postepy2-range__row">
+                            <span className="postepy2-range__key">Średnio na dzień:</span>
+                            <span className="postepy2-range__value">{(rangeSum.count / calendarDays).toFixed(2)}</span>
+                        </div>
+                        <div className="postepy2-range__row">
+                            <span className="postepy2-range__key">Niebotycznych:</span>
+                            <span className="postepy2-range__value">~{(rangeSum.count / 15).toFixed(2)}</span>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="popup-empty">Wybierz obie daty.</div>
+                )}
+                {rangeSum && (
+                    <div className="postepy2-entries">
+                        {rangeDays.length === 0 ? (
+                            <div className="popup-empty">Brak postępów w tym okresie.</div>
+                        ) : (
+                            rangeDays.map((entry, index) => (
+                                <div key={entry.date} className="postepy2-entry postepy2-entry--with-noform">
+                                    <span className="postepy2-entry__num">[{(index + 1).toString().padStart(4, ' ')}]</span>
+                                    <span className="postepy2-entry__date">{formatDateLabel(entry.date)}</span>
+                                    <span className="postepy2-entry__counts">
+                                        <span className="postepy2-entry__count">{formatCount(entry.count)}</span>
+                                        {!!(entry.noFormCount && entry.noFormCount > 0) && (
+                                            <span className="postepy2-entry__count postepy2-entry__count--noform">{formatCount(entry.noFormCount)}</span>
+                                        )}
+                                    </span>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                )}
+            </div>
+        );
+    };
+
     const noFormData = useMemo(() => data.filter(e => e.noFormCount && e.noFormCount > 0), [data]);
     const totalNoForm = useMemo(() => data.reduce((sum, e) => sum + (e.noFormCount || 0), 0), [data]);
 
@@ -408,6 +545,13 @@ const Postepy2Popup: React.FC = () => {
                 </button>
                 <button
                     type="button"
+                    className={`popup-tab ${activeTab === 'range' ? 'popup-tab--active' : ''}`}
+                    onClick={() => handleTabClick('range')}
+                >
+                    Zakres
+                </button>
+                <button
+                    type="button"
                     className={`popup-tab ${activeTab === 'noform' ? 'popup-tab--active' : ''}`}
                     onClick={() => handleTabClick('noform')}
                 >
@@ -426,6 +570,7 @@ const Postepy2Popup: React.FC = () => {
                 {activeTab === 'daily' && renderDailyTab()}
                 {activeTab === 'monthly' && renderMonthlyTab()}
                 {activeTab === 'yearly' && renderYearlyTab()}
+                {activeTab === 'range' && renderRangeTab()}
                 {activeTab === 'noform' && renderNoFormTab()}
                 {activeTab === 'graphs' && renderGraphsTab()}
             </div>

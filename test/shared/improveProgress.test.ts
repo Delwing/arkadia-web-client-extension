@@ -1,4 +1,4 @@
-import { mergeImproveSessions, mergeLifeCounts, type ImproveSessionData } from '@shared/improveProgress';
+import { mergeImproveSessions, mergeLifeCounts, sumLifetimeRange, type ImproveSessionData } from '@shared/improveProgress';
 
 const entry = (state: string, time: number) => ({ state, time, delta: 1, killsMy: 0, killsTeam: 0 });
 
@@ -67,5 +67,27 @@ describe('mergeLifeCounts', () => {
         expect(mergeLifeCounts({ count: 7, noFormCount: 2 }, cleared)).toBe(cleared);
         expect(mergeLifeCounts(cleared, { count: 7 })).toBe(cleared);
         expect(mergeLifeCounts({ count: 1, clearedAt: 500 }, { count: 2, clearedAt: 500 })).toEqual({ count: 2, clearedAt: 500 });
+    });
+});
+
+describe('sumLifetimeRange', () => {
+    const days = [
+        { date: '2026/9/30', count: 4 },
+        { date: '2026/10/1', count: 2, noFormCount: 1 },
+        { date: '2026/10/9', count: 0 },
+        { date: '2026/10/10', count: 5 },
+        { date: '2026/11/1', count: 7 },
+    ];
+
+    it('sums the days between both dates, both included', () => {
+        expect(sumLifetimeRange(days, '2026-10-01', '2026-10-10')).toEqual({ count: 7, noFormCount: 1, activeDays: 2 });
+    });
+
+    it('takes the dates in either order and format', () => {
+        expect(sumLifetimeRange(days, '2026/10/31', '2026-09-30')).toEqual({ count: 11, noFormCount: 1, activeDays: 3 });
+    });
+
+    it('is zero for a range without days', () => {
+        expect(sumLifetimeRange(days, '2025-01-01', '2025-12-31')).toEqual({ count: 0, noFormCount: 0, activeDays: 0 });
     });
 });
