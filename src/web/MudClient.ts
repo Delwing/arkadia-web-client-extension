@@ -156,6 +156,9 @@ class MudClient implements ClientAdapter {
     // missed — it cannot tell on its own, since a socket accepts writes long after the
     // page behind it has stopped reading them.
     private processedBytes = 0;
+    // Whether the proxy on this socket reads acknowledgements (it says so on attach). An
+    // older one would forward them to the game as typed input. See sendAck.
+    private proxyAcks = false;
     // A "this session is over" notice owed to the proxy, held until our socket has
     // actually closed. See queueLeavingNotice.
     private pendingLeave: {url: string; sessionId: string} | null = null;
@@ -172,7 +175,12 @@ class MudClient implements ClientAdapter {
     private clockOffsetWarned = false;
 
     constructor() {
-        this.pingTracker = new PingTracker(() => this.sendGmcp('core.ping'), getDeviceViewSettings().pingInterval);
+        // The ack rides after the ping: the ping is what wakes the proxy's view of a tab
+        // that froze, and an ack is not meant to stand in for it.
+        this.pingTracker = new PingTracker(() => {
+            this.sendGmcp('core.ping');
+            this.sendAck();
+        }, getDeviceViewSettings().pingInterval);
         onDeviceViewSettingsChange((view) => this.pingTracker.setInterval(view.pingInterval));
         this.gmcpStream = createGmcpStream({
             onEnvelope: ({path, value}) => {
@@ -427,6 +435,8 @@ class MudClient implements ClientAdapter {
         this.clockOffset.reset();
         this.reportedClockOffset = null;
         this.clockOffsetWarned = false;
+        // Learned afresh from this socket's attach frame: it may be another proxy.
+        this.proxyAcks = false;
         this.gmcpInitialized = false;
         this.introduced = false;
         this.textDecoder = new TextDecoder('utf-8', {fatal: false});
@@ -468,9 +478,14 @@ class MudClient implements ClientAdapter {
                     if (frame.control) {
                         // Session metadata, not game output: never goes near the
                         // trigger pipeline.
+                        if (frame.control.acks) this.proxyAcks = true;
                         if (frame.control.resumed && !frame.control.upstreamClosed) {
                             this.renegotiateGmcpAfterResume();
                         }
+                        // The game ended the session, and everything it said came in ahead
+                        // of this frame: say we have it all, so the proxy hangs up now
+                        // rather than waiting out its grace for pings.
+                        if (frame.control.type === 'ended') this.sendAck();
                         this.emit('proxy.session', frame.control);
                         return;
                     }
@@ -959,6 +974,21 @@ class MudClient implements ClientAdapter {
      * Same units as the count: the session proxy runs without MCCP, so the held bytes
      * are the bytes that came off the wire.
      */
+    /**
+     * Tell the session proxy how much game output this page has processed, so it lets go
+     * of exactly that. A ping alone only shows the page was running when it sent it, not
+     * that it read what was still in flight. Sent as a text message: game input goes as
+     * binary, so the proxy can tell the two apart.
+     *
+     * A telnet sequence held back for the next frame is counted but not yet processed, so
+     * it is left out: claiming it would release bytes a resume still needs.
+     */
+    private sendAck(): void {
+        if (!this.proxyAcks || !this.socket || this.socket.readyState !== WebSocket.OPEN) return;
+        const offset = Math.max(0, this.processedBytes - this.pendingSubneg.length);
+        this.socket.send(JSON.stringify({type: 'ack', offset}));
+    }
+
     private dropHeldTelnet(): void {
         this.processedBytes = Math.max(0, this.processedBytes - this.pendingSubneg.length);
         this.pendingSubneg = "";

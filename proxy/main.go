@@ -329,10 +329,22 @@ func handleAttach(w http.ResponseWriter, r *http.Request, manager *Manager, arch
 			return
 		}
 		if typ == websocket.MessageText {
-			// Tolerated, but the client sends binary.
+			if client.framed {
+				// Our client sends game input as binary, which leaves text free to
+				// speak to the proxy itself.
+				clientMessage(session, client, data)
+				continue
+			}
+			// Tolerated from a raw client: it is just input.
 			data = []byte(string(data))
 		}
 		if err := session.write(data); err != nil {
+			if session.isClosed() {
+				// Ended by the game, and held open for the client's last word. Keep
+				// listening: its acknowledgement may still be behind this ping, and the
+				// close grace hangs up when it is done waiting.
+				continue
+			}
 			session.finish(fmt.Sprintf("upstream write failed: %v", err))
 			return
 		}
@@ -514,4 +526,30 @@ func serveArchive(client *wsClient, record *archivedSession, clientOffset int64)
 		replayed += len(payload)
 	}
 	client.close("archived session replayed")
+}
+
+// clientPayload is the JSON a framed client sends the proxy as a text message.
+type clientPayload struct {
+	Type string `json:"type"`
+	// For "ack": bytes of game output the client has processed, counted from the start
+	// of the session — the same offset it names when it reattaches.
+	Offset int64 `json:"offset"`
+}
+
+/*
+clientMessage handles what a framed client says to the proxy rather than to the game.
+
+Only "ack" so far: the client's own count of what it processed. It rides alongside every
+ping and answers the "ended" frame, and is what lets held output go exactly when it has
+been read — a ping can only say the page was running when it sent it. Anything else is
+ignored, never forwarded: text from this client was never meant for the game.
+*/
+func clientMessage(session *Session, client *wsClient, data []byte) {
+	var msg clientPayload
+	if err := json.Unmarshal(data, &msg); err != nil {
+		return
+	}
+	if msg.Type == "ack" && msg.Offset >= 0 {
+		session.acknowledged(client, msg.Offset)
+	}
 }

@@ -20,6 +20,8 @@ export interface SessionControl {
     replayedBytes?: number;
     droppedBytes?: number;
     resumed?: boolean;
+    /** The proxy reads the client's offset acknowledgements (sent as text messages). */
+    acks?: boolean;
     /**
      * The game ended this session while nobody was attached — idled out, quit, or the
      * server restarted. Distinct from the proxy losing the session, and the difference

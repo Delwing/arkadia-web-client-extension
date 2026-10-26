@@ -38,6 +38,9 @@ type controlPayload struct {
 	ReplayedBytes int    `json:"replayedBytes"`
 	DroppedBytes  int    `json:"droppedBytes"`
 	Resumed       bool   `json:"resumed"`
+	// This proxy reads the client's acknowledgements (see clientMessage). An older one
+	// would forward them to the game as typed input, so the client waits to be told.
+	Acks bool `json:"acks,omitempty"`
 	// The game ended the connection while nobody was attached — an idle timeout, a
 	// quit, a server restart. Distinct from the proxy losing the session, and the
 	// difference is the whole answer to "what happened while I was away".
@@ -82,6 +85,12 @@ type Session struct {
 	// How long a closed session keeps its socket open so a last ping can confirm what
 	// was just sent. Zero closes at once.
 	closeGrace time.Duration
+	// Whether the attached client has acknowledged by offset. Once it has, its pings
+	// only prove it is alive: what it read is what it says it read. See acknowledged.
+	clientAcks bool
+	// Closed when a client still attached through the close grace acknowledges
+	// everything the session produced, so the socket can go without waiting it out.
+	finalAck chan struct{}
 	// Build the attached client reports at handshake, so a bug report can be tied to a
 	// deploy rather than guessed at.
 	clientVersion string
@@ -366,6 +375,7 @@ func (s *Session) attach(c clientConn, resumed bool, clientOffset int64) {
 	s.detachedAt = time.Time{}
 	s.attachedAt = time.Now()
 	s.clientHeartbeats = c.heartbeats()
+	s.clientAcks = false
 	s.clientVersion = c.version()
 
 	/*
@@ -442,6 +452,7 @@ func (s *Session) attach(c clientConn, resumed bool, clientOffset int64) {
 		ReplayedBytes:  replayed,
 		DroppedBytes:   dropped,
 		Resumed:        resumed,
+		Acks:           true,
 		UpstreamClosed: upstreamClosed,
 		CloseReason:    closeReason,
 	})
@@ -479,6 +490,34 @@ func (s *Session) detach(c clientConn) {
 	}
 }
 
+/*
+acknowledged lets go of everything the client says it has processed.
+
+Exact, where a ping is only circumstantial: the client reports its own offset, so nothing
+it has not read is released and nothing it has read is held. A client that acknowledges
+once keeps doing it, and from then on its pings stop releasing anything (see write).
+
+Deliberately not a heartbeat. Waking a frozen tab is the ping's job, and an ack touching
+lastClient first would hide the wake from it, leaving the buffer unflushed.
+
+It also ends the close grace early: an acknowledgement covering everything a closed
+session produced is the definite answer the grace waits for.
+*/
+func (s *Session) acknowledged(c clientConn, offset int64) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.client != c {
+		// A replaced socket speaking late: its view of the stream is no longer ours.
+		return
+	}
+	s.clientAcks = true
+	s.releaseConfirmedLocked(offset)
+	if s.closed && s.finalAck != nil && offset >= s.produced {
+		close(s.finalAck)
+		s.finalAck = nil
+	}
+}
+
 // write forwards player input to the game.
 func (s *Session) write(b []byte) error {
 	s.mu.Lock()
@@ -491,7 +530,7 @@ func (s *Session) write(b []byte) error {
 	s.lastClient = time.Now()
 	// It is awake again, and on the same socket it went to sleep on. Hand over what it
 	// missed rather than making it reconnect to find out.
-	if s.client != nil && !wasStale {
+	if s.client != nil && !wasStale && !s.clientAcks {
 		// Proof the page is running, and so that what it was sent a ping ago was read.
 		s.confirmedLocked()
 	}
@@ -592,7 +631,13 @@ func (s *Session) finish(reason string) {
 		retention, and archived, for output the player demonstrably read.
 	*/
 	waiting := client != nil && heartbeats && s.closeGrace > 0
-	if !waiting {
+	var acked chan struct{}
+	if waiting {
+		// The client answers the "ended" frame below with its offset; once that covers
+		// everything, there is nothing left to wait for.
+		acked = make(chan struct{})
+		s.finalAck = acked
+	} else {
 		s.client = nil
 	}
 	s.mu.Unlock()
@@ -622,14 +667,22 @@ func (s *Session) finish(reason string) {
 			client.close(reason)
 			return
 		}
-		// Held open just long enough for two more pings — the client sends them every
-		// three seconds, so this is a short wait for a definite answer rather than a
-		// guess either way.
+		// Held open until the client acknowledges everything, or for two more pings from
+		// one that does not — it sends them every three seconds, so this is a short wait
+		// for a definite answer rather than a guess either way.
 		go func() {
-			time.Sleep(s.closeGrace)
+			timer := time.NewTimer(s.closeGrace)
+			select {
+			case <-acked:
+				timer.Stop()
+			case <-timer.C:
+			}
 			s.mu.Lock()
 			if s.client == client {
 				s.client = nil
+			}
+			if s.finalAck == acked {
+				s.finalAck = nil
 			}
 			s.mu.Unlock()
 			client.close(reason)

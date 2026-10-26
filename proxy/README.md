@@ -159,6 +159,14 @@ lost whatever was still in flight — typically a prompt, ~100 bytes — wheneve
 locked its screen between the two. Replays are held the same way, so a resume whose fresh
 socket drops again before reading them loses nothing either.
 
+That lag is the fallback. The attach frame carries `"acks": true`, and a client that sees it
+sends its own count back as a text message, `{"type":"ack","offset":N}`, alongside every
+ping (game input is always binary, so the two never mix; an older proxy would forward the
+text to the game, which is why the client waits to be told). From its first ack on, a
+client's pings stop releasing anything and the ack releases exactly up to `N`. The client
+also acks the `ended` frame, so a clean logout hangs up the moment everything has been read
+instead of waiting out `-close-grace` for two more pings.
+
 `-client-silence` (default 20s) decides when a quiet client stops being written to at all
 and has its output buffered instead. It matters less than it used to: unconfirmed writes
 are replayed either way, so the threshold now only chooses between holding and buffering,
