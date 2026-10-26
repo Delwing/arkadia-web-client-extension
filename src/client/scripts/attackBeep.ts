@@ -49,9 +49,12 @@ export default function initAttackBeep(client: Client) {
 
     ensurePeopleLoaded().catch(() => undefined);
 
-    // Function to find a person's guild by their name
+    // Find a person's guild by name, or by description when the attacker is
+    // not introduced ("Muskularny zielonooki krasnolud atakuje cie!")
     function findPersonGuild(name: string): string | null {
-        const person = peopleCache.find(p => p.name === name);
+        const lowered = name.toLowerCase();
+        const person = peopleCache.find(p => p.name === name)
+            ?? peopleCache.find(p => p.description?.toLowerCase() === lowered);
         return person ? person.guild : null;
     }
 
@@ -106,6 +109,7 @@ export default function initAttackBeep(client: Client) {
         /^W oczach (?<name>.*) rozpala sie swiety ogien nienawisci i z imieniem Morra na ustach (?<upper>rzuca sie do walki z toba)!/,
         /^(?<name>\w+(?: \w+){0,4}) z determinacja i pewnoscia siebie unosi swoja bron i (?<upper>naciera na ciebie)!/,
         /^(?<name>\w+(?: \w+){0,4}) z pierwotna wsciekloscia (?<upper>rzuca sie na ciebie), rozpoczynajac walke!/,
+        /^(?<name>\w+(?: \w+){0,4}) z pelnym przebieglosci blyskiem w oku (?<upper>rzuca sie na ciebie)!/,
         /^Przy ogluszajacym akompaniamencie okrzyku bojowego '[^']*' (?<name>\w+(?: \w+){0,4}) (?<upper>rzuca sie na ciebie), wiazac cie/
     ].forEach(p => client.Triggers.registerTrigger(p, beep, tag));
 

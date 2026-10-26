@@ -99,6 +99,23 @@ describe('attack beep triggers', () => {
     expect(beepCalls).toHaveLength(2);
   });
 
+  test('beeps and uppercases on the Tzeentch attack line', () => {
+    const result = parse('Intia z pelnym przebieglosci blyskiem w oku rzuca sie na ciebie!');
+    const beepCalls = client.sendEvent.mock.calls.filter(call => call[0] === 'sound:category');
+    expect(beepCalls).toHaveLength(1);
+    expect(beepCalls[0][1]).toBe('attack');
+    expect(client.sendEvent).toHaveBeenCalledWith('attack', { attacker: 'Intia', enemy: true });
+    expect(result.text).toContain('RZUCA SIE NA CIEBIE!');
+  });
+
+  test('beeps when an enemy attacks under their description', () => {
+    parse('Wysoki mezczyzna z pelnym przebieglosci blyskiem w oku rzuca sie na ciebie!');
+    parse('Niski mezczyzna atakuje cie!');
+    const beepCalls = client.sendEvent.mock.calls.filter(call => call[0] === 'sound:category');
+    expect(beepCalls).toHaveLength(1);
+    expect(client.sendEvent).toHaveBeenCalledWith('enemy.attack', { attacker: 'Wysoki mezczyzna' });
+  });
+
   test('raises attack event for every attacker, enemy.attack only for enemies', () => {
     parse('Intia atakuje cie!');
     parse('Nieznajomy atakuje cie!');
