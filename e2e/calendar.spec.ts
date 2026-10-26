@@ -59,7 +59,7 @@ test.describe('Calendar popup', () => {
         await page.locator('#main_text_output_msg_wrapper').click({ button: 'right' });
 
         // the menu really is open - otherwise the assertions below prove nothing
-        await expect(page.locator('text=Depozyty').first()).toBeVisible();
+        await expect(page.locator('#context-menu').getByText('Depozyty')).toBeVisible();
 
         // ...and neither undocumented window is reachable from it
         await expect(page.locator('text=Kalendarz roku')).toHaveCount(0);
