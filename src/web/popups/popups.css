@@ -1636,11 +1636,6 @@ select.popup-input optgroup {
   background-color: var(--popup-bg);
   margin: 0 calc(-1 * var(--popup-split-gutter));
   padding: 0 var(--popup-split-gutter);
-  /* Its own compositing layer. Painted into the scrollback's layer, Chrome
-     sometimes left the pane's old pixels on screen after it closed or its
-     lines were redrawn (a stale half line or an empty strip) until something
-     forced a repaint, e.g. the mouse moving over it. */
-  will-change: transform;
 }
 
 /* Same line as the main output's #split-handle: --popup-border is too faint to
