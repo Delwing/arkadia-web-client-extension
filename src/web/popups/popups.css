@@ -4820,12 +4820,17 @@ select.popup-input optgroup {
 }
 
 .package-receiver__controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   padding: 8px 10px;
   border-bottom: 1px solid var(--popup-border);
 }
 
 .package-receiver__search {
   position: relative;
+  flex: 1;
+  min-width: 0;
 }
 
 .package-receiver__search .popup-input.popup-input--control {
@@ -4861,6 +4866,76 @@ select.popup-input optgroup {
   color: var(--popup-text-strong);
 }
 
+/* The package being carried — sits above the search while there is one. */
+.package-receiver__current {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 10px 0;
+  padding: 8px 10px;
+  border: 1px solid var(--popup-accent-border);
+  border-radius: 6px;
+  background-color: var(--popup-accent-subtle-bg);
+}
+
+.package-receiver__current + .package-receiver__controls {
+  padding-top: 8px;
+}
+
+.package-receiver__current-icon {
+  flex-shrink: 0;
+  color: var(--popup-accent);
+}
+
+.package-receiver__current-main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.package-receiver__current-title {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
+
+.package-receiver__current-label {
+  flex-shrink: 0;
+  color: var(--popup-text-dim);
+  font-size: var(--ui-fs-xs, 11px);
+}
+
+.package-receiver__current-name {
+  overflow: hidden;
+  color: var(--popup-text-strong);
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.package-receiver__unknown {
+  color: var(--popup-warning);
+  font-size: var(--ui-fs-xs, 11px);
+}
+
+.package-receiver__timer {
+  flex-shrink: 0;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background-color: var(--popup-accent-bg);
+  color: var(--popup-accent);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.package-receiver__timer.is-urgent {
+  background-color: var(--popup-danger-bg);
+  color: var(--popup-danger);
+}
+
 .package-receiver__content {
   flex: 1;
   overflow-y: auto;
@@ -4877,54 +4952,45 @@ select.popup-input optgroup {
 }
 
 .package-receiver__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.package-receiver__npc-item {
   display: flex;
-  flex-direction: column;
-}
-
-.package-receiver__head,
-.package-receiver__npc-item {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 84px 96px;
-  gap: 8px;
   align-items: center;
-  padding: 0 10px;
-}
-
-.package-receiver__head {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  height: 26px;
-  background-color: var(--popup-bg);
-  border-bottom: 1px solid var(--popup-border);
-  color: var(--popup-text-faint);
-  font-size: var(--ui-fs-xs, 11px);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-/* Lines the heading up with the number inside the location button. */
-.package-receiver__head > :nth-child(2) {
-  padding-left: 7px;
-}
-
-.package-receiver__npc-item {
-  min-height: 36px;
+  gap: 8px;
+  padding: 4px 10px;
   border-bottom: 1px solid var(--popup-border-subtle);
-  font-size: calc(0.875rem * var(--window-font-scale, 1));
+  border-left: 2px solid transparent;
 }
 
 .package-receiver__npc-item:hover {
   background-color: var(--popup-hover-bg);
 }
 
+.package-receiver__npc-item.is-current {
+  border-left-color: var(--popup-accent);
+  background-color: var(--popup-accent-subtle-bg);
+}
+
+.package-receiver__npc-main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  min-width: 0;
+}
+
 .package-receiver__npc-name {
   display: flex;
   align-items: center;
   gap: 6px;
-  min-width: 0;
+  max-width: 100%;
   color: var(--popup-text);
+  font-size: calc(0.875rem * var(--window-font-scale, 1));
   font-weight: 600;
 }
 
@@ -4941,31 +5007,68 @@ select.popup-input optgroup {
   background-color: var(--popup-accent-bg);
   color: var(--popup-accent);
   font-size: var(--ui-fs-xs, 11px);
+  font-weight: 400;
   line-height: 16px;
 }
 
-/* Location id and map marker in one: opens the map on that room. */
-.popup-btn.package-receiver__npc-loc {
-  justify-self: start;
-  gap: 4px;
-  padding: 0 6px;
-  color: var(--popup-text-medium);
-  font-weight: 400;
-  font-variant-numeric: tabular-nums;
+.package-receiver__badge--current {
+  background-color: var(--popup-success-bg);
+  color: var(--popup-success);
 }
 
-.popup-btn.package-receiver__npc-loc:hover:not(:disabled) {
+/* Room, area and id in one: opens the map on that room. */
+.package-receiver__place {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  margin-left: -4px;
+  padding: 1px 4px;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: var(--popup-text-dim);
+  font: inherit;
+  font-size: var(--ui-fs-xs, 11px);
+  text-align: left;
+  cursor: pointer;
+}
+
+.package-receiver__place > svg {
+  flex-shrink: 0;
+}
+
+.package-receiver__place:hover {
+  background-color: var(--popup-control-hover-bg);
   color: var(--popup-accent);
+}
+
+.package-receiver__place-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.package-receiver__area {
+  color: var(--popup-text-faint);
+}
+
+.package-receiver__loc-id {
+  flex-shrink: 0;
+  color: var(--popup-text-faint);
+  font-variant-numeric: tabular-nums;
 }
 
 .package-receiver__npc-actions {
   display: flex;
+  flex-shrink: 0;
   justify-content: flex-end;
   align-items: center;
   gap: 4px;
 }
 
 .popup-btn.package-receiver__go {
+  flex-shrink: 0;
   gap: 4px;
 }
 
