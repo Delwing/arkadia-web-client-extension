@@ -1638,10 +1638,12 @@ select.popup-input optgroup {
   padding: 0 var(--popup-split-gutter);
 }
 
+/* Same line as the main output's #split-handle: --popup-border is too faint to
+   show where the pane starts, and a line cut by its edge then reads as a glitch. */
 .popup-split-handle {
   height: 2px;
   margin: 0 calc(-1 * var(--popup-split-gutter));
-  background-color: var(--popup-border);
+  background-color: var(--footer-control-hover-border);
   cursor: ns-resize;
   user-select: none;
   touch-action: none;

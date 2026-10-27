@@ -58,8 +58,23 @@ export function attachScrollback(scrollEl: HTMLElement, options: ScrollbackOptio
     sticky.className = 'popup-split-sticky';
     pane.append(handle, sticky);
 
+    // The mirrored lines are bottom-anchored, so a pane edge between two lines
+    // would cut the top one in half - and a half line under a moving scrollback
+    // reads as a rendering glitch. Trimmed to the whole lines that fit.
     const applyHeight = () => {
         pane.style.height = `${splitHeight}px`;
+        if (!pane.isConnected) return;
+        const handleHeight = handle.offsetHeight;
+        // clientHeight, not splitHeight: the CSS max-height may have clamped it
+        const room = pane.clientHeight - handleHeight;
+        const bottom = sticky.getBoundingClientRect().bottom;
+        let fits = 0;
+        for (const line of Array.from(sticky.children).reverse()) {
+            const height = bottom - line.getBoundingClientRect().top;
+            if (height > room) break;
+            fits = height;
+        }
+        if (fits > 0) pane.style.height = `${Math.ceil(fits + handleHeight)}px`;
     };
 
     const renderMirror = () => {
@@ -85,9 +100,9 @@ export function attachScrollback(scrollEl: HTMLElement, options: ScrollbackOptio
         onOpen: () => {
             // The pane bleeds over the scroller's side padding, so match it.
             pane.style.setProperty('--popup-split-gutter', getComputedStyle(scrollEl).paddingLeft || '0px');
-            applyHeight();
             renderMirror();
             showPane();
+            applyHeight();
             options.onSplitViewChange?.(true);
         },
         onClose: () => {
@@ -99,9 +114,9 @@ export function attachScrollback(scrollEl: HTMLElement, options: ScrollbackOptio
             splitHeight = heightPx;
             applyHeight();
         },
-        onHandleDragEnd: (heightPx) => {
-            // Measured, so the CSS max-height clamp is what gets stored.
-            if (heightPx > 0) splitHeight = heightPx;
+        onHandleDragEnd: () => {
+            // Where the player let go, not the trimmed height - trimming it again
+            // next time would shrink the pane a little with every drag.
             options.onSplitResize?.(splitHeight);
         },
     });
@@ -113,6 +128,7 @@ export function attachScrollback(scrollEl: HTMLElement, options: ScrollbackOptio
         if (controller.isSplitView()) {
             showPane();
             renderMirror();
+            applyHeight();
         }
     };
 

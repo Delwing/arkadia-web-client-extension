@@ -43,12 +43,15 @@ body.theme-forged :is(#main_text_output_msg_wrapper, #sticky-area) .output-messa
 }
 
 /* The split view's handle: a bronze hairline rather than a grey bar. */
-body.theme-forged #split-handle {
+body.theme-forged #split-handle,
+body.theme-forged .popup-split-handle {
   height: 1px;
   background-color: var(--iron-hi);
 }
 body.theme-forged #split-handle:hover,
-body.theme-forged #split-handle:active {
+body.theme-forged #split-handle:active,
+body.theme-forged .popup-split-handle:hover,
+body.theme-forged .popup-split-handle:active {
   background-color: var(--bronze-dim);
 }
 
