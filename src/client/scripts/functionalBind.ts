@@ -1,9 +1,12 @@
-import Client from "../Client";
-import {AnsiAwareBuffer, FormatStateSnapshot} from "@client/ansi/FormatState";
+import type Client from "../Client";
+import {AnsiAwareBuffer} from "@client/ansi/FormatState";
 import {bindMatches} from "@modules/core/keymapTypes";
 import {shouldIgnoreGlobalKeybind} from "../keybindGuard";
 import type {FunctionalBindCategory} from "./functionalBindCategories";
 import {CATEGORY_LABELS, FUNCTIONAL_BIND_CATEGORIES} from "./functionalBindCategories";
+
+import { getRenderSettings, onRenderSettingsChange } from "@modules/core/settings/index.ts";
+import { functionalBindParts, normalizeFunctionalBindPresentation, type FunctionalBindPresentation } from "@shared/functionalBindPresentation.ts";
 
 const isMac = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform);
 const ALT_LABEL = isMac ? '⌥' : 'ALT';
@@ -43,26 +46,22 @@ export function formatLabel(options: FunctionalBindOptions) {
     return parts.join('+');
 }
 
-export function createBindMessage(label: string, printable: string, callback: () => void): AnsiAwareBuffer {
-    // Using xterm proper palette colors: 49 = #00ffaf, 222 = #ffd787
-    const bindColor: FormatStateSnapshot = { foreground: { space: 'hex', color: '#00ffaf' } };
-    const labelColor: FormatStateSnapshot = { foreground: { space: 'hex', color: '#ffd787' } };
-
+export function createBindMessage(
+    label: string, printable: string, callback: () => void,
+    settings: FunctionalBindPresentation = normalizeFunctionalBindPresentation({}),
+): AnsiAwareBuffer {
     const buffer = new AnsiAwareBuffer();
-    buffer.append('\t', undefined);
-    buffer.append('bind ', bindColor);
-    buffer.append(label, labelColor);
-    buffer.append(': ', bindColor);
-    buffer.append(printable, undefined);
-
-    const printableIndex = buffer.text.indexOf(printable);
-    if (printableIndex !== -1) {
-        buffer.createLink([printableIndex, printableIndex + printable.length], {
-            onClick: callback,
-            title: `Kliknij aby wykonać: ${printable}`
-        });
+    if (settings.functionalBindOutput === 'full') buffer.append('\t');
+    for (const part of functionalBindParts(label, printable, settings)) {
+        const start = buffer.length;
+        buffer.append(part.text, part.color ? { foreground: { space: 'hex', color: part.color } } : undefined);
+        if (part.action && part.text.length) {
+            buffer.createLink([start, buffer.length], {
+                onClick: callback,
+                title: `Kliknij aby wykonać: ${printable}`,
+            });
+        }
     }
-
     return buffer;
 }
 
@@ -85,6 +84,7 @@ export class FunctionalBind {
     private shift: boolean;
     /** Called when an active bind is cleared, by its owner or after use. */
     onCleared?: () => void;
+    onChanged?: () => void;
 
     constructor(client: Client, options: FunctionalBindOptions = {}) {
         this.client = client;
@@ -99,6 +99,14 @@ export class FunctionalBind {
 
     newMessage() {
         this.printedInMessage = false;
+    }
+
+    private printMessage(printable: string) {
+        const settings = normalizeFunctionalBindPresentation(getRenderSettings());
+        if (settings.functionalBindOutput === 'hidden') return;
+        const line = createBindMessage(this.label, printable, this.functionalBind, settings);
+        if (settings.functionalBindOutput === 'compact') this.client.print(line.append('\n'));
+        else this.client.println(line);
     }
 
     set(printable: string | null, callback?: () => void, clearAfterUse: boolean = false) {
@@ -120,18 +128,18 @@ export class FunctionalBind {
 
         if (this.currentPrintable === printable) {
             if (printable && !this.printedInMessage) {
-                const line = createBindMessage(this.label, printable, this.functionalBind);
-                this.client.println(line);
+                this.printMessage(printable);
                 this.printedInMessage = true;
             }
+            this.onChanged?.();
             return;
         }
         this.currentPrintable = printable;
         this.printedInMessage = true;
         if (printable) {
-            const line = createBindMessage(this.label, printable, this.functionalBind);
-            this.client.println(line);
+            this.printMessage(printable);
         }
+        this.onChanged?.();
     }
 
     clear() {
@@ -142,6 +150,7 @@ export class FunctionalBind {
         this.printedInMessage = false;
         if (wasActive) {
             this.onCleared?.();
+            this.onChanged?.();
         }
     }
 
@@ -174,12 +183,11 @@ export class FunctionalBind {
         if (options.alt !== undefined) this.alt = !!options.alt;
         if (options.shift !== undefined) this.shift = !!options.shift;
 
-        // When the label changes, invalidate the cached printable so the next
-        // set() call reprints the bind message with the updated label.
+        // Refresh the next announcement without discarding the active action.
         if (this.label !== oldLabel) {
-            this.currentPrintable = null;
             this.printedInMessage = false;
         }
+        this.onChanged?.();
     }
 
     getKey(): string {
@@ -222,14 +230,21 @@ export class FunctionalBindManager {
     private setOrder: Map<FunctionalBindCategory, number> = new Map();
     private setCounter = 0;
 
-    constructor(client: Client) {
+    constructor(private readonly client: Client) {
         // Create one FunctionalBind per category
         for (const cat of FUNCTIONAL_BIND_CATEGORIES) {
             const bind = new FunctionalBind(client);
             bind.onCleared = () => this.dropOlderBinds(cat);
+            bind.onChanged = () => this.sendState();
             this.categories.set(cat, bind);
             this.setOrder.set(cat, 0);
         }
+
+        client.on('requestFunctionalBindState', () => this.sendState());
+        onRenderSettingsChange(() => {
+            this.newMessage();
+            this.sendState();
+        });
 
         // Single keydown listener for all functional binds
         window.addEventListener('keydown', (ev) => {
@@ -259,6 +274,12 @@ export class FunctionalBindManager {
         client.on('executeFunctionalBind', () => {
             this.findBestBind()?.execute();
         });
+    }
+
+    private sendState() {
+        const bind = this.findBestBind();
+        this.client.sendEvent?.('functionalBindState', bind
+            ? { label: bind.getLabel(), action: bind.getPrintable()! } : null);
     }
 
     /** Clear every active bind on the same key that was set before `category`. */
@@ -363,10 +384,10 @@ export class FunctionalBindManager {
      * (the loot bind) guard against that themselves.
      */
     setCategory(category: FunctionalBindCategory, printable: string | null, callback?: () => void, clearAfterUse?: boolean): void {
-        this.categories.get(category)?.set(printable, callback, clearAfterUse ?? false);
         if (printable !== null) {
             this.setOrder.set(category, ++this.setCounter);
         }
+        this.categories.get(category)?.set(printable, callback, clearAfterUse ?? false);
     }
 
     /** Clear a specific category's bind. */

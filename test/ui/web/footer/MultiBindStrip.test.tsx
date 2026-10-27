@@ -1,3 +1,4 @@
+import { setRenderSettings } from "@modules/core/settings/index.ts";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import eventBus from "@modules/core/eventBus";
@@ -43,6 +44,24 @@ describe("MultiBindStrip key hints", () => {
     container.remove();
     resetHardwareKeyboardDetection();
     globalStorage.remove("uiSettings");
+    globalStorage.remove("renderSettings");
+  });
+
+  test("shows the functional action only when enabled and runs its callback event", () => {
+    mount();
+    act(() => eventBus.emit('functionalBindState', { label: ']', action: 'usiadz' }));
+    expect(container.querySelector('.multi-bind--functional')).toBeNull();
+    act(() => setRenderSettings({ functionalBindInFooter: true }));
+    const execute = jest.fn();
+    const unsubscribe = eventBus.on('executeFunctionalBind', execute);
+    try {
+      const pill = container.querySelector<HTMLButtonElement>('.multi-bind--functional')!;
+      expect(pill.textContent).toContain('usiadz');
+      act(() => pill.click());
+      expect(execute).toHaveBeenCalledTimes(1);
+      act(() => eventBus.emit('functionalBindState', null));
+      expect(container.querySelector('.multi-bind--functional')).toBeNull();
+    } finally { unsubscribe(); }
   });
 
   test("are dropped on a touch-only device, leaving the action", () => {

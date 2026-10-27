@@ -58,7 +58,7 @@ export const SETTINGS_CATEGORIES: readonly SettingsCategory[] = [
     { key: "character-magics", group: "character", label: "Magiki" },
     { key: "ui-appearance", group: "ui", label: "Wygląd", keywords: "motyw czcionka kolory paleta" },
     { key: "ui-windows", group: "ui", label: "Okna", keywords: "układ bufor lista obiektów ustawienia okien tło krycie czcionka" },
-    { key: "ui-commands", group: "ui", label: "Komendy", keywords: "multibindy bindy wpisywanie" },
+    { key: "ui-commands", group: "ui", label: "Komendy", keywords: "multibindy bindy wpisywanie funkcyjny kolory format stopka" },
     { key: "ui-buttons", group: "ui", label: "Przyciski", keywords: "makra" },
     { key: "ui-mobile-buttons", group: "ui", label: "Przyciski mobilne", keywords: "makra kierunki telefon drużyna" },
     { key: "ui-radial", group: "ui", label: "Menu kołowe", keywords: "radialne gest komendy telefon" },

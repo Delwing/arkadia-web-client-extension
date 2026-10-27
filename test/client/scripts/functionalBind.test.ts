@@ -1,4 +1,7 @@
-import { FunctionalBind, FunctionalBindManager } from '@client/scripts/functionalBind';
+import { normalizeFunctionalBindPresentation } from '@shared/functionalBindPresentation.ts';
+import { getRenderSettings, setRenderSettings } from '@modules/core/settings/index.ts';
+import { globalStorage } from '@modules/core/storage';
+import { createBindMessage, FunctionalBind, FunctionalBindManager } from '@client/scripts/functionalBind';
 
 describe('FunctionalBind clickable text', () => {
   test('set makes printed text clickable', () => {
@@ -184,5 +187,66 @@ describe('FunctionalBindManager re-set priority', () => {
 
     expect(lootCb).toHaveBeenCalled();
     expect(followCb).not.toHaveBeenCalled();
+  });
+});
+
+
+describe('Functional bind presentation', () => {
+  afterEach(() => globalStorage.remove('renderSettings'));
+
+  test('compact output substitutes the template once and keeps the action clickable in its own color', () => {
+    setRenderSettings({ functionalBindOutput: 'compact', functionalBindTemplate: '[{key}] {action}',
+      functionalBindKeyColor: '#123456', functionalBindActionColor: '#654321' });
+    const cb = jest.fn();
+    const line = createBindMessage(']', 'echo {key}', cb, normalizeFunctionalBindPresentation(getRenderSettings()));
+    expect(line.text).toBe('[]] echo {key}');
+    const host = document.createElement('div');
+    host.append(line.toDom());
+    const link = host.querySelector<HTMLElement>('[data-output-clickable]')!;
+    expect(link.textContent).toBe('echo {key}');
+    expect(link.style.color).toBe('rgb(101, 67, 33)');
+    link.click();
+    expect(cb).toHaveBeenCalledTimes(1);
+  });
+
+  test('compact mode prints one line without the surrounding println spacing', () => {
+    setRenderSettings({ functionalBindOutput: 'compact' });
+    const client = { on: jest.fn(), print: jest.fn(), println: jest.fn() } as any;
+    new FunctionalBind(client).set('usiadz');
+    expect(client.println).not.toHaveBeenCalled();
+    expect(client.print).toHaveBeenCalledTimes(1);
+    expect(client.print.mock.calls[0][0].text).toBe('bind ]: usiadz\n');
+  });
+
+  test('hidden output still publishes the latest action, executes callbacks and clears the footer after use', () => {
+    setRenderSettings({ functionalBindOutput: 'hidden', functionalBindInFooter: true });
+    const handlers = new Map<string, Function>();
+    const client = { on: (name: string, fn: Function) => handlers.set(name, fn),
+      sendEvent: jest.fn(), println: jest.fn(), print: jest.fn() } as any;
+    const manager = new FunctionalBindManager(client);
+    manager.setCategory('gates', 'uderz we wrota', jest.fn());
+    const callback = jest.fn();
+    manager.set('usiadz', callback, true);
+    expect(client.sendEvent).toHaveBeenLastCalledWith('functionalBindState', { label: ']', action: 'usiadz' });
+    expect(client.println).not.toHaveBeenCalled();
+    expect(client.print).not.toHaveBeenCalled();
+    // A newly mounted footer can request the existing action.
+    client.sendEvent.mockClear();
+    handlers.get('requestFunctionalBindState')!();
+    expect(client.sendEvent).toHaveBeenLastCalledWith('functionalBindState', { label: ']', action: 'usiadz' });
+    handlers.get('executeFunctionalBind')!();
+    expect(callback).toHaveBeenCalledTimes(1);
+    expect(client.sendEvent).toHaveBeenLastCalledWith('functionalBindState', null);
+  });
+
+  test('changing the shortcut refreshes the footer without losing the active action', () => {
+    const client = { on: jest.fn(), sendEvent: jest.fn(), println: jest.fn() } as any;
+    const manager = new FunctionalBindManager(client);
+    const callback = jest.fn();
+    manager.set('usiadz', callback);
+    manager.updateOptions({ key: 'KeyG', label: 'G' });
+    expect(client.sendEvent).toHaveBeenLastCalledWith('functionalBindState', { label: 'G', action: 'usiadz' });
+    manager.getCategory('default')!.execute();
+    expect(callback).toHaveBeenCalledTimes(1);
   });
 });

@@ -41,6 +41,12 @@ export const defaultRenderSettings: RenderSettings = {
     highlightMessageBlocks: false,
     characterPlaque: false,
     objectListCoverMarkers: true,
+    functionalBindOutput: 'full',
+    functionalBindTemplate: 'bind {key}: {action}',
+    functionalBindColor: '#00ffaf',
+    functionalBindKeyColor: '#ffd787',
+    functionalBindActionColor: '',
+    functionalBindInFooter: false,
     commandEcho: true,
     clearInputOnSend: false,
     autoLowercaseCommands: false,
@@ -112,6 +118,8 @@ export const renderSettingsKeys = [
     'xtermPalette', 'colorTheme', 'customThemeColor', 'outputBackground', 'outputTextColor',
     'backgroundImage', 'backgroundImageShade',
     'outputBottomPadding', 'showTimestamps', 'highlightMessageBlocks', 'characterPlaque', 'objectListCoverMarkers', 'commandEcho',
+    'functionalBindOutput', 'functionalBindTemplate', 'functionalBindColor',
+    'functionalBindKeyColor', 'functionalBindActionColor', 'functionalBindInFooter',
     'clearInputOnSend', 'autoLowercaseCommands', 'soundCategories', 'customBeepSoundKey',
 ] as const satisfies readonly (keyof RenderSettings)[];
 
