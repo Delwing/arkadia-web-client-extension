@@ -75,10 +75,15 @@ export function hiddenIds(data: ButtonModes, mode: ButtonMode): string[] {
 
 /** How many buttons placed in `mode` use the style. */
 export function styleUsage(data: ButtonModes, mode: ButtonMode, styleId: string): number {
+    return selectableIds(data, mode).filter(id => styleOf(data, resolveButton(data, mode, id)!.button) === data.styles[styleId]).length;
+}
+
+/** Placed, non-empty buttons of `mode`, in grid order: what Zaznacz can pick. */
+export function selectableIds(data: ButtonModes, mode: ButtonMode): string[] {
     return resolveLayout(data, mode).layout.order.filter(id => {
         const button = resolveButton(data, mode, id)?.button;
-        return !!button && button.macroType !== 'empty' && styleOf(data, button) === data.styles[styleId];
-    }).length;
+        return !!button && button.macroType !== 'empty';
+    });
 }
 
 const missingButton: StoredMobileButton = { macroType: 'empty', label: '' };

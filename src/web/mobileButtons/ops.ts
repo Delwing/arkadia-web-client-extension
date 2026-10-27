@@ -96,7 +96,7 @@ export function setButton(input: ButtonModes, mode: ButtonMode, id: string, patc
 /** Back to what the parent chain has; no-op on solo and on slots only this mode has. */
 export function restoreButton(input: ButtonModes, mode: ButtonMode, id: string): ButtonModes {
     const parent = PARENT_MODE[mode];
-    if (!parent || !resolveButton(input, parent, id)) return input;
+    if (!parent || !input.modes[mode].buttons[id] || !resolveButton(input, parent, id)) return input;
     const data = structuredClone(input);
     delete data.modes[mode].buttons[id];
     return data;
@@ -225,4 +225,75 @@ export function newStyleForButton(input: ButtonModes, mode: ButtonMode, id: stri
     data.styleOrder.push(styleId);
     button.style = styleId;
     return { data, forked, styleId };
+}
+
+/** Give the buttons a style, forking the inherited ones. Empty slots and buttons already on it are skipped. */
+export function assignStyle(input: ButtonModes, mode: ButtonMode, ids: string[], styleId: string): { data: ButtonModes; changed: number; forked: number } {
+    if (!input.styles[styleId]) return { data: input, changed: 0, forked: 0 };
+    const data = structuredClone(input);
+    let changed = 0, forked = 0;
+    for (const id of ids) {
+        const button = resolveButton(data, mode, id)?.button;
+        if (!button || button.macroType === 'empty' || styleOf(data, button) === data.styles[styleId]) continue;
+        if (fork(data, mode, id)) forked++;
+        data.modes[mode].buttons[id].style = styleId;
+        changed++;
+    }
+    return { data: changed ? data : input, changed, forked };
+}
+
+/** Copy the inherited ones into `mode` as they are, so later parent changes no longer reach them. */
+export function overrideButtons(input: ButtonModes, mode: ButtonMode, ids: string[]): { data: ButtonModes; forked: number } {
+    if (mode === 'solo') return { data: input, forked: 0 };
+    const data = structuredClone(input);
+    const forked = ids.filter(id => resolveButton(data, mode, id) && fork(data, mode, id)).length;
+    return { data: forked ? data : input, forked };
+}
+
+/** `restoreButton` for several; counts only the ones that went back to the parent. */
+export function restoreButtons(input: ButtonModes, mode: ButtonMode, ids: string[]): { data: ButtonModes; restored: number } {
+    let data = input, restored = 0;
+    for (const id of ids) {
+        const next = restoreButton(data, mode, id);
+        if (next !== data) restored++;
+        data = next;
+    }
+    return { data, restored };
+}
+
+/** Turn the slots into empty ones in `mode` (an empty override where they are inherited). */
+export function clearSlots(input: ButtonModes, mode: ButtonMode, ids: string[]): ButtonModes {
+    const data = structuredClone(input);
+    for (const id of ids) data.modes[mode].buttons[id] = { ...EMPTY };
+    return data;
+}
+
+const NEW_STYLE: MobileButtonStyle = { name: '', color: '#4b7f52', fontColor: '#ffffff', activeColor: '#5ec27a' };
+
+/** A new style at the end of the palette, copying `from` when given. */
+export function addStyle(input: ButtonModes, from?: string): { data: ButtonModes; styleId: string } {
+    const data = structuredClone(input);
+    const styleId = `style-${nextNumber(Object.keys(data.styles), 'style-')}`;
+    const names = new Set(Object.values(data.styles).map(s => s.name));
+    const source = from ? data.styles[from] : undefined;
+    let name = source ? `${source.name} (kopia)` : `Styl ${data.styleOrder.length + 1}`;
+    for (let n = 2; names.has(name); n++) name = source ? `${source.name} (kopia ${n})` : `Styl ${data.styleOrder.length + n}`;
+    data.styles[styleId] = { ...(source ?? NEW_STYLE), name };
+    data.styleOrder.push(styleId);
+    return { data, styleId };
+}
+
+/** Remove a style; every button on it, in every mode, moves to the first remaining one. The last style stays. */
+export function deleteStyle(input: ButtonModes, styleId: string): ButtonModes {
+    if (!input.styles[styleId] || input.styleOrder.length <= 1) return input;
+    const data = structuredClone(input);
+    delete data.styles[styleId];
+    data.styleOrder = data.styleOrder.filter(id => id !== styleId);
+    const fallback = data.styleOrder[0];
+    for (const config of Object.values(data.modes)) {
+        for (const button of Object.values(config.buttons)) {
+            if (button.style === styleId) button.style = fallback;
+        }
+    }
+    return data;
 }

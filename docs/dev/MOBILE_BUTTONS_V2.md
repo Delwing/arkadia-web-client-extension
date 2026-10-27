@@ -1,8 +1,15 @@
 # Mobile buttons v2: data model and migration
 
-Status: phases 1 (model, migration, mirror) and 2 (editor: modes,
-inheritance, Edytuj, Układ, background, style chips) implemented; the Style
-tab and Zaznacz (phase 3) not yet.
+Status: phases 1 (model, migration, mirror), 2 (editor: modes, inheritance,
+Edytuj, Układ, background, style chips) and 3 (Zaznacz, Style) implemented;
+phase 4 (dropping the mirror) waits for the transition window.
+
+Phase 3 deviations from the mockup: the quick-select chip for direction
+buttons is "Wszystkie kierunki" (it picks `kierunek` and `specialExit` by
+type; a plain "Kierunki" clashed with the default style of that name); the
+Style tool has no preset swatches, only the colour inputs, plus "Kopiuj styl"
+and a delete bin per style (answers the per-style copy question below); the
+tools stay a segmented control above the grid on phones too, not a bottom bar.
 
 Phase 2 deviations from the mockup: Rozmiar/Odstęp stay visible under the
 panel in both tools rather than inside Układ; the Układ tool uses the +/− on
@@ -156,6 +163,7 @@ resolved value into `mode`.
 | `placeHidden(mode, id)` | forks layout, puts `id` in the first empty slot, else appends a row. |
 | `setBackground(mode, value)` / `restoreBackground(mode)` | fork / delete `modes[mode].background`. |
 | `assignStyle(mode, ids, styleId)` | for each non-empty id whose style differs: fork into `mode`, set style. Returns the counts (changed, forked) for the toast. |
+| `overrideButtons(mode, ids)` / `restoreButtons(mode, ids)` / `clearSlots(mode, ids)` | Zaznacz bulk actions: fork as-is / back to the parent / store empties in `mode`; return counts for the toast. |
 | `addStyle(from?)`, `updateStyle(id, patch)`, `deleteStyle(id)` | delete reassigns every button using it (in all modes) to `styleOrder[0]`; the last style cannot be deleted. |
 | `newStyleForButton(mode, id)` | copies the button's style under a new id named `Styl: <label>`, assigns it to the button (forking if inherited). |
 

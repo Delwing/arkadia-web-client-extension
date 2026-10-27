@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { Button, Check, ColorInput, Field, Input, Segmented } from "@web-ui/primitives/index.ts";
+import { useEffect, useRef, useState, type MouseEvent } from "react";
+import { Button, Check, ColorInput, DeleteButton, Field, Input, Segmented } from "@web-ui/primitives/index.ts";
 import {
     applySettings,
     defaultButtonGap,
@@ -25,16 +25,23 @@ import {
     resolveBackground,
     resolveButton,
     resolveLayout,
+    selectableIds,
     styleOf,
     styleUsage,
 } from "../mobileButtons/resolve";
 import {
     addLine,
+    addStyle,
+    assignStyle,
+    clearSlots,
+    deleteStyle,
     newStyleForButton,
+    overrideButtons,
     placeHidden,
     removeLine,
     restoreBackground,
     restoreButton,
+    restoreButtons,
     setBackground,
     setButton,
     setOwnLayout,
@@ -43,7 +50,7 @@ import {
     type Edge,
     type OpResult,
 } from "../mobileButtons/ops";
-import type { StoredMobileButton } from "../mobileButtons/model";
+import type { MobileButtonStyle, StoredMobileButton } from "../mobileButtons/model";
 
 import ButtonGrid from "./ButtonGrid";
 import MacroSelect from "./MacroSelect";
@@ -98,7 +105,14 @@ const MODE_NAMES: Record<ButtonMode, string> = { solo: 'Solo', team: 'Drużyna',
 /** "z Solo", "z Drużyny", "z Prowadzącego". */
 const MODE_FROM: Record<ButtonMode, string> = { solo: 'Solo', team: 'Drużyny', leader: 'Prowadzącego' };
 
-type Tool = 'edit' | 'layout';
+type Tool = 'edit' | 'select' | 'styles' | 'layout';
+
+const TOOL_HINTS: Record<Tool, string> = {
+    edit: 'Kliknij przycisk, aby go edytować · Ctrl+klik zaznacza kilka',
+    select: 'Klikaj przyciski, aby je zaznaczyć',
+    styles: 'Rozwiń styl i klikaj przyciski, aby go nadać',
+    layout: 'Kliknij dwa pola, aby je zamienić · +/− na krawędziach',
+};
 
 function plural(n: number, one: string, few: string, many: string) {
     if (n === 1) return one;
@@ -124,6 +138,10 @@ function MobileButtons({ registerSave }: { registerSave: (save: () => void) => v
     const [tool, setTool] = useState<Tool>('edit');
     const [selected, setSelected] = useState<string | null>(null);
     const [swapFrom, setSwapFrom] = useState<number | null>(null);
+    /** Zaznacz: ids picked in the current mode. */
+    const [multi, setMulti] = useState<string[]>([]);
+    /** Style tool: the expanded style, which clicks on the grid assign. */
+    const [openStyle, setOpenStyle] = useState<string | null>(null);
     const [styleEditorOpen, setStyleEditorOpen] = useState(false);
     const [notice, setNotice] = useState('');
     const noticeTimer = useRef<number | undefined>(undefined);
@@ -161,6 +179,8 @@ function MobileButtons({ registerSave }: { registerSave: (save: () => void) => v
 
     const data = modesOf(settings);
     const parent = PARENT_MODE[view];
+    const selectable = selectableIds(data, view);
+    const picked = multi.filter(id => selectable.includes(id));
 
     function commit(next: ButtonModes, message?: string) {
         setSettings(prev => withViews({ ...prev, modes: next.modes, styles: next.styles, styleOrder: next.styleOrder }));
@@ -175,9 +195,17 @@ function MobileButtons({ registerSave }: { registerSave: (save: () => void) => v
         commit(result.data, result.forked ? `Utworzono własny układ dla trybu ${MODE_NAMES[view]}` : undefined);
     }
 
+    function commitAssigned(result: ReturnType<typeof assignStyle>, styleId: string) {
+        if (!result.changed) return;
+        let message = `Styl „${result.data.styles[styleId].name}”: ${result.changed} ${plural(result.changed, 'przycisk', 'przyciski', 'przycisków')}`;
+        if (result.forked) message += ` · ${result.forked} ${plural(result.forked, 'nadpisany', 'nadpisane', 'nadpisanych')} w trybie ${MODE_NAMES[view]}`;
+        commit(result.data, message);
+    }
+
     function changeView(mode: ButtonMode) {
         setView(mode);
         setSwapFrom(null);
+        setMulti([]);
     }
 
     function changeTool(next: Tool) {
@@ -185,7 +213,22 @@ function MobileButtons({ registerSave }: { registerSave: (save: () => void) => v
         setSwapFrom(null);
     }
 
-    function onCellClick(id: string, index: number) {
+    function onCellClick(id: string, index: number, event: MouseEvent) {
+        if ((event.ctrlKey || event.metaKey || event.shiftKey) && tool !== 'layout') {
+            if (!selectable.includes(id)) return;
+            const base = tool === 'select' ? picked : selected && selectable.includes(selected) ? [selected] : [];
+            setMulti(base.includes(id) ? base.filter(x => x !== id) : [...base, id]);
+            setTool('select');
+            return;
+        }
+        if (tool === 'select') {
+            if (selectable.includes(id)) setMulti(picked.includes(id) ? picked.filter(x => x !== id) : [...picked, id]);
+            return;
+        }
+        if (tool === 'styles') {
+            if (openStyle && selectable.includes(id)) commitAssigned(assignStyle(data, view, [id], openStyle), openStyle);
+            return;
+        }
         if (tool === 'edit') {
             setSelected(prev => (prev === id ? null : id));
             setStyleEditorOpen(false);
@@ -238,6 +281,8 @@ function MobileButtons({ registerSave }: { registerSave: (save: () => void) => v
             inherited: view !== 'solo' && !!resolved && resolved.source !== view && resolved.button.macroType !== 'empty',
             own: isOwnButton(data, view, id),
             selected: tool === 'edit' && selected === id,
+            checked: tool === 'select' && picked.includes(id),
+            styleHit: tool === 'styles' && !!openStyle && !!resolved && selectable.includes(id) && styleOf(data, resolved.button) === data.styles[openStyle],
             swapSource: tool === 'layout' && swapFrom === index,
         };
     };
@@ -315,11 +360,19 @@ function MobileButtons({ registerSave }: { registerSave: (save: () => void) => v
                 </div>
 
                 <div className={`mobile-buttons-stage${editing ? ' is-editing' : ''}`}>
-                    <Segmented
-                        value={tool}
-                        onChange={changeTool}
-                        options={[{ value: 'edit', label: 'Edytuj' }, { value: 'layout', label: 'Układ' }]}
-                    />
+                    <div className="mobile-buttons-tools">
+                        <Segmented
+                            value={tool}
+                            onChange={changeTool}
+                            options={[
+                                { value: 'edit', label: 'Edytuj' },
+                                { value: 'select', label: 'Zaznacz' },
+                                { value: 'styles', label: 'Style' },
+                                { value: 'layout', label: 'Układ' },
+                            ]}
+                        />
+                        <span className="mobile-buttons-tools__hint">{TOOL_HINTS[tool]}</span>
+                    </div>
                     {tool === 'layout' ? (
                         <div className="mobile-buttons-grid-editor">
                             <div className="mobile-buttons-grid-editor__edge">{edge('+', 'top')}{edge('-', 'top')}</div>
@@ -337,8 +390,7 @@ function MobileButtons({ registerSave }: { registerSave: (save: () => void) => v
 
                 <div className="mobile-buttons-panel">
                     {notice && <div className="mobile-buttons-notice">{notice}</div>}
-                    {tool === 'edit'
-                        ? <EditPanel
+                    {tool === 'edit' && <EditPanel
                             data={data}
                             settings={settings}
                             view={view}
@@ -356,8 +408,55 @@ function MobileButtons({ registerSave }: { registerSave: (save: () => void) => v
                                 setStyleEditorOpen(true);
                             }}
                             onStyleChange={(styleId, patch) => commit(updateStyle(data, styleId, patch))}
-                        />
-                        : <LayoutPanel
+                        />}
+                    {tool === 'select' && <SelectPanel
+                        data={data}
+                        view={view}
+                        picked={picked}
+                        selectable={selectable}
+                        onPick={setMulti}
+                        onAssign={styleId => commitAssigned(assignStyle(data, view, picked, styleId), styleId)}
+                        onOverride={() => {
+                            const result = overrideButtons(data, view, picked);
+                            commit(result.data, result.forked
+                                ? `Nadpisano ${result.forked} ${plural(result.forked, 'przycisk', 'przyciski', 'przycisków')} w trybie ${MODE_NAMES[view]}`
+                                : 'Zaznaczone są już własne');
+                        }}
+                        onRestore={() => {
+                            const result = restoreButtons(data, view, picked);
+                            commit(result.data, result.restored
+                                ? `Przywrócono ${result.restored} ${plural(result.restored, 'przycisk', 'przyciski', 'przycisków')} z ${MODE_FROM[parent!]}`
+                                : 'Nic do przywrócenia');
+                        }}
+                        onClear={() => {
+                            commit(clearSlots(data, view, picked), `Opróżniono ${picked.length} ${plural(picked.length, 'pole', 'pola', 'pól')}`);
+                            setMulti([]);
+                        }}
+                    />}
+                    {tool === 'styles' && <StylesPanel
+                        data={data}
+                        view={view}
+                        openStyle={openStyle}
+                        onToggle={setOpenStyle}
+                        onStyleChange={(styleId, patch) => commit(updateStyle(data, styleId, patch))}
+                        onAdd={from => {
+                            const result = addStyle(data, from);
+                            commit(result.data, from
+                                ? `Skopiowano styl „${data.styles[from].name}”`
+                                : 'Dodano styl. Klikaj przyciski na podglądzie, aby go nadać');
+                            setOpenStyle(result.styleId);
+                        }}
+                        onDelete={styleId => {
+                            const next = deleteStyle(data, styleId);
+                            commit(next, `Usunięto styl „${data.styles[styleId].name}”, jego przyciski mają teraz „${next.styles[next.styleOrder[0]].name}”`);
+                            setOpenStyle(null);
+                        }}
+                        onSelectUsing={styleId => {
+                            setMulti(selectable.filter(id => styleOf(data, resolveButton(data, view, id)!.button) === data.styles[styleId]));
+                            changeTool('select');
+                        }}
+                    />}
+                    {tool === 'layout' && <LayoutPanel
                             data={data}
                             view={view}
                             ownLayout={ownLayout}
@@ -446,7 +545,30 @@ interface EditPanelProps {
     onRestore: (id: string) => void;
     onGoTo: (mode: ButtonMode) => void;
     onNewStyle: (id: string) => void;
-    onStyleChange: (styleId: string, patch: { name?: string; color?: string; fontColor?: string; activeColor?: string }) => void;
+    onStyleChange: (styleId: string, patch: Partial<MobileButtonStyle>) => void;
+}
+
+function ColorRow({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+    return (
+        <div className="mobile-button-color-row">
+            <span className="popup-field__label">{label}</span>
+            <ColorInput value={parseBackgroundColor(value).hex} onChange={onChange} />
+        </div>
+    );
+}
+
+/** Name and colours of one style, edited from a button and from the Style tool. */
+function StyleFields({ style, withActive, onChange }: { style: MobileButtonStyle; withActive: boolean; onChange: (patch: Partial<MobileButtonStyle>) => void }) {
+    return (
+        <>
+            <Field label="Nazwa stylu">
+                <Input value={style.name} onChange={e => onChange({ name: e.target.value })} />
+            </Field>
+            <ColorRow label="Tło" value={style.color} onChange={color => onChange({ color })} />
+            <ColorRow label="Tekst" value={style.fontColor} onChange={fontColor => onChange({ fontColor })} />
+            {withActive && <ColorRow label="Aktywny (kierunek dostępny)" value={style.activeColor} onChange={activeColor => onChange({ activeColor })} />}
+        </>
+    );
 }
 
 function EditPanel({
@@ -457,7 +579,7 @@ function EditPanel({
     if (!selected) {
         return (
             <div className="mobile-buttons-hint">
-                <p>Kliknij przycisk na podglądzie, aby go edytować. Puste pole to miejsce na nowy przycisk.</p>
+                <p>Kliknij przycisk na podglądzie, aby go edytować. Puste pole to miejsce na nowy przycisk. Ctrl+klik albo Shift+klik zaznacza kilka naraz.</p>
                 {view === 'solo'
                     ? <p><b>Solo to baza.</b> Drużyna dziedziczy z Solo, Prowadzący z Drużyny. Zmiana tutaj pojawia się wszędzie, gdzie przycisk nie jest nadpisany.</p>
                     : <>
@@ -481,13 +603,6 @@ function EditPanel({
     const usage = styleId ? styleUsage(data, view, styleId) : 0;
     const isDirection = button.macroType === 'kierunek' || button.macroType === 'specialExit';
     const asSetting = settings[view].buttons[selected];
-
-    const colorRow = (label: string, value: string, onValue: (v: string) => void) => (
-        <div className="mobile-button-color-row">
-            <span className="popup-field__label">{label}</span>
-            <ColorInput value={parseBackgroundColor(value).hex} onChange={onValue} />
-        </div>
-    );
 
     return (
         <div className="mobile-button-config">
@@ -575,12 +690,7 @@ function EditPanel({
                         </Button>
                         {styleEditorOpen && (
                             <div className="mobile-button-style-editor">
-                                <Field label="Nazwa stylu">
-                                    <Input value={style!.name} onChange={e => onStyleChange(styleId, { name: e.target.value })} />
-                                </Field>
-                                {colorRow('Tło', style!.color, v => onStyleChange(styleId, { color: v }))}
-                                {colorRow('Tekst', style!.fontColor, v => onStyleChange(styleId, { fontColor: v }))}
-                                {isDirection && colorRow('Aktywny (kierunek dostępny)', style!.activeColor, v => onStyleChange(styleId, { activeColor: v }))}
+                                <StyleFields style={style!} withActive={isDirection} onChange={patch => onStyleChange(styleId, patch)} />
                                 <p className={`mobile-button-style-usage${usage > 1 ? ' is-shared' : ''}`}>
                                     {usage > 1
                                         ? `Ten styl ma ${usage} ${plural(usage, 'przycisk', 'przyciski', 'przycisków')} w trybie ${MODE_NAMES[view]}, zmiana obejmie wszystkie. Żeby zmienić tylko ten, użyj „+ Nowy styl”.`
@@ -603,6 +713,137 @@ function EditPanel({
                     />
                 )}
             </div>
+        </div>
+    );
+}
+
+interface SelectPanelProps {
+    data: ButtonModes;
+    view: ButtonMode;
+    picked: string[];
+    selectable: string[];
+    onPick: (ids: string[]) => void;
+    onAssign: (styleId: string) => void;
+    onOverride: () => void;
+    onRestore: () => void;
+    onClear: () => void;
+}
+
+function SelectPanel({ data, view, picked, selectable, onPick, onAssign, onOverride, onRestore, onClear }: SelectPanelProps) {
+    const parent = PARENT_MODE[view];
+    const count = picked.length;
+    const buttonOf = (id: string) => resolveButton(data, view, id)!.button;
+    const directions = selectable.filter(id => ['kierunek', 'specialExit'].includes(buttonOf(id).macroType));
+    const usingStyle = (styleId: string) => selectable.filter(id => styleOf(data, buttonOf(id)) === data.styles[styleId]);
+    const swatch = (styleId: string) => <span className="mobile-button-style__swatch" style={{ backgroundColor: data.styles[styleId].color }} />;
+
+    return (
+        <div className="mobile-buttons-select-panel">
+            <div className="mobile-buttons-select-panel__header">
+                <b>{count ? `Zaznaczono ${count}` : 'Nic nie zaznaczono'}</b>
+                <Button size="sm" variant="ghost" disabled={!count} onClick={() => onPick([])}>Odznacz</Button>
+            </div>
+            {count > 0 && (
+                <>
+                    <div className="mobile-button-config-section">
+                        <div className="mobile-button-config-section-title">Nadaj styl</div>
+                        <div className="mobile-button-styles">
+                            {data.styleOrder.map(id => (
+                                <button key={id} type="button" className="popup-chip mobile-button-style" onClick={() => onAssign(id)}>
+                                    {swatch(id)}
+                                    {data.styles[id].name}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                    <div className="popup-inline settings-wrap">
+                        {parent && <Button size="sm" onClick={onOverride}>Nadpisz tutaj</Button>}
+                        {parent && <Button size="sm" onClick={onRestore}>Przywróć dziedziczone</Button>}
+                        <Button size="sm" onClick={onClear}>Opróżnij pola</Button>
+                    </div>
+                    {parent && (
+                        <p className="mobile-buttons-note">
+                            Zmiana stylu dziedziczonych przycisków nadpisze je tylko w trybie {MODE_NAMES[view]}. Żeby zmienić wszędzie, zrób to w Solo.
+                        </p>
+                    )}
+                </>
+            )}
+            <div className="mobile-button-config-section">
+                <div className="mobile-button-config-section-title">Zaznacz szybko</div>
+                <div className="mobile-button-styles">
+                    <button type="button" className="popup-chip mobile-button-style" onClick={() => onPick(selectable)}>Wszystkie</button>
+                    {directions.length > 0 && (
+                        <button type="button" className="popup-chip mobile-button-style" onClick={() => onPick(directions)}>Wszystkie kierunki</button>
+                    )}
+                    {data.styleOrder.filter(id => usingStyle(id).length > 0).map(id => (
+                        <button key={id} type="button" className="popup-chip mobile-button-style" onClick={() => onPick(usingStyle(id))}>
+                            {swatch(id)}
+                            {data.styles[id].name}
+                        </button>
+                    ))}
+                </div>
+            </div>
+            {!count && (
+                <p className="mobile-buttons-note">
+                    Klikaj przyciski na podglądzie albo wybierz grupę powyżej. Ctrl+klik zaznacza też z innych narzędzi.
+                </p>
+            )}
+        </div>
+    );
+}
+
+interface StylesPanelProps {
+    data: ButtonModes;
+    view: ButtonMode;
+    openStyle: string | null;
+    onToggle: (styleId: string | null) => void;
+    onStyleChange: (styleId: string, patch: Partial<MobileButtonStyle>) => void;
+    onAdd: (from?: string) => void;
+    onDelete: (styleId: string) => void;
+    onSelectUsing: (styleId: string) => void;
+}
+
+function StylesPanel({ data, view, openStyle, onToggle, onStyleChange, onAdd, onDelete, onSelectUsing }: StylesPanelProps) {
+    return (
+        <div className="mobile-buttons-styles-panel">
+            <p className="mobile-buttons-note">
+                Style są wspólne dla wszystkich trybów. Zmiana koloru stylu zmienia każdy przycisk, który go używa.
+            </p>
+            {data.styleOrder.map(id => {
+                const style = data.styles[id];
+                const open = openStyle === id;
+                const count = styleUsage(data, view, id);
+                const heir = data.styleOrder.find(other => other !== id);
+                return (
+                    <div key={id} className={`mobile-buttons-style-card${open ? ' is-open' : ''}`} data-style-id={id}>
+                        <button type="button" className="mobile-buttons-style-card__head" onClick={() => onToggle(open ? null : id)}>
+                            <span className="mobile-buttons-style-card__sample" style={{ backgroundColor: style.color, color: style.fontColor }}>Aa</span>
+                            <span className="mobile-buttons-style-card__text">
+                                <b>{style.name}</b>
+                                <span>{count} {plural(count, 'przycisk', 'przyciski', 'przycisków')} w trybie {MODE_NAMES[view]}</span>
+                            </span>
+                            <span className="mobile-buttons-style-card__chevron">{open ? '−' : '+'}</span>
+                        </button>
+                        {open && (
+                            <div className="mobile-buttons-style-card__body">
+                                <StyleFields style={style} withActive onChange={patch => onStyleChange(id, patch)} />
+                                <p className="mobile-buttons-note">Kliknij przycisk na podglądzie, aby nadać mu ten styl.</p>
+                                <div className="popup-inline settings-wrap">
+                                    <Button size="sm" disabled={!count} onClick={() => onSelectUsing(id)}>Zaznacz przyciski w tym stylu</Button>
+                                    <Button size="sm" onClick={() => onAdd(id)}>Kopiuj styl</Button>
+                                    {heir && (
+                                        <DeleteButton
+                                            title={`Usuń styl (jego przyciski dostaną „${data.styles[heir].name}”)`}
+                                            onClick={() => onDelete(id)}
+                                        />
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                );
+            })}
+            <Button size="sm" className="mobile-buttons-style-new" onClick={() => onAdd()}>+ Nowy styl</Button>
         </div>
     );
 }

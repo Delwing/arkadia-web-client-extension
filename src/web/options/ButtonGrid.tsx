@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import type { CSSProperties, MouseEvent } from "react";
 import { computeBoxShadow, type LayoutSettings } from "../mobileButtonSettings";
 import { defaultFontColor } from "../buttonSettings";
 
@@ -8,6 +8,10 @@ export interface CellState {
     /** Marked: stored in this mode (an override or a slot of its own). */
     own: boolean;
     selected: boolean;
+    /** Picked in Zaznacz. */
+    checked: boolean;
+    /** Uses the style open in the Style tool. */
+    styleHit: boolean;
     swapSource: boolean;
 }
 
@@ -17,7 +21,7 @@ interface Props {
     buttonSize: number;
     buttonGap: number;
     cellState: (id: string, index: number) => CellState;
-    onCellClick: (id: string, index: number) => void;
+    onCellClick: (id: string, index: number, event: MouseEvent) => void;
 }
 
 /** The editor's preview of one mode, at the real button size. */
@@ -43,6 +47,8 @@ export default function ButtonGrid({ id, layout, buttonSize, buttonGap, cellStat
                     isText ? 'mobile-button-text' : 'direction-button',
                     isEmpty && 'empty',
                     state.selected && 'editing',
+                    state.checked && 'checked',
+                    state.styleHit && 'style-hit',
                     state.inherited && 'inherited',
                     state.own && 'own',
                     state.swapSource && 'swap-source',
@@ -68,7 +74,7 @@ export default function ButtonGrid({ id, layout, buttonSize, buttonGap, cellStat
                         className={classes}
                         style={style}
                         title={isEmpty ? 'Puste pole' : undefined}
-                        onClick={() => onCellClick(buttonId, index)}
+                        onClick={event => onCellClick(buttonId, index, event)}
                     >
                         {isEmpty ? '' : cfg.label}
                     </button>

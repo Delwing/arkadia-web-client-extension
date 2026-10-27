@@ -1697,6 +1697,114 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
   outline: 2px dashed var(--popup-accent);
   outline-offset: 2px;
 }
+/* Zaznacz: picked cells at full strength with a tick; Style: cells on the open style. */
+.mobile-direction-buttons.preview .mobile-button.checked {
+  opacity: 1;
+  outline: 2px solid var(--popup-text);
+  outline-offset: 2px;
+}
+.mobile-direction-buttons.preview .mobile-button.checked::before {
+  content: '✓';
+  position: absolute;
+  top: -6px;
+  left: -6px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background-color: var(--popup-accent);
+  box-shadow: 0 0 0 2px var(--popup-bg);
+  color: var(--popup-bg);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+}
+.mobile-direction-buttons.preview .mobile-button.style-hit {
+  outline: 2px solid color-mix(in srgb, var(--popup-text) 55%, transparent);
+  outline-offset: 2px;
+}
+
+.mobile-buttons-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px 14px;
+}
+.mobile-buttons-tools__hint {
+  color: var(--popup-text-dim);
+  font-size: var(--ui-fs-sm, 13px);
+}
+@media (max-width: 899px) {
+  .mobile-buttons-tools__hint { display: none; }
+}
+
+.mobile-buttons-select-panel,
+.mobile-buttons-styles-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.mobile-buttons-select-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+/* Style tool: one card per style, expanded to edit it. */
+.mobile-buttons-style-card {
+  border: 1px solid var(--popup-border-subtle);
+  border-radius: var(--ui-radius-lg, 10px);
+}
+.mobile-buttons-style-card.is-open {
+  border-color: color-mix(in srgb, var(--popup-accent) 60%, transparent);
+}
+.mobile-buttons-style-card__head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 52px;
+  padding: 6px 12px;
+  border: 0;
+  background: transparent;
+  color: var(--popup-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.mobile-buttons-style-card__sample {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  font-weight: 600;
+}
+.mobile-buttons-style-card__text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+.mobile-buttons-style-card__text > span,
+.mobile-buttons-style-card__chevron {
+  color: var(--popup-text-dim);
+  font-size: var(--ui-fs-sm, 13px);
+}
+.mobile-buttons-style-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 12px 12px;
+}
+.mobile-buttons-style-new {
+  align-self: flex-start;
+  border-style: dashed;
+}
 
 /* Where the selected button comes from. */
 .mobile-button-origin {

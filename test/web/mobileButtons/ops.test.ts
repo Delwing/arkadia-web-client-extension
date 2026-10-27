@@ -2,18 +2,24 @@ import { describe, expect, it } from 'vitest';
 import { modesFromLayouts } from '@web/mobileButtons/migrateV1.ts';
 import {
     addLine,
+    addStyle,
+    assignStyle,
+    clearSlots,
+    deleteStyle,
     newButtonIds,
     newStyleForButton,
+    overrideButtons,
     placeHidden,
     removeLine,
     restoreBackground,
     restoreButton,
+    restoreButtons,
     setBackground,
     setButton,
     setOwnLayout,
     swapSlots,
 } from '@web/mobileButtons/ops.ts';
-import { hiddenIds, isOwnButton, ownCount, resolveButton, resolveLayout, resolveMode, styleUsage } from '@web/mobileButtons/resolve.ts';
+import { hiddenIds, isOwnButton, ownCount, resolveButton, resolveLayout, resolveMode, selectableIds, styleUsage } from '@web/mobileButtons/resolve.ts';
 import { createDefaultLayout } from '@web/mobileButtonSettings.ts';
 
 function stock() {
@@ -140,6 +146,81 @@ describe('mobile button ops', () => {
         expect(result.data.styles[result.styleId]).toMatchObject({ name: 'Styl: wesprzyj', color: data.styles[before].color });
         expect(styleUsage(result.data, 'team', result.styleId)).toBe(1);
         expect(styleUsage(result.data, 'solo', result.styleId)).toBe(0);
+    });
+
+    it('assigns a style to several buttons, forking only the inherited ones', () => {
+        const data = setButton(stock(), 'team', 'n-button', { label: 'N' }).data;
+        const target = data.styleOrder[0];
+
+        const result = assignStyle(data, 'team', ['n-button', 's-button', 'button-1'], target);
+
+        expect(result.changed).toBe(2);
+        expect(result.forked).toBe(1);
+        expect(result.data.modes.team.buttons['n-button']).toMatchObject({ label: 'N', style: target });
+        expect(result.data.modes.team.buttons['s-button'].style).toBe(target);
+        expect(result.data.modes.team.buttons['button-1']).toBeUndefined();
+        expect(result.data.modes.solo.buttons['s-button'].style).not.toBe(target);
+    });
+
+    it('leaves the data alone when no button changes style', () => {
+        const data = stock();
+        const own = data.modes.solo.buttons['button-1'].style!;
+        const result = assignStyle(data, 'solo', ['button-1'], own);
+        expect(result).toEqual({ data, changed: 0, forked: 0 });
+        expect(assignStyle(data, 'solo', ['button-1'], 'missing').changed).toBe(0);
+    });
+
+    it('overrides and restores several buttons at once', () => {
+        const data = stock();
+
+        const overridden = overrideButtons(data, 'leader', ['n-button', 's-button']);
+        expect(overridden.forked).toBe(2);
+        expect(ownCount(overridden.data, 'leader')).toBe(2);
+        expect(overrideButtons(overridden.data, 'leader', ['n-button']).forked).toBe(0);
+        expect(overrideButtons(data, 'solo', ['n-button']).data).toBe(data);
+
+        const restored = restoreButtons(overridden.data, 'leader', ['n-button', 's-button', 'e-button']);
+        expect(restored.restored).toBe(2);
+        expect(restored.data.modes.leader.buttons).toEqual({});
+    });
+
+    it('clears slots as empty overrides in the mode', () => {
+        const data = clearSlots(stock(), 'team', ['button-1', 'button-2']);
+        expect(data.modes.team.buttons['button-1']).toEqual({ macroType: 'empty', label: '' });
+        expect(resolveMode(data, 'leader').buttons['button-2'].macroType).toBe('empty');
+        expect(resolveMode(data, 'solo').buttons['button-2'].macroType).not.toBe('empty');
+        expect(selectableIds(data, 'team')).not.toContain('button-1');
+    });
+
+    it('adds a fresh style or a copy at the end of the palette', () => {
+        const data = stock();
+        const fresh = addStyle(data);
+        expect(fresh.data.styleOrder.at(-1)).toBe(fresh.styleId);
+        expect(fresh.data.styles[fresh.styleId].name).toBe(`Styl ${data.styleOrder.length + 1}`);
+
+        const source = data.styleOrder[0];
+        const copy = addStyle(fresh.data, source);
+        expect(copy.styleId).not.toBe(fresh.styleId);
+        expect(copy.data.styles[copy.styleId]).toEqual({ ...data.styles[source], name: `${data.styles[source].name} (kopia)` });
+        expect(addStyle(copy.data, source).data.styles[`style-${Number(copy.styleId.slice(6)) + 1}`].name).toBe(`${data.styles[source].name} (kopia 2)`);
+    });
+
+    it('moves the buttons of a deleted style to the first remaining one, in every mode', () => {
+        const [first, second] = stock().styleOrder;
+        const data = assignStyle(stock(), 'team', ['button-1'], second).data;
+
+        const next = deleteStyle(data, second);
+
+        expect(next.styleOrder).not.toContain(second);
+        expect(next.styles[second]).toBeUndefined();
+        expect(next.modes.team.buttons['button-1'].style).toBe(first);
+        expect(next.modes.solo.buttons['n-button'].style).toBe(first);
+    });
+
+    it('never deletes the last style', () => {
+        let data = stock();
+        while (data.styleOrder.length > 1) data = deleteStyle(data, data.styleOrder[0]);
+        expect(deleteStyle(data, data.styleOrder[0])).toBe(data);
     });
 
     it('makes new button ids unique across all modes', () => {
