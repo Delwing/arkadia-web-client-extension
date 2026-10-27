@@ -622,6 +622,51 @@ function notifyPanelSetting(scope: SettingScope, id: string, key: string, value:
   });
 }
 
+// ─── Settings changed in another tab ──────────────────────────────────────
+
+/**
+ * Another tab or window of the client saved the layout. Each tab keeps its own
+ * copy in the WindowManager and writes all of it on every save, so without
+ * this the next save here would put this tab's old window settings back over
+ * whatever was just changed there - and the other tab would do the same to
+ * ours. Only the windows' settings are taken over: where windows sit stays
+ * per tab. A setting the other tab does not have is left alone.
+ */
+export function adoptSettingsFromOtherTab(raw: string | null): void {
+  if (!raw) return;
+  let stored: Partial<LayoutState>;
+  try {
+    stored = JSON.parse(raw) as Partial<LayoutState>;
+  } catch {
+    return;
+  }
+  resetLayoutCache();
+
+  const live = windowManager.serialize();
+  const scopes: [SettingScope, Record<string, { settings?: Record<string, unknown> }> | undefined,
+    Record<string, { settings?: Record<string, unknown> }>, (id: string, key: string, value: unknown) => void][] = [
+    ['popup', stored.popupPanels, live.popupPanels, (id, key, value) => windowManager.syncPopupSetting(id, key, value)],
+    ['builtIn', stored.builtInPanels, live.builtInPanels, (id, key, value) => windowManager.syncBuiltInPanelSetting(id, key, value)],
+  ];
+  for (const [scope, theirs, ours, sync] of scopes) {
+    for (const [id, panel] of Object.entries(theirs ?? {})) {
+      const mine = ours[id]?.settings ?? {};
+      for (const [key, value] of Object.entries(panel?.settings ?? {})) {
+        if (key in mine && JSON.stringify(mine[key]) === JSON.stringify(value)) continue;
+        sync(id, key, value);
+        notifyPanelSetting(scope, id, key, value);
+      }
+    }
+  }
+}
+
+if (typeof window !== 'undefined') {
+  // Fires only for writes from other tabs, never for this tab's own saves.
+  window.addEventListener('storage', (event) => {
+    if (event.key === 'layoutManagerState') adoptSettingsFromOtherTab(event.newValue);
+  });
+}
+
 export function getPopupSetting<T>(popupId: string, key: string, defaultValue: T): T {
   try {
     const settings = getCachedLayoutState().popupPanels[popupId]?.settings;

@@ -16,6 +16,7 @@ import {
   invalidateLayoutCache,
   setLayoutOverrides,
   isLayoutModeForced,
+  subscribeToPanelSetting,
 } from '@web/layout/utils/layoutStorage';
 
 describe('built-in panel settings persistence', () => {
@@ -113,6 +114,58 @@ describe('popup settings persistence', () => {
     // Reload as if the page was refreshed.
     invalidateLayoutCache();
     expect(getPopupSetting('popup:chat', 'showTeamOnly', false)).toBe(true);
+  });
+});
+
+describe('settings changed in another tab', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    invalidateLayoutCache();
+    windowManager.loadState(loadLayoutState());
+  });
+
+  // What another tab writes: its whole layout, with its own copy of the settings.
+  const otherTabSaves = (popupSettings: Record<string, unknown>) => {
+    const state = loadPersistedLayoutState();
+    state.popupPanels['popup:discord'] = { isDocked: true, settings: popupSettings };
+    const raw = JSON.stringify(state);
+    localStorage.setItem('layoutManagerState', raw);
+    window.dispatchEvent(new StorageEvent('storage', { key: 'layoutManagerState', newValue: raw }));
+  };
+
+  it('takes over a setting changed there, so this tab does not save its old value back', () => {
+    setPopupSetting('popup:discord', 'hiddenChannels', []);
+    const heard: unknown[] = [];
+    const off = subscribeToPanelSetting('popup', 'popup:discord', 'hiddenChannels', (v) => heard.push(v));
+
+    otherTabSaves({ hiddenChannels: ['magiki'] });
+    saveLayoutState(windowManager.serialize());
+
+    invalidateLayoutCache();
+    expect(getPopupSetting('popup:discord', 'hiddenChannels', [])).toEqual(['magiki']);
+    expect(heard).toEqual([['magiki']]);
+    off();
+  });
+
+  it('keeps a setting the other tab does not know about', () => {
+    setPopupSetting('popup:discord', 'channel:42', true);
+
+    otherTabSaves({ hiddenChannels: [] });
+    saveLayoutState(windowManager.serialize());
+
+    invalidateLayoutCache();
+    expect(getPopupSetting('popup:discord', 'channel:42', false)).toBe(true);
+  });
+
+  it('does not notify settings that did not change', () => {
+    setPopupSetting('popup:discord', 'hiddenChannels', ['magiki']);
+    const listener = vi.fn();
+    const off = subscribeToPanelSetting('popup', 'popup:discord', 'hiddenChannels', listener);
+
+    otherTabSaves({ hiddenChannels: ['magiki'] });
+
+    expect(listener).not.toHaveBeenCalled();
+    off();
   });
 });
 
