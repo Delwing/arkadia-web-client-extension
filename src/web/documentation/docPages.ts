@@ -6,6 +6,7 @@ import trackingMd from "../../../docs/TRACKING.md?raw";
 import herbsMd from "../../../docs/HERBS.md?raw";
 import bindsMd from "../../../docs/BINDS.md?raw";
 import shortcutsMd from "../../../docs/SHORTCUTS.md?raw";
+import przyciskiMd from "../../../docs/PRZYCISKI_MOBILNE.md?raw";
 import aliasesMd from "../../../docs/ALIASES.md?raw";
 import synchronizacjaMd from "../../../docs/SYNCHRONIZACJA.md?raw";
 import skryptyMd from "../../../docs/SKRYPTY.md?raw";
@@ -56,6 +57,7 @@ export const DOC_PAGES: DocPageDef[] = [
   { key: "herbs", title: "Zioła", group: "Gra", md: herbsMd },
   { key: "binds", title: "Bindowanie", group: "Klient", md: bindsMd },
   { key: "shortcuts", title: "Skróty lokacji", group: "Klient", md: shortcutsMd },
+  { key: "przyciski", title: "Przyciski mobilne", group: "Klient", md: withImages(przyciskiMd) },
   { key: "automatyzacje", title: "Skrypty", group: "Klient", md: withImages(automatyzacjeMd) },
   { key: "skrypty", title: "Wtyczki", group: "Klient", md: skryptyMd },
   { key: "polaczenie", title: "Połączenie", group: "Klient", md: withImages(polaczenieMd) },

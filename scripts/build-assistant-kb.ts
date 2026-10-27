@@ -1301,6 +1301,7 @@ const USER_DOCS = [
     'docs/TRACKING.md',
     'docs/BINDS.md',
     'docs/SHORTCUTS.md',
+    'docs/PRZYCISKI_MOBILNE.md',
     'docs/ALIASES.md',
     'docs/AUTOMATYZACJE.md',
     'docs/SKRYPTY.md',

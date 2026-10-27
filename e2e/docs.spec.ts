@@ -111,6 +111,20 @@ test.describe('Dokumentacja', () => {
         await expect(win.locator('.doc-crumb')).toHaveText('Klient / Dane');
         await page.screenshot({ path: 'test-results/docs-dane.png' });
     });
+
+    test('Przyciski mobilne explains the modes with an inline diagram', async ({ page }) => {
+        await openDocs(page);
+        const win = docsWindow(page);
+        await win.locator('.doc-nav__page', { hasText: 'Przyciski mobilne' }).click();
+        await expect(win.locator('.doc-crumb')).toHaveText('Klient / Przyciski mobilne');
+        await expect(win.locator('.doc-nav__sub button', { hasText: 'Edytor' })).toBeVisible();
+        const diagram = win.locator('figure.doc-diagram');
+        await expect(diagram).toHaveCount(1);
+        await expect(diagram.locator('svg text', { hasText: 'Prowadzący' })).toBeVisible();
+        await page.screenshot({ path: 'test-results/docs-przyciski.png' });
+        await win.locator('.doc-nav__sub button', { hasText: 'Akcje przycisków' }).click();
+        await page.screenshot({ path: 'test-results/docs-przyciski-akcje.png' });
+    });
 });
 
 test.describe('Dokumentacja on a phone', () => {

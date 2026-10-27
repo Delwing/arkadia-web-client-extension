@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 150" class="doc-dg" font-family="inherit">
+  <defs><marker id="dg-arr-mb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" class="dg-head"/></marker></defs>
+  <rect x="8" y="30" width="140" height="64" rx="8" class="dg-box dg-hi"/>
+  <text x="78" y="57" text-anchor="middle" class="dg-t">Solo</text>
+  <text x="78" y="77" text-anchor="middle" class="dg-s">baza: wszystkie przyciski</text>
+  <rect x="190" y="30" width="140" height="64" rx="8" class="dg-box"/>
+  <text x="260" y="57" text-anchor="middle" class="dg-t">Drużyna</text>
+  <text x="260" y="77" text-anchor="middle" class="dg-s">tylko własne zmiany</text>
+  <rect x="372" y="30" width="140" height="64" rx="8" class="dg-box"/>
+  <text x="442" y="57" text-anchor="middle" class="dg-t">Prowadzący</text>
+  <text x="442" y="77" text-anchor="middle" class="dg-s">tylko własne zmiany</text>
+  <line x1="186" y1="62" x2="153" y2="62" class="dg-line" marker-end="url(#dg-arr-mb)"/>
+  <line x1="368" y1="62" x2="335" y2="62" class="dg-line" marker-end="url(#dg-arr-mb)"/>
+  <text x="169" y="20" text-anchor="middle" class="dg-s">dziedziczy z</text>
+  <text x="351" y="20" text-anchor="middle" class="dg-s">dziedziczy z</text>
+  <text x="260" y="128" text-anchor="middle" class="dg-s">Zmiana w Solo pojawia się wszędzie, gdzie przycisk nie jest nadpisany.</text>
+</svg>
