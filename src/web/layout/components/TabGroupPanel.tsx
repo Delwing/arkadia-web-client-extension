@@ -195,7 +195,7 @@ function useTabBarLayout(
   useLayoutEffect(() => {
     const bar = barRef.current;
     if (!bar) return;
-    return observeHeader([bar, ...Array.from(bar.children)], () => measureRef.current());
+    return observeHeader([bar, ...Array.from(bar.children)], () => measureRef.current(), bar);
   });
 
   return layout;

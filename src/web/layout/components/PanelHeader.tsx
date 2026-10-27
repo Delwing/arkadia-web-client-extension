@@ -198,7 +198,7 @@ function useStackedHeader(
     const header = headerRef.current;
     if (!header) return;
     const watched = actionsRef.current ? [header, actionsRef.current] : [header];
-    return observeHeader(watched, () => measureRef.current());
+    return observeHeader(watched, () => measureRef.current(), header);
   }, [headerRef, actionsRef, enabled]);
 
   return stacked;

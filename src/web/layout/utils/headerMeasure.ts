@@ -34,10 +34,20 @@ function onResize(entries: ResizeObserverEntry[]) {
 }
 
 /** Measures again whenever one of the elements resizes, in one batch with
- *  every other header resized in the same frame. Returns the unsubscribe. */
-export function observeHeader(elements: Element[], measure: MeasureFactory): () => void {
+ *  every other header resized in the same frame, or whatever `contents` holds
+ *  changes. Returns the unsubscribe. */
+export function observeHeader(
+  elements: Element[],
+  measure: MeasureFactory,
+  contents?: Element | null
+): () => void {
   if (typeof ResizeObserver === 'undefined') return () => {};
   observer ??= new ResizeObserver(onResize);
+  // A row of actions stacked under the title spans the header whatever it
+  // holds, so a popup swapping its actions (switching tabs, say) resizes
+  // nothing observed. Measuring only toggles classes, which this ignores.
+  const mutations = contents ? new MutationObserver(() => runMeasures([measure()])) : null;
+  mutations?.observe(contents!, { childList: true, subtree: true, characterData: true });
   for (const el of elements) {
     let set = watchers.get(el);
     if (!set) {
@@ -48,6 +58,7 @@ export function observeHeader(elements: Element[], measure: MeasureFactory): () 
     set.add(measure);
   }
   return () => {
+    mutations?.disconnect();
     for (const el of elements) {
       const set = watchers.get(el);
       if (!set) continue;
