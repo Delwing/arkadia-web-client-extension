@@ -25,7 +25,7 @@ export interface ScrollbackOptions {
     renderSplit?: (lines: number) => Node[];
     /** Called when the split view opens (true) or closes (false). */
     onSplitViewChange?: (open: boolean) => void;
-    /** Slack in px when deciding "at the bottom" (default 50). */
+    /** Slack in px when deciding "at the bottom" (default 1: only the real bottom). */
     bottomThreshold?: number;
 }
 
@@ -103,7 +103,12 @@ export function attachScrollback(scrollEl: HTMLElement, options: ScrollbackOptio
 
     const controller = createSplitViewController({
         scrollEl,
-        bottomThreshold: options.bottomThreshold ?? 50,
+        // Only the real bottom closes the pane. There it covers exactly the same
+        // lines it shows, so closing changes nothing on screen. Closing it
+        // earlier meant jumping the rest of the way while a smooth scroll was
+        // still running, and Chrome drew a frame or two of shifted, doubled
+        // lines - left on screen until the mouse passing over them redrew them.
+        bottomThreshold: options.bottomThreshold ?? 1,
         // The pane lies over the content rather than adding below it (see
         // applyHeight), so only the real bottom counts as "at the bottom"
         getSplitHeight: () => 0,
@@ -118,7 +123,6 @@ export function attachScrollback(scrollEl: HTMLElement, options: ScrollbackOptio
         onClose: () => {
             pane.remove();
             options.onSplitViewChange?.(false);
-            controller.pinToBottom(true);
         },
         onHandleDrag: (heightPx) => {
             splitHeight = heightPx;
@@ -160,8 +164,8 @@ export function attachScrollback(scrollEl: HTMLElement, options: ScrollbackOptio
             applyHeight();
         },
         scrollToBottom: () => {
-            if (controller.isSplitView()) controller.close();
-            else controller.pinToBottom(true);
+            controller.close();
+            controller.pinToBottom(true);
         },
         remove: () => {
             observer.disconnect();

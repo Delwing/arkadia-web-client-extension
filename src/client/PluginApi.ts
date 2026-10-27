@@ -1727,7 +1727,7 @@ export interface PluginScrollbackOptions {
   renderSplit?: (lines: number) => Node[];
   /** Called when the split view opens (true) or closes (false). */
   onSplitViewChange?: (open: boolean) => void;
-  /** How close to the bottom, in px, still counts as "at the bottom" (default 50). */
+  /** How close to the bottom, in px, still counts as "at the bottom" (default 1: only the real bottom closes the split view). */
   bottomThreshold?: number;
 }
 

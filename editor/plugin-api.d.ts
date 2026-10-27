@@ -1580,8 +1580,7 @@ interface UiApi {
    * @example
    * ```typescript
    * // React component with state
-   * import { useState, useEffect } from 'react';
-   *
+   *    *
    * const MyTimer: React.FC = () => {
    *   const [seconds, setSeconds] = useState(0);
    *
@@ -1603,9 +1602,7 @@ interface UiApi {
    * @example
    * ```typescript
    * // React component using client events (like built-in OrderTimer)
-   * import { useState } from 'react';
-   * import { useClientEvent } from '@web/hooks';
-   *
+   *    *    *
    * const AttackStatus: React.FC = () => {
    *   const [isAttacking, setIsAttacking] = useState(false);
    *
@@ -1733,7 +1730,7 @@ interface PluginScrollbackOptions {
   renderSplit?: (lines: number) => Node[];
   /** Called when the split view opens (true) or closes (false). */
   onSplitViewChange?: (open: boolean) => void;
-  /** How close to the bottom, in px, still counts as "at the bottom" (default 50). */
+  /** How close to the bottom, in px, still counts as "at the bottom" (default 1: only the real bottom closes the split view). */
   bottomThreshold?: number;
 }
 
@@ -2907,8 +2904,7 @@ interface HerbBagInspection {
  *
  * Types are available for import:
  * ```typescript
- * import type { ObjectListEntryFilter, EntryContext, FilterResult } from "@web/objectListFilters";
- * ```
+ *  * ```
  */
 interface ObjectListFiltersApi {
   /**
