@@ -25,6 +25,7 @@ describe('PeopleBrowserService local-only filter', () => {
             person('Ally', { isAlly: true }),
             person('Coloured', { color: '#ff0000' }),
             person('Noted', { note: 'handluje ziolami' }),
+            person('Located', { location: 1203 }),
         ]);
 
         const result = service.query({
@@ -37,7 +38,46 @@ describe('PeopleBrowserService local-only filter', () => {
         });
 
         expect(result.items.map(p => p.name).sort()).toEqual(
-            ['Added', 'Ally', 'Coloured', 'Edited', 'Enemy', 'Ignored', 'Noted'],
+            ['Added', 'Ally', 'Coloured', 'Edited', 'Enemy', 'Ignored', 'Located', 'Noted'],
         );
+    });
+});
+
+const query = (searchTerm: string) => ({
+    searchTerm,
+    guildFilter: '',
+    statusFilter: '' as const,
+    localOnly: false,
+    pageSize: 20 as const,
+    page: 0,
+});
+
+describe('PeopleBrowserService location search', () => {
+    it('finds people by the name or number of their room', () => {
+        const service = new PeopleBrowserService();
+        service.setData([
+            person('Borgaf', { location: 4 }),
+            person('Hilda', { location: 2871 }),
+            person('Nowhere'),
+        ]);
+        service.setLocationResolver(id => ({ 4: 'Poczta', 2871: 'Sklep zielarski' } as Record<number, string>)[id]);
+
+        expect(service.query(query('poczta')).items.map(p => p.name)).toEqual(['Borgaf']);
+        expect(service.query(query('#2871')).items.map(p => p.name)).toEqual(['Hilda']);
+        expect(service.query(query('2871')).items.map(p => p.name)).toEqual(['Hilda']);
+    });
+});
+
+describe('PeopleBrowserService status counts', () => {
+    it('counts every entry, enemies and allies regardless of filters', () => {
+        const service = new PeopleBrowserService();
+        service.setData([
+            person('A', { isEnemy: true }),
+            person('B', { isAlly: true }),
+            person('C', { isAlly: true }),
+            person('D'),
+        ]);
+
+        expect(service.getStatusCounts()).toEqual({ all: 4, enemy: 1, ally: 2 });
     });
 });

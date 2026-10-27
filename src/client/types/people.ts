@@ -5,7 +5,7 @@ export interface PersonEntry {
 }
 
 // Local edit event types
-export type PersonEditEventType = 'add' | 'replace' | 'ignore' | 'mark-enemy' | 'mark-ally' | 'set-color' | 'set-note';
+export type PersonEditEventType = 'add' | 'replace' | 'ignore' | 'mark-enemy' | 'mark-ally' | 'set-color' | 'set-note' | 'set-location';
 
 export interface PersonEditEvent {
     id: string;
@@ -16,6 +16,7 @@ export interface PersonEditEvent {
     color?: string; // For 'set-color': hex color value (e.g., '#ff0000')
     note?: string; // For 'set-note': free-text note about the person
     showNoteOnMeet?: boolean; // For 'set-note': print the note under the room's living line
+    location?: number; // For 'set-location': map room id where the person (usually an NPC) can be found
 }
 
 export interface PeopleLocalEventsSnapshot {
@@ -32,6 +33,7 @@ export interface PersonListEntry extends PersonEntry {
     color?: string; // Individual color override (hex value)
     note?: string;
     showNoteOnMeet?: boolean;
+    location?: number; // Map room id
     originalEntry?: PersonEntry;
     eventId?: string;
 }
