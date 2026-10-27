@@ -28,3 +28,4 @@ coverage/
 
 # Visual brainstorm sessions
 .superpowers/
+perf-results/

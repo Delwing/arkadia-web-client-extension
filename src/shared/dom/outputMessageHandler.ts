@@ -59,6 +59,13 @@ let messageTypesVisible = false;
 let currentOutputWrapper: HTMLElement | null = null;
 let currentStickyArea: HTMLElement | null = null;
 
+// Same fields as Date#toLocaleString(), but built once: toLocaleString creates a new
+// formatter per call, and this runs for every output line.
+const TIMESTAMP_TITLE_FORMAT = new Intl.DateTimeFormat(undefined, {
+    year: 'numeric', month: 'numeric', day: 'numeric',
+    hour: 'numeric', minute: 'numeric', second: 'numeric',
+});
+
 function formatTimestamp(timestamp: number): string {
     const date = new Date(timestamp);
     const hours = date.getHours().toString().padStart(2, '0');
@@ -95,7 +102,7 @@ export function createTimestampElement(timestamp: number): HTMLSpanElement {
     timestampEl.classList.add('output-timestamp');
     timestampEl.textContent = formatTimestamp(timestamp);
     timestampEl.dataset.timestamp = `${timestamp}`;
-    timestampEl.title = new Date(timestamp).toLocaleString();
+    timestampEl.title = TIMESTAMP_TITLE_FORMAT.format(timestamp);
     return timestampEl;
 }
 

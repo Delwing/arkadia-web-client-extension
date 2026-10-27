@@ -44,8 +44,13 @@ interface LocalExportTabProps {
     onSelectionChange?: (characters: string[], options: ExportOptions) => void;
 }
 
+function sameNames(a: readonly string[], b: readonly string[] | null): boolean {
+    return b !== null && a.length === b.length && a.every((name, i) => name === b[i]);
+}
+
 function LocalExportTab({ onSelectionChange }: LocalExportTabProps) {
     const [characters, setCharacters] = useState<string[]>([]);
+    const charactersRef = useRef<string[] | null>(null);
     const [selection, setSelection] = useState<Record<string, boolean>>({});
     const [exportOptions, setExportOptions] = useState<ExportOptions>({ ...DEFAULT_EXPORT_OPTIONS });
     const [status, setStatus] = useState<string | null>(null);
@@ -65,6 +70,13 @@ function LocalExportTab({ onSelectionChange }: LocalExportTabProps) {
 
     const refreshCharacters = useCallback(() => {
         const list = collectCharacters();
+        // This runs on every storage write, and the game writes storage all the time
+        // while the dialog sits closed. Only a changed roster may re-render (and
+        // re-notify the parent through onSelectionChange).
+        if (sameNames(list, charactersRef.current)) {
+            return;
+        }
+        charactersRef.current = list;
         setCharacters(list);
         setSelection(prev => {
             const next: Record<string, boolean> = {};

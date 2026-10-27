@@ -118,44 +118,57 @@ export class Trigger {
         }
     }
 
+    private matchPattern(pattern: TriggerSubPattern, line: AnsiAwareBuffer, type: string, plainLine: string): RegExpMatchArray | undefined {
+        if (pattern instanceof RegExp) {
+            return plainLine.match(pattern) ?? undefined;
+        }
+        if (typeof pattern === "string") {
+            const haystack = !this.options.caseInsensitive ? plainLine : plainLine.toLowerCase();
+            const needle = !this.options.caseInsensitive ? pattern : pattern.toLowerCase();
+            const index = haystack.indexOf(needle);
+            if (index > -1) {
+                const matches = [plainLine.substring(index, index + pattern.length)] as RegExpMatchArray;
+                matches.index = index;
+                matches.input = plainLine;
+                return matches;
+            }
+            return undefined;
+        }
+        if (typeof pattern === "function") {
+            try {
+                return pattern(line, null, type);
+            } catch (err) {
+                // A match function that throws decides nothing: treat it as no match
+                // and let the remaining patterns (and triggers) have their say.
+                this.reportFault("match function", err);
+                return undefined;
+            }
+        }
+        return undefined;
+    }
+
     execute(line: AnsiAwareBuffer, type: string, originalText?: string, plainLine?: string): AnsiAwareBuffer | null {
         // Use pre-trimmed plainLine if provided, otherwise compute from originalText/line.text
         if (plainLine === undefined) {
             plainLine = (originalText ?? line.text).replace(/\s$/g, "");
         }
-        this.openInstances = this.openInstances.map(v => v - 1).filter(v => v > 0);
-        let matches: RegExpMatchArray | undefined;
-        const patterns = Array.isArray(this.pattern) ? this.pattern : [this.pattern];
-        for (const pattern of patterns) {
-            if (pattern instanceof RegExp) {
-                matches = plainLine.match(pattern);
-            } else if (typeof pattern === "string") {
-                const patternStr = pattern.toString();
-                const haystack = !this.options.caseInsensitive ? plainLine : plainLine.toLowerCase();
-                const needle = !this.options.caseInsensitive ? patternStr : patternStr.toLowerCase();
-                const index = haystack.indexOf(needle);
-                if (index > -1) {
-                    const end = index + patternStr.length;
-                    const matchedText = plainLine.substring(index, end);
-                    matches = [matchedText] as RegExpMatchArray;
-                    matches.index = index;
-                    matches.input = plainLine;
-                }
-            } else if (typeof pattern === "function") {
-                try {
-                    matches = pattern(line, null, type);
-                } catch (err) {
-                    // A match function that throws decides nothing: treat it as no match
-                    // and let the remaining patterns (and triggers) have their say.
-                    this.reportFault("match function", err);
-                    matches = undefined;
-                }
-            }
-            if (matches) {
-                break;
-            }
+        // Runs for every trigger on every line, so it must not allocate when idle.
+        if (this.openInstances.length > 0) {
+            this.openInstances = this.openInstances.map(v => v - 1).filter(v => v > 0);
         }
-        let matched = patterns.length == 0;
+        let matches: RegExpMatchArray | undefined;
+        const pattern = this.pattern;
+        if (Array.isArray(pattern)) {
+            for (const sub of pattern) {
+                matches = this.matchPattern(sub, line, type, plainLine);
+                if (matches) {
+                    break;
+                }
+            }
+        } else {
+            matches = this.matchPattern(pattern, line, type, plainLine);
+        }
+        let matched = Array.isArray(pattern) && pattern.length === 0;
         if (matches) {
             matched = true;
             if (this.options.stayOpenLines && this.options.stayOpenLines > 0) {
