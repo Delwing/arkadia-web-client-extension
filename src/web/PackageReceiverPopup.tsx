@@ -146,9 +146,11 @@ function CurrentPackage({ status, place, onNavigate, onShowOnMap }: {
  * Kept apart from the popup so the package countdown, ticking every second,
  * does not re-render a list that can run to hundreds of rows.
  */
-const ReceiverList = memo(function ReceiverList({ rows, recipient, onNavigate, onShowOnMap, onDelete }: {
+const ReceiverList = memo(function ReceiverList({ rows, recipient, hasLocal, onNavigate, onShowOnMap, onDelete }: {
     rows: ReceiverRow[];
     recipient: string;
+    /** Whether any row has a bin; only then do the others keep its space, to stay lined up. */
+    hasLocal: boolean;
     onNavigate: (loc: number) => void;
     onShowOnMap: (loc: number) => void;
     onDelete: (npc: NpcListEntry) => void;
@@ -193,7 +195,7 @@ const ReceiverList = memo(function ReceiverList({ rows, recipient, onNavigate, o
                             </Button>
                             {npc.source === 'local' ? (
                                 <DeleteButton onClick={() => onDelete(npc)} />
-                            ) : (
+                            ) : hasLocal && (
                                 <span className="package-receiver__action-slot" />
                             )}
                         </div>
@@ -387,6 +389,7 @@ const PackageReceiverPopup: React.FC = () => {
                     <ReceiverList
                         rows={visibleRows}
                         recipient={recipient}
+                        hasLocal={visibleRows.some(row => row.source === 'local')}
                         onNavigate={handleNavigate}
                         onShowOnMap={handleShowOnMap}
                         onDelete={handleDeleteNpc}
