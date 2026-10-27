@@ -375,6 +375,76 @@ describe('MapHelper executeBind (via handleNewLocation)', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Placed again in the same room — /ustaw, the GPS or a plugin localizer re-sending
+// enterLocation for the room the map is already on must not print its bind twice
+// ---------------------------------------------------------------------------
+
+describe('MapHelper handleNewLocation — placed again in the same room', () => {
+    /** createClient, but `on` honours `once` and `signal` like the real event bus. */
+    function createOnceClient() {
+        const { client } = createClient();
+        let listeners: Array<{ event: string; fn: (detail?: any) => void; once?: boolean; signal?: AbortSignal }> = [];
+        client.on = jest.fn((event: string, fn: (detail?: any) => void, options?: { once?: boolean; signal?: AbortSignal }) => {
+            listeners.push({ event, fn, once: options?.once, signal: options?.signal });
+        });
+        client.emit = (event: string, detail?: any) => {
+            const firing = listeners.filter(l => l.event === event && !l.signal?.aborted);
+            listeners = listeners.filter(l => !(l.event === event && l.once) && !l.signal?.aborted);
+            firing.forEach(l => l.fn(detail));
+        };
+        return client;
+    }
+
+    function setup() {
+        const client = createOnceClient();
+        const map = new MapHelper(client, { storage: { getItem: () => null, setItem: () => {} } });
+        const river: any = { id: 13774, userData: { drinkable: true } };
+        map.currentRoom = river;
+        return { client, map, river };
+    }
+
+    it('does not set the drinkable bind again once it is up', () => {
+        const { client, map, river } = setup();
+
+        map.handleNewLocation({ room: river });
+        client.emit('output-sent');
+        map.handleNewLocation({ room: river });
+        client.emit('output-sent');
+
+        expect(client.functionalBind.set).toHaveBeenCalledTimes(1);
+        expect(client.functionalBind.set).toHaveBeenCalledWith('napij sie do syta wody', expect.any(Function));
+    });
+
+    it('sets the bind once when placed again before the output arrived', () => {
+        const { client, map, river } = setup();
+
+        map.handleNewLocation({ room: river });
+        map.handleNewLocation({ room: river });
+        client.emit('output-sent');
+
+        expect(client.functionalBind.set).toHaveBeenCalledTimes(1);
+    });
+
+    it('sets the bind again after leaving and coming back', () => {
+        const { client, map, river } = setup();
+        const cave: any = { id: 20812, userData: {} };
+
+        map.handleNewLocation({ room: river });
+        client.emit('output-sent');
+
+        map.currentRoom = cave;
+        map.handleNewLocation({ room: cave });
+        client.emit('output-sent');
+
+        map.currentRoom = river;
+        map.handleNewLocation({ room: river });
+        client.emit('output-sent');
+
+        expect(client.functionalBind.set).toHaveBeenCalledTimes(2);
+    });
+});
+
+// ---------------------------------------------------------------------------
 // walk_pre_cmd / walk_post_cmd — applied immediately on handleNewLocation
 // ---------------------------------------------------------------------------
 

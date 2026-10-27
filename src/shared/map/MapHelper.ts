@@ -237,6 +237,8 @@ export default class MapHelper {
     /** Transfer point already announced, so travelling along the route does not repeat itself. */
     private announcedTransfer: number | null = null;
     private pendingBindAbort?: AbortController;
+    /** Room whose bind is set and not left since, so placing us there again does not print it twice. */
+    private boundRoomId?: number;
     private highlighterIdCounter = 0;
     private highlighters: Map<string, { roomIds: Set<number>; color: string; enabled: boolean }> = new Map();
 
@@ -1359,9 +1361,18 @@ export default class MapHelper {
             );
         }
 
+        const roomId = room?.id;
+        // Placed again in the room we just bound (/ustaw, the GPS, a plugin localizer):
+        // its bind is already up, so don't print it a second time.
+        if (typeof roomId === "number" && roomId === this.boundRoomId) {
+            return;
+        }
+        this.boundRoomId = undefined;
+
+        // A bind still waiting for output belongs to an earlier placement - this one replaces it.
+        this.pendingBindAbort?.abort();
         const abortController = new AbortController();
         this.pendingBindAbort = abortController;
-        const roomId = room?.id;
 
         this.client.on(
             "output-sent",
@@ -1380,11 +1391,13 @@ export default class MapHelper {
                         printable,
                         () => this.executeBind(bindStr)
                     );
+                    this.boundRoomId = roomId;
                 } else if (room?.userData?.drinkable && !this.onTransport && this.client.shouldSetDrinkableBind?.() !== false) {
                     this.client.functionalBind?.set(
                         "napij sie do syta wody",
                         () => this.client.sendCommand("napij sie do syta wody")
                     );
+                    this.boundRoomId = roomId;
                 }
             },
             {once: true, signal: abortController.signal}
