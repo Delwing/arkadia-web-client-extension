@@ -1,5 +1,5 @@
 import type { CSSProperties, MouseEvent } from "react";
-import { computeBoxShadow, type LayoutSettings } from "../mobileButtonSettings";
+import { computeBoxShadow, mobileButtonFontSize, type LayoutSettings } from "../mobileButtonSettings";
 import { defaultFontColor } from "../buttonSettings";
 
 export interface CellState {
@@ -53,8 +53,7 @@ export default function ButtonGrid({ id, layout, buttonSize, buttonGap, cellStat
                     state.own && 'own',
                     state.swapSource && 'swap-source',
                 ].filter(Boolean).join(' ');
-                // Font size scales with button size: direction ~35%, text ~20% to ensure fit
-                const fontSize = isText ? Math.max(6, Math.round(buttonSize * 0.20)) : Math.round(buttonSize * 0.35);
+                const fontSize = mobileButtonFontSize(cfg.label || '', isText, buttonSize);
                 const style: CSSProperties = {
                     width: buttonSize + 'px',
                     height: buttonSize + 'px',

@@ -63,6 +63,9 @@ export interface DesktopButtonSetting extends BaseButtonSetting {
 
 export const defaultFontColor = '#f1f5f9';
 
+/** Stock button background, dark enough for `defaultFontColor` to stay readable (5:1). */
+export const defaultButtonColor = '#1d6fa5';
+
 export const directionOptions = ["nw", "n", "ne", "w", "e", "sw", "s", "se", "u", "d"] as const;
 
 export const macroOptions: { value: MacroType; label: string }[] = [

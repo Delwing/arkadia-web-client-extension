@@ -10,6 +10,7 @@ import {
     loadSettings as loadMobileButtonSettings,
     parseSettings as parseMobileButtonSettings,
     computeBoxShadow,
+    mobileButtonFontSize,
     defaultButtonSize,
     defaultButtonGap,
     defaultSettings,
@@ -17,6 +18,7 @@ import {
 } from '@web/mobileButtonSettings';
 import type { MobileButtonSetting } from '@web/buttonSettings';
 import { defaultFontColor } from '@web/buttonSettings';
+import { DEFAULT_ACTIVE_COLOR } from '@web/mobileButtons/model.ts';
 import { executeMacro, updateMoveModeLabel, type MacroExecutorCallbacks } from '@web/scripts/buttonMacroExecutor';
 import { specialExitAt } from '@client/scripts/directionBinds.ts';
 import { useClientEvent } from '../hooks';
@@ -115,7 +117,7 @@ function computeButtonVisual(id: string, cfg: MobileButtonSetting, activeButtons
         const directionButton = Object.values(activeButtons).find((b) => b.macroType === 'kierunek');
         if (directionButton) {
             effectiveColor = directionButton.color;
-            effectiveActiveColor = directionButton.activeColor || '#2fa7c5';
+            effectiveActiveColor = directionButton.activeColor || DEFAULT_ACTIVE_COLOR;
         }
     }
 
@@ -781,9 +783,9 @@ export default function MobileDirectionButtons({ client, messageInputId = 'messa
                 const visual = computeButtonVisual(id, cfg, activeSet.buttons, client);
                 const hasHold = !!cfg.holdEnabled && !!cfg.hold?.macroType;
                 const isExitAvailable = !!visual.dataDirection && availableExits.has(visual.dataDirection);
-                const fontSize = visual.isTextButtonClass ? Math.max(6, Math.round(buttonSize * 0.20)) : Math.round(buttonSize * 0.35);
                 const isListToggleActive = openListId !== null && cfg.macroType === openListId;
                 const label = cfg.macroType === 'toggleButtons' ? (collapsed ? '⇧' : '⇩') : visual.label;
+                const fontSize = mobileButtonFontSize(String(label ?? ''), visual.isTextButtonClass, buttonSize);
 
                 const className = [
                     'mobile-button',
@@ -805,7 +807,7 @@ export default function MobileDirectionButtons({ client, messageInputId = 'messa
                     style['--btn-accent'] = visual.color;
                     if (visual.useColorVars) {
                         style['--color'] = visual.color;
-                        style['--active-color'] = visual.activeColor || '#2fa7c5';
+                        style['--active-color'] = visual.activeColor || DEFAULT_ACTIVE_COLOR;
                     }
                 }
 

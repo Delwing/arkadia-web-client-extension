@@ -1,4 +1,4 @@
-import type { ButtonMacroConfig } from "../buttonSettings";
+import { defaultButtonColor, type ButtonMacroConfig } from "../buttonSettings";
 
 /**
  * Mobile buttons v2 (see docs/dev/MOBILE_BUTTONS_V2.md): Solo is the base,
@@ -12,8 +12,12 @@ export const BUTTON_MODES: readonly ButtonMode[] = ['solo', 'team', 'leader'];
 
 export const PARENT_MODE: Record<ButtonMode, ButtonMode | null> = { solo: null, team: 'solo', leader: 'team' };
 
+/** Stock colours, dark enough for the light default font to stay readable (at least 4:1). */
+export const DEFAULT_BUTTON_COLOR = defaultButtonColor;
+export const DEFAULT_DIRECTION_COLOR = '#2a4d6e';
+
 /** What the renderer falls back to for a direction button without an active colour. */
-export const DEFAULT_ACTIVE_COLOR = '#2fa7c5';
+export const DEFAULT_ACTIVE_COLOR = '#0284c7';
 
 export interface MobileButtonStyle {
     name: string;

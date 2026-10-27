@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { canonical, modesFromLayouts } from '@web/mobileButtons/migrateV1.ts';
 import { resolveMode } from '@web/mobileButtons/resolve.ts';
-import { BUTTON_MODES, type ButtonMode } from '@web/mobileButtons/model.ts';
+import { BUTTON_MODES, DEFAULT_ACTIVE_COLOR, type ButtonMode } from '@web/mobileButtons/model.ts';
 import { createDefaultLayout, type LayoutSettings } from '@web/mobileButtonSettings.ts';
 import type { MobileButtonSetting } from '@web/buttonSettings.ts';
 
@@ -39,7 +39,7 @@ function shown(layout: LayoutSettings, id: string) {
         ...rest,
         color: lower(shownColor),
         fontColor: lower(fontColor || '#f1f5f9'),
-        activeColor: isDirection ? lower(shownActive || '#2fa7c5') : undefined,
+        activeColor: isDirection ? lower(shownActive || DEFAULT_ACTIVE_COLOR) : undefined,
     });
 }
 

@@ -7,9 +7,10 @@ import {
     ListPosition,
     ListGrowDirection,
     defaultFontColor,
+    defaultButtonColor,
 } from "./buttonSettings";
 
-export { defaultFontColor };
+export { defaultFontColor, defaultButtonColor };
 
 export interface DesktopButtonsSettings {
     buttons: DesktopButtonSetting[];
@@ -18,7 +19,6 @@ export interface DesktopButtonsSettings {
     snap: boolean;
 }
 
-export const defaultButtonColor = '#6EB4DC';
 export const defaultFontSize = 11;
 export const defaultWidth = 60;
 export const defaultHeight = 36;

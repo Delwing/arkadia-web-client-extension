@@ -7,6 +7,7 @@ import {
     migrateSunAnnouncement,
     migrateImportedValue,
     migrateMobileButtonMacroData,
+    migrateStockButtonColors,
     migrateZerknijButtonMacro,
     migrateZerknijButtonMacroData,
 } from '@modules/core/settingsMigrations';
@@ -599,6 +600,52 @@ describe('settingsMigrations', () => {
             const { settings } = migrateSettings({ sunTracker: true } as Partial<Settings>, 17);
             expect(settings).toMatchObject({ sunAnnouncement: 'frame' });
             expect(settings).not.toHaveProperty('sunTracker');
+        });
+    });
+describe('migration v20: darker stock button colours', () => {
+        const mobile = () => ({
+            version: 2,
+            styles: {
+                'style-1': { name: 'Podstawowy', color: '#6EB4DC', fontColor: '#f1f5f9', activeColor: '#2fa7c5' },
+                'style-2': { name: 'Kierunki', color: '#6ca6cd', fontColor: '#f1f5f9', activeColor: '#2fa7c5' },
+                'style-3': { name: 'Mój', color: '#ff0000', fontColor: '#000000', activeColor: '#00ff00' },
+            },
+            solo: { buttons: { 'n-button': { macroType: 'kierunek', label: 'n', color: '#6ca6cd', activeColor: '#2fa7c5' } } },
+        });
+
+        it('swaps the old stock colours and keeps hand-picked ones', () => {
+            localStorage.setItem('mobileButtonSettings', JSON.stringify(mobile()));
+            localStorage.setItem('desktopButtonSettings', JSON.stringify({
+                buttons: [{ id: 'a', color: '#6EB4DC' }, { id: 'b', color: '#123456' }],
+                locked: false,
+                snap: true,
+            }));
+
+            migrateStockButtonColors();
+
+            const m = JSON.parse(localStorage.getItem('mobileButtonSettings')!);
+            expect(m.styles['style-1']).toMatchObject({ color: '#1d6fa5', activeColor: '#0284c7', fontColor: '#f1f5f9' });
+            expect(m.styles['style-2']).toMatchObject({ color: '#2a4d6e', activeColor: '#0284c7' });
+            expect(m.styles['style-3']).toMatchObject({ color: '#ff0000', activeColor: '#00ff00' });
+            expect(m.solo.buttons['n-button']).toMatchObject({ color: '#2a4d6e', activeColor: '#0284c7' });
+            const d = JSON.parse(localStorage.getItem('desktopButtonSettings')!);
+            expect(d.buttons.map((b: { color: string }) => b.color)).toEqual(['#1d6fa5', '#123456']);
+        });
+
+        it('leaves storage alone when there are no button settings', () => {
+            migrateStockButtonColors();
+            expect(localStorage.getItem('mobileButtonSettings')).toBeNull();
+            expect(localStorage.getItem('desktopButtonSettings')).toBeNull();
+        });
+
+        it('is skipped once the migration version is past it', () => {
+            localStorage.setItem('settingsMigrationsVersion', '20');
+            const stored = JSON.stringify(mobile());
+            localStorage.setItem('mobileButtonSettings', stored);
+
+            migrateStockButtonColors();
+
+            expect(localStorage.getItem('mobileButtonSettings')).toBe(stored);
         });
     });
 });

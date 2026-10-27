@@ -48,10 +48,11 @@
   min-height: 0;
   padding: 0;
   font-size: 14px;
+  font-weight: 600;
   line-height: normal; /* centres the glyph exactly in the fixed box */
   border: 1px solid #a0d0e0;
   border-radius: 4px;
-  background-color: #6EB4DC;
+  background-color: #1d6fa5;
   color: inherit;
   cursor: pointer;
   display: flex;
@@ -77,8 +78,8 @@
 }
 
 .direction-button {
-  --color: #6CA6CD;
-  --active-color: #2fa7c5;
+  --color: #2a4d6e;
+  --active-color: #0284c7;
   background-color: var(--color);
 }
 
@@ -87,6 +88,7 @@
 }
 
 .mobile-button-text {
+  font-family: "Radio Canada Condensed", var(--font-ui);
   font-size: 9px;
   padding: 1px;
   line-height: 1;

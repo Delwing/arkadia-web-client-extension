@@ -245,22 +245,22 @@ test.describe('Mobile buttons sizing and gap', () => {
         const soloPreview = page.locator('#mobile-buttons-preview-solo:visible');
         await soloPreview.locator('[data-button-id="button-1"]').waitFor({ timeout: 5000 });
 
-        // Get a text button (not direction button)
+        // A text button (not a direction button) labelled "wesprzyj"
         const textButton = soloPreview.locator('[data-button-id="button-1"]');
 
         // Change size to 60px
         const sizeSlider = getSizeSlider(modal);
         await sizeSlider.fill('60');
 
-        // Verify font size scales (60 * 0.20 = 12px for text buttons)
+        // The label is sized to fit its longest word: (60 - 4) / (8 * 0.42) = 16px
         const fontSize = await textButton.evaluate((el) => el.style.fontSize);
-        expect(fontSize, 'font size should scale with button size').toBe('12px');
+        expect(fontSize, 'font size should scale with button size').toBe('16px');
 
         // Change to smaller size (30px)
         await sizeSlider.fill('30');
 
-        // Verify font size scales (30 * 0.20 = 6px, but min is 6px)
+        // (30 - 4) / (8 * 0.42) = 7px
         const smallFontSize = await textButton.evaluate((el) => el.style.fontSize);
-        expect(smallFontSize, 'font size should have minimum of 6px').toBe('6px');
+        expect(smallFontSize, 'font size should shrink with the button').toBe('7px');
     });
 });

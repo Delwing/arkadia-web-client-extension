@@ -277,6 +277,11 @@ const migrations: Migration[] = [
         description: 'Turn the character plaque off for everyone (handled by migrateCharacterPlaqueOff)',
         migrate: settings => settings, // No-op for core Settings; actual migration is below
     },
+    {
+        version: 20,
+        description: 'Darker stock mobile/desktop button colours (handled by migrateStockButtonColors)',
+        migrate: settings => settings, // No-op for core Settings; actual migration is below
+    },
 ];
 
 /** The old `sunTracker` switch printed frames: on keeps the frames, off stays off. */
@@ -688,6 +693,86 @@ export function migrateCoverMarkersOn(): void {
         }
     } catch (e) {
         console.error('[SettingsMigrations] Failed to turn cover markers on:', e);
+    }
+}
+
+/** Old stock button colours and their darker, more readable replacements. */
+const STOCK_BUTTON_COLORS: Record<string, string> = {
+    '#6eb4dc': '#1d6fa5',
+    '#6ca6cd': '#2a4d6e',
+    '#2fa7c5': '#0284c7',
+};
+
+function recolorStock(obj: any, fields: string[]): boolean {
+    if (!obj || typeof obj !== 'object') return false;
+    let changed = false;
+    for (const field of fields) {
+        const value = obj[field];
+        const next = typeof value === 'string' ? STOCK_BUTTON_COLORS[value.trim().toLowerCase()] : undefined;
+        if (next) {
+            obj[field] = next;
+            changed = true;
+        }
+    }
+    return changed;
+}
+
+/**
+ * Pure transform for migration v20: swap the old stock colours in a
+ * mobileButtonSettings value (v2 styles and the resolved v1 views) for the
+ * new ones. Colours picked by hand are left alone.
+ */
+export function migrateStockMobileButtonColorsData(input: unknown): { data: any; changed: boolean } {
+    if (!input || typeof input !== 'object') return { data: input, changed: false };
+    const data: any = structuredClone(input);
+    let changed = false;
+    for (const style of Object.values<any>(data.styles && typeof data.styles === 'object' ? data.styles : {})) {
+        changed = recolorStock(style, ['color', 'activeColor']) || changed;
+    }
+    for (const mode of ['solo', 'team', 'leader']) {
+        const buttons = data[mode]?.buttons;
+        if (!buttons || typeof buttons !== 'object') continue;
+        for (const button of Object.values<any>(buttons)) {
+            changed = recolorStock(button, ['color', 'activeColor']) || changed;
+        }
+    }
+    return { data, changed };
+}
+
+/** Pure transform for migration v20 on desktopButtonSettings. */
+export function migrateStockDesktopButtonColorsData(input: unknown): { data: any; changed: boolean } {
+    if (!input || typeof input !== 'object') return { data: input, changed: false };
+    const data: any = structuredClone(input);
+    let changed = false;
+    for (const button of Array.isArray(data.buttons) ? data.buttons : []) {
+        changed = recolorStock(button, ['color']) || changed;
+    }
+    return { data, changed };
+}
+
+/**
+ * Migration v20: the stock mobile and desktop button colours were too pale
+ * for the light default font. Buttons still on an old stock colour get its
+ * darker replacement, once.
+ */
+export function migrateStockButtonColors(): void {
+    if (getMigrationsVersion() >= 20) {
+        return;
+    }
+
+    try {
+        const mobile = migrateStockMobileButtonColorsData(globalStorage.get('mobileButtonSettings'));
+        if (mobile.changed) {
+            globalStorage.set('mobileButtonSettings', mobile.data);
+            console.log('[SettingsMigrations] Darkened stock mobile button colours');
+        }
+        const desktop = migrateStockDesktopButtonColorsData(globalStorage.get('desktopButtonSettings'));
+        if (desktop.changed) {
+            globalStorage.set('desktopButtonSettings', desktop.data);
+            console.log('[SettingsMigrations] Darkened stock desktop button colours');
+        }
+    } catch (e) {
+        console.error('[SettingsMigrations] Failed to darken stock button colours:', e);
     }
 }
 

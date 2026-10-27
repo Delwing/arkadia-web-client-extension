@@ -5,6 +5,8 @@ import { createDefaultJoysticks, parseJoystickSettings, type JoystickSettings } 
 import {
     BUTTON_MODES,
     DEFAULT_ACTIVE_COLOR,
+    DEFAULT_BUTTON_COLOR,
+    DEFAULT_DIRECTION_COLOR,
     type ButtonMode,
     type ButtonModes,
     type GridLayout,
@@ -37,21 +39,21 @@ export const defaultButtonGap = 10;
 
 export const defaultSettings: Record<string, MobileButtonSetting> = {
     // top row buttons
-    'z-list-toggle': { macroType: 'zList', label: '/z', color: '#6EB4DC', fontColor: defaultFontColor },
-    'zas-list-toggle': { macroType: 'zaList', label: '/za', color: '#6EB4DC', fontColor: defaultFontColor },
-    'go-button': { macroType: 'command', label: '/go', color: '#6EB4DC', fontColor: defaultFontColor, command: '/go' },
-    'buttons-toggle': { macroType: 'toggleButtons', label: '⇩', color: '#6EB4DC', fontColor: defaultFontColor },
-    'bracket-right-button': { macroType: 'functional', label: ']', color: '#6EB4DC', fontColor: defaultFontColor },
-    'button-1': { macroType: 'wesprzyj', label: 'wesprzyj', color: '#6EB4DC', fontColor: defaultFontColor },
-    'button-2': { macroType: 'command', label: '/z cel', color: '#6EB4DC', fontColor: defaultFontColor, command: '/z' },
-    'button-3': { macroType: 'command', label: '/za cel', color: '#6EB4DC', fontColor: defaultFontColor, command: '/za' },
+    'z-list-toggle': { macroType: 'zList', label: '/z', color: DEFAULT_BUTTON_COLOR, fontColor: defaultFontColor },
+    'zas-list-toggle': { macroType: 'zaList', label: '/za', color: DEFAULT_BUTTON_COLOR, fontColor: defaultFontColor },
+    'go-button': { macroType: 'command', label: '/go', color: DEFAULT_BUTTON_COLOR, fontColor: defaultFontColor, command: '/go' },
+    'buttons-toggle': { macroType: 'toggleButtons', label: '⇩', color: DEFAULT_BUTTON_COLOR, fontColor: defaultFontColor },
+    'bracket-right-button': { macroType: 'functional', label: ']', color: DEFAULT_BUTTON_COLOR, fontColor: defaultFontColor },
+    'button-1': { macroType: 'wesprzyj', label: 'wesprzyj', color: DEFAULT_BUTTON_COLOR, fontColor: defaultFontColor },
+    'button-2': { macroType: 'command', label: '/z cel', color: DEFAULT_BUTTON_COLOR, fontColor: defaultFontColor, command: '/z' },
+    'button-3': { macroType: 'command', label: '/za cel', color: DEFAULT_BUTTON_COLOR, fontColor: defaultFontColor, command: '/za' },
 
     // direction buttons in visual order
     'nw-button': {
         macroType: 'kierunek',
         label: '↖',
-        color: '#6CA6CD',
-        activeColor: '#2fa7c5',
+        color: DEFAULT_DIRECTION_COLOR,
+        activeColor: DEFAULT_ACTIVE_COLOR,
         fontColor: defaultFontColor,
         command: 'nw',
         direction: 'nw',
@@ -59,8 +61,8 @@ export const defaultSettings: Record<string, MobileButtonSetting> = {
     'n-button': {
         macroType: 'kierunek',
         label: '↑',
-        color: '#6CA6CD',
-        activeColor: '#2fa7c5',
+        color: DEFAULT_DIRECTION_COLOR,
+        activeColor: DEFAULT_ACTIVE_COLOR,
         fontColor: defaultFontColor,
         command: 'n',
         direction: 'n',
@@ -68,8 +70,8 @@ export const defaultSettings: Record<string, MobileButtonSetting> = {
     'ne-button': {
         macroType: 'kierunek',
         label: '↗',
-        color: '#6CA6CD',
-        activeColor: '#2fa7c5',
+        color: DEFAULT_DIRECTION_COLOR,
+        activeColor: DEFAULT_ACTIVE_COLOR,
         fontColor: defaultFontColor,
         command: 'ne',
         direction: 'ne',
@@ -77,8 +79,8 @@ export const defaultSettings: Record<string, MobileButtonSetting> = {
     'u-button': {
         macroType: 'kierunek',
         label: 'u',
-        color: '#6CA6CD',
-        activeColor: '#2fa7c5',
+        color: DEFAULT_DIRECTION_COLOR,
+        activeColor: DEFAULT_ACTIVE_COLOR,
         fontColor: defaultFontColor,
         command: 'u',
         direction: 'u',
@@ -86,18 +88,18 @@ export const defaultSettings: Record<string, MobileButtonSetting> = {
     'w-button': {
         macroType: 'kierunek',
         label: '←',
-        color: '#6CA6CD',
-        activeColor: '#2fa7c5',
+        color: DEFAULT_DIRECTION_COLOR,
+        activeColor: DEFAULT_ACTIVE_COLOR,
         fontColor: defaultFontColor,
         command: 'w',
         direction: 'w',
     },
-    'c-button': { macroType: 'zerknij', label: 'zerknij', color: '#6CA6CD', fontColor: defaultFontColor },
+    'c-button': { macroType: 'zerknij', label: 'zerknij', color: DEFAULT_DIRECTION_COLOR, fontColor: defaultFontColor },
     'e-button': {
         macroType: 'kierunek',
         label: '→',
-        color: '#6CA6CD',
-        activeColor: '#2fa7c5',
+        color: DEFAULT_DIRECTION_COLOR,
+        activeColor: DEFAULT_ACTIVE_COLOR,
         fontColor: defaultFontColor,
         command: 'e',
         direction: 'e',
@@ -105,8 +107,8 @@ export const defaultSettings: Record<string, MobileButtonSetting> = {
     'd-button': {
         macroType: 'kierunek',
         label: 'd',
-        color: '#6CA6CD',
-        activeColor: '#2fa7c5',
+        color: DEFAULT_DIRECTION_COLOR,
+        activeColor: DEFAULT_ACTIVE_COLOR,
         fontColor: defaultFontColor,
         command: 'd',
         direction: 'd',
@@ -114,8 +116,8 @@ export const defaultSettings: Record<string, MobileButtonSetting> = {
     'sw-button': {
         macroType: 'kierunek',
         label: '↙',
-        color: '#6CA6CD',
-        activeColor: '#2fa7c5',
+        color: DEFAULT_DIRECTION_COLOR,
+        activeColor: DEFAULT_ACTIVE_COLOR,
         fontColor: defaultFontColor,
         command: 'sw',
         direction: 'sw',
@@ -123,8 +125,8 @@ export const defaultSettings: Record<string, MobileButtonSetting> = {
     's-button': {
         macroType: 'kierunek',
         label: '↓',
-        color: '#6CA6CD',
-        activeColor: '#2fa7c5',
+        color: DEFAULT_DIRECTION_COLOR,
+        activeColor: DEFAULT_ACTIVE_COLOR,
         fontColor: defaultFontColor,
         command: 's',
         direction: 's',
@@ -132,13 +134,13 @@ export const defaultSettings: Record<string, MobileButtonSetting> = {
     'se-button': {
         macroType: 'kierunek',
         label: '↘',
-        color: '#6CA6CD',
-        activeColor: '#2fa7c5',
+        color: DEFAULT_DIRECTION_COLOR,
+        activeColor: DEFAULT_ACTIVE_COLOR,
         fontColor: defaultFontColor,
         command: 'se',
         direction: 'se',
     },
-    'special-exit-button': { macroType: 'specialExit', label: 'sp ex', color: '#6CA6CD', fontColor: defaultFontColor },
+    'special-exit-button': { macroType: 'specialExit', label: 'sp ex', color: DEFAULT_DIRECTION_COLOR, fontColor: defaultFontColor },
 };
 
 export const defaultOrder = [
@@ -528,6 +530,23 @@ export function computeBoxShadow(bgColor: string): string {
     const alpha = extractAlpha(bgColor);
     const shadowOpacity = Math.min(0.2, alpha * 0.3);
     return `0 2px 5px rgba(0, 0, 0, ${shadowOpacity})`;
+}
+
+/**
+ * Label size for a mobile button: arrows get a fixed share of the button,
+ * text labels the largest size at which their longest word still fits on a
+ * line and every word fits on its own line (`white-space: normal` wraps them).
+ * Assumes the condensed label face, measured at about 0.41em per glyph.
+ */
+export function mobileButtonFontSize(label: string, isText: boolean, buttonSize: number): number {
+    const max = Math.round(buttonSize * 0.35);
+    if (!isText) return max;
+    const inner = buttonSize - 4;
+    const words = label.trim().split(/\s+/).filter(Boolean);
+    const longest = Math.max(1, ...words.map(word => word.length));
+    const byWidth = inner / (longest * 0.42);
+    const byHeight = inner / (Math.max(1, words.length) * 1.1);
+    return Math.max(6, Math.floor(Math.min(max, byWidth, byHeight)));
 }
 
 /**

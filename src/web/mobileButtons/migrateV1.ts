@@ -3,6 +3,7 @@ import type { LayoutSettings } from "../mobileButtonSettings";
 import {
     BUTTON_MODES,
     DEFAULT_ACTIVE_COLOR,
+    DEFAULT_BUTTON_COLOR,
     PARENT_MODE,
     type ButtonMode,
     type ButtonModes,
@@ -11,8 +12,8 @@ import {
 } from "./model";
 import { resolveBackground, resolveButton, resolveLayout } from "./resolve";
 
-/** The top-row colour of the stock layout; the style holding it is named "Podstawowy". */
-const BASE_COLOR = '#6eb4dc';
+/** Top-row colours of the stock layout, current and past; the style holding one is named "Podstawowy". */
+const BASE_COLORS = new Set([DEFAULT_BUTTON_COLOR, '#6eb4dc']);
 
 const EMPTY_V1: MobileButtonSetting = { macroType: 'empty', label: '', color: 'transparent' };
 
@@ -161,7 +162,7 @@ export function modesFromLayouts(
             candidate.id = `style-${idNumber++}`;
             if (candidate.directionLike) {
                 candidate.name = uniqueName('Kierunki');
-            } else if (candidate.color === BASE_COLOR) {
+            } else if (BASE_COLORS.has(candidate.color)) {
                 candidate.name = uniqueName('Podstawowy');
             } else {
                 candidate.name = uniqueName(`Styl ${plainNumber++}`);
@@ -176,7 +177,7 @@ export function modesFromLayouts(
         styleOrder.push(candidate.id);
     }
     if (styleOrder.length === 0) {
-        styles['style-1'] = { name: 'Podstawowy', color: BASE_COLOR, fontColor: defaultFontColor, activeColor: DEFAULT_ACTIVE_COLOR };
+        styles['style-1'] = { name: 'Podstawowy', color: DEFAULT_BUTTON_COLOR, fontColor: defaultFontColor, activeColor: DEFAULT_ACTIVE_COLOR };
         styleOrder.push('style-1');
     }
 

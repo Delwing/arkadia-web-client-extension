@@ -4,6 +4,7 @@ import {
     createDefaultLayout,
     loadSettings,
     migrateMobileButtonsToV2,
+    mobileButtonFontSize,
     saveSettings,
 } from '@web/mobileButtonSettings.ts';
 
@@ -27,7 +28,7 @@ describe('mobile button settings v2', () => {
         expect(settings.version).toBe(2);
         expect(settings.modes.team).toEqual({ buttons: {} });
         expect(settings.team.order).toEqual(settings.solo.order);
-        expect(settings.solo.buttons['n-button'].color).toBe('#6ca6cd');
+        expect(settings.solo.buttons['n-button'].color).toBe('#2a4d6e');
     });
 
     it('migrates stored v1 data on read without writing it', () => {
@@ -108,5 +109,25 @@ describe('mobile button settings v2', () => {
         localStorage.setItem('mobileButtonSettings', JSON.stringify(saved));
 
         expect(loadSettings().team.buttons['button-2'].label).toBe('atak');
+    });
+});
+
+describe('mobileButtonFontSize', () => {
+    it('gives arrows a fixed share of the button', () => {
+        expect(mobileButtonFontSize('n', false, 36)).toBe(13);
+    });
+
+    it('shrinks text labels only as far as their longest word needs', () => {
+        expect(mobileButtonFontSize('/z', true, 36)).toBe(13);
+        expect(mobileButtonFontSize('/za cel', true, 36)).toBe(13);
+        expect(mobileButtonFontSize('wesprzyj', true, 36)).toBe(9);
+    });
+
+    it('fits every word of a long label on its own line', () => {
+        expect(mobileButtonFontSize('a b c d', true, 36)).toBe(7);
+    });
+
+    it('never goes below 6px', () => {
+        expect(mobileButtonFontSize('przeciwuderzeniowy', true, 36)).toBe(6);
     });
 });

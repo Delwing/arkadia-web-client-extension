@@ -17,6 +17,7 @@ import {
     migrateFooterComponentVisibility,
     migrateLayoutManagerState,
     migrateMobileButtonMacroField,
+    migrateStockButtonColors,
     migrateUiSettingsSplit,
     migrateZerknijButtonMacro,
     runAllSettingsMigrations,
@@ -60,6 +61,7 @@ export function bootstrapGameClient(opts: { installPorts: () => void }): GameCli
     migrateMobileButtonsToV2();
     migrateCoverMarkersOn();
     migrateCharacterPlaqueOff();
+    migrateStockButtonColors();
     runAllSettingsMigrations();
     migrateButtonSizeMultiplier();
     migrateFooterComponentVisibility();

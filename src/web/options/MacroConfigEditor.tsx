@@ -1,5 +1,5 @@
 import { Button, Check, ColorInput, DeleteButton, Field, Input, Select, TextArea } from "@web-ui/primitives/index.ts";
-import { directionOptions } from "../buttonSettings";
+import { defaultButtonColor, directionOptions } from "../buttonSettings";
 import type { MacroType, ButtonMacroConfig } from "../buttonSettings";
 import {
     getMacroStates,
@@ -256,7 +256,7 @@ function PluginStateConfig({ macroType, pluginConfig, onChange, color }: PluginS
                                 }}
                             />
                             <ColorInput
-                                value={stateColors[state.id] || state.color || color || '#6EB4DC'}
+                                value={stateColors[state.id] || state.color || color || defaultButtonColor}
                                 onChange={v => {
                                     const newStateColors = { ...stateColors };
                                     newStateColors[state.id] = v;
