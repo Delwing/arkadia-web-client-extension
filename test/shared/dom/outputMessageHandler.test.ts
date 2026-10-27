@@ -18,7 +18,7 @@ function makeFakeClient() {
     };
 }
 
-function defineGeometry(el: HTMLElement, geometry: { scrollTop?: number; scrollHeight?: number; clientHeight?: number }) {
+function defineGeometry(el: HTMLElement, geometry: { scrollTop?: number; scrollHeight?: number; clientHeight?: number; offsetHeight?: number }) {
     for (const [key, value] of Object.entries(geometry)) {
         Object.defineProperty(el, key, { configurable: true, writable: true, value });
     }
@@ -168,6 +168,33 @@ describe('setupOutputMessageHandler', () => {
         expect(handler.isSplitView()).toBe(false);
         expect(splitBottom.classList.contains('split-hidden')).toBe(true);
         expect(stickyArea.children.length).toBe(0);
+    });
+
+    test('the pane lies over the last lines, and only the real bottom closes it', async () => {
+        const { outputWrapper, splitBottom, splitHandle, stickyArea } = setupDom();
+        const client = makeFakeClient();
+        handler = setupOutputMessageHandler(client, {
+            outputWrapper, splitBottom, splitHandle, stickyArea, stickyLines: 3,
+        });
+        for (let i = 1; i <= 5; i++) client.emit(`line ${i}`, 'comm');
+        await new Promise(resolve => setTimeout(resolve, 260));
+
+        defineGeometry(splitBottom, { offsetHeight: 120, clientHeight: 120 });
+        defineGeometry(outputWrapper, { scrollTop: 0, clientHeight: 100, scrollHeight: 1000 });
+        outputWrapper.dispatchEvent(new Event('scroll'));
+        expect(handler.isSplitView()).toBe(true);
+        // No height added below the text: opening and closing never change the scroll height
+        expect(splitBottom.style.marginTop).toBe('-120px');
+
+        await new Promise(resolve => setTimeout(resolve, 160));
+        // Within the pane's height of the bottom is not the bottom
+        defineGeometry(outputWrapper, { scrollTop: 800, clientHeight: 100, scrollHeight: 1000 });
+        outputWrapper.dispatchEvent(new Event('scroll'));
+        expect(handler.isSplitView()).toBe(true);
+
+        defineGeometry(outputWrapper, { scrollTop: 900, clientHeight: 100, scrollHeight: 1000 });
+        outputWrapper.dispatchEvent(new Event('scroll'));
+        expect(handler.isSplitView()).toBe(false);
     });
 
     test('does not open split view on the scroll event a wrapper resize emits', async () => {

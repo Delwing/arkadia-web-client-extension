@@ -265,7 +265,8 @@ if (footerLayoutElement) {
                 // Force scroll to bottom after layout settles
                 requestAnimationFrame(() => {
                     requestAnimationFrame(() => {
-                        const isAtBottom = outputWrapper.scrollTop + outputWrapper.clientHeight + splitBottom.clientHeight >= outputWrapper.scrollHeight - 1;
+                        // The split pane lies over the text, so only the real bottom counts
+                        const isAtBottom = outputWrapper.scrollTop + outputWrapper.clientHeight >= outputWrapper.scrollHeight - 1;
                         if (isAtBottom) {
                             outputWrapper.scrollTop = outputWrapper.scrollHeight;
                         }

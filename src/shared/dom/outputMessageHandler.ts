@@ -252,23 +252,42 @@ export function setupOutputMessageHandler(
     // put. The scroll/wheel/resize/drag state machine behind that lives in the
     // shared controller — what stays here is what only this host knows: the
     // sticky mirror and the trim.
+    // The pane lies over the last lines instead of being added below them, so
+    // showing and hiding it never changes the scroll height. When it did, a
+    // smooth scroll still under way kept heading for the old, taller bottom
+    // and Chrome drew a frame or two of shifted, doubled lines as the pane
+    // closed. At the very bottom it covers the newest lines with its own copy
+    // of them, so closing there changes nothing on screen.
+    const overlayPane = () => {
+        splitBottom.style.marginTop = `${-splitBottom.offsetHeight}px`;
+    };
+    // Its height also follows the window (max-height: 50vh)
+    const paneResize = new ResizeObserver(overlayPane);
+    paneResize.observe(splitBottom);
+
     const splitView = createSplitViewController({
         scrollEl: outputWrapper,
-        getSplitHeight: () => splitBottom.clientHeight,
+        // Covered lines are not seen lines any more: only the real bottom counts
+        getSplitHeight: () => 0,
         onOpen: () => {
             splitBottom.classList.remove('split-hidden');
+            overlayPane();
             refreshStickyArea();
         },
         onClose: () => {
             splitBottom.classList.add('split-hidden');
+            overlayPane();
             stickyArea.replaceChildren();
         },
         onHandleDrag: (heightPx) => {
             splitBottom.style.height = `${heightPx}px`;
+            overlayPane();
         },
-        onHandleDragEnd: (heightPx) => {
+        onHandleDragEnd: () => {
             refreshStickyArea();
-            onSplitViewResize?.(heightPx);
+            // Measured here: getSplitHeight no longer reports the pane's height.
+            // The CSS max-height may have clamped what was dragged.
+            onSplitViewResize?.(splitBottom.offsetHeight);
         },
     });
     const detachHandle = splitView.attachHandle(splitHandle);
@@ -346,6 +365,7 @@ export function setupOutputMessageHandler(
             client.off('message', handleMessage);
             detachHandle();
             splitView.destroy();
+            paneResize.disconnect();
             if (currentOutputWrapper === outputWrapper) {
                 currentOutputWrapper = null;
             }

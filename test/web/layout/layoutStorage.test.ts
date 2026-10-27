@@ -127,42 +127,42 @@ describe('settings changed in another tab', () => {
   // What another tab writes: its whole layout, with its own copy of the settings.
   const otherTabSaves = (popupSettings: Record<string, unknown>) => {
     const state = loadPersistedLayoutState();
-    state.popupPanels['popup:discord'] = { isDocked: true, settings: popupSettings };
+    state.popupPanels['popup:notes'] = { isDocked: true, settings: popupSettings };
     const raw = JSON.stringify(state);
     localStorage.setItem('layoutManagerState', raw);
     window.dispatchEvent(new StorageEvent('storage', { key: 'layoutManagerState', newValue: raw }));
   };
 
   it('takes over a setting changed there, so this tab does not save its old value back', () => {
-    setPopupSetting('popup:discord', 'hiddenChannels', []);
+    setPopupSetting('popup:notes', 'hiddenTags', []);
     const heard: unknown[] = [];
-    const off = subscribeToPanelSetting('popup', 'popup:discord', 'hiddenChannels', (v) => heard.push(v));
+    const off = subscribeToPanelSetting('popup', 'popup:notes', 'hiddenTags', (v) => heard.push(v));
 
-    otherTabSaves({ hiddenChannels: ['magiki'] });
+    otherTabSaves({ hiddenTags: ['zakupy'] });
     saveLayoutState(windowManager.serialize());
 
     invalidateLayoutCache();
-    expect(getPopupSetting('popup:discord', 'hiddenChannels', [])).toEqual(['magiki']);
-    expect(heard).toEqual([['magiki']]);
+    expect(getPopupSetting('popup:notes', 'hiddenTags', [])).toEqual(['zakupy']);
+    expect(heard).toEqual([['zakupy']]);
     off();
   });
 
   it('keeps a setting the other tab does not know about', () => {
-    setPopupSetting('popup:discord', 'channel:42', true);
+    setPopupSetting('popup:notes', 'tag:42', true);
 
-    otherTabSaves({ hiddenChannels: [] });
+    otherTabSaves({ hiddenTags: [] });
     saveLayoutState(windowManager.serialize());
 
     invalidateLayoutCache();
-    expect(getPopupSetting('popup:discord', 'channel:42', false)).toBe(true);
+    expect(getPopupSetting('popup:notes', 'tag:42', false)).toBe(true);
   });
 
   it('does not notify settings that did not change', () => {
-    setPopupSetting('popup:discord', 'hiddenChannels', ['magiki']);
+    setPopupSetting('popup:notes', 'hiddenTags', ['zakupy']);
     const listener = vi.fn();
-    const off = subscribeToPanelSetting('popup', 'popup:discord', 'hiddenChannels', listener);
+    const off = subscribeToPanelSetting('popup', 'popup:notes', 'hiddenTags', listener);
 
-    otherTabSaves({ hiddenChannels: ['magiki'] });
+    otherTabSaves({ hiddenTags: ['zakupy'] });
 
     expect(listener).not.toHaveBeenCalled();
     off();

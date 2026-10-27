@@ -69,7 +69,7 @@ describe('plugin UI kit and popup settings', () => {
 
         const api = new PluginApiImpl({} as never, 'jubiler');
         const popup = await api.ui.registerPersistentPopup({ id: 'main', title: 'Jubiler', createContent: () => 'x' });
-        const fields = [{ type: 'toggle' as const, key: 'kanal:1', label: '#ogolny', default: true }];
+        const fields = [{ type: 'toggle' as const, key: 'tag:1', label: 'Zakupy', default: true }];
         popup.setSettingsFields(fields);
 
         expect(updates).toEqual([{ id: 'popup:plugin:jubiler:main', changes: { settingsFields: fields } }]);
