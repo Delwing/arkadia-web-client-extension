@@ -1,3 +1,4 @@
+import {openSettings, SETTINGS_SAVE} from './support/settings';
 import {expect, test} from './support/fixtures';
 import {ensureGameSocket, pushText, waitForCommandInput, getLastOutgoingCommand} from './support/mocks';
 
@@ -122,4 +123,42 @@ test.describe('Functional Bind', () => {
 
         expect(usesProperColors, 'bind message should use hex colors from xterm palette').toBe(true);
     });
+});
+
+
+test('custom functional bind style persists and its footer executes the active action with output hidden', async ({page}) => {
+    await page.goto('/');
+    await waitForCommandInput(page);
+    await ensureGameSocket(page);
+    const modal = await openSettings(page, 'ui-commands');
+    await modal.getByRole('button', {name: 'Subtelny + stopka'}).click();
+    await expect(modal.locator('#ui-functional-bind-output')).toHaveValue('compact');
+    await modal.locator('#ui-functional-bind-template').fill('Akcja [{key}]: {action}');
+    await modal.locator(SETTINGS_SAVE).click();
+    await expect(modal).not.toBeVisible();
+
+    await pushText(page, 'A moze najpierw gdzies usiadziesz?');
+    const output = page.locator('#main_text_output_msg_wrapper');
+    await expect(output).toContainText('Akcja []]: usiadz');
+    const footer = page.locator('#multi-binds .multi-bind--functional');
+    await expect(footer).toContainText('usiadz');
+    await expect(footer.locator('.multi-bind-action')).toHaveCSS('color', 'rgb(160, 160, 160)');
+    await footer.click();
+    await expect.poll(() => getLastOutgoingCommand(page)).toBe('usiadz');
+
+    await page.reload();
+    await waitForCommandInput(page);
+    await ensureGameSocket(page);
+    const reopened = await openSettings(page, 'ui-commands');
+    await expect(reopened.locator('#ui-functional-bind-output')).toHaveValue('compact');
+    await expect(reopened.locator('#ui-functional-bind-template')).toHaveValue('Akcja [{key}]: {action}');
+    await expect(reopened.locator('#ui-functional-bind-footer')).toBeChecked();
+    await reopened.locator('#ui-functional-bind-output').selectOption('hidden');
+    await reopened.locator(SETTINGS_SAVE).click();
+    await expect(reopened).not.toBeVisible();
+    await pushText(page, 'A moze najpierw gdzies usiadziesz?');
+    await expect(footer).toContainText('usiadz');
+    await expect(output).not.toContainText('Akcja []]: usiadz');
+    await footer.click();
+    await expect.poll(() => getLastOutgoingCommand(page)).toBe('usiadz');
 });

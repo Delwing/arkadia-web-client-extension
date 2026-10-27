@@ -1,3 +1,4 @@
+import FunctionalBindSettings from "../FunctionalBindSettings";
 import type { UiSettings } from "../../uiSettingsCore";
 import { ChoiceList, Field } from "@web-ui/primitives/index.ts";
 import { CheckboxRow, SettingsSection } from "../fields";
@@ -34,6 +35,7 @@ function CommandsSection({ draft, update }: CommandsSectionProps) {
                 </Field>
                 <CheckboxRow id="ui-tab-completion-hint" label="Podpowiedź uzupełniania (Tab) za kursorem" checked={draft.tabCompletionHint} onChange={(v) => update({ tabCompletionHint: v })} />
             </SettingsSection>
+            <FunctionalBindSettings draft={draft} update={update} />
             <SettingsSection title="Podróż wozem">
                 <CheckboxRow id="ui-carriage-route-binds" label="Bindy trasy wozu (następny krok, zsiadanie)" checked={draft.carriageRouteBinds} onChange={(v) => update({ carriageRouteBinds: v })} />
                 <CheckboxRow id="ui-dismount-on-refused-ride" label="Powtórzenie odrzuconej jazdy zsiada z wozu i idzie pieszo" checked={draft.dismountOnRefusedRide} onChange={(v) => update({ dismountOnRefusedRide: v })} />

@@ -30,6 +30,7 @@ import {loadLayoutState} from "@web/layout";
 import {OBJECT_LIST_OTHERS_ID} from "@web/layout/types.ts";
 import {getWindowBackground, subscribeToWindowSetting, WINDOW_BACKGROUND_KEY, windowBackgroundRgba} from "@web/layout/windowSettings.ts";
 import {applyCustomTheme, generateRandomColor, removeCustomTheme} from "./themes/randomTheme";
+import {normalizeFunctionalBindPresentation} from "@shared/functionalBindPresentation.ts";
 import {normalizeToastSettings} from "@web/notifications/toastSettings.ts";
 
 // Re-export for backwards compatibility
@@ -709,6 +710,7 @@ export function load(): UiSettings {
             return {
                 ...defaultUiSettings,
                 ...parsed,
+                ...normalizeFunctionalBindPresentation(parsed),
                 mapScale,
                 mapPosition,
                 emojiLabels: !!parsed.emojiLabels,

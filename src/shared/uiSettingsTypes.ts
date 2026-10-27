@@ -100,6 +100,14 @@ export interface RenderSettings {
     characterPlaque: boolean;
     /** Shield after enemies covered against us / against teammates in the object list. */
     objectListCoverMarkers: boolean;
+    functionalBindOutput: 'full' | 'compact' | 'hidden';
+    /** {key} and {action} are substituted without interpreting commands or markup. */
+    functionalBindTemplate: string;
+    functionalBindColor: string;
+    functionalBindKeyColor: string;
+    /** Empty means the normal output text color. */
+    functionalBindActionColor: string;
+    functionalBindInFooter: boolean;
     commandEcho: boolean;
     clearInputOnSend: boolean;
     autoLowercaseCommands: boolean;

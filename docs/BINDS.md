@@ -12,6 +12,26 @@ Klient umożliwia ustawienie bindów do szybkiego wykonywania akcji.
 | `Ctrl+Q` | Wesprzyj | Wysyła `wesprzyj` (+ `wesprzyj ob_ID` przywódcy drużyny) |
 | `` ` `` | Tryb ruchu | Zmienia tryb ruchu |
 
+## Wygląd binda funkcyjnego
+
+W **Ustawienia → Interfejs → Komendy → Bind funkcyjny** możesz zmienić wygląd
+podpowiedzi akcji przypisanej domyślnie do `]`:
+
+- **Pełny** pokazuje komunikat z odstępami, jak dotychczas. To tryb domyślny.
+- **Kompaktowy** pokazuje jedną linię bez dodatkowych pustych linii.
+- **Ukryty** wyłącza komunikat w oknie gry; klawisz nadal wykonuje akcję.
+- **Pokazuj aktywny bind w stopce** dodaje klikalną akcję do paska bindów.
+  Działa niezależnie od trybu komunikatu, także przy ukrytym outputcie.
+
+Format komunikatu możesz wpisać samodzielnie: `{key}` zostanie zastąpione
+klawiszem, a `{action}` — klikalną akcją. Na przykład `{key} → {action}`.
+Osobno ustawisz kolor tekstu, klawisza i akcji; akcja może też zachować zwykły
+kolor tekstu gry. Podgląd pokazuje efekt przed zapisaniem.
+
+Przycisk **Subtelny + stopka** ustawia szary komunikat w jednej linii i włącza
+akcję w stopce. **Przywróć domyślny** przywraca dotychczasowy wygląd i wyłącza
+bind w stopce. Zmiany zatwierdź przyciskiem **Zapisz**.
+
 ## Konfiguracja
 
 Bindy ustawiasz w oknie **Klawisze** (menu -> Klawisze). Każda zmiana zapisuje

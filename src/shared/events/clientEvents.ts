@@ -294,6 +294,9 @@ export interface KnownEvents {
     "visitedRooms.added": { character: string; rooms: number[] };
     "highlights": [number[]];
     "multibinds": MultibindList;
+    /** The action currently executed by executeFunctionalBind (latest active category). */
+    "functionalBindState": { label: string; action: string } | null;
+    "requestFunctionalBindState": void;
     "letterComposer": { to?: string; cc?: string; udw?: string; subject?: string; content?: string };
     "letterComposer.submit": LetterSubmitPayload;
     "letterComposer.preview": LetterSubmitPayload;

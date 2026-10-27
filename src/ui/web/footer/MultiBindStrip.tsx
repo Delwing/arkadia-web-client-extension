@@ -1,4 +1,7 @@
 import { useEffect, useState } from "react";
+import { getRenderSettings, onRenderSettingsChange } from "@modules/core/settings/index.ts";
+import { normalizeFunctionalBindPresentation } from "@shared/functionalBindPresentation.ts";
+import type { ClientEvents } from "@modules/core/eventBus";
 import eventBus from "@modules/core/eventBus";
 import { globalStorage } from "@modules/core/storage";
 import { PREVIEW_BINDS, useFooterPreview } from "./layout/previewContext";
@@ -9,7 +12,7 @@ interface DisplayMultibind {
   action: string;
   /** Key label; empty for a slot without a key. */
   label: string;
-  kind?: "room" | "drink" | "gate";
+  kind?: "room" | "drink" | "gate" | "functional";
   /** Display name of a temporary (plugin) bind, shown instead of the action. */
   name?: string;
   temporary?: boolean;
@@ -60,7 +63,17 @@ export default function MultiBindStrip({
   const [liveBinds, setBinds] = useState<DisplayMultibind[]>([]);
   // The layout editor's preview shows a few binds even where the room has none.
   const preview = useFooterPreview();
-  const binds = preview && liveBinds.length === 0 ? PREVIEW_BINDS : liveBinds;
+  const [functionalBind, setFunctionalBind] = useState<ClientEvents['functionalBindState']>(null);
+  const [presentation, setPresentation] = useState(() => normalizeFunctionalBindPresentation(getRenderSettings()));
+  useClientEvent<ClientEvents['functionalBindState']>('functionalBindState', setFunctionalBind);
+  useEffect(() => {
+    const unsubscribe = onRenderSettingsChange(settings => setPresentation(normalizeFunctionalBindPresentation(settings)));
+    eventBus.emit('requestFunctionalBindState');
+    return unsubscribe;
+  }, []);
+  const displayed: DisplayMultibind[] = presentation.functionalBindInFooter && functionalBind
+    ? [...liveBinds, { index: 1004, kind: 'functional', ...functionalBind }] : liveBinds;
+  const binds = preview && displayed.length === 0 ? PREVIEW_BINDS : displayed;
   const [keepVisible, setKeepVisible] = useState(getInitialKeepVisible);
   const [keyHintMode, setKeyHintMode] = useState(getKeyHintMode);
   const hardwareKeyboard = useHardwareKeyboard();
@@ -114,11 +127,13 @@ export default function MultiBindStrip({
               title={name ? `${name}: ${bind.action}` : bind.action}
               disabled={!action}
               onClick={() => {
-                if (action) eventBus.emit("sendCommand", { command: bind.action });
+                if (!action) return;
+                if (bind.kind === 'functional') eventBus.emit('executeFunctionalBind');
+                else eventBus.emit("sendCommand", { command: bind.action });
               }}
             >
-              {showKeys && bind.label && <span className="multi-bind-key">{bind.label}</span>}
-              <span className="multi-bind-action">{name || bind.action}</span>
+              {showKeys && bind.label && <span className="multi-bind-key" style={bind.kind === 'functional' ? { color: presentation.functionalBindKeyColor } : undefined}>{bind.label}</span>}
+              <span className="multi-bind-action" style={bind.kind === 'functional' ? { color: presentation.functionalBindActionColor || undefined } : undefined}>{name || bind.action}</span>
             </button>
           );
         })}
