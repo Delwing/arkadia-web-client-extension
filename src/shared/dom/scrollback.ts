@@ -63,6 +63,7 @@ export function attachScrollback(scrollEl: HTMLElement, options: ScrollbackOptio
     // reads as a rendering glitch. Trimmed to the whole lines that fit.
     const applyHeight = () => {
         pane.style.height = `${splitHeight}px`;
+        pane.style.marginTop = `${-splitHeight}px`;
         if (!pane.isConnected) return;
         const handleHeight = handle.offsetHeight;
         // clientHeight, not splitHeight: the CSS max-height may have clamped it
@@ -75,6 +76,13 @@ export function attachScrollback(scrollEl: HTMLElement, options: ScrollbackOptio
             fits = height;
         }
         if (fits > 0) pane.style.height = `${Math.ceil(fits + handleHeight)}px`;
+        // The pane lies over the last lines instead of being added below them,
+        // so opening and closing it never changes the scroll height. When it
+        // did, a smooth scroll already under way kept heading for the old,
+        // taller bottom: Chrome drew the list shifted - an empty strip, lines
+        // doubled - until something made it redraw. At the very bottom the pane
+        // covers the newest lines with its own copy of them.
+        pane.style.marginTop = `${-pane.offsetHeight}px`;
     };
 
     const renderMirror = () => {
@@ -96,7 +104,9 @@ export function attachScrollback(scrollEl: HTMLElement, options: ScrollbackOptio
     const controller = createSplitViewController({
         scrollEl,
         bottomThreshold: options.bottomThreshold ?? 50,
-        getSplitHeight: () => (pane.isConnected ? pane.clientHeight : 0),
+        // The pane lies over the content rather than adding below it (see
+        // applyHeight), so only the real bottom counts as "at the bottom"
+        getSplitHeight: () => 0,
         onOpen: () => {
             // The pane bleeds over the scroller's side padding, so match it.
             pane.style.setProperty('--popup-split-gutter', getComputedStyle(scrollEl).paddingLeft || '0px');
