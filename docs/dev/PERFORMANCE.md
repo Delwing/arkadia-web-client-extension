@@ -81,5 +81,5 @@ proportional to game output while it is not visible.
 - **Output timestamps:** every line builds timestamp and message-type spans that are
   hidden unless the toggles are on.
 - **Bursts block the main thread:** a 200-line message is processed synchronously
-  (~80-100 ms). Chunking the trigger pass across frames would keep input responsive
+  (~90-110 ms here). Chunking the trigger pass across frames would keep input responsive
   during login dumps, at the cost of ordering complexity.
