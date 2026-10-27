@@ -22,6 +22,7 @@ import {
     createMarkAllyEvent,
     createSetColorEvent,
     createSetNoteEvent,
+    createSetLocationEvent,
 } from './peopleLocalEvents';
 import { characterStorage } from '@modules/core/storage';
 
@@ -123,9 +124,9 @@ export function addLocalPerson(entry: PersonEntry): void {
  * Edit an existing person entry (creates a replace event)
  */
 export function editPerson(targetKey: string, newEntry: PersonEntry): void {
-    // Remove existing replace/ignore events for this target, but preserve mark-enemy, mark-ally, set-color and set-note
+    // Remove existing replace/ignore events for this target, but preserve mark-enemy, mark-ally, set-color, set-note and set-location
     const filteredEvents = localEventsSnapshot.events.filter(
-        (e) => e.targetKey !== targetKey || e.type === 'add' || e.type === 'mark-enemy' || e.type === 'mark-ally' || e.type === 'set-color' || e.type === 'set-note'
+        (e) => e.targetKey !== targetKey || e.type === 'add' || e.type === 'mark-enemy' || e.type === 'mark-ally' || e.type === 'set-color' || e.type === 'set-note' || e.type === 'set-location'
     );
     const event = createReplaceEvent(targetKey, newEntry);
     localEventsSnapshot = {
@@ -294,6 +295,29 @@ export function setPersonNote(targetKey: string, note: string, showNoteOnMeet: b
     localEventsSnapshot = {
         events: trimmed || stillCarried
             ? [...filteredEvents, createSetNoteEvent(targetKey, trimmed, trimmed ? showNoteOnMeet : false)]
+            : filteredEvents,
+        timestamp: Date.now(),
+    };
+    saveLocalEvents(localEventsSnapshot);
+    recomputeMerged();
+}
+
+/**
+ * Set the map room where a person can be found. Null removes it.
+ */
+export function setPersonLocation(targetKey: string, location: number | null): void {
+    const filteredEvents = localEventsSnapshot.events.filter(
+        (e) => !(e.targetKey === targetKey && e.type === 'set-location')
+    );
+    // Like notes, an edit carries the location over from the previous key, so clearing it may need an override.
+    const stillCarried = location === null && !!remoteData && applyLocalEvents(remoteData, filteredEvents)
+        .some((p) => makePersonKey(p.name, p.description) === targetKey && p.location !== undefined);
+    if (location === null && !stillCarried && filteredEvents.length === localEventsSnapshot.events.length) {
+        return; // No changes
+    }
+    localEventsSnapshot = {
+        events: location !== null || stillCarried
+            ? [...filteredEvents, createSetLocationEvent(targetKey, location ?? undefined)]
             : filteredEvents,
         timestamp: Date.now(),
     };

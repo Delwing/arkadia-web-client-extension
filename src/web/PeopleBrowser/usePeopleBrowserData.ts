@@ -1,6 +1,8 @@
 import {useCallback, useEffect, useMemo, useState} from 'react';
 import {loadPeople, subscribeMerged} from '@modules/data/peopleLoader';
-import {getPeopleBrowserService} from './PeopleBrowserService';
+import {getPeopleBrowserService, type StatusCounts} from './PeopleBrowserService';
+import {subscribeEmbeddedMap} from '../embedRegistry';
+import {describeRoom} from './personLocation';
 import type {PageSize, PeopleBrowserResult, StatusFilter} from './PeopleBrowserTypes';
 
 interface UsePeopleBrowserDataOptions {
@@ -17,6 +19,7 @@ export function usePeopleBrowserData({ isOpen }: UsePeopleBrowserDataOptions) {
     const [page, setPage] = useState(0);
     const [result, setResult] = useState<PeopleBrowserResult | null>(null);
     const [availableGuilds, setAvailableGuilds] = useState<string[]>([]);
+    const [statusCounts, setStatusCounts] = useState<StatusCounts>({ all: 0, enemy: 0, ally: 0 });
     const [dataVersion, setDataVersion] = useState(0);
     const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -39,9 +42,17 @@ export function usePeopleBrowserData({ isOpen }: UsePeopleBrowserDataOptions) {
             (snapshot) => {
                 service.setData(snapshot);
                 setAvailableGuilds(service.getAvailableGuilds());
+                setStatusCounts(service.getStatusCounts());
                 setDataVersion((v) => v + 1);
             }
         );
+    }, [isOpen, service]);
+
+    // Room names come from the map, which may load after the people do.
+    useEffect(() => {
+        if (!isOpen) return;
+        service.setLocationResolver((roomId) => describeRoom(roomId)?.name);
+        return subscribeEmbeddedMap(() => setDataVersion((v) => v + 1));
     }, [isOpen, service]);
 
     useEffect(() => {
@@ -95,6 +106,7 @@ export function usePeopleBrowserData({ isOpen }: UsePeopleBrowserDataOptions) {
         isLoading,
         result,
         availableGuilds,
+        statusCounts,
         searchTerm,
         guildFilter,
         statusFilter,

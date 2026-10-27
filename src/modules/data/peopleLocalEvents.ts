@@ -78,6 +78,7 @@ export function applyLocalEvents(
                     color: original?.color,
                     note: original?.note,
                     showNoteOnMeet: original?.showNoteOnMeet,
+                    location: original?.location,
                     originalEntry: original?.originalEntry
                         ?? (original && original.source === 'remote'
                             ? {
@@ -155,6 +156,18 @@ export function applyLocalEvents(
                 }
                 break;
             }
+
+            case 'set-location': {
+                if (!event.targetKey) break;
+                const existing = result.get(event.targetKey);
+                if (existing) {
+                    result.set(event.targetKey, {
+                        ...existing,
+                        location: event.location,
+                    });
+                }
+                break;
+            }
         }
     }
 
@@ -226,5 +239,15 @@ export function createSetNoteEvent(targetKey: string, note: string, showNoteOnMe
         targetKey,
         note,
         showNoteOnMeet,
+    };
+}
+
+export function createSetLocationEvent(targetKey: string, location: number | undefined): PersonEditEvent {
+    return {
+        id: generateEventId(),
+        type: 'set-location',
+        timestamp: Date.now(),
+        targetKey,
+        location,
     };
 }

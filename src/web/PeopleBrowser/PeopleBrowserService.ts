@@ -2,18 +2,31 @@ import type { PersonListEntry } from '@client/types/people';
 import type { PeopleBrowserQuery, PeopleBrowserResult } from './PeopleBrowserTypes';
 import { makePersonKey } from '@modules/data/peopleLoader';
 
-/** Anything the user did to the entry on this device: added, edited, ignored, marked, coloured or noted. */
+/** Anything the user did to the entry on this device: added, edited, ignored, marked, coloured, noted or located. */
 function hasLocalChanges(person: PersonListEntry): boolean {
     return person.source !== 'remote'
         || person.ignored
         || person.isEnemy
         || person.isAlly
         || !!person.color
-        || !!person.note;
+        || !!person.note
+        || person.location !== undefined;
+}
+
+export interface StatusCounts {
+    all: number;
+    enemy: number;
+    ally: number;
 }
 
 export class PeopleBrowserService {
     private people: PersonListEntry[] = [];
+    private locationName: (roomId: number) => string | undefined = () => undefined;
+
+    /** How a room id reads in search, so typing a room's name finds the people placed there. */
+    setLocationResolver(resolver: (roomId: number) => string | undefined): void {
+        this.locationName = resolver;
+    }
 
     setData(people: PersonListEntry[] | undefined): void {
         this.people = people ?? [];
@@ -21,6 +34,16 @@ export class PeopleBrowserService {
 
     findByKey(key: string): PersonListEntry | undefined {
         return this.people.find(p => makePersonKey(p.name, p.description) === key);
+    }
+
+    getStatusCounts(): StatusCounts {
+        let enemy = 0;
+        let ally = 0;
+        for (const person of this.people) {
+            if (person.isEnemy) enemy++;
+            if (person.isAlly) ally++;
+        }
+        return { all: this.people.length, enemy, ally };
     }
 
     getAvailableGuilds(): string[] {
@@ -57,7 +80,8 @@ export class PeopleBrowserService {
             if (searchLower) {
                 const nameLower = person.name.toLowerCase();
                 const descLower = person.description.toLowerCase();
-                if (!nameLower.includes(searchLower) && !descLower.includes(searchLower)) {
+                if (!nameLower.includes(searchLower) && !descLower.includes(searchLower)
+                    && !this.matchesLocation(person, searchLower)) {
                     return false;
                 }
             }
@@ -88,6 +112,12 @@ export class PeopleBrowserService {
             currentPage: safePage,
             query: { ...query, page: safePage },
         };
+    }
+
+    private matchesLocation(person: PersonListEntry, searchLower: string): boolean {
+        if (person.location === undefined) return false;
+        if (String(person.location) === searchLower.replace(/^#/, '')) return true;
+        return !!this.locationName(person.location)?.toLowerCase().includes(searchLower);
     }
 
     getTotalCount(): number {

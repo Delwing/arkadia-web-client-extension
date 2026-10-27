@@ -3788,6 +3788,10 @@ select.popup-input optgroup {
 }
 
 /* ── people browser ──────────────────────────────────────────────────── */
+/* A list with a side panel. The layout follows the popup's own width:
+   under 560px one pane at a time (the panel replaces the list while open),
+   560–960px list + panel with two-line rows, 960px+ a one-line table with a
+   location column and a wider two-column panel. */
 .people-browser-body {
   display: flex;
   flex-direction: column;
@@ -3797,24 +3801,21 @@ select.popup-input optgroup {
   background-color: var(--popup-bg);
   font-size: calc(0.8rem * var(--window-font-scale, 1));
   line-height: 1.4;
+  container: people-browser / inline-size;
 }
 
 .people-browser__controls {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
   padding: 8px 10px;
   border-bottom: 1px solid var(--popup-border);
 }
 
-.people-browser__toolbar {
-  display: flex;
-  gap: 6px;
-}
-
 .people-browser__search {
   position: relative;
-  flex: 1;
+  flex: 1 1 0;
   min-width: 0;
 }
 
@@ -3856,15 +3857,53 @@ select.popup-input optgroup {
   flex-wrap: wrap;
   align-items: center;
   gap: 6px 10px;
+  order: 2;
+  flex: 1 1 100%;
 }
 
 .people-browser__guild-filter {
-  width: 150px;
+  width: 140px;
+}
+
+.people-browser__count {
+  margin-left: 3px;
+  color: var(--popup-text-faint);
+  font-variant-numeric: tabular-nums;
 }
 
 .people-browser__local-only {
   margin: 0;
   white-space: nowrap;
+}
+
+.people-browser__main {
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-height: 0;
+}
+
+.people-browser__list-pane {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.people-browser__panel-pane {
+  display: none;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* Narrow: an open panel replaces the toolbar and the list. */
+.people-browser-body--panel-open .people-browser__controls,
+.people-browser-body--panel-open .people-browser__list-pane {
+  display: none;
+}
+
+.people-browser-body--panel-open .people-browser__panel-pane {
+  display: flex;
 }
 
 .people-browser__content {
@@ -3874,7 +3913,8 @@ select.popup-input optgroup {
 }
 
 .people-browser__loading,
-.people-browser__empty {
+.people-browser__empty,
+.people-browser__panel-empty {
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -3883,6 +3923,7 @@ select.popup-input optgroup {
   height: 100%;
   padding: 1rem;
   color: var(--popup-text-dim);
+  text-align: center;
 }
 
 .people-browser__list {
@@ -3890,40 +3931,30 @@ select.popup-input optgroup {
   flex-direction: column;
 }
 
-.people-browser__head,
+/* Two-line rows: name, guild and flags on top, description below. */
+.people-browser__head {
+  display: none;
+}
+
 .people-browser__item {
   display: grid;
-  grid-template-columns: minmax(90px, 1fr) 56px minmax(120px, 2.2fr) 26px;
-  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1px 8px;
   align-items: center;
-  padding: 0 10px;
-}
-
-.people-browser__head {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  height: 26px;
-  background-color: var(--popup-bg);
-  border-bottom: 1px solid var(--popup-border);
-  color: var(--popup-text-faint);
-  font-size: var(--ui-fs-xs, 11px);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.people-browser__item {
-  min-height: 36px;
-  font-size: calc(0.875rem * var(--window-font-scale, 1));
+  padding: 6px 10px 6px 12px;
   border-bottom: 1px solid var(--popup-border-subtle);
-  /* A thin stripe on the left marks enemies and allies. */
+  /* A thin stripe on the left marks enemies, allies and the selection. */
   box-shadow: inset 2px 0 0 transparent;
   cursor: pointer;
 }
 
 .people-browser__item:hover {
   background-color: var(--popup-hover-bg);
+}
+
+.people-browser__item:focus-visible {
+  outline: 2px solid var(--popup-accent);
+  outline-offset: -2px;
 }
 
 .people-browser__item--enemy {
@@ -3934,7 +3965,16 @@ select.popup-input optgroup {
   box-shadow: inset 2px 0 0 var(--popup-success);
 }
 
-.people-browser__item--ignored > :not(.people-browser__item-edit) {
+.people-browser__item--selected,
+.people-browser__item--selected:hover {
+  background-color: var(--popup-accent-dim-bg);
+}
+
+.people-browser__item--selected:not(.people-browser__item--enemy):not(.people-browser__item--ally) {
+  box-shadow: inset 2px 0 0 var(--popup-accent);
+}
+
+.people-browser__item--ignored > * {
   opacity: 0.45;
 }
 
@@ -3948,6 +3988,7 @@ select.popup-input optgroup {
   gap: 6px;
   min-width: 0;
   color: var(--popup-text);
+  font-size: calc(0.875rem * var(--window-font-scale, 1));
   font-weight: 600;
 }
 
@@ -3972,21 +4013,37 @@ select.popup-input optgroup {
   border-radius: 2px;
 }
 
-.people-browser__item-guild {
-  justify-self: start;
+.people-browser__guild {
+  flex-shrink: 0;
   padding: 0 5px;
   border-radius: 4px;
   background-color: var(--popup-subtle-bg);
   color: var(--popup-data-blue);
   font-size: var(--ui-fs-xs, 11px);
   font-weight: 600;
-  line-height: 20px;
+  line-height: 18px;
+}
+
+.people-browser__item-guild,
+.people-browser__item-location {
+  display: none;
+}
+
+.people-browser__item-flags {
+  grid-row: 1;
+  grid-column: 2;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  min-width: 0;
 }
 
 .people-browser__item-desc {
+  grid-column: 1 / -1;
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 8px;
   min-width: 0;
   color: var(--popup-text-medium);
 }
@@ -3998,33 +4055,31 @@ select.popup-input optgroup {
   white-space: nowrap;
 }
 
+.people-browser__item-loc {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+  color: var(--popup-text-dim);
+  white-space: nowrap;
+}
+
+.people-browser__item-loc span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.people-browser__item-loc--inline {
+  flex-shrink: 0;
+  max-width: 45%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .people-browser__note {
   display: inline-flex;
   flex-shrink: 0;
   color: var(--popup-accent);
-}
-
-/* Bare icon button; the whole row opens the editor, this is its visible cue. */
-.people-browser__item-edit {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  padding: 0;
-  border: 0;
-  border-radius: 4px;
-  background: none;
-  color: var(--popup-text-faint);
-  cursor: pointer;
-}
-
-.people-browser__item:hover .people-browser__item-edit {
-  color: var(--popup-text-strong);
-}
-
-.people-browser__item-edit:hover {
-  background-color: var(--popup-control-hover-bg);
 }
 
 .people-browser__badge {
@@ -4034,6 +4089,7 @@ select.popup-input optgroup {
   font-size: var(--ui-fs-xs, 11px);
   font-weight: 600;
   line-height: 16px;
+  white-space: nowrap;
 }
 
 .people-browser__badge--local {
@@ -4063,8 +4119,9 @@ select.popup-input optgroup {
 
 .people-browser__footer {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: 6px 8px;
   padding: 6px 10px;
   border-top: 1px solid var(--popup-border);
 }
@@ -4073,6 +4130,7 @@ select.popup-input optgroup {
   min-width: 0;
   color: var(--popup-text-dim);
   font-size: var(--ui-fs-sm, 12px);
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
@@ -4096,107 +4154,175 @@ select.popup-input optgroup {
   margin-left: auto;
 }
 
-/* ── people browser: add / edit dialog ───────────────────────────────── */
-.people-modal__form {
+/* ── people browser: person panel ────────────────────────────────────── */
+.people-panel {
+  --people-map-exit: var(--popup-border-stronger);
+  --people-map-marker: var(--popup-accent);
   display: flex;
   flex-direction: column;
-  gap: 12px;
-}
-
-.people-modal__row {
-  display: flex;
-  gap: 10px;
-}
-
-.people-modal__name {
   flex: 1;
+  min-width: 0;
+  min-height: 0;
 }
 
-.people-modal__guild {
-  width: 120px;
-}
-
-.people-modal__hint {
-  font-size: var(--ui-fs-sm, 12px);
-  color: var(--popup-text-dim);
-}
-
-.people-modal__note {
-  min-height: 3.5rem;
-}
-
-/* The "this entry was edited locally" recap block. */
-.people-modal__original {
+.people-panel__back {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 8px 10px;
-  border: 1px solid var(--popup-border-subtle);
-  border-radius: var(--ui-radius, 6px);
-  background-color: var(--popup-subtle-bg);
+  gap: 4px;
+  padding: 7px 10px;
+  border: 0;
+  border-bottom: 1px solid var(--popup-border);
+  background: none;
+  color: var(--popup-accent);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
 }
 
-.people-modal__marks {
+.people-panel__back:hover {
+  background-color: var(--popup-hover-bg);
+}
+
+.people-panel__scroll {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 0;
+  padding: 14px;
+  overflow-y: auto;
+}
+
+.people-panel__id {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.people-panel__name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  color: var(--popup-text-strong);
+  font-size: calc(1.1rem * var(--window-font-scale, 1));
+  font-weight: 700;
+}
+
+.people-panel__name-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.people-panel__name-text.is-enemy {
+  color: var(--popup-danger);
+}
+
+.people-panel__name-text.is-ally {
+  color: var(--popup-success);
+}
+
+.people-panel__name-text.is-ignored {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
+.people-panel__desc {
+  color: var(--popup-text-medium);
+}
+
+.people-panel__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.people-panel__badges:empty {
+  display: none;
+}
+
+.people-panel__cols,
+.people-panel__col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.people-panel__group {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding-top: 12px;
-  border-top: 1px solid var(--popup-border-subtle);
 }
 
-.people-modal__marks-head {
+.people-panel__group-head {
   display: flex;
+  justify-content: space-between;
   align-items: baseline;
   gap: 8px;
 }
 
-.people-modal__marks-row {
+.people-panel__label {
+  color: var(--popup-text-dim);
+  font-size: var(--ui-fs-xs, 11px);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.people-panel__hint {
+  color: var(--popup-text-faint);
+  font-size: var(--ui-fs-xs, 11px);
+}
+
+.people-panel__error {
+  color: var(--popup-danger);
+  font-size: var(--ui-fs-sm, 12px);
+}
+
+.people-panel__note {
+  min-height: 4rem;
+}
+
+.people-panel__marks {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
 }
 
-.people-modal__marks-sep {
+.people-panel__marks-sep {
   width: 1px;
   height: 20px;
-  margin: 0 4px;
+  margin: 0 2px;
   background-color: var(--popup-border);
 }
 
 /* Toggles: outlined in their colour when off, filled when on. */
-.popup-btn.people-modal__mark--enemy {
+.popup-btn.people-panel__mark--enemy {
   gap: 4px;
   border-color: var(--popup-danger-border);
   color: var(--popup-danger);
 }
 
-.popup-btn.people-modal__mark--enemy.is-active,
-.popup-btn.people-modal__mark--enemy:hover {
+.popup-btn.people-panel__mark--enemy.is-active,
+.popup-btn.people-panel__mark--enemy:hover {
   background-color: var(--popup-danger-bg);
 }
 
-.popup-btn.people-modal__mark--ally {
+.popup-btn.people-panel__mark--ally {
   gap: 4px;
   border-color: var(--popup-success-border);
   color: var(--popup-success);
 }
 
-.popup-btn.people-modal__mark--ally.is-active,
-.popup-btn.people-modal__mark--ally:hover {
+.popup-btn.people-panel__mark--ally.is-active,
+.popup-btn.people-panel__mark--ally:hover {
   background-color: var(--popup-success-bg);
 }
 
-.popup-btn.people-modal__mark--warning {
-  color: var(--popup-warning);
-}
-
-.popup-btn.people-modal__mark--warning:hover:not(:disabled) {
-  background-color: var(--popup-warning-bg);
-}
-
-.people-modal__color-label {
+.people-panel__color-label {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -4206,9 +4332,9 @@ select.popup-input optgroup {
   cursor: pointer;
 }
 
-.people-modal__color {
-  width: 28px;
-  height: 28px;
+.people-panel__color {
+  width: 26px;
+  height: 26px;
   padding: 2px;
   border: 1px solid var(--popup-border-control);
   border-radius: var(--ui-radius, 6px);
@@ -4216,8 +4342,238 @@ select.popup-input optgroup {
   cursor: pointer;
 }
 
-.people-modal__footer-spacer {
+.people-panel__fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 96px;
+  gap: 8px;
+}
+
+.people-panel__field-desc {
+  grid-column: 1 / -1;
+}
+
+.people-panel__location-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.people-panel__location-row .popup-input.people-panel__location-input {
+  width: 96px;
+  font-variant-numeric: tabular-nums;
+}
+
+.people-panel__suggestion {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 6px 5px 8px;
+  border-radius: var(--ui-radius, 6px);
+  background-color: var(--popup-accent-dim-bg);
+  color: var(--popup-text-medium);
+  font-size: var(--ui-fs-sm, 12px);
+}
+
+.people-panel__suggestion .popup-btn {
+  margin-left: auto;
+}
+
+.people-panel__room {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--popup-border-control);
+  border-radius: var(--ui-radius, 6px);
+  background-color: var(--popup-subtle-bg);
+}
+
+.people-panel__room--empty {
+  color: var(--popup-text-dim);
+  font-size: var(--ui-fs-sm, 12px);
+}
+
+.people-panel__room-name {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.people-panel__room-name strong {
+  color: var(--popup-text-strong);
+  font-weight: 600;
+}
+
+.people-panel__room-name span {
+  color: var(--popup-text-dim);
+  font-size: var(--ui-fs-sm, 12px);
+  font-variant-numeric: tabular-nums;
+}
+
+.people-panel__map {
+  display: none;
+  width: 100%;
+  height: 120px;
+  border: 1px solid var(--popup-border);
+  border-radius: var(--ui-radius, 6px);
+  background-color: var(--popup-input-bg);
+  object-fit: cover;
+}
+
+.people-panel__room-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* The "this entry was edited locally" recap block. */
+.people-panel__original {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--popup-border-subtle);
+  border-radius: var(--ui-radius, 6px);
+  background-color: var(--popup-subtle-bg);
+  font-size: var(--ui-fs-sm, 12px);
+}
+
+.people-panel__footer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-top: 1px solid var(--popup-border);
+}
+
+.people-panel__spacer {
   flex: 1;
+}
+
+.popup-btn.people-panel__ignore {
+  color: var(--popup-warning);
+}
+
+.popup-btn.people-panel__ignore:hover:not(:disabled) {
+  background-color: var(--popup-warning-bg);
+}
+
+.popup-btn.people-panel__delete {
+  color: var(--popup-danger);
+}
+
+.popup-btn.people-panel__delete:hover:not(:disabled) {
+  background-color: var(--popup-danger-bg);
+}
+
+/* Medium: list and panel side by side. */
+@container people-browser (min-width: 560px) {
+  .people-browser__main {
+    grid-template-columns: minmax(0, 1fr) 320px;
+  }
+
+  .people-browser__panel-pane,
+  .people-browser-body--panel-open .people-browser__panel-pane {
+    display: flex;
+    border-left: 1px solid var(--popup-border);
+    background-color: var(--popup-section-bg);
+  }
+
+  .people-browser-body--panel-open .people-browser__controls {
+    display: flex;
+  }
+
+  .people-browser-body--panel-open .people-browser__list-pane {
+    display: flex;
+  }
+
+  .people-panel__back {
+    display: none;
+  }
+}
+
+/* Wide: a one-line table with a location column, toolbar on one row, wider panel. */
+@container people-browser (min-width: 960px) {
+  .people-browser__controls {
+    flex-wrap: nowrap;
+  }
+
+  .people-browser__search {
+    flex: 0 1 300px;
+  }
+
+  .people-browser__filters {
+    order: 0;
+    flex: 1 1 auto;
+    flex-wrap: nowrap;
+  }
+
+  .people-browser__add {
+    margin-left: auto;
+  }
+
+  .people-browser__main {
+    grid-template-columns: minmax(0, 1fr) 460px;
+  }
+
+  .people-browser__head,
+  .people-browser__item {
+    display: grid;
+    /* Fixed edges on both ends: every row is its own grid, so auto tracks would drift. */
+    grid-template-columns: minmax(100px, 1fr) 52px minmax(140px, 2fr) minmax(100px, 1.2fr) 150px;
+    gap: 10px;
+    align-items: center;
+    padding: 0 10px 0 12px;
+  }
+
+  .people-browser__head {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    height: 26px;
+    background-color: var(--popup-bg);
+    border-bottom: 1px solid var(--popup-border);
+    color: var(--popup-text-faint);
+    font-size: var(--ui-fs-xs, 11px);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .people-browser__item {
+    min-height: 34px;
+  }
+
+  .people-browser__guild--inline,
+  .people-browser__item-loc--inline {
+    display: none;
+  }
+
+  .people-browser__item-guild,
+  .people-browser__item-location {
+    display: flex;
+    min-width: 0;
+  }
+
+  .people-browser__item-desc,
+  .people-browser__item-flags {
+    grid-row: auto;
+    grid-column: auto;
+  }
+
+  .people-browser__item-flags {
+    overflow: hidden;
+  }
+
+  .people-panel__cols {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .people-panel__map {
+    display: block;
+  }
 }
 
 /* ── walker ──────────────────────────────────────────────────────────── */

@@ -21,20 +21,21 @@ import {
     setPersonColor,
     clearPersonColor,
     setPersonNote,
+    setPersonLocation,
 } from '@modules/data/peopleLoader';
-import PersonEditModal, { type PersonNote } from './PersonEditModal';
+import { PersonPanel, type PersonNote } from './PersonPanel';
+import { PersonBadges } from './PersonBadges';
+import { describeRoom } from './personLocation';
 import { Button, Check, HeaderButton, Input, Segmented, Select } from '@web-ui/primitives';
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, NotebookPen, Pencil, Search, Undo2, UserPlus, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, MapPin, NotebookPen, Search, UserPlus, X } from 'lucide-react';
 
 const POPUP_ID = 'popup:peopleBrowser';
 
 const ALL_GUILD_CODES = Object.values(GUILD_CODES_BY_ID).sort();
 
-const STATUS_OPTIONS: { value: StatusFilter; label: string }[] = [
-    { value: '', label: 'Wszyscy' },
-    { value: 'enemy', label: 'Wrogowie' },
-    { value: 'ally', label: 'Sojusznicy' },
-];
+type Selection = { mode: 'edit'; key: string } | { mode: 'add' } | null;
+
+const keyOf = (person: { name: string; description: string }) => makePersonKey(person.name, person.description);
 
 const PeopleBrowser: React.FC = () => {
     const { wrapperProps, setIsOpen, isOpen } = usePopup(POPUP_ID);
@@ -48,6 +49,7 @@ const PeopleBrowser: React.FC = () => {
     const {
         isLoading,
         result,
+        statusCounts,
         searchTerm,
         guildFilter,
         statusFilter,
@@ -66,125 +68,83 @@ const PeopleBrowser: React.FC = () => {
         refreshData,
     } = usePeopleBrowserData({ isOpen });
 
-    // Modal state
-    const [showModal, setShowModal] = useState(false);
-    const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
-    const [selectedPersonKey, setSelectedPersonKey] = useState<string | undefined>();
+    const [selection, setSelection] = useState<Selection>(null);
+    const selectedKey = selection?.mode === 'edit' ? selection.key : undefined;
 
-    // Derive selectedPerson from current data so it reflects live updates (e.g., color changes)
+    // Derived from current data so the panel reflects live updates (marks, colours, sync).
     const selectedPerson = React.useMemo(() => {
-        if (!selectedPersonKey) return undefined;
-        return service.findByKey(selectedPersonKey);
-    }, [selectedPersonKey, service, dataVersion]);
+        if (!selectedKey) return undefined;
+        return service.findByKey(selectedKey);
+    }, [selectedKey, service, dataVersion]);
 
-    const handleAddClick = useCallback(() => {
-        setSelectedPersonKey(undefined);
-        setModalMode('add');
-        setShowModal(true);
-    }, []);
+    // An entry that disappears (deleted here, or by a sync) closes its panel.
+    useEffect(() => {
+        if (selectedKey && dataVersion > 0 && !selectedPerson) {
+            setSelection(null);
+        }
+    }, [selectedKey, selectedPerson, dataVersion]);
 
-    const handleEditClick = useCallback((person: PersonListEntry) => {
-        setSelectedPersonKey(makePersonKey(person.name, person.description));
-        setModalMode('edit');
-        setShowModal(true);
-    }, []);
+    const closePanel = useCallback(() => setSelection(null), []);
 
-    const handleModalClose = useCallback(() => {
-        setShowModal(false);
-        setSelectedPersonKey(undefined);
-    }, []);
-
-    const handleModalSave = useCallback((entry: PersonEntry, note: PersonNote) => {
-        if (modalMode === 'add') {
+    const handleSave = useCallback((entry: PersonEntry, note: PersonNote, location: number | null) => {
+        const previous = selection?.mode === 'edit' ? selectedPerson : undefined;
+        if (!previous) {
             addLocalPerson(entry);
-        } else if (selectedPerson) {
-            const changed = entry.name !== selectedPerson.name
-                || entry.description !== selectedPerson.description
-                || entry.guild !== selectedPerson.guild;
-            if (changed) {
-                const targetKey = makePersonKey(selectedPerson.name, selectedPerson.description);
-                editPerson(targetKey, entry);
-            }
+        } else if (entry.name !== previous.name || entry.description !== previous.description || entry.guild !== previous.guild) {
+            editPerson(keyOf(previous), entry);
         }
         // Keyed on the saved name and description, so it lands on the entry as it is after an edit.
-        const previousNote = modalMode === 'edit' ? selectedPerson?.note ?? '' : '';
-        const previousShow = modalMode === 'edit' ? selectedPerson?.showNoteOnMeet ?? false : false;
-        if (note.text !== previousNote || (note.text && note.showOnMeet !== previousShow)) {
-            setPersonNote(makePersonKey(entry.name, entry.description), note.text, note.showOnMeet);
+        const savedKey = keyOf(entry);
+        if (note.text !== (previous?.note ?? '') || (note.text && note.showOnMeet !== (previous?.showNoteOnMeet ?? false))) {
+            setPersonNote(savedKey, note.text, note.showOnMeet);
         }
-        handleModalClose();
-    }, [modalMode, selectedPerson, handleModalClose]);
+        if (location !== (previous?.location ?? null)) {
+            setPersonLocation(savedKey, location);
+        }
+        setSelection({ mode: 'edit', key: savedKey });
+    }, [selection, selectedPerson]);
 
     const handleIgnore = useCallback(() => {
-        if (selectedPerson) {
-            const targetKey = makePersonKey(selectedPerson.name, selectedPerson.description);
-            ignorePerson(targetKey);
-        }
-        handleModalClose();
-    }, [selectedPerson, handleModalClose]);
+        if (selectedKey) ignorePerson(selectedKey);
+    }, [selectedKey]);
 
     const handleRestore = useCallback(() => {
-        if (selectedPerson) {
-            const targetKey = makePersonKey(selectedPerson.name, selectedPerson.description);
-            restorePerson(targetKey);
-        }
-        handleModalClose();
-    }, [selectedPerson, handleModalClose]);
+        if (selectedKey) restorePerson(selectedKey);
+    }, [selectedKey]);
 
     const handleDelete = useCallback(() => {
-        if (selectedPerson?.eventId) {
-            deleteLocalPerson(selectedPerson.eventId);
-        }
-        handleModalClose();
-    }, [selectedPerson, handleModalClose]);
+        if (selectedPerson?.eventId) deleteLocalPerson(selectedPerson.eventId);
+        setSelection(null);
+    }, [selectedPerson]);
 
     const handleRestoreOriginal = useCallback(() => {
-        if (selectedPerson?.originalEntry) {
-            // Use the original entry's key to find and remove the replace event
-            const originalKey = makePersonKey(
-                selectedPerson.originalEntry.name,
-                selectedPerson.originalEntry.description
-            );
-            restorePerson(originalKey);
-        }
-        handleModalClose();
-    }, [selectedPerson, handleModalClose]);
+        const original = selectedPerson?.originalEntry;
+        if (!original) return;
+        // The original entry's key finds and removes the replace event.
+        const originalKey = keyOf(original);
+        restorePerson(originalKey);
+        setSelection({ mode: 'edit', key: originalKey });
+    }, [selectedPerson]);
 
-    const handleMarkEnemy = useCallback(() => {
-        if (selectedPersonKey) {
-            markAsEnemy(selectedPersonKey);
-        }
-    }, [selectedPersonKey]);
+    const handleToggleEnemy = useCallback(() => {
+        if (!selectedKey) return;
+        if (selectedPerson?.isEnemy) unmarkAsEnemy(selectedKey);
+        else markAsEnemy(selectedKey);
+    }, [selectedKey, selectedPerson]);
 
-    const handleUnmarkEnemy = useCallback(() => {
-        if (selectedPersonKey) {
-            unmarkAsEnemy(selectedPersonKey);
-        }
-    }, [selectedPersonKey]);
-
-    const handleMarkAlly = useCallback(() => {
-        if (selectedPersonKey) {
-            markAsAlly(selectedPersonKey);
-        }
-    }, [selectedPersonKey]);
-
-    const handleUnmarkAlly = useCallback(() => {
-        if (selectedPersonKey) {
-            unmarkAsAlly(selectedPersonKey);
-        }
-    }, [selectedPersonKey]);
+    const handleToggleAlly = useCallback(() => {
+        if (!selectedKey) return;
+        if (selectedPerson?.isAlly) unmarkAsAlly(selectedKey);
+        else markAsAlly(selectedKey);
+    }, [selectedKey, selectedPerson]);
 
     const handleSetColor = useCallback((color: string) => {
-        if (selectedPersonKey) {
-            setPersonColor(selectedPersonKey, color);
-        }
-    }, [selectedPersonKey]);
+        if (selectedKey) setPersonColor(selectedKey, color);
+    }, [selectedKey]);
 
     const handleClearColor = useCallback(() => {
-        if (selectedPersonKey) {
-            clearPersonColor(selectedPersonKey);
-        }
-    }, [selectedPersonKey]);
+        if (selectedKey) clearPersonColor(selectedKey);
+    }, [selectedKey]);
 
     useEffect(() => {
         if (isOpen) {
@@ -233,7 +193,13 @@ const PeopleBrowser: React.FC = () => {
         setStatusFilter('');
         setLocalOnly(false);
     }, [setSearchTerm, setGuildFilter, setStatusFilter, setLocalOnly]);
-    const displayTitle = totalCount > 0 ? `Baza postaci (${totalCount})` : 'Baza postaci';
+    const displayTitle = statusCounts.all > 0 ? `Baza postaci (${statusCounts.all})` : 'Baza postaci';
+
+    const statusOptions: { value: StatusFilter; label: React.ReactNode }[] = [
+        { value: '', label: <>Wszyscy <span className="people-browser__count">{statusCounts.all}</span></> },
+        { value: 'enemy', label: <>Wrogowie <span className="people-browser__count">{statusCounts.enemy}</span></> },
+        { value: 'ally', label: <>Sojusznicy <span className="people-browser__count">{statusCounts.ally}</span></> },
+    ];
 
     const headerActions = (
         <HeaderButton onClick={refreshData} disabled={isRefreshing} title="Odśwież bazę postaci">
@@ -241,42 +207,39 @@ const PeopleBrowser: React.FC = () => {
         </HeaderButton>
     );
 
+    const panelOpen = selection?.mode === 'add' || !!selectedPerson;
+
     return (
         <DockablePopupWrapper
             {...wrapperProps}
             popupType="peopleBrowser"
             title={displayTitle}
             headerActions={headerActions}
-            minWidth={400}
+            minWidth={320}
             minHeight={300}
-            initialWidth={550}
-            initialHeight={500}
+            initialWidth={820}
+            initialHeight={520}
             className="people-browser"
-            bodyClassName="people-browser-body"
+            bodyClassName={panelOpen ? 'people-browser-body people-browser-body--panel-open' : 'people-browser-body'}
         >
             <div className="people-browser__controls">
-                <div className="people-browser__toolbar">
-                    <div className="people-browser__search">
-                        <Search className="people-browser__search-icon" size={14} strokeWidth={2} />
-                        <Input
-                            placeholder="Szukaj po imieniu lub opisie..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                        {searchTerm && (
-                            <button
-                                type="button"
-                                className="people-browser__search-clear"
-                                onClick={() => setSearchTerm('')}
-                                title="Wyczyść wyszukiwanie"
-                            >
-                                <X size={14} strokeWidth={2} />
-                            </button>
-                        )}
-                    </div>
-                    <Button variant="solid" onClick={handleAddClick} title="Dodaj nową postać">
-                        <UserPlus size={15} strokeWidth={2} /> Dodaj
-                    </Button>
+                <div className="people-browser__search">
+                    <Search className="people-browser__search-icon" size={14} strokeWidth={2} />
+                    <Input
+                        placeholder="Szukaj po imieniu, opisie lub lokacji..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                    {searchTerm && (
+                        <button
+                            type="button"
+                            className="people-browser__search-clear"
+                            onClick={() => setSearchTerm('')}
+                            title="Wyczyść wyszukiwanie"
+                        >
+                            <X size={14} strokeWidth={2} />
+                        </button>
+                    )}
                 </div>
 
                 <div className="people-browser__filters">
@@ -292,192 +255,207 @@ const PeopleBrowser: React.FC = () => {
                     </div>
 
                     <div className="people-browser__status-filter">
-                        <Segmented value={statusFilter} onChange={setStatusFilter} options={STATUS_OPTIONS} />
+                        <Segmented size="sm" value={statusFilter} onChange={setStatusFilter} options={statusOptions} />
                     </div>
 
                     <Check
                         className="people-browser__local-only"
                         label="Tylko lokalne"
-                        title="Tylko postacie zmienione na tym urządzeniu: dodane, edytowane, ignorowane, wróg, sojusznik, kolor, notatka"
+                        title="Tylko postacie zmienione na tym urządzeniu: dodane, edytowane, ignorowane, wróg, sojusznik, kolor, notatka, lokacja"
                         checked={localOnly}
                         onChange={(e) => setLocalOnly(e.target.checked)}
                     />
                 </div>
+
+                <Button
+                    variant="solid"
+                    className="people-browser__add"
+                    onClick={() => setSelection({ mode: 'add' })}
+                    title="Dodaj nową postać"
+                >
+                    <UserPlus size={15} strokeWidth={2} /> Dodaj
+                </Button>
             </div>
 
-            <div className="people-browser__content">
-                {isLoading ? (
-                    <div className="people-browser__loading">Ładowanie...</div>
-                ) : !result || result.items.length === 0 ? (
-                    <div className="people-browser__empty">
-                        {hasFilters ? (
-                            <>
-                                <span>Brak wyników pasujących do filtrów.</span>
-                                <Button size="sm" onClick={resetFilters}>Wyczyść filtry</Button>
-                            </>
+            <div className="people-browser__main">
+                <div className="people-browser__list-pane">
+                    <div className="people-browser__content">
+                        {isLoading ? (
+                            <div className="people-browser__loading">Ładowanie...</div>
+                        ) : !result || result.items.length === 0 ? (
+                            <div className="people-browser__empty">
+                                {hasFilters ? (
+                                    <>
+                                        <span>Brak wyników pasujących do filtrów.</span>
+                                        <Button size="sm" onClick={resetFilters}>Wyczyść filtry</Button>
+                                    </>
+                                ) : (
+                                    <span>Brak danych o ludziach.</span>
+                                )}
+                            </div>
                         ) : (
-                            <span>Brak danych o ludziach.</span>
+                            <div className="people-browser__list">
+                                <div className="people-browser__head">
+                                    <span>Imię</span>
+                                    <span>Gildia</span>
+                                    <span>Opis</span>
+                                    <span>Lokacja</span>
+                                    <span />
+                                </div>
+                                {result.items.map((person, index) => (
+                                    <PersonRow
+                                        key={`${person.name}-${person.guild}-${person.description}-${index}`}
+                                        person={person}
+                                        selected={selectedKey === keyOf(person)}
+                                        onSelect={() => setSelection({ mode: 'edit', key: keyOf(person) })}
+                                    />
+                                ))}
+                            </div>
                         )}
                     </div>
-                ) : (
-                    <div className="people-browser__list">
-                        <div className="people-browser__head">
-                            <span>Imię</span>
-                            <span>Gildia</span>
-                            <span>Opis</span>
-                        </div>
-                        {result.items.map((person, index) => {
-                            const isIgnored = person.ignored;
-                            const isLocal = person.source === 'local';
-                            const isEdited = person.source === 'edited';
-                            const isMarkedEnemy = person.isEnemy;
-                            const isMarkedAlly = person.isAlly && !isMarkedEnemy;
-                            const hasColor = !!person.color && !isMarkedEnemy;
-                            const itemClass = [
-                                'people-browser__item',
-                                isIgnored && 'people-browser__item--ignored',
-                                isMarkedEnemy && 'people-browser__item--enemy',
-                                person.isAlly && 'people-browser__item--ally',
-                            ].filter(Boolean).join(' ');
 
-                            return (
-                                <div
-                                    key={`${person.name}-${person.guild}-${person.description}-${index}`}
-                                    className={itemClass}
-                                    onClick={() => handleEditClick(person)}
-                                >
-                                    <span className="people-browser__item-name">
-                                        {hasColor && (
-                                            <span
-                                                className="people-browser__swatch"
-                                                style={{ backgroundColor: person.color }}
-                                                title={`Kolor indywidualny: ${person.color}`}
-                                            />
-                                        )}
-                                        <span
-                                            className="people-browser__item-name-text"
-                                            style={hasColor ? { color: person.color } : undefined}
-                                        >
-                                            {person.name}
-                                        </span>
-                                    </span>
-                                    <span className="people-browser__item-guild">{person.guild}</span>
-                                    <span className="people-browser__item-desc">
-                                        <span className="people-browser__item-desc-text">{person.description}</span>
-                                        {person.note && (
-                                            <span className="people-browser__note" title={person.note}>
-                                                <NotebookPen size={13} strokeWidth={2} />
-                                            </span>
-                                        )}
-                                        {isMarkedEnemy && (
-                                            <span className="people-browser__badge people-browser__badge--enemy" title="Oznaczony jako wróg">
-                                                wróg
-                                            </span>
-                                        )}
-                                        {isMarkedAlly && (
-                                            <span className="people-browser__badge people-browser__badge--ally" title="Oznaczony jako sojusznik">
-                                                sojusznik
-                                            </span>
-                                        )}
-                                        {isLocal && (
-                                            <span className="people-browser__badge people-browser__badge--local" title="Dodano lokalnie">
-                                                lokalna
-                                            </span>
-                                        )}
-                                        {isEdited && (
-                                            <span
-                                                className="people-browser__badge people-browser__badge--edited"
-                                                title={person.originalEntry
-                                                    ? `Oryginał: ${person.originalEntry.name} (${person.originalEntry.guild}) - ${person.originalEntry.description}`
-                                                    : 'Edytowano lokalnie'}
-                                            >
-                                                zmieniona
-                                            </span>
-                                        )}
-                                        {isIgnored && (
-                                            <span className="people-browser__badge people-browser__badge--ignored" title="Ignorowana: nie tworzy triggerów">
-                                                ignorowana
-                                            </span>
-                                        )}
-                                    </span>
-                                    <button
-                                        type="button"
-                                        className="people-browser__item-edit"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleEditClick(person);
-                                        }}
-                                        title={isIgnored ? 'Przywróć/Edytuj' : 'Edytuj'}
-                                    >
-                                        {isIgnored ? <Undo2 size={14} strokeWidth={2} /> : <Pencil size={14} strokeWidth={2} />}
-                                    </button>
-                                </div>
-                            );
-                        })}
-                    </div>
-                )}
-            </div>
-
-            <div className="people-browser__footer">
-                <span className="people-browser__range">
-                    {result && totalCount > 0
-                        ? `${result.currentPage * pageSize + 1}–${Math.min(totalCount, (result.currentPage + 1) * pageSize)} z ${totalCount}`
-                        : '0 wyników'}
-                </span>
-
-                {result && result.totalPages > 1 && (
-                    <div className="people-browser__pagination">
-                        <Button size="sm" variant="ghost" className="popup-btn--icon" onClick={goToFirstPage} disabled={page === 0} title="Pierwsza strona">
-                            <ChevronsLeft size={15} strokeWidth={2} />
-                        </Button>
-                        <Button size="sm" variant="ghost" className="popup-btn--icon" onClick={goToPrevPage} disabled={page === 0} title="Poprzednia strona">
-                            <ChevronLeft size={15} strokeWidth={2} />
-                        </Button>
-                        <span className="people-browser__pagination-info">
-                            Strona {result.currentPage + 1} z {result.totalPages}
+                    <div className="people-browser__footer">
+                        <span className="people-browser__range">
+                            {result && totalCount > 0
+                                ? `${result.currentPage * pageSize + 1}–${Math.min(totalCount, (result.currentPage + 1) * pageSize)} z ${totalCount}`
+                                : '0 wyników'}
                         </span>
-                        <Button size="sm" variant="ghost" className="popup-btn--icon" onClick={goToNextPage} disabled={page >= result.totalPages - 1} title="Następna strona">
-                            <ChevronRight size={15} strokeWidth={2} />
-                        </Button>
-                        <Button size="sm" variant="ghost" className="popup-btn--icon" onClick={goToLastPage} disabled={page >= result.totalPages - 1} title="Ostatnia strona">
-                            <ChevronsRight size={15} strokeWidth={2} />
-                        </Button>
-                    </div>
-                )}
 
-                <div className="people-browser__page-size">
-                    <Select
-                        value={pageSize}
-                        onChange={(e) => handlePageSizeChange(Number(e.target.value) as PageSize)}
-                        title="Liczba postaci na stronie"
-                    >
-                        {PAGE_SIZE_OPTIONS.map((size) => (
-                            <option key={size} value={size}>
-                                {size} na stronę
-                            </option>
-                        ))}
-                    </Select>
+                        {result && result.totalPages > 1 && (
+                            <div className="people-browser__pagination">
+                                <Button size="sm" variant="ghost" className="popup-btn--icon" onClick={goToFirstPage} disabled={page === 0} title="Pierwsza strona">
+                                    <ChevronsLeft size={15} strokeWidth={2} />
+                                </Button>
+                                <Button size="sm" variant="ghost" className="popup-btn--icon" onClick={goToPrevPage} disabled={page === 0} title="Poprzednia strona">
+                                    <ChevronLeft size={15} strokeWidth={2} />
+                                </Button>
+                                <span className="people-browser__pagination-info">
+                                    Strona {result.currentPage + 1} z {result.totalPages}
+                                </span>
+                                <Button size="sm" variant="ghost" className="popup-btn--icon" onClick={goToNextPage} disabled={page >= result.totalPages - 1} title="Następna strona">
+                                    <ChevronRight size={15} strokeWidth={2} />
+                                </Button>
+                                <Button size="sm" variant="ghost" className="popup-btn--icon" onClick={goToLastPage} disabled={page >= result.totalPages - 1} title="Ostatnia strona">
+                                    <ChevronsRight size={15} strokeWidth={2} />
+                                </Button>
+                            </div>
+                        )}
+
+                        <div className="people-browser__page-size">
+                            <Select
+                                value={pageSize}
+                                onChange={(e) => handlePageSizeChange(Number(e.target.value) as PageSize)}
+                                title="Liczba postaci na stronie"
+                            >
+                                {PAGE_SIZE_OPTIONS.map((size) => (
+                                    <option key={size} value={size}>
+                                        {size} na stronę
+                                    </option>
+                                ))}
+                            </Select>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="people-browser__panel-pane">
+                    {panelOpen ? (
+                        <PersonPanel
+                            key={selectedKey ?? 'new'}
+                            mode={selection?.mode === 'add' ? 'add' : 'edit'}
+                            person={selectedPerson}
+                            onSave={handleSave}
+                            onClose={closePanel}
+                            onIgnore={handleIgnore}
+                            onRestore={handleRestore}
+                            onRestoreOriginal={handleRestoreOriginal}
+                            onDelete={handleDelete}
+                            onToggleEnemy={handleToggleEnemy}
+                            onToggleAlly={handleToggleAlly}
+                            onSetColor={handleSetColor}
+                            onClearColor={handleClearColor}
+                        />
+                    ) : (
+                        <div className="people-browser__panel-empty">
+                            Wybierz postać z listy, żeby zobaczyć szczegóły, albo dodaj nową.
+                        </div>
+                    )}
                 </div>
             </div>
-
-            <PersonEditModal
-                show={showModal}
-                onClose={handleModalClose}
-                onSave={handleModalSave}
-                onIgnore={handleIgnore}
-                onRestore={handleRestore}
-                onRestoreOriginal={handleRestoreOriginal}
-                onDelete={handleDelete}
-                onMarkEnemy={handleMarkEnemy}
-                onUnmarkEnemy={handleUnmarkEnemy}
-                onMarkAlly={handleMarkAlly}
-                onUnmarkAlly={handleUnmarkAlly}
-                onSetColor={handleSetColor}
-                onClearColor={handleClearColor}
-                person={selectedPerson}
-                mode={modalMode}
-            />
         </DockablePopupWrapper>
+    );
+};
+
+const PersonRow: React.FC<{ person: PersonListEntry; selected: boolean; onSelect: () => void }> = ({ person, selected, onSelect }) => {
+    const isMarkedEnemy = person.isEnemy;
+    const hasColor = !!person.color && !isMarkedEnemy;
+    const room = person.location !== undefined ? describeRoom(person.location) : null;
+    const locationLabel = person.location !== undefined ? (room?.name ?? `#${person.location}`) : null;
+    const locationTitle = person.location !== undefined
+        ? `${room ? `${room.name} (${room.area}) ` : ''}#${person.location}`
+        : undefined;
+    const itemClass = [
+        'people-browser__item',
+        selected && 'people-browser__item--selected',
+        person.ignored && 'people-browser__item--ignored',
+        isMarkedEnemy && 'people-browser__item--enemy',
+        person.isAlly && 'people-browser__item--ally',
+    ].filter(Boolean).join(' ');
+
+    return (
+        <div
+            className={itemClass}
+            tabIndex={0}
+            onClick={onSelect}
+            onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onSelect();
+                }
+            }}
+        >
+            <span className="people-browser__item-name">
+                {hasColor && (
+                    <span
+                        className="people-browser__swatch"
+                        style={{ backgroundColor: person.color }}
+                        title={`Kolor indywidualny: ${person.color}`}
+                    />
+                )}
+                <span
+                    className="people-browser__item-name-text"
+                    style={hasColor ? { color: person.color } : undefined}
+                >
+                    {person.name}
+                </span>
+                <span className="people-browser__guild people-browser__guild--inline">{person.guild}</span>
+            </span>
+            <span className="people-browser__item-guild">
+                <span className="people-browser__guild">{person.guild}</span>
+            </span>
+            <span className="people-browser__item-desc">
+                <span className="people-browser__item-desc-text">{person.description}</span>
+                {locationLabel && (
+                    <span className="people-browser__item-loc people-browser__item-loc--inline" title={locationTitle}>
+                        <MapPin size={12} strokeWidth={2} />{locationLabel}
+                    </span>
+                )}
+            </span>
+            <span className="people-browser__item-location">
+                {locationLabel && (
+                    <span className="people-browser__item-loc" title={locationTitle}>
+                        <MapPin size={12} strokeWidth={2} /><span>{locationLabel}</span>
+                    </span>
+                )}
+            </span>
+            <span className="people-browser__item-flags">
+                {person.note && (
+                    <span className="people-browser__note" title={person.note}>
+                        <NotebookPen size={13} strokeWidth={2} />
+                    </span>
+                )}
+                <PersonBadges person={person} />
+            </span>
+        </div>
     );
 };
 
