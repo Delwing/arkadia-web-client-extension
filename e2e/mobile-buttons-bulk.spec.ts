@@ -86,4 +86,15 @@ test.describe('Mobile buttons: Zaznacz and Style tools', () => {
         await expect(modal.locator('.mobile-buttons-style-card')).toHaveCount(2);
         await expect(solo.locator('[data-button-id="button-3"]')).not.toHaveCSS('background-color', 'rgb(75, 127, 82)');
     });
+
+    test('the tool switch stays in place whatever the hint under it says', async ({ page }) => {
+        const modal = await openSettings(page, 'ui-mobile-buttons');
+        const segmented = modal.locator('.mobile-buttons-tools .popup-segmented');
+        const positions = new Set<number>();
+        for (const name of ['Edytuj', 'Zaznacz', 'Style', 'Układ']) {
+            await pickTool(modal, name);
+            positions.add(Math.round((await segmented.boundingBox())!.x));
+        }
+        expect(positions.size).toBe(1);
+    });
 });

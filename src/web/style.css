@@ -1724,12 +1724,15 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
   outline-offset: 2px;
 }
 
+/* The hint sits under the switch, so its changing length never moves the switch. */
 .mobile-buttons-tools {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 6px 14px;
+  gap: 6px;
+}
+.mobile-buttons-tools > .popup-segmented {
+  align-self: center;
 }
 .mobile-buttons-tools__hint {
   color: var(--popup-text-dim);
