@@ -68,32 +68,11 @@ describe('attachScrollback', () => {
         expect(scrollEl.scrollTop).toBe(0);
     });
 
-    test('trims the pane to whole lines so its edge never cuts one in half', async () => {
-        // 25px lines; the pane's bottom edge at 100, room for 90px
-        const rect = HTMLElement.prototype.getBoundingClientRect;
-        const height = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'clientHeight');
-        jest.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
-            if (this.classList.contains('popup-split-sticky')) return { bottom: 100 } as DOMRect;
-            if (this.dataset.top) return { top: Number(this.dataset.top) } as DOMRect;
-            return rect.call(this);
-        });
-        Object.defineProperty(HTMLElement.prototype, 'clientHeight', {
-            configurable: true,
-            get(this: HTMLElement) { return this.classList.contains('popup-split-bottom') ? 90 : 0; },
-        });
-        try {
-            const at = (top: number) => {
-                const el = line(`${top}`);
-                el.dataset.top = `${top}`;
-                return el;
-            };
-            scrollback = attachScrollback(scrollEl, { splitHeight: 90, renderSplit: () => [25, 50, 75].map(at) });
-            await scrollUp();
-            expect((pane() as HTMLElement).style.height).toBe('75px');
-        } finally {
-            jest.restoreAllMocks();
-            if (height) Object.defineProperty(HTMLElement.prototype, 'clientHeight', height);
-        }
+    test('the pane takes any height the player sets, not whole lines only', async () => {
+        scrollback = attachScrollback(scrollEl, { splitHeight: 90 });
+        await scrollUp();
+        scrollback.setSplitHeight(137);
+        expect((pane() as HTMLElement).style.height).toBe('137px');
     });
 
     test('renderSplit builds the pane lines instead of clones', async () => {

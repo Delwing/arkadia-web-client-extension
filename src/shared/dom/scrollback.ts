@@ -58,30 +58,17 @@ export function attachScrollback(scrollEl: HTMLElement, options: ScrollbackOptio
     sticky.className = 'popup-split-sticky';
     pane.append(handle, sticky);
 
-    // The mirrored lines are bottom-anchored, so a pane edge between two lines
-    // would cut the top one in half - and a half line under a moving scrollback
-    // reads as a rendering glitch. Trimmed to the whole lines that fit.
     const applyHeight = () => {
         pane.style.height = `${splitHeight}px`;
         pane.style.marginTop = `${-splitHeight}px`;
         if (!pane.isConnected) return;
-        const handleHeight = handle.offsetHeight;
-        // clientHeight, not splitHeight: the CSS max-height may have clamped it
-        const room = pane.clientHeight - handleHeight;
-        const bottom = sticky.getBoundingClientRect().bottom;
-        let fits = 0;
-        for (const line of Array.from(sticky.children).reverse()) {
-            const height = bottom - line.getBoundingClientRect().top;
-            if (height > room) break;
-            fits = height;
-        }
-        if (fits > 0) pane.style.height = `${Math.ceil(fits + handleHeight)}px`;
         // The pane lies over the last lines instead of being added below them,
         // so opening and closing it never changes the scroll height. When it
         // did, a smooth scroll already under way kept heading for the old,
         // taller bottom: Chrome drew the list shifted - an empty strip, lines
         // doubled - until something made it redraw. At the very bottom the pane
-        // covers the newest lines with its own copy of them.
+        // covers the newest lines with its own copy of them. Measured: the CSS
+        // max-height may have clamped it.
         pane.style.marginTop = `${-pane.offsetHeight}px`;
     };
 
@@ -136,8 +123,7 @@ export function attachScrollback(scrollEl: HTMLElement, options: ScrollbackOptio
             applyHeight();
         },
         onHandleDragEnd: () => {
-            // Where the player let go, not the trimmed height - trimming it again
-            // next time would shrink the pane a little with every drag.
+            // Where the player let go
             options.onSplitResize?.(splitHeight);
         },
     });
