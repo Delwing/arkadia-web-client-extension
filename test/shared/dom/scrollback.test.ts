@@ -125,10 +125,13 @@ describe('attachScrollback', () => {
 
     test('remove leaves the content and stops following it', async () => {
         scrollback = attachScrollback(scrollEl);
+        // On its own layer, like the pane, so text is smoothed the same in both
+        expect(scrollEl.style.willChange).toBe('transform');
         await scrollUp();
         scrollback.remove();
 
         expect(pane()).toBeNull();
+        expect(scrollEl.style.willChange).toBe('');
         expect(Array.from(scrollEl.children).map(el => el.textContent)).toEqual(['a', 'b', 'c']);
         defineGeometry(scrollEl, { scrollTop: 0 });
         scrollEl.append(line('d'));

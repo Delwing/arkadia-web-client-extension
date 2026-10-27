@@ -95,6 +95,13 @@ export function attachScrollback(scrollEl: HTMLElement, options: ScrollbackOptio
         sticky.replaceChildren(...nodes);
     };
 
+    // The sticky pane is drawn on its own layer, where Chrome smooths text in
+    // grey; the list on the page used subpixel smoothing, so coloured text
+    // (nicks) looked a shade different in the pane. On its own layer too, the
+    // list is drawn the same way.
+    const previousWillChange = scrollEl.style.willChange;
+    scrollEl.style.willChange = 'transform';
+
     // The pane sits last among the host's lines so `position: sticky` holds it
     // at the bottom of the scrollport.
     const showPane = () => {
@@ -172,6 +179,7 @@ export function attachScrollback(scrollEl: HTMLElement, options: ScrollbackOptio
             detachHandle();
             controller.destroy();
             pane.remove();
+            scrollEl.style.willChange = previousWillChange;
         },
     };
 }
