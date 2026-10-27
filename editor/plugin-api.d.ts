@@ -1215,6 +1215,12 @@ interface PersistentPopupHandle extends PopupHandle {
   setHeaderActions(actions: Node | React.ReactNode): void;
 
   /**
+   * Replace the fields in the popup's settings cog, for options that are only
+   * known later (e.g. a list loaded after login). Stored values are kept.
+   */
+  setSettingsFields(fields: PluginWindowSettingField[]): void;
+
+  /**
    * Read a value from the popup's settings, kept with its window layout
    * (the keys of `settingsFields`, or any other key the plugin chooses).
    */

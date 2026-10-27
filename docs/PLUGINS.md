@@ -1533,6 +1533,8 @@ popup.setSetting('zakladka', 'lista');        // dowolny klucz, nie tylko z sett
 const off = popup.onSettingChange('ceny', (on) => { /* ... */ });
 ```
 
+Pola, których listę znasz dopiero później (np. po wczytaniu z serwera), podmienisz przez `popup.setSettingsFields([...])` — zapisane wartości zostają.
+
 #### Przewijana lista (`attachScrollback`)
 
 Lista, która przybywa od dołu (czat, log), może zachowywać się jak tekst gry i okno czatu: trzyma się dołu, a gdy gracz przewinie w górę, najnowsze wiersze zostają widoczne w panelu na dole (podział ekranu), z uchwytem do zmiany wysokości. Podaj element, który się przewija (`overflow-y: auto`, bez dolnego paddingu), i dodawaj, usuwaj albo podmieniaj jego dzieci — każda zmiana przypina listę na nowo.

@@ -58,4 +58,20 @@ describe('plugin UI kit and popup settings', () => {
         api.cleanup();
         expect(listeners.size).toBe(0);
     });
+
+    test('a persistent popup can replace its settings fields later', async () => {
+        const updates: { id: string; changes: Partial<PluginPopupConfig> }[] = [];
+        setPluginHostPort({
+            ...original,
+            registerPluginPopup: () => {},
+            updatePluginPopup: (id, changes) => { updates.push({ id, changes }); },
+        });
+
+        const api = new PluginApiImpl({} as never, 'jubiler');
+        const popup = await api.ui.registerPersistentPopup({ id: 'main', title: 'Jubiler', createContent: () => 'x' });
+        const fields = [{ type: 'toggle' as const, key: 'kanal:1', label: '#ogolny', default: true }];
+        popup.setSettingsFields(fields);
+
+        expect(updates).toEqual([{ id: 'popup:plugin:jubiler:main', changes: { settingsFields: fields } }]);
+    });
 });
