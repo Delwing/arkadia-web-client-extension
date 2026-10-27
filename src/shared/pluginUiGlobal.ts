@@ -55,12 +55,18 @@ export function buildPluginUiShim(module: PluginUiModule): string {
     }
     if (module === 'react/jsx-runtime') {
         // The automatic JSX runtime passes children inside props, which
-        // createElement accepts as-is.
+        // createElement accepts as-is. jsxs is for children written out in the
+        // source: passed as one array, development React would warn that the
+        // list has no keys, so they go in as separate arguments, as React's own
+        // runtime treats them.
         return head
             + 'const React = UI.React;\n'
             + 'export const Fragment = React.Fragment;\n'
             + 'export function jsx(type, props, key) { return React.createElement(type, key === undefined ? props : { ...props, key }); }\n'
-            + 'export const jsxs = jsx;\n';
+            + 'export function jsxs(type, props, key) {\n'
+            + '    const { children, ...rest } = props;\n'
+            + '    return React.createElement(type, key === undefined ? rest : { ...rest, key }, ...children);\n'
+            + '}\n';
     }
     if (module === 'react-dom' || module === 'react-dom/client') {
         const [key, names] = module === 'react-dom'

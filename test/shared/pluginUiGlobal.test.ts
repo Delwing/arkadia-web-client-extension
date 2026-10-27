@@ -97,7 +97,9 @@ describe('plugin UI shim', () => {
         const [fragment, button, span] = [calls[2], calls[0], calls[1]];
         expect(button).toEqual(['host:Button', { variant: 'solid', children: 3, key: 'b' }]);
         expect(span).toEqual(['span', { children: 'x' }]);
-        expect(fragment[0]).toBe(React.Fragment);
+        // Children written out in the source come as separate arguments, so
+        // development React does not take them for a list without keys
+        expect(fragment).toEqual([React.Fragment, {}, { args: button }, { args: span }]);
     });
 
     test('the generated shim copy matches the source', () => {
