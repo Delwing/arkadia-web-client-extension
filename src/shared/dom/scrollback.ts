@@ -1,0 +1,147 @@
+/**
+ * A scrollback with the split view, for hosts that build their list by hand
+ * (plugin popups via `api.ui.attachScrollback`) rather than through React's
+ * `useAutoScroll`. Same engine (`splitViewController`) and the same
+ * `.popup-split-*` pane: pinned to the bottom until the user scrolls up, then
+ * the newest lines are mirrored into a sticky pane while they read.
+ *
+ * The host only appends, removes or replaces the scroller's children; a
+ * MutationObserver re-pins the view and refreshes the mirror after every change.
+ */
+import { createSplitViewController } from './splitViewController';
+
+export interface ScrollbackOptions {
+    /** Newest children mirrored into the pane (default 40). */
+    splitLines?: number;
+    /** Starting pane height in px (default 120). */
+    splitHeight?: number;
+    /** Called with the pane height once the user finishes dragging its handle. */
+    onSplitResize?: (heightPx: number) => void;
+    /**
+     * Builds the pane's lines. By default the last `splitLines` children are
+     * cloned, which drops their event listeners - pass this when lines need
+     * live handlers (click a command, open a link).
+     */
+    renderSplit?: (lines: number) => Node[];
+    /** Called when the split view opens (true) or closes (false). */
+    onSplitViewChange?: (open: boolean) => void;
+    /** Slack in px when deciding "at the bottom" (default 50). */
+    bottomThreshold?: number;
+}
+
+export interface ScrollbackHandle {
+    /** Whether the user is scrolled up and the split pane is showing. */
+    isSplitView(): boolean;
+    /** Re-pin and re-mirror after a change that kept the same children (an edited line). */
+    refresh(): void;
+    /** Resize the pane, e.g. from a stored setting. */
+    setSplitHeight(heightPx: number): void;
+    /** Leave the split view and jump to the bottom. */
+    scrollToBottom(): void;
+    /** Detach: listeners, the pane and the observer go; the content stays. */
+    remove(): void;
+}
+
+const DEFAULT_SPLIT_LINES = 40;
+const DEFAULT_SPLIT_HEIGHT = 120;
+
+export function attachScrollback(scrollEl: HTMLElement, options: ScrollbackOptions = {}): ScrollbackHandle {
+    const doc = scrollEl.ownerDocument ?? document;
+    const splitLines = options.splitLines ?? DEFAULT_SPLIT_LINES;
+    let splitHeight = options.splitHeight ?? DEFAULT_SPLIT_HEIGHT;
+
+    const pane = doc.createElement('div');
+    pane.className = 'popup-split-bottom';
+    const handle = doc.createElement('div');
+    handle.className = 'popup-split-handle';
+    const sticky = doc.createElement('div');
+    sticky.className = 'popup-split-sticky';
+    pane.append(handle, sticky);
+
+    const applyHeight = () => {
+        pane.style.height = `${splitHeight}px`;
+    };
+
+    const renderMirror = () => {
+        const nodes = options.renderSplit
+            ? options.renderSplit(splitLines)
+            : Array.from(scrollEl.children)
+                .filter((child) => child !== pane)
+                .slice(-splitLines)
+                .map((child) => child.cloneNode(true));
+        sticky.replaceChildren(...nodes);
+    };
+
+    // The pane sits last among the host's lines so `position: sticky` holds it
+    // at the bottom of the scrollport.
+    const showPane = () => {
+        if (scrollEl.lastChild !== pane) scrollEl.appendChild(pane);
+    };
+
+    const controller = createSplitViewController({
+        scrollEl,
+        bottomThreshold: options.bottomThreshold ?? 50,
+        getSplitHeight: () => (pane.isConnected ? pane.clientHeight : 0),
+        onOpen: () => {
+            // The pane bleeds over the scroller's side padding, so match it.
+            pane.style.setProperty('--popup-split-gutter', getComputedStyle(scrollEl).paddingLeft || '0px');
+            applyHeight();
+            renderMirror();
+            showPane();
+            options.onSplitViewChange?.(true);
+        },
+        onClose: () => {
+            pane.remove();
+            options.onSplitViewChange?.(false);
+            controller.pinToBottom(true);
+        },
+        onHandleDrag: (heightPx) => {
+            splitHeight = heightPx;
+            applyHeight();
+        },
+        onHandleDragEnd: (heightPx) => {
+            // Measured, so the CSS max-height clamp is what gets stored.
+            if (heightPx > 0) splitHeight = heightPx;
+            options.onSplitResize?.(splitHeight);
+        },
+    });
+    const detachHandle = controller.attachHandle(handle);
+
+    const sync = () => {
+        // Closes a split view whose content shrank to nothing to scroll.
+        controller.pinToBottom(true);
+        if (controller.isSplitView()) {
+            showPane();
+            renderMirror();
+        }
+    };
+
+    // Our own pane moves come back as mutations too; only the host's count.
+    const observer = new MutationObserver((records) => {
+        const hostChange = records.some((record) =>
+            [...Array.from(record.addedNodes), ...Array.from(record.removedNodes)].some((node) => node !== pane));
+        if (hostChange) sync();
+    });
+    observer.observe(scrollEl, { childList: true });
+
+    controller.pinToBottom(true);
+
+    return {
+        isSplitView: () => controller.isSplitView(),
+        refresh: sync,
+        setSplitHeight: (heightPx) => {
+            splitHeight = heightPx;
+            applyHeight();
+        },
+        scrollToBottom: () => {
+            if (controller.isSplitView()) controller.close();
+            else controller.pinToBottom(true);
+        },
+        remove: () => {
+            observer.disconnect();
+            detachHandle();
+            controller.destroy();
+            pane.remove();
+        },
+    };
+}

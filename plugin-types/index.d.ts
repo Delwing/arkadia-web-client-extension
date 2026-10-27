@@ -2560,6 +2560,64 @@ export interface UiApi {
      * ```
      */
     setTooltip(element: Element, tooltip: string | PluginTooltip | null): PluginTooltipHandle;
+    /**
+     * Make a scrolling list behave like the game output and the built-in chat
+     * window: it stays pinned to the bottom as lines arrive, and once the player
+     * scrolls up to read, the newest lines stay in sight in a pane at the bottom
+     * (the split view) with a handle to resize it.
+     *
+     * Give it the element that scrolls (`overflow-y: auto`, no bottom padding)
+     * and add, remove or replace its children as you like - every change re-pins
+     * it. Children are cloned into the pane, which drops their event listeners;
+     * pass `renderSplit` when the lines need live handlers. Removed with the plugin.
+     *
+     * @example
+     * ```typescript
+     * const list = document.createElement('div');
+     * list.style.cssText = 'height: 100%; overflow-y: auto';
+     * const scrollback = api.ui.attachScrollback(list, {
+     *   splitHeight: popup.getSetting('splitHeight', 120),
+     *   onSplitResize: (height) => popup.setSetting('splitHeight', height),
+     * });
+     * list.append(lineElement); // pinned, or mirrored into the pane
+     * ```
+     */
+    attachScrollback(element: HTMLElement, options?: PluginScrollbackOptions): PluginScrollbackHandle;
+}
+
+/** Options for {@link UiApi.attachScrollback}. */
+
+export interface PluginScrollbackOptions {
+    /** Newest lines mirrored into the split pane (default 40). */
+    splitLines?: number;
+    /** Starting pane height in px (default 120). */
+    splitHeight?: number;
+    /** Called with the pane height once the player finishes dragging its handle - store it to keep the size. */
+    onSplitResize?: (heightPx: number) => void;
+    /**
+     * Builds the pane's lines, newest last, at most `lines` of them. Without it
+     * the last children are cloned, so their event listeners are not carried over.
+     */
+    renderSplit?: (lines: number) => Node[];
+    /** Called when the split view opens (true) or closes (false). */
+    onSplitViewChange?: (open: boolean) => void;
+    /** How close to the bottom, in px, still counts as "at the bottom" (default 50). */
+    bottomThreshold?: number;
+}
+
+/** Handle for a scrollback made with {@link UiApi.attachScrollback}. */
+
+export interface PluginScrollbackHandle {
+    /** Whether the player is scrolled up and the split pane is showing. */
+    isSplitView(): boolean;
+    /** Re-pin and redraw the pane after changing a line in place (the children stayed the same). */
+    refresh(): void;
+    /** Resize the split pane. */
+    setSplitHeight(heightPx: number): void;
+    /** Close the split view and jump to the newest line. */
+    scrollToBottom(): void;
+    /** Stop managing the element. Its content stays. */
+    remove(): void;
 }
 
 /** A hover card for {@link UiApi.setTooltip}. */
@@ -6481,6 +6539,8 @@ export interface SessionControl {
     replayedBytes?: number;
     droppedBytes?: number;
     resumed?: boolean;
+    /** The proxy reads the client's offset acknowledgements (sent as text messages). */
+    acks?: boolean;
     /**
      * The game ended this session while nobody was attached — idled out, quit, or the
      * server restarted. Distinct from the proxy losing the session, and the difference

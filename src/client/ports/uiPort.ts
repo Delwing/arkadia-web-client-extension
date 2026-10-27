@@ -1,5 +1,6 @@
 import type { HerbUse } from '@modules/data/dataStores/herbsStore';
 import type { TooltipContent, TooltipHandle } from '@shared/dom/tooltip.ts';
+import type { ScrollbackHandle, ScrollbackOptions } from '@shared/dom/scrollback.ts';
 
 /**
  * A single context-menu entry.
@@ -51,6 +52,11 @@ export interface UiPort {
      * `api.ui.setTooltip`). Omitted → the element simply has no tooltip.
      */
     attachTooltip?(element: Element, card: TooltipContent | null): TooltipHandle;
+    /**
+     * Optional: turn an element into a scrollback with the split view (plugin
+     * `api.ui.attachScrollback`). Omitted → the element scrolls as it is.
+     */
+    attachScrollback?(element: HTMLElement, options: ScrollbackOptions): ScrollbackHandle;
     /**
      * Optional: whether global keybinds (e.g. direction/movement keys) should be
      * suppressed right now, for UI state the client can't see — e.g. an open

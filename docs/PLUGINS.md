@@ -1533,6 +1533,25 @@ popup.setSetting('zakladka', 'lista');        // dowolny klucz, nie tylko z sett
 const off = popup.onSettingChange('ceny', (on) => { /* ... */ });
 ```
 
+#### Przewijana lista (`attachScrollback`)
+
+Lista, która przybywa od dołu (czat, log), może zachowywać się jak tekst gry i okno czatu: trzyma się dołu, a gdy gracz przewinie w górę, najnowsze wiersze zostają widoczne w panelu na dole (podział ekranu), z uchwytem do zmiany wysokości. Podaj element, który się przewija (`overflow-y: auto`, bez dolnego paddingu), i dodawaj, usuwaj albo podmieniaj jego dzieci — każda zmiana przypina listę na nowo.
+
+```typescript
+const list = document.createElement('div');
+list.style.cssText = 'height: 100%; overflow-y: auto';
+const scrollback = api.ui.attachScrollback(list, {
+  splitHeight: popup.getSetting('splitHeight', 120),
+  onSplitResize: (height) => popup.setSetting('splitHeight', height),
+  // bez renderSplit wiersze są klonowane, więc tracą nasłuchiwacze zdarzeń
+  renderSplit: (lines) => ostatnie(lines).map(stworzWiersz),
+});
+list.append(wiersz);          // przypięte do dołu albo skopiowane do panelu
+scrollback.refresh();         // po zmianie wiersza w miejscu
+```
+
+Przy wyłączeniu pluginu lista przestaje być obsługiwana sama.
+
 ### Stopka
 
 - **Komponent** (`registerFooterComponent`) jest wstawiany bez ramki. Żeby wyglądał jak wbudowane chipy, użyj ich znaczników:
