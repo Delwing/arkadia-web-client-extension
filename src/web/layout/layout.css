@@ -127,10 +127,16 @@ body.layout-locked .layout-splitter {
   pointer-events: none;
   cursor: default;
 }
-/* Docked titlebars/tabs are no longer draggable — drop the grab cursor. */
+/* Docked titlebars/tabs are no longer draggable — drop the grab cursor. A tab
+   still switches on click, so an inactive one keeps the pointer hand. */
 body.layout-locked .docked-panel__header,
-body.layout-locked .tab-group-tab {
+body.layout-locked .tab-group-tab--active,
+body.layout-locked .tab-group-tab--active:active {
   cursor: default;
+}
+body.layout-locked .tab-group-tab:not(.tab-group-tab--active),
+body.layout-locked .tab-group-tab:not(.tab-group-tab--active):active {
+  cursor: pointer;
 }
 /* The close button is gone, so its reserved right padding would push tab
    titles off-centre — even the padding back out. */
@@ -1086,7 +1092,11 @@ body.layout-manager-enabled .compass-rose-box {
   background: var(--surface-ground, #1a1a1a);
   border-bottom: 2px solid var(--layout-accent, #589aff);
 }
-.tab-group-tab--locked { cursor: default; }
+/* A per-window lock only stops dragging — switching tabs still works. */
+.tab-group-tab--locked,
+.tab-group-tab--locked:active { cursor: pointer; }
+.tab-group-tab--locked.tab-group-tab--active,
+.tab-group-tab--locked.tab-group-tab--active:active { cursor: default; }
 /* The close button brings its own box, so trim the right padding to keep the
  * title visually centred in the tab. */
 .tab-group-tab--closable { padding-right: 6px; }
