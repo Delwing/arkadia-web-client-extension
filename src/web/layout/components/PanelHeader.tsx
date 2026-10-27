@@ -9,6 +9,7 @@ import { builtInSettingsFields, hasAppearanceSettings, hasWindowSettings } from 
 import { MapHeaderMenu } from './MapHeaderMenu';
 import { ObjectListHeaderActions } from './ObjectListHeaderActions';
 import { WindowSettingsMenu } from './WindowSettingsMenu';
+import { observeHeader, runMeasures, type HeaderMeasure } from '../utils/headerMeasure';
 
 /** Combined chrome state for a window — built from the popupRegistry, the
  *  built-in panel state, and the window record itself. */
@@ -135,20 +136,25 @@ const MIN_TITLE_WIDTH = 120;
 
 const STACKED_CLASS = 'managed-panel__header--stacked';
 
-/** Width the header needs to fit everything on one row, title kept readable. */
-function measureOneRowWidth(header: HTMLElement): number {
+/** Whether the header is too narrow for everything on one row, title kept
+ *  readable. Yields between reads and writes (see headerMeasure). */
+function* measureStacked(header: HTMLElement, apply: (stacked: boolean) => void): HeaderMeasure {
+  const available = header.clientWidth;
+  yield;
   // Measured on the live one-row layout: the stacked class comes off just for
   // the reading and goes back before anything paints. A width remembered from
   // an earlier one-row layout goes stale - the window buttons are bigger on a
   // phone, so coming back to a wide screen would leave the header stacked.
   const wasStacked = header.classList.contains(STACKED_CLASS);
   if (wasStacked) header.classList.remove(STACKED_CLASS);
+  yield;
   const title = header.querySelector<HTMLElement>('.managed-panel__title');
   const titleWidth = title?.clientWidth ?? 0;
   const titleWanted = Math.min(title?.scrollWidth ?? 0, MIN_TITLE_WIDTH);
-  const width = header.scrollWidth + Math.max(0, titleWanted - titleWidth);
+  const needed = header.scrollWidth + Math.max(0, titleWanted - titleWidth);
+  yield;
   if (wasStacked) header.classList.add(STACKED_CLASS);
-  return width;
+  apply(available < needed);
 }
 
 /**
@@ -167,30 +173,32 @@ function useStackedHeader(
   const enabledRef = useRef(enabled);
   enabledRef.current = enabled;
 
-  const checkRef = useRef(() => {});
-  checkRef.current = () => {
-    const header = headerRef.current;
-    let next = false;
-    if (header && enabledRef.current) {
-      next = header.clientWidth < measureOneRowWidth(header);
-    }
+  const apply = (next: boolean) => {
     if (next !== stackedRef.current) {
       stackedRef.current = next;
       setStacked(next);
     }
   };
 
+  const measureRef = useRef<() => HeaderMeasure>(null!);
+  measureRef.current = function* () {
+    const header = headerRef.current;
+    if (header && enabledRef.current) {
+      yield* measureStacked(header, apply);
+    } else {
+      apply(false);
+    }
+  };
+
   // The title and actions change without resizing anything observed, so
   // measure again after every render too.
-  useLayoutEffect(() => checkRef.current());
+  useLayoutEffect(() => runMeasures([measureRef.current()]));
 
   useLayoutEffect(() => {
     const header = headerRef.current;
-    if (!header || typeof ResizeObserver === 'undefined') return;
-    const observer = new ResizeObserver(() => checkRef.current());
-    observer.observe(header);
-    if (actionsRef.current) observer.observe(actionsRef.current);
-    return () => observer.disconnect();
+    if (!header) return;
+    const watched = actionsRef.current ? [header, actionsRef.current] : [header];
+    return observeHeader(watched, () => measureRef.current());
   }, [headerRef, actionsRef, enabled]);
 
   return stacked;

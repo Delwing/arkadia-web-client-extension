@@ -65,6 +65,8 @@ function SplitView({
         `:scope > [data-cell-id="${b.id}"]`
       );
       if (!aEl || !bEl) return;
+      // Hover stays on the handle (see DockArea's edge drag).
+      e.currentTarget.setPointerCapture(e.pointerId);
 
       const startPos = horizontal ? e.clientX : e.clientY;
       const startA = horizontal ? aEl.offsetWidth : aEl.offsetHeight;
@@ -80,12 +82,24 @@ function SplitView({
         const newA = Math.max(40, Math.min(total - 40, startA + delta));
         return newA / total;
       };
+      // Pointer moves can come faster than frames; resizing the panes relays
+      // out every window in them, so only the latest move of a frame counts.
+      let frame = 0;
+      let latest: PointerEvent | null = null;
       const onMove = (ev: PointerEvent) => {
-        const ratio = ratioAt(ev);
-        aEl.style.flex = `${totFlex * ratio}`;
-        bEl.style.flex = `${totFlex * (1 - ratio)}`;
+        latest = ev;
+        if (frame) return;
+        frame = requestAnimationFrame(() => {
+          frame = 0;
+          if (!latest) return;
+          const ratio = ratioAt(latest);
+          aEl.style.flex = `${totFlex * ratio}`;
+          bEl.style.flex = `${totFlex * (1 - ratio)}`;
+        });
       };
       const onUp = (ev: PointerEvent) => {
+        cancelAnimationFrame(frame);
+        frame = 0;
         const ratio = ratioAt(ev);
         ctx.manager.setNodeFlex(
           ctx.side,

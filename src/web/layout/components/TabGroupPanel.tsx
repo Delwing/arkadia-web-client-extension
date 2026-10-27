@@ -7,6 +7,7 @@ import { PanelSettingsButton, usePanelChrome, type PanelChrome } from './PanelHe
 import { useWindowBackground } from '../hooks/useWindowAppearance';
 import { usePopover } from '../hooks/usePopover';
 import { MenuCheckItem, MenuItem } from './HeaderMenu';
+import { observeHeader, runMeasures, type HeaderMeasure } from '../utils/headerMeasure';
 
 interface TabGroupPanelProps {
   side: DockSide;
@@ -108,27 +109,52 @@ interface TabBarLayout {
 
 const ONE_ROW: TabBarLayout = { compact: false, stacked: false, overflow: false };
 
-/** Natural widths on one row, read with the layout classes off for a moment
- *  (put back before anything paints). */
-function measureOneRow(bar: HTMLElement) {
+/**
+ * Which way the bar gives way, read off its live layout and then its natural
+ * widths on one row (the layout classes off for a moment, put back before
+ * anything paints). Yields between reads and writes, so every bar resized in
+ * a frame shares the same two layouts.
+ */
+function* measureTabBar(bar: HTMLElement, tabs: HTMLElement, apply: (next: TabBarLayout) => void): HeaderMeasure {
+  const width = bar.clientWidth;
+  // The strip's room without ▾, so the button showing up never squeezes the
+  // tabs into keeping it, nor its going frees them.
+  const toggle = bar.querySelector<HTMLElement>('.tab-group-overflow');
+  const room = tabs.clientWidth + (toggle?.offsetWidth ?? 0);
+  yield;
+
   const removed = LAYOUT_CLASSES.filter(c => bar.classList.contains(c));
   bar.classList.remove(...removed);
   bar.classList.add(MEASURING_CLASS);
-  const tabs = bar.querySelector<HTMLElement>('.tab-group-tabs');
+  yield;
+
   const custom = bar.querySelector<HTMLElement>('.tab-group-custom-actions');
   const full = bar.querySelector<HTMLElement>('.tab-group-window-buttons__full');
   const titles = Array.from(bar.querySelectorAll<HTMLElement>('.tab-group-tab-title'));
-  const result = {
-    total: bar.scrollWidth,
-    tabs: tabs?.scrollWidth ?? 0,
-    /** A title longer than the tab's own cap, cut short however wide the bar. */
-    titleCapped: titles.some(t => t.scrollWidth > t.clientWidth + 1),
-    custom: custom?.getBoundingClientRect().width ?? 0,
-    full: full?.getBoundingClientRect().width ?? 0,
-  };
+  const oneRow = bar.scrollWidth;
+  const tabsWidth = tabs.scrollWidth;
+  // A title longer than the tab's own cap, cut short however wide the bar.
+  const titleCapped = titles.some(t => t.scrollWidth > t.clientWidth + 1);
+  const customWidth = custom?.getBoundingClientRect().width ?? 0;
+  const fullWidth = full?.getBoundingClientRect().width ?? 0;
+  yield;
+
   bar.classList.remove(MEASURING_CLASS);
   bar.classList.add(...removed);
-  return result;
+
+  const next: TabBarLayout = { ...ONE_ROW };
+  // Every tab at its full width: the actions give way before the titles do.
+  const folded = fullWidth > 0 ? oneRow - fullWidth + MORE_BUTTON_WIDTH : oneRow;
+  if (oneRow > width) {
+    if (folded <= width || customWidth === 0) {
+      next.compact = fullWidth > 0;
+    } else {
+      next.stacked = true;
+      next.compact = fullWidth > 0 && oneRow - customWidth > width;
+    }
+  }
+  next.overflow = titleCapped || tabsWidth > room + 1;
+  apply(next);
 }
 
 /**
@@ -143,31 +169,7 @@ function useTabBarLayout(
   const [layout, setLayout] = useState<TabBarLayout>(ONE_ROW);
   const layoutRef = useRef(layout);
 
-  const checkRef = useRef(() => {});
-  checkRef.current = () => {
-    const bar = barRef.current;
-    const tabs = tabsRef.current;
-    const next: TabBarLayout = { ...ONE_ROW };
-    if (bar && tabs) {
-      const m = measureOneRow(bar);
-      const width = bar.clientWidth;
-      // Every tab at its full width: the actions give way before the titles do.
-      const oneRow = m.total;
-      const folded = m.full > 0 ? oneRow - m.full + MORE_BUTTON_WIDTH : oneRow;
-      if (oneRow > width) {
-        if (folded <= width || m.custom === 0) {
-          next.compact = m.full > 0;
-        } else {
-          next.stacked = true;
-          next.compact = m.full > 0 && oneRow - m.custom > width;
-        }
-      }
-      // Measured against the strip's room without ▾, so the button showing up
-      // never squeezes the tabs into keeping it, nor its going frees them.
-      const toggle = bar.querySelector<HTMLElement>('.tab-group-overflow');
-      const room = tabs.clientWidth + (toggle?.offsetWidth ?? 0);
-      next.overflow = m.titleCapped || m.tabs > room + 1;
-    }
+  const apply = (next: TabBarLayout) => {
     const prev = layoutRef.current;
     if (prev.compact !== next.compact || prev.stacked !== next.stacked || prev.overflow !== next.overflow) {
       layoutRef.current = next;
@@ -175,17 +177,25 @@ function useTabBarLayout(
     }
   };
 
+  const measureRef = useRef<() => HeaderMeasure>(null!);
+  measureRef.current = function* () {
+    const bar = barRef.current;
+    const tabs = tabsRef.current;
+    if (bar && tabs) {
+      yield* measureTabBar(bar, tabs, apply);
+    } else {
+      apply(ONE_ROW);
+    }
+  };
+
   // Tabs, titles and actions change without resizing anything observed, so
   // measure again after every render too.
-  useLayoutEffect(() => checkRef.current());
+  useLayoutEffect(() => runMeasures([measureRef.current()]));
 
   useLayoutEffect(() => {
     const bar = barRef.current;
-    if (!bar || typeof ResizeObserver === 'undefined') return;
-    const observer = new ResizeObserver(() => checkRef.current());
-    observer.observe(bar);
-    for (const child of Array.from(bar.children)) observer.observe(child);
-    return () => observer.disconnect();
+    if (!bar) return;
+    return observeHeader([bar, ...Array.from(bar.children)], () => measureRef.current());
   });
 
   return layout;

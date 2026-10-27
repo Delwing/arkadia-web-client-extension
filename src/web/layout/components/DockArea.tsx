@@ -2,6 +2,7 @@ import { useMemo, useRef } from 'react';
 import type { DockSide, DragState, SplitNode, WindowRecord } from '../types';
 import type { WindowManager } from '../WindowManager';
 import { LayoutNodeView, NodeViewContext } from './LayoutNodeView';
+import { setDockSizeVar } from '../utils/dockSizeVars';
 
 interface DockAreaProps {
   side: DockSide;
@@ -54,15 +55,12 @@ export function DockArea({
     e.preventDefault();
     const el = areaRef.current;
     if (!el) return;
+    // Hover stays on the handle: a pointer crossing the output and the docked
+    // windows flipped :hover on big containers, restyling them every move.
+    e.currentTarget.setPointerCapture(e.pointerId);
     const startPos = horizontal ? e.clientX : e.clientY;
     const startSize = horizontal ? el.offsetWidth : el.offsetHeight;
     const flip = side === 'right' || side === 'bottom' ? -1 : 1;
-    // The dock-size vars live on #main-container (see LayoutContent) so both the
-    // horizontal (#content-area) and vertical (#main-container) grids reflow.
-    const gridHost =
-      document.getElementById('main-container') ??
-      document.getElementById('content-area');
-    const cssVar = `--dock-${side}-size`;
     let lastSize = startSize;
     const onMove = (ev: PointerEvent) => {
       lastSize = Math.max(
@@ -71,7 +69,7 @@ export function DockArea({
       );
       // Drive the grid track via the CSS variable so the whole layout reflows
       // live during drag.
-      gridHost?.style.setProperty(cssVar, `${lastSize}px`);
+      setDockSizeVar(side, `${lastSize}px`);
       el.style[horizontal ? 'width' : 'height'] = `${lastSize}px`;
     };
     const onUp = () => {

@@ -9,6 +9,7 @@ import { ObjectListPanel } from './panels/ObjectListPanel';
 import { useLayoutManager } from './hooks/useLayoutManager';
 import { useBuiltInPanelSetting } from '../hooks/useBuiltInPanelSetting';
 import { OBJECT_LIST_OTHERS_ID, PANEL_CONFIGS, SEPARATE_OTHERS_SETTING, type DockSide } from './types';
+import { setDockSizeVars } from './utils/dockSizeVars';
 
 interface LayoutContentProps {
   mapElement: HTMLElement | null;
@@ -81,22 +82,16 @@ export function LayoutContent({
     }
   }, [showOthers, manager, loadVersion]);
 
-  // Apply CSS variables that size the dock grid tracks. They live on
-  // #main-container (falling back to #content-area) so BOTH grids can read them:
-  // the horizontal-priority grid on #content-area (top/left/right) inherits them,
-  // while the vertical-priority "rails span everything" grid on #main-container
-  // (left/right rails + top/bottom/input rows) reads them directly.
+  // Apply CSS variables that size the dock grid tracks: the horizontal-priority
+  // grid on #content-area (top/left/right), the vertical-priority "rails span
+  // everything" grid on #main-container (left/right rails + top/bottom/input
+  // rows) and the compass rose each get them set directly (see dockSizeVars).
   // Critical: a drag-target side must size its track even when it has no windows
   // yet — otherwise the empty DockArea renders at 0px and dockDetect's
   // bounding-rect test rejects it as out-of-bounds.
   useEffect(() => {
-    const host =
-      document.getElementById('main-container') ??
-      document.getElementById('content-area');
-    if (!host) return;
-    const sides: DockSide[] = ['left', 'top', 'right', 'bottom'];
     if (!isLayoutMode) {
-      for (const side of sides) host.style.removeProperty(`--dock-${side}-size`);
+      setDockSizeVars(() => null);
       return;
     }
     const sideHasContent = (side: DockSide) => {
@@ -109,9 +104,7 @@ export function LayoutContent({
       sideHasContent(side) || sideIsDragTarget(side)
         ? `${layoutState.dockExtents[side]}px`
         : '0px';
-    for (const side of sides) {
-      host.style.setProperty(`--dock-${side}-size`, sizeFor(side));
-    }
+    setDockSizeVars(sizeFor);
   }, [layoutState, isLayoutMode, dragState]);
 
   const setExtent = useCallback(

@@ -54,9 +54,6 @@
   --panel-btn-icon-size: 12px;
   --panel-btn-hover-opacity: 1;
   --hold-glow-color: rgba(255, 255, 255, 0.6);
-  --dock-left-size: 0px;
-  --dock-right-size: 0px;
-  --dock-top-size: 0px;
   --floating-close-size: 1.75rem;
   --floating-close-icon-size: 0.9rem;
   --floating-close-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' viewBox='0 0 16 16'%3E%3Cpath stroke='%23ffffff' stroke-linecap='round' stroke-width='1.5' d='M3.75 3.75l8.5 8.5m0-8.5l-8.5 8.5'/%3E%3C/svg%3E");

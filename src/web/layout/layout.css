@@ -16,6 +16,14 @@
    near-black on the forged dark plate. Shared layout CSS must not depend on
    `--bs-*`. */
 
+/* Dock track sizes. Not inherited: a dock edge drag changes them every frame,
+   and as inherited values that restyled everything inside the shell, the whole
+   output buffer with it. dockSizeVars.ts sets them on each element reading them. */
+@property --dock-left-size { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --dock-right-size { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --dock-top-size { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --dock-bottom-size { syntax: '<length>'; inherits: false; initial-value: 0px; }
+
 /* When layout manager is enabled, use CSS Grid for content area.
    Default ("horizontal") priority: top/bottom span the full width, left/right
    are sandwiched in the central band. */
@@ -935,6 +943,9 @@ body.layout-manager-enabled .compass-rose-box {
 .tab-group-tabbar.tab-group-tabbar--stacked {
   flex-wrap: wrap;
   height: auto;
+  /* The header gap is for the one row; between the rows it showed as a strip
+     under the tabs. */
+  row-gap: 0;
 }
 
 /* Tabs scroll horizontally if there are too many, but actions stay pinned right. */

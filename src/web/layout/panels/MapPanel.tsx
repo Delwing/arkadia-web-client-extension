@@ -148,14 +148,22 @@ export function MapPanel({ mapElement }: MapPanelProps) {
   useEffect(() => {
     if (!containerRef.current) return;
 
+    // Dispatch resize event so the map renderer updates its canvas. Everything
+    // else listening for window resizes runs too, so a splitter drag sends at
+    // most one a frame.
+    let frame = 0;
     const resizeObserver = new ResizeObserver(() => {
-      // Dispatch resize event so the map renderer updates its canvas
-      window.dispatchEvent(new Event('resize'));
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        window.dispatchEvent(new Event('resize'));
+      });
     });
 
     resizeObserver.observe(containerRef.current);
 
     return () => {
+      cancelAnimationFrame(frame);
       resizeObserver.disconnect();
     };
   }, []);
