@@ -15,7 +15,7 @@ import {
     subscribe as subscribeNpcStore,
 } from './dataStores/npcStore';
 import { Button, DeleteButton, HeaderButton, Input, Segmented } from '@web-ui/primitives';
-import { MapPin, Navigation, Package, Search, X } from 'lucide-react';
+import { Map as MapIcon, MapPin, Navigation, Package, Search, X } from 'lucide-react';
 
 const POPUP_ID = 'popup:packageReceiver';
 
@@ -48,6 +48,22 @@ function placeOf(roomId: number): Place | null {
     const area = room.area !== undefined ? reader?.getArea?.(room.area) : undefined;
     const name = room.name && room.name !== String(roomId) ? room.name : '';
     return { room: name, area: area?.getAreaName?.() ?? '' };
+}
+
+/** Opens the map preview on a room - the same as clicking its place, as a button you can find. */
+function PreviewButton({ loc, onShowOnMap }: { loc: number; onShowOnMap: (loc: number) => void }) {
+    return (
+        <Button
+            size="sm"
+            variant="ghost"
+            className="popup-btn--icon package-receiver__preview"
+            onClick={() => onShowOnMap(loc)}
+            onContextMenu={roomContextMenuHandler(loc)}
+            title="Podgląd na mapie"
+        >
+            <MapIcon size={15} strokeWidth={1.75} />
+        </Button>
+    );
 }
 
 function mmss(seconds: number): string {
@@ -109,6 +125,7 @@ function CurrentPackage({ status, place, onNavigate, onShowOnMap }: {
                     {mmss(status.seconds)}
                 </span>
             )}
+            {loc != null && <PreviewButton loc={loc} onShowOnMap={onShowOnMap} />}
             {loc != null && (
                 <Button
                     size="sm"
@@ -164,6 +181,7 @@ const ReceiverList = memo(function ReceiverList({ rows, recipient, onNavigate, o
                             </button>
                         </div>
                         <div className="package-receiver__npc-actions">
+                            <PreviewButton loc={npc.loc} onShowOnMap={onShowOnMap} />
                             <Button
                                 size="sm"
                                 className="package-receiver__go"

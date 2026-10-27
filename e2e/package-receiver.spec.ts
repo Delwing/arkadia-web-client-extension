@@ -24,6 +24,12 @@ test.describe('Odbiorcy paczek', () => {
         await expect(row.locator('.package-receiver__place')).toContainText('#7');
     });
 
+    test('the map button previews the receiver room', async ({page}) => {
+        const row = page.locator('.package-receiver__npc-item', {hasText: 'Otto Gruby'});
+        await row.getByTitle('Podgląd na mapie').click();
+        await expect(page.locator('.static-map-popup')).toBeVisible();
+    });
+
     test('search matches the area as well as the name', async ({page}) => {
         await page.fill('.package-receiver input', 'jaskin');
         await expect(page.locator('.package-receiver__npc-item')).toHaveCount(1);
