@@ -31,8 +31,9 @@ const REACT_NAMED_EXPORTS = [
 ];
 
 // A React DOM bundled next to the host React renders with a React it doesn't
-// own, so plugins get the host's roots and portals too.
-const REACT_DOM_NAMED_EXPORTS = ['createPortal', 'flushSync'];
+// own, so plugins get the host's roots and portals too. unstable_batchedUpdates
+// is still imported by libraries such as @dnd-kit; without it their bundle fails.
+const REACT_DOM_NAMED_EXPORTS = ['createPortal', 'flushSync', 'unstable_batchedUpdates'];
 const REACT_DOM_CLIENT_NAMED_EXPORTS = ['createRoot', 'hydrateRoot'];
 
 /** The components on `api.ui.components` (experimental). */

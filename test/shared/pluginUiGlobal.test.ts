@@ -57,16 +57,18 @@ describe('plugin UI shim', () => {
 
     test('react-dom and react-dom/client come from the host', async () => {
         const { arkadiaHostUi } = require('../../plugin-types/esbuild.cjs');
-        const ReactDOM = { createPortal: () => 'host:portal', flushSync: () => {} };
+        const ReactDOM = { createPortal: () => 'host:portal', flushSync: () => {}, unstable_batchedUpdates: (fn: () => string) => fn() };
         const ReactDOMClient = { createRoot: () => 'host:root', hydrateRoot: () => {} };
         (globalThis as Record<string, unknown>)[PLUGIN_UI_GLOBAL] = { React: {}, ReactDOM, ReactDOMClient, components: {} };
         const result = await esbuild.build({
             stdin: {
+                // unstable_batchedUpdates as @dnd-kit imports it
                 contents: `import { createRoot } from 'react-dom/client';
-                           import ReactDOMDefault, { createPortal } from 'react-dom';
+                           import ReactDOMDefault, { createPortal, unstable_batchedUpdates } from 'react-dom';
                            export const root = createRoot(null);
                            export const portal = createPortal(null, null);
-                           export const same = ReactDOMDefault.createPortal === createPortal;`,
+                           export const same = ReactDOMDefault.createPortal === createPortal;
+                           export const batched = unstable_batchedUpdates(() => 'host:batched');`,
                 loader: 'ts',
                 resolveDir: '/',
             },
@@ -77,7 +79,7 @@ describe('plugin UI shim', () => {
         });
         const module = { exports: {} as Record<string, unknown> };
         new Function('module', 'exports', result.outputFiles[0].text)(module, module.exports);
-        expect(module.exports).toEqual({ root: 'host:root', portal: 'host:portal', same: true });
+        expect(module.exports).toEqual({ root: 'host:root', portal: 'host:portal', same: true, batched: 'host:batched' });
     });
 
     test('react-dom fails with a clear error on a client that does not publish it', async () => {
