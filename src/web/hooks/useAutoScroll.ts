@@ -11,8 +11,8 @@ export interface UseAutoScrollOptions {
   deps?: React.DependencyList;
   /**
    * Height in px of the sticky split pane the caller renders while
-   * `isSplitView` is true. Only needed by callers that render one — it is what
-   * makes "at the bottom" account for the content the pane covers.
+   * `isSplitView` is true. Only callers that render one pass it: the hook then
+   * lays the pane over the last lines and closes it only at the real bottom.
    */
   splitHeight?: number;
   /** Called with the committed pane height once a handle drag ends. */
@@ -55,6 +55,9 @@ export interface UseAutoScrollResult {
  */
 export function useAutoScroll(options: UseAutoScrollOptions = {}): UseAutoScrollResult {
   const { threshold = 50, deps = [], splitHeight, onSplitResize } = options;
+  // A host that renders a split pane: the pane lies over the last lines
+  // (see the overlay effect below), and only the real bottom closes it
+  const hasPane = splitHeight !== undefined;
   const containerRef = useRef<HTMLDivElement>(null);
   const splitPaneRef = useRef<HTMLDivElement>(null);
   const [isSplitView, setIsSplitView] = useState(false);
@@ -70,21 +73,35 @@ export function useAutoScroll(options: UseAutoScrollOptions = {}): UseAutoScroll
   useLayoutEffect(() => {
     const element = containerRef.current;
     if (controllerRef.current?.element === element) return;
+    if (controllerRef.current && hasPane) controllerRef.current.element.style.willChange = '';
     controllerRef.current?.controller.destroy();
     controllerRef.current = null;
     if (!element) return;
+    // The sticky pane is drawn on its own layer. On the page, the list's text
+    // was smoothed and snapped to pixels differently - coloured text looked a
+    // shade off and line spacing shifted a little between the pane and the
+    // list. On its own layer too, the list is drawn the same way.
+    if (hasPane) element.style.willChange = 'transform';
     controllerRef.current = {
       element,
       controller: createSplitViewController({
         scrollEl: element,
-        bottomThreshold: threshold,
-        getSplitHeight: () => splitPaneRef.current?.clientHeight ?? 0,
+        // Closing the pane anywhere but the real bottom meant jumping the rest
+        // of the way while a smooth scroll was still running, and Chrome drew a
+        // frame or two of shifted, doubled lines
+        bottomThreshold: hasPane ? 1 : threshold,
+        // The pane covers lines rather than adding below them: covered is not seen
+        getSplitHeight: () => 0,
         onOpen: () => setIsSplitView(true),
         onClose: () => setIsSplitView(false),
         // Both fire the same callback: the live value keeps the pane tracking
-        // the pointer, and the measured one at drag end is what gets persisted.
+        // the pointer, and the measured one at drag end (the CSS max-height may
+        // have clamped it) is what gets persisted.
         onHandleDrag: (heightPx) => onSplitResizeRef.current?.(heightPx),
-        onHandleDragEnd: (heightPx) => onSplitResizeRef.current?.(heightPx),
+        onHandleDragEnd: () => {
+          const pane = splitPaneRef.current;
+          if (pane) onSplitResizeRef.current?.(pane.offsetHeight);
+        },
       }),
     };
   });
@@ -102,10 +119,27 @@ export function useAutoScroll(options: UseAutoScrollOptions = {}): UseAutoScroll
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
 
-  // The pane appearing/growing changes how much content it covers, which is
-  // part of the "at the bottom" test — re-measure once it has rendered.
+  // Back at the bottom once the pane is gone.
   useLayoutEffect(() => {
     if (!isSplitView) controllerRef.current?.controller.pinToBottom(true);
+  }, [isSplitView, splitHeight]);
+
+  // The pane lies over the last lines instead of being added below them, so
+  // showing and hiding it never changes the scroll height - when it did, a
+  // smooth scroll still under way kept heading for the old, taller bottom and
+  // Chrome drew shifted, doubled lines as the pane closed. At the very bottom
+  // it covers the newest lines with its own copy of them. Measured, and kept in
+  // step with the window: the CSS max-height may clamp it.
+  useLayoutEffect(() => {
+    const pane = splitPaneRef.current;
+    if (!isSplitView || !pane) return;
+    const overlay = () => {
+      pane.style.marginTop = `${-pane.offsetHeight}px`;
+    };
+    overlay();
+    const resizeObserver = new ResizeObserver(overlay);
+    resizeObserver.observe(pane);
+    return () => resizeObserver.disconnect();
   }, [isSplitView, splitHeight]);
 
   const startDrag = (event: React.MouseEvent | React.TouchEvent) => {

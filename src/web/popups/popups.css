@@ -1611,6 +1611,10 @@ select.popup-input optgroup {
   font-family: var(--output-font-family), monospace;
   font-size: var(--output-font-size, 0.875rem);
   line-height: 1.4;
+  /* Whole pixels: with fractional rows Chrome rounds each one separately while
+     the list scrolls, so the spacing between lines shifted against the split
+     pane's copy of them, which stays still. */
+  line-height: round(1.4em, 1px);
 }
 
 /* ── popup split view ──────────────────────────────────────────────────────
@@ -2117,6 +2121,10 @@ select.popup-input optgroup {
   font-family: var(--output-font-family), monospace;
   font-size: var(--output-font-size, 0.875rem);
   line-height: 1.4;
+  /* Whole pixels: with fractional rows Chrome rounds each one separately while
+     the list scrolls, so the spacing between lines shifted against the split
+     pane's copy of them, which stays still. */
+  line-height: round(1.4em, 1px);
 }
 
 .chat-popup__empty {
