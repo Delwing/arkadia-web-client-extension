@@ -1,5 +1,10 @@
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
-import { setupOutputMessageHandler, type OutputMessageHandler } from '@shared/dom/outputMessageHandler';
+import {
+    setOutputMessageTypeVisibility,
+    setOutputTimestampVisibility,
+    setupOutputMessageHandler,
+    type OutputMessageHandler,
+} from '@shared/dom/outputMessageHandler';
 
 type MessageListener = (message?: string | AnsiAwareBuffer, type?: string, timestamp?: number) => void;
 
@@ -465,6 +470,53 @@ describe('setupOutputMessageHandler', () => {
         const mirrored = stickyArea.querySelector('.output_msg') as HTMLElement;
         expect(mirrored).not.toBeNull();
         expect(mirrored.classList.contains('msg-flair-lup')).toBe(true);
+    });
+
+    describe('timestamp and message-type spans', () => {
+        afterEach(() => {
+            setOutputTimestampVisibility(false);
+            setOutputMessageTypeVisibility(false);
+        });
+
+        const chrome = (msg: Element) =>
+            [...msg.querySelector('.output_msg_text')!.children].map(el => el.className);
+
+        test('are not built while their toggles are off', () => {
+            const { outputWrapper, splitBottom, splitHandle, stickyArea } = setupDom();
+            const client = makeFakeClient();
+            handler = setupOutputMessageHandler(client, { outputWrapper, splitBottom, splitHandle, stickyArea, stickyLines: 5 });
+
+            client.emit('hello', 'comm', 1000);
+
+            expect(chrome(outputWrapper.querySelector('.output_msg')!)).toEqual(['output_msg_content']);
+        });
+
+        test('are added to existing lines in order when a toggle turns on, and built for new ones', () => {
+            const { outputWrapper, splitBottom, splitHandle, stickyArea } = setupDom();
+            const client = makeFakeClient();
+            handler = setupOutputMessageHandler(client, { outputWrapper, splitBottom, splitHandle, stickyArea, stickyLines: 5 });
+            const at = new Date(2026, 9, 28, 7, 5, 9, 42).getTime();
+
+            client.emit('typed', 'room.short', at);
+            client.emit('untyped', undefined, at);
+            setOutputMessageTypeVisibility(true);
+            setOutputTimestampVisibility(true);
+            client.emit('later', 'comm', at);
+
+            const [typed, untyped, later] = outputWrapper.querySelectorAll('.output_msg');
+            for (const msg of [typed, untyped, later]) {
+                expect(chrome(msg)).toEqual(['output-timestamp', 'output-message-type', 'output_msg_content']);
+                expect(msg.querySelector('.output-timestamp')!.textContent).toBe('07:05:09.042');
+            }
+            expect(typed.querySelector('.output-message-type')!.textContent).toBe('room.short');
+            expect(untyped.querySelector('.output-message-type')!.textContent).toBe('—');
+            expect(later.querySelector('.output-message-type')!.textContent).toBe('comm');
+
+            // Turning one on again does not duplicate anything.
+            setOutputTimestampVisibility(false);
+            setOutputTimestampVisibility(true);
+            expect(chrome(typed)).toEqual(['output-timestamp', 'output-message-type', 'output_msg_content']);
+        });
     });
 
     test('destroy detaches listeners so further messages and scroll events are inert', () => {
