@@ -37,4 +37,12 @@ describe('MapHelper resolveDirection', () => {
     rooms[4] = { id: 4, area: 1, x: 93, y: 125, z: 0, exits: {}, specialExits: { 'wejdz na gore': 3 }, stubs: [] };
     expect(mapIn(rooms[3]).resolveDirection('sw')).toBe('zejdz na dol');
   });
+
+  // Room 8264: a w stub (a cliff), while its down exit lands on 8262 drawn west of it.
+  test('an up/down exit drawn that way wins over a stub', () => {
+    rooms[5] = { id: 5, area: 1, x: 123, y: -141, z: 0, exits: { east: 7, down: 6 }, stubs: [6, 7, 8, 5, 3] };
+    rooms[6] = { id: 6, area: 1, x: 121, y: -141, z: 0, exits: { up: 5 }, stubs: [] };
+    rooms[7] = { id: 7, area: 1, x: 125, y: -141, z: 0, exits: { west: 5 }, stubs: [] };
+    expect(mapIn(rooms[5]).resolveDirection('w')).toBe('d');
+  });
 });

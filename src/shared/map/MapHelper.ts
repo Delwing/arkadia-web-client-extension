@@ -952,7 +952,8 @@ export default class MapHelper {
      * unchanged when nothing better is known, or when the room has an unexplored stub that way:
      * the game says that exit exists, so a regular exit merely drawn in that direction must not
      * steal it. A special exit drawn that way still wins over the stub, as in Mudlet (19034: sw
-     * stub, "zejdz na dol" lands south-west).
+     * stub, "zejdz na dol" lands south-west), and so does an up/down exit (8264: w stub, "down"
+     * lands west).
      *
      * Split out of move() so callers that must not advance the mapper (driving a carriage, where
      * the ride is asynchronous and GMCP is the authority) can still resolve the direction.
@@ -969,6 +970,11 @@ export default class MapHelper {
             .filter(leadsThatWay)
             .map(([exit]) => exit);
         if (specialExitMatch.length > 0) return getShortDir(specialExitMatch[0]);
+
+        // Mudlet's up/down translation ignores stubs too (8264: w stub, "down" lands west).
+        const verticalMatch = (["up", "down"] as const)
+            .filter(exit => room.exits?.[exit] && leadsThatWay([exit, room.exits[exit]]));
+        if (verticalMatch.length > 0) return getShortDir(verticalMatch[0]);
 
         const stub = directionToStub(potentialExit);
         if (stub !== undefined && room.stubs?.includes(stub)) return direction;
