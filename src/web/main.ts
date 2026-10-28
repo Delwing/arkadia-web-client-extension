@@ -22,6 +22,8 @@ import {
 } from "./proxySession.ts";
 import {ConnectionController} from "./connection/connectionController";
 import {WakeLock} from "./platform/wakeLock";
+import {installMapLayoutOffsets} from "./platform/iosViewport";
+import {applyInitialLocation} from "./platform/initialLocation";
 import {OPEN_SETTINGS_EVENT} from "./assistant/openSettings.ts";
 import {ProxyControls} from "./hostProxy/ProxyControls.tsx";
 import {AccountSession} from "./account/accountSession";
@@ -48,7 +50,6 @@ import { setWidgetEditMode } from "@modules/core/widgetLayout";
 import SettingsDialog from "./settings/SettingsDialog";
 import {
     getRenderSettings,
-    getMapSettings,
     getShellSettings,
     getDeviceViewSettings,
     onRenderSettingsChange,
@@ -56,9 +57,7 @@ import {
 } from "@modules/core/settings";
 
 import "@client/main.ts"
-import {loadColors, loadMapData, subscribeToMapData} from "./mapDataLoader.ts";
-import {EmbeddedMap} from "./embed.ts"
-import {getEmbeddedMap, setEmbeddedMap} from "./embedRegistry.ts"
+import {bootstrapMap} from "./map/mapBootstrap";
 import {createElement} from 'react'
 import {createRoot} from 'react-dom/client'
 import {flushSync} from 'react-dom'
@@ -70,7 +69,7 @@ import { isHelperSupported } from "./helperDownload"
 import Scripts from "./options/Scripts.tsx"
 import AutomationWindow from "./automation/AutomationWindow.tsx"
 import Recordings from "./options/Recordings.tsx"
-import {CLOSE_SETTINGS_EVENT, OPEN_SETTINGS_PAGE_EVENT, SAVE_SETTINGS_EVENT, requestSettingsCategory, requestSettingsResume, type OpenSettingsPageDetail} from "./settings/categories.ts";
+import {CLOSE_SETTINGS_EVENT, OPEN_SETTINGS_PAGE_EVENT, SAVE_SETTINGS_EVENT, requestSettingsCategory, type OpenSettingsPageDetail} from "./settings/categories.ts";
 import CharacterManagement from "./options/CharacterManagementModal.tsx"
 import Places from "./places/Places.tsx"
 import { OPEN_PLACE_EVENT, openPlace } from "./places/placesData.ts"
@@ -84,7 +83,8 @@ import {isLikelyTouchDevice, isMobileLikeViewport, isTouchPointerType} from "@sh
 import CommandLine from "./commandInput/CommandLine";
 import {installOutputSearch} from "./outputSearch/installOutputSearch";
 import {setConnectionOffline, setConnectionStatus, setReconnectHandler} from "./commandInput/connectionView";
-import {registerMainMenuItem, updateMainMenuItem, type MainMenuGroup} from "@modules/core/mainMenuRegistry";
+import {updateMainMenuItem} from "@modules/core/mainMenuRegistry";
+import {registerBuiltinMainMenu, type MainMenuModal} from "./menu/mainMenu";
 import {harvestOutputLines} from "./commandInput/outputWords";
 import {installClientPorts} from "./installClientPorts";
 import {installContentWidthMeasurer} from "./contentWidthMeasurer";
@@ -107,22 +107,7 @@ const { client, helperConnection } = bootstrapGameClient({ installPorts: install
 installContentWidthMeasurer(client);
 
 
-const locationParam = new URLSearchParams(window.location.search).get('locationId');
-const initialLocationId = locationParam ? parseInt(locationParam) : NaN;
-if (!isNaN(initialLocationId)) {
-    const handleInitialLocation = () => {
-        client.Map.setMapRoomById(initialLocationId);
-
-        const params = new URLSearchParams(window.location.search);
-        params.delete('locationId');
-        const base = window.location.origin + window.location.pathname;
-        const rest = params.toString();
-        window.history.replaceState({}, '', rest ? `${base}?${rest}` : base);
-
-        unsubscribe();
-    };
-    const unsubscribe = client.on('gmcp.room.info', handleInitialLocation);
-}
+applyInitialLocation(client);
 
 // Keep a phone from sleeping the tab while connected (the wake-lock setting).
 const wakeLock = new WakeLock();
@@ -135,34 +120,10 @@ function updateWakeLockButton() {
 }
 wakeLock.subscribe(updateWakeLockButton);
 
-const iframeContainerEl = document.getElementById("iframe-container") as HTMLElement | null;
-const mainContainerEl = document.getElementById("main-container") as HTMLElement | null;
-let iosKeyboardOffset = 0;
-
-const updateMapLayoutOffsets = () => {
-    if (!iframeContainerEl || !mainContainerEl) {
-        return;
-    }
-    if (document.body?.dataset.mapPosition === 'top-overlay') {
-        iframeContainerEl.style.top = iosKeyboardOffset + 'px';
-        mainContainerEl.style.paddingTop = iosKeyboardOffset + 2 + 'px';
-    } else {
-        iframeContainerEl.style.top = '';
-        mainContainerEl.style.paddingTop = '';
-    }
-};
-
-window.addEventListener('map-position-change', updateMapLayoutOffsets);
-
-if (navigator.userAgent.includes('iPhone') || navigator.userAgent.includes('iPad') || navigator.userAgent.includes('iPod')) {
-    const baseOffset = window.outerHeight - window.visualViewport.height
-    window.visualViewport.addEventListener("resize", () => {
-        iosKeyboardOffset = window.outerHeight - window.visualViewport.height - baseOffset
-        updateMapLayoutOffsets()
-    })
-}
-
-updateMapLayoutOffsets()
+installMapLayoutOffsets(
+    document.getElementById("iframe-container"),
+    document.getElementById("main-container"),
+);
 
 const progressContainer = document.getElementById('map-progress-container')!;
 const progressBar = document.getElementById('map-progress-bar') as HTMLElement;
@@ -283,30 +244,10 @@ outputWrapper.addEventListener('click', (event) => {
 // MobileCommandRadial component itself (src/ui/web/buttons) — it wires its
 // own mousedown listener onto the content area.
 
-function updateProgress(p: number, loaded?: number) {
-    progressContainer.style.display = 'block';
-    if (p < 0) {
-        // Indeterminate progress: version check, or download of unknown total size
-        progressBar.style.width = '100%';
-        progressBar.textContent = loaded !== undefined ? `${Math.floor(loaded / 1024)} KB` : '';
-    } else {
-        progressBar.style.width = `${p}%`;
-        progressBar.textContent = `${Math.floor(p)}%`;
-    }
-}
-
-// Load map data and colors asynchronously
-const mapDataPromise = loadMapData(updateProgress);
-const colorsPromise = loadColors();
-
-// When both are loaded, dispatch events
-Promise.all([mapDataPromise, colorsPromise])
-    .then(([mapData, colors]) => {
-        console.log('Map data and colors loaded successfully');
-        progressContainer.style.display = 'none';
-
-        // Render LocationLabel component before initializing the map
-        // so it can receive the initial location event
+// Map data and colours load in the background; the bar follows the download.
+const mapBootstrap = bootstrapMap(client, {
+    // Rendered before the map initialises, so they hear the first location.
+    beforeInitialize: () => {
         const locationTextElement = document.getElementById('location-text');
         if (locationTextElement) {
             createRoot(locationTextElement).render(createElement(LocationLabel));
@@ -321,52 +262,20 @@ Promise.all([mapDataPromise, colorsPromise])
         if (mapLostBadgeElement) {
             createRoot(mapLostBadgeElement).render(createElement(MapLostBadge));
         }
-
-        const {startId, reader, pathFinder} = client.Map.initialize(mapData, colors);
-        const savedAlgorithm = getMapSettings().pathFindingAlgorithm;
-        if (savedAlgorithm && pathFinder.setAlgorithm) {
-            pathFinder.setAlgorithm(savedAlgorithm);
-        }
-        const embedded = new EmbeddedMap(reader, startId);
-        embedded.pathFinder = pathFinder;
-        setEmbeddedMap(embedded);
-
-        // Single place the view is reconciled with map data, however it changed:
-        // a data refresh, a whole map pushed from the editor, or individual areas
-        // synced from it. The view holds its own reader reference and the renderer
-        // caches per-area geometry, so neither a swapped reader nor an in-place
-        // edit shows up on its own.
-        client.Map.onAreasChanged((areaIds) => {
-            const currentEmbedded = getEmbeddedMap();
-            const currentReader = client.Map.tryGetMapReader();
-            if (!currentEmbedded || !currentReader) return;
-
-            if (currentEmbedded.reader !== currentReader) {
-                // The map was rebuilt — the old reader (and its renderer) are stale.
-                currentEmbedded.reload(currentReader);
-                currentEmbedded.pathFinder = client.Map.getPathFinder();
-                const algorithm = getMapSettings().pathFindingAlgorithm;
-                if (algorithm && currentEmbedded.pathFinder?.setAlgorithm) {
-                    currentEmbedded.pathFinder.setAlgorithm(algorithm);
-                }
-            } else {
-                currentEmbedded.refreshAreas(areaIds);
-            }
-        });
-
-        subscribeToMapData((newMapData) => {
-            if (!newMapData) return;
-            if (!getEmbeddedMap()) return;
-
-            // initialize() announces the new areas, and the handler above swaps
-            // the reader into the view.
-            client.Map.initialize(newMapData, colors);
-        }, { emitInitial: false });
-    })
-    .catch(error => {
-        progressContainer.style.display = 'none';
-        console.error('Failed to load map data or colors:', error);
-    });
+    },
+});
+mapBootstrap.subscribeProgress(({visible, percent, loadedBytes}) => {
+    progressContainer.style.display = visible ? 'block' : 'none';
+    if (!visible) return;
+    if (percent === null) {
+        // Indeterminate progress: version check, or download of unknown total size
+        progressBar.style.width = '100%';
+        progressBar.textContent = loadedBytes !== undefined ? `${Math.floor(loadedBytes / 1024)} KB` : '';
+    } else {
+        progressBar.style.width = `${percent}%`;
+        progressBar.textContent = `${Math.floor(percent)}%`;
+    }
+});
 
 
 // The connection lifecycle (connect, autologin, reattach through the session
@@ -854,7 +763,7 @@ document.addEventListener('DOMContentLoaded', () => {
         eventBus.on('locationNote.open', ({ roomId }) => openPlace(roomId, 'note'));
     }
 
-    // The ⋯ menu next to the command line (Logi registers itself).
+    // The ⋯ menu's Kod QR lokacji: a link that opens the map on this room.
     const shareLocation = () => {
         const roomId = client.Map.currentRoom?.id;
         if (!roomId || !locationQrImage) {
@@ -865,41 +774,21 @@ document.addEventListener('DOMContentLoaded', () => {
         locationQrImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url.toString())}`;
         locationShareModal?.show();
     };
-    const toggleFullscreen = () => {
-        if (!document.fullscreenElement) {
-            document.documentElement.requestFullscreen().catch(err => console.error('Failed to enter fullscreen:', err));
-        } else {
-            document.exitFullscreen().catch(err => console.error('Failed to exit fullscreen:', err));
-        }
+    const modals: Record<MainMenuModal, AppModal | null> = {
+        automation: automationModal,
+        binds: bindsModal,
+        places: placesModal,
+        recordings: recordingsModal,
+        scripts: scriptsModal,
+        helper: helperModal,
+        settings: settingsModal,
     };
-    const builtins: [string, string, MainMenuGroup, string, () => void, string?, string[]?][] = [
-        ['automation-button', 'Skrypty', 'gra', 'zap', () => automationModal?.show(), undefined, ['aliasy', 'triggery', 'wyzwalacze', 'automatyzacja']],
-        ['binds-button', 'Klawisze', 'gra', 'keyboard', () => bindsModal?.show()],
-        ['places-button', 'Miejsca', 'gra', 'map-pin', () => placesModal?.show()],
-        ['recordings-button', 'Nagrania', 'gra', 'record', () => recordingsModal?.show()],
-        ['people-browser-button', 'Baza postaci', 'gra', 'users', () => eventBus.emit('peopleBrowser.popup.open')],
-        ['npc-button', 'Odbiorcy paczek', 'gra', 'package', () => eventBus.emit('packageReceiver.popup.open')],
-        ['share-location-button', 'Kod QR lokacji', 'gra', 'qr-code', shareLocation, 'Kod QR'],
-        ['scripts-button', 'Wtyczki', 'narzedzia', 'code', () => scriptsModal?.show(), undefined, ['skrypty', 'pluginy']],
-        ['data-sources-button', 'Źródła danych', 'narzedzia', 'database', () => eventBus.emit('dataSources.popup.open')],
-        ['helper-button', 'Helper', 'narzedzia', 'plug', () => helperModal?.show()],
-    ];
-    builtins.filter(([id]) => id !== 'helper-button' || isHelperSupported()).forEach(([id, label, group, icon, onSelect, shortLabel, keywords], index) => {
-        registerMainMenuItem({id, label, shortLabel, keywords, group, icon, order: (index + 1) * 10, onSelect, source: 'builtin'});
+    registerBuiltinMainMenu({
+        openModal: (modal) => modals[modal]?.show(),
+        shareLocation,
+        isConnected: () => connection.getState().connected,
+        toggleConnection: () => connection.toggle(),
     });
-    // One entry for the whole dialog: it opens where it was left (page, unsaved edits).
-    registerMainMenuItem({
-        id: 'settings-button', label: 'Ustawienia', group: 'ustawienia', icon: 'settings', order: 5, onSelect: () => { requestSettingsResume(); settingsModal?.show(); }, source: 'builtin',
-        keywords: ['opcje', 'postać', 'interfejs', 'przyciski', 'menu kołowe', 'eksport', 'import', 'synchronizacja', 'kopia'],
-    });
-    registerMainMenuItem({
-        id: 'widgets-button', label: 'Widżety', group: 'narzedzia', icon: 'widgets', order: 160, onSelect: () => setWidgetEditMode(true), source: 'builtin',
-        keywords: ['zegar', 'kompas', 'witalne', 'transport', 'nakładka', 'hud'],
-    });
-    // Logi (170) registers itself in Narzędzia.
-    registerMainMenuItem({id: 'docs-button', label: 'Dokumentacja', shortLabel: 'Pomoc', group: 'narzedzia', icon: 'book', order: 180, onSelect: () => eventBus.emit('docs.popup.open'), source: 'builtin'});
-    registerMainMenuItem({id: 'fullscreen-button', label: 'Pełny ekran', group: 'sesja', icon: 'fullscreen', order: 900, onSelect: toggleFullscreen, source: 'builtin'});
-    registerMainMenuItem({id: 'disconnect-button', label: connection.getState().connected ? 'Rozłącz' : 'Połącz', group: 'sesja', icon: 'power', order: 910, onSelect: () => connection.toggle(), tone: 'danger', source: 'builtin'});
 
     if (recordingButton) {
         recordingButton.addEventListener('click', () => {

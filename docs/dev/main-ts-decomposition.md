@@ -41,11 +41,14 @@ Each piece exposes `getState()` + `subscribe()` so React can later read it with
    (`test/web/connection/connectionController.test.ts`). **Done.**
    `platform/wakeLock.ts` — NoSleep behind activate/deactivate/toggle. **Done.**
 2. **`map/mapBootstrap.ts`** — map + colours load with progress as a store, `EmbeddedMap`
-   creation, `onAreasChanged` reconciliation, `subscribeToMapData`.
+   creation, `onAreasChanged` reconciliation, `subscribeToMapData`. **Done.**
 3. **`platform/iosViewport.ts`, `platform/initialLocation.ts`** — iOS keyboard offset
-   and map layout offsets; the `?locationId=` one-shot.
+   and map layout offsets; the `?locationId=` one-shot. **Done.**
 4. **`menu/mainMenu.ts`** — the built-in main-menu registrations (takes a `modals`
-   handle and the connection controller).
+   handle and the connection controller). **Done.**
+
+Phase 0 result: `main.ts` 1,548 → 1,018 lines; everything left in it is DOM wiring
+and React mounting, which is what Phases 1–2 replace.
 
 ### Phase 1 — one React root
 
