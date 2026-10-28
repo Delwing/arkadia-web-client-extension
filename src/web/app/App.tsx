@@ -1,10 +1,8 @@
-import type { ComponentProps } from "react";
 import { useAppServices } from "./appServices";
 import { Island } from "./Island";
 import { AppModals } from "./AppModals";
 import CommandLine, { type CommandLineDeps } from "../commandInput/CommandLine";
-import { ProxyControls } from "../hostProxy/ProxyControls";
-import { AccountScreen } from "../account/AccountScreen";
+import { AuthOverlay, type AuthOverlayProps } from "../auth/AuthOverlay";
 import { ToastStack, type ToastStackProps } from "../notifications/ToastStack";
 import { LayoutManagerWrapper } from "../layout";
 import { ContextMenuHost } from "../contextMenu";
@@ -24,7 +22,7 @@ import BossKeyOverlay from "@web-ui/bossKey/BossKeyOverlay";
 /** The wiring that still lives in main.ts, handed to the parts that need it. */
 export interface AppProps {
     commandLine: CommandLineDeps;
-    proxyControls: ComponentProps<typeof ProxyControls>;
+    auth: AuthOverlayProps;
     /** Absent when the page has no #notification-center. */
     toasts: ToastStackProps | null;
 }
@@ -36,8 +34,8 @@ const getOutputArea = () => document.getElementById("main_text_output_msg_wrappe
  * always had (or portals itself), so the page's DOM and CSS are unchanged; what
  * changes is that they share one root and the services context.
  */
-export function App({ commandLine, proxyControls, toasts }: AppProps) {
-    const { client, accountSession } = useAppServices();
+export function App({ commandLine, auth, toasts }: AppProps) {
+    const { client } = useAppServices();
 
     return (
         <>
@@ -49,9 +47,8 @@ export function App({ commandLine, proxyControls, toasts }: AppProps) {
             <Island name="CommandLine" target="command-line-root"><CommandLine deps={commandLine} /></Island>
             {toasts && <Island name="Toasts" target="notification-center"><ToastStack {...toasts} /></Island>}
 
-            {/* The login screen's account screens and its connection footer. */}
-            <Island name="AccountScreen" target="account-root"><AccountScreen session={accountSession} /></Island>
-            <Island name="ProxyControls" target="proxy-controls-root"><ProxyControls {...proxyControls} /></Island>
+            {/* Logowanie: the card over the game while offline. */}
+            <Island name="AuthOverlay" target="auth-root"><AuthOverlay {...auth} /></Island>
 
             {/* The footer: the location binds and the status line, as the footer layout arranges them. */}
             <Island name="StockFooter" target="footer-layout"><StockFooter /></Island>

@@ -57,7 +57,6 @@ import {applyDefaultLayoutMode, setRailSpanSupported} from "@web/layout"
 import {globalStorage} from "@modules/core/storage"
 import {setOutputTimestampVisibility, setupOutputMessageHandler} from "@shared/dom/outputMessageHandler";
 import {createCharPlaqueFeed} from "@shared/dom/charPlaque";
-import {setupLoginFire} from "./loginFire";
 import {isLikelyTouchDevice, isMobileLikeViewport, isTouchPointerType} from "@shared/dom/pointerEnvironment.ts";
 import {installOutputSearch} from "./outputSearch/installOutputSearch";
 import {setConnectionOffline, setConnectionStatus, setReconnectHandler} from "./commandInput/connectionView";
@@ -73,7 +72,6 @@ import {prepareStockFooter} from "@web-ui/footer/prepareStockFooter.tsx";
 import {App, type AppProps} from "./app/App";
 import {AppProviders} from "./app/AppProviders";
 import {initTextToSpeech} from "./voice/textToSpeech.ts";
-import {reloadToLatest, watchForNewVersion} from "./versionCheck";
 
 // The client seeds `binds` from the active keymap itself (KeyBindingManager),
 // so any UI — including this one — picks up keybinds without a UI-side step.
@@ -283,7 +281,6 @@ const accountSession = new AccountSession({
         if (!isMobileLikeViewport()) document.getElementById('message-input')?.focus();
     },
 });
-accountSession.subscribe(() => updateConnectButtons());
 connection.subscribe(() => updateConnectButtons());
 connection.onLeftGame(() => accountSession.reset());
 
@@ -296,71 +293,19 @@ connection.onConnected(() => {
 });
 connection.onSessionLost(() => wakeLock.deactivate());
 
-// Function to update the connect button state
+// The command line's connection view and the menu's Połącz/Rozłącz follow the
+// connection; the login card (AuthOverlay) renders the same state itself.
 function updateConnectButtons() {
-    const authPanel = document.getElementById('auth-panel');
-    const authOverlay = document.getElementById('auth-overlay') as HTMLElement | null;
-    const account = accountSession.getState();
-    const {connected, connecting, disconnecting, authClosed, playback, accountLeaving, loginNotice} = connection.getState();
-
-    // Connecting: the form and the connect button give way to the spinner, which
-    // also covers an e-mail login waiting for the game's answer.
-    authPanel?.classList.toggle('is-connecting', connecting || account.loggingIn);
-    authPanel?.classList.toggle('is-account', account.view !== 'off');
-    authPanel?.classList.toggle('is-direct', mudClient.getProxyMode() === 'direct');
+    const {connected, connecting, disconnecting, authClosed} = connection.getState();
 
     // Offline with the login screen dismissed: the command line shows the closed
     // connection and offers to reconnect in place of the send button.
     setConnectionOffline(!connected && !connecting && authClosed);
     setConnectionStatus(connected ? 'connected' : connecting ? 'connecting' : 'disconnected', mudClient.getProxyMode());
 
-
-    if (authOverlay) {
-        // Leaving an account keeps the card up through the close: there is no game
-        // under it to show for the moment the socket takes to go.
-        const accountUp = accountSession.isActive() || (accountLeaving && disconnecting);
-        const authShown = (!connected || accountUp) && !playback && !authClosed;
-        authOverlay.style.display = authShown ? 'flex' : 'none';
-        // What a theme that takes the screen for the login keys on (Kuźnia hides the game under it).
-        document.body.classList.toggle('auth-open', authShown);
-    }
-
     updateMainMenuItem('disconnect-button', connected
         ? { label: 'Rozłącz', disabled: disconnecting, tone: 'danger' }
         : { label: 'Połącz', disabled: connecting, tone: undefined });
-
-    renderSystemLoginMessage(!connected && !connecting ? loginNotice : null);
-}
-
-/**
- * What the game said about the last login, over the form. A wrong password
- * also empties the password field and marks it, ready to be typed again.
- */
-let shownSystemLoginMessage: string | null = null;
-function renderSystemLoginMessage(message: string | null) {
-    const el = document.getElementById('system-login-message');
-    if (!el || message === shownSystemLoginMessage) return;
-    shownSystemLoginMessage = message;
-    el.textContent = '';
-    const aboutPassword = message != null && /has(l|\u0142)o/i.test(message);
-    document.getElementById('auth-panel')?.classList.toggle('has-password-error', aboutPassword);
-    const password = document.getElementById('login-password') as HTMLInputElement | null;
-    if (password) {
-        password.placeholder = aboutPassword ? 'Wpisz ponownie' : '';
-        if (aboutPassword) {
-            password.value = '';
-            password.dispatchEvent(new Event('input'));
-        }
-    }
-    if (!message) return;
-    const text = document.createElement('div');
-    const strong = document.createElement('strong');
-    strong.textContent = message;
-    const source = document.createElement('span');
-    source.textContent = 'wiadomość od serwera gry';
-    text.append(strong, source);
-    el.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2 21h20z"></path><path d="M12 10v4"></path><path d="M12 18h.01"></path></svg>';
-    el.append(text);
 }
 
 // Returning to the tab reflows the output; the split view must not take that for a scroll.
@@ -383,78 +328,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // the side docks span the full height (Okna → Menedżer Okien). Must run
     // before the LayoutProvider mounts.
     setRailSpanSupported(true);
-
-    const commitInfo = document.getElementById('commit-info') as HTMLElement | null;
-    if (commitInfo) {
-        const formatCommitDate = (raw: string): string => {
-            if (!raw || raw === 'unknown') return raw;
-            const parsed = new Date(raw);
-            if (Number.isNaN(parsed.getTime())) return raw;
-            const pad = (n: number) => n.toString().padStart(2, '0');
-            return `${parsed.getFullYear()}-${pad(parsed.getMonth() + 1)}-${pad(parsed.getDate())} ${pad(parsed.getHours())}:${pad(parsed.getMinutes())}`;
-        };
-
-        const repoLink = document.createElement('a');
-        repoLink.href = 'https://github.com/Delwing/arkadia-web-client-extension';
-        repoLink.target = '_blank';
-        repoLink.rel = 'noopener noreferrer';
-        repoLink.className = 'commit-info-link';
-        repoLink.title = `Wersja z ${formatCommitDate(__COMMIT_DATE__)}: otwórz repozytorium na GitHub`;
-        repoLink.textContent = __COMMIT_SHA__;
-
-        const githubLink = document.createElement('a');
-        githubLink.href = repoLink.href;
-        githubLink.target = '_blank';
-        githubLink.rel = 'noopener noreferrer';
-        githubLink.className = 'commit-info-github';
-        githubLink.title = 'Otwórz repozytorium na GitHub';
-        githubLink.innerHTML = '<svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" focusable="false"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>';
-
-        const dateSpan = document.createElement('span');
-        dateSpan.className = 'commit-info-date';
-        dateSpan.textContent = ` · ${formatCommitDate(__COMMIT_DATE__)}`;
-
-        const line = document.createElement('div');
-        line.className = 'commit-info-line';
-        line.append(githubLink, repoLink, dateSpan);
-
-        commitInfo.textContent = '';
-        commitInfo.append(line);
-
-        // Reported on the login screen: an open PWA notices the new build when it
-        // returns to the foreground, and the player sees it the next time they are
-        // not in the middle of a game. Opting in also shows a passing toast in the
-        // notification center, since a session can go on for days without the login.
-        watchForNewVersion({
-            currentSha: __COMMIT_SHA__,
-            onUpdate: () => {
-                const warningDiv = document.createElement('div');
-                warningDiv.className = 'commit-info-update';
-                warningDiv.append('Nowa wersja dostępna');
-                const reloadButton = document.createElement('button');
-                reloadButton.type = 'button';
-                reloadButton.className = 'auth-btn auth-btn--sm commit-info-reload';
-                reloadButton.textContent = 'Odśwież';
-                reloadButton.addEventListener('click', () => {
-                    reloadButton.disabled = true;
-                    void reloadToLatest();
-                });
-                warningDiv.append(reloadButton);
-                commitInfo.appendChild(warningDiv);
-
-                if (getShellSettings().inGameUpdateNotice) {
-                    client.sendEvent('notify', {
-                        title: 'Dostępna nowa wersja',
-                        text: 'Odśwież stronę, kiedy skończysz grać.',
-                        source: 'client',
-                        key: 'client.update',
-                        time: 15000,
-                        actions: [{ label: 'Odśwież', primary: true, onClick: () => void reloadToLatest() }],
-                    });
-                }
-            },
-        });
-    }
 
     let clearInputOnSend = getRenderSettings().clearInputOnSend;
     onRenderSettingsChange((render) => {
@@ -485,7 +358,6 @@ document.addEventListener('DOMContentLoaded', () => {
             wakeLock.deactivate();
         }
     });
-    const connectButton = document.getElementById('connect-button') as HTMLButtonElement | null;
     const recordingButton = document.getElementById('recording-button') as HTMLButtonElement | null;
     wakeLockButton = document.getElementById('wake-lock-button') as HTMLButtonElement | null;
     updateWakeLockButton();
@@ -501,12 +373,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const placesModal = () => AppModal.byId('places-modal');
     const helperModal = () => AppModal.byId('helper-modal');
     const locationShareModal = () => AppModal.byId('location-share-modal');
-    const loginCharacter = document.getElementById('login-character') as HTMLInputElement | null;
-    const loginPassword = document.getElementById('login-password') as HTMLInputElement | null;
-    const loginForm = document.getElementById('login-form') as HTMLFormElement | null;
-    const authClose = document.getElementById('auth-close') as HTMLButtonElement | null;
     const notificationCenter = document.getElementById('notification-center') as HTMLElement | null;
-    const enableNotificationsSettings = document.getElementById('ui-enable-notifications') as HTMLButtonElement | null;
     const contentArea = document.getElementById('content-area') as HTMLElement | null;
 
     const focusCommandInputOnConnect = () => {
@@ -581,44 +448,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 focusMessageInput(event.target);
             });
         }
-    }
-    const enableNotificationsConnection = document.getElementById('enable-notifications-connection') as HTMLButtonElement | null;
-
-    // The login screen's banner: gone once notifications are on, or for now on its cross.
-    const authNotify = document.getElementById('auth-notify');
-    document.getElementById('auth-notify-dismiss')?.addEventListener('click', () => {
-        if (authNotify) authNotify.style.display = 'none';
-    });
-    if (authNotify && typeof Notification === 'undefined') {
-        authNotify.style.display = 'none';
-    }
-
-    if (enableNotificationsSettings || enableNotificationsConnection) {
-        const updateVisibility = () => {
-            if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-                if (enableNotificationsSettings) {
-                    enableNotificationsSettings.style.display = 'none';
-                }
-                if (authNotify) {
-                    authNotify.style.display = 'none';
-                }
-            }
-        };
-        const handleClick = () => {
-            client.enableNotifications();
-            updateVisibility();
-        };
-        if (enableNotificationsSettings) {
-            enableNotificationsSettings.addEventListener('click', handleClick);
-        }
-        if (enableNotificationsConnection) {
-            enableNotificationsConnection.addEventListener('click', handleClick);
-        }
-        updateVisibility();
-        // The permission prompt answers after the click.
-        navigator.permissions?.query({name: 'notifications'})
-            .then((status) => { status.onchange = updateVisibility; })
-            .catch(() => undefined);
     }
 
     initTextToSpeech(client);
@@ -729,59 +558,14 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    loginForm?.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const character = loginCharacter?.value || '';
-        const password = loginPassword?.value || '';
-
-        // An e-mail opens the account rather than a character. Over telnet the
-        // game asks for one in its own text menu, so only the direct connection
-        // takes this road; the others type it in below like a name.
-        if (character.includes('@') && mudClient.getProxyMode() === 'direct') {
-            const {connected, connecting} = connection.getState();
-            if (connected || connecting) return;
-            connection.clearLoginNotice();
-            accountSession.login(character.trim(), password);
-            return;
-        }
-
-        connection.signIn({character, password});
-    });
-
-    // The login screen's Połącz, and the command line's reconnect while offline.
-    connectButton?.addEventListener('click', () => connection.toggle());
+    // The command line's reconnect while offline.
     setReconnectHandler(() => connection.toggle());
 
-    setupLoginFire();
-
-    // The login screen's password field: the eye shows what was typed.
-    const passwordToggle = document.getElementById('login-password-toggle');
-    if (passwordToggle && loginPassword) {
-        passwordToggle.addEventListener('click', () => {
-            const show = loginPassword.type === 'password';
-            loginPassword.type = show ? 'text' : 'password';
-            passwordToggle.title = show ? 'Ukryj hasło' : 'Pokaż hasło';
-            passwordToggle.classList.toggle('is-on', show);
-            loginPassword.focus();
-        });
-        // Never leave the password shown once it is sent.
-        loginForm?.addEventListener('submit', () => {
-            loginPassword.type = 'password';
-            passwordToggle.title = 'Pokaż hasło';
-            passwordToggle.classList.remove('is-on');
-        });
-    }
-
-    // Konto: the way in (AccountScreen renders the screens that replace the card).
-    document.getElementById('create-account-link')?.addEventListener('click', () => {
-        connection.clearLoginNotice();
-        accountSession.openCreateAccount();
-    });
     updateConnectButtons();
 
     // The login screen's connection footer: the mode (direct / helper / proxy),
     // what the helper is doing, and each mode's settings (proxy URL, MCCP).
-    const proxyControlsProps: AppProps['proxyControls'] = {
+    const proxyControlsProps: AppProps['auth']['proxyControls'] = {
         defaultProxy: DEFAULT_SESSION_PROXY_URL,
         initialResumeNotice: isResumeNoticeEnabled(),
         onResumeNoticeChange: (enabled: boolean) => setResumeNoticeEnabled(enabled),
@@ -800,25 +584,7 @@ document.addEventListener('DOMContentLoaded', () => {
         onMccpChange: (enabled: boolean) => mudClient.setMccpEnabled(enabled),
         helper: helperConnection,
         onHelperHelp: () => helperModal()?.show(),
-        onBlockedChange: (blocked: boolean) => document.getElementById('auth-panel')?.classList.toggle('is-blocked', blocked),
     };
-
-    if (authClose) {
-        const closeAuthOverlay = () => {
-            connection.closeAuth();
-            // Dismissing the login screen without connecting leaves the command
-            // line as the place to type, same as after a connect.
-            focusCommandInputOnConnect();
-        };
-        authClose.addEventListener('click', closeAuthOverlay);
-        document.addEventListener('keydown', (e) => {
-            const {authClosed, connected, playback} = connection.getState();
-            if (e.key === 'Escape' && !authClosed && !connected && !playback) {
-                closeAuthOverlay();
-            }
-        });
-    }
-
 
     // Initialize button state
     updateConnectButtons();
@@ -837,7 +603,17 @@ document.addEventListener('DOMContentLoaded', () => {
     flushSync(() => appRoot.render(createElement(
         AppProviders,
         {services: {client, helperConnection, connection, accountSession}},
-        createElement(App, {commandLine: commandLineDeps, proxyControls: proxyControlsProps, toasts}),
+        createElement(App, {
+            commandLine: commandLineDeps,
+            auth: {
+                proxyControls: proxyControlsProps,
+                getProxyMode: () => mudClient.getProxyMode(),
+                // Dismissing the login screen without connecting leaves the command
+                // line as the place to type, same as after a connect.
+                onDismissed: focusCommandInputOnConnect,
+            },
+            toasts,
+        }),
     )));
 
     // Phone footer: the expander that unfolds its two scrolling rails. The rest
