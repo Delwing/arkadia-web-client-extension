@@ -32,12 +32,16 @@ export default function initChatHistory(client: Client, aliases?: { pattern: Reg
     /** The character the in-memory history belongs to; see loadFromStorage. */
     let loadedCharacter: string | null = null;
 
+    // One formatter for the session: toLocaleTimeString builds a new one per call,
+    // which is tens of microseconds on every chat line.
+    const timestampFormat = new Intl.DateTimeFormat("pl-PL", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+    });
+
     function formatTimestamp(date: Date) {
-        return date.toLocaleTimeString("pl-PL", {
-            hour: "2-digit",
-            minute: "2-digit",
-            second: "2-digit",
-        });
+        return timestampFormat.format(date);
     }
 
     function checkIfTeamMember(text: string): boolean {

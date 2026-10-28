@@ -52,8 +52,14 @@ function seconds(ms: number): string {
     return `${(ms / 1000).toFixed(1)} s`;
 }
 
+// toLocaleTimeString builds a fresh formatter on every call (tens of µs each), and
+// the log repaints up to LOG_LIMIT of these per render.
+const CLOCK_FORMAT = new Intl.DateTimeFormat('pl-PL', {
+    hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: false,
+});
+
 function clockTime(at: number): string {
-    return new Date(at).toLocaleTimeString('pl-PL', { hour12: false });
+    return CLOCK_FORMAT.format(at);
 }
 
 interface Row {
@@ -65,7 +71,7 @@ interface Row {
 }
 
 const CoverDebugPopup: React.FC = () => {
-    const { wrapperProps } = usePopup<'cover.popup.open'>(POPUP_ID, {
+    const { wrapperProps, isOpen } = usePopup<'cover.popup.open'>(POPUP_ID, {
         openEvent: 'cover.popup.open',
     });
     const [state, setState] = useState<CoverStateSnapshot>(EMPTY_STATE);
@@ -82,13 +88,19 @@ const CoverDebugPopup: React.FC = () => {
         };
         eventBus.on('cover.state', onState);
         eventBus.on('cover.event', onEvent);
-        const timer = setInterval(() => setTick(t => t + 1), TICK_MS);
         return () => {
             eventBus.off('cover.state', onState);
             eventBus.off('cover.event', onEvent);
-            clearInterval(timer);
         };
     }, []);
+
+    // The popup is mounted for the whole session so the log keeps filling while it
+    // is closed; only the live `since` column needs ticking, and only when visible.
+    useEffect(() => {
+        if (!isOpen) return;
+        const timer = setInterval(() => setTick(t => t + 1), TICK_MS);
+        return () => clearInterval(timer);
+    }, [isOpen]);
 
     const nameOf = useMemo(() => {
         const byNum = new Map(state.objects.map(o => [o.num, o.desc]));
@@ -219,68 +231,74 @@ const CoverDebugPopup: React.FC = () => {
             bodyClassName="cover-dbg-popup-body"
             headerActions={headerActions}
         >
-            <div className="cover-dbg-counter">
-                {/* The tracker grading itself: a non-zero value in a normal fight
-                    means an establishing line was missed, not that this is noise. */}
-                <span className={unknownBlocks.current > 0 ? 'cover-dbg-counter--bad' : undefined}>
-                    nieznane blokady: {unknownBlocks.current}
-                </span>
-            </div>
+            {/* DockablePopupWrapper renders nothing while closed, but the children
+                would still be built: 200 log rows on every cover event. */}
+            {isOpen && (
+                <>
+                <div className="cover-dbg-counter">
+                    {/* The tracker grading itself: a non-zero value in a normal fight
+                        means an establishing line was missed, not that this is noise. */}
+                    <span className={unknownBlocks.current > 0 ? 'cover-dbg-counter--bad' : undefined}>
+                        nieznane blokady: {unknownBlocks.current}
+                    </span>
+                </div>
 
-            <div className="cover-dbg-state">
-                <table className="zlom-table cover-dbg-table">
-                    <thead>
-                        <tr>
-                            <th>opis</th>
-                            <th>num</th>
-                            <th>status</th>
-                            <th>przed kim</th>
-                            <th>od</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {renderGroup('Drużyna', team)}
-                        {renderGroup('Wrogowie', enemies)}
-                    </tbody>
-                </table>
-            </div>
+                <div className="cover-dbg-state">
+                    <table className="zlom-table cover-dbg-table">
+                        <thead>
+                            <tr>
+                                <th>opis</th>
+                                <th>num</th>
+                                <th>status</th>
+                                <th>przed kim</th>
+                                <th>od</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {renderGroup('Drużyna', team)}
+                            {renderGroup('Wrogowie', enemies)}
+                        </tbody>
+                    </table>
+                </div>
 
-            <div className="cover-dbg-log">
-                {visibleLog.length === 0 ? (
-                    <div className="popup-empty">Brak zdarzeń.</div>
-                ) : visibleLog.map((entry, i) => (
-                    <div key={`${entry.at}-${i}`} className="cover-dbg-log-entry">
-                        <div className="cover-dbg-log-head">
-                            <span className="cover-dbg-log-time">{clockTime(entry.at)}</span>
-                            <span className={`cover-dbg-log-kind cover-dbg-log-kind--${entry.kind}`}>
-                                {KIND_LABEL[entry.kind]}
-                            </span>
-                            <span className="cover-dbg-log-pair">
-                                {entry.coveredName ?? nameOf(entry.coveredId)}
-                                {/* A break line names no coverer, and by then there
-                                    may have been several - say nothing rather than '?'. */}
-                                {(entry.covererId !== undefined || entry.covererName) && (
-                                    <>{' <- '}{entry.covererName ?? nameOf(entry.covererId)}</>
-                                )}
-                                {entry.attackerId !== undefined && ` (przed ${nameOf(entry.attackerId)})`}
-                            </span>
-                            <span className="cover-dbg-log-source">({entry.source})</span>
-                            {entry.reason && (
-                                <span className="cover-dbg-log-reason">
-                                    {REASON_LABEL[entry.reason]}
-                                    {entry.missingIds?.length
-                                        ? `: ${entry.missingIds.map(nameOf).join(', ')}`
-                                        : ''}
+                <div className="cover-dbg-log">
+                    {visibleLog.length === 0 ? (
+                        <div className="popup-empty">Brak zdarzeń.</div>
+                    ) : visibleLog.map((entry, i) => (
+                        <div key={`${entry.at}-${i}`} className="cover-dbg-log-entry">
+                            <div className="cover-dbg-log-head">
+                                <span className="cover-dbg-log-time">{clockTime(entry.at)}</span>
+                                <span className={`cover-dbg-log-kind cover-dbg-log-kind--${entry.kind}`}>
+                                    {KIND_LABEL[entry.kind]}
                                 </span>
-                            )}
-                            {entry.wasKnown === false && (
-                                <span className="cover-dbg-log-unknown">nieznana</span>
-                            )}
+                                <span className="cover-dbg-log-pair">
+                                    {entry.coveredName ?? nameOf(entry.coveredId)}
+                                    {/* A break line names no coverer, and by then there
+                                        may have been several - say nothing rather than '?'. */}
+                                    {(entry.covererId !== undefined || entry.covererName) && (
+                                        <>{' <- '}{entry.covererName ?? nameOf(entry.covererId)}</>
+                                    )}
+                                    {entry.attackerId !== undefined && ` (przed ${nameOf(entry.attackerId)})`}
+                                </span>
+                                <span className="cover-dbg-log-source">({entry.source})</span>
+                                {entry.reason && (
+                                    <span className="cover-dbg-log-reason">
+                                        {REASON_LABEL[entry.reason]}
+                                        {entry.missingIds?.length
+                                            ? `: ${entry.missingIds.map(nameOf).join(', ')}`
+                                            : ''}
+                                    </span>
+                                )}
+                                {entry.wasKnown === false && (
+                                    <span className="cover-dbg-log-unknown">nieznana</span>
+                                )}
+                            </div>
+                            {entry.raw && <div className="cover-dbg-log-raw">{entry.raw}</div>}
                         </div>
-                        {entry.raw && <div className="cover-dbg-log-raw">{entry.raw}</div>}
-                    </div>
-                ))}
-            </div>
+                    ))}
+                </div>
+                </>
+            )}
         </DockablePopupWrapper>
     );
 };
