@@ -42,15 +42,49 @@ main-thread time while text streamed in.
 
 Likewise, keep `toLocale*String` off hot paths; reuse one `Intl.DateTimeFormat`.
 
+## The trigger pass
+
+About 1300 top-level triggers see every line, and the pass is most of the line
+processing (~90% of it in the burst profile). Trigger order is part of the
+behaviour, so everything here keeps it. What helps is not visiting what cannot
+match:
+
+- The literal prefilter (`triggerPrefilter.ts`) skips a regex whose required text
+  is not in the line. It also understands alternations and mandatory groups
+  (`^(?:one phrase|another)`, `(^[ >]*... text ...)`), so every Mudlet gag regex
+  has one - no change to the imported regexes was needed.
+- `Triggers.parseLine` asks `Trigger.cannotMatch` before `execute`, so a ruled-out
+  trigger costs one prefilter check instead of a full call.
+
+Together ~17% off the per-line cost against the plain prefilter.
+
+Small effects like these drown in the noise of `yarn perf` (10-15% run to run on a
+shared machine). Compare variants in one Node process instead - the real client
+with `registerScripts`, `client.onLine` over the corpus, variants alternated over
+many rounds, minimum taken - which resolves a few percent.
+
+Tried and dropped, measured that way:
+
+- **An Aho-Corasick scan** of each line for every literal at once. On ~70-character
+  lines V8's `String.includes` is so fast that ~1200 of them cost less than the scan.
+- **Caching each trigger's prefilter on the trigger** instead of the WeakMap: no
+  measurable difference.
+
+## Rendering
+
+Per frame of streamed text, the browser's own work (style, layout, pre-paint, paint,
+commit) costs more than processing the lines. Only ~10% of the layouts are forced
+from script (the footer `StatusLine` measuring its chips, the scroll handler reading
+sizes); the rest is the normal per-frame work for a ~1000-message scrollback.
+`content-visibility: auto` on output messages made it worse: layout and pre-paint
+grew more than paint shrank.
+
 ## Remaining opportunities
 
-- **The trigger pass.** About 1260 top-level triggers see every line. The largest
-  single tree is `luaGags` (`gags_lua.json`): ~100 patterns on every non-combat
-  line and ~700 on a combat line, because its top nodes have no pattern and match
-  everything. Gating its subtrees by line type (most only apply to `combat.*`)
-  would cut most of that.
 - **Session logger:** one IndexedDB transaction per output line
   (`sessionLogger.ts`). Batching per frame would save ~25 us/line.
 - **Bursts block the main thread:** a 200-line message is processed synchronously
-  (~80-100 ms here). Chunking the trigger pass across frames would keep input
+  (~60-80 ms here). Chunking the trigger pass across frames would keep input
   responsive during login dumps, at the cost of ordering complexity.
+- **Fewer nodes per output message:** every line gets timestamp and message-type
+  spans that stay hidden unless their toggles are on.
