@@ -77,19 +77,13 @@ describe("bootstrapMap", () => {
         expect(boot.getProgress()).toEqual({ visible: true, percent: 42.5 });
     });
 
-    it("initialises the map and registers the embedded view, after beforeInitialize", async () => {
+    it("initialises the map and registers the embedded view", async () => {
         const { client, pathFinder } = makeMapHelper();
         settings.pathFindingAlgorithm = "astar";
-        const order: string[] = [];
-        client.Map.initialize.mockImplementation((...args: any[]) => {
-            order.push("initialize");
-            return { startId: 7, reader: { id: "reader-1" }, pathFinder, args };
-        });
 
-        const boot = bootstrapMap(client, { beforeInitialize: () => order.push("before") });
+        const boot = bootstrapMap(client);
         await boot.ready;
 
-        expect(order).toEqual(["before", "initialize"]);
         expect(client.Map.initialize).toHaveBeenCalledWith({ map: true }, { colors: true });
         expect(registry.current.startId).toBe(7);
         expect(registry.current.pathFinder).toBe(pathFinder);

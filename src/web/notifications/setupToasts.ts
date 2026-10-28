@@ -1,19 +1,18 @@
-import { createRoot } from 'react-dom/client';
 import type Client from '@client/Client';
 import type { NotificationAction } from '@shared/events/clientEvents.ts';
 import { getShellSettings } from '@modules/core/settings';
 import { ToastStore } from './toastStore';
-import { ToastStack } from './ToastStack';
+import type { ToastStackProps } from './ToastStack';
 import { normalizeToastSettings } from './toastSettings';
 import './toasts.css';
 
 /**
- * Renders the `notify` toasts into #notification-center, a zero-height sticky
- * strip at the top of the game output's scroll container. The stack inside it
- * is placed against the visible output, so it learns the scrollport's height
- * to reach the bottom corners.
+ * Feeds the `notify` toasts into a store for `<ToastStack>`, which renders them
+ * into #notification-center, a zero-height sticky strip at the top of the game
+ * output's scroll container. The stack inside it is placed against the visible
+ * output, so it learns the scrollport's height to reach the bottom corners.
  */
-export function mountToasts(container: HTMLElement, outputWrapper: HTMLElement, client: Client): ToastStore {
+export function setupToasts(container: HTMLElement, outputWrapper: HTMLElement, client: Client): ToastStackProps {
     const store = new ToastStore(() => normalizeToastSettings(getShellSettings()));
 
     const measure = () => container.style.setProperty('--toast-viewport-h', `${outputWrapper.clientHeight}px`);
@@ -40,6 +39,5 @@ export function mountToasts(container: HTMLElement, outputWrapper: HTMLElement, 
         if (action.command) client.sendCommand(action.command);
     };
 
-    createRoot(container).render(<ToastStack store={store} runAction={runAction} />);
-    return store;
+    return { store, runAction };
 }

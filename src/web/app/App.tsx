@@ -1,0 +1,109 @@
+import type { ComponentProps } from "react";
+import { useAppServices } from "./appServices";
+import { Island } from "./Island";
+import CommandLine, { type CommandLineDeps } from "../commandInput/CommandLine";
+import { ProxyControls } from "../hostProxy/ProxyControls";
+import { AccountScreen } from "../account/AccountScreen";
+import { ToastStack, type ToastStackProps } from "../notifications/ToastStack";
+import SettingsDialog from "../settings/SettingsDialog";
+import CharacterManagement from "../options/CharacterManagementModal";
+import Keys from "../keys/Keys";
+import Scripts from "../options/Scripts";
+import AutomationWindow from "../automation/AutomationWindow";
+import Recordings from "../options/Recordings";
+import Places from "../places/Places";
+import HelperSettings from "../options/HelperSettings";
+import { isHelperSupported } from "../helperDownload";
+import { LayoutManagerWrapper } from "../layout";
+import { ContextMenuHost } from "../contextMenu";
+import { suppressTitleUpdates } from "../FightTitle";
+import { LocationLabel } from "@web-ui/components/map/LocationLabel";
+import { PauseIcon } from "@web-ui/components/map/PauseIcon";
+import { MapLostBadge } from "@web-ui/components/map/MapLostBadge";
+import { PlaybackControls } from "@web-ui/components";
+import StockFooter from "@web-ui/footer/layout/StockFooter";
+import MobileDirectionButtons from "@web-ui/buttons/MobileDirectionButtons";
+import DesktopButtons from "@web-ui/buttons/DesktopButtons";
+import MobileCommandRadial from "@web-ui/buttons/MobileCommandRadial";
+import MobileJoysticks from "@web-ui/buttons/MobileJoysticks";
+import { WidgetLayer } from "@web-ui/widgets/WidgetLayer";
+import BossKeyOverlay from "@web-ui/bossKey/BossKeyOverlay";
+
+/** The wiring that still lives in main.ts, handed to the parts that need it. */
+export interface AppProps {
+    commandLine: CommandLineDeps;
+    proxyControls: ComponentProps<typeof ProxyControls>;
+    /** Absent when the page has no #notification-center. */
+    toasts: ToastStackProps | null;
+}
+
+const getOutputArea = () => document.getElementById("main_text_output_msg_wrapper");
+
+/**
+ * The stock UI's React tree. Each island renders into the index.html element it
+ * always had (or portals itself), so the page's DOM and CSS are unchanged; what
+ * changes is that they share one root and the services context.
+ */
+export function App({ commandLine, proxyControls, toasts }: AppProps) {
+    const { client, helperConnection, accountSession } = useAppServices();
+
+    return (
+        <>
+            {/* Map chrome. Each asks the map for its current state on mount. */}
+            <Island name="LocationLabel" target="location-text"><LocationLabel /></Island>
+            <Island name="PauseIcon" target="pause-icon"><PauseIcon /></Island>
+            <Island name="MapLostBadge" target="map-lost-wrapper"><MapLostBadge /></Island>
+
+            <Island name="CommandLine" target="command-line-root"><CommandLine deps={commandLine} /></Island>
+            {toasts && <Island name="Toasts" target="notification-center"><ToastStack {...toasts} /></Island>}
+
+            {/* The login screen's account screens and its connection footer. */}
+            <Island name="AccountScreen" target="account-root"><AccountScreen session={accountSession} /></Island>
+            <Island name="ProxyControls" target="proxy-controls-root"><ProxyControls {...proxyControls} /></Island>
+
+            {/* The footer: the location binds and the status line, as the footer layout arranges them. */}
+            <Island name="StockFooter" target="footer-layout"><StockFooter /></Island>
+
+            {/* These portal themselves to document.body. */}
+            <Island name="PlaybackControls"><PlaybackControls /></Island>
+            <Island name="ContextMenuHost"><ContextMenuHost /></Island>
+            <Island name="MobileDirectionButtons"><MobileDirectionButtons client={client} /></Island>
+            <Island name="DesktopButtons"><DesktopButtons client={client} /></Island>
+            <Island name="MobileCommandRadial"><MobileCommandRadial client={client} /></Island>
+            <Island name="MobileJoysticks"><MobileJoysticks client={client} /></Island>
+            {/* Widgets over the game output (Zegar, Witalne…). */}
+            <Island name="WidgetLayer"><WidgetLayer getArea={getOutputArea} /></Island>
+            {/* Boss key: Pause / ScrollLock drops a fake Word window over the whole
+                client, freezing the "Arkadia [5/7]" tab title while it is up. */}
+            <Island name="BossKeyOverlay">
+                <BossKeyOverlay client={client} soundControl={client.SoundManager} suppressTitle={suppressTitleUpdates} />
+            </Island>
+
+            {/* The page-level windows (index.html app-modal shells, src/web/modals/appModal.ts). */}
+            <Island name="SettingsDialog" target="settings-root">
+                <SettingsDialog soundManager={client.SoundManager} onEnableNotifications={() => client.enableNotifications()} />
+            </Island>
+            <Island name="CharacterManagement" target="character-management-root"><CharacterManagement /></Island>
+            <Island name="Keys" target="binds-options">
+                <Keys
+                    helperConnection={isHelperSupported() ? helperConnection : null}
+                    headerSlot={document.getElementById("binds-header-slot")}
+                />
+            </Island>
+            <Island name="Scripts" target="scripts-options"><Scripts /></Island>
+            <Island name="AutomationWindow" target="automation-options"><AutomationWindow /></Island>
+            <Island name="Recordings" target="recordings-options"><Recordings /></Island>
+            <Island name="Places" target="places-options"><Places /></Island>
+            <Island name="HelperSettings" target="helper-options"><HelperSettings helperConnection={helperConnection} /></Island>
+
+            {/* The layout manager, with every dockable popup. */}
+            <Island name="LayoutManager" target="layout-manager-root">
+                <LayoutManagerWrapper
+                    mapElement={document.getElementById("map")}
+                    objectListElement={document.getElementById("objects-list")}
+                    objectListOthersElement={document.getElementById("objects-list-others")}
+                />
+            </Island>
+        </>
+    );
+}

@@ -20,14 +20,6 @@ export interface MapBootstrap {
     ready: Promise<void>;
 }
 
-export interface MapBootstrapOptions {
-    /**
-     * Runs once data and colours are in, right before the map is initialised —
-     * for views that must already listen when the first location is announced.
-     */
-    beforeInitialize?: () => void;
-}
-
 function applySavedAlgorithm(pathFinder: { setAlgorithm?: (algorithm: any) => void } | null | undefined): void {
     const algorithm = getMapSettings().pathFindingAlgorithm;
     if (algorithm && pathFinder?.setAlgorithm) {
@@ -39,7 +31,7 @@ function applySavedAlgorithm(pathFinder: { setAlgorithm?: (algorithm: any) => vo
  * Download map data and colours, put the embedded map on screen, and keep it in
  * step with every later change to the map data.
  */
-export function bootstrapMap(client: Pick<Client, "Map">, options: MapBootstrapOptions = {}): MapBootstrap {
+export function bootstrapMap(client: Pick<Client, "Map">): MapBootstrap {
     let progress: MapLoadProgress = {visible: false, percent: 0};
     const listeners = new Set<(progress: MapLoadProgress) => void>();
     const setProgress = (next: MapLoadProgress) => {
@@ -57,7 +49,6 @@ export function bootstrapMap(client: Pick<Client, "Map">, options: MapBootstrapO
         .then(([mapData, colors]) => {
             console.log('Map data and colors loaded successfully');
             setProgress({visible: false, percent: 100});
-            options.beforeInitialize?.();
 
             const {startId, reader, pathFinder} = client.Map.initialize(mapData, colors);
             applySavedAlgorithm(pathFinder);

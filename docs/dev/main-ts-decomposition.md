@@ -58,6 +58,17 @@ and React mounting, which is what Phases 1–2 replace.
   detached ones (buttons, widgets, boss key) become plain children.
 - No DOM or CSS change, so e2e should pass untouched.
 
+**Done.** `src/web/app/App.tsx` renders every part of the page as an `<Island>`
+(`app/Island.tsx`): a per-part error boundary, so one failing component still only
+empties its own spot as a separate root did, plus a portal into its `index.html`
+element. Services come from `app/appServices.ts` via `<AppProviders>`. `main.ts`
+renders the tree once with `flushSync`, after `FightTitle`/`HpTitle`/`ObjectList`
+exist and before `setupMobileFooter`. Toasts are set up by `setupToasts` and rendered
+by the tree; the footer's registry/preview setup is `prepareStockFooter`. The map
+labels no longer wait for the map: they ask `MapHelper` for the current state on
+mount. Roots created on demand elsewhere (output search, log browser, confirm
+dialog, plugin footer items) are untouched.
+
 ### Phase 2 — markup from `index.html` into components, region by region
 
 **Every `id` and class stays verbatim** — e2e relies on them

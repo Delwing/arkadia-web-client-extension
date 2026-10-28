@@ -25,9 +25,7 @@ import {WakeLock} from "./platform/wakeLock";
 import {installMapLayoutOffsets} from "./platform/iosViewport";
 import {applyInitialLocation} from "./platform/initialLocation";
 import {OPEN_SETTINGS_EVENT} from "./assistant/openSettings.ts";
-import {ProxyControls} from "./hostProxy/ProxyControls.tsx";
 import {AccountSession} from "./account/accountSession";
-import {AccountScreen} from "./account/AccountScreen";
 import recordingManager from "./RecordingManager.ts";
 import eventBus from "@modules/core/eventBus";
 import {setupOutputContextMenu} from "./outputContextMenu";
@@ -35,19 +33,11 @@ import {installLongPressContextMenu} from "@shared/dom/longPressContextMenu.ts";
 import {isIOS} from "@shared/dom/mobileOs.ts";
 import {AppModal} from './modals/appModal';
 import ObjectList from "./ObjectList";
-import {mountMigratedComponents} from "@web-ui/mountComponents.tsx";
 import {setupMobileFooter} from "./mobileFooter.ts";
-import FightTitle, {suppressTitleUpdates} from "./FightTitle";
+import FightTitle from "./FightTitle";
 import HpTitle from "./HpTitle";
-import BossKeyOverlay from "@web-ui/bossKey/BossKeyOverlay";
-import MobileDirectionButtons from "@web-ui/buttons/MobileDirectionButtons";
-import DesktopButtons from "@web-ui/buttons/DesktopButtons";
-import MobileCommandRadial from "@web-ui/buttons/MobileCommandRadial";
-import MobileJoysticks from "@web-ui/buttons/MobileJoysticks";
-import { WidgetLayer } from "@web-ui/widgets/WidgetLayer";
 import { registerBuiltinWidgets } from "@web-ui/widgets/builtinWidgets";
 import { setWidgetEditMode } from "@modules/core/widgetLayout";
-import SettingsDialog from "./settings/SettingsDialog";
 import {
     getRenderSettings,
     getShellSettings,
@@ -61,26 +51,14 @@ import {bootstrapMap} from "./map/mapBootstrap";
 import {createElement} from 'react'
 import {createRoot} from 'react-dom/client'
 import {flushSync} from 'react-dom'
-import {LocationLabel} from "@web-ui/components/map/LocationLabel"
-import {PauseIcon} from "@web-ui/components/map/PauseIcon"
-import {MapLostBadge} from "@web-ui/components/map/MapLostBadge"
-import Keys from "./keys/Keys.tsx"
-import { isHelperSupported } from "./helperDownload"
-import Scripts from "./options/Scripts.tsx"
-import AutomationWindow from "./automation/AutomationWindow.tsx"
-import Recordings from "./options/Recordings.tsx"
 import {CLOSE_SETTINGS_EVENT, OPEN_SETTINGS_PAGE_EVENT, SAVE_SETTINGS_EVENT, requestSettingsCategory, type OpenSettingsPageDetail} from "./settings/categories.ts";
-import CharacterManagement from "./options/CharacterManagementModal.tsx"
-import Places from "./places/Places.tsx"
 import { OPEN_PLACE_EVENT, openPlace } from "./places/placesData.ts"
-import HelperSettings from "./options/HelperSettings.tsx"
-import {applyDefaultLayoutMode, LayoutManagerWrapper, setRailSpanSupported} from "@web/layout"
+import {applyDefaultLayoutMode, setRailSpanSupported} from "@web/layout"
 import {globalStorage} from "@modules/core/storage"
 import {setOutputTimestampVisibility, setupOutputMessageHandler} from "@shared/dom/outputMessageHandler";
 import {createCharPlaqueFeed} from "@shared/dom/charPlaque";
 import {setupLoginFire} from "./loginFire";
 import {isLikelyTouchDevice, isMobileLikeViewport, isTouchPointerType} from "@shared/dom/pointerEnvironment.ts";
-import CommandLine from "./commandInput/CommandLine";
 import {installOutputSearch} from "./outputSearch/installOutputSearch";
 import {setConnectionOffline, setConnectionStatus, setReconnectHandler} from "./commandInput/connectionView";
 import {updateMainMenuItem} from "@modules/core/mainMenuRegistry";
@@ -89,7 +67,11 @@ import {harvestOutputLines} from "./commandInput/outputWords";
 import {installClientPorts} from "./installClientPorts";
 import {installContentWidthMeasurer} from "./contentWidthMeasurer";
 import {bootstrapGameClient} from "./clientBootstrap";
-import {mountToasts} from "@web/notifications/mountToasts.tsx";
+import {setupToasts} from "./notifications/setupToasts";
+import type {CommandLineDeps} from "./commandInput/CommandLine";
+import {prepareStockFooter} from "@web-ui/footer/prepareStockFooter.tsx";
+import {App, type AppProps} from "./app/App";
+import {AppProviders} from "./app/AppProviders";
 import {initTextToSpeech} from "./voice/textToSpeech.ts";
 import {reloadToLatest, watchForNewVersion} from "./versionCheck";
 
@@ -134,7 +116,7 @@ const outputWrapper = document.getElementById('main_text_output_msg_wrapper') as
 const splitBottom = document.getElementById('split-bottom') as HTMLElement;
 const splitHandle = document.getElementById('split-handle')!;
 const stickyArea = document.getElementById('sticky-area') as HTMLElement;
-// Holds #multi-binds once the footer layout renders (mountMigratedComponents).
+// Holds #multi-binds once the footer renders (StockFooter, in the app tree).
 const footerLayoutElement = document.getElementById('footer-layout');
 const STICKY_LINES = 50;
 const DOUBLE_CLICK_TIMEOUT_MS = 300;
@@ -245,25 +227,7 @@ outputWrapper.addEventListener('click', (event) => {
 // own mousedown listener onto the content area.
 
 // Map data and colours load in the background; the bar follows the download.
-const mapBootstrap = bootstrapMap(client, {
-    // Rendered before the map initialises, so they hear the first location.
-    beforeInitialize: () => {
-        const locationTextElement = document.getElementById('location-text');
-        if (locationTextElement) {
-            createRoot(locationTextElement).render(createElement(LocationLabel));
-        }
-
-        const pauseIconElement = document.getElementById('pause-icon');
-        if (pauseIconElement) {
-            createRoot(pauseIconElement).render(createElement(PauseIcon));
-        }
-
-        const mapLostBadgeElement = document.getElementById('map-lost-wrapper');
-        if (mapLostBadgeElement) {
-            createRoot(mapLostBadgeElement).render(createElement(MapLostBadge));
-        }
-    },
-});
+const mapBootstrap = bootstrapMap(client);
 mapBootstrap.subscribeProgress(({visible, percent, loadedBytes}) => {
     progressContainer.style.display = visible ? 'block' : 'none';
     if (!visible) return;
@@ -496,22 +460,18 @@ document.addEventListener('DOMContentLoaded', () => {
     onRenderSettingsChange((render) => {
         clearInputOnSend = render.clearInputOnSend;
     });
-    // Synchronously, so #message-input exists for everything below that looks it up.
-    const commandLineRoot = document.getElementById('command-line-root');
-    if (commandLineRoot) {
-        flushSync(() => createRoot(commandLineRoot).render(createElement(CommandLine, {
-            deps: {
-                outputWrapper,
-                sendCommand: (cmd, echo, opts, skip, fromUser) => client.sendCommand(cmd, echo, opts, skip, fromUser),
-                isPasswordMode: () => mudClient.isPasswordMode(),
-                getCommandLineSuggestions: () => client.commandLineSuggestions ?? [],
-                getClearInputOnSend: () => clearInputOnSend,
-                // What is on screen is the vocabulary the recogniser lacks.
-                getVoiceVocabulary: () => [...harvestOutputLines(outputWrapper), ...(client.commandLineSuggestions ?? [])],
-            },
-        })));
-    }
-    const messageInput = document.getElementById('message-input') as HTMLTextAreaElement;
+    // The command line renders with the rest of the app below; #message-input is
+    // looked up when needed, not here.
+    const commandLineDeps: CommandLineDeps = {
+        outputWrapper,
+        sendCommand: (cmd, echo, opts, skip, fromUser) => client.sendCommand(cmd, echo, opts, skip, fromUser),
+        isPasswordMode: () => mudClient.isPasswordMode(),
+        getCommandLineSuggestions: () => client.commandLineSuggestions ?? [],
+        getClearInputOnSend: () => clearInputOnSend,
+        // What is on screen is the vocabulary the recogniser lacks.
+        getVoiceVocabulary: () => [...harvestOutputLines(outputWrapper), ...(client.commandLineSuggestions ?? [])],
+    };
+    const getMessageInput = () => document.getElementById('message-input') as HTMLTextAreaElement | null;
     installOutputSearch({
         outputWrapper,
         splitBottom,
@@ -557,6 +517,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const contentArea = document.getElementById('content-area') as HTMLElement | null;
 
     const focusCommandInputOnConnect = () => {
+        const messageInput = getMessageInput();
         if (!messageInput) return;
         if (isMobileLikeViewport()) return;
         if (document.hidden) return;
@@ -574,6 +535,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // would close the split view. Closing it is a double-click or the
         // pane's close button.
         const focusKeepingScroll = () => {
+            const messageInput = getMessageInput();
+            if (!messageInput) return;
             messageInput.setAttribute('data-keep-scroll', '');
             messageInput.focus({preventScroll: true});
             messageInput.removeAttribute('data-keep-scroll');
@@ -670,9 +633,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initTextToSpeech(client);
 
-    if (notificationCenter) {
-        mountToasts(notificationCenter, outputWrapper, client);
-    }
+    const toasts = notificationCenter ? setupToasts(notificationCenter, outputWrapper, client) : null;
 
     window.addEventListener('close-options', () => {
         (document.activeElement as HTMLElement)?.blur?.();
@@ -854,11 +815,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Konto: the screens that replace the card for an account, and the way in.
-    const accountRoot = document.getElementById('account-root');
-    if (accountRoot) {
-        createRoot(accountRoot).render(createElement(AccountScreen, {session: accountSession}));
-    }
+    // Konto: the way in (AccountScreen renders the screens that replace the card).
     document.getElementById('create-account-link')?.addEventListener('click', () => {
         connection.clearLoginNotice();
         accountSession.openCreateAccount();
@@ -867,30 +824,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // The login screen's connection footer: the mode (direct / helper / proxy),
     // what the helper is doing, and each mode's settings (proxy URL, MCCP).
-    const proxyControlsRoot = document.getElementById('proxy-controls-root');
-    if (proxyControlsRoot) {
-        createRoot(proxyControlsRoot).render(createElement(ProxyControls, {
-            defaultProxy: DEFAULT_SESSION_PROXY_URL,
-            initialResumeNotice: isResumeNoticeEnabled(),
-            onResumeNoticeChange: (enabled: boolean) => setResumeNoticeEnabled(enabled),
-            initialMode: mudClient.getProxyMode(),
-            initialUrl: mudClient.getUserProxyUrl() ?? '',
-            onModeChange: (mode) => {
-                mudClient.setProxyMode(mode);
-                updateConnectButtons();
-            },
-            onUrlChange: (url: string) => mudClient.setUserProxyUrl(url),
-            onUseProxy: (url: string) => {
-                mudClient.setUserProxyUrl(url);
-                mudClient.setProxyMode('proxy');
-            },
-            initialMccp: mudClient.isMccpEnabled(),
-            onMccpChange: (enabled: boolean) => mudClient.setMccpEnabled(enabled),
-            helper: helperConnection,
-            onHelperHelp: () => helperModal?.show(),
-            onBlockedChange: (blocked: boolean) => document.getElementById('auth-panel')?.classList.toggle('is-blocked', blocked),
-        }));
-    }
+    const proxyControlsProps: AppProps['proxyControls'] = {
+        defaultProxy: DEFAULT_SESSION_PROXY_URL,
+        initialResumeNotice: isResumeNoticeEnabled(),
+        onResumeNoticeChange: (enabled: boolean) => setResumeNoticeEnabled(enabled),
+        initialMode: mudClient.getProxyMode(),
+        initialUrl: mudClient.getUserProxyUrl() ?? '',
+        onModeChange: (mode) => {
+            mudClient.setProxyMode(mode);
+            updateConnectButtons();
+        },
+        onUrlChange: (url: string) => mudClient.setUserProxyUrl(url),
+        onUseProxy: (url: string) => {
+            mudClient.setUserProxyUrl(url);
+            mudClient.setProxyMode('proxy');
+        },
+        initialMccp: mudClient.isMccpEnabled(),
+        onMccpChange: (enabled: boolean) => mudClient.setMccpEnabled(enabled),
+        helper: helperConnection,
+        onHelperHelp: () => helperModal?.show(),
+        onBlockedChange: (blocked: boolean) => document.getElementById('auth-panel')?.classList.toggle('is-blocked', blocked),
+    };
 
     if (authClose) {
         const closeAuthOverlay = () => {
@@ -912,103 +866,26 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize button state
     updateConnectButtons();
 
-    // Mount React components
-    mountMigratedComponents();
-    // Phone footer: the expander that unfolds its two scrolling rails. The rest
-    // of that layout is CSS (footerMobile.css) plus CharState's compact meters.
-    setupMobileFooter();
     const fightTitle = new FightTitle();
     new HpTitle(fightTitle);
     new ObjectList(client);
 
-    // Mobile direction buttons, desktop buttons & mobile command radial —
-    // shared React components (src/ui/web/buttons), also mounted by forge-ui.
-    // Each portals its own container to document.body, so the mount roots
-    // here are just detached hosts, never themselves appended.
-    createRoot(document.createElement('div')).render(createElement(MobileDirectionButtons, { client }));
-    createRoot(document.createElement('div')).render(createElement(DesktopButtons, { client }));
-    createRoot(document.createElement('div')).render(createElement(MobileCommandRadial, { client }));
-    createRoot(document.createElement('div')).render(createElement(MobileJoysticks, { client }));
-
-    // Widgets over the game output (Zegar, Witalne…); portals itself to document.body.
-    // Rendered once, so the inline getArea stays one function.
+    prepareStockFooter();
     registerBuiltinWidgets();
     eventBus.on('widgets.edit', ({ on }) => setWidgetEditMode(on));
-    createRoot(document.createElement('div')).render(createElement(WidgetLayer, {
-        getArea: () => document.getElementById('main_text_output_msg_wrapper'),
-    }));
 
-    // Boss key: Pause / ScrollLock drops a fake Word window over the whole
-    // client. Same detached-root pattern as the buttons above — it portals to
-    // document.body itself. FightTitle must already exist so suppressTitleUpdates
-    // can freeze the "Arkadia [5/7]" tab title while the overlay is up.
-    createRoot(document.createElement('div')).render(createElement(BossKeyOverlay, {
-        client,
-        soundControl: client.SoundManager,
-        suppressTitle: suppressTitleUpdates,
-    }));
+    // The whole React UI, as one tree. Synchronously, so the footer and the
+    // command line exist for setupMobileFooter and anything after this.
+    const appRoot = createRoot(document.createElement('div'));
+    flushSync(() => appRoot.render(createElement(
+        AppProviders,
+        {services: {client, helperConnection, connection, accountSession}},
+        createElement(App, {commandLine: commandLineDeps, proxyControls: proxyControlsProps, toasts}),
+    )));
 
-    const settingsRoot = document.getElementById('settings-root');
-    if (settingsRoot) {
-        createRoot(settingsRoot).render(createElement(SettingsDialog, {
-            soundManager: client.SoundManager,
-            onEnableNotifications: () => client.enableNotifications(),
-        }));
-    }
-
-
-    const characterManagementRoot = document.getElementById('character-management-root');
-    if (characterManagementRoot) {
-        createRoot(characterManagementRoot).render(createElement(CharacterManagement));
-    }
-
-    const bindsRoot = document.getElementById('binds-options');
-    if (bindsRoot) {
-        createRoot(bindsRoot).render(createElement(Keys, {
-            helperConnection: isHelperSupported() ? helperConnection : null,
-            headerSlot: document.getElementById('binds-header-slot'),
-        }));
-    }
-
-    const scriptsRoot = document.getElementById('scripts-options');
-    if (scriptsRoot) {
-        createRoot(scriptsRoot).render(createElement(Scripts));
-    }
-
-    const automationRoot = document.getElementById('automation-options');
-    if (automationRoot) {
-        createRoot(automationRoot).render(createElement(AutomationWindow));
-    }
-
-    const recordingsRoot = document.getElementById('recordings-options');
-    if (recordingsRoot) {
-        createRoot(recordingsRoot).render(createElement(Recordings));
-    }
-
-    const placesRoot = document.getElementById('places-options');
-    if (placesRoot) {
-        createRoot(placesRoot).render(createElement(Places));
-    }
-
-    const helperRoot = document.getElementById('helper-options');
-    if (helperRoot) {
-        createRoot(helperRoot).render(createElement(HelperSettings, { helperConnection }));
-    }
-
-    // Mount Layout Manager (includes all dockable popups)
-    const layoutManagerRoot = document.getElementById('layout-manager-root');
-    if (layoutManagerRoot) {
-        const mapElement = document.getElementById('map');
-        const objectListElement = document.getElementById('objects-list');
-        const objectListOthersElement = document.getElementById('objects-list-others');
-        createRoot(layoutManagerRoot).render(
-            createElement(LayoutManagerWrapper, {
-                mapElement,
-                objectListElement,
-                objectListOthersElement,
-            })
-        );
-    }
+    // Phone footer: the expander that unfolds its two scrolling rails. The rest
+    // of that layout is CSS (footerMobile.css) plus CharState's compact meters.
+    setupMobileFooter();
 });
 
 
