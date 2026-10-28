@@ -149,7 +149,9 @@ export function ZaskChip() {
 /** Attack mode (leader only): A / AW / AWR. Click cycles through them. */
 export function AttackChip() {
   const [leader, setLeader] = useState(false);
-  const [mode, setMode] = useState<"A" | "AW" | "AWR">("A");
+  // The stored mode, as the attack controller reads it: the controller announces it
+  // once at start-up, which may be before this chip mounts.
+  const [mode, setMode] = useState<"A" | "AW" | "AWR">(() => characterStorage.get("attack_mode") ?? "A");
   useClientEvent<boolean>("isTeamLeader", (v) => setLeader(Boolean(v)));
   useClientEvent<"A" | "AW" | "AWR">("attackMode", (v) => { if (v) setMode(v); });
   if (!leader) return null;

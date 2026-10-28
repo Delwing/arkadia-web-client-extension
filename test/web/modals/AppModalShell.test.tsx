@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
+import { createPortal } from 'react-dom';
 import { AppModalShell } from '@web/modals/AppModalShell';
 import { AppModal } from '@web/modals/appModal';
 
@@ -66,5 +67,28 @@ describe('AppModalShell', () => {
         expect(document.getElementById('demo-modal')!.hidden).toBe(false);
         modal.hide();
         expect(document.getElementById('demo-modal')!.hidden).toBe(true);
+    });
+
+    it('lets content inside take Escape first, and closes on an Escape it leaves alone', () => {
+        // The shell portalled the way the app does it, so React handles events above the modal.
+        const portalTarget = document.createElement('div');
+        document.body.appendChild(portalTarget);
+        const SearchBox = () => (
+            <input id="demo-search" onKeyDown={(e) => { if (e.currentTarget.value) { e.currentTarget.value = ''; e.preventDefault(); } }} />
+        );
+        act(() => root.render(createPortal(<AppModalShell id="demo-modal" title="Demo"><SearchBox /></AppModalShell>, portalTarget)));
+        const modal = AppModal.byId('demo-modal')!;
+        act(() => modal.show());
+        const input = document.getElementById('demo-search') as HTMLInputElement;
+        const escape = () => act(() => { input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })); });
+
+        input.value = 'mapa';
+        escape();
+        expect(input.value).toBe('');
+        expect(modal.isOpen).toBe(true);
+
+        escape();
+        expect(modal.isOpen).toBe(false);
+        portalTarget.remove();
     });
 });

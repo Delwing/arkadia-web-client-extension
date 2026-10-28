@@ -52,8 +52,12 @@ export class AppModal {
         element.addEventListener("click", (event) => {
             if ((event.target as Element).closest("[data-modal-dismiss]")) this.hide();
         });
-        element.addEventListener("keydown", (event) => {
+        // On the document, not the element: React handles a portal's events where
+        // the portal is mounted, above this element, so a panel inside that takes
+        // Escape for itself (a search clearing its query) must get it first.
+        element.ownerDocument.addEventListener("keydown", (event) => {
             if (event.key !== "Escape" || event.defaultPrevented || stack[stack.length - 1] !== this) return;
+            if (!(event.target instanceof Node) || !element.contains(event.target)) return;
             event.preventDefault();
             this.hide();
         });
