@@ -19,8 +19,9 @@ import {
     DEFAULT_SESSION_PROXY_URL,
     isResumeNoticeEnabled,
     setResumeNoticeEnabled,
-    shouldReattachAfterClose,
 } from "./proxySession.ts";
+import {ConnectionController} from "./connection/connectionController";
+import {WakeLock} from "./platform/wakeLock";
 import {OPEN_SETTINGS_EVENT} from "./assistant/openSettings.ts";
 import {ProxyControls} from "./hostProxy/ProxyControls.tsx";
 import {AccountSession} from "./account/accountSession";
@@ -55,7 +56,6 @@ import {
 } from "@modules/core/settings";
 
 import "@client/main.ts"
-import NoSleep from 'nosleep.js';
 import {loadColors, loadMapData, subscribeToMapData} from "./mapDataLoader.ts";
 import {EmbeddedMap} from "./embed.ts"
 import {getEmbeddedMap, setEmbeddedMap} from "./embedRegistry.ts"
@@ -124,61 +124,16 @@ if (!isNaN(initialLocationId)) {
     const unsubscribe = client.on('gmcp.room.info', handleInitialLocation);
 }
 
-// Prevent tab sleep on mobile when switching tabs
-let noSleepInstance: NoSleep | null = null;
-let tabSleepPreventionActive = false;
-let wakeLockEnabled = false;
+// Keep a phone from sleeping the tab while connected (the wake-lock setting).
+const wakeLock = new WakeLock();
 let wakeLockButton: HTMLButtonElement | null = null;
 
 function updateWakeLockButton() {
     if (wakeLockButton) {
-        wakeLockButton.textContent = wakeLockEnabled ? 'NoSleep ON' : 'NoSleep OFF';
+        wakeLockButton.textContent = wakeLock.isEnabled() ? 'NoSleep ON' : 'NoSleep OFF';
     }
 }
-
-// Function to prevent tab sleep
-function preventTabSleep() {
-    // If already active, don't activate again
-    if (tabSleepPreventionActive) return;
-
-    tabSleepPreventionActive = true;
-
-    if (!noSleepInstance) {
-        noSleepInstance = new NoSleep();
-    }
-
-    const enableNoSleep = async () => {
-        try {
-            await noSleepInstance!.enable();
-            wakeLockEnabled = noSleepInstance!.isEnabled;
-            console.log('NoSleep enabled:', wakeLockEnabled);
-        } catch (err) {
-            wakeLockEnabled = false;
-            console.warn('NoSleep failed to enable:', err);
-        }
-        updateWakeLockButton();
-    };
-
-    // Re-enable on visibility change (Android releases wake lock when tab hidden)
-    document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible' && tabSleepPreventionActive && noSleepInstance) {
-            enableNoSleep();
-        }
-    });
-
-    document.addEventListener('touchstart', enableNoSleep, {once: true});
-    document.addEventListener('click', enableNoSleep, {once: true});
-}
-
-function disableTabSleepPrevention() {
-    if (!tabSleepPreventionActive) return;
-    tabSleepPreventionActive = false;
-    if (noSleepInstance) {
-        noSleepInstance.disable();
-    }
-    wakeLockEnabled = false;
-    updateWakeLockButton();
-}
+wakeLock.subscribe(updateWakeLockButton);
 
 const iframeContainerEl = document.getElementById("iframe-container") as HTMLElement | null;
 const mainContainerEl = document.getElementById("main-container") as HTMLElement | null;
@@ -414,39 +369,31 @@ Promise.all([mapDataPromise, colorsPromise])
     });
 
 
-// Track connection state
-let isConnected = false;
-let isConnecting = false;
-let isDisconnecting = false;
-let playbackMode = false;
-let authClosed = false;
-let lastSystemLoginMessage: string | null = null;
-
-eventBus.on('gmcp_msg.system.login', (args) => {
-    const loginMsg = args.text
-    if (loginMsg) {
-        lastSystemLoginMessage = loginMsg.trim()
-    }
+// The connection lifecycle (connect, autologin, reattach through the session
+// proxy, checks on returning to the tab) lives in the controller; this file only
+// renders its state onto the login screen and buttons.
+const connection = new ConnectionController({
+    connect: () => mudClient.connect(),
+    disconnect: () => mudClient.disconnect(),
+    isSocketOpen: () => mudClient.isSocketOpen(),
+    checkConnection: () => mudClient.checkConnection(),
+    sendGmcp: (path, payload) => mudClient.sendGmcp(path, payload),
+    usesSessionProxy: () => mudClient.usesSessionProxy(),
+    lastCloseCause: () => mudClient.lastCloseCause,
+    prepareSounds: () => client.prepareSounds(),
+    send: (text, echo, options) => client.send(text, echo, options),
+    println: (text) => client.println(text),
+    isResumeNoticeEnabled,
+    on: (event, handler) => eventBus.on(event, handler),
+    isSafari: /^((?!chrome|chromium|edg|android).)*safari/i.test(navigator.userAgent),
 });
-
-client.on('gmcp_msg.room.long', () => {
-    lastSystemLoginMessage = null;
-});
+connection.start();
 
 /*
 Konto: logging in by e-mail, creating an account and a character over GMCP.
 Only the direct connection speaks it (see account/accountProtocol.ts), and
 while it runs the login card stays up over the live connection.
 */
-let pendingAccountRequest: (() => void) | null = null;
-// Set by Wyloguj until the connection it closes is gone.
-let accountLeaving = false;
-const onGameReady = () => {
-    const run = pendingAccountRequest;
-    pendingAccountRequest = null;
-    run?.();
-};
-mudClient.on('gmcp.client.connect', onGameReady);
 const accountSession = new AccountSession({
     sendGmcp: (path, payload) => mudClient.sendGmcp(path, payload ?? ''),
     onGmcp: (path, listener) => {
@@ -454,98 +401,62 @@ const accountSession = new AccountSession({
         mudClient.on(event, listener);
         return () => mudClient.off(event, listener);
     },
-    // The game takes requests once it has said client.connect, as it does for the
-    // original client; an open socket alone is not yet listening.
-    whenReady: (run) => {
-        if (isConnected && !pendingAccountRequest) {
-            run();
-            return;
-        }
-        pendingAccountRequest = run;
-        if (isConnected || isConnecting) return;
-        isConnecting = true;
-        lastSystemLoginMessage = null;
-        updateConnectButtons();
-        void client.prepareSounds();
-        mudClient.connect();
-    },
-    disconnect: () => {
-        pendingAccountRequest = null;
-        if (isConnected) {
-            accountLeaving = true;
-            requestDisconnect();
-        } else if (isConnecting) {
-            mudClient.disconnect();
-        }
-    },
+    whenReady: (run) => connection.whenGameReady(run),
+    disconnect: () => connection.leaveAccount(),
 }, {
-    onLoginFailed: (message) => {
-        lastSystemLoginMessage = message;
-        pendingAccountRequest = null;
-        mudClient.disconnect();
-    },
+    onLoginFailed: (message) => connection.accountLoginFailed(message),
     onEnteredGame: () => {
         updateConnectButtons();
         if (!isMobileLikeViewport()) document.getElementById('message-input')?.focus();
     },
 });
 accountSession.subscribe(() => updateConnectButtons());
+connection.subscribe(() => updateConnectButtons());
+connection.onLeftGame(() => accountSession.reset());
 
-/**
- * Close the connection on the player's word. The close event does not always
- * come, so once the socket is shut a second later the state follows without it,
- * the same as the event would have done.
- */
-function requestDisconnect() {
-    if (isDisconnecting) return;
-    isDisconnecting = true;
-    updateConnectButtons();
-    mudClient.disconnect();
-    setTimeout(() => {
-        if (isDisconnecting && !mudClient.isSocketOpen()) {
-            isConnected = false;
-            isDisconnecting = false;
-            pendingAccountRequest = null;
-            accountLeaving = false;
-            accountSession.reset();
-            updateConnectButtons();
-        }
-    }, 1000);
-}
+connection.onConnected(() => {
+    eventBus.emit('refreshPositionWhenAble');
+    if (getShellSettings().wakeLock !== false) {
+        wakeLock.activate();
+    }
+    console.log('Client connected to Arkadia server.');
+});
+connection.onSessionLost(() => wakeLock.deactivate());
 
 // Function to update the connect button state
 function updateConnectButtons() {
     const authPanel = document.getElementById('auth-panel');
     const authOverlay = document.getElementById('auth-overlay') as HTMLElement | null;
     const account = accountSession.getState();
+    const {connected, connecting, disconnecting, authClosed, playback, accountLeaving, loginNotice} = connection.getState();
 
     // Connecting: the form and the connect button give way to the spinner, which
     // also covers an e-mail login waiting for the game's answer.
-    authPanel?.classList.toggle('is-connecting', isConnecting || account.loggingIn);
+    authPanel?.classList.toggle('is-connecting', connecting || account.loggingIn);
     authPanel?.classList.toggle('is-account', account.view !== 'off');
     authPanel?.classList.toggle('is-direct', mudClient.getProxyMode() === 'direct');
 
     // Offline with the login screen dismissed: the command line shows the closed
     // connection and offers to reconnect in place of the send button.
-    setConnectionOffline(!isConnected && !isConnecting && authClosed);
-    setConnectionStatus(isConnected ? 'connected' : isConnecting ? 'connecting' : 'disconnected', mudClient.getProxyMode());
+    setConnectionOffline(!connected && !connecting && authClosed);
+    setConnectionStatus(connected ? 'connected' : connecting ? 'connecting' : 'disconnected', mudClient.getProxyMode());
 
 
     if (authOverlay) {
         // Leaving an account keeps the card up through the close: there is no game
         // under it to show for the moment the socket takes to go.
-        const accountUp = accountSession.isActive() || (accountLeaving && isDisconnecting);
-        const authShown = (!isConnected || accountUp) && !playbackMode && !authClosed;
+        const accountUp = accountSession.isActive() || (accountLeaving && disconnecting);
+        const authShown = (!connected || accountUp) && !playback && !authClosed;
         authOverlay.style.display = authShown ? 'flex' : 'none';
         // What a theme that takes the screen for the login keys on (Kuźnia hides the game under it).
         document.body.classList.toggle('auth-open', authShown);
     }
 
-    updateMainMenuItem('disconnect-button', isConnected
-        ? { label: 'Rozłącz', disabled: isDisconnecting, tone: 'danger' }
-        : { label: 'Połącz', disabled: isConnecting, tone: undefined });
+    updateMainMenuItem('disconnect-button', connected
+        ? { label: 'Rozłącz', disabled: disconnecting, tone: 'danger' }
+        : { label: 'Połącz', disabled: connecting, tone: undefined });
 
-    renderSystemLoginMessage(!isConnected && !isConnecting ? lastSystemLoginMessage : null);
+    renderSystemLoginMessage(!connected && !connecting ? loginNotice : null);
 }
 
 /**
@@ -579,231 +490,9 @@ function renderSystemLoginMessage(message: string | null) {
     el.append(text);
 }
 
-// Handle client connect event
-mudClient.on('client.connect', () => {
-    isConnected = true;
-    isConnecting = false;
-    isDisconnecting = false;
-    cancelProxyResume();
-    updateConnectButtons();
-    eventBus.emit('refreshPositionWhenAble');
-    const wakeLockSetting = getShellSettings().wakeLock;
-    if (wakeLockSetting !== false) {
-        preventTabSleep();
-    }
-    console.log('Client connected to Arkadia server.');
-});
-
-// Disconnect diagnostics, for the console only. They were shown in the output while we
-// were working out why mobile players were being dropped, and that investigation is
-// over: the answer was that Chrome freezes a backgrounded tab, which the session proxy
-// now survives. Close codes and background timings say nothing to a player and read as
-// alarming noise attached to an event that, behind the proxy, costs them nothing.
-let lastCloseEvent: CloseEvent | null = null;
-let hiddenSince: number | null = null;
-let lastReturnFromBackground: {at: number; backgroundMs: number} | null = null;
-
-mudClient.on('close', (event) => {
-    lastCloseEvent = event;
-});
-
-const formatDuration = (ms: number): string => {
-    const seconds = Math.max(0, Math.round(ms / 1000));
-    if (seconds < 60) return `${seconds} s`;
-    const minutes = Math.floor(seconds / 60);
-    const rest = seconds % 60;
-    return rest ? `${minutes} min ${rest} s` : `${minutes} min`;
-};
-
-const describeDisconnect = (): string => {
-    const details: string[] = [];
-
-    if (mudClient.lastCloseCause === 'user') {
-        details.push('rozłączenie na żądanie');
-    } else if (mudClient.lastCloseCause === 'watchdog') {
-        details.push('brak odpowiedzi serwera na sprawdzenie połączenia');
-    } else {
-        details.push('połączenie zamknięte po stronie serwera lub sieci');
-    }
-
-    if (lastCloseEvent) {
-        details.push(`kod ${lastCloseEvent.code}${lastCloseEvent.wasClean ? '' : ', zerwane'}`);
-        if (lastCloseEvent.reason) details.push(lastCloseEvent.reason);
-    }
-
-    if (hiddenSince !== null) {
-        details.push(`karta w tle od ${formatDuration(Date.now() - hiddenSince)}`);
-    } else if (lastReturnFromBackground && Date.now() - lastReturnFromBackground.at < 120_000) {
-        details.push(
-            `powrót z tła ${formatDuration(Date.now() - lastReturnFromBackground.at)} temu, po ${formatDuration(lastReturnFromBackground.backgroundMs)} w tle`,
-        );
-    }
-
-    return details.join('; ');
-};
-
-/*
-Reattach after the browser's socket dies behind a session proxy.
-
-Losing that socket is not losing the game: the proxy still holds the telnet connection
-and the character is still standing where it was. A phone freezing a backgrounded tab
-produces exactly this, several times a session, so it has to heal itself rather than
-hand the player a disconnect notice and a Połącz button.
-
-The first attempt is immediate — a hidden tab still runs JavaScript, so the socket is
-often back before the player looks. A frozen one runs nothing, but the close event is
-delivered on resume and the attempt happens then instead. Later attempts back off, for
-the case the proxy itself is unreachable, and after the last one we say so plainly.
-*/
-const PROXY_RESUME_DELAYS_MS = [0, 2_000, 5_000, 15_000, 30_000];
-let proxyResumeAttempt = 0;
-let proxyResumeTimer: number | null = null;
-// Set when the proxy reports the game ended the session. Reattaching then is not a
-// resume — it is a fresh login the player did not ask for, on top of the explanation
-// they came back to read.
-let proxySessionEnded = false;
-
-const cancelProxyResume = (): void => {
-    if (proxyResumeTimer !== null) {
-        clearTimeout(proxyResumeTimer);
-        proxyResumeTimer = null;
-    }
-    proxyResumeAttempt = 0;
-    // Consumed: it only ever suppresses the one reattach that would have followed the
-    // session the game ended. A later connection starts with a clean slate.
-    proxySessionEnded = false;
-};
-
-const scheduleProxyResume = (): void => {
-    if (proxyResumeTimer !== null) return;
-    if (proxyResumeAttempt >= PROXY_RESUME_DELAYS_MS.length) {
-        proxyResumeAttempt = 0;
-        authClosed = false;
-        updateConnectButtons();
-        disableTabSleepPrevention();
-        client.println('Nie udało się wznowić połączenia. Kliknij Połącz, aby spróbować ponownie.');
-        return;
-    }
-    const delay = PROXY_RESUME_DELAYS_MS[proxyResumeAttempt];
-    proxyResumeAttempt += 1;
-    proxyResumeTimer = window.setTimeout(() => {
-        proxyResumeTimer = null;
-        if (isConnected || isConnecting) return;
-        mudClient.connect();
-    }, delay);
-};
-
-// Handle client disconnect event
-mudClient.on('client.disconnect', () => {
-    const willResume = shouldReattachAfterClose({
-        usesSessionProxy: mudClient.usesSessionProxy(),
-        closedByUser: mudClient.lastCloseCause === 'user',
-        sessionEndedByGame: proxySessionEnded,
-    });
-    isConnected = false;
-    isConnecting = false;
-    isDisconnecting = false;
-    pendingAccountRequest = null;
-    accountLeaving = false;
-    accountSession.reset();
-    // Reopening the login overlay would be wrong while a reattach is in flight: the
-    // character is still in the world, so there is nothing to log in to, and it would
-    // flash over the output for as long as the reconnect takes.
-    if (!willResume) authClosed = false;
-    updateConnectButtons();
-    console.log(`Client disconnected from Arkadia server: ${describeDisconnect()}`);
-
-    if (willResume) {
-        scheduleProxyResume();
-        return;
-    }
-
-    cancelProxyResume();
-    disableTabSleepPrevention();
-    client.println('Rozłączono z serwerem Arkadii.');
-});
-
-// What the session proxy reports on attach. A resume is worth saying out loud: the
-// player pressed nothing and their character is still where they left it, which is
-// otherwise indistinguishable from a fresh login that happened to work.
-mudClient.on('proxy.session', (info) => {
-    if (info?.upstreamClosed) {
-        // The game itself ended this session while nobody was listening. The replay
-        // that arrived just before this carries its parting words — "zostajesz
-        // rozlaczony z powodu bezczynnosci" and the like — which is the entire reason
-        // an ended session is kept around instead of dropped. Reattaching would open a
-        // fresh connection and bury that under a login banner.
-        proxySessionEnded = true;
-        return;
-    }
-    if (!info?.resumed) return;
-    // Already in the world: the login screen has nothing left to ask for.
-    authClosed = true;
-    updateConnectButtons();
-    const away = typeof info.sessionAgeMs === 'number'
-        ? ` (sesja trwa ${Math.round(info.sessionAgeMs / 1000)} s)`
-        : '';
-    if (isResumeNoticeEnabled()) {
-        client.println(`Wznowiono polaczenie z gra${away}.`);
-    }
-    // Not covered by the setting. Losing output is not routine, and a gap the player
-    // cannot account for is worse than a line they asked not to see.
-    if (info.droppedBytes) {
-        client.println(`Czesc tekstu z czasu nieobecnosci przepadla (${info.droppedBytes} bajtow).`);
-    }
-});
-
-// `core.keepalive` toggling is only useful on Safari (where the original user
-// reported background-tab disconnects). On Chromium/Firefox it causes the
-// opposite problem: telling the server to stop sending data lets the idle TCP
-// connection get killed by browser/server/proxy timeouts.
-const isSafari = /^((?!chrome|chromium|edg|android).)*safari/i.test(navigator.userAgent);
-
-// Ensure button state is correct when returning to the tab
+// Returning to the tab reflows the output; the split view must not take that for a scroll.
 document.addEventListener('visibilitychange', () => {
-    if (document.hidden) {
-        hiddenSince = Date.now();
-        // Deliberately no connection check on the way out. Mobile suspends a
-        // backgrounded tab within moments of this event, so a check armed here can
-        // only ever expire unattended and report a silence nobody was listening for.
-        if (isConnected && isSafari) {
-            mudClient.sendGmcp('core.keepalive', {disabled: true});
-        }
-        return;
-    }
-
-    if (hiddenSince !== null) {
-        lastReturnFromBackground = {at: Date.now(), backgroundMs: Date.now() - hiddenSince};
-        hiddenSince = null;
-    }
-
-    // Coming back is when the answer matters: the socket may well have died while we
-    // were away, and the buttons have to reflect that.
-    if (isConnected) {
-        mudClient.checkConnection();
-    }
-
-    // Suppress split view checks during tab reactivation reflow
-    outputMessageHandler.suppressSplitView(500);
-
-    const socketOpen = mudClient.isSocketOpen();
-    if (socketOpen && !isConnected) {
-        isConnected = true;
-        updateConnectButtons();
-    } else if (!socketOpen && isConnected) {
-        // Belt and braces: a socket that closed without delivering its close event.
-        // The ordinary path is client.disconnect, which fires on resume for a tab that
-        // was frozen, and reattaches there.
-        isConnected = false;
-        isConnecting = false;
-        isDisconnecting = false;
-        updateConnectButtons();
-        if (mudClient.usesSessionProxy()) {
-            scheduleProxyResume();
-        }
-    } else if (socketOpen && isConnected && isSafari) {
-        mudClient.sendGmcp('core.keepalive', {disabled: false});
-    }
+    if (!document.hidden) outputMessageHandler.suppressSplitView(500);
 });
 
 
@@ -921,10 +610,10 @@ document.addEventListener('DOMContentLoaded', () => {
         commandInput: () => document.getElementById('message-input'),
     });
     onShellSettingsChange((shell) => {
-        if (shell.wakeLock && isConnected) {
-            preventTabSleep();
+        if (shell.wakeLock && connection.getState().connected) {
+            wakeLock.activate();
         } else {
-            disableTabSleepPrevention();
+            wakeLock.deactivate();
         }
     });
     const connectButton = document.getElementById('connect-button') as HTMLButtonElement | null;
@@ -1076,26 +765,6 @@ document.addEventListener('DOMContentLoaded', () => {
         mountToasts(notificationCenter, outputWrapper, client);
     }
 
-    const toggleConnection = () => {
-        if (isConnected) {
-            // Disconnect
-            if (isDisconnecting) {
-                return;
-            }
-            requestDisconnect();
-        } else {
-            // Connect
-            if (isConnecting) {
-                return;
-            }
-            isConnecting = true;
-            lastSystemLoginMessage = null;
-            updateConnectButtons();
-            void client.prepareSounds();
-            mudClient.connect();
-        }
-    };
-
     window.addEventListener('close-options', () => {
         (document.activeElement as HTMLElement)?.blur?.();
         if (settingsModal) {
@@ -1230,7 +899,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Logi (170) registers itself in Narzędzia.
     registerMainMenuItem({id: 'docs-button', label: 'Dokumentacja', shortLabel: 'Pomoc', group: 'narzedzia', icon: 'book', order: 180, onSelect: () => eventBus.emit('docs.popup.open'), source: 'builtin'});
     registerMainMenuItem({id: 'fullscreen-button', label: 'Pełny ekran', group: 'sesja', icon: 'fullscreen', order: 900, onSelect: toggleFullscreen, source: 'builtin'});
-    registerMainMenuItem({id: 'disconnect-button', label: isConnected ? 'Rozłącz' : 'Połącz', group: 'sesja', icon: 'power', order: 910, onSelect: toggleConnection, tone: 'danger', source: 'builtin'});
+    registerMainMenuItem({id: 'disconnect-button', label: connection.getState().connected ? 'Rozłącz' : 'Połącz', group: 'sesja', icon: 'power', order: 910, onSelect: () => connection.toggle(), tone: 'danger', source: 'builtin'});
 
     if (recordingButton) {
         recordingButton.addEventListener('click', () => {
@@ -1247,122 +916,34 @@ document.addEventListener('DOMContentLoaded', () => {
         if (recordingButton) recordingButton.style.display = 'none';
     });
 
-    mudClient.on('recording.loaded', () => {
-        playbackMode = true;
-        updateConnectButtons();
-    });
-
-    mudClient.on('playback.start', () => {
-        playbackMode = true;
-        updateConnectButtons();
-    });
-
-    mudClient.on('playback.stop', () => {
-        playbackMode = false;
-        updateConnectButtons();
-    });
-
     if (wakeLockButton) {
         wakeLockButton.addEventListener('click', () => {
-            if (wakeLockEnabled) {
-                disableTabSleepPrevention();
-            } else {
-                preventTabSleep();
-            }
+            wakeLock.toggle();
         });
     }
 
-    if (loginForm) {
-        let unsubLoginMessage: (() => void) | null = null;
-        let unsubLoginEcho: (() => void) | null = null;
+    loginForm?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const character = loginCharacter?.value || '';
+        const password = loginPassword?.value || '';
 
-        const clearPendingLogin = () => {
-            unsubLoginMessage?.();
-            unsubLoginEcho?.();
-            unsubLoginMessage = null;
-            unsubLoginEcho = null;
-        };
-
-        mudClient.on('client.disconnect', clearPendingLogin);
-
-        // A resumed session is already logged in, so nothing armed by the login form
-        // should ever fire. The character-name handler waits for the next line of game
-        // text — which after a resume is ordinary output — and would type the name into
-        // the world as a command; the password handler waits for an echo-off prompt that
-        // is never coming and stays armed until something else triggers it.
-        mudClient.on('proxy.session', (info) => {
-            if (info?.resumed) {
-                clearPendingLogin();
-            }
-        });
-
-        loginForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            clearPendingLogin();
-            const character = loginCharacter?.value || '';
-            const password = loginPassword?.value || '';
-
-            // An e-mail opens the account rather than a character. Over telnet the
-            // game asks for one in its own text menu, so only the direct connection
-            // takes this road; the others type it in below like a name.
-            if (character.includes('@') && mudClient.getProxyMode() === 'direct') {
-                if (isConnected || isConnecting) return;
-                lastSystemLoginMessage = null;
-                accountSession.login(character.trim(), password);
-                return;
-            }
-
-            if (character) {
-                unsubLoginMessage = eventBus.on('socket.incoming', () => {
-                    unsubLoginMessage?.();
-                    unsubLoginMessage = null;
-                    client.send(character, false);
-                });
-            }
-
-            if (password) {
-                unsubLoginEcho = eventBus.on('telnet.echo', (serverEchoing: boolean) => {
-                    if (serverEchoing) {
-                        unsubLoginEcho?.();
-                        unsubLoginEcho = null;
-                        client.send(password, false, {preserveCase: true});
-                    }
-                });
-            }
-
-            // Re-submitting while a connection is in flight re-arms the credential
-            // listeners above, but must not open a second socket: two attaches with
-            // one session id make the proxy kill one as "replaced by a newer attach".
-            if (!isConnected && !isConnecting) {
-                isConnecting = true;
-                lastSystemLoginMessage = null;
-                updateConnectButtons();
-                void client.prepareSounds();
-                mudClient.connect();
-            }
-        });
-    }
-
-    // Handle connect/disconnect button click
-    const handleConnect = () => {
-        if (isConnected) {
-            mudClient.disconnect();
-        } else {
-            // A second connect while one is in flight opens a second socket with the
-            // same session id, and the proxy kills one of them as "replaced by a
-            // newer attach" — a double tap must not race itself.
-            if (isConnecting) {
-                return;
-            }
-            isConnecting = true;
-            lastSystemLoginMessage = null;
-            updateConnectButtons();
-            void client.prepareSounds();
-            mudClient.connect();
+        // An e-mail opens the account rather than a character. Over telnet the
+        // game asks for one in its own text menu, so only the direct connection
+        // takes this road; the others type it in below like a name.
+        if (character.includes('@') && mudClient.getProxyMode() === 'direct') {
+            const {connected, connecting} = connection.getState();
+            if (connected || connecting) return;
+            connection.clearLoginNotice();
+            accountSession.login(character.trim(), password);
+            return;
         }
-    };
-    connectButton?.addEventListener('click', handleConnect);
-    setReconnectHandler(handleConnect);
+
+        connection.signIn({character, password});
+    });
+
+    // The login screen's Połącz, and the command line's reconnect while offline.
+    connectButton?.addEventListener('click', () => connection.toggle());
+    setReconnectHandler(() => connection.toggle());
 
     setupLoginFire();
 
@@ -1390,7 +971,7 @@ document.addEventListener('DOMContentLoaded', () => {
         createRoot(accountRoot).render(createElement(AccountScreen, {session: accountSession}));
     }
     document.getElementById('create-account-link')?.addEventListener('click', () => {
-        lastSystemLoginMessage = null;
+        connection.clearLoginNotice();
         accountSession.openCreateAccount();
     });
     updateConnectButtons();
@@ -1424,15 +1005,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (authClose) {
         const closeAuthOverlay = () => {
-            authClosed = true;
-            updateConnectButtons();
+            connection.closeAuth();
             // Dismissing the login screen without connecting leaves the command
             // line as the place to type, same as after a connect.
             focusCommandInputOnConnect();
         };
         authClose.addEventListener('click', closeAuthOverlay);
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && !authClosed && !isConnected && !playbackMode) {
+            const {authClosed, connected, playback} = connection.getState();
+            if (e.key === 'Escape' && !authClosed && !connected && !playback) {
                 closeAuthOverlay();
             }
         });

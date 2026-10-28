@@ -68,8 +68,9 @@ type ConnectionEvent =
  * until they are sent, and the browser's own password manager (via the form's
  * autocomplete attributes) is what remembers them across visits, if anything.
  *
- * Mirrors the behaviour of the stock UI's inline implementation in
- * `src/web/main.ts`; that copy can be replaced with this engine.
+ * Only forge-ui uses this. The stock UI runs `connectionController.ts`, which
+ * carries the same handshake plus proxy reattach and account requests; this file
+ * goes with forge-ui (see docs/dev/main-ts-decomposition.md, Phase 3).
  */
 export class ConnectionEngine {
     private readonly ports: ConnectionPorts;

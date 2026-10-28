@@ -22,6 +22,11 @@
 | `PluginApi.ts` — 3,556 lines | **Regressed** to 3,675. Still the top target. |
 | `LogBrowser.tsx` — 1,677 lines | **Regressed** to 1,816. |
 
+> **2026-10-28:** `forge-ui/` is obsolete — it has been folded into the main UI (the
+> Kuźnia theme) and is slated for deletion; ignore it when weighing findings below.
+> `src/web/main.ts` is being decomposed — see `docs/dev/main-ts-decomposition.md`.
+> `PluginApi.ts` has since grown to ~5,500 lines and `MapHelper.ts` to ~1,870.
+
 Everything else below — `knowledge.ts`, `FormatState.ts`, `MapHelper.ts`, the flat-directory
 sprawl, the `@shared → @client` reverse dependency, and the Tier 2/4 duplication — is
 unchanged or slightly worse.
