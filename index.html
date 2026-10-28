@@ -92,107 +92,9 @@
     <button id="recording-button" type="button" class="popup-btn popup-btn--control popup-btn--sm recordings-rec" style="display:none;">Zatrzymaj i zapisz</button>
 
     <span id="content-width-measure" style="visibility:hidden;position:absolute;white-space:pre">M</span>
-    <!-- Page-level windows, opened by id through src/web/modals/appModal.ts;
-         styled in style.css ("app-modal"). -->
-    <div id="settings-modal" class="app-modal app-modal--settings" hidden>
-        <div class="app-modal__dialog app-modal__dialog--xl app-modal__dialog--fill app-modal__dialog--phone-full" tabindex="-1">
-            <div class="app-modal__header">
-                <h2 class="app-modal__title">Ustawienia</h2>
-                <button type="button" class="popup-btn popup-btn--control popup-btn--sm" id="settings-characters-btn">Postacie</button>
-                <button type="button" class="app-modal__close" data-modal-dismiss title="Zamknij">&times;</button>
-            </div>
-            <div class="app-modal__body app-modal__body--panel">
-                <div id="settings-root" class="app-modal__panel"></div>
-            </div>
-            <div class="app-modal__footer">
-                <!-- Shown while something is unsaved; closing keeps the edits for the next opening. -->
-                <button type="button" class="popup-btn popup-btn--control" id="settings-discard" title="Wróć do zapisanych ustawień" hidden>Odrzuć zmiany</button>
-                <button type="button" class="popup-btn popup-btn--control popup-btn--solid" id="settings-save">Zapisz</button>
-            </div>
-        </div>
-    </div>
-    <div id="character-management-modal" class="app-modal" hidden>
-        <div class="app-modal__dialog" tabindex="-1">
-            <div class="app-modal__header">
-                <h2 class="app-modal__title">Zarządzanie postaciami</h2>
-                <button type="button" class="app-modal__close" data-modal-dismiss title="Zamknij">&times;</button>
-            </div>
-            <div class="app-modal__body">
-                <div id="character-management-root"></div>
-            </div>
-        </div>
-    </div>
-    <div id="binds-modal" class="app-modal" hidden>
-        <div class="app-modal__dialog app-modal__dialog--keys app-modal__dialog--phone-full" tabindex="-1">
-            <!-- Keys (src/web/keys/Keys.tsx) puts its keymap toolbar in the header slot.
-                 Every change is stored at once, so there is no footer. -->
-            <div class="app-modal__header">
-                <h2 class="app-modal__title">Klawisze</h2>
-                <div id="binds-header-slot" class="app-modal__header-slot"></div>
-                <button type="button" class="app-modal__close" data-modal-dismiss title="Zamknij">&times;</button>
-            </div>
-            <div class="app-modal__body app-modal__body--flush">
-                <div id="binds-options"></div>
-            </div>
-        </div>
-    </div>
-    <div id="scripts-modal" class="app-modal" hidden>
-        <div class="app-modal__dialog app-modal__dialog--xl app-modal__dialog--fill" tabindex="-1">
-            <div class="app-modal__header">
-                <h2 class="app-modal__title">Wtyczki</h2>
-                <button type="button" class="app-modal__close" data-modal-dismiss title="Zamknij">&times;</button>
-            </div>
-            <!-- The panel scrolls its own list under a fixed tab bar and toolbar,
-                 so the body itself must not scroll. -->
-            <div class="app-modal__body app-modal__body--panel">
-                <div id="scripts-options" class="app-modal__panel"></div>
-            </div>
-        </div>
-    </div>
-    <div id="automation-modal" class="app-modal" hidden>
-        <div class="app-modal__dialog app-modal__dialog--automation app-modal__dialog--phone-full" tabindex="-1">
-            <div class="app-modal__header">
-                <h2 class="app-modal__title">Skrypty</h2>
-                <button type="button" class="app-modal__close" data-modal-dismiss title="Zamknij">&times;</button>
-            </div>
-            <div class="app-modal__body app-modal__body--flush">
-                <div id="automation-options"></div>
-            </div>
-        </div>
-    </div>
-    <div id="recordings-modal" class="app-modal" hidden>
-        <div class="app-modal__dialog app-modal__dialog--lg" tabindex="-1">
-            <div class="app-modal__header">
-                <h2 class="app-modal__title">Nagrania</h2>
-                <button type="button" class="app-modal__close" data-modal-dismiss title="Zamknij">&times;</button>
-            </div>
-            <div class="app-modal__body">
-                <div id="recordings-options"></div>
-            </div>
-        </div>
-    </div>
-    <div id="places-modal" class="app-modal" hidden>
-        <div class="app-modal__dialog app-modal__dialog--xl app-modal__dialog--phone-full" tabindex="-1">
-            <div class="app-modal__header">
-                <h2 class="app-modal__title">Miejsca</h2>
-                <button type="button" class="app-modal__close" data-modal-dismiss title="Zamknij">&times;</button>
-            </div>
-            <div class="app-modal__body app-modal__body--flush">
-                <div id="places-options"></div>
-            </div>
-        </div>
-    </div>
-    <div id="helper-modal" class="app-modal" hidden>
-        <div class="app-modal__dialog" tabindex="-1">
-            <div class="app-modal__header">
-                <h2 class="app-modal__title">Arkadia Helper</h2>
-                <button type="button" class="app-modal__close" data-modal-dismiss title="Zamknij">&times;</button>
-            </div>
-            <div class="app-modal__body app-modal__body--flush">
-                <div id="helper-options"></div>
-            </div>
-        </div>
-    </div>
+    <!-- Page-level windows (Ustawienia, Klawisze, Miejsca…): src/web/app/AppModals.tsx,
+         opened by id through src/web/modals/appModal.ts; styled in style.css ("app-modal"). -->
+    <div id="app-modals" style="display: contents"></div>
     <div id="knowledge-root"></div>
     <div id="knowledge-details-root"></div>
     <div id="clock-root"></div>
@@ -261,18 +163,6 @@
                  session title, the export menu and the close control. -->
             <div class="app-modal__body app-modal__body--panel logs-modal-body">
                 <!-- Filled by logBrowserMount.tsx -->
-            </div>
-        </div>
-    </div>
-
-    <div id="location-share-modal" class="app-modal" hidden>
-        <div class="app-modal__dialog" tabindex="-1">
-            <div class="app-modal__header">
-                <h2 class="app-modal__title">Kod QR lokacji</h2>
-                <button type="button" class="app-modal__close" data-modal-dismiss title="Zamknij">&times;</button>
-            </div>
-            <div class="app-modal__body app-modal__body--center">
-                <img id="location-qr-image" alt="QR code">
             </div>
         </div>
     </div>

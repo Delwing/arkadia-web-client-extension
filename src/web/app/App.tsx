@@ -1,19 +1,11 @@
 import type { ComponentProps } from "react";
 import { useAppServices } from "./appServices";
 import { Island } from "./Island";
+import { AppModals } from "./AppModals";
 import CommandLine, { type CommandLineDeps } from "../commandInput/CommandLine";
 import { ProxyControls } from "../hostProxy/ProxyControls";
 import { AccountScreen } from "../account/AccountScreen";
 import { ToastStack, type ToastStackProps } from "../notifications/ToastStack";
-import SettingsDialog from "../settings/SettingsDialog";
-import CharacterManagement from "../options/CharacterManagementModal";
-import Keys from "../keys/Keys";
-import Scripts from "../options/Scripts";
-import AutomationWindow from "../automation/AutomationWindow";
-import Recordings from "../options/Recordings";
-import Places from "../places/Places";
-import HelperSettings from "../options/HelperSettings";
-import { isHelperSupported } from "../helperDownload";
 import { LayoutManagerWrapper } from "../layout";
 import { ContextMenuHost } from "../contextMenu";
 import { suppressTitleUpdates } from "../FightTitle";
@@ -45,7 +37,7 @@ const getOutputArea = () => document.getElementById("main_text_output_msg_wrappe
  * changes is that they share one root and the services context.
  */
 export function App({ commandLine, proxyControls, toasts }: AppProps) {
-    const { client, helperConnection, accountSession } = useAppServices();
+    const { client, accountSession } = useAppServices();
 
     return (
         <>
@@ -79,22 +71,8 @@ export function App({ commandLine, proxyControls, toasts }: AppProps) {
                 <BossKeyOverlay client={client} soundControl={client.SoundManager} suppressTitle={suppressTitleUpdates} />
             </Island>
 
-            {/* The page-level windows (index.html app-modal shells, src/web/modals/appModal.ts). */}
-            <Island name="SettingsDialog" target="settings-root">
-                <SettingsDialog soundManager={client.SoundManager} onEnableNotifications={() => client.enableNotifications()} />
-            </Island>
-            <Island name="CharacterManagement" target="character-management-root"><CharacterManagement /></Island>
-            <Island name="Keys" target="binds-options">
-                <Keys
-                    helperConnection={isHelperSupported() ? helperConnection : null}
-                    headerSlot={document.getElementById("binds-header-slot")}
-                />
-            </Island>
-            <Island name="Scripts" target="scripts-options"><Scripts /></Island>
-            <Island name="AutomationWindow" target="automation-options"><AutomationWindow /></Island>
-            <Island name="Recordings" target="recordings-options"><Recordings /></Island>
-            <Island name="Places" target="places-options"><Places /></Island>
-            <Island name="HelperSettings" target="helper-options"><HelperSettings helperConnection={helperConnection} /></Island>
+            {/* The page-level windows (Ustawienia, Klawisze, Miejsca…). */}
+            <Island name="AppModals" target="app-modals"><AppModals /></Island>
 
             {/* The layout manager, with every dockable popup. */}
             <Island name="LayoutManager" target="layout-manager-root">

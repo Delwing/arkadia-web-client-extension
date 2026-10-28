@@ -51,7 +51,7 @@ import {bootstrapMap} from "./map/mapBootstrap";
 import {createElement} from 'react'
 import {createRoot} from 'react-dom/client'
 import {flushSync} from 'react-dom'
-import {CLOSE_SETTINGS_EVENT, OPEN_SETTINGS_PAGE_EVENT, SAVE_SETTINGS_EVENT, requestSettingsCategory, type OpenSettingsPageDetail} from "./settings/categories.ts";
+import {CLOSE_SETTINGS_EVENT, OPEN_SETTINGS_PAGE_EVENT, requestSettingsCategory, type OpenSettingsPageDetail} from "./settings/categories.ts";
 import { OPEN_PLACE_EVENT, openPlace } from "./places/placesData.ts"
 import {applyDefaultLayoutMode, setRailSpanSupported} from "@web/layout"
 import {globalStorage} from "@modules/core/storage"
@@ -486,28 +486,21 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     const connectButton = document.getElementById('connect-button') as HTMLButtonElement | null;
-    const settingsSave = document.getElementById('settings-save') as HTMLButtonElement | null;
     const recordingButton = document.getElementById('recording-button') as HTMLButtonElement | null;
     wakeLockButton = document.getElementById('wake-lock-button') as HTMLButtonElement | null;
     updateWakeLockButton();
 
-    // The page-level windows (index.html, src/web/modals/appModal.ts)
-    const settingsModalElement = document.getElementById('settings-modal');
-    const settingsModal = settingsModalElement ? AppModal.for(settingsModalElement) : null;
-    const characterManagementModalElement = document.getElementById('character-management-modal');
-    const characterManagementModal = characterManagementModalElement ? AppModal.for(characterManagementModalElement) : null;
-    const bindsModalElement = document.getElementById('binds-modal');
-    const bindsModal = bindsModalElement ? AppModal.for(bindsModalElement) : null;
-    const scriptsModalElement = document.getElementById('scripts-modal');
-    const scriptsModal = scriptsModalElement ? AppModal.for(scriptsModalElement) : null;
-    const automationModalElement = document.getElementById('automation-modal');
-    const automationModal = automationModalElement ? AppModal.for(automationModalElement) : null;
-    const recordingsModalElement = document.getElementById('recordings-modal');
-    const recordingsModal = recordingsModalElement ? AppModal.for(recordingsModalElement) : null;
-    const placesModalElement = document.getElementById('places-modal');
-    const placesModal = placesModalElement ? AppModal.for(placesModalElement) : null;
-    const helperModalElement = document.getElementById('helper-modal');
-    const helperModal = helperModalElement ? AppModal.for(helperModalElement) : null;
+    // The page-level windows (AppModals.tsx, src/web/modals/appModal.ts). Looked up
+    // when used: they render with the app tree at the end of this handler.
+    const settingsModal = () => AppModal.byId('settings-modal');
+    const characterManagementModal = () => AppModal.byId('character-management-modal');
+    const bindsModal = () => AppModal.byId('binds-modal');
+    const scriptsModal = () => AppModal.byId('scripts-modal');
+    const automationModal = () => AppModal.byId('automation-modal');
+    const recordingsModal = () => AppModal.byId('recordings-modal');
+    const placesModal = () => AppModal.byId('places-modal');
+    const helperModal = () => AppModal.byId('helper-modal');
+    const locationShareModal = () => AppModal.byId('location-share-modal');
     const loginCharacter = document.getElementById('login-character') as HTMLInputElement | null;
     const loginPassword = document.getElementById('login-password') as HTMLInputElement | null;
     const loginForm = document.getElementById('login-form') as HTMLFormElement | null;
@@ -590,9 +583,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     const enableNotificationsConnection = document.getElementById('enable-notifications-connection') as HTMLButtonElement | null;
-    const locationQrImage = document.getElementById('location-qr-image') as HTMLImageElement | null;
-    const locationShareModalElement = document.getElementById('location-share-modal');
-    const locationShareModal = locationShareModalElement ? AppModal.for(locationShareModalElement) : null;
 
     // The login screen's banner: gone once notifications are on, or for now on its cross.
     const authNotify = document.getElementById('auth-notify');
@@ -637,23 +627,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.addEventListener('close-options', () => {
         (document.activeElement as HTMLElement)?.blur?.();
-        if (settingsModal) {
-            settingsModal.hide();
-        }
-        if (bindsModal) {
-            bindsModal.hide();
-        }
-        if (scriptsModal) {
-            scriptsModal.hide();
-        }
-        if (automationModal) {
-            automationModal.hide();
-        }
-        if (recordingsModal) {
-            recordingsModal.hide();
-        }
-        if (placesModal) {
-            placesModal.hide();
+        for (const modal of [settingsModal, bindsModal, scriptsModal, automationModal, recordingsModal, placesModal]) {
+            modal()?.hide();
         }
     });
 
@@ -663,44 +638,27 @@ document.addEventListener('DOMContentLoaded', () => {
         const { category, anchor } = (event as CustomEvent<OpenSettingsPageDetail>).detail;
         window.dispatchEvent(new Event('close-options'));
         requestSettingsCategory(category);
-        settingsModal?.show();
+        settingsModal()?.show();
         if (anchor) window.setTimeout(() => document.getElementById(anchor)?.scrollIntoView({ block: 'center' }), 350);
     });
 
     window.addEventListener('show-export-import', () => {
         requestSettingsCategory('data-sync');
-        settingsModal?.show();
+        settingsModal()?.show();
     });
 
     // Helper settings sends the user here: its shortcuts are edited in Klawisze.
     window.addEventListener('show-binds', () => {
-        bindsModal?.show();
+        bindsModal()?.show();
     });
 
     window.addEventListener('show-character-management', () => {
-        if (characterManagementModal) {
-            characterManagementModal.show();
-        }
+        characterManagementModal()?.show();
     });
-
-    // Header buttons in the settings modal
-    const settingsCharactersBtn = document.getElementById('settings-characters-btn');
-
-    if (settingsCharactersBtn) {
-        settingsCharactersBtn.addEventListener('click', () => {
-            window.dispatchEvent(new Event('show-character-management'));
-        });
-    }
-
-    if (settingsSave) {
-        settingsSave.addEventListener('click', () => {
-            window.dispatchEvent(new Event(SAVE_SETTINGS_EVENT));
-        });
-    }
 
     window.addEventListener(CLOSE_SETTINGS_EVENT, () => {
         (document.activeElement as HTMLElement)?.blur?.();
-        settingsModal?.hide();
+        settingsModal()?.hide();
     });
 
     /**
@@ -713,29 +671,28 @@ document.addEventListener('DOMContentLoaded', () => {
      * same event and switches to the page named in it.
      */
     window.addEventListener(OPEN_SETTINGS_EVENT, () => {
-        settingsModal?.show();
+        settingsModal()?.show();
     });
 
     // The map's "Dodaj skrót" and "Notatka" (and /notatka) open Miejsca on that room.
-    if (placesModal) {
-        window.addEventListener(OPEN_PLACE_EVENT, () => placesModal.show());
-        eventBus.on('shortcuts.addWithRoom', ({ roomId }) => openPlace(roomId, 'shortcut'));
-        eventBus.on('locationNote.edit', ({ roomId }) => openPlace(roomId, 'note'));
-        eventBus.on('locationNote.open', ({ roomId }) => openPlace(roomId, 'note'));
-    }
+    window.addEventListener(OPEN_PLACE_EVENT, () => placesModal()?.show());
+    eventBus.on('shortcuts.addWithRoom', ({ roomId }) => openPlace(roomId, 'shortcut'));
+    eventBus.on('locationNote.edit', ({ roomId }) => openPlace(roomId, 'note'));
+    eventBus.on('locationNote.open', ({ roomId }) => openPlace(roomId, 'note'));
 
     // The ⋯ menu's Kod QR lokacji: a link that opens the map on this room.
     const shareLocation = () => {
         const roomId = client.Map.currentRoom?.id;
+        const locationQrImage = document.getElementById('location-qr-image') as HTMLImageElement | null;
         if (!roomId || !locationQrImage) {
             return;
         }
         const url = new URL(window.location.origin + window.location.pathname);
         url.searchParams.set('locationId', roomId.toString());
         locationQrImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url.toString())}`;
-        locationShareModal?.show();
+        locationShareModal()?.show();
     };
-    const modals: Record<MainMenuModal, AppModal | null> = {
+    const modals: Record<MainMenuModal, () => AppModal | null> = {
         automation: automationModal,
         binds: bindsModal,
         places: placesModal,
@@ -745,7 +702,7 @@ document.addEventListener('DOMContentLoaded', () => {
         settings: settingsModal,
     };
     registerBuiltinMainMenu({
-        openModal: (modal) => modals[modal]?.show(),
+        openModal: (modal) => modals[modal]()?.show(),
         shareLocation,
         isConnected: () => connection.getState().connected,
         toggleConnection: () => connection.toggle(),
@@ -842,7 +799,7 @@ document.addEventListener('DOMContentLoaded', () => {
         initialMccp: mudClient.isMccpEnabled(),
         onMccpChange: (enabled: boolean) => mudClient.setMccpEnabled(enabled),
         helper: helperConnection,
-        onHelperHelp: () => helperModal?.show(),
+        onHelperHelp: () => helperModal()?.show(),
         onBlockedChange: (blocked: boolean) => document.getElementById('auth-panel')?.classList.toggle('is-blocked', blocked),
     };
 
