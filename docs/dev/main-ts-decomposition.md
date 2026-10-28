@@ -75,20 +75,39 @@ dialog, plugin footer items) are untouched.
 (`#main_text_output_msg_wrapper` ×146, `#message-input` ×86, `#binds-modal` ×54…)
 and so does the Kuźnia theme CSS.
 
-1. **Modals** — the eight `app-modal` shells → `<AppModal id title size>`;
-   `appModal.ts` + `window` events (`show-binds`, `close-options`,
-   `OPEN_SETTINGS_EVENT`…) → a typed modal store, old events kept as adapters.
-2. **Login** — `<AuthOverlay>`, `<LoginForm>`, `<SystemLoginMessage>` rendering the
-   connection controller's state (replaces `updateConnectButtons` and
-   `renderSystemLoginMessage`).
-3. **Map chrome** — progress bar, location label, pause icon, lost badge; `<MapPane>`
-   attaches `EmbeddedMap` by ref.
-4. **`<GameOutput>`** — static shell (wrapper, split pane, sticky area, notification
-   centre) rendered once; `setupOutputMessageHandler` and `installOutputSearch` run in
-   its layout effect. Same pattern for the object lists.
-5. **Footer leftovers** — commit info + update notice, recording button, wake-lock button.
+1. **Modals** — **done.** The shells live in `app/AppModals.tsx` on
+   `modals/AppModalShell.tsx` (same markup), rendered into `#app-modals`
+   (`display: contents`) where index.html held them. The `AppModal` controller is
+   kept as is: it is imperative, small, and used by several panels; `main.ts` looks
+   modals up lazily with `AppModal.byId`. `#logs-modal` stays in index.html, because
+   `logBrowserMount.tsx` (a separate entry) empties its body and mounts its own root.
+   Still open: the `window` events (`show-binds`, `close-options`,
+   `OPEN_SETTINGS_EVENT`…) → a typed modal store.
+2. **Login** — **done.** `auth/AuthOverlay.tsx` (+ `auth/CommitInfo.tsx`) renders
+   the controller's and the account session's state, into `#auth-root`.
+   `updateConnectButtons` keeps only the command line's connection view and the
+   menu's Połącz/Rozłącz.
+3. **Map chrome** — **blocked as planned.** The layout manager moves `#map`,
+   `#location-wrapper` and `#map-lost-wrapper` into dock panels and back
+   (`layout/panels/MapPanel.tsx`), and `ObjectListPanel` does the same with
+   `#objects-list`. React cannot own nodes something else re-parents: its fiber
+   tree would point at the wrong parent and the next removal throws. Their
+   *content* already renders from the tree by portal (Phase 1). To go further, the
+   panels must first take React-rendered panes (render the map host inside
+   `MapPanel` and pass the element to `EmbeddedMap`) instead of moving DOM.
+4. **`<GameOutput>`** — **deferred** for the same reason in spirit: the output
+   wrapper's children are appended and trimmed by `setupOutputMessageHandler`, so
+   React would own only a static frame. Worth doing together with the panel change
+   in 3, not on its own.
+5. **Footer leftovers** — **done.** Commit info is in `CommitInfo`; the recording
+   button is `app/shell/RecordingStopButton.tsx`. The wake-lock button code was
+   dead (no `#wake-lock-button` exists) and is removed.
 
-End state: `index.html` is `<head>` + `<div id="root">`.
+Revised end state for this phase: `index.html` keeps the static hosts the
+imperative engines own (`#iframe-container` with the map, the output wrapper,
+the object lists, `#logs-modal`, the dock hosts) and empty `display: contents`
+mount points; everything else renders from the tree. The full `<div id="root">`
+needs the panel rework above first.
 
 ### Phase 3 — cleanup
 

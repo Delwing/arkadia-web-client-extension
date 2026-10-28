@@ -1,6 +1,7 @@
 import { useAppServices } from "./appServices";
 import { Island } from "./Island";
 import { AppModals } from "./AppModals";
+import { RecordingStopButton } from "./shell/RecordingStopButton";
 import CommandLine, { type CommandLineDeps } from "../commandInput/CommandLine";
 import { AuthOverlay, type AuthOverlayProps } from "../auth/AuthOverlay";
 import { ToastStack, type ToastStackProps } from "../notifications/ToastStack";
@@ -49,6 +50,8 @@ export function App({ commandLine, auth, toasts }: AppProps) {
 
             {/* Logowanie: the card over the game while offline. */}
             <Island name="AuthOverlay" target="auth-root"><AuthOverlay {...auth} /></Island>
+
+            <Island name="RecordingStopButton" target="recording-button-root"><RecordingStopButton /></Island>
 
             {/* The footer: the location binds and the status line, as the footer layout arranges them. */}
             <Island name="StockFooter" target="footer-layout"><StockFooter /></Island>

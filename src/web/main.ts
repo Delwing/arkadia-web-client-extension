@@ -26,7 +26,6 @@ import {installMapLayoutOffsets} from "./platform/iosViewport";
 import {applyInitialLocation} from "./platform/initialLocation";
 import {OPEN_SETTINGS_EVENT} from "./assistant/openSettings.ts";
 import {AccountSession} from "./account/accountSession";
-import recordingManager from "./RecordingManager.ts";
 import eventBus from "@modules/core/eventBus";
 import {setupOutputContextMenu} from "./outputContextMenu";
 import {installLongPressContextMenu} from "@shared/dom/longPressContextMenu.ts";
@@ -91,14 +90,6 @@ applyInitialLocation(client);
 
 // Keep a phone from sleeping the tab while connected (the wake-lock setting).
 const wakeLock = new WakeLock();
-let wakeLockButton: HTMLButtonElement | null = null;
-
-function updateWakeLockButton() {
-    if (wakeLockButton) {
-        wakeLockButton.textContent = wakeLock.isEnabled() ? 'NoSleep ON' : 'NoSleep OFF';
-    }
-}
-wakeLock.subscribe(updateWakeLockButton);
 
 installMapLayoutOffsets(
     document.getElementById("iframe-container"),
@@ -358,9 +349,6 @@ document.addEventListener('DOMContentLoaded', () => {
             wakeLock.deactivate();
         }
     });
-    const recordingButton = document.getElementById('recording-button') as HTMLButtonElement | null;
-    wakeLockButton = document.getElementById('wake-lock-button') as HTMLButtonElement | null;
-    updateWakeLockButton();
 
     // The page-level windows (AppModals.tsx, src/web/modals/appModal.ts). Looked up
     // when used: they render with the app tree at the end of this handler.
@@ -536,27 +524,6 @@ document.addEventListener('DOMContentLoaded', () => {
         isConnected: () => connection.getState().connected,
         toggleConnection: () => connection.toggle(),
     });
-
-    if (recordingButton) {
-        recordingButton.addEventListener('click', () => {
-            recordingManager.stopRecording(true);
-        });
-    }
-
-
-
-    mudClient.on('recording.start', () => {
-        if (recordingButton) recordingButton.style.display = 'inline-flex';
-    });
-    mudClient.on('recording.stop', () => {
-        if (recordingButton) recordingButton.style.display = 'none';
-    });
-
-    if (wakeLockButton) {
-        wakeLockButton.addEventListener('click', () => {
-            wakeLock.toggle();
-        });
-    }
 
     // The command line's reconnect while offline.
     setReconnectHandler(() => connection.toggle());

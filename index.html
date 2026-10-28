@@ -89,7 +89,8 @@
     <div id="objects-list" data-mobile-command-radial-ignore></div>
     <!-- Non-team objects, filled by ObjectList and shown only as its own layout window. -->
     <div id="objects-list-others" data-mobile-command-radial-ignore></div>
-    <button id="recording-button" type="button" class="popup-btn popup-btn--control popup-btn--sm recordings-rec" style="display:none;">Zatrzymaj i zapisz</button>
+    <!-- Zatrzymaj i zapisz while recording: src/web/app/shell/RecordingStopButton.tsx -->
+    <div id="recording-button-root" style="display: contents"></div>
 
     <span id="content-width-measure" style="visibility:hidden;position:absolute;white-space:pre">M</span>
     <!-- Page-level windows (Ustawienia, Klawisze, Miejsca…): src/web/app/AppModals.tsx,
