@@ -1,6 +1,8 @@
 import Triggers from '@client/Triggers';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
-import { mayMatch, prefilterMisses, prefilterVerifyStats, requiredLiteral } from '@client/triggerPrefilter';
+import { mayMatch, prefilterMisses, prefilterVerifyStats, requiredLiteral, requiredLiterals } from '@client/triggerPrefilter';
+import fs from 'fs';
+import path from 'path';
 import gagsData from '@client/scripts/gags_lua.json';
 
 describe('requiredLiteral', () => {
@@ -89,6 +91,58 @@ describe('requiredLiteral', () => {
   });
 });
 
+describe('requiredLiterals', () => {
+  test.each([
+    // A plain run wins, as before.
+    ['(?<name>.*) atakuje cie!', '', [' atakuje cie!']],
+    // Alternations, at the top or in a mandatory group.
+    ['foo|bar', '', ['foo', 'bar']],
+    ['^(?:Wychodzisz z ukrycia|Jest tu zbyt ciezko)\\.$', '', ['Wychodzisz z ukrycia', 'Jest tu zbyt ciezko']],
+    ['(Lekko ranisz|Ranisz|Masakrujesz)', '', ['Lekko ranisz', 'Ranisz', 'Masakrujesz']],
+    ['(\\w+) (ryb[aey]|ryb)\\b', '', ['ryb']],
+    // A pattern wrapped whole in a group.
+    ['(^[ >]*[a-zA-Z (),!]+ omija twoj nieskuteczny blok\\.$)', '', [' omija twoj nieskuteczny blok.']],
+    ['^(?<who>.+) (?:rzuca|ciska) (sie|toba)', '', ['rzuca', 'ciska']],
+  ])('%s -> %j', (source, flags, expected) => {
+    expect(requiredLiterals(source, flags)).toEqual(expected);
+  });
+
+  test.each([
+    ['(?:abcd)?de'],
+    ['(?:abcd)*'],
+    ['(?:abcd){0,2}'],
+    ['(?=abcd)x'],
+    ['(?!abcd)x'],
+    ['(?<=abcd)x'],
+    ['(?:|abcd)'],
+    ['foo|.*'],
+    ['ab|cd'],
+  ])('%s has no prefilter', (source) => {
+    expect(requiredLiterals(source)).toBeNull();
+  });
+
+  test('every Mudlet gag regex that matches a corpus line passes its prefilter', () => {
+    const corpus = fs.readFileSync(path.resolve('e2e/perf/corpus.txt'), 'utf8').split('\n').filter(Boolean);
+    const regexes: RegExp[] = [];
+    const walk = (node: any) => {
+      for (const p of node.patterns ?? []) if (p.type === 1) regexes.push(new RegExp(p.pattern));
+      (node.triggers ?? []).forEach(walk);
+    };
+    (gagsData as any[]).forEach(walk);
+    const wrong: string[] = [];
+    let matched = 0;
+    for (const re of regexes) {
+      for (const line of corpus) {
+        if (!re.test(line)) continue;
+        matched++;
+        if (!mayMatch(re, line)) wrong.push(`/${re.source}/ ${line}`);
+      }
+    }
+    expect(wrong.slice(0, 5)).toEqual([]);
+    expect(matched).toBeGreaterThan(40);
+  });
+});
+
 describe('Triggers literal prefilter', () => {
   const lines = [
     'Rudy ork atakuje cie!',
@@ -117,6 +171,38 @@ describe('Triggers literal prefilter', () => {
     };
     const off = run(false);
     expect(off).toEqual(['atak:Rudy ork', 'mowi:1', 'srebro:SREBRNE', 'alt', 'monety', 'alt']);
+    expect(run(true)).toEqual(off);
+  });
+
+  test('skipping ruled-out triggers keeps stayOpenLines, arrays and mid-pass changes as they were', () => {
+    const run = (enabled: boolean) => {
+      const triggers = new Triggers({} as any);
+      triggers.literalPrefilter = enabled;
+      const calls: string[] = [];
+      // Held open for two more lines that lack its literal: its children must still run.
+      const open = triggers.registerTrigger(/^Walka zaczyna sie/, (b) => { calls.push('open'); return b; }, undefined, { stayOpenLines: 2 });
+      open.registerChild(/ork/, (b) => { calls.push('open>ork'); return b; });
+      triggers.registerTrigger([/^Brak tego/, /^Rudy ork/], (b) => { calls.push('array'); return b; });
+      // Registers and removes triggers while the pass is running.
+      let added = false;
+      triggers.registerTrigger(/atakuje cie!/, (b) => {
+        calls.push('atak');
+        if (!added) {
+          added = true;
+          triggers.registerOneTimeTrigger(/atakuje/, (bb) => { calls.push('one-time'); return bb; });
+        }
+        return b;
+      });
+      const doomed = triggers.registerTrigger(/^Rudy ork/, (b) => { calls.push('doomed'); return b; });
+      triggers.registerTrigger(/^Walka/, (b) => { triggers.removeTrigger(doomed); return b; });
+      ['Walka zaczyna sie teraz.', 'Rudy ork atakuje cie!', 'Rudy ork atakuje cie!', 'Rudy ork atakuje cie!', 'Cisza.']
+        .forEach(line => triggers.parseLine(new AnsiAwareBuffer(line), ''));
+      return calls;
+    };
+    const off = run(false);
+    expect(off).toContain('open>ork');
+    expect(off).toContain('one-time');
+    expect(off).not.toContain('doomed');
     expect(run(true)).toEqual(off);
   });
 

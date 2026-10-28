@@ -15,11 +15,11 @@
  * repeated end the current run; a top-level `|` means nothing is required at all.
  */
 
-interface Prefilter {
-    /** As extracted from the source, for reports. */
+export interface Prefilter {
+    /** As extracted from the source, for reports: one literal, or alternatives joined by " | ". */
     raw: string;
-    /** What is searched for: lowercased when the regex is case-insensitive. */
-    literal: string;
+    /** What is searched for, any one of which suffices: lowercased when the regex is case-insensitive. */
+    literals: string[];
     caseInsensitive: boolean;
 }
 
@@ -147,14 +147,165 @@ export function requiredLiteral(source: string, flags = ""): string | null {
     return best.length >= MIN_LITERAL_LENGTH ? best : null;
 }
 
-function prefilterFor(pattern: RegExp): Prefilter | null {
+/** Most alternatives a prefilter may list; past that the check stops paying for itself. */
+const MAX_ALTERNATIVES = 16;
+
+/**
+ * Text every match of `source` must contain, as alternatives any one of which is
+ * required: `["Lekko ranisz", "Ranisz"]` for `^(Lekko ranisz|Ranisz) `. Null when nothing
+ * is provably required.
+ *
+ * Where {@link requiredLiteral} finds a run of plain text, that run is the answer. Only
+ * when it finds none does this look further, into alternations and groups the run
+ * extraction treats as opaque - mostly the Mudlet-synced gags, written as
+ * `(^[ >]*... text ...)` or `^(?:one phrase|another phrase)`. A group counts only when
+ * it must take part in every match: not optional, not a lookaround.
+ */
+export function requiredLiterals(source: string, flags = ""): string[] | null {
+    const literal = requiredLiteral(source, flags);
+    if (literal !== null) return [literal];
+    if (flags.includes("y")) return null;
+    if (flags.includes("i") && (flags.includes("u") || flags.includes("v"))) return null;
+    return requirementOf(source);
+}
+
+/** Best requirement of a pattern or group body: a union over its top-level branches. */
+function requirementOf(source: string): string[] | null {
+    const branches = splitTopLevel(source);
+    if (branches === null) return null;
+    if (branches.length === 1) return requirementOfSequence(branches[0]);
+    const union = new Set<string>();
+    for (const branch of branches) {
+        const required = requirementOfSequence(branch);
+        if (required === null) return null;
+        required.forEach(l => union.add(l));
+        if (union.size > MAX_ALTERNATIVES) return null;
+    }
+    return [...union];
+}
+
+/** A branch without top-level `|`: its own literal run, or the best mandatory group's. */
+function requirementOfSequence(source: string): string[] | null {
+    const literal = requiredLiteral(source);
+    let best: string[] | null = literal !== null ? [literal] : null;
+    const score = (r: string[]) => Math.min(...r.map(l => l.length));
+    for (const body of mandatoryGroupBodies(source)) {
+        const required = requirementOf(body);
+        if (required !== null && (best === null || score(required) > score(best))) best = required;
+    }
+    return best;
+}
+
+/** Index after the class starting at `i` ("["), or -1. */
+function skipClassAt(source: string, i: number): number {
+    let j = i + 1;
+    if (source[j] === "^") j++;
+    if (source[j] === "]") j++;
+    while (j < source.length && source[j] !== "]") {
+        if (source[j] === "\\") j++;
+        j++;
+    }
+    return j < source.length ? j + 1 : -1;
+}
+
+/** Index of the ")" closing the group opened at `i`, or -1. */
+function closeOfGroupAt(source: string, i: number): number {
+    let depth = 0;
+    for (let j = i; j < source.length; j++) {
+        const c = source[j];
+        if (c === "\\") {
+            j++;
+        } else if (c === "[") {
+            const end = skipClassAt(source, j);
+            if (end === -1) return -1;
+            j = end - 1;
+        } else if (c === "(") {
+            depth++;
+        } else if (c === ")") {
+            depth--;
+            if (depth === 0) return j;
+        }
+    }
+    return -1;
+}
+
+/** The top-level `|` branches of `source`, or null when it does not parse. */
+function splitTopLevel(source: string): string[] | null {
+    const branches: string[] = [];
+    let start = 0;
+    for (let i = 0; i < source.length; i++) {
+        const c = source[i];
+        if (c === "\\") {
+            i++;
+        } else if (c === "[") {
+            const end = skipClassAt(source, i);
+            if (end === -1) return null;
+            i = end - 1;
+        } else if (c === "(") {
+            const close = closeOfGroupAt(source, i);
+            if (close === -1) return null;
+            i = close;
+        } else if (c === ")") {
+            return null;
+        } else if (c === "|") {
+            branches.push(source.slice(start, i));
+            start = i + 1;
+        }
+    }
+    branches.push(source.slice(start));
+    return branches;
+}
+
+/**
+ * Bodies of the top-level groups every match must go through: capturing, `(?:` and
+ * named groups that are not optional. Lookarounds and inline-flag groups are skipped.
+ */
+function mandatoryGroupBodies(source: string): string[] {
+    const bodies: string[] = [];
+    for (let i = 0; i < source.length; i++) {
+        const c = source[i];
+        if (c === "\\") {
+            i++;
+            continue;
+        }
+        if (c === "[") {
+            const end = skipClassAt(source, i);
+            if (end === -1) return [];
+            i = end - 1;
+            continue;
+        }
+        if (c !== "(") continue;
+        const close = closeOfGroupAt(source, i);
+        if (close === -1) return [];
+        let bodyStart = -1;
+        if (source[i + 1] !== "?") {
+            bodyStart = i + 1;
+        } else if (source[i + 2] === ":") {
+            bodyStart = i + 3;
+        } else if (source[i + 2] === "<" && source[i + 3] !== "=" && source[i + 3] !== "!") {
+            const nameEnd = source.indexOf(">", i);
+            if (nameEnd !== -1 && nameEnd < close) bodyStart = nameEnd + 1;
+        }
+        const q = source[close + 1];
+        const optional = q === "?" || q === "*" || (q === "{" && /^\{0[,}]/.test(source.slice(close + 1)));
+        if (bodyStart !== -1 && !optional) bodies.push(source.slice(bodyStart, close));
+        i = close;
+    }
+    return bodies;
+}
+
+/** The prefilter for `pattern`, or null when it has none. Cached per regex. */
+export function prefilterFor(pattern: RegExp): Prefilter | null {
     let entry = cache.get(pattern);
     if (entry === undefined) {
-        const literal = requiredLiteral(pattern.source, pattern.flags);
+        const required = requiredLiterals(pattern.source, pattern.flags);
         const caseInsensitive = pattern.flags.includes("i");
-        entry = literal === null
-            ? null
-            : {raw: literal, literal: caseInsensitive ? literal.toLowerCase() : literal, caseInsensitive};
+        if (required === null) {
+            entry = null;
+        } else {
+            const literals = caseInsensitive ? required.map(l => l.toLowerCase()) : required;
+            entry = {raw: required.join(" | "), literals, caseInsensitive};
+        }
         cache.set(pattern, entry);
     }
     return entry;
@@ -173,12 +324,20 @@ function lowered(line: string): string {
     return lastLowered;
 }
 
-/** False only when `pattern` provably cannot match `line`. */
-export function mayMatch(pattern: RegExp, line: string): boolean {
-    const prefilter = prefilterFor(pattern);
+/** False only when a regex with this prefilter provably cannot match `line`. */
+export function prefilterAllows(prefilter: Prefilter | null, line: string): boolean {
     if (prefilter === null) return true;
     const haystack = prefilter.caseInsensitive ? lowered(line) : line;
-    return haystack.includes(prefilter.literal);
+    const literals = prefilter.literals;
+    for (let i = 0; i < literals.length; i++) {
+        if (haystack.includes(literals[i])) return true;
+    }
+    return false;
+}
+
+/** False only when `pattern` provably cannot match `line`. */
+export function mayMatch(pattern: RegExp, line: string): boolean {
+    return prefilterAllows(prefilterFor(pattern), line);
 }
 
 /**

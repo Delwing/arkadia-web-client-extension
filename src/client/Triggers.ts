@@ -133,6 +133,31 @@ export class Trigger {
         }
     }
 
+    /**
+     * True only when executing this trigger on `plainLine` provably does nothing: nothing
+     * is held open by `stayOpenLines`, and every pattern is a regex whose prefilter rules
+     * the line out. The line pass checks this first, so the ~1000 triggers that do not
+     * apply to a given line cost one prefilter check each instead of a full execute.
+     */
+    cannotMatch(plainLine: string): boolean {
+        if (this.openInstances.length > 0) return false;
+        const pattern = this.pattern;
+        if (pattern instanceof RegExp) {
+            if (mayMatch(pattern, plainLine)) return false;
+            // Left as String.match leaves a global regex that did not match.
+            if (pattern.global) pattern.lastIndex = 0;
+            return true;
+        }
+        if (!Array.isArray(pattern) || pattern.length === 0) return false;
+        for (const sub of pattern) {
+            if (!(sub instanceof RegExp) || mayMatch(sub, plainLine)) return false;
+        }
+        for (const sub of pattern) {
+            if ((sub as RegExp).global) (sub as RegExp).lastIndex = 0;
+        }
+        return true;
+    }
+
     execute(line: AnsiAwareBuffer, type: string, originalText?: string, plainLine?: string): AnsiAwareBuffer | null {
         // Use pre-trimmed plainLine if provided, otherwise compute from originalText/line.text
         if (plainLine === undefined) {
@@ -402,7 +427,10 @@ export default class Triggers {
         };
 
         if (this.trace) this.trace.pass = 'line';
+        // A trigger the prefilter rules out would only cost its own execute call.
+        const skipRuledOut = this.literalPrefilter;
         for (const trigger of this.triggers.values()) {
+            if (skipRuledOut && trigger.cannotMatch(plain)) continue;
             const result = trigger.execute(line, type, originalText, plain);
             if (result === null) {
                 return null;
