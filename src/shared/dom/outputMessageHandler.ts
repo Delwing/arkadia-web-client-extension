@@ -86,6 +86,7 @@ function applyTimestampVisibility() {
     if (currentStickyArea) {
         currentStickyArea.classList.toggle(TIMESTAMP_CLASS, timestampsVisible);
     }
+    if (timestampsVisible) fillLineChrome();
 }
 
 function applyMessageTypeVisibility() {
@@ -94,6 +95,34 @@ function applyMessageTypeVisibility() {
     }
     if (currentStickyArea) {
         currentStickyArea.classList.toggle(MESSAGE_TYPE_CLASS, messageTypesVisible);
+    }
+    if (messageTypesVisible) fillLineChrome();
+}
+
+/**
+ * The stock wrapper builds its timestamp and message-type spans only while their
+ * toggle is on: hidden, they were a quarter of the output's DOM nodes, laid out and
+ * styled on every frame for nothing. Turning a toggle on gives the lines already
+ * on screen the spans they were built without.
+ */
+function fillLineChrome() {
+    for (const container of [currentOutputWrapper, currentStickyArea]) {
+        if (!container) continue;
+        for (const wrapper of container.querySelectorAll<HTMLElement>('.output_msg')) {
+            addLineChrome(wrapper);
+        }
+    }
+}
+
+function addLineChrome(wrapper: HTMLElement) {
+    const text = wrapper.querySelector(':scope > .output_msg_text');
+    const content = text?.querySelector(':scope > .output_msg_content');
+    if (!text || !content) return;
+    if (timestampsVisible && !text.querySelector(':scope > .output-timestamp')) {
+        text.insertBefore(createTimestampElement(Number(wrapper.dataset.timestamp)), text.firstChild);
+    }
+    if (messageTypesVisible && !text.querySelector(':scope > .output-message-type')) {
+        text.insertBefore(createMessageTypeElement(wrapper.dataset.messageType), content);
     }
 }
 
@@ -179,9 +208,9 @@ function createMessageWrapper(
     const messageDiv = document.createElement('div');
     messageDiv.classList.add('output_msg_text');
     wrapper.dataset.timestamp = `${timestamp}`;
+    // Kept so the type span can be added later (see fillLineChrome).
+    if (type !== undefined) wrapper.dataset.messageType = type;
 
-    const timestampEl = createTimestampElement(timestamp);
-    const typeEl = createMessageTypeElement(type);
     const contentSpan = document.createElement('span');
     contentSpan.classList.add('output_msg_content');
 
@@ -205,8 +234,8 @@ function createMessageWrapper(
 
     contentSpan.style.whiteSpace = 'pre-wrap';
 
-    messageDiv.appendChild(timestampEl);
-    messageDiv.appendChild(typeEl);
+    if (timestampsVisible) messageDiv.appendChild(createTimestampElement(timestamp));
+    if (messageTypesVisible) messageDiv.appendChild(createMessageTypeElement(type));
     messageDiv.appendChild(contentSpan);
     wrapper.appendChild(messageDiv);
 

@@ -79,12 +79,20 @@ sizes); the rest is the normal per-frame work for a ~1000-message scrollback.
 `content-visibility: auto` on output messages made it worse: layout and pre-paint
 grew more than paint shrank.
 
+## Output DOM
+
+The stock output wrapper builds a line's timestamp and message-type spans only while
+their toggle is on, and fills them into the lines on screen when it is switched on.
+Hidden, they were ~23% of the output's DOM nodes; dropping them took ~7% off the
+per-line cost and ~5% off main-thread time in the steady scenario (averaged over
+five `yarn perf` pairs).
+
 ## Remaining opportunities
 
 - **Session logger:** one IndexedDB transaction per output line
-  (`sessionLogger.ts`). Batching per frame would save ~25 us/line.
+  (`sessionLogger.ts`). Not worth batching: with logging switched off entirely,
+  main-thread time drops by at most ~4% (steady) and not measurably in a burst, and
+  batching would only remove part of that.
 - **Bursts block the main thread:** a 200-line message is processed synchronously
   (~60-80 ms here). Chunking the trigger pass across frames would keep input
   responsive during login dumps, at the cost of ordering complexity.
-- **Fewer nodes per output message:** every line gets timestamp and message-type
-  spans that stay hidden unless their toggles are on.
