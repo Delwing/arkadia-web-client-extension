@@ -189,8 +189,14 @@ button code was dead (no `#wake-lock-button` exists) and is removed.
    silently stopped measuring at start-up when the output moved into the tree.
    `index.html`'s body is `<div id="root">` (`display: contents`), the two tooltip
    elements (`#map-note-tooltip`, `#hover-tooltip`, still filled imperatively) and
-   the main script; the six unused placeholders are gone. Moving the two tooltips
-   into `<Overlays>` is all that is left of Phase 2.
+   the main script; the six unused placeholders are gone.
+10. **`<Overlays>`** — **done.** `app/Overlays.tsx` holds what floats over the
+    page: the menus, on-screen buttons, widgets and boss key (each renders into
+    `document.body` itself) and the two tooltip elements, still filled by
+    `mapNoteTooltip.ts` and `shared/dom/tooltip.ts`. `App.tsx` is `<Shell>` +
+    `<Overlays>`.
+
+**Phase 2 is done:** `index.html`'s body is `<div id="root">` and the main script.
 
 **Done when** `index.html`'s `<body>` is `<div id="root"></div>` plus the script
 tags, and `grep createPortal src/web/app` finds no placeholder target.
