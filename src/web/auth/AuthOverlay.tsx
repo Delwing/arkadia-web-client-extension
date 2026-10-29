@@ -1,6 +1,6 @@
 import { type ComponentProps, type CSSProperties, type FormEvent, useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useAppServices } from "../app/appServices";
-import { Island } from "../app/Island";
+import { ErrorBoundary } from "../app/ErrorBoundary";
 import { AccountScreen } from "../account/AccountScreen";
 import { ProxyControls } from "../hostProxy/ProxyControls";
 import type { ProxyMode } from "../MudClient";
@@ -217,7 +217,7 @@ export function AuthOverlay({ proxyControls, getProxyMode, onDismissed }: AuthOv
                     </div>
                     {/* Konto: the screens that replace the card, while #auth-panel carries is-account. */}
                     <div id="account-root">
-                        <Island name="AccountScreen"><AccountScreen session={accountSession} /></Island>
+                        <ErrorBoundary name="AccountScreen"><AccountScreen session={accountSession} /></ErrorBoundary>
                     </div>
                     <div className="auth-or"><span></span>albo<span></span></div>
                     <button id="connect-button" type="button" className="auth-btn auth-btn--two" onClick={() => connection.toggle()}>
@@ -235,19 +235,19 @@ export function AuthOverlay({ proxyControls, getProxyMode, onDismissed }: AuthOv
                 </button>
                 {/* The connection footer: the mode (direct / helper / proxy), what the helper is doing, and each mode's settings. */}
                 <div id="proxy-controls-root" className={connectionOpen ? "auth-conn is-open" : "auth-conn"}>
-                    <Island name="ProxyControls">
+                    <ErrorBoundary name="ProxyControls">
                         <ProxyControls
                             {...proxyControls}
                             onModeChange={(mode) => { setProxyMode(mode); proxyControls.onModeChange(mode); }}
                             onUseProxy={(url) => { proxyControls.onUseProxy(url); setProxyMode(getProxyMode()); }}
                             onBlockedChange={setBlocked}
                         />
-                    </Island>
+                    </ErrorBoundary>
                 </div>
             </section>
             <div className="auth-meta">
                 <a className="auth-coffee" href="https://buycoffee.to/dargoth" target="_blank" rel="noopener noreferrer"><img src="https://buycoffee.to/static/img/share/share-button-primary--pl.png" alt="Postaw kawę dla dargoth na buycoffee.to" /></a>
-                <Island name="CommitInfo"><CommitInfo /></Island>
+                <ErrorBoundary name="CommitInfo"><CommitInfo /></ErrorBoundary>
             </div>
         </div>
     );

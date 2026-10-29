@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAppServices } from "./appServices";
-import { Island } from "./Island";
+import { ErrorBoundary } from "./ErrorBoundary";
 import { AppModalShell } from "../modals/AppModalShell";
 import SettingsDialog from "../settings/SettingsDialog";
 import { SAVE_SETTINGS_EVENT } from "../settings/categories";
@@ -58,15 +58,15 @@ export function AppModals() {
                 }
             >
                 <div id="settings-root" className="app-modal__panel">
-                    <Island name="SettingsDialog">
+                    <ErrorBoundary name="SettingsDialog">
                         <SettingsDialog soundManager={client.SoundManager} onEnableNotifications={() => client.enableNotifications()} />
-                    </Island>
+                    </ErrorBoundary>
                 </div>
             </AppModalShell>
 
             <AppModalShell id="character-management-modal" title="Zarządzanie postaciami">
                 <div id="character-management-root">
-                    <Island name="CharacterManagement"><CharacterManagement /></Island>
+                    <ErrorBoundary name="CharacterManagement"><CharacterManagement /></ErrorBoundary>
                 </div>
             </AppModalShell>
 
@@ -79,9 +79,9 @@ export function AppModals() {
                 headerSlot={{ id: "binds-header-slot", ref: setBindsHeaderSlot }}
             >
                 <div id="binds-options">
-                    <Island name="Keys">
+                    <ErrorBoundary name="Keys">
                         <Keys helperConnection={isHelperSupported() ? helperConnection : null} headerSlot={bindsHeaderSlot} />
-                    </Island>
+                    </ErrorBoundary>
                 </div>
             </AppModalShell>
 
@@ -93,7 +93,7 @@ export function AppModals() {
                 bodyClassName="app-modal__body--panel"
             >
                 <div id="scripts-options" className="app-modal__panel">
-                    <Island name="Scripts"><Scripts /></Island>
+                    <ErrorBoundary name="Scripts"><Scripts /></ErrorBoundary>
                 </div>
             </AppModalShell>
 
@@ -104,13 +104,13 @@ export function AppModals() {
                 bodyClassName="app-modal__body--flush"
             >
                 <div id="automation-options">
-                    <Island name="AutomationWindow"><AutomationWindow /></Island>
+                    <ErrorBoundary name="AutomationWindow"><AutomationWindow /></ErrorBoundary>
                 </div>
             </AppModalShell>
 
             <AppModalShell id="recordings-modal" title="Nagrania" dialogClassName="app-modal__dialog--lg">
                 <div id="recordings-options">
-                    <Island name="Recordings"><Recordings /></Island>
+                    <ErrorBoundary name="Recordings"><Recordings /></ErrorBoundary>
                 </div>
             </AppModalShell>
 
@@ -121,13 +121,13 @@ export function AppModals() {
                 bodyClassName="app-modal__body--flush"
             >
                 <div id="places-options">
-                    <Island name="Places"><Places /></Island>
+                    <ErrorBoundary name="Places"><Places /></ErrorBoundary>
                 </div>
             </AppModalShell>
 
             <AppModalShell id="helper-modal" title="Arkadia Helper" bodyClassName="app-modal__body--flush">
                 <div id="helper-options">
-                    <Island name="HelperSettings"><HelperSettings helperConnection={helperConnection} /></Island>
+                    <ErrorBoundary name="HelperSettings"><HelperSettings helperConnection={helperConnection} /></ErrorBoundary>
                 </div>
             </AppModalShell>
 

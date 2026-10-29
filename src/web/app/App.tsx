@@ -1,20 +1,9 @@
 import { useAppServices } from "./appServices";
-import { Island } from "./Island";
-import { AppModals } from "./AppModals";
-import { RecordingStopButton } from "./shell/RecordingStopButton";
-import CommandLine, { type CommandLineDeps } from "../commandInput/CommandLine";
-import { AuthOverlay, type AuthOverlayProps } from "../auth/AuthOverlay";
-import type { ToastStackProps } from "../notifications/ToastStack";
-import { GameOutput } from "./shell/GameOutput";
-import { LayoutManagerWrapper } from "../layout";
+import { ErrorBoundary } from "./ErrorBoundary";
+import { Shell, type ShellProps } from "./shell/Shell";
 import { ContextMenuHost } from "../contextMenu";
 import { suppressTitleUpdates } from "../FightTitle";
-import { MapPane } from "./shell/MapPane";
-import { ObjectLists } from "./shell/ObjectLists";
-import { mapHost, objectListHost, objectListOthersHost } from "./shell/mapHosts";
-import type { MapBootstrap } from "../map/mapBootstrap";
 import { PlaybackControls } from "@web-ui/components";
-import StockFooter from "@web-ui/footer/layout/StockFooter";
 import MobileDirectionButtons from "@web-ui/buttons/MobileDirectionButtons";
 import DesktopButtons from "@web-ui/buttons/DesktopButtons";
 import MobileCommandRadial from "@web-ui/buttons/MobileCommandRadial";
@@ -23,68 +12,35 @@ import { WidgetLayer } from "@web-ui/widgets/WidgetLayer";
 import BossKeyOverlay from "@web-ui/bossKey/BossKeyOverlay";
 
 /** The wiring that still lives in main.ts, handed to the parts that need it. */
-export interface AppProps {
-    commandLine: CommandLineDeps;
-    auth: AuthOverlayProps;
-    /** Absent when the page has no #notification-center. */
-    toasts: ToastStackProps | null;
-    /** The map download, for the progress bar. */
-    mapLoad: MapBootstrap;
-}
+export type AppProps = ShellProps;
 
 const getOutputArea = () => document.getElementById("main_text_output_msg_wrapper");
 
 /**
- * The stock UI's React tree. Each island renders into the index.html element it
- * always had (or portals itself), so the page's DOM and CSS are unchanged; what
- * changes is that they share one root and the services context.
+ * The stock UI: the page itself, and the overlays over it, which render into
+ * document.body on their own (menus, on-screen buttons, widgets, the boss key).
+ * Each region has its own error boundary.
  */
-export function App({ commandLine, auth, toasts, mapLoad }: AppProps) {
+export function App(props: AppProps) {
     const { client } = useAppServices();
 
     return (
         <>
-            {/* The map's and the object lists' default places; layout panels take them over while open. */}
-            <Island name="MapPane" target="map-pane-root"><MapPane mapLoad={mapLoad} /></Island>
-            <Island name="ObjectLists"><ObjectLists /></Island>
+            <Shell {...props} />
 
-            <Island name="CommandLine" target="command-line-root"><CommandLine deps={commandLine} /></Island>
-            <Island name="GameOutput" target="game-output-root"><GameOutput toasts={toasts} /></Island>
-
-            {/* Logowanie: the card over the game while offline. */}
-            <Island name="AuthOverlay" target="auth-root"><AuthOverlay {...auth} /></Island>
-
-            <Island name="RecordingStopButton" target="recording-button-root"><RecordingStopButton /></Island>
-
-            {/* The footer: the location binds and the status line, as the footer layout arranges them. */}
-            <Island name="StockFooter" target="footer-layout"><StockFooter /></Island>
-
-            {/* These portal themselves to document.body. */}
-            <Island name="PlaybackControls"><PlaybackControls /></Island>
-            <Island name="ContextMenuHost"><ContextMenuHost /></Island>
-            <Island name="MobileDirectionButtons"><MobileDirectionButtons client={client} /></Island>
-            <Island name="DesktopButtons"><DesktopButtons client={client} /></Island>
-            <Island name="MobileCommandRadial"><MobileCommandRadial client={client} /></Island>
-            <Island name="MobileJoysticks"><MobileJoysticks client={client} /></Island>
+            <ErrorBoundary name="PlaybackControls"><PlaybackControls /></ErrorBoundary>
+            <ErrorBoundary name="ContextMenuHost"><ContextMenuHost /></ErrorBoundary>
+            <ErrorBoundary name="MobileDirectionButtons"><MobileDirectionButtons client={client} /></ErrorBoundary>
+            <ErrorBoundary name="DesktopButtons"><DesktopButtons client={client} /></ErrorBoundary>
+            <ErrorBoundary name="MobileCommandRadial"><MobileCommandRadial client={client} /></ErrorBoundary>
+            <ErrorBoundary name="MobileJoysticks"><MobileJoysticks client={client} /></ErrorBoundary>
             {/* Widgets over the game output (Zegar, Witalne…). */}
-            <Island name="WidgetLayer"><WidgetLayer getArea={getOutputArea} /></Island>
+            <ErrorBoundary name="WidgetLayer"><WidgetLayer getArea={getOutputArea} /></ErrorBoundary>
             {/* Boss key: Pause / ScrollLock drops a fake Word window over the whole
                 client, freezing the "Arkadia [5/7]" tab title while it is up. */}
-            <Island name="BossKeyOverlay">
+            <ErrorBoundary name="BossKeyOverlay">
                 <BossKeyOverlay client={client} soundControl={client.SoundManager} suppressTitle={suppressTitleUpdates} />
-            </Island>
-
-            {/* The page-level windows (Ustawienia, Klawisze, Miejsca…). */}
-            <Island name="AppModals" target="app-modals"><AppModals /></Island>
-
-            {/* The layout manager, with every dockable popup. */}
-            <Island name="LayoutManager" target="layout-manager-root">
-                <LayoutManagerWrapper
-                    mapHost={mapHost}
-                    objectListHost={objectListHost}
-                    objectListOthersHost={objectListOthersHost}
-                />
-            </Island>
+            </ErrorBoundary>
         </>
     );
 }

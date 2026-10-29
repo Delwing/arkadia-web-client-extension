@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act } from 'react';
+import { act, type ReactNode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 
 const client = vi.hoisted(() => {
@@ -17,9 +17,17 @@ const client = vi.hoisted(() => {
 vi.mock('@web/MudClient.ts', () => ({ default: client }));
 vi.mock('@web/outputContextMenu.tsx', () => ({ setupOutputContextMenu: vi.fn() }));
 vi.mock('@web/outputSearch/installOutputSearch.ts', () => ({ installOutputSearch: vi.fn() }));
+const measurer = vi.hoisted(() => ({ installContentWidthMeasurer: vi.fn() }));
+vi.mock('@web/contentWidthMeasurer.ts', () => measurer);
 
 import { GameOutput } from '@web/app/shell/GameOutput';
 import { bufferOutputUntilMounted, getOutputHandler } from '@web/app/shell/outputHandle';
+import { AppProviders } from '@web/app/AppProviders';
+import type { AppServices } from '@web/app/appServices';
+
+const gameClient = { setContentWidth: vi.fn() };
+const services = { client: gameClient } as unknown as AppServices;
+const withServices = (node: ReactNode) => <AppProviders services={services}>{node}</AppProviders>;
 
 // React 19 requires this flag for act() outside a test framework integration.
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -46,7 +54,7 @@ describe('GameOutput', () => {
         client.emit('message', 'pierwsza', 'text', 1);
         client.emit('message', 'druga', 'text', 2);
 
-        act(() => root.render(<GameOutput toasts={null} />));
+        act(() => root.render(withServices(<GameOutput toasts={null} />)));
         expect(lines()).toEqual(['pierwsza', 'druga']);
         // The buffer let go of the client; only the engine listens now.
         expect(client.count('message')).toBe(1);
@@ -58,10 +66,12 @@ describe('GameOutput', () => {
         expect(wrapper.firstElementChild!.id).toBe('notification-center');
         expect(wrapper.lastElementChild!.id).toBe('split-bottom');
         expect(getOutputHandler()).not.toBeNull();
+        // The column width is measured once the output exists.
+        expect(measurer.installContentWidthMeasurer).toHaveBeenCalledWith(gameClient);
     });
 
     it('lets go of the client when it unmounts', () => {
-        act(() => root.render(<GameOutput toasts={null} />));
+        act(() => root.render(withServices(<GameOutput toasts={null} />)));
         act(() => root.unmount());
         root = createRoot(container);
         expect(client.count('message')).toBe(0);
@@ -71,7 +81,7 @@ describe('GameOutput', () => {
     it('renders the toasts inside the notification strip', () => {
         const snapshot = { toasts: [], expanded: false };
         const store = { subscribe: () => () => undefined, getSnapshot: () => snapshot, refresh: vi.fn() };
-        act(() => root.render(<GameOutput toasts={{ store: store as any, runAction: vi.fn() }} />));
+        act(() => root.render(withServices(<GameOutput toasts={{ store: store as any, runAction: vi.fn() }} />)));
         const strip = document.getElementById('notification-center')!;
         expect(strip.hasAttribute('data-output-keep')).toBe(true);
         expect(strip.style.getPropertyValue('--toast-viewport-h')).toMatch(/px$/);

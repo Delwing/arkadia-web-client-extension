@@ -39,78 +39,8 @@
      with its expander, so both are there from the first paint;
      uiSettingsCore.apply() rewrites them from the player's settings. -->
 <body data-map-position="top-overlay" data-mobile-footer="1" data-footer-expand="toggle">
-<div id="main-container">
-    <div id="content-area">
-        <div id="layout-manager-root"></div>
-        <!-- #iframe-container, the map's default place: src/web/app/shell/MapPane.tsx -->
-        <div id="map-pane-root" style="display: contents"></div>
-        <!-- #main_text_output_msg_wrapper, the game output: src/web/app/shell/GameOutput.tsx -->
-        <div id="game-output-root" style="display: contents"></div>
-        <div id="compass-rose-box" class="compass-rose-box" style="display:none">
-            <div class="compass-rose-special-exits"></div>
-            <div class="compass-rose-grid">
-                <span class="cr-dir" data-dir="nw">NW</span>
-                <span class="cr-dir" data-dir="n">N</span>
-                <span class="cr-dir" data-dir="ne">NE</span>
-                <span class="cr-dir cr-ud" data-dir="u">U</span>
-                <span class="cr-dir" data-dir="w">W</span>
-                <span class="cr-center">X</span>
-                <span class="cr-dir" data-dir="e">E</span>
-                <span class="cr-sep"></span>
-                <span class="cr-dir" data-dir="sw">SW</span>
-                <span class="cr-dir" data-dir="s">S</span>
-                <span class="cr-dir" data-dir="se">SE</span>
-                <span class="cr-dir cr-ud" data-dir="d">D</span>
-            </div>
-        </div>
-    </div>
-    <!-- The footer: #multi-binds and #char-state, as @web-ui/footer/layout arranges them. -->
-    <div id="footer-layout"></div>
-    <!-- #objects-list / #objects-list-others are attached here unless a layout panel
-         holds them: src/web/app/shell/ObjectLists.tsx -->
-    <!-- Zatrzymaj i zapisz while recording: src/web/app/shell/RecordingStopButton.tsx -->
-    <div id="recording-button-root" style="display: contents"></div>
-
-    <span id="content-width-measure" style="visibility:hidden;position:absolute;white-space:pre">M</span>
-    <!-- Page-level windows (Ustawienia, Klawisze, Miejsca…): src/web/app/AppModals.tsx,
-         opened by id through src/web/modals/appModal.ts; styled in style.css ("app-modal"). -->
-    <div id="app-modals" style="display: contents"></div>
-    <div id="knowledge-root"></div>
-    <div id="knowledge-details-root"></div>
-    <div id="clock-root"></div>
-    <div id="contracts-root"></div>
-    <!-- Command line (history, field, microphone, send, the menu): CommandLine.tsx -->
-    <div id="command-line-root" style="display: contents"></div>
-
-    <div id="layout-bottom-dock-host"></div>
-    <!-- The side docks portal here when they span the full height (layout.css). -->
-    <div id="layout-left-dock-host"></div>
-    <div id="layout-right-dock-host"></div>
-
-    <!-- Logowanie: src/web/auth/AuthOverlay.tsx (#auth-overlay and the ids password
-         managers recognise). -->
-    <div id="auth-root" style="display: contents"></div>
-
-
-    <div id="logs-modal" class="app-modal app-modal--logs" hidden>
-        <div class="app-modal__dialog app-modal__dialog--xl app-modal__dialog--fill app-modal__dialog--phone-full logs-modal-dialog" tabindex="-1">
-            <!-- No header of the shell: the viewer renders its own, with the
-                 session title, the export menu and the close control. -->
-            <div class="app-modal__body app-modal__body--panel logs-modal-body">
-                <!-- Filled by logBrowserMount.tsx -->
-            </div>
-        </div>
-    </div>
-
-    <!-- #mobile-direction-buttons is now rendered by the shared
-         MobileDirectionButtons React component (src/ui/web/buttons), mounted
-         in main.ts — it portals to document.body itself. -->
-    <!-- #mobile-command-radial is now rendered by the shared
-         MobileCommandRadial React component (src/ui/web/buttons), mounted
-         in main.ts — it portals to document.body itself. -->
-</div>
-<div id="letter-composer-root"></div>
-<div id="herb-ui-root"></div>
+<!-- The page: src/web/app/App.tsx (one React tree; src/web/main.ts renders it). -->
+<div id="root" style="display: contents"></div>
 <div id="map-note-tooltip" class="map-note-tooltip"></div>
 <div id="hover-tooltip" class="hover-tooltip"></div>
 <script type="module" src="/src/web/main.ts"></script>

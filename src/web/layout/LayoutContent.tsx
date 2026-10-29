@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import type { MovableHost } from './movableHost';
 import { createPortal } from 'react-dom';
 import { DockArea } from './components/DockArea';
@@ -297,11 +297,25 @@ function BuiltInPortal({
   return createPortal(<>{children}</>, manager.getOrCreatePortalTarget(id));
 }
 
+/**
+ * The page element with this id. The shell renders the dock hosts in the same
+ * commit as the layout, so on the first render they are not in the document yet:
+ * look again once they are, before the browser paints.
+ */
+function useHostElement(id: string): HTMLElement | null {
+  const [host, setHost] = useState<HTMLElement | null>(() => document.getElementById(id));
+  useLayoutEffect(() => {
+    const found = document.getElementById(id);
+    if (found !== host) setHost(found);
+  }, [id, host]);
+  return host;
+}
+
 /** Portals the bottom DockArea into #layout-bottom-dock-host so it sits below
  *  #input-area in DOM order (and therefore below it visually inside the
  *  column-flex #main-container). */
 function BottomDockPortal({ children }: { children: React.ReactNode }) {
-  const host = document.getElementById('layout-bottom-dock-host');
+  const host = useHostElement('layout-bottom-dock-host');
   if (!host) return null;
   return createPortal(<>{children}</>, host);
 }
@@ -320,9 +334,8 @@ function SideDockPortal({
   vertical: boolean;
   children: React.ReactNode;
 }) {
-  const host = vertical
-    ? document.getElementById(`layout-${side}-dock-host`)
-    : null;
+  const sideHost = useHostElement(`layout-${side}-dock-host`);
+  const host = vertical ? sideHost : null;
   if (!host) return <>{children}</>;
   return createPortal(<>{children}</>, host);
 }

@@ -23,11 +23,13 @@ export default function initInlineCompassRose(client: Client, aliases?: Alias[])
     let mode = 0; // 0=off, 1=inline, 2=box, 3=inline-ascii, 4=box-ascii
     let unsubscribeExits: (() => void) | undefined;
 
-    const boxContainer = document.getElementById('compass-rose-box') as HTMLDivElement | null;
+    // The box is part of the page the UI renders, which happens after the scripts
+    // start, so it is looked up when drawn rather than held from here.
+    const getBox = () => document.getElementById('compass-rose-box') as HTMLDivElement | null;
 
     // Click handler for directions and special exits (event delegation)
-    boxContainer?.addEventListener('click', (e) => {
-        const target = (e.target as HTMLElement).closest<HTMLElement>('.cr-clickable');
+    document.addEventListener('click', (e) => {
+        const target = (e.target as HTMLElement | null)?.closest?.<HTMLElement>('#compass-rose-box .cr-clickable');
         if (!target) return;
         const dir = target.dataset.dir;
         if (dir) {
@@ -357,6 +359,7 @@ export default function initInlineCompassRose(client: Client, aliases?: Alias[])
     // --- Mode 2: floating box compass rose ---
 
     function updateBoxCompassRose() {
+        const boxContainer = getBox();
         if (!boxContainer) return;
 
         boxContainer.style.display = 'flex';
@@ -396,6 +399,7 @@ export default function initInlineCompassRose(client: Client, aliases?: Alias[])
     // --- Mode 4: floating box ASCII compass rose ---
 
     function updateBoxCompassRoseAscii() {
+        const boxContainer = getBox();
         if (!boxContainer) return;
 
         boxContainer.style.display = 'flex';
@@ -444,6 +448,7 @@ export default function initInlineCompassRose(client: Client, aliases?: Alias[])
     }
 
     function hideBox() {
+        const boxContainer = getBox();
         if (boxContainer) {
             boxContainer.style.display = 'none';
         }

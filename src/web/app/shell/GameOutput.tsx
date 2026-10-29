@@ -6,6 +6,8 @@ import mudClient from "@web/MudClient.ts";
 import { setupOutputContextMenu } from "@web/outputContextMenu.tsx";
 import { installOutputSearch } from "@web/outputSearch/installOutputSearch.ts";
 import { ToastStack, type ToastStackProps } from "@web/notifications/ToastStack.tsx";
+import { installContentWidthMeasurer } from "@web/contentWidthMeasurer.ts";
+import { useAppServices } from "../appServices";
 import { attachOutputHandler } from "./outputHandle";
 
 const STICKY_LINES = 50;
@@ -19,6 +21,7 @@ const DOUBLE_CLICK_TIMEOUT_MS = 300;
  * strip or the pane, so React keeps owning those two.
  */
 export function GameOutput({ toasts }: { toasts: ToastStackProps | null }) {
+    const { client } = useAppServices();
     const wrapperRef = useRef<HTMLDivElement>(null);
     const noticesRef = useRef<HTMLDivElement>(null);
     const splitBottomRef = useRef<HTMLDivElement>(null);
@@ -129,6 +132,10 @@ export function GameOutput({ toasts }: { toasts: ToastStackProps | null }) {
         const resizeObserver = new ResizeObserver(measure);
         resizeObserver.observe(outputWrapper);
 
+        // The client core is DOM-free; the column width it wraps text to is
+        // measured from the output and pushed in.
+        installContentWidthMeasurer(client);
+
         setupOutputContextMenu(outputWrapper);
         installOutputSearch({
             outputWrapper,
@@ -144,7 +151,7 @@ export function GameOutput({ toasts }: { toasts: ToastStackProps | null }) {
             detachHandle();
             handler.destroy();
         };
-    }, []);
+    }, [client]);
 
     return (
         <div id="main_text_output_msg_wrapper" ref={wrapperRef}>

@@ -160,23 +160,36 @@ button code was dead (no `#wake-lock-button` exists) and is removed.
    through `getOutputHandler()`. `CommandLineDeps.getOutputWrapper` replaces the
    element, read when the command line mounts. Until `<Shell>` (9) renders
    `#content-area`, it mounts into `#game-output-root` (`display: contents`).
-7. **Footer, command line, compass rose, dock hosts** — `StockFooter` and
-   `CommandLine` rendered by `<Shell>` in place instead of portalled into
-   `#footer-layout` / `#command-line-root`; the `layout-*-dock-host` elements in JSX;
-   the layout manager rendered by `<Shell>`. `#compass-rose-box` needs one step first:
-   `src/client/scripts/inlineCompassRose.ts` reads it with `document.getElementById`
-   and builds its rows itself, which also breaks the client's no-DOM rule. Its state
-   goes out through an event or the UI port, and a `<CompassRose>` component renders it.
-   `setupMobileFooter` and the multibind `MutationObserver` become effects of `<Footer>`.
-8. **The log viewer's window** — `#logs-modal` moves into `<AppModals>`, and
-   `logBrowserMount.tsx` stops being a separate entry: `LogBrowserWindow` renders in the
-   shell, still loading `LogBrowser` lazily.
-9. **`<Shell>` and region boundaries** — `#main-container` / `#content-area` in JSX;
-   `Island` is replaced by an `ErrorBoundary` per region (and per page-level window),
-   and the portal half of `Island` is deleted once 3–8 have removed its last use.
-   `index.html` drops the six placeholders nothing references any more
-   (`knowledge-root`, `knowledge-details-root`, `clock-root`, `contracts-root`,
-   `letter-composer-root`, `herb-ui-root`), then everything but `<div id="root">`.
+7. **Footer, command line, dock hosts** — **done, with 9.** `<Shell>` renders
+   `#footer-layout` with `StockFooter`, `#command-line-root` with `CommandLine`, the
+   `layout-*-dock-host` elements and the layout manager in place. `LayoutContent`'s
+   dock portals look the hosts up again after their first render (`useHostElement`),
+   since the shell renders them in the same commit. Still open:
+   - **`<CompassRose>`** — `#compass-rose-box` is static markup in `<Shell>`, and
+     `src/client/scripts/inlineCompassRose.ts` still draws into it with DOM calls
+     (it now looks the box up when drawing and takes clicks through one document
+     listener, since the box renders after the client starts). Its state should go
+     out through an event or the UI port and a component render it; that also
+     ends `src/client` touching the DOM here.
+   - **`<Footer>`** — `setupMobileFooter` still runs from `main.ts` after the
+     render, and the multibind `MutationObserver` lives in `<GameOutput>`.
+8. **The log viewer's window** — `#logs-modal` is rendered by `<Shell>` (same
+   markup), and `logBrowserMount.tsx`, still a separate entry, finds it and fills its
+   body. Still open: `LogBrowserWindow` rendered in the tree and the separate entry
+   dropped.
+9. **`<Shell>` and region boundaries** — **done.** `app/shell/Shell.tsx` renders
+   `#main-container` with everything that was in it, in the same order; `App.tsx`
+   renders `<Shell>` and the overlays. `Island` is gone: `app/ErrorBoundary.tsx`
+   wraps each region, and nothing is portalled into an index.html placeholder any
+   more. The object lists' default place is the shell's own layout effect (a child's
+   layout effect runs before its parent's refs are set, so a child cannot attach
+   them between two of the shell's children). The click-to-focus handling on
+   `#content-area` (`app/shell/contentAreaFocus.ts`) and the text column width
+   measurer (in `<GameOutput>`) run once their elements exist; the measurer had
+   silently stopped measuring at start-up when the output moved into the tree.
+   `index.html`'s body is `<div id="root">` (`display: contents`), the two tooltip
+   elements (`#map-note-tooltip`, `#hover-tooltip`, still filled imperatively) and
+   the scripts; the six unused placeholders are gone.
 
 **Done when** `index.html`'s `<body>` is `<div id="root"></div>` plus the script
 tags, and `grep createPortal src/web/app` finds no placeholder target.

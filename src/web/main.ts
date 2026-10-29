@@ -53,13 +53,12 @@ import {applyDefaultLayoutMode, setRailSpanSupported} from "@web/layout"
 import {setOutputTimestampVisibility} from "@shared/dom/outputMessageHandler";
 import {bufferOutputUntilMounted, getOutputHandler} from "./app/shell/outputHandle";
 import {createCharPlaqueFeed} from "@shared/dom/charPlaque";
-import {isLikelyTouchDevice, isMobileLikeViewport, isTouchPointerType} from "@shared/dom/pointerEnvironment.ts";
+import {isMobileLikeViewport} from "@shared/dom/pointerEnvironment.ts";
 import {setConnectionOffline, setConnectionStatus, setReconnectHandler} from "./commandInput/connectionView";
 import {updateMainMenuItem} from "@modules/core/mainMenuRegistry";
 import {registerBuiltinMainMenu, type MainMenuModal} from "./menu/mainMenu";
 import {harvestOutputLines} from "./commandInput/outputWords";
 import {installClientPorts} from "./installClientPorts";
-import {installContentWidthMeasurer} from "./contentWidthMeasurer";
 import {bootstrapGameClient} from "./clientBootstrap";
 import {setupToasts} from "./notifications/setupToasts";
 import type {CommandLineDeps} from "./commandInput/CommandLine";
@@ -78,9 +77,6 @@ import {initTextToSpeech} from "./voice/textToSpeech.ts";
 // piece, injected here before scripts run.
 const { client, helperConnection } = bootstrapGameClient({ installPorts: installClientPorts });
 
-// The client core is DOM-free; the web UI measures terminal column width from
-// the DOM and pushes it in.
-installContentWidthMeasurer(client);
 
 
 applyInitialLocation(client);
@@ -235,7 +231,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const placesModal = () => AppModal.byId('places-modal');
     const helperModal = () => AppModal.byId('helper-modal');
     const locationShareModal = () => AppModal.byId('location-share-modal');
-    const contentArea = document.getElementById('content-area') as HTMLElement | null;
 
     const focusCommandInputOnConnect = () => {
         const messageInput = getMessageInput();
@@ -247,69 +242,6 @@ document.addEventListener('DOMContentLoaded', () => {
         messageInput.focus();
     };
     mudClient.on('client.connect', focusCommandInputOnConnect);
-
-    if (contentArea) {
-        const interactiveSelector = 'a, button, input, textarea, select, [contenteditable], .plugin-window, .app-modal, .managed-panel';
-
-        // A click only hands focus to the command line; it must leave the
-        // scrollback where it is, or a single click while reading the history
-        // would close the split view. Closing it is a double-click or the
-        // pane's close button.
-        const focusKeepingScroll = () => {
-            const messageInput = getMessageInput();
-            if (!messageInput) return;
-            messageInput.setAttribute('data-keep-scroll', '');
-            messageInput.focus({preventScroll: true});
-            messageInput.removeAttribute('data-keep-scroll');
-        };
-
-        const focusMessageInput = (target: EventTarget | null) => {
-            // Check if there's a text selection
-            const selection = window.getSelection();
-            if (selection && selection.toString().length > 0) {
-                return;
-            }
-
-            if (!target || !(target instanceof Element)) {
-                focusKeepingScroll();
-                return;
-            }
-
-            if (target.closest(interactiveSelector)) {
-                return;
-            }
-
-            if (target.closest('[data-output-clickable]')) {
-                // Output links are plain spans, so clicking one drops focus without
-                // moving it anywhere useful. Restore it once the link handler has run,
-                // unless that handler focused something on purpose (modal, editor...).
-                setTimeout(() => {
-                    const active = document.activeElement;
-                    if (active && active !== document.body && active.closest?.(interactiveSelector)) {
-                        return;
-                    }
-                    focusKeepingScroll();
-                }, 0);
-                return;
-            }
-
-            focusKeepingScroll();
-            setTimeout(focusKeepingScroll, 1);
-        };
-
-        if (window.PointerEvent) {
-            contentArea.addEventListener('pointerup', (event: PointerEvent) => {
-                if (event.button !== 0) return;
-                if (isTouchPointerType(event.pointerType)) return;
-                focusMessageInput(event.target);
-            });
-        } else {
-            contentArea.addEventListener('click', (event) => {
-                if (isLikelyTouchDevice()) return;
-                focusMessageInput(event.target);
-            });
-        }
-    }
 
     initTextToSpeech(client);
 
@@ -437,9 +369,9 @@ document.addEventListener('DOMContentLoaded', () => {
     registerBuiltinWidgets();
     eventBus.on('widgets.edit', ({ on }) => setWidgetEditMode(on));
 
-    // The whole React UI, as one tree. Synchronously, so the footer and the
-    // command line exist for setupMobileFooter and anything after this.
-    const appRoot = createRoot(document.createElement('div'));
+    // The whole page, as one React tree, into #root. Synchronously, so the footer
+    // and the command line exist for setupMobileFooter and anything after this.
+    const appRoot = createRoot(document.getElementById('root')!);
     flushSync(() => appRoot.render(createElement(
         AppProviders,
         {services: {client, helperConnection, connection, accountSession}},
