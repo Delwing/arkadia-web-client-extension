@@ -8,10 +8,8 @@
  * What is left here is what only the client has: session management
  * (`LogManager`) and the link out to the standalone page.
  *
- * It is mounted twice and assumes nothing about its host: the stock UI's
- * `LogsWindow` (src/web/app) puts it in its Logi window, forge-ui in its own modal shell.
- * The viewer brings its own palette (`lv-theme`), so neither host has to
- * provide one.
+ * `LogsWindow` (src/web/app) puts it in the Logi window. The viewer brings its
+ * own palette (`lv-theme`), so the window does not have to provide one.
  */
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { Button, Icon, IconButton, LogViewer, MenuItem, Spinner } from "@ui/logViewer";
@@ -43,11 +41,6 @@ function openInNewTab(sessionId: string): void {
 }
 
 export function LogBrowser({ headerTrailing, initialQuery }: LogBrowserProps) {
-    /**
-     * True inside stock's Bootstrap window, false under forge, which hosts the
-     * same component in a shell of its own and supplies its own close control.
-     */
-    const [inStockModal] = useState(() => Boolean(document.getElementById("logs-modal")));
     const [sessions, setSessions] = useState<LogSessionInfo[] | null>(null);
     /** Set while the list is still being built; the manager waits for it. */
     const [listing, setListing] = useState<ListProgress | null>(null);
@@ -143,15 +136,14 @@ export function LogBrowser({ headerTrailing, initialQuery }: LogBrowserProps) {
         setManageOpen(true);
     }, []);
 
-    // Stock's window has no header of the shell, so its close control lives
-    // here, in the header and on the loading screen alike; the shell closes on
-    // any [data-modal-dismiss] inside it. Under forge, where there is no
-    // `#logs-modal`, the host's own shell carries one.
-    const closeControl = inStockModal ? (
+    // The Logi window has no header of its own, so its close control lives
+    // here, in the header and on the loading screen alike; the window closes on
+    // any [data-modal-dismiss] inside it.
+    const closeControl = (
         <IconButton id="logs-close" data-modal-dismiss title="Zamknij  Esc">
             <Icon name="close" />
         </IconButton>
-    ) : null;
+    );
 
     return (
         <div className="lv-theme logs-browser">
@@ -159,7 +151,7 @@ export function LogBrowser({ headerTrailing, initialQuery }: LogBrowserProps) {
                 <div className="logs-browser__loading">
                     {/* The listing can take a while on a large store; closing
                         unmounts the browser, which aborts it. */}
-                    {closeControl ? <div className="logs-browser__loading-close">{closeControl}</div> : null}
+                    <div className="logs-browser__loading-close">{closeControl}</div>
                     <Spinner size="lg" />
                     <span>Wczytywanie sesji...</span>
                 </div>
@@ -209,15 +201,11 @@ export function LogBrowser({ headerTrailing, initialQuery }: LogBrowserProps) {
                                 <span className="lv-hide-narrow">Zarządzaj</span>
                             </Button>
                             {headerTrailing}
-                            {closeControl ? (
-                                <>
-                                    {/* Sets the window's own control apart from
-                                        the log actions; between the two actions
-                                        it split a pair that belongs together. */}
-                                    <div className="lv-divider--vertical lv-hide-narrow" />
-                                    {closeControl}
-                                </>
-                            ) : null}
+                            {/* Sets the window's own control apart from the log
+                                actions; between the two actions it split a pair
+                                that belongs together. */}
+                            <div className="lv-divider--vertical lv-hide-narrow" />
+                            {closeControl}
                         </>
                     }
                 />

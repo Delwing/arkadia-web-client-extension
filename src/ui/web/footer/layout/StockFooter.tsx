@@ -7,7 +7,7 @@ import { stockFooterSkin } from "./stockSkin";
 import { useFooterLayout } from "./useFooterLayout";
 
 /**
- * The stock UI's footer in the layout the player picked, drawn as the Kuźnia
+ * The footer in the layout the player picked, drawn as the Kuźnia
  * plate under that theme - which, when nothing is picked, also brings the
  * Forge layout the plate was made for. A phone keeps the stock one whatever the pick: the
  * phone footer (footerMobile.css) folds that status line into its two rails

@@ -3,7 +3,7 @@ import type { UiSettings } from "../../uiSettingsCore";
 import { Button, Field } from "@web-ui/primitives/index.ts";
 import { CheckboxRow, NumberField, SelectField, SettingsSection } from "../fields";
 import ObjectContextMenuEditor from "../ObjectContextMenuEditor";
-import { isLayoutModeForced, isRailSpanSupported } from "@web/layout/utils/layoutStorage";
+import { isRailSpanSupported } from "@web/layout/utils/layoutStorage";
 import { useBuiltInPanelSetting } from "@web/hooks/useBuiltInPanelSetting.ts";
 import { SEPARATE_OTHERS_SETTING } from "@web/layout/types.ts";
 import { listSettingsWindows } from "@web/layout/settingsWindows.ts";
@@ -26,7 +26,6 @@ export function LayoutManagerSection({
     layoutEnabled, layoutObjectList, layoutRailsFull,
     onLayoutEnabledChange, onLayoutObjectListChange, onLayoutRailsFullChange, onLayoutReset,
 }: LayoutManagerSectionProps) {
-    const layoutForced = isLayoutModeForced();
     const railSpanSupported = isRailSpanSupported();
     // Alias of the toggle in Kondycje's settings cog: the same window setting,
     // so flipping either one moves the other.
@@ -37,20 +36,11 @@ export function LayoutManagerSection({
             {/* These save immediately rather than on Save, so they never mark
                 the page as having unsaved changes. */}
             <div className="ui-settings-stack" data-settings-ignore>
-                {/* Shells that force layout mode on (forge) hide the toggles: they
-                    are process-local overrides, so flipping them here would do
-                    nothing and would not persist. */}
-                {layoutForced ? (
-                    <div className="popup-field__hint">Ten interfejs zawsze korzysta z menedżera okien.</div>
-                ) : (
-                    <>
-                        <CheckboxRow id="ui-layout-manager-enabled" label="Włącz menedżer okien" checked={layoutEnabled} onChange={onLayoutEnabledChange} />
-                        <CheckboxRow id="ui-layout-manager-object-list" label="Kondycje jako okno" hint="Wyłączone: lista pływa nad tekstem gry i przesuwasz ją myszą." checked={layoutObjectList} onChange={onLayoutObjectListChange} disabled={!layoutEnabled} className="ui-settings-indent" />
-                        <CheckboxRow id="ui-layout-manager-separate-others" label="Pozostali w osobnym oknie" checked={separateOthers === true} onChange={setSeparateOthers} disabled={!layoutEnabled || !layoutObjectList} className="ui-settings-indent ui-settings-indent--2" />
-                        {railSpanSupported && (
-                            <DockArrangementTiles railsFull={layoutRailsFull} onChange={onLayoutRailsFullChange} disabled={!layoutEnabled} />
-                        )}
-                    </>
+                <CheckboxRow id="ui-layout-manager-enabled" label="Włącz menedżer okien" checked={layoutEnabled} onChange={onLayoutEnabledChange} />
+                <CheckboxRow id="ui-layout-manager-object-list" label="Kondycje jako okno" hint="Wyłączone: lista pływa nad tekstem gry i przesuwasz ją myszą." checked={layoutObjectList} onChange={onLayoutObjectListChange} disabled={!layoutEnabled} className="ui-settings-indent" />
+                <CheckboxRow id="ui-layout-manager-separate-others" label="Pozostali w osobnym oknie" checked={separateOthers === true} onChange={setSeparateOthers} disabled={!layoutEnabled || !layoutObjectList} className="ui-settings-indent ui-settings-indent--2" />
+                {railSpanSupported && (
+                    <DockArrangementTiles railsFull={layoutRailsFull} onChange={onLayoutRailsFullChange} disabled={!layoutEnabled} />
                 )}
                 <Button size="sm" className="ui-settings-self-start" id="ui-layout-manager-reset" onClick={onLayoutReset}>Przywróć domyślny układ</Button>
             </div>

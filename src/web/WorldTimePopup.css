@@ -1,8 +1,6 @@
 /* World-time ("Czas") popup — the in-game season / date / time-of-day widget
-   ported from forge-ui's TimePanel into a shared dockable popup. Self-contained
-   and themed through the shared --popup-* variables so it reads correctly in
-   both the stock UI and forge-ui. Distinct `wt-` class names avoid colliding
-   with forge's global `.tp-*` rules. */
+   as a dockable popup. Self-contained and themed through the shared --popup-*
+   variables, so it reads correctly under every theme. */
 
 .world-time-popup {
   display: flex;

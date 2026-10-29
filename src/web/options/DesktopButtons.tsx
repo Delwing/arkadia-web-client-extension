@@ -117,10 +117,10 @@ function DesktopButtons({ registerSave }: { registerSave: (save: () => void) => 
     const selectedBtn = settings.buttons.find(b => b.id === selected) || null;
 
     /* The preview renders the real `.desktop-button` / `.desktop-button-list-item`
-     * classes rather than re-stating their look inline, so whichever host UI has
-     * this editor open skins the preview exactly like the button it will produce.
-     * That matters most in forge-ui, which re-skins those classes wholesale
-     * (forge-ui/buttons-theme.css) — with the look inlined here, "Podglad" showed
+     * classes rather than re-stating their look inline, so the active theme skins
+     * the preview exactly like the button it will produce. That matters most
+     * under Kuźnia, which re-skins those classes wholesale
+     * (themes/forged/buttons.css) — with the look inlined here, "Podglad" showed
      * a stock flat-blue button no matter what the real one would look like. Only
      * the per-button values (size, color, font) stay inline, matching what
      * DesktopButtons.tsx sets on the live button; `--btn-accent` rides along for

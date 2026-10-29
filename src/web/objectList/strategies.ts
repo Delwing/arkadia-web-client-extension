@@ -5,8 +5,8 @@
 // window, data subscription, click / context-menu delegation, PiP, drag — and
 // just picks a strategy by viewMode and delegates. The row markup below is moved
 // verbatim from the old per-mode render methods (list / card / compact /
-// compact-dots / raid) so behaviour is unchanged; `nearby` is the new
-// forge-born "W poblizu" flavor.
+// compact-dots / raid) so behaviour is unchanged; `nearby` is the "W poblizu"
+// flavor.
 //
 // Click handling stays central in the shell: every flavor tags its clickable
 // parts with the same `data-object-num` / `data-object-id` (+ `data-action`)
@@ -843,9 +843,8 @@ const raidStrategy: ObjectListStrategy = {
 };
 
 // ── Nearby ("W poblizu") ────────────────────────────────────
-// The forge-born flavor: a compact key/name/HP row with an attacker "fray" line
-// underneath. Ported from forge-ui/components/ObjectsPanel.tsx into the shared
-// panel; the shell's click delegation drives .obj__key (attack), .obj__name
+// A compact key/name/HP row with an attacker "fray" line underneath; the
+// shell's click delegation drives .obj__key (attack), .obj__name
 // (guard) and .obj__hp (break / pull-back), and the row's data-object-id lets
 // the shared right-click menu resolve the object.
 

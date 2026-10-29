@@ -20,9 +20,8 @@ import {
  * Assistant settings, rendered inside the panel itself.
  *
  * It lives here rather than in the settings modal on purpose: a settings-modal
- * home would need a `ModalKey` in forge's `MenuModalHost` *and* a `#…-modal`
- * shell in `index.html` — two hosts, two edits, no benefit — while the panel
- * already exists in both UIs through the popup catalog.
+ * home would need another page-level window in AppModals for no benefit, while
+ * the panel already exists through the popup catalog.
  *
  * `SubDialog`, never a react-bootstrap `<Modal>`: a portaled modal inside a
  * panel makes two focus managers fight over the node and pegs the CPU (see the

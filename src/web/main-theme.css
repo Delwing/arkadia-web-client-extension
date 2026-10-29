@@ -5,18 +5,14 @@
    These stylesheets MUST load in this order: the document base first, then
    style.css and the colour themes overriding it, then layout.
 
-   The problem this solves: forge-ui transitively imports several of these
-   (e.g. Settings.tsx pulls in ./style.css; layout.css/themes likewise), which
-   turns them into chunks SHARED between the stock and forge entries. Rollup
-   then extracts each shared sheet into its own CSS chunk and links them in the
-   built stock HTML in an order it chooses, which can flip stock's cascade.
+   The problem this solves: a sheet imported from more than one entry (or more
+   than one chunk) becomes a shared chunk, which Rollup extracts on its own and
+   links in an order it chooses - and that can flip the cascade.
 
    `@import` inlines each sheet's content into THIS file's chunk in source
-   order, so they are no longer separately-extractable shared chunks from the
-   stock entry's point of view - the order is fixed and cannot be reshuffled by
-   chunk splitting. forge keeps its own (JS-imported) copies. This is the same
-   fix master applied for layout.css (156a1eeb) and forge uses in
-   layout-theme.css / buttons-theme.css. */
+   order, so they are not separately-extractable chunks - the order is fixed and
+   cannot be reshuffled by chunk splitting. (main.ts pins the component sheets
+   that must come before this one the same way.) */
 @import './fonts/radio-canada.css';
 @import './fonts/vera-sans-mono.css';
 @import './base.css';

@@ -209,14 +209,21 @@ tags, and `grep createPortal src/web/app` finds no placeholder target.
   only its Bootstrap file used, `connection/ConnectionEngine.ts` (only it used that)
   and `MovableHost.adopt`. The stock UI's Kuźnia theme and its specs
   (`forged-login`, `forged-theme`) stay.
-  Still open, as one follow-up: the seams that existed only for a second shell and
-  the ~100 comments that still describe forge as a consumer —
-  `setLayoutOverrides` / `getLayoutOverrides`, `setDockingSupported`,
-  `setObjectListChrome` / `objectListChrome`, `setPopoutEntry`,
-  `LayoutManagerWrapper`'s `renderObjectList` / `objectListTitle`, the output
-  engine's `buildMessageNode` hook. Each needs its stock default checked before it
-  goes. The `sass` dev dependency is unused now too (dropping it changes
-  `yarn.lock`).
+  The seams that existed only for a second shell are gone too:
+  `setLayoutOverrides` / `getLayoutOverrides` / `isLayoutModeForced` (and the
+  "Ten interfejs zawsze korzysta z menedżera okien" branch in Okna),
+  `setDockingSupported`, `builtInChrome.ts` (`setObjectListChrome`),
+  `setPopoutEntry`, `LayoutManagerWrapper`'s `renderObjectList` /
+  `objectListTitle`, the output engine's `buildMessageNode` hook, the context
+  menu's `messageWrappersSupported`, `LogBrowser`'s host check, `forge-ui` in
+  `appUrls`' sub-apps and `.forge-menu-backdrop` in the modal selector. Each had
+  the stock value as its default, so nothing the stock UI does changed. The
+  comments that described forge as a consumer are rewritten (or, for the
+  "moved to …" tombstones in style.css, deleted); what still says forge is the
+  Kuźnia theme and its "forge" footer layout id, which is a stored value.
+  `setRailSpanSupported` stays: the shell opts in from `main.ts`, and tests and
+  pages without the dock hosts keep it off. Still open: the `sass` dev
+  dependency is unused now (dropping it changes `yarn.lock`).
 - **Typed window API instead of `window` events** — **done.** `modals/pageWindows.ts`
   (`openWindow`, `closeWindow`, `closeOptionWindows`, over the `AppModal`
   controller) replaces `close-options`, `show-binds`, `show-character-management`,

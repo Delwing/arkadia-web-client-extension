@@ -1,10 +1,9 @@
 /*
  * Settings dialog shell: sidebar + search + pages. Every selector is namespaced
- * under .settings-* so the sheet is safe to load in both the stock UI and forge;
- * colours come from the --popup-* variables both hosts define.
+ * under .settings-*; colours come from the --popup-* variables.
  *
  * The phone layout switches on the dialog's own width (SettingsDialog measures
- * it), not the viewport, so a narrow forge shell or popout gets it too.
+ * it), not the viewport, so a narrow window or popout gets it too.
  */
 
 .settings-dialog-host {
@@ -221,8 +220,8 @@
 }
 
 /* A grid rather than a masonry, so cards sharing a row stretch to the tallest
-   one. Spacing comes from the gap; the cards' own margins (stock style.css and
-   forge's _stock-settings.scss) are for the flowing layouts elsewhere. */
+   one. Spacing comes from the gap; the cards' own margins (style.css) are for
+   the flowing layouts elsewhere. */
 .settings-page__layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr);

@@ -5,16 +5,15 @@
  *
  * Vite builds with `base: "./"`, so there is no absolute base path to hang these
  * off — a link must be resolved relative to the page doing the linking. That is
- * fine for the stock client (served from the root, so `editor/index.html` just
- * works) and wrong for every other entry: from `<root>/forge-ui/index.html` the
- * same relative link resolves to `<root>/forge-ui/editor/index.html`, which does
- * not exist — the sub-apps have no nested copies of each other. Components shared
- * between the UIs (e.g. options/Scripts.tsx, hosted by both the stock settings
- * and the forge menu) therefore have to resolve the root explicitly.
+ * fine for the client (served from the root, so `editor/index.html` just works)
+ * and wrong for every other entry: from `<root>/popup/index.html` the same
+ * relative link resolves to `<root>/popup/editor/index.html`, which does not
+ * exist — the sub-apps have no nested copies of each other. Links that can be
+ * followed from a popped-out panel therefore have to resolve the root explicitly.
  */
 
 /** Entry directories that sit one level below the client root. */
-const SUB_APPS = ['editor', 'viewer', 'log-viewer', 'forge-ui', 'popup'];
+const SUB_APPS = ['editor', 'viewer', 'log-viewer', 'popup'];
 
 /** The client root, derived from the page currently running. */
 function appRootUrl(): URL {

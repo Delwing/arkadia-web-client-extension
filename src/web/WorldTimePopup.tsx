@@ -15,8 +15,8 @@ const VIEW_OPTIONS: { value: WorldTimeView; label: string }[] = [
 ];
 
 /**
- * "Czas" — the in-game season / world-date / time-of-day window, ported from
- * forge-ui's TimePanel into a shared dockable popup. The clocks themselves are
+ * "Czas" — the in-game season / world-date / time-of-day window, as a dockable
+ * popup. The clocks themselves are
  * WorldTimeClocks, which the clock widget shows too.
  *
  * The header switch picks what to show relative to where you stand — the

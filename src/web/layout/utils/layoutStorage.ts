@@ -302,72 +302,9 @@ function ensureBuiltIns(state: LayoutState): LayoutState {
   return state;
 }
 
-// ─── UI capability: shell-forced layout fields ────────────────────────────
-// Some shells (forge-ui) ARE the dock grid: their chrome only works with layout
-// mode on, the built-in objectList slot enabled and the rail-span arrangement.
-// The stock UI treats all three as user choices, and both UIs share the same
-// persisted `layoutManagerState` — so a shell must never write its own
-// requirements into storage (merely opening forge would otherwise flip the
-// stock UI's "Menedzer Okien" on). Instead it declares them as process-local
-// overrides: loadLayoutState() reports them as set, while saveLayoutState()
-// writes the persisted (user-chosen) value back for those fields.
-export type LayoutOverrides = Partial<
-  Pick<LayoutState, 'enabled' | 'spanningDocks' | 'enabledPanels'>
->;
-
-let layoutOverrides: LayoutOverrides = {};
-
-export function setLayoutOverrides(overrides: LayoutOverrides): void {
-  layoutOverrides = { ...overrides };
-  resetLayoutCache();
-}
-
-export function getLayoutOverrides(): LayoutOverrides {
-  return { ...layoutOverrides };
-}
-
-/** True when this shell forces layout mode on (the user cannot turn it off). */
-export function isLayoutModeForced(): boolean {
-  return layoutOverrides.enabled === true;
-}
-
-function hasLayoutOverrides(): boolean {
-  return Object.keys(layoutOverrides).length > 0;
-}
-
-/** Overlay the shell's forced fields onto a persisted snapshot. */
-function applyLayoutOverrides(state: LayoutState): LayoutState {
-  if (!hasLayoutOverrides()) return state;
-  const o = layoutOverrides;
-  return {
-    ...state,
-    ...(o.enabled !== undefined ? { enabled: o.enabled } : {}),
-    ...(o.spanningDocks !== undefined ? { spanningDocks: o.spanningDocks } : {}),
-    ...(o.enabledPanels !== undefined
-      ? { enabledPanels: { ...state.enabledPanels, ...o.enabledPanels } }
-      : {}),
-  };
-}
-
-/** Restore the persisted value for every forced field, so this shell's own
- *  requirements never leak into the shared key. */
-function stripLayoutOverrides(state: LayoutState): LayoutState {
-  if (!hasLayoutOverrides()) return state;
-  const o = layoutOverrides;
-  const persisted = loadPersistedLayoutState();
-  return {
-    ...state,
-    ...(o.enabled !== undefined ? { enabled: persisted.enabled } : {}),
-    ...(o.spanningDocks !== undefined ? { spanningDocks: persisted.spanningDocks } : {}),
-    ...(o.enabledPanels !== undefined ? { enabledPanels: persisted.enabledPanels } : {}),
-  };
-}
-
 // ─── Loading / saving ─────────────────────────────────────────────────────
 
-/** The layout exactly as persisted, with no shell overrides applied. Use this
- *  when the state is about to leave this shell (settings export / device sync);
- *  everything else wants loadLayoutState(). */
+/** The layout as persisted (what settings export and device sync carry). */
 export function loadPersistedLayoutState(): LayoutState {
   try {
     const stored = globalStorage.get('layoutManagerState');
@@ -409,7 +346,7 @@ export function loadPersistedLayoutState(): LayoutState {
 }
 
 export function loadLayoutState(): LayoutState {
-  return applyLayoutOverrides(loadPersistedLayoutState());
+  return loadPersistedLayoutState();
 }
 
 function cloneDefault(): LayoutState {
@@ -427,7 +364,7 @@ function cloneDefault(): LayoutState {
 
 export function saveLayoutState(state: LayoutState): void {
   try {
-    globalStorage.set('layoutManagerState', stripLayoutOverrides(state));
+    globalStorage.set('layoutManagerState', state);
   } catch (e) {
     console.error('Failed to save layout state:', e);
   }
@@ -464,9 +401,7 @@ export function saveLayoutStateDebounced(getState: () => LayoutState, delay = 30
 }
 
 export function resetLayoutState(): LayoutState {
-  // Forced fields survive the reset (a shell that needs them still needs them);
-  // saveLayoutState() keeps them out of the shared key as usual.
-  const resetState = applyLayoutOverrides({ ...cloneDefault(), enabled: true });
+  const resetState = { ...cloneDefault(), enabled: true };
   saveLayoutState(resetState);
   return resetState;
 }
@@ -497,29 +432,10 @@ function getCachedLayoutState(): LayoutState {
   return cachedLayoutState;
 }
 
-// ─── UI capability: does the active UI render dock slots? ─────────────────
-// The stock UI has a layout manager with dockable slots; alternate UIs
-// (forge-ui) render popups only as plain floating windows and have no docking.
-// Because both UIs share the same persisted `layoutManagerState`, a popup
-// docked in the stock UI would otherwise auto-open in forge-ui too. When
-// docking is unsupported, only pinned (persistOpen) popups auto-open — a
-// merely-docked popup does not. Defaults to true (stock UI); forge-ui flips it
-// off at boot via setDockingSupported(false).
-let dockingSupported = true;
-
-export function setDockingSupported(supported: boolean): void {
-  dockingSupported = supported;
-}
-
-export function isDockingSupported(): boolean {
-  return dockingSupported;
-}
-
-// ─── UI capability: can this shell render "left/right rails span everything"? ──
-// The vertical span mode needs the shell to provide #layout-left/right-dock-host
-// elements (children of #main-container) to portal the rails into. Only the
-// forge shell does; the stock shell never opts in, so the shared `spanningDocks`
-// flag is a no-op there even though it lives in the shared persisted state.
+// ─── Can the page render "left/right rails span everything"? ──────────────
+// The vertical span mode needs #layout-left/right-dock-host (children of
+// #main-container) to portal the rails into. The shell renders them and opts in
+// at start-up (main.ts); until then, and in tests, `spanningDocks` is a no-op.
 let railSpanSupported = false;
 
 export function setRailSpanSupported(supported: boolean): void {
@@ -534,8 +450,7 @@ export function isRailSpanSupported(): boolean {
 
 /**
  * Returns true if this popup should auto-open on page load — either it was
- * pinned, or (only when the active UI supports docking) it was last seen
- * docked, or it currently appears as a docked WindowRecord in the persisted
+ * pinned, or it was last seen docked, or it currently appears as a docked WindowRecord in the persisted
  * layout.
  */
 export function shouldPopupAutoOpen(popupId: string): boolean {
@@ -546,10 +461,6 @@ export function shouldPopupAutoOpen(popupId: string): boolean {
     const popupState = stored.popupPanels[popupId];
     if (popupState?.persistOpen) return true;
 
-    // Docking is a stock-UI concept. In a UI with no dock slots (forge-ui),
-    // a merely-docked popup must NOT auto-open — otherwise every popup docked
-    // in the stock UI pops open here as a floating window.
-    if (!dockingSupported) return false;
     if (popupState?.isDocked) return true;
 
     const w = stored.windows[popupId];
@@ -760,9 +671,6 @@ export function getPinnedPopupsByPrefix(prefix: string): string[] {
         result.push(id);
         continue;
       }
-      // Docked-only popups auto-open just in dock-capable UIs (see
-      // shouldPopupAutoOpen); forge-ui restores only pinned ones.
-      if (!dockingSupported) continue;
       if (s?.isDocked) {
         result.push(id);
         continue;

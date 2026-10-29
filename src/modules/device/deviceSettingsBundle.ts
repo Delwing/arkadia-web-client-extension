@@ -52,8 +52,6 @@ export function exportDeviceSettings(): DeviceSettings {
     const deviceInfo = getDeviceInfo();
 
     const uiSettings = loadUiSettings();
-    // Persisted, not overridden: a shell that forces layout mode on for itself
-    // (forge) must not export that choice to the user's other devices.
     const layoutManagerState = loadPersistedLayoutState();
     const widgetLayout = globalStorage.get('widgetLayout');
     const desktopButtonSettings = loadDesktopButtonSettings();

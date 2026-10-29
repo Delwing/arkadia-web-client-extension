@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useRef } from 'react';
 import type { MovableHost } from './movableHost';
 import { LayoutProvider } from './LayoutContext';
 import { LayoutContent } from './LayoutContent';
@@ -19,12 +19,6 @@ interface LayoutManagerWrapperProps {
   /** The non-team objects window (#objects-list-others). */
   objectListOthersHost?: MovableHost | null;
   onLayoutModeChange?: (enabled: boolean) => void;
-  /** Override the built-in objectList panel's title (default "Kondycje"). */
-  objectListTitle?: string;
-  /** Render custom content for the objectList panel instead of showing the
-   *  #objects-list host. forge-ui passes its forged "W poblizu" panel here;
-   *  when set, objectListHost is ignored. */
-  renderObjectList?: () => ReactNode;
 }
 
 /**
@@ -51,8 +45,6 @@ export function LayoutManagerWrapper({
   objectListHost,
   objectListOthersHost,
   onLayoutModeChange,
-  objectListTitle,
-  renderObjectList,
 }: LayoutManagerWrapperProps) {
   return (
     <LayoutProvider onLayoutModeChange={onLayoutModeChange}>
@@ -60,10 +52,8 @@ export function LayoutManagerWrapper({
         mapHost={mapHost}
         objectListHost={objectListHost}
         objectListOthersHost={objectListOthersHost}
-        objectListTitle={objectListTitle}
-        renderObjectList={renderObjectList}
       />
-      {/* Standard dockable popups — single source of truth shared with forge-ui */}
+      {/* The standard dockable popups (POPUP_CATALOG). */}
       {POPUP_CATALOG.map(({ id, Component }) => (
         <Component key={id} />
       ))}

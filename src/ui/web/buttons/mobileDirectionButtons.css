@@ -1,4 +1,4 @@
-/* Mobile direction buttons — shared between stock and forge-ui
+/* Mobile direction buttons
    (src/ui/web/buttons/MobileDirectionButtons.tsx). Structural rules only;
    per-button colors/sizes are set inline by the component from user settings. */
 .mobile-direction-buttons {

@@ -51,7 +51,7 @@ function settingControls(root: HTMLElement): Element[] {
 
 /**
  * Whether the dialog is phone-narrow - the same 40rem as the stylesheet's
- * container query, measured on the dialog itself so a narrow forge shell or
+ * container query, measured on the dialog itself so a narrow window or
  * popout gets the phone views too. A hidden dialog (width 0) keeps its answer.
  */
 function useNarrow(ref: RefObject<HTMLElement | null>): boolean {
@@ -90,7 +90,7 @@ export interface SettingsDialogProps extends UiSettingsPagesProps {
  * they are stored, a search across every page, and one Save for both.
  *
  * The host provides the chrome (title, Save button) and the modal lifecycle
- * on `#settings-modal`; forge fakes those events on its own shell.
+ * on `#settings-modal` (AppModals).
  *
  * Closing without saving is not discarding: the dialog stays mounted for the
  * session and reopens where it was left - the page, its scroll, the search and

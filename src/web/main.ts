@@ -1,9 +1,7 @@
 // Component sheets that come BEFORE the base and the themes, so the page's own
 // rules win ties with them (footer.css's .footer-buttons__panel over popups.css's
-// .popup-popover, for one). They used to land there by accident: forge-ui shared
-// them, so Rollup split them into chunks loaded ahead of client.css. Imported here
-// first, Rollup emits each where it is first imported, which pins that order
-// whatever the other entries share. Keep new component sheets out of this list
+// .popup-popover, for one). Imported here first, Rollup emits each where it is
+// first imported, which pins that order whatever the other entries share. Keep new component sheets out of this list
 // unless they need to lose to the base.
 import './documentation/docs.css'
 import './CombatStatusPopup.css'

@@ -9,10 +9,9 @@ import { claimedChipIds } from "./layoutTree";
 import { useFooterPreview } from "./previewContext";
 
 /**
- * How one UI draws the footer layout. The layout decides what goes where; the
- * skin decides the markup each band and block gets, so the stock UI keeps its
- * ids and classes (CSS, the phone footer and e2e lean on them) and the forge
- * HUD keeps its plate.
+ * How the footer layout is drawn. The layout decides what goes where; the skin
+ * decides the markup each band and block gets, so the footer keeps its ids and
+ * classes (CSS, the phone footer and e2e lean on them).
  */
 export interface FooterSkin {
   /** Wraps one band; `children` are its nodes, already drawn. */

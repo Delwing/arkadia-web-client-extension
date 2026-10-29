@@ -27,8 +27,7 @@ const CONTENT_AREA_ID = 'main_text_output_msg_wrapper';
 
 /**
  * Shared, host-agnostic rewrite of the stock `MobileCommandRadial` class (see
- * `src/web/scripts/mobileCommandRadial.ts`) as a React component both the
- * stock UI and forge-ui mount. Renders the exact same overlay markup
+ * `src/web/scripts/mobileCommandRadial.ts`) as a React component. Renders the exact same overlay markup
  * (`#mobile-command-radial` + its threshold/selected/commands children) the
  * existing e2e suite (`e2e/mobile-command-radial.spec.ts`) already asserts
  * against — it used to be static HTML in `index.html`; this component now
@@ -411,10 +410,7 @@ export default function MobileCommandRadial({ client }: { client: Client }) {
         }
 
         // Middle-mouse-click on the content area opens the same menu at the click
-        // point — a desktop trigger alongside the touch long-press. Previously
-        // wired only in stock's main.ts against the old class's public `showAt`;
-        // folded in here so forge gets it for free too, since it's just another
-        // way to activate the one shared menu.
+        // point — a desktop trigger alongside the touch long-press.
         const handleContentAreaMouseDown = (event: MouseEvent) => {
             if (event.button !== 1) return;
             if (!isRadialEnabled() || !commands.length) return;

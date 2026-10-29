@@ -5,7 +5,6 @@ import {createAttackController} from "@client/utils/attackController";
 import {hideContextMenu, showContextMenu} from "@web/contextMenu";
 import eventBus from "@modules/core/eventBus";
 import {getBuiltInPanelSetting, loadLayoutState, subscribeToPanelSetting} from "./layout/utils/layoutStorage";
-import {getObjectListChrome} from "./layout/builtInChrome";
 import {LEADER_MARK_SETTING, SEPARATE_OTHERS_SETTING} from "./layout/types";
 import {buildRenderContext, scopeRenderContext, type ObjectListViewMode, type RenderContext} from "./objectList/context.ts";
 import {getStrategy, renderListLines} from "./objectList/strategies.ts";
@@ -157,9 +156,8 @@ export default class ObjectList {
     };
 
     private syncViewModeWithLayoutState(isLayoutEnabled: boolean) {
-        const defaultViewMode = getObjectListChrome().defaultViewMode ?? 'list';
         const nextViewMode = isLayoutEnabled
-            ? getBuiltInPanelSetting<ObjectListViewMode>('objectList', 'viewMode', defaultViewMode)
+            ? getBuiltInPanelSetting<ObjectListViewMode>('objectList', 'viewMode', 'list')
             : 'list';
         if (this.viewMode !== nextViewMode) {
             this.viewMode = nextViewMode;

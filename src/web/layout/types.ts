@@ -213,8 +213,8 @@ export interface BuiltInPanelState {
  *     sandwiched in the central band (the classic layout).
  *   - 'leftRight': left/right rails span the full height, top/bottom (and the
  *     input bar) sit between them in the central column.
- * Only honoured by shells that opt in via setRailSpanSupported(true) and provide
- * #layout-left/right-dock-host elements (currently forge-ui).
+ * Only honoured once setRailSpanSupported(true) says the page provides the
+ * #layout-left/right-dock-host elements (main.ts, for the shell).
  */
 export type SpanningDocks = 'topBottom' | 'leftRight';
 

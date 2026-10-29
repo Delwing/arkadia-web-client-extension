@@ -171,8 +171,7 @@ function computeButtonVisual(id: string, cfg: MobileButtonSetting, activeButtons
 
 /**
  * Shared, host-agnostic rewrite of the stock `MobileDirectionButtons` class
- * (see `src/web/scripts/mobileDirectionButtons.ts`) as a React component both
- * the stock UI and forge-ui mount. Renders the exact same DOM contract
+ * (see `src/web/scripts/mobileDirectionButtons.ts`) as a React component. Renders the exact same DOM contract
  * (`#mobile-direction-buttons`, the ten direction buttons, `#buttons-toggle`,
  * the five sub-lists) the existing e2e suite already asserts against.
  *

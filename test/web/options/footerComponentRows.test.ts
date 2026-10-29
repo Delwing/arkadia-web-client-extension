@@ -66,9 +66,9 @@ describe('merge', () => {
     });
 
     test('keeps the built-ins even when nothing has registered them', () => {
-        // The bug this is here for: only the forge HUD registers the built-in
-        // chips, so requiring a registration emptied this panel in the stock UI
-        // and left it showing the loaded plugins and nothing else.
+        // The bug this is here for: requiring a registration emptied this panel
+        // whenever the built-in chips had not registered, leaving it showing the
+        // loaded plugins and nothing else.
         const rows = merge(
             [
                 { id: 'clock-display', visible: true, order: 0 },

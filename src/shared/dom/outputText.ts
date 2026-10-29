@@ -4,9 +4,9 @@ import { AnsiAwareBuffer } from "@client/ansi/FormatState";
  * Plain-text helpers for renderers that show game output as text rather than
  * as the ANSI-styled DOM `AnsiAwareBuffer.toDom()` produces.
  *
- * Lives in `@shared` because more than one such renderer exists now (forge's
- * `GameLog`, the boss key overlay's fake document) and the decoding rule below
- * is subtle enough that a second copy would eventually drift.
+ * Lives in `@shared` so any such renderer (the boss key overlay's fake document,
+ * for one) shares the decoding rule below, which is subtle enough that a second
+ * copy would eventually drift.
  */
 
 /** The message text with formatting dropped. */

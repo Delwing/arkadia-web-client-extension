@@ -2,34 +2,30 @@
  * popups.css — shared structural styles for the standard dockable popups.
  *
  * WHY THIS FILE EXISTS
- * Popup structural rules used to live scattered through the 12k-line stock
- * `src/web/style.css`, which only the stock UI imports. Alternative UIs (forge)
- * therefore rendered popup bodies unstyled. This file is the single home for
- * those rules and is imported by BOTH entry points (stock `src/web/main.ts` and
- * `forge-ui/main.tsx`), so a popup is styled identically wherever it is mounted.
+ * Popup structural rules used to live scattered through the 12k-line
+ * `src/web/style.css`. This file is their single home, so a popup is styled
+ * identically wherever it is mounted (a dock, a floating window, a popout).
  *
  * HOW THEMING WORKS — DO NOT hardcode chrome colors here.
  * Every rule reads the `--popup-*` semantic variables (defined at `:root` in
- * stock style.css). Each UI supplies its own palette by remapping those vars:
- * stock at `:root`, forge under `.panel--floating`. Because these selectors are
- * GLOBAL (not scoped to either UI's shell), the var an element resolves is
- * whatever its host UI mapped — so the same rule reads as stock or as forge for
- * free. The only literals allowed are `--popup-data-*`-style semantic game hues
- * (which forge intentionally preserves, only desaturating them).
+ * style.css). Each theme supplies its own palette by remapping those vars, so
+ * the same rule reads in the classic colours or in Kuźnia's for free. The only
+ * literals allowed are `--popup-data-*`-style semantic game hues (which Kuźnia
+ * intentionally preserves, only desaturating them).
  *
  * COLOUR POLICY
  * - Neutral CHROME (surfaces, borders, text, controls, the accent, and the
  *   herb-bag palette) is fully variable-driven, so each UI re-themes it by
- *   remapping `--popup-*` — this is why forge renders every popup, herb bags
+ *   remapping `--popup-*` — this is why Kuźnia renders every popup, herb bags
  *   included, in its bronze world rather than the stock blue.
  * - Semantic STATUS + data colours use vars too (`--popup-success` /
- *   `-warning` / `-danger` / `--popup-data-*`), so each UI re-tints them: stock
- *   keeps the vivid tailwind hues, forge maps them to its earthy palette (moss /
+ *   `-warning` / `-danger` / `--popup-data-*`), so each theme re-tints them: the
+ *   classic ones keep the vivid tailwind hues, Kuźnia maps them to its earthy palette (moss /
  *   gold / terracotta + muted data tones) so green buttons and purple stats read
  *   forged rather than foreign. Prefer these vars over a literal hue.
  * - A few genuinely game-specific hues remain LITERAL where they carry meaning a
  *   generic status var can't (e.g. fishing's distinct cast / strike / pull
- *   states); forge only mutes those via a `filter: saturate(.7)` safety net.
+ *   states); a theme may only mute those, e.g. via a `filter: saturate(.7)`.
  * - Pure depth effects (white inset highlights, black/near-black drop shadows)
  *   are theme-agnostic and remain literal.
  *
@@ -1591,8 +1587,8 @@ select.popup-input optgroup {
 
 /* ── combat log ────────────────────────────────────────────────────────────
    Migrated from style.css. Remaining literals are semantic game hues (success
-   green / "others" orange) and a neutral separator gradient — forge preserves
-   data hues, so they read correctly in both UIs. Promoting them to dedicated
+   green / "others" orange) and a neutral separator gradient — themes preserve
+   data hues, so they read correctly under each. Promoting them to dedicated
    vars is left for the Layer-2 cleanup. */
 .combat-popup-body {
   display: flex;
@@ -6430,7 +6426,7 @@ select.popup-input optgroup {
 
 /* ── herbManager (ziola bags) ────────────────────────────────────────────────
    The /ziola HerbManager body (bags + pills). Palette promoted to `--popup-*`
-   so forge themes the bags/pills with the bronze accent instead of the stock
+   so Kuźnia themes the bags/pills with the bronze accent instead of the stock
    blue: the bag surface follows the section/bg vars, the pill uses the accent
    gradient, condition badges use the success/warning/danger scale. Only neutral
    inset-highlight / drop-shadow literals (white/black alphas) remain — those are
@@ -7127,9 +7123,8 @@ select.popup-input optgroup {
 
 /* ==========================================================================
    PANEL ACTION BUTTONS (.panel-button — pin / lock / reset / close / popout)
-   Moved here from stock src/web/style.css so BOTH UIs get them: these render in
-   every dockable/floating panel header (PanelHeader), and forge-ui imports this
-   sheet but not stock style.css. Var-driven, so they theme per-UI for free.
+   These render in every dockable/floating panel header (PanelHeader).
+   Var-driven, so they theme per-theme for free.
    ========================================================================== */
 .panel-button {
   width: var(--panel-btn-size, 20px);
@@ -7242,11 +7237,9 @@ select.popup-input optgroup {
 
 /* ============================================================
    Object List — card / compact / dots / raid view components
-   (moved verbatim from src/web/style.css). Shared by both UIs:
-   the stock "Kondycje" panel and forge's plain objectList dock
-   window both render these flavors. Colours come through the
-   --popup-* vars each UI defines on its panels, so they recolour
-   per-theme (blue in stock, bronze in forge) for free.
+   (moved verbatim from src/web/style.css). Colours come through
+   the --popup-* vars each theme defines on its panels, so they
+   recolour per-theme (blue in the classic ones, bronze in Kuźnia).
    ============================================================ */
 /* Object List Card View Toggle */
 .object-list__card-toggle {
@@ -7986,8 +7979,8 @@ select.popup-input optgroup {
    Object List — "W poblizu" (nearby) flavor rows. Shared base.
    A compact key / name / HP row with an attacker "fray" line under
    it. Coloured through --popup-* so it reads neutral in the stock
-   UI; forge re-skins the fonts, the bronze key diamond and the
-   blood palette in forge-ui/layout-theme.css (loaded after this).
+   UI; a theme may re-skin the fonts, the key diamond and the
+   palette in a sheet loaded after this.
    ============================================================ */
 .objects-list-nearby {
   display: flex;
@@ -8141,9 +8134,8 @@ select.popup-input optgroup {
 .atk--you   { color: var(--popup-accent); background: var(--popup-accent-subtle-bg); box-shadow: inset 0 0 0 1px var(--popup-accent-border); }
 
 /* ============================================================
-   Object List Demo Popup (/demo_kondycje). Shared by both UIs:
-   the popup is mounted from POPUP_CATALOG, which forge-ui renders
-   through LayoutManagerWrapper just like the stock UI. Colours come
+   Object List Demo Popup (/demo_kondycje), mounted from
+   POPUP_CATALOG through LayoutManagerWrapper. Colours come
    through the --popup-* vars, so it recolours per-theme for free.
    ============================================================ */.object-list-demo-popup__body {
   padding: 0;
@@ -8282,7 +8274,7 @@ select.popup-input optgroup {
   cursor: pointer;
 }
 
-/* Native controls follow the panel accent (blue in stock, bronze in forge)
+/* Native controls follow the panel accent (blue in the classic themes, bronze in Kuźnia)
    instead of the browser default. */
 .demo-popup-content input[type="checkbox"],
 .demo-popup-content input[type="range"] {
@@ -8996,7 +8988,7 @@ select.popup-input optgroup {
   border-top: 1px solid var(--popup-border);
 }
 
-/* ── Shortcuts / location notes panels (forge menu) ─────────────────────── */
+/* ── Shortcuts / location notes panels (Miejsca) ─────────────────────────── */
 .shortcuts-panel__form {
   padding: 12px;
   border: 1px solid var(--popup-border);

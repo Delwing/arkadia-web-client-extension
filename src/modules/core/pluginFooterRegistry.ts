@@ -4,10 +4,8 @@
  * This is the plugin-facing adapter over the common footer registry
  * (`footerRegistry`): each plugin footer component is backed by a real `<span>`
  * (the handle's `.element`, which plugins may manipulate directly), and that
- * span is registered as a `node` item in the common registry. Every UI then
- * renders it — the forge HUD interleaves it with its chips, the stock UI hosts
- * it in `#plugin-footer-components` — so plugin footer components now appear in
- * both UIs, not just the stock DOM footer they used to be pinned to.
+ * span is registered as a `node` item in the common registry, so whichever
+ * footer layout is drawn places it among the chips like any other item.
  *
  * Supports the same three content types as before: HTML strings, DOM nodes and
  * React elements.

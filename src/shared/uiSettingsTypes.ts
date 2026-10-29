@@ -217,8 +217,8 @@ export interface ChromeSettings extends DeviceViewSettings {
     mapPosition: MapPosition;
     footerMode: number;
     /**
-     * Which footer layout every UI draws (see @shared/footerLayoutTypes). Unset,
-     * each UI keeps its own: the stock footer here, the HUD plate in forge.
+     * Which footer layout is drawn (see @shared/footerLayoutTypes). Unset, the
+     * theme's own: the classic one, or the forge plate under Kuźnia.
      * `custom` draws footerCustomLayout.
      */
     footerLayout?: FooterLayoutChoice;

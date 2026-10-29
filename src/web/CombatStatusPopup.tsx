@@ -65,8 +65,7 @@ const IconBanner = () => (
 );
 
 /**
- * "Postawa" — a compact combat-readiness popup ported from forge-ui's
- * StatusPanel. Surfaces four bits of client state at a glance: whether a weapon
+ * "Postawa" — a compact combat-readiness popup. Surfaces four bits of client state at a glance: whether a weapon
  * is drawn (`weapon_state`), the cover cooldown (`coverTimer`), the auto-release
  * guard toggle (`releaseGuard`, driven by the `/puszczaj` alias) and the
  * team-order cooldown (`orderTimer`, only meaningful while leading a team).

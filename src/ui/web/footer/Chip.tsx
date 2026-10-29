@@ -21,8 +21,7 @@ export const CHIP_LONG_PRESS_MS = 300;
  * (`chip`, `chip__ico`, `chip__text`, `chip__lab`, `chip__val`, the
  * `chip--{tone}` urgency modifier, `chip--act` for interactive chips and
  * `chip--value-first` when the value leads). Each
- * host UI skins those classes — the forge HUD gives them the forged-stone look,
- * the stock UI can give them its own. Renders a `<button>` when it does
+ * theme skins those classes — Kuźnia gives them the forged-stone look. Renders a `<button>` when it does
  * something on click and a plain `<div>` otherwise, so only interactive chips
  * present themselves as clickable.
  *

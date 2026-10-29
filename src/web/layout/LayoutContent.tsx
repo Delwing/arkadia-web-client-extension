@@ -19,19 +19,12 @@ interface LayoutContentProps {
   objectListHost: MovableHost | null;
   /** The non-team objects window (#objects-list-others). */
   objectListOthersHost?: MovableHost | null;
-  /** Override the built-in objectList panel's title (default "Kondycje"). */
-  objectListTitle?: string;
-  /** Custom content for the objectList panel; when set, the legacy
-   *  #objects-list host is not shown by the panel. */
-  renderObjectList?: () => React.ReactNode;
 }
 
 export function LayoutContent({
   mapHost,
   objectListHost,
   objectListOthersHost,
-  objectListTitle,
-  renderObjectList,
 }: LayoutContentProps) {
   const {
     manager,
@@ -56,23 +49,20 @@ export function LayoutContent({
     }
     manager.open('map', { title: 'Mapa' });
     if (layoutState.enabledPanels.objectList) {
-      manager.open('objectList', { title: objectListTitle ?? 'Kondycje' });
+      manager.open('objectList', { title: 'Kondycje' });
     } else if (manager.has('objectList')) {
       manager.close('objectList');
     }
     // loadVersion in deps so Restore Default / device-sync import re-opens
     // built-ins after the manager's live-windows map is cleared by loadState.
-  }, [isLayoutMode, layoutState.enabledPanels.objectList, manager, loadVersion, objectListTitle]);
+  }, [isLayoutMode, layoutState.enabledPanels.objectList, manager, loadVersion]);
 
   // The non-team objects window lives and dies with the Kondycje split setting.
-  // Shells that render their own object list (renderObjectList) have no such
-  // window, so it's never opened there.
   const [separateOthers] = useBuiltInPanelSetting('objectList', SEPARATE_OTHERS_SETTING, false);
   const showOthers =
     isLayoutMode &&
     layoutState.enabledPanels.objectList &&
     separateOthers === true &&
-    !renderObjectList &&
     !!objectListOthersHost;
   useEffect(() => {
     if (showOthers) {
@@ -245,11 +235,9 @@ export function LayoutContent({
           <MapPanel mapHost={mapHost} />
         </BuiltInPortal>
       )}
-      {manager.has('objectList') && (renderObjectList || objectListHost) && (
+      {manager.has('objectList') && objectListHost && (
         <BuiltInPortal id="objectList" manager={manager}>
-          {renderObjectList
-            ? renderObjectList()
-            : <ObjectListPanel host={objectListHost!} />}
+          <ObjectListPanel host={objectListHost} />
         </BuiltInPortal>
       )}
       {manager.has(OBJECT_LIST_OTHERS_ID) && objectListOthersHost && (
@@ -323,7 +311,7 @@ function BottomDockPortal({ children }: { children: React.ReactNode }) {
 /** In "rails span everything" (vertical) mode the left/right DockAreas must
  *  escape #content-area and become tracks of the #main-container grid so they
  *  span the full height past the input + bottom dock. When a host div is present
- *  (only the forge shell provides one), portal into it; otherwise — and in the
+ *  (the shell renders #layout-left/right-dock-host), portal into it; otherwise — and in the
  *  default horizontal mode — render inline so #content-area's grid places it. */
 function SideDockPortal({
   side,

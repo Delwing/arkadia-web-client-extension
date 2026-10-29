@@ -6,12 +6,6 @@ export type MessageHandlerClient = {
     off(event: 'message', listener: (message?: string | AnsiAwareBuffer, type?: string, timestamp?: number) => void): void;
 };
 
-export type BuildMessageNode = (
-    message: string | AnsiAwareBuffer | undefined,
-    type: string | undefined,
-    timestamp: number,
-) => HTMLElement | null;
-
 type OutputHandlerOptions = {
     outputWrapper: HTMLElement;
     splitBottom: HTMLElement;
@@ -22,16 +16,8 @@ type OutputHandlerOptions = {
     // can be changed at runtime without tearing down the handler.
     maxElements?: number | (() => number);
     trimSlack?: number;
-    // Builds the DOM node for one message. Defaults to the stock `.output_msg`
-    // wrapper (timestamp/type spans + content). A host with its own message
-    // shape (e.g. forge-ui's plain `<p>` lines) supplies its own builder here
-    // and gets the rest of the engine — split view, trimming, sticky mirroring —
-    // for free. Return `null` to skip the message entirely (e.g. a blank
-    // room-name line).
-    buildMessageNode?: BuildMessageNode;
     // Fired when the user finishes dragging the split-view resize handle, with
-    // the committed height in px. Hosts that persist a preferred height (stock)
-    // hook in here; hosts that don't (forge-ui) simply omit it.
+    // the committed height in px (the page stores it as the preferred height).
     onSplitViewResize?: (heightPx: number) => void;
 };
 
@@ -101,10 +87,9 @@ function applyMessageTypeVisibility() {
     }
 }
 
-// Exported so hosts with their own message shape (forge-ui's `<p>` lines) can
-// emit the same `.output-timestamp` / `.output-message-type` spans the shared
-// toggle classes (`output-show-*`) key off — keeping one source of truth for the
-// class names, time formatting, and hover tooltips across both UIs.
+// The `.output-timestamp` / `.output-message-type` spans the toggle classes
+// (`output-show-*`) key off — one source of truth for the class names, time
+// formatting, and hover tooltips.
 export function createTimestampElement(timestamp: number): HTMLSpanElement {
     const timestampEl = document.createElement('span');
     timestampEl.classList.add('output-timestamp');
@@ -151,9 +136,8 @@ export function toggleOutputMessageTypeVisibility() {
 }
 
 // A decorated message block (inventory, body loot, character description) marks
-// itself with `AnsiAwareBuffer.flair`. Both hosts turn that into the same class
-// pair, so one stylesheet rule set covers stock and forge alike. Exported for
-// forge-ui's own message builder.
+// itself with `AnsiAwareBuffer.flair`, which becomes a class pair the
+// stylesheets (messageFlair.css) style.
 const FLAIR_NAME = /^[a-z][a-z0-9-]*$/;
 
 export function applyFlairClass(element: HTMLElement, message: string | AnsiAwareBuffer | undefined): void {
@@ -165,9 +149,7 @@ export function applyFlairClass(element: HTMLElement, message: string | AnsiAwar
     element.classList.add('msg-flair', `msg-flair-${flair}`);
 }
 
-// The stock `.output_msg` wrapper: timestamp + type spans plus the message
-// content. The default `buildMessageNode` — hosts with their own message
-// shape (forge-ui) supply their own builder instead.
+// One message's `.output_msg` wrapper: timestamp + type spans plus the content.
 function createMessageWrapper(
     message: string | AnsiAwareBuffer,
     type: string | undefined,
@@ -217,7 +199,7 @@ function createMessageWrapper(
     return wrapper;
 }
 
-const defaultBuildMessageNode: BuildMessageNode = (message, type, timestamp) => {
+const buildMessageNode = (message: string | AnsiAwareBuffer | undefined, type: string | undefined, timestamp: number): HTMLElement | null => {
     // Allow empty strings to render as empty lines, but skip undefined/null.
     if (message === undefined || message === null) {
         return null;
@@ -235,7 +217,6 @@ export function setupOutputMessageHandler(
         stickyLines,
         maxElements = 1000,
         trimSlack = 100,
-        buildMessageNode = defaultBuildMessageNode,
         onSplitViewResize,
     }: OutputHandlerOptions,
 ): OutputMessageHandler {

@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
  *
  * These are self-contained (each `ChipIcon` renders its own `<svg>`) rather than
  * `<use href="#id">` references into an SVG symbol library, so the shared chips
- * render identically in any host — the forge HUD, the stock footer, a test —
+ * render identically in any host — the footer, the layout editor, a test —
  * without that host having to seed a symbol sheet first.
  */
 const PATHS: Record<string, ReactNode> = {

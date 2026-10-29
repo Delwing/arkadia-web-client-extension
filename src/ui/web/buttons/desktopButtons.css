@@ -1,4 +1,4 @@
-/* Desktop Buttons — shared between stock and forge-ui (src/ui/web/buttons/DesktopButtons.tsx).
+/* Desktop Buttons (src/ui/web/buttons/DesktopButtons.tsx).
    Structural rules only (position/pointer-events/touch-action/etc.) — per-button
    colors are set inline by the component from user settings. */
 .desktop-buttons-container {

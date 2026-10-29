@@ -112,7 +112,7 @@ test.describe('Footer layout', () => {
         expect(await chips.locator('#clock-display .chip').evaluate((el) => el.getBoundingClientRect().height)).toBeLessThan(24);
     });
 
-    test('the forge layout in the stock UI: binds row, spaced chips, vitals over a Postępy bar', async ({page}) => {
+    test('the Piętrowy (forge) layout: binds row, spaced chips, vitals over a Postępy bar', async ({page}) => {
         await page.setViewportSize({width: 1280, height: 800});
         await pickLayout(page, 'forge');
         await page.goto('/');

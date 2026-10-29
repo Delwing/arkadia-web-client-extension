@@ -16,8 +16,8 @@ const APPEARANCE_KEYS = [WINDOW_FONT_SIZE_KEY, WINDOW_FONT_FAMILY_KEY, WINDOW_BA
 
 /**
  * Keep a window's appearance overrides applied to its content element. Every
- * frame that shows a window with a settings cog calls this (the stock panel
- * shells and forge's floating host); the element outlives any one frame, so
+ * frame that shows a window with a settings cog calls this (the docked and
+ * floating panel shells); the element outlives any one frame, so
  * applying it from more than one is harmless.
  */
 export function useWindowAppearance(windowId: string, enabled = true): void {
