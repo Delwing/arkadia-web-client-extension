@@ -8,9 +8,10 @@ import { ToastStack, type ToastStackProps } from "../notifications/ToastStack";
 import { LayoutManagerWrapper } from "../layout";
 import { ContextMenuHost } from "../contextMenu";
 import { suppressTitleUpdates } from "../FightTitle";
-import { MapChrome } from "./shell/MapChrome";
+import { MapPane } from "./shell/MapPane";
+import { ObjectLists } from "./shell/ObjectLists";
 import { mapHost, objectListHost, objectListOthersHost } from "./shell/mapHosts";
-import { DEFAULT_SLOT, useHostHeldAt } from "../layout/movableHost";
+import type { MapBootstrap } from "../map/mapBootstrap";
 import { PlaybackControls } from "@web-ui/components";
 import StockFooter from "@web-ui/footer/layout/StockFooter";
 import MobileDirectionButtons from "@web-ui/buttons/MobileDirectionButtons";
@@ -26,27 +27,25 @@ export interface AppProps {
     auth: AuthOverlayProps;
     /** Absent when the page has no #notification-center. */
     toasts: ToastStackProps | null;
+    /** The map download, for the progress bar. */
+    mapLoad: MapBootstrap;
 }
 
 const getOutputArea = () => document.getElementById("main_text_output_msg_wrapper");
-
-/** The map chrome in the map's default spot, only while that spot holds the map. */
-function DefaultMapChrome() {
-    return useHostHeldAt(mapHost, DEFAULT_SLOT) ? <MapChrome /> : null;
-}
 
 /**
  * The stock UI's React tree. Each island renders into the index.html element it
  * always had (or portals itself), so the page's DOM and CSS are unchanged; what
  * changes is that they share one root and the services context.
  */
-export function App({ commandLine, auth, toasts }: AppProps) {
+export function App({ commandLine, auth, toasts, mapLoad }: AppProps) {
     const { client } = useAppServices();
 
     return (
         <>
-            {/* Over the map in its default spot; the map panel renders its own while it holds the map. */}
-            <Island name="MapChrome" target="iframe-container"><DefaultMapChrome /></Island>
+            {/* The map's and the object lists' default places; layout panels take them over while open. */}
+            <Island name="MapPane" target="map-pane-root"><MapPane mapLoad={mapLoad} /></Island>
+            <Island name="ObjectLists"><ObjectLists /></Island>
 
             <Island name="CommandLine" target="command-line-root"><CommandLine deps={commandLine} /></Island>
             {toasts && <Island name="Toasts" target="notification-center"><ToastStack {...toasts} /></Island>}

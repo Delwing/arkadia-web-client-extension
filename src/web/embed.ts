@@ -132,8 +132,8 @@ export class EmbeddedMap {
     private _saveVisitedTimer: ReturnType<typeof setTimeout> | undefined;
     private viewChangeListeners: Set<(isViewing: boolean, areaName?: string) => void> = new Set();
 
-    constructor(reader: MapReader, startId?: number) {
-        this.map = document.querySelector<HTMLDivElement>("#map")!;
+    constructor(reader: MapReader, startId?: number, container: HTMLElement | null = document.querySelector<HTMLDivElement>("#map")) {
+        this.map = container as HTMLDivElement;
         this.map.style.touchAction = 'none';
         this.map.addEventListener('zoom', () => this.onZoom());
         this.map.addEventListener('roomcontextmenu', (ev: CustomEvent<RoomContextMenuEventDetail>) => this.onContextMenu(ev));

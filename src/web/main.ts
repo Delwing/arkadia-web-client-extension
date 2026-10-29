@@ -22,7 +22,6 @@ import {
 } from "./proxySession.ts";
 import {ConnectionController} from "./connection/connectionController";
 import {WakeLock} from "./platform/wakeLock";
-import {installMapLayoutOffsets} from "./platform/iosViewport";
 import {applyInitialLocation} from "./platform/initialLocation";
 import {OPEN_SETTINGS_EVENT} from "./assistant/openSettings.ts";
 import {AccountSession} from "./account/accountSession";
@@ -70,17 +69,8 @@ import type {CommandLineDeps} from "./commandInput/CommandLine";
 import {prepareStockFooter} from "@web-ui/footer/prepareStockFooter.tsx";
 import {App, type AppProps} from "./app/App";
 import {mapHost, objectListHost, objectListOthersHost} from "./app/shell/mapHosts";
-import {DEFAULT_SLOT} from "./layout/movableHost";
 import {AppProviders} from "./app/AppProviders";
 import {initTextToSpeech} from "./voice/textToSpeech.ts";
-
-// The map and the object lists in their default spots, before anything looks
-// them up by id (ObjectList, EmbeddedMap, the UI settings). A layout panel takes
-// them over while it shows them and hands them back when it closes.
-mapHost.attach(document.getElementById('iframe-container')!, DEFAULT_SLOT, document.getElementById('map-progress-container'));
-const recordingButtonRoot = document.getElementById('recording-button-root');
-objectListHost.attach(document.getElementById('main-container')!, DEFAULT_SLOT, recordingButtonRoot);
-objectListOthersHost.attach(document.getElementById('main-container')!, DEFAULT_SLOT, recordingButtonRoot);
 
 // The client seeds `binds` from the active keymap itself (KeyBindingManager),
 // so any UI — including this one — picks up keybinds without a UI-side step.
@@ -100,16 +90,6 @@ applyInitialLocation(client);
 
 // Keep a phone from sleeping the tab while connected (the wake-lock setting).
 const wakeLock = new WakeLock();
-
-installMapLayoutOffsets(
-    document.getElementById("iframe-container"),
-    document.getElementById("main-container"),
-);
-
-const progressContainer = document.getElementById('map-progress-container')!;
-const progressBar = document.getElementById('map-progress-bar') as HTMLElement;
-
-progressContainer.style.display = 'none';
 
 const outputWrapper = document.getElementById('main_text_output_msg_wrapper') as HTMLElement;
 const splitBottom = document.getElementById('split-bottom') as HTMLElement;
@@ -225,21 +205,8 @@ outputWrapper.addEventListener('click', (event) => {
 // MobileCommandRadial component itself (src/ui/web/buttons) — it wires its
 // own mousedown listener onto the content area.
 
-// Map data and colours load in the background; the bar follows the download.
-const mapBootstrap = bootstrapMap(client);
-mapBootstrap.subscribeProgress(({visible, percent, loadedBytes}) => {
-    progressContainer.style.display = visible ? 'block' : 'none';
-    if (!visible) return;
-    if (percent === null) {
-        // Indeterminate progress: version check, or download of unknown total size
-        progressBar.style.width = '100%';
-        progressBar.textContent = loadedBytes !== undefined ? `${Math.floor(loadedBytes / 1024)} KB` : '';
-    } else {
-        progressBar.style.width = `${percent}%`;
-        progressBar.textContent = `${Math.floor(percent)}%`;
-    }
-});
-
+// Map data and colours load in the background; MapPane shows the download.
+const mapBootstrap = bootstrapMap(client, mapHost);
 
 // The connection lifecycle (connect, autologin, reattach through the session
 // proxy, checks on returning to the tab) lives in the controller; this file only
@@ -568,7 +535,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const fightTitle = new FightTitle();
     new HpTitle(fightTitle);
-    new ObjectList(client);
+    new ObjectList(client, {list: objectListHost.element, others: objectListOthersHost.element});
 
     prepareStockFooter();
     registerBuiltinWidgets();
@@ -590,6 +557,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 onDismissed: focusCommandInputOnConnect,
             },
             toasts,
+            mapLoad: mapBootstrap,
         }),
     )));
 

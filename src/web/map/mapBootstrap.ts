@@ -3,6 +3,7 @@ import {getMapSettings} from "@modules/core/settings";
 import {loadColors, loadMapData, subscribeToMapData} from "../mapDataLoader";
 import {EmbeddedMap} from "../embed";
 import {getEmbeddedMap, setEmbeddedMap} from "../embedRegistry";
+import type {MovableHost} from "../layout/movableHost";
 
 /** The map download as the progress bar shows it. */
 export interface MapLoadProgress {
@@ -31,7 +32,7 @@ function applySavedAlgorithm(pathFinder: { setAlgorithm?: (algorithm: any) => vo
  * Download map data and colours, put the embedded map on screen, and keep it in
  * step with every later change to the map data.
  */
-export function bootstrapMap(client: Pick<Client, "Map">): MapBootstrap {
+export function bootstrapMap(client: Pick<Client, "Map">, mapHost: MovableHost): MapBootstrap {
     let progress: MapLoadProgress = {visible: false, percent: 0};
     const listeners = new Set<(progress: MapLoadProgress) => void>();
     const setProgress = (next: MapLoadProgress) => {
@@ -45,14 +46,16 @@ export function bootstrapMap(client: Pick<Client, "Map">): MapBootstrap {
             : {visible: true, percent});
     };
 
-    const ready = Promise.all([loadMapData(onDownloadProgress), loadColors()])
+    // The renderer sizes itself from its container, so the map waits for the host
+    // to be in the page as well as for its data.
+    const ready = Promise.all([loadMapData(onDownloadProgress), loadColors(), mapHost.whenPlaced()])
         .then(([mapData, colors]) => {
             console.log('Map data and colors loaded successfully');
             setProgress({visible: false, percent: 100});
 
             const {startId, reader, pathFinder} = client.Map.initialize(mapData, colors);
             applySavedAlgorithm(pathFinder);
-            const embedded = new EmbeddedMap(reader, startId);
+            const embedded = new EmbeddedMap(reader, startId, mapHost.element);
             embedded.pathFinder = pathFinder;
             setEmbeddedMap(embedded);
 

@@ -135,14 +135,19 @@ button code was dead (no `#wake-lock-button` exists) and is removed.
    follows the `mapLocationLabel` event instead of watching `#location-text`.
    The default places are still `#iframe-container` and `#main-container` in
    index.html, attached in `main.ts` at startup; 4 and 5 make them components.
-4. **`<MapPane>`** — `#iframe-container` and the download progress bar as a
-   component that holds `mapHost` at the default priority and renders `MapChrome`
-   while it does; `EmbeddedMap` takes the host element instead of querying `#map`.
-   `installMapLayoutOffsets` becomes its effect.
-5. **`<ObjectLists>`** — the object lists' default place as a component holding
-   their hosts; `ObjectList` takes the host elements instead of looking them up, and
-   stops clearing its container (`innerHTML = ""`), which today only works because it
-   runs before any panel adds its timers bar.
+4. **`<MapPane>`** — **done.** `app/shell/MapPane.tsx` renders `#iframe-container`
+   with the download progress bar, holds `mapHost` at the default priority and
+   renders `MapChrome` while it does; `installMapLayoutOffsets` is its effect.
+   `EmbeddedMap` takes the host element, and `bootstrapMap` waits for the host to be
+   placed as well as for the data. Until `<Shell>` (9) renders `#content-area`, the
+   pane mounts into one `display: contents` point (`#map-pane-root`) where
+   `#iframe-container` was.
+5. **`<ObjectLists>`** — **done.** `app/shell/ObjectLists.tsx` attaches the list
+   hosts straight into `#main-container` (direct children, as the vertical-rails
+   grid places them). `ObjectList` takes the elements instead of looking them up,
+   clears only its own content instead of `innerHTML = ""`, and clamps its saved
+   position once the list is in the page (a detached element measured nothing and
+   was reset to 0,0). Renders nothing itself until `<Shell>` renders `#main-container`.
 6. **`<GameOutput>`** — the output wrapper, split pane, sticky area, close button and
    `#notification-center` (toasts as a child, not a portal). `setupOutputMessageHandler`,
    `installOutputSearch`, the output context menu and the double-tap/double-click

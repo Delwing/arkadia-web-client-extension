@@ -70,6 +70,18 @@ export class MovableHost {
     return this.current?.priority ?? null;
   }
 
+  /** Resolves once some place holds the element (at once if one does). */
+  whenPlaced(): Promise<void> {
+    if (this.current) return Promise.resolve();
+    return new Promise((resolve) => {
+      const off = this.subscribe(() => {
+        if (!this.current) return;
+        off();
+        resolve();
+      });
+    });
+  }
+
   subscribe = (listener: () => void): (() => void) => {
     this.listeners.add(listener);
     return () => { this.listeners.delete(listener); };

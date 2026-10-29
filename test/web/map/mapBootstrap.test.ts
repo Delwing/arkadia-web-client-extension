@@ -14,7 +14,8 @@ vi.mock("@web/embedRegistry", () => ({
     setEmbeddedMap: (map: any) => { registry.current = map; },
 }));
 vi.mock("@web/embed", () => ({
-    EmbeddedMap: vi.fn(function (this: any, reader: any, startId: number) {
+    EmbeddedMap: vi.fn(function (this: any, reader: any, startId: number, container: HTMLElement) {
+        this.container = container;
         this.reader = reader;
         this.startId = startId;
         this.pathFinder = null;
@@ -27,6 +28,14 @@ vi.mock("@modules/core/settings", () => ({
 }));
 
 import { bootstrapMap } from "@web/map/mapBootstrap";
+import { MovableHost } from "@web/layout/movableHost";
+
+/** The map host in a place, as the map pane holds it. */
+function placedHost() {
+    const host = MovableHost.create("map");
+    host.attach(document.createElement("div"));
+    return host;
+}
 
 function makeMapHelper() {
     let reader: any = { id: "reader-1" };
@@ -64,7 +73,7 @@ describe("bootstrapMap", () => {
             return new Promise(() => undefined);
         });
         const { client } = makeMapHelper();
-        const boot = bootstrapMap(client);
+        const boot = bootstrapMap(client, placedHost());
         const seen: any[] = [];
         boot.subscribeProgress((p) => seen.push(p));
 
@@ -77,11 +86,23 @@ describe("bootstrapMap", () => {
         expect(boot.getProgress()).toEqual({ visible: true, percent: 42.5 });
     });
 
+    it("waits for the map host to be placed before creating the view", async () => {
+        const { client } = makeMapHelper();
+        const host = MovableHost.create("map");
+        const boot = bootstrapMap(client, host);
+        await new Promise((r) => setTimeout(r, 0));
+        expect(registry.current).toBeNull();
+
+        host.attach(document.createElement("div"));
+        await boot.ready;
+        expect(registry.current.container).toBe(host.element);
+    });
+
     it("initialises the map and registers the embedded view", async () => {
         const { client, pathFinder } = makeMapHelper();
         settings.pathFindingAlgorithm = "astar";
 
-        const boot = bootstrapMap(client);
+        const boot = bootstrapMap(client, placedHost());
         await boot.ready;
 
         expect(client.Map.initialize).toHaveBeenCalledWith({ map: true }, { colors: true });
@@ -93,7 +114,7 @@ describe("bootstrapMap", () => {
 
     it("redraws changed areas in place, and reloads the view when the reader is swapped", async () => {
         const fx = makeMapHelper();
-        await bootstrapMap(fx.client).ready;
+        await bootstrapMap(fx.client, placedHost()).ready;
         const embedded = registry.current;
 
         fx.fireAreasChanged([3, 4]);
@@ -109,7 +130,7 @@ describe("bootstrapMap", () => {
 
     it("re-initialises from new map data, keeping the loaded colours", async () => {
         const { client } = makeMapHelper();
-        await bootstrapMap(client).ready;
+        await bootstrapMap(client, placedHost()).ready;
         const [onData, opts] = loader.subscribeToMapData.mock.calls[0];
         expect(opts).toEqual({ emitInitial: false });
 
@@ -122,7 +143,7 @@ describe("bootstrapMap", () => {
     it("hides the bar and rejects ready when loading fails", async () => {
         loader.loadColors.mockRejectedValue(new Error("offline"));
         const { client } = makeMapHelper();
-        const boot = bootstrapMap(client);
+        const boot = bootstrapMap(client, placedHost());
 
         await expect(boot.ready).rejects.toThrow("offline");
         expect(boot.getProgress().visible).toBe(false);

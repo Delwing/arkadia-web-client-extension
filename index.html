@@ -42,16 +42,8 @@
 <div id="main-container">
     <div id="content-area">
         <div id="layout-manager-root"></div>
-        <!-- The map (src/web/app/shell/mapHosts.ts) and what sits over it (MapChrome)
-             show here unless a layout panel holds them. -->
-        <div id="iframe-container">
-            <div id="map-progress-container" class="map-progress">
-                <div class="map-progress__track">
-                    <div id="map-progress-bar" class="map-progress__bar"
-                         style="width: 0"></div>
-                </div>
-            </div>
-        </div>
+        <!-- #iframe-container, the map's default place: src/web/app/shell/MapPane.tsx -->
+        <div id="map-pane-root" style="display: contents"></div>
         <div id="main_text_output_msg_wrapper">
             <div id="notification-center" data-output-keep></div>
             <div id="split-bottom" class="split-hidden">
@@ -80,8 +72,8 @@
     </div>
     <!-- The footer: #multi-binds and #char-state, as @web-ui/footer/layout arranges them. -->
     <div id="footer-layout"></div>
-    <!-- #objects-list / #objects-list-others (src/web/app/shell/mapHosts.ts) are
-         attached here unless a layout panel holds them. -->
+    <!-- #objects-list / #objects-list-others are attached here unless a layout panel
+         holds them: src/web/app/shell/ObjectLists.tsx -->
     <!-- Zatrzymaj i zapisz while recording: src/web/app/shell/RecordingStopButton.tsx -->
     <div id="recording-button-root" style="display: contents"></div>
 
