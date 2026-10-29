@@ -1,8 +1,29 @@
+// Component sheets that come BEFORE the base and the themes, so the page's own
+// rules win ties with them (footer.css's .footer-buttons__panel over popups.css's
+// .popup-popover, for one). They used to land there by accident: forge-ui shared
+// them, so Rollup split them into chunks loaded ahead of client.css. Imported here
+// first, Rollup emits each where it is first imported, which pins that order
+// whatever the other entries share. Keep new component sheets out of this list
+// unless they need to lose to the base.
+import './documentation/docs.css'
+import './CombatStatusPopup.css'
+import './CoverDebugPopup.css'
+import './LineInspectorPopup.css'
+import './WorldTimePopup.css'
+import './knowledge/knowledge.css'
+import './automation/automation.css'
+import '@web-ui/footer/chip.css'
+import '@web-ui/bossKey/bossKey.css'
+import '@web-ui/messageFlair.css'
+import './pluginLabelIcon.css'
+import './popups/popups.css'
+import './options/footerEditor/footerEditor.css'
+import './settings/settingsDialog.css'
+import './uiSettings/palettePreview.css'
+import './keys/keys.css'
 // The document base + style.css + colour themes + layout.css, @imported into one
 // chunk (main-theme.css) to lock the stock cascade order — see that file for why.
 import './main-theme.css'
-import './popups/popups.css'
-import '@web-ui/messageFlair.css'
 import '@web-ui/buttons/desktopButtons.css'
 import '@web-ui/buttons/mobileCommandRadial.css'
 import '@web-ui/buttons/mobileDirectionButtons.css'
