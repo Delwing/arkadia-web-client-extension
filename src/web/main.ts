@@ -26,7 +26,6 @@ import {applyInitialLocation} from "./platform/initialLocation";
 import {OPEN_SETTINGS_EVENT} from "./assistant/openSettings.ts";
 import {AccountSession} from "./account/accountSession";
 import eventBus from "@modules/core/eventBus";
-import {setupOutputContextMenu} from "./outputContextMenu";
 import {installLongPressContextMenu} from "@shared/dom/longPressContextMenu.ts";
 import {isIOS} from "@shared/dom/mobileOs.ts";
 import {AppModal} from './modals/appModal';
@@ -39,7 +38,6 @@ import { setWidgetEditMode } from "@modules/core/widgetLayout";
 import {
     getRenderSettings,
     getShellSettings,
-    getDeviceViewSettings,
     onRenderSettingsChange,
     onShellSettingsChange,
 } from "@modules/core/settings";
@@ -52,11 +50,10 @@ import {flushSync} from 'react-dom'
 import {CLOSE_SETTINGS_EVENT, OPEN_SETTINGS_PAGE_EVENT, requestSettingsCategory, type OpenSettingsPageDetail} from "./settings/categories.ts";
 import { OPEN_PLACE_EVENT, openPlace } from "./places/placesData.ts"
 import {applyDefaultLayoutMode, setRailSpanSupported} from "@web/layout"
-import {globalStorage} from "@modules/core/storage"
-import {setOutputTimestampVisibility, setupOutputMessageHandler} from "@shared/dom/outputMessageHandler";
+import {setOutputTimestampVisibility} from "@shared/dom/outputMessageHandler";
+import {bufferOutputUntilMounted, getOutputHandler} from "./app/shell/outputHandle";
 import {createCharPlaqueFeed} from "@shared/dom/charPlaque";
 import {isLikelyTouchDevice, isMobileLikeViewport, isTouchPointerType} from "@shared/dom/pointerEnvironment.ts";
-import {installOutputSearch} from "./outputSearch/installOutputSearch";
 import {setConnectionOffline, setConnectionStatus, setReconnectHandler} from "./commandInput/connectionView";
 import {updateMainMenuItem} from "@modules/core/mainMenuRegistry";
 import {registerBuiltinMainMenu, type MainMenuModal} from "./menu/mainMenu";
@@ -91,115 +88,25 @@ applyInitialLocation(client);
 // Keep a phone from sleeping the tab while connected (the wake-lock setting).
 const wakeLock = new WakeLock();
 
-const outputWrapper = document.getElementById('main_text_output_msg_wrapper') as HTMLElement;
-const splitBottom = document.getElementById('split-bottom') as HTMLElement;
-const splitHandle = document.getElementById('split-handle')!;
-const stickyArea = document.getElementById('sticky-area') as HTMLElement;
-// Holds #multi-binds once the footer renders (StockFooter, in the app tree).
-const footerLayoutElement = document.getElementById('footer-layout');
-const STICKY_LINES = 50;
-const DOUBLE_CLICK_TIMEOUT_MS = 300;
+// What the client prints before the output area renders is shown once it does
+// (GameOutput sets up the output engine when it mounts).
+bufferOutputUntilMounted(mudClient);
+const getOutputWrapper = () => document.getElementById('main_text_output_msg_wrapper') as HTMLElement;
 
 setOutputTimestampVisibility(getRenderSettings().showTimestamps);
 onRenderSettingsChange((render) => {
     setOutputTimestampVisibility(render.showTimestamps);
 });
 
-// Scroll/wheel/resize/drag split-view detection, trimming, and sticky-mirror
-// live in the shared engine (also used by forge-ui).
-const outputMessageHandler = setupOutputMessageHandler(mudClient, {
-    outputWrapper,
-    splitBottom,
-    splitHandle,
-    stickyArea,
-    stickyLines: STICKY_LINES,
-    maxElements: () => getDeviceViewSettings().outputMaxElements,
-    onSplitViewResize: (heightPx) => {
-        if (heightPx < 60) return;
-        const settings = globalStorage.get('uiSettings');
-        if (settings) {
-            settings.splitViewHeight = heightPx;
-            globalStorage.set('uiSettings', settings);
-        }
-    },
-});
-
 // The character's plaque, once per character on login (Wygląd -> wizytówka).
-const showCharPlaque = createCharPlaqueFeed(outputMessageHandler.appendNode);
+const showCharPlaque = createCharPlaqueFeed((node, rebuild) => getOutputHandler()?.appendNode(node, rebuild));
 eventBus.on('gmcp.char.info', (info) => {
     if (getRenderSettings().characterPlaque) showCharPlaque(info);
 });
 
-// Multibinds appearing or disappearing is stock-only layout churn, so its
-// extra suppression + forced rescroll stays here, layered on top of the
-// shared engine via the returned handle.
-if (footerLayoutElement) {
-    const mutationObserver = new MutationObserver((mutations) => {
-        for (const mutation of mutations) {
-            if (mutation.type === 'attributes' && (mutation.target as Element).id === 'multi-binds') {
-                outputMessageHandler.suppressSplitView(500);
-
-                // Force scroll to bottom after layout settles
-                requestAnimationFrame(() => {
-                    requestAnimationFrame(() => {
-                        // The split pane lies over the text, so only the real bottom counts
-                        const isAtBottom = outputWrapper.scrollTop + outputWrapper.clientHeight >= outputWrapper.scrollHeight - 1;
-                        if (isAtBottom) {
-                            outputWrapper.scrollTop = outputWrapper.scrollHeight;
-                        }
-                    });
-                });
-            }
-        }
-    });
-    mutationObserver.observe(footerLayoutElement, {
-        attributes: true,
-        attributeFilter: ['class'],
-        subtree: true,
-    });
-}
-
-setupOutputContextMenu(outputWrapper);
 // iOS has no long-press contextmenu of its own; every right-click menu needs one.
 if (isIOS()) installLongPressContextMenu();
 
-
-function closeHistoryScrollback() {
-    outputMessageHandler.closeSplitView();
-}
-
-document.getElementById('split-close')?.addEventListener('click', () => {
-    closeHistoryScrollback();
-    (document.getElementById('message-input') as HTMLElement | null)?.focus();
-});
-
-
-let lastTap = 0;
-outputWrapper.addEventListener('touchend', (e) => {
-    const now = Date.now();
-    if (now - lastTap < DOUBLE_CLICK_TIMEOUT_MS) {
-        e.preventDefault();
-        closeHistoryScrollback();
-    }
-    lastTap = now;
-});
-
-let lastClick = 0;
-let lastClickTarget: EventTarget | null = null;
-outputWrapper.addEventListener('click', (event) => {
-    if (event.button !== 0) {
-        return;
-    }
-    const now = Date.now();
-    if (lastClickTarget === event.target && now - lastClick < DOUBLE_CLICK_TIMEOUT_MS) {
-        closeHistoryScrollback();
-        lastClick = 0;
-        lastClickTarget = null;
-        return;
-    }
-    lastClick = now;
-    lastClickTarget = event.target;
-});
 
 // Middle-mouse-click-opens-radial-menu now lives inside the shared
 // MobileCommandRadial component itself (src/ui/web/buttons) — it wires its
@@ -276,10 +183,6 @@ function updateConnectButtons() {
         : { label: 'Połącz', disabled: connecting, tone: undefined });
 }
 
-// Returning to the tab reflows the output; the split view must not take that for a scroll.
-document.addEventListener('visibilitychange', () => {
-    if (!document.hidden) outputMessageHandler.suppressSplitView(500);
-});
 
 
 // Direction (numpad movement) keybinds and the `binds` seed now live in the
@@ -304,21 +207,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // The command line renders with the rest of the app below; #message-input is
     // looked up when needed, not here.
     const commandLineDeps: CommandLineDeps = {
-        outputWrapper,
+        getOutputWrapper,
         sendCommand: (cmd, echo, opts, skip, fromUser) => client.sendCommand(cmd, echo, opts, skip, fromUser),
         isPasswordMode: () => mudClient.isPasswordMode(),
         getCommandLineSuggestions: () => client.commandLineSuggestions ?? [],
         getClearInputOnSend: () => clearInputOnSend,
         // What is on screen is the vocabulary the recogniser lacks.
-        getVoiceVocabulary: () => [...harvestOutputLines(outputWrapper), ...(client.commandLineSuggestions ?? [])],
+        getVoiceVocabulary: () => [...harvestOutputLines(getOutputWrapper()), ...(client.commandLineSuggestions ?? [])],
     };
     const getMessageInput = () => document.getElementById('message-input') as HTMLTextAreaElement | null;
-    installOutputSearch({
-        outputWrapper,
-        splitBottom,
-        skip: [document.getElementById('notification-center')].filter((el): el is HTMLElement => !!el),
-        commandInput: () => document.getElementById('message-input'),
-    });
     onShellSettingsChange((shell) => {
         if (shell.wakeLock && connection.getState().connected) {
             wakeLock.activate();
@@ -338,7 +235,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const placesModal = () => AppModal.byId('places-modal');
     const helperModal = () => AppModal.byId('helper-modal');
     const locationShareModal = () => AppModal.byId('location-share-modal');
-    const notificationCenter = document.getElementById('notification-center') as HTMLElement | null;
     const contentArea = document.getElementById('content-area') as HTMLElement | null;
 
     const focusCommandInputOnConnect = () => {
@@ -417,7 +313,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initTextToSpeech(client);
 
-    const toasts = notificationCenter ? setupToasts(notificationCenter, outputWrapper, client) : null;
+    const toasts = setupToasts(client);
 
     window.addEventListener('close-options', () => {
         (document.activeElement as HTMLElement)?.blur?.();

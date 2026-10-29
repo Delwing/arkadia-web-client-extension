@@ -4,7 +4,8 @@ import { AppModals } from "./AppModals";
 import { RecordingStopButton } from "./shell/RecordingStopButton";
 import CommandLine, { type CommandLineDeps } from "../commandInput/CommandLine";
 import { AuthOverlay, type AuthOverlayProps } from "../auth/AuthOverlay";
-import { ToastStack, type ToastStackProps } from "../notifications/ToastStack";
+import type { ToastStackProps } from "../notifications/ToastStack";
+import { GameOutput } from "./shell/GameOutput";
 import { LayoutManagerWrapper } from "../layout";
 import { ContextMenuHost } from "../contextMenu";
 import { suppressTitleUpdates } from "../FightTitle";
@@ -48,7 +49,7 @@ export function App({ commandLine, auth, toasts, mapLoad }: AppProps) {
             <Island name="ObjectLists"><ObjectLists /></Island>
 
             <Island name="CommandLine" target="command-line-root"><CommandLine deps={commandLine} /></Island>
-            {toasts && <Island name="Toasts" target="notification-center"><ToastStack {...toasts} /></Island>}
+            <Island name="GameOutput" target="game-output-root"><GameOutput toasts={toasts} /></Island>
 
             {/* Logowanie: the card over the game while offline. */}
             <Island name="AuthOverlay" target="auth-root"><AuthOverlay {...auth} /></Island>

@@ -9,15 +9,10 @@ import './toasts.css';
 /**
  * Feeds the `notify` toasts into a store for `<ToastStack>`, which renders them
  * into #notification-center, a zero-height sticky strip at the top of the game
- * output's scroll container. The stack inside it is placed against the visible
- * output, so it learns the scrollport's height to reach the bottom corners.
+ * output's scroll container (GameOutput measures the scrollport for it).
  */
-export function setupToasts(container: HTMLElement, outputWrapper: HTMLElement, client: Client): ToastStackProps {
+export function setupToasts(client: Client): ToastStackProps {
     const store = new ToastStore(() => normalizeToastSettings(getShellSettings()));
-
-    const measure = () => container.style.setProperty('--toast-viewport-h', `${outputWrapper.clientHeight}px`);
-    measure();
-    new ResizeObserver(measure).observe(outputWrapper);
 
     client.on('notify', (payload) => {
         if (!payload) return;

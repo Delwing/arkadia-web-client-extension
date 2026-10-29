@@ -1,7 +1,7 @@
 import {AnsiAwareBuffer} from "@client/ansi/FormatState";
 import {createSplitViewController} from "./splitViewController";
 
-type MessageHandlerClient = {
+export type MessageHandlerClient = {
     on(event: 'message', listener: (message?: string | AnsiAwareBuffer, type?: string, timestamp?: number) => void): void;
     off(event: 'message', listener: (message?: string | AnsiAwareBuffer, type?: string, timestamp?: number) => void): void;
 };
@@ -46,6 +46,10 @@ export type OutputMessageHandler = {
     // and pins the output to the bottom. Unlike just scrolling down, this works
     // while output is pouring in, when the scroll it causes would be ignored.
     closeSplitView(): void;
+    // Shows a client message as if it had just been emitted: for messages that
+    // arrived before the handler was set up (the page's output area renders
+    // after the client starts).
+    appendMessage(message?: string | AnsiAwareBuffer, type?: string, timestamp?: number): void;
     // Appends an arbitrary node through the same insert/trim/scroll/sticky-mirror
     // pipeline as an incoming client message. `rebuild` — when provided — must
     // return a fresh, independently-live equivalent node; it is called again
@@ -388,6 +392,7 @@ export function setupOutputMessageHandler(
             splitView.close();
             splitView.pinToBottom(true);
         },
+        appendMessage: handleMessage,
         appendNode,
     };
 }

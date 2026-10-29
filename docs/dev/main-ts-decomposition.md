@@ -148,10 +148,18 @@ button code was dead (no `#wake-lock-button` exists) and is removed.
    clears only its own content instead of `innerHTML = ""`, and clamps its saved
    position once the list is in the page (a detached element measured nothing and
    was reset to 0,0). Renders nothing itself until `<Shell>` renders `#main-container`.
-6. **`<GameOutput>`** — the output wrapper, split pane, sticky area, close button and
-   `#notification-center` (toasts as a child, not a portal). `setupOutputMessageHandler`,
-   `installOutputSearch`, the output context menu and the double-tap/double-click
-   handlers run in its layout effect; the lines stay the handler's.
+6. **`<GameOutput>`** — **done.** `app/shell/GameOutput.tsx` renders the output
+   wrapper, `#notification-center` with the toasts as a child (no portal) and the
+   scrollback pane. `setupOutputMessageHandler`, the output context menu, output
+   search, the double-tap/double-click close, the multibind and tab-return
+   suppression and the toasts' viewport measure run in its layout effect; the lines
+   stay the engine's (it only inserts before the pane and trims lines, never the
+   strip or the pane). The client prints before the page renders, so
+   `app/shell/outputHandle.ts` holds those messages and replays them through the
+   engine (`appendMessage`) when it mounts; the character plaque reaches the engine
+   through `getOutputHandler()`. `CommandLineDeps.getOutputWrapper` replaces the
+   element, read when the command line mounts. Until `<Shell>` (9) renders
+   `#content-area`, it mounts into `#game-output-root` (`display: contents`).
 7. **Footer, command line, compass rose, dock hosts** — `StockFooter` and
    `CommandLine` rendered by `<Shell>` in place instead of portalled into
    `#footer-layout` / `#command-line-root`; the `layout-*-dock-host` elements in JSX;
