@@ -217,9 +217,17 @@ tags, and `grep createPortal src/web/app` finds no placeholder target.
   engine's `buildMessageNode` hook. Each needs its stock default checked before it
   goes. The `sass` dev dependency is unused now too (dropping it changes
   `yarn.lock`).
-- Replace the `window` events that open and close windows (`show-binds`,
-  `close-options`, `show-character-management`, `OPEN_SETTINGS_EVENT`…) with a typed
-  modal store, keeping the events as adapters until nothing fires them, then remove them.
+- **Typed window API instead of `window` events** — **done.** `modals/pageWindows.ts`
+  (`openWindow`, `closeWindow`, `closeOptionWindows`, over the `AppModal`
+  controller) replaces `close-options`, `show-binds`, `show-character-management`,
+  `OPEN_SETTINGS_PAGE_EVENT` and `CLOSE_SETTINGS_EVENT`; `openSettingsPage`,
+  `openPlace` and the assistant's `openSettingsFor` open their window themselves.
+  Two events stay, for what they tell the window's content rather than for opening
+  it: the place event (which room Miejsca selects) and the assistant's (which page
+  the dialog shows). `show-export-import` stays too: it comes from
+  `src/modules/firebase/syncEngine.ts`, which must not import the UI, and
+  `<AppModals>` answers it. Character management refreshes on its window's own
+  `MODAL_EVENT.show`.
 - Move the remaining `main.ts` wiring into the components it belongs to (focus
   handling into `<GameOutput>`/`<CommandLine>`, the settings/places event listeners
   into `<AppModals>`), leaving `main.ts` as CSS, `bootstrapGameClient`, the pre-mount

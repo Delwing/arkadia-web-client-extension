@@ -4,8 +4,8 @@ import { useCharacterSettingsPages } from "@web/options/useCharacterSettingsPage
 import { useUiSettingsPages, type UiSettingsPagesProps } from "@web/uiSettings/useUiSettingsPages.tsx";
 import { useDataPages } from "@web/options/useDataPages.tsx";
 import { OPEN_SETTINGS_EVENT, type OpenSettingsDetail } from "@web/assistant/openSettings.ts";
+import { closeWindow } from "@web/modals/pageWindows.ts";
 import {
-    CLOSE_SETTINGS_EVENT,
     DEFAULT_SETTINGS_CATEGORY,
     SAVE_SETTINGS_EVENT,
     SETTINGS_CATEGORIES,
@@ -340,8 +340,7 @@ function SettingsDialog({ soundManager, onEnableNotifications, initialCategory }
             resetDirty();
             // The close below comes before the re-render: nothing is left unsaved.
             dirtyRef.current = new Set();
-            (document.activeElement as HTMLElement | null)?.blur?.();
-            window.dispatchEvent(new Event(CLOSE_SETTINGS_EVENT));
+            closeWindow("settings");
         };
 
         const modalEl = document.getElementById(SETTINGS_MODAL_ID);
@@ -572,7 +571,7 @@ function SettingsDialog({ soundManager, onEnableNotifications, initialCategory }
                             category={currentCategory}
                             chip={scopeChip(currentCategory.group)}
                             onBack={() => setPhoneView("list")}
-                            onClose={() => window.dispatchEvent(new Event(CLOSE_SETTINGS_EVENT))}
+                            onClose={() => closeWindow("settings")}
                         />
                         <PhoneSectionChips key={category} sections={phoneSections} pane={pagesRef.current} />
                     </div>

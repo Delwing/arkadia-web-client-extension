@@ -3,6 +3,7 @@ import { getRoomInfo } from "@modules/core/roomInfoProvider";
 import { getAllPluginLocationNotes, type PluginLocationNote } from "@modules/core/pluginLocationNotesRegistry";
 import { deleteNote, getAllNotes, type LocationNote } from "@modules/data/locationNotesStorage";
 import { getEmbeddedMap } from "@web/embedRegistry.ts";
+import { openWindow } from "@web/modals/pageWindows.ts";
 
 /**
  * Miejsca: a place is a room plus whatever the player keeps about it — the
@@ -42,8 +43,9 @@ export interface OpenPlaceDetail {
     focus?: "shortcut" | "note";
 }
 
-/** Open Miejsca on a room (hosts show the window; the window selects the room). */
+/** Open Miejsca on a room: the window opens, then selects the room. */
 export function openPlace(roomId: number, focus?: OpenPlaceDetail["focus"]) {
+    openWindow("places");
     window.dispatchEvent(new CustomEvent<OpenPlaceDetail>(OPEN_PLACE_EVENT, { detail: { roomId, focus } }));
 }
 

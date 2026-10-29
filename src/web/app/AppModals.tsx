@@ -1,4 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import eventBus from "@modules/core/eventBus";
+import { openPlace } from "../places/placesData";
+import { requestSettingsCategory } from "../settings/categories";
 import { useAppServices } from "./appServices";
 import { ErrorBoundary } from "./ErrorBoundary";
 import { AppModalShell } from "../modals/AppModalShell";
@@ -12,6 +15,7 @@ import Recordings from "../options/Recordings";
 import Places from "../places/Places";
 import HelperSettings from "../options/HelperSettings";
 import { isHelperSupported } from "../helperDownload";
+import { openWindow } from "../modals/pageWindows";
 
 /**
  * The page-level windows, opened by id through src/web/modals/appModal.ts. Each
@@ -22,6 +26,26 @@ export function AppModals() {
     const { client, helperConnection } = useAppServices();
     // Klawisze portals its keymap toolbar into the header; the slot exists only once rendered.
     const [bindsHeaderSlot, setBindsHeaderSlot] = useState<HTMLDivElement | null>(null);
+
+    useEffect(() => {
+        // The map's "Dodaj skrót" and "Notatka" (and /notatka) open Miejsca on that room.
+        const offs = [
+            eventBus.on("shortcuts.addWithRoom", ({ roomId }) => openPlace(roomId, "shortcut")),
+            eventBus.on("locationNote.edit", ({ roomId }) => openPlace(roomId, "note")),
+            eventBus.on("locationNote.open", ({ roomId }) => openPlace(roomId, "note")),
+        ];
+        // Sync's "Rozwiąż" (src/modules/firebase/syncEngine.ts, which cannot import
+        // the UI) asks for the sync page this way.
+        const showSync = () => {
+            requestSettingsCategory("data-sync");
+            openWindow("settings");
+        };
+        window.addEventListener("show-export-import", showSync);
+        return () => {
+            offs.forEach((off) => off());
+            window.removeEventListener("show-export-import", showSync);
+        };
+    }, []);
 
     return (
         <>
@@ -36,7 +60,7 @@ export function AppModals() {
                         type="button"
                         className="popup-btn popup-btn--control popup-btn--sm"
                         id="settings-characters-btn"
-                        onClick={() => window.dispatchEvent(new Event("show-character-management"))}
+                        onClick={() => openWindow("characters")}
                     >
                         Postacie
                     </button>

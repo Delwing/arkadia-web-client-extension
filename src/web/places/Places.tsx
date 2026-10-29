@@ -28,6 +28,7 @@ import {
     type ShortcutEntry,
 } from "./placesData";
 import "./places.css";
+import { closeOptionWindows } from "@web/modals/pageWindows.ts";
 
 /** Your places (shortcuts, notes) or the rooms the mapper described. */
 type Source = "mine" | "described";
@@ -42,7 +43,7 @@ const DESCRIBED_LIMIT = 200;
 const NOTE_SAVE_DELAY = 600;
 
 function closeWindow() {
-    window.dispatchEvent(new Event("close-options"));
+    closeOptionWindows();
 }
 
 function distanceLabel(d: number | null) {

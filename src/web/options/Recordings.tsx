@@ -6,6 +6,7 @@ import eventBus from "@modules/core/eventBus";
 import recordingManager, {defaultRecordingName} from "../RecordingManager";
 import { MODAL_EVENT } from "@web/modals/appModal.ts";
 import { foldText } from "@web/settings/settingsSearch.ts";
+import { closeOptionWindows } from "@web/modals/pageWindows.ts";
 
 const BLACK_BOX_RECENT_MS = 3 * 60 * 1000;
 
@@ -84,7 +85,7 @@ async function fetchRecordingEvents(name: string, options?: { recentMs?: number 
 }
 
 function closeDialog() {
-    window.dispatchEvent(new Event('close-options'));
+    closeOptionWindows();
 }
 
 function Recordings() {

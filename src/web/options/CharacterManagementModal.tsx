@@ -2,6 +2,7 @@ import {useState, useEffect} from 'react';
 import {characterStorage} from '@modules/core/storage';
 import {DeleteButton} from '@web-ui/primitives/index.ts';
 import {confirmDialog} from '@web-ui/primitives/confirmDialog.tsx';
+import { MODAL_EVENT } from "@web/modals/appModal.ts";
 
 const IGNORED_CHARACTER_KEY_PREFIXES = new Set([
     "firebase",
@@ -84,9 +85,11 @@ export default function CharacterManagement() {
     useEffect(() => {
         refreshCharacters();
 
+        // Re-read whenever the window opens: characters come and go while it is closed.
+        const modal = document.getElementById('character-management-modal');
         const handleShow = () => refreshCharacters();
-        window.addEventListener('show-character-management', handleShow);
-        return () => window.removeEventListener('show-character-management', handleShow);
+        modal?.addEventListener(MODAL_EVENT.show, handleShow);
+        return () => modal?.removeEventListener(MODAL_EVENT.show, handleShow);
     }, []);
 
     function refreshCharacters() {

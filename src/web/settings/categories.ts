@@ -12,6 +12,8 @@
  * label — so labels are unique across both groups.
  */
 
+import { closeOptionWindows, openWindow } from "@web/modals/pageWindows.ts";
+
 export type SettingsGroup = "character" | "ui" | "data";
 
 export type SettingsCategoryKey =
@@ -114,25 +116,19 @@ export function requestSettingsCategory(category: SettingsCategoryKey, options: 
 }
 
 /**
- * Ask the host UI to show the settings dialog on a page — for a button outside
- * the dialog (a window's "Import z Mudleta" shortcut). `anchor` is the DOM id
- * of an element on that page to scroll into view. Hosts close their other
- * modals first; the dialog itself picks the page from `SHOW_SETTINGS_EVENT`.
+ * Show the settings dialog on a page — for a button outside the dialog (a
+ * window's "Import z Mudleta" shortcut). The other option windows close first;
+ * the dialog picks the page from `SHOW_SETTINGS_EVENT`. `anchor` is the DOM id
+ * of an element on that page to scroll into view.
  */
-export const OPEN_SETTINGS_PAGE_EVENT = "open-settings-page";
-
-export interface OpenSettingsPageDetail {
-    category: SettingsCategoryKey;
-    anchor?: string;
-}
-
 export function openSettingsPage(category: SettingsCategoryKey, anchor?: string): void {
-    window.dispatchEvent(new CustomEvent<OpenSettingsPageDetail>(OPEN_SETTINGS_PAGE_EVENT, { detail: { category, anchor } }));
+    closeOptionWindows();
+    requestSettingsCategory(category);
+    openWindow("settings");
+    if (anchor) window.setTimeout(() => document.getElementById(anchor)?.scrollIntoView({ block: "center" }), 350);
 }
 
 /** Dispatched by the host's Save button. */
 export const SAVE_SETTINGS_EVENT = "save-settings";
-/** Dispatched by the dialog after saving, asking the host to close it. */
-export const CLOSE_SETTINGS_EVENT = "close-settings";
 /** DOM id of the window whose open/close events (MODAL_EVENT, appModal.ts) the dialog follows. */
 export const SETTINGS_MODAL_ID = "settings-modal";

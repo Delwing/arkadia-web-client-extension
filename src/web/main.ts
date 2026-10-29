@@ -44,12 +44,11 @@ import {
 import {ConnectionController} from "./connection/connectionController";
 import {WakeLock} from "./platform/wakeLock";
 import {applyInitialLocation} from "./platform/initialLocation";
-import {OPEN_SETTINGS_EVENT} from "./assistant/openSettings.ts";
 import {AccountSession} from "./account/accountSession";
 import eventBus from "@modules/core/eventBus";
 import {installLongPressContextMenu} from "@shared/dom/longPressContextMenu.ts";
 import {isIOS} from "@shared/dom/mobileOs.ts";
-import {AppModal} from './modals/appModal';
+import {openWindow} from './modals/pageWindows';
 import ObjectList from "./ObjectList";
 import FightTitle from "./FightTitle";
 import HpTitle from "./HpTitle";
@@ -67,8 +66,6 @@ import {bootstrapMap} from "./map/mapBootstrap";
 import {createElement} from 'react'
 import {createRoot} from 'react-dom/client'
 import {flushSync} from 'react-dom'
-import {CLOSE_SETTINGS_EVENT, OPEN_SETTINGS_PAGE_EVENT, requestSettingsCategory, type OpenSettingsPageDetail} from "./settings/categories.ts";
-import { OPEN_PLACE_EVENT, openPlace } from "./places/placesData.ts"
 import {applyDefaultLayoutMode, setRailSpanSupported} from "@web/layout"
 import {setOutputTimestampVisibility} from "@shared/dom/outputMessageHandler";
 import {bufferOutputUntilMounted, getOutputHandler} from "./app/shell/outputHandle";
@@ -76,7 +73,7 @@ import {createCharPlaqueFeed} from "@shared/dom/charPlaque";
 import {isMobileLikeViewport} from "@shared/dom/pointerEnvironment.ts";
 import {setConnectionOffline, setConnectionStatus, setReconnectHandler} from "./commandInput/connectionView";
 import {updateMainMenuItem} from "@modules/core/mainMenuRegistry";
-import {registerBuiltinMainMenu, type MainMenuModal} from "./menu/mainMenu";
+import {registerBuiltinMainMenu} from "./menu/mainMenu";
 import {harvestOutputLines} from "./commandInput/outputWords";
 import {installClientPorts} from "./installClientPorts";
 import {bootstrapGameClient} from "./clientBootstrap";
@@ -240,18 +237,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // The page-level windows (AppModals.tsx, src/web/modals/appModal.ts). Looked up
-    // when used: they render with the app tree at the end of this handler.
-    const settingsModal = () => AppModal.byId('settings-modal');
-    const characterManagementModal = () => AppModal.byId('character-management-modal');
-    const bindsModal = () => AppModal.byId('binds-modal');
-    const scriptsModal = () => AppModal.byId('scripts-modal');
-    const automationModal = () => AppModal.byId('automation-modal');
-    const recordingsModal = () => AppModal.byId('recordings-modal');
-    const placesModal = () => AppModal.byId('places-modal');
-    const helperModal = () => AppModal.byId('helper-modal');
-    const locationShareModal = () => AppModal.byId('location-share-modal');
-
     const focusCommandInputOnConnect = () => {
         const messageInput = getMessageInput();
         if (!messageInput) return;
@@ -267,61 +252,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const toasts = setupToasts(client);
 
-    window.addEventListener('close-options', () => {
-        (document.activeElement as HTMLElement)?.blur?.();
-        for (const modal of [settingsModal, bindsModal, scriptsModal, automationModal, recordingsModal, placesModal]) {
-            modal()?.hide();
-        }
-    });
-
-    // Sync, backup and devices are the "Dane" pages of the settings dialog;
-    // the old "show-export-import" request opens it on Synchronizacja.
-    window.addEventListener(OPEN_SETTINGS_PAGE_EVENT, (event) => {
-        const { category, anchor } = (event as CustomEvent<OpenSettingsPageDetail>).detail;
-        window.dispatchEvent(new Event('close-options'));
-        requestSettingsCategory(category);
-        settingsModal()?.show();
-        if (anchor) window.setTimeout(() => document.getElementById(anchor)?.scrollIntoView({ block: 'center' }), 350);
-    });
-
-    window.addEventListener('show-export-import', () => {
-        requestSettingsCategory('data-sync');
-        settingsModal()?.show();
-    });
-
-    // Helper settings sends the user here: its shortcuts are edited in Klawisze.
-    window.addEventListener('show-binds', () => {
-        bindsModal()?.show();
-    });
-
-    window.addEventListener('show-character-management', () => {
-        characterManagementModal()?.show();
-    });
-
-    window.addEventListener(CLOSE_SETTINGS_EVENT, () => {
-        (document.activeElement as HTMLElement)?.blur?.();
-        settingsModal()?.hide();
-    });
-
-    /**
-     * The assistant asking for the panel that holds a setting it may not change
-     * itself (drag-and-drop editors, nested config). The modal instance lives in
-     * this scope and is not importable, so the panel reaches it by event.
-     *
-     * Only the dialog is opened, never the setting itself: these are exactly the
-     * settings a human is supposed to edit by hand. SettingsDialog handles the
-     * same event and switches to the page named in it.
-     */
-    window.addEventListener(OPEN_SETTINGS_EVENT, () => {
-        settingsModal()?.show();
-    });
-
-    // The map's "Dodaj skrót" and "Notatka" (and /notatka) open Miejsca on that room.
-    window.addEventListener(OPEN_PLACE_EVENT, () => placesModal()?.show());
-    eventBus.on('shortcuts.addWithRoom', ({ roomId }) => openPlace(roomId, 'shortcut'));
-    eventBus.on('locationNote.edit', ({ roomId }) => openPlace(roomId, 'note'));
-    eventBus.on('locationNote.open', ({ roomId }) => openPlace(roomId, 'note'));
-
     // The ⋯ menu's Kod QR lokacji: a link that opens the map on this room.
     const shareLocation = () => {
         const roomId = client.Map.currentRoom?.id;
@@ -332,19 +262,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const url = new URL(window.location.origin + window.location.pathname);
         url.searchParams.set('locationId', roomId.toString());
         locationQrImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url.toString())}`;
-        locationShareModal()?.show();
-    };
-    const modals: Record<MainMenuModal, () => AppModal | null> = {
-        automation: automationModal,
-        binds: bindsModal,
-        places: placesModal,
-        recordings: recordingsModal,
-        scripts: scriptsModal,
-        helper: helperModal,
-        settings: settingsModal,
+        openWindow('locationShare');
     };
     registerBuiltinMainMenu({
-        openModal: (modal) => modals[modal]()?.show(),
+        openModal: openWindow,
         shareLocation,
         isConnected: () => connection.getState().connected,
         toggleConnection: () => connection.toggle(),
@@ -375,7 +296,7 @@ document.addEventListener('DOMContentLoaded', () => {
         initialMccp: mudClient.isMccpEnabled(),
         onMccpChange: (enabled: boolean) => mudClient.setMccpEnabled(enabled),
         helper: helperConnection,
-        onHelperHelp: () => helperModal()?.show(),
+        onHelperHelp: () => openWindow('helper'),
     };
 
     // Initialize button state
