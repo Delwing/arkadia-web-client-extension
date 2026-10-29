@@ -120,21 +120,29 @@ Done along the way: the build line and new-version notice (`auth/CommitInfo.tsx`
 the recording stop button (`app/shell/RecordingStopButton.tsx`); the wake-lock
 button code was dead (no `#wake-lock-button` exists) and is removed.
 
-3. **Layout manager adopts panes instead of moving DOM** — *prerequisite for 4 and 5.*
-   Today `layout/panels/MapPanel.tsx` moves `#map`, `#location-wrapper` and
-   `#map-lost-wrapper` into a dock panel and back, and `ObjectListPanel` does the same
-   with `#objects-list`. React cannot own nodes something else re-parents (its tree
-   would point at the wrong parent and the next removal throws), which is why those
-   are still `index.html` placeholders filled by portals. Change the panels so the pane
-   *is* a React component rendered where the panel is (docked, floating, or in its
-   default spot), with the map engine and `ObjectList` attached to that component's
-   element by ref and re-attached when it moves.
-4. **`<MapPane>`** — the map host, its label, pause icon, lost badge and the download
-   progress bar as one component; `EmbeddedMap` attaches to the host by ref.
+3. **Layout manager stops moving page markup** — **done.** `#map`,
+   `#objects-list` and `#objects-list-others` are created in code
+   (`app/shell/mapHosts.ts`), not in index.html, and moved by
+   `layout/movableHost.ts`: places attach to a host and detach again, and the host
+   sits in the attached place with the highest priority (default spot 0, a layout
+   panel 1). `MapPanel` and `ObjectListPanel` attach while mounted instead of moving
+   nodes by hand and restoring them. React renders the places, never the hosts, so
+   moving a host is safe. Only those three elements move, because their contents
+   belong to an engine (`EmbeddedMap`, `ObjectList`) and must survive the move. The
+   location label, pause icon and lost badge are plain React now (`MapChrome`),
+   rendered by whichever place holds the map: they ask for their state on mount, the
+   pause icon reads a shared store, and `ObjectList`'s picture-in-picture header
+   follows the `mapLocationLabel` event instead of watching `#location-text`.
+   The default places are still `#iframe-container` and `#main-container` in
+   index.html, attached in `main.ts` at startup; 4 and 5 make them components.
+4. **`<MapPane>`** — `#iframe-container` and the download progress bar as a
+   component that holds `mapHost` at the default priority and renders `MapChrome`
+   while it does; `EmbeddedMap` takes the host element instead of querying `#map`.
    `installMapLayoutOffsets` becomes its effect.
-5. **`<ObjectLists>`** — `#objects-list` / `#objects-list-others` rendered by the
-   pane from 3, with `ObjectList` attached by ref. `ObjectList` must stop clearing its
-   container (`innerHTML = ""`) so the panel's timers host survives.
+5. **`<ObjectLists>`** — the object lists' default place as a component holding
+   their hosts; `ObjectList` takes the host elements instead of looking them up, and
+   stops clearing its container (`innerHTML = ""`), which today only works because it
+   runs before any panel adds its timers bar.
 6. **`<GameOutput>`** — the output wrapper, split pane, sticky area, close button and
    `#notification-center` (toasts as a child, not a portal). `setupOutputMessageHandler`,
    `installOutputSearch`, the output context menu and the double-tap/double-click

@@ -412,7 +412,6 @@ describe('ObjectList', () => {
 
   test('picture-in-picture shows status header and footer', async () => {
     document.body.innerHTML = `
-      <div id="location-text">#101 Northern Gate</div>
       <span id="cover-timer">Zas: 1.50</span>
       <div id="main_text_output_msg_wrapper">
         <div class="output_msg"><div class="output_msg_text"><span class="ansi">Enemies incoming</span></div></div>
@@ -432,6 +431,8 @@ describe('ObjectList', () => {
 
     const client = new MockClient();
     const objectList = new ObjectList(client as any);
+    // The map announces its location label; the PiP header follows the announcements.
+    client.emit('mapLocationLabel', '#101 Northern Gate');
     client.ObjectManager.getObjectsOnLocation = () => [
       { shortcut: '1', desc: 'Goblin', num: 7 },
     ];
@@ -455,9 +456,7 @@ describe('ObjectList', () => {
     expect(initialFooterHtml).toContain('Enemies incoming');
     expect(initialFooterHtml).toContain('span class="ansi"');
 
-    const locationEl = document.getElementById('location-text')!;
-    locationEl.textContent = '#202 Southern Gate';
-    await Promise.resolve();
+    client.emit('mapLocationLabel', '#202 Southern Gate');
     expect(getHeaderHtml()).toContain('#202 Southern Gate');
 
     const coverEl = document.getElementById('cover-timer')!;
@@ -484,7 +483,6 @@ describe('ObjectList', () => {
 
   test('picture-in-picture footer shows last two lines of multiline message', async () => {
     document.body.innerHTML = `
-      <div id="location-text"></div>
       <span id="cover-timer"></span>
       <div id="main_text_output_msg_wrapper">
         <div class="output_msg"><div class="output_msg_text">Initial</div></div>

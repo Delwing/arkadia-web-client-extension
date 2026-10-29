@@ -69,8 +69,18 @@ import {setupToasts} from "./notifications/setupToasts";
 import type {CommandLineDeps} from "./commandInput/CommandLine";
 import {prepareStockFooter} from "@web-ui/footer/prepareStockFooter.tsx";
 import {App, type AppProps} from "./app/App";
+import {mapHost, objectListHost, objectListOthersHost} from "./app/shell/mapHosts";
+import {DEFAULT_SLOT} from "./layout/movableHost";
 import {AppProviders} from "./app/AppProviders";
 import {initTextToSpeech} from "./voice/textToSpeech.ts";
+
+// The map and the object lists in their default spots, before anything looks
+// them up by id (ObjectList, EmbeddedMap, the UI settings). A layout panel takes
+// them over while it shows them and hands them back when it closes.
+mapHost.attach(document.getElementById('iframe-container')!, DEFAULT_SLOT, document.getElementById('map-progress-container'));
+const recordingButtonRoot = document.getElementById('recording-button-root');
+objectListHost.attach(document.getElementById('main-container')!, DEFAULT_SLOT, recordingButtonRoot);
+objectListOthersHost.attach(document.getElementById('main-container')!, DEFAULT_SLOT, recordingButtonRoot);
 
 // The client seeds `binds` from the active keymap itself (KeyBindingManager),
 // so any UI — including this one — picks up keybinds without a UI-side step.

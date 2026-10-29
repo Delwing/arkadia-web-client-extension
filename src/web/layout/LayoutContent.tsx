@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { MovableHost } from './movableHost';
 import { createPortal } from 'react-dom';
 import { DockArea } from './components/DockArea';
 import { FloatingWindowLayer } from './components/FloatingWindowLayer';
@@ -12,21 +13,23 @@ import { OBJECT_LIST_OTHERS_ID, PANEL_CONFIGS, SEPARATE_OTHERS_SETTING, type Doc
 import { setDockSizeVars } from './utils/dockSizeVars';
 
 interface LayoutContentProps {
-  mapElement: HTMLElement | null;
-  objectListElement: HTMLElement | null;
-  /** Host for the non-team objects window (#objects-list-others). */
-  objectListOthersElement?: HTMLElement | null;
+  /** The map's drawing surface (#map), shown by the map panel while it is open. */
+  mapHost: MovableHost | null;
+  /** Kondycje (#objects-list), shown by its panel while it is open. */
+  objectListHost: MovableHost | null;
+  /** The non-team objects window (#objects-list-others). */
+  objectListOthersHost?: MovableHost | null;
   /** Override the built-in objectList panel's title (default "Kondycje"). */
   objectListTitle?: string;
   /** Custom content for the objectList panel; when set, the legacy
-   *  #objects-list DOM relocation is bypassed. */
+   *  #objects-list host is not shown by the panel. */
   renderObjectList?: () => React.ReactNode;
 }
 
 export function LayoutContent({
-  mapElement,
-  objectListElement,
-  objectListOthersElement,
+  mapHost,
+  objectListHost,
+  objectListOthersHost,
   objectListTitle,
   renderObjectList,
 }: LayoutContentProps) {
@@ -70,7 +73,7 @@ export function LayoutContent({
     layoutState.enabledPanels.objectList &&
     separateOthers === true &&
     !renderObjectList &&
-    !!objectListOthersElement;
+    !!objectListOthersHost;
   useEffect(() => {
     if (showOthers) {
       manager.open(OBJECT_LIST_OTHERS_ID, {
@@ -237,21 +240,21 @@ export function LayoutContent({
           via the BuiltInPortal helper. The portal target is then attached to
           whichever shell currently owns it. Popups portal themselves through
           DockablePopupWrapper. */}
-      {mapElement && manager.has('map') && (
+      {mapHost && manager.has('map') && (
         <BuiltInPortal id="map" manager={manager}>
-          <MapPanel mapElement={mapElement} />
+          <MapPanel mapHost={mapHost} />
         </BuiltInPortal>
       )}
-      {manager.has('objectList') && (renderObjectList || objectListElement) && (
+      {manager.has('objectList') && (renderObjectList || objectListHost) && (
         <BuiltInPortal id="objectList" manager={manager}>
           {renderObjectList
             ? renderObjectList()
-            : <ObjectListPanel objectListElement={objectListElement} />}
+            : <ObjectListPanel host={objectListHost!} />}
         </BuiltInPortal>
       )}
-      {manager.has(OBJECT_LIST_OTHERS_ID) && objectListOthersElement && (
+      {manager.has(OBJECT_LIST_OTHERS_ID) && objectListOthersHost && (
         <BuiltInPortal id={OBJECT_LIST_OTHERS_ID} manager={manager}>
-          <ObjectListPanel objectListElement={objectListOthersElement} withTimers={false} />
+          <ObjectListPanel host={objectListOthersHost} withTimers={false} />
         </BuiltInPortal>
       )}
 

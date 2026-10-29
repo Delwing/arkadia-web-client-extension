@@ -35,7 +35,6 @@ export default class ObjectList {
     private pipContent: HTMLElement | null = null;
     private pipStyleObserver: MutationObserver | null = null;
     private pipTitleObserver: MutationObserver | null = null;
-    private locationObserver: MutationObserver | null = null;
     private coverTimerObserver: MutationObserver | null = null;
     private pipLocationText = "";
     private pipCoverTimerText = "";
@@ -988,21 +987,10 @@ html, body {
     }
 
     private initializePipInfoSources() {
-        const locationElement = document.getElementById("location-text");
-        if (locationElement && typeof MutationObserver !== "undefined") {
-            this.locationObserver?.disconnect();
-            this.locationObserver = new MutationObserver(() => {
-                this.updateLocationText(locationElement.textContent || "");
-            });
-            this.locationObserver.observe(locationElement, {
-                childList: true,
-                characterData: true,
-                subtree: true,
-            });
-            this.updateLocationText(locationElement.textContent || "");
-        } else {
-            this.locationObserver = null;
-        }
+        // The label as the map announces it, not #location-text's DOM: the label
+        // renders wherever the map is shown and remounts when the map moves.
+        this.client.on("mapLocationLabel", (text: string) => this.updateLocationText(text ?? ""));
+        eventBus.emit("requestMapLocationLabel");
 
         const coverTimerElement = document.getElementById("cover-timer");
         if (coverTimerElement && typeof MutationObserver !== "undefined") {

@@ -8,9 +8,9 @@ import { ToastStack, type ToastStackProps } from "../notifications/ToastStack";
 import { LayoutManagerWrapper } from "../layout";
 import { ContextMenuHost } from "../contextMenu";
 import { suppressTitleUpdates } from "../FightTitle";
-import { LocationLabel } from "@web-ui/components/map/LocationLabel";
-import { PauseIcon } from "@web-ui/components/map/PauseIcon";
-import { MapLostBadge } from "@web-ui/components/map/MapLostBadge";
+import { MapChrome } from "./shell/MapChrome";
+import { mapHost, objectListHost, objectListOthersHost } from "./shell/mapHosts";
+import { DEFAULT_SLOT, useHostHeldAt } from "../layout/movableHost";
 import { PlaybackControls } from "@web-ui/components";
 import StockFooter from "@web-ui/footer/layout/StockFooter";
 import MobileDirectionButtons from "@web-ui/buttons/MobileDirectionButtons";
@@ -30,6 +30,11 @@ export interface AppProps {
 
 const getOutputArea = () => document.getElementById("main_text_output_msg_wrapper");
 
+/** The map chrome in the map's default spot, only while that spot holds the map. */
+function DefaultMapChrome() {
+    return useHostHeldAt(mapHost, DEFAULT_SLOT) ? <MapChrome /> : null;
+}
+
 /**
  * The stock UI's React tree. Each island renders into the index.html element it
  * always had (or portals itself), so the page's DOM and CSS are unchanged; what
@@ -40,10 +45,8 @@ export function App({ commandLine, auth, toasts }: AppProps) {
 
     return (
         <>
-            {/* Map chrome. Each asks the map for its current state on mount. */}
-            <Island name="LocationLabel" target="location-text"><LocationLabel /></Island>
-            <Island name="PauseIcon" target="pause-icon"><PauseIcon /></Island>
-            <Island name="MapLostBadge" target="map-lost-wrapper"><MapLostBadge /></Island>
+            {/* Over the map in its default spot; the map panel renders its own while it holds the map. */}
+            <Island name="MapChrome" target="iframe-container"><DefaultMapChrome /></Island>
 
             <Island name="CommandLine" target="command-line-root"><CommandLine deps={commandLine} /></Island>
             {toasts && <Island name="Toasts" target="notification-center"><ToastStack {...toasts} /></Island>}
@@ -77,9 +80,9 @@ export function App({ commandLine, auth, toasts }: AppProps) {
             {/* The layout manager, with every dockable popup. */}
             <Island name="LayoutManager" target="layout-manager-root">
                 <LayoutManagerWrapper
-                    mapElement={document.getElementById("map")}
-                    objectListElement={document.getElementById("objects-list")}
-                    objectListOthersElement={document.getElementById("objects-list-others")}
+                    mapHost={mapHost}
+                    objectListHost={objectListHost}
+                    objectListOthersHost={objectListOthersHost}
                 />
             </Island>
         </>

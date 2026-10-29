@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from 'react';
 import { LayoutManagerWrapper } from '@web/layout';
+import { MovableHost } from '@web/layout/movableHost';
 import IconDefs from './IconDefs';
 import World from './World';
 import CommandRail from './CommandRail';
@@ -27,14 +28,21 @@ import BossKeyOverlay from '@web-ui/bossKey/BossKeyOverlay';
  * bootstrap). Forge defaults it to the "W poblizu" flavor via setObjectListChrome
  * — it's just another row-strategy of the one shared panel now, not a fork.
  */
+function adoptById(id: string): MovableHost | null {
+    const element = document.getElementById(id);
+    return element ? MovableHost.adopt(element) : null;
+}
+
 export default function App() {
     const client = useClient();
 
     // The static #map / #objects-list hosts live in index.html (offscreen). Hand
     // them to the built-in panels, which relocate them into whichever dock/float
     // owns them.
-    const mapElement = useMemo(() => document.getElementById('map'), []);
-    const objectListElement = useMemo(() => document.getElementById('objects-list'), []);
+    // Static nodes from forge's index.html; their spot there is the default the
+    // layout panels hand them back to.
+    const mapHost = useMemo(() => adoptById('map'), []);
+    const objectListHost = useMemo(() => adoptById('objects-list'), []);
 
     // Mount the real forged map into #map. EmbeddedMap binds to #map by id, so
     // this works whether or not MapPanel has already relocated the node.
@@ -55,8 +63,8 @@ export default function App() {
                 <div id="content-area">
                     <World />
                     <LayoutManagerWrapper
-                        mapElement={mapElement}
-                        objectListElement={objectListElement}
+                        mapHost={mapHost}
+                        objectListHost={objectListHost}
                         objectListTitle="W pobliżu"
                     />
                 </div>
