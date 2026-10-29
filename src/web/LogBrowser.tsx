@@ -8,8 +8,8 @@
  * What is left here is what only the client has: session management
  * (`LogManager`) and the link out to the standalone page.
  *
- * It is mounted twice and assumes nothing about its host: `logBrowserMount`
- * puts it in stock's Bootstrap modal, forge-ui puts it in its own modal shell.
+ * It is mounted twice and assumes nothing about its host: the stock UI's
+ * `LogsWindow` (src/web/app) puts it in its Logi window, forge-ui in its own modal shell.
  * The viewer brings its own palette (`lv-theme`), so neither host has to
  * provide one.
  */

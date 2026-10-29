@@ -95,36 +95,6 @@ export function GameOutput({ toasts }: { toasts: ToastStackProps | null }) {
             if (!document.hidden) handler.suppressSplitView(500);
         }, o);
 
-        // Multibinds appearing or disappearing is stock-only layout churn, so its
-        // extra suppression + forced rescroll stays here, layered on top of the
-        // shared engine via the returned handle.
-        const footerLayoutElement = document.getElementById("footer-layout");
-        const mutationObserver = new MutationObserver((mutations) => {
-            for (const mutation of mutations) {
-                if (mutation.type === "attributes" && (mutation.target as Element).id === "multi-binds") {
-                    handler.suppressSplitView(500);
-
-                    // Force scroll to bottom after layout settles
-                    requestAnimationFrame(() => {
-                        requestAnimationFrame(() => {
-                            // The split pane lies over the text, so only the real bottom counts
-                            const isAtBottom = outputWrapper.scrollTop + outputWrapper.clientHeight >= outputWrapper.scrollHeight - 1;
-                            if (isAtBottom) {
-                                outputWrapper.scrollTop = outputWrapper.scrollHeight;
-                            }
-                        });
-                    });
-                }
-            }
-        });
-        if (footerLayoutElement) {
-            mutationObserver.observe(footerLayoutElement, {
-                attributes: true,
-                attributeFilter: ["class"],
-                subtree: true,
-            });
-        }
-
         // The toasts are placed against the visible output, so the strip learns
         // the scrollport's height to reach the bottom corners.
         const measure = () => notices.style.setProperty("--toast-viewport-h", `${outputWrapper.clientHeight}px`);
@@ -146,7 +116,6 @@ export function GameOutput({ toasts }: { toasts: ToastStackProps | null }) {
 
         return () => {
             ac.abort();
-            mutationObserver.disconnect();
             resizeObserver.disconnect();
             detachHandle();
             handler.destroy();

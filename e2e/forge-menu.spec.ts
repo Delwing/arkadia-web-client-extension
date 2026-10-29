@@ -109,7 +109,7 @@ test.describe('forge menu', () => {
         // MutationObserver on document.body that retried — and re-logged — on
         // every DOM mutation. forge imports the module for its component only
         // (and warms it via prefetchAllModals), so it spammed the console for
-        // the whole session. The bootstrap now lives in logBrowserMount.tsx.
+        // the whole session. The stock window now lives in src/web/app/LogsWindow.tsx.
         await page.locator('.forge-menu__button').click();
         await page.locator('.forge-menu__list').getByRole('button', { name: 'Logi' }).click();
         const modal = page.locator('.forge-menu-modal');

@@ -4,9 +4,11 @@ import { AuthOverlay, type AuthOverlayProps } from "@web/auth/AuthOverlay.tsx";
 import type { ToastStackProps } from "@web/notifications/ToastStack.tsx";
 import { LayoutManagerWrapper } from "@web/layout";
 import type { MapBootstrap } from "@web/map/mapBootstrap.ts";
-import StockFooter from "@web-ui/footer/layout/StockFooter";
 import { ErrorBoundary } from "../ErrorBoundary";
 import { AppModals } from "../AppModals";
+import { LogsWindow } from "../LogsWindow";
+import { CompassRose } from "./CompassRose";
+import { Footer } from "./Footer";
 import { GameOutput } from "./GameOutput";
 import { MapPane } from "./MapPane";
 import { RecordingStopButton } from "./RecordingStopButton";
@@ -58,29 +60,10 @@ export function Shell({ commandLine, auth, toasts, mapLoad }: ShellProps) {
                 </div>
                 <ErrorBoundary name="MapPane"><MapPane mapLoad={mapLoad} /></ErrorBoundary>
                 <ErrorBoundary name="GameOutput"><GameOutput toasts={toasts} /></ErrorBoundary>
-                {/* Filled by src/client/scripts/inlineCompassRose.ts while its box mode is on. */}
-                <div id="compass-rose-box" className="compass-rose-box" style={{ display: "none" }}>
-                    <div className="compass-rose-special-exits"></div>
-                    <div className="compass-rose-grid">
-                        <span className="cr-dir" data-dir="nw">NW</span>
-                        <span className="cr-dir" data-dir="n">N</span>
-                        <span className="cr-dir" data-dir="ne">NE</span>
-                        <span className="cr-dir cr-ud" data-dir="u">U</span>
-                        <span className="cr-dir" data-dir="w">W</span>
-                        <span className="cr-center">X</span>
-                        <span className="cr-dir" data-dir="e">E</span>
-                        <span className="cr-sep"></span>
-                        <span className="cr-dir" data-dir="sw">SW</span>
-                        <span className="cr-dir" data-dir="s">S</span>
-                        <span className="cr-dir" data-dir="se">SE</span>
-                        <span className="cr-dir cr-ud" data-dir="d">D</span>
-                    </div>
-                </div>
+                <ErrorBoundary name="CompassRose"><CompassRose /></ErrorBoundary>
             </div>
             {/* The footer: #multi-binds and #char-state, as @web-ui/footer/layout arranges them. */}
-            <div id="footer-layout">
-                <ErrorBoundary name="StockFooter"><StockFooter /></ErrorBoundary>
-            </div>
+            <Footer />
             {/* #objects-list / #objects-list-others go here, unless a layout panel holds them. */}
             <ErrorBoundary name="RecordingStopButton"><RecordingStopButton ref={recordingRef} /></ErrorBoundary>
 
@@ -99,14 +82,8 @@ export function Shell({ commandLine, auth, toasts, mapLoad }: ShellProps) {
             {/* Logowanie: #auth-overlay and the ids password managers recognise. */}
             <ErrorBoundary name="AuthOverlay"><AuthOverlay {...auth} /></ErrorBoundary>
 
-            {/* The log viewer's window; src/web/logBrowserMount.tsx fills its body. */}
-            <div id="logs-modal" className="app-modal app-modal--logs" hidden>
-                <div className="app-modal__dialog app-modal__dialog--xl app-modal__dialog--fill app-modal__dialog--phone-full logs-modal-dialog" tabIndex={-1}>
-                    {/* No header of the shell: the viewer renders its own, with the
-                        session title, the export menu and the close control. */}
-                    <div className="app-modal__body app-modal__body--panel logs-modal-body"></div>
-                </div>
-            </div>
+            {/* Logi, the log browser's window. */}
+            <ErrorBoundary name="LogsWindow"><LogsWindow /></ErrorBoundary>
         </div>
     );
 }

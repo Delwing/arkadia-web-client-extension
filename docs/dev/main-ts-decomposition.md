@@ -164,19 +164,19 @@ button code was dead (no `#wake-lock-button` exists) and is removed.
    `#footer-layout` with `StockFooter`, `#command-line-root` with `CommandLine`, the
    `layout-*-dock-host` elements and the layout manager in place. `LayoutContent`'s
    dock portals look the hosts up again after their first render (`useHostElement`),
-   since the shell renders them in the same commit. Still open:
-   - **`<CompassRose>`** — `#compass-rose-box` is static markup in `<Shell>`, and
-     `src/client/scripts/inlineCompassRose.ts` still draws into it with DOM calls
-     (it now looks the box up when drawing and takes clicks through one document
-     listener, since the box renders after the client starts). Its state should go
-     out through an event or the UI port and a component render it; that also
-     ends `src/client` touching the DOM here.
-   - **`<Footer>`** — `setupMobileFooter` still runs from `main.ts` after the
-     render, and the multibind `MutationObserver` lives in `<GameOutput>`.
-8. **The log viewer's window** — `#logs-modal` is rendered by `<Shell>` (same
-   markup), and `logBrowserMount.tsx`, still a separate entry, finds it and fills its
-   body. Still open: `LogBrowserWindow` rendered in the tree and the separate entry
-   dropped.
+   since the shell renders them in the same commit.
+   - **`<CompassRose>`** — **done.** `app/shell/CompassRose.tsx` draws
+     `#compass-rose-box` (the grid or the ASCII drawing, special exits, the way
+     back) from the `compassRose.box` event, asks for it on mount
+     (`requestCompassRose`), and walks an exit on click through the client.
+     `src/client/scripts/inlineCompassRose.ts` no longer touches the DOM.
+   - **`<Footer>`** — **done.** `app/shell/Footer.tsx` renders `#footer-layout`;
+     `setupMobileFooter` and the multibind `MutationObserver` are its effects.
+8. **The log viewer's window** — **done.** `app/LogsWindow.tsx` renders
+   `#logs-modal`, registers Logi in the main menu and the "Szukaj w logach"
+   handler, and mounts `LogBrowser` (loaded lazily, as the separate entry kept it
+   out of the main bundle) only while the window is open. `logBrowserMount.tsx`
+   and its `<script>` tag are gone.
 9. **`<Shell>` and region boundaries** — **done.** `app/shell/Shell.tsx` renders
    `#main-container` with everything that was in it, in the same order; `App.tsx`
    renders `<Shell>` and the overlays. `Island` is gone: `app/ErrorBoundary.tsx`
@@ -189,7 +189,8 @@ button code was dead (no `#wake-lock-button` exists) and is removed.
    silently stopped measuring at start-up when the output moved into the tree.
    `index.html`'s body is `<div id="root">` (`display: contents`), the two tooltip
    elements (`#map-note-tooltip`, `#hover-tooltip`, still filled imperatively) and
-   the scripts; the six unused placeholders are gone.
+   the main script; the six unused placeholders are gone. Moving the two tooltips
+   into `<Overlays>` is all that is left of Phase 2.
 
 **Done when** `index.html`'s `<body>` is `<div id="root"></div>` plus the script
 tags, and `grep createPortal src/web/app` finds no placeholder target.

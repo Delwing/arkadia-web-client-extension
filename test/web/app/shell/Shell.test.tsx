@@ -15,6 +15,8 @@ vi.mock('@web/app/shell/RecordingStopButton', () => ({
     RecordingStopButton: ({ ref }: { ref?: Ref<HTMLButtonElement> }) => <button id="recording-button" ref={ref} />,
 }));
 vi.mock('@web/app/shell/contentAreaFocus', () => ({ installContentAreaFocus: vi.fn() }));
+vi.mock('@web/app/shell/CompassRose', () => ({ CompassRose: () => <div id="compass-rose-box" /> }));
+vi.mock('@web/app/LogsWindow', () => ({ LogsWindow: () => <div id="logs-modal" /> }));
 
 import { Shell } from '@web/app/shell/Shell';
 import { objectListHost, objectListOthersHost } from '@web/app/shell/mapHosts';

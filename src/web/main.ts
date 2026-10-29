@@ -30,7 +30,6 @@ import {installLongPressContextMenu} from "@shared/dom/longPressContextMenu.ts";
 import {isIOS} from "@shared/dom/mobileOs.ts";
 import {AppModal} from './modals/appModal';
 import ObjectList from "./ObjectList";
-import {setupMobileFooter} from "./mobileFooter.ts";
 import FightTitle from "./FightTitle";
 import HpTitle from "./HpTitle";
 import { registerBuiltinWidgets } from "@web-ui/widgets/builtinWidgets";
@@ -369,8 +368,8 @@ document.addEventListener('DOMContentLoaded', () => {
     registerBuiltinWidgets();
     eventBus.on('widgets.edit', ({ on }) => setWidgetEditMode(on));
 
-    // The whole page, as one React tree, into #root. Synchronously, so the footer
-    // and the command line exist for setupMobileFooter and anything after this.
+    // The whole page, as one React tree, into #root. Synchronously, so the page is
+    // complete when start-up finishes.
     const appRoot = createRoot(document.getElementById('root')!);
     flushSync(() => appRoot.render(createElement(
         AppProviders,
@@ -388,10 +387,6 @@ document.addEventListener('DOMContentLoaded', () => {
             mapLoad: mapBootstrap,
         }),
     )));
-
-    // Phone footer: the expander that unfolds its two scrolling rails. The rest
-    // of that layout is CSS (footerMobile.css) plus CharState's compact meters.
-    setupMobileFooter();
 });
 
 

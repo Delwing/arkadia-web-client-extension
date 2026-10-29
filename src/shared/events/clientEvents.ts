@@ -33,6 +33,18 @@ import type {LootPopupPayload, GroundItem} from "@client/scripts/lootParser.ts";
 import type {SyncCategory, CategoryConflictInfo, CategorySyncTimes} from "@modules/firebase/firebaseTypes";
 import type {GmcpCharInfo, GmcpCharState, GmcpCharOptions, GmcpCharOptionsInfo, GmcpCharColors, GmcpRoomInfo, GmcpRoomTime, GmcpMsgType} from "./gmcpTypes";
 
+
+/** The floating compass rose: hidden, the grid, or the ASCII drawing, with its exits. */
+export interface CompassRoseBox {
+    view: "hidden" | "grid" | "ascii";
+    /** Standard exits as short directions (n, se, u…). */
+    exits: string[];
+    /** Of those, the ones leading back where the player came from (when that colouring is on). */
+    backDirs: string[];
+    specialExits: string[];
+    /** Special exits leading back (when that colouring is on). */
+    backSpecialExits: string[];
+}
 export type FirebaseSyncMetadataPayload = Partial<Record<SyncCategory, {
     exists: boolean;
     syncedAt?: string;
@@ -266,6 +278,10 @@ export interface KnownEvents {
     /** The mapper is sure the room it draws is not the room we stand in - or sure again that it is. */
     "mapPositionLost": { lost: boolean; reason: MapLostReason | null };
     "requestMapLocationLabel": void;
+    /** The floating compass rose (/roza box modes), as the UI should draw it. */
+    "compassRose.box": CompassRoseBox;
+    /** Ask for the current "compassRose.box" (a view that mounts after the client started). */
+    "requestCompassRose": void;
     "requestMapHighlights": void;
     "requestMapLostRooms": void;
     "requestMapPositionLost": void;

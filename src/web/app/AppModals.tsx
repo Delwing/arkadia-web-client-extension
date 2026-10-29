@@ -16,8 +16,7 @@ import { isHelperSupported } from "../helperDownload";
 /**
  * The page-level windows, opened by id through src/web/modals/appModal.ts. Each
  * keeps the ids its content and the tests look for (`#settings-root`,
- * `#binds-options`…). The log viewer's window (#logs-modal) stays in index.html:
- * logBrowserMount.tsx, a separate entry, fills it.
+ * `#binds-options`…). The log viewer's window is LogsWindow.
  */
 export function AppModals() {
     const { client, helperConnection } = useAppServices();
