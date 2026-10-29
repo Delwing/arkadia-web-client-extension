@@ -192,22 +192,6 @@ test.describe('Footer layout editor', () => {
         await expect(page.locator('#char-state .footer-compass')).toBeVisible();
     });
 
-    test('in forge the preview is drawn on the plate', async ({page}) => {
-        await page.setViewportSize({width: 1400, height: 950});
-        await page.goto('/forge-ui/');
-        await page.locator('.gate__close').click();
-        await page.locator('.forge-menu__button').click();
-        await page.locator('.forge-menu__list').getByRole('button', {name: 'Interfejs'}).click();
-        const modal = page.locator('.forge-menu-modal');
-        await modal.locator('.settings-dialog__nav-item[data-settings-category="ui-footer"]').click();
-        await modal.locator('#ui-footer-layout').selectOption('forge');
-        await modal.locator('#ui-footer-customize').click();
-
-        const preview = page.locator('.footer-editor-dialog').frameLocator('.footer-editor__frame');
-        await expect(preview.locator('.hud-panel .multibind-strip')).toBeVisible();
-        await expect(preview.locator('[data-fl-frame="1.0"]')).toBeVisible();
-    });
-
     test('the preview stays put whatever the settings under it take', async ({page}) => {
         await start(page);
         const editor = await editArkadia(page);

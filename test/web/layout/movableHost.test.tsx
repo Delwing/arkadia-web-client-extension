@@ -67,15 +67,6 @@ describe('MovableHost', () => {
         expect(host.ownerPriority()).toBeNull();
     });
 
-    it('adopt keeps an existing element where it is as its default', () => {
-        const element = document.getElementById('anchor')!;
-        const host = MovableHost.adopt(element);
-        const detach = host.attach(panel, PANEL_SLOT);
-        expect(element.parentElement).toBe(panel);
-        detach();
-        expect(element.parentElement).toBe(home);
-    });
-
     it('tells subscribers when the holder changes, not on every attach', () => {
         const host = MovableHost.create('map');
         const listener = vi.fn();

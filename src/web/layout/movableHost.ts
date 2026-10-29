@@ -44,16 +44,6 @@ export class MovableHost {
     return new MovableHost(element);
   }
 
-  /**
-   * A host around an element already in the page, whose current spot becomes the
-   * host's default slot.
-   */
-  static adopt(element: HTMLElement): MovableHost {
-    const host = new MovableHost(element);
-    if (element.parentElement) host.attach(element.parentElement, DEFAULT_SLOT, element.nextSibling);
-    return host;
-  }
-
   /** Offer a place; returns the detach. */
   attach(parent: HTMLElement, priority = 0, before: Node | null = null): () => void {
     const slot: Slot = { parent, before, priority, seq: this.seq++ };

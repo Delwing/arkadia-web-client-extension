@@ -4,8 +4,12 @@ The game client (`src/client`) is UI-agnostic. It knows how to talk to Arkadia
 — transport, telnet/GMCP, triggers, ANSI rendering, combat/team/object state,
 plugins — but it knows **nothing** about React, the DOM, or the stock web app.
 A UI is something you plug *around* the client, not something the client depends
-on. This is what makes it possible to build a second UI (see `forge-ui/`) that
-drives the real client with none of the stock chrome.
+on. This is what makes it possible to build a second UI that drives the real
+client with none of the stock chrome.
+
+> `forge-ui/`, the second UI this document was written against, has been removed:
+> its look lives on as the stock UI's Kuźnia theme. The references to it below
+> describe the seam as it was exercised; the seam itself is unchanged.
 
 This document explains the seam and how to build a UI on top of it.
 

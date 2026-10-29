@@ -203,9 +203,20 @@ tags, and `grep createPortal src/web/app` finds no placeholder target.
 
 ### Phase 3 — cleanup
 
-- Delete `forge-ui/` (folded into the main UI as the Kuźnia theme) together with
-  `connection/ConnectionEngine.ts`, which only it used; drop now-unused hooks such as
-  `setLayoutOverrides` / `setObjectListChrome` if nothing else calls them.
+- **Delete `forge-ui/`** — **done.** The app, its Vite entry and `tsconfig`
+  include, its unit tests (`test/forge-ui/`), the five specs that opened
+  `/forge-ui/` and the two forge tests in the footer-layout specs, the SCSS options
+  only its Bootstrap file used, `connection/ConnectionEngine.ts` (only it used that)
+  and `MovableHost.adopt`. The stock UI's Kuźnia theme and its specs
+  (`forged-login`, `forged-theme`) stay.
+  Still open, as one follow-up: the seams that existed only for a second shell and
+  the ~100 comments that still describe forge as a consumer —
+  `setLayoutOverrides` / `getLayoutOverrides`, `setDockingSupported`,
+  `setObjectListChrome` / `objectListChrome`, `setPopoutEntry`,
+  `LayoutManagerWrapper`'s `renderObjectList` / `objectListTitle`, the output
+  engine's `buildMessageNode` hook. Each needs its stock default checked before it
+  goes. The `sass` dev dependency is unused now too (dropping it changes
+  `yarn.lock`).
 - Replace the `window` events that open and close windows (`show-binds`,
   `close-options`, `show-character-management`, `OPEN_SETTINGS_EVENT`…) with a typed
   modal store, keeping the events as adapters until nothing fires them, then remove them.
@@ -213,8 +224,11 @@ tags, and `grep createPortal src/web/app` finds no placeholder target.
   handling into `<GameOutput>`/`<CommandLine>`, the settings/places event listeners
   into `<AppModals>`), leaving `main.ts` as CSS, `bootstrapGameClient`, the pre-mount
   flags and `render(<App/>)`.
-- Update `AGENTS.md`: "Prefer creating HTML elements in HTML files" contradicts this
-  direction.
+- **Update `AGENTS.md`** — **done.** The HTML rule now says the page is one React
+  tree (markup goes in the region's component, never `index.html`; no placeholder
+  portals; an `ErrorBoundary` per region; engine-owned elements are `MovableHost`s),
+  and the forge references are gone. `docs/CLIENT_UI_DECOUPLING.md` notes that
+  forge-ui was removed.
 
 ## Target layout
 

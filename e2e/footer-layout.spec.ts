@@ -216,15 +216,4 @@ test.describe('Footer layout', () => {
         await expect(page.locator('#footer-chips.status-chips')).toBeAttached();
         await expect(page.locator('.footer-compass')).toHaveCount(0);
     });
-
-    test('forge draws the same pick on its plate', async ({page}) => {
-        await page.setViewportSize({width: 1280, height: 800});
-        await pickLayout(page, 'arkadia');
-        await page.goto('/forge-ui/');
-        await page.locator('.gate__close').click();
-
-        const plate = page.locator('.hud-panel');
-        await expect(plate.locator('.footer-compass')).toBeVisible();
-        await expect(plate.locator('.footer-chip-grid.footer-chips--text')).toBeAttached();
-    });
 });

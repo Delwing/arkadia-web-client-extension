@@ -134,7 +134,9 @@ yarn test:e2e -- --shard=1/12              # Run one CI shard
 - Relative imports omit extensions: `from "./Client"`
 
 ### HTML/Components
-- Prefer creating HTML elements in HTML files when possible
+- The stock UI is one React tree: `index.html`'s body is only `<div id="root">`, and `src/web/app/App.tsx` renders the page (`app/shell/Shell.tsx`) and its overlays (`app/Overlays.tsx`). Add page markup to the component that owns that region, never to `index.html`
+- Don't portal into placeholder elements; portals are for things that render into `document.body` (menus, overlays). Give each new region an `ErrorBoundary`
+- Elements whose contents belong to an engine (the map's `#map`, the object lists) are `MovableHost`s (`src/web/layout/movableHost.ts`), created in code; never render them with React or move them by hand
 - Do not use `aria-*` attributes (not needed in this project)
 
 ### Regular Expressions
@@ -153,7 +155,7 @@ yarn test:e2e -- --shard=1/12              # Run one CI shard
 ## Entry Points
 
 There are four Vite build entries (see `vite.config.ts`):
-- **Client**: `index.html` → `src/web/main.ts` - Main web application
+- **Client**: `index.html` → `src/web/main.ts` - Main web application (renders `src/web/app/App.tsx` into `#root`; see `docs/dev/main-ts-decomposition.md`)
 - **Editor**: `editor/index.html` → `editor/main.ts` - Plugin editor
 - **Viewer**: `viewer/index.html` → `viewer/main.tsx` - Session log viewer
 - **Log Viewer**: `log-viewer/index.html` → `log-viewer/main.tsx` - Standalone log viewer
@@ -163,7 +165,7 @@ The client-side scripts entry is `src/client/main.ts` (loaded dynamically by the
 ## Key Architecture Patterns
 
 ### Client/UI Decoupling
-The game client (`src/client`) is UI-agnostic: DOM-free, no runtime `@web` imports (enforced by an ESLint boundary rule), and driven only through injected ports (`@client/ports`), the event bus, and concern-scoped settings accessors (`@modules/core/settings`). This is what lets a second UI (`forge-ui/`) drive the real client. See `docs/CLIENT_UI_DECOUPLING.md` for the seam and a recipe for building a UI on it.
+The game client (`src/client`) is UI-agnostic: DOM-free, no runtime `@web` imports (enforced by an ESLint boundary rule), and driven only through injected ports (`@client/ports`), the event bus, and concern-scoped settings accessors (`@modules/core/settings`). This is what lets another UI drive the real client. See `docs/CLIENT_UI_DECOUPLING.md` for the seam and a recipe for building a UI on it.
 
 ### Event System
 The project uses a custom event bus in `src/modules/core/eventBus.ts` with typed events defined in `src/shared/events/`. All cross-module communication goes through events. Check existing event handlers for patterns.

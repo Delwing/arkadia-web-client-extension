@@ -20,7 +20,6 @@
     "scripts/**/*.ts",
     "editor/**/*",
     "viewer/**/*",
-    "forge-ui/**/*",
     "popup/**/*"
   ],
   "exclude": [
