@@ -18,16 +18,44 @@ and keeps the e2e suite green.
 | Main-menu registration, modal plumbing via `window` events | 150 | Wiring |
 | **21 separate `createRoot` islands** into `index.html` placeholders or detached divs | 150 | React islands, no shared context |
 
-## What stays imperative, on purpose
+## End state
 
-React hosts these through a ref and never reconciles their children:
+React renders the whole page: `index.html` is the `<head>` and one `<div id="root">`,
+and `src/web/app/App.tsx` reads like the page, one component per region:
 
-- **The game output** — `setupOutputMessageHandler` appends, trims and mirrors
+```
+<App>
+  <Shell>                    #main-container / #content-area
+    <MapPane/>               map host, location label, pause icon, lost badge, progress
+    <GameOutput/>            output wrapper, split pane, sticky area, toasts
+    <CompassRose/>
+    <Footer/>                StockFooter
+    <ObjectLists/>
+    <CommandLine/>
+    <DockHosts/>             layout dock hosts + the layout manager
+  </Shell>
+  <AuthOverlay/>
+  <AppModals/>               every page-level window, the log viewer's included
+  <Overlays/>                buttons, widgets, boss key, context menu, playback, tooltips
+</App>
+```
+
+Each region has an error boundary of its own, and **no component is portalled into
+an `index.html` placeholder**. Portals remain only where a component deliberately
+renders into `document.body` (overlays, menus), which is what portals are for.
+
+### What stays imperative, on purpose
+
+Only the *inside* of two engines, hosted by a component through a ref; React renders
+their containers but never their children:
+
+- **The game output's lines** — `setupOutputMessageHandler` appends, trims and mirrors
   thousands of line nodes. Routing lines through React would cost a reconcile per line.
-- **The map** — `EmbeddedMap` / mudlet-map-renderer draws its own canvas.
-- **The game client** — built by `bootstrapGameClient` before React renders and passed
-  down through context. `src/client` stays UI-agnostic, and a remount can never build a
-  second client.
+- **The map's drawing** — `EmbeddedMap` / mudlet-map-renderer draws its own canvas.
+
+Plus, outside the DOM, **the game client** — built by `bootstrapGameClient` before
+React renders and passed down through context. `src/client` stays UI-agnostic, and a
+remount can never build a second client.
 
 ## Phases
 
@@ -87,34 +115,63 @@ and so does the Kuźnia theme CSS.
    the controller's and the account session's state, into `#auth-root`.
    `updateConnectButtons` keeps only the command line's connection view and the
    menu's Połącz/Rozłącz.
-3. **Map chrome** — **blocked as planned.** The layout manager moves `#map`,
-   `#location-wrapper` and `#map-lost-wrapper` into dock panels and back
-   (`layout/panels/MapPanel.tsx`), and `ObjectListPanel` does the same with
-   `#objects-list`. React cannot own nodes something else re-parents: its fiber
-   tree would point at the wrong parent and the next removal throws. Their
-   *content* already renders from the tree by portal (Phase 1). To go further, the
-   panels must first take React-rendered panes (render the map host inside
-   `MapPanel` and pass the element to `EmbeddedMap`) instead of moving DOM.
-4. **`<GameOutput>`** — **deferred** for the same reason in spirit: the output
-   wrapper's children are appended and trimmed by `setupOutputMessageHandler`, so
-   React would own only a static frame. Worth doing together with the panel change
-   in 3, not on its own.
-5. **Footer leftovers** — **done.** Commit info is in `CommitInfo`; the recording
-   button is `app/shell/RecordingStopButton.tsx`. The wake-lock button code was
-   dead (no `#wake-lock-button` exists) and is removed.
 
-Revised end state for this phase: `index.html` keeps the static hosts the
-imperative engines own (`#iframe-container` with the map, the output wrapper,
-the object lists, `#logs-modal`, the dock hosts) and empty `display: contents`
-mount points; everything else renders from the tree. The full `<div id="root">`
-needs the panel rework above first.
+Done along the way: the build line and new-version notice (`auth/CommitInfo.tsx`),
+the recording stop button (`app/shell/RecordingStopButton.tsx`); the wake-lock
+button code was dead (no `#wake-lock-button` exists) and is removed.
+
+3. **Layout manager adopts panes instead of moving DOM** — *prerequisite for 4 and 5.*
+   Today `layout/panels/MapPanel.tsx` moves `#map`, `#location-wrapper` and
+   `#map-lost-wrapper` into a dock panel and back, and `ObjectListPanel` does the same
+   with `#objects-list`. React cannot own nodes something else re-parents (its tree
+   would point at the wrong parent and the next removal throws), which is why those
+   are still `index.html` placeholders filled by portals. Change the panels so the pane
+   *is* a React component rendered where the panel is (docked, floating, or in its
+   default spot), with the map engine and `ObjectList` attached to that component's
+   element by ref and re-attached when it moves.
+4. **`<MapPane>`** — the map host, its label, pause icon, lost badge and the download
+   progress bar as one component; `EmbeddedMap` attaches to the host by ref.
+   `installMapLayoutOffsets` becomes its effect.
+5. **`<ObjectLists>`** — `#objects-list` / `#objects-list-others` rendered by the
+   pane from 3, with `ObjectList` attached by ref. `ObjectList` must stop clearing its
+   container (`innerHTML = ""`) so the panel's timers host survives.
+6. **`<GameOutput>`** — the output wrapper, split pane, sticky area, close button and
+   `#notification-center` (toasts as a child, not a portal). `setupOutputMessageHandler`,
+   `installOutputSearch`, the output context menu and the double-tap/double-click
+   handlers run in its layout effect; the lines stay the handler's.
+7. **Footer, command line, compass rose, dock hosts** — `StockFooter` and
+   `CommandLine` rendered by `<Shell>` in place instead of portalled into
+   `#footer-layout` / `#command-line-root`; the `layout-*-dock-host` elements in JSX;
+   the layout manager rendered by `<Shell>`. `#compass-rose-box` needs one step first:
+   `src/client/scripts/inlineCompassRose.ts` reads it with `document.getElementById`
+   and builds its rows itself, which also breaks the client's no-DOM rule. Its state
+   goes out through an event or the UI port, and a `<CompassRose>` component renders it.
+   `setupMobileFooter` and the multibind `MutationObserver` become effects of `<Footer>`.
+8. **The log viewer's window** — `#logs-modal` moves into `<AppModals>`, and
+   `logBrowserMount.tsx` stops being a separate entry: `LogBrowserWindow` renders in the
+   shell, still loading `LogBrowser` lazily.
+9. **`<Shell>` and region boundaries** — `#main-container` / `#content-area` in JSX;
+   `Island` is replaced by an `ErrorBoundary` per region (and per page-level window),
+   and the portal half of `Island` is deleted once 3–8 have removed its last use.
+   `index.html` drops the six placeholders nothing references any more
+   (`knowledge-root`, `knowledge-details-root`, `clock-root`, `contracts-root`,
+   `letter-composer-root`, `herb-ui-root`), then everything but `<div id="root">`.
+
+**Done when** `index.html`'s `<body>` is `<div id="root"></div>` plus the script
+tags, and `grep createPortal src/web/app` finds no placeholder target.
 
 ### Phase 3 — cleanup
 
 - Delete `forge-ui/` (folded into the main UI as the Kuźnia theme) together with
   `connection/ConnectionEngine.ts`, which only it used; drop now-unused hooks such as
   `setLayoutOverrides` / `setObjectListChrome` if nothing else calls them.
-- Remove the `window`-event adapters once nothing fires them.
+- Replace the `window` events that open and close windows (`show-binds`,
+  `close-options`, `show-character-management`, `OPEN_SETTINGS_EVENT`…) with a typed
+  modal store, keeping the events as adapters until nothing fires them, then remove them.
+- Move the remaining `main.ts` wiring into the components it belongs to (focus
+  handling into `<GameOutput>`/`<CommandLine>`, the settings/places event listeners
+  into `<AppModals>`), leaving `main.ts` as CSS, `bootstrapGameClient`, the pre-mount
+  flags and `render(<App/>)`.
 - Update `AGENTS.md`: "Prefer creating HTML elements in HTML files" contradicts this
   direction.
 
@@ -123,11 +180,12 @@ needs the panel rework above first.
 ```
 src/web/
   main.ts                 # CSS, bootstrapGameClient, pre-mount flags, render(<App/>)
-  app/App.tsx, AppProviders.tsx
-  app/shell/GameOutput.tsx, MapPane.tsx, Footer.tsx
-  auth/AuthOverlay.tsx, LoginForm.tsx, SystemLoginMessage.tsx
-  connection/connectionController.ts, useConnection.ts
-  modals/AppModal.tsx, AppModals.tsx, modalStore.ts
+  app/App.tsx, AppProviders.tsx, appServices.ts, ErrorBoundary.tsx
+  app/shell/Shell.tsx, MapPane.tsx, GameOutput.tsx, ObjectLists.tsx, Footer.tsx,
+            CompassRose.tsx, DockHosts.tsx, Overlays.tsx, RecordingStopButton.tsx
+  auth/AuthOverlay.tsx, CommitInfo.tsx
+  connection/connectionController.ts
+  modals/appModal.ts, AppModalShell.tsx, modalStore.ts   (+ app/AppModals.tsx)
   map/mapBootstrap.ts
   menu/mainMenu.ts
   platform/wakeLock.ts, iosViewport.ts, initialLocation.ts
