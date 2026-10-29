@@ -1,7 +1,9 @@
 import { useLayoutEffect, useRef } from "react";
 import { globalStorage } from "@modules/core/storage.ts";
-import { getDeviceViewSettings } from "@modules/core/settings";
-import { setupOutputMessageHandler } from "@shared/dom/outputMessageHandler.ts";
+import eventBus from "@modules/core/eventBus";
+import { getDeviceViewSettings, getRenderSettings, onRenderSettingsChange } from "@modules/core/settings";
+import { setOutputTimestampVisibility, setupOutputMessageHandler } from "@shared/dom/outputMessageHandler.ts";
+import { createCharPlaqueFeed } from "@shared/dom/charPlaque.ts";
 import mudClient from "@web/MudClient.ts";
 import { setupOutputContextMenu } from "@web/outputContextMenu.tsx";
 import { installOutputSearch } from "@web/outputSearch/installOutputSearch.ts";
@@ -37,7 +39,7 @@ export function GameOutput({ toasts }: { toasts: ToastStackProps | null }) {
         const o = { signal: ac.signal };
 
         // Scroll/wheel/resize/drag split-view detection, trimming, and sticky-mirror
-        // live in the shared engine (also used by forge-ui).
+        // live in the shared engine.
         const handler = setupOutputMessageHandler(mudClient, {
             outputWrapper,
             splitBottom,
@@ -55,6 +57,16 @@ export function GameOutput({ toasts }: { toasts: ToastStackProps | null }) {
             },
         });
         const detachHandle = attachOutputHandler(handler);
+
+        // Wygląd -> znaczniki czasu.
+        setOutputTimestampVisibility(getRenderSettings().showTimestamps);
+        const offTimestamps = onRenderSettingsChange((render) => setOutputTimestampVisibility(render.showTimestamps));
+
+        // The character's plaque, once per character on login (Wygląd -> wizytówka).
+        const showCharPlaque = createCharPlaqueFeed((node, rebuild) => handler.appendNode(node, rebuild));
+        const offCharInfo = eventBus.on("gmcp.char.info", (info) => {
+            if (getRenderSettings().characterPlaque) showCharPlaque(info);
+        });
 
         const closeHistoryScrollback = () => handler.closeSplitView();
 
@@ -116,6 +128,8 @@ export function GameOutput({ toasts }: { toasts: ToastStackProps | null }) {
 
         return () => {
             ac.abort();
+            offTimestamps();
+            offCharInfo();
             resizeObserver.disconnect();
             detachHandle();
             handler.destroy();

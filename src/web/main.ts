@@ -41,25 +41,19 @@ import {
     isResumeNoticeEnabled,
     setResumeNoticeEnabled,
 } from "./proxySession.ts";
-import {ConnectionController} from "./connection/connectionController";
-import {WakeLock} from "./platform/wakeLock";
+import {startConnection} from "./connection/startConnection";
 import {applyInitialLocation} from "./platform/initialLocation";
-import {AccountSession} from "./account/accountSession";
 import eventBus from "@modules/core/eventBus";
 import {installLongPressContextMenu} from "@shared/dom/longPressContextMenu.ts";
 import {isIOS} from "@shared/dom/mobileOs.ts";
 import {openWindow} from './modals/pageWindows';
+import {shareLocation} from "./locationShare/locationShare";
 import ObjectList from "./ObjectList";
 import FightTitle from "./FightTitle";
 import HpTitle from "./HpTitle";
 import { registerBuiltinWidgets } from "@web-ui/widgets/builtinWidgets";
 import { setWidgetEditMode } from "@modules/core/widgetLayout";
-import {
-    getRenderSettings,
-    getShellSettings,
-    onRenderSettingsChange,
-    onShellSettingsChange,
-} from "@modules/core/settings";
+import {getRenderSettings, onRenderSettingsChange} from "@modules/core/settings";
 
 import "@client/main.ts"
 import {bootstrapMap} from "./map/mapBootstrap";
@@ -67,12 +61,7 @@ import {createElement} from 'react'
 import {createRoot} from 'react-dom/client'
 import {flushSync} from 'react-dom'
 import {applyDefaultLayoutMode, setRailSpanSupported} from "@web/layout"
-import {setOutputTimestampVisibility} from "@shared/dom/outputMessageHandler";
-import {bufferOutputUntilMounted, getOutputHandler} from "./app/shell/outputHandle";
-import {createCharPlaqueFeed} from "@shared/dom/charPlaque";
-import {isMobileLikeViewport} from "@shared/dom/pointerEnvironment.ts";
-import {setConnectionOffline, setConnectionStatus, setReconnectHandler} from "./commandInput/connectionView";
-import {updateMainMenuItem} from "@modules/core/mainMenuRegistry";
+import {bufferOutputUntilMounted} from "./app/shell/outputHandle";
 import {registerBuiltinMainMenu} from "./menu/mainMenu";
 import {harvestOutputLines} from "./commandInput/outputWords";
 import {installClientPorts} from "./installClientPorts";
@@ -85,140 +74,43 @@ import {mapHost, objectListHost, objectListOthersHost} from "./app/shell/mapHost
 import {AppProviders} from "./app/AppProviders";
 import {initTextToSpeech} from "./voice/textToSpeech.ts";
 
-// The client seeds `binds` from the active keymap itself (KeyBindingManager),
-// so any UI — including this one — picks up keybinds without a UI-side step.
-
 // Build the client and wire all UI-agnostic startup concerns (migrations,
 // scripts, session logging, Firebase sync, helper, sendCommand/NPC bridges)
 // through the shared bootstrap. Port implementations are the one UI-specific
 // piece, injected here before scripts run.
 const { client, helperConnection } = bootstrapGameClient({ installPorts: installClientPorts });
 
-
-
 applyInitialLocation(client);
-
-// Keep a phone from sleeping the tab while connected (the wake-lock setting).
-const wakeLock = new WakeLock();
 
 // What the client prints before the output area renders is shown once it does
 // (GameOutput sets up the output engine when it mounts).
 bufferOutputUntilMounted(mudClient);
 const getOutputWrapper = () => document.getElementById('main_text_output_msg_wrapper') as HTMLElement;
 
-setOutputTimestampVisibility(getRenderSettings().showTimestamps);
-onRenderSettingsChange((render) => {
-    setOutputTimestampVisibility(render.showTimestamps);
-});
-
-// The character's plaque, once per character on login (Wygląd -> wizytówka).
-const showCharPlaque = createCharPlaqueFeed((node, rebuild) => getOutputHandler()?.appendNode(node, rebuild));
-eventBus.on('gmcp.char.info', (info) => {
-    if (getRenderSettings().characterPlaque) showCharPlaque(info);
-});
-
 // iOS has no long-press contextmenu of its own; every right-click menu needs one.
 if (isIOS()) installLongPressContextMenu();
-
-
-// Middle-mouse-click-opens-radial-menu now lives inside the shared
-// MobileCommandRadial component itself (src/ui/web/buttons) — it wires its
-// own mousedown listener onto the content area.
 
 // Map data and colours load in the background; MapPane shows the download.
 const mapBootstrap = bootstrapMap(client, mapHost);
 
-// The connection lifecycle (connect, autologin, reattach through the session
-// proxy, checks on returning to the tab) lives in the controller; this file only
-// renders its state onto the login screen and buttons.
-const connection = new ConnectionController({
-    connect: () => mudClient.connect(),
-    disconnect: () => mudClient.disconnect(),
-    isSocketOpen: () => mudClient.isSocketOpen(),
-    checkConnection: () => mudClient.checkConnection(),
-    sendGmcp: (path, payload) => mudClient.sendGmcp(path, payload),
-    usesSessionProxy: () => mudClient.usesSessionProxy(),
-    lastCloseCause: () => mudClient.lastCloseCause,
-    prepareSounds: () => client.prepareSounds(),
-    send: (text, echo, options) => client.send(text, echo, options),
-    println: (text) => client.println(text),
-    isResumeNoticeEnabled,
-    on: (event, handler) => eventBus.on(event, handler),
-    isSafari: /^((?!chrome|chromium|edg|android).)*safari/i.test(navigator.userAgent),
-});
-connection.start();
-
-/*
-Konto: logging in by e-mail, creating an account and a character over GMCP.
-Only the direct connection speaks it (see account/accountProtocol.ts), and
-while it runs the login card stays up over the live connection.
-*/
-const accountSession = new AccountSession({
-    sendGmcp: (path, payload) => mudClient.sendGmcp(path, payload ?? ''),
-    onGmcp: (path, listener) => {
-        const event = `gmcp.${path}` as const;
-        mudClient.on(event, listener);
-        return () => mudClient.off(event, listener);
-    },
-    whenReady: (run) => connection.whenGameReady(run),
-    disconnect: () => connection.leaveAccount(),
-}, {
-    onLoginFailed: (message) => connection.accountLoginFailed(message),
-    onEnteredGame: () => {
-        updateConnectButtons();
-        if (!isMobileLikeViewport()) document.getElementById('message-input')?.focus();
-    },
-});
-connection.subscribe(() => updateConnectButtons());
-connection.onLeftGame(() => accountSession.reset());
-
-connection.onConnected(() => {
-    eventBus.emit('refreshPositionWhenAble');
-    if (getShellSettings().wakeLock !== false) {
-        wakeLock.activate();
-    }
-    console.log('Client connected to Arkadia server.');
-});
-connection.onSessionLost(() => wakeLock.deactivate());
-
-// The command line's connection view and the menu's Połącz/Rozłącz follow the
-// connection; the login card (AuthOverlay) renders the same state itself.
-function updateConnectButtons() {
-    const {connected, connecting, disconnecting, authClosed} = connection.getState();
-
-    // Offline with the login screen dismissed: the command line shows the closed
-    // connection and offers to reconnect in place of the send button.
-    setConnectionOffline(!connected && !connecting && authClosed);
-    setConnectionStatus(connected ? 'connected' : connecting ? 'connecting' : 'disconnected', mudClient.getProxyMode());
-
-    updateMainMenuItem('disconnect-button', connected
-        ? { label: 'Rozłącz', disabled: disconnecting, tone: 'danger' }
-        : { label: 'Połącz', disabled: connecting, tone: undefined });
-}
-
-
-
-// Direction (numpad movement) keybinds and the `binds` seed now live in the
-// client (src/client/scripts/directionBinds.ts + KeyBindingManager), so every
-// UI gets them identically. This UI only supplies the modal-open suppression
-// via UiPort.shouldSuppressKeys (see installClientPorts).
+// Connecting, the e-mail account, the wake lock, and the command line's and the
+// menu's view of the connection (see connection/startConnection.ts).
+const { connection, accountSession, refreshConnectionView, focusCommandLine } = startConnection(client, mudClient);
 
 document.addEventListener('DOMContentLoaded', () => {
     // Desktop gets the window manager by default (one-time flip). Must run
     // before anything reads the layout state — panels and popups decide
     // whether to auto-open from it.
     applyDefaultLayoutMode();
-    // index.html provides #layout-left/right-dock-host, so the player may let
-    // the side docks span the full height (Okna → Menedżer Okien). Must run
-    // before the LayoutProvider mounts.
+    // The shell renders #layout-left/right-dock-host, so the player may let the
+    // side docks span the full height (Okna → Menedżer Okien). Must run before
+    // the LayoutProvider mounts.
     setRailSpanSupported(true);
 
     let clearInputOnSend = getRenderSettings().clearInputOnSend;
     onRenderSettingsChange((render) => {
         clearInputOnSend = render.clearInputOnSend;
     });
-    // The command line renders with the rest of the app below; #message-input is
-    // looked up when needed, not here.
     const commandLineDeps: CommandLineDeps = {
         getOutputWrapper,
         sendCommand: (cmd, echo, opts, skip, fromUser) => client.sendCommand(cmd, echo, opts, skip, fromUser),
@@ -228,53 +120,19 @@ document.addEventListener('DOMContentLoaded', () => {
         // What is on screen is the vocabulary the recogniser lacks.
         getVoiceVocabulary: () => [...harvestOutputLines(getOutputWrapper()), ...(client.commandLineSuggestions ?? [])],
     };
-    const getMessageInput = () => document.getElementById('message-input') as HTMLTextAreaElement | null;
-    onShellSettingsChange((shell) => {
-        if (shell.wakeLock && connection.getState().connected) {
-            wakeLock.activate();
-        } else {
-            wakeLock.deactivate();
-        }
-    });
-
-    const focusCommandInputOnConnect = () => {
-        const messageInput = getMessageInput();
-        if (!messageInput) return;
-        if (isMobileLikeViewport()) return;
-        if (document.hidden) return;
-        // The account screens are still up: the game comes once a character is chosen.
-        if (accountSession.isActive()) return;
-        messageInput.focus();
-    };
-    mudClient.on('client.connect', focusCommandInputOnConnect);
 
     initTextToSpeech(client);
 
     const toasts = setupToasts(client);
 
-    // The ⋯ menu's Kod QR lokacji: a link that opens the map on this room.
-    const shareLocation = () => {
-        const roomId = client.Map.currentRoom?.id;
-        const locationQrImage = document.getElementById('location-qr-image') as HTMLImageElement | null;
-        if (!roomId || !locationQrImage) {
-            return;
-        }
-        const url = new URL(window.location.origin + window.location.pathname);
-        url.searchParams.set('locationId', roomId.toString());
-        locationQrImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url.toString())}`;
-        openWindow('locationShare');
-    };
     registerBuiltinMainMenu({
         openModal: openWindow,
-        shareLocation,
+        shareLocation: () => shareLocation(client.Map.currentRoom?.id),
         isConnected: () => connection.getState().connected,
         toggleConnection: () => connection.toggle(),
     });
-
-    // The command line's reconnect while offline.
-    setReconnectHandler(() => connection.toggle());
-
-    updateConnectButtons();
+    // The menu's Połącz/Rozłącz now exists to show the connection.
+    refreshConnectionView();
 
     // The login screen's connection footer: the mode (direct / helper / proxy),
     // what the helper is doing, and each mode's settings (proxy URL, MCCP).
@@ -286,7 +144,7 @@ document.addEventListener('DOMContentLoaded', () => {
         initialUrl: mudClient.getUserProxyUrl() ?? '',
         onModeChange: (mode) => {
             mudClient.setProxyMode(mode);
-            updateConnectButtons();
+            refreshConnectionView();
         },
         onUrlChange: (url: string) => mudClient.setUserProxyUrl(url),
         onUseProxy: (url: string) => {
@@ -298,9 +156,6 @@ document.addEventListener('DOMContentLoaded', () => {
         helper: helperConnection,
         onHelperHelp: () => openWindow('helper'),
     };
-
-    // Initialize button state
-    updateConnectButtons();
 
     const fightTitle = new FightTitle();
     new HpTitle(fightTitle);
@@ -323,7 +178,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 getProxyMode: () => mudClient.getProxyMode(),
                 // Dismissing the login screen without connecting leaves the command
                 // line as the place to type, same as after a connect.
-                onDismissed: focusCommandInputOnConnect,
+                onDismissed: focusCommandLine,
             },
             toasts,
             mapLoad: mapBootstrap,
@@ -331,8 +186,4 @@ document.addEventListener('DOMContentLoaded', () => {
     )));
 });
 
-
 window.client = mudClient;
-
-
-

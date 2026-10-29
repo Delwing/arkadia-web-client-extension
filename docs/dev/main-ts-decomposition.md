@@ -228,10 +228,17 @@ tags, and `grep createPortal src/web/app` finds no placeholder target.
   `src/modules/firebase/syncEngine.ts`, which must not import the UI, and
   `<AppModals>` answers it. Character management refreshes on its window's own
   `MODAL_EVENT.show`.
-- Move the remaining `main.ts` wiring into the components it belongs to (focus
-  handling into `<GameOutput>`/`<CommandLine>`, the settings/places event listeners
-  into `<AppModals>`), leaving `main.ts` as CSS, `bootstrapGameClient`, the pre-mount
-  flags and `render(<App/>)`.
+- **Move the remaining `main.ts` wiring out** — **done.** The connection (the
+  controller, the e-mail account session, the wake lock, the command line's and
+  the menu's view of the connection, focusing the command line on connect, the
+  offline reconnect) is `connection/startConnection.ts`; the output timestamps and
+  the character plaque live in `<GameOutput>`'s effect; the map's room-note and
+  shortcut events and sync's `show-export-import` in `<AppModals>`; Kod QR lokacji
+  is `locationShare/` (a store and `<LocationShareQr>`, no `src` set by hand).
+  `main.ts` (~190 lines) keeps the CSS order, `bootstrapGameClient`, the engines
+  that start before the page (`bootstrapMap`, `startConnection`, `ObjectList`,
+  the title feeds), the pre-mount flags, the menu and widget registries, the props
+  built from `mudClient`, and `render(<App/>)`.
 - **Update `AGENTS.md`** — **done.** The HTML rule now says the page is one React
   tree (markup goes in the region's component, never `index.html`; no placeholder
   portals; an `ErrorBoundary` per region; engine-owned elements are `MovableHost`s),
@@ -247,7 +254,8 @@ src/web/
   app/shell/Shell.tsx, MapPane.tsx, GameOutput.tsx, ObjectLists.tsx, Footer.tsx,
             CompassRose.tsx, DockHosts.tsx, Overlays.tsx, RecordingStopButton.tsx
   auth/AuthOverlay.tsx, CommitInfo.tsx
-  connection/connectionController.ts
+  connection/connectionController.ts, startConnection.ts
+  locationShare/locationShare.ts, LocationShareQr.tsx
   modals/appModal.ts, AppModalShell.tsx, modalStore.ts   (+ app/AppModals.tsx)
   map/mapBootstrap.ts
   menu/mainMenu.ts

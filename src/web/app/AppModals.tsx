@@ -16,6 +16,7 @@ import Places from "../places/Places";
 import HelperSettings from "../options/HelperSettings";
 import { isHelperSupported } from "../helperDownload";
 import { openWindow } from "../modals/pageWindows";
+import { LocationShareQr } from "../locationShare/LocationShareQr";
 
 /**
  * The page-level windows, opened by id through src/web/modals/appModal.ts. Each
@@ -155,7 +156,7 @@ export function AppModals() {
             </AppModalShell>
 
             <AppModalShell id="location-share-modal" title="Kod QR lokacji" bodyClassName="app-modal__body--center">
-                <img id="location-qr-image" alt="QR code" />
+                <LocationShareQr />
             </AppModalShell>
         </>
     );
