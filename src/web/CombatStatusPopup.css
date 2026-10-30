@@ -1,9 +1,6 @@
-/* Combat-status ("Postawa") popup — a compact combat-readiness list ported from
-   forge-ui's StatusPanel into a shared dockable popup. Self-contained and
-   themed through the shared --popup-* variables, so it reads correctly in both
-   the stock UI and forge-ui (where layout-theme.css remaps --popup-* to the
-   forged palette). Distinct `cs-` class names avoid colliding with forge's
-   global `.st-*` rules. */
+/* Combat-status ("Postawa") popup — a compact combat-readiness list as a
+   dockable popup. Self-contained and themed through the shared --popup-*
+   variables, so it reads correctly under every theme. */
 
 .combat-status-popup {
   display: flex;

@@ -76,8 +76,8 @@ export default function BossKeyOverlay({ client, soundControl, suppressTitle }: 
     const mapFigureRef = useRef<HTMLDivElement>(null);
     // The game is asking for a password. Despite the `serverEchoing` parameter
     // name on the event, the payload is already "echo suppressed" -- i.e. it IS
-    // the password flag, and both existing UIs pass it straight through
-    // (main.ts's setPasswordMode, forge's useCommandLine). Do not negate it:
+    // the password flag, and the command line passes it straight through too.
+    // Do not negate it:
     // EchoHandler.reset() fires false on connect, so a negated value would mask
     // the field from connect onward and never unmask.
     const [passwordMode, setPasswordMode] = useState(false);

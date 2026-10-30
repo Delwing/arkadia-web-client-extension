@@ -14,8 +14,8 @@ const contextMenuEntries = new Map<string, ContextMenuEntryRecord>();
 /**
  * Plugin entries of the stock "⋯" menu. The menu itself renders from
  * {@link registerMainMenuItem}'s registry; these keep the stable plugin API
- * (register / relabel / disable / remove by id). UIs without that menu (forge)
- * simply never render the entries, so plugins still load.
+ * (register / relabel / disable / remove by id). A UI without that menu simply
+ * never renders the entries, so plugins still load.
  */
 export function registerPopupMenuEntry(
   id: string,

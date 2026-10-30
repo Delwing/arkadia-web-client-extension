@@ -20,7 +20,7 @@ export const STOCK_FOOTER_LAYOUT: FooterLayout = {
 };
 
 /**
- * The forge HUD plate: the location binds (always there, so the plate keeps
+ * The Kuźnia plate (Piętrowy): the location binds (always there, so the plate keeps
  * its height) with the reconnect chip at their end, then the chips, then the
  * vitals with Postępy as a full-width bar under them.
  */

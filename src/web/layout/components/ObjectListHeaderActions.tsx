@@ -3,7 +3,6 @@ import eventBus from '@modules/core/eventBus';
 import { useEffect, useState } from 'react';
 import { ObjectListHeaderMenu } from './ObjectListHeaderMenu';
 import type { ObjectListViewMode } from '@web/objectList/context';
-import { getObjectListChrome } from '../builtInChrome';
 
 // Document Picture-in-Picture is progressively enhanced; only offer the button
 // where the browser supports it.
@@ -37,7 +36,7 @@ export function ObjectListHeaderActions() {
     const [viewMode, setViewMode] = useBuiltInPanelSetting<ObjectListViewMode>(
         PANEL_ID,
         'viewMode',
-        getObjectListChrome().defaultViewMode ?? 'list',
+        'list',
     );
 
     // Emit event when view mode changes (including initial mount)

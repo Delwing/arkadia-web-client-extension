@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import type { MovableHost } from './movableHost';
 import { createPortal } from 'react-dom';
 import { DockArea } from './components/DockArea';
 import { FloatingWindowLayer } from './components/FloatingWindowLayer';
@@ -12,23 +13,18 @@ import { OBJECT_LIST_OTHERS_ID, PANEL_CONFIGS, SEPARATE_OTHERS_SETTING, type Doc
 import { setDockSizeVars } from './utils/dockSizeVars';
 
 interface LayoutContentProps {
-  mapElement: HTMLElement | null;
-  objectListElement: HTMLElement | null;
-  /** Host for the non-team objects window (#objects-list-others). */
-  objectListOthersElement?: HTMLElement | null;
-  /** Override the built-in objectList panel's title (default "Kondycje"). */
-  objectListTitle?: string;
-  /** Custom content for the objectList panel; when set, the legacy
-   *  #objects-list DOM relocation is bypassed. */
-  renderObjectList?: () => React.ReactNode;
+  /** The map's drawing surface (#map), shown by the map panel while it is open. */
+  mapHost: MovableHost | null;
+  /** Kondycje (#objects-list), shown by its panel while it is open. */
+  objectListHost: MovableHost | null;
+  /** The non-team objects window (#objects-list-others). */
+  objectListOthersHost?: MovableHost | null;
 }
 
 export function LayoutContent({
-  mapElement,
-  objectListElement,
-  objectListOthersElement,
-  objectListTitle,
-  renderObjectList,
+  mapHost,
+  objectListHost,
+  objectListOthersHost,
 }: LayoutContentProps) {
   const {
     manager,
@@ -53,24 +49,21 @@ export function LayoutContent({
     }
     manager.open('map', { title: 'Mapa' });
     if (layoutState.enabledPanels.objectList) {
-      manager.open('objectList', { title: objectListTitle ?? 'Kondycje' });
+      manager.open('objectList', { title: 'Kondycje' });
     } else if (manager.has('objectList')) {
       manager.close('objectList');
     }
     // loadVersion in deps so Restore Default / device-sync import re-opens
     // built-ins after the manager's live-windows map is cleared by loadState.
-  }, [isLayoutMode, layoutState.enabledPanels.objectList, manager, loadVersion, objectListTitle]);
+  }, [isLayoutMode, layoutState.enabledPanels.objectList, manager, loadVersion]);
 
   // The non-team objects window lives and dies with the Kondycje split setting.
-  // Shells that render their own object list (renderObjectList) have no such
-  // window, so it's never opened there.
   const [separateOthers] = useBuiltInPanelSetting('objectList', SEPARATE_OTHERS_SETTING, false);
   const showOthers =
     isLayoutMode &&
     layoutState.enabledPanels.objectList &&
     separateOthers === true &&
-    !renderObjectList &&
-    !!objectListOthersElement;
+    !!objectListOthersHost;
   useEffect(() => {
     if (showOthers) {
       manager.open(OBJECT_LIST_OTHERS_ID, {
@@ -237,21 +230,19 @@ export function LayoutContent({
           via the BuiltInPortal helper. The portal target is then attached to
           whichever shell currently owns it. Popups portal themselves through
           DockablePopupWrapper. */}
-      {mapElement && manager.has('map') && (
+      {mapHost && manager.has('map') && (
         <BuiltInPortal id="map" manager={manager}>
-          <MapPanel mapElement={mapElement} />
+          <MapPanel mapHost={mapHost} />
         </BuiltInPortal>
       )}
-      {manager.has('objectList') && (renderObjectList || objectListElement) && (
+      {manager.has('objectList') && objectListHost && (
         <BuiltInPortal id="objectList" manager={manager}>
-          {renderObjectList
-            ? renderObjectList()
-            : <ObjectListPanel objectListElement={objectListElement} />}
+          <ObjectListPanel host={objectListHost} />
         </BuiltInPortal>
       )}
-      {manager.has(OBJECT_LIST_OTHERS_ID) && objectListOthersElement && (
+      {manager.has(OBJECT_LIST_OTHERS_ID) && objectListOthersHost && (
         <BuiltInPortal id={OBJECT_LIST_OTHERS_ID} manager={manager}>
-          <ObjectListPanel objectListElement={objectListOthersElement} withTimers={false} />
+          <ObjectListPanel host={objectListOthersHost} withTimers={false} />
         </BuiltInPortal>
       )}
 
@@ -294,11 +285,25 @@ function BuiltInPortal({
   return createPortal(<>{children}</>, manager.getOrCreatePortalTarget(id));
 }
 
+/**
+ * The page element with this id. The shell renders the dock hosts in the same
+ * commit as the layout, so on the first render they are not in the document yet:
+ * look again once they are, before the browser paints.
+ */
+function useHostElement(id: string): HTMLElement | null {
+  const [host, setHost] = useState<HTMLElement | null>(() => document.getElementById(id));
+  useLayoutEffect(() => {
+    const found = document.getElementById(id);
+    if (found !== host) setHost(found);
+  }, [id, host]);
+  return host;
+}
+
 /** Portals the bottom DockArea into #layout-bottom-dock-host so it sits below
  *  #input-area in DOM order (and therefore below it visually inside the
  *  column-flex #main-container). */
 function BottomDockPortal({ children }: { children: React.ReactNode }) {
-  const host = document.getElementById('layout-bottom-dock-host');
+  const host = useHostElement('layout-bottom-dock-host');
   if (!host) return null;
   return createPortal(<>{children}</>, host);
 }
@@ -306,7 +311,7 @@ function BottomDockPortal({ children }: { children: React.ReactNode }) {
 /** In "rails span everything" (vertical) mode the left/right DockAreas must
  *  escape #content-area and become tracks of the #main-container grid so they
  *  span the full height past the input + bottom dock. When a host div is present
- *  (only the forge shell provides one), portal into it; otherwise — and in the
+ *  (the shell renders #layout-left/right-dock-host), portal into it; otherwise — and in the
  *  default horizontal mode — render inline so #content-area's grid places it. */
 function SideDockPortal({
   side,
@@ -317,9 +322,8 @@ function SideDockPortal({
   vertical: boolean;
   children: React.ReactNode;
 }) {
-  const host = vertical
-    ? document.getElementById(`layout-${side}-dock-host`)
-    : null;
+  const sideHost = useHostElement(`layout-${side}-dock-host`);
+  const host = vertical ? sideHost : null;
   if (!host) return <>{children}</>;
   return createPortal(<>{children}</>, host);
 }

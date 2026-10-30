@@ -9,8 +9,8 @@
  * - **Persisting a UI setting is not applying it.** `save()` fans a `UiSettings`
  *   object out to five storage keys, but the live effect (fonts, colours, map,
  *   chrome) comes from `apply()`, which is otherwise called only by
- *   `UiSettings.tsx` on its own local draft — a component that under forge is
- *   usually not even mounted. `save()` without `apply()` persists, syncs, and
+ *   `UiSettings.tsx` on its own local draft — a component that is usually not
+ *   even mounted. `save()` without `apply()` persists, syncs, and
  *   visibly does nothing until reload.
  * - **A bind written to `keymaps` alone is dead.** `saveKeymapBinds` also writes
  *   the `binds` key when the keymap is the active one, and that second write is

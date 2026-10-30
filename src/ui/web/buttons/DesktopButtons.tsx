@@ -22,16 +22,16 @@ type PressStart = { time: number; x: number; y: number; settings: DesktopButtonS
 
 /** `--btn-accent` carries the button's plain chosen/default color as a CSS
  * custom property alongside the real (settings-driven) `backgroundColor` —
- * inert for stock, but lets forge-ui's theme re-purpose the color as a border/
+ * inert by default, but lets the Kuźnia theme re-purpose the color as a border/
  * ring accent on a neutral surface instead of a flat fill (see
- * forge-ui/buttons-theme.css). */
+ * themes/forged/buttons.css). */
 type CSSVarStyle = React.CSSProperties & { '--btn-accent'?: string };
 
 /**
  * Shared, host-agnostic rewrite of the stock `DesktopButtons` class (see
- * `src/web/scripts/desktopButtons.ts`) as a React component both the stock UI
- * and forge-ui mount. Renders the exact same DOM contract (`#desktop-buttons-container`,
- * `.desktop-button`, `.desktop-button-list`) the existing e2e suite
+ * `src/web/scripts/desktopButtons.ts`) as a React component. Renders the exact
+ * same DOM contract (`#desktop-buttons-container`, `.desktop-button`,
+ * `.desktop-button-list`) the existing e2e suite
  * (`e2e/attack-all-button.spec.ts`, `e2e/compound-macro-desktop.spec.ts`)
  * already asserts against, so those specs keep passing unchanged.
  *

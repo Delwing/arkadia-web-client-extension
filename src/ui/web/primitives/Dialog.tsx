@@ -19,9 +19,8 @@ export interface DialogProps {
 /**
  * A modal dialog: backdrop, frame, header (title + ×), body and footer.
  *
- * Rendered *inline* rather than portaled. Most dialogs still open over one of
- * stock's page-level windows (settings, triggers, aliases…) or forge's
- * menu modal; a portaled dialog there makes two focus managers fight over
+ * Rendered *inline* rather than portaled. Most dialogs open over one of the
+ * page-level windows (settings, triggers, aliases…); a portaled dialog there makes two focus managers fight over
  * focus (CPU pegged, inputs untypeable) and can leave a stray backdrop behind
  * when the host closes first. Inline, the dialog lives and dies with its host.
  * The backdrop is position: fixed, so it still covers the viewport.

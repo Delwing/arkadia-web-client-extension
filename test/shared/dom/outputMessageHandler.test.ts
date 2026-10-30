@@ -108,30 +108,6 @@ describe('setupOutputMessageHandler', () => {
         expect(onRender).toHaveBeenCalledTimes(1);
     });
 
-    test('a custom buildMessageNode can render a different shape and skip messages', () => {
-        const { outputWrapper, splitBottom, splitHandle, stickyArea } = setupDom();
-        const client = makeFakeClient();
-
-        handler = setupOutputMessageHandler(client, {
-            outputWrapper, splitBottom, splitHandle, stickyArea, stickyLines: 5,
-            buildMessageNode: (message, type) => {
-                if (message === undefined || message === null) return null;
-                if (type === 'skip-me') return null;
-                const p = document.createElement('p');
-                p.textContent = typeof message === 'string' ? message : message.text;
-                return p;
-            },
-        });
-
-        client.emit('kept', 'comm');
-        client.emit('dropped', 'skip-me');
-
-        expect(outputWrapper.querySelectorAll('.output_msg').length).toBe(0);
-        const lines = outputWrapper.querySelectorAll('p');
-        expect(lines.length).toBe(1);
-        expect(lines[0].textContent).toBe('kept');
-    });
-
     test('opens split view and mirrors trailing lines into the sticky area when scrolled away from bottom', async () => {
         const { outputWrapper, splitBottom, splitHandle, stickyArea } = setupDom();
         const client = makeFakeClient();

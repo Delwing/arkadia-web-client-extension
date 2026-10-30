@@ -12,7 +12,9 @@ import { useHardwareKeyboard, useMediaQuery } from "@web-ui/hooks";
 import FooterButtons from "@web-ui/footer/FooterButtons.tsx";
 
 export type CommandLineDeps = Pick<CommandInputDeps,
-  "outputWrapper" | "sendCommand" | "isPasswordMode" | "getCommandLineSuggestions" | "getClearInputOnSend"> & {
+  "sendCommand" | "isPasswordMode" | "getCommandLineSuggestions" | "getClearInputOnSend"> & {
+  /** The game output; read when the command line mounts, after the output area renders. */
+  getOutputWrapper: () => HTMLElement;
   /** Words the voice recogniser should lean towards (what is on screen, client suggestions). */
   getVoiceVocabulary: () => string[];
 };
@@ -70,7 +72,7 @@ export default function CommandLine({ deps }: { deps: CommandLineDeps }) {
       sendButton: sendRef.current!,
       historyUpButton: upRef.current,
       historyDownButton: downRef.current,
-      outputWrapper: depsRef.current.outputWrapper,
+      outputWrapper: depsRef.current.getOutputWrapper(),
       sendCommand: (...args) => depsRef.current.sendCommand(...args),
       isPasswordMode: () => depsRef.current.isPasswordMode(),
       getCommandLineSuggestions: () => depsRef.current.getCommandLineSuggestions(),

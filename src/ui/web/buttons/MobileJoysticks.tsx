@@ -265,8 +265,7 @@ function Joystick({ item, center, locked, describe, onSend, onMove, onMoved }: {
 }
 
 /**
- * Floating joysticks (Fado-style) — shared by the stock UI and forge-ui, each
- * portalled to document.body. Configured on the "Joysticki" settings page.
+ * Floating joysticks (Fado-style), portalled to document.body. Configured on the "Joysticki" settings page.
  */
 export default function MobileJoysticks({ client }: { client: Client }) {
     const [joysticks, setJoysticks] = useState<JoystickSettings>(() => loadSettings().joysticks);

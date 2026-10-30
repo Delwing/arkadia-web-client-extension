@@ -17,7 +17,7 @@ import { HeaderButton } from '@web-ui/primitives';
  * A standard dockable popup rather than a settings modal: that buys docking,
  * floating, pinning, locking and detaching into a separate OS window for free
  * (every popup owning a portal target is detachable), and a single
- * `POPUP_CATALOG` entry mounts it in both the stock UI and forge.
+ * `POPUP_CATALOG` entry mounts it.
  *
  * Nothing here writes to storage. The panel renders proposal cards; only a
  * click on "Zastosuj" reaches `applyProposal`.

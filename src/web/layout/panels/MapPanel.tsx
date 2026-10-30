@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, useCallback } from 'react';
 import { MapReturnButton } from '../components/MapReturnButton';
 import { MapNoteDisplay } from '../components/MapNoteDisplay';
 import { MapNoteIcon } from '../components/MapNoteIcon';
@@ -7,16 +7,16 @@ import { useLayoutManager } from '@web/layout';
 import { PANEL_CONFIGS } from '../types';
 import eventBus from '@modules/core/eventBus';
 import { getBuiltInPanelSetting } from '../utils/layoutStorage';
+import { PANEL_SLOT, useHostSlot, type MovableHost } from '../movableHost';
+import { MapChrome } from '@web/app/shell/MapChrome';
 
 interface MapPanelProps {
-  mapElement: HTMLElement | null;
+  /** The map's drawing surface; held here while the panel is mounted. */
+  mapHost: MovableHost;
 }
 
-export function MapPanel({ mapElement }: MapPanelProps) {
+export function MapPanel({ mapHost }: MapPanelProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const originalParentRef = useRef<HTMLElement | null>(null);
-  const locationWrapperRef = useRef<HTMLElement | null>(null);
-  const lostWrapperRef = useRef<HTMLElement | null>(null);
   const { updateBuiltInPanelState } = useLayoutManager();
   const mapViewingState = useMapViewingState();
   const [labelVisible, setLabelVisible] = useState(() => getBuiltInPanelSetting('map', 'labelVisible', true));
@@ -59,13 +59,6 @@ export function MapPanel({ mapElement }: MapPanelProps) {
     };
   }, []);
 
-  // Update location-wrapper visibility
-  useEffect(() => {
-    if (locationWrapperRef.current) {
-      locationWrapperRef.current.style.display = labelVisible ? '' : 'none';
-    }
-  }, [labelVisible]);
-
   // Build title with label info when label is hidden
   const buildTitle = useCallback(() => {
     const baseTitle = PANEL_CONFIGS.map?.title ?? 'Mapa';
@@ -90,59 +83,13 @@ export function MapPanel({ mapElement }: MapPanelProps) {
     updateBuiltInPanelState('map', { title });
   }, [buildTitle, updateBuiltInPanelState]);
 
-  useEffect(() => {
-    if (!containerRef.current || !mapElement) return;
-
-    // Store original parent for cleanup
-    originalParentRef.current = mapElement.parentElement;
-
-    // Also get the location wrapper (sibling of map in #iframe-container)
-    const locationWrapper = document.getElementById('location-wrapper');
-    locationWrapperRef.current = locationWrapper;
-
-    // Move map element into our container
-    containerRef.current.appendChild(mapElement);
-
-    // Move location wrapper into our container (after map)
-    if (locationWrapper) {
-      containerRef.current.appendChild(locationWrapper);
-      // Apply initial visibility based on saved setting
-      locationWrapper.style.display = labelVisible ? '' : 'none';
-    }
-
-    // The lost-position badge sits in the map's top-right corner, so it has to
-    // follow the map here too. It stays visible even with the label hidden -
-    // it is a warning, not chrome.
-    const lostWrapper = document.getElementById('map-lost-wrapper');
-    lostWrapperRef.current = lostWrapper;
-    if (lostWrapper) {
-      containerRef.current.appendChild(lostWrapper);
-    }
-
-    // Ensure map fills container
-    mapElement.style.width = '100%';
-    mapElement.style.height = '100%';
-
-    // Trigger resize event so the map renderer adjusts
+  // The map shows here while the panel is mounted, and goes back to its default
+  // spot when it closes. The renderer sizes its canvas on window resize.
+  useHostSlot(mapHost, containerRef, PANEL_SLOT);
+  useLayoutEffect(() => {
     window.dispatchEvent(new Event('resize'));
-
-    return () => {
-      // Restore map and location wrapper to original parent on unmount
-      if (originalParentRef.current && mapElement) {
-        originalParentRef.current.appendChild(mapElement);
-        if (locationWrapperRef.current) {
-          originalParentRef.current.appendChild(locationWrapperRef.current);
-        }
-        if (lostWrapperRef.current) {
-          originalParentRef.current.appendChild(lostWrapperRef.current);
-        }
-        window.dispatchEvent(new Event('resize'));
-      }
-    };
-    // Note: labelVisible is intentionally excluded to prevent re-running the entire effect
-    // when visibility changes - we have a separate effect for that
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mapElement]);
+    return () => { window.dispatchEvent(new Event('resize')); };
+  }, [mapHost]);
 
   // Use ResizeObserver to trigger map resize when container size changes
   useEffect(() => {
@@ -173,6 +120,7 @@ export function MapPanel({ mapElement }: MapPanelProps) {
       <MapReturnButton />
       <MapNoteDisplay />
       <MapNoteIcon />
+      <MapChrome labelVisible={labelVisible} />
     </div>
   );
 }

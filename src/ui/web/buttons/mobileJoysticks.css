@@ -1,4 +1,4 @@
-/* Floating joysticks — shared between stock and forge-ui
+/* Floating joysticks
    (src/ui/web/buttons/MobileJoysticks.tsx). Position, size and colours are set
    inline from the user's settings. */
 .mobile-joystick {

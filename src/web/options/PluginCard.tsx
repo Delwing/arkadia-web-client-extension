@@ -7,8 +7,7 @@ import type { PluginSource } from "./useInstalledPlugins";
  * catalogue grid. Both wear the same card so a plugin looks the same before and
  * after it is installed — only the actions differ.
  *
- * The card is one CSS component (`.plugin-card`, in style.css and mirrored into
- * forge's scoped sheet). It reflows to a single column below 768px, where the
+ * The card is one CSS component (`.plugin-card`, in style.css). It reflows to a single column below 768px, where the
  * action row also grows labels: icon-only buttons are fine with a pointer and a
  * title tooltip, and are a guessing game on a phone.
  */

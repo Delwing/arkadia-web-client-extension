@@ -5,6 +5,7 @@ import {getShortDir, longToShort} from "@shared/map";
 import {AnsiAwareBuffer} from "../ansi/FormatState";
 import {characterStorage} from "@modules/core/storage";
 import {defaultSettings} from "@modules/core/defaultSettings";
+import type {CompassRoseBox} from "@shared/events/clientEvents.ts";
 
 const SPRING_GREEN = createColorFormat("#00ff7f");
 const DIM_GRAY = createColorFormat("#696969");
@@ -23,19 +24,21 @@ export default function initInlineCompassRose(client: Client, aliases?: Alias[])
     let mode = 0; // 0=off, 1=inline, 2=box, 3=inline-ascii, 4=box-ascii
     let unsubscribeExits: (() => void) | undefined;
 
-    const boxContainer = document.getElementById('compass-rose-box') as HTMLDivElement | null;
-
-    // Click handler for directions and special exits (event delegation)
-    boxContainer?.addEventListener('click', (e) => {
-        const target = (e.target as HTMLElement).closest<HTMLElement>('.cr-clickable');
-        if (!target) return;
-        const dir = target.dataset.dir;
-        if (dir) {
-            client.sendCommand(dir);
-        } else if (target.dataset.exit) {
-            client.sendCommand(target.dataset.exit);
-        }
-    });
+    // The box modes are drawn by the UI (CompassRose); this sends what to draw.
+    const HIDDEN_BOX: CompassRoseBox = { view: 'hidden', exits: [], backDirs: [], specialExits: [], backSpecialExits: [] };
+    let boxState: CompassRoseBox = HIDDEN_BOX;
+    function sendBox(view: CompassRoseBox['view']) {
+        boxState = view === 'hidden' ? HIDDEN_BOX : {
+            view,
+            exits: [...exits],
+            backDirs: colorBackExits ? [...backDirs] : [],
+            specialExits: [...specialExits],
+            backSpecialExits: colorBackExits ? [...backSpecialExits] : [],
+        };
+        client.sendEvent('compassRose.box', boxState);
+    }
+    // The UI mounts after the scripts start, and asks for what it missed.
+    client.on('requestCompassRose', () => client.sendEvent('compassRose.box', boxState));
 
     // Compute which exits lead back to the previous location
     client.on("enterLocation", () => {
@@ -354,98 +357,17 @@ export default function initInlineCompassRose(client: Client, aliases?: Alias[])
         client.println(output);
     }
 
-    // --- Mode 2: floating box compass rose ---
+    // --- Modes 2 and 4: the floating box, as the grid or the ASCII drawing ---
 
     function updateBoxCompassRose() {
-        if (!boxContainer) return;
-
-        boxContainer.style.display = 'flex';
-
-        // Show grid, hide ascii pre
-        const grid = boxContainer.querySelector<HTMLElement>('.compass-rose-grid');
-        const asciiPre = boxContainer.querySelector<HTMLElement>('.compass-rose-ascii');
-        if (grid) grid.style.display = '';
-        if (asciiPre) asciiPre.style.display = 'none';
-
-        // Update direction cells
-        const dirs = boxContainer.querySelectorAll<HTMLElement>('.cr-dir');
-        dirs.forEach(el => {
-            const dir = el.dataset.dir;
-            if (dir) {
-                const active = hasExit(dir);
-                el.classList.toggle('active', active);
-                el.classList.toggle('cr-clickable', active);
-                el.classList.toggle('cr-back', colorBackExits && active && backDirs.has(dir));
-            }
-        });
-
-        // Update special exits (on top, growing upward)
-        const specialContainer = boxContainer.querySelector('.compass-rose-special-exits');
-        if (specialContainer) {
-            specialContainer.innerHTML = '';
-            specialExits.forEach(exit => {
-                const span = document.createElement('span');
-                span.className = 'cr-special cr-clickable' + (colorBackExits && backSpecialExits.has(exit) ? ' cr-back' : '');
-                span.dataset.exit = exit;
-                span.textContent = exit.toUpperCase();
-                specialContainer.appendChild(span);
-            });
-        }
+        sendBox('grid');
     }
 
-    // --- Mode 4: floating box ASCII compass rose ---
-
     function updateBoxCompassRoseAscii() {
-        if (!boxContainer) return;
-
-        boxContainer.style.display = 'flex';
-
-        // Hide grid, show ascii pre
-        const grid = boxContainer.querySelector<HTMLElement>('.compass-rose-grid');
-        if (grid) grid.style.display = 'none';
-
-        let pre = boxContainer.querySelector<HTMLPreElement>('.compass-rose-ascii');
-        if (!pre) {
-            pre = document.createElement('pre');
-            pre.className = 'compass-rose-ascii';
-            boxContainer.appendChild(pre);
-        }
-        pre.style.display = '';
-
-        const o = (dir: string) => hasExit(dir)
-            ? `<span class="cr-clickable${colorBackExits && backDirs.has(dir) ? ' cr-back' : ''}" data-dir="${dir}">O</span>`
-            : ' ';
-        const c = (dir: string, ch: string) => hasExit(dir) ? ch : ' '.repeat(ch.length);
-
-        const udPivot = (hasExit('u') || hasExit('d'))
-            ? '<span class="cr-ascii-dim">O</span>'
-            : ' ';
-
-        pre.innerHTML = [
-            `${o('nw')} ${o('n')} ${o('ne')}   ${o('u')}`,
-            ` ${c('nw', '\\')}${c('n', '|')}${c('ne', '/')}    ${c('u', '|')}`,
-            `${o('w')}${c('w', '-')}<span class="cr-ascii-dim">O</span>${c('e', '-')}${o('e')}   ${udPivot}`,
-            ` ${c('sw', '/')}${c('s', '|')}${c('se', '\\')}    ${c('d', '|')}`,
-            `${o('sw')} ${o('s')} ${o('se')}   ${o('d')}`,
-        ].join('\n');
-
-        // Update special exits
-        const specialContainer = boxContainer.querySelector('.compass-rose-special-exits');
-        if (specialContainer) {
-            specialContainer.innerHTML = '';
-            specialExits.forEach(exit => {
-                const span = document.createElement('span');
-                span.className = 'cr-special cr-clickable' + (colorBackExits && backSpecialExits.has(exit) ? ' cr-back' : '');
-                span.dataset.exit = exit;
-                span.textContent = exit.toUpperCase();
-                specialContainer.appendChild(span);
-            });
-        }
+        sendBox('ascii');
     }
 
     function hideBox() {
-        if (boxContainer) {
-            boxContainer.style.display = 'none';
-        }
+        sendBox('hidden');
     }
 }

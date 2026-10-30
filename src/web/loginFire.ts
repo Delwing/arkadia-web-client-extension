@@ -3,7 +3,9 @@
  * burning behind it (a hearth glow and a field of rising embers), the password
  * cooling into its dots as it is typed, and the connection folded under a
  * named hairline. The pieces are always there; themes/forged/login.css shows
- * them, so switching the theme needs nothing from here.
+ * them, so switching the theme needs nothing from here. AuthOverlay.tsx renders
+ * the hearth and the embers from these numbers and hands the password field to
+ * forgeThePassword.
  */
 
 const mix = (a: number, b: number, t: number) => a + (b - a) * t;
@@ -13,14 +15,14 @@ const mix = (a: number, b: number, t: number) => a + (b - a) * t;
  * scattering of unrelated dots across 2560px. Under 24 it stops being a
  * field, over 36 it starts being weather.
  */
-const emberCount = () => Math.round(Math.min(36, Math.max(24, window.innerWidth / 64)));
+export const emberCount = (): number => Math.round(Math.min(36, Math.max(24, window.innerWidth / 64)));
 
 /**
  * One ember's numbers. Generated so no two embers share a duration, a delay,
  * a drift or a brightness - a field that rhymes reads as a particle effect,
  * not as fire.
  */
-function makeEmber(): HTMLElement {
+export function emberVars(): Record<string, string> {
     const x = Math.random() * 100;
     // The logo owns the middle and must stay the brightest thing there: embers
     // in that band are 1px and dimmed rather than left out (a bare corridor
@@ -34,9 +36,7 @@ function makeEmber(): HTMLElement {
         * (size > 2 ? 0.6 : size > 1 ? 0.8 : 1);
     // 9-22s: slow is what tells embers from rain.
     const dur = mix(9, 22, Math.random());
-    const ember = document.createElement('span');
-    ember.className = 'auth-ember';
-    const vars: Record<string, string> = {
+    return {
         '--x': `${x.toFixed(2)}%`,
         '--size': `${size}px`,
         '--peak': peak.toFixed(3),
@@ -51,19 +51,6 @@ function makeEmber(): HTMLElement {
         // Where it freezes under reduced motion, so the still frame is a field.
         '--settle': mix(0.12, 0.82, Math.random()).toFixed(3),
     };
-    for (const [name, value] of Object.entries(vars)) ember.style.setProperty(name, value);
-    ember.appendChild(document.createElement('i'));
-    return ember;
-}
-
-function lightTheForge(overlay: HTMLElement): void {
-    const hearth = document.createElement('div');
-    hearth.className = 'auth-hearth';
-    hearth.append(document.createElement('i'), document.createElement('i'));
-    const embers = document.createElement('div');
-    embers.className = 'auth-embers';
-    for (let i = 0; i < emberCount(); i++) embers.appendChild(makeEmber());
-    overlay.prepend(hearth, embers);
 }
 
 /**
@@ -92,7 +79,7 @@ const MIRROR = [
  * is driven by the value's LENGTH alone, every glyph the same bullet, so it
  * can never spell what was typed.
  */
-function forgeThePassword(input: HTMLInputElement): void {
+export function forgeThePassword(input: HTMLInputElement): void {
     const host = input.parentElement;
     if (!host) return;
     const mask = document.createElement('span');
@@ -143,20 +130,4 @@ function forgeThePassword(input: HTMLInputElement): void {
         input.addEventListener(type, () => { if (input.value.length !== shown) render(null); });
     }
     render(null);
-}
-
-export function setupLoginFire(): void {
-    const overlay = document.getElementById('auth-overlay');
-    if (overlay) lightTheForge(overlay);
-
-    const password = document.getElementById('login-password') as HTMLInputElement | null;
-    if (password) forgeThePassword(password);
-
-    const fold = document.getElementById('auth-conn-fold');
-    const conn = document.getElementById('proxy-controls-root');
-    fold?.addEventListener('click', () => {
-        const open = !conn?.classList.contains('is-open');
-        conn?.classList.toggle('is-open', open);
-        fold.classList.toggle('is-open', open);
-    });
 }

@@ -5,7 +5,6 @@ import {createAttackController} from "@client/utils/attackController";
 import {hideContextMenu, showContextMenu} from "@web/contextMenu";
 import eventBus from "@modules/core/eventBus";
 import {getBuiltInPanelSetting, loadLayoutState, subscribeToPanelSetting} from "./layout/utils/layoutStorage";
-import {getObjectListChrome} from "./layout/builtInChrome";
 import {LEADER_MARK_SETTING, SEPARATE_OTHERS_SETTING} from "./layout/types";
 import {buildRenderContext, scopeRenderContext, type ObjectListViewMode, type RenderContext} from "./objectList/context.ts";
 import {getStrategy, renderListLines} from "./objectList/strategies.ts";
@@ -35,7 +34,6 @@ export default class ObjectList {
     private pipContent: HTMLElement | null = null;
     private pipStyleObserver: MutationObserver | null = null;
     private pipTitleObserver: MutationObserver | null = null;
-    private locationObserver: MutationObserver | null = null;
     private coverTimerObserver: MutationObserver | null = null;
     private pipLocationText = "";
     private pipCoverTimerText = "";
@@ -48,11 +46,21 @@ export default class ObjectList {
     private pressedTarget: Element | null = null;
     private suppressClick = false;
 
-    constructor(client: Client) {
+    /**
+     * `lists` are the elements to fill: Kondycje and its non-team window. They
+     * may not be in the page yet; by default they are looked up by id.
+     */
+    constructor(
+        client: Client,
+        lists: { list: HTMLElement | null; others: HTMLElement | null } = {
+            list: document.getElementById("objects-list"),
+            others: document.getElementById("objects-list-others"),
+        },
+    ) {
         this.client = client;
-        this.container = document.getElementById("objects-list");
+        this.container = lists.list;
         this.content = this.setupContainer(this.container);
-        this.othersContainer = document.getElementById("objects-list-others");
+        this.othersContainer = lists.others;
         this.othersContent = this.setupContainer(this.othersContainer);
         this.isMobile = this.isMobileBrowser();
         this.attackController = createAttackController(client);
@@ -148,9 +156,8 @@ export default class ObjectList {
     };
 
     private syncViewModeWithLayoutState(isLayoutEnabled: boolean) {
-        const defaultViewMode = getObjectListChrome().defaultViewMode ?? 'list';
         const nextViewMode = isLayoutEnabled
-            ? getBuiltInPanelSetting<ObjectListViewMode>('objectList', 'viewMode', defaultViewMode)
+            ? getBuiltInPanelSetting<ObjectListViewMode>('objectList', 'viewMode', 'list')
             : 'list';
         if (this.viewMode !== nextViewMode) {
             this.viewMode = nextViewMode;
@@ -169,7 +176,8 @@ export default class ObjectList {
 
     private setupContainer(container: HTMLElement | null) {
         if (!container) return null;
-        container.innerHTML = "";
+        // Only its own content: a layout panel may already have put the timers bar in.
+        container.querySelector(":scope > .objects-list-content")?.remove();
         const content = document.createElement("div");
         content.className = "objects-list-content";
         container.appendChild(content);
@@ -207,7 +215,13 @@ export default class ObjectList {
                 console.error("Error parsing saved objects list position", e);
             }
         }
-        this.clampToViewport();
+        // The list may not be in the page yet (the shell places it right after
+        // start-up); a detached element measures nothing and would be reset to 0,0.
+        if (this.container.isConnected) {
+            this.clampToViewport();
+        } else {
+            requestAnimationFrame(() => this.clampToViewport());
+        }
 
         this.container.addEventListener("pointerdown", this.onPointerDown);
         window.addEventListener("pointermove", this.onPointerMove);
@@ -271,7 +285,7 @@ export default class ObjectList {
     };
 
     private clampToViewport = () => {
-        if (!this.container) return;
+        if (!this.container?.isConnected) return;
         const rect = this.container.getBoundingClientRect();
         const styles = window.getComputedStyle(this.container);
         let newLeft = parseFloat(styles.left || "0");
@@ -988,21 +1002,10 @@ html, body {
     }
 
     private initializePipInfoSources() {
-        const locationElement = document.getElementById("location-text");
-        if (locationElement && typeof MutationObserver !== "undefined") {
-            this.locationObserver?.disconnect();
-            this.locationObserver = new MutationObserver(() => {
-                this.updateLocationText(locationElement.textContent || "");
-            });
-            this.locationObserver.observe(locationElement, {
-                childList: true,
-                characterData: true,
-                subtree: true,
-            });
-            this.updateLocationText(locationElement.textContent || "");
-        } else {
-            this.locationObserver = null;
-        }
+        // The label as the map announces it, not #location-text's DOM: the label
+        // renders wherever the map is shown and remounts when the map moves.
+        this.client.on("mapLocationLabel", (text: string) => this.updateLocationText(text ?? ""));
+        eventBus.emit("requestMapLocationLabel");
 
         const coverTimerElement = document.getElementById("cover-timer");
         if (coverTimerElement && typeof MutationObserver !== "undefined") {

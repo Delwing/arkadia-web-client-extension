@@ -59,10 +59,9 @@ export interface PopupCatalogEntry {
 /**
  * Single source of truth for the standard, single-instance dockable popups.
  *
- * Both UIs render from this list so they never drift: the stock UI maps it to
- * bare `<Component />` mounts (docking/geometry handled by its WindowManager),
- * while forge-ui pairs each with a `FloatingPopupHost` to show it as a plain
- * floating window. Ids match each popup's internal `POPUP_ID`.
+ * LayoutManagerWrapper maps it to bare `<Component />` mounts (docking and
+ * geometry handled by the WindowManager). Ids match each popup's internal
+ * `POPUP_ID`.
  *
  * Only genuinely non-catalog popups are excluded (they don't use the shared
  * popupRegistry / DockablePopupWrapper): the multi-instance static-map manager

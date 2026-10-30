@@ -4,6 +4,7 @@ import type { HelperConnection } from "@modules/helper/HelperConnection";
 import type { HelperState } from "@modules/helper/HelperConnection";
 import type { HelperStatus } from "@modules/helper/helperProtocol";
 import { getDownloadUrl } from "@web/helperDownload.ts";
+import { openWindow } from "@web/modals/pageWindows.ts";
 
 interface HelperSettingsProps {
     helperConnection: HelperConnection;
@@ -108,7 +109,7 @@ function HelperSettings({ helperConnection }: HelperSettingsProps) {
                 w innych oknach i drugie, globalne klawisze wbudowanych funkcji.
             </div>
             <div className="popup-row">
-                <Button size="sm" onClick={() => window.dispatchEvent(new Event('show-binds'))}>
+                <Button size="sm" onClick={() => openWindow('binds')}>
                     Otwórz Klawisze
                 </Button>
             </div>

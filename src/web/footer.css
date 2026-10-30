@@ -2,7 +2,7 @@
    Markup: @web-ui/footer (MultiBindStrip, …). The phone layout reshapes them in
    footerMobile.css. */
 :root {
-  /* Bind kinds, as the forge HUD colours them: the room's own bind, the drinkable
+  /* Bind kinds, as the Kuźnia plate colours them: the room's own bind, the drinkable
      spot and the gate. Plain multibinds stay neutral. */
   --footer-bind-room: #d9bf62;
   --footer-bind-drink: #62b8be;
@@ -363,8 +363,8 @@ body[data-urgent-chips-first="1"] .status-slot:has(> .chip--danger) {
 }
 
 /* A chip: glyph, caps label, mono value, in a small tile, in whichever band the
-   layout puts it. Shared markup (@web-ui/footer/Chip.tsx); the forge HUD skins
-   the same classes its own way. */
+   layout puts it. Shared markup (@web-ui/footer/Chip.tsx); Kuźnia skins the
+   same classes its own way. */
 #footer-layout .chip {
   --chip-tone: var(--popup-text-subtle);
   position: relative;

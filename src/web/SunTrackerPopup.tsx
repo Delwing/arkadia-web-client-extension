@@ -566,10 +566,9 @@ const SunTrackerPopup: React.FC = () => {
                     ))}
                 </div>
                 {/* The three overlays below are `position: fixed` at viewport
-                    coordinates, so they must live at <body> level. An alternative
-                    UI (forge) puts a `filter` on `.dockable-popup-body`, which
-                    makes that element the containing block for fixed descendants:
-                    rendered in place they'd be offset by the popup's own origin
+                    coordinates, so they must live at <body> level. A theme that
+                    puts a `filter` on `.dockable-popup-body` makes that element the
+                    containing block for fixed descendants: rendered in place they'd be offset by the popup's own origin
                     AND — since the body scrolls (`overflow: auto`) — would inflate
                     its scroll area, toggling scrollbars that reflow the day grid
                     under the cursor (enter/leave/enter → visible flicker).

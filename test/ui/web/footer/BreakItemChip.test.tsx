@@ -3,8 +3,8 @@ import { createRoot, type Root } from "react-dom/client";
 import eventBus from "@modules/core/eventBus";
 import { BreakItemChip } from "@web-ui/footer/chips";
 
-// The forge HUD surfaces the item-break warning through this footer chip. Unlike
-// the stock BreakItemWarning banner, the chip regressed to being clickable only
+// The footer surfaces the item-break warning through this chip. Unlike the
+// BreakItemWarning banner, the chip regressed to being clickable only
 // when the game supplied a repair command; these tests pin the restored contract:
 // a click always dismisses, and runs the command when one is present.
 describe("BreakItemChip", () => {

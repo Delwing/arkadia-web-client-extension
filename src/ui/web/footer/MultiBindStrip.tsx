@@ -42,7 +42,7 @@ function getKeyHintMode(): string {
  *    passes `onActiveChange`, which toggles that container's `active` class
  *    (the CSS gate + what main.ts's split-view MutationObserver watches). The
  *    row shows only when there are binds, or when `keepMultibindsVisible` is on.
- *  - The forge HUD wraps it in its own always-present band and passes
+ *  - A layout whose binds band is always present (the Kuźnia plate) passes
  *    `alwaysVisible`, so the row keeps a stable height (showing the placeholder
  *    when a room has no binds) and never shifts the plate.
  *

@@ -1,10 +1,5 @@
-// NOTE: this component does NOT import ../style.css. The stock UI already loads
-// that stylesheet globally (main.ts → main-theme.css), so mounting here inside
-// stock's modal is fully styled. forge-ui mounts the very same component in its
-// own modal but must NOT pull stock's global sheet in — it's a page-wide sheet
-// (#content-area, footer, badges, popups, …) that, once loaded, repaints
-// forge's whole base UI. forge instead provides the modal chrome via its scoped
-// bootstrap-compat.css. Re-adding this import would reintroduce that leak.
+// This component does not import ../style.css: the page loads it globally
+// (main.ts → main-theme.css), in the cascade order that file pins.
 import {useState} from "react";
 import {Button as UiButton, Check, ColorInput, DeleteButton, Field, Input, Select} from "@web-ui/primitives/index.ts";
 import {CircleHelp} from "lucide-react";

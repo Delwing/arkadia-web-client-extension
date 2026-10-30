@@ -5,6 +5,7 @@ import eventBus from "@modules/core/eventBus";
 import { getCurrentRoomId } from "@modules/core/currentRoomProvider";
 import type { ClientEvents } from "@modules/core/eventBus";
 import {roomContextMenuHandler} from "@modules/core/contextMenus";
+import { closeOptionWindows } from "@web/modals/pageWindows.ts";
 
 interface ShortcutEntry {
     key: string;
@@ -52,7 +53,7 @@ function Shortcuts() {
         setKey('');
         setLoc('');
         setLabel('');
-        window.dispatchEvent(new Event('close-options'));
+        closeOptionWindows();
     }
 
     function remove(k: string) {

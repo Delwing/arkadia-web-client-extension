@@ -9,7 +9,7 @@ import type {
 
 // Default values for the portable settings slices, plus the explicit field-key
 // lists that drive the settings accessors (@modules/core/settings). These live
-// in @shared so both the client and any UI (including the forge UI) can use them
+// in @shared so both the client and any UI can use them
 // without importing @web. Stock-chrome defaults stay in @web/defaultUiSettings
 // (they reference stock-only values like the footer component list).
 

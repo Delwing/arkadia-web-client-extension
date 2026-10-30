@@ -1,7 +1,6 @@
 /* Decorated message blocks — see src/client/scripts/messageFlair.ts.
-   A trigger marks a reply block via AnsiAwareBuffer.flair; both hosts turn that
-   into `msg-flair msg-flair-<category>` on the message node (stock .output_msg,
-   forge <p>), so these rules cover both UIs.
+   A trigger marks a reply block via AnsiAwareBuffer.flair; the output engine
+   turns that into `msg-flair msg-flair-<category>` on the .output_msg node.
 
    Icons are lucide — the set outputContextMenu.tsx already uses — inlined as SVG
    masks. A mask carries shape only; the colour comes from background-color, so an

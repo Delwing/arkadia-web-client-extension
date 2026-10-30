@@ -282,10 +282,6 @@ body {
   pointer-events: all;
 }
 
-/* Panel action-button styles (.panel-button + variants) were moved to the
-   shared src/web/popups/popups.css so both the stock UI and forge-ui pick them
-   up (forge imports popups.css but not this stylesheet). */
-
 /* ==========================================================================
    END FLOATING WINDOW BASE CLASSES
    ========================================================================== */
@@ -579,7 +575,7 @@ h1 {
    input and the bottom dock, but this shell also stacks the footer bands (the
    multibind row, the status line) between the output and the command line.
    Give the footer its own row in the centre column, its bands stacked in it, keep every other child (empty roots, modals) out
-   of the rail columns, and drop the forge spacing — the stock docks sit flush.
+   of the rail columns; the docks sit flush.
    `html` outranks the same selectors in layout.css, which loads later. */
 html body.layout-manager-enabled.layout-rails-vertical #main-container {
   grid-template-rows:
@@ -740,14 +736,6 @@ body[data-backdrop] #main_text_output_msg_wrapper {
 
 /* herbManager (ziola bags) — moved to src/web/popups/popups.css (shared by both UIs). */
 
-/* herb popup — moved to src/web/popups/popups.css (shared by both UIs). */
-/* Object List card / compact / dots / raid views + the "Lista" mode toggle —
-   moved to src/web/popups/popups.css so both the stock UI and forge-ui pick
-   them up (forge renders every objectList flavor now, not just its own). The
-   list-view + container + PiP styles already live there. */
-
-/* Object List Demo Popup (/demo_kondycje) — moved to src/web/popups/popups.css
-   so forge-ui picks it up too: forge loads popups.css but not this file. */
 
 /* Top-right stop button while a manual recording runs. */
 #recording-button {
@@ -1536,11 +1524,8 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
 
 }
 
-/* Direction Buttons (visible on both mobile and desktop) — moved to
-   src/ui/web/buttons/mobileDirectionButtons.css (shared with forge-ui, since
-   MobileDirectionButtons is now a shared React component imported from
-   @web-ui/buttons/MobileDirectionButtons). Imported below. The settings-editor
-   preview grid below (#mobile-buttons-preview*) stays here — it's stock-only. */
+/* The direction buttons themselves are src/ui/web/buttons/mobileDirectionButtons.css;
+   the settings editor's preview grid (#mobile-buttons-preview*) is here. */
 
 #mobile-buttons-preview,
 #mobile-buttons-preview-solo,
@@ -2012,25 +1997,12 @@ body[data-map-position="right"] #content-area #main_text_output_msg_wrapper {
   outline-offset: 1px;
 }
 
-/* Mobile direction buttons runtime CSS (.mobile-button, .direction-button,
-   .mobile-z-buttons, the collapsed-state rule, etc.) — moved to
-   src/ui/web/buttons/mobileDirectionButtons.css (shared with forge-ui, since
-   MobileDirectionButtons is now a shared React component imported from
-   @web-ui/buttons/MobileDirectionButtons). Imported below. Still relied on
-   here by the settings-editor preview grid above (.preview .mobile-button*),
-   which stays stock-only. */
 
 .mobile-direction-buttons.preview .mobile-button.empty {
   border: 1px dashed #888;
 }
 
-/* Mobile command radial — moved to src/ui/web/buttons/mobileCommandRadial.css
-   (shared with forge-ui, since MobileCommandRadial is now a shared React
-   component imported from @web-ui/buttons/MobileCommandRadial). Imported below. */
 
-/* Desktop Buttons — moved to src/ui/web/buttons/desktopButtons.css (shared
-   with forge-ui, since DesktopButtons is now a shared React component
-   imported from @web-ui/buttons/DesktopButtons). Imported below. */
 
 /* Map download progress, centred over the map (index.html, main.ts). */
 #map-progress-container {
@@ -4222,10 +4194,7 @@ select.popup-input.popup-input--control.is-warning {
 
 /* ── Plugin manager (Skrypty) ─────────────────────────────────────────
    Shell, list and catalogue grid for the Skrypty panel (src/web/options/
-   Scripts.tsx). Layout only reads the --popup-* tokens, so forge compiles a
-   copy of this exact block scoped under .forge-menu-modal — see
-   forge-ui/components/menu/_stock-plugin-manager.scss; keep the two in sync.
-   Below 768px the panel drops to one column and every card action grows a
+   Scripts.tsx). Layout only reads the --popup-* tokens. Below 768px the panel drops to one column and every card action grows a
    label: an unlabelled icon is a guess without a hover tooltip, and the
    bigger target is easier to hit. */
 .plugin-manager {

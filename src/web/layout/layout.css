@@ -3,18 +3,9 @@
 /* ── Dock chrome accent tokens ──────────────────────────────────────────────
    Resize handles, drop previews, splitters, the active tab underline and the
    empty-leaf placeholder paint with `--layout-accent` / `--layout-warning` /
-   `--layout-muted`. Each shell maps them to its own palette at `:root` (stock:
-   src/web/style.css; forge: forge-ui/layout-theme.css); the inline fallbacks
-   below are the last resort.
-
-   These used to read Bootstrap's `--bs-primary` / `--bs-warning` /
-   `--bs-secondary-color` directly, which only holds in a UI that loads
-   Bootstrap globally. forge does not: it had to shadow `--bs-primary` at
-   `:root` to get bronze splitters, and `--bs-secondary-color` — which it never
-   shadowed — sat on the #888 fallback until forge's scoped modal stylesheet
-   leaked Bootstrap's light `:root` defaults, turning the placeholder text
-   near-black on the forged dark plate. Shared layout CSS must not depend on
-   `--bs-*`. */
+   `--layout-muted`. src/web/style.css maps them at `:root` and the themes
+   remap them; the inline fallbacks below are the last resort. (They used to
+   read Bootstrap's `--bs-*`, which no longer exists here.) */
 
 /* Dock track sizes. Not inherited: a dock edge drag changes them every frame,
    and as inherited values that restyled everything inside the shell, the whole
@@ -41,8 +32,8 @@ body.layout-manager-enabled #content-area {
    #layout-left/right-dock-host divs (children of #main-container), so the rails
    become full-height tracks of the #main-container grid. The central column
    then stacks the content (top dock + main), the input bar and the bottom dock
-   between the rails. Only active when the shell opts in (adds
-   .layout-rails-vertical + provides the host divs — currently forge-ui). */
+   between the rails. Only active when the page opts in (adds
+   .layout-rails-vertical + provides the host divs, as the shell does). */
 body.layout-manager-enabled.layout-rails-vertical #main-container {
   display: grid;
   grid-template-columns:
@@ -318,7 +309,7 @@ body.layout-locked .tab-group-tab--closable {
    the content's --popup-bg is transparent (applyWindowAppearance). Surfaces
    that float over the content or must hide what they cover get the theme's
    background back, captured on the slot before the content redeclares it;
-   zero specificity, so a UI's own value for them (forge) still wins. */
+   zero specificity, so a theme's own value for them still wins. */
 .managed-panel__content,
 .panel__body {
   --window-theme-bg: var(--popup-bg);

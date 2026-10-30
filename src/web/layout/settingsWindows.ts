@@ -1,4 +1,3 @@
-import { getObjectListChrome } from './builtInChrome';
 import { MAP_SETTINGS_FIELDS } from './mapSettingsFields';
 import { OBJECT_LIST_SETTINGS_FIELDS } from './objectListSettingsFields';
 import { getRegisteredPopups } from './popupRegistry';
@@ -27,8 +26,7 @@ export function hasAppearanceSettings(windowId: string): boolean {
 /** A built-in window's own fields (popups register theirs with the popup). */
 export function builtInSettingsFields(windowId: string): WindowSettingField[] | undefined {
   if (windowId === 'map') return MAP_SETTINGS_FIELDS;
-  // forge-ui retitles Kondycje and drops its stock actions, these with them.
-  if (windowId === 'objectList' && !getObjectListChrome()?.hideStockActions) return OBJECT_LIST_SETTINGS_FIELDS;
+  if (windowId === 'objectList') return OBJECT_LIST_SETTINGS_FIELDS;
   return undefined;
 }
 
@@ -47,7 +45,7 @@ export interface SettingsWindow {
 export function listSettingsWindows(): SettingsWindow[] {
   const builtIns = BUILT_IN_SETTINGS_WINDOWS.map(id => ({
     id,
-    title: (id === 'objectList' ? getObjectListChrome()?.title : undefined) ?? PANEL_CONFIGS[id]?.title ?? id,
+    title: PANEL_CONFIGS[id]?.title ?? id,
     fields: builtInSettingsFields(id),
     appearance: hasAppearanceSettings(id),
   }));

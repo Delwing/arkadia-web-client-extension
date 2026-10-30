@@ -128,7 +128,7 @@ To add an "Asystent" chip:
 5. **Stock UI does not render `FooterStrip`.** Only forge calls `registerBuiltinFooterItems()`
    (`forge-ui/client/bootstrap.ts:72`). For the stock footer you must additionally add a
    `<span id="assistant-chip">` inside `#char-state` in `index.html` and an entry in
-   `src/ui/web/mountComponents.tsx`'s `componentConfigs`.
+   `src/web/app/App.tsx` (one `<Island>` per part of the page).
 
 Given that 5-step cost, **defer the chip**. Ship `/pomoc` + the output context menu first.
 

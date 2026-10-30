@@ -1,6 +1,5 @@
 import { ReactNode, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { OBJECT_LIST_OTHERS_ID, PANEL_CONFIGS, WindowRecord } from '../types';
-import { getObjectListChrome } from '../builtInChrome';
 import { getPopup, RegisteredPopup, subscribeToRegistry } from '../popupRegistry';
 import { useLayoutManager } from '../hooks/useLayoutManager';
 import { useWindowAppearance } from '../hooks/useWindowAppearance';
@@ -69,14 +68,8 @@ export function usePanelChrome(window: WindowRecord): PanelChrome {
   const isBuiltIn = window.id === 'map' || window.id === 'objectList' || window.id === OBJECT_LIST_OTHERS_ID;
   const builtInState = isBuiltIn ? getBuiltInPanelState(window.id) : undefined;
 
-  // Shell-level chrome override for the built-in objectList (forge-ui retitles it
-  // "W poblizu" and drops the stock actions). Process-local, never persisted.
-  const objectListChrome =
-    window.id === 'objectList' ? getObjectListChrome() : undefined;
-
   const config = PANEL_CONFIGS[window.id];
   const title =
-    objectListChrome?.title ??
     builtInState?.title ??
     popup?.config.title ??
     config?.title ??
@@ -99,7 +92,7 @@ export function usePanelChrome(window: WindowRecord): PanelChrome {
     : window.id === 'map'
     ? <MapHeaderMenu />
     : window.id === 'objectList'
-    ? (objectListChrome?.hideStockActions ? undefined : <ObjectListHeaderActions />)
+    ? <ObjectListHeaderActions />
     : undefined;
 
   return {

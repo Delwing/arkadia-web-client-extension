@@ -5,6 +5,7 @@ import eventBus from "@modules/core/eventBus";
 import { getAllNotes, deleteNote, type LocationNote } from "./locationNotesStorage";
 import { foldText } from "@web/settings/settingsSearch.ts";
 import {roomContextMenuHandler} from "@modules/core/contextMenus";
+import { closeOptionWindows } from "@web/modals/pageWindows.ts";
 
 function LocationNotes() {
     const [notes, setNotes] = useState<LocationNote[]>([]);
@@ -63,7 +64,7 @@ function LocationNotes() {
 
     const handleNavigate = (id: number) => {
         eventBus.emit('leadTo', id);
-        window.dispatchEvent(new Event('close-options'));
+        closeOptionWindows();
     };
 
     const truncateNote = (text: string, maxLength: number = 50) => {

@@ -1,16 +1,11 @@
 /**
- * Ask the host UI to open the settings page holding a given setting.
+ * Open the settings dialog on the page holding a given setting.
  *
- * `src/web` has two hosts — the stock UI (a Bootstrap modal created in
- * `main.ts`) and forge (its own modal host) — and neither exposes its modal
- * instance as an import. The established seam for reaching them is a window
- * event, the same way the menu picks the dialog's opening page
- * (`SHOW_SETTINGS_EVENT`). The dialog itself switches to the named page.
- *
- * A host that does not implement the event simply does nothing, and the card
- * still shows the navigation path as text — so the button degrades to a no-op
- * rather than to a broken promise.
+ * The window opens through `openWindow`; the event then tells the dialog which
+ * page to switch to, the same way the menu picks its opening page
+ * (`SHOW_SETTINGS_EVENT`). The card still shows the navigation path as text.
  */
+import { openWindow } from '@web/modals/pageWindows.ts';
 
 export const OPEN_SETTINGS_EVENT = 'assistant:open-settings';
 
@@ -64,5 +59,6 @@ export function openSettingsFor(settingKey: string, uiLocation?: string): void {
         surface: surfaceFor(settingKey),
         tabLabel: tabLabelOf(uiLocation),
     };
+    openWindow('settings');
     window.dispatchEvent(new CustomEvent<OpenSettingsDetail>(OPEN_SETTINGS_EVENT, { detail }));
 }

@@ -1,9 +1,11 @@
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useRef } from 'react';
+import type { MovableHost } from './movableHost';
 import { LayoutProvider } from './LayoutContext';
 import { LayoutContent } from './LayoutContent';
 import { setPopupPortalContainer } from './popupPortal';
 import { PluginPopupRenderer } from './pluginPopupRenderer';
 import { POPUP_CATALOG } from '../popups/popupCatalog';
+import { AfterFirstPaint } from '@web-ui/afterFirstPaint.tsx';
 // Non-catalog popups: they don't use the shared popupRegistry/DockablePopupWrapper
 // (own chrome, portal to body) or are multi-instance — mounted directly here.
 import LetterComposer from '../LetterComposer';
@@ -11,17 +13,13 @@ import StaticMapPopupManager from '../StaticMapPopup';
 import TransportDebugPopup from '../TransportDebugPopup';
 
 interface LayoutManagerWrapperProps {
-  mapElement: HTMLElement | null;
-  objectListElement: HTMLElement | null;
-  /** Host for the non-team objects window (#objects-list-others). */
-  objectListOthersElement?: HTMLElement | null;
+  /** The map's drawing surface (#map), shown by the map panel while it is open. */
+  mapHost: MovableHost | null;
+  /** Kondycje (#objects-list), shown by its panel while it is open. */
+  objectListHost: MovableHost | null;
+  /** The non-team objects window (#objects-list-others). */
+  objectListOthersHost?: MovableHost | null;
   onLayoutModeChange?: (enabled: boolean) => void;
-  /** Override the built-in objectList panel's title (default "Kondycje"). */
-  objectListTitle?: string;
-  /** Render custom content for the objectList panel instead of relocating the
-   *  legacy #objects-list DOM node. forge-ui passes its forged "W poblizu"
-   *  panel here; when set, objectListElement is ignored. */
-  renderObjectList?: () => ReactNode;
 }
 
 /**
@@ -44,30 +42,30 @@ function PopupPortalContainer() {
 }
 
 export function LayoutManagerWrapper({
-  mapElement,
-  objectListElement,
-  objectListOthersElement,
+  mapHost,
+  objectListHost,
+  objectListOthersHost,
   onLayoutModeChange,
-  objectListTitle,
-  renderObjectList,
 }: LayoutManagerWrapperProps) {
   return (
     <LayoutProvider onLayoutModeChange={onLayoutModeChange}>
       <LayoutContent
-        mapElement={mapElement}
-        objectListElement={objectListElement}
-        objectListOthersElement={objectListOthersElement}
-        objectListTitle={objectListTitle}
-        renderObjectList={renderObjectList}
+        mapHost={mapHost}
+        objectListHost={objectListHost}
+        objectListOthersHost={objectListOthersHost}
       />
-      {/* Standard dockable popups — single source of truth shared with forge-ui */}
-      {POPUP_CATALOG.map(({ id, Component }) => (
-        <Component key={id} />
-      ))}
-      {/* Non-catalog popups (own chrome / multi-instance) */}
-      <LetterComposer />
-      <TransportDebugPopup />
-      <StaticMapPopupManager />
+      {/* The popups mount once the page has painted: closed, they draw nothing,
+          and the ones left open come back a frame later. */}
+      <AfterFirstPaint>
+        {/* The standard dockable popups (POPUP_CATALOG). */}
+        {POPUP_CATALOG.map(({ id, Component }) => (
+          <Component key={id} />
+        ))}
+        {/* Non-catalog popups (own chrome / multi-instance) */}
+        <LetterComposer />
+        <TransportDebugPopup />
+        <StaticMapPopupManager />
+      </AfterFirstPaint>
       {/* Plugin popups - rendered inside LayoutProvider for docking support */}
       <PluginPopupRenderer />
       {/* Portal container for plugin popups (legacy fallback) */}

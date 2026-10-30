@@ -63,9 +63,8 @@ export function domId(id: string): string {
  *
  * A configured *plugin* component with nothing registered behind it is dropped:
  * the plugin is not loaded, so there is nothing to switch and nothing to call
- * it but its id. Built-ins are kept whether or not they are registered, because
- * only the forge HUD registers them - in the stock UI the config is all there
- * is, and dropping them would empty this panel. They are not dropped from the
+ * it but its id. Built-ins are kept whether or not they are registered (they
+ * register at start-up, but the config alone must be enough to list them). They are not dropped from the
  * *config* either way; see `toConfig`.
  */
 export function merge(components: FooterComponentConfig[], registered: RegisteredItem[]): FooterRow[] {

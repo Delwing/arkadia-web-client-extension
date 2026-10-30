@@ -3,7 +3,7 @@ import {ensureGameSocket, getLastOutgoingCommand, pushText, waitForCommandInput}
 
 /**
  * The footer lamp readout is the shared <LampChip> (src/ui/web/footer/chips.tsx),
- * the same component the forge HUD renders — so it is always on screen and says
+ * the same component every footer layout renders — so it is always on screen and says
  * "off" when the lamp is out, rather than disappearing. Clicking it lights
  * or snuffs the lamp.
  */

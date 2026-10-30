@@ -26,8 +26,8 @@ import {
  * the `uiSettings.footerComponents` config ids, so the registry can apply the
  * user's show/hide + ordering to them.
  *
- * A host opts into these by calling `registerBuiltinFooterItems()` once (the
- * forge HUD does). The registry then filters/orders them by config and merges
+ * A host opts into these by calling `registerBuiltinFooterItems()` once
+ * (prepareStockFooter does). The registry then filters/orders them by config and merges
  * them with any plugin items — so the host just renders `getFooterItems()`.
  */
 const CHIPS: Record<string, () => ReactNode> = {

@@ -1,6 +1,8 @@
 import initInlineCompassRose from '@client/scripts/inlineCompassRose';
 import { EventEmitter } from 'events';
 import { getShortDir, longToShort } from '@shared/map';
+import { characterStorage } from '@modules/core/storage';
+import { gmcp } from '@client/gmcp';
 
 class FakeClient {
   private emitter = new EventEmitter();
@@ -11,6 +13,7 @@ class FakeClient {
     this.emitter.off(event, cb);
   }
   println = jest.fn();
+  sendEvent = jest.fn();
 }
 
 const VALID_SHORT_DIRS = new Set(Object.values(longToShort));
@@ -71,5 +74,51 @@ describe('InlineCompassRose parsing', () => {
       standard: ['n', 's'],
       special: ['exit1', 'exit2', 'exit3', 'exit4']
     });
+  });
+});
+
+describe('InlineCompassRose box modes', () => {
+
+  class BoxClient extends FakeClient {
+    sendEvent = jest.fn((event: string, payload?: any) => this.emit(event, payload));
+    sendCommand = jest.fn();
+    Map = { locationHistory: [] as number[], currentRoom: null as any };
+    emit(event: string, payload?: any) {
+      (this as any).emitter.emit(event, payload);
+    }
+  }
+
+  const lastBox = (client: BoxClient) =>
+    client.sendEvent.mock.calls.filter(([event]) => event === 'compassRose.box').at(-1)?.[1];
+
+  beforeEach(() => {
+    localStorage.clear();
+    gmcp.room = { info: { exits: { north: 1, 'wschod': 2, 'w bramie': 3 } } };
+  });
+
+  test('the grid mode sends the open exits, and the UI can ask for them later', () => {
+    characterStorage.set('settings', { inlineCompassRose: 2 });
+    const client = new BoxClient();
+    initInlineCompassRose(client as any);
+
+    client.emit('gmcp_msg.room.exits');
+    const box = lastBox(client);
+    expect(box.view).toBe('grid');
+    expect(box.exits).toEqual(expect.arrayContaining(['n']));
+    expect(box.specialExits).toContain('w bramie');
+
+    client.sendEvent.mockClear();
+    client.emit('requestCompassRose');
+    expect(lastBox(client)).toEqual(box);
+  });
+
+  test('the ASCII mode is its own view, and switching off hides the box', () => {
+    characterStorage.set('settings', { inlineCompassRose: 4 });
+    const client = new BoxClient();
+    initInlineCompassRose(client as any);
+    expect(lastBox(client).view).toBe('ascii');
+
+    characterStorage.set('settings', { inlineCompassRose: 0 });
+    expect(lastBox(client)).toEqual({ view: 'hidden', exits: [], backDirs: [], specialExits: [], backSpecialExits: [] });
   });
 });

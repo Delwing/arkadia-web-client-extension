@@ -46,18 +46,9 @@ import { splitOwnIcon } from './pluginLabelIcon';
 
 export interface OutputContextMenuOptions {
     /**
-     * Whether the host renders the shared `.output_msg` message wrappers (the
-     * `setupOutputMessageHandler` structure with the `.output_msg_content` span
-     * and copy/serialise affordances). The copy-as-image / save-as-HTML entries
-     * walk that structure, so a host rendering its own plain output (e.g.
-     * forge-ui) passes `false` to omit them. Defaults to `true` (the stock UI).
-     */
-    messageWrappersSupported?: boolean;
-    /**
      * Whether to offer the "show/hide timestamps" and "show/hide message types"
-     * toggles. These only need each line to carry `.output-timestamp` /
-     * `.output-message-type` spans (which forge-ui also emits), so they are
-     * decoupled from {@link messageWrappersSupported}. Defaults to `true`.
+     * toggles (each line's `.output-timestamp` / `.output-message-type` spans).
+     * Defaults to `true`.
      */
     messageMetadataToggles?: boolean;
 }
@@ -109,7 +100,7 @@ function quote(text: string): string {
 
 export function buildOutputContextMenuItems(
     selection: string,
-    { messageWrappersSupported = true, messageMetadataToggles = true }: OutputContextMenuOptions = {},
+    { messageMetadataToggles = true }: OutputContextMenuOptions = {},
 ): ContextMenuEntry[] {
     const items: ContextMenuEntry[] = [];
     // One line of it: a search over the logs matches within a line.
@@ -125,26 +116,24 @@ export function buildOutputContextMenuItems(
             // The output's own copy handler shapes the text (no timestamps).
             action: () => document.execCommand('copy'),
         });
-        if (messageWrappersSupported) {
-            items.push(
-                {
-                    section,
-                    label: 'Kopiuj jako obraz',
-                    icon: Image,
-                    action: () => {
-                        copyOutputAsImage().catch(err => console.error('Failed to copy as image:', err));
-                    },
+        items.push(
+            {
+                section,
+                label: 'Kopiuj jako obraz',
+                icon: Image,
+                action: () => {
+                    copyOutputAsImage().catch(err => console.error('Failed to copy as image:', err));
                 },
-                {
-                    section,
-                    label: 'Zapisz jako HTML',
-                    icon: FileCode,
-                    action: () => {
-                        saveOutputAsHtml().catch(err => console.error('Failed to save as HTML:', err));
-                    },
+            },
+            {
+                section,
+                label: 'Zapisz jako HTML',
+                icon: FileCode,
+                action: () => {
+                    saveOutputAsHtml().catch(err => console.error('Failed to save as HTML:', err));
                 },
-            );
-        }
+            },
+        );
         if (canSearchLogs()) {
             items.push({
                 section,

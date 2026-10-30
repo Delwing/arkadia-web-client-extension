@@ -1,6 +1,6 @@
 /* The footer layout editor (FooterLayoutDialog): the live footer on top, what to
    add under it, then the selected piece's settings beside the warnings and JSON.
-   Imported by the dialog, so it comes along wherever the settings open (forge too). */
+   Imported by the dialog, so it comes along wherever the settings open. */
 /* One fixed height: what is shown under the preview changes as pieces are
    picked, and a dialog that grew and shrank with it (centred, so from both
    ends) would move the preview about. The body scrolls instead. */

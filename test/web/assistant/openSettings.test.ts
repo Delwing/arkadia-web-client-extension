@@ -154,7 +154,7 @@ describe('openSettingsFor', () => {
     });
 
     it('does not throw when no host is listening', () => {
-        // Forge has its own modal host and may not implement the event. The card
+        // Nothing may be listening for the event. The card
         // still shows the navigation path as text, so a silent no-op is correct —
         // but it must not take the panel down with it.
         expect(() => openSettingsFor('uiSettings.barOrder')).not.toThrow();

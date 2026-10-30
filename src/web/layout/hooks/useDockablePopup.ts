@@ -13,11 +13,11 @@ import type { WindowSettingField } from '../windowSettings';
 import { pushBackLayer } from '@web-ui/backNavigation.ts';
 
 /**
- * Modals open over the windows: the stock app modals, the Dialog primitive and
- * forge's menu modals, each with its backdrop. A click or Escape there is for
+ * Modals open over the windows: the page-level app modals and the Dialog
+ * primitive, each with its backdrop. A click or Escape there is for
  * the modal, not an outside click that closes a floating window.
  */
-const MODAL_SELECTOR = '.app-modal, .popup-dialog-backdrop, .forge-menu-backdrop';
+const MODAL_SELECTOR = '.app-modal, .popup-dialog-backdrop';
 
 interface UseDockablePopupOptions {
   popupId: string;

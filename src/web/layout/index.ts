@@ -12,13 +12,9 @@ export {
   saveLayoutState,
   resetLayoutState,
   invalidateLayoutCache,
-  setLayoutOverrides,
-  getLayoutOverrides,
-  isLayoutModeForced,
   setRailSpanSupported,
   isRailSpanSupported,
 } from './utils/layoutStorage';
-export type { LayoutOverrides } from './utils/layoutStorage';
 export { applyDefaultLayoutMode } from './utils/layoutDefault';
 export {
   getPopupPortalContainer,

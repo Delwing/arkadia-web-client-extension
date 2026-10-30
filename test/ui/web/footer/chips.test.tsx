@@ -124,6 +124,17 @@ describe("footer chips", () => {
       expect(chip()).toBeNull();
     });
 
+    test("starts from the stored mode, announced or not", () => {
+      characterStorage.set("attack_mode", "AWR");
+      try {
+        mount(<AttackChip />);
+        emit("isTeamLeader", true);
+        expect(chip()?.querySelector(".chip__val")?.textContent).toBe("AWR");
+      } finally {
+        characterStorage.remove("attack_mode");
+      }
+    });
+
     test("a click cycles A → AW → AWR → A", () => {
       mount(<AttackChip />);
       emit("isTeamLeader", true);

@@ -4,8 +4,8 @@ import { useCharacterSettingsPages } from "@web/options/useCharacterSettingsPage
 import { useUiSettingsPages, type UiSettingsPagesProps } from "@web/uiSettings/useUiSettingsPages.tsx";
 import { useDataPages } from "@web/options/useDataPages.tsx";
 import { OPEN_SETTINGS_EVENT, type OpenSettingsDetail } from "@web/assistant/openSettings.ts";
+import { closeWindow } from "@web/modals/pageWindows.ts";
 import {
-    CLOSE_SETTINGS_EVENT,
     DEFAULT_SETTINGS_CATEGORY,
     SAVE_SETTINGS_EVENT,
     SETTINGS_CATEGORIES,
@@ -51,7 +51,7 @@ function settingControls(root: HTMLElement): Element[] {
 
 /**
  * Whether the dialog is phone-narrow - the same 40rem as the stylesheet's
- * container query, measured on the dialog itself so a narrow forge shell or
+ * container query, measured on the dialog itself so a narrow window or
  * popout gets the phone views too. A hidden dialog (width 0) keeps its answer.
  */
 function useNarrow(ref: RefObject<HTMLElement | null>): boolean {
@@ -90,7 +90,7 @@ export interface SettingsDialogProps extends UiSettingsPagesProps {
  * they are stored, a search across every page, and one Save for both.
  *
  * The host provides the chrome (title, Save button) and the modal lifecycle
- * on `#settings-modal`; forge fakes those events on its own shell.
+ * on `#settings-modal` (AppModals).
  *
  * Closing without saving is not discarding: the dialog stays mounted for the
  * session and reopens where it was left - the page, its scroll, the search and
@@ -340,8 +340,7 @@ function SettingsDialog({ soundManager, onEnableNotifications, initialCategory }
             resetDirty();
             // The close below comes before the re-render: nothing is left unsaved.
             dirtyRef.current = new Set();
-            (document.activeElement as HTMLElement | null)?.blur?.();
-            window.dispatchEvent(new Event(CLOSE_SETTINGS_EVENT));
+            closeWindow("settings");
         };
 
         const modalEl = document.getElementById(SETTINGS_MODAL_ID);
@@ -572,7 +571,7 @@ function SettingsDialog({ soundManager, onEnableNotifications, initialCategory }
                             category={currentCategory}
                             chip={scopeChip(currentCategory.group)}
                             onBack={() => setPhoneView("list")}
-                            onClose={() => window.dispatchEvent(new Event(CLOSE_SETTINGS_EVENT))}
+                            onClose={() => closeWindow("settings")}
                         />
                         <PhoneSectionChips key={category} sections={phoneSections} pane={pagesRef.current} />
                     </div>

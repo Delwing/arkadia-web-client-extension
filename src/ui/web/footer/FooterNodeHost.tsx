@@ -6,8 +6,8 @@ import { useEffect, useRef } from "react";
  * Plugin footer components (and any non-React footer content) are backed by a
  * real `<span>` the plugin owns and can manipulate directly (the handle's
  * `.element`). This adopts that span into whichever UI is rendering the footer
- * by appending it to a ref'd wrapper — so the same registry item renders in the
- * forge HUD or the stock footer without the registry knowing about the DOM.
+ * by appending it to a ref'd wrapper — so the same registry item renders in any
+ * footer layout without the registry knowing about the DOM.
  */
 export default function FooterNodeHost({ node }: { node: HTMLElement }) {
   const ref = useRef<HTMLSpanElement>(null);

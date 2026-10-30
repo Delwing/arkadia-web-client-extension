@@ -1,83 +1,61 @@
-import { useEffect, useRef, useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ObjectListTimersBar } from '../components/ObjectListTimersBar';
+import { PANEL_SLOT, useHostSlot, type MovableHost } from '../movableHost';
 
 interface ObjectListPanelProps {
-  objectListElement: HTMLElement | null;
+  /** The list ObjectList fills (#objects-list or #objects-list-others); held here while mounted. */
+  host: MovableHost;
   /** The weapon / cover / order timers bar; only Kondycje carries it. */
   withTimers?: boolean;
 }
 
-export function ObjectListPanel({ objectListElement, withTimers = true }: ObjectListPanelProps) {
+export function ObjectListPanel({ host, withTimers = true }: ObjectListPanelProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [timersHost, setTimersHost] = useState<HTMLDivElement | null>(null);
-  const originalParentRef = useRef<HTMLElement | null>(null);
-  const originalStyleRef = useRef<{
-    position: string;
-    left: string;
-    top: string;
-    right: string;
-    bottom: string;
-    display: string;
-  } | null>(null);
 
-  useEffect(() => {
-    if (!containerRef.current || !objectListElement) return;
+  useHostSlot(host, containerRef, PANEL_SLOT);
 
-    // Store original parent and styles for cleanup
-    originalParentRef.current = objectListElement.parentElement;
-    originalStyleRef.current = {
-      position: objectListElement.style.position,
-      left: objectListElement.style.left,
-      top: objectListElement.style.top,
-      right: objectListElement.style.right,
-      bottom: objectListElement.style.bottom,
-      display: objectListElement.style.display,
+  // Docked, the list fills the panel instead of floating where its default spot puts it.
+  useLayoutEffect(() => {
+    const list = host.element;
+    const original = {
+      position: list.style.position,
+      left: list.style.left,
+      top: list.style.top,
+      right: list.style.right,
+      bottom: list.style.bottom,
+      display: list.style.display,
     };
 
-    // Move object list element into our container
-    containerRef.current.appendChild(objectListElement);
-
-    // Create a host element for the timers bar inside #objects-list
-    // so it inherits the user's font-size and font-family settings
-    const host = document.createElement('div');
-    const contentEl = objectListElement.querySelector('.objects-list-content');
+    // A host element for the timers bar inside the list, so it inherits the
+    // user's font-size and font-family settings.
+    const timers = document.createElement('div');
+    const contentEl = list.querySelector('.objects-list-content');
     if (contentEl) {
-      objectListElement.insertBefore(host, contentEl);
+      list.insertBefore(timers, contentEl);
     } else {
-      objectListElement.prepend(host);
+      list.prepend(timers);
     }
-    setTimersHost(host);
+    setTimersHost(timers);
 
-    // Reset positioning styles for docked mode
-    objectListElement.style.position = 'relative';
-    objectListElement.style.left = '';
-    objectListElement.style.top = '';
-    objectListElement.style.right = '';
-    objectListElement.style.bottom = '';
-    objectListElement.style.display = 'block';
-    objectListElement.style.width = '100%';
-    objectListElement.style.height = '100%';
+    list.style.position = 'relative';
+    list.style.left = '';
+    list.style.top = '';
+    list.style.right = '';
+    list.style.bottom = '';
+    list.style.display = 'block';
+    list.style.width = '100%';
+    list.style.height = '100%';
 
     return () => {
-      // Clean up timers host
-      host.remove();
+      timers.remove();
       setTimersHost(null);
-
-      // Restore object list to original parent and styles on unmount
-      if (originalParentRef.current && objectListElement && originalStyleRef.current) {
-        originalParentRef.current.appendChild(objectListElement);
-        objectListElement.style.position = originalStyleRef.current.position;
-        objectListElement.style.left = originalStyleRef.current.left;
-        objectListElement.style.top = originalStyleRef.current.top;
-        objectListElement.style.right = originalStyleRef.current.right;
-        objectListElement.style.bottom = originalStyleRef.current.bottom;
-        objectListElement.style.display = originalStyleRef.current.display;
-        objectListElement.style.width = '';
-        objectListElement.style.height = '';
-      }
+      Object.assign(list.style, original);
+      list.style.width = '';
+      list.style.height = '';
     };
-  }, [objectListElement]);
+  }, [host]);
 
   return (
     <>
