@@ -122,7 +122,7 @@ describe('requiredLiterals', () => {
   });
 
   test('every Mudlet gag regex that matches a corpus line passes its prefilter', () => {
-    const corpus = fs.readFileSync(path.resolve('e2e/perf/corpus.txt'), 'utf8').split('\n').filter(Boolean);
+    const corpus = fs.readFileSync(path.resolve('e2e/perf/corpus.txt'), 'utf8').split(/\r?\n/).filter(Boolean);
     const regexes: RegExp[] = [];
     const walk = (node: any) => {
       for (const p of node.patterns ?? []) if (p.type === 1) regexes.push(new RegExp(p.pattern));
