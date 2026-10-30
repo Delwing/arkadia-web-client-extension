@@ -108,7 +108,7 @@ export const binaryCodec: TransportCodec = {
     },
 };
 
-// Frame types on the session proxy's wire, mirroring proxy/frame.go.
+// Frame types on the session proxy's wire, mirroring services/session-proxy/frame.go.
 const FRAME_DATA = 0x01;
 const FRAME_CONTROL = 0x02;
 const FRAME_HEADER_LEN = 9;

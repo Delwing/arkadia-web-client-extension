@@ -48,12 +48,21 @@ src/
 │   └── device/       # Device management and settings bundles
 └── ui/web/           # Component mounting utilities
 
-editor/               # Plugin editor application (separate entry point)
-viewer/               # Session log viewer (separate entry point)
-log-viewer/           # Alternative log viewer (separate entry point)
-helper/               # Native helper app (Go) — system tray, hotkeys, window mgmt
-plugin-types/         # Auto-generated TypeScript types for plugin API
-examples/             # Example plugins
+plugins/              # Everything for plugin authors
+├── types/            # Auto-generated TypeScript types for the plugin API (npm package)
+├── examples/         # Example plugins
+└── editor/           # Plugin editor (separate entry point, served at editor/)
+views/                # Other pages of the site (separate entry points, served at viewer/, log-viewer/, popup/)
+├── viewer/           # Session log viewer
+├── log-viewer/       # Standalone log viewer
+└── popup/            # Page a popped-out window loads
+services/             # Code that does not run in the page; each has its own build and deploy
+├── ai-worker/        # Cloudflare Worker for the AI assistant
+├── crowd-worker/     # Cloudflare Worker for the shared item lists
+├── push-worker/      # Cloudflare Worker for Web Push alerts
+├── session-proxy/    # Go session proxy (resumable telnet <-> WebSocket)
+└── helper/           # Native helper app (Go) — system tray, hotkeys, window mgmt
+scripts/              # Dev and data-generation scripts
 docs/                 # User-facing documentation
 test/                 # Vitest unit tests (mirrors src/ structure)
 e2e/                  # Playwright end-to-end tests (100+ specs)
@@ -154,11 +163,12 @@ yarn test:e2e -- --shard=1/12              # Run one CI shard
 
 ## Entry Points
 
-There are four Vite build entries (see `vite.config.ts`):
+There are five Vite build entries (see `vite.config.ts`). The pages outside the root keep their old URLs (`editor/`, `viewer/`, `log-viewer/`, `popup/`) whatever folder their source is in: `PAGES` in `vite.config.ts` maps one to the other, for the build and the dev server alike. A new page goes there too.
 - **Client**: `index.html` → `src/web/main.ts` - Main web application (renders `src/web/app/App.tsx` into `#root`; see `docs/dev/main-ts-decomposition.md`)
-- **Editor**: `editor/index.html` → `editor/main.ts` - Plugin editor
-- **Viewer**: `viewer/index.html` → `viewer/main.tsx` - Session log viewer
-- **Log Viewer**: `log-viewer/index.html` → `log-viewer/main.tsx` - Standalone log viewer
+- **Editor**: `plugins/editor/index.html` → `plugins/editor/main.ts` - Plugin editor
+- **Viewer**: `views/viewer/index.html` → `views/viewer/main.tsx` - Session log viewer
+- **Log Viewer**: `views/log-viewer/index.html` → `views/log-viewer/main.tsx` - Standalone log viewer
+- **Popup**: `views/popup/index.html` → `views/popup/main.ts` - The page a popped-out window loads
 
 The client-side scripts entry is `src/client/main.ts` (loaded dynamically by the web app, not a Vite entry itself). It bootstraps the `Client` class which manages triggers, plugins, and game communication.
 
@@ -196,10 +206,10 @@ Settings and state are managed through `src/modules/core/` (storage, default set
 
 ### Plugin API
 - `src/client/PluginApi.ts` is the stable API surface exposed to external plugins
-- Types are auto-generated into `plugin-types/` via `yarn build:types`
+- Types are auto-generated into `plugins/types/` via `yarn build:types`
 - Plugin registries (triggers, buttons, footer, location notes) in `src/modules/core/`
 - `src/client/PluginManager.ts` handles dynamic loading and lifecycle
-- See `examples/` for plugin structure
+- See `plugins/examples/` for plugin structure
 
 ### Helper App
-`helper/` contains a Go application that provides native OS integration (system tray, hotkeys, window management). It communicates with the web client via WebSocket. Agents typically do not need to modify this unless working on native integration features.
+`services/helper/` contains a Go application that provides native OS integration (system tray, hotkeys, window management). It communicates with the web client via WebSocket. Agents typically do not need to modify this unless working on native integration features.

@@ -3,7 +3,7 @@
  *
  * A `LogSession` is one recorded play session; a `LogLine` is one rendered line
  * of it. Both are view-layer shapes: the adapter that reads the client's log
- * store (see `log-viewer/sessionAdapter.ts`) is what turns stored records into
+ * store (see `views/log-viewer/sessionAdapter.ts`) is what turns stored records into
  * these, so the viewer never touches IndexedDB itself and can be driven from
  * mock data in the showcase.
  */

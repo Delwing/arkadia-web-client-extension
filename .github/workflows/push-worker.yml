@@ -1,7 +1,7 @@
 # Cloudflare Worker (Web Push) — test on PRs, deploy from master.
 #
 # Deliberately separate from worker.yml: the two Workers deploy independently so
-# that neither can break the other's rollout. See push-worker/README.md.
+# that neither can break the other's rollout. See services/push-worker/README.md.
 #
 # Required repository secrets:
 #   CLOUDFLARE_API_TOKEN   — "Edit Cloudflare Workers" template token
@@ -16,11 +16,11 @@ on:
   push:
     branches: [ master ]
     paths:
-      - 'push-worker/**'
+      - 'services/push-worker/**'
       - '.github/workflows/push-worker.yml'
   pull_request:
     paths:
-      - 'push-worker/**'
+      - 'services/push-worker/**'
       - '.github/workflows/push-worker.yml'
   workflow_dispatch:
 
@@ -38,14 +38,14 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: push-worker
+        working-directory: services/push-worker
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: yarn
-          cache-dependency-path: push-worker/yarn.lock
+          cache-dependency-path: services/push-worker/yarn.lock
       - name: Install dependencies
         run: yarn install --frozen-lockfile
       - name: Typecheck
@@ -66,14 +66,14 @@ jobs:
       url: https://arkadia-push-worker.delwing.workers.dev
     defaults:
       run:
-        working-directory: push-worker
+        working-directory: services/push-worker
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: yarn
-          cache-dependency-path: push-worker/yarn.lock
+          cache-dependency-path: services/push-worker/yarn.lock
       - name: Install dependencies
         run: yarn install --frozen-lockfile
       - name: Deploy

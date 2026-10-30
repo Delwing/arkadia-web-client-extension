@@ -17,7 +17,7 @@ coverage/
 /.claude/*
 !/.claude/skills/
 /data
-# Cloudflare Worker (worker/) local state and build output
+# Cloudflare Workers (services/*-worker) local state and build output
 .wrangler
 # Local secrets - never commit
 .dev.vars
@@ -30,8 +30,8 @@ coverage/
 .superpowers/
 
 # npm wrapper: downloaded types snapshot
-/plugin-types/npm/latest/
-/plugin-types/npm/latest.tmp/
+/plugins/types/npm/latest/
+/plugins/types/npm/latest.tmp/
 
 # yarn perf CPU profiles
 perf-results/

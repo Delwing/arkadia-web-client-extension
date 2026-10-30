@@ -1,5 +1,5 @@
 /// <reference types="vitest/config" />
-import {defineConfig} from 'vite'
+import {defineConfig, type Plugin} from 'vite'
 import react from '@vitejs/plugin-react'
 import {resolve} from "path";
 import {execSync} from 'child_process';
@@ -12,12 +12,63 @@ const resolveGitInfo = (command: string, fallback: string) => {
     }
 };
 
+/**
+ * The pages other than the client, by the URL they are served at and the folder
+ * their source lives in. The URLs predate the folders (links, bookmarks and the
+ * client itself point at them), so the build and the dev server keep them.
+ */
+const PAGES: Record<string, string> = {
+    'editor/': 'plugins/editor/',
+    'viewer/': 'views/viewer/',
+    'log-viewer/': 'views/log-viewer/',
+    'popup/': 'views/popup/',
+};
+
+const depth = (fileName: string) => fileName.split('/').length - 1;
+
+/** Serves and emits each page in {@link PAGES} at its URL, not its source path. */
+function pageUrls(): Plugin {
+    return {
+        name: 'page-urls',
+        enforce: 'post',
+        configureServer(server) {
+            server.middlewares.use((req, _res, next) => {
+                const url = req.url ?? '';
+                for (const [served, source] of Object.entries(PAGES)) {
+                    if (url.startsWith('/' + served)) {
+                        req.url = '/' + source + url.slice(served.length + 1);
+                        break;
+                    }
+                }
+                next();
+            });
+        },
+        generateBundle(_options, bundle) {
+            for (const [served, source] of Object.entries(PAGES)) {
+                for (const fileName of Object.keys(bundle)) {
+                    const file = bundle[fileName];
+                    if (!fileName.startsWith(source) || file.type !== 'asset') continue;
+                    const target = served + fileName.slice(source.length);
+                    // One folder shallower: its relative links to the shared
+                    // assets and public files lose a `../`.
+                    const html = typeof file.source === 'string'
+                        ? file.source.split('../'.repeat(depth(fileName))).join('../'.repeat(depth(target)))
+                        : file.source;
+                    delete bundle[fileName];
+                    this.emitFile({type: 'asset', fileName: target, source: html});
+                }
+            }
+        },
+    };
+}
+
 const commitSha = resolveGitInfo('git rev-parse --short HEAD', 'unknown');
 const commitDate = resolveGitInfo('git log -1 --format=%cI', 'unknown');
 
 export default defineConfig({
     plugins: [
         react(),
+        pageUrls(),
         {
             // What is live, for src/web/versionCheck.ts: an open page compares it
             // with the build it was loaded from.
@@ -79,10 +130,10 @@ export default defineConfig({
         rollupOptions: {
             input: {
                 client: resolve('index.html'),
-                editor: resolve('editor/index.html'),
-                viewer: resolve('viewer/index.html'),
-                'log-viewer': resolve('log-viewer/index.html'),
-                popup: resolve('popup/index.html'),
+                editor: resolve('plugins/editor/index.html'),
+                viewer: resolve('views/viewer/index.html'),
+                'log-viewer': resolve('views/log-viewer/index.html'),
+                popup: resolve('views/popup/index.html'),
             },
             output: {
                 manualChunks: (id) => {

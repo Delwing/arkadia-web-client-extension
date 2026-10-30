@@ -2,7 +2,7 @@
  * How far the session proxy's clock runs ahead of ours, estimated from the frames it
  * already sends.
  *
- * Every proxy frame carries the moment the proxy received the bytes (`proxy/frame.go`),
+ * Every proxy frame carries the moment the proxy received the bytes (`services/session-proxy/frame.go`),
  * and that timestamp is what `client.now()` hands to scripts. It is a *different
  * machine's* wall clock, though, and the timers that use it tick against `Date.now()` on
  * this one — so a proxy running five seconds fast makes a five-second cover cooldown

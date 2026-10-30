@@ -8315,7 +8315,7 @@ select.popup-input optgroup {
 /* ── assistant ───────────────────────────────────────────────────────── */
 /* AI assistant panel. Uses the same --popup-* variables as every other
    popup body, so it themes with the rest without a second stylesheet
-   (a new global stylesheet would also have to be added to popup/main.ts
+   (a new global stylesheet would also have to be added to views/popup/main.ts
    or the detached panel would render unstyled). */
 .assistant-popup-body {
   display: flex;

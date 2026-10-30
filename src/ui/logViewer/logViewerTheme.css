@@ -11,7 +11,7 @@
    background, text and accent.
 
    The fallback after each token is the viewer's old dark palette. The
-   standalone page (`log-viewer/`) has no client theme around it, so that is
+   standalone page (`views/log-viewer/`) has no client theme around it, so that is
    what it shows.
 
    The names are the semantic roles the stylesheets were written against, not

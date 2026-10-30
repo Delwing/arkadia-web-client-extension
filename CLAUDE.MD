@@ -8,7 +8,7 @@ When exploring this codebase for the first time:
 3. Read `src/modules/core/storage.ts` and `src/modules/core/storageSchema.ts` for the storage system
 4. Check `src/shared/events/` for the event type definitions that connect modules
 
-For plugin-related work, start with `src/client/PluginApi.ts` and `examples/`.
+For plugin-related work, start with `src/client/PluginApi.ts` and `plugins/examples/`.
 
 ## Platform Notes
 

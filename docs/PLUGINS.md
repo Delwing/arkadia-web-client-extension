@@ -939,7 +939,7 @@ const myFilter: ObjectListEntryFilter = (context, result) => {
 };
 ```
 
-Zobacz `examples/object-list-filters-plugin.ts` dla pełnego przykładu.
+Zobacz `plugins/examples/object-list-filters-plugin.ts` dla pełnego przykładu.
 
 #### `api.enemyBinds` - Dostosowywanie Bindów na Wrogów
 
@@ -989,7 +989,7 @@ const myResolver: EnemyBindResolver = (candidates, allObjects) => {
 };
 ```
 
-Zobacz `examples/enemy-binds-plugin.ts` dla pełnego przykładu.
+Zobacz `plugins/examples/enemy-binds-plugin.ts` dla pełnego przykładu.
 
 #### `api.AnsiAwareBuffer` - Manipulacja Liniami
 
@@ -1716,7 +1716,7 @@ export async function init(api: PluginApi): Promise<PluginInfo> {
 }
 ```
 
-Zobacz `plugin-types/README.md` i `plugin-types/index.d.ts` dla pełnej dokumentacji typów.
+Zobacz `plugins/types/README.md` i `plugins/types/index.d.ts` dla pełnej dokumentacji typów.
 
 > Wcześniej typy instalowało się wprost z adresu `…/arkadia-plugin-types.tgz`. Taki wpis psuje instalację po każdym wdrożeniu klienta (zmienia się suma kontrolna w `yarn.lock` / `package-lock.json`) — zamień go na polecenie powyżej.
 
@@ -1846,14 +1846,14 @@ Plugin esbuild z `plugins` działa po `arkadiaHostUi()`. Plik startowy i wynik (
 - **Konsola przeglądarki (F12)** — tu trafiają błędy z `init()` i z callbacków triggerów oraz Twoje `console.log`. Dzięki mapom źródeł ślady stosu wskazują na pliki `.ts`, a w zakładce *Sources* możesz stawiać breakpointy w swoim kodzie
 - **`/fake tekst`** — przepuszcza podany tekst przez triggery tak, jakby przyszedł z gry. Tak sprawdzisz wzorzec bez czekania na sytuację w grze. Opcja `--type=` ustawia typ wiadomości GMCP, który dostaje callback triggera (domyślnie `combat.avatar`), np. `/fake --type=room.short Na trakcie.`
 - **`api.output.print(...)`** — szybki podgląd wartości prosto w oknie gry
-- **Podgląd GMCP** — przykładowy plugin `examples/gmcp-inspector-plugin.ts` pokazuje na żywo wszystkie zdarzenia GMCP, z których możesz korzystać w `api.gmcp`
+- **Podgląd GMCP** — przykładowy plugin `plugins/examples/gmcp-inspector-plugin.ts` pokazuje na żywo wszystkie zdarzenia GMCP, z których możesz korzystać w `api.gmcp`
 - **Status w oknie Wtyczki** — plugin, którego `init()` rzucił błąd, ma tam status błędu z komunikatem; po poprawce i zapisie przeładuje się sam
 
 ### Gdzie szukać API
 
 - Ten dokument — opis wszystkich przestrzeni `api.*` z przykładami
 - `node_modules/@arkadia/plugin-types/latest/index.d.ts` — pełne typy, generowane z kodu klienta, więc zawsze aktualne. Twój edytor podpowiada je sam
-- [`examples/`](../examples/) — kompletne przykładowe pluginy
+- [`plugins/examples/`](../plugins/examples/) — kompletne przykładowe pluginy
 
 ### Praca z asystentem AI
 
@@ -1923,7 +1923,7 @@ export async function init(api: PluginApi): Promise<PluginInfo> {
 
 ## Przykłady
 
-Zobacz katalog `examples/` w repozytorium dla kompletnych przykładów pluginów:
+Zobacz katalog `plugins/examples/` w repozytorium dla kompletnych przykładów pluginów:
 - `simple-highlighter-plugin.ts` - Prosty plugin do podświetlania słów
 - `example-plugin.ts` - Kompleksowy przykład demonstrujący różne funkcje API
 - `combat-alert-plugin.ts` - Zaawansowany plugin śledzący statystyki walki

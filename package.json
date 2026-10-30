@@ -8,9 +8,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "build:types": "node plugin-types/build.cjs",
+    "build:types": "node plugins/types/build.cjs",
     "build:assistant-kb": "node scripts/build-assistant-kb.ts",
-    "build:examples": "node examples/build.cjs",
+    "build:examples": "node plugins/examples/build.cjs",
     "generate:plugin-types": "node scripts/generate-plugin-types.js",
     "lint": "eslint .",
     "preview": "vite preview",
@@ -19,7 +19,7 @@
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "perf": "playwright test -c playwright.perf.config.ts",
-    "serve:examples": "node examples/server.cjs"
+    "serve:examples": "node plugins/examples/server.cjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

@@ -92,7 +92,7 @@ or bind, even though the validator would flag it afterwards.
 ## Running the corpus
 
 There is **no provider runner yet** — the worker that talks to the LLM providers
-is being built separately (`worker/`, see
+is being built separately (`services/ai-worker/`, see
 `docs/dev/ASSISTANT_INTEGRATION_PLAN.md`). Until it lands, the corpus is only
 checked for *integrity*:
 

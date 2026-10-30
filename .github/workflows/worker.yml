@@ -1,9 +1,9 @@
 # Cloudflare Worker (AI assistant) — test on PRs, deploy from master.
 #
 # The Worker inlines `public/assistant-kb.json` at bundle time (see
-# worker/src/kb/index.ts), so a knowledge-base regeneration only reaches users
+# services/ai-worker/src/kb/index.ts), so a knowledge-base regeneration only reaches users
 # after a deploy. That is why this workflow watches the bundle as well as
-# `worker/` itself.
+# `services/ai-worker/` itself.
 #
 # Required repository secrets:
 #   CLOUDFLARE_API_TOKEN   — "Edit Cloudflare Workers" template token
@@ -17,13 +17,13 @@ on:
   push:
     branches: [ master ]
     paths:
-      - 'worker/**'
+      - 'services/ai-worker/**'
       - 'public/assistant-kb.json'
       - 'src/shared/assistant/**'
       - '.github/workflows/worker.yml'
   pull_request:
     paths:
-      - 'worker/**'
+      - 'services/ai-worker/**'
       - 'public/assistant-kb.json'
       - 'src/shared/assistant/**'
       - '.github/workflows/worker.yml'
@@ -43,14 +43,14 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: worker
+        working-directory: services/ai-worker
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: yarn
-          cache-dependency-path: worker/yarn.lock
+          cache-dependency-path: services/ai-worker/yarn.lock
       - name: Install dependencies
         run: yarn install --frozen-lockfile
       - name: Typecheck
@@ -59,7 +59,7 @@ jobs:
         run: yarn test
       - name: Build bundle (dry run)
         # Resolves the imports of `public/assistant-kb.json` and
-        # `src/shared/assistant/` from outside `worker/`, so a bundling failure
+        # `src/shared/assistant/` from outside `services/ai-worker/`, so a bundling failure
         # surfaces on the PR rather than at deploy time. Needs no credentials.
         run: yarn build
 
@@ -72,14 +72,14 @@ jobs:
       url: https://arkadia-ai-worker.delwing.workers.dev
     defaults:
       run:
-        working-directory: worker
+        working-directory: services/ai-worker
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: yarn
-          cache-dependency-path: worker/yarn.lock
+          cache-dependency-path: services/ai-worker/yarn.lock
       - name: Install dependencies
         run: yarn install --frozen-lockfile
       - name: Read expected KB version
