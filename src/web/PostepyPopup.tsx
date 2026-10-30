@@ -62,8 +62,7 @@ const PostepyPopup: React.FC = () => {
 
     const entries = data?.entries ?? [];
     const lastTime = data?.lastTime ?? Date.now();
-    const lastKills = data?.lastKills ?? { my: 0, team: 0 };
-    const currentKills = data?.currentKills ?? { my: 0, team: 0 };
+    const killsSince = data?.killsSince ?? { my: 0, team: 0 };
     const waitingForFirstCombat = data?.waitingForFirstCombat ?? false;
 
     // Calculate mean time
@@ -73,8 +72,8 @@ const PostepyPopup: React.FC = () => {
 
     // Calculate time and kills since last improve
     const timeSinceLast = waitingForFirstCombat ? 0 : Math.max(0, now - lastTime);
-    const killsSinceLast = waitingForFirstCombat ? 0 : currentKills.my - lastKills.my;
-    const teamKillsSinceLast = waitingForFirstCombat ? 0 : currentKills.team - lastKills.team;
+    const killsSinceLast = killsSince.my;
+    const teamKillsSinceLast = killsSince.team;
 
     const handleCopyAsImage = useCallback(async () => {
         const buffer = getFormattedPostepyTable();

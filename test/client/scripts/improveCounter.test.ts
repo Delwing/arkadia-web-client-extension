@@ -401,6 +401,51 @@ describe('improve counter', () => {
     show();
     expect(client.print.mock.calls.at(-1)[0]?.text).toMatch(/zabici: 1\/1/);
   });
+  describe('kills since the last improvement', () => {
+    const killsLine = () => {
+      client.print.mockClear();
+      show();
+      return client.print.mock.calls[0][0]?.text.match(/Od ostatniego postepu: .*zabici: (-?\d+)\/(-?\d+)/)?.slice(1, 3);
+    };
+
+    test('carry on from the session taken over from another device, never negative', () => {
+      client.dispatch('gmcp.char.state', { improve: 2 });
+      parse('Zabiles smoka chaosu.');
+      // The other device fought on: 40 kills of its own session since the last improvement
+      const stored = characterStorage.get('improve_counter') as any;
+      characterStorage.set('improve_counter', {
+        ...stored, lastKills: { my: 40, team: 0 }, killsSince: { my: 40, team: 2 },
+      });
+      // ...while this device's session kill counter starts over
+      characterStorage.set('kill_counter_session', {} as any);
+      expect(killsLine()).toEqual(['40', '42']);
+
+      parse('Zabiles smoka chaosu.');
+      client.dispatch('gmcp.char.state', { improve: 3 });
+      const entries = (characterStorage.get('improve_counter') as any).entries;
+      expect(entries[entries.length - 1]).toMatchObject({ killsMy: 41, killsTeam: 2 });
+      expect(killsLine()).toEqual(['0', '0']);
+    });
+
+    test('a session stored as a kill snapshot of another device counts from zero', () => {
+      client.dispatch('gmcp.char.state', { improve: 2 });
+      const stored = characterStorage.get('improve_counter') as any;
+      const { killsSince: _, ...legacy } = stored;
+      characterStorage.set('improve_counter', { ...legacy, lastKills: { my: 40, team: 5 } });
+      expect(killsLine()).toEqual(['0', '0']);
+      parse('Zabiles smoka chaosu.');
+      expect(killsLine()).toEqual(['1', '1']);
+    });
+
+    test('are not touched by /zabici_reset', () => {
+      client.dispatch('gmcp.char.state', { improve: 2 });
+      parse('Zabiles smoka chaosu.');
+      parse('Zabiles smoka chaosu.');
+      characterStorage.set('kill_counter_session', {} as any);
+      expect(killsLine()).toEqual(['2', '2']);
+    });
+  });
+
   describe('tied to the life (object number)', () => {
     const today = '2026/1/15';
     const lifetime = () => characterStorage.get('improve_counter_lifetime') as any;

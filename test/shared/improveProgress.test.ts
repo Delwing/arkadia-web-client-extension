@@ -25,6 +25,15 @@ describe('mergeImproveSessions', () => {
         expect(mergeImproveSessions(ab, b)).toEqual(ab);
     });
 
+    it('takes the larger count of kills since the same last improvement', () => {
+        const x: ImproveSessionData = { ...b, killsSince: { my: 3, team: 4 } };
+        const y: ImproveSessionData = { ...b, killsSince: { my: 9, team: 1 } };
+        expect(mergeImproveSessions(x, y).killsSince).toEqual({ my: 9, team: 4 });
+        expect(mergeImproveSessions(y, x).killsSince).toEqual({ my: 9, team: 4 });
+        // A copy from before the last improvement doesn't count toward it
+        expect(mergeImproveSessions({ ...a, killsSince: { my: 50, team: 0 } }, y).killsSince).toEqual({ my: 9, team: 1 });
+    });
+
     it('takes the newer life whole', () => {
         const next: ImproveSessionData = { entries: [], level: 0, obj: 8, since: 1_000, waitingForFirstCombat: true };
         expect(mergeImproveSessions(a, next)).toBe(next);

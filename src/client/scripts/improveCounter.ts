@@ -107,10 +107,24 @@ export function formatDuration(ms: number): string {
 export type ImproveData = {
     entries: ImproveEntry[];
     lastTime: number;
-    lastKills: { my: number; team: number };
-    currentKills: { my: number; team: number };
+    killsSince: { my: number; team: number };
     waitingForFirstCombat?: boolean;
 };
+
+function isKills(value: unknown): value is { my: number; team: number } {
+    return !!value && typeof value === "object"
+        && typeof (value as any).my === "number" && typeof (value as any).team === "number";
+}
+
+/** Stored before kills were counted here: a snapshot of this device's session totals. */
+function loadKillsSince(data: any, totals: { my: number; team: number }) {
+    if (isKills(data.killsSince)) return {...data.killsSince};
+    if (!isKills(data.lastKills)) return {my: 0, team: 0};
+    return {
+        my: Math.max(0, totals.my - data.lastKills.my),
+        team: Math.max(0, totals.team - data.lastKills.team),
+    };
+}
 
 let improveCounterInstance: ImproveCounter | null = null;
 
@@ -157,7 +171,8 @@ export default class ImproveCounter extends BaseCounter {
     private lifetimeLoaded = false;
     private pendingLifetime: { count: number; time: number; noForm?: boolean; obj?: number }[] = [];
     private lastTime: number = 0;
-    private lastKills = {my: 0, team: 0};
+    /** Kills since the last improvement, counted here: the session kill counter is per device. */
+    private killsSince = {my: 0, team: 0};
     private level: number = -1;
     private lastObjNum?: number;
     /** Life (object number) the entries belong to; null until known after a reset. */
@@ -247,10 +262,20 @@ export default class ImproveCounter extends BaseCounter {
             if (inCombat && this.waitingForFirstCombat) {
                 this.waitingForFirstCombat = false;
                 this.lastTime = this.client.now();
-                this.lastKills = this.getKills();
+                this.killsSince = {my: 0, team: 0};
                 this.persist();
                 this.emitUpdate();
             }
+        });
+
+        this.client.on("kill", ({killer}) => {
+            if (killer === "OTHER") return;
+            this.killsSince = {
+                my: this.killsSince.my + (killer === "ME" ? 1 : 0),
+                team: this.killsSince.team + (killer === "TEAM" ? 1 : 0),
+            };
+            this.persist();
+            this.emitUpdate();
         });
     }
 
@@ -262,8 +287,7 @@ export default class ImproveCounter extends BaseCounter {
         return {
             entries: [...this.entries],
             lastTime: this.lastTime,
-            lastKills: {...this.lastKills},
-            currentKills: this.getKills(),
+            killsSince: this.waitingForFirstCombat ? {my: 0, team: 0} : {...this.killsSince},
             waitingForFirstCombat: this.waitingForFirstCombat,
         };
     }
@@ -318,7 +342,7 @@ export default class ImproveCounter extends BaseCounter {
             this.clearedAt = now;
         }
         this.lastTime = now;
-        this.lastKills = this.getKills();
+        this.killsSince = {my: 0, team: 0};
         this.waitingForFirstCombat = true;
         this.persist();
         this.emitUpdate();
@@ -470,18 +494,17 @@ export default class ImproveCounter extends BaseCounter {
         const state = STATES[level] ?? String(level);
         // A level replayed by the proxy happened when the server sent it, not now
         const now = this.client.now();
-        const kills = this.getKills();
         const entry: ImproveEntry = {
             state,
             time: now,
             delta: now - this.lastTime,
-            killsMy: kills.my - this.lastKills.my,
-            killsTeam: kills.team - this.lastKills.team,
+            killsMy: this.killsSince.my,
+            killsTeam: this.killsSince.team,
         };
         this.entries.push(entry);
         this.countLevel(level, now);
         this.lastTime = now;
-        this.lastKills = kills;
+        this.killsSince = {my: 0, team: 0};
         // An improvement only comes from fighting, whether or not combat was seen
         this.waitingForFirstCombat = false;
         this.persist();
@@ -499,14 +522,14 @@ export default class ImproveCounter extends BaseCounter {
         const now = this.client.now();
         this.countLevel(level, now);
         this.lastTime = now;
-        this.lastKills = this.getKills();
+        this.killsSince = {my: 0, team: 0};
         this.persist();
     }
 
     private load(data: any = {}) {
         this.entries = Array.isArray(data.entries) ? data.entries : [];
         this.lastTime = typeof data.lastTime === "number" && data.lastTime > 0 ? data.lastTime : Date.now();
-        this.lastKills = data.lastKills || this.getKills();
+        this.killsSince = loadKillsSince(data, this.getKills());
         this.level = typeof data.level === "number" ? data.level : -1;
         this.lastObjNum = typeof data.lastObjNum === "number" ? data.lastObjNum : undefined;
         // Stored before entries were tied to a life: they belong to the last one seen
@@ -560,7 +583,7 @@ export default class ImproveCounter extends BaseCounter {
         this.setStorage('improve_counter', {
             entries: this.entries,
             lastTime: this.lastTime,
-            lastKills: this.lastKills,
+            killsSince: this.killsSince,
             level: this.level,
             lastObjNum: this.lastObjNum,
             waitingForFirstCombat: this.waitingForFirstCombat,
@@ -780,10 +803,8 @@ export default class ImproveCounter extends BaseCounter {
 
         // When waiting for first combat, show 0:00 instead of time since login
         const effectiveLastTime = this.waitingForFirstCombat ? Date.now() : this.lastTime;
-        const effectiveLastKills = this.waitingForFirstCombat ? totals : this.lastKills;
         const since = Date.now() - effectiveLastTime;
-        const myDelta = totals.my - effectiveLastKills.my;
-        const teamDelta = totals.team - effectiveLastKills.team;
+        const {my: myDelta, team: teamDelta} = this.getData().killsSince;
         if (narrow) {
             wrapPieces([
                 colorString(`Od ostatniego postepu: ${duration(since)}`, POSTEP_COLOR),

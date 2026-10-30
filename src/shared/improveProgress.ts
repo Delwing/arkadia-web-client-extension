@@ -19,7 +19,10 @@ export type ImproveEntry = {
 export type ImproveSessionData = {
     entries?: ImproveEntry[];
     lastTime?: number;
+    /** Before killsSince: this device's session kill totals at the last improvement. */
     lastKills?: { my: number; team: number };
+    /** Kills since the last improvement (or since counting started). */
+    killsSince?: { my: number; team: number };
     level?: number;
     lastObjNum?: number;
     waitingForFirstCombat?: boolean;
@@ -131,6 +134,15 @@ export function mergeImproveSessions(a: ImproveSessionData, b: ImproveSessionDat
         since: Math.min(a.since ?? Infinity, b.since ?? Infinity),
     };
     if (timeSide.lastKills) merged.lastKills = timeSide.lastKills;
+    // Kills since that time only grow until the next improvement: the side that
+    // played on after the other copy was taken counted more of them
+    const killsSince = [a, b]
+        .filter(s => s.killsSince && (s === timeSide || (s.lastTime ?? 0) === lastTime))
+        .map(s => s.killsSince!)
+        .reduce<{ my: number; team: number } | undefined>((x, y) => x
+            ? { my: Math.max(x.my, y.my), team: Math.max(x.team, y.team) }
+            : { ...y }, undefined);
+    if (killsSince) merged.killsSince = killsSince;
     if (clearedAt > 0) merged.clearedAt = clearedAt;
     if (!Number.isFinite(merged.since)) delete merged.since;
     return merged;
