@@ -71,6 +71,7 @@ import {App, type AppProps} from "./app/App";
 import {mapHost, objectListHost, objectListOthersHost} from "./app/shell/mapHosts";
 import {AppProviders} from "./app/AppProviders";
 import {initTextToSpeech} from "./voice/textToSpeech.ts";
+import {apply as applyUiSettings, load as loadUiSettings} from "./uiSettingsCore";
 
 // Build the client and wire all UI-agnostic startup concerns (migrations,
 // scripts, session logging, Firebase sync, helper, sendCommand/NPC bridges)
@@ -182,6 +183,11 @@ document.addEventListener('DOMContentLoaded', () => {
             mapLoad: mapBootstrap,
         }),
     )));
+
+    // The stored look (fonts, colours, map, chrome) onto the page. Ustawienia's
+    // live preview applies it again while open; it mounts on first use, so it is
+    // not what applies it at start-up.
+    applyUiSettings(loadUiSettings());
 });
 
 window.client = mudClient;
