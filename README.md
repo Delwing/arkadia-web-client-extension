@@ -6,7 +6,7 @@
 
 **Przeglądarkowy klient Arkadii (MUD)** — z mapą, walką, pluginami, edytorem skryptów i synchronizacją między urządzeniami.
 
-[**▶ Zagraj w przeglądarce**](https://delwing.github.io/arkadia-web-client-extension/) · [Dokumentacja](docs/OVERVIEW.md) · [Pluginy](docs/PLUGINS.md)
+[**▶ Zagraj w przeglądarce**](https://delwing.github.io/arkadia-web-client-extension/) · [Arkadia](https://arkadia.rpg.pl/) · [Dokumentacja](docs/OVERVIEW.md) · [Pluginy](docs/PLUGINS.md)
 
 ![React](https://img.shields.io/badge/React-19-61dafb?logo=react&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178c6?logo=typescript&logoColor=white)
