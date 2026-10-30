@@ -18,6 +18,16 @@
 
 ---
 
+## 📖 O projekcie
+
+Dargoth Client to pełny klient [Arkadii](https://arkadia.rpg.pl/) działający w przeglądarce — bez instalowania Mudleta i bez pobierania skryptów. Wystarczy otworzyć stronę i zalogować się postacią. Klient łączy się z grą bezpośrednio, przez natywną aplikację pomocniczą albo przez proxy sesji, które trzyma połączenie, gdy telefon uśpi kartę.
+
+Od razu dostajesz to, co gracze zwykle składają z wielu skryptów: mapę z prowadzeniem, kolorowanie i obsługę walki, pojemniki, zioła, liczniki postępów i historię czatu. Wszystko konfiguruje się w oknach ustawień, a ustawienia mogą się synchronizować między komputerem a telefonem.
+
+Jeśli wbudowane funkcje to za mało, możesz napisać własny plugin w TypeScript lub JavaScript. Pomogą ci w tym edytor z podpowiedziami typów, asystent AI i przykłady. Plugin może dodawać triggery, przyciski i okna, a nawet otworzyć własny widok w osobnej karcie.
+
+Aplikację można zainstalować jako PWA na komputerze i na telefonie.
+
 ## ✨ Możliwości
 
 - 🗺️ **Mapa i nawigacja** — mapa z prowadzeniem, zapisanymi miejscami i notatkami do lokacji
