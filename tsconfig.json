@@ -18,14 +18,14 @@
   "include": [
     "src/**/*",
     "scripts/**/*.ts",
-    "editor/**/*",
-    "viewer/**/*",
-    "popup/**/*"
+    "plugins/editor/**/*",
+    "views/viewer/**/*",
+    "views/popup/**/*"
   ],
   "exclude": [
     "node_modules",
     "dist",
     "test",
-    "examples"
+    "plugins/examples"
   ]
 }

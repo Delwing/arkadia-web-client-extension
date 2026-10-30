@@ -33,7 +33,7 @@ const PREFER_BYOK_KEY = 'arkadia.assistantPreferByok';
 /**
  * Where the shared Worker lives when the user has not overridden it.
  *
- * Dev builds default to a locally running `wrangler dev` (see `worker/`), so
+ * Dev builds default to a locally running `wrangler dev` (see `services/ai-worker/`), so
  * `yarn dev` + `cd worker && yarn dev:mock` is a working pair with no setup.
  *
  * Production points at the deployed Worker as a literal rather than relying on

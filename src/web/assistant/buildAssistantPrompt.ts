@@ -42,7 +42,7 @@ ZASADY:
  * — the module that gates the write to storage. Typing this as a total record
  * means adding a kind there fails to compile here until the contract is taught
  * how to emit it, and it keeps this contract identical in shape to the one the
- * Worker builds in `worker/src/kb/policy.ts`.
+ * Worker builds in `services/ai-worker/src/kb/policy.ts`.
  */
 const KIND_LINES: Record<ProposalKindName, string> = {
     settingChange:

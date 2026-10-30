@@ -4,7 +4,7 @@ Dev-facing. `docs/` root is user-facing; this file is deliberately in `docs/dev/
 
 Scope: how the assistant plugs into the **existing** client. The knowledge bundle
 (`public/assistant-kb.json`, `scripts/build-assistant-kb.ts`), the shared bundle types in
-`src/shared/`, and the Cloudflare Worker in `worker/` are built separately and are treated
+`src/shared/`, and the Cloudflare Worker in `services/ai-worker/` are built separately and are treated
 here as given inputs.
 
 Invariants that shape everything below:
@@ -54,8 +54,8 @@ require parallel wiring in two hosts and cannot be popped out.
 
 ### 1.2 How popout actually works (so you don't break it)
 
-- `popup/index.html` + `popup/main.ts` — a *stylesheet-only* Vite entry
-  (`vite.config.ts:85`, `popup: resolve('popup/index.html')`). Body is just
+- `views/popup/index.html` + `views/popup/main.ts` — a *stylesheet-only* Vite entry
+  (`vite.config.ts:85`, `popup: resolve('views/popup/index.html')`). Body is just
   `<div id="popout-root" class="popout-root">`.
 - `src/web/layout/components/PopoutWindowLayer.tsx` — `window.open('popup/index.html', ...)`,
   then physically `appendChild`s the panel's **existing** portal target div into the external
@@ -72,7 +72,7 @@ deps (`src/web/layout/hooks/useDockablePopup.ts:92-98`) — re-registering drops
 snaps the window back. If the assistant panel wants a dynamic title (e.g. "Asystent (3)"),
 use `updatePopup(id, { title })` from `src/web/layout/popupRegistry.ts`, never a re-register.
 
-**If a new global stylesheet is added** for the assistant, add it to `popup/main.ts` too
+**If a new global stylesheet is added** for the assistant, add it to `views/popup/main.ts` too
 (its header comment says so) or the popped-out panel renders unstyled.
 
 ### 1.3 Exact contract for a new panel
@@ -155,7 +155,7 @@ Given that 5-step cost, **defer the chip**. Ship `/pomoc` + the output context m
   `handleModalSubmit` (129-173) parses/stores the result.
 
 `src/web/aiPluginPrompt.ts` — `buildAiPluginPrompt(description: string): string`. It inlines
-`docs/PLUGINS.md?raw` and `plugin-types/index.d.ts?raw` into one big prompt with an explicit
+`docs/PLUGINS.md?raw` and `plugins/types/index.d.ts?raw` into one big prompt with an explicit
 "Output ONLY … in a single fenced code block" instruction.
 
 `src/web/SubDialog.tsx` — `SubDialog({ title, onClose, children, footer, size, scrollable, dismissible })`.
@@ -657,7 +657,7 @@ independently. The assistant must validate against the **client** copy (that is 
 `@client/scripts/userTriggers` and treat the web copy as UI-only.
 
 **R5 — Prompt size.** `src/web/options/Scripts.tsx` already inlines `PLUGINS.md?raw` +
-`plugin-types/index.d.ts?raw`, which is why the Skrypty chunk is ~40 kB gzip (documented at
+`plugins/types/index.d.ts?raw`, which is why the Skrypty chunk is ~40 kB gzip (documented at
 `forge-ui/components/menu/MenuModalHost.tsx:6-19`). Naively inlining the whole KB into
 `buildAssistantPrompt` will (a) blow past free-tier context limits and (b) fatten the assistant
 chunk for every session. Load `public/assistant-kb.json` with `fetch` at panel-open time — never
@@ -669,7 +669,7 @@ proposal through the plugin path (`storePluginScript`) — that is a code-execut
 the assistant has no business touching it.
 
 **R7 — Popout stylesheet drift.** Any new global CSS for the assistant must be added to
-`popup/main.ts` or the detached panel renders unstyled. There is no automatic check.
+`views/popup/main.ts` or the detached panel renders unstyled. There is no automatic check.
 
 **R8 — Re-registering the popup kills the popout.** Do not put `title` (or anything that changes
 per message) in the `useDockablePopup` register-effect deps. Use `updatePopup(id, { title })`.
@@ -679,7 +679,7 @@ react-bootstrap `<Modal>` pegs the CPU until the page stops responding
 (`src/web/SubDialog.tsx:3-21`). This has already bitten this codebase once
 (commit `bce4a890 fix(ui): render settings sub-dialogs inline to stop the focus-trap freeze`).
 
-**R10 — Ollama tier needs the Go helper.** Tier 5 goes through `helper/`, which talks to the web
+**R10 — Ollama tier needs the Go helper.** Tier 5 goes through `services/helper/`, which talks to the web
 client over WebSocket (`src/modules/helper/`). That is a separate protocol addition on both
 sides and should be the last tier implemented, if at all.
 

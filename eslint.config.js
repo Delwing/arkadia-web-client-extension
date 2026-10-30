@@ -6,9 +6,9 @@ import tseslint from 'typescript-eslint'
 
 export default [
   // '**/dist' rather than 'dist' so build output from nested standalone
-  // projects (worker/dist from `wrangler deploy --dry-run`) is ignored too.
+  // projects (services/*/dist from `wrangler deploy --dry-run`) is ignored too.
   // '**/.wrangler' is wrangler's local dev scratch space, not source.
-  { ignores: ['**/dist', '**/.wrangler', 'examples/**/*'] },
+  { ignores: ['**/dist', '**/.wrangler', 'plugins/examples/**/*'] },
   {
     files: ['**/*.{js,jsx}'],
     languageOptions: {

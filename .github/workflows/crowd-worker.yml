@@ -1,7 +1,7 @@
 # Cloudflare Worker (crowd spis zlomu / odmiany) — test on PRs, deploy from master.
 #
 # Separate from the other Worker workflows so that no Worker can break another's
-# rollout. See crowd-worker/README.md.
+# rollout. See services/crowd-worker/README.md.
 #
 # Required repository secrets:
 #   CLOUDFLARE_API_TOKEN   — needs Workers Scripts:Edit, D1:Edit and Workers KV Storage:Edit
@@ -12,11 +12,11 @@ on:
   push:
     branches: [ master ]
     paths:
-      - 'crowd-worker/**'
+      - 'services/crowd-worker/**'
       - '.github/workflows/crowd-worker.yml'
   pull_request:
     paths:
-      - 'crowd-worker/**'
+      - 'services/crowd-worker/**'
       - '.github/workflows/crowd-worker.yml'
   workflow_dispatch:
 
@@ -32,14 +32,14 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: crowd-worker
+        working-directory: services/crowd-worker
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: yarn
-          cache-dependency-path: crowd-worker/yarn.lock
+          cache-dependency-path: services/crowd-worker/yarn.lock
       - name: Install dependencies
         run: yarn install --frozen-lockfile
       - name: Typecheck
@@ -58,7 +58,7 @@ jobs:
       url: https://arkadia-crowd-worker.delwing.workers.dev
     defaults:
       run:
-        working-directory: crowd-worker
+        working-directory: services/crowd-worker
     steps:
       - uses: actions/checkout@v6
       - name: Check the database is configured
@@ -67,7 +67,7 @@ jobs:
         # nothing to deploy to. Skip rather than fail, so master stays green.
         run: |
           if grep -q REPLACE_WITH_D1_DATABASE_ID wrangler.jsonc; then
-            echo "::warning::crowd-worker/wrangler.jsonc still has the placeholder D1 id; skipping deploy"
+            echo "::warning::services/crowd-worker/wrangler.jsonc still has the placeholder D1 id; skipping deploy"
             echo "ready=false" >> "$GITHUB_OUTPUT"
           else
             echo "ready=true" >> "$GITHUB_OUTPUT"
@@ -77,7 +77,7 @@ jobs:
         with:
           node-version: 24
           cache: yarn
-          cache-dependency-path: crowd-worker/yarn.lock
+          cache-dependency-path: services/crowd-worker/yarn.lock
       - name: Install dependencies
         if: steps.configured.outputs.ready == 'true'
         run: yarn install --frozen-lockfile

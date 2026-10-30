@@ -17,7 +17,7 @@ const pluginApiSource = path.join(rootDir, 'src', 'client', 'PluginApi.ts');
 const pluginTypeSource = path.join(rootDir, 'src', 'shared', 'types', 'Plugin.ts');
 const triggersSource = path.join(rootDir, 'src', 'client', 'Triggers.ts');
 const formatStateSource = path.join(rootDir, 'src', 'client', 'ansi', 'FormatState.ts');
-const outputFile = path.join(rootDir, 'editor', 'plugin-api.d.ts');
+const outputFile = path.join(rootDir, 'plugins', 'editor', 'plugin-api.d.ts');
 
 // Read source files
 const pluginApiContent = fs.readFileSync(pluginApiSource, 'utf-8');

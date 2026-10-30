@@ -411,7 +411,7 @@ listeners download a log of at most ~64 KiB.
 
 - **Firestore Blaze (pay as you go):** same code, billed per operation beyond the free quota; at these
   volumes a small monthly cost.
-- **Cloudflare:** the repo already deploys a Worker (`worker/`). A Durable Object per user could hold the
+- **Cloudflare:** the repo already deploys a Worker (`services/ai-worker/`). A Durable Object per user could hold the
   log and compact server-side, verifying Firebase Auth tokens. More work; only worth it if Firestore costs
   become real.
 

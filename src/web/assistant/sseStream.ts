@@ -1,7 +1,7 @@
 /**
  * Browser-side SSE frame reader.
  *
- * Mirrors `worker/src/sse.ts` (same field handling, same CRLF normalisation)
+ * Mirrors `services/ai-worker/src/sse.ts` (same field handling, same CRLF normalisation)
  * but reads a `fetch` response body instead of a Worker stream. Hand-written
  * for the same reason the Worker's is: `EventSource` cannot issue a POST, and
  * both the Worker (`data:` only) and the BYOK providers (`data:` plus named

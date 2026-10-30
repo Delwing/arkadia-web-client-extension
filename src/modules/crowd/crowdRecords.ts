@@ -1,7 +1,7 @@
 /**
  * The shape of a crowd record, and its hash.
  *
- * MIRRORED from crowd-worker/src/records.ts. The two must produce the same
+ * MIRRORED from services/crowd-worker/src/records.ts. The two must produce the same
  * canonical form and the same hash for the same input, or every sync asks the
  * Worker about hashes it never stores and re-sends everything. Both test
  * suites pin the same hash for the same fixture — change one, change both.

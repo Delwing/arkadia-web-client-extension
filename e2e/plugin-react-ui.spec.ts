@@ -12,7 +12,7 @@ import {bindKey, captureKey, closeKeysWindow, openKeysWindow} from './support/ke
  */
 
 const require = createRequire(import.meta.url);
-const {arkadiaHostUi} = require('../plugin-types/esbuild.cjs');
+const {arkadiaHostUi} = require('../plugins/types/esbuild.cjs');
 
 const MENU_BUTTON = '#menu-button';
 const SCRIPTS_BUTTON = '#scripts-button';

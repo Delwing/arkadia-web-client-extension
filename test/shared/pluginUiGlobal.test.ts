@@ -56,7 +56,7 @@ describe('plugin UI shim', () => {
     });
 
     test('react-dom and react-dom/client come from the host', async () => {
-        const { arkadiaHostUi } = require('../../plugin-types/esbuild.cjs');
+        const { arkadiaHostUi } = require('../../plugins/types/esbuild.cjs');
         const ReactDOM = { createPortal: () => 'host:portal', flushSync: () => {}, unstable_batchedUpdates: (fn: () => string) => fn() };
         const ReactDOMClient = { createRoot: () => 'host:root', hydrateRoot: () => {} };
         (globalThis as Record<string, unknown>)[PLUGIN_UI_GLOBAL] = { React: {}, ReactDOM, ReactDOMClient, components: {} };
@@ -89,7 +89,7 @@ describe('plugin UI shim', () => {
     });
 
     test('the published @arkadia/plugin-types esbuild plugin bundles a TSX plugin against the host React', async () => {
-        const { arkadiaHostUi } = require('../../plugin-types/esbuild.cjs');
+        const { arkadiaHostUi } = require('../../plugins/types/esbuild.cjs');
         const { React, calls } = fakeHost();
         const exports = await bundle(arkadiaHostUi());
         (exports.Counter as () => unknown)();
@@ -103,7 +103,7 @@ describe('plugin UI shim', () => {
     });
 
     test('the generated shim copy matches the source', () => {
-        const generated = require('../../plugin-types/pluginUiShim.cjs');
+        const generated = require('../../plugins/types/pluginUiShim.cjs');
         for (const m of PLUGIN_UI_MODULES) expect(generated.buildPluginUiShim(m)).toBe(buildPluginUiShim(m));
     });
 

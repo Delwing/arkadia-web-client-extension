@@ -11,7 +11,7 @@
  * The two must stay a matched pair. Regenerating either one invalidates every
  * existing subscription silently — browsers keep pushing to endpoints whose
  * signatures no longer verify, with no error surfaced anywhere — so this value
- * is effectively permanent. See push-worker/README.md.
+ * is effectively permanent. See services/push-worker/README.md.
  */
 export const VAPID_PUBLIC_KEY =
     'BCZxO58QHp39cdEYDjgI4WrYnlgn49H9p5phlBHRhqeUjmvDd4C6zaHxXcbcq4eC04KpqDdtqm0zc3XkaMOgHjk';

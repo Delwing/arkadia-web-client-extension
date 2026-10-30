@@ -15,7 +15,7 @@
  *   proposalValidator.ProposalKind   (authority — gates writes to storage)
  *     ^= PROPOSAL_KINDS              (shared constant, dependency-free)
  *          ^= assistant-kb.json      (what the model is taught)
- *          ^= worker/src/**          (asserted in worker/test/kb.test.ts, which
+ *          ^= services/ai-worker/src/**          (asserted in services/ai-worker/test/kb.test.ts, which
  *                                     imports the same shared constant)
  *
  * The Worker cannot import the validator — `@modules` drags in `@client` and a

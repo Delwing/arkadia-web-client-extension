@@ -1,6 +1,6 @@
 import {base64Codec, binaryCodec, framedCodec, selectCodec} from '@shared/socket/transport.ts';
 
-/** Build a proxy frame the way proxy/frame.go does. */
+/** Build a proxy frame the way services/session-proxy/frame.go does. */
 function frame(kind: number, atMs: number, payload: string): ArrayBuffer {
     const buf = new ArrayBuffer(9 + payload.length);
     const view = new DataView(buf);

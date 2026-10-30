@@ -4,7 +4,7 @@
  * This is a *host*, not a screen: the log reading — search, scopes, timeline,
  * ranges, channel filters, exports — is `@ui/logViewer`, the same component the
  * standalone page renders, and the sessions come from
- * `log-viewer/sessionAdapter.ts`, the one module that knows about IndexedDB.
+ * `views/log-viewer/sessionAdapter.ts`, the one module that knows about IndexedDB.
  * What is left here is what only the client has: session management
  * (`LogManager`) and the link out to the standalone page.
  *
@@ -14,9 +14,9 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { Button, Icon, IconButton, LogViewer, MenuItem, Spinner } from "@ui/logViewer";
 import type { LogSessionInfo, PersistedPreferences } from "@ui/logViewer";
-import { readPreferences, writePreferences } from "../../log-viewer/preferences";
-import { createSessionSource, type ListProgress, type SessionSource } from "../../log-viewer/sessionAdapter";
-import { useLogsMigration } from "../../log-viewer/useLogsMigration";
+import { readPreferences, writePreferences } from "../../views/log-viewer/preferences";
+import { createSessionSource, type ListProgress, type SessionSource } from "../../views/log-viewer/sessionAdapter";
+import { useLogsMigration } from "../../views/log-viewer/useLogsMigration";
 import { LogManager } from "./LogManager";
 import { currentSessionName } from "./sessionLogger";
 import "./logBrowser.css";
