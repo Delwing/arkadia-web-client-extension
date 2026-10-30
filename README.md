@@ -1,126 +1,140 @@
-# Arkadia Web Client
+<div align="center">
 
-Przeglądarkowy klient Arkadii (MUD) z wbudowaną mapą, systemem pluginów, własnymi triggerami, edytorem skryptów oraz konfigurowalną stroną ustawień. Aplikacja działa jako PWA — można ją zainstalować na komputerze i urządzeniach mobilnych.
+<img src="public/logo.png" alt="Dargoth Client" width="200" />
 
-## Struktura projektu
+# Dargoth Client
 
-| Katalog | Opis |
-|---------|------|
-| `src/client` | Skrypt uruchamiany w kliencie Arkadii; zawiera poprawki, triggery i towarzyszące skrypty. |
-| `src/web` | Aplikacja React używana jako interfejs klienta i strona ustawień. |
-| `src/shared` | Wspólny kod używany zarówno przez klienta jak i interfejs webowy. |
-| `src/modules` | Moduły odpowiedzialne za usługi (event bus, storage, Firebase, zarządzanie urządzeniami). |
-| `editor` | Edytor pluginów oparty na Monaco Editor. |
-| `viewer` | Przeglądarka logów sesji. |
-| `log-viewer` | Samodzielna przeglądarka logów (oddzielny entry point). |
-| `helper` | Natywna aplikacja pomocnicza (Go) — system tray, hotkeye, zarządzanie oknem. |
-| `examples` | Przykładowe pluginy z serwerem deweloperskim. |
-| `docs` | Dokumentacja funkcjonalności (aliasy, bindy, walka, nawigacja, pluginy i inne). |
-| `plugin-types` | Definicje typów TypeScript dla API pluginów. |
-| `e2e` | Testy end-to-end używające Playwright. |
-| `test` | Testy jednostkowe (Vitest). |
-| `scripts` | Skrypty pomocnicze do generowania danych dla projektu. |
-| `public` | Zasoby statyczne, manifest PWA i ikony. |
+**Przeglądarkowy klient Arkadii (MUD)** — z mapą, walką, pluginami, edytorem skryptów i synchronizacją między urządzeniami.
 
-## Technologie
+[**▶ Zagraj w przeglądarce**](https://delwing.github.io/arkadia-web-client-extension/) · [Arkadia](https://arkadia.rpg.pl/) · [Dokumentacja](docs/OVERVIEW.md) · [Pluginy](docs/PLUGINS.md)
 
-- **React 19** + **TypeScript 5.8**
-- **Vite 7** (bundler i serwer deweloperski)
-- **React-Bootstrap 2** / **Bootstrap 5**
-- **Monaco Editor** (edytor pluginów)
-- **Firebase** (synchronizacja danych)
-- **Vitest** (testy jednostkowe) + **Playwright** (testy e2e)
-- **Lua-in-js** (wsparcie skryptów Lua)
+![React](https://img.shields.io/badge/React-19-61dafb?logo=react&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178c6?logo=typescript&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-7-646cff?logo=vite&logoColor=white)
+![PWA](https://img.shields.io/badge/PWA-ready-5a0fc8?logo=pwa&logoColor=white)
+![License](https://img.shields.io/badge/licencja-MIT-green)
 
-## Instalacja
+</div>
 
-Zainstaluj zależności:
+---
+
+## 📖 O projekcie
+
+Dargoth Client to pełny klient [Arkadii](https://arkadia.rpg.pl/) działający w przeglądarce — bez instalowania Mudleta i bez pobierania skryptów. Wystarczy otworzyć stronę i zalogować się postacią. Klient łączy się z grą bezpośrednio, przez natywną aplikację pomocniczą albo przez proxy sesji, które trzyma połączenie, gdy telefon uśpi kartę.
+
+Od razu dostajesz to, co gracze zwykle składają z wielu skryptów: mapę z prowadzeniem, kolorowanie i obsługę walki, pojemniki, zioła, liczniki postępów i historię czatu. Wszystko konfiguruje się w oknach ustawień, a ustawienia mogą się synchronizować między komputerem a telefonem.
+
+Jeśli wbudowane funkcje to za mało, możesz napisać własny plugin w TypeScript lub JavaScript. Pomogą ci w tym edytor z podpowiedziami typów, asystent AI i przykłady. Plugin może dodawać triggery, przyciski i okna, a nawet otworzyć własny widok w osobnej karcie.
+
+Aplikację można zainstalować jako PWA na komputerze i na telefonie.
+
+## ✨ Możliwości
+
+- 🗺️ **Mapa i nawigacja** — mapa z prowadzeniem, zapisanymi miejscami i notatkami do lokacji
+- ⚔️ **Walka** — kolorowanie walki, kolejka celów, zasłanianie, śledzenie zabitych
+- 🎒 **Ekwipunek** — pojemniki, zbieranie łupów, depozyty, licznik ziół
+- ⌨️ **Aliasy, bindy i triggery** — konfigurowane w ustawieniach, bez pisania kodu
+- 🧩 **Pluginy** — własne skrypty w TypeScript/JavaScript, z edytorem opartym na Monaco i asystentem AI
+- 💬 **Historia czatu i logi sesji** — przeglądarka logów z wyszukiwaniem
+- ☁️ **Synchronizacja** — ustawienia i dane między urządzeniami przez Firebase
+- 📱 **PWA i telefon** — instalowalna aplikacja, przyciski mobilne, powiadomienia push, wznawianie sesji przez proxy
+- 🖥️ **Aplikacja pomocnicza** — natywny tray, globalne skróty i zarządzanie oknem (Windows/macOS/Linux)
+
+## 🚀 Szybki start
+
+Wymagany **Node 24** i **yarn**.
 
 ```bash
 yarn install
 ```
 
-## Rozwój
-
-Uruchom serwer deweloperski:
-
 ```bash
 yarn dev
 ```
 
-## Testy
+| Komenda | Opis |
+|---------|------|
+| `yarn dev` | Serwer deweloperski |
+| `yarn build` | Build produkcyjny |
+| `yarn preview` | Podgląd zbudowanej aplikacji |
+| `yarn test` | Testy jednostkowe (Vitest) |
+| `yarn test:e2e` | Testy end-to-end (Playwright) |
+| `yarn lint` | ESLint |
 
-Uruchom testy jednostkowe:
+## 🗂️ Struktura projektu
 
-```bash
-yarn test
+```
+src/
+├── client/      # Klient gry: triggery, skrypty, pluginy, ANSI, Lua (bez DOM, niezależny od UI)
+├── web/         # Aplikacja React: okna, ustawienia, wyświetlacze
+├── ui/          # Prymitywy UI, komponenty i przeglądarka logów
+├── shared/      # Kod wspólny dla klienta i UI (zdarzenia)
+└── modules/     # Usługi: ustawienia, storage, event bus, dane, Firebase, urządzenia
+plugins/
+├── editor/      # Edytor pluginów (Monaco) — strona editor/
+├── examples/    # Przykładowe pluginy z serwerem deweloperskim
+└── types/       # Typy API pluginów i narzędzia arkadia-plugin (paczka npm)
+views/
+├── viewer/      # Widok, w którym pluginy wyświetlają własne komponenty React — strona viewer/
+├── log-viewer/  # Samodzielna przeglądarka logów sesji — strona log-viewer/
+└── popup/       # Strona ładowana przez okna wyskakujące — strona popup/
+services/
+├── ai-worker/      # Cloudflare Worker asystenta AI
+├── crowd-worker/   # Cloudflare Worker wspólnych list przedmiotów
+├── push-worker/    # Cloudflare Worker powiadomień Web Push
+├── session-proxy/  # Proxy sesji (Go): wznawialne telnet ↔ WebSocket
+└── helper/         # Natywna aplikacja pomocnicza (Go)
+docs/            # Dokumentacja dla graczy (i docs/dev dla deweloperów)
+test/            # Testy jednostkowe (odzwierciedlają strukturę src/)
+e2e/             # Testy end-to-end (Playwright)
+scripts/         # Skrypty deweloperskie i generujące dane
+public/          # Zasoby statyczne, manifest PWA, ikony
+data/            # Dane gry
 ```
 
-Uruchom testy end-to-end:
+### Viewer dla pluginów
+
+`viewer/` to pusta powłoka, w której plugin może pokazać własny interfejs w osobnym widoku (karcie lub oknie). Ładuje moduł, który domyślnie eksportuje komponent React, i go renderuje:
+
+- `viewer/?module=<url>` — moduł JS pod wskazanym adresem
+- `viewer/?code=<base64>` — kod modułu przekazany w URL
+
+Pozostałe parametry URL trafiają do komponentu w propsie `params`. `React` i `ReactDOM` są dostępne globalnie, więc moduł nie musi ich dołączać.
+
+## 🧩 Pluginy
 
 ```bash
-yarn test:e2e
+yarn build:types       # typy API pluginów (plugins/types)
+yarn build:examples    # zbuduj przykładowe pluginy
+yarn serve:examples    # serwer deweloperski przykładów
 ```
 
-Uruchom linter:
+Typy są publikowane jako [`@dargoth-client/plugin-types`](plugins/types/README.md). Więcej w [`docs/PLUGINS.md`](docs/PLUGINS.md) i [`plugins/examples/`](plugins/examples/README.md).
 
-```bash
-yarn lint
-```
+## 📚 Dokumentacja
 
-## Budowanie
+| Dla graczy | |
+|---|---|
+| [Przegląd](docs/OVERVIEW.md) | Ogólny opis klienta |
+| [Walka](docs/COMBAT.md) | Atakowanie, zasłanianie, kolejka celów |
+| [Nawigacja](docs/NAVIGATION.md) | Chodzenie, mapa, prowadzenie |
+| [Ekwipunek](docs/INVENTORY.md) | Pojemniki, łupy, depozyty |
+| [Zioła](docs/HERBS.md) | Licznik i zarządzanie ziołami |
+| [Śledzenie](docs/TRACKING.md) | Postępy, zabici, zlecenia |
+| [Aliasy](docs/ALIASES.md) · [Bindy](docs/BINDS.md) · [Skróty](docs/SHORTCUTS.md) | Komendy i klawisze |
+| [Automatyzacje](docs/AUTOMATYZACJE.md) · [Skrypty](docs/SKRYPTY.md) | Triggery, skrypty, wtyczki |
+| [Połączenie](docs/POLACZENIE.md) | Bezpośrednio, pomocnik, proxy |
+| [Przyciski mobilne](docs/PRZYCISKI_MOBILNE.md) | Sterowanie na telefonie |
+| [Dźwięki](docs/AUDIO_SYSTEM.md) | System audio |
+| [Dane](docs/DANE.md) · [Synchronizacja](docs/SYNCHRONIZACJA.md) | Przechowywanie i synchronizacja danych |
 
-Zbuduj aplikację:
+| Dla deweloperów | |
+|---|---|
+| [Pluginy](docs/PLUGINS.md) | Tworzenie pluginów |
+| [Testowanie skryptów](docs/SCRIPT_TESTING.md) | Jak testować skrypty |
+| [Oddzielenie klienta od UI](docs/CLIENT_UI_DECOUPLING.md) | Jak zbudować własny UI na kliencie |
+| [`AGENTS.md`](AGENTS.md) | Architektura i konwencje projektu |
 
-```bash
-yarn build
-```
-
-Podgląd zbudowanej aplikacji:
-
-```bash
-yarn preview
-```
-
-## Pluginy
-
-Generuj typy dla API pluginów:
-
-```bash
-yarn generate:plugin-types
-```
-
-Zbuduj przykładowe pluginy:
-
-```bash
-yarn build:examples
-```
-
-Uruchom serwer deweloperski przykładów:
-
-```bash
-yarn serve:examples
-```
-
-Więcej informacji o systemie pluginów: [`docs/PLUGINS.md`](docs/PLUGINS.md).
-
-## Dokumentacja
-
-Szczegółowa dokumentacja znajduje się w katalogu [`docs/`](docs/):
-
-- [Przegląd](docs/OVERVIEW.md) — ogólny opis projektu
-- [Aliasy](docs/ALIASES.md) — definiowanie aliasów
-- [Bindy](docs/BINDS.md) — skróty klawiszowe
-- [Walka](docs/COMBAT.md) — system walki
-- [Nawigacja](docs/NAVIGATION.md) — poruszanie się i mapa
-- [Ekwipunek](docs/INVENTORY.md) — zarządzanie przedmiotami
-- [Zioła](docs/HERBS.md) — system ziół
-- [Śledzenie](docs/TRACKING.md) — śledzenie postępów
-- [Skróty](docs/SHORTCUTS.md) — skróty i komendy
-- [Synchronizacja](docs/SYNCHRONIZACJA.md) — synchronizacja ustawień między urządzeniami
-- [Pluginy](docs/PLUGINS.md) — tworzenie pluginów
-- [Testowanie skryptów](docs/SCRIPT_TESTING.md) — jak testować skrypty
-
-## Licencja
+## 📄 Licencja
 
 MIT
