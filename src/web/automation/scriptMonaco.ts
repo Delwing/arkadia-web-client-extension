@@ -6,7 +6,7 @@
 import * as monaco from "monaco-editor";
 import editorWorker from "monaco-editor/esm/vs/editor/editor.worker?worker";
 import tsWorker from "monaco-editor/esm/vs/language/typescript/ts.worker?worker";
-import pluginApiTypes from "../../../plugin-types/index.d.ts?raw";
+import pluginApiTypes from "../../../plugins/types/index.d.ts?raw";
 import { SCRIPT_API_NAMES } from "@client/scripts/scriptScope.ts";
 
 /**

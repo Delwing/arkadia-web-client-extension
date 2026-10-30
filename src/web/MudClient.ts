@@ -308,7 +308,7 @@ class MudClient implements ClientAdapter {
      * session, which makes it the right end to be the zlib peer: it negotiates
      * COMPRESS2 with the game itself and hands us plaintext, and the browser hop is
      * compressed by the WebSocket's own permessage-deflate, whose context is per
-     * connection and so survives resuming. See proxy/mccp.go.
+     * connection and so survives resuming. See services/session-proxy/mccp.go.
      */
     private applyMccpForConnection(): void {
         const preferred = localStorage.getItem(MCCP_STORAGE_KEY) !== 'false';

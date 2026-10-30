@@ -56,7 +56,7 @@ class FakeSocket {
 let instances: FakeSocket[] = [];
 const realWebSocket = globalThis.WebSocket;
 
-/** A session-proxy control frame, framed the way proxy/frame.go does. */
+/** A session-proxy control frame, framed the way services/session-proxy/frame.go does. */
 function controlFrame(payload: object): ArrayBuffer {
     const json = new TextEncoder().encode(JSON.stringify(payload));
     const buf = new ArrayBuffer(9 + json.length);

@@ -1,7 +1,7 @@
 /**
  * Streaming prose/proposal splitter for the BYOK path.
  *
- * The shared Worker does this server-side (`worker/src/proposals.ts`) and the
+ * The shared Worker does this server-side (`services/ai-worker/src/proposals.ts`) and the
  * client only ever sees clean `delta` / `proposals` frames. When the user brings
  * their own key we talk to the provider directly, so the same split has to
  * happen here — same output contract, same markers, so a question answered

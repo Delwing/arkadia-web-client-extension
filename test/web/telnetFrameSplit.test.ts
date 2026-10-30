@@ -44,7 +44,7 @@ class FakeSocket {
 let instances: FakeSocket[] = [];
 const realWebSocket = globalThis.WebSocket;
 
-/** A session-proxy data frame, framed the way proxy/frame.go does. */
+/** A session-proxy data frame, framed the way services/session-proxy/frame.go does. */
 function dataFrame(bytes: string): ArrayBuffer {
     const buf = new ArrayBuffer(9 + bytes.length);
     const view = new DataView(buf);

@@ -3,7 +3,7 @@
  *
  * Two paths, one event shape:
  *
- * 1. **The shared Worker** (`worker/`, `POST /ask`). Default. Takes a question
+ * 1. **The shared Worker** (`services/ai-worker/`, `POST /ask`). Default. Takes a question
  *    plus structured context — never a prompt — and streams SSE frames back.
  *    The owner's keys stay server-side.
  * 2. **BYOK.** The user's own key, called directly against an OpenAI-compatible
@@ -376,7 +376,7 @@ function safeDeviceId(): string | undefined {
 /**
  * Direct OpenAI-compatible call with the user's own key. Defaults to Gemini's
  * OpenAI-compatibility surface, which is what the Worker's own escape hatch
- * uses (`worker/README.md`), so the same free-tier key works either way.
+ * uses (`services/ai-worker/README.md`), so the same free-tier key works either way.
  */
 async function askByok(options: AskOptions, apiKey: string): Promise<void> {
     const { question, context, signal, onEvent } = options;

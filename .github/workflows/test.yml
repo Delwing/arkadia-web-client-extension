@@ -37,7 +37,7 @@ jobs:
         run: yarn build:types
       - name: Copy types tarball to dist
         if: github.ref == 'refs/heads/master'
-        run: cp plugin-types/dist/*.tgz dist/
+        run: cp plugins/types/dist/*.tgz dist/
       - name: Upload dist artifact
         if: github.ref == 'refs/heads/master'
         uses: actions/upload-artifact@v6
@@ -117,9 +117,9 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version: '1.24'
-          cache-dependency-path: helper/go.sum
+          cache-dependency-path: services/helper/go.sum
       - name: Build helper
-        working-directory: helper
+        working-directory: services/helper
         env:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
@@ -134,14 +134,14 @@ jobs:
           if [ "${{ matrix.goos }}" = "windows" ]; then
             LDFLAGS="$LDFLAGS -H windowsgui"
           fi
-          go build -ldflags="$LDFLAGS" -o ../arkadia-helper-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.suffix }} .
+          go build -ldflags="$LDFLAGS" -o ../../arkadia-helper-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.suffix }} .
           if [ "${{ matrix.goos }}" = "darwin" ]; then
-            otool -l ../arkadia-helper-darwin-${{ matrix.goarch }} | grep -A4 LC_BUILD_VERSION | grep -q 'minos 11.0' \
-              || { echo "helper minimum macOS is not 11.0"; otool -l ../arkadia-helper-darwin-${{ matrix.goarch }} | grep -A4 LC_BUILD_VERSION; exit 1; }
+            otool -l ../../arkadia-helper-darwin-${{ matrix.goarch }} | grep -A4 LC_BUILD_VERSION | grep -q 'minos 11.0' \
+              || { echo "helper minimum macOS is not 11.0"; otool -l ../../arkadia-helper-darwin-${{ matrix.goarch }} | grep -A4 LC_BUILD_VERSION; exit 1; }
             # Safari saves an extensionless download as "<name>.txt", so the
             # browser gets a zip (which also keeps the exec bit); the updater
             # still fetches the bare binary.
-            (cd .. && zip -j arkadia-helper-darwin-${{ matrix.goarch }}.zip arkadia-helper-darwin-${{ matrix.goarch }})
+            (cd ../.. && zip -j arkadia-helper-darwin-${{ matrix.goarch }}.zip arkadia-helper-darwin-${{ matrix.goarch }})
           fi
       - name: Attest helper binary
         if: github.ref == 'refs/heads/master' && github.event_name != 'pull_request'

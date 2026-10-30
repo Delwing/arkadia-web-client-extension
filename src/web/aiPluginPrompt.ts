@@ -1,5 +1,5 @@
 import pluginDocs from "../../docs/PLUGINS.md?raw";
-import pluginApiTypes from "../../plugin-types/index.d.ts?raw";
+import pluginApiTypes from "../../plugins/types/index.d.ts?raw";
 
 export function buildAiPluginPrompt(description: string): string {
     return `You are writing a plugin for the Arkadia Web Client, a browser extension for the Arkadia MUD game.
