@@ -42,7 +42,7 @@ Read before guessing - the API is large and most needs are already covered.
    loading, publishing):
    https://raw.githubusercontent.com/Delwing/arkadia-web-client-extension/master/docs/PLUGINS.md
 3. **Example plugins**:
-   https://github.com/Delwing/arkadia-web-client-extension/tree/master/examples
+   https://github.com/Delwing/arkadia-web-client-extension/tree/master/plugins/examples
    (`gmcp-inspector-plugin.ts` shows live GMCP traffic - useful for finding
    which GMCP path carries the data you want).
 

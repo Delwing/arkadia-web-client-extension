@@ -2,7 +2,7 @@ import {useState} from 'react';
 import {Button, Dialog, Field, Input} from '@web-ui/primitives/index.ts';
 
 const SETUP_GUIDE_URL =
-    'https://github.com/Delwing/arkadia-web-client-extension/blob/master/proxy/deploy/SETUP.md';
+    'https://github.com/Delwing/arkadia-web-client-extension/blob/master/services/session-proxy/deploy/SETUP.md';
 
 /** The commands that do the actual work, once the machine and the domain exist. */
 const INSTALL_COMMANDS = `# na swoim komputerze, w katalogu services/session-proxy/ z repozytorium

@@ -1,6 +1,6 @@
 [Unit]
 Description=Arkadia session proxy
-Documentation=https://github.com/Delwing/arkadia-web-client-extension/tree/master/proxy
+Documentation=https://github.com/Delwing/arkadia-web-client-extension/tree/master/services/session-proxy
 After=network-online.target
 Wants=network-online.target
 
