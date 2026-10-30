@@ -222,8 +222,8 @@ tags, and `grep createPortal src/web/app` finds no placeholder target.
   "moved to …" tombstones in style.css, deleted); what still says forge is the
   Kuźnia theme and its "forge" footer layout id, which is a stored value.
   `setRailSpanSupported` stays: the shell opts in from `main.ts`, and tests and
-  pages without the dock hosts keep it off. Still open: the `sass` dev
-  dependency is unused now (dropping it changes `yarn.lock`).
+  pages without the dock hosts keep it off. The `sass` dev dependency, used
+  only by forge's SCSS, is dropped as well (no `.scss` file is left).
 - **Typed window API instead of `window` events** — **done.** `modals/pageWindows.ts`
   (`openWindow`, `closeWindow`, `closeOptionWindows`, over the `AppModal`
   controller) replaces `close-options`, `show-binds`, `show-character-management`,
