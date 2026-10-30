@@ -12,7 +12,7 @@
  * label — so labels are unique across both groups.
  */
 
-import { closeOptionWindows, openWindow } from "@web/modals/pageWindows.ts";
+import { closeOptionWindows, openWindow, prepareWindow } from "@web/modals/pageWindows.ts";
 
 export type SettingsGroup = "character" | "ui" | "data";
 
@@ -108,10 +108,13 @@ export interface ShowSettingsDetail {
 
 /** Before showing the dialog as it was left: pages that refresh on opening hear it, the page stays. */
 export function requestSettingsResume(): void {
+    // The dialog mounts on first use; it has to be there to hear this.
+    prepareWindow("settings");
     window.dispatchEvent(new CustomEvent<ShowSettingsDetail>(SHOW_SETTINGS_EVENT, { detail: {} }));
 }
 
 export function requestSettingsCategory(category: SettingsCategoryKey, options: { overview?: boolean } = {}): void {
+    prepareWindow("settings");
     window.dispatchEvent(new CustomEvent<ShowSettingsDetail>(SHOW_SETTINGS_EVENT, { detail: { category, ...options } }));
 }
 

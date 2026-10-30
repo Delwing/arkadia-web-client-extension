@@ -1,4 +1,6 @@
-import type { ReactNode, Ref } from "react";
+import { useLayoutEffect, useRef, useState, type ReactNode, type Ref } from "react";
+import { flushSync } from "react-dom";
+import { MODAL_EVENT } from "./appModal";
 
 interface AppModalShellProps {
     id: string;
@@ -24,6 +26,11 @@ interface AppModalShellProps {
  *
  * The controller toggles `hidden` and `z-index` on the element itself; React sets
  * `hidden` only once, at mount, and never touches either again.
+ *
+ * The content (`children`) mounts the first time the window is needed
+ * ({@link MODAL_EVENT.prepare}, before it opens) and then stays mounted, so a
+ * window keeps its state between openings. Mounting it all at start-up made the
+ * first paint wait for every window (Ustawienia alone is most of the page).
  */
 export function AppModalShell({
     id,
@@ -37,8 +44,21 @@ export function AppModalShell({
     children,
 }: AppModalShellProps) {
     const join = (...parts: (string | undefined)[]) => parts.filter(Boolean).join(" ");
+    const ref = useRef<HTMLDivElement>(null);
+    const [prepared, setPrepared] = useState(false);
+
+    useLayoutEffect(() => {
+        if (prepared) return;
+        const element = ref.current!;
+        // Synchronously, so the content and its effects (its own `show`
+        // listeners among them) are in place before the window opens.
+        const prepare = () => flushSync(() => setPrepared(true));
+        element.addEventListener(MODAL_EVENT.prepare, prepare);
+        return () => element.removeEventListener(MODAL_EVENT.prepare, prepare);
+    }, [prepared]);
+
     return (
-        <div id={id} className={join("app-modal", modalClassName)} hidden>
+        <div id={id} className={join("app-modal", modalClassName)} hidden ref={ref}>
             <div className={join("app-modal__dialog", dialogClassName)} tabIndex={-1}>
                 <div className="app-modal__header">
                     <h2 className="app-modal__title">{title}</h2>
@@ -47,7 +67,7 @@ export function AppModalShell({
                     <button type="button" className="app-modal__close" data-modal-dismiss="" title="Zamknij">&times;</button>
                 </div>
                 <div className={join("app-modal__body", bodyClassName)}>
-                    {children}
+                    {prepared && children}
                 </div>
                 {footer && <div className="app-modal__footer">{footer}</div>}
             </div>

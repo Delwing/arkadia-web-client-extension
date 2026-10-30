@@ -1,4 +1,4 @@
-import { AppModal } from "./appModal";
+import { AppModal, prepareModal } from "./appModal";
 
 /**
  * The page-level windows (app/AppModals.tsx, app/LogsWindow.tsx), by name. What
@@ -35,6 +35,15 @@ const OPTION_WINDOWS: PageWindow[] = ["settings", "binds", "scripts", "automatio
 
 export function openWindow(window: PageWindow): void {
     AppModal.byId(IDS[window])?.show();
+}
+
+/**
+ * Mount a window's content without opening it, for a request that has to reach
+ * the content before the window opens (which page Ustawienia shows).
+ */
+export function prepareWindow(window: PageWindow): void {
+    const element = document.getElementById(IDS[window]);
+    if (element) prepareModal(element);
 }
 
 export function closeWindow(window: PageWindow): void {

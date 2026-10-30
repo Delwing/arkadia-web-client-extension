@@ -5,6 +5,7 @@ import { LayoutContent } from './LayoutContent';
 import { setPopupPortalContainer } from './popupPortal';
 import { PluginPopupRenderer } from './pluginPopupRenderer';
 import { POPUP_CATALOG } from '../popups/popupCatalog';
+import { AfterFirstPaint } from '@web-ui/afterFirstPaint.tsx';
 // Non-catalog popups: they don't use the shared popupRegistry/DockablePopupWrapper
 // (own chrome, portal to body) or are multi-instance — mounted directly here.
 import LetterComposer from '../LetterComposer';
@@ -53,14 +54,18 @@ export function LayoutManagerWrapper({
         objectListHost={objectListHost}
         objectListOthersHost={objectListOthersHost}
       />
-      {/* The standard dockable popups (POPUP_CATALOG). */}
-      {POPUP_CATALOG.map(({ id, Component }) => (
-        <Component key={id} />
-      ))}
-      {/* Non-catalog popups (own chrome / multi-instance) */}
-      <LetterComposer />
-      <TransportDebugPopup />
-      <StaticMapPopupManager />
+      {/* The popups mount once the page has painted: closed, they draw nothing,
+          and the ones left open come back a frame later. */}
+      <AfterFirstPaint>
+        {/* The standard dockable popups (POPUP_CATALOG). */}
+        {POPUP_CATALOG.map(({ id, Component }) => (
+          <Component key={id} />
+        ))}
+        {/* Non-catalog popups (own chrome / multi-instance) */}
+        <LetterComposer />
+        <TransportDebugPopup />
+        <StaticMapPopupManager />
+      </AfterFirstPaint>
       {/* Plugin popups - rendered inside LayoutProvider for docking support */}
       <PluginPopupRenderer />
       {/* Portal container for plugin popups (legacy fallback) */}

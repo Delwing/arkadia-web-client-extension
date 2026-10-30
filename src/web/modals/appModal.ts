@@ -21,6 +21,13 @@
 import { pushBackLayer } from "@web-ui/backNavigation.ts";
 
 export const MODAL_EVENT = {
+    /**
+     * About to be used: mount the content now (AppModalShell mounts a window's
+     * content the first time it is needed, not at start-up). Fires before every
+     * `show`, and before anything is asked of the content while it is closed
+     * ({@link prepareModal}), so the content's own `show` listeners are in place.
+     */
+    prepare: "app-modal:prepare",
     /** About to open; the content is still hidden. */
     show: "app-modal:show",
     /** Open and laid out. */
@@ -85,6 +92,7 @@ export class AppModal {
 
     show(): void {
         if (this.isOpen) return;
+        prepareModal(this.element);
         this.element.dispatchEvent(new Event(MODAL_EVENT.show));
         const active = document.activeElement;
         this.returnFocus = active instanceof HTMLElement && active !== document.body ? active : null;
@@ -126,6 +134,11 @@ export class AppModal {
         if (this.isOpen) this.hide();
         else this.show();
     }
+}
+
+/** Make sure the modal's content is mounted (see {@link MODAL_EVENT.prepare}). */
+export function prepareModal(element: HTMLElement): void {
+    element.dispatchEvent(new Event(MODAL_EVENT.prepare));
 }
 
 /** Some page-level modal is open (global keybinds and Enter-to-send stand down). */

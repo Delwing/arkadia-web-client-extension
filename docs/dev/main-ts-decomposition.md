@@ -252,6 +252,40 @@ tags, and `grep createPortal src/web/app` finds no placeholder target.
   and the forge references are gone. `docs/CLIENT_UI_DECOUPLING.md` notes that
   forge-ui was removed.
 
+## Start-up performance
+
+Rendering the whole page as one tree made the first paint wait for all of it:
+`index.html` no longer holds static markup to show early, and the single
+`flushSync` render ran ~400 ms in one task (1x CPU), most of it windows nobody
+had opened (Ustawienia alone was 2,452 of the page's 3,577 elements). So:
+
+- **Page windows mount on first use.** `AppModalShell` renders its content on
+  `MODAL_EVENT.prepare`, which `AppModal.show()` fires before `show` (so the
+  content's own `show` listeners are in place for the first opening) and
+  `prepareWindow()` fires for a request that must reach a closed window
+  (`requestSettingsCategory` / `requestSettingsResume`). Once mounted, it stays.
+- **Closed popups and the floating overlays mount after the first paint**
+  (`@web-ui/afterFirstPaint.tsx`): `POPUP_CATALOG` and the non-catalog popups in
+  `LayoutManagerWrapper`; the playback bar, on-screen buttons, joysticks, radial,
+  widgets and boss key in `Overlays`.
+
+Measured against the merge base on master (production builds, static server,
+external requests blocked, headless Chromium, medians):
+
+| | master | this branch |
+|---|---|---|
+| first paint, 1x CPU | 808 ms | 768 ms |
+| main thread quiet, 1x | 955 ms | 710 ms |
+| first paint, 4x CPU | 1.96 s | 2.28 s |
+| main thread quiet, 4x | 3.76 s | 2.50 s |
+| DOM elements / listeners after start | 7,677 / 5,407 | 856 / 1,243 |
+| JS heap | 25.3 MB | 19.6 MB |
+
+Master's first paint is a partial page (static markup, React regions filled in
+afterwards, the last of them at ~3.4 s on 4x); the branch's is the whole page.
+What remains before it is the visible shell's render (~50 ms at 1x) and the
+page's first layout.
+
 ## Target layout
 
 ```

@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { act } from 'react';
+import { act, useEffect } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { createPortal } from 'react-dom';
 import { AppModalShell } from '@web/modals/AppModalShell';
-import { AppModal } from '@web/modals/appModal';
+import { AppModal, MODAL_EVENT, prepareModal } from '@web/modals/appModal';
 
 // React 19 requires this flag for act() outside a test framework integration.
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -34,9 +34,40 @@ describe('AppModalShell', () => {
             + '<div class="app-modal__dialog app-modal__dialog--lg" tabindex="-1">'
             + '<div class="app-modal__header"><h2 class="app-modal__title">Demo</h2>'
             + '<button type="button" class="app-modal__close" data-modal-dismiss="" title="Zamknij">×</button></div>'
-            + '<div class="app-modal__body app-modal__body--flush"><p>body</p></div>'
+            + '<div class="app-modal__body app-modal__body--flush"></div>'
             + '</div></div>',
         );
+    });
+
+    it('mounts the content on first use, before the window opens, and keeps it', () => {
+        const seen: string[] = [];
+        // A content that refreshes on its window's show, as Klawisze or Miejsca do.
+        const Content = () => {
+            useEffect(() => {
+                const modal = document.getElementById('demo-modal')!;
+                const onShow = () => seen.push('show');
+                modal.addEventListener(MODAL_EVENT.show, onShow);
+                return () => modal.removeEventListener(MODAL_EVENT.show, onShow);
+            }, []);
+            return <p id="demo-content">body</p>;
+        };
+        act(() => root.render(<AppModalShell id="demo-modal" title="Demo"><Content /></AppModalShell>));
+        expect(document.getElementById('demo-content')).toBeNull();
+
+        const modal = AppModal.byId('demo-modal')!;
+        modal.show();
+        expect(document.getElementById('demo-content')).not.toBeNull();
+        expect(seen).toEqual(['show']);
+
+        modal.hide();
+        expect(document.getElementById('demo-content')).not.toBeNull();
+    });
+
+    it('mounts the content without opening when prepared', () => {
+        act(() => root.render(<AppModalShell id="demo-modal" title="Demo"><p id="demo-content">body</p></AppModalShell>));
+        prepareModal(document.getElementById('demo-modal')!);
+        expect(document.getElementById('demo-content')).not.toBeNull();
+        expect(document.getElementById('demo-modal')!.hidden).toBe(true);
     });
 
     it('renders header actions, a header slot and a footer when given', () => {
