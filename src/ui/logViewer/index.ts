@@ -42,6 +42,11 @@ export type { LogEventKind } from "./model/events";
 
 export { formatClock, formatDateLong, formatDayLabel, formatDuration } from "./model/format";
 
+export { tallySearchText, toSearchText } from "./model/searchText";
+export type { SearchText } from "./model/searchText";
+
+export { resetCrossSearchCache } from "./useCrossSearch";
+
 export { hasLines } from "./model/types";
 export type { LogLine, LogSession, LogSessionInfo, SearchScope } from "./model/types";
-export type { PersistedPreferences } from "./model/viewerState";
+export type { PersistedPreferences, ViewerSnapshot } from "./model/viewerState";

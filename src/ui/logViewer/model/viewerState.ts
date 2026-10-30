@@ -163,6 +163,58 @@ export function applyPreferences(state: ViewerState, stored: unknown): ViewerSta
     };
 }
 
+/**
+ * What the player was looking at, for the next time the same host opens the
+ * viewer: the log, the search and where in the log. Unlike the preferences
+ * this is not shared between hosts or tabs — it is the host's to keep, for as
+ * long as it sees fit.
+ */
+export interface ViewerSnapshot {
+    sessionId: string;
+    sessionFilter: string;
+    query: string;
+    caseSensitive: boolean;
+    regex: boolean;
+    onlyMatches: boolean;
+    /** Never "range": the range is not kept, so the scope it fell back to is. */
+    scope: SearchScope;
+    matchIndex: number;
+    follow: boolean;
+    /** The session line on top of the pane; undefined to open as a new log does. */
+    scrolledTo?: number;
+}
+
+export function takeSnapshot(state: ViewerState, scrolledTo: number | undefined): ViewerSnapshot {
+    return {
+        sessionId: state.sessionId,
+        sessionFilter: state.sessionFilter,
+        query: state.query,
+        caseSensitive: state.caseSensitive,
+        regex: state.regex,
+        onlyMatches: state.onlyMatches,
+        scope: state.scope === "range" ? "log" : state.scope,
+        matchIndex: state.matchIndex,
+        follow: state.follow,
+        scrolledTo,
+    };
+}
+
+/** Puts a snapshot back over `state`, minus the log, which the caller checks is still there. */
+export function applySnapshot(state: ViewerState, snapshot: ViewerSnapshot | null | undefined): ViewerState {
+    if (!snapshot) return state;
+    return {
+        ...state,
+        sessionFilter: snapshot.sessionFilter,
+        query: snapshot.query,
+        caseSensitive: snapshot.caseSensitive,
+        regex: snapshot.regex,
+        onlyMatches: snapshot.onlyMatches,
+        scope: snapshot.scope === "all" ? "all" : "log",
+        matchIndex: snapshot.matchIndex,
+        follow: snapshot.follow,
+    };
+}
+
 export interface RenderedRow {
     /** Index into the session's full line list — used for scroll targets. */
     lineIndex: number;

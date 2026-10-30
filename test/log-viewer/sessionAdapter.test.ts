@@ -5,6 +5,7 @@ import {
     recordedBackground,
     resetSessionIndex,
 } from "../../log-viewer/sessionAdapter";
+import { SEARCH_DB_NAME, SearchTextStore } from "../../log-viewer/searchTextStore";
 import { edgeRecord, openLogsDb, writeSession } from "@web/logsDatabase";
 
 const INDEX_KEY = "arkadia.logViewer.sessionIndex";
@@ -16,9 +17,9 @@ interface StoredRecord {
     character?: string;
 }
 
-function deleteDb(): Promise<void> {
+function deleteDb(name = "ArkadiaLogsDB"): Promise<void> {
     return new Promise((resolve) => {
-        const request = indexedDB.deleteDatabase("ArkadiaLogsDB");
+        const request = indexedDB.deleteDatabase(name);
         request.onsuccess = () => resolve();
         request.onerror = () => resolve();
         request.onblocked = () => resolve();
@@ -42,6 +43,7 @@ describe("createSessionSource", () => {
         localStorage.clear();
         resetSessionIndex();
         await deleteDb();
+        await deleteDb(SEARCH_DB_NAME);
         await seed({
             session_1000: [
                 { text: "Witaj", timestamp: 1000, character: "alfa" },
@@ -160,6 +162,91 @@ describe("createSessionSource", () => {
         const source = createSessionSource({ candidates: [] });
         expect(await source.list(undefined, controller.signal)).toEqual([]);
         source.release();
+    });
+
+    it("stores each log's search text while listing", async () => {
+        const source = createSessionSource({ candidates: [] });
+        await source.list();
+        source.release();
+        const store = new SearchTextStore();
+        const stored = await store.get("session_1000");
+        store.release();
+        expect(stored?.count).toBe(2);
+        expect(stored?.text).toBe("Witaj\nraz\ndwa");
+    });
+
+    it("searches from the stored text without parsing the log again", async () => {
+        const first = createSessionSource({ candidates: [] });
+        await first.list();
+        first.release();
+        // A stored text the log itself could not have produced.
+        const store = new SearchTextStore();
+        const stored = (await store.get("session_5000"))!;
+        await store.put("session_5000", { ...stored, text: "z bazy" });
+        store.release();
+
+        const second = createSessionSource({ candidates: [] });
+        await second.list();
+        const text = await second.searchText("session_5000");
+        second.release();
+        expect(text?.text).toBe("z bazy");
+    });
+
+    it("builds the search text again once the log grew", async () => {
+        const first = createSessionSource({ candidates: [] });
+        await first.list();
+        first.release();
+        await seed({ session_5000: [{ text: "jeszcze", timestamp: 6000 }] });
+
+        const second = createSessionSource({ candidates: [] });
+        await second.list();
+        const text = await second.searchText("session_5000");
+        second.release();
+        expect(text?.text).toBe("troll\njeszcze");
+        expect(text?.count).toBe(2);
+    });
+
+    it("builds the search text of a log listed before texts were stored", async () => {
+        const first = createSessionSource({ candidates: [] });
+        await first.list();
+        first.release();
+        await deleteDb(SEARCH_DB_NAME);
+
+        const second = createSessionSource({ candidates: [] });
+        await second.list();
+        expect((await second.searchText("session_1000"))?.text).toBe("Witaj\nraz\ndwa");
+        second.release();
+        const store = new SearchTextStore();
+        expect((await store.get("session_1000"))?.count).toBe(2);
+        store.release();
+    });
+
+    it("does not store the search text of the log being recorded", async () => {
+        const source = createSessionSource({ candidates: [], liveSessionName: "session_5000" });
+        await source.list();
+        expect((await source.searchText("session_5000"))?.text).toBe("troll");
+        source.release();
+        const store = new SearchTextStore();
+        expect(await store.get("session_5000")).toBeNull();
+        store.release();
+    });
+
+    it("drops the search texts of logs that are gone", async () => {
+        const first = createSessionSource({ candidates: [] });
+        await first.list();
+        first.release();
+        await deleteDb();
+        await seed({ session_5000: [{ text: "troll", timestamp: 5000 }] });
+
+        const second = createSessionSource({ candidates: [] });
+        await second.list();
+        // The prune is fired off at the end of the listing; let it land.
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        second.release();
+        const store = new SearchTextStore();
+        expect(await store.get("session_1000")).toBeNull();
+        expect(await store.get("session_5000")).not.toBeNull();
+        store.release();
     });
 
     it("loads nothing after release, so a late call cannot hold the database", async () => {

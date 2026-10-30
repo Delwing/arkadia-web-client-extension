@@ -21,10 +21,13 @@ import {
     type LogLine,
     type LogSession,
     type LogSessionInfo,
+    type SearchText,
+    toSearchText,
 } from "@ui/logViewer";
 import { splitLines } from "@web/logBrowserUtils";
 import { countEach, countSession, LogsDatabase, readSession, sessionNames, type StoredLogEntry } from "@web/logsDatabase";
 import { collectCharacters } from "@web/options/exportUtils";
+import { SearchTextStore, type StoredSearchText } from "./searchTextStore";
 
 /** `session_1758304931000` -> 1758304931000; null for anything else. */
 export function sessionStartFromName(name: string): number | null {
@@ -285,6 +288,13 @@ const COUNT_CHUNK = 25;
  */
 const CACHED_LINES = 200_000;
 
+/**
+ * Search texts kept by one source, by characters of text. Far smaller than
+ * parsed logs, so many more fit: a search typed again, or narrowed, reads
+ * none of them back from the database.
+ */
+const CACHED_TEXT = 16_000_000;
+
 export interface ListProgress {
     done: number;
     total: number;
@@ -304,6 +314,12 @@ export interface SessionSource {
     ): Promise<LogSessionInfo[]>;
     /** One log with its lines; null when it is gone or empty. */
     load(id: string): Promise<LogSession | null>;
+    /**
+     * One log's search text: stored when the log has not changed since it was
+     * built, else built from the log (and stored for next time). Null when the
+     * log is gone or empty.
+     */
+    searchText(id: string): Promise<SearchText | null>;
     /** Drops the cached logs and the database connection. */
     release(): void;
 }
@@ -325,6 +341,37 @@ export function createSessionSource(options: LoadOptions = {}): SessionSource {
     const inFlight = new Map<string, Promise<LogSession | null>>();
     /** Set by `release`: a late call must not reopen the connection and hold it. */
     let released = false;
+    const textStore = new SearchTextStore();
+    const texts = new Map<string, StoredSearchText>();
+    let cachedText = 0;
+
+    const rememberText = (name: string, entry: StoredSearchText) => {
+        const previous = texts.get(name);
+        if (previous) {
+            cachedText -= previous.text.length;
+            texts.delete(name);
+        }
+        texts.set(name, entry);
+        cachedText += entry.text.length;
+        for (const [key, value] of texts) {
+            if (cachedText <= CACHED_TEXT || key === name) break;
+            texts.delete(key);
+            cachedText -= value.text.length;
+        }
+    };
+
+    /**
+     * Builds and stores a log's search text. Not for the log being recorded:
+     * it changes with every line, so a stored copy would be stale at once.
+     */
+    const storeText = (name: string, count: number, session: LogSession): StoredSearchText => {
+        const entry: StoredSearchText = { count, ...toSearchText(session.lines) };
+        if (name !== options.liveSessionName) {
+            rememberText(name, entry);
+            void textStore.put(name, entry);
+        }
+        return entry;
+    };
 
     const remember = (name: string, count: number, session: LogSession | null) => {
         const previous = cache.get(name);
@@ -359,6 +406,9 @@ export function createSessionSource(options: LoadOptions = {}): SessionSource {
         if (session) file.entries[name] = indexEntry(session, entries.length, entries);
         else delete file.entries[name];
         remember(name, entries.length, session);
+        // The log is parsed now; its search text costs little more, and spares
+        // the first search across every log from parsing it again.
+        if (session) storeText(name, entries.length, session);
         return session;
     };
 
@@ -377,6 +427,38 @@ export function createSessionSource(options: LoadOptions = {}): SessionSource {
         const session = await readAndParse(id);
         saveIndex();
         return session;
+    };
+
+    /** Two callers asking at once (the open log and a search) share one read. */
+    const loadShared = (id: string): Promise<LogSession | null> => {
+        let pending = inFlight.get(id);
+        if (!pending) {
+            pending = load(id).finally(() => inFlight.delete(id));
+            inFlight.set(id, pending);
+        }
+        return pending;
+    };
+
+    const searchText = async (id: string): Promise<SearchText | null> => {
+        // A finished log keeps the record count it was listed with, so the
+        // index says whether a stored text is current without counting again.
+        const count = id === options.liveSessionName ? undefined : loadIndex(candidatesKey).entries[id]?.count;
+        if (count !== undefined) {
+            const known = texts.get(id);
+            if (known && known.count === count) return known;
+            const stored = await textStore.get(id);
+            if (stored && stored.count === count) {
+                rememberText(id, stored);
+                return stored;
+            }
+        }
+        const session = await loadShared(id);
+        if (!session) return null;
+        const parsed = cache.get(id);
+        const fresh = texts.get(id);
+        // Parsed just now, which built the text; else it came from the cache of parsed logs.
+        if (fresh && parsed && fresh.count === parsed.count) return fresh;
+        return storeText(id, parsed?.count ?? 0, session);
     };
 
     return {
@@ -450,24 +532,23 @@ export function createSessionSource(options: LoadOptions = {}): SessionSource {
                 }
             }
             saveIndex();
+            // Only after a full listing: one cut short has not seen every name.
+            if (!signal?.aborted && !released) void textStore.prune(known);
             return list();
         },
 
-        load(id) {
-            // Two callers asking at once (the open log and a search) share one read.
-            let pending = inFlight.get(id);
-            if (!pending) {
-                pending = load(id).finally(() => inFlight.delete(id));
-                inFlight.set(id, pending);
-            }
-            return pending;
-        },
+        load: loadShared,
+
+        searchText,
 
         release() {
             released = true;
             cache.clear();
             cachedLines = 0;
+            texts.clear();
+            cachedText = 0;
             database.release();
+            textStore.release();
         },
     };
 }

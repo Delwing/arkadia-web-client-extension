@@ -6,14 +6,18 @@ import { normalizeMatchIndex } from "./model/search";
 import { indexAtOrAfter } from "./model/timeline";
 import { hasLines, type LogSession, type LogSessionInfo, type SearchScope, type TimeRange } from "./model/types";
 import { useCrossSearch } from "./useCrossSearch";
+import type { SearchText } from "./model/searchText";
 import {
     applyPreferences,
+    applySnapshot,
     deriveView,
     initialSessionId,
     initialViewerState,
     pickPreferences,
     stepMatch,
+    takeSnapshot,
     type PersistedPreferences,
+    type ViewerSnapshot,
     type ViewerState,
 } from "./model/viewerState";
 import { buildLogHtml, escapeHtml } from "./export/logHtml";
@@ -41,6 +45,12 @@ export interface LogViewerProps {
     sessions: LogSessionInfo[];
     loadSession?: (id: string) => Promise<LogSession | null>;
     /**
+     * A session's search text (see `model/searchText.ts`). When given, an
+     * All-logs search counts hits from it rather than from `loadSession`'s
+     * lines, which spares parsing every log.
+     */
+    loadSearchText?: (id: string) => Promise<SearchText | null>;
+    /**
      * Set while the host is still listing sessions. The list works as it
      * grows, but an All-logs search waits for it: counting hits in half the
      * logs would look like an answer.
@@ -53,6 +63,13 @@ export interface LogViewerProps {
     /** Preferences to restore; `onPreferencesChange` reports them back. */
     preferences?: PersistedPreferences | null;
     onPreferencesChange?: (preferences: PersistedPreferences) => void;
+    /**
+     * Where the player left off — the log, the search, the scroll position —
+     * to open on instead of the preferences' log. `onSnapshotChange` reports it
+     * back as it changes.
+     */
+    snapshot?: ViewerSnapshot | null;
+    onSnapshotChange?: (snapshot: ViewerSnapshot) => void;
     /** Called instead of the built-in `navigator.clipboard` write, if given. */
     onCopy?: (text: string) => void;
     onExport?: (session: LogSession, text: string) => void;
@@ -90,11 +107,14 @@ const DEBOUNCE_MS = 100;
 export function LogViewer({
     sessions,
     loadSession,
+    loadSearchText,
     loading,
     headerTrailing,
     menuExtra,
     preferences,
     onPreferencesChange,
+    snapshot,
+    onSnapshotChange,
     onCopy,
     onExport,
     noSessionsAction,
@@ -102,14 +122,25 @@ export function LogViewer({
     listNotice,
 }: LogViewerProps) {
     const [state, setState] = useState<ViewerState>(() => {
+        const listed = (id: string | undefined) => Boolean(id && sessions.some((session) => session.id === id));
+        const snapshotId = listed(snapshot?.sessionId) ? snapshot?.sessionId : undefined;
         const preferredId = preferences?.sessionId;
-        const initialId =
-            preferredId && sessions.some((session) => session.id === preferredId)
-                ? preferredId
-                : initialSessionId(sessions);
-        const restored = applyPreferences(initialViewerState(initialId), preferences);
-        return initialQuery ? { ...restored, query: initialQuery, scope: "all" } : restored;
+        const initialId = snapshotId ?? (preferredId && listed(preferredId) ? preferredId : initialSessionId(sessions));
+        let restored = applyPreferences(initialViewerState(initialId), preferences);
+        // A snapshot of a log that is gone is no place to come back to.
+        if (snapshotId) restored = applySnapshot(restored, snapshot);
+        return initialQuery ? { ...restored, query: initialQuery, scope: "all", matchIndex: 0 } : restored;
     });
+
+    /**
+     * The scroll position to come back to, until the snapshot's log has its
+     * lines on screen. Not when following a live log: that opens at its end.
+     */
+    const restoreScroll = useRef(
+        snapshot && snapshot.sessionId === state.sessionId && !(snapshot.follow && snapshot.scrolledTo === undefined)
+            ? snapshot.scrolledTo
+            : undefined,
+    );
 
     /**
      * The query the derivation actually runs on. Equal to `state.query` except
@@ -117,7 +148,7 @@ export function LogViewer({
      * full re-scan.
      */
     const [activeQuery, setActiveQuery] = useState(state.query);
-    const [viewport, setViewport] = useState<{ from: number; to: number } | null>(null);
+    const [viewport, setViewport] = useState<{ from: number; to: number; firstLine: number } | null>(null);
     const [scrollRequest, setScrollRequest] = useState<ScrollRequest | null>(null);
     const [lineMenu, setLineMenu] = useState<LineMenuState | null>(null);
     /**
@@ -216,6 +247,7 @@ export function LogViewer({
     const crossSearch = useCrossSearch({
         sessions,
         loadSession,
+        loadSearchText,
         enabled: state.scope === "all" && !loading,
         query: activeQuery,
         regex: state.regex,
@@ -257,6 +289,13 @@ export function LogViewer({
         onPreferencesChange?.(persisted);
     }, [persisted, onPreferencesChange]);
 
+    // Where the player is, for the host to open on next time. The viewport is
+    // only trusted once the snapshot's log is the one on screen.
+    const scrolledTo = view.session?.id === state.sessionId ? viewport?.firstLine : undefined;
+    useEffect(() => {
+        onSnapshotChange?.(takeSnapshot(state, scrolledTo));
+    }, [state, scrolledTo, onSnapshotChange]);
+
     /* --- scroll targets -------------------------------------------------- */
 
     const currentRow = view.currentRow;
@@ -291,6 +330,15 @@ export function LogViewer({
         if (!loadedId) return;
         if (matchJump.current === loadedId) {
             matchJump.current = null;
+            return;
+        }
+        const restoreAt = restoreScroll.current;
+        restoreScroll.current = undefined;
+        if (restoreAt !== undefined && view.rows.length > 0 && !(state.follow && loadedLive)) {
+            // The first row at or past the line that was on top: lines filtered
+            // out since are skipped, not jumped back over.
+            const row = view.rows.findIndex((candidate) => candidate.lineIndex >= restoreAt);
+            requestScroll({ kind: "row", row: row === -1 ? view.rows.length - 1 : row, align: "start" });
             return;
         }
         requestScroll({ kind: loadedLive ? "bottom" : "top" });

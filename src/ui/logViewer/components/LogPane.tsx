@@ -35,8 +35,11 @@ export interface LogPaneProps {
      */
     emptyAction?: React.ReactNode;
     onResetFilters: () => void;
-    /** Reports the time range on screen, for the timeline's viewport box. */
-    onViewportChange: (range: { from: number; to: number } | null) => void;
+    /**
+     * Reports the time range on screen, for the timeline's viewport box, and
+     * the session line at its top.
+     */
+    onViewportChange: (range: { from: number; to: number; firstLine: number } | null) => void;
     /** Fires when the player scrolls away from the bottom — turns follow off. */
     onScrollAwayFromBottom: () => void;
     follow: boolean;
@@ -311,10 +314,10 @@ export function LogPane({
         if (!first || !last) {
             const fallback = currentRows[items[0].index];
             if (!fallback) return;
-            onViewportChange({ from: fallback.timestamp, to: fallback.timestamp });
+            onViewportChange({ from: fallback.timestamp, to: fallback.timestamp, firstLine: fallback.lineIndex });
             return;
         }
-        onViewportChange({ from: first.timestamp, to: last.timestamp });
+        onViewportChange({ from: first.timestamp, to: last.timestamp, firstLine: first.lineIndex });
     }, [onViewportChange]);
 
     // Covers everything that is not a scroll: a new range, a channel filter,

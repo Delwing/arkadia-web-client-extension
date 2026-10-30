@@ -296,6 +296,32 @@ test.describe('Logi browser', () => {
         await expect(sessions).toHaveCount(3);
     });
 
+    test('reopening the window comes back to the log and the search it was closed on', async ({page}) => {
+        await login(page);
+        await pushText(page, 'Stara sesja: POWROTNY_ZNACZNIK tutaj');
+        await pushFiller(page, 'stara', 200);
+        await login(page);
+        await pushFiller(page, 'nowa', 20);
+
+        await openLogs(page);
+        await chooseScope(page, 'We wszystkich logach');
+        await page.fill('#lv-search', 'POWROTNY_ZNACZNIK');
+        await expect(page.locator('.lv-search__sub')).toHaveText('1 w 1 logu');
+        await page.press('#lv-search', 'Enter');
+        await expect(page.locator('.lv-log__row[data-current="true"]')).toContainText('POWROTNY_ZNACZNIK');
+
+        await page.locator('#logs-close').click();
+        await expect(page.locator('#logs-modal')).toBeHidden();
+        await openLogs(page);
+
+        // The old log, not the one being recorded, with the search still on.
+        await expect(page.locator('#lv-search')).toHaveValue('POWROTNY_ZNACZNIK');
+        await expect(page.locator('.lv-search__sub')).toHaveText('1 w 1 logu');
+        await expect(page.locator('.lv-log__row[data-current="true"]')).toContainText('POWROTNY_ZNACZNIK');
+        await expect.poll(() => activeLineInView(page)).toBe(true);
+        await expect(page.locator('.lv-log')).not.toContainText('nowa 19');
+    });
+
     test('display switches live in the Widok menu', async ({page}) => {
         await login(page);
         await pushFiller(page, 'linia', 10);
