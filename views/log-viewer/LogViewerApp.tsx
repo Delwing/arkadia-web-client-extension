@@ -78,6 +78,10 @@ export default function LogViewerApp() {
         (id: string) => (source ? source.load(id) : Promise.resolve(null)),
         [source],
     );
+    const loadSearchText = useCallback(
+        (id: string) => (source ? source.searchText(id) : Promise.resolve(null)),
+        [source],
+    );
 
     const onPreferencesChange = useCallback((next: PersistedPreferences) => writePreferences(next), []);
 
@@ -94,6 +98,7 @@ export default function LogViewerApp() {
         <LogViewer
             sessions={sessions}
             loadSession={loadSession}
+            loadSearchText={loadSearchText}
             loading={listing}
             preferences={preferences}
             onPreferencesChange={onPreferencesChange}

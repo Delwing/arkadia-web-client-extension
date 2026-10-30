@@ -12,8 +12,8 @@
  * own palette (`lv-theme`), so the window does not have to provide one.
  */
 import { useCallback, useEffect, useState, type ReactNode } from "react";
-import { Button, Icon, IconButton, LogViewer, MenuItem, Spinner } from "@ui/logViewer";
-import type { LogSessionInfo, PersistedPreferences } from "@ui/logViewer";
+import { Button, Icon, IconButton, LogViewer, MenuItem, Spinner, resetCrossSearchCache } from "@ui/logViewer";
+import type { LogSessionInfo, PersistedPreferences, ViewerSnapshot } from "@ui/logViewer";
 import { readPreferences, writePreferences } from "../../views/log-viewer/preferences";
 import { createSessionSource, type ListProgress, type SessionSource } from "../../views/log-viewer/sessionAdapter";
 import { useLogsMigration } from "../../views/log-viewer/useLogsMigration";
@@ -29,6 +29,19 @@ export interface LogBrowserProps {
     headerTrailing?: ReactNode;
     /** Opens with this in the search box ("Szukaj w logach"). */
     initialQuery?: string;
+}
+
+/**
+ * Where the player left the browser: the log, the search, the scroll position.
+ *
+ * Kept in memory, for this tab, until the page goes: the window reopens where
+ * it was closed, while another tab, or this one after a reload, still opens on
+ * the session it is recording itself.
+ */
+let lastSnapshot: ViewerSnapshot | null = null;
+
+function rememberSnapshot(snapshot: ViewerSnapshot): void {
+    lastSnapshot = snapshot;
 }
 
 /** Opens the standalone page on one session, in a tab of its own. */
@@ -65,6 +78,8 @@ export function LogBrowser({ headerTrailing, initialQuery }: LogBrowserProps) {
     });
     /** The session the viewer has open, for "Nowa karta". */
     const [openSessionId, setOpenSessionId] = useState<string | undefined>();
+    /** Taken once: the viewer reports every change back through `rememberSnapshot`. */
+    const [snapshot] = useState(() => lastSnapshot);
 
     useEffect(() => {
         // A snapshot, taken each time the window opens. The pane does not
@@ -77,7 +92,12 @@ export function LogBrowser({ headerTrailing, initialQuery }: LogBrowserProps) {
         //
         // Closing the window (or a reload) stops the listing and lets go of
         // every parsed log: nothing of a large store outlives the window.
-        const created = createSessionSource({ liveSessionName: currentSessionName, priority: [currentSessionName] });
+        // The log the window was closed on is listed first too, so the viewer
+        // can open on it rather than fall back to the live one.
+        const created = createSessionSource({
+            liveSessionName: currentSessionName,
+            priority: [currentSessionName, snapshot?.sessionId],
+        });
         const controller = new AbortController();
         setSource(created);
         setListing({ done: 0, total: 0 });
@@ -102,10 +122,14 @@ export function LogBrowser({ headerTrailing, initialQuery }: LogBrowserProps) {
             controller.abort();
             created.release();
         };
-    }, [reloadToken]);
+    }, [reloadToken, snapshot]);
 
     const loadSession = useCallback(
         (id: string) => (source ? source.load(id) : Promise.resolve(null)),
+        [source],
+    );
+    const loadSearchText = useCallback(
+        (id: string) => (source ? source.searchText(id) : Promise.resolve(null)),
         [source],
     );
 
@@ -115,6 +139,8 @@ export function LogBrowser({ headerTrailing, initialQuery }: LogBrowserProps) {
     }, []);
 
     const reload = useCallback(() => {
+        // Logs were deleted or imported: counts remembered for them may be wrong.
+        resetCrossSearchCache();
         setSessions(null);
         setReloadToken((token) => token + 1);
     }, []);
@@ -159,8 +185,11 @@ export function LogBrowser({ headerTrailing, initialQuery }: LogBrowserProps) {
                 <LogViewer
                     sessions={sessions}
                     loadSession={loadSession}
+                    loadSearchText={loadSearchText}
                     loading={listing}
                     preferences={initialPreferences}
+                    snapshot={snapshot}
+                    onSnapshotChange={rememberSnapshot}
                     initialQuery={initialQuery}
                     listNotice={migrationNotice}
                     onPreferencesChange={onPreferencesChange}

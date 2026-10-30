@@ -3,6 +3,7 @@ import { allChannelsOn } from "@ui/logViewer/model/channels";
 import type { LogLine, LogSession, LogSessionInfo } from "@ui/logViewer/model/types";
 import {
     applyPreferences,
+    applySnapshot,
     appliedRange,
     deriveView,
     effectiveScope,
@@ -11,6 +12,7 @@ import {
     orderSessions,
     pickPreferences,
     stepMatch,
+    takeSnapshot,
     type ViewerState,
 } from "@ui/logViewer/model/viewerState";
 
@@ -456,5 +458,34 @@ describe("preferences", () => {
         expect(restored.channels.system).toBe(false);
         expect(restored.channels.other).toBe(true);
         expect(restored.channels.script).toBe(true);
+    });
+});
+
+describe("viewer snapshot", () => {
+    it("comes back as the state it was taken from", () => {
+        const state = {
+            ...initialViewerState("s1"),
+            query: "troll",
+            regex: true,
+            caseSensitive: true,
+            onlyMatches: true,
+            scope: "all" as const,
+            matchIndex: 4,
+            sessionFilter: "alfa",
+            follow: false,
+        };
+        const snapshot = takeSnapshot(state, 1234);
+        expect(snapshot.scrolledTo).toBe(1234);
+        expect(applySnapshot(initialViewerState("s1"), snapshot)).toEqual(state);
+    });
+
+    it("keeps the wider scope rather than a range it does not keep", () => {
+        const state = { ...initialViewerState("s1"), scope: "range" as const, range: { from: 1, to: 2 } };
+        expect(takeSnapshot(state, undefined).scope).toBe("log");
+    });
+
+    it("leaves the state alone without one", () => {
+        const state = initialViewerState("s1");
+        expect(applySnapshot(state, null)).toBe(state);
     });
 });

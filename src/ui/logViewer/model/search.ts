@@ -94,7 +94,7 @@ export interface LineHit {
 }
 
 /** A session's text joined into one string, for native `indexOf` over all of it. */
-interface TextIndex {
+export interface TextIndex {
     exact: string;
     /** Null when lowering changed the length, so offsets would not line up. */
     lower: string | null;
@@ -106,6 +106,14 @@ interface TextIndex {
 // reloaded live session comes with a new array.
 const textIndexes = new WeakMap<readonly LogLine[], TextIndex>();
 const hitCache = new WeakMap<readonly LogLine[], { key: string; hits: LineHit[] }>();
+
+/** Indexes text that is already joined with `\n`, one line per line. */
+export function indexJoinedText(exact: string): TextIndex {
+    const starts = [0];
+    for (let at = exact.indexOf("\n"); at !== -1; at = exact.indexOf("\n", at + 1)) starts.push(at + 1);
+    const lowered = exact.toLowerCase();
+    return { exact, lower: lowered.length === exact.length ? lowered : null, starts };
+}
 
 function textIndex(lines: readonly LogLine[]): TextIndex {
     const known = textIndexes.get(lines);
@@ -137,6 +145,44 @@ function lineAt(starts: number[], position: number): number {
     return low;
 }
 
+/** The search key a query and its flags make; equal keys find the same hits. */
+export function searchKey(query: string, options: { regex: boolean; caseSensitive: boolean }): string {
+    return `${options.regex ? "r" : "p"}${options.caseSensitive ? "c" : "i"}:${query}`;
+}
+
+/** Whether a query can be found with `indexOf` over joined text. */
+function plainQuery(query: string, options: { regex: boolean }): boolean {
+    return !options.regex && Boolean(query) && !query.includes("\n");
+}
+
+/**
+ * The plain-query scan: `indexOf` over the joined text. Null when the text
+ * cannot be searched that way (lowering changed its length).
+ */
+function plainHits(index: TextIndex, query: string, caseSensitive: boolean): LineHit[] | null {
+    const haystack = caseSensitive ? index.exact : index.lower;
+    if (haystack === null) return null;
+    const hits: LineHit[] = [];
+    const needle = caseSensitive ? query : query.toLowerCase();
+    let from = 0;
+    let current = -1;
+    let count = 0;
+    for (;;) {
+        const at = haystack.indexOf(needle, from);
+        if (at === -1) break;
+        const line = lineAt(index.starts, at);
+        if (line !== current) {
+            if (current !== -1) hits.push({ line: current, count });
+            current = line;
+            count = 0;
+        }
+        if (count < MAX_MATCHES_PER_LINE) count += 1;
+        from = at + needle.length;
+    }
+    if (current !== -1) hits.push({ line: current, count });
+    return hits;
+}
+
 /**
  * Every line of a session that the query matches, in order.
  *
@@ -152,38 +198,38 @@ export function findLineHits(
     options: { regex: boolean; caseSensitive: boolean },
     regex: RegExp,
 ): LineHit[] {
-    const key = `${options.regex ? "r" : "p"}${options.caseSensitive ? "c" : "i"}:${query}`;
+    const key = searchKey(query, options);
     const cached = hitCache.get(lines);
     if (cached && cached.key === key) return cached.hits;
 
-    const hits: LineHit[] = [];
-    const index = !options.regex && query && !query.includes("\n") ? textIndex(lines) : null;
-    const haystack = index ? (options.caseSensitive ? index.exact : index.lower) : null;
-    if (index && haystack !== null) {
-        const needle = options.caseSensitive ? query : query.toLowerCase();
-        let from = 0;
-        let current = -1;
-        let count = 0;
-        for (;;) {
-            const at = haystack.indexOf(needle, from);
-            if (at === -1) break;
-            const line = lineAt(index.starts, at);
-            if (line !== current) {
-                if (current !== -1) hits.push({ line: current, count });
-                current = line;
-                count = 0;
-            }
-            if (count < MAX_MATCHES_PER_LINE) count += 1;
-            from = at + needle.length;
-        }
-        if (current !== -1) hits.push({ line: current, count });
-    } else {
+    let hits = plainQuery(query, options) ? plainHits(textIndex(lines), query, options.caseSensitive) : null;
+    if (!hits) {
+        hits = [];
         for (let line = 0; line < lines.length; line += 1) {
             const count = countMatches(lines[line].text, regex);
             if (count > 0) hits.push({ line, count });
         }
     }
     hitCache.set(lines, { key, hits });
+    return hits;
+}
+
+/** `findLineHits` over text already joined and indexed (see `indexJoinedText`). Not cached. */
+export function findTextHits(
+    index: TextIndex,
+    query: string,
+    options: { regex: boolean; caseSensitive: boolean },
+    regex: RegExp,
+): LineHit[] {
+    const plain = plainQuery(query, options) ? plainHits(index, query, options.caseSensitive) : null;
+    if (plain) return plain;
+    const hits: LineHit[] = [];
+    const { exact, starts } = index;
+    for (let line = 0; line < starts.length; line += 1) {
+        const end = line + 1 < starts.length ? starts[line + 1] - 1 : exact.length;
+        const count = countMatches(exact.slice(starts[line], end), regex);
+        if (count > 0) hits.push({ line, count });
+    }
     return hits;
 }
 
