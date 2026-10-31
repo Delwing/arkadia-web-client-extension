@@ -603,6 +603,9 @@ export interface KnownEvents {
     "followSpecialExit": { exit: string };
     // Lua gag events - maneuver
     "maneuverAttempted": void;
+    // Upstream `skrypty/events`: someone attacks the player. `special` marks the
+    // attacks only players can make (battle cries and the like).
+    "attacked": [attacker: string, special: boolean];
     // Loot events
     "loot.popup.open": LootPopupPayload;
     "loot.popup.closed": void;

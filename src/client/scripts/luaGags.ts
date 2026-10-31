@@ -1,6 +1,9 @@
 import Triggers, {Trigger} from "../Triggers";
 import type { SoundCategory } from '@shared/events/clientEvents.ts';
 import gagsData from "./gags_lua.json";
+// Upstream `skrypty/events`: triggers whose lua only raises events (and formats
+// the line), so scripts subscribe to the event instead of copying the regex.
+import eventsData from "./events_lua.json";
 import {colorString, createColorFormat, mudletColorLine} from "@modules/core/Colors";
 import {AnsiAwareBuffer, FormatStateSnapshot} from "../ansi/FormatState";
 
@@ -412,11 +415,18 @@ export default function registerLuaGagTriggers(client: Client) {
                     startIndex = global.line.text.indexOf(string, searchFrom);
                     if (startIndex === -1) {
                         selection = [-1, -1];
-                        return;
+                        return -1;
                     }
                     searchFrom = startIndex + 1;
                 }
                 selection = [startIndex, startIndex + string.length];
+                return startIndex;
+            },
+            replace: (text: string) => {
+                if (selection[0] > -1 && selection[1] > selection[0]) {
+                    global.line.replace([selection[0], selection[1]], text);
+                    selection = [selection[0], selection[0] + text.length];
+                }
             },
             raiseEvent(event: string, ...args: any[]) {
                 client.sendEvent(event, ...args)
@@ -467,7 +477,7 @@ export default function registerLuaGagTriggers(client: Client) {
         return {global, luaEnv, resetSelection, gagsTable};
     }
 
-    (gagsData as GagNode[]).forEach(group => registerNode(client.Triggers, group));
+    [...(gagsData as GagNode[]), ...(eventsData as GagNode[])].forEach(group => registerNode(client.Triggers, group));
     client.on("playSound", (category: string) => {
         client.sendEvent("sound:category", category as SoundCategory);
     });

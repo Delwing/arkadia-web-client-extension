@@ -15,6 +15,28 @@ const repoPath = process.argv.find(arg => arg !== '--download' && process.argv.i
 const GITHUB_RAW_BASE = 'https://raw.githubusercontent.com/tjurczyk/arkadia/master';
 const GITHUB_API_BASE = 'https://api.github.com/repos/tjurczyk/arkadia/contents';
 
+// Upstream trigger subtrees mirrored by the client. Each one is extracted from
+// Arkadia.xml into a JSON tree that luaGags.ts registers, and the lua its
+// triggers call is copied into src/client/lua/ so the client runs it as-is.
+//
+// `skrypty/events` exists for the client: its triggers only turn lines into
+// events (see skrypty/events.lua upstream), so a script that needs to react to
+// a line subscribes to the event instead of keeping its own copy of the regex.
+const SOURCES = [
+    {
+        name: 'gags',
+        xpath: "//MudletPackage/TriggerPackage/TriggerGroup[name='skrypty']/TriggerGroup[name='ui']/TriggerGroup[name='gags']",
+        lua: { dir: 'skrypty/ui/gags/color', dest: '' },
+        output: 'src/client/scripts/gags_lua.json',
+    },
+    {
+        name: 'events',
+        xpath: "//MudletPackage/TriggerPackage/TriggerGroup[name='skrypty']/TriggerGroup[name='events']",
+        lua: { file: 'skrypty/events.lua', dest: 'events.lua' },
+        output: 'src/client/scripts/events_lua.json',
+    },
+];
+
 const funcCalls = {};
 const funcRe = /^function\s+(trigger_func_[^(]+)\s*\(/;
 const callRe = /scripts\.gags:(gag_own_spec|gag_prefix|gag_spec|gag)\(([^)]*)\)/;
@@ -166,17 +188,61 @@ function processNode(node) {
     return out;
 }
 
-function extractGags(xmlPath) {
+function parseXml(xmlPath) {
     return new Promise((resolve, reject) => {
         const xmlData = fs.readFileSync(xmlPath, 'utf8');
         xml2js.parseString(xmlData, { explicitArray: false }, (err, result) => {
             if (err) return reject(err);
-            const root = xpath.find(result, "//MudletPackage/TriggerPackage/TriggerGroup[name='skrypty']/TriggerGroup[name='ui']/TriggerGroup[name='gags']");
-            if (!root) return resolve([]);
-            const groups = toArray(root).map(processNode).filter(Boolean);
-            resolve(groups);
+            resolve(result);
         });
     });
+}
+
+function extractSubtree(xml, source) {
+    const root = toArray(xpath.find(xml, source.xpath));
+    // An empty result would silently wipe the client's copy, which is exactly
+    // the kind of drift this script exists to prevent.
+    if (!root.length) throw new Error(`No trigger group found for "${source.name}" (${source.xpath})`);
+    return root.map(processNode).filter(Boolean);
+}
+
+function luaDest(...relative) {
+    return path.join(rootDir, 'src', 'client', 'lua', ...relative.filter(Boolean).flatMap(p => p.split('/')));
+}
+
+/** Lists the upstream lua a source needs as { relativePath, url } (download) or { relativePath, from } (local). */
+async function listSourceLua(source, repo) {
+    const { dir, file, dest } = source.lua;
+    if (file) {
+        return [repo
+            ? { relativePath: dest, from: path.join(repo, ...file.split('/')) }
+            : { relativePath: dest, url: `${GITHUB_RAW_BASE}/${file}` }];
+    }
+    if (repo) {
+        const base = path.join(repo, ...dir.split('/'));
+        const out = [];
+        const visit = (d) => {
+            for (const ent of fs.readdirSync(d, { withFileTypes: true })) {
+                const full = path.join(d, ent.name);
+                if (ent.isDirectory()) visit(full);
+                else if (ent.name.endsWith('.lua')) {
+                    const rel = path.relative(base, full).split(path.sep).join('/');
+                    out.push({ relativePath: dest ? `${dest}/${rel}` : rel, from: full });
+                }
+            }
+        };
+        visit(base);
+        return out;
+    }
+    const files = await listFilesRecursive(`${GITHUB_API_BASE}/${dir}`);
+    return files.map(f => ({ relativePath: dest ? `${dest}/${f.relativePath}` : f.relativePath, url: f.download_url }));
+}
+
+// Copies keep LF, as the files are committed; downloads use CRLF for the Windows checkout they were written for.
+function copyLocal(from, destPath) {
+    const content = fs.readFileSync(from, 'utf8').replace(/\r\n/g, '\n');
+    fs.mkdirSync(path.dirname(destPath), { recursive: true });
+    fs.writeFileSync(destPath, content, 'utf8');
 }
 
 async function main() {
@@ -199,31 +265,33 @@ async function main() {
                         ctx.xmlPath = destPath;
                     }
                 },
-                {
-                    title: 'Fetch lua file list',
-                    task: async (ctx) => {
-                        const colorGagsUrl = `${GITHUB_API_BASE}/skrypty/ui/gags/color`;
-                        ctx.luaFiles = await listFilesRecursive(colorGagsUrl);
-                    }
-                },
-                {
-                    title: 'Download lua files',
-                    task: (ctx, task) => task.newListr(
-                        ctx.luaFiles.map(file => ({
-                            title: file.relativePath,
-                            task: async () => {
-                                const destPath = path.join(rootDir, 'src', 'client', 'lua', ...file.relativePath.split('/'));
-                                await downloadFile(file.download_url, destPath, true);
-                            }
-                        })),
-                        { concurrent: true }
-                    )
-                }
             ], { concurrent: false })
         },
         {
+            title: 'Fetch lua file list',
+            task: async (ctx) => {
+                const repo = downloadFlag ? null : repoPath;
+                for (const source of SOURCES) {
+                    ctx.luaFiles.push(...await listSourceLua(source, repo));
+                }
+            }
+        },
+        {
+            title: downloadFlag ? 'Download lua files' : 'Copy lua files',
+            task: (ctx, task) => task.newListr(
+                ctx.luaFiles.map(file => ({
+                    title: file.relativePath,
+                    task: async () => {
+                        const destPath = luaDest(file.relativePath);
+                        if (file.url) await downloadFile(file.url, destPath, true);
+                        else copyLocal(file.from, destPath);
+                    }
+                })),
+                { concurrent: true }
+            )
+        },
+        {
             title: 'Apply lua fixes',
-            enabled: () => downloadFlag,
             task: () => {
                 const warnings = [];
                 for (const fix of LUA_FIXES) {
@@ -269,17 +337,20 @@ async function main() {
             }
         },
         {
-            title: 'Extract gags from XML',
+            title: 'Extract triggers from XML',
             task: async (ctx) => {
-                ctx.gags = await extractGags(ctx.xmlPath);
+                const xml = await parseXml(ctx.xmlPath);
+                ctx.trees = SOURCES.map(source => ({ source, tree: extractSubtree(xml, source) }));
             }
         },
         {
-            title: 'Write gags_lua.json',
+            title: 'Write trigger JSON',
             task: (ctx) => {
-                const outputPath = path.join(rootDir, 'src', 'client', 'scripts', 'gags_lua.json');
-                fs.mkdirSync(path.dirname(outputPath), { recursive: true });
-                fs.writeFileSync(outputPath, JSON.stringify(ctx.gags, null, 2));
+                for (const { source, tree } of ctx.trees) {
+                    const outputPath = path.join(rootDir, ...source.output.split('/'));
+                    fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+                    fs.writeFileSync(outputPath, JSON.stringify(tree, null, 2));
+                }
             }
         }
     ], {

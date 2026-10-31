@@ -158,6 +158,8 @@ Never trust exit codes from piped `yarn build`/`yarn test` on Windows — false 
 
 ## When you're porting from Lua
 
+Don't copy regexes out of `Arkadia.xml` by hand: the copies drift from upstream unnoticed. If the client needs to react to a line an upstream trigger already matches, move that trigger into the `skrypty/events` group upstream (Delwing/arkadia → tjurczyk/arkadia), have its function in `skrypty/events.lua` `raiseEvent(...)` before anything else, and have the Mudlet module subscribe to the event. Then run `node scripts/extract-gags.js <path-to-arkadia>` (or `--download`), which regenerates `src/client/scripts/events_lua.json` and `src/client/lua/events.lua`. Declare the event in `src/shared/events/clientEvents.ts` and `client.on(...)` it. `attackBeep.ts` (`attacked`) and `coverTimer.ts` (`maneuverAttempted`) work this way. Lua in that group may only use `raiseEvent` and the line API `luaGags.ts` emulates (`selectCurrentLine`, `selectString`, `fg`, `replace`, `resetFormat`, ...).
+
 Common substitutions:
 
 | Lua / Mudlet | Replacement |

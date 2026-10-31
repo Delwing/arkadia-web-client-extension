@@ -1,4 +1,5 @@
 import initAttackBeep from '@client/scripts/attackBeep';
+import registerLuaGagTriggers from '@client/scripts/luaGags';
 import Triggers from '@client/Triggers';
 import {refresh, subscribe} from '@modules/data/peopleStore';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
@@ -18,9 +19,18 @@ const MOCK_PEOPLE = [
   { name: 'Eamon', description: 'wysoki mezczyzna', guild: 'CKN' },
 ];
 
+// The attack lines come from upstream `skrypty/events` (events_lua.json), whose
+// lua raises `attacked`, so the test runs the real lua through luaGags.
 class FakeClient {
   Triggers = new Triggers(({} as unknown) as any);
-  sendEvent = jest.fn();
+  listeners: Record<string, ((...args: any[]) => void)[]> = {};
+  on = (event: string, cb: (...args: any[]) => void) => {
+    (this.listeners[event] ??= []).push(cb);
+    return () => {};
+  };
+  sendEvent = jest.fn((event: string, ...args: any[]) => {
+    (this.listeners[event] ?? []).forEach(cb => cb(...args));
+  });
 }
 
 describe('attack beep triggers', () => {
@@ -45,6 +55,7 @@ describe('attack beep triggers', () => {
     });
     characterStorage.setCharacter('TestChar');
     client = new FakeClient();
+    registerLuaGagTriggers((client as unknown) as any);
     initAttackBeep((client as unknown) as any);
     await refreshMock.mock.results[0]?.value;
     parse = (line: string) => Triggers.prototype.parseLine.call(client.Triggers, new AnsiAwareBuffer(line), '');
@@ -53,6 +64,22 @@ describe('attack beep triggers', () => {
     const lastCall = refreshMock.mock.results[refreshMock.mock.results.length - 1];
     await lastCall?.value;
     jest.clearAllMocks();
+  });
+
+  test('the attacked event carries the attacker and whether the attack is special', () => {
+    parse('Intia atakuje cie!');
+    parse("Przy ogluszajacym akompaniamencie okrzyku bojowego 'Za Morra!' Eamon rzuca sie na ciebie, wiazac cie walka.");
+    const attacked = client.sendEvent.mock.calls.filter(call => call[0] === 'attacked');
+    expect(attacked).toEqual([
+      ['attacked', 'Intia', false],
+      ['attacked', 'Eamon', true],
+    ]);
+  });
+
+  test('colours the special attack line red', () => {
+    const result = parse('Eamon z pierwotna wsciekloscia rzuca sie na ciebie, rozpoczynajac walke!');
+    const segments = (result as any).getSegments();
+    expect(segments.every((seg: any) => seg.state?.foreground)).toBe(true);
   });
 
   afterEach(() => {

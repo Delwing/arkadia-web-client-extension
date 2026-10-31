@@ -8,18 +8,6 @@ import { defaultSettings } from "@modules/core/defaultSettings";
 
 const RED = createColorFormat("#ff0000");
 
-function highlightAttack(buffer: AnsiAwareBuffer, upper?: string): AnsiAwareBuffer {
-    const text = buffer.text;
-    if (upper) {
-        const matchIndex = text.indexOf(upper);
-        if (matchIndex !== -1) {
-            buffer.replace([matchIndex, matchIndex + upper.length], upper.toUpperCase());
-        }
-    }
-    buffer.color([0, buffer.length], RED);
-    return buffer;
-}
-
 function highlightPhrase(buffer: AnsiAwareBuffer): AnsiAwareBuffer {
     const phrase = "atakuje cie";
     const text = buffer.text;
@@ -31,6 +19,13 @@ function highlightPhrase(buffer: AnsiAwareBuffer): AnsiAwareBuffer {
     return buffer;
 }
 
+/**
+ * Attack lines are matched upstream: the `skrypty/events` triggers in Arkadia.xml
+ * raise `attacked` (and colour the special-attack lines), and luaGags.ts runs them
+ * from `events_lua.json`, which `scripts/extract-gags.js` regenerates. The patterns
+ * used to be copied here by hand, and the copies drifted - two of them lost their
+ * attacker group, so those lines could never beep. New attack lines belong upstream.
+ */
 export default function initAttackBeep(client: Client) {
     const tag = "attackBeep";
     let enemyGuilds: string[] = [];
@@ -68,8 +63,7 @@ export default function initAttackBeep(client: Client) {
         return !!guild && enemyGuilds.includes(guild);
     }
 
-    const handleAttack = (line: AnsiAwareBuffer, matches: RegExpMatchArray, always: boolean): AnsiAwareBuffer => {
-        const attackerName = matches?.groups?.name
+    const handleAttack = (attackerName: string, always: boolean) => {
         const isEnemy = !!attackerName && shouldBeep(attackerName);
 
         // Fires for every attack line, whoever the attacker is — the
@@ -82,9 +76,6 @@ export default function initAttackBeep(client: Client) {
             // this event in the trigger editor means what it says on the label.
             client.sendEvent("enemy.attack", { attacker: attackerName ?? "" });
         }
-
-        const upper = matches?.groups?.upper
-        return highlightAttack(line, upper);
     };
 
     // Listen for settings changes
@@ -100,22 +91,9 @@ export default function initAttackBeep(client: Client) {
         applySettings(settings);
     });
 
-    // Plain attack lines beep only for enemy guilds
-    [
-        /(?<name>.*) atakuje cie!/,
-        /(?<name>.*) atakuje cie nie dajac ci czasu na skontrowanie swojego ataku!/,
-        /^Ku twojemu zdumieniu, (?<name>.*) pojawil sie nagle tuz obok ciebie!/,
-        /^Oczy (?<name>.*) zachodza woalem rytualnego transu, gdy jak blyskawica rzuca sie on na ciebie, rozniecajac burze Tanca Smierci!/,
-    ].forEach(p => client.Triggers.registerTrigger(p, (line, matches) => handleAttack(line, matches, false), tag));
-
-    // Special attacks only players can make beep for anyone, as in Mudlet
-    [
-        /^W oczach (?<name>.*) rozpala sie swiety ogien nienawisci i z imieniem Morra na ustach (?<upper>rzuca sie do walki z toba)!/,
-        /^(?<name>\w+(?: \w+){0,4}) z determinacja i pewnoscia siebie unosi swoja bron i (?<upper>naciera na ciebie)!/,
-        /^(?<name>\w+(?: \w+){0,4}) z pierwotna wsciekloscia (?<upper>rzuca sie na ciebie), rozpoczynajac walke!/,
-        /^(?<name>\w+(?: \w+){0,4}) z pelnym przebieglosci blyskiem w oku (?<upper>rzuca sie na ciebie)!/,
-        /^Przy ogluszajacym akompaniamencie okrzyku bojowego '[^']*' (?<name>\w+(?: \w+){0,4}) (?<upper>rzuca sie na ciebie), wiazac cie/
-    ].forEach(p => client.Triggers.registerTrigger(p, (line, matches) => handleAttack(line, matches, true), tag));
+    // Plain attack lines beep only for enemy guilds; special attacks only
+    // players can make beep for anyone, as in Mudlet.
+    client.on("attacked", (attacker, special) => handleAttack(attacker, !!special));
 
     client.Triggers.registerTrigger('atakuje cie!', (line) => {
         return highlightPhrase(line);
