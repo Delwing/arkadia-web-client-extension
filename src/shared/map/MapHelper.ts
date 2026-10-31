@@ -32,10 +32,11 @@ export interface MapFunctionalBind {
 }
 
 /**
- * A single room's worth of live map edits. Only the fields present are touched.
- * See {@link MapHelper.applyRoomChanges}.
+ * A single room's worth of live map edits, as accepted by `api.map.applyChanges`.
+ * Only the fields present are touched; everything else on the room is left alone.
  */
 export interface RoomChange {
+    /** Room to patch. Ignored if the map has no such room. */
     roomId: number;
     /**
      * What to do with the room:
@@ -46,13 +47,19 @@ export interface RoomChange {
     op?: 'patch' | 'upsert' | 'delete';
     /** Area to place a newly created room in. Only read when upserting. */
     area?: number;
+    /** Room name. */
     name?: string;
+    /** Symbol drawn in the room square (Mudlet's roomChar). */
     roomChar?: string;
+    /** Environment/colour id. */
     env?: number;
+    /** Pathfinding weight. */
     weight?: number;
+    /** Map coordinates. Moving a room needs the area geometry rebuild. */
     x?: number;
     y?: number;
     z?: number;
+    /** Replaces the room's exits wholesale. */
     exits?: Partial<Record<MapData.direction, number>>;
     /** Replaces the room's special exits wholesale. */
     specialExits?: Record<string, number>;
@@ -70,8 +77,8 @@ export interface RoomChange {
 /**
  * One area in the shape the renderer consumes — the same objects found in the
  * published `mapExport.json`. Coordinates are in **source orientation** (y-up,
- * as Mudlet stores them); {@link MapHelper.syncAreas} flips y on the way in,
- * exactly as `MapReader` does when it first builds the map.
+ * as Mudlet stores them); `api.map.syncAreas` flips y on the way in, exactly
+ * as `MapReader` does when it first builds the map.
  */
 export interface MapAreaData {
     areaId: string | number;
@@ -80,10 +87,22 @@ export interface MapAreaData {
     labels?: unknown[];
 }
 
-/** Tuning for {@link MapHelper.applyRoomChanges}; every rebuild defaults to on. */
+/**
+ * Tuning for `api.map.applyChanges`. Every rebuild defaults to `true`, which
+ * is always correct but heavier than a cosmetic edit needs.
+ */
 export interface ApplyChangesOptions {
+    /**
+     * Rebuild renderer geometry for affected areas. Required for anything that
+     * changes what is drawn (symbols, colours, exits). Default `true`.
+     */
     rebuildAreas?: boolean;
+    /**
+     * Rebuild the pathfinder. Only exits and weights affect routing, so a pure
+     * name/symbol change can skip it. Default `true`.
+     */
     rebuildPaths?: boolean;
+    /** Redraw the current view when done. Default `true`. */
     rerender?: boolean;
 }
 

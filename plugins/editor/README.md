@@ -188,39 +188,20 @@ Output will be in `dist/editor/`
 
 ## Type Definitions
 
-The file `plugin-api.d.ts` contains TypeScript type definitions for the Arkadia Plugin API. This file is **auto-generated** from the source code to maintain a single source of truth.
+The editor uses the same type definitions as the `@arkadia/plugin-types` package:
+`plugins/types/index.d.ts`, imported as a raw string with Vite's `?raw` syntax and
+injected into Monaco's TypeScript environment for autocomplete and hover documentation.
 
-### Regenerating Type Definitions
-
-When you update the Plugin API (changes to `src/client/PluginApi.ts`, `src/shared/types/Plugin.ts`, or related files), regenerate the type definitions:
+That file is **generated, not committed** (it is in `.gitignore`). It holds every type
+`src/client/PluginApi/index.ts` exports, with everything those types reference, taken
+from their source declarations (so the JSDoc in the source is what plugin authors see).
+Vite generates it: on every build, when it is missing under `yarn dev` or `yarn test`,
+and again under `yarn dev` whenever a file in `src/client/PluginApi/` changes. To
+regenerate it by hand (and build the npm tarball):
 
 ```bash
-yarn generate:plugin-types
+yarn build:types
 ```
-
-Or directly:
-
-```bash
-node scripts/generate-plugin-types.js
-```
-
-### Source Files
-
-The type definitions are extracted from:
-- `src/client/PluginApi.ts` - Main Plugin API interfaces with JSDoc documentation
-- `src/shared/types/Plugin.ts` - Core plugin types (PluginInfo, Plugin, LoadedPlugin)
-- `src/client/Triggers.ts` - Trigger-related types
-- `src/client/ansi/FormatState.ts` - Format state types for text styling
-
-### Manual Editing
-
-**Do not manually edit `plugin-api.d.ts`** - your changes will be overwritten the next time the file is regenerated. Instead:
-
-1. Update the JSDoc comments in the source files (e.g., `src/client/PluginApi.ts`)
-2. Run `yarn generate:plugin-types` to regenerate
-3. The updated types will be available in Monaco with full IntelliSense and hover documentation
-
-The type definitions are imported as a raw string using Vite's `?raw` syntax and injected into Monaco's TypeScript environment, providing full autocomplete and hover documentation for plugin developers.
 
 ## Future Enhancements
 

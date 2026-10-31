@@ -64,7 +64,7 @@ Type-only imports are still permitted (they erase at build time). A few UI types
 are still referenced this way from `src/client` and are tracked as follow-up
 cleanups — relocating them to `@shared` would make the boundary type-clean too:
 
-- `PluginApi.ts` — `MobileButtonSetting`, `ObjectListEntryFilter`/`EntryContext`/`FilterResult`
+- `PluginApi/macros.ts` — `MobileButtonSetting`
 - `ports/pluginHostPort.ts` — `PluginPopupConfig`
 
 ## The ports

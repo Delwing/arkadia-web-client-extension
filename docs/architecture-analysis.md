@@ -18,7 +18,7 @@
 | `src/web/main.ts` | **Done.** 193 lines; the stock UI is one React tree under `src/web/app/`. |
 | `src/shared/ansi/` empty directory | **Removed.** |
 | Tier 2 #1/#2 — `BaseCounter` + table helpers | **Partly done** — used by `kill`, `improveCounter`, `deliveryStats`, `deposits`, `prettyContainers`; `herbCounter`, `whoCount`, `przybywajaCount` still hand-roll theirs. |
-| `PluginApi.ts` | **Regressed** — 3,556 → 5,510. Still the top target. |
+| `PluginApi.ts` — 5,510 lines | **Done** (2026-10-31). `src/client/PluginApi/`: 30 files, one per domain (types + a `create*Api(ctx)` factory that owns its registrations and cleanup), largest `map.ts` (~620). `PluginApiImpl` is a ~150-line assembler. The plugin types are now generated entirely from source (#1433). |
 
 ## The shape of the problem
 
@@ -46,7 +46,6 @@ Line counts as of 2026-10-31; the "was" column is the 2026-07-27 reading.
 
 | File | Lines (was) | Distinct jobs crammed in | Split into |
 |---|---|---|---|
-| `src/client/PluginApi.ts` | **5,510** (3,675) | 25+ API domains + all type defs + cleanup tracking, in one class | `PluginApi/` dir: one file per API domain (Ui, Map, Events, Containers, People…), `types.ts`, a cleanup handler |
 | `src/client/scripts/knowledge.ts` | 2,835 (2,747) | data lookup + parsing + display + triggers + aliases + state machine | data layer / display / trigger-handlers |
 | `src/shared/map/MapHelper.ts` | 1,874 (911) | position tracking + trip planner + directions + rendering + GMCP | extract managers — **and move out of `@shared`** (see Tier 4) |
 | `src/client/ansi/FormatState.ts` | 1,483 (1,329) | color types + format state machine + `AnsiAwareBuffer` + ANSI parsing + hyperlinks | `colors`, `FormatState`, `AnsiAwareBuffer`, `AnsiParser` |
@@ -55,9 +54,7 @@ Line counts as of 2026-10-31; the "was" column is the 2026-07-27 reading.
 | `src/web/ObjectList.ts` | 1,197 (1,080) | view-mode renderers + event handlers + Picture-in-Picture sync + filters | `ObjectListCardRenderer`, `ObjectListEventHandlers`, `PictureInPictureSync` |
 | `src/web/options/FirebaseTab.tsx` | 1,091 (1,042) | auth + sync + metadata + persistence + UI | `useFirebaseAuth`, `useFirebaseSync`, split UI |
 
-**Highest leverage:** `PluginApi.ts`. Single worst offender and growing fastest; it's
-the *stable public surface* plugins depend on, and splitting by domain is mechanical
-and low-risk (each `create*Api()` factory is already self-contained).
+**Highest leverage:** `knowledge.ts`, now the largest file in `src/client`.
 
 ---
 
@@ -147,7 +144,7 @@ Co-locating related files is what makes the Tier-2 duplication visible and fixab
 
 ## Suggested sequence
 
-1. **Split `PluginApi.ts`** by domain — biggest file, fastest-growing, lowest risk.
+1. ~~Split `PluginApi.ts` by domain~~ — done 2026-10-31.
 2. **Finish `BaseCounter`** — migrate `herbCounter`, `whoCount` and `przybywajaCount`.
 3. **Remove sync v1** — takes most of `firebaseUnifiedSync.ts` with it.
 4. **Folder reorganization** of `scripts/` and web popups — makes remaining duplication self-evident.

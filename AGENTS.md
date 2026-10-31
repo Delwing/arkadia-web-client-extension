@@ -205,8 +205,8 @@ Most scripts in `src/client/scripts/` register triggers in their setup functions
 Settings and state are managed through `src/modules/core/` (storage, default settings, migrations). UI state for popups and timers lives directly in `src/web/` files.
 
 ### Plugin API
-- `src/client/PluginApi.ts` is the stable API surface exposed to external plugins
-- Types are auto-generated into `plugins/types/` via `yarn build:types`
+- `src/client/PluginApi/` is the stable API surface exposed to external plugins: one file per domain (`map.ts`, `ui/popups.ts`…), each with its types and a `create*Api(ctx)` factory that tracks and cleans up its own registrations; `PluginApiImpl.ts` assembles them
+- Types are auto-generated into `plugins/types/` via `yarn build:types`: every type `PluginApi/index.ts` exports, plus everything it references, straight from source (class members tagged `@internal` are left out)
 - Plugin registries (triggers, buttons, footer, location notes) in `src/modules/core/`
 - `src/client/PluginManager.ts` handles dynamic loading and lifecycle
 - See `plugins/examples/` for plugin structure

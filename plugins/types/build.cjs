@@ -2,7 +2,7 @@
  * Build script for plugin-types tarball
  *
  * This script:
- * 1. Generates index.d.ts from src/client/PluginApi.ts (single source of truth)
+ * 1. Generates index.d.ts from src/client/PluginApi/ (single source of truth)
  * 2. Creates a tarball for distribution
  */
 

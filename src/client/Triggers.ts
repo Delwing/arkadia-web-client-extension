@@ -3,24 +3,38 @@ import {AnsiAwareBuffer} from "@client/ansi/FormatState.ts";
 import {mayMatch, verifyMatch} from "@client/triggerPrefilter.ts";
 import type {LineTraceRecorder} from "@client/lineTrace.ts";
 
+/**
+ * Called when a trigger matches
+ * @param line - The line buffer, to modify or return as is
+ * @param matches - Regex match results
+ * @param type - Line type (e.g. "prompt", "info", "error")
+ * @param originalLine - The line's text as the game sent it, before any trigger changed it
+ * @returns The (modified) line, or null to suppress it
+ */
 export type TriggerCallback = (
     line: AnsiAwareBuffer,
     matches: RegExpMatchArray,
-    type: string, //TODO I guess we can try to list values
+    type: string,
     originalLine: string,
 ) => AnsiAwareBuffer | null;
 
+/** Custom match function for advanced trigger patterns; returns the matches, or undefined for no match */
 export type TriggerMatchFunction = (
     line: AnsiAwareBuffer,
     matches: RegExpMatchArray,
     type: string
 ) => RegExpMatchArray | undefined;
 
+/** One pattern: a substring, a regex, or a match function */
 export type TriggerSubPattern = string | RegExp | TriggerMatchFunction;
+/** A pattern, or a list of them, any of which matches */
 export type TriggerPattern = TriggerSubPattern | TriggerSubPattern[];
 
+/** Options for trigger behavior */
 export interface TriggerOptions {
+    /** Number of lines to keep child triggers active after the parent matches */
     stayOpenLines?: number;
+    /** Make regex and string patterns case-insensitive */
     caseInsensitive?: boolean;
 }
 
@@ -45,21 +59,28 @@ export function matchWhen(guard: (type: string, line: AnsiAwareBuffer) => boolea
     };
 }
 
+/**
+ * A registered trigger. Members tagged `@internal` are left out of the plugin
+ * types (plugins/types/generate-types.cjs).
+ */
 export class Trigger {
     /** How many faults to report per trigger before going quiet about it. */
     private static readonly MAX_REPORTED_FAULTS = 3;
 
-    id = Math.random().toString(36).slice(2);
+    /** Unique trigger ID */
+    readonly id: string = Math.random().toString(36).slice(2);
+    /** @internal */
     children: Map<string, Trigger> = new Map();
     private openInstances: number[] = [];
     private faultCount = 0;
 
+    /** @internal Triggers are made by registering them, not constructed. */
     constructor(
         private manager: Triggers,
-        public pattern: TriggerPattern,
-        public callback?: TriggerCallback,
-        public tag?: string,
-        public parent?: Trigger,
+        /** @internal */ public pattern: TriggerPattern,
+        /** @internal */ public callback?: TriggerCallback,
+        /** @internal */ public tag?: string,
+        /** @internal */ public parent?: Trigger,
         private options: TriggerOptions = {}
     ) {
         if (options.caseInsensitive) {
@@ -80,23 +101,38 @@ export class Trigger {
         return compile(pattern);
     }
 
+    /**
+     * Register a child trigger, tried on the lines the parent matches (and on the
+     * `stayOpenLines` after it)
+     * @param pattern - Pattern(s) to match
+     * @param callback - Function to call on match
+     * @param tag - Optional tag for grouping/removal
+     * @param options - Trigger options
+     */
     registerChild(
         pattern: TriggerPattern,
         callback?: TriggerCallback,
         tag?: string,
         options?: TriggerOptions
-    ) {
+    ): Trigger {
         const child = new Trigger(this.manager, pattern, callback, tag, this, options);
         this.children.set(child.id, child);
         return child;
     }
 
+    /**
+     * Register a child trigger that is removed after its first match
+     * @param pattern - Pattern(s) to match
+     * @param callback - Function to call on match
+     * @param tag - Optional tag for grouping/removal
+     * @param options - Trigger options
+     */
     registerOneTimeChild(
         pattern: TriggerPattern,
         callback: TriggerCallback,
         tag?: string,
         options?: TriggerOptions
-    ) {
+    ): Trigger {
         const child = this.registerChild(
             pattern,
             (line, matches, type, originalLine) => {
@@ -109,7 +145,7 @@ export class Trigger {
         return child;
     }
 
-    /** Human-readable identity for fault logs: the tag if there is one, plus the pattern(s). */
+    /** @internal Human-readable identity for fault logs: the tag if there is one, plus the pattern(s). */
     describe(): string {
         const patterns = Array.isArray(this.pattern) ? this.pattern : [this.pattern];
         const source = patterns
@@ -138,6 +174,8 @@ export class Trigger {
      * is held open by `stayOpenLines`, and every pattern is a regex whose prefilter rules
      * the line out. The line pass checks this first, so the ~1000 triggers that do not
      * apply to a given line cost one prefilter check each instead of a full execute.
+     *
+     * @internal
      */
     cannotMatch(plainLine: string): boolean {
         if (this.openInstances.length > 0) return false;
@@ -158,6 +196,7 @@ export class Trigger {
         return true;
     }
 
+    /** @internal */
     execute(line: AnsiAwareBuffer, type: string, originalText?: string, plainLine?: string): AnsiAwareBuffer | null {
         // Use pre-trimmed plainLine if provided, otherwise compute from originalText/line.text
         if (plainLine === undefined) {

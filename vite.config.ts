@@ -2,7 +2,9 @@
 import {defineConfig, type Plugin} from 'vite'
 import react from '@vitejs/plugin-react'
 import {resolve} from "path";
-import {execSync} from 'child_process';
+import {execFileSync, execSync} from 'child_process';
+import {existsSync} from 'fs';
+import {fileURLToPath} from 'url';
 
 const resolveGitInfo = (command: string, fallback: string) => {
     try {
@@ -62,6 +64,40 @@ function pageUrls(): Plugin {
     };
 }
 
+/**
+ * plugins/types/index.d.ts (and pluginUiShim.cjs) are generated from the source
+ * and not committed, while the editors import them (`?raw`). A build always
+ * regenerates them; dev and vitest generate them when missing, and the dev
+ * server again whenever the plugin API source changes.
+ */
+function pluginTypes(): Plugin {
+    const root = fileURLToPath(new URL('.', import.meta.url));
+    const generator = resolve(root, 'plugins/types/generate-types.cjs');
+    const output = resolve(root, 'plugins/types/index.d.ts');
+    const generate = () => execFileSync(process.execPath, [generator], {stdio: 'inherit'});
+    return {
+        name: 'plugin-types',
+        configResolved(config) {
+            if (config.command === 'build' || !existsSync(output)) generate();
+        },
+        configureServer(server) {
+            let timer: ReturnType<typeof setTimeout> | undefined;
+            const source = resolve(root, 'src/client/PluginApi');
+            server.watcher.on('change', (file) => {
+                if (!resolve(file).startsWith(source)) return;
+                clearTimeout(timer);
+                timer = setTimeout(() => {
+                    try {
+                        generate();
+                    } catch {
+                        // The generator has said what is wrong; keep serving the last good types
+                    }
+                }, 500);
+            });
+        },
+    };
+}
+
 const commitSha = resolveGitInfo('git rev-parse --short HEAD', 'unknown');
 const commitDate = resolveGitInfo('git log -1 --format=%cI', 'unknown');
 
@@ -69,6 +105,7 @@ export default defineConfig({
     plugins: [
         react(),
         pageUrls(),
+        pluginTypes(),
         {
             // What is live, for src/web/versionCheck.ts: an open page compares it
             // with the build it was loaded from.

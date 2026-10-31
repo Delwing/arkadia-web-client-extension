@@ -34,7 +34,7 @@ export async function destroy(): Promise<void> {
 Read before guessing - the API is large and most needs are already covered.
 
 1. **Types**: `node_modules/@arkadia/plugin-types/latest/index.d.ts`. Generated from
-   the client's own `PluginApi.ts`, so it is the exact current surface. It is
+   the client's own `PluginApi/` sources, so it is the exact current surface. It is
    big: grep it for the namespace you need (`interface TriggersApi`,
    `interface GmcpApi`, `registerPersistentPopup`, ...) instead of reading it
    whole. `ui.d.ts` next to it types the `@arkadia/ui` React components.

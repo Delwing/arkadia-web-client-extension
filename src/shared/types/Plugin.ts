@@ -21,7 +21,8 @@ export interface Plugin {
   /**
    * Optional stable id (`export const stableId = 'jubiler'`): the plugin's
    * storage and windows are kept under it instead of its URL, so they survive
-   * the plugin moving to another address. 1-64 letters, digits, '.', '_', '-'.
+   * the plugin moving to another address. 1-64 letters, digits, '.', '_', '-';
+   * ignored when another loaded plugin uses it.
    */
   stableId?: string
 

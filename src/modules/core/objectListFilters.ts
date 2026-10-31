@@ -8,7 +8,10 @@
  * object-list renderer (`src/web`) can share the single registry without a cross-layer import.
  */
 
-export interface ObjectData {
+import type { ObjectData } from "@shared/events";
+
+/** An object as the object list shows it: its GMCP data plus what the list adds */
+export interface ObjectListObject extends ObjectData {
     num: number;
     id?: string;
     desc?: string;
@@ -18,9 +21,10 @@ export interface ObjectData {
     attackers?: { num: number; id?: string }[];
 }
 
+/** Entry context provided to filters */
 export interface EntryContext {
     /** The object data from GMCP */
-    object: ObjectData;
+    object: ObjectListObject;
     /** The display number/shortcut for this entry */
     displayNum: number;
     /** Whether this is the avatar's current target */
@@ -37,6 +41,7 @@ export interface EntryContext {
     attackCommand: string;
 }
 
+/** Entry style modifications */
 export interface EntryStyle {
     /** Color for the description text (CSS color value) */
     descriptionColor?: string;
@@ -54,6 +59,7 @@ export interface EntryStyle {
     suffix?: string;
 }
 
+/** Entry content modifications */
 export interface EntryContent {
     /** Modified description text (replaces original if provided) */
     description?: string;
@@ -63,6 +69,7 @@ export interface EntryContent {
     numberLabel?: string;
 }
 
+/** Filter result - mutate this object to modify the entry */
 export interface FilterResult {
     /** Style modifications - mutate this object to add/change styles */
     style: EntryStyle;
@@ -91,6 +98,18 @@ export interface FilterResult {
  *
  * @param context Information about the object being rendered
  * @param result Current accumulated style and content (mutate this object)
+ *
+ * @example
+ * ```typescript
+ * const highlightDragons: ObjectListEntryFilter = (context, result) => {
+ *   if (context.rawDescription.toLowerCase().includes("smok")) {
+ *     result.style.descriptionColor = "#ff0000";
+ *     result.style.prefix = (result.style.prefix || "") + "🐉 ";
+ *   }
+ * };
+ *
+ * api.objectListFilters.register("dragons", highlightDragons, 10);
+ * ```
  */
 export type ObjectListEntryFilter = (context: EntryContext, result: FilterResult) => void | { stopPropagation: true };
 

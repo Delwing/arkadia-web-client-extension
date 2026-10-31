@@ -35,3 +35,7 @@ coverage/
 
 # yarn perf CPU profiles
 perf-results/
+
+# Generated from src/ by plugins/types/generate-types.cjs (vite build/dev/test, yarn build:types)
+/plugins/types/index.d.ts
+/plugins/types/pluginUiShim.cjs

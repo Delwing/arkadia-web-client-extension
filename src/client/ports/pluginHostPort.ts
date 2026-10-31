@@ -10,7 +10,7 @@ export type { UiSettings, PluginPopupConfig };
 /**
  * The UI host's React and the curated set of UI components handed to plugins
  * (`api.ui.react`, `api.ui.components`). Typed loosely here; the plugin-facing
- * shapes are declared in PluginApi.ts.
+ * shapes are declared in PluginApi/ui/kit.ts.
  */
 export interface PluginUiKit {
     React: unknown;

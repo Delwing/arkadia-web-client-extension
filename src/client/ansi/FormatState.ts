@@ -3,6 +3,7 @@ import mudletColorsJson from "@client/colors.json";
 
 const ESC = "\u001b";
 
+/** Hyperlink with callbacks */
 export interface FormatHyperlink {
     onClick?: (ev: MouseEvent) => void;
     onContextMenu?: (ev: MouseEvent) => void;  // right click
@@ -11,11 +12,13 @@ export interface FormatHyperlink {
     title?: string;
 }
 
+/** Indexed color (0-255) */
 export interface IndexedColor {
     space: "indexed";
     index: number;
 }
 
+/** RGB color */
 export interface RgbColor {
     space: "rgb";
     r: number;
@@ -23,11 +26,13 @@ export interface RgbColor {
     b: number;
 }
 
+/** Hexadecimal color */
 export interface HexColor {
     space: "hex";
     color: string;
 }
 
+/** Any of the color formats */
 export type FormatColor = IndexedColor | RgbColor | HexColor
 
 export type DimEasing = 'linear' | 'ease' | 'ease-in' | 'ease-out' | 'ease-in-out';
@@ -39,6 +44,7 @@ export interface DimEffect {
     easing?: DimEasing;    // defaults to 'ease-in-out'
 }
 
+/** Complete formatting state for text */
 export interface FormatStateSnapshot {
     foreground?: FormatColor;
     background?: FormatColor;
@@ -54,8 +60,10 @@ export interface FormatStateSnapshot {
     cssClass?: string;
 }
 
+/** Text range [start, end) for applying formatting */
 export type TextRange = [start: number, end: number];
 
+/** Buffer segment with text and optional formatting state */
 export interface BufferSegment {
     text: string;
     state?: FormatStateSnapshot;
@@ -412,6 +420,10 @@ function mapEditPosition(position: number, edit: BufferEdit, isStart: boolean): 
 /**
  * Buffer of text aware of ANSI formatting codes and hyperlink metadata.
  */
+/**
+ * A line of text with ANSI formatting: color and style information per
+ * character. Members tagged `@internal` are left out of the plugin types.
+ */
 export class AnsiAwareBuffer {
     private segments: BufferSegment[] = [];
     private _deleted = false;
@@ -437,6 +449,31 @@ export class AnsiAwareBuffer {
     private _edits: BufferEdit[] = [];
     private _editDepth = 0;
 
+    /**
+     * Create a new AnsiAwareBuffer
+     * @param initial - Initial text with ANSI codes, array of segments, or undefined
+     * @param state - Optional default formatting state
+     *
+     * @example
+     * // Create empty buffer
+     * const buffer = new AnsiAwareBuffer();
+     *
+     * // Create from plain text
+     * const buffer = new AnsiAwareBuffer("Hello world");
+     *
+     * // Create from text with default formatting
+     * const buffer = new AnsiAwareBuffer("Hello", api.colors.fromHex('#ff0000'));
+     *
+     * // Create from ANSI string
+     * const buffer = new AnsiAwareBuffer("\x1b[31mRed text\x1b[0m");
+     *
+     * // Create from segments
+     * const segments: BufferSegment[] = [
+     *   { text: "Hello ", state: api.colors.fromHex('#00ff00') },
+     *   { text: "world", state: api.colors.fromHex('#0000ff') }
+     * ];
+     * const buffer = new AnsiAwareBuffer(segments);
+     */
     constructor(initial?: string | BufferSegment[], state?: FormatStateSnapshot) {
         if (typeof initial === "string") {
             this.segments = parseAnsiSegments(initial, state);
@@ -453,10 +490,16 @@ export class AnsiAwareBuffer {
         }
     }
 
+    /**
+     * @internal
+     */
     get deleted(): boolean {
         return this._deleted;
     }
 
+    /**
+     * @internal
+     */
     markAsDeleted(): this {
         this._deleted = true;
         return this;
@@ -482,12 +525,18 @@ export class AnsiAwareBuffer {
         }
     }
 
+    /**
+     * Create a deep copy of this buffer
+     */
     clone(): AnsiAwareBuffer {
         const copy = new AnsiAwareBuffer(this.getSegments());
         copy.flair = this.flair;
         return copy;
     }
 
+    /**
+     * The plain text content without formatting
+     */
     get text(): string {
         if (this._textCache === null) {
             this._textCache = this.segments.map(segment => segment.text).join("");
@@ -495,6 +544,9 @@ export class AnsiAwareBuffer {
         return this._textCache;
     }
 
+    /**
+     * The total character length
+     */
     get length(): number {
         if (this._lengthCache === null) {
             let length = 0;
@@ -504,6 +556,9 @@ export class AnsiAwareBuffer {
         return this._lengthCache;
     }
 
+    /**
+     * Clear all content from the buffer
+     */
     clear(): this {
         this.recordEdit(0, this.length, () => {
             this.segments = [];
@@ -518,6 +573,8 @@ export class AnsiAwareBuffer {
      * still reads `original`, carries on when it was already anchored to it, and
      * stops otherwise — the buffer was rewritten in a way nothing recorded, so
      * `mapOriginalRange` can no longer place original offsets.
+     *
+     * @internal
      */
     trackEditsFrom(original: string): this {
         if (this.text === original) {
@@ -530,7 +587,7 @@ export class AnsiAwareBuffer {
         return this;
     }
 
-    /** The text `trackEditsFrom` anchored to, or null while edits are untracked. */
+    /** @internal The text `trackEditsFrom` anchored to, or null while edits are untracked. */
     get trackedOriginal(): string | null {
         return this._editBase;
     }
@@ -545,6 +602,8 @@ export class AnsiAwareBuffer {
      * range starts or ends inside rewritten text, it keeps the same offset into
      * the rewrite, clamped to its length, so recolouring (same text replaced)
      * keeps the range exact. An untracked buffer returns the range unchanged.
+     *
+     * @internal
      */
     mapOriginalRange(range: TextRange): TextRange {
         if (this._editBase === null || this._edits.length === 0) return range;
@@ -582,7 +641,13 @@ export class AnsiAwareBuffer {
         }
     }
 
-    replace(range: [number, number], text: string, state?: FormatStateSnapshot): this {
+    /**
+     * Replace text in a range
+     * @param range - [start, end] indices
+     * @param text - New text to insert
+     * @param state - Optional formatting to apply
+     */
+    replace(range: TextRange, text: string, state?: FormatStateSnapshot): this {
         const [start, end] = range;
         this.assertRange(start, end);
         this.recordEdit(start, end - start, () => {
@@ -594,7 +659,12 @@ export class AnsiAwareBuffer {
         return this;
     }
 
-    replaceBuffer(range: [number, number], buffer: AnsiAwareBuffer): this {
+    /**
+     * Replace a range with another buffer, keeping its formatting
+     * @param range - [start, end] indices
+     * @param buffer - Buffer to put in its place
+     */
+    replaceBuffer(range: TextRange, buffer: AnsiAwareBuffer): this {
         const [start, end] = range;
         this.assertRange(start, end);
         this.recordEdit(start, end - start, () => {
@@ -605,6 +675,12 @@ export class AnsiAwareBuffer {
         return this;
     }
 
+    /**
+     * Insert text at an index
+     * @param index - Position to insert at
+     * @param text - Text to insert
+     * @param state - Optional formatting to apply
+     */
     insert(index: number, text: string, state?: FormatStateSnapshot): this {
         if (text.length === 0) return this;
         this.assertIndex(index, true);
@@ -615,6 +691,11 @@ export class AnsiAwareBuffer {
         return this;
     }
 
+    /**
+     * Insert another buffer at an index
+     * @param index - Position to insert at
+     * @param buffer - Buffer to insert
+     */
     insertBuffer(index: number, buffer: AnsiAwareBuffer): this {
         if (buffer.length === 0) return this;
         this.assertIndex(index, true);
@@ -643,11 +724,19 @@ export class AnsiAwareBuffer {
         this.normalizeSegments();
     }
 
+    /**
+     * Add text to the beginning of the line, formatted like the text it is put in
+     * front of unless `state` is given
+     */
     prefix(text: string, state?: FormatStateSnapshot): this {
         this.insert(0, text, state ?? {});
         return this;
     }
 
+    /**
+     * Add text to the end of the line, formatted like the text before it unless
+     * `state` is given
+     */
     suffix(text: string, state?: FormatStateSnapshot): this {
         this.insert(this.length, text, state ?? {});
         return this;
@@ -678,27 +767,49 @@ export class AnsiAwareBuffer {
         this.normalizeSegments();
     }
 
+    /**
+     * Add text to the end of the line
+     * @param text - Text to append
+     * @param state - Optional formatting to apply
+     */
     append(text: string, state?: FormatStateSnapshot): this {
         this.insert(this.length, text, state);
         return this;
     }
 
+    /**
+     * Append another buffer to the end
+     * @param buffer - Buffer to append
+     */
     appendBuffer(buffer: AnsiAwareBuffer): this {
         this.insertBuffer(this.length, buffer);
         return this;
     }
 
+    /**
+     * Add text to the beginning of the line
+     * @param text - Text to prepend
+     * @param state - Optional formatting to apply
+     */
     prepend(text: string, state?: FormatStateSnapshot): this {
         this.insert(0, text, state);
         return this;
     }
 
+    /**
+     * Prepend another buffer to the beginning
+     * @param buffer - Buffer to prepend
+     */
     prependBuffer(buffer: AnsiAwareBuffer): this {
         this.insertBuffer(0, buffer);
         return this;
     }
 
-    remove(range: [number, number]): this {
+    /**
+     * Remove text in a range
+     * @param range - [start, end] indices
+     */
+    remove(range: TextRange): this {
         const [start, end] = range;
         this.assertRange(start, end);
         if (start === end) return this;
@@ -731,6 +842,8 @@ export class AnsiAwareBuffer {
 
     /**
      * Returns hyperlink-aware text segments for further processing.
+     *
+     * @internal
      */
     toHyperlinkSegments(): { text: string; hyperlink?: FormatHyperlink }[] {
         const segments: { text: string; hyperlink?: FormatHyperlink }[] = [];
@@ -746,6 +859,11 @@ export class AnsiAwareBuffer {
         return segments;
     }
 
+    /**
+     * Apply color/formatting to a text range
+     * @param range - [start, end] indices
+     * @param color - Color index (0-255) or full FormatStateSnapshot
+     */
     color(range: TextRange, color: number | FormatStateSnapshot): this {
         const style = this.prepareStyle(color);
         const [start, end] = range;
@@ -782,6 +900,21 @@ export class AnsiAwareBuffer {
         return this;
     }
 
+    /**
+     * Apply color/formatting to specific words throughout the buffer
+     * @param words - Single word or array of words to colorize
+     * @param color - Color index (0-255) or full FormatStateSnapshot
+     * @param options - Search options (caseInsensitive)
+     *
+     * @example
+     * ```typescript
+     * // Color a single word
+     * line.colorWords("gold", api.colors.fromHex('#ffd700'));
+     *
+     * // Color multiple words
+     * line.colorWords(["red", "blue"], 196, { caseInsensitive: true });
+     * ```
+     */
     colorWords(
         words: string | string[],
         color: number | FormatStateSnapshot,
@@ -1384,6 +1517,16 @@ export class AnsiAwareBuffer {
      * @param range - The text range to make clickable [start, end]
      * @param options - Link options including onClick, onContextMenu (right-click), and title
      * @returns this buffer for chaining
+     *
+     * @example
+     * ```typescript
+     * const text = "Click here";
+     * const start = line.text.indexOf(text);
+     * line.createLink([start, start + text.length], {
+     *   onClick: () => api.output.print("Clicked!"),
+     *   title: "Click to execute"
+     * });
+     * ```
      */
     createLink(
         range: TextRange,
@@ -1435,6 +1578,14 @@ export class AnsiAwareBuffer {
      * @param options - Link options including onClick, onContextMenu (right-click), and title
      * @param searchOptions - Optional search configuration (case insensitive)
      * @returns this buffer for chaining
+     *
+     * @example
+     * ```typescript
+     * line.createLinksForText("potion", {
+     *   onClick: () => api.output.print("Use potion"),
+     *   title: "Click to use"
+     * }, { caseInsensitive: true });
+     * ```
      */
     createLinksForText(
         text: string,
