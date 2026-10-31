@@ -8,6 +8,7 @@ import {
     normalizeLuaGagsColors,
     normalizeLuaGagsDeleteLines,
 } from "@client/luaGagsSettings";
+import { registerDuplicateToMain } from "./duplicateToMain";
 
 const COLOR_WHITE = createColorFormat("#ffffff");
 const COLOR_GREEN = createColorFormat("#00ff00");
@@ -117,8 +118,36 @@ function formatDamageSpellOnOthers(line: AnsiAwareBuffer, spellName: string, dmg
     return formatSpellOnOthers(line, `${spellName} ${damageLevel(dmgText)}/6`, target);
 }
 
+// Offensive spells landing on you or on somebody else. The combat window
+// swallows these lines like any other combat message, which hides the hits of
+// a fight you follow in the main window - so, unless switched off from the
+// combat window, a copy is echoed back to the main output.
+const SPELL_HITS_TO_MAIN_TAG = "spell-hits";
+const spellHitPatterns: RegExp[] = [];
+let spellHitsToMain = true;
+
+/** Whether spell hits redirected to the combat window are also copied to the main window. */
+export function setSpellHitsToMain(enabled: boolean): void {
+    spellHitsToMain = enabled;
+}
+
+function spellHit(pattern: RegExp): RegExp {
+    spellHitPatterns.push(pattern);
+    return pattern;
+}
+
 export default function initSpells(client: Client) {
     const tag = "spells";
+
+    spellHitPatterns.length = 0;
+    registerDuplicateToMain({
+        tag: SPELL_HITS_TO_MAIN_TAG,
+        match: (_line, _type, originalText) => {
+            if (!spellHitsToMain) return false;
+            const plain = originalText.replace(/s+$/, "");
+            return spellHitPatterns.some(pattern => pattern.test(plain));
+        },
+    });
 
     // === BARRIERS ===
 
@@ -239,14 +268,14 @@ export default function initSpells(client: Client) {
 
     // Kula ognia - on me
     client.Triggers.registerTrigger(
-        /^Czujesz najpierw zapach siarki, a potem niewiadomo skad wylatuje kula zywego ognia i uderza o podloze .+?\! Pocisk eksploduje fala plomieni, ktore parza twoje cialo, zadajac (?<dmg>.+?) bol\.$/,
+        spellHit(/^Czujesz najpierw zapach siarki, a potem niewiadomo skad wylatuje kula zywego ognia i uderza o podloze .+?\! Pocisk eksploduje fala plomieni, ktore parza twoje cialo, zadajac (?<dmg>.+?) bol\.$/),
         (line, matches) => formatDamageSpellOnMe(line, "KULA OGNIA", matches.groups?.dmg ?? ""),
         tag
     );
 
     // Kula ognia - on others
     client.Triggers.registerTrigger(
-        /^Czujesz najpierw zapach siarki, a potem niewiadomo skad wylatuje kula zywego ognia i uderza z impetem o podloze! Pocisk eksploduje fala plomieni, ktore dosiegaja (?<cel>.+)\.$/,
+        spellHit(/^Czujesz najpierw zapach siarki, a potem niewiadomo skad wylatuje kula zywego ognia i uderza z impetem o podloze! Pocisk eksploduje fala plomieni, ktore dosiegaja (?<cel>.+)\.$/),
         (line, matches) => formatSpellOnOthers(line, "KULA OGNIA", matches.groups?.cel),
         tag
     );
@@ -255,14 +284,14 @@ export default function initSpells(client: Client) {
 
     // Kwasowa strzala - on me
     client.Triggers.registerTrigger(
-        /^W powietrzu formuje sie zielonkawa mgielka, ktora po chwili materializuje sie w mknaca z sykiem prosto w ciebie kwasowa strzale! Jest juz za pozno by zejsc z toru pocisku, ktory wbija ci sie w .+? a zracy kwas pali i trawi twe cialo\.$/,
+        spellHit(/^W powietrzu formuje sie zielonkawa mgielka, ktora po chwili materializuje sie w mknaca z sykiem prosto w ciebie kwasowa strzale! Jest juz za pozno by zejsc z toru pocisku, ktory wbija ci sie w .+? a zracy kwas pali i trawi twe cialo\.$/),
         (line) => formatSpellOnMe(line, "KWASOWA STRZALA"),
         tag
     );
 
     // Kwasowa strzala - on others
     client.Triggers.registerTrigger(
-        /^W powietrzu formuje sie zielonkawa mgielka, ktora po chwili materializuje sie w mknaca z sykiem prosto w (?<cel>.+?) kwasowa strzale! Pocisk wbija (?:mu|jej) sie w .+? a zracy kwas pali i trawi (?:jego|jej) cialo\.$/,
+        spellHit(/^W powietrzu formuje sie zielonkawa mgielka, ktora po chwili materializuje sie w mknaca z sykiem prosto w (?<cel>.+?) kwasowa strzale! Pocisk wbija (?:mu|jej) sie w .+? a zracy kwas pali i trawi (?:jego|jej) cialo\.$/),
         (line, matches) => formatSpellOnOthers(line, "KWASOWA STRZALA", matches.groups?.cel),
         tag
     );
@@ -271,14 +300,14 @@ export default function initSpells(client: Client) {
 
     // Lodowy wicher - on me
     client.Triggers.registerTrigger(
-        /^Nagle wokol zaczyna swiszczec lodowaty wicher\. Przejmujace podmuchy uderzaja prosto w ciebie, chloszczac twoje cialo i pokrywajac je (?<dmg>.+?) odmrozeniami\.$/,
+        spellHit(/^Nagle wokol zaczyna swiszczec lodowaty wicher\. Przejmujace podmuchy uderzaja prosto w ciebie, chloszczac twoje cialo i pokrywajac je (?<dmg>.+?) odmrozeniami\.$/),
         (line, matches) => formatDamageSpellOnMe(line, "LODOWY WICHER", matches.groups?.dmg ?? ""),
         tag
     );
 
     // Lodowy wicher - on others
     client.Triggers.registerTrigger(
-        /^Nagle wokol zaczyna swiszczec lodowaty wicher, ktory koncentruje sie na (?<cel>.+?)\. Przejmujace podmuchy chloszcza (?:jego|jej) cialo, pokrywajac je (?<dmg>.+?) odmrozeniami\.$/,
+        spellHit(/^Nagle wokol zaczyna swiszczec lodowaty wicher, ktory koncentruje sie na (?<cel>.+?)\. Przejmujace podmuchy chloszcza (?:jego|jej) cialo, pokrywajac je (?<dmg>.+?) odmrozeniami\.$/),
         (line, matches) => formatDamageSpellOnOthers(line, "LODOWY WICHER", matches.groups?.dmg ?? "", matches.groups?.cel),
         tag
     );
@@ -348,14 +377,14 @@ export default function initSpells(client: Client) {
 
     // Magiczny pocisk - on me
     client.Triggers.registerTrigger(
-        /^Spostrzegasz ostry rozblysk swiatla i zaraz potem wylatujaca z niego salwe jasnoniebieskich, migocacych pociskow, ktore z niewyobrazalna predkoscia mkna w twoja strone\. Straszliwy bol rozlewa sie po twych czlonkach, gdy kilka z nich trafia cie (?<dmg>.+)\.$/,
+        spellHit(/^Spostrzegasz ostry rozblysk swiatla i zaraz potem wylatujaca z niego salwe jasnoniebieskich, migocacych pociskow, ktore z niewyobrazalna predkoscia mkna w twoja strone\. Straszliwy bol rozlewa sie po twych czlonkach, gdy kilka z nich trafia cie (?<dmg>.+)\.$/),
         (line, matches) => formatDamageSpellOnMe(line, "MAGICZNY POCISK", matches.groups?.dmg ?? ""),
         tag
     );
 
     // Magiczny pocisk - on others
     client.Triggers.registerTrigger(
-        /^Spostrzegasz ostry rozblysk swiatla i zaraz potem wylatujaca z niego salwe jasnoniebieskich, migocacych pociskow, ktore z niewyobrazalna predkoscia mkna w strone (?<cel>.+?)\. Glosny krzyk ofiary przeszywa komnate, gdy kilka z nich trafia (?:ja|go) (?<dmg>.+)\.$/,
+        spellHit(/^Spostrzegasz ostry rozblysk swiatla i zaraz potem wylatujaca z niego salwe jasnoniebieskich, migocacych pociskow, ktore z niewyobrazalna predkoscia mkna w strone (?<cel>.+?)\. Glosny krzyk ofiary przeszywa komnate, gdy kilka z nich trafia (?:ja|go) (?<dmg>.+)\.$/),
         (line, matches) => formatDamageSpellOnOthers(line, "MAGICZNY POCISK", matches.groups?.dmg ?? "", matches.groups?.cel),
         tag
     );
@@ -399,14 +428,14 @@ export default function initSpells(client: Client) {
 
     // Pocisk magii smierci - on me
     client.Triggers.registerTrigger(
-        /^W powietrzu formuje sie czarna blyskawica, ktora natychmiast rusza w twoja strone! Promien mrocznej energii z hukiem uderza cie w (?:korpus|glowe|nogi|lewe ramie|prawe ramie) (?<dmg>.+?)\. Czujesz, jak opuszczaja cie sily zyciowe, a przed oczami pojawia sie obraz skowyczacej otchlani, ktora probuje cie pochlonac\.$/,
+        spellHit(/^W powietrzu formuje sie czarna blyskawica, ktora natychmiast rusza w twoja strone! Promien mrocznej energii z hukiem uderza cie w (?:korpus|glowe|nogi|lewe ramie|prawe ramie) (?<dmg>.+?)\. Czujesz, jak opuszczaja cie sily zyciowe, a przed oczami pojawia sie obraz skowyczacej otchlani, ktora probuje cie pochlonac\.$/),
         (line, matches) => formatDamageSpellOnMe(line, "CZARNA BLYSKAWICA", matches.groups?.dmg ?? ""),
         tag
     );
 
     // Pocisk magii smierci - on others
     client.Triggers.registerTrigger(
-        /^W powietrzu formuje sie czarna blyskawica, ktora natychmiast rusza w strone (?<cel>.+?)\. Promien mrocznej energii z hukiem uderza (?:go|ja) w (?:lewe ramie|prawe ramie|korpus|glowe|nogi) (?<dmg>.+?) i powodujac, ze na moment zamiera (?:on|ona) z grymasem bolu na twarzy\.$/,
+        spellHit(/^W powietrzu formuje sie czarna blyskawica, ktora natychmiast rusza w strone (?<cel>.+?)\. Promien mrocznej energii z hukiem uderza (?:go|ja) w (?:lewe ramie|prawe ramie|korpus|glowe|nogi) (?<dmg>.+?) i powodujac, ze na moment zamiera (?:on|ona) z grymasem bolu na twarzy\.$/),
         (line, matches) => formatDamageSpellOnOthers(line, "CZARNA BLYSKAWICA", matches.groups?.dmg ?? "", matches.groups?.cel),
         tag
     );

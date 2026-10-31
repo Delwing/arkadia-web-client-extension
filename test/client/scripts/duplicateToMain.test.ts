@@ -3,7 +3,7 @@ import initCombatWindow, {
     setCombatRedirectSetting,
 } from '@client/scripts/combatWindow';
 import registerLuaGagTriggers from '@client/scripts/luaGags';
-import initSpells from '@client/scripts/spells';
+import initSpells, { setSpellHitsToMain } from '@client/scripts/spells';
 import {
     registerDuplicateToMain,
     resetDuplicateToMainRules,
@@ -144,6 +144,48 @@ describe('duplicate to main window', () => {
 
     setCombatRedirectSetting('combat.others', false);
   });
+  test('a spell hit on you is redirected and copied to the main window', () => {
+    const result = parse(
+      'Nagle wokol zaczyna swiszczec lodowaty wicher. Przejmujace podmuchy uderzaja prosto w ciebie, chloszczac twoje cialo i pokrywajac je dotkliwymi odmrozeniami.',
+      'combat.avatar',
+    );
+
+    expect(result).toBeNull();
+    expect(getCombatHistory()).toHaveLength(1);
+    expect(client.print).toHaveBeenCalledTimes(1);
+    expect(client.print.mock.calls[0][0].text).toContain('LODOWY WICHER 3/6');
+  });
+
+  test('a spell hit on somebody else is copied to the main window', () => {
+    setCombatRedirectSetting('combat.others', true);
+
+    const result = parse(
+      'Czujesz najpierw zapach siarki, a potem niewiadomo skad wylatuje kula zywego ognia i uderza z impetem o podloze! Pocisk eksploduje fala plomieni, ktore dosiegaja Orka.',
+      'combat.others',
+    );
+
+    expect(result).toBeNull();
+    expect(client.print).toHaveBeenCalledTimes(1);
+    expect(client.print.mock.calls[0][0].text).toContain('KULA OGNIA');
+
+    setCombatRedirectSetting('combat.others', false);
+  });
+
+  test('spell hits stay in the combat window when switched off', () => {
+    setSpellHitsToMain(false);
+
+    const result = parse(
+      'Nagle wokol zaczyna swiszczec lodowaty wicher. Przejmujace podmuchy uderzaja prosto w ciebie, chloszczac twoje cialo i pokrywajac je dotkliwymi odmrozeniami.',
+      'combat.avatar',
+    );
+
+    expect(result).toBeNull();
+    expect(getCombatHistory()).toHaveLength(1);
+    expect(client.print).not.toHaveBeenCalled();
+
+    setSpellHitsToMain(true);
+  });
+
   test('the copy is independent of the deleted original', () => {
     parse('Ork zwinnym ruchem wytraca ci miecz.', 'combat.avatar');
 

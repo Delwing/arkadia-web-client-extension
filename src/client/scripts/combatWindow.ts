@@ -66,7 +66,7 @@ export default function initCombatWindow(client: Client, aliases?: { pattern: Re
             // Return empty matches to indicate we matched
             return [] as unknown as RegExpMatchArray;
         },
-        (line: AnsiAwareBuffer, _matches: RegExpMatchArray, type: string) => {
+        (line: AnsiAwareBuffer, _matches: RegExpMatchArray, type: string, originalText: string) => {
             if (!isCombatType(type)) return line;
 
             // Add to combat history
@@ -74,7 +74,7 @@ export default function initCombatWindow(client: Client, aliases?: { pattern: Re
 
             // Messages too important to hide behind the popup get a copy echoed
             // into the main window; the redirect below is unaffected.
-            const duplicate = resolveDuplicateToMain(line, type);
+            const duplicate = resolveDuplicateToMain(line, type, originalText);
             if (duplicate) client.print(duplicate);
 
             // Mark as deleted to prevent showing in main window

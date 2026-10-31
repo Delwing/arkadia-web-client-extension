@@ -14,13 +14,14 @@ import { AnsiAwareBuffer } from "../ansi/FormatState";
  *
  * Matching runs on the line as the redirect sees it — i.e. after gags and
  * colouring have rewritten it — so rules match the decorated text (`[ BRON ]`)
- * rather than the raw game output.
+ * rather than the raw game output. Predicates also get the line as the MUD
+ * sent it, for rules keyed on the game text itself.
  */
 export type DuplicateToMainRule = {
     /** Identifies the rule so it can be replaced or removed. */
     tag: string;
     /** Claims a redirected line: a pattern on its text, or a custom predicate. */
-    match: RegExp | ((line: AnsiAwareBuffer, type: string) => boolean);
+    match: RegExp | ((line: AnsiAwareBuffer, type: string, originalText: string) => boolean);
     /**
      * Builds what the main window shows. Defaults to a copy of the redirected
      * line; return null to print nothing.
@@ -85,10 +86,11 @@ export function resetDuplicateToMainRules(): void {
 export function resolveDuplicateToMain(
     line: AnsiAwareBuffer,
     type: string,
+    originalText: string = line.originalText ?? line.text,
 ): AnsiAwareBuffer | string | null {
     for (const rule of rules) {
         const matched = typeof rule.match === "function"
-            ? rule.match(line, type)
+            ? rule.match(line, type, originalText)
             : rule.match.test(line.text);
         if (!matched) continue;
         // clone() so the copy is independent of the buffer the redirect keeps

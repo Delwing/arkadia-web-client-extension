@@ -10,7 +10,9 @@ import {
     CombatEntry,
     CombatMessageType
 } from '../client/scripts/combatWindow';
+import { setSpellHitsToMain } from '../client/scripts/spells';
 import { HeaderButton } from '@web-ui/primitives';
+import type { WindowSettingField } from './layout/windowSettings';
 
 const POPUP_ID = 'popup:combat';
 const DISPLAY_LIMIT = 200;
@@ -29,6 +31,11 @@ type ToggleConfig = {
     type: CombatMessageType;
 };
 
+// Spell hits are redirected like any combat line; by default a copy stays in the main window.
+const COMBAT_SETTINGS_FIELDS: WindowSettingField[] = [
+    { type: 'toggle', key: 'spellsToMain', label: 'Czary także w głównym oknie', default: true },
+];
+
 const TOGGLES: ToggleConfig[] = [
     { label: "Swoja", type: "combat.avatar" },
     { label: "Drużyny", type: "combat.team" },
@@ -44,6 +51,11 @@ const CombatPopup: React.FC = () => {
     const [showAvatar, setShowAvatar] = usePopupSetting(POPUP_ID, 'showAvatar', true);
     const [showTeam, setShowTeam] = usePopupSetting(POPUP_ID, 'showTeam', true);
     const [showOthers, setShowOthers] = usePopupSetting(POPUP_ID, 'showOthers', true);
+    const [spellsToMain] = usePopupSetting(POPUP_ID, 'spellsToMain', true);
+
+    useEffect(() => {
+        setSpellHitsToMain(spellsToMain);
+    }, [spellsToMain]);
 
     // Sync toggle states with redirect settings - only capture when popup is open
     useEffect(() => {
@@ -174,6 +186,7 @@ const CombatPopup: React.FC = () => {
             className="combat-popup"
             bodyClassName="combat-popup-body"
             headerActions={headerActions}
+            settingsFields={COMBAT_SETTINGS_FIELDS}
         >
             <div className="combat-popup__messages" ref={containerRef}>
                 {displayedMessages.length === 0 ? (

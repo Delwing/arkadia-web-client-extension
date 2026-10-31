@@ -12,6 +12,10 @@ const ORDINARY_HIT = 'Lekko ranisz Orka mieczem.';
 const WEAPON_KNOCKED_OFF = 'Ork zwinnym ruchem wytraca ci miecz.';
 const CAN_WIELD_AGAIN =
     "Czujesz, ze efekt dzialania czaru 'rozbrojenie postaci' konczy sie i powoli odzyskujesz czucie w swoich dloniach.";
+const SPELL_HIT =
+    'Nagle wokol zaczyna swiszczec lodowaty wicher. Przejmujace podmuchy uderzaja prosto w ciebie, chloszczac twoje cialo i pokrywajac je dotkliwymi odmrozeniami.';
+const SPELL_HIT_OTHER =
+    'Czujesz najpierw zapach siarki, a potem niewiadomo skad wylatuje kula zywego ognia i uderza z impetem o podloze! Pocisk eksploduje fala plomieni, ktore dosiegaja Orka.';
 
 // Opens the combat window, which is what turns the redirect on: while it is
 // open, combat lines are captured by the popup instead of the main output.
@@ -76,6 +80,30 @@ test.describe('Combat window duplicate to main', () => {
 
         await expect(combatWindow.locator('.combat-popup__message')).toHaveCount(1);
         await waitForOutputContaining(page, 'Mozesz dobyc broni');
+    });
+
+    test('spell hits reach the main window unless switched off in the cog', async ({page}) => {
+        await setup(page);
+        const combatWindow = await openCombatWindow(page);
+        const mainOutput = page.locator('#main_text_output_msg_wrapper');
+        const messages = combatWindow.locator('.combat-popup__message');
+
+        await pushText(page, SPELL_HIT, {type: 'combat.avatar'});
+
+        // Default: redirected to the popup and copied to the main window.
+        await expect(messages).toHaveCount(1);
+        await expect(messages.first()).toContainText('LODOWY WICHER');
+        await waitForOutputContaining(page, 'lodowaty wicher');
+
+        await combatWindow.locator('.panel-button--settings').click();
+        const panel = page.locator('.window-settings');
+        await panel.locator('.window-settings__toggle', {hasText: 'Czary także w głównym oknie'}).click();
+
+        await pushText(page, SPELL_HIT_OTHER, {type: 'combat.others'});
+
+        await expect(messages).toHaveCount(2);
+        await expect(messages.last()).toContainText('KULA OGNIA');
+        await expect(mainOutput).not.toContainText('kula zywego ognia');
     });
 
     test('with the redirect off the line is shown once, in the main window', async ({page}) => {
