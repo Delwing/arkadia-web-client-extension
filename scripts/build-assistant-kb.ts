@@ -1321,7 +1321,6 @@ const DEV_DOCS = [
     'docs/AUDIO_SYSTEM.md',
     'docs/CLIENT_UI_DECOUPLING.md',
     'docs/SCRIPT_TESTING.md',
-    'docs/architecture-analysis.md',
 ];
 
 function buildDocs(): DocEntry[] {

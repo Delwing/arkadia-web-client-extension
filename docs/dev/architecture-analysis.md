@@ -19,6 +19,7 @@
 | `src/shared/ansi/` empty directory | **Removed.** |
 | Tier 2 #1/#2 — `BaseCounter` + table helpers | **Partly done** — used by `kill`, `improveCounter`, `deliveryStats`, `deposits`, `prettyContainers`; `herbCounter`, `whoCount`, `przybywajaCount` still hand-roll theirs. |
 | `PluginApi.ts` — 5,510 lines | **Done** (2026-10-31). `src/client/PluginApi/`: 30 files, one per domain (types + a `create*Api(ctx)` factory that owns its registrations and cleanup), largest `map.ts` (~620). `PluginApiImpl` is a ~150-line assembler. The plugin types are now generated entirely from source (#1433). |
+| `scripts/knowledge.ts` — 2,835 lines | **Done** (2026-10-31). `src/client/scripts/knowledge/`: one file per feature (`libraries`, `books`, `entries`, `detailsRun` for `/wiedza_buduj`, `levels`, `hints`) sharing a `KnowledgeContext`, over pure `parsing` / `progress` / `reports`; largest `libraries.ts` (~440). The two near-identical details-report builders became one. |
 
 ## The shape of the problem
 
@@ -46,7 +47,6 @@ Line counts as of 2026-10-31; the "was" column is the 2026-07-27 reading.
 
 | File | Lines (was) | Distinct jobs crammed in | Split into |
 |---|---|---|---|
-| `src/client/scripts/knowledge.ts` | 2,835 (2,747) | data lookup + parsing + display + triggers + aliases + state machine | data layer / display / trigger-handlers |
 | `src/shared/map/MapHelper.ts` | 1,874 (911) | position tracking + trip planner + directions + rendering + GMCP | extract managers — **and move out of `@shared`** (see Tier 4) |
 | `src/client/ansi/FormatState.ts` | 1,483 (1,329) | color types + format state machine + `AnsiAwareBuffer` + ANSI parsing + hyperlinks | `colors`, `FormatState`, `AnsiAwareBuffer`, `AnsiParser` |
 | `src/modules/firebase/firebaseUnifiedSync.ts` | 1,376 (1,328) | document I/O + category sync + device registry + sync groups + conflict resolution | Mostly the v1 single-document sync — most of it goes when v1 is removed (`docs/dev/SYNC_V2_PLAN.md`, stage 5b); the device registry stays |
@@ -54,7 +54,7 @@ Line counts as of 2026-10-31; the "was" column is the 2026-07-27 reading.
 | `src/web/ObjectList.ts` | 1,197 (1,080) | view-mode renderers + event handlers + Picture-in-Picture sync + filters | `ObjectListCardRenderer`, `ObjectListEventHandlers`, `PictureInPictureSync` |
 | `src/web/options/FirebaseTab.tsx` | 1,091 (1,042) | auth + sync + metadata + persistence + UI | `useFirebaseAuth`, `useFirebaseSync`, split UI |
 
-**Highest leverage:** `knowledge.ts`, now the largest file in `src/client`.
+**Highest leverage:** `MapHelper.ts` — the largest file left, and the move out of `@shared` comes with it.
 
 ---
 
@@ -144,7 +144,7 @@ Co-locating related files is what makes the Tier-2 duplication visible and fixab
 
 ## Suggested sequence
 
-1. ~~Split `PluginApi.ts` by domain~~ — done 2026-10-31.
+1. ~~Split `PluginApi.ts` by domain~~ and ~~`knowledge.ts`~~ — both done 2026-10-31.
 2. **Finish `BaseCounter`** — migrate `herbCounter`, `whoCount` and `przybywajaCount`.
 3. **Remove sync v1** — takes most of `firebaseUnifiedSync.ts` with it.
 4. **Folder reorganization** of `scripts/` and web popups — makes remaining duplication self-evident.
