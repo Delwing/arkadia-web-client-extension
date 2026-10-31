@@ -14,7 +14,7 @@ import {
     type TextStyle,
     type UserMacro,
 } from '@client/scripts/userTriggers';
-import type { DimEasing } from '@client/ansi/FormatState';
+import { isDimEasing, type DimEasing } from '@client/ansi/FormatState';
 import type { UserScript } from '@client/scripts/userScripts';
 import { getAutomationGroups } from '@modules/core/automation';
 import { globalStorage } from '@modules/core/storage';
@@ -51,6 +51,15 @@ const MACRO_TYPE_LABELS: Record<BuiltInMacroType, string> = {
     functionalBind: 'Funkcyjny bind',
     script: 'Uruchom skrypt',
     group: 'Włącz / wyłącz grupę',
+};
+
+/** Every easing has a label, so a new one in `DIM_EASINGS` cannot be left out. */
+const DIM_EASING_LABELS: Record<DimEasing, string> = {
+    linear: 'Liniowe',
+    ease: 'Ease',
+    'ease-in': 'Ease In',
+    'ease-out': 'Ease Out',
+    'ease-in-out': 'Ease In-Out',
 };
 
 function storedScripts(): UserScript[] {
@@ -481,13 +490,13 @@ export function MacroEditor({
                         <Field label="Przejście">
                             <Select
                                 value={macro.dimEasing ?? 'ease-in-out'}
-                                onChange={e => onChange({ ...macro, dimEasing: e.target.value as DimEasing })}
+                                onChange={e => {
+                                    if (isDimEasing(e.target.value)) onChange({ ...macro, dimEasing: e.target.value });
+                                }}
                             >
-                                <option value="linear">Liniowe</option>
-                                <option value="ease">Ease</option>
-                                <option value="ease-in">Ease In</option>
-                                <option value="ease-out">Ease Out</option>
-                                <option value="ease-in-out">Ease In-Out</option>
+                                {(Object.entries(DIM_EASING_LABELS) as [DimEasing, string][]).map(([easing, label]) => (
+                                    <option key={easing} value={easing}>{label}</option>
+                                ))}
                             </Select>
                         </Field>
                     </div>

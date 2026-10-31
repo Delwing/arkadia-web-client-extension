@@ -529,6 +529,17 @@ describe('trigger proposals - pattern', () => {
         expect(result.issues[0].suggestions).toContain('push');
     });
 
+    it('accepts every dim easing the client supports', () => {
+        expect(validateProposal({
+            kind: 'trigger', pattern: 'abc', macros: [{ type: 'dim', dimEasing: 'ease' }],
+        }).ok).toBe(true);
+        const result = validateProposal({
+            kind: 'trigger', pattern: 'abc', macros: [{ type: 'dim', dimEasing: 'bounce' }],
+        });
+        expect(errorCodes(result)).toEqual(['valueNotAllowed']);
+        expect(result.issues[0].suggestions).toContain('ease');
+    });
+
     it('accepts plugin macros', () => {
         expect(validateProposal({
             kind: 'trigger', pattern: 'abc', macros: [{ type: 'plugin:mymacro', pluginConfig: { a: 1 } }],

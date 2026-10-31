@@ -30,6 +30,7 @@
  */
 
 import { stripPolishCharacters } from '@client/stripPolishCharacters';
+import { DIM_EASINGS, isDimEasing } from '@client/ansi/FormatState';
 import { BUILT_IN_MACRO_TYPES, CONDITION_OPERATORS, isBuiltInMacroType, isMacroType, LINELESS_MACRO_TYPES, SUPPORTED_EVENTS, TEXT_STYLES, type BuiltInMacroType, type EventArg, type TriggerCondition, type UserMacro, type UserTrigger } from '@client/scripts/userTriggers';
 import type { UserAlias } from '@client/scripts/userAliases';
 import type { CustomBind } from '../keymapTypes';
@@ -842,7 +843,6 @@ const ASSISTANT_MACRO_TYPES: readonly BuiltInMacroType[] =
 const EVENT_SAFE_MACRO_TYPES: readonly BuiltInMacroType[] =
     ASSISTANT_MACRO_TYPES.filter(type => LINELESS_MACRO_TYPES.has(type));
 
-const DIM_EASINGS = ['linear', 'ease-in', 'ease-out', 'ease-in-out'];
 
 export const SUPPORTED_EVENT_IDS: readonly string[] = SUPPORTED_EVENTS.map(e => e.id);
 
@@ -1094,10 +1094,10 @@ function validateMacro(raw: unknown, index: number, triggerType: 'pattern' | 'ev
                 }
             }
             if (raw.dimEasing !== undefined) {
-                if (typeof raw.dimEasing !== 'string' || !DIM_EASINGS.includes(raw.dimEasing)) {
-                    issues.push(err('valueNotAllowed', `${path}.dimEasing`, `Pole "dimEasing" przyjmuje: ${DIM_EASINGS.join(', ')}.`, DIM_EASINGS));
+                if (!isDimEasing(raw.dimEasing)) {
+                    issues.push(err('valueNotAllowed', `${path}.dimEasing`, `Pole "dimEasing" przyjmuje: ${DIM_EASINGS.join(', ')}.`, [...DIM_EASINGS]));
                 } else {
-                    macro.dimEasing = raw.dimEasing as UserMacro['dimEasing'];
+                    macro.dimEasing = raw.dimEasing;
                 }
             }
             break;

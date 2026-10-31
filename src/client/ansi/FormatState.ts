@@ -35,7 +35,14 @@ export interface HexColor {
 /** Any of the color formats */
 export type FormatColor = IndexedColor | RgbColor | HexColor
 
-export type DimEasing = 'linear' | 'ease' | 'ease-in' | 'ease-out' | 'ease-in-out';
+/** The CSS easings a dim effect may use. The one list: validators and the editor read it. */
+export const DIM_EASINGS = ['linear', 'ease', 'ease-in', 'ease-out', 'ease-in-out'] as const;
+
+export type DimEasing = typeof DIM_EASINGS[number];
+
+export function isDimEasing(value: unknown): value is DimEasing {
+    return typeof value === 'string' && (DIM_EASINGS as readonly string[]).includes(value);
+}
 
 export interface DimEffect {
     startOpacity: number;  // 0-1
