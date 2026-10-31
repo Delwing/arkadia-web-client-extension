@@ -146,6 +146,7 @@ import initFishing from './scripts/fishing'
 import initSpiderWeb from './scripts/spiderWeb'
 import initPoczta from './scripts/poczta'
 import initLanguageTeacher from './scripts/languageTeacher'
+import initTrainerSkills from './scripts/trainerSkills'
 import initProfession from './scripts/profession'
 import initIntroduced from './scripts/introduced'
 import initAligatorEmoji from './scripts/aligatorEmoji'
@@ -436,6 +437,7 @@ export function registerScripts(client: Client) {
     initSpiderWeb(client)
     initPoczta(client, aliases)
     initLanguageTeacher(client)
+    initTrainerSkills(client)
     initProfession(client, aliases)
     initIntroduced(client, aliases)
     initAligatorEmoji(client)
