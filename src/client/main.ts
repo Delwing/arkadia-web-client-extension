@@ -95,6 +95,7 @@ import initUserTriggers from './scripts/userTriggers'
 import initUserScripts from './scripts/userScripts'
 import initWeaponEvaluation from './scripts/weaponEvaluation'
 import initArmorEvaluation from './scripts/armorEvaluation'
+import initSpellScrolls from './scripts/spellScrolls'
 import initParryShieldEvaluation from './scripts/parryShieldEvaluation'
 import initGuildPostfix from './scripts/guildPostfix'
 import initShortExits from './scripts/shortExits'
@@ -414,6 +415,7 @@ export function registerScripts(client: Client) {
     initCoverTracker(client, aliases)
     initWeaponEvaluation(client)
     initArmorEvaluation(client)
+    initSpellScrolls(client)
     initParryShieldEvaluation(client)
     initSpecialLocations(client)
 
