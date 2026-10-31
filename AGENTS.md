@@ -164,7 +164,7 @@ yarn test:e2e -- --shard=1/12              # Run one CI shard
 ## Entry Points
 
 There are five Vite build entries (see `vite.config.ts`). The pages outside the root keep their old URLs (`editor/`, `viewer/`, `log-viewer/`, `popup/`) whatever folder their source is in: `PAGES` in `vite.config.ts` maps one to the other, for the build and the dev server alike. A new page goes there too.
-- **Client**: `index.html` → `src/web/main.ts` - Main web application (renders `src/web/app/App.tsx` into `#root`; see `docs/dev/main-ts-decomposition.md`)
+- **Client**: `index.html` → `src/web/main.ts` - Main web application (renders `src/web/app/App.tsx` into `#root`)
 - **Editor**: `plugins/editor/index.html` → `plugins/editor/main.ts` - Plugin editor
 - **Viewer**: `views/viewer/index.html` → `views/viewer/main.tsx` - Session log viewer
 - **Log Viewer**: `views/log-viewer/index.html` → `views/log-viewer/main.tsx` - Standalone log viewer
