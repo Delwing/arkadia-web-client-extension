@@ -30,7 +30,8 @@
  */
 
 import { stripPolishCharacters } from '@client/stripPolishCharacters';
-import { CONDITION_OPERATORS, SUPPORTED_EVENTS, TEXT_STYLES, type BuiltInMacroType, type EventArg, type TriggerCondition, type UserMacro, type UserTrigger } from '@client/scripts/userTriggers';
+import { DIM_EASINGS, isDimEasing } from '@client/ansi/FormatState';
+import { BUILT_IN_MACRO_TYPES, CONDITION_OPERATORS, isBuiltInMacroType, isMacroType, LINELESS_MACRO_TYPES, SUPPORTED_EVENTS, TEXT_STYLES, type BuiltInMacroType, type EventArg, type TriggerCondition, type UserMacro, type UserTrigger } from '@client/scripts/userTriggers';
 import type { UserAlias } from '@client/scripts/userAliases';
 import type { CustomBind } from '../keymapTypes';
 import {
@@ -828,15 +829,20 @@ export function validateAlias(input: Record<string, unknown>): ValidationResult<
     return { ok: true, proposal, issues: issues.filter(i => i.severity === 'warning'), repairs, commandFlags: safety.flags };
 }
 
-const BUILT_IN_MACRO_TYPES: readonly BuiltInMacroType[] = [
-    'uppercase', 'color', 'replace', 'beep', 'mute', 'unmute', 'command',
-    'slowBlink', 'rapidBlink', 'dim', 'functionalBind', 'wrap', 'notify', 'push', 'speak', 'echo',
-];
+/**
+ * Built-in macros the assistant may not propose: they point at a stored script
+ * or group by id, which it cannot see.
+ */
+const ASSISTANT_EXCLUDED_MACRO_TYPES: ReadonlySet<BuiltInMacroType> = new Set<BuiltInMacroType>(['script', 'group']);
+
+/** Derived from the client's list, so a new built-in macro reaches the assistant too. */
+const ASSISTANT_MACRO_TYPES: readonly BuiltInMacroType[] =
+    BUILT_IN_MACRO_TYPES.filter(type => !ASSISTANT_EXCLUDED_MACRO_TYPES.has(type));
 
 /** Macros `applyEventMacros` actually handles; the rest need text context. */
-const EVENT_SAFE_MACRO_TYPES: readonly string[] = ['beep', 'mute', 'unmute', 'command', 'functionalBind', 'notify', 'push', 'speak', 'echo'];
+const EVENT_SAFE_MACRO_TYPES: readonly BuiltInMacroType[] =
+    ASSISTANT_MACRO_TYPES.filter(type => LINELESS_MACRO_TYPES.has(type));
 
-const DIM_EASINGS = ['linear', 'ease-in', 'ease-out', 'ease-in-out'];
 
 export const SUPPORTED_EVENT_IDS: readonly string[] = SUPPORTED_EVENTS.map(e => e.id);
 
@@ -912,20 +918,20 @@ function validateMacro(raw: unknown, index: number, triggerType: 'pattern' | 'ev
     }
 
     const isPlugin = type.startsWith('plugin:');
-    if (!isPlugin && !BUILT_IN_MACRO_TYPES.includes(type as BuiltInMacroType)) {
+    if (!isMacroType(type) || (isBuiltInMacroType(type) && ASSISTANT_EXCLUDED_MACRO_TYPES.has(type))) {
         return {
             issues: [err(
                 'unknownMacroType',
                 `${path}.type`,
-                `Nieznany typ makra "${type}". Dostępne: ${BUILT_IN_MACRO_TYPES.join(', ')}.`,
-                [...BUILT_IN_MACRO_TYPES],
+                `Nieznany typ makra "${type}". Dostępne: ${ASSISTANT_MACRO_TYPES.join(', ')}.`,
+                [...ASSISTANT_MACRO_TYPES],
             )],
             repairs,
             flags,
         };
     }
 
-    if (triggerType === 'event' && !EVENT_SAFE_MACRO_TYPES.includes(type)) {
+    if (triggerType === 'event' && !(isBuiltInMacroType(type) && EVENT_SAFE_MACRO_TYPES.includes(type))) {
         return {
             issues: [err(
                 'macroNotSupportedForEvent',
@@ -1088,10 +1094,10 @@ function validateMacro(raw: unknown, index: number, triggerType: 'pattern' | 'ev
                 }
             }
             if (raw.dimEasing !== undefined) {
-                if (typeof raw.dimEasing !== 'string' || !DIM_EASINGS.includes(raw.dimEasing)) {
-                    issues.push(err('valueNotAllowed', `${path}.dimEasing`, `Pole "dimEasing" przyjmuje: ${DIM_EASINGS.join(', ')}.`, DIM_EASINGS));
+                if (!isDimEasing(raw.dimEasing)) {
+                    issues.push(err('valueNotAllowed', `${path}.dimEasing`, `Pole "dimEasing" przyjmuje: ${DIM_EASINGS.join(', ')}.`, [...DIM_EASINGS]));
                 } else {
-                    macro.dimEasing = raw.dimEasing as UserMacro['dimEasing'];
+                    macro.dimEasing = raw.dimEasing;
                 }
             }
             break;

@@ -519,6 +519,27 @@ describe('trigger proposals - pattern', () => {
         expect(result.issues[0].suggestions).toContain('color');
     });
 
+    it('does not offer macros that point at stored scripts or groups', () => {
+        const result = validateProposal({
+            kind: 'trigger', pattern: 'abc', macros: [{ type: 'script', scriptId: 'x' }],
+        });
+        expect(errorCodes(result)).toEqual(['unknownMacroType']);
+        expect(result.issues[0].suggestions).not.toContain('script');
+        expect(result.issues[0].suggestions).not.toContain('group');
+        expect(result.issues[0].suggestions).toContain('push');
+    });
+
+    it('accepts every dim easing the client supports', () => {
+        expect(validateProposal({
+            kind: 'trigger', pattern: 'abc', macros: [{ type: 'dim', dimEasing: 'ease' }],
+        }).ok).toBe(true);
+        const result = validateProposal({
+            kind: 'trigger', pattern: 'abc', macros: [{ type: 'dim', dimEasing: 'bounce' }],
+        });
+        expect(errorCodes(result)).toEqual(['valueNotAllowed']);
+        expect(result.issues[0].suggestions).toContain('ease');
+    });
+
     it('accepts plugin macros', () => {
         expect(validateProposal({
             kind: 'trigger', pattern: 'abc', macros: [{ type: 'plugin:mymacro', pluginConfig: { a: 1 } }],

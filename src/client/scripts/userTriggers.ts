@@ -9,10 +9,39 @@ import { isAutomationActiveNow, onAutomationScopeChange, setAutomationGroupEnabl
 import { runUserScript, type RunOptions } from "./userScripts";
 import type { NotificationLevel } from "@shared/events/clientEvents";
 
-export type BuiltInMacroType = 'uppercase' | 'color' | 'replace' | 'beep' | 'mute' | 'unmute' | 'command' | 'slowBlink' | 'rapidBlink' | 'dim' | 'functionalBind' | 'wrap' | 'notify' | 'push' | 'speak' | 'echo' | 'script' | 'group';
+/**
+ * The macros the client itself runs. The single source of truth: the editor's
+ * labels are a `Record<BuiltInMacroType, ...>`, so a type added here and not
+ * there fails to compile instead of silently missing from the list.
+ */
+export const BUILT_IN_MACRO_TYPES = [
+    'uppercase', 'color', 'replace', 'beep', 'mute', 'unmute', 'command', 'slowBlink', 'rapidBlink', 'dim',
+    'functionalBind', 'wrap', 'notify', 'push', 'speak', 'echo', 'script', 'group',
+] as const;
+
+export type BuiltInMacroType = typeof BUILT_IN_MACRO_TYPES[number];
+
+/** A macro a plugin registered, `plugin:<pluginId>:<id>`. */
+export type PluginMacroType = `plugin:${string}`;
+
+/**
+ * Deliberately not `| string`: an unknown type must be a compile error, not a
+ * macro that silently does nothing.
+ */
+export type MacroType = BuiltInMacroType | PluginMacroType;
+
+const BUILT_IN_MACRO_TYPE_SET: ReadonlySet<string> = new Set(BUILT_IN_MACRO_TYPES);
+
+export function isBuiltInMacroType(type: string): type is BuiltInMacroType {
+    return BUILT_IN_MACRO_TYPE_SET.has(type);
+}
+
+export function isMacroType(type: string): type is MacroType {
+    return isBuiltInMacroType(type) || type.startsWith('plugin:');
+}
 
 export interface UserMacro {
-    type: BuiltInMacroType | string;  // string allows plugin macros like "plugin:..."
+    type: MacroType;
     color?: string;  // color: the match's colour; echo: the printed line's, absent = default
     background?: string;  // color only: the match's background, absent = unchanged
     // color only: text styles laid over the match, absent = unchanged
@@ -68,7 +97,7 @@ export type TriggerType = 'pattern' | 'event';
  * Actions that need no line of game text, so they also run on an event, an
  * alias, and later a timer. The rest (colour, replace, blink...) edit the line.
  */
-export const LINELESS_MACRO_TYPES: ReadonlySet<string> = new Set([
+export const LINELESS_MACRO_TYPES: ReadonlySet<string> = new Set<BuiltInMacroType>([
     'beep', 'mute', 'unmute', 'command', 'functionalBind', 'notify', 'push', 'speak', 'echo', 'script', 'group',
 ]);
 

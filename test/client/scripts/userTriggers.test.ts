@@ -1,5 +1,8 @@
 import { vi } from 'vitest';
 import initUserTriggers, {
+    BUILT_IN_MACRO_TYPES,
+    isMacroType,
+    LINELESS_MACRO_TYPES,
   GMCP_EVENT_CATEGORY,
   SUPPORTED_EVENTS,
   evaluateCondition,
@@ -709,4 +712,17 @@ describe('userTriggers on a line earlier triggers rewrote', () => {
     const result = client.Triggers.parseLine(new AnsiAwareBuffer('troll atakuje'), '');
     expect(result?.text).toBe('[1/6] <ork> atakuje');
   });
+});
+
+describe('macro types', () => {
+    it('accepts built-in and plugin macro types, rejects anything else', () => {
+        for (const type of BUILT_IN_MACRO_TYPES) expect(isMacroType(type)).toBe(true);
+        expect(isMacroType('plugin:my-plugin:flash')).toBe(true);
+        expect(isMacroType('explode')).toBe(false);
+        expect(isMacroType('')).toBe(false);
+    });
+
+    it('lists only built-in types as lineless', () => {
+        for (const type of LINELESS_MACRO_TYPES) expect(BUILT_IN_MACRO_TYPES).toContain(type);
+    });
 });
