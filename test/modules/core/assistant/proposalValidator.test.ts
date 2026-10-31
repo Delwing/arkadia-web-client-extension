@@ -519,6 +519,16 @@ describe('trigger proposals - pattern', () => {
         expect(result.issues[0].suggestions).toContain('color');
     });
 
+    it('does not offer macros that point at stored scripts or groups', () => {
+        const result = validateProposal({
+            kind: 'trigger', pattern: 'abc', macros: [{ type: 'script', scriptId: 'x' }],
+        });
+        expect(errorCodes(result)).toEqual(['unknownMacroType']);
+        expect(result.issues[0].suggestions).not.toContain('script');
+        expect(result.issues[0].suggestions).not.toContain('group');
+        expect(result.issues[0].suggestions).toContain('push');
+    });
+
     it('accepts plugin macros', () => {
         expect(validateProposal({
             kind: 'trigger', pattern: 'abc', macros: [{ type: 'plugin:mymacro', pluginConfig: { a: 1 } }],

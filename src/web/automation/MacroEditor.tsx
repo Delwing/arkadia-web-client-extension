@@ -6,7 +6,14 @@ import {
     type PluginTriggerMacro,
 } from '@modules/core/pluginTriggerMacroRegistry';
 import { Check, DeleteButton, Field, Input, Select } from '@web-ui/primitives/index.ts';
-import { TEXT_STYLES, type TextStyle, type UserMacro } from '@client/scripts/userTriggers';
+import {
+    isMacroType,
+    LINELESS_MACRO_TYPES,
+    TEXT_STYLES,
+    type BuiltInMacroType,
+    type TextStyle,
+    type UserMacro,
+} from '@client/scripts/userTriggers';
 import type { DimEasing } from '@client/ansi/FormatState';
 import type { UserScript } from '@client/scripts/userScripts';
 import { getAutomationGroups } from '@modules/core/automation';
@@ -18,6 +25,32 @@ const TEXT_STYLE_BUTTONS: Record<TextStyle, { title: string; icon: typeof Bold }
     italic: { title: 'Kursywa', icon: Italic },
     underline: { title: 'Podkreślenie', icon: Underline },
     strikethrough: { title: 'Przekreślenie', icon: Strikethrough },
+};
+
+/**
+ * The type picker's entries, in display order. A `Record` over every built-in
+ * type, so a macro the client gains and the editor does not offer is a compile
+ * error rather than a type that cannot be picked.
+ */
+const MACRO_TYPE_LABELS: Record<BuiltInMacroType, string> = {
+    uppercase: 'Wielkie litery',
+    color: 'Koloruj / formatuj',
+    replace: 'Zamień',
+    wrap: 'Otocz tekstem',
+    beep: 'Dźwięk',
+    mute: 'Wycisz dźwięki',
+    unmute: 'Włącz dźwięki',
+    command: 'Komenda',
+    notify: 'Powiadomienie',
+    push: 'Powiadomienie na telefon',
+    speak: 'Czytaj na głos',
+    echo: 'Wypisz tekst',
+    slowBlink: 'Wolne miganie',
+    rapidBlink: 'Szybkie miganie',
+    dim: 'Pulsowanie',
+    functionalBind: 'Funkcyjny bind',
+    script: 'Uruchom skrypt',
+    group: 'Włącz / wyłącz grupę',
 };
 
 function storedScripts(): UserScript[] {
@@ -130,6 +163,7 @@ export function MacroEditor({
                     className={available ? undefined : 'is-warning'}
                     onChange={e => {
                         const nextType = e.target.value;
+                        if (!isMacroType(nextType)) return;
                         onChange({
                             ...macro,
                             type: nextType,
@@ -143,24 +177,9 @@ export function MacroEditor({
                         });
                     }}
                 >
-                    {!lineless && <option value="uppercase">Wielkie litery</option>}
-                    {!lineless && <option value="color">Koloruj / formatuj</option>}
-                    {!lineless && <option value="replace">Zamień</option>}
-                    {!lineless && <option value="wrap">Otocz tekstem</option>}
-                    <option value="beep">Dźwięk</option>
-                    <option value="mute">Wycisz dźwięki</option>
-                    <option value="unmute">Włącz dźwięki</option>
-                    <option value="command">Komenda</option>
-                    <option value="notify">Powiadomienie</option>
-                    <option value="push">Powiadomienie na telefon</option>
-                    <option value="speak">Czytaj na głos</option>
-                    <option value="echo">Wypisz tekst</option>
-                    {!lineless && <option value="slowBlink">Wolne miganie</option>}
-                    {!lineless && <option value="rapidBlink">Szybkie miganie</option>}
-                    {!lineless && <option value="dim">Pulsowanie</option>}
-                    <option value="functionalBind">Funkcyjny bind</option>
-                    <option value="script">Uruchom skrypt</option>
-                    <option value="group">Włącz / wyłącz grupę</option>
+                    {(Object.entries(MACRO_TYPE_LABELS) as [BuiltInMacroType, string][])
+                        .filter(([type]) => !lineless || LINELESS_MACRO_TYPES.has(type))
+                        .map(([type, label]) => <option key={type} value={type}>{label}</option>)}
                     {(() => {
                         const byPlugin = new Map<string, typeof pluginMacros>();
                         for (const pm of pluginMacros) {
