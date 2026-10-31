@@ -1,4 +1,4 @@
-import initTrainerSkills from '@client/scripts/trainerSkills';
+import initTrainerSkills, { skillToAccusative } from '@client/scripts/trainerSkills';
 import Triggers from '@client/Triggers';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 
@@ -39,9 +39,24 @@ describe('trainer skill list', () => {
 
     const animals = links(parse('  opieka nad zwierzetami    5 zlotych, 16 srebrnych i 3 miedziane monety'));
     expect(animals[0].text).toBe('opieka nad zwierzetami');
+    animals[0].hyperlink!.onClick!({} as MouseEvent);
+    expect(client.sendCommand).toHaveBeenLastCalledWith('trenuj opieke nad zwierzetami');
   });
 
   test('ignores price-like lines without the header', () => {
     expect(links(parse('  zielarstwo                4 zlote i 10 miedzianych monet'))).toHaveLength(0);
+  });
+
+  test('declines the head noun to the accusative', () => {
+    expect(skillToAccusative('wspinaczka')).toBe('wspinaczke');
+    expect(skillToAccusative('opieka nad zwierzetami')).toBe('opieke nad zwierzetami');
+    expect(skillToAccusative('walka bez broni')).toBe('walke bez broni');
+    expect(skillToAccusative('ocena przeciwnika')).toBe('ocene przeciwnika');
+    expect(skillToAccusative('wyczucie kierunku')).toBe('wyczucie kierunku');
+    expect(skillToAccusative('zielarstwo')).toBe('zielarstwo');
+    expect(skillToAccusative('walka pokazowa')).toBe('walke pokazowa');
+    expect(skillToAccusative('miecze')).toBe('miecze');
+    expect(skillToAccusative('mierzony cios')).toBe('mierzony cios');
+    expect(skillToAccusative('targowanie sie')).toBe('targowanie sie');
   });
 });
