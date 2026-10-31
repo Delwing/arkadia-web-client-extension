@@ -52,7 +52,7 @@ describe("buildHerbContextMenuItems", () => {
             [1],
         );
 
-        expect(labels(items)).toEqual(["zjedz", "Pokaż w Ziołach"]);
+        expect(labels(items)).toEqual(["zjedz", "Wyjmij", "Pokaż w Ziołach"]);
     });
 
     it("adds 'Nabij fajkę' for smokable herbs, after a separator", () => {
@@ -67,10 +67,11 @@ describe("buildHerbContextMenuItems", () => {
             [1],
         );
 
-        expect(labels(items)).toEqual(["zjedz", "Nabij fajkę", "Pokaż w Ziołach"]);
-        const smoke = items[1];
-        expect(smoke.separator).toBe(true);
-        expect(items[2].separator).toBe(false);
+        expect(labels(items)).toEqual(["zjedz", "Wyjmij", "Nabij fajkę", "Pokaż w Ziołach"]);
+        expect(items[1].separator).toBe(true);
+        const smoke = items[2];
+        expect(smoke.separator).toBeFalsy();
+        expect(items[3].separator).toBeFalsy();
 
         smoke.action();
         expect(emitSpy).toHaveBeenCalledWith("sendCommand", { command: "/ziola_fajka tyton" });
@@ -85,8 +86,20 @@ describe("buildHerbContextMenuItems", () => {
             [1],
         );
 
-        expect(labels(items)).toEqual(["Nabij fajkę", "Pokaż w Ziołach"]);
+        expect(labels(items)).toEqual(["Wyjmij", "Nabij fajkę", "Pokaż w Ziołach"]);
         expect(items[0].separator).toBe(false);
+    });
+
+    it("'Wyjmij' takes the chosen amount out of the bags without using it", () => {
+        const emitSpy = jest.spyOn(eventBus, "emit");
+        const items = buildHerbContextMenuItems("rumianek", [{ action: "zjedz", effect: "" }], "/zi", [1, 3, 5]);
+        const take = items.find(item => item.label === "Wyjmij")!;
+
+        expect(take.choices?.map(choice => choice.label)).toEqual(["1", "3", "5"]);
+        take.choices![2].action();
+        expect(emitSpy).toHaveBeenCalledTimes(1);
+        expect(emitSpy).toHaveBeenCalledWith("sendCommand", { command: "/wezz rumianek 5" });
+        emitSpy.mockRestore();
     });
 
     it("ends in 'Pokaż w Ziołach', which opens the window", () => {

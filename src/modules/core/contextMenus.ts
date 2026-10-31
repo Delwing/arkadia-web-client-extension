@@ -6,7 +6,7 @@ import {getEmbeddedMap} from "@web/embedRegistry";
 import {characterStorage} from "./storage";
 import {getRoomMenuEntries} from "./pluginUiRegistry";
 import eventBus from "@modules/core/eventBus";
-import {Flame, Footprints, Info, Leaf, Map as MapIcon, MapPin, Navigation, Route, StickyNote, Zap} from "lucide-react";
+import {Flame, Footprints, Info, Leaf, Map as MapIcon, MapPin, Navigation, PackageOpen, Route, StickyNote, Zap} from "lucide-react";
 
 export type ContextMenuItem = ContextMenuEntry;
 
@@ -49,6 +49,21 @@ export function buildHerbContextMenuItems(
         };
     });
 
+    // Take the herb out of the bags without using it (the /wezz alias).
+    items.push({
+        label: 'Wyjmij',
+        icon: PackageOpen,
+        separator: items.length > 0,
+        action: () => {},
+        choices: amounts.map(amount => ({
+            label: String(amount),
+            title: `Wyjmij ${amount} z woreczków`,
+            action: () => {
+                eventBus.emit('sendCommand', { command: `/wezz ${herbId} ${amount}` });
+            },
+        })),
+    });
+
     // Smokable herbs get a "nabij fajke" entry that loads the pipe (routed
     // through the /ziola_fajka alias, which takes the herb and uses the
     // instrumental form).
@@ -56,7 +71,6 @@ export function buildHerbContextMenuItems(
         items.push({
             label: 'Nabij fajkę',
             icon: Flame,
-            separator: items.length > 0,
             action: () => eventBus.emit('sendCommand', { command: `/ziola_fajka ${herbId}` }),
         });
     }
@@ -64,7 +78,6 @@ export function buildHerbContextMenuItems(
     items.push({
         label: 'Pokaż w Ziołach',
         icon: Leaf,
-        separator: !isHerbSmokable(actions) && items.length > 0,
         opensWindow: true,
         action: () => eventBus.emit('sendCommand', { command: '/ziola' }),
     });
