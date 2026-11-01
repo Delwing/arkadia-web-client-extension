@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { HerbsData } from '@modules/data/dataStores/herbsStore.ts';
-import { amountsFor, formatHerbInventory, herbTotals, matchesHerbFilter } from '@web/herbs/herbInventory.ts';
+import { amountsFor, formatHerbInventory, herbCatalogIds, herbTotals, matchesHerbFilter } from '@web/herbs/herbInventory.ts';
 
 const herbsData: HerbsData = {
     version: 1,
@@ -23,6 +23,19 @@ const bags = {
 };
 
 describe('herbInventory', () => {
+    it('lists every known herb without requiring inventory, deduplicating both maps', () => {
+        expect(herbCatalogIds(null)).toEqual([]);
+        const data = { ...herbsData, herb_id_to_odmiana: { ...herbsData.herb_id_to_odmiana, unknown: herbsData.herb_id_to_odmiana.babka } };
+        expect(herbCatalogIds(data)).toEqual(['arnika', 'babka', 'tyton_krema', 'unknown']);
+    });
+
+    it('includes unbound uses in catalog search, groups and effect exports', () => {
+        const data = { ...herbsData, herb_id_to_use: { babka: [{ action: 'zjedz', effect: 'tr', dont_bind: true }] } };
+        expect(matchesHerbFilter('babka', data, { query: 'zjedz', group: 'poison' }, true)).toBe(true);
+        expect(matchesHerbFilter('babka', data, { query: 'zjedz', group: 'poison' })).toBe(false);
+        expect(formatHerbInventory('effects', ['babka'], {}, data, true)).toBe('  0 babka  zjedz tr');
+    });
+
     it('sums herbs across bags', () => {
         expect(herbTotals(bags)).toEqual({ babka: 5, arnika: 2, tyton_krema: 1 });
     });

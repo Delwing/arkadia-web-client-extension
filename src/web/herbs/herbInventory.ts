@@ -2,7 +2,15 @@ import type { HerbBagsState } from '@client/types/herbs.ts';
 import { getBindableUses, isHerbSmokable, type HerbsData } from '@modules/data/dataStores/herbsStore.ts';
 import { HERB_EFFECT_GROUPS, cleanHerbEffect, herbGroupKeys } from '@modules/data/herbEffects.ts';
 
-export type HerbWindowMode = 'bags' | 'list' | 'effects';
+export type HerbWindowMode = 'bags' | 'list' | 'effects' | 'catalog';
+
+/** All known herbs, including entries with no recorded uses or no description. */
+export function herbCatalogIds(data: HerbsData | null): string[] {
+    return [...new Set([
+        ...Object.keys(data?.herb_id_to_odmiana ?? {}),
+        ...Object.keys(data?.herb_id_to_use ?? {}),
+    ])].sort((a, b) => a.localeCompare(b));
+}
 
 export const HERB_USE_AMOUNTS = [1, 3, 5];
 
@@ -37,24 +45,24 @@ export function isHerbFilterActive(filter: HerbFilter): boolean {
  * (so `kac` finds both `+kac` and `-kac`) and the names of its effect groups
  * (so `odtrut` finds the antidotes).
  */
-function searchTexts(herbId: string, herbsData: HerbsData | null): string[] {
+function searchTexts(herbId: string, herbsData: HerbsData | null, catalog: boolean): string[] {
     const uses = herbsData?.herb_id_to_use[herbId];
-    const groups = herbGroupKeys(uses);
+    const groups = herbGroupKeys(uses, catalog);
     return [
         herbId,
         herbsData?.herb_id_to_odmiana[herbId]?.mianownik ?? '',
-        ...getBindableUses(uses).map(use => cleanHerbEffect(use.effect)),
+        ...(catalog ? uses ?? [] : getBindableUses(uses)).map(use => `${use.action} ${cleanHerbEffect(use.effect)}`),
         ...HERB_EFFECT_GROUPS.filter(group => groups.has(group.key)).map(group => group.label.toLowerCase()),
     ];
 }
 
-export function matchesHerbFilter(herbId: string, herbsData: HerbsData | null, filter: HerbFilter): boolean {
+export function matchesHerbFilter(herbId: string, herbsData: HerbsData | null, filter: HerbFilter, catalog = false): boolean {
     const query = filter.query.trim().toLowerCase();
-    if (query && !searchTexts(herbId, herbsData).some(text => text.includes(query))) {
+    if (query && !searchTexts(herbId, herbsData, catalog).some(text => text.toLowerCase().includes(query))) {
         return false;
     }
     if (filter.group !== null) {
-        return herbGroupKeys(herbsData?.herb_id_to_use[herbId]).has(filter.group);
+        return herbGroupKeys(herbsData?.herb_id_to_use[herbId], catalog).has(filter.group);
     }
     return true;
 }
@@ -67,6 +75,7 @@ export function formatHerbInventory(
     herbIds: string[],
     bags: HerbBagsState,
     herbsData: HerbsData | null,
+    catalog = false,
 ): string {
     const ids = [...herbIds].sort((a, b) => a.localeCompare(b));
     const totals = herbTotals(bags);
@@ -90,7 +99,7 @@ export function formatHerbInventory(
         const width = Math.max(0, ...ids.map(id => id.length));
         return ids.map(herbId => {
             const uses = herbsData?.herb_id_to_use[herbId];
-            const described = getBindableUses(uses)
+            const described = (catalog ? (uses ?? []).filter(use => !use.smokable) : getBindableUses(uses))
                 .map(use => `${use.action} ${cleanHerbEffect(use.effect) || '--'}`)
                 .join(' | ');
             const text = described || (isHerbSmokable(uses) ? 'do palenia' : '--');

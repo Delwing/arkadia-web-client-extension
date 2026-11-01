@@ -14,15 +14,16 @@ Moduł licznika ziół pozwala zliczyć zawartość wszystkich noszonych woreczk
 
 ## Okno ziół
 
-Okno ma trzy tryby, przełączane w nagłówku:
+Okno ma cztery tryby, przełączane w nagłówku:
 
 - **Woreczki** - zawartość każdego woreczka; zioła można przeciągać między woreczkami i przekazywać innym (przycisk **Daj**, opis niżej). Ctrl+klik (Cmd+klik na Macu) zaznacza kilka ziół - przeciągnięcie dowolnego z zaznaczonych przenosi wszystkie naraz, a zwykły klik lub Esc czyści zaznaczenie. Kliknięcie nagłówka woreczka zaznacza całą jego zawartość (z Ctrl dokłada ją do zaznaczenia, ponowne kliknięcie odznacza).
 - **Lista** - zwarta lista: jedna linia na zioło z sumą ze wszystkich woreczków, każde użycie z efektem i przyciskami 1/3/5 (wysyłają `/zi akcja ziolo ilosc`; przycisków nigdy nie ma więcej niż posiadanych sztuk). Zioła do palenia mają przycisk **nabij**.
 - **Efekty** - zioła pogrupowane według tego, co robią (Leczenie, Zmęczenie, Odtrutki, Odporność, Mana, Cechy…). Zioło z kilkoma efektami pojawia się w każdej swojej grupie. Skutki uboczne są oznaczone na pomarańczowo, trucizny na czerwono - grupa **Trucizny** nie ma przycisków użycia. Gwiazdka przypina grupę na górę.
+- **Katalog** - wszystkie zioła znane klientowi, także te, których nie masz. Działa bez wcześniejszego `/ziola_buduj`. Pokazuje opisy i wszystkie zapisane zastosowania, również te pomijane w skrótach. Ilości pochodzą z licznika woreczków; przy zerowym zapasie przyciski użycia są nieaktywne. Kliknij nagłówek **Ile** lub **Zioło**, aby sortować. Zastosowania wyłączone ze skrótów pozostają tylko opisem.
 
 We wszystkich trybach działa wyszukiwanie (po nazwie zioła, efekcie lub nazwie grupy - np. `kac` znajdzie zarówno `+kac`, jak i `-kac`) i filtr efektu (jeden naraz - kliknięcie aktywnego zdejmuje filtr). W trybie Woreczki niepasujące zioła są przyciemnione, ale nadal można je przeciągać.
 
-Przycisk **Kopiuj** kopiuje do schowka listę posiadanych ziół; strzałka obok oferuje też listę z działaniem i podział na woreczki. Przy aktywnym filtrze kopiowane jest tylko to, co do niego pasuje.
+Przycisk **Kopiuj** kopiuje do schowka listę posiadanych ziół (w Katalogu również zioła z zerowym zapasem); strzałka obok oferuje też listę z działaniem i podział na woreczki. Przy aktywnym filtrze kopiowane jest tylko to, co do niego pasuje.
 
 ## Wyjmowanie ziół
 

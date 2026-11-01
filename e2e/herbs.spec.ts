@@ -341,3 +341,61 @@ test.describe('Herb bag tracking', () => {
         await expect(emptyMessage, 'should show empty state instruction').toContainText('ziola_buduj');
     });
 });
+
+
+test('catalog browses all herbs without a bag scan and disables unavailable uses', async ({page}) => {
+    await page.goto('/');
+    await waitForCommandInput(page);
+    await ensureGameSocket(page);
+    await pushGmcp(page, 'char.info', {name: 'HerbCatalogEmpty', object_num: 60008});
+    await waitForCharacter(page, 'HerbCatalogEmpty');
+    await submitCommand(page, '/ziola');
+    const popup = page.locator('.herb-window');
+    await popup.getByRole('radio', {name: 'Katalog', exact: true}).click();
+    const names = popup.locator('.herb-list__name');
+    await expect(names).not.toHaveCount(0);
+    expect(await names.count()).toBeGreaterThan(50);
+    await expect(popup.locator('.herb-amount:not(:disabled)')).toHaveCount(0);
+    await expect(popup.locator('.herb-manager-status')).toHaveCount(0);
+
+    const search = popup.locator('.herb-filter__search');
+    await search.fill('lancetowaty');
+    await expect(names).toHaveCount(1);
+    await expect(names).toContainText('babka');
+    await expect(popup.locator('.herb-list__count').last()).toHaveText('0');
+    await search.fill('');
+    await popup.locator('.herb-filter__chip').filter({hasText: 'Mana'}).click();
+    await expect(names).not.toHaveCount(0);
+    await expect(names.filter({hasText: 'babka'})).toHaveCount(0);
+    await popup.locator('.herb-filter__chip').filter({hasText: 'Mana'}).click();
+    await popup.locator('.herb-list__sortable').filter({hasText: 'Zioło'}).click();
+    const sorted = await names.allTextContents();
+    // The pipe herbs form a separate section, as in Lista.
+    expect(sorted[0].localeCompare(sorted[1])).toBeGreaterThan(0);
+    await popup.getByRole('radio', {name: 'Lista', exact: true}).click();
+    await expect(popup.locator('.herb-manager-status')).toContainText('ziola_buduj');
+});
+
+test('catalog combines all known herbs with owned counts and keeps Lista inventory-only', async ({page}) => {
+    await page.goto('/');
+    await waitForCommandInput(page);
+    await ensureGameSocket(page);
+    await pushGmcp(page, 'char.info', {name: 'HerbCatalogOwned', object_num: 60009});
+    await waitForCharacter(page, 'HerbCatalogOwned');
+    await simulateHerbBagScan(page, [{content: 'trzy rozetkowate lancetowate liscie'}]);
+    await submitCommand(page, '/ziola');
+    const popup = page.locator('.herb-window');
+    await popup.getByRole('radio', {name: 'Katalog', exact: true}).click();
+    const babka = popup.locator('.herb-list tbody tr').filter({hasText: 'babka'});
+    await expect(babka.locator('.herb-list__count')).toHaveText('3');
+    await expect(babka.getByRole('button', {name: '1', exact: true})).toBeEnabled();
+    await expect(babka.getByRole('button', {name: '3', exact: true})).toBeEnabled();
+    const arnika = popup.locator('.herb-list tbody tr').filter({hasText: 'arnika'});
+    await expect(arnika.locator('.herb-list__count')).toHaveText('0');
+    await expect(arnika.getByRole('button', {name: '1', exact: true})).toBeDisabled();
+    await popup.locator('.herb-list__sortable').filter({hasText: 'Ile'}).click();
+    await expect(popup.locator('.herb-list__name').first()).toContainText('babka');
+    await popup.getByRole('radio', {name: 'Lista', exact: true}).click();
+    await expect(popup.locator('.herb-list__name')).toHaveCount(1);
+    await expect(popup.locator('.herb-list__name')).toHaveText('babka');
+});

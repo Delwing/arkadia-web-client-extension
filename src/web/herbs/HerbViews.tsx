@@ -39,6 +39,7 @@ export function UseButtons({ action, herbId, count }: { action: string; herbId: 
                     type="button"
                     className="herb-amount"
                     title={`${action} ${amount} — ${herbId}`}
+                    disabled={count < amount}
                     onClick={() => send(`/zi ${action} ${herbId} ${amount}`)}
                 >
                     {amount}
@@ -48,12 +49,13 @@ export function UseButtons({ action, herbId, count }: { action: string; herbId: 
     );
 }
 
-function SmokeButton({ herbId }: { herbId: string }) {
+function SmokeButton({ herbId, count }: { herbId: string; count: number }) {
     return (
         <button
             type="button"
             className="herb-amount herb-amount--wide"
             title={`Nabij fajkę — ${herbId}`}
+            disabled={count < 1}
             onClick={() => send(`/ziola_fajka ${herbId}`)}
         >
             nabij
@@ -67,7 +69,9 @@ export function HerbFilterBar({
     onChange,
     herbIds,
     herbsData,
+    catalog = false,
 }: {
+    catalog?: boolean;
     filter: HerbFilter;
     onChange: (next: HerbFilter) => void;
     herbIds: string[];
@@ -76,12 +80,12 @@ export function HerbFilterBar({
     const counts = useMemo(() => {
         const result: Record<string, number> = {};
         herbIds.forEach(herbId => {
-            herbGroupKeys(herbsData?.herb_id_to_use[herbId]).forEach(key => {
+            herbGroupKeys(herbsData?.herb_id_to_use[herbId], catalog).forEach(key => {
                 result[key] = (result[key] ?? 0) + 1;
             });
         });
         return result;
-    }, [herbIds, herbsData]);
+    }, [herbIds, herbsData, catalog]);
 
     const chips = [
         ...HERB_EFFECT_GROUPS.filter(group => counts[group.key]),
@@ -121,7 +125,9 @@ export function HerbListView({
     herbsData,
     sort,
     onSort,
+    catalog = false,
 }: {
+    catalog?: boolean;
     herbIds: string[];
     totals: Record<string, number>;
     herbsData: HerbsData | null;
@@ -129,7 +135,7 @@ export function HerbListView({
     onSort: (next: ListSort) => void;
 }) {
     const sorted = useMemo(() => [...herbIds].sort((a, b) => sort.dir * (
-        sort.key === 'count' ? (totals[a] - totals[b]) || a.localeCompare(b) : a.localeCompare(b)
+        sort.key === 'count' ? ((totals[a] ?? 0) - (totals[b] ?? 0)) || a.localeCompare(b) : a.localeCompare(b)
     )), [herbIds, totals, sort]);
     const regular = sorted.filter(herbId => !isHerbSmokable(herbsData?.herb_id_to_use[herbId]));
     const smokable = sorted.filter(herbId => isHerbSmokable(herbsData?.herb_id_to_use[herbId]));
@@ -149,19 +155,23 @@ export function HerbListView({
         return (
             <tr key={herbId}>
                 <td className="herb-list__count">{count}</td>
-                <td className="herb-list__name">{herbId}</td>
+                <td className="herb-list__name">
+                    {herbId}
+                    {catalog && <div className="herb-list__description">{herbsData?.herb_id_to_odmiana[herbId]?.mianownik}</div>}
+                </td>
                 <td>
-                    {getBindableUses(uses).map((use, index) => (
+                    {(catalog ? (uses ?? []).filter(use => !use.smokable) : getBindableUses(uses)).map((use, index) => (
                         <span key={index} className="herb-list__use">
-                            <span className="herb-list__action">{use.action}</span>
+                            <span className="herb-list__action">{use.action === '.' ? '—' : use.action}</span>
                             <EffectTokens effect={use.effect} />
-                            <UseButtons action={use.action} herbId={herbId} count={count} />
+                            {!use.dont_bind && <UseButtons action={use.action} herbId={herbId} count={count} />}
                         </span>
                     ))}
+                    {catalog && !uses?.length && <EffectTokens effect={undefined} />}
                     {isHerbSmokable(uses) && (
                         <span className="herb-list__use">
                             <span className="herb-list__action">fajka</span>
-                            <SmokeButton herbId={herbId} />
+                            <SmokeButton herbId={herbId} count={count} />
                         </span>
                     )}
                 </td>
@@ -300,7 +310,7 @@ export function HerbEffectsView({
                                     </span>
                                     <span className="herb-group__action">fajka</span>
                                     <span className="herb-group__effect" />
-                                    <span className="herb-group__use"><SmokeButton herbId={herbId} /></span>
+                                    <span className="herb-group__use"><SmokeButton herbId={herbId} count={totals[herbId] ?? 0} /></span>
                                 </div>
                             ))}
                         </div>
