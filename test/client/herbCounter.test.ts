@@ -469,6 +469,38 @@ describe('herb counter', () => {
     ]);
   });
 
+  test('ziola_spakuj puts loose herbs into every own bag, then counts again', async () => {
+    const aliases: { pattern: RegExp; callback: Function }[] = [];
+    const herbs = new FakeClient();
+    const parseLine = (line: string) => Triggers.prototype.parseLine.call(herbs.Triggers, new AnsiAwareBuffer(line), '');
+    initHerbClient((herbs as unknown) as any, {}, defaultHerbData, aliases);
+    const entry = aliases.find(({ pattern }) => pattern.test('/ziola_spakuj'))!;
+    entry.callback();
+    expect(herbs.sendCommand.mock.calls.map((c: unknown[]) => c[0])).toEqual(['policz swoje woreczki']);
+    herbs.sendCommand.mockClear();
+    parseLine('Doliczyles sie dwoch sztuk.');
+    await Promise.resolve();
+    await new Promise(r => setTimeout(r, 0));
+    expect(herbs.sendCommand.mock.calls.map((c: unknown[]) => c[0])).toEqual([
+      'otworz 1. swoj woreczek',
+      'wloz ziola do 1. swojego woreczka',
+      'otworz 2. swoj woreczek',
+      'wloz ziola do 2. swojego woreczka',
+      'zamknij otwarte woreczki',
+      'policz swoje woreczki',
+    ]);
+  });
+
+  test('a torn bag binds putting it down and packing the herbs', () => {
+    const herbs = new FakeClient();
+    const parseLine = (line: string) => Triggers.prototype.parseLine.call(herbs.Triggers, new AnsiAwareBuffer(line), '');
+    initHerbClient((herbs as unknown) as any, {}, defaultHerbData, []);
+    parseLine('Nagle skorzany woreczek rozpruwa sie. Chyba do niczego juz sie nie przyda.');
+    expect(herbs.FunctionalBind.set).toHaveBeenCalledTimes(1);
+    (herbs.FunctionalBind.set as jest.Mock).mock.calls[0][1]();
+    expect(herbs.sendCommand.mock.calls.map((c: unknown[]) => c[0])).toEqual(['odloz rozerwany woreczek', 'policz swoje woreczki']);
+  });
+
   test('ziola_odloz_woreczek sends 3 commands for empty bag', () => {
     const aliases: { pattern: RegExp; callback: Function }[] = [];
     initHerbClient((client as unknown) as any, { 2: {} }, defaultHerbData, aliases);

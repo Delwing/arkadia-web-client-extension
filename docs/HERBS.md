@@ -54,6 +54,9 @@ Przy komunikacie o chorobie lub zatruciu (np. `Cierpisz na chorobe pluc.`) klien
 | `/ziola_daj cel ziolo` | Daj 1 sztukę zioła wskazanemu celowi |
 | `/ziola_daj cel ziolo ilosc` | Daj wskazaną ilość zioła wskazanemu celowi |
 | `/ziola_odloz_woreczek numer` | Odłóż woreczek (odbezpiecz, odtrocz, odłóż) |
+| `/ziola_spakuj` | Włóż luźne zioła do swoich woreczków po kolei (co się nie zmieści, trafia do następnego), potem policz zioła od nowa |
+
+Gdy woreczek się rozpruje („Nagle skórzany woreczek rozpruwa się.”), bind funkcyjny odkłada rozerwany woreczek i pakuje zioła do pozostałych jak `/ziola_spakuj`.
 
 > **Wskazówka:** Cel można podać jako skrót (litera/numer z listy obiektów, jak w `/z`, `/zas`) albo jako imię członka drużyny.
 

@@ -35,6 +35,13 @@ describe('break item triggers', () => {
     expect(client.FunctionalBind.set).toHaveBeenCalledTimes(1);
   });
 
+  test('leaves the bind of a torn herb bag to the herb counter', () => {
+    const line = 'Nagle skorzany woreczek rozpruwa sie. Chyba do niczego juz sie nie przyda.';
+    const result = parse(line);
+    expect(result?.text).toContain('[  SPRZET  ]');
+    expect(client.FunctionalBind.set).not.toHaveBeenCalled();
+  });
+
   test('binds weapon command', () => {
     const line = 'Miecz bojowy peka!';
     parse(line);

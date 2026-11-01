@@ -9,7 +9,9 @@ export default function initBreakItem(client: Client) {
     type Entry = { pattern: RegExp; command?: string; noBind?: boolean };
 
     const entries: Entry[] = [
-        { pattern: /^Nagle ([\w\- ]+) rozpruwa sie\..*/ },
+        // A torn herb bag's bind is the herb counter's: it puts the bag down and packs the herbs
+        { pattern: /^Nagle [\w\- ]*woreczek rozpruwa sie\..*/, noBind: true },
+        { pattern: /^Nagle (?![\w\- ]*woreczek rozpruwa)([\w\- ]+) rozpruwa sie\..*/ },
         { pattern: /^Niestety zbyt mocnym ruchem rozrywasz (?:\w+ )+(\w+), drac go na bezwartosciowe pasy materialu\.$/ },
         { pattern: /^Probujesz zalozyc (?:\w+ )+line(?: z hakiem)?, ale ta peka ci w rekach ze starosci\.$/ },
         { pattern: /^Czujesz, ze (?:\w+ )+(\w+) po prostu rozpada ci sie w rekach\.$/ },

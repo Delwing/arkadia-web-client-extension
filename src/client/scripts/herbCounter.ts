@@ -180,6 +180,8 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
         return getWearValue(`${trimmed}.`);
     };
     let currentBag = 0;
+    /** Set while /ziola_spakuj waits for its bag count */
+    let packTimeout: ReturnType<typeof setTimeout> | undefined;
 
     const showHerbActions = (id: string, ev: MouseEvent) => {
         openHerbContextMenu({
@@ -478,6 +480,21 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
     }
 
     client.Triggers.registerTrigger(countRegex, (line, matches) => {
+        if (packTimeout && !awaiting) {
+            clearTimeout(packTimeout);
+            packTimeout = undefined;
+            const count = polishWordToNumber(matches.groups?.num || matches[1]);
+            if (Number.isInteger(count) && count > 0) {
+                for (let i = 1; i <= count; i++) {
+                    client.sendCommand(`otworz ${i}. swoj woreczek`);
+                    client.sendCommand(`wloz ziola do ${i}. swojego woreczka`);
+                }
+                client.sendCommand('zamknij otwarte woreczki');
+                // What each bag holds has changed, so count them again
+                void start();
+            }
+            return line;
+        }
         if (!awaiting || left > 0) return line;
         left = polishWordToNumber(matches.groups?.num || matches[1]);
         if (!Number.isInteger(left) || left < 0) {
@@ -569,6 +586,10 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
     }
 
     client.Triggers.registerTrigger(/^Nie widzisz tu niczego takiego\.$/, line => {
+        if (packTimeout && !awaiting) {
+            clearTimeout(packTimeout);
+            packTimeout = undefined;
+        }
         if (awaiting && left === 0) failBuild('no-bags');
         return line;
     });
@@ -578,6 +599,30 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
     });
     client.on('client.disconnect', () => failBuild('disconnected'));
     characterStorage.onCharacterChange(() => failBuild('character-changed'));
+
+    /**
+     * Puts the herbs carried loose into the own bags, first bag first: counts
+     * the bags, then opens each and puts the herbs in, so what does not fit
+     * goes on to the next. The bags are counted again afterwards.
+     */
+    function pack() {
+        if (awaiting) {
+            client.println('Trwa liczenie ziol, sprobuj za chwile.');
+            return;
+        }
+        clearTimeout(packTimeout);
+        packTimeout = setTimeout(() => { packTimeout = undefined; }, 10000);
+        client.sendCommand('policz swoje woreczki');
+    }
+
+    // A torn bag spills its herbs: put it down and pack them into the rest
+    client.Triggers.registerTrigger(/^Nagle [a-z -]*woreczek rozpruwa sie\./, line => {
+        client.FunctionalBind.set(' >> Odloz rozerwany woreczek i spakuj ziola', () => {
+            client.sendCommand('odloz rozerwany woreczek');
+            pack();
+        }, true);
+        return line;
+    });
 
     function evaluateBagConditions() {
         Object.keys(pendingConditions as Record<string, number>).forEach(key => {
@@ -794,6 +839,7 @@ export default async function initHerbCounter(client: Client, aliases?: { patter
     if (aliases) {
         aliases.push({pattern: /\/ziola_buduj$/, callback: start});
         aliases.push({pattern: /\/woreczki_buduj$/, callback: evaluateBagConditions});
+        aliases.push({pattern: /^\/ziola_spakuj$/, callback: pack});
         aliases.push({
             pattern: /\/ziola_pokaz$/, callback: async () => {
                 const stored = characterStorage.get(STORAGE_KEY);
