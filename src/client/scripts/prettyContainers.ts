@@ -316,7 +316,7 @@ const defaultContainerPatterns: RegExp[] = [
     /^W .+? (?<container>skrzyni|kufrze|skrzynce) zauwazasz miedzy innymi (?<content>.*)\.$/,
     /^Otwarty .+? (?<container>kosz(?:|yk)) zawiera (?<content>.*)\.$/,
     /^Na (?<container>stojakach) zauwazasz miedzy innymi (?<content>.*)\.$/,
-    /^(?<container>.+? (?:skrzynia|kufer|komoda|stojak|biblioteczka|kuferek|skrzynka|regal|szkatula))(?:| z okuciami| depozytowa) zawiera (?<content>.*)\.$/,
+    /^(?<container>.+? (?:skrzynia|kufer|komoda|stojak|biblioteczka|kuferek|skrzynka|regal|szkatula|kosz))(?:| z okuciami| depozytowa) zawiera (?<content>.*)\.$/,
     /^Wsrod pedantycznego porzadku w (?<container>szafie) zauwazasz miedzy innymi (?<content>.*)\.$/,
     /^Otwart[ay] (?<container>[a-z- ]+ (?:koszyk|szafa|sejf|misa|sarkofag|sarkofag z kamiennych plyt)) zawiera (?<content>.*)\.$/,
     /^Narozna (?<container>etazerka) zawiera: (?<content>.*)\.$/,

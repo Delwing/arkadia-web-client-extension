@@ -179,6 +179,19 @@ describe('prettyContainers with real Client', () => {
       expect(tableText).toMatch(/tarcze/);
     });
 
+    test('handles a basket that is not described as open', () => {
+      const input = 'Ogromny wiklinowy kosz zawiera jadeitowa pieczec, zloty miecz.';
+
+      const results = client.onLine(input, '');
+      client.sendEvent('output-sent', 1);
+
+      expect(results).toHaveLength(0);
+      const tableText = getEmittedTable();
+
+      expect(tableText).toMatch(/pieczec/);
+      expect(tableText).toMatch(/miecz/);
+    });
+
     test.each([
       'Otwarty praktyczny plecak ze skory echinopsa zawiera zloty miecz, srebrna tarcze.',
       'Otwierasz na chwile praktyczny plecak ze skory echinopsa, sprawdzajac zawartosc. W srodku dostrzegasz zloty miecz, srebrna tarcze.',
