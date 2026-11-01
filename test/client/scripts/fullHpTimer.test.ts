@@ -65,6 +65,31 @@ describe('full hp timer', () => {
     expect(client.sendEvent).not.toHaveBeenCalledWith('notify', expect.anything());
   });
 
+  test('does not start when reaching full hp in combat', () => {
+    const client = new FakeClient();
+    initFullHpTimer((client as unknown) as any);
+    enable(client);
+    client.sendEvent('combatState', true);
+    client.sendEvent('gmcp.char.state', { hp: 5 });
+    client.sendEvent('gmcp.char.state', { hp: 6 });
+    client.sendEvent('combatState', false);
+    jest.advanceTimersByTime(180000);
+    expect(client.println).not.toHaveBeenCalled();
+    expect(client.sendEvent).not.toHaveBeenCalledWith('notify', expect.anything());
+  });
+
+  test('cancels a running timer when combat starts', () => {
+    const client = new FakeClient();
+    initFullHpTimer((client as unknown) as any);
+    enable(client);
+    client.sendEvent('gmcp.char.state', { hp: 5 });
+    client.sendEvent('gmcp.char.state', { hp: 6 });
+    jest.advanceTimersByTime(60000);
+    client.sendEvent('combatState', true);
+    jest.advanceTimersByTime(180000);
+    expect(client.println).not.toHaveBeenCalled();
+  });
+
     test('timer is cancelled on combat', () => {
       const client = new FakeClient();
       initFullHpTimer((client as unknown) as any);

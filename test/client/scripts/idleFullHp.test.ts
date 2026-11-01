@@ -41,6 +41,21 @@ describe('idle full hp notification', () => {
     expect(client.sendEvent).not.toHaveBeenCalledWith('notify', expect.anything());
   });
 
+  test('does not notify when reaching full hp in combat', () => {
+    const client = new FakeClient();
+    initIdleFullHp((client as unknown) as any);
+    client.sendEvent('gmcp.char.state', { hp: 5 });
+    client.sendEvent('combatState', true);
+    jest.setSystemTime(120000);
+    client.sendEvent('gmcp.char.state', { hp: 6 });
+    expect(client.sendEvent).not.toHaveBeenCalledWith('notify', expect.anything());
+
+    client.sendEvent('combatState', false);
+    client.sendEvent('gmcp.char.state', { hp: 5 });
+    client.sendEvent('gmcp.char.state', { hp: 6 });
+    expect(client.sendEvent).toHaveBeenCalledWith('notify', expect.objectContaining({ text: 'Masz pełne życie' }));
+  });
+
   test('command resets idle timer', () => {
     const client = new FakeClient();
     initIdleFullHp((client as unknown) as any);

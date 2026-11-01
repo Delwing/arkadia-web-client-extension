@@ -10,6 +10,8 @@ export default function initFullHpTimer(client: Client) {
     let enabled = false;
     let playerNum: number | undefined;
     let previousHp: number | null = null;
+    // Full hp regained mid-fight is not rest, so the countdown never starts then.
+    let inCombat = false;
 
     function clearTimer() {
         if (timer !== null) {
@@ -18,8 +20,13 @@ export default function initFullHpTimer(client: Client) {
         }
     }
 
+    function setCombat(state: boolean) {
+        inCombat = state;
+        if (inCombat) clearTimer();
+    }
+
     function startTimer() {
-        if (!enabled || timer !== null) return;
+        if (!enabled || inCombat || timer !== null) return;
         timer = window.setTimeout(() => {
             const plain = "Jestes w pelni zdrowia.";
             const msg = colorString(plain, SPRING_GREEN);
@@ -68,13 +75,14 @@ export default function initFullHpTimer(client: Client) {
         if (!playerNum) return;
         const obj = data[playerNum];
         if (!obj || obj.attack_num === undefined) return;
-        if (obj.attack_num !== false) {
-            clearTimer();
-        }
+        setCombat(obj.attack_num !== false);
     });
+
+    client.on("combatState", (state) => setCombat(state));
 
     client.on("client.disconnect", () => {
         playerNum = undefined;
+        inCombat = false;
         clearTimer();
         previousHp = null;
     });
