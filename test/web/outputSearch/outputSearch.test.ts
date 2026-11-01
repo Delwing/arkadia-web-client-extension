@@ -46,6 +46,17 @@ describe('findInOutput', () => {
         expect(findInOutput(wrapper, '   ', new Set([split]))).toEqual([]);
     });
 
+    it('searches the lines inside the output\'s blocks, each hit on its own line', () => {
+        const { wrapper, split } = output(
+            `<div class="output-block output-block-sealed">${line('goblin')}${line('nic')}</div>` +
+            `<div class="output-block">${line('drugi goblin')}</div>`);
+        const hits = findInOutput(wrapper, 'goblin', new Set([split]));
+
+        expect(hits).toHaveLength(2);
+        expect(hits[0].line).toBe(wrapper.querySelectorAll('.output_msg')[0]);
+        expect(hits[1].line).toBe(wrapper.querySelectorAll('.output-block')[1].firstElementChild);
+    });
+
     it('hands out static ranges, which DOM changes leave alone', () => {
         const { wrapper, split } = output(line('goblin'));
         const [hit] = findInOutput(wrapper, 'goblin', new Set([split]));

@@ -3218,6 +3218,13 @@ select.popup-input.popup-input--control.is-warning {
     padding: 0;
 }
 
+/* The output's lines come in blocks of 100 (outputMessageHandler.ts). A full
+   block takes no more lines, so it is laid out and painted on its own: a new
+   line costs the newest block, not the whole scrollback. */
+.output-block-sealed {
+  contain: content;
+}
+
 .output_msg_text {
   white-space: pre-wrap;
 }

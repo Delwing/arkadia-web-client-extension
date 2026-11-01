@@ -1,3 +1,5 @@
+import {outputLinesFromEnd} from "@shared/dom/outputMessageHandler.ts";
+
 const MAX_OUTPUT_LINES = 500;
 const MIN_WORD_LENGTH = 2;
 /** Per-line metadata spans: in the DOM even while hidden, but not game text. */
@@ -21,15 +23,15 @@ function lineText(line: Element): string {
  */
 export function harvestOutputLines(wrapper: HTMLElement | null | undefined): string[] {
     if (!wrapper) return [];
-    const children = wrapper.children;
     const lines: string[] = [];
-
-    const startIdx = Math.max(0, children.length - MAX_OUTPUT_LINES);
-    for (let i = startIdx; i < children.length; i++) {
-        lines.push(lineText(children[i]));
+    // From the newest back, as far as needed: the stock output keeps its lines
+    // in blocks, so the wrapper's children are not the lines.
+    for (const line of outputLinesFromEnd(wrapper)) {
+        if (lines.length >= MAX_OUTPUT_LINES) break;
+        lines.push(lineText(line));
     }
 
-    return lines;
+    return lines.reverse();
 }
 
 /**

@@ -3,6 +3,7 @@ import { ChevronDown, ChevronUp, ScrollText, Search, X } from "lucide-react";
 import { canSearchLogs, requestLogSearch } from "@web/logSearchRequest.ts";
 import { clearMatches, findInLines, findInOutput, paintMatches, revealMatch, type OutputMatch } from "./outputSearch";
 import { closeOutputSearch, getOutputSearchRequest, subscribeOutputSearch } from "./outputSearchState";
+import { OUTPUT_BLOCK_CLASS, isOutputLine } from "@shared/dom/outputMessageHandler.ts";
 
 interface OutputSearchBarProps {
     outputWrapper: HTMLElement;
@@ -96,13 +97,13 @@ function SearchBar({ initialQuery, outputWrapper, splitBottom, skip, commandInpu
         let added: Element[] = [];
         const rescan = () => {
             timer = null;
-            const arrived = added.filter(line => line.parentNode === outputWrapper)
+            const arrived = added.filter(line => isOutputLine(outputWrapper, line))
                 .sort((a, b) => (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1));
             added = [];
             const { searchQuery: q, found: before, current: index } = stateRef.current;
             const anchor = before.matches[index];
             let hits: OutputMatch[];
-            const kept = before.matches.filter(m => m.line.parentNode === outputWrapper);
+            const kept = before.matches.filter(m => isOutputLine(outputWrapper, m.line));
             const last = kept[kept.length - 1]?.line;
             const inOrder = !last || arrived.every(line => line !== last &&
                 (last.compareDocumentPosition(line) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0);
@@ -115,15 +116,22 @@ function SearchBar({ initialQuery, outputWrapper, splitBottom, skip, commandInpu
             setFound({ query: q, matches: hits });
             setCurrent(keptIndex !== -1 ? keptIndex : index < 0 ? hits.length - 1 : Math.min(index, hits.length - 1));
         };
+        // Lines go into the output's blocks, so the whole subtree is watched, but
+        // only what changes in the wrapper or in a block adds or trims lines. A
+        // new block arrives empty; its lines get records of their own.
         const observer = new MutationObserver((records) => {
+            let changed = false;
             for (const record of records) {
+                const target = record.target;
+                if (target !== outputWrapper && !(target instanceof Element && target.classList.contains(OUTPUT_BLOCK_CLASS))) continue;
+                changed = true;
                 record.addedNodes.forEach(node => {
-                    if (node instanceof Element) added.push(node);
+                    if (node instanceof Element && !node.classList.contains(OUTPUT_BLOCK_CLASS)) added.push(node);
                 });
             }
-            timer ??= setTimeout(rescan, RESCAN_MS);
+            if (changed) timer ??= setTimeout(rescan, RESCAN_MS);
         });
-        observer.observe(outputWrapper, { childList: true });
+        observer.observe(outputWrapper, { childList: true, subtree: true });
         return () => {
             observer.disconnect();
             if (timer) clearTimeout(timer);

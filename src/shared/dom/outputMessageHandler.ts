@@ -45,6 +45,52 @@ export type OutputMessageHandler = {
     appendNode(node: HTMLElement, rebuild?: () => HTMLElement): void;
 };
 
+/**
+ * The output's lines sit in blocks of OUTPUT_BLOCK_LINES, not straight in the
+ * wrapper. A full block is sealed, and CSS contains a sealed block (`contain:
+ * content`), so each frame lays out and paints the newest block instead of the
+ * whole scrollback: about half the browser's rendering work while text streams
+ * in, with the default 5000-line buffer (docs/dev/PERFORMANCE.md).
+ *
+ * Code that walks the lines goes through {@link outputLines},
+ * {@link outputLinesFromEnd} and {@link isOutputLine}, never the wrapper's
+ * children.
+ */
+export const OUTPUT_BLOCK_CLASS = 'output-block';
+export const OUTPUT_BLOCK_SEALED_CLASS = 'output-block-sealed';
+const OUTPUT_BLOCK_LINES = 100;
+
+/** The output's lines (and anything else in it, such as the toast strip), top to bottom. */
+export function outputLines(wrapper: Element): Element[] {
+    const lines: Element[] = [];
+    for (let el = wrapper.firstElementChild; el; el = el.nextElementSibling) {
+        if (el.classList.contains(OUTPUT_BLOCK_CLASS)) {
+            for (let line = el.firstElementChild; line; line = line.nextElementSibling) lines.push(line);
+        } else {
+            lines.push(el);
+        }
+    }
+    return lines;
+}
+
+/** The output's lines from the newest back, without listing them all first. */
+export function* outputLinesFromEnd(wrapper: Element): Generator<Element> {
+    for (let el = wrapper.lastElementChild; el; el = el.previousElementSibling) {
+        if (el.classList.contains(OUTPUT_BLOCK_CLASS)) {
+            for (let line = el.lastElementChild; line; line = line.previousElementSibling) yield line;
+        } else {
+            yield el;
+        }
+    }
+}
+
+/** Whether `line` is (still) one of the wrapper's lines: not trimmed, not inside a line. */
+export function isOutputLine(wrapper: Element, line: Element): boolean {
+    const parent = line.parentElement;
+    if (parent === wrapper) return !line.classList.contains(OUTPUT_BLOCK_CLASS);
+    return !!parent && parent.classList.contains(OUTPUT_BLOCK_CLASS) && parent.parentElement === wrapper;
+}
+
 const TIMESTAMP_CLASS = 'output-show-timestamps';
 const MESSAGE_TYPE_CLASS = 'output-show-message-types';
 
@@ -313,16 +359,76 @@ export function setupOutputMessageHandler(
     });
     const detachHandle = splitView.attachHandle(splitHandle);
 
-    // Children of the wrapper besides the split pane, as last counted plus one
-    // per append since. Reading `childElementCount` walks every child, which on
-    // a big buffer made each appended line cost O(buffer); the exact count is
-    // only taken when this estimate says the trim threshold may be crossed.
-    // Anything else adding or removing lines only skews it until that recount.
-    let estimatedLines = outputWrapper.childElementCount - 1;
+    // Fixtures of the wrapper (the split pane, anything marked data-output-keep
+    // such as the toast strip) are never trimmed and do not count as lines.
+    const isFixture = (el: Element) => el === splitBottom || el.hasAttribute('data-output-keep');
+
+    // Lines go into blocks of OUTPUT_BLOCK_LINES (see OUTPUT_BLOCK_CLASS). Only
+    // the open block, the newest, takes new lines; the others are sealed.
+    let openBlock: HTMLElement | null = null;
+    let openBlockLines = 0;
+
+    const blockFor = (): HTMLElement => {
+        // Still last before the pane: something put straight into the wrapper
+        // after the block would otherwise end up below lines that came later.
+        if (openBlock && openBlockLines < OUTPUT_BLOCK_LINES && openBlock.parentNode === outputWrapper
+            && openBlock.nextElementSibling === splitBottom) {
+            return openBlock;
+        }
+        openBlock?.classList.add(OUTPUT_BLOCK_SEALED_CLASS);
+        openBlock = document.createElement('div');
+        openBlock.className = OUTPUT_BLOCK_CLASS;
+        // Keep splitBottom last: insert output before it, never after.
+        outputWrapper.insertBefore(openBlock, splitBottom);
+        openBlockLines = 0;
+        return openBlock;
+    };
+
+    // Exact count of the lines, in blocks or (from before the handler, or put
+    // there by someone else) straight in the wrapper. A walk over the wrapper's
+    // children: a few dozen blocks, not thousands of lines.
+    const countLines = (): number => {
+        let lines = 0;
+        for (let el = outputWrapper.firstElementChild; el; el = el.nextElementSibling) {
+            if (isFixture(el)) continue;
+            lines += el.classList.contains(OUTPUT_BLOCK_CLASS) ? el.childElementCount : 1;
+        }
+        return lines;
+    };
+
+    // The lines, as last counted plus one per append since. The exact count is
+    // only taken when this estimate says the trim threshold may be crossed;
+    // anything else adding or removing lines only skews it until that recount.
+    let estimatedLines = countLines();
+
+    // Removes the `excess` oldest lines: whole blocks while a block is all
+    // excess, then single lines from the front of the next one.
+    const trimOldest = (excess: number) => {
+        let el = outputWrapper.firstElementChild;
+        while (excess > 0 && el) {
+            const next = el.nextElementSibling;
+            if (isFixture(el)) {
+                // stays
+            } else if (!el.classList.contains(OUTPUT_BLOCK_CLASS)) {
+                outputWrapper.removeChild(el);
+                excess--;
+            } else if (el.childElementCount <= excess && el !== openBlock) {
+                excess -= el.childElementCount;
+                outputWrapper.removeChild(el);
+            } else {
+                while (excess > 0 && el.firstElementChild) {
+                    el.removeChild(el.firstElementChild);
+                    excess--;
+                }
+                if (el !== openBlock && !el.firstElementChild) outputWrapper.removeChild(el);
+            }
+            el = next;
+        }
+    };
 
     const appendNode = (node: HTMLElement, rebuild?: () => HTMLElement) => {
-        // Keep splitBottom last: insert output before it, never after.
-        outputWrapper.insertBefore(node, splitBottom);
+        blockFor().appendChild(node);
+        openBlockLines++;
         estimatedLines++;
 
         if (rebuild) {
@@ -336,25 +442,11 @@ export function setupOutputMessageHandler(
         // view — otherwise removing the oldest nodes would shift the content
         // they are reading. When split view closes, the accumulated excess
         // drains on the next message via the `> maxElements + trimSlack` check.
-        // Fixtures of the wrapper (the split pane, anything marked
-        // data-output-keep such as the toast strip) are never trimmed and do
-        // not count as lines.
         if (!splitView.isSplitView() && estimatedLines > maxElementsValue + trimSlack) {
-            estimatedLines = outputWrapper.childElementCount - 1;
+            estimatedLines = countLines();
             if (estimatedLines > maxElementsValue + trimSlack) {
-                const keep = (el: Element) => el === splitBottom || el.hasAttribute('data-output-keep');
-                const kept = 1 + outputWrapper.querySelectorAll(':scope > [data-output-keep]').length;
-                let excess = estimatedLines + 1 - kept - maxElementsValue;
-                let oldest = outputWrapper.firstElementChild;
-                while (excess > 0 && oldest) {
-                    const next = oldest.nextElementSibling;
-                    if (!keep(oldest)) {
-                        outputWrapper.removeChild(oldest);
-                        estimatedLines--;
-                        excess--;
-                    }
-                    oldest = next;
-                }
+                trimOldest(estimatedLines - maxElementsValue);
+                estimatedLines = countLines();
             }
         }
 

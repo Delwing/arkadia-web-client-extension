@@ -51,3 +51,24 @@ Measured on one machine; use them for orders of magnitude, not as a baseline.
   `toLocale*String` off hot paths and reuse one formatter.
 - With session logging switched off entirely, main-thread time drops by at most ~4%
   (steady) and not measurably in a burst.
+
+## Output blocks
+
+The stock output keeps its lines in blocks of 100 (`outputMessageHandler.ts`), and a
+full block gets `contain: content`. Without that, the per-frame style/layout/paint
+cost grew with the whole scrollback (default 5000 lines), not with what is on screen:
+capping the buffer at 200 lines halved it. With the blocks, a frame lays out the
+newest block plus a few dozen sealed boxes.
+
+Measured with `yarn perf`, master and blocks alternated over two rounds:
+
+- **steady**: main-thread busy 2.70 s -> 2.03 s (-25%), browser work (`(program)`)
+  1.36 s -> 0.69 s, layout 0.41 s -> 0.13 s.
+- **burst**: 0.94 s -> 0.87 s; trigger processing dominates there.
+
+Grouping alone (no containment CSS) got about half of it, by cutting layout.
+`content-visibility: auto` on the sealed blocks measured the same as `contain:
+content`; on single lines it had made things worse.
+
+Code that reads the output's lines uses `outputLines`, `outputLinesFromEnd` and
+`isOutputLine` from `outputMessageHandler.ts`, never the wrapper's children.

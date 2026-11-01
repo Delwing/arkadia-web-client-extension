@@ -18,6 +18,16 @@ describe('harvestOutputWords', () => {
         expect(harvestOutputWords(wrapper)).toEqual(['Stoisz', 'na', 'trakcie']);
     });
 
+    it('reads the lines inside the stock output\'s blocks, oldest first, up to the last 500', () => {
+        const block = (from: number, to: number) => '<div class="output-block">' +
+            Array.from({length: to - from + 1}, (_, i) => `<p>linia${from + i}</p>`).join('') + '</div>';
+        const wrapper = wrapperWith(block(1, 100) + block(101, 600));
+        const lines = harvestOutputLines(wrapper);
+        expect(lines).toHaveLength(500);
+        expect(lines[0]).toBe('linia101');
+        expect(lines[499]).toBe('linia600');
+    });
+
     it('reads plain lines unchanged', () => {
         expect(harvestOutputWords(wrapperWith('<p>Widzisz goblina</p>'))).toEqual(['Widzisz', 'goblina']);
     });

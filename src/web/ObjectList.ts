@@ -9,6 +9,7 @@ import {LEADER_MARK_SETTING, SEPARATE_OTHERS_SETTING} from "./layout/types";
 import {buildRenderContext, scopeRenderContext, type ObjectListViewMode, type RenderContext} from "./objectList/context.ts";
 import {getStrategy, renderListLines} from "./objectList/strategies.ts";
 import {buildObjectContextMenu} from "./objectList/objectContextMenu.ts";
+import {outputLinesFromEnd} from "@shared/dom/outputMessageHandler.ts";
 
 const DEFAULT_CONTEXT_MENU_COMMANDS = ['ob', 'ocen', 'zapros', 'wskaz'];
 const EMPTY_HTML = '<span style="color: #888; font-style: italic;">Brak obiektów</span>';
@@ -1060,9 +1061,10 @@ html, body {
             return;
         }
         const outputs: string[] = [];
-        // Walk back from the end: indexing `children` from the back after each
-        // append re-counts the whole buffer.
-        for (let child = wrapper.lastElementChild; child && outputs.length < 2; child = child.previousElementSibling) {
+        // Walk back from the newest line: listing them all after each append
+        // would cost the whole buffer.
+        for (const child of outputLinesFromEnd(wrapper)) {
+            if (outputs.length >= 2) break;
             if (child.classList.contains("output_msg")) {
                 const textEl = child.querySelector<HTMLElement>(".output_msg_text");
                 if (textEl) {

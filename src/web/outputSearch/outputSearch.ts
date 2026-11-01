@@ -1,4 +1,5 @@
 import { foldText } from "@shared/foldText.ts";
+import { outputLines } from "@shared/dom/outputMessageHandler.ts";
 
 /**
  * One hit in the game output: its range, and the line it sits on (for keeping
@@ -17,12 +18,12 @@ const CHROME_SELECTOR = ".output-timestamp, .output-message-type";
 
 /**
  * Every place `query` occurs in the output, top to bottom. The output's lines
- * are the wrapper's children (minus `skip`: the split view, the notification
+ * are what `outputLines` lists (minus `skip`: the split view, the notification
  * overlay); a hit may run across the coloured spans of one line but never
  * across lines. Case and Polish letters don't matter, as in the other searches.
  */
 export function findInOutput(wrapper: HTMLElement, query: string, skip: ReadonlySet<Element>): OutputMatch[] {
-    return findInLines(Array.from(wrapper.children), query, skip);
+    return findInLines(outputLines(wrapper), query, skip);
 }
 
 /** Like `findInOutput`, over just the given lines (e.g. the ones that arrived since). */

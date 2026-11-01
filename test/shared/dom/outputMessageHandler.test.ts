@@ -1,5 +1,10 @@
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 import {
+    OUTPUT_BLOCK_CLASS,
+    OUTPUT_BLOCK_SEALED_CLASS,
+    isOutputLine,
+    outputLines,
+    outputLinesFromEnd,
     setOutputMessageTypeVisibility,
     setOutputTimestampVisibility,
     setupOutputMessageHandler,
@@ -325,6 +330,82 @@ describe('setupOutputMessageHandler', () => {
         const remaining = Array.from(outputWrapper.querySelectorAll('.output_msg_content')).map(el => el.textContent);
         expect(remaining[0]).toBe('line 7');
         expect(remaining[remaining.length - 1]).toBe('line 16');
+    });
+
+    test('puts lines in blocks of 100 and seals a block once the next one opens', () => {
+        const { outputWrapper, splitBottom, splitHandle, stickyArea } = setupDom();
+        const client = makeFakeClient();
+
+        handler = setupOutputMessageHandler(client, {
+            outputWrapper, splitBottom, splitHandle, stickyArea, stickyLines: 3,
+            maxElements: 1000,
+        });
+
+        for (let i = 1; i <= 250; i++) client.emit(`line ${i}`, 'comm');
+        const blocks = Array.from(outputWrapper.querySelectorAll(`:scope > .${OUTPUT_BLOCK_CLASS}`));
+        expect(blocks.map(b => b.childElementCount)).toEqual([100, 100, 50]);
+        expect(blocks.map(b => b.classList.contains(OUTPUT_BLOCK_SEALED_CLASS))).toEqual([true, true, false]);
+        expect(outputWrapper.lastElementChild).toBe(splitBottom);
+        expect(outputLines(outputWrapper).filter(l => l.classList.contains('output_msg'))).toHaveLength(250);
+    });
+
+    test('trims whole blocks first, then lines from the front of the next, down to exactly maxElements', () => {
+        const { outputWrapper, splitBottom, splitHandle, stickyArea } = setupDom();
+        const client = makeFakeClient();
+
+        handler = setupOutputMessageHandler(client, {
+            outputWrapper, splitBottom, splitHandle, stickyArea, stickyLines: 3,
+            maxElements: 150, trimSlack: 100,
+        });
+
+        for (let i = 1; i <= 251; i++) client.emit(`line ${i}`, 'comm');
+        const remaining = Array.from(outputWrapper.querySelectorAll('.output_msg_content')).map(el => el.textContent);
+        expect(remaining).toHaveLength(150);
+        expect(remaining[0]).toBe('line 102');
+        expect(remaining[149]).toBe('line 251');
+        // The first block went whole; the second lost its first line; the third is open.
+        const blocks = Array.from(outputWrapper.querySelectorAll(`:scope > .${OUTPUT_BLOCK_CLASS}`));
+        expect(blocks.map(b => b.childElementCount)).toEqual([99, 51]);
+    });
+
+    test('a node put straight into the wrapper stays above the lines that come after it', () => {
+        const { outputWrapper, splitBottom, splitHandle, stickyArea } = setupDom();
+        const client = makeFakeClient();
+
+        handler = setupOutputMessageHandler(client, {
+            outputWrapper, splitBottom, splitHandle, stickyArea, stickyLines: 3,
+        });
+        client.emit('before', 'comm');
+        const foreign = document.createElement('span');
+        outputWrapper.insertBefore(foreign, splitBottom);
+        client.emit('after', 'comm');
+
+        const order = outputLines(outputWrapper).map(l => l === foreign ? 'foreign' : l.textContent);
+        expect(order.slice(0, 3)).toEqual(['before', 'foreign', 'after']);
+    });
+
+    test('line helpers see lines in blocks and straight in the wrapper alike', () => {
+        const { outputWrapper, splitBottom, splitHandle, stickyArea } = setupDom();
+        const loose = document.createElement('div');
+        loose.className = 'output_msg';
+        outputWrapper.insertBefore(loose, splitBottom);
+        const client = makeFakeClient();
+
+        handler = setupOutputMessageHandler(client, {
+            outputWrapper, splitBottom, splitHandle, stickyArea, stickyLines: 3,
+        });
+        client.emit('a', 'comm');
+        client.emit('b', 'comm');
+
+        const lines = outputLines(outputWrapper);
+        expect(lines).toEqual([loose, ...outputWrapper.querySelectorAll(`.${OUTPUT_BLOCK_CLASS} > .output_msg`), splitBottom]);
+        expect([...outputLinesFromEnd(outputWrapper)]).toEqual([...lines].reverse());
+        expect(lines.slice(0, 3).every(l => isOutputLine(outputWrapper, l))).toBe(true);
+        expect(isOutputLine(outputWrapper, outputWrapper.querySelector(`.${OUTPUT_BLOCK_CLASS}`)!)).toBe(false);
+        expect(isOutputLine(outputWrapper, outputWrapper.querySelector('.output_msg_text')!)).toBe(false);
+        const trimmed = lines[1];
+        trimmed.parentElement!.remove();
+        expect(isOutputLine(outputWrapper, trimmed)).toBe(false);
     });
 
     test('trims to maxElements even after lines were removed behind its back', () => {

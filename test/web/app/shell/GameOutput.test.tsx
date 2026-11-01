@@ -32,7 +32,8 @@ const withServices = (node: ReactNode) => <AppProviders services={services}>{nod
 // React 19 requires this flag for act() outside a test framework integration.
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-const lines = () => [...document.querySelectorAll('#main_text_output_msg_wrapper > .output_msg .output_msg_content')].map(el => el.textContent);
+// The output's lines, in its blocks (not the scrollback pane's copies).
+const lines = () => [...document.querySelectorAll('#main_text_output_msg_wrapper > .output-block > .output_msg .output_msg_content')].map(el => el.textContent);
 
 describe('GameOutput', () => {
     let container: HTMLElement;
