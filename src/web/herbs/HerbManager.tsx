@@ -18,6 +18,7 @@ import { HerbCopyButton, HerbEffectsView, HerbFilterBar, HerbListView } from "./
 import {
     formatHerbInventory,
     herbTotals,
+    herbCatalogIds,
     isHerbFilterActive,
     matchesHerbFilter,
     type HerbCopyFormat,
@@ -31,6 +32,7 @@ const MODE_OPTIONS: { value: HerbWindowMode; label: string }[] = [
     { value: 'bags', label: 'Woreczki' },
     { value: 'list', label: 'Lista' },
     { value: 'effects', label: 'Efekty' },
+    { value: 'catalog', label: 'Katalog' },
 ];
 
 const EMPTY_FILTER: HerbFilter = { query: '', group: null };
@@ -375,15 +377,23 @@ const HerbManager = () => {
         return herbsDataPromiseRef.current;
     }, []);
 
+    const [herbsLoading, setHerbsLoading] = useState(false);
+    const [herbsLoadAttempt, setHerbsLoadAttempt] = useState(0);
+
     // Every mode but the plain bag grid reads the herb data, so load it on open.
     useEffect(() => {
         if (!isOpen) return;
         let cancelled = false;
+        setHerbsLoading(true);
         void ensureHerbsData().then(data => {
             if (!cancelled) setHerbsData(data);
+        }).catch(() => {
+            if (!cancelled) setHerbsData(null);
+        }).finally(() => {
+            if (!cancelled) setHerbsLoading(false);
         });
         return () => { cancelled = true; };
-    }, [isOpen, ensureHerbsData]);
+    }, [isOpen, ensureHerbsData, herbsLoadAttempt]);
 
     // Check if popup is managed by layout to determine overlay visibility
     const layoutContext = useLayoutManagerOptional();
@@ -829,16 +839,18 @@ const HerbManager = () => {
 
     const totals = useMemo(() => herbTotals(counts), [counts]);
     const ownedIds = useMemo(() => Object.keys(totals).filter(herbId => totals[herbId] > 0), [totals]);
+    const catalog = mode === 'catalog';
+    const availableIds = useMemo(() => catalog ? herbCatalogIds(herbsData) : ownedIds, [catalog, herbsData, ownedIds]);
     const visibleIds = useMemo(
-        () => ownedIds.filter(herbId => matchesHerbFilter(herbId, herbsData, filter)),
-        [ownedIds, herbsData, filter],
+        () => availableIds.filter(herbId => matchesHerbFilter(herbId, herbsData, filter, catalog)),
+        [availableIds, herbsData, filter, catalog],
     );
     const visibleSet = useMemo(() => new Set(visibleIds), [visibleIds]);
     const filterActive = isHerbFilterActive(filter);
 
     const previewCopy = useCallback(
-        (format: HerbCopyFormat) => formatHerbInventory(format, visibleIds, counts, herbsData),
-        [visibleIds, counts, herbsData],
+        (format: HerbCopyFormat) => formatHerbInventory(format, visibleIds, counts, herbsData, catalog),
+        [visibleIds, counts, herbsData, catalog],
     );
     const handleCopy = useCallback((format: HerbCopyFormat) => {
         const text = previewCopy(format);
@@ -855,7 +867,7 @@ const HerbManager = () => {
         const timer = setTimeout(() => setCopied(false), 1500);
         return () => clearTimeout(timer);
     }, [copied]);
-    const copyNote = filterActive ? `Kopiuje tylko to, co pasuje do filtra (${visibleIds.length} z ${ownedIds.length}).` : null;
+    const copyNote = filterActive ? `Kopiuje tylko to, co pasuje do filtra (${visibleIds.length} z ${availableIds.length}).` : null;
 
     const changeMode = useCallback((next: HerbWindowMode) => {
         // The give basket only lives in the bag grid; leaving it puts the herbs back.
@@ -951,8 +963,8 @@ const HerbManager = () => {
                             {error}
                         </div>
                     )}
-                    {!emptyState && (
-                        <HerbFilterBar filter={filter} onChange={setFilter} herbIds={ownedIds} herbsData={herbsData} />
+                    {(!emptyState || catalog) && (
+                        <HerbFilterBar filter={filter} onChange={setFilter} herbIds={availableIds} herbsData={herbsData} catalog={catalog} />
                     )}
                     {mode === 'bags' && giveMode && (
                         <div
@@ -1037,12 +1049,20 @@ const HerbManager = () => {
                             </div>
                         </div>
                     )}
-                    {emptyState ? (
+                    {catalog && !herbsData ? (
+                        <div className="popup-notice herb-manager-status">
+                            {herbsLoading ? 'Ładowanie katalogu ziół…' : <>
+                                Nie udało się wczytać katalogu ziół.
+                                <button type="button" className="popup-btn" onClick={() => setHerbsLoadAttempt(attempt => attempt + 1)}>Spróbuj ponownie</button>
+                            </>}
+                        </div>
+                    ) : emptyState && !catalog ? (
                         <div className="popup-notice herb-manager-status">
                             Brak danych o woreczkach. Użyj aliasu <code>/ziola_buduj</code>, aby odświeżyć zawartość.
                         </div>
-                    ) : mode === 'list' ? (
+                    ) : mode === 'list' || catalog ? (
                         <HerbListView
+                            catalog={catalog}
                             herbIds={visibleIds}
                             totals={totals}
                             herbsData={herbsData}

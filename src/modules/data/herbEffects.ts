@@ -59,9 +59,9 @@ export function herbEffectGroupOf(token: string): string | undefined {
 }
 
 /** Every group a herb belongs to (through any of its uses), plus `smoke` for pipe herbs. */
-export function herbGroupKeys(uses: HerbUse[] | undefined): Set<string> {
+export function herbGroupKeys(uses: HerbUse[] | undefined, includeUnbound = false): Set<string> {
     const keys = new Set<string>();
-    getBindableUses(uses).forEach(use => herbEffectTokens(use.effect).forEach(token => {
+    (includeUnbound ? (uses ?? []).filter(use => !use.smokable) : getBindableUses(uses)).forEach(use => herbEffectTokens(use.effect).forEach(token => {
         const group = TOKEN_TO_GROUP.get(token);
         if (group) keys.add(group);
     }));

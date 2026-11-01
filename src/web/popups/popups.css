@@ -6799,9 +6799,21 @@ select.popup-input optgroup {
   cursor: pointer;
 }
 
-.herb-amount:hover {
+.herb-amount:hover:not(:disabled) {
   border-color: var(--popup-accent);
   background: var(--popup-control-hover-bg);
+}
+
+.herb-amount:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.herb-list__description {
+  white-space: normal;
+  font-size: var(--ui-fs-xs, 11px);
+  font-weight: normal;
+  color: var(--popup-text-dim);
 }
 
 .herb-amount--wide {

@@ -406,7 +406,7 @@ export interface KnownEvents {
     /** A scan ended without replacing the previous herb database. */
     "herbs.build.failed": { reason: 'no-bags' | 'timeout' | 'busy' | 'disconnected' | 'character-changed' | 'error' };
     /** Opens the Zioła window, optionally in a given mode (`/ziola2` opens the list). */
-    "herbManagerOpen": { mode?: "bags" | "list" | "effects" } | void;
+    "herbManagerOpen": { mode?: "bags" | "list" | "effects" | "catalog" } | void;
     "sound:play": { key: string };
     "sound:muted": boolean;
     "sound:category": SoundCategory;
