@@ -45,6 +45,8 @@ export function RemoteApp() {
     const inputRef = useRef<HTMLInputElement>(null);
     const followRef = useRef(true);
     const retriesRef = useRef(0);
+    /** False after "Rozłącz", so the phone stays disconnected (also across a reload). */
+    const autoConnectRef = useRef(prefs.autoConnect());
     const statusRef = useRef(status);
     statusRef.current = status;
     const hostsRef = useRef(hosts);
@@ -91,6 +93,15 @@ export function RemoteApp() {
         output: append,
     }), [append, scrollToBottom]);
 
+    const setAutoConnect = (on: boolean) => {
+        autoConnectRef.current = on;
+        prefs.setAutoConnect(on);
+    };
+    const disconnectByHand = () => {
+        setAutoConnect(false);
+        link.disconnect();
+    };
+
     const connect = useCallback((hostId: string) => {
         if (!prefs.pairCode(hostId)) return;
         prefs.setLastHost(hostId);
@@ -104,6 +115,7 @@ export function RemoteApp() {
 
     // Back on the PC you used last, without a tap: on load, and after a drop.
     useEffect(() => {
+        if (!autoConnectRef.current) return;
         const last = prefs.lastHost();
         if (!last || !prefs.pairCode(last) || !hosts.some(host => host.hostId === last)) return;
         if (status.kind === 'idle' && retriesRef.current === 0) {
@@ -125,7 +137,7 @@ export function RemoteApp() {
         const onVisible = () => {
             if (document.visibilityState !== 'visible') return;
             const current = statusRef.current;
-            if (current.kind === 'lost' && hostsRef.current.some(host => host.hostId === current.hostId)) {
+            if (autoConnectRef.current && current.kind === 'lost' && hostsRef.current.some(host => host.hostId === current.hostId)) {
                 retriesRef.current = 0;
                 connect(current.hostId);
             }
@@ -246,7 +258,7 @@ export function RemoteApp() {
                 )}
                 <button type="button" className="rc-icon" onClick={() => changeFont(-1)}>A−</button>
                 <button type="button" className="rc-icon" onClick={() => changeFont(1)}>A+</button>
-                {connected && <button type="button" className="rc-icon" onClick={() => link.disconnect()}>Rozłącz</button>}
+                {connected && <button type="button" className="rc-icon" onClick={disconnectByHand}>Rozłącz</button>}
             </header>
 
             {connected && <VitalsBar vitals={game.vitals} combat={game.combat}/>}
@@ -272,6 +284,7 @@ export function RemoteApp() {
                     {(status.kind === 'idle' || status.kind === 'lost') && hosts.filter(host => prefs.pairCode(host.hostId)).map(host => (
                         <button key={host.hostId} type="button" className="rc-host" onClick={() => {
                             retriesRef.current = 0;
+                            setAutoConnect(true);
                             connect(host.hostId);
                         }}>
                             {status.kind === 'lost' && status.hostId === host.hostId ? 'Połącz ponownie: ' : 'Steruj: '}

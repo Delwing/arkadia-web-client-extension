@@ -17,6 +17,8 @@ function takePairing(): boolean {
     if (!pairHost || !pairCode) return false;
     prefs.setPairCode(pairHost, pairCode);
     prefs.setLastHost(pairHost);
+    // Scanning a QR is asking to connect, even after an earlier "Rozłącz".
+    prefs.setAutoConnect(true);
     history.replaceState(null, '', location.pathname + location.search);
     return true;
 }

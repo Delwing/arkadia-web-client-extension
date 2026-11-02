@@ -67,6 +67,9 @@ export const prefs = {
     setHostName(hostId: string, name: string) {
         write('hostNames', { ...read('hostNames', {} as Record<string, string>, isStringRecord), [hostId]: name });
     },
+    /** Off after "Rozłącz": no reconnecting on its own until a PC is tapped or a QR scanned. */
+    autoConnect: () => read('autoConnect', true, isBoolean),
+    setAutoConnect: (on: boolean) => write('autoConnect', on),
     lastHost: () => read('lastHost', '', isString),
     setLastHost: (hostId: string) => write('lastHost', hostId),
 };
