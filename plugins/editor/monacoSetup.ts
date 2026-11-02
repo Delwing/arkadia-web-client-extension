@@ -1,10 +1,80 @@
 import * as monaco from 'monaco-editor'
-import {createHighlighter} from 'shiki'
+import {createHighlighterCore} from 'shiki/core'
+import {createOnigurumaEngine} from 'shiki/engine/oniguruma'
 import {shikiToMonaco} from '@shikijs/monaco'
 import pluginApiTypes from '../types/index.d.ts?raw'
 import type {StatusType} from './types'
 import { registerSnippets } from './snippets'
 import {IPosition, IRange} from "monaco-editor";
+
+/**
+ * The themes the editor offers, imported one by one. The full `shiki` bundle
+ * would also work, but it makes the build emit every grammar and theme Shiki
+ * has (~300 chunks, ~9 MB) for the 3 languages the editor loads; plain text
+ * needs no grammar.
+ */
+const editorThemes = () => [
+  import('shiki/themes/andromeeda.mjs'),
+  import('shiki/themes/aurora-x.mjs'),
+  import('shiki/themes/ayu-dark.mjs'),
+  import('shiki/themes/catppuccin-frappe.mjs'),
+  import('shiki/themes/catppuccin-latte.mjs'),
+  import('shiki/themes/catppuccin-macchiato.mjs'),
+  import('shiki/themes/catppuccin-mocha.mjs'),
+  import('shiki/themes/dark-plus.mjs'),
+  import('shiki/themes/dracula.mjs'),
+  import('shiki/themes/dracula-soft.mjs'),
+  import('shiki/themes/everforest-dark.mjs'),
+  import('shiki/themes/everforest-light.mjs'),
+  import('shiki/themes/github-dark.mjs'),
+  import('shiki/themes/github-dark-default.mjs'),
+  import('shiki/themes/github-dark-dimmed.mjs'),
+  import('shiki/themes/github-dark-high-contrast.mjs'),
+  import('shiki/themes/github-light.mjs'),
+  import('shiki/themes/github-light-default.mjs'),
+  import('shiki/themes/github-light-high-contrast.mjs'),
+  import('shiki/themes/gruvbox-dark-hard.mjs'),
+  import('shiki/themes/gruvbox-dark-medium.mjs'),
+  import('shiki/themes/gruvbox-dark-soft.mjs'),
+  import('shiki/themes/gruvbox-light-hard.mjs'),
+  import('shiki/themes/gruvbox-light-medium.mjs'),
+  import('shiki/themes/gruvbox-light-soft.mjs'),
+  import('shiki/themes/houston.mjs'),
+  import('shiki/themes/kanagawa-dragon.mjs'),
+  import('shiki/themes/kanagawa-lotus.mjs'),
+  import('shiki/themes/kanagawa-wave.mjs'),
+  import('shiki/themes/laserwave.mjs'),
+  import('shiki/themes/light-plus.mjs'),
+  import('shiki/themes/material-theme.mjs'),
+  import('shiki/themes/material-theme-darker.mjs'),
+  import('shiki/themes/material-theme-lighter.mjs'),
+  import('shiki/themes/material-theme-ocean.mjs'),
+  import('shiki/themes/material-theme-palenight.mjs'),
+  import('shiki/themes/min-dark.mjs'),
+  import('shiki/themes/min-light.mjs'),
+  import('shiki/themes/monokai.mjs'),
+  import('shiki/themes/night-owl.mjs'),
+  import('shiki/themes/nord.mjs'),
+  import('shiki/themes/one-dark-pro.mjs'),
+  import('shiki/themes/one-light.mjs'),
+  import('shiki/themes/plastic.mjs'),
+  import('shiki/themes/poimandres.mjs'),
+  import('shiki/themes/red.mjs'),
+  import('shiki/themes/rose-pine.mjs'),
+  import('shiki/themes/rose-pine-dawn.mjs'),
+  import('shiki/themes/rose-pine-moon.mjs'),
+  import('shiki/themes/slack-dark.mjs'),
+  import('shiki/themes/slack-ochin.mjs'),
+  import('shiki/themes/snazzy-light.mjs'),
+  import('shiki/themes/solarized-dark.mjs'),
+  import('shiki/themes/solarized-light.mjs'),
+  import('shiki/themes/synthwave-84.mjs'),
+  import('shiki/themes/tokyo-night.mjs'),
+  import('shiki/themes/vesper.mjs'),
+  import('shiki/themes/vitesse-black.mjs'),
+  import('shiki/themes/vitesse-dark.mjs'),
+  import('shiki/themes/vitesse-light.mjs'),
+]
 
 export function setupTypeScriptEnvironment() {
   // Configure TypeScript compiler options
@@ -347,70 +417,14 @@ export async function initializeEditor(
   // Initialize Shiki for TextMate-based syntax highlighting
   updateStatus('Loading syntax highlighter...', 'normal')
   try {
-    const highlighter = await createHighlighter({
-      themes: [
-        'andromeeda',
-        'aurora-x',
-        'ayu-dark',
-        'catppuccin-frappe',
-        'catppuccin-latte',
-        'catppuccin-macchiato',
-        'catppuccin-mocha',
-        'dark-plus',
-        'dracula',
-        'dracula-soft',
-        'everforest-dark',
-        'everforest-light',
-        'github-dark',
-        'github-dark-default',
-        'github-dark-dimmed',
-        'github-dark-high-contrast',
-        'github-light',
-        'github-light-default',
-        'github-light-high-contrast',
-        'gruvbox-dark-hard',
-        'gruvbox-dark-medium',
-        'gruvbox-dark-soft',
-        'gruvbox-light-hard',
-        'gruvbox-light-medium',
-        'gruvbox-light-soft',
-        'houston',
-        'kanagawa-dragon',
-        'kanagawa-lotus',
-        'kanagawa-wave',
-        'laserwave',
-        'light-plus',
-        'material-theme',
-        'material-theme-darker',
-        'material-theme-lighter',
-        'material-theme-ocean',
-        'material-theme-palenight',
-        'min-dark',
-        'min-light',
-        'monokai',
-        'night-owl',
-        'nord',
-        'one-dark-pro',
-        'one-light',
-        'plastic',
-        'poimandres',
-        'red',
-        'rose-pine',
-        'rose-pine-dawn',
-        'rose-pine-moon',
-        'slack-dark',
-        'slack-ochin',
-        'snazzy-light',
-        'solarized-dark',
-        'solarized-light',
-        'synthwave-84',
-        'tokyo-night',
-        'vesper',
-        'vitesse-black',
-        'vitesse-dark',
-        'vitesse-light',
+    const highlighter = await createHighlighterCore({
+      themes: editorThemes(),
+      langs: [
+        import('shiki/langs/typescript.mjs'),
+        import('shiki/langs/javascript.mjs'),
+        import('shiki/langs/json.mjs'),
       ],
-      langs: ['typescript', 'javascript', 'json', 'plaintext']
+      engine: createOnigurumaEngine(import('shiki/wasm')),
     })
 
     shikiToMonaco(highlighter, monaco)
