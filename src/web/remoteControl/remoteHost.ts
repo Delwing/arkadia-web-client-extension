@@ -27,18 +27,18 @@ const PAIR_KEY = 'arkadia.remoteHost.pair';
 
 export interface RemoteHostStatus {
     enabled: boolean;
-    /** A phone is connected. */
-    phoneConnected: boolean;
+    /** Phones connected now; any number may drive at once. */
+    phones: number;
     /** Registered with the PeerJS server: a phone can reach this PC. */
     listening: boolean;
 }
 
 let client: Client | null = null;
 let enabled = false;
-let status: RemoteHostStatus = { enabled: false, phoneConnected: false, listening: false };
+let status: RemoteHostStatus = { enabled: false, phones: 0, listening: false };
 const statusListeners = new Set<(status: RemoteHostStatus) => void>();
 let host: HostHandle | null = null;
-let channel: RemoteChannel | null = null;
+const channels = new Set<RemoteChannel>();
 const state: RemoteState = emptyRemoteState();
 /**
  * Recent output, kept even while hosting is off, so a phone that connects
@@ -90,7 +90,7 @@ export function getPairingCode(): string {
     }
 }
 
-/** A fresh code: phones paired with the old one can no longer connect, and the current one is dropped. */
+/** A fresh code: phones paired with the old one can no longer connect, and the connected ones are dropped. */
 export function rotatePairingCode(): string {
     const code = newPairingCode();
     try {
@@ -124,8 +124,8 @@ export function setRemoteHostEnabled(next: boolean): void {
     else stopHosting();
 }
 
-export function disconnectPhone(): void {
-    channel?.close();
+export function disconnectPhones(): void {
+    [...channels].forEach(channel => channel.close());
 }
 
 function notify(text: string, level: 'info' | 'success' | 'warning' = 'info') {
@@ -133,7 +133,9 @@ function notify(text: string, level: 'info' | 'success' | 'warning' = 'info') {
 }
 
 function send(message: HostMessage) {
-    channel?.send(JSON.stringify(message));
+    if (channels.size === 0) return;
+    const text = JSON.stringify(message);
+    channels.forEach(channel => channel.send(text));
 }
 
 function patchState(patch: Partial<RemoteState>) {
@@ -227,7 +229,7 @@ export function installRemoteHost(target: Client): void {
         // Like the PC output: every message is a line, and an empty one is an empty line.
         if (text === undefined || text === null) return;
         backlog.push(text);
-        if (channel) send({ t: 'out', html: toHtml(text) });
+        if (channels.size > 0) send({ t: 'out', html: toHtml(text) });
     });
     watchGameState(target);
 
@@ -246,30 +248,29 @@ function startHosting() {
             console.warn('[RemoteHost] not reachable yet:', reason);
         },
         connection: next => {
-            // One phone at a time: the newest replaces whoever was connected.
-            channel?.close();
-            channel = next;
+            // Any number of phones: each gets everything, and any may send commands.
+            channels.add(next);
             next.onMessage(text => {
                 const message = parseRemoteMessage(text);
                 if (message?.t === 'cmd') void client?.sendCommand(message.text, true, undefined, false, true);
             });
             next.onClose(() => {
-                if (channel !== next) return;
-                channel = null;
-                setStatus({ phoneConnected: false });
+                if (!channels.delete(next)) return;
+                setStatus({ phones: channels.size });
                 notify('Telefon rozłączony.');
             });
-            send({ t: 'hello', state, backlog: backlog.snapshot().map(toHtml) });
-            setStatus({ phoneConnected: true });
-            notify('Telefon steruje postacią.', 'success');
+            next.send(JSON.stringify({ t: 'hello', state, backlog: backlog.snapshot().map(toHtml) } satisfies HostMessage));
+            setStatus({ phones: channels.size });
+            notify(channels.size > 1 ? `Telefon steruje postacią (połączone: ${channels.size}).` : 'Telefon steruje postacią.', 'success');
         },
     });
 }
 
 function stopHosting() {
-    channel?.close();
-    channel = null;
+    const open = [...channels];
+    channels.clear();
+    open.forEach(channel => channel.close());
     host?.close();
     host = null;
-    setStatus({ listening: false, phoneConnected: false });
+    setStatus({ listening: false, phones: 0 });
 }

@@ -10,7 +10,7 @@
 import { useEffect, useState } from "react";
 import { Button, Check, Dialog, Notice, Select } from "@web-ui/primitives/index.ts";
 import {
-    disconnectPhone,
+    disconnectPhones,
     getPairingCode,
     getRemoteHostId,
     getRemoteHostStatus,
@@ -19,6 +19,7 @@ import {
     setRemoteHostEnabled,
     type RemoteHostStatus,
 } from "./remoteHost";
+import { appUrl } from "../appUrls";
 import "./remoteControl.css";
 
 interface PhoneAddress {
@@ -50,9 +51,14 @@ async function phoneAddress(): Promise<PhoneAddress> {
     }
 }
 
+/** The phone page next to this client, at `origin` (the PC's network address under the dev server). */
 function phoneUrl(origin: string, code: string): string {
-    const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
-    return `${origin}${base}remote/#pair=${code}&host=${getRemoteHostId()}`;
+    const url = new URL(appUrl('remote/'));
+    const at = new URL(origin);
+    url.protocol = at.protocol;
+    url.host = at.host;
+    url.hash = `pair=${code}&host=${getRemoteHostId()}`;
+    return url.href;
 }
 
 export function RemoteControlModal({ onClose }: { onClose: () => void }) {
@@ -64,12 +70,17 @@ export function RemoteControlModal({ onClose }: { onClose: () => void }) {
 
     useEffect(() => onRemoteHostStatus(setStatus), []);
 
-    // The job is done once the phone is on: show it for a moment, then get out of the way.
+    // Opening the window is asking to pair: switch hosting on straight away (the box turns it off).
+    useEffect(() => setRemoteHostEnabled(true), []);
+
+    // The job is done once a phone joins: show it for a moment, then get out of the way.
+    const [phonesAtOpen] = useState(() => getRemoteHostStatus().phones);
+    const joined = status.phones > phonesAtOpen;
     useEffect(() => {
-        if (!status.phoneConnected) return;
+        if (!joined) return;
         const timer = window.setTimeout(onClose, 1200);
         return () => window.clearTimeout(timer);
-    }, [status.phoneConnected, onClose]);
+    }, [joined, onClose]);
 
     useEffect(() => {
         void phoneAddress().then(found => {
@@ -101,8 +112,10 @@ export function RemoteControlModal({ onClose }: { onClose: () => void }) {
 
     const stateText = !status.enabled
         ? null
-        : status.phoneConnected
+        : joined
             ? 'Telefon jest połączony i steruje postacią.'
+            : status.phones > 0 && status.listening
+            ? `Połączone telefony: ${status.phones}. Możesz zeskanować kod kolejnym.`
             : status.listening
                 ? 'Czekam na telefon. Zeskanuj kod aparatem telefonu.'
                 : 'Łączenie z serwerem pośredniczącym…';
@@ -114,7 +127,11 @@ export function RemoteControlModal({ onClose }: { onClose: () => void }) {
             size="sm"
             footer={(
                 <>
-                    {status.phoneConnected && <Button variant="danger" onClick={disconnectPhone}>Rozłącz telefon</Button>}
+                    {status.phones > 0 && (
+                        <Button variant="danger" onClick={disconnectPhones}>
+                            {status.phones > 1 ? `Rozłącz telefony (${status.phones})` : 'Rozłącz telefon'}
+                        </Button>
+                    )}
                     <Button onClick={onClose}>Zamknij</Button>
                 </>
             )}
