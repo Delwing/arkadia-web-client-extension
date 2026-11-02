@@ -173,11 +173,14 @@ export function RemoteApp() {
         scrollToBottom();
     }, [link, scrollToBottom]);
 
+    // As the PC command line does by default: the sent command stays, and the
+    // next tap selects it, so typing replaces it and Wyślij repeats it. Focus
+    // goes, so the keyboard folds away and the output gets the screen back.
     const onSubmit = (event: FormEvent) => {
         event.preventDefault();
         send(draft);
-        setDraft('');
         setHistoryOpen(false);
+        inputRef.current?.blur();
     };
 
     /**
@@ -356,6 +359,15 @@ export function RemoteApp() {
                             autoCorrect="off"
                             spellCheck={false}
                             enterKeyHint="send"
+                            onFocus={event => {
+                                const field = event.currentTarget;
+                                const value = field.value;
+                                // After the keyboard's own caret placement, or the selection is lost;
+                                // not if typing has already begun.
+                                window.setTimeout(() => {
+                                    if (document.activeElement === field && field.value === value) field.select();
+                                });
+                            }}
                             placeholder="Komenda…"
                         />
                         <button type="submit" className="rc-send">Wyślij</button>
