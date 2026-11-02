@@ -1368,6 +1368,27 @@ Kolory tekstu gry (`api.colors.fromHex` w triggerach) to osobna sprawa — tam h
 
 Na telefonach klient podnosi te wartości (większe kontrolki pod palec) — używając zmiennych, dostajesz to za darmo.
 
+#### Rozmiar czcionki okna
+
+Gracz może ustawić każdemu oknu własny rozmiar i krój czcionki. Żeby Twoje okno za tym podążało:
+
+| Zmienna | Do czego |
+|---|---|
+| `--window-font-scale` | mnożnik względem głównego okna (`1`, gdy okno nie ma własnego rozmiaru) |
+| `--output-font-size` | rozmiar czcionki okna — dla tekstu, który ma wyglądać jak tekst z gry |
+| `--window-font-family` | krój czcionki wybrany dla okna |
+
+Stałe rozmiary zapisuj jako `calc(<px> * var(--window-font-scale, 1))` zamiast gołych px/rem:
+
+```css
+.moj-plugin-tytul { font-size: calc(14px * var(--window-font-scale, 1)); }
+.moj-plugin-log   { font-size: var(--output-font-size, 0.875rem); font-family: var(--window-font-family, monospace); }
+```
+
+Tak samo w stylach inline: `style="font-size: calc(12px * var(--window-font-scale, 1))"`. Możesz też ustawić rozmiar raz na elemencie głównym okna, a w środku używać `em`.
+
+`--ui-fs`, `--ui-fs-sm` i `--ui-fs-xs` mają stałą wartość i **nie** zmieniają się z rozmiarem czcionki okna.
+
 ### Gotowe klasy
 
 **Przyciski** — zawsze `popup-btn popup-btn--control`, plus wariant:
