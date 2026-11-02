@@ -16,6 +16,7 @@ import {
 } from '@client/scripts/userTriggers';
 import { isDimEasing, type DimEasing } from '@client/ansi/FormatState';
 import type { UserScript } from '@client/scripts/userScripts';
+import { timerLabel, type UserTimer } from '@client/scripts/userTimers';
 import { getAutomationGroups } from '@modules/core/automation';
 import { globalStorage } from '@modules/core/storage';
 import { ColorSlot } from './ColorSlot';
@@ -51,6 +52,7 @@ const MACRO_TYPE_LABELS: Record<BuiltInMacroType, string> = {
     functionalBind: 'Funkcyjny bind',
     script: 'Uruchom skrypt',
     group: 'Włącz / wyłącz grupę',
+    timer: 'Uruchom / zatrzymaj timer',
 };
 
 /** Every easing has a label, so a new one in `DIM_EASINGS` cannot be left out. */
@@ -65,6 +67,11 @@ const DIM_EASING_LABELS: Record<DimEasing, string> = {
 function storedScripts(): UserScript[] {
     const value = globalStorage.get('automationScripts');
     return Array.isArray(value) ? value.filter(s => s.id) : [];
+}
+
+function storedTimers(): UserTimer[] {
+    const value = globalStorage.get('automationTimers');
+    return Array.isArray(value) ? value.filter(t => t.id) : [];
 }
 
 /**
@@ -183,6 +190,8 @@ export function MacroEditor({
                             scriptId: nextType === 'script' ? macro.scriptId ?? storedScripts()[0]?.id : undefined,
                             groupId: nextType === 'group' ? macro.groupId ?? getAutomationGroups()[0]?.id : undefined,
                             groupState: nextType === 'group' ? macro.groupState ?? 'toggle' : undefined,
+                            timerId: nextType === 'timer' ? macro.timerId ?? storedTimers()[0]?.id : undefined,
+                            timerState: undefined,
                         });
                     }}
                 >
@@ -251,6 +260,32 @@ export function MacroEditor({
                         </div>
                     ) : (
                         <div className="popup-field__warning">Nie ma jeszcze grup. Utwórz grupę przyciskiem z folderem nad listą.</div>
+                    );
+                })()}
+                {macro.type === 'timer' && (() => {
+                    const timers = storedTimers();
+                    return timers.length ? (
+                        <>
+                            <div className="trigger-action__pair">
+                                <Select
+                                    title="Co zrobić z timerem"
+                                    value={macro.timerState ?? 'start'}
+                                    onChange={e => onChange({ ...macro, timerState: e.target.value === 'stop' ? 'stop' : undefined })}
+                                >
+                                    <option value="start">Uruchom</option>
+                                    <option value="stop">Zatrzymaj</option>
+                                </Select>
+                                <Select title="Timer" value={macro.timerId ?? ''} onChange={e => onChange({ ...macro, timerId: e.target.value })}>
+                                    {!timers.some(t => t.id === macro.timerId) && <option value={macro.timerId ?? ''}>(brak timera)</option>}
+                                    {timers.map(t => <option key={t.id} value={t.id}>{t.name?.trim() || timerLabel(t)}</option>)}
+                                </Select>
+                            </div>
+                            <div className="popup-field__hint">
+                                Uruchom liczy od zera, także gdy timer już odlicza. Zatrzymany nie ruszy, dopóki znów go nie uruchomisz albo nie wejdziesz ponownie do gry.
+                            </div>
+                        </>
+                    ) : (
+                        <div className="popup-field__warning">Nie ma jeszcze timerów. Dodaj timer przyciskiem + w oknie Skrypty.</div>
                     );
                 })()}
                 {macro.type === 'beep' && (

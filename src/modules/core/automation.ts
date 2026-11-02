@@ -1,7 +1,7 @@
 /**
  * The part every automation element shares, whatever starts it.
  *
- * Aliases and triggers (and later timers and scripts) differ only in their
+ * Aliases, triggers, scripts and timers differ only in their
  * source; the name, the group, the on/off switch and the characters an element
  * applies to work the same for all of them. Every field is optional so data
  * written before these existed, or by writers that do not know about them (the

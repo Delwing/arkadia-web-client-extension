@@ -3,6 +3,7 @@ import { useMemo } from "react";
 import { Check, Segmented } from "@web-ui/primitives/index.ts";
 import { showContextMenu, type ContextMenuEntry } from "@web/contextMenu";
 import { collectCharacters } from "@web/options/exportUtils";
+import { KIND_LABEL, itemTitle, type AutomationItem } from "./automationModel";
 
 /** An on/off switch as a real button; its title names what it switches. */
 export function Switch({ on, title, onChange, children }: {
@@ -108,6 +109,23 @@ export function Tokens({ tokens }: { tokens: { token: string; title: string }[] 
     return (
         <>
             {tokens.map(t => <span key={t.token} className="automation-tok" title={t.title}>{t.token}</span>)}
+        </>
+    );
+}
+
+/** The elements that run this one, each a button that opens it. */
+export function ItemUsers({ users, onSelect }: { users: AutomationItem[]; onSelect: (id: string) => void }) {
+    return (
+        <>
+            {users.map(u => {
+                const title = itemTitle(u);
+                return (
+                    <button key={u.id} type="button" className="automation-user" title="Pokaż ten element" onClick={() => onSelect(u.id)}>
+                        <span className={`automation-user__kind automation-user__kind--${u.kind}`}>{KIND_LABEL[u.kind].toLowerCase()}</span>
+                        <span className={title.mono ? "is-mono" : undefined}>{title.prefix ? `${title.prefix} ` : ""}{title.text}</span>
+                    </button>
+                );
+            })}
         </>
     );
 }

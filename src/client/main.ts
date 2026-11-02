@@ -93,6 +93,7 @@ import {pluginNotice} from './PluginManager'
 import initUserAliases from './scripts/userAliases'
 import initUserTriggers from './scripts/userTriggers'
 import initUserScripts from './scripts/userScripts'
+import initUserTimers from './scripts/userTimers'
 import initWeaponEvaluation from './scripts/weaponEvaluation'
 import initArmorEvaluation from './scripts/armorEvaluation'
 import initSpellScrolls from './scripts/spellScrolls'
@@ -409,6 +410,7 @@ export function registerScripts(client: Client) {
     initUserAliases(client, aliases)
     initUserTriggers(client)
     initUserScripts(client, aliases)
+    initUserTimers(client)
     initZlom(client, aliases)
     initOdmiana(client)
     initEnemyResistances(client, aliases)

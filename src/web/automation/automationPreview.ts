@@ -82,7 +82,7 @@ export interface LineSegment {
     effect?: boolean;
 }
 
-export type OutputKind = "command" | "notify" | "push" | "speak" | "echo" | "sound" | "bind" | "script" | "group" | "other";
+export type OutputKind = "command" | "notify" | "push" | "speak" | "echo" | "sound" | "bind" | "script" | "group" | "timer" | "other";
 
 export interface PreviewOutput {
     kind: OutputKind;
@@ -110,6 +110,8 @@ function linelessOutput(m: UserMacro, fill: (t: string) => string, fallback: str
             return m.scriptId ? { kind: "script", text: `${actionShort(m)}${args.length ? ` (${args.join(", ")})` : ""}` } : null;
         case "group":
             return m.groupId ? { kind: "group", text: actionShort(m) } : null;
+        case "timer":
+            return m.timerId ? { kind: "timer", text: actionShort(m) } : null;
         default: return null;
     }
 }

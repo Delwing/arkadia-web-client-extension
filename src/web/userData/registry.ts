@@ -40,6 +40,7 @@ export function createUserDataTypes(
         listType('aliases', 'aliases'),
         listType('automationGroups', 'automationGroups'),
         listType('automationScripts', 'automationScripts'),
+        listType('automationTimers', 'automationTimers'),
         listType('letterTemplates', 'letter_templates'),
         objectEntriesType('shortcuts', 'shortcuts', true),
         keymapsType,

@@ -1067,6 +1067,40 @@ select.automation-override__select.popup-input.popup-input--control {
   font-weight: 700;
 }
 
+/* ── Timers ── */
+/* Rose: alias blue, trigger amber, script lavender and Biblioteka green are taken. */
+.automation-kind--timer {
+  background-color: color-mix(in srgb, var(--automation-timer, #d98cb3) 15%, transparent);
+  color: var(--automation-timer, #d98cb3);
+}
+.automation-timer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.automation-timer__word {
+  color: var(--popup-text-medium);
+}
+/* Each part a short field with its unit as a suffix: [ 1 | h ] [ 30 | min ] [ 0 | s ]. */
+.automation-timer__part {
+  flex: 0 0 auto;
+}
+.automation-timer__part .popup-input-group__addon {
+  min-width: 2.6em;
+  justify-content: center;
+  color: var(--popup-text-medium);
+}
+.automation-timer .automation-timer__part .automation-timer__amount {
+  width: 3.75em;
+  flex: 0 0 auto;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.automation-timer > .automation-chip {
+  margin-left: 4px;
+}
+
 /* ── Scripts ── */
 .automation-kind--script {
   background-color: color-mix(in srgb, var(--automation-script, #a898dc) 15%, transparent);
@@ -1121,6 +1155,10 @@ select.automation-override__select.popup-input.popup-input--control {
 .automation-user__kind--trigger {
   background-color: color-mix(in srgb, var(--popup-warning) 14%, transparent);
   color: var(--popup-warning);
+}
+.automation-user__kind--timer {
+  background-color: color-mix(in srgb, var(--automation-timer, #d98cb3) 15%, transparent);
+  color: var(--automation-timer, #d98cb3);
 }
 .automation-code {
   display: flex;

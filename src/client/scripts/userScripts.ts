@@ -39,7 +39,7 @@ export interface UserScript extends AutomationMeta {
     onLogin?: boolean;
 }
 
-export type ScriptSource = "alias" | "trigger" | "event" | "command" | "login" | "manual";
+export type ScriptSource = "alias" | "trigger" | "event" | "timer" | "command" | "login" | "manual";
 
 export interface ScriptContext {
     source: ScriptSource;

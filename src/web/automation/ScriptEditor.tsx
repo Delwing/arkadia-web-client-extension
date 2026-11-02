@@ -4,8 +4,8 @@ import { Button, Check, Input, InputGroup, NO_PASSWORD_MANAGER } from "@web-ui/p
 import eventBus from "@modules/core/eventBus";
 import { clearScriptLog, getScriptLog, onScriptLog, type ScriptLogEntry } from "@modules/core/scriptConsole";
 import type { UserScript } from "@client/scripts/userScripts";
-import { CharacterScope, CharacterScopeSwitch, Section } from "./EditorParts";
-import { itemTitle, type AutomationItem } from "./automationModel";
+import { CharacterScope, CharacterScopeSwitch, ItemUsers, Section } from "./EditorParts";
+import type { AutomationItem } from "./automationModel";
 import type { ScriptEditorHandle } from "./scriptMonaco";
 
 const INDENT = "    ";
@@ -117,7 +117,7 @@ function ScriptCodeEditor({ value, onChange, onSave }: {
 export function ScriptEditor({ id, script, users, onChange, onSelect, onSave }: {
     id: string;
     script: UserScript;
-    /** The aliases and triggers that run it. */
+    /** The aliases, triggers and timers that run it. */
     users: AutomationItem[];
     onChange: (script: UserScript) => void;
     onSelect: (id: string) => void;
@@ -137,15 +137,7 @@ export function ScriptEditor({ id, script, users, onChange, onSelect, onSave }: 
                         checked={!!script.onLogin}
                         onChange={e => onChange({ ...script, onLogin: e.target.checked || undefined })}
                     />
-                    {users.map(u => {
-                        const title = itemTitle(u);
-                        return (
-                            <button key={u.id} type="button" className="automation-user" title="Pokaż ten element" onClick={() => onSelect(u.id)}>
-                                <span className={`automation-user__kind automation-user__kind--${u.kind}`}>{u.kind === "alias" ? "alias" : "trigger"}</span>
-                                <span className={title.mono ? "is-mono" : undefined}>{title.prefix ? `${title.prefix} ` : ""}{title.text}</span>
-                            </button>
-                        );
-                    })}
+                    <ItemUsers users={users} onSelect={onSelect} />
                     <InputGroup before="/">
                         <Input
                             mono
@@ -157,7 +149,7 @@ export function ScriptEditor({ id, script, users, onChange, onSelect, onSave }: 
                     </InputGroup>
                 </div>
                 <p className="automation-hint">
-                    Dodajesz go jako akcję „Uruchom skrypt” w dowolnym aliasie lub triggerze. Z komendą uruchomisz go też sam,
+                    Dodajesz go jako akcję „Uruchom skrypt” w dowolnym aliasie, triggerze lub timerze. Z komendą uruchomisz go też sam,
                     np. <code>/{script.command?.trim() || "leczenie"} goblin</code> — słowa po komendzie trafiają do <code>args</code>.
                     Z „Zalogowaniem postaci” rusza raz po każdym wejściu do gry postacią, dla której jest włączony.
                 </p>

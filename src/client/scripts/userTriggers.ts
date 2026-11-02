@@ -7,6 +7,7 @@ import { globalStorage } from "@modules/core/storage";
 import { sendPush } from "@modules/push/pushClient";
 import { isAutomationActiveNow, onAutomationScopeChange, setAutomationGroupEnabled, type AutomationMeta } from "@modules/core/automation";
 import { runUserScript, type RunOptions } from "./userScripts";
+import { controlUserTimer, type TimerControl } from "./userTimerControl";
 import type { NotificationLevel } from "@shared/events/clientEvents";
 
 /**
@@ -16,7 +17,7 @@ import type { NotificationLevel } from "@shared/events/clientEvents";
  */
 export const BUILT_IN_MACRO_TYPES = [
     'uppercase', 'color', 'replace', 'beep', 'mute', 'unmute', 'command', 'slowBlink', 'rapidBlink', 'dim',
-    'functionalBind', 'wrap', 'notify', 'push', 'speak', 'echo', 'script', 'group',
+    'functionalBind', 'wrap', 'notify', 'push', 'speak', 'echo', 'script', 'group', 'timer',
 ] as const;
 
 export type BuiltInMacroType = typeof BUILT_IN_MACRO_TYPES[number];
@@ -76,6 +77,10 @@ export interface UserMacro {
     groupId?: string;
     /** group: what to do with it; absent flips it. */
     groupState?: 'on' | 'off' | 'toggle';
+    /** timer: the automation timer to start or stop. */
+    timerId?: string;
+    /** timer: absent starts it (from zero, if it was counting). */
+    timerState?: TimerControl;
     // Dim effect options
     dimStartOpacity?: number;
     dimEndOpacity?: number;
@@ -95,10 +100,10 @@ export type TriggerType = 'pattern' | 'event';
 
 /**
  * Actions that need no line of game text, so they also run on an event, an
- * alias, and later a timer. The rest (colour, replace, blink...) edit the line.
+ * alias, and a timer. The rest (colour, replace, blink...) edit the line.
  */
 export const LINELESS_MACRO_TYPES: ReadonlySet<string> = new Set<BuiltInMacroType>([
-    'beep', 'mute', 'unmute', 'command', 'functionalBind', 'notify', 'push', 'speak', 'echo', 'script', 'group',
+    'beep', 'mute', 'unmute', 'command', 'functionalBind', 'notify', 'push', 'speak', 'echo', 'script', 'group', 'timer',
 ]);
 
 /**
@@ -116,9 +121,9 @@ export interface ScriptCall {
 }
 
 /**
- * The actions that reach beyond the element itself: running a script and
- * switching a group. Shared by every kind of element. Returns whether it was
- * one of them.
+ * The actions that reach beyond the element itself: running a script,
+ * switching a group, starting or stopping a timer. Shared by every kind of
+ * element. Returns whether it was one of them.
  */
 function applyAutomationMacro(client: Client, macro: UserMacro, call: ScriptCall): boolean {
     switch (macro.type) {
@@ -130,6 +135,9 @@ function applyAutomationMacro(client: Client, macro: UserMacro, call: ScriptCall
                 const state = macro.groupState === 'on' ? true : macro.groupState === 'off' ? false : 'toggle';
                 setAutomationGroupEnabled(macro.groupId, state);
             }
+            return true;
+        case 'timer':
+            if (macro.timerId) controlUserTimer(macro.timerId, macro.timerState ?? 'start');
             return true;
         default:
             return false;

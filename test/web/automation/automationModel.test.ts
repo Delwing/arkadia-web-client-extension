@@ -266,6 +266,69 @@ describe('automationModel', () => {
         });
     });
 
+    describe('timers', () => {
+        it('saves a new timer with its empty actions dropped, and lists it', () => {
+            const draft = newDraft('timer');
+            expect(draftError(draft, [])).toBe('Dodaj co najmniej jedną akcję.');
+
+            const data = { ...draft.data, seconds: 90, once: false, macros: [{ type: 'command' as const, command: 'pij' }, { type: 'command' as const, command: ' ' }] };
+            const ready = { ...draft, data };
+            expect(draftError(ready, [])).toBeNull();
+            writeItem(itemFromDraft(placeDraft(ready, [])));
+
+            const [item] = loadItems();
+            expect(item.kind).toBe('timer');
+            expect(item.data).toMatchObject({ seconds: 90, macros: [{ type: 'command', command: 'pij' }] });
+            expect('once' in item.data).toBe(false);
+            expect(itemTitle(item)).toEqual({ text: 'co 1 min 30 s', mono: false, prefix: 'Timer:' });
+            expect(itemSummary(item)).toBe('→ pij');
+            expect(itemSearchText(item, [])).toContain('timer co 1 min 30 s');
+        });
+
+        it('refuses an interval out of range', () => {
+            const draft = newDraft('timer');
+            const withSeconds = (seconds: number) => ({ ...draft, data: { ...draft.data, seconds, macros: [{ type: 'command' as const, command: 'x' }] } });
+            expect(draftError(withSeconds(0), [])).toMatch(/od 1 s do 24 h/);
+            expect(draftError(withSeconds(90_000), [])).toMatch(/od 1 s do 24 h/);
+            expect(draftError(withSeconds(1), [])).toBeNull();
+        });
+
+        it('is started by a trigger action, which travels with the trigger and points at the new timer on import', () => {
+            globalStorage.set('automationTimers', [
+                { id: 'tm', name: 'woda', seconds: 30, once: true, start: 'action', macros: [{ type: 'command', command: 'pij' }] },
+            ]);
+            globalStorage.set('triggers', [{ id: 'tr', pattern: 'Pragniesz', macros: [{ type: 'timer', timerId: 'tm' }] }]);
+            const items = loadItems();
+            const timerItem = items.find(i => i.id === 'tm')!;
+            const triggerItem = items.find(i => i.id === 'tr')!;
+            expect(itemSummary(triggerItem)).toBe('→ uruchom timer woda');
+            expect(itemSummary(timerItem, undefined, items)).toBe('raz po 30 s → pij · uruchamiany przez 1 element');
+
+            const pack = buildItemPack(triggerItem);
+            expect(pack.timers!.map(t => t.id)).toEqual(['tm']);
+            localStorage.clear();
+            expect(importPack(parsePack(JSON.stringify(pack)))).toMatchObject({ triggers: 1, timers: 1 });
+            const [imported] = globalStorage.get('automationTimers') as { id: string }[];
+            expect(triggers()[0].macros[0].timerId).toBe(imported.id);
+            expect(imported.id).not.toBe('tm');
+        });
+
+        it('keeps the start mode only when it is not the default', () => {
+            const draft = newDraft('timer');
+            const save = (start?: 'auto' | 'action') => itemFromDraft({ ...draft, data: { ...draft.data, start, macros: [{ type: 'command', command: 'x' }] } }).data;
+            expect(save('action')).toMatchObject({ start: 'action' });
+            expect('start' in save('auto')).toBe(false);
+            expect(draftError({ ...draft, data: { ...draft.data, macros: [{ type: 'timer' }] } }, [])).toBe('Dodaj co najmniej jedną akcję.');
+        });
+
+        it('goes with its group', () => {
+            globalStorage.set('automationGroups', [{ id: 'g', name: 'Walka' }]);
+            globalStorage.set('automationTimers', [{ id: 'tm', seconds: 5, macros: [], group: 'g' }, { id: 'keep', seconds: 5, macros: [] }]);
+            deleteGroup('g');
+            expect(loadItems().map(i => i.id)).toEqual(['keep']);
+        });
+    });
+
     describe('packs', () => {
         beforeEach(() => {
             globalStorage.set('automationGroups', [{ id: 'g', name: 'Walka' }, { id: 'h', name: 'Handel' }]);
@@ -288,14 +351,14 @@ describe('automationModel', () => {
             localStorage.clear();
             globalStorage.set('automationGroups', [{ id: 'mine', name: 'walka' }]);
 
-            expect(importPack(pack)).toEqual({ aliases: 1, triggers: 1, scripts: 0, skipped: 0 });
+            expect(importPack(pack)).toEqual({ aliases: 1, triggers: 1, scripts: 0, timers: 0, skipped: 0 });
             expect(getAutomationGroups()).toEqual([{ id: 'mine', name: 'walka' }]);
             expect(aliases()[0].group).toBe('mine');
             expect(aliases()[0].id).not.toBe('a');
         });
 
         it('skips what is already there', () => {
-            expect(importPack(buildPack())).toEqual({ aliases: 0, triggers: 0, scripts: 0, skipped: 3 });
+            expect(importPack(buildPack())).toEqual({ aliases: 0, triggers: 0, scripts: 0, timers: 0, skipped: 3 });
         });
 
         it('imports scripts as they were and points actions at their new ids', () => {
@@ -335,6 +398,33 @@ describe('automationModel', () => {
 
             const script = loadItems().find(i => i.id === 'other')!;
             expect(buildItemPack(script)).toMatchObject({ aliases: [], triggers: [], groups: [], scripts: [{ id: 'other' }] });
+        });
+
+        it('exports and imports timers, pointing their actions at new ids and skipping duplicates', () => {
+            globalStorage.set('automationScripts', [{ id: 's', name: 'leczenie', code: 'x', group: 'g' }]);
+            globalStorage.set('automationTimers', [{
+                id: 'tm', seconds: 30, group: 'g',
+                macros: [{ type: 'script', scriptId: 's' }, { type: 'group', groupId: 'g', groupState: 'off' }],
+            }]);
+            const pack = parsePack(JSON.stringify(buildPack('g')));
+            expect(pack.timers!.map(t => t.id)).toEqual(['tm']);
+            localStorage.clear();
+
+            expect(importPack(pack)).toMatchObject({ timers: 1, scripts: 1 });
+            const [timer] = globalStorage.get('automationTimers') as { id: string; group: string; macros: { scriptId?: string; groupId?: string }[] }[];
+            const [script] = globalStorage.get('automationScripts') as { id: string }[];
+            const group = getAutomationGroups()[0].id;
+            expect(timer.id).not.toBe('tm');
+            expect(timer.group).toBe(group);
+            expect(timer.macros[0].scriptId).toBe(script.id);
+            expect(timer.macros[1].groupId).toBe(group);
+
+            expect(importPack(pack)).toMatchObject({ timers: 0 });
+        });
+
+        it('reads a pack from before timers', () => {
+            const { timers: _t, ...old } = buildPack();
+            expect(parsePack(JSON.stringify(old)).timers).toEqual([]);
         });
 
         it('refuses a file that is not a pack', () => {

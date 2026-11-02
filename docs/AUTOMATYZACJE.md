@@ -1,6 +1,6 @@
 # Skrypty
 
-Aliasy, triggery i skrypty tworzysz w jednym oknie: **Menu → Skrypty**. Nie trzeba pisać kodu — wystarczy wzorzec i lista akcji.
+Aliasy, triggery, skrypty i timery tworzysz w jednym oknie: **Menu → Skrypty**. Nie trzeba pisać kodu — wystarczy wzorzec i lista akcji.
 
 ## Okno Skrypty
 
@@ -8,8 +8,8 @@ Aliasy, triggery i skrypty tworzysz w jednym oknie: **Menu → Skrypty**. Nie tr
 
 Okno ma trzy kolumny:
 
-- **Po lewej** — filtr rodzaju (*Wszystko*, *Aliasy*, *Triggery*, *Skrypty*) z liczbą elementów, a pod nim **Biblioteka** gotowych aliasów, triggerów i skryptów. **Wyłączone** pokazuje też to, co wyłączyłeś, a **Tylko tej postaci** chowa to, co na zalogowanej postaci nie działa. Na dole **Importuj** i **Eksportuj wszystko**
-- **Na środku** — lista w grupach, z polem **Szukaj** (po wzorcu, komendzie albo nazwie). Przycisk **+** dodaje alias, trigger, skrypt albo grupę; ikona folderu obok tworzy nową grupę
+- **Po lewej** — filtr rodzaju (*Wszystko*, *Aliasy*, *Triggery*, *Skrypty*, *Timery*) z liczbą elementów, a pod nim **Biblioteka** gotowych aliasów, triggerów i skryptów. **Wyłączone** pokazuje też to, co wyłączyłeś, a **Tylko tej postaci** chowa to, co na zalogowanej postaci nie działa. Na dole **Importuj** i **Eksportuj wszystko**
+- **Na środku** — lista w grupach, z polem **Szukaj** (po wzorcu, komendzie albo nazwie). Przycisk **+** dodaje alias, trigger, skrypt, timer albo grupę; ikona folderu obok tworzy nową grupę
 - **Po prawej** — edytor zaznaczonego elementu. **Zapisz** (albo `Ctrl+Enter`) zapisuje zmiany, **Cofnij zmiany** wraca do zapisanej wersji
 
 Element ze zmianami, których jeszcze nie zapisałeś, ma przy nazwie pomarańczową kropkę. Przełącznik przy każdym wierszu włącza go i wyłącza bez otwierania edytora, a menu **…** pozwala go zduplikować, przenieść do innej grupy albo usunąć.
@@ -66,7 +66,7 @@ Akcje, które zmieniają linię na ekranie:
 - **Wielkie litery**, **Zamień**, **Otocz tekstem**
 - **Wolne miganie**, **Szybkie miganie**, **Pulsowanie**
 
-Akcje, które robią coś poza linią (działają też w aliasach i zdarzeniach):
+Akcje, które robią coś poza linią (działają też w aliasach, zdarzeniach i timerach):
 
 - **Komenda** — wysyła komendę do gry, z `$1`, `$2` z wzorca
 - **Dźwięk** — domyślny beep albo własny plik (**Dodaj dźwięk…**); **Wycisz dźwięki** / **Włącz dźwięki**
@@ -89,6 +89,23 @@ Zamiast tekstu trigger może reagować na zdarzenie: zabicie wroga, początek i 
 - W akcjach zamiast `$1` używasz pól zdarzenia, np. `{hp}` czy `{attacker}`. Przyciski pod polem tekstowym wstawiają je za ciebie
 
 Na zrzucie trigger przy niskim życiu uruchamia skrypt "leczenie" i czyta na głos "Mało życia".
+
+## Timery
+
+Timer wykonuje akcje co jakiś czas albo raz, po zadanym czasie. Dodajesz go przez **+ → Timer**.
+
+1. **Kiedy** — **Co jakiś czas** (np. co 5 minut) albo **Raz, po czasie** (np. raz po 30 sekundach). Czas podajesz w sekundach, minutach albo godzinach, od 1 sekundy do 24 godzin. **Start** mówi, kiedy timer zaczyna odliczać:
+   - **Sam, po wejściu do gry** — od zera po wejściu do gry, po włączeniu (jego albo jego grupy) i po zapisaniu zmian
+   - **Akcją z triggera lub aliasu** — dopiero gdy uruchomi go akcja **Uruchom / zatrzymaj timer**. Obok widać, co go uruchamia
+2. **Co zrobić** — te same akcje, które działają w aliasach: komenda, dźwięk, powiadomienie, wypisz tekst, uruchom skrypt, włącz / wyłącz grupę, uruchom / zatrzymaj timer…
+3. **Dla kogo** — wszystkie postacie albo tylko wybrane
+
+Timer odlicza tylko wtedy, gdy postać jest w grze — nic nie zostanie wysłane na ekranie logowania.
+
+Akcja **Uruchom / zatrzymaj timer** działa w triggerach (także na zdarzenia), aliasach i innych timerach. **Uruchom** zaczyna odliczanie od zera, także gdy timer już odlicza; **Zatrzymaj** wstrzymuje go do kolejnego uruchomienia albo następnego wejścia do gry. Przykłady:
+
+- opóźniona komenda — timer *Raz, po 30 s*, start *akcją*; trigger na linię z gry go uruchamia. Każde zadziałanie triggera liczy od nowa
+- coś powtarzanego w walce — timer *Co 10 s*, start *akcją*; trigger na zdarzenie *Początek walki* go uruchamia, a *Koniec walki* zatrzymuje
 
 ## Skrypty
 

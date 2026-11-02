@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { ArrowRight, ArrowUp, Bell, Braces, Check as CheckIcon, Code2, FlaskConical, Folder, MessageSquareText, Smartphone, Volume2, X } from "lucide-react";
+import { ArrowRight, ArrowUp, Bell, Braces, Check as CheckIcon, Code2, FlaskConical, Folder, MessageSquareText, Smartphone, Timer, Volume2, X } from "lucide-react";
 import { Button, DeleteButton, Input, InputGroup, NO_PASSWORD_MANAGER, Select } from "@web-ui/primitives/index.ts";
 import { aliasActions, type UserAlias } from "@client/scripts/userAliases";
 import type { UserMacro } from "@client/scripts/userTriggers";
@@ -31,6 +31,7 @@ const OUTPUT_ICON: Partial<Record<PreviewOutput["kind"], typeof ArrowRight>> = {
     sound: Volume2,
     script: Code2,
     group: Folder,
+    timer: Timer,
 };
 
 export function OutputLine({ output }: { output: PreviewOutput }) {

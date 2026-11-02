@@ -14,6 +14,7 @@ import {
     Plus,
     Search,
     SquareTerminal,
+    Timer,
     Trash2,
     Upload,
     Zap,
@@ -30,6 +31,7 @@ import {
 import type { UserAlias } from "@client/scripts/userAliases";
 import type { UserTrigger } from "@client/scripts/userTriggers";
 import type { UserScript } from "@client/scripts/userScripts";
+import type { UserTimer } from "@client/scripts/userTimers";
 import { openSettingsPage } from "@web/settings/categories.ts";
 import { foldText } from "@web/settings/settingsSearch.ts";
 import { MODAL_EVENT } from "@web/modals/appModal.ts";
@@ -37,10 +39,12 @@ import { showContextMenu, type ContextMenuEntry } from "@web/contextMenu";
 import { AliasEditor } from "./AliasEditor";
 import { TriggerEditor } from "./TriggerEditor";
 import { ScriptEditor } from "./ScriptEditor";
+import { TimerEditor } from "./TimerEditor";
 import { Switch, openMenuAt } from "./EditorParts";
 import { useCustomSounds, usePluginMacros } from "./useCustomSounds";
 import { LIBRARY, recipeItems, recipePack, type LibraryRecipe } from "./automationLibrary";
 import {
+    AUTOMATION_KINDS,
     KIND_LABEL,
     buildItemPack,
     buildPack,
@@ -55,6 +59,7 @@ import {
     itemSearchText,
     itemSummary,
     itemTitle,
+    itemUsers,
     loadItems,
     moveGroup,
     moveItem,
@@ -65,6 +70,7 @@ import {
     renameGroup,
     scriptUsers,
     sameDraft,
+    timerUsers,
     setGroupEnabled,
     setItemEnabled,
     sortItems,
@@ -86,11 +92,11 @@ interface DropAt {
     where: "before" | "after" | "into";
 }
 
-const KIND_ICON = { alias: SquareTerminal, trigger: Zap, script: Code2 } as const;
+const KIND_ICON = { alias: SquareTerminal, trigger: Zap, script: Code2, timer: Timer } as const;
 
-const KIND_NAV: Record<AutomationKind, string> = { alias: "Aliasy", trigger: "Triggery", script: "Skrypty" };
-const NEW_NAME: Record<AutomationKind, string> = { alias: "Nowy alias", trigger: "Nowy trigger", script: "Nowy skrypt" };
-const THIS_ONE: Record<AutomationKind, string> = { alias: "ten alias", trigger: "ten trigger", script: "ten skrypt" };
+const KIND_NAV: Record<AutomationKind, string> = { alias: "Aliasy", trigger: "Triggery", script: "Skrypty", timer: "Timery" };
+const NEW_NAME: Record<AutomationKind, string> = { alias: "Nowy alias", trigger: "Nowy trigger", script: "Nowy skrypt", timer: "Nowy timer" };
+const THIS_ONE: Record<AutomationKind, string> = { alias: "ten alias", trigger: "ten trigger", script: "ten skrypt", timer: "ten timer" };
 
 function KindIcon({ kind, size = 14 }: { kind: AutomationKind; size?: number }) {
     const Icon = KIND_ICON[kind];
@@ -112,12 +118,13 @@ function packFileName(label: string) {
     return `skrypty-${slug}-${date}.json`;
 }
 
-function countLabel(aliases: number, triggers: number, scripts = 0) {
+function countLabel(aliases: number, triggers: number, scripts = 0, timers = 0) {
     const parts: string[] = [];
     if (aliases) parts.push(`${aliases} ${aliases === 1 ? "alias" : "aliasów"}`);
-    if (triggers) parts.push(`${triggers} ${triggers === 1 ? "trigger" : "triggerÃ³w"}`);
+    if (triggers) parts.push(`${triggers} ${triggers === 1 ? "trigger" : "triggerów"}`);
     if (scripts) parts.push(`${scripts} ${scripts === 1 ? "skrypt" : "skryptów"}`);
-    return parts.join(" i ") || "nic nowego";
+    if (timers) parts.push(`${timers} ${timers === 1 ? "timer" : "timerów"}`);
+    return parts.length > 1 ? `${parts.slice(0, -1).join(", ")} i ${parts[parts.length - 1]}` : parts[0] ?? "nic nowego";
 }
 
 function charactersChip(n: number) {
@@ -227,6 +234,7 @@ export default function AutomationWindow() {
         const offAliases = globalStorage.onChange("aliases", onChange);
         const offTriggers = globalStorage.onChange("triggers", onChange);
         const offScripts = globalStorage.onChange("automationScripts", onChange);
+        const offTimers = globalStorage.onChange("automationTimers", onChange);
         const offGroups = globalStorage.onChange(AUTOMATION_GROUPS_KEY, () => setGroups(getAutomationGroups()));
         const offCharacter = characterStorage.onCharacterChange(setCharacter);
         const modal = document.getElementById("automation-modal");
@@ -235,6 +243,7 @@ export default function AutomationWindow() {
             offAliases();
             offTriggers();
             offScripts();
+            offTimers();
             offGroups();
             offCharacter();
             modal?.removeEventListener(MODAL_EVENT.show, onShow);
@@ -257,6 +266,7 @@ export default function AutomationWindow() {
         alias: items.filter(i => i.kind === "alias").length,
         trigger: items.filter(i => i.kind === "trigger").length,
         script: items.filter(i => i.kind === "script").length,
+        timer: items.filter(i => i.kind === "timer").length,
     };
 
     const newDrafts = Object.values(drafts).filter(d => d.isNew);
@@ -354,7 +364,7 @@ export default function AutomationWindow() {
 
     /** Deletes a stored element after asking. */
     async function confirmRemove(kind: AutomationKind, id: string) {
-        const users = kind === "script" ? scriptUsers(id, items).length : 0;
+        const users = itemUsers(kind, id, items).length;
         const warning = users ? ` Używa go ${users} ${users === 1 ? "element" : "elementów"} - ich akcja przestanie działać.` : "";
         if (!await confirmDialog({ title: "Usuń", message: `Czy na pewno chcesz usunąć ${THIS_ONE[kind]}?${warning}`, confirmLabel: "Usuń", danger: true })) return;
         removeItem(kind, id);
@@ -368,15 +378,14 @@ export default function AutomationWindow() {
         const memberIds = new Set(members.map(i => i.id));
         const count = (kind: AutomationKind) => members.filter(i => i.kind === kind).length;
         const contents = members.length
-            ? ` razem z tym, co w niej jest (${countLabel(count("alias"), count("trigger"), count("script"))})`
+            ? ` razem z tym, co w niej jest (${countLabel(count("alias"), count("trigger"), count("script"), count("timer"))})`
             : "";
-        // A script in the group may be run by an element that stays.
+        // A script or timer in the group may be run by an element that stays.
         const users = new Set(members
-            .filter(i => i.kind === "script")
-            .flatMap(i => scriptUsers(i.id, items))
+            .flatMap(i => itemUsers(i.kind, i.id, items))
             .filter(u => !memberIds.has(u.id))
             .map(u => u.id)).size;
-        const warning = users ? ` Skrypty z tej grupy używa ${users} ${users === 1 ? "element" : "elementów"} spoza niej - ich akcja przestanie działać.` : "";
+        const warning = users ? ` Skrypty lub timery z tej grupy uruchamia ${users} ${users === 1 ? "element" : "elementów"} spoza niej - ich akcja przestanie działać.` : "";
         if (!await confirmDialog({ title: "Usuń grupę", message: `Usunąć grupę "${group.name}"${contents}?${warning}`, confirmLabel: "Usuń", danger: true })) return;
         deleteGroup(group.id);
         // Unsaved changes to what was in the group go with it.
@@ -520,6 +529,7 @@ export default function AutomationWindow() {
             { label: "Nowy alias w grupie", action: () => create("alias", group.id) },
             { label: "Nowy trigger w grupie", action: () => create("trigger", group.id) },
             { label: "Nowy skrypt w grupie", action: () => create("script", group.id) },
+            { label: "Nowy timer w grupie", action: () => create("timer", group.id) },
             { label: "Zmień nazwę", action: () => setRenamingGroup(group.id) },
             { label: "Eksportuj grupę", action: () => download(packFileName(group.name), JSON.stringify(buildPack(group.id), null, 2)) },
             {
@@ -537,9 +547,10 @@ export default function AutomationWindow() {
             { label: "Alias - gdy wpiszesz komendę", icon: SquareTerminal, action: () => create("alias") },
             { label: "Trigger - gdy gra wypisze linię lub zajdzie zdarzenie", icon: Zap, action: () => create("trigger") },
             { label: "Skrypt - kod JavaScript uruchamiany akcją lub komendą", icon: Code2, action: () => create("script") },
+            { label: "Timer - akcje co jakiś czas albo raz, po czasie", icon: Timer, action: () => create("timer") },
         ];
         // Filtered to one kind, only that one is offered; a group always is.
-        const shown = kindFilter === "all" ? kinds : [kinds[["alias", "trigger", "script"].indexOf(kindFilter)]];
+        const shown = kindFilter === "all" ? kinds : [kinds[AUTOMATION_KINDS.indexOf(kindFilter)]];
         openMenuAt(e, [
             ...shown,
             { label: "Grupa - do porządkowania elementów", icon: FolderPlus, separator: true, action: () => { addGroup(); } },
@@ -558,7 +569,7 @@ export default function AutomationWindow() {
         try {
             const result = importPack(parsePack(await file.text()));
             const skipped = result.skipped ? ` Pominięto ${result.skipped} już istniejących.` : "";
-            setNotice(`Zaimportowano: ${countLabel(result.aliases, result.triggers, result.scripts)}.${skipped}`);
+            setNotice(`Zaimportowano: ${countLabel(result.aliases, result.triggers, result.scripts, result.timers)}.${skipped}`);
         } catch (err) {
             setNotice(err instanceof SyntaxError ? "Plik nie jest poprawnym JSON-em." : (err as Error).message);
         }
@@ -566,7 +577,7 @@ export default function AutomationWindow() {
 
     function addRecipe(recipe: LibraryRecipe) {
         const result = importPack(recipePack(recipe));
-        const added = result.aliases + result.triggers + result.scripts;
+        const added = result.aliases + result.triggers + result.scripts + result.timers;
         setNotice(added ? `Dodano "${recipe.title}" do grupy ${recipe.group}.` : `"${recipe.title}" już masz.`);
     }
 
@@ -653,7 +664,7 @@ export default function AutomationWindow() {
 
     const nav = (
         <nav className="automation-nav">
-            {(["all", "alias", "trigger", "script"] as const).map(kind => (
+            {(["all", ...AUTOMATION_KINDS] as const).map(kind => (
                 <button
                     key={kind}
                     type="button"
@@ -775,7 +786,7 @@ export default function AutomationWindow() {
                 })}
                 {listEmpty && (
                     <p className="automation-empty">
-                        Nie masz jeszcze aliasów ani triggerÃ³w. Alias zamienia wpisaną komendę na inne, np.{" "}
+                        Nie masz jeszcze aliasów ani triggerów. Alias zamienia wpisaną komendę na inne, np.{" "}
                         <code>zab (.+)</code> → <code>zabij $1</code>. Trigger reaguje na linie z gry albo zdarzenie
                         i wykonuje akcje: koloruje, wysyła komendę, gra dźwięk... Kliknij + żeby dodać.
                     </p>
@@ -883,6 +894,15 @@ export default function AutomationWindow() {
                         onSelect={select}
                         onSave={save}
                     />
+                ) : selectedDraft.kind === "timer" ? (
+                    <TimerEditor
+                        timer={selectedDraft.data as UserTimer}
+                        users={timerUsers(selectedDraft.id, items)}
+                        onChange={data => updateDraft({ ...selectedDraft, data })}
+                        onSelect={select}
+                        sounds={customSounds}
+                        onRequestSoundUpload={requestSoundUpload}
+                    />
                 ) : selectedDraft.kind === "alias" ? (
                     <AliasEditor
                         alias={selectedDraft.data as UserAlias}
@@ -912,7 +932,7 @@ export default function AutomationWindow() {
     ) : (
         <section className="automation-editor automation-editor--empty">
             <Zap size={22} strokeWidth={1.6} />
-            <p>Wybierz alias, trigger lub skrypt z listy albo dodaj nowy przyciskiem +.</p>
+            <p>Wybierz alias, trigger, skrypt lub timer z listy albo dodaj nowy przyciskiem +.</p>
             {items.length === 0 && (
                 <div className="automation-editor__starters">
                     <Button onClick={() => create("alias")}><SquareTerminal size={15} />Nowy alias</Button>

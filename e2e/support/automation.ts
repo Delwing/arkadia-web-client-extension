@@ -15,10 +15,10 @@ export async function closeAutomation(modal: Locator): Promise<void> {
     await expect(modal, 'should close the Skrypty window').not.toBeVisible();
 }
 
-const NEW_ITEM = {alias: /^Alias - /, trigger: /^Trigger - /, script: /^Skrypt - /};
+const NEW_ITEM = {alias: /^Alias - /, trigger: /^Trigger - /, script: /^Skrypt - /, timer: /^Timer - /};
 
-/** Starts a new alias, trigger or script through the + button. */
-export async function startNew(page: Page, modal: Locator, kind: 'alias' | 'trigger' | 'script'): Promise<void> {
+/** Starts a new alias, trigger, script or timer through the + button. */
+export async function startNew(page: Page, modal: Locator, kind: keyof typeof NEW_ITEM): Promise<void> {
     await modal.getByTitle('Dodaj', {exact: true}).click();
     await page.getByRole('button', {name: NEW_ITEM[kind]}).click();
 }
@@ -84,7 +84,7 @@ export async function addGroup(modal: Locator, name: string): Promise<void> {
 const NEW_IN_GROUP = {alias: 'Nowy alias w grupie', trigger: 'Nowy trigger w grupie', script: 'Nowy skrypt w grupie'};
 
 /** Starts a new element inside a group, from the group's menu. */
-export async function startNewInGroup(page: Page, modal: Locator, group: string, kind: 'alias' | 'trigger' | 'script'): Promise<void> {
+export async function startNewInGroup(page: Page, modal: Locator, group: string, kind: keyof typeof NEW_ITEM): Promise<void> {
     await modal.locator('.automation-group', {hasText: group}).getByTitle('Opcje grupy').click();
     await page.getByRole('button', {name: NEW_IN_GROUP[kind]}).click();
 }
