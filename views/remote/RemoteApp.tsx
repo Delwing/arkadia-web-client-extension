@@ -135,14 +135,16 @@ export function RemoteApp() {
     }, [status]);
 
     // A phone that slept may hold a dead connection; coming back is the cue to retry.
+    // It shares the drop's few attempts rather than starting new ones: a PC that
+    // renewed its code while this phone was away would otherwise be retried forever.
     useEffect(() => {
         const onVisible = () => {
             if (document.visibilityState !== 'visible') return;
             const current = statusRef.current;
-            if (autoConnectRef.current && current.kind === 'lost' && hostsRef.current.some(host => host.hostId === current.hostId)) {
-                retriesRef.current = 0;
-                connect(current.hostId);
-            }
+            if (!autoConnectRef.current || current.kind !== 'lost' || retriesRef.current >= AUTO_RETRIES) return;
+            if (!hostsRef.current.some(host => host.hostId === current.hostId)) return;
+            retriesRef.current += 1;
+            connect(current.hostId);
         };
         document.addEventListener('visibilitychange', onVisible);
         return () => document.removeEventListener('visibilitychange', onVisible);
