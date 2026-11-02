@@ -2,12 +2,14 @@
 
 extern void trayOnQuit();
 extern void trayOnUnregister();
+extern void trayOnShowStatus();
 
 static NSStatusItem *statusItem = nil;
 
 @interface TrayDelegate : NSObject
 - (void)quit:(id)sender;
 - (void)unregister:(id)sender;
+- (void)showStatus:(id)sender;
 @end
 
 @implementation TrayDelegate
@@ -17,6 +19,9 @@ static NSStatusItem *statusItem = nil;
 }
 - (void)unregister:(id)sender {
     trayOnUnregister();
+}
+- (void)showStatus:(id)sender {
+    trayOnShowStatus();
 }
 @end
 
@@ -54,6 +59,13 @@ void setupTray(const char* title, const void* iconData, int iconLen) {
         [menu addItem:versionItem];
 
         [menu addItem:[NSMenuItem separatorItem]];
+
+        NSMenuItem *statusMenuItem = [[NSMenuItem alloc]
+            initWithTitle:@"Show status"
+            action:@selector(showStatus:)
+            keyEquivalent:@""];
+        [statusMenuItem setTarget:delegate];
+        [menu addItem:statusMenuItem];
 
         NSMenuItem *unregItem = [[NSMenuItem alloc]
             initWithTitle:@"Unregister arkadia://"

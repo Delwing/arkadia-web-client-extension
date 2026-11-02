@@ -49,6 +49,7 @@ func (s *Server) handleWS(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	log.Println("WebSocket client connected")
+	s.Note("Client connected")
 
 	for {
 		_, data, err := conn.Read(context.Background())
@@ -108,6 +109,7 @@ func (s *Server) removeClient(c *wsConn) {
 	s.clientsMu.Unlock()
 
 	log.Printf("Client disconnected, %d remaining", remaining)
+	s.Note("Client disconnected, %d remaining", remaining)
 	if remaining == 0 {
 		if s.onDisconnectAll != nil {
 			s.onDisconnectAll()

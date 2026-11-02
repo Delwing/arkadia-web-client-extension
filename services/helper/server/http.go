@@ -36,6 +36,9 @@ type Server struct {
 	onDisconnectAll  func()
 	idleTimer        *time.Timer
 	idleMu           sync.Mutex
+	started          time.Time
+	stateProvider    func() any
+	activity         activityLog
 }
 
 // OnDisconnectAll sets a callback called immediately when the last client disconnects.
@@ -70,8 +73,11 @@ func New(version string) *Server {
 	s := &Server{
 		version: version,
 		mux:     http.NewServeMux(),
+		started: time.Now(),
 	}
+	s.mux.HandleFunc("GET /{$}", s.handleStatusPage)
 	s.mux.HandleFunc("GET /status", s.handleStatus)
+	s.mux.HandleFunc("GET /status/detail", s.handleStatusDetail)
 	s.mux.HandleFunc("GET /ws", s.handleWS)
 	s.mux.HandleFunc("GET /telnet", s.handleTelnet)
 	return s
@@ -135,9 +141,11 @@ func (s *Server) handleStatus(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) corsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		if !isPrivatePath(r.URL.Path) {
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+			w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		}
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusNoContent)
 			return

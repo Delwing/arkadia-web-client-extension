@@ -9,6 +9,7 @@ var IconData []byte
 type Callbacks struct {
 	OnQuit       func()
 	OnUnregister func()
+	OnShowStatus func() // opens the status page in the browser
 }
 
 // Run starts the system tray application. Blocks until quit.

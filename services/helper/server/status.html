@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Arkadia Helper</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --panel: #fff; --text: #1d2330; --muted: #677085; --line: #e2e5eb;
+    --accent: #2b78c5; --ok: #2f8a4f; --warn-bg: #fff4d6; --warn-text: #7a5600; --hot: #c4372f;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14171d; --panel: #1c2028; --text: #e3e7ee; --muted: #8b94a7; --line: #2c323d;
+      --accent: #5fa3e8; --ok: #5cc27e; --warn-bg: #3a3017; --warn-text: #f0cf7a; --hot: #ef6b62;
+      color-scheme: dark;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 960px; margin: 0 auto; padding: 20px 16px 40px; }
+  header { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+  h1 { font-size: 20px; margin: 0; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0 0 10px; }
+  .muted { color: var(--muted); }
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--ok); margin-right: 6px; }
+  .dot.off { background: var(--hot); }
+  section { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; margin-bottom: 14px; }
+  .warn { background: var(--warn-bg); color: var(--warn-text); border-radius: 6px; padding: 8px 12px; margin-bottom: 8px; }
+  dl { display: grid; grid-template-columns: max-content 1fr; gap: 4px 16px; margin: 0; }
+  dt { color: var(--muted); }
+  dd { margin: 0; overflow-wrap: anywhere; }
+  code, .mono { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 13px; }
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 500; font-size: 12px; }
+  tr:last-child td { border-bottom: 0; }
+  .key { font-weight: 600; white-space: nowrap; }
+  .pill { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 12px; border: 1px solid var(--line); white-space: nowrap; }
+  .pill.hot { border-color: var(--hot); color: var(--hot); }
+  .log { list-style: none; margin: 0; padding: 0; max-height: 360px; overflow-y: auto; }
+  .log li { display: flex; gap: 12px; padding: 3px 0; border-bottom: 1px solid var(--line); }
+  .log li:last-child { border-bottom: 0; }
+  .log time { color: var(--muted); flex: none; }
+  .empty { color: var(--muted); font-style: italic; }
+  #offline { display: none; }
+  body.offline #offline { display: block; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1><span id="dot" class="dot"></span>Arkadia Helper</h1>
+    <span id="version" class="muted"></span>
+  </header>
+
+  <div id="offline" class="warn">The helper isn't answering. It quits on its own about 10 seconds after the last client disconnects.</div>
+  <div id="warnings"></div>
+
+  <section>
+    <h2>Binds held right now</h2>
+    <p class="muted" id="binds-note"></p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Key</th><th>Swallowed now</th><th>When</th><th>Does</th><th>ID</th></tr></thead>
+        <tbody id="binds"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Focus</h2>
+    <dl id="focus"></dl>
+  </section>
+
+  <section>
+    <h2>Process</h2>
+    <dl id="process"></dl>
+  </section>
+
+  <section>
+    <h2>Activity</h2>
+    <ul class="log" id="activity"></ul>
+  </section>
+</main>
+<script>
+  const $ = (id) => document.getElementById(id);
+
+  function el(tag, text, cls) {
+    const e = document.createElement(tag);
+    if (text != null) e.textContent = text;
+    if (cls) e.className = cls;
+    return e;
+  }
+
+  function fillDl(dl, rows) {
+    dl.replaceChildren(...rows.flatMap(([k, v, mono]) => [el("dt", k), el("dd", v, mono ? "mono" : "")]));
+  }
+
+  function duration(ms) {
+    const s = Math.floor(ms / 1000), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
+    return h ? `${h} h ${m} min` : m ? `${m} min ${s % 60} s` : `${s} s`;
+  }
+
+  const MODES = {
+    browser_only: "only while the client has focus",
+    global: "always, in every app",
+    global_focus: "always, and raises the client",
+  };
+
+  function swallowsNow(bind, focused) {
+    return bind.mode === "browser_only" ? focused : true;
+  }
+
+  function render(d) {
+    document.body.classList.remove("offline");
+    $("dot").className = "dot";
+    $("version").textContent = `${d.version === "dev" ? "dev build" : "v" + d.version} · ${d.platform}`;
+    $("warnings").replaceChildren(...(d.warnings || []).map((w) => el("div", w, "warn")));
+
+    const hk = (d.state && d.state.hotkeys) || { binds: [] };
+    const focused = !!hk.focus_effective;
+    const binds = hk.binds || [];
+    $("binds-note").textContent = binds.length
+      ? "While a key is swallowed, no other program sees it, the browser included. Each connecting client replaces this list with its own."
+      : "";
+    $("binds").replaceChildren(...(binds.length ? binds.map((b) => {
+      const tr = el("tr");
+      tr.append(el("td", b.key, "key"));
+      const now = swallowsNow(b, focused);
+      const td = el("td");
+      td.append(el("span", now ? "yes" : "no", now ? "pill hot" : "pill"));
+      tr.append(td);
+      tr.append(el("td", (MODES[b.mode] || b.mode) + (b.focus_browser && b.mode !== "global_focus" ? ", raises the client" : "")));
+      const does = b.action === "command" ? `command: ${b.command || ""}` : b.action === "bind" ? `bind: ${b.remap_to || ""}` : b.action;
+      tr.append(el("td", does, "mono"));
+      tr.append(el("td", b.id, "mono muted"));
+      return tr;
+    }) : [(() => { const tr = el("tr"); const td = el("td", "No binds registered.", "empty"); td.colSpan = 5; tr.append(td); return tr; })()]));
+
+    const hint = hk.focus_hint;
+    fillDl($("focus"), [
+      ["Client focused", focused ? "yes: browser-only binds are swallowing" : "no: browser-only binds let keys through"],
+      ["Decided by", hint == null ? "window title (no client has reported focus)" : `the client (says ${hint ? "focused" : "not focused"})`],
+      ["Window title check", hk.focus_polled ? "matches" : "no match"],
+      ["Matching titles", (d.state && d.state.window_match || []).join(" · ") || "none", true],
+    ]);
+
+    fillDl($("process"), [
+      ["Clients", String(d.clients)],
+      ["Game connections", String(d.telnet_bridges)],
+      ["Running for", duration(Date.now() - d.started)],
+      ["PID", String(d.pid)],
+      ["Executable", d.executable || "unknown", true],
+    ]);
+
+    const log = (d.activity || []).slice().reverse();
+    $("activity").replaceChildren(...(log.length ? log.map((a) => {
+      const li = el("li");
+      li.append(el("time", new Date(a.time).toLocaleTimeString()), el("span", a.text));
+      return li;
+    }) : [el("li", "Nothing yet.", "empty")]));
+  }
+
+  async function tick() {
+    try {
+      const r = await fetch("/status/detail", { cache: "no-store" });
+      if (!r.ok) throw new Error(r.status);
+      render(await r.json());
+    } catch {
+      document.body.classList.add("offline");
+      $("dot").className = "dot off";
+    }
+  }
+
+  tick();
+  setInterval(tick, 1000);
+</script>
+</body>
+</html>

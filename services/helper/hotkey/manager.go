@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"runtime"
+	"sort"
 	"sync"
 	"time"
 
@@ -18,22 +19,22 @@ type FocusCallback func(bind protocol.Bind)
 
 // registration tracks one registered keybinding.
 type registration struct {
-	bind     protocol.Bind
-	vk       KeyCode
-	mods     Modifier
-	remapVK  KeyCode  // target key for remap action
+	bind      protocol.Bind
+	vk        KeyCode
+	mods      Modifier
+	remapVK   KeyCode  // target key for remap action
 	remapMods Modifier // target mods for remap action
 }
 
 // Manager handles hotkey registration, mode filtering, and event dispatch.
 // On Windows, it uses a low-level keyboard hook to intercept and suppress keys.
 type Manager struct {
-	mu                  sync.RWMutex
-	registrations       map[string]*registration
-	browserFocused      bool  // from window title polling
-	browserFocusedHint  *bool // from web client via WS; takes precedence over polling
-	callback            EventCallback
-	focusCallback       FocusCallback
+	mu                 sync.RWMutex
+	registrations      map[string]*registration
+	browserFocused     bool  // from window title polling
+	browserFocusedHint *bool // from web client via WS; takes precedence over polling
+	callback           EventCallback
+	focusCallback      FocusCallback
 }
 
 // NewManager creates a new HotkeyManager.
@@ -146,6 +147,41 @@ func (m *Manager) RegisteredIDs() []string {
 		ids = append(ids, id)
 	}
 	return ids
+}
+
+// Snapshot is what the manager holds right now, for the status page.
+type Snapshot struct {
+	Binds []protocol.Bind `json:"binds"`
+	// FocusPolled is the window-title poll; FocusHint is what the web client
+	// last said (nil when no client has); FocusEffective is what browser_only
+	// binds actually go by — when true they swallow their keys.
+	FocusPolled    bool  `json:"focus_polled"`
+	FocusHint      *bool `json:"focus_hint"`
+	FocusEffective bool  `json:"focus_effective"`
+}
+
+// Snapshot returns the registered binds (sorted by key) and the focus state.
+func (m *Manager) Snapshot() Snapshot {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	s := Snapshot{Binds: make([]protocol.Bind, 0, len(m.registrations)), FocusPolled: m.browserFocused}
+	for _, reg := range m.registrations {
+		s.Binds = append(s.Binds, reg.bind)
+	}
+	sort.Slice(s.Binds, func(i, j int) bool {
+		if s.Binds[i].Key != s.Binds[j].Key {
+			return s.Binds[i].Key < s.Binds[j].Key
+		}
+		return s.Binds[i].ID < s.Binds[j].ID
+	})
+	if m.browserFocusedHint != nil {
+		hint := *m.browserFocusedHint
+		s.FocusHint = &hint
+		s.FocusEffective = hint
+	} else {
+		s.FocusEffective = m.browserFocused
+	}
+	return s
 }
 
 // CaptureNextKey sets up a one-shot capture. The next full key combo

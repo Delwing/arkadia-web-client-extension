@@ -9,47 +9,49 @@ import (
 )
 
 var (
-	shell32              = syscall.NewLazyDLL("shell32.dll")
-	user32               = syscall.NewLazyDLL("user32.dll")
-	kernel32             = syscall.NewLazyDLL("kernel32.dll")
-	pShellNotifyIcon     = shell32.NewProc("Shell_NotifyIconW")
-	pCreateWindowEx      = user32.NewProc("CreateWindowExW")
-	pDefWindowProc       = user32.NewProc("DefWindowProcW")
-	pRegisterClassEx     = user32.NewProc("RegisterClassExW")
-	pGetMessage          = user32.NewProc("GetMessageW")
-	pTranslateMessage    = user32.NewProc("TranslateMessage")
-	pDispatchMessage     = user32.NewProc("DispatchMessageW")
-	pPostQuitMessage     = user32.NewProc("PostQuitMessage")
-	pCreatePopupMenu     = user32.NewProc("CreatePopupMenu")
-	pAppendMenu          = user32.NewProc("AppendMenuW")
-	pTrackPopupMenu      = user32.NewProc("TrackPopupMenu")
-	pDestroyMenu         = user32.NewProc("DestroyMenu")
-	pSetForegroundWindow = user32.NewProc("SetForegroundWindow")
-	pGetCursorPos        = user32.NewProc("GetCursorPos")
+	shell32                 = syscall.NewLazyDLL("shell32.dll")
+	user32                  = syscall.NewLazyDLL("user32.dll")
+	kernel32                = syscall.NewLazyDLL("kernel32.dll")
+	pShellNotifyIcon        = shell32.NewProc("Shell_NotifyIconW")
+	pCreateWindowEx         = user32.NewProc("CreateWindowExW")
+	pDefWindowProc          = user32.NewProc("DefWindowProcW")
+	pRegisterClassEx        = user32.NewProc("RegisterClassExW")
+	pGetMessage             = user32.NewProc("GetMessageW")
+	pTranslateMessage       = user32.NewProc("TranslateMessage")
+	pDispatchMessage        = user32.NewProc("DispatchMessageW")
+	pPostQuitMessage        = user32.NewProc("PostQuitMessage")
+	pCreatePopupMenu        = user32.NewProc("CreatePopupMenu")
+	pAppendMenu             = user32.NewProc("AppendMenuW")
+	pTrackPopupMenu         = user32.NewProc("TrackPopupMenu")
+	pDestroyMenu            = user32.NewProc("DestroyMenu")
+	pSetForegroundWindow    = user32.NewProc("SetForegroundWindow")
+	pGetCursorPos           = user32.NewProc("GetCursorPos")
 	pCreateIconFromResource = user32.NewProc("CreateIconFromResource")
-	pGetConsoleWindow    = kernel32.NewProc("GetConsoleWindow")
-	pShowWindow          = user32.NewProc("ShowWindow")
-	pFreeConsole         = kernel32.NewProc("FreeConsole")
+	pGetConsoleWindow       = kernel32.NewProc("GetConsoleWindow")
+	pShowWindow             = user32.NewProc("ShowWindow")
+	pFreeConsole            = kernel32.NewProc("FreeConsole")
 )
 
 const (
-	WM_APP          = 0x8000
-	WM_TRAYICON     = WM_APP + 1
-	WM_COMMAND      = 0x0111
-	WM_RBUTTONUP    = 0x0205
-	NIM_ADD         = 0x00000000
-	NIM_DELETE      = 0x00000002
-	NIF_MESSAGE     = 0x00000001
-	NIF_ICON        = 0x00000002
-	NIF_TIP         = 0x00000004
-	MF_STRING       = 0x00000000
-	MF_GRAYED       = 0x00000001
-	MF_SEPARATOR    = 0x00000800
-	TPM_RIGHTALIGN  = 0x0008
-	TPM_BOTTOMALIGN = 0x0020
-	SW_HIDE         = 0
-	IDM_UNREGISTER  = 1001
-	IDM_QUIT        = 1002
+	WM_APP           = 0x8000
+	WM_TRAYICON      = WM_APP + 1
+	WM_COMMAND       = 0x0111
+	WM_RBUTTONUP     = 0x0205
+	NIM_ADD          = 0x00000000
+	NIM_DELETE       = 0x00000002
+	NIF_MESSAGE      = 0x00000001
+	NIF_ICON         = 0x00000002
+	NIF_TIP          = 0x00000004
+	MF_STRING        = 0x00000000
+	MF_GRAYED        = 0x00000001
+	MF_SEPARATOR     = 0x00000800
+	TPM_RIGHTALIGN   = 0x0008
+	TPM_BOTTOMALIGN  = 0x0020
+	SW_HIDE          = 0
+	IDM_UNREGISTER   = 1001
+	IDM_QUIT         = 1002
+	IDM_STATUS       = 1003
+	WM_LBUTTONDBLCLK = 0x0203
 )
 
 type NOTIFYICONDATA struct {
@@ -74,7 +76,7 @@ type WNDCLASSEX struct {
 	HbrBackground uintptr
 	LpszMenuName  uintptr
 	LpszClassName uintptr
-	HIconSm      uintptr
+	HIconSm       uintptr
 }
 
 type POINT struct {
@@ -154,12 +156,21 @@ func run(title string, cb Callbacks, ready func()) {
 func trayWndProc(hwnd, msg, wParam, lParam uintptr) uintptr {
 	switch msg {
 	case WM_TRAYICON:
-		if lParam == WM_RBUTTONUP {
+		switch lParam {
+		case WM_RBUTTONUP:
 			showContextMenu(hwnd)
+		case WM_LBUTTONDBLCLK:
+			if trayCb.OnShowStatus != nil {
+				go trayCb.OnShowStatus()
+			}
 		}
 		return 0
 	case WM_COMMAND:
 		switch wParam {
+		case IDM_STATUS:
+			if trayCb.OnShowStatus != nil {
+				go trayCb.OnShowStatus()
+			}
 		case IDM_UNREGISTER:
 			if trayCb.OnUnregister != nil {
 				trayCb.OnUnregister()
@@ -181,6 +192,7 @@ func showContextMenu(hwnd uintptr) {
 
 	pAppendMenu.Call(menu, MF_STRING|MF_GRAYED, 0, uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr(trayTitle))))
 	pAppendMenu.Call(menu, MF_SEPARATOR, 0, 0)
+	pAppendMenu.Call(menu, MF_STRING, IDM_STATUS, uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr("Show status"))))
 	pAppendMenu.Call(menu, MF_STRING, IDM_UNREGISTER, uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr("Unregister arkadia://"))))
 	pAppendMenu.Call(menu, MF_STRING, IDM_QUIT, uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr("Quit"))))
 

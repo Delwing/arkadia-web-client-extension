@@ -85,6 +85,13 @@ func (m *FocusMonitor) Stop() {
 	m.stopOnce.Do(func() { close(m.stop) })
 }
 
+// Patterns returns the window-title patterns currently matched against.
+func (m *FocusMonitor) Patterns() []string {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	return append([]string(nil), m.patterns...)
+}
+
 func (m *FocusMonitor) IsFocused() bool {
 	m.mu.RLock()
 	defer m.mu.RUnlock()

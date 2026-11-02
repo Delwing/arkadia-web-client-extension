@@ -84,6 +84,7 @@ func (s *Server) handleTelnet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	log.Printf("telnet bridge connected to %s", addr)
+	s.Note("Game connection bridged to %s", addr)
 	defer tcp.Close()
 
 	type closeInfo struct {
@@ -137,4 +138,9 @@ func (s *Server) handleTelnet(w http.ResponseWriter, r *http.Request) {
 	tcp.Close()
 	conn.Close(info.code, info.reason)
 	log.Printf("telnet bridge to %s closed: %s", addr, info.reason)
+	if info.reason != "" {
+		s.Note("Game connection to %s closed: %s", addr, info.reason)
+	} else {
+		s.Note("Game connection to %s closed", addr)
+	}
 }

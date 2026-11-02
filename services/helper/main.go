@@ -7,6 +7,8 @@ import (
 	"log"
 	"net"
 	"os"
+	"os/exec"
+	"runtime"
 	"strings"
 	"time"
 
@@ -75,6 +77,7 @@ func main() {
 	// Create hotkey manager
 	hotkeyMgr := hk.NewManager(
 		func(msg protocol.HotkeyMsg) {
+			srv.Note("%s pressed: fired bind %q, key swallowed", msg.Key, msg.ID)
 			srv.Broadcast(msg)
 		},
 		func(bind protocol.Bind) {
@@ -89,6 +92,14 @@ func main() {
 	})
 	focusMonitor.Start(100 * time.Millisecond)
 
+	// What the status page shows beyond the server's own counters.
+	srv.SetStateProvider(func() any {
+		return struct {
+			Hotkeys     hk.Snapshot `json:"hotkeys"`
+			WindowMatch []string    `json:"window_match"`
+		}{hotkeyMgr.Snapshot(), focusMonitor.Patterns()}
+	})
+
 	// Wire up message handler
 	srv.SetMessageHandler(func(env protocol.Envelope) []any {
 		return handleMessage(env, hotkeyMgr, focusMonitor, detector, srv)
@@ -98,7 +109,11 @@ func main() {
 	// Falls back to window title polling until a new client reconnects and sends its state.
 	srv.OnDisconnectAll(func() {
 		hotkeyMgr.ClearBrowserFocusedHint()
+		srv.Note("No clients left: browser focus now taken from the window title")
 	})
+
+	statusURL := fmt.Sprintf("http://127.0.0.1:%d/", *portFlag)
+	log.Printf("Status page: %s", statusURL)
 
 	shutdown := func() {
 		log.Println("Shutting down...")
@@ -115,6 +130,11 @@ func main() {
 	// Run as tray app (blocks on Windows, foreground on other platforms)
 	tray.Run(fmt.Sprintf("Arkadia Helper v%s", Version), tray.Callbacks{
 		OnQuit: shutdown,
+		OnShowStatus: func() {
+			if err := openURL(statusURL); err != nil {
+				log.Printf("Failed to open status page: %v", err)
+			}
+		},
 		OnUnregister: func() {
 			if err := protocol.Uninstall(); err != nil {
 				log.Printf("Failed to unregister protocol handler: %v", err)
@@ -155,9 +175,20 @@ func handleMessage(env protocol.Envelope, hotkeyMgr *hk.Manager, focusMonitor *w
 		// *suppressed* key, so a stale one on Ctrl+W keeps swallowing it and
 		// the browser tab never closes.
 		hotkeyMgr.UnregisterAll()
+		keys := make([]string, 0, len(msg.Binds))
 		for _, bind := range msg.Binds {
 			err := hotkeyMgr.Register(bind)
 			responses = append(responses, protocol.NewBindResultMsg(bind.ID, err == nil, err))
+			if err != nil {
+				srv.Note("Bind %q (%s) rejected: %v", bind.ID, bind.Key, err)
+			} else {
+				keys = append(keys, bind.Key)
+			}
+		}
+		if len(keys) == 0 {
+			srv.Note("Binds replaced: none registered")
+		} else {
+			srv.Note("Binds replaced: %s", strings.Join(keys, ", "))
 		}
 
 	case protocol.TypeUnregisterBind:
@@ -167,6 +198,7 @@ func handleMessage(env protocol.Envelope, hotkeyMgr *hk.Manager, focusMonitor *w
 			return nil
 		}
 		hotkeyMgr.Unregister(msg.ID)
+		srv.Note("Bind %q removed", msg.ID)
 
 	case protocol.TypeSetWindowMatch:
 		var msg protocol.SetWindowMatchMsg
@@ -183,11 +215,20 @@ func handleMessage(env protocol.Envelope, hotkeyMgr *hk.Manager, focusMonitor *w
 			log.Printf("invalid set_browser_focused message: %v", err)
 			return nil
 		}
+		prev := hotkeyMgr.Snapshot().FocusHint
 		hotkeyMgr.SetBrowserFocusedHint(msg.Focused)
 		log.Printf("Browser focus hint: %v", msg.Focused)
+		if prev != nil && *prev == msg.Focused {
+			// unchanged — keep the activity log readable
+		} else if msg.Focused {
+			srv.Note("Client says it has focus: browser-only binds now swallow their keys")
+		} else {
+			srv.Note("Client says it lost focus: browser-only binds let keys through")
+		}
 
 	case protocol.TypeStartCapture:
 		log.Println("Starting key capture...")
+		srv.Note("Capturing the next key press for the bind editor")
 		go hotkeyMgr.CaptureNextKey(func(msg protocol.KeyCapturedMsg) {
 			log.Printf("Captured key: %s", msg.Key)
 			srv.Broadcast(msg)
@@ -195,6 +236,21 @@ func handleMessage(env protocol.Envelope, hotkeyMgr *hk.Manager, focusMonitor *w
 	}
 
 	return responses
+}
+
+// openURL opens a URL in the default browser.
+func openURL(url string) error {
+	var cmd *exec.Cmd
+	switch runtime.GOOS {
+	case "windows":
+		// url.dll takes the URL as one argument, so no cmd.exe quoting is involved.
+		cmd = exec.Command("rundll32", "url.dll,FileProtocolHandler", url)
+	case "darwin":
+		cmd = exec.Command("open", url)
+	default:
+		cmd = exec.Command("xdg-open", url)
+	}
+	return cmd.Start()
 }
 
 func hasProtocolArg(args []string) bool {

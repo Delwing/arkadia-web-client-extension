@@ -8,6 +8,7 @@ package tray
 
 extern void trayOnQuit();
 extern void trayOnUnregister();
+extern void trayOnShowStatus();
 
 void setupTray(const char* title, const void* iconData, int iconLen);
 void runApp();
@@ -31,6 +32,13 @@ func trayOnQuit() {
 func trayOnUnregister() {
 	if darwinCb.OnUnregister != nil {
 		darwinCb.OnUnregister()
+	}
+}
+
+//export trayOnShowStatus
+func trayOnShowStatus() {
+	if darwinCb.OnShowStatus != nil {
+		go darwinCb.OnShowStatus()
 	}
 }
 
