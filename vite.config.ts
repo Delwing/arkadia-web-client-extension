@@ -5,6 +5,7 @@ import {resolve} from "path";
 import {execFileSync, execSync} from 'child_process';
 import {existsSync} from 'fs';
 import {fileURLToPath} from 'url';
+import {networkInterfaces} from 'os';
 
 const resolveGitInfo = (command: string, fallback: string) => {
     try {
@@ -24,6 +25,7 @@ const PAGES: Record<string, string> = {
     'viewer/': 'views/viewer/',
     'log-viewer/': 'views/log-viewer/',
     'popup/': 'views/popup/',
+    'remote/': 'views/remote/',
 };
 
 const depth = (fileName: string) => fileName.split('/').length - 1;
@@ -98,6 +100,32 @@ function pluginTypes(): Plugin {
     };
 }
 
+/**
+ * Dev server only: where a phone on the same network can reach this server.
+ * The remote-control QR on the PC needs that address - a PC tab on localhost
+ * cannot know it. Run `yarn dev --host` so the phone can actually connect.
+ */
+function remoteAddressDev(): Plugin {
+    return {
+        name: 'remote-address-dev',
+        apply: 'serve',
+        configureServer(server) {
+            server.middlewares.use('/__remote/info', (_req, res) => {
+                const host = server.config.server.host;
+                const exposed = host === true || (typeof host === 'string' && host !== 'localhost' && host !== '127.0.0.1');
+                const address = server.httpServer?.address();
+                const port = address && typeof address === 'object' ? address.port : (server.config.server.port ?? 5173);
+                const lan = Object.values(networkInterfaces()).flat()
+                    .filter(net => net && net.family === 'IPv4' && !net.internal)
+                    .map(net => net!.address);
+                res.setHeader('Content-Type', 'application/json');
+                res.setHeader('Cache-Control', 'no-store');
+                res.end(JSON.stringify({exposed, origins: lan.map(ip => `http://${ip}:${port}`)}));
+            });
+        },
+    };
+}
+
 const commitSha = resolveGitInfo('git rev-parse --short HEAD', 'unknown');
 const commitDate = resolveGitInfo('git log -1 --format=%cI', 'unknown');
 
@@ -106,6 +134,7 @@ export default defineConfig({
         react(),
         pageUrls(),
         pluginTypes(),
+        remoteAddressDev(),
         {
             // What is live, for src/web/versionCheck.ts: an open page compares it
             // with the build it was loaded from.
@@ -171,6 +200,7 @@ export default defineConfig({
                 viewer: resolve('views/viewer/index.html'),
                 'log-viewer': resolve('views/log-viewer/index.html'),
                 popup: resolve('views/popup/index.html'),
+                remote: resolve('views/remote/index.html'),
             },
             output: {
                 manualChunks: (id) => {

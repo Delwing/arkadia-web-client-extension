@@ -1,0 +1,5 @@
+.remote-pilot { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 12px; }
+.remote-pilot__qr { width: 220px; height: 220px; padding: 6px; background: #fff; border-radius: 6px; }
+.remote-pilot__qr svg { display: block; width: 100%; height: 100%; }
+.remote-pilot__url { max-width: 100%; font-size: 11px; word-break: break-all; opacity: 0.75; user-select: all; }
+.remote-pilot__state { margin: 0; text-align: center; }
