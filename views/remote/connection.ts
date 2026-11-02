@@ -19,7 +19,8 @@ export type LinkStatus =
     | { kind: 'idle' }
     | { kind: 'connecting'; hostId: string }
     | { kind: 'connected'; hostId: string }
-    | { kind: 'lost'; hostId: string; reason: string };
+    /** `byHost`: the PC closed it on purpose, so do not reconnect on its own. */
+    | { kind: 'lost'; hostId: string; reason: string; byHost?: boolean };
 
 export interface LinkEvents {
     hosts(hosts: HostEntry[]): void;
@@ -96,6 +97,7 @@ export class RemoteLink {
         }
 
         this.channel = channel;
+        let saidBye = false;
         channel.onMessage(text => {
             const message = parseHostMessage(text);
             if (!message) return;
@@ -105,6 +107,8 @@ export class RemoteLink {
                     this.refreshHosts();
                 }
                 this.events.hello(message.state, message.backlog);
+            } else if (message.t === 'bye') {
+                saidBye = true;
             } else if (message.t === 'state') {
                 this.events.state(message.state);
             } else {
@@ -114,7 +118,9 @@ export class RemoteLink {
         channel.onClose(() => {
             if (this.channel !== channel) return;
             this.channel = null;
-            this.events.status({ kind: 'lost', hostId, reason: 'Połączenie z komputerem zostało zamknięte.' });
+            this.events.status(saidBye
+                ? { kind: 'lost', hostId, reason: 'Komputer rozłączył ten telefon.', byHost: true }
+                : { kind: 'lost', hostId, reason: 'Połączenie z komputerem zostało zamknięte.' });
         });
         this.events.status({ kind: 'connected', hostId });
     }

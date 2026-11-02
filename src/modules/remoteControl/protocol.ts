@@ -56,7 +56,9 @@ export type HostMessage =
     /** Fields of the state that changed. */
     | { t: 'state'; state: Partial<RemoteState> }
     /** One piece of output, as HTML (inline styles, so it needs no stylesheet). */
-    | { t: 'out'; html: string };
+    | { t: 'out'; html: string }
+    /** The PC is closing this connection on purpose: the phone must not reconnect on its own. */
+    | { t: 'bye' };
 
 /** Phone -> PC. */
 export type RemoteMessage =
@@ -88,6 +90,7 @@ export function parseHostMessage(raw: unknown): HostMessage | null {
     }
     if (!value || typeof value !== 'object') return null;
     const message = value as Record<string, unknown>;
+    if (message.t === 'bye') return { t: 'bye' };
     if (message.t === 'out' && typeof message.html === 'string') {
         return { t: 'out', html: message.html };
     }

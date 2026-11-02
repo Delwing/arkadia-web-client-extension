@@ -115,6 +115,8 @@ export function RemoteApp() {
 
     // Back on the PC you used last, without a tap: on load, and after a drop.
     useEffect(() => {
+        // Disconnected from the PC on purpose: same as Rozłącz here.
+        if (status.kind === 'lost' && status.byHost) setAutoConnect(false);
         if (!autoConnectRef.current) return;
         const last = prefs.lastHost();
         if (!last || !prefs.pairCode(last) || !hosts.some(host => host.hostId === last)) return;

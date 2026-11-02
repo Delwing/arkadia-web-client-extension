@@ -67,3 +67,9 @@ describe("remote control objects", () => {
         });
     });
 });
+
+describe("remote control goodbye", () => {
+    it("parses the PC's goodbye", () => {
+        expect(parseHostMessage(JSON.stringify({ t: "bye" }))).toEqual({ t: "bye" });
+    });
+});

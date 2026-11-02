@@ -124,8 +124,21 @@ export function setRemoteHostEnabled(next: boolean): void {
     else stopHosting();
 }
 
+/** Time for a goodbye to leave before its connection closes. */
+const BYE_FLUSH_MS = 300;
+
+/** Close phones on purpose: they are told so, and do not reconnect on their own. */
+function sayGoodbye(phones: RemoteChannel[], after?: () => void) {
+    const bye = JSON.stringify({ t: 'bye' } satisfies HostMessage);
+    phones.forEach(phone => phone.send(bye));
+    window.setTimeout(() => {
+        phones.forEach(phone => phone.close());
+        after?.();
+    }, BYE_FLUSH_MS);
+}
+
 export function disconnectPhones(): void {
-    [...channels].forEach(channel => channel.close());
+    sayGoodbye([...channels]);
 }
 
 function notify(text: string, level: 'info' | 'success' | 'warning' = 'info') {
@@ -269,8 +282,9 @@ function startHosting() {
 function stopHosting() {
     const open = [...channels];
     channels.clear();
-    open.forEach(channel => channel.close());
-    host?.close();
+    const previous = host;
     host = null;
+    // Switched off or re-coded on purpose: the phones should not keep trying.
+    sayGoodbye(open, () => previous?.close());
     setStatus({ listening: false, phones: 0 });
 }
