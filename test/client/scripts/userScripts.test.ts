@@ -197,5 +197,38 @@ describe('userScripts', () => {
             await vi.waitFor(() => expect(log('s1').at(-1)).toBe('log: trigger Goblin Goblin atakuje cie!'));
             expect(getAutomationGroups()[0].enabled).toBe(false);
         });
+
+        it('a trigger passes the action\'s own arguments, placeholders filled in', async () => {
+            const client = new FakeClient();
+            initUserTriggers(client as never);
+            setScripts([{ id: 's1', name: 'x', code: "ctx.log(JSON.stringify(args))" }]);
+            globalStorage.set('triggers', [{
+                pattern: '^(\\w+) atakuje (?<cel>\\w+)',
+                macros: [{ type: 'script', scriptId: 's1', scriptArgs: ['wrog: $1', '{cel}', 'stale'] }],
+            }]);
+
+            client.Triggers.parseLine(new AnsiAwareBuffer('Goblin atakuje cie!'), '');
+
+            await vi.waitFor(() => expect(log('s1').at(-1)).toBe('log: ["wrog: Goblin","cie","stale"]'));
+        });
+
+        it('an event trigger passes arguments from its payload', async () => {
+            const client = new FakeClient();
+            const handlers = new Map<string, Function>();
+            client.on = vi.fn((event: string, handler: Function) => { handlers.set(event, handler); }) as never;
+            initUserTriggers(client as never);
+            setScripts([{ id: 's1', name: 'x', code: "ctx.log(ctx.source, args.join('|'))" }]);
+            globalStorage.set('triggers', [{
+                type: 'event',
+                event: 'kill',
+                macros: [{ type: 'script', scriptId: 's1', scriptArgs: ['{name}', 'zabity'] }],
+            }]);
+
+            const [event, handler] = [...handlers.entries()].find(([e]) => e.includes('kill')) ?? [];
+            expect(event).toBeDefined();
+            handler!({ name: 'Goblin' });
+
+            await vi.waitFor(() => expect(log('s1').at(-1)).toBe('log: event Goblin|zabity'));
+        });
     });
 });

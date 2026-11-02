@@ -128,6 +128,61 @@ function PlaceholderChips({
     );
 }
 
+/**
+ * The arguments a "run script" action passes, one field each. A placeholder
+ * chip adds an argument holding just that token: a group is usually a whole
+ * argument. With none, the script gets the pattern's groups.
+ */
+function ScriptArgs({
+    args,
+    placeholders,
+    onChange,
+}: {
+    args: string[];
+    placeholders: MacroPlaceholder[];
+    onChange: (args: string[]) => void;
+}) {
+    const set = (i: number, value: string) => onChange(args.map((a, j) => (j === i ? value : a)));
+    return (
+        <div className="trigger-script-args">
+            {args.map((arg, i) => (
+                <div key={i} className="trigger-script-args__row">
+                    <span className="popup-field__hint">args[{i}]</span>
+                    <Input
+                        mono
+                        title={`Argument ${i + 1}`}
+                        placeholder="Wartość argumentu"
+                        value={arg}
+                        onChange={e => set(i, e.target.value)}
+                    />
+                    <DeleteButton title="Usuń argument" onClick={() => onChange(args.filter((_, j) => j !== i))} />
+                </div>
+            ))}
+            <div className="trigger-arg-chips">
+                <button type="button" className="popup-btn popup-btn--sm" onClick={() => onChange([...args, ''])}>
+                    + Argument
+                </button>
+                {placeholders.map(p => (
+                    <button
+                        key={p.token}
+                        type="button"
+                        className={`popup-btn popup-btn--sm trigger-arg-chips__chip${p.className ? ` is-group ${p.className}` : ''}`}
+                        title={`Dodaj argument: ${p.label}`}
+                        onClick={() => onChange([...args, p.token])}
+                    >
+                        {p.token}
+                    </button>
+                ))}
+            </div>
+            <div className="popup-field__hint">
+                {args.length
+                    ? <>Skrypt dostaje te wartości jako <code>args</code> (pierwsza to <code>args[0]</code>).</>
+                    : <>Bez argumentów skrypt dostaje grupy z wzorca jako <code>args</code> ($1 to <code>args[0]</code>), a z timera czy zdarzenia nic.</>}
+            </div>
+        </div>
+    );
+}
+
 export function MacroEditor({
     macro,
     onChange,
@@ -188,6 +243,7 @@ export function MacroEditor({
                             background: nextType === 'color' ? macro.background : undefined,
                             ...Object.fromEntries(TEXT_STYLES.map(style => [style, nextType === 'color' ? macro[style] : undefined])),
                             scriptId: nextType === 'script' ? macro.scriptId ?? storedScripts()[0]?.id : undefined,
+                            scriptArgs: nextType === 'script' ? macro.scriptArgs : undefined,
                             groupId: nextType === 'group' ? macro.groupId ?? getAutomationGroups()[0]?.id : undefined,
                             groupState: nextType === 'group' ? macro.groupState ?? 'toggle' : undefined,
                             timerId: nextType === 'timer' ? macro.timerId ?? storedTimers()[0]?.id : undefined,
@@ -232,9 +288,11 @@ export function MacroEditor({
                                 {!scripts.some(sc => sc.id === macro.scriptId) && <option value={macro.scriptId ?? ''}>(brak skryptu)</option>}
                                 {scripts.map(sc => <option key={sc.id} value={sc.id}>{sc.name || '(bez nazwy)'}</option>)}
                             </Select>
-                            <div className="popup-field__hint">
-                                Skrypt dostaje grupy z wzorca jako <code>args</code> ($1 to <code>args[0]</code>).
-                            </div>
+                            <ScriptArgs
+                                args={macro.scriptArgs ?? []}
+                                placeholders={placeholders}
+                                onChange={next => onChange({ ...macro, scriptArgs: next.length ? next : undefined })}
+                            />
                         </>
                     ) : (
                         <div className="popup-field__warning">Nie ma jeszcze skryptów. Dodaj skrypt przyciskiem + w oknie Skrypty.</div>

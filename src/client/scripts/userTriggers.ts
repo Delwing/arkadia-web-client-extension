@@ -73,6 +73,12 @@ export interface UserMacro {
     pluginConfig?: Record<string, any>;
     /** script: the automation script to run. */
     scriptId?: string;
+    /**
+     * script: the arguments to pass it, each with the element's placeholders
+     * filled in (`$1`, `{name}`). Absent or empty = the pattern's groups, as
+     * before arguments could be given.
+     */
+    scriptArgs?: string[];
     /** group: the automation group to switch. */
     groupId?: string;
     /** group: what to do with it; absent flips it. */
@@ -121,14 +127,31 @@ export interface ScriptCall {
 }
 
 /**
+ * The arguments a "run script" action passes: its own, with placeholders
+ * filled in by `interpolate`, or, when it has none, what the element offers
+ * (a pattern's groups).
+ */
+export function scriptMacroArgs(macro: UserMacro, defaults: string[], interpolate: (text: string) => string): string[] {
+    const own = Array.isArray(macro.scriptArgs) ? macro.scriptArgs : [];
+    return own.length ? own.map(a => interpolate(a ?? '')) : defaults;
+}
+
+/**
  * The actions that reach beyond the element itself: running a script,
  * switching a group, starting or stopping a timer. Shared by every kind of
  * element. Returns whether it was one of them.
  */
-function applyAutomationMacro(client: Client, macro: UserMacro, call: ScriptCall): boolean {
+function applyAutomationMacro(
+    client: Client,
+    macro: UserMacro,
+    call: ScriptCall,
+    interpolate: (text: string) => string,
+): boolean {
     switch (macro.type) {
         case 'script':
-            if (macro.scriptId) void runUserScript(client, macro.scriptId, call.args, call.options);
+            if (macro.scriptId) {
+                void runUserScript(client, macro.scriptId, scriptMacroArgs(macro, call.args, interpolate), call.options);
+            }
             return true;
         case 'group':
             if (macro.groupId) {
@@ -514,7 +537,7 @@ function applyMacrosToMatch(
             args: Array.from(match).slice(1).map(g => g ?? ''),
             options: { source: 'trigger', label, line: line.text },
         };
-        if (applyAutomationMacro(client, macro, call)) return;
+        if (applyAutomationMacro(client, macro, call, text => interpolateMatch(text, match))) return;
         switch (macro.type) {
             case 'uppercase':
                 line.replace(matchRange, line.text.substring(matchRange[0], matchRange[1]).toUpperCase());
@@ -748,7 +771,7 @@ export function applyLinelessMacro(
     interpolate: (text: string) => string,
     call: ScriptCall = { args: [], options: { source: 'event' } },
 ): void {
-    if (applyAutomationMacro(client, macro, call)) return;
+    if (applyAutomationMacro(client, macro, call, interpolate)) return;
     const command = macro.command && interpolate(macro.command);
     const label = macro.label && interpolate(macro.label);
     const message = macro.message && interpolate(macro.message);

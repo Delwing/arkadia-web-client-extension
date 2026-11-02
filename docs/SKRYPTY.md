@@ -15,7 +15,7 @@ await send('wypij miksture');
 log('hp', hp);
 ```
 
-- **`args`** — grupy z wzorca aliasu lub triggera (`$1` to `args[0]`) albo słowa po komendzie
+- **`args`** — argumenty podane w akcji **Uruchom skrypt** (mogą zawierać `$1` czy `{nazwa}`), a bez nich grupy z wzorca aliasu lub triggera (`$1` to `args[0]`); albo słowa po komendzie
 - **`api`** — to samo API, które dostają wtyczki (zob. dokumentację wtyczek). Jego części są też pod własnymi nazwami, bez `api.`: `command.send(...)`, `map`, `team`, `objects`, `triggers`... Własna zmienna o takiej nazwie (np. `const map = new Map()`) po prostu ją przysłania
 - **`ctx`** — skąd przyszło uruchomienie (`ctx.source`, `ctx.line` z linią gry, `ctx.event` z danymi zdarzenia)
 - **`vars`** — obiekt wspólny dla wszystkich skryptów: jeden zapisze `vars.cel = args[0]`, drugi odczyta `vars.cel`. Trzyma dane do przeładowania strony (nie zapisuje ich na stałe). W module to `ctx.vars`

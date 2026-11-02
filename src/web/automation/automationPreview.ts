@@ -8,7 +8,7 @@
  * I think" the text and the colour are what matter.
  */
 import { expandAliasCommand, substituteGroups } from "@client/scripts/userAliases";
-import { interpolateMatch, TEXT_STYLES, type UserMacro } from "@client/scripts/userTriggers";
+import { interpolateMatch, scriptMacroArgs, TEXT_STYLES, type UserMacro } from "@client/scripts/userTriggers";
 import { actionShort } from "./automationModel";
 
 export interface PatternTest {
@@ -107,7 +107,9 @@ function linelessOutput(m: UserMacro, fill: (t: string) => string, fallback: str
         case "functionalBind":
             return m.label && m.command ? { kind: "bind", text: `[${fill(m.label)}] ${fill(m.command)}` } : null;
         case "script":
-            return m.scriptId ? { kind: "script", text: `${actionShort(m)}${args.length ? ` (${args.join(", ")})` : ""}` } : null;
+            if (!m.scriptId) return null;
+            args = scriptMacroArgs(m, args, fill);
+            return { kind: "script", text: `${actionShort(m)}${args.length ? ` (${args.join(", ")})` : ""}` };
         case "group":
             return m.groupId ? { kind: "group", text: actionShort(m) } : null;
         case "timer":

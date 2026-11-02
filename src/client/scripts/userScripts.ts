@@ -15,8 +15,9 @@ import { SCRIPT_API_NAMES } from "./scriptScope";
  * in scope (see `toModuleSource`):
  *
  *     api   - the plugin API (docs/PLUGINS.md)
- *     args  - the groups of the alias/trigger that called it ($1 is args[0]),
- *             or the words after its command
+ *     args  - the arguments the "run script" action gives (placeholders
+ *             filled in), else the groups of the alias/trigger that called
+ *             it ($1 is args[0]), or the words after its command
  *     ctx   - what started it (source, label, line, event), ctx.log() and
  *             ctx.vars
  *     vars  - one object shared by every script (ctx.vars)

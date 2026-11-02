@@ -1269,6 +1269,20 @@ select.automation-override__select.popup-input.popup-input--control {
   display: flex;
   gap: 6px;
 }
+.trigger-script-args {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.trigger-script-args__row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.trigger-script-args__row > input.popup-input.popup-input--control {
+  flex: 1;
+  width: auto;
+}
 .trigger-action__pair > select.popup-input.popup-input--control {
   flex: 1;
   width: auto;

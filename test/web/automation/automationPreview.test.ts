@@ -32,6 +32,14 @@ describe('automationPreview', () => {
         });
     });
 
+    it('shows the arguments a script action passes', () => {
+        const { matches } = testTriggerPattern('^(\\w+) atakuje cie', '', 'Goblin atakuje cie!');
+        const groups = previewTrigger('Goblin atakuje cie!', matches, [{ type: 'script', scriptId: 's' }]).outputs;
+        expect(groups[0].text).toMatch(/\(Goblin\)$/);
+        const own = previewTrigger('Goblin atakuje cie!', matches, [{ type: 'script', scriptId: 's', scriptArgs: ['cel $1', 'x'] }]).outputs;
+        expect(own[0].text).toMatch(/\(cel Goblin, x\)$/);
+    });
+
     it('matches an alias against the whole command', () => {
         expect(testAliasPattern('zab (.+)', 'zab goblina').matches).toHaveLength(1);
         expect(testAliasPattern('zab', 'zabij').matches).toHaveLength(0);

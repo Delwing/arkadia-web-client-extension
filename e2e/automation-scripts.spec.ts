@@ -68,4 +68,27 @@ test.describe('Automation scripts', () => {
             .poll(async () => await getLastOutgoingCommand(page), {message: 'should pass $1 to the script'})
             .toBe('zabij orka');
     });
+
+    test('an alias passes its own arguments to a script', async ({page}) => {
+        const modal = await openAutomation(page);
+        await startNew(page, modal, 'script');
+        await modal.getByTitle('Nazwa (opcjonalna)').fill('atak');
+        await fillScriptCode(page, modal, CODE);
+        await saveEditor(modal);
+
+        await startNew(page, modal, 'alias');
+        await modal.getByPlaceholder('np. zab (.+)').fill('za (.+)');
+        const action = modal.locator('.automation-act').first();
+        await action.locator('select').first().selectOption('script');
+        await action.getByRole('button', {name: '+ Argument'}).click();
+        await action.getByTitle('Argument 1').fill('drugiego $1');
+        await saveEditor(modal);
+        await closeAutomation(modal);
+
+        await resetCommandLog(page);
+        await submitCommand(page, 'za orka');
+        await expect
+            .poll(async () => await getLastOutgoingCommand(page), {message: 'should pass the argument, $1 filled in'})
+            .toBe('zabij drugiego orka');
+    });
 });

@@ -113,7 +113,7 @@ Gdy akcje to za mało, piszesz krótki skrypt w JavaScripcie (**+ → Skrypt**).
 
 ![Edytor skryptu z konsolą](img/automatyzacje/skrypt.png)
 
-- **Uruchamiany przez** — skrypt uruchamia akcja **Uruchom skrypt** w aliasie lub triggerze albo własna komenda: skrypt z komendą `leczenie` uruchomisz, wpisując `/leczenie`. Słowa po komendzie trafiają do `args`. Zaznaczone **Zalogowanie postaci** uruchamia skrypt raz po każdym wejściu do gry — dobre miejsce na ustawienie `vars` czy komendy na start
+- **Uruchamiany przez** — skrypt uruchamia akcja **Uruchom skrypt** w aliasie lub triggerze albo własna komenda: skrypt z komendą `leczenie` uruchomisz, wpisując `/leczenie`. Słowa po komendzie trafiają do `args`. Akcja **Uruchom skrypt** może podać własne argumenty (także z timera czy zdarzenia), z wstawkami jak `$1` albo `{nazwa}`; bez nich skrypt dostaje grupy z wzorca. Zaznaczone **Zalogowanie postaci** uruchamia skrypt raz po każdym wejściu do gry — dobre miejsce na ustawienie `vars` czy komendy na start
 - **Kod JavaScript** — piszesz od razu kod, bez funkcji dookoła. Masz pod ręką `send('komenda')`, `print('tekst')`, `log(...)`, dane `gmcp`, grupy z wzorca w `args` i całe API wtyczek w `api`. Działa `await` i `return`
 - **Uruchom** — puszcza skrypt od razu, także niezapisany
 - **Konsola** — pokazuje, kto uruchomił skrypt, co wypisał przez `log`, co wysłał do gry i jaki błąd go zatrzymał
