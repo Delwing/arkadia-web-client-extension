@@ -10,6 +10,7 @@ import { IndexedDbRecordStore, type RecordStore } from '@modules/userData/record
 import { UserDataTracker } from '@modules/userData/tracker';
 import type { UserDataType } from '@modules/userData/types';
 import {
+    cechyHistoryType,
     characterKeysType,
     characterValueType,
     crowdCredentialsType,
@@ -49,6 +50,7 @@ export function createUserDataTypes(
         objectEntriesType('mapSettings', 'mapSettings', false),
         objectEntriesType('behaviorSettings', 'behaviorSettings', false),
         characterKeysType,
+        cechyHistoryType,
         professionType,
         characterValueType('deposits', 'deposits'),
         characterValueType('containers', 'containers'),

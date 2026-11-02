@@ -185,12 +185,27 @@ export function startSyncV2(userId: string, passphrase: () => string | null): vo
         });
         if (token !== startToken) return;
         if (!editTypes) return retryLater('przygotowanie danych nie powiodło się');
+
+        const tracker = createUserDataTracker(undefined, type => editTypes.has(type), checkDeviceOutsideGroup);
+        const dropped = await tracker.bindOwner(userId).catch(error => {
+            console.warn('[SyncV2] Could not check the owner of the tracking data:', error);
+            return null;
+        });
+        if (token !== startToken) return;
+        if (dropped === null) return retryLater('przygotowanie danych nie powiodło się');
+        if (dropped) {
+            // The cursors describe what the dropped copy had applied: read the
+            // cloud from the start.
+            localStorage.removeItem(cursorKey(userId));
+            console.info('[SyncV2] The tracking data belonged to another device or account: starting over');
+            logSyncActivity('warning', 'Dane synchronizacji w przeglądarce należały do innego urządzenia lub konta - pobieranie wszystkiego z chmury od nowa.');
+        }
         waitReason = null;
         retryAt = null;
 
         engine = new SyncEngineV2({
             deviceId: getDeviceId(),
-            tracker: createUserDataTracker(undefined, type => editTypes.has(type), checkDeviceOutsideGroup),
+            tracker,
             types: createUserDataTypes(),
             transport: new FirestoreTransport(db, userId),
             encryptionKey: () => (loadFirebaseSettings().encryptionEnabled ? passphrase() : null),

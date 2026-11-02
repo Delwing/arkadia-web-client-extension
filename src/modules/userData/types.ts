@@ -61,6 +61,14 @@ export interface UserDataType<V = any> {
      * neither deleted nor written to local data.
      */
     retired?: (item: { scope: string; key: string }) => boolean;
+    /**
+     * Deletable types: whether the storage behind `scope` is gone altogether
+     * (its key was never written, or local data was wiped), as opposed to
+     * emptied by the user. Tracked items of a missing scope are restored, not
+     * deleted: a lost localStorage must not turn into deletions on every
+     * device. Without it, items missing locally are deletions.
+     */
+    isMissing?(scope: string): boolean | Promise<boolean>;
     read(): LocalItem<V>[] | Promise<LocalItem<V>[]>;
     write(changes: ItemChange<V>[]): void | Promise<void>;
 }

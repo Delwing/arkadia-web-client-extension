@@ -5,6 +5,7 @@ import type { UserRecord } from '@modules/userData/records';
 import { UserDataTracker } from '@modules/userData/tracker';
 import { characterScope, deviceScope } from '@modules/userData/types';
 import {
+    cechyHistoryType,
     characterKeysType,
     improveCountsType,
     keymapsType,
@@ -109,6 +110,7 @@ describe('characterKeysType', () => {
         localStorage.setItem('Alice:mapperRoomId', '5');
         localStorage.setItem('Alice:profession', JSON.stringify({ start_time: 1, plus_events: [] }));
         localStorage.setItem('Alice:deposits', JSON.stringify({}));
+        localStorage.setItem('Alice:cechy_history', JSON.stringify([{ time: 1, stats: {}, total: 0, estimated: false }]));
         localStorage.setItem('Alice:chat_history', JSON.stringify([{ text: 'a chat log line' }]));
 
         const items = (characterKeysType.read() as { scope: string; key: string }[])
@@ -176,6 +178,56 @@ describe('peopleEditsType', () => {
 
         const events = JSON.parse(localStorage.getItem('Alice:peopleLocalEvents')!).events;
         expect(events).toEqual([{ id: 'e0', type: 'ignore', timestamp: 1 }]);
+    });
+});
+
+describe('isMissing', () => {
+    it('tells a wiped list from one the user emptied', () => {
+        const type = listType('aliases', 'aliases');
+        expect(type.isMissing!('global')).toBe(true);
+        globalStorage.set('aliases', [] as never);
+        expect(type.isMissing!('global')).toBe(false);
+    });
+
+    it('takes a character without any keys for wiped', () => {
+        expect(characterKeysType.isMissing!(characterScope('Alice'))).toBe(true);
+        localStorage.setItem('Alice:settings', '{}');
+        expect(characterKeysType.isMissing!(characterScope('Alice'))).toBe(false);
+    });
+
+    it('restores aliases after localStorage is wiped, instead of deleting them everywhere', async () => {
+        globalStorage.set('aliases', [{ id: 'a1', pattern: 'x', command: 'look' }] as never);
+        const a = tracker('a');
+        await a.capture();
+        await a.acknowledge(Number.MAX_SAFE_INTEGER);
+
+        localStorage.clear();
+        expect(await a.capture()).toEqual([]);
+        expect(globalStorage.get('aliases')).toEqual([{ id: 'a1', pattern: 'x', command: 'look' }]);
+    });
+});
+
+describe('cechyHistoryType', () => {
+    const entry = (time: number, sum: number) => ({ time, stats: { sil: { value: 1, step: 0, sum } }, total: sum, estimated: true });
+
+    it('syncs each read-out on its own, so histories from two devices add up', async () => {
+        localStorage.setItem('Alice:cechy_history', JSON.stringify([entry(1, 10), entry(3, 30)]));
+        const fromA = await captureAll('a');
+
+        localStorage.clear();
+        localStorage.setItem('Alice:cechy_history', JSON.stringify([entry(2, 20)]));
+        const b = tracker('b');
+        await b.capture();
+        await b.apply(fromA);
+
+        const times = JSON.parse(localStorage.getItem('Alice:cechy_history')!).map((e: { time: number }) => e.time);
+        expect(times).toEqual([1, 2, 3]);
+    });
+
+    it('removes read-outs deleted on another device', () => {
+        localStorage.setItem('Alice:cechy_history', JSON.stringify([entry(1, 10), entry(2, 20)]));
+        cechyHistoryType.write([{ scope: characterScope('Alice'), key: '1', deleted: true }]);
+        expect(JSON.parse(localStorage.getItem('Alice:cechy_history')!)).toEqual([entry(2, 20)]);
     });
 });
 

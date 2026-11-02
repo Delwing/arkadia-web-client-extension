@@ -57,7 +57,7 @@ Synchronizowane są zawsze wszystkie poniższe kategorie - nie trzeba (i nie da 
 | **Ustawienia interfejsu** | Kolory, czcionki, motyw, układ okien (pliki wgranej czcionki zostają na urządzeniu, synchronizowana jest tylko jej nazwa) |
 | **Bindy klawiszy** | Przypisania klawiszy do komend |
 | **Skróty** | Zapisane lokacje na mapie |
-| **Ustawienia postaci** | Ustawienia rozgrywki (profesja, staż itp.) |
+| **Ustawienia postaci** | Ustawienia rozgrywki (profesja, staż, historia cech itp.) |
 | **Triggery** | Triggery reagujące na tekst z gry |
 | **Aliasy** | Aliasy komend |
 | **Grupy z okna Skrypty** | Grupy aliasów, triggerów i skryptów oraz to, czy są włączone |
@@ -159,7 +159,7 @@ Nie ma konfliktów do rozwiązywania - zmiany z różnych urządzeń są łączo
 ![Telefon i komputer zmieniają różne aliasy i zabijają przeciwników; w chmurze zostają oba aliasy, a liczniki się sumują](img/synchronizacja/laczenie.svg)
 
 - **Ustawienia, aliasy, triggery, bindy, notatki** - wygrywa najnowsza zmiana danego elementu. Edycja aliasu na telefonie nie nadpisuje innego aliasu zmienionego na komputerze.
-- **Odwiedzone lokacje, ticki wiedzy, karmienia, dostawy** - dane z obu urządzeń są sumowane, nic nie ginie.
+- **Odwiedzone lokacje, ticki wiedzy, karmienia, dostawy, historia cech** - dane z obu urządzeń są sumowane, nic nie ginie.
 - **Licznik zabitych, ręczne zmiany licznika postępów** - liczby z urządzeń są dodawane.
 - **Postępy zliczone w grze (`/postepy`, `/postepy2`)** - przypisane do sesji w grze (numeru obiektu postaci). Gdy przejmiesz tę samą sesję na innym urządzeniu, lista `/postepy` (z czasami) jest kontynuowana, a postępy tej sesji nie są liczone w `/postepy2` drugi raz. Nowe zalogowanie (nowy numer obiektu) zaczyna nową listę.
 - **Postępy w bibliotekach i książkach** - postęp tylko rośnie.

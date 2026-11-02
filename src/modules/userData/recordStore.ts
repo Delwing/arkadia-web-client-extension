@@ -22,6 +22,13 @@ export interface RecordStore {
     markSeeded(type: string): Promise<void>;
     /** Forget everything: records, outbox and seed marks (sequence numbers keep counting). */
     clear(): Promise<void>;
+    /** Who the tracking copy belongs to (`{userId}:{deviceId}`), null when never set. */
+    getOwner(): Promise<string | null>;
+    setOwner(owner: string): Promise<void>;
+    /** Whether anything is tracked or queued at all. */
+    hasData(): Promise<boolean>;
+    /** Whether a tracked or queued record was produced by `origin`. */
+    hasRecordsFrom(origin: string): Promise<boolean>;
 }
 
 const itemKey = (r: UserRecord) => `${r.type}\u0000${recordId(r)}`;
@@ -72,6 +79,24 @@ export class MemoryRecordStore implements RecordStore {
         this.records.clear();
         this.outbox.clear();
         this.seeded.clear();
+    }
+
+    private owner: string | null = null;
+
+    async getOwner(): Promise<string | null> {
+        return this.owner;
+    }
+
+    async setOwner(owner: string): Promise<void> {
+        this.owner = owner;
+    }
+
+    async hasData(): Promise<boolean> {
+        return this.records.size > 0 || this.outbox.size > 0 || this.seeded.size > 0;
+    }
+
+    async hasRecordsFrom(origin: string): Promise<boolean> {
+        return [...this.records.values(), ...this.outbox.values()].some(r => r.origin === origin);
     }
 }
 
@@ -216,5 +241,52 @@ export class IndexedDbRecordStore implements RecordStore {
             }
         };
         await done(tx);
+    }
+
+    async getOwner(): Promise<string | null> {
+        const db = await this.db();
+        const tx = db.transaction(META, 'readonly');
+        const owner = await request(tx.objectStore(META).get('owner'));
+        return typeof owner === 'string' ? owner : null;
+    }
+
+    async setOwner(owner: string): Promise<void> {
+        const db = await this.db();
+        const tx = db.transaction(META, 'readwrite');
+        tx.objectStore(META).put(owner, 'owner');
+        await done(tx);
+    }
+
+    async hasData(): Promise<boolean> {
+        const db = await this.db();
+        const tx = db.transaction([RECORDS, OUTBOX, META], 'readonly');
+        const [records, outbox, metaKeys] = await Promise.all([
+            request(tx.objectStore(RECORDS).count()),
+            request(tx.objectStore(OUTBOX).count()),
+            request(tx.objectStore(META).getAllKeys()),
+        ]);
+        return records > 0 || outbox > 0
+            || metaKeys.some(key => typeof key === 'string' && key.startsWith('seeded:'));
+    }
+
+    async hasRecordsFrom(origin: string): Promise<boolean> {
+        const db = await this.db();
+        for (const name of [OUTBOX, RECORDS]) {
+            const tx = db.transaction(name, 'readonly');
+            // Walk until the first match: a device's own records are usually
+            // found quickly, and this runs once per store (legacy stores only).
+            const found = await new Promise<boolean>((resolve, reject) => {
+                const cursorReq = tx.objectStore(name).openCursor();
+                cursorReq.onsuccess = () => {
+                    const cursor = cursorReq.result;
+                    if (!cursor) return resolve(false);
+                    if ((cursor.value as UserRecord).origin === origin) return resolve(true);
+                    cursor.continue();
+                };
+                cursorReq.onerror = () => reject(cursorReq.error ?? new Error('IndexedDB cursor failed'));
+            });
+            if (found) return true;
+        }
+        return false;
     }
 }

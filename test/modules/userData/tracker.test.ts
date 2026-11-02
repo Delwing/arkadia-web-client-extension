@@ -32,6 +32,13 @@ class MapType<V> implements UserDataType<V> {
         return [...this.data.values()];
     }
 
+    /** Scopes whose storage is gone altogether (wiped), not just emptied. */
+    readonly missing = new Set<string>();
+
+    isMissing(scope: string): boolean {
+        return this.missing.has(scope);
+    }
+
     /** Runs right before a write, e.g. to record a kill in between read and write. */
     beforeWrite?: () => void;
 
@@ -233,6 +240,30 @@ describe('UserDataTracker', () => {
 
         expect(records[0]).toMatchObject({ key: 'x', deleted: true });
         expect(b.types.aliases.get('x')).toBeUndefined();
+    });
+
+    it('restores user-edited data whose storage is gone instead of deleting it', async () => {
+        const a = makeDevice('a', 1_000);
+        a.types.aliases.set('x', 'look');
+        a.types.aliases.set('y', 'glance');
+        await a.tracker.capture();
+
+        // Local storage wiped: the key is gone, not emptied by the user
+        a.types.aliases.data.clear();
+        a.types.aliases.missing.add('global');
+        expect(await a.tracker.capture()).toEqual([]);
+        expect(a.types.aliases.get('x')).toBe('look');
+        expect(a.types.aliases.get('y')).toBe('glance');
+    });
+
+    it('still deletes items the user removed while their storage exists', async () => {
+        const a = makeDevice('a', 1_000);
+        a.types.aliases.set('x', 'look');
+        await a.tracker.capture();
+
+        a.types.aliases.data.clear();
+        const records = await a.tracker.capture();
+        expect(records[0]).toMatchObject({ key: 'x', deleted: true });
     });
 
     it('restores accumulated data that went missing locally instead of deleting it', async () => {
@@ -482,6 +513,84 @@ describe('UserDataTracker', () => {
         const outbox = await a.tracker.outbox();
         expect(outbox).toHaveLength(1);
         expect(outbox[0].value).toBe('glance');
+    });
+
+    describe('bindOwner', () => {
+        it('keeps the tracking copy of the same user and device', async () => {
+            const a = makeDevice('a', 1_000);
+            a.types.aliases.set('x', 'look');
+            await a.tracker.capture();
+            expect(await a.tracker.bindOwner('u1')).toBe(false);
+            expect(await a.tracker.bindOwner('u1')).toBe(false);
+            expect(await a.store.getRecords('aliases')).toHaveLength(1);
+        });
+
+        it('drops the copy when the user changes', async () => {
+            const a = makeDevice('a', 1_000);
+            await a.tracker.bindOwner('u1');
+            a.types.aliases.set('x', 'look');
+            await a.tracker.capture();
+
+            expect(await a.tracker.bindOwner('u2')).toBe(true);
+            expect(await a.store.getRecords('aliases')).toEqual([]);
+            expect(await a.store.isSeeded('aliases')).toBe(false);
+        });
+
+        it('keeps a copy from before owners were recorded when it holds this device\'s records', async () => {
+            const a = makeDevice('a', 1_000);
+            a.types.aliases.set('x', 'look');
+            await a.tracker.capture();
+            expect(await a.tracker.bindOwner('u1')).toBe(false);
+            expect(await a.store.getOwner()).toBe('u1:a');
+        });
+
+        it('does not turn a wiped device into deletions under its new device id', async () => {
+            // Device "old" synced aliases x and y with another device
+            const other = makeDevice('other', 1_000);
+            other.types.aliases.set('x', 'look');
+            other.types.aliases.set('y', 'glance');
+            const old = makeDevice('old', 1_000);
+            await old.tracker.bindOwner('u1');
+            await sync(other, old);
+            await old.tracker.capture();
+
+            // Local storage is wiped (new device id); IndexedDB, the record store, survives
+            const store = old.store;
+            const fresh = makeDevice('fresh', 9_000);
+            const tracker = new UserDataTracker({
+                deviceId: 'fresh',
+                types: Object.values(fresh.types),
+                store,
+                clock: new HybridLogicalClock('fresh', { load: () => null, save: () => undefined }, () => 9_000),
+            });
+            fresh.types.aliases.set('z', 'only here');
+
+            expect(await tracker.bindOwner('u1')).toBe(true);
+            // The cloud's data arrives again from the start
+            await tracker.apply(await other.store.getRecords('aliases'));
+            const records = await tracker.capture();
+
+            expect(records.some(r => r.deleted)).toBe(false);
+            expect(fresh.types.aliases.get('x')).toBe('look');
+            expect(fresh.types.aliases.get('y')).toBe('glance');
+            expect(fresh.types.aliases.get('z')).toBe('only here');
+        });
+
+        it('drops a copy from before owners were recorded that holds only other devices\' records', async () => {
+            const other = makeDevice('other', 1_000);
+            other.types.aliases.set('x', 'look');
+            const stale = makeDevice('stale', 1_000);
+            await sync(other, stale);
+
+            const tracker = new UserDataTracker({
+                deviceId: 'newId',
+                types: Object.values(stale.types),
+                store: stale.store,
+                clock: new HybridLogicalClock('newId', { load: () => null, save: () => undefined }),
+            });
+            expect(await tracker.bindOwner('u1')).toBe(true);
+            expect(await stale.store.getRecords('aliases')).toEqual([]);
+        });
     });
 
     it('ignores records of types this version does not know', async () => {

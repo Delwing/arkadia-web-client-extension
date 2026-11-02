@@ -96,6 +96,7 @@ device's local data (section 10), so nothing is lost in the meantime.
 | `improveCounts` | `character:improve_counter_lifetime` | `improveCounts`, per character/skill |
 | `deposits`, `containers` | `character:deposits`, `character:containers` | same, per character/place |
 | `peopleEdits` | `character:peopleLocalEvents` | `peopleEdits`, per event id (already event-based) |
+| cechy history | `character:cechy_history` | `cechyHistory`, per character/read-out time (it was a whole `characterKeys` value, newest wins, so a short history replaced a long one) |
 | `killCounts` | `ArkadiaKillsDB` (+ legacy `character:kill_counter`) | `kills`, per character/mob/day |
 | `visitedRooms` | `ArkadiaVisitedRoomsDB` | `visitedRooms`, per character/room |
 | `locationNotes` | `ArkadiaLocationNotesDB` | `locationNotes`, per room id |
@@ -209,6 +210,13 @@ it, and startup would have to await IndexedDB.)
   per character key, …) and `write(changes)` applies merged items back through the feature's own storage.
 - A new IndexedDB database `ArkadiaUserData` keeps the **tracking copy**: the last known record of every
   item, with its merge metadata.
+- The tracking copy is **owned** by `{userId}:{deviceId}` (meta key `owner`), checked before sync starts.
+  It describes what local data held when it was last synced, so it is only valid for that device and
+  account. When localStorage is wiped but IndexedDB is not, the device comes back under a new device id
+  with an old copy: every tracked item missing locally would become a tombstone with a fresh stamp and
+  win everywhere (this happened in October 2026). A copy owned by someone else is dropped together with
+  the sync cursors, so the device starts from first contact. A copy from before owners were recorded is
+  kept only if it holds records of this device id (or nothing).
 
 ```ts
 interface UserRecord {
@@ -236,6 +244,9 @@ game events (earliest level-up, ticks) use the event's own timestamp from the da
 - **Capture** compares `read()` with the tracking copy. An item that is new or different becomes a record
   with a fresh stamp and the next local `seq`; a tracked item missing locally becomes a tombstone for
   deletable (user-edited) types, and is written back for accumulated types (no reset, section 2).
+  A deletable type can tell a scope whose storage is gone altogether (`isMissing`: the localStorage key
+  is absent, the character has no keys left) from one the user emptied; a missing scope is written back
+  too, so lost storage never turns into deletions.
 - Capture runs on every upload tick, and a type can request an immediate capture after a write (e.g.
   `TypedStorage` changes to its keys) so stamps stay close to the actual edit.
 - Every write path is covered, including direct `localStorage` calls and e2e seeding.

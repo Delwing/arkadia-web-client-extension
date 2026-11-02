@@ -15,7 +15,7 @@ describe('createUserDataTypes', () => {
             'knowledgeLibraries', 'knowledgeBooks', 'knowledgeDetails', 'knowledgeTicks', 'knowledgeLevels',
             'kills', 'visitedRooms', 'locationNotes', 'multibinds',
             'tamingFeedings', 'tamingLevels', 'tamingFoodGroups', 'enemyResistances', 'zlom',
-            'transportSegments', 'deliveries',
+            'transportSegments', 'deliveries', 'cechyHistory',
         ]) {
             expect(ids.has(id)).toBe(true);
         }

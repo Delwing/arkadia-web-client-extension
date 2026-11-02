@@ -2,6 +2,7 @@ const settings = { autoSyncEnabled: false, encryptionEnabled: false };
 const engineStart = vi.fn();
 const engineStop = vi.fn(() => Promise.resolve());
 const registerDevice = vi.fn(() => Promise.resolve({ success: true }));
+const bindOwner = vi.fn((_userId: string) => Promise.resolve(false));
 
 vi.mock('@modules/firebase/firebaseConfig', () => ({ getFirestore: () => ({}) }));
 vi.mock('@modules/firebase/firebaseTypes', () => ({
@@ -10,7 +11,7 @@ vi.mock('@modules/firebase/firebaseTypes', () => ({
 }));
 vi.mock('@modules/firebase/firebaseUnifiedSync', () => ({ registerDevice: () => registerDevice() }));
 vi.mock('@web/userData/migrateFromV1', () => ({ migrateFromV1: () => Promise.resolve(new Set<string>()) }));
-vi.mock('@web/userData/registry', () => ({ createUserDataTracker: () => ({}), createUserDataTypes: () => [] }));
+vi.mock('@web/userData/registry', () => ({ createUserDataTracker: () => ({ bindOwner }), createUserDataTypes: () => [] }));
 vi.mock('@modules/syncV2/firestoreTransport', () => ({ FirestoreTransport: function FirestoreTransport() {} }));
 vi.mock('@modules/syncV2/engine', () => ({
     SyncEngineV2: function SyncEngineV2() {
@@ -66,6 +67,20 @@ describe('startSyncV2', () => {
         await stopSyncV2();
         expect(getSyncV2Status().state).toBe('stopped');
         expect(getSyncActivity().at(-1)?.text).toBe('Synchronizacja zatrzymana.');
+    });
+
+    it('reads the cloud from the start when the tracking data belonged to another device or account', async () => {
+        settings.autoSyncEnabled = true;
+        localStorage.setItem('arkadia.syncV2.cursors:user-1', JSON.stringify({ other: 50 }));
+        bindOwner.mockResolvedValueOnce(true);
+        clearSyncActivity();
+
+        startSyncV2('user-1', () => null);
+        expect(await waitForSyncV2(1_000)).toBe(true);
+
+        expect(bindOwner).toHaveBeenCalledWith('user-1');
+        expect(localStorage.getItem('arkadia.syncV2.cursors:user-1')).toBeNull();
+        expect(getSyncActivity().some(e => e.level === 'warning')).toBe(true);
     });
 
     it('starts once per user however often it is asked', async () => {

@@ -12,6 +12,7 @@ import type { Keymap, KeymapStore } from '@modules/core/keymapTypes';
 import { mergeProfessionStates, type ProfessionState } from '@client/scripts/profession';
 import { adoptCrowdCredentials, loadCrowdCredentials, type CrowdCredentials } from '@modules/crowd/crowdCredentials.ts';
 import type { PersonEditEvent, PeopleLocalEventsSnapshot } from '@client/types/people';
+import type { CechyHistoryEntry } from '@client/scripts/cechyHistory';
 import {
     lifetimeDateOrder,
     mergeImproveSessions,
@@ -116,6 +117,7 @@ export function listType(id: string, storageKey: string): UserDataType<WithId> {
         scope: 'global',
         rule: { kind: 'newest' },
         deletable: true,
+        isMissing: () => localStorage.getItem(storageKey) === null,
         read() {
             const list = readGlobal<WithId[]>(storageKey);
             if (!Array.isArray(list)) return [];
@@ -149,6 +151,7 @@ export function objectEntriesType(id: string, storageKey: string, deletable: boo
         scope: 'global',
         rule: { kind: 'newest' },
         deletable,
+        isMissing: () => localStorage.getItem(storageKey) === null,
         read() {
             const object = readGlobal<Record<string, unknown>>(storageKey);
             if (!object || typeof object !== 'object' || Array.isArray(object)) return [];
@@ -196,6 +199,7 @@ export const keymapsType: UserDataType<Keymap> = {
     scope: 'global',
     rule: { kind: 'newest' },
     deletable: true,
+    isMissing: () => localStorage.getItem('keymaps') === null,
     read() {
         const store = readGlobal<KeymapStore>('keymaps');
         if (!store || store.version !== 1 || !store.keymaps) return [];
@@ -229,6 +233,7 @@ const CHARACTER_KEYS_WITH_OWN_TYPE = new Set([
     'containers',
     'peopleLocalEvents',
     'kill_counter',
+    'cechy_history',
 ]);
 
 /** Logs stay on the device: they are large, change with every message and aren't settings. */
@@ -244,6 +249,11 @@ export const characterKeysType: UserDataType = {
     deletable: true,
     // improve_counter used to be synced here, whole and newest-wins
     retired: item => CHARACTER_KEYS_WITH_OWN_TYPE.has(item.key),
+    // A character with no keys at all was wiped; single keys are removed on purpose.
+    isMissing: scope => {
+        const character = characterFromScope(scope);
+        return !!character && !collectCharacters().includes(character);
+    },
     read() {
         const items: LocalItem[] = [];
         for (let i = 0; i < localStorage.length; i += 1) {
@@ -460,6 +470,10 @@ export const peopleEditsType: UserDataType<PersonEditEvent> = {
     rule: { kind: 'newest' },
     // Edits are undone by removing their event.
     deletable: true,
+    isMissing: scope => {
+        const character = characterFromScope(scope);
+        return !!character && localStorage.getItem(`${character}:peopleLocalEvents`) === null;
+    },
     read() {
         const items: LocalItem<PersonEditEvent>[] = [];
         for (const name of collectCharacters()) {
@@ -480,6 +494,53 @@ export const peopleEditsType: UserDataType<PersonEditEvent> = {
             const sorted = [...events.values()].sort((a, b) => a.timestamp - b.timestamp);
             const timestamp = Math.max(snapshot.timestamp ?? 0, ...sorted.map(e => e.timestamp));
             writeCharacterKey(character, 'peopleLocalEvents', { ...snapshot, events: sorted, timestamp });
+        }
+    },
+};
+
+// ---------------------------------------------------------------------------
+// Cechy history: one item per read-out, so devices add up instead of the
+// newest whole list replacing the others
+// ---------------------------------------------------------------------------
+
+const CECHY_HISTORY_KEY = 'cechy_history';
+
+function readCechyHistory(character: string): CechyHistoryEntry[] {
+    const list = readCharacterKey<CechyHistoryEntry[]>(character, CECHY_HISTORY_KEY);
+    return Array.isArray(list) ? list.filter(entry => Number.isFinite(entry?.time)) : [];
+}
+
+export const cechyHistoryType: UserDataType<CechyHistoryEntry> = {
+    id: 'cechyHistory',
+    scope: 'character',
+    rule: { kind: 'newest' },
+    // The client drops read-outs taken while weakened and trims the oldest
+    // past its limit; those removals carry over. Clearing the history empties
+    // the list, which is a deletion too.
+    deletable: true,
+    isMissing: scope => {
+        const character = characterFromScope(scope);
+        return !!character && localStorage.getItem(`${character}:${CECHY_HISTORY_KEY}`) === null;
+    },
+    read() {
+        const items: LocalItem<CechyHistoryEntry>[] = [];
+        for (const name of collectCharacters()) {
+            for (const entry of readCechyHistory(name)) {
+                items.push({ scope: characterScope(name), key: String(entry.time), value: entry });
+            }
+        }
+        return items;
+    },
+    write(changes) {
+        for (const [character, list] of byCharacter(changes)) {
+            const entries = new Map(readCechyHistory(character).map(entry => [String(entry.time), entry]));
+            for (const change of list) {
+                if (change.deleted) entries.delete(change.key);
+                else if (change.value) entries.set(change.key, change.value);
+            }
+            // The client recomputes totals over the merged list (sanitizeCechyHistory).
+            const sorted = [...entries.values()].sort((a, b) => a.time - b.time);
+            writeCharacterKey(character, CECHY_HISTORY_KEY, sorted);
         }
     },
 };

@@ -195,6 +195,32 @@ export class UserDataTracker {
         return this.serial(() => this.options.store.clear());
     }
 
+    /**
+     * Make sure the tracking copy belongs to this user and device, before
+     * anything is captured or applied. It describes what local data held when
+     * it was last synced; under another device id (local storage was wiped
+     * but IndexedDB was not) or another account, every tracked item missing
+     * locally would be taken for a deletion and sent to every device. Such a
+     * copy is dropped, so this device starts from first contact: the cloud's
+     * versions win and what only this device has is added.
+     *
+     * A copy from before owners were recorded is kept when it holds this
+     * device's own records (or nothing at all). Returns whether it was dropped.
+     */
+    bindOwner(userId: string): Promise<boolean> {
+        return this.serial(async () => {
+            const { store, deviceId } = this.options;
+            const owner = `${userId}:${deviceId}`;
+            const current = await store.getOwner();
+            if (current === owner) return false;
+            const keep = current === null
+                && (!(await store.hasData()) || await store.hasRecordsFrom(deviceId));
+            if (!keep) await store.clear();
+            await store.setOwner(owner);
+            return !keep;
+        });
+    }
+
     /** Records up to and including `seq` were uploaded. */
     acknowledge(uptoSeq: number): Promise<void> {
         return this.serial(() => this.options.store.removeOutbox(uptoSeq));
@@ -280,11 +306,23 @@ export class UserDataTracker {
         }
 
         const writes: ItemChange[] = [];
+        const missingScopes = new Map<string, boolean>();
+        const scopeMissing = async (scope: string): Promise<boolean> => {
+            if (!type.isMissing) return false;
+            let missing = missingScopes.get(scope);
+            if (missing === undefined) {
+                missing = await type.isMissing(scope);
+                missingScopes.set(scope, missing);
+            }
+            return missing;
+        };
         for (const [id, current] of tracked) {
             if (local.has(id) || current.deleted || !this.ownScope(type, current.scope)) continue;
             if (type.retired?.(current)) continue;
             if (type.scope === 'device') continue;
-            if (type.deletable) {
+            // Storage that is gone altogether was lost, not emptied by the
+            // user: restore it like accumulated data.
+            if (type.deletable && !(await scopeMissing(current.scope))) {
                 draft(current, { deleted: true });
             } else {
                 // Accumulated data has no reset: restore what local storage lost.

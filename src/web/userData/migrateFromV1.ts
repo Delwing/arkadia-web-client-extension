@@ -39,6 +39,7 @@ export const V1_CATEGORY_OF_TYPE: Readonly<Record<string, SyncCategory>> = {
     behaviorSettings: 'behaviorSettings',
     characterKeys: 'characterSettings',
     profession: 'characterSettings',
+    cechyHistory: 'characterSettings',
     deposits: 'deposits',
     containers: 'containers',
     improveCounts: 'improveCounts',
