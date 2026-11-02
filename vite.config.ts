@@ -191,7 +191,10 @@ export default defineConfig({
     },
     build: {
         minify: true,
-        sourcemap: true,
+        // Maps are ~60% of the output. Vercel (which sets VERCEL=1 while building)
+        // only serves previews, and every one counts against the deployment
+        // storage quota, so it builds without them; GitHub Pages and local builds keep them.
+        sourcemap: !process.env.VERCEL,
         chunkSizeWarningLimit: 5000,
         rollupOptions: {
             input: {
