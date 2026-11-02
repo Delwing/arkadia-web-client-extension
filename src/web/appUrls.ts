@@ -13,7 +13,7 @@
  */
 
 /** Entry directories that sit one level below the client root. */
-const SUB_APPS = ['editor', 'viewer', 'log-viewer', 'popup'];
+const SUB_APPS = ['editor', 'viewer', 'log-viewer', 'popup', 'remote'];
 
 /** The client root, derived from the page currently running. */
 function appRootUrl(): URL {

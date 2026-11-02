@@ -20,7 +20,8 @@
     "scripts/**/*.ts",
     "plugins/editor/**/*",
     "views/viewer/**/*",
-    "views/popup/**/*"
+    "views/popup/**/*",
+    "views/remote/**/*"
   ],
   "exclude": [
     "node_modules",
