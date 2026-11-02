@@ -2,8 +2,19 @@
 
 Klient umożliwia synchronizację ustawień między urządzeniami za pomocą Firebase. Dzięki temu możesz korzystać z tych samych ustawień na różnych komputerach, telefonach i przeglądarkach.
 
+## W skrócie
+
+- **Włącz i zapomnij** - zaloguj się w **Ustawienia > Firebase** i zaznacz "Automatyczna synchronizacja". Reszta dzieje się sama.
+- **Synchronizowane jest wszystko**, dla wszystkich postaci - nie ma czego wybierać ([lista](#synchronizowane-kategorie)).
+- **Zmiany idą do chmury co 5 minut**, a od razu, gdy ukrywasz kartę. Widoczna karta na innym urządzeniu odbiera je na żywo.
+- **Nie ma konfliktów** - każdy alias, trigger czy lokacja jest łączony osobno, a liczniki się sumują ([więcej](#łączenie-zmian-z-wielu-urządzeń)).
+- **Wyjątek: ustawienia interfejsu i przyciski.** Trafiają do chmury, ale **nie są stosowane** na innych urządzeniach - układ okien z dużego monitora rozjechałby się na telefonie. Każde urządzenie zachowuje swój. Żeby mieć ten sam układ na kilku urządzeniach, połącz je w [grupę synchronizacji](#grupy-synchronizacji) albo skopiuj go raz przyciskiem "Kopiuj ustawienia" ([więcej](#kategorie-powiązane-z-urządzeniem)).
+
+![Komputer wysyła zmiany do chmury co 5 minut, telefon odbiera je na żywo](img/synchronizacja/obieg.svg)
+
 ## Spis treści
 
+- [W skrócie](#w-skrócie)
 - [Logowanie](#logowanie)
 - [Synchronizowane kategorie](#synchronizowane-kategorie)
 - [Automatyczna synchronizacja](#automatyczna-synchronizacja)
@@ -74,6 +85,13 @@ Kopia zapasowa (plik lub Google Drive, w **Ustawienia > Kopia zapasowa**) zawier
 
 Dwie kategorie są traktowane specjalnie - **Ustawienia interfejsu** i **Przyciski**. Te ustawienia są powiązane z konkretnym urządzeniem, ponieważ różne urządzenia mogą mieć różne rozmiary ekranu i układy. Nie są automatycznie stosowane na innych urządzeniach, chyba że należą do tej samej [grupy synchronizacji](#grupy-synchronizacji).
 
+Każde urządzenie wysyła swoje ustawienia interfejsu i przycisków na osobne miejsce w chmurze, więc nic nie ginie - ale nikt ich też nie nadpisuje. Urządzenie stosuje je tylko:
+
+- od urządzeń z tej samej grupy synchronizacji (najnowszy układ spośród nich),
+- jednorazowo, gdy klikniesz "Kopiuj ustawienia" przy innym urządzeniu w **Zarządzanie urządzeniami**.
+
+![Komputer i laptop w jednej grupie przejmują swoje układy; telefon zachowuje własny i może skopiować cudzy na żądanie](img/synchronizacja/interfejs.svg)
+
 Kategoria **Ustawienia interfejsu** obejmuje także układ okien, trasy podróży (trip planner) i aktywną mapę klawiszy.
 
 ---
@@ -137,6 +155,8 @@ Możesz zabezpieczyć swoje dane w chmurze, szyfrując je hasłem.
 ## Łączenie zmian z wielu urządzeń
 
 Nie ma konfliktów do rozwiązywania - zmiany z różnych urządzeń są łączone automatycznie, osobno dla każdego elementu (każdego aliasu, triggera, lokacji, wpisu wiedzy itd.):
+
+![Telefon i komputer zmieniają różne aliasy i zabijają przeciwników; w chmurze zostają oba aliasy, a liczniki się sumują](img/synchronizacja/laczenie.svg)
 
 - **Ustawienia, aliasy, triggery, bindy, notatki** - wygrywa najnowsza zmiana danego elementu. Edycja aliasu na telefonie nie nadpisuje innego aliasu zmienionego na komputerze.
 - **Odwiedzone lokacje, ticki wiedzy, karmienia, dostawy** - dane z obu urządzeń są sumowane, nic nie ginie.

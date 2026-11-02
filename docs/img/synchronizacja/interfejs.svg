@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 268" class="doc-dg" font-family="inherit">
+  <defs><marker id="dg-arr-s2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" class="dg-head"/></marker></defs>
+  <rect x="12" y="8" width="536" height="84" rx="8" class="dg-box"/>
+  <text x="280" y="28" text-anchor="middle" class="dg-t">Chmura</text>
+  <rect x="34" y="40" width="112" height="36" rx="6" class="dg-box dg-hi"/>
+  <text x="90" y="63" text-anchor="middle" class="dg-s">układ: Komputer</text>
+  <rect x="184" y="40" width="112" height="36" rx="6" class="dg-box dg-hi"/>
+  <text x="240" y="63" text-anchor="middle" class="dg-s">układ: Laptop</text>
+  <rect x="412" y="40" width="112" height="36" rx="6" class="dg-box dg-hi"/>
+  <text x="468" y="63" text-anchor="middle" class="dg-s">układ: Telefon</text>
+  <rect x="10" y="128" width="310" height="92" rx="10" class="dg-zone"/>
+  <text x="165" y="212" text-anchor="middle" class="dg-s">grupa synchronizacji</text>
+  <rect x="22" y="142" width="136" height="52" rx="8" class="dg-box"/>
+  <text x="90" y="164" text-anchor="middle" class="dg-t">Komputer</text>
+  <text x="90" y="182" text-anchor="middle" class="dg-s">duży ekran</text>
+  <rect x="172" y="142" width="136" height="52" rx="8" class="dg-box"/>
+  <text x="240" y="164" text-anchor="middle" class="dg-t">Laptop</text>
+  <text x="240" y="182" text-anchor="middle" class="dg-s">duży ekran</text>
+  <rect x="400" y="142" width="136" height="52" rx="8" class="dg-box"/>
+  <text x="468" y="164" text-anchor="middle" class="dg-t">Telefon</text>
+  <text x="468" y="182" text-anchor="middle" class="dg-s">mały ekran</text>
+  <line x1="50" y1="138" x2="50" y2="96" class="dg-line" marker-end="url(#dg-arr-s2)"/>
+  <line x1="200" y1="138" x2="200" y2="96" class="dg-line" marker-end="url(#dg-arr-s2)"/>
+  <line x1="428" y1="138" x2="428" y2="96" class="dg-line" marker-end="url(#dg-arr-s2)"/>
+  <line x1="110" y1="96" x2="262" y2="138" class="dg-line dg-strong" marker-end="url(#dg-arr-s2)"/>
+  <line x1="262" y1="96" x2="110" y2="138" class="dg-line dg-strong" marker-end="url(#dg-arr-s2)"/>
+  <line x1="300" y1="96" x2="420" y2="138" class="dg-line dg-dash" marker-end="url(#dg-arr-s2)"/>
+  <text x="468" y="114" text-anchor="start" class="dg-s">Kopiuj</text>
+  <text x="468" y="128" text-anchor="start" class="dg-s">ustawienia</text>
+  <text x="280" y="242" text-anchor="middle" class="dg-s">Każde urządzenie wysyła swój układ na osobne miejsce w chmurze.</text>
+  <text x="280" y="260" text-anchor="middle" class="dg-s">W grupie przejmuje się najnowszy układ; poza nią tylko na żądanie.</text>
+</svg>

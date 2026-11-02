@@ -62,6 +62,6 @@ export const DOC_PAGES: DocPageDef[] = [
   { key: "skrypty", title: "Wtyczki", group: "Klient", md: skryptyMd },
   { key: "polaczenie", title: "Połączenie", group: "Klient", md: withImages(polaczenieMd) },
   { key: "dane", title: "Dane", group: "Klient", md: daneMd },
-  { key: "sync", title: "Synchronizacja", group: "Klient", md: synchronizacjaMd },
+  { key: "sync", title: "Synchronizacja", group: "Klient", md: withImages(synchronizacjaMd) },
   { key: "aliases", title: "Inne komendy", group: "Klient", md: aliasesMd },
 ];

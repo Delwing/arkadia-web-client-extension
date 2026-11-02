@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 150" class="doc-dg" font-family="inherit">
+  <defs><marker id="dg-arr-s1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" class="dg-head"/></marker></defs>
+  <rect x="8" y="30" width="120" height="60" rx="8" class="dg-box"/>
+  <text x="68" y="56" text-anchor="middle" class="dg-t">Komputer</text>
+  <text x="68" y="75" text-anchor="middle" class="dg-s">zmieniasz alias</text>
+  <rect x="220" y="30" width="120" height="60" rx="8" class="dg-box dg-hi"/>
+  <text x="280" y="56" text-anchor="middle" class="dg-t">Chmura</text>
+  <text x="280" y="75" text-anchor="middle" class="dg-s">Firebase</text>
+  <rect x="432" y="30" width="120" height="60" rx="8" class="dg-box"/>
+  <text x="492" y="56" text-anchor="middle" class="dg-t">Telefon</text>
+  <text x="492" y="75" text-anchor="middle" class="dg-s">ma go od razu</text>
+  <line x1="133" y1="60" x2="215" y2="60" class="dg-line dg-strong" marker-end="url(#dg-arr-s1)"/>
+  <text x="174" y="50" text-anchor="middle" class="dg-s">co 5 min</text>
+  <line x1="345" y1="60" x2="427" y2="60" class="dg-line dg-strong" marker-end="url(#dg-arr-s1)"/>
+  <text x="386" y="50" text-anchor="middle" class="dg-s">na żywo</text>
+  <text x="280" y="120" text-anchor="middle" class="dg-s">Wysyłanie: co 5 minut, a od razu przy ukryciu lub zamknięciu karty.</text>
+  <text x="280" y="138" text-anchor="middle" class="dg-s">Odbieranie: na żywo w widocznej karcie. Działa tak samo w drugą stronę.</text>
+</svg>

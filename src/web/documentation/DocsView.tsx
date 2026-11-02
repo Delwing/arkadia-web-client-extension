@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type RefObject } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent, type RefObject } from 'react';
 import { CornerDownLeft, Info, Menu, Search, Sparkles, X } from 'lucide-react';
 import eventBus from '@modules/core/eventBus';
 import { DOC_PAGES, type DocGroup } from './docPages';
@@ -9,6 +9,7 @@ import {
     pagesLabel,
     resultsLabel,
     searchDocs,
+    slug,
     type DocBlock,
     type DocCommand,
     type DocPage,
@@ -106,7 +107,7 @@ function Blocks({ blocks }: { blocks: DocBlock[] }) {
                     case 'tip':
                         return <Tip key={i} html={b.html} />;
                     case 'subheading':
-                        return <h3 key={i} className="doc-h3">{b.title}</h3>;
+                        return <h3 key={i} className="doc-h3" data-anchor={slug(b.title)}>{b.title}</h3>;
                     default:
                         return <Html key={i} className="doc-text" html={b.html} />;
                 }
@@ -131,6 +132,9 @@ function CustomPage({ page }: { page: DocPage }) {
                 h.dataset.section = section.id;
             }
         });
+        el.querySelectorAll<HTMLElement>('h2, h3').forEach((h) => {
+            h.dataset.anchor = slug(h.textContent ?? '');
+        });
     }, [page]);
     return <div ref={ref} className="doc-custom" />;
 }
@@ -148,7 +152,7 @@ function PageView({ page }: { page: DocPage }) {
             ) : (
                 page.sections.map((section) => (
                     <section key={section.id} className="doc-sec">
-                        {section.title && <h2 id={section.id} data-section={section.id}>{section.title}</h2>}
+                        {section.title && <h2 id={section.id} data-section={section.id} data-anchor={slug(section.title)}>{section.title}</h2>}
                         <Blocks blocks={section.blocks} />
                     </section>
                 ))
@@ -340,6 +344,24 @@ export default function DocsView({ pageKey, onPageKey: setPageKey, query, onQuer
         setActiveSection(id);
     };
 
+    // An in-page link, `[Szyfrowanie](#szyfrowanie)`: GitHub's slug keeps the diacritics, ours folds them.
+    const followAnchor = (e: MouseEvent<HTMLDivElement>) => {
+        const link = (e.target as HTMLElement).closest<HTMLAnchorElement>('a[href^="#"]');
+        const main = mainRef.current;
+        if (!link || !main) return;
+        e.preventDefault();
+        let hash = link.getAttribute('href')!.slice(1);
+        try {
+            hash = decodeURIComponent(hash);
+        } catch {
+            // Keep it as written.
+        }
+        const heading = main.querySelector<HTMLElement>(`[data-anchor="${slug(hash)}"]`);
+        if (!heading) return;
+        main.scrollTo({ top: main.scrollTop + heading.getBoundingClientRect().top - main.getBoundingClientRect().top - 12, behavior: 'smooth' });
+        if (heading.dataset.section) setActiveSection(heading.dataset.section);
+    };
+
     const scrollToResults = (key: string) => {
         setResultPage(key);
         const main = mainRef.current;
@@ -415,7 +437,7 @@ export default function DocsView({ pageKey, onPageKey: setPageKey, query, onQuer
     );
 
     const main = page && (
-        <div ref={mainRef} className="doc-main" onScroll={spy}>
+        <div ref={mainRef} className="doc-main" onScroll={spy} onClick={followAnchor}>
             {result ? <ResultsView result={result} query={query} onOpen={openPage} /> : <PageView page={page} />}
         </div>
     );

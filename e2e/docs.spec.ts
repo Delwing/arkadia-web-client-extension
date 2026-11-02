@@ -64,6 +64,26 @@ test.describe('Dokumentacja', () => {
         await expect(win.locator('#docs-search')).toBeFocused();
     });
 
+    test('links inside a page scroll to their heading, diacritics and subheadings too', async ({ page }) => {
+        await openDocs(page);
+        const win = docsWindow(page);
+        await win.locator('.doc-nav__page', { hasText: 'Synchronizacja' }).click();
+        await expect(win.locator('.doc-crumb')).toHaveText('Klient / Synchronizacja');
+        const main = win.locator('.doc-main');
+        await expect(main.locator('figure.doc-diagram svg.doc-dg')).toHaveCount(3);
+        for (const [i, figure] of (await main.locator('figure.doc-diagram').all()).entries()) {
+            await figure.screenshot({ path: `test-results/docs-sync-diagram-${i}.png` });
+        }
+
+        await main.getByRole('link', { name: 'Zarządzanie urządzeniami', exact: true }).first().click();
+        await expect(win.locator('.doc-nav__sub button', { hasText: 'Zarządzanie urządzeniami' })).toHaveClass(/is-active/);
+        await expect(main.locator('h2', { hasText: 'Zarządzanie urządzeniami' })).toBeInViewport();
+
+        // A ### heading.
+        await main.getByRole('link', { name: 'Ręczne wysyłanie', exact: true }).first().click();
+        await expect(main.locator('h3', { hasText: 'Ręczne wysyłanie' })).toBeInViewport();
+    });
+
     test('the assistant (/pomoc) is a click away, and offered when nothing matches', async ({ page }) => {
         await openDocs(page);
         const win = docsWindow(page);
