@@ -358,7 +358,8 @@ export default class Client {
         // The multiline pass may rewrite the buffer (insert markers, recolor, drop text),
         // and without this the per-line pass would match against that rewritten text —
         // an inserted prefix silently breaks every `^`-anchored single-line trigger.
-        const originalLines = splitPristineLines(buffer.text)
+        const pristine = buffer.text
+        const originalLines = splitPristineLines(pristine)
         originalLines.forEach(line => recordRecentLine(line, type))
         this.inLineProcess = true
         try {
@@ -373,8 +374,27 @@ export default class Client {
             // there is no way to tell which original line a part came from, so those parts
             // fall back to matching their own (rewritten) text.
             if (split.length === originalLines.length) {
+                // The multiline pass recorded its edits against the whole pristine text;
+                // a line it rewrote finds its original offsets through them, so a
+                // single-line trigger's match still lands on the right characters.
+                const tracked = multilineResult.trackedOriginal === pristine
+                let originalStart = 0
+                let currentStart = 0
                 for (let i = 0; i < split.length; i++) {
-                    split[i].originalText = originalLines[i]
+                    const part = split[i]
+                    part.originalText = originalLines[i]
+                    if (tracked && part.text !== originalLines[i]) {
+                        const from = originalStart
+                        const at = currentStart
+                        const length = part.length
+                        const clamp = (n: number) => Math.min(Math.max(n - at, 0), length)
+                        part.trackEditsThrough(originalLines[i], ([start, end]) => {
+                            const [s, e] = multilineResult.mapOriginalRange([from + start, from + end])
+                            return [clamp(s), clamp(e)]
+                        })
+                    }
+                    originalStart += originalLines[i].length + 1
+                    currentStart += part.length + 1
                 }
             }
             result = split.map(part => this.Triggers.parseLine(part, type)).filter(part => part !== null)

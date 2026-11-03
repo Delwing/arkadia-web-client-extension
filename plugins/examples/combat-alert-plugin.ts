@@ -34,13 +34,6 @@ export async function init(api: PluginApi): Promise<PluginInfo> {
   const KILL_COLOR = api.colors.fromHex('#00ff00');          // Zielony
   const DAMAGE_COLOR = api.colors.fromHex('#ffa500');        // Pomarańczowy
 
-  // Funkcja pomocnicza do kolorowania tekstu w linii
-  const colorStringInLine = (line: any, text: string, color: any) => {
-    const matchIndex = line.text.indexOf(text);
-    if (matchIndex === -1) return line;
-    return line.color([matchIndex, matchIndex + text.length], color);
-  };
-
   // Śledź statystyki walki
   let stats: CombatStats = {
     hits: 0,
@@ -86,7 +79,7 @@ export async function init(api: PluginApi): Promise<PluginInfo> {
       stats.misses++;
 
       // Pokoloruj wiadomość o chybieniu
-      return colorStringInLine(line, matches[0], MISS_COLOR);
+      return line.select(matches).style(MISS_COLOR).line;
     },
     tag
   );

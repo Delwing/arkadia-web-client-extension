@@ -175,11 +175,8 @@ export async function init(api: PluginApi): Promise<PluginInfo> {
   const trigger = api.triggers.register(
     /treasure/i,
     (line, matches, type) => {
-      // TypeScript knows all available methods on 'line'
-      const matchIndex = line.text.indexOf(matches[0]);
-      if (matchIndex === -1) return line;
-
-      return line.color([matchIndex, matchIndex + matches[0].length], goldColor);
+      // select(matches) finds the match even if an earlier trigger changed the line
+      return line.select(matches).style(goldColor).line;
     },
     tag,
     options

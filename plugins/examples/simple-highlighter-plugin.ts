@@ -34,11 +34,8 @@ export async function init(api: PluginApi): Promise<PluginInfo> {
     api.triggers.register(
       pattern,
       (line, matches) => {
-        // Znajdź tekst w linii i pokoloruj go
-        const matchIndex = line.text.indexOf(matches[0]);
-        if (matchIndex === -1) return line;
-
-        return line.color([matchIndex, matchIndex + matches[0].length], color);
+        // select(matches) znajdzie dopasowanie, nawet jeśli wcześniejszy trigger zmienił linię
+        return line.select(matches).style(color).line;
       },
       tag
     );

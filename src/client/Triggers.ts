@@ -1,6 +1,7 @@
 import Client from "./Client";
 import {AnsiAwareBuffer} from "@client/ansi/FormatState.ts";
 import {mayMatch, verifyMatch} from "@client/triggerPrefilter.ts";
+import {noteMatchSource} from "@client/ansi/style.ts";
 import type {LineTraceRecorder} from "@client/lineTrace.ts";
 
 /**
@@ -222,6 +223,8 @@ export class Trigger {
                     if (matches && this.manager.literalPrefilterVerify) {
                         verifyMatch(pattern, plainLine, () => this.describe());
                     }
+                    // Lets line.select(matches, group) place a capture group exactly.
+                    if (matches && !pattern.global) noteMatchSource(matches, pattern);
                 }
             } else if (typeof pattern === "string") {
                 const caseInsensitive = this.options.caseInsensitive;

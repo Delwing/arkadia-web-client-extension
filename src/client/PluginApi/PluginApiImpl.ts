@@ -1,5 +1,6 @@
 import type Client from "@client/Client";
 import { AnsiAwareBuffer } from "@client/ansi/FormatState";
+import type { StyleInput } from "@client/ansi/FormatState";
 import { createPluginApiContext, type PluginApiLifecycle } from "./context";
 import type { PluginApi } from "./PluginApi";
 import { createAliasesApi } from "./aliases";
@@ -71,6 +72,7 @@ export class PluginApiImpl implements PluginApi {
   public sqlite;
   public notifications;
   public readonly AnsiAwareBuffer = AnsiAwareBuffer;
+  public readonly text = (text?: string, style?: StyleInput): AnsiAwareBuffer => new AnsiAwareBuffer(text ?? "", style);
 
   /**
    * @param options.stableId What the plugin's saved state (storage, persistent

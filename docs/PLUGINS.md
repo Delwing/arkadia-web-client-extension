@@ -102,18 +102,11 @@ export async function init(api: PluginApi): Promise<PluginInfo> {
   // Zdefiniuj swój kolor używając API
   const HIGHLIGHT_COLOR = api.colors.fromHex('#ff0000'); // Czerwony
 
-  // Funkcja pomocnicza do kolorowania tekstu w linii
-  const colorStringInLine = (line: any, text: string, color: any) => {
-    const matchIndex = line.text.indexOf(text);
-    if (matchIndex === -1) return line;
-    return line.color([matchIndex, matchIndex + text.length], color);
-  };
-
   // Zarejestruj trigger do kolorowania słowa "ważne"
   api.triggers.register(
     /ważne/i,
     (line, matches) => {
-      return colorStringInLine(line, matches[0], HIGHLIGHT_COLOR);
+      return line.select(matches).style(HIGHLIGHT_COLOR).line;
     },
     tag
   );
@@ -139,12 +132,6 @@ export async function init(api: PluginApi): Promise<PluginInfo> {
   const SILVER_COLOR = api.colors.fromHex('#c0c0c0');
   const BRONZE_COLOR = api.colors.fromHex('#cd7f32');
 
-  const colorStringInLine = (line: any, text: string, color: any) => {
-    const matchIndex = line.text.indexOf(text);
-    if (matchIndex === -1) return line;
-    return line.color([matchIndex, matchIndex + text.length], color);
-  };
-
   // Definicje wzorców
   const patterns = [
     { regex: /\bzlot[yae]\s+\w+/i, color: GOLD_COLOR },
@@ -157,7 +144,7 @@ export async function init(api: PluginApi): Promise<PluginInfo> {
     api.triggers.register(
       regex,
       (line, matches) => {
-        return colorStringInLine(line, matches[0], color);
+        return line.select(matches).style(color).line;
       },
       tag
     );
@@ -250,12 +237,6 @@ export async function init(api: PluginApi): Promise<PluginInfo> {
   const QUEST_COLOR = api.colors.fromHex("#00ff00");
   let questCount = 0;
 
-  const colorStringInLine = (line: any, text: string, color: any) => {
-    const matchIndex = line.text.indexOf(text);
-    if (matchIndex === -1) return line;
-    return line.color([matchIndex, matchIndex + text.length], color);
-  };
-
   // Trigger dla rozpoczęcia questa
   api.triggers.register(
     /Przyjales quest: (.+)/i,
@@ -263,7 +244,7 @@ export async function init(api: PluginApi): Promise<PluginInfo> {
       questCount++;
       const questName = matches[1];
       api.output.print(`Quest rozpoczęty: ${questName} (Łącznie: ${questCount})`);
-      return colorStringInLine(line, matches[0], QUEST_COLOR);
+      return line.select(matches).style(QUEST_COLOR).line;
     },
     tag
   );
@@ -274,7 +255,7 @@ export async function init(api: PluginApi): Promise<PluginInfo> {
     (line, matches) => {
       const questName = matches[1];
       api.output.print(`Quest ukończony: ${questName}!`);
-      return colorStringInLine(line, matches[0], QUEST_COLOR);
+      return line.select(matches).style(QUEST_COLOR).line;
     },
     tag
   );
@@ -350,30 +331,36 @@ export async function init(api: PluginApi): Promise<PluginInfo> {
 }
 ```
 
-### Przykład 8: Użycie AnsiAwareBuffer
+### Przykład 8: Kolorowy tekst i tabela
 
 ```typescript
 import type { PluginApi, PluginInfo } from '@arkadia/plugin-types';
 
 export async function init(api: PluginApi): Promise<PluginInfo> {
-  const GREEN_COLOR = api.colors.fromHex('#00ff00');
-  const BLUE_COLOR = api.colors.fromHex('#0000ff');
-  const RED_COLOR = api.colors.fromHex('#ff0000');
-
   api.aliases.register(/^\/kolorowy$/, () => {
-    // Stwórz nowy buffer z kolorowym tekstem
-    const buffer = new api.AnsiAwareBuffer("Witaj ", GREEN_COLOR);
-    buffer.append("kolorowy ", BLUE_COLOR);
-    buffer.append("świecie!", RED_COLOR);
+    // Koloruj w trakcie pisania...
+    api.output.print(
+      api.text('Witaj ', { fg: 'green' }).append('kolorowy ', { fg: 'blue' }).append('świecie!', { fg: 'red' })
+    );
 
-    api.output.print(buffer);
+    // ...albo napisz tekst i pokoloruj jego fragmenty - tak samo jak linię w triggerze
+    api.output.print(api.text('Haslo to: abc').select('abc').fg('gold').bold());
+
+    // Tabela to też linia - można ją potem kolorować
+    const table = api.output.table({
+      title: 'Zapasy',
+      columns: ['Rzecz', { header: 'Ile', align: 'right' }],
+      rows: [['strzaly', 40], ['bandaze', 0]],
+    });
+    table.selectAll('bandaze').fg('red');
+    api.output.print(table);
     return true;
   });
 
   return {
     name: "Kolorowa Komenda",
     version: "1.0.0",
-    description: "Demonstracja użycia AnsiAwareBuffer"
+    description: "Kolorowy tekst i tabela"
   };
 }
 ```
@@ -440,9 +427,45 @@ Wynik: `index` (który wzorzec pasował), `match` (grupy) i `line` (tekst linii)
 #### `api.output` - Wypisywanie Tekstu
 
 ```typescript
-// Wypisz tekst do okna gry
-api.output.print(text);  // text: string | AnsiAwareBuffer
+api.output.print('Gotowe.');                                          // zwykły tekst
+api.output.print(api.text('Uwaga!', { fg: 'tomato', bold: true }));   // cała linia w jednym stylu
+api.output.print(api.text('Haslo: ').append(haslo, { fg: 'gold' }));  // kolorowanie w trakcie pisania
+api.output.print(api.text(`Haslo: ${haslo}`).select(haslo).fg('gold')); // albo napisz i zaznacz
+
+api.output.width                                          // szerokość okna gry w znakach (0 = jeszcze nieznana)
+api.output.table({ title, columns, rows, maxWidth, styles }) // tabela gotowa do wypisania
 ```
+
+`api.text(tekst, styl?)` tworzy linię - taką samą, jaką dostaje trigger - więc działa
+na niej wszystko z sekcji `api.AnsiAwareBuffer`: `select`, `append`, kolory, linki.
+Styl to ten sam zapis co wszędzie (`{ fg, bg, bold, link, ... }` albo
+`api.colors.fromHex(...)`). `print` przyjmuje też zaznaczenie i wypisuje całą jego
+linię, więc łańcuch można wypisać od razu.
+
+`append(tekst)` **bez stylu** kontynuuje formatowanie tekstu przed nim (także link).
+Zwykły tekst po kolorowym: `append(' dalej', {})`.
+
+**Tabele** rysują ramkę klienta:
+
+```
+/-----------------\
+|      Ziola      |
++---------+-------+
+| Nazwa   | Ilosc |
++---------+-------+
+| leczace |     3 |
+\-----------------/
+```
+
+Komórki to tekst, liczby albo linie z `api.text` (z kolorami i linkami). Kolumny mają
+szerokość zawartości; gdy tabela nie mieści się w `api.output.width` (lub `maxWidth`),
+najszersze kolumny się zwężają, a komórki zawijają. `styles` nadaje styl tytułowi,
+nagłówkom i ramce: `{ title: { fg: 'gold' }, header: { bold: true }, border: { fg: 'gray' } }`.
+Wynik to zwykła linia - jej fragmenty można potem zaznaczać i kolorować.
+
+Do układania tekstu linia ma też `padEnd(n)`, `padStart(n)`, `center(n)` (wypełnienie
+zawsze bez formatowania), `truncate(n, '…')`, `wrap(n, { indent })` (zwraca listę
+linii) i `slice(start, end)`.
 
 #### `api.colors` - Kolory
 
@@ -993,9 +1016,58 @@ Zobacz `plugins/examples/enemy-binds-plugin.ts` dla pełnego przykładu.
 
 #### `api.AnsiAwareBuffer` - Manipulacja Liniami
 
+Linię do wypisania tworzy się przez `api.text(...)` (zobacz `api.output`);
+`new api.AnsiAwareBuffer(...)` nadal działa.
+
+**Zaznaczenia - najprostszy sposób na zmianę linii.** `line.select(...)` wybiera
+fragment, a potem zmieniasz go bez liczenia pozycji:
+
 ```typescript
-// Stwórz nowy buffer
-const buffer = new api.AnsiAwareBuffer("Hello", colorState);
+api.triggers.register(/^(\w+) (\w+) flakonik/, (line, matches) => {
+  return line.select(matches, 2)          // grupa 2 dopasowania (też nazwana: 'nazwa')
+    .fg('gold')                            // '#ffd700', nazwa koloru Mudleta albo indeks 0-255
+    .link({ onClick: () => api.command.send('wypij flakonik'), title: 'Wypij' })
+    .after(' (leczenie)', { fg: 'gray' })
+    .line;                                 // linia - do zwrócenia z triggera
+});
+
+line.select()                    // cała linia
+line.select('miecz')             // pierwsze wystąpienie tekstu (w linii, jaka jest teraz)
+line.select(/(\d+) mithrylow/, 1)
+line.select([start, end])        // zakres
+line.selectAll('zloto', 0, { caseInsensitive: true })  // każde wystąpienie
+```
+
+- `select(matches)` liczy pozycje w linii takiej, jaką przysłała gra, i przenosi je
+  na linię zmienioną przez wcześniejsze triggery. `line.text.indexOf(matches[0])`
+  myli się, gdy ktoś coś dopisał przed dopasowaniem albo tekst powtarza się w linii.
+- Metody zaznaczenia: `fg`, `bg`, `style`, `bold`, `italic`, `underline`,
+  `strikethrough`, `link`, `restyle`, `replace(tekst | (stary) => nowy, styl?)`,
+  `remove`, `before`, `after`. Właściwości: `text`, `texts`, `found`, `count`,
+  `ranges`, `line`.
+- Zaznaczenie podąża za zmianami linii, więc można je łańcuchować. Gdy nic nie
+  znaleziono, zaznaczenie jest puste i każda zmiana nic nie robi.
+- `before`/`after` wstawiają tekst bez formatowania, chyba że podasz styl.
+
+**Krótki zapis stylu** działa wszędzie, gdzie przyjmowany jest stan formatowania
+(`api.text`, `append`, `color`, `replace`...):
+
+```typescript
+const buffer = api.text()
+  .append('[ ', { fg: 'white' })
+  .append(setName, { fg: '#ffa500', bold: true, link: () => api.command.send(`kup ${setName}`) })
+  .append(' ]', { fg: 'white' });
+```
+
+Pola: `fg`, `bg`, `bold`, `italic`, `underline`, `strikethrough`, `link` (funkcja
+albo `{ onClick, onContextMenu, onMouseEnter, onMouseLeave, title }`), `cssClass`.
+Stany z `api.colors.fromHex(...)` działają jak dotąd.
+
+**Metody na zakresach** - gdy już masz pozycje:
+
+```typescript
+// Stwórz linię
+const buffer = api.text("Hello", { fg: "green" });
 
 // Dostępne właściwości
 buffer.text    // Tekst bez formatowania
@@ -1004,8 +1076,11 @@ buffer.length  // Długość tekstu
 // Metody manipulacji
 buffer.prepend(text, state)           // Dodaj na początku
 buffer.append(text, state)            // Dodaj na końcu
-buffer.color(range, colorState)       // Pokoloruj fragment [start, end]
-buffer.colorWords(words, color)       // Pokoloruj słowa
+buffer.prefix(text, state)            // Dodaj na początku, bez formatowania sąsiada
+buffer.suffix(text, state)            // Dodaj na końcu, bez formatowania sąsiada
+buffer.color(range, colorState)       // Pokoloruj fragment [start, end) - zmienia tylko to, co podasz
+buffer.colorWords(words, color)       // Pokoloruj słowa (jak color)
+buffer.restyle(range, state)          // Zastąp całe formatowanie fragmentu (także linki)
 buffer.insert(index, text, state)     // Wstaw tekst
 buffer.replace(range, text, state)    // Zamień fragment
 buffer.remove(range)                  // Usuń fragment
@@ -1014,6 +1089,15 @@ buffer.createLinksForText(text, opts) // Stwórz linki dla wszystkich wystąpie�
 buffer.clone()                        // Sklonuj buffer
 buffer.clear()                        // Wyczyść buffer
 ```
+
+`color`, `colorWords` i `applyFormat` zmieniają tylko pola, które podasz - link
+dodany wcześniej przez inny trigger, tło, podkreślenie itd. zostają, osobno dla
+każdego fragmentu tekstu. `false` wyłącza flagę (`{ bold: false }`). Żeby
+wyczyścić albo zastąpić formatowanie w całości, użyj `restyle(range, {})`.
+
+`prepend`/`append` bez `state` przejmują formatowanie sąsiedniego tekstu - także
+jego link. Za linkiem dopisuj z jawnym stanem (`append(" ]", white)`) albo przez
+`suffix`.
 
 #### `api.buttonMacros` - Własne Makra Przycisków
 
@@ -1680,16 +1764,10 @@ export async function init(api: PluginApi): Promise<PluginInfo> {
 
   const RED_COLOR = api.colors.fromHex('#ff0000');
 
-  const colorStringInLine = (line: any, text: string, color: any) => {
-    const matchIndex = line.text.indexOf(text);
-    if (matchIndex === -1) return line;
-    return line.color([matchIndex, matchIndex + text.length], color);
-  };
-
   api.triggers.register(
     /niebezpieczenstwo/i,
     (line, matches) => {
-      return colorStringInLine(line, matches[0], RED_COLOR);
+      return line.select(matches).style(RED_COLOR).line;
     },
     tag
   );

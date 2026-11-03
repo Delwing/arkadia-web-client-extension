@@ -4,36 +4,14 @@ import {AnsiAwareBuffer, FormatStateSnapshot} from "@client/ansi/FormatState";
 export function createPad(width: number, left: number, right: number) {
     const contentWidth = width - left - right;
     return (content?: AnsiAwareBuffer): AnsiAwareBuffer => {
-        const line = new AnsiAwareBuffer("|");
-        line.append(" ".repeat(left), {});
-
-        if (content) {
-            if (content.length > contentWidth) {
-                const truncated = new AnsiAwareBuffer();
-                const segments = content.getSegments();
-                let remaining = contentWidth;
-                for (const segment of segments) {
-                    if (remaining <= 0) break;
-                    if (segment.text.length <= remaining) {
-                        truncated.append(segment.text, segment.state);
-                        remaining -= segment.text.length;
-                    } else {
-                        truncated.append(segment.text.slice(0, remaining), segment.state);
-                        remaining = 0;
-                    }
-                }
-                line.appendBuffer(truncated);
-            } else {
-                line.appendBuffer(content);
-                line.append(" ".repeat(contentWidth - content.length));
-            }
-        } else {
-            line.append(" ".repeat(contentWidth), {});
-        }
-
-        line.append(" ".repeat(right), {});
-        line.append("|");
-        return line;
+        // slice copies (and cuts) the content with its formatting; padEnd pads
+        // with plain spaces, so a coloured or linked cell doesn't spill into them.
+        const cell = (content ?? new AnsiAwareBuffer()).slice(0, contentWidth).padEnd(contentWidth);
+        return new AnsiAwareBuffer("|")
+            .append(" ".repeat(left), {})
+            .appendBuffer(cell)
+            .append(" ".repeat(right), {})
+            .append("|", {});
     };
 }
 
@@ -46,7 +24,7 @@ export function createHeader(width: number, offset: number, color: FormatStateSn
         line.append("-".repeat(left));
         line.append(" ");
         line.appendBuffer(colorString(title, color));
-        line.append(" ");
+        line.append(" ", {});
         line.append("-".repeat(right), {});
         line.append("+");
         return line;

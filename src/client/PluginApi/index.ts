@@ -74,5 +74,18 @@ export type {
   TriggerPattern,
   TriggerSubPattern,
 } from "@client/Triggers";
-export type { AnsiAwareBuffer, BufferSegment, FormatColor, FormatStateSnapshot, TextRange } from "@client/ansi/FormatState";
+export type {
+  AnsiAwareBuffer,
+  BufferSegment,
+  ColorInput,
+  FormatColor,
+  FormatHyperlink,
+  FormatStateSnapshot,
+  LinkInput,
+  SelectTarget,
+  StyleInput,
+  StyleSpec,
+  TextRange,
+  TextSelection,
+} from "@client/ansi/FormatState";
 export type { ObjectData } from "@shared/events";

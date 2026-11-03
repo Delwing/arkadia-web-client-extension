@@ -1,6 +1,6 @@
 ---
 name: arkadia-plugin
-description: Write, run and debug a plugin for the Arkadia Web Client (the browser client for the Polish MUD Arkadia). Use whenever working in a project that depends on @arkadia/plugin-types, when adding triggers, aliases, popups, footer chips or GMCP handling to such a plugin, when a plugin does not load or reacts twice after a reload, or when looking up what the plugin API offers.
+description: Write, run and debug a plugin for the Arkadia Web Client (the browser client for the Polish MUD Arkadia). Use whenever working in a project that depends on @arkadia/plugin-types, when adding triggers, aliases, popups, footer chips or GMCP handling to such a plugin, when colouring, linking or printing text or tables from one, when a plugin does not load or reacts twice after a reload, or when looking up what the plugin API offers.
 ---
 
 # Arkadia Web Client plugins
@@ -106,9 +106,8 @@ scripts yourself before saying a change is done.
   ("Ktos przybywa", "zolty"), so write trigger patterns in ASCII. UI text you
   show the player (popups, labels, notifications) should use proper Polish
   letters.
-- **Trigger callbacks return the line** (possibly modified: `line.color(...)`,
-  `line.prepend(...)`, `line.replace(...)`). Look at `TriggersApi` and the
-  guide's coloring examples before writing one.
+- **Trigger callbacks return the line** (possibly changed, see below), or
+  `null` to gag it.
 - **UI**: build popups with `api.ui` / `registerPersistentPopup` and the
   client's `popup-*` classes and CSS variables (guide section "Wygląd
   Interfejsu (UI)"). No Bootstrap, no hard-coded colours. For React/TSX use the
@@ -123,6 +122,51 @@ scripts yourself before saying a change is done.
   the published build see different data.
 - **Version** shown to players comes from `PluginInfo.version` returned by
   `init()`; bump it together with `plugin.json` before a release.
+
+## Changing and printing text
+
+A trigger's `line` and anything you print are the same kind of line, with one
+API. Prefer selections over positions: write the text, then select a part and
+change it.
+
+```ts
+// In a trigger: matches -> the matched text (or a capture group, by number or name)
+api.triggers.register(/^(\w+) (\w+) flakonik/, (line, m) =>
+  line.select(m, 2).fg('gold').link(() => api.command.send('wypij flakonik')).after(' (!)', { fg: 'gray' }).line, TAG);
+
+line.select()                         // whole line
+line.select('miecz')                  // first occurrence in the line as it is now
+line.selectAll(/(\d+) mithrylow/, 1)  // every occurrence (no g flag needed)
+
+// Printing: api.text, never `new api.AnsiAwareBuffer`
+api.output.print(api.text('Uwaga!', { fg: 'tomato', bold: true }));
+api.output.print(api.text(`Haslo: ${pw}`).select(pw).fg('gold'));        // write, then colour
+api.output.print(api.text('Haslo: ').append(pw, { fg: 'gold' }));         // or colour as you write
+
+// Tables: client frame, fits api.output.width, returns a line you can still colour
+const table = api.output.table({ title: 'Zapasy', columns: ['Rzecz', { header: 'Ile', align: 'right' }], rows });
+table.selectAll('brak').fg('gray');
+api.output.print(table);
+```
+
+- **Styles** everywhere take `{ fg, bg, bold, italic, underline, strikethrough,
+  link, cssClass }`; colours are `'#rrggbb'`, a Mudlet colour name (`'gold'`) or
+  a palette index. `api.colors.fromHex(...)` states work too.
+- **Selection methods**: `fg`, `bg`, `style`, `bold`/`italic`/`underline`/
+  `strikethrough`, `link`, `restyle`, `replace(text | old => new, style?)`,
+  `remove`, `before`, `after`, and `select`/`selectAll` to move to another part
+  of the same line. `.line` gives the line back (to return from a trigger);
+  `print` accepts a selection as is.
+- **Do not** find positions with `line.text.indexOf(matches[0])`: `matches` are
+  offsets into the line as the game sent it, and an earlier trigger may have
+  changed it; the text may also repeat. `select(matches)` maps them correctly.
+- **Colouring keeps what it doesn't set** (links from other triggers,
+  backgrounds). `restyle(...)` / `restyle({})` replaces or clears formatting.
+- **`append(text)` without a style continues the formatting before it, link
+  included.** Pass a style, or `{}` for plain text. `prefix`/`suffix` and a
+  selection's `before`/`after` are plain unless given a style.
+- **Layout**: `padEnd`/`padStart`/`center` (plain padding), `truncate(n)`,
+  `wrap(n, { indent })`, `slice(start, end)`.
 
 ## Debugging checklist
 
