@@ -164,3 +164,16 @@ describe("AnsiAwareBuffer", () => {
         expect(segments[1].state?.slowBlink).toBeUndefined();
     });
 });
+
+describe("toHtml link ids", () => {
+    it("names links that have a click, and only when asked", () => {
+        const buffer = new AnsiAwareBuffer("zabij ogra");
+        const onClick = () => {};
+        buffer.createLink([0, 5], { onClick, title: "x" });
+        buffer.createLink([6, 10], { title: "tylko podpowiedz" });
+        expect(buffer.toHtml()).not.toContain("data-link");
+        const html = buffer.toHtml(link => link.onClick === onClick ? "k7" : null);
+        expect(html).toContain('data-link="k7">zabij</span>');
+        expect(html.match(/data-link=/g)).toHaveLength(1);
+    });
+});

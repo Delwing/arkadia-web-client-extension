@@ -118,3 +118,20 @@ button { font: inherit; color: inherit; cursor: pointer; -webkit-tap-highlight-c
 .rc-obj-btn { flex: none; padding: 8px 10px; background: #22252b; border: 1px solid var(--rc-line); border-radius: 4px; font-size: 13px; }
 .rc-obj-btn.attack { border-color: #7a3430; background: #3a1d1b; color: #ffd0cc; }
 .rc-obj-btn:active { filter: brightness(1.4); }
+
+.rc-binds { display: flex; gap: 5px; padding: 6px 6px 0; overflow-x: auto; scrollbar-width: none; }
+.rc-bind { flex: none; max-width: 70vw; padding: 9px 12px; background: #22252b; border: 1px solid var(--rc-line); border-radius: 6px; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rc-bind:active { filter: brightness(1.4); }
+/* The functional bind is the one to hit in a hurry: first, widest, loudest. */
+.rc-bind-functional { flex: 1 0 auto; min-width: 40%; font-weight: 600; color: #fff; background: var(--rc-accent-bg); border-color: var(--rc-accent); }
+.rc-bind-mark { margin-right: 6px; color: #9cc3ec; font-size: 11px; }
+.rc-bind-room { border-color: #d9bf6280; background: #d9bf621a; }
+.rc-bind-drink { border-color: #62b8be80; background: #62b8be1a; }
+.rc-bind-gate { border-color: #d9855a80; background: #d9855a1a; }
+
+/* Links the PC can run on a tap; the rest (no click, or a tooltip only) read as plain text here. */
+.rc-line [data-link] { text-decoration-color: #9cc3ec !important; }
+.rc-line [data-link]:active { background: var(--rc-accent-bg); }
+.rc-line [data-output-clickable]:not([data-link]) { text-decoration: none !important; cursor: auto !important; }
+
+.rc-note { position: absolute; left: 50%; top: 10px; z-index: 3; transform: translateX(-50%); max-width: 85%; padding: 7px 12px; border-radius: 6px; background: #2b2f37; border: 1px solid var(--rc-line); box-shadow: 0 2px 10px #000a; font-size: 13px; text-align: center; }

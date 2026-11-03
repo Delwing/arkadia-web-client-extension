@@ -32,6 +32,16 @@ export interface RemoteObject {
     defenseTarget: boolean;
 }
 
+/** One of the PC's location binds / multibinds, as its footer row shows them. */
+export interface RemoteBind {
+    index: number;
+    action: string;
+    /** A temporary bind's display name, shown instead of the action. */
+    name: string | null;
+    /** The room's own bind, drink or gate bind; null for a numbered multibind. */
+    kind: string | null;
+}
+
 /** What the phone shows besides the output. */
 export interface RemoteState {
     character: string | null;
@@ -43,10 +53,13 @@ export interface RemoteState {
     objects: RemoteObject[];
     /** The PC's attack command (`zabij` unless changed). */
     attackCommand: string;
+    /** What the functional bind (`]`) would do now; null when nothing is bound. */
+    functionalBind: string | null;
+    binds: RemoteBind[];
 }
 
 export function emptyRemoteState(): RemoteState {
-    return { character: null, vitals: {}, combat: false, room: null, objects: [], attackCommand: 'zabij' };
+    return { character: null, vitals: {}, combat: false, room: null, objects: [], attackCommand: 'zabij', functionalBind: null, binds: [] };
 }
 
 /** PC -> phone. */
@@ -58,11 +71,19 @@ export type HostMessage =
     /** One piece of output, as HTML (inline styles, so it needs no stylesheet). */
     | { t: 'out'; html: string }
     /** The PC is closing this connection on purpose: the phone must not reconnect on its own. */
-    | { t: 'bye' };
+    | { t: 'bye' }
+    /** A short word for the phone's player, e.g. that a tapped link only works on the PC. */
+    | { t: 'note'; text: string };
 
 /** Phone -> PC. */
 export type RemoteMessage =
-    | { t: 'cmd'; text: string };
+    | { t: 'cmd'; text: string }
+    /** Run the functional bind - only if it still does `action`, what the phone showed. */
+    | { t: 'fbind'; action: string }
+    /** Run a multibind - only if slot `index` still does `action`. */
+    | { t: 'mbind'; index: number; action: string }
+    /** Click an output link, by the `data-link` id its HTML carries. */
+    | { t: 'link'; id: string };
 
 export function parseRemoteMessage(raw: unknown): RemoteMessage | null {
     if (typeof raw !== 'string') return null;
@@ -76,6 +97,15 @@ export function parseRemoteMessage(raw: unknown): RemoteMessage | null {
     const message = value as Record<string, unknown>;
     if (message.t === 'cmd' && typeof message.text === 'string') {
         return { t: 'cmd', text: message.text };
+    }
+    if (message.t === 'fbind' && typeof message.action === 'string') {
+        return { t: 'fbind', action: message.action };
+    }
+    if (message.t === 'mbind' && typeof message.index === 'number' && Number.isInteger(message.index) && typeof message.action === 'string') {
+        return { t: 'mbind', index: message.index, action: message.action };
+    }
+    if (message.t === 'link' && typeof message.id === 'string' && message.id) {
+        return { t: 'link', id: message.id };
     }
     return null;
 }
@@ -91,6 +121,7 @@ export function parseHostMessage(raw: unknown): HostMessage | null {
     if (!value || typeof value !== 'object') return null;
     const message = value as Record<string, unknown>;
     if (message.t === 'bye') return { t: 'bye' };
+    if (message.t === 'note' && typeof message.text === 'string') return { t: 'note', text: message.text };
     if (message.t === 'out' && typeof message.html === 'string') {
         return { t: 'out', html: message.html };
     }
@@ -137,7 +168,24 @@ export function parseStatePatch(raw: unknown): Partial<RemoteState> {
     }
     if (Array.isArray(value.objects)) patch.objects = value.objects.flatMap(parseObject);
     if (typeof value.attackCommand === 'string' && value.attackCommand.trim()) patch.attackCommand = value.attackCommand.trim();
+    if ('functionalBind' in value) {
+        patch.functionalBind = typeof value.functionalBind === 'string' && value.functionalBind.trim() ? value.functionalBind : null;
+    }
+    if (Array.isArray(value.binds)) patch.binds = value.binds.flatMap(parseBind);
     return patch;
+}
+
+function parseBind(raw: unknown): RemoteBind[] {
+    if (!raw || typeof raw !== 'object') return [];
+    const b = raw as Record<string, unknown>;
+    if (typeof b.index !== 'number' || !Number.isInteger(b.index)) return [];
+    if (typeof b.action !== 'string' || !b.action.trim()) return [];
+    return [{
+        index: b.index,
+        action: b.action,
+        name: typeof b.name === 'string' && b.name.trim() ? b.name.trim() : null,
+        kind: typeof b.kind === 'string' && b.kind ? b.kind : null,
+    }];
 }
 
 function parseObject(raw: unknown): RemoteObject[] {

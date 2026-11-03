@@ -73,3 +73,40 @@ describe("remote control goodbye", () => {
         expect(parseHostMessage(JSON.stringify({ t: "bye" }))).toEqual({ t: "bye" });
     });
 });
+
+describe("remote control binds and links", () => {
+    it("accepts bind presses and link taps from the phone", () => {
+        expect(parseRemoteMessage(JSON.stringify({ t: "fbind", action: "zabij ogra" }))).toEqual({ t: "fbind", action: "zabij ogra" });
+        expect(parseRemoteMessage(JSON.stringify({ t: "mbind", index: 1003, action: "uderz w brame" })))
+            .toEqual({ t: "mbind", index: 1003, action: "uderz w brame" });
+        expect(parseRemoteMessage(JSON.stringify({ t: "link", id: "a1" }))).toEqual({ t: "link", id: "a1" });
+        expect(parseRemoteMessage(JSON.stringify({ t: "fbind" }))).toBeNull();
+        expect(parseRemoteMessage(JSON.stringify({ t: "mbind", index: 1.5, action: "x" }))).toBeNull();
+        expect(parseRemoteMessage(JSON.stringify({ t: "link", id: "" }))).toBeNull();
+    });
+
+    it("keeps the functional bind and well-formed binds", () => {
+        expect(parseStatePatch({
+            functionalBind: "zabij ogra",
+            binds: [
+                { index: 1, action: "wem", name: "", kind: null },
+                { index: 1003, action: "uderz w brame", kind: "gate" },
+                { index: 2, action: "  " },
+                { index: "3", action: "x" },
+            ],
+        })).toEqual({
+            functionalBind: "zabij ogra",
+            binds: [
+                { index: 1, action: "wem", name: null, kind: null },
+                { index: 1003, action: "uderz w brame", name: null, kind: "gate" },
+            ],
+        });
+        expect(parseStatePatch({ functionalBind: null })).toEqual({ functionalBind: null });
+        expect(parseStatePatch({})).toEqual({});
+    });
+
+    it("parses a note from the PC", () => {
+        expect(parseHostMessage(JSON.stringify({ t: "note", text: "Ten link działa tylko na komputerze." })))
+            .toEqual({ t: "note", text: "Ten link działa tylko na komputerze." });
+    });
+});

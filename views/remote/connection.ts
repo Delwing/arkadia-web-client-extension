@@ -28,6 +28,7 @@ export interface LinkEvents {
     hello(state: RemoteState, backlog: string[]): void;
     state(patch: Partial<RemoteState>): void;
     output(html: string): void;
+    note(text: string): void;
 }
 
 function lostReason(error: unknown): string {
@@ -111,6 +112,8 @@ export class RemoteLink {
                 saidBye = true;
             } else if (message.t === 'state') {
                 this.events.state(message.state);
+            } else if (message.t === 'note') {
+                this.events.note(message.text);
             } else {
                 this.events.output(message.html);
             }

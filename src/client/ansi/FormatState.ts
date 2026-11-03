@@ -1003,9 +1003,11 @@ export class AnsiAwareBuffer {
     /**
      * Converts the buffer to HTML with styling based on format states.
      * Note: Hyperlinks with callbacks cannot be properly rendered in HTML strings.
-     * Use toDom() instead if you need clickable links.
+     * Use toDom() instead if you need clickable links - or pass `linkId`, which
+     * names a link (`data-link="<id>"`) so whoever shows the HTML can ask for
+     * its click to be run here.
      */
-    toHtml(): string {
+    toHtml(linkId?: (link: FormatHyperlink) => string | null): string {
         let html = "";
 
         for (const segment of this.segments) {
@@ -1061,7 +1063,8 @@ export class AnsiAwareBuffer {
                 styles.push("text-decoration: underline");
                 styles.push("text-decoration-style: dotted");
                 styles.push("text-decoration-skip-ink: auto");
-                const dataAttr = ' data-output-clickable="true"';
+                const id = linkId?.(state.hyperlink);
+                const dataAttr = ' data-output-clickable="true"' + (id ? ` data-link="${this.escapeHtml(id)}"` : '');
                 if (state.hyperlink.title) {
                     const titleAttr = ` title="${this.escapeHtml(state.hyperlink.title)}"`;
                     const styleAttr = styles.length > 0 ? ` style="${styles.join("; ")}"` : "";

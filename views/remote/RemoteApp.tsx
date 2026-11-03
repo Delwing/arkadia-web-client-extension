@@ -9,6 +9,7 @@ import { splitExits } from "./exits";
 import { QuickCommands } from "./QuickCommands";
 import { MapPanel } from "./MapPanel";
 import { ObjectsPanel } from "./ObjectsPanel";
+import { BindBar } from "./BindBar";
 
 /** Output nodes kept on the phone; older ones are dropped from the top. */
 const MAX_NODES = 4000;
@@ -18,6 +19,8 @@ const TAIL_LINES = 80;
 const AUTO_RETRIES = 3;
 const FONT_MIN = 10;
 const FONT_MAX = 22;
+/** How long a note from the PC stays up. */
+const NOTE_MS = 3500;
 
 function hostLabel(host: HostEntry): string {
     return host.character ?? `Komputer ${host.hostId.slice(0, 6)}`;
@@ -37,6 +40,7 @@ export function RemoteApp() {
     // Once opened, the map stays mounted and is only hidden, so reopening is instant.
     const [mapUsed, setMapUsed] = useState(prefs.mapOpen);
     const [atBottom, setAtBottom] = useState(true);
+    const [note, setNote] = useState<string | null>(null);
 
     const outputRef = useRef<HTMLDivElement>(null);
     /** The split view's bottom pane: the newest lines, live, while the output is scrolled up. */
@@ -91,7 +95,14 @@ export function RemoteApp() {
         },
         state: patch => setGame(previous => ({ ...previous, ...patch })),
         output: append,
+        note: setNote,
     }), [append, scrollToBottom]);
+
+    useEffect(() => {
+        if (!note) return;
+        const timer = setTimeout(() => setNote(null), NOTE_MS);
+        return () => clearTimeout(timer);
+    }, [note]);
 
     const setAutoConnect = (on: boolean) => {
         autoConnectRef.current = on;
@@ -217,11 +228,30 @@ export function RemoteApp() {
         touchYRef.current = null;
         onScroll();
     };
-    /** A tap (not a drag) where the live pane lies goes back to the bottom. */
+    /** Ask the PC to run an output link's click, as if clicked there. */
+    const tapLink = (target: EventTarget | null): boolean => {
+        const element = target instanceof Element ? target.closest<HTMLElement>('[data-link]') : null;
+        const id = element?.dataset.link;
+        if (!id) return false;
+        link.send({ t: 'link', id });
+        return true;
+    };
+    /**
+     * A tap on a link runs it on the PC. A tap (not a drag) where the live pane
+     * lies goes back to the bottom - unless it is on a link in that pane, which
+     * lets touches through to the history underneath (so hit testing skips it),
+     * and is looked up by its boxes.
+     */
     const onOutputClick = (event: MouseEvent) => {
         const pane = tailPaneRef.current;
-        if (atBottom || !pane) return;
-        if (event.clientY >= pane.getBoundingClientRect().top) scrollToBottom();
+        if (atBottom || !pane || event.clientY < pane.getBoundingClientRect().top) {
+            tapLink(event.target);
+            return;
+        }
+        const { clientX: x, clientY: y } = event;
+        const inPane = Array.from(tailRef.current?.querySelectorAll('[data-link]') ?? []).find(element =>
+            Array.from(element.getClientRects()).some(box => x >= box.left && x <= box.right && y >= box.top && y <= box.bottom));
+        if (!tapLink(inPane ?? null)) scrollToBottom();
     };
     const onWheel = (event: WheelEvent) => {
         if (event.deltaY < 0) openSplit();
@@ -322,6 +352,7 @@ export function RemoteApp() {
                 {!atBottom && (
                     <button type="button" className="rc-jump" onClick={scrollToBottom}>↓ Na dół</button>
                 )}
+                {note && <div className="rc-note" onClick={() => setNote(null)}>{note}</div>}
                 {/* Over the output, see-through, so the text keeps its full height. */}
                 {connected && mapUsed && <MapPanel roomId={game.room?.id ?? null} visible={mapOpen}/>}
                 {connected && <DirectionPad exits={directions} center="zerknij" onSend={send}/>}
@@ -329,6 +360,12 @@ export function RemoteApp() {
 
             {connected && (
                 <footer className="rc-controls">
+                    <BindBar
+                        functional={game.functionalBind}
+                        binds={game.binds}
+                        onFunctional={action => link.send({ t: 'fbind', action }) && scrollToBottom()}
+                        onBind={bind => link.send({ t: 'mbind', index: bind.index, action: bind.action }) && scrollToBottom()}
+                    />
                     {panel === 'objects' && <ObjectsPanel objects={game.objects} attackCommand={game.attackCommand} onSend={send}/>}
                     {panel === 'quick' && <QuickCommands commands={quick} draft={draft} onSend={send} onChange={setQuick}/>}
                     {historyOpen && recent.length > 0 && (

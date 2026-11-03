@@ -10,7 +10,7 @@
 
 import type Client from "@client/Client";
 import mudClient from "../MudClient.ts";
-import { AnsiAwareBuffer } from "@client/ansi/FormatState.ts";
+import { AnsiAwareBuffer, type FormatHyperlink } from "@client/ansi/FormatState.ts";
 import { getDeviceId } from "@modules/firebase/firebaseTypes.ts";
 import { openHost, type HostHandle, type RemoteChannel } from "@modules/remoteControl/peerTransport.ts";
 import {
@@ -18,6 +18,7 @@ import {
     parseRemoteMessage,
     emptyRemoteState,
     type HostMessage,
+    type RemoteBind,
     type RemoteObject,
     type RemoteState,
 } from "@modules/remoteControl/protocol.ts";
@@ -46,7 +47,32 @@ const state: RemoteState = emptyRemoteState();
  * messages and turned into HTML only when a phone connects.
  */
 const backlog = new OutputBacklog<string | AnsiAwareBuffer>();
-const toHtml = (text: string | AnsiAwareBuffer) => text instanceof AnsiAwareBuffer ? text.toHtml() : text;
+/** Messages printed so far: a tapped link that printed nothing and sent nothing did its work on the PC only. */
+let outputCount = 0;
+
+/**
+ * Output links a phone may tap, by the id their HTML carries. Only links that
+ * reached a phone are kept, the oldest dropped past the cap - about what a phone keeps.
+ */
+const LINK_LIMIT = 4000;
+const links = new Map<string, (event: MouseEvent) => void>();
+/** One id per link, however many pieces of HTML (or phones) it is in. */
+const linkIds = new WeakMap<object, string>();
+let nextLinkId = 1;
+
+function linkId(link: FormatHyperlink): string | null {
+    const click = link.onClick;
+    if (!click) return null;
+    const known = linkIds.get(click);
+    if (known && links.has(known)) return known;
+    const id = (nextLinkId++).toString(36);
+    linkIds.set(click, id);
+    links.set(id, click);
+    if (links.size > LINK_LIMIT) links.delete(links.keys().next().value!);
+    return id;
+}
+
+const toHtml = (text: string | AnsiAwareBuffer) => text instanceof AnsiAwareBuffer ? text.toHtml(linkId) : text;
 
 function readEnabled(): boolean {
     try {
@@ -145,6 +171,62 @@ function notify(text: string, level: 'info' | 'success' | 'warning' = 'info') {
     client?.sendEvent('notify', { text, level, source: 'client', key: 'remote.control', time: 6000 });
 }
 
+function tell(phone: RemoteChannel, text: string) {
+    phone.send(JSON.stringify({ t: 'note', text } satisfies HostMessage));
+}
+
+/** Time a tapped link has to send a command or print something before the phone hears it did nothing there. */
+const LINK_EFFECT_MS = 700;
+
+function clickLink(id: string, phone: RemoteChannel) {
+    const target = client;
+    const click = links.get(id);
+    if (!target) return;
+    if (!click) {
+        tell(phone, 'Ten link jest już za stary.');
+        return;
+    }
+    const printed = outputCount;
+    let sent = false;
+    const stop = target.on('command', () => {
+        sent = true;
+    });
+    try {
+        click(new MouseEvent('click'));
+    } catch (error) {
+        console.warn('[RemoteHost] link failed:', error);
+    }
+    window.setTimeout(() => {
+        stop();
+        if (!sent && outputCount === printed) tell(phone, 'Ten link działa tylko na komputerze.');
+    }, LINK_EFFECT_MS);
+}
+
+function onPhoneMessage(text: unknown, phone: RemoteChannel) {
+    const target = client;
+    const message = parseRemoteMessage(text);
+    if (!target || !message) return;
+    switch (message.t) {
+        case 'cmd':
+            void target.sendCommand(message.text, true, undefined, false, true);
+            break;
+        case 'fbind':
+            // The phone's button showed one action; a bind that changed since must not fire in its place.
+            if (state.functionalBind === message.action) target.sendEvent('executeFunctionalBind');
+            else tell(phone, 'Bind na komputerze właśnie się zmienił.');
+            break;
+        case 'mbind': {
+            const bind = state.binds.find(b => b.index === message.index);
+            if (bind && bind.action === message.action) void target.sendCommand(bind.action);
+            else tell(phone, 'Bind na komputerze właśnie się zmienił.');
+            break;
+        }
+        case 'link':
+            clickLink(message.id, phone);
+            break;
+    }
+}
+
 function send(message: HostMessage) {
     if (channels.size === 0) return;
     const text = JSON.stringify(message);
@@ -187,6 +269,23 @@ function watchGameState(target: Client) {
         sendRoom();
     });
     watchObjects(target);
+    watchBinds(target);
+}
+
+/** The functional bind and the room's binds, as the PC's footer row shows them. */
+function watchBinds(target: Client) {
+    target.on('functionalBindState', bind => {
+        const action = bind?.action?.trim() ? bind.action : null;
+        if (action !== state.functionalBind) patchState({ functionalBind: action });
+    });
+    target.on('multibinds', payload => {
+        const binds: RemoteBind[] = (Array.isArray(payload?.list) ? payload.list : [])
+            .filter(bind => typeof bind.action === 'string' && bind.action.trim() !== '')
+            .sort((a, b) => a.index - b.index)
+            .map(bind => ({ index: bind.index, action: bind.action, name: bind.name?.trim() || null, kind: bind.kind ?? null }));
+        patchState({ binds });
+    });
+    target.sendEvent('requestFunctionalBindState');
 }
 
 /**
@@ -242,6 +341,7 @@ export function installRemoteHost(target: Client): void {
         // Like the PC output: every message is a line, and an empty one is an empty line.
         if (text === undefined || text === null) return;
         backlog.push(text);
+        outputCount++;
         if (channels.size > 0) send({ t: 'out', html: toHtml(text) });
     });
     watchGameState(target);
@@ -263,10 +363,7 @@ function startHosting() {
         connection: next => {
             // Any number of phones: each gets everything, and any may send commands.
             channels.add(next);
-            next.onMessage(text => {
-                const message = parseRemoteMessage(text);
-                if (message?.t === 'cmd') void client?.sendCommand(message.text, true, undefined, false, true);
-            });
+            next.onMessage(text => onPhoneMessage(text, next));
             next.onClose(() => {
                 if (!channels.delete(next)) return;
                 setStatus({ phones: channels.size });
