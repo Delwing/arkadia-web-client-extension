@@ -40,4 +40,14 @@ describe('ErrorBoundary', () => {
         expect(host.textContent).toBe('still here');
         expect(error).toHaveBeenCalledWith('[app] Broken failed to render', expect.any(Error));
     });
+
+    it('renders its fallback, given the error, once the region has failed', () => {
+        vi.spyOn(console, 'error').mockImplementation(() => undefined);
+        act(() => root.render(
+            <ErrorBoundary name="Broken" fallback={(error) => <span>{(error as Error).message}</span>}>
+                <Boom />
+            </ErrorBoundary>,
+        ));
+        expect(host.innerHTML).toBe('<span>boom</span>');
+    });
 });

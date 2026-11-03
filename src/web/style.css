@@ -652,6 +652,37 @@ body[data-backdrop] #main_text_output_msg_wrapper {
   overflow: hidden;
 }
 
+/* In place of a log browser that failed to load (`LogsWindow.tsx`). Styled
+   here, not in logBrowser.css: that sheet comes with the chunk that failed. */
+.logs-failed {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-grow: 1;
+  min-height: 12rem;
+  padding: 48px 24px;
+  text-align: center;
+  color: var(--popup-text);
+}
+.logs-failed__close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}
+.logs-failed__title {
+  margin: 0;
+  font-weight: 600;
+  color: var(--popup-text-bright);
+}
+.logs-failed__text {
+  margin: 0;
+  max-width: 32rem;
+  color: var(--popup-text-subtle);
+}
+
 #split-bottom {
   position: sticky;
   bottom: 0;
