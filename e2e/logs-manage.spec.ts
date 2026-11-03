@@ -210,3 +210,32 @@ test('with a save picker the archive is written by the client, so it is known to
     await page.locator('#logs-archive-delete').click();
     await expect(page.locator('.logs-manage__status')).toContainText('Zarchiwizowano 1 logów');
 });
+
+test('deleting a log leaves Zarządzaj and the viewer where they are, without reloading', async ({page}) => {
+    await login(page);
+    const [first] = await seedOldLogs(page, [20, 60]);
+    await openManager(page);
+    await expect(rows(page)).toHaveCount(3);
+
+    // Watch for the manager leaving the page or the viewer's loading screen showing, even for a frame.
+    await page.evaluate(() => {
+        const w = window as unknown as {__blinks: string[]};
+        w.__blinks = [];
+        const dialog = [...document.querySelectorAll('[role="dialog"]')].find((el) => el.textContent?.includes('Zarządzanie logami'));
+        new MutationObserver(() => {
+            if (dialog && !dialog.isConnected) w.__blinks.push('manager removed');
+            if (document.querySelector('.logs-browser__loading')) w.__blinks.push('loading screen');
+            if (document.querySelector('.logs-manage__empty')) w.__blinks.push('empty list');
+        }).observe(document.body, {childList: true, subtree: true});
+    });
+
+    await page.locator(`tr[data-session="${first}"] input`).check();
+    await page.getByRole('button', {name: 'Usuń (1)'}).click();
+    await page.getByRole('dialog').getByRole('button', {name: 'Usuń', exact: true}).click();
+
+    await expect(rows(page)).toHaveCount(2);
+    await expect(page.locator(`tr[data-session="${first}"]`)).toHaveCount(0);
+    // Long enough for the quiet listing behind it to have finished.
+    await expect(page.locator('.lv-session')).toHaveCount(2);
+    expect(await page.evaluate(() => (window as unknown as {__blinks: string[]}).__blinks)).toEqual([]);
+});

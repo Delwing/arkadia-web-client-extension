@@ -11,7 +11,7 @@
  * `LogsWindow` (src/web/app) puts it in the Logi window. The viewer brings its
  * own palette (`lv-theme`), so the window does not have to provide one.
  */
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { Button, Icon, IconButton, LogViewer, MenuItem, Spinner, resetCrossSearchCache } from "@ui/logViewer";
 import type { LogSessionInfo, PersistedPreferences, ViewerSnapshot } from "@ui/logViewer";
 import { readPreferences, writePreferences } from "../../views/log-viewer/preferences";
@@ -68,6 +68,12 @@ export function LogBrowser({ headerTrailing, initialQuery, manageRequest = 0 }: 
     const [importOnOpen, setImportOnOpen] = useState(false);
     // Bumped when the store changes underneath us (a delete or an import).
     const [reloadToken, setReloadToken] = useState(0);
+    /**
+     * Set for a listing again (after a delete, an import, a migration step):
+     * the list on screen stays until the new one is complete, so neither the
+     * viewer nor Zarządzaj blinks through a loading screen or a half list.
+     */
+    const quietRelist = useRef(false);
 
     /**
      * The stored view preferences, minus the last-viewed session.
@@ -104,11 +110,13 @@ export function LogBrowser({ headerTrailing, initialQuery, manageRequest = 0 }: 
             priority: [currentSessionName, snapshot?.sessionId],
         });
         const controller = new AbortController();
+        const quiet = quietRelist.current;
+        quietRelist.current = false;
         setSource(created);
-        setListing({ done: 0, total: 0 });
+        if (!quiet) setListing({ done: 0, total: 0 });
         created
             .list((partial, progress) => {
-                if (controller.signal.aborted) return;
+                if (controller.signal.aborted || quiet) return;
                 setSessions(partial);
                 setListing(progress);
             }, controller.signal)
@@ -147,17 +155,28 @@ export function LogBrowser({ headerTrailing, initialQuery, manageRequest = 0 }: 
         setOpenSessionId(next.sessionId);
     }, []);
 
-    const reload = useCallback(() => {
-        // Logs were deleted or imported: counts remembered for them may be wrong.
+    /**
+     * Logs were deleted or imported. Deleted ones leave the list at once; the
+     * store is then listed again, quietly (see `quietRelist`), for imported
+     * ones and anything else that changed.
+     */
+    const reload = useCallback((removed?: string[]) => {
+        // Counts remembered for the logs may be wrong now.
         resetCrossSearchCache();
-        setSessions(null);
+        if (removed && removed.length > 0) {
+            const gone = new Set(removed);
+            setSessions((previous) => previous?.filter((session) => !gone.has(session.id)) ?? previous);
+        }
+        quietRelist.current = true;
         setReloadToken((token) => token + 1);
     }, []);
 
     // Old logs are listed once they have moved to the new store, not before;
-    // until then the list says they are on their way. Listing again keeps the
-    // viewer (and the log open in it) mounted, unlike `reload`.
-    const relist = useCallback(() => setReloadToken((token) => token + 1), []);
+    // until then the list says they are on their way.
+    const relist = useCallback(() => {
+        quietRelist.current = true;
+        setReloadToken((token) => token + 1);
+    }, []);
     const migration = useLogsMigration(relist);
     const migrationNotice =
         migration === null

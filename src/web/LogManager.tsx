@@ -114,8 +114,11 @@ export interface LogManagerProps {
     sessions: LogSessionInfo[];
     /** The log being recorded: never archived, marked in the list. */
     liveSessionId?: string;
-    /** Deleting or importing changes the store; the host reloads from it. */
-    onSessionsChanged: () => void;
+    /**
+     * Deleting or importing changed the store; the host lists it again.
+     * `removed` names the deleted logs, which the host can drop at once.
+     */
+    onSessionsChanged: (removed?: string[]) => void;
 }
 
 /** The export creator's state while it is open; `deleting` once the file is handed over. */
@@ -407,7 +410,7 @@ export function LogManager({
                 if (!db) throw new Error("Logs database is unavailable");
                 await deleteSessions(db, names);
                 setSelected(new Set());
-                onSessionsChanged();
+                onSessionsChanged(names);
                 return true;
             } catch (error) {
                 console.error("[LogManager] Delete failed:", error);
