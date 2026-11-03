@@ -101,6 +101,16 @@ describe('renderTable', () => {
         expect(table.text.replace(/[|\s\\/-]+/g, ' ')).toContain('bardzo dlugi');
     });
 
+    it('keeps to a width too narrow for 3-character columns, as long as the columns fit at all', () => {
+        const long = 'dlugi tekst w kolumnie';
+        const width = (t: AnsiAwareBuffer) => Math.max(...t.text.split('\n').map(l => l.length));
+
+        // Four columns at 3 characters would need 25.
+        expect(width(renderTable({ rows: [[long, long, long, long]], maxWidth: 20 }))).toBeLessThanOrEqual(20);
+        // One character per column is the floor: 4 columns need 17, so 10 overflows.
+        expect(width(renderTable({ rows: [[long, long, long, long]], maxWidth: 10 }))).toBe(17);
+    });
+
     it('styles title, header and frame; the result can still be selected and coloured', () => {
         const table = renderTable({
             title: 'T',

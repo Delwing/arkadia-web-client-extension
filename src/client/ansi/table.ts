@@ -19,7 +19,11 @@ export interface TableOptions {
     columns?: (string | TableColumn)[];
     /** The cells, row by row. A cell may span several lines (`\n`) and wraps when the table must narrow. */
     rows: TextInput[][];
-    /** Widest the table may be, frame included. Defaults to the console width. */
+    /**
+     * Widest the table may be, frame included. Defaults to the console width.
+     * Columns narrow down to one character to keep to it, so only a table with
+     * more columns than fit (each needs 4 characters with its frame) is wider.
+     */
     maxWidth?: number;
     /** Formatting laid over the title, the header cells and the frame */
     styles?: { title?: StyleInput; header?: StyleInput; border?: StyleInput };
@@ -81,13 +85,17 @@ export function renderTable(options: TableOptions, availableWidth = 0): AnsiAwar
         if (inner() < need) widths[count - 1] += need - inner();
     }
 
-    // Too wide: narrow the widest column a step at a time.
+    // Too wide: narrow the widest column a step at a time — first down to a
+    // readable MIN_COLUMN, then, if that still doesn't fit, to one character.
+    // Only more columns than the width has room for (each needs 4) overflow.
     const limit = options.maxWidth ?? availableWidth;
     if (limit > 0) {
-        while (inner() + 2 > limit) {
-            const widest = widths.indexOf(Math.max(...widths));
-            if (widths[widest] <= MIN_COLUMN) break;
-            widths[widest]--;
+        for (const floor of [MIN_COLUMN, 1]) {
+            while (inner() + 2 > limit) {
+                const widest = widths.indexOf(Math.max(...widths));
+                if (widths[widest] <= floor) break;
+                widths[widest]--;
+            }
         }
     }
 
