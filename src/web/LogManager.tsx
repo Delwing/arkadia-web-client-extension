@@ -37,7 +37,7 @@ import {
 } from "./logsArchive";
 import { formatBytes } from "./storage/formatBytes";
 import { PersistenceNotice } from "./storage/PersistenceNotice";
-import { knownLogSizes, scanStorage, type LogSize } from "./storage/storageScan";
+import { knownDiskFactor, knownLogSizes, scanStorage, type LogSize } from "./storage/storageScan";
 
 // --- helpers --------------------------------------------------------------
 
@@ -92,13 +92,26 @@ function passesFilter(formats: DownloadedFormats | undefined, filter: DownloadFi
     return !formats?.[filter];
 }
 
-/** Total size of `names`, and whether any of them is not measured yet. */
-function sizeOf(names: Iterable<string>, sizes: Record<string, LogSize>): { bytes: number; partial: boolean } {
+/**
+ * Room on disk for a measured size: the data scaled by what the browser
+ * reports (`diskFactor` in storage/storageScan.ts), the data itself where
+ * that is not known yet.
+ */
+function onDisk(bytes: number, factor: number | null): number {
+    return factor === null ? bytes : Math.round(bytes * factor);
+}
+
+/** Room on disk of `names`, and whether any of them is not measured yet. */
+function sizeOf(
+    names: Iterable<string>,
+    sizes: Record<string, LogSize>,
+    factor: number | null,
+): { bytes: number; partial: boolean } {
     let bytes = 0;
     let partial = false;
     for (const name of names) {
         const size = sizes[name];
-        if (size) bytes += size.bytes;
+        if (size) bytes += onDisk(size.bytes, factor);
         else partial = true;
     }
     return { bytes, partial };
@@ -147,6 +160,7 @@ export function LogManager({
     const [downloaded, setDownloaded] = useState<Map<string, DownloadedFormats>>(new Map());
     const [savedToDisk, setSavedToDisk] = useState<Set<string>>(new Set());
     const [sizes, setSizes] = useState<Record<string, LogSize>>(() => knownLogSizes());
+    const [factor, setFactor] = useState<number | null>(() => knownDiskFactor());
     const [measuring, setMeasuring] = useState(false);
     const [preset, setPreset] = useState<RangePreset>("all");
     const [customFrom, setCustomFrom] = useState("");
@@ -194,8 +208,13 @@ export function LogManager({
         if (!open) return;
         const controller = new AbortController();
         setMeasuring(true);
-        scanStorage({ logsOnly: true, signal: controller.signal })
-            .then((result) => setSizes(result.logSizes))
+        // The logs alone, once the factor to disk is known; a full scan the first
+        // time, as that is what finds it.
+        scanStorage({ logsOnly: knownDiskFactor() !== null, signal: controller.signal })
+            .then((result) => {
+                setSizes(result.logSizes);
+                setFactor(result.diskFactor);
+            })
             .catch((error: unknown) => {
                 if (!controller.signal.aborted) console.error("[LogManager] Measuring logs failed:", error);
             })
@@ -245,10 +264,11 @@ export function LogManager({
     const selectedNames = ordered.filter((session) => selected.has(session.id)).map((s) => s.id);
     const allVisibleSelected = visible.length > 0 && visible.every((session) => selected.has(session.id));
     const working = busy !== "";
-    const selection = sizeOf(selectedNames, sizes);
+    const selection = sizeOf(selectedNames, sizes, factor);
     const shown = sizeOf(
         visible.map((session) => session.id),
         sizes,
+        factor,
     );
 
     const toggleVisible = useCallback(() => {
@@ -427,7 +447,7 @@ export function LogManager({
     const finishArchive = useCallback(async () => {
         const done = exporting?.downloaded;
         if (!done) return;
-        const freed = sizeOf(done.names, sizes);
+        const freed = sizeOf(done.names, sizes, factor);
         if (await removeSessions(done.names)) {
             setExporting(null);
             setStatus({
@@ -435,7 +455,7 @@ export function LogManager({
                 text: `Zarchiwizowano ${done.names.length} logów do ${done.fileName}${freed.bytes > 0 ? `, zwolniono ~${formatBytes(freed.bytes)}` : ""}.`,
             });
         }
-    }, [exporting, sizes, removeSessions]);
+    }, [exporting, sizes, factor, removeSessions]);
 
     const importFile = useCallback(
         async (file: File) => {
@@ -722,7 +742,7 @@ export function LogManager({
                                                     <td className="logs-manage__span">{spanLabel(session)}</td>
                                                     <td className="logs-manage__num">{session.lineCount}</td>
                                                     <td className="logs-manage__num">
-                                                        {size ? `~${formatBytes(size.bytes)}` : measuring ? "…" : ""}
+                                                        {size ? `~${formatBytes(onDisk(size.bytes, factor))}` : measuring ? "…" : ""}
                                                     </td>
                                                     <td className="logs-manage__formats">
                                                         {/* Every format has its slot, shown or not, so the

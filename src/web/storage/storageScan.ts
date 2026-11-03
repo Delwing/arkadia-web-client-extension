@@ -85,6 +85,47 @@ export interface ScanProgress {
 export interface ScanResult {
     databases: DatabaseSize[];
     logSizes: Record<string, LogSize>;
+    /** Bytes on disk per measured byte (see `diskFactor`); null when not known. */
+    diskFactor: number | null;
+}
+
+// --- From measured data to room on disk ----------------------------------------
+
+const DISK_FACTOR_KEY = "arkadia.storage.diskFactor";
+
+/**
+ * How much room on disk one measured byte takes. The scan counts the data as
+ * it is (every character of every line); the browser stores it compressed,
+ * and log HTML, repetitive as it is, compresses well, so the measured sizes
+ * add up to more than the browser reports. Scaled by this, each part is its
+ * share of the room IndexedDB really takes, and the parts add up to it.
+ *
+ * Taken over every database at once (a full scan), so it is an average: the
+ * logs may compress better than the map data, but no browser says by how much.
+ */
+export function diskFactor(databases: DatabaseSize[], estimate: StorageEstimate | null): number | null {
+    const measured = databases.reduce((sum, database) => sum + database.bytes, 0);
+    const onDisk = estimate?.details?.indexedDB ?? estimate?.usage;
+    if (!onDisk || measured <= 0) return null;
+    return onDisk / measured;
+}
+
+/** The factor the last full scan found, for a scan of the logs alone. */
+export function knownDiskFactor(): number | null {
+    try {
+        const value = Number(localStorage.getItem(DISK_FACTOR_KEY));
+        return Number.isFinite(value) && value > 0 ? value : null;
+    } catch {
+        return null;
+    }
+}
+
+function rememberDiskFactor(factor: number): void {
+    try {
+        localStorage.setItem(DISK_FACTOR_KEY, String(factor));
+    } catch {
+        // Measured again on the next full scan.
+    }
 }
 
 /**
@@ -119,7 +160,15 @@ export function scanStorage(options: {
                 finish();
                 // Only what is still there: deleted logs leave the cache.
                 writeLogSizes(message.logSizes);
-                resolve({ databases: message.databases, logSizes: message.logSizes });
+                const logsOnly = options.logsOnly ?? false;
+                // A full scan measures what the browser's IndexedDB figure covers;
+                // a scan of the logs alone keeps the factor the last full one found.
+                void (logsOnly ? Promise.resolve(null) : readStorageEstimate()).then((estimate) => {
+                    let factor = logsOnly ? knownDiskFactor() : diskFactor(message.databases, estimate);
+                    if (!logsOnly && factor !== null) rememberDiskFactor(factor);
+                    if (factor === null && !logsOnly) factor = knownDiskFactor();
+                    resolve({ databases: message.databases, logSizes: message.logSizes, diskFactor: factor });
+                });
             } else {
                 finish();
                 reject(new Error(message.message));

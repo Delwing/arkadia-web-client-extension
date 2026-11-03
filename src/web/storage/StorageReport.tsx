@@ -23,7 +23,10 @@ interface Part {
     label: string;
     /** The raw name, under the label, for anyone who wants to look it up. */
     name: string;
+    /** Room it takes: for a database, its measured data scaled to disk (`diskFactor`). */
     bytes: number;
+    /** The data as measured, before scaling; set where it differs from `bytes`. */
+    dataBytes?: number;
     records: number;
     /** Kept by the client, not by another app at the same address (or a plugin). */
     own: boolean;
@@ -32,14 +35,15 @@ interface Part {
     error?: string;
 }
 
-function partsOf(databases: DatabaseSize[]): Part[] {
+function partsOf(databases: DatabaseSize[], factor: number | null): Part[] {
     const local = measureLocalStorage();
     return [
         ...databases.map((database) => ({
             key: database.name,
             label: databaseLabel(database.name),
             name: `IndexedDB · ${database.name}`,
-            bytes: database.bytes,
+            bytes: factor === null ? database.bytes : Math.round(database.bytes * factor),
+            dataBytes: factor === null ? undefined : database.bytes,
             records: database.records,
             own: isClientDatabase(database.name),
             recordsUnit: ["wpis", "wpisy", "wpisów"] as [string, string, string],
@@ -97,7 +101,7 @@ export function StorageReport() {
         scanStorage({ onProgress: setProgress, signal: current.signal })
             .then((result) => {
                 if (current.signal.aborted) return;
-                setParts(partsOf(result.databases));
+                setParts(partsOf(result.databases, result.diskFactor));
                 setProgress(null);
             })
             .catch((error: unknown) => {
@@ -159,6 +163,7 @@ export function StorageReport() {
                             <div className="storage-report__label">{part.label}</div>
                             <div className="storage-report__name popup-muted">
                                 {part.name} · {part.records.toLocaleString("pl-PL")} {plural(part.records, part.recordsUnit)}
+                                {part.dataBytes !== undefined && part.dataBytes > 0 ? ` · dane ~${formatBytes(part.dataBytes)}` : ""}
                                 {part.error ? ` · nie odczytano w całości (${part.error})` : ""}
                             </div>
                         </div>
@@ -258,8 +263,9 @@ export function StorageReport() {
             ) : null}
 
             <p className="popup-muted storage-report__note">
-                Rozmiary z „~” to przybliżona ilość zapisanych danych. Przeglądarka przechowuje je po swojemu (często
-                skompresowane), więc łączna suma nie musi się zgadzać z zajętym miejscem.
+                Rozmiary baz z „~” to szacowane miejsce na dysku: przeglądarka przechowuje dane skompresowane, więc
+                zmierzone dane („dane ~…”) przeliczono proporcjonalnie do miejsca, które według niej zajmuje IndexedDB.
+                Rozmiar ustawień (localStorage) to ilość zapisanych znaków.
             </p>
         </div>
     );

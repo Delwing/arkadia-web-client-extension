@@ -34,6 +34,15 @@ test('the storage row opens the breakdown, and the logs lead to Zarządzaj', asy
     await expect(logs).toContainText('Logi');
     await expect(logs).toContainText(/~[\d,]+ (kB|MB)/);
     await expect(modal.locator('tr[data-part="localStorage"]')).toContainText('Ustawienia i stan');
+    // Sizes are room on disk, scaled to what the browser reports: no database takes more than the total.
+    const parse = (text: string) => {
+        const match = /([\d,]+) (kB|MB|GB)/.exec(text)!;
+        return Number(match[1].replace(',', '.')) * {kB: 1, MB: 1024, GB: 1024 * 1024}[match[2] as 'kB' | 'MB' | 'GB'];
+    };
+    const total = parse(await modal.locator('.storage-report__total-figure').innerText());
+    const logsSize = parse(await logs.locator('.storage-report__num').innerText());
+    expect(logsSize).toBeLessThanOrEqual(total);
+    await expect(logs).toContainText(/dane ~[\d,]+ (kB|MB)/);
     await expect(modal.locator('.storage-report__head')).toContainText('Co zajmuje miejsce');
 
     // The client's data, then what else shares the address, each under its heading.
