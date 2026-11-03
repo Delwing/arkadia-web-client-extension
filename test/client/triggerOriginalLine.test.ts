@@ -249,3 +249,56 @@ describe('the kto packet that swallowed a carriage move line', () => {
         expect(text.indexOf('Zakonczyli: ')).toBeLessThan(text.indexOf(CARRIAGE));
     });
 });
+
+describe('match positions survive a multiline rewrite', () => {
+    const goldText = (line: AnsiAwareBuffer) =>
+        line.getSegments().filter(s => s.state?.foreground).map(s => s.text);
+    // onLine merges a frame's lines back into one buffer; look at them one by one.
+    const lines = (out: AnsiAwareBuffer[]) => out.flatMap(b => b.splitLines());
+
+    test('select(matches) lands on the matched text after a multiline trigger prefixed the line', () => {
+        const client = createClient();
+        client.Triggers.registerMultilineTrigger(/^Header:\n/, line => {
+            line.insert(line.text.indexOf('\n') + 1, '[!] ', {});
+            return line;
+        });
+        client.Triggers.registerTrigger(/z (\w+) jedziesz/, (line, m) => line.select(m, 1).fg('gold').line);
+
+        const [, second] = lines(client.onLine('Header:\nWraz z Wexlinem jedziesz.', 'text'));
+
+        expect(second.text).toBe('[!] Wraz z Wexlinem jedziesz.');
+        expect(goldText(second)).toEqual(['Wexlinem']);
+    });
+
+    test('a rewrite on an earlier line does not move matches on a later one', () => {
+        const client = createClient();
+        client.Triggers.registerMultilineTrigger(/^Header:/, line => {
+            line.insert(0, '>>> ', {});
+            line.insert(line.text.lastIndexOf('\n') + 1, '- ', {});
+            return line;
+        });
+        client.Triggers.registerTrigger(/miecz/, (line, m) => line.select(m).fg('gold').line);
+
+        const out = lines(client.onLine('Header:\nmiecz i tarcza\nmiecz', 'text'));
+
+        expect(out.map(b => b.text)).toEqual(['>>> Header:', 'miecz i tarcza', '- miecz']);
+        expect(goldText(out[1])).toEqual(['miecz']);
+        expect(out[1].getSegments()[0].text).toBe('miecz');
+        expect(goldText(out[2])).toEqual(['miecz']);
+    });
+
+    test('edits by single-line triggers stack on the multiline mapping', () => {
+        const client = createClient();
+        client.Triggers.registerMultilineTrigger(/^A\n/, line => {
+            line.insert(line.text.indexOf('\n') + 1, '12345 ', {});
+            return line;
+        });
+        client.Triggers.registerTrigger(/^B/, line => line.prefix('xx '));
+        client.Triggers.registerTrigger(/cel/, (line, m) => line.select(m).fg('gold').line);
+
+        const [, second] = lines(client.onLine('A\nB cel', 'text'));
+
+        expect(second.text).toBe('xx 12345 B cel');
+        expect(goldText(second)).toEqual(['cel']);
+    });
+});

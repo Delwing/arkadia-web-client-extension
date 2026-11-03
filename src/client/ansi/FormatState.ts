@@ -488,6 +488,8 @@ export class AnsiAwareBuffer {
     private _editBase: string | null = null;
     private _edits: BufferEdit[] = [];
     private _editDepth = 0;
+    /** Where `trackEditsThrough` placed the original text, before `_edits` apply. */
+    private _baseMap: ((range: TextRange) => TextRange) | null = null;
     /** Ranges of live selections, moved by every edit (see `anchor`). */
     private _anchors = new Set<{ start: number; end: number }>();
 
@@ -623,10 +625,28 @@ export class AnsiAwareBuffer {
         if (this.text === original) {
             this._editBase = original;
             this._edits = [];
+            this._baseMap = null;
         } else if (this._editBase !== original) {
             this._editBase = null;
             this._edits = [];
+            this._baseMap = null;
         }
+        return this;
+    }
+
+    /**
+     * Anchors this buffer to `original` although it no longer reads it: `map`
+     * places a range of `original` in the text as it is now, and edits from
+     * here on are recorded on top. For a line split out of a multiline buffer
+     * a multiline trigger rewrote — the split line has no edit history of its
+     * own, but the multiline buffer's tells where each original line went.
+     *
+     * @internal
+     */
+    trackEditsThrough(original: string, map: (range: TextRange) => TextRange): this {
+        this._editBase = original;
+        this._edits = [];
+        this._baseMap = map;
         return this;
     }
 
@@ -649,8 +669,8 @@ export class AnsiAwareBuffer {
      * @internal
      */
     mapOriginalRange(range: TextRange): TextRange {
-        if (this._editBase === null || this._edits.length === 0) return range;
-        let [start, end] = range;
+        if (this._editBase === null || (this._edits.length === 0 && !this._baseMap)) return range;
+        let [start, end] = this._baseMap ? this._baseMap(range) : range;
         for (const edit of this._edits) {
             start = mapEditPosition(start, edit, true);
             end = mapEditPosition(end, edit, false);
