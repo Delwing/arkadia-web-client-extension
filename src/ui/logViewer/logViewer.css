@@ -237,6 +237,10 @@
     color: var(--lv-text-secondary);
 }
 
+.lv-session__range--unreadable {
+    color: var(--lv-danger-solid);
+}
+
 .lv-session__live {
     flex-shrink: 0;
     width: 7px;

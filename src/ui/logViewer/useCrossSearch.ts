@@ -138,8 +138,9 @@ export function useCrossSearch({
         }
         const pattern = matcher.regex;
         const options = { regex, caseSensitive };
-        // Sessions that came with their lines are counted by `deriveView`.
-        const targets = orderSessions(sessions).filter((session) => !hasLines(session));
+        // Sessions that came with their lines are counted by `deriveView`; one
+        // the list could not read would only fail again, at the same cost.
+        const targets = orderSessions(sessions).filter((session) => !hasLines(session) && !session.unreadable);
         const memory = rememberSearch(key, query, regex, caseSensitive);
         const narrowed = narrowedSearches(query, regex, caseSensitive, key);
 

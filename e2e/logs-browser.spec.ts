@@ -536,3 +536,50 @@ test.describe('Logi browser on a phone', () => {
         expect((await waitDownload).suggestedFilename()).toContain('.txt');
     });
 });
+
+test.describe('Logi with a log it cannot read', () => {
+    test('the log is listed as unreadable and can be saved as plain text', async ({page}) => {
+        await login(page);
+        // A log whose record the viewer cannot parse (its text is not a string),
+        // standing in for one too large or too odd to read into lines.
+        await page.evaluate(async () => {
+            await new Promise<void>((resolve, reject) => {
+                const request = indexedDB.open('ArkadiaLogsDB', 1);
+                request.onsuccess = () => {
+                    const db = request.result;
+                    const tx = db.transaction('records', 'readwrite');
+                    const store = tx.objectStore('records');
+                    store.put({text: 'NIECZYTELNY_ZNACZNIK pierwsza linia', timestamp: 1700000000000}, ['session_1700000000000', 0]);
+                    store.put({text: 42, timestamp: 1700000001000}, ['session_1700000000000', 1]);
+                    tx.oncomplete = () => {
+                        db.close();
+                        resolve();
+                    };
+                    tx.onerror = () => reject(tx.error);
+                };
+                request.onerror = () => reject(request.error);
+            });
+        });
+
+        await openLogs(page);
+        const row = page.locator('.lv-session', {hasText: 'nie udało się wczytać'});
+        await expect(row).toHaveCount(1);
+        await row.click();
+        await expect(page.locator('#logs-modal')).toContainText('Nie udało się wczytać tego logu.');
+
+        const download = page.waitForEvent('download');
+        await page.getByRole('button', {name: 'Pobierz jako tekst'}).click();
+        const file = await download;
+        expect(file.suggestedFilename()).toBe('session_1700000000000.txt');
+        const text = await new Promise<string>((resolve, reject) => {
+            void file.createReadStream().then((stream) => {
+                const chunks: Buffer[] = [];
+                stream.on('data', (chunk: Buffer) => chunks.push(chunk));
+                stream.on('end', () => resolve(Buffer.concat(chunks).toString('utf-8')));
+                stream.on('error', reject);
+            });
+        });
+        expect(text).toContain('NIECZYTELNY_ZNACZNIK pierwsza linia');
+        expect(text).toContain(' 42');
+    });
+});

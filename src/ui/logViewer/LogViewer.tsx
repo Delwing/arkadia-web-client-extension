@@ -27,6 +27,7 @@ import { LineMenu, type LineMenuState } from "./components/LineMenu";
 import { LogPane, type ScrollRequest } from "./components/LogPane";
 import { SearchBar } from "./components/SearchBar";
 import { SessionSidebar } from "./components/SessionSidebar";
+import { Button, Icon } from "./ui";
 import { StatusBar } from "./components/StatusBar";
 import { Timeline } from "./components/Timeline";
 import { ViewerHeader } from "./components/ViewerHeader";
@@ -89,6 +90,12 @@ export interface LogViewerProps {
      * the host's logs still being moved to a new store, say.
      */
     listNotice?: string;
+    /**
+     * Saves a log that could not be opened (listed `unreadable`, or failed to
+     * load) as plain text, straight from the host's store. Without it such a
+     * log only says it could not be read.
+     */
+    onDownloadRaw?: (session: LogSessionInfo) => Promise<unknown>;
 }
 
 /**
@@ -120,6 +127,7 @@ export function LogViewer({
     noSessionsAction,
     initialQuery,
     listNotice,
+    onDownloadRaw,
 }: LogViewerProps) {
     const [state, setState] = useState<ViewerState>(() => {
         const listed = (id: string | undefined) => Boolean(id && sessions.some((session) => session.id === id));
@@ -222,7 +230,9 @@ export function LogViewer({
     const [openSession, setOpenSession] = useState<LogSession | null>(null);
     const [openFailed, setOpenFailed] = useState("");
     const selectedInfo = sessions.find((session) => session.id === state.sessionId);
-    const needsLoad = Boolean(loadSession && selectedInfo && !hasLines(selectedInfo));
+    // Not a log the list could not read: reading it again would only fail
+    // again, and a log that ran out of memory once may take the page with it.
+    const needsLoad = Boolean(loadSession && selectedInfo && !hasLines(selectedInfo) && !selectedInfo.unreadable);
     useEffect(() => {
         if (!needsLoad || !loadSession) {
             setOpenSession(null);
@@ -758,19 +768,34 @@ export function LogViewer({
         return { subLine: "", subIsNotice: false };
     }, [state.notice, state.scope, view.searching, view.hitsBySession, sessions, loading, crossSearch]);
 
+    /** The selected log could not be read: listed so, or its load failed. */
+    const unreadable = Boolean(
+        view.sessionInfo && !view.session && (view.sessionInfo.unreadable || openFailed === view.sessionInfo.id),
+    );
+    const [rawState, setRawState] = useState<{ id: string; status: "saving" | "empty" | "failed" } | null>(null);
+
     const emptyMessage = useMemo(() => {
         if (view.rows.length > 0) return null;
         if (!view.sessionInfo) {
             return loading ? "Wczytywanie listy logów..." : "Nie ma tu jeszcze żadnego zapisanego logu.";
         }
-        if (!view.session) {
-            return openFailed === view.sessionInfo.id ? "Nie udało się wczytać tego logu." : "Wczytywanie logu...";
+        if (unreadable) {
+            if (rawState?.id === view.sessionInfo.id && rawState.status === "empty") {
+                return "Nie udało się wczytać tego logu, a w bazie nie ma z niego żadnych linii.";
+            }
+            if (rawState?.id === view.sessionInfo.id && rawState.status === "failed") {
+                return "Nie udało się wczytać tego logu ani pobrać go jako tekstu.";
+            }
+            return onDownloadRaw
+                ? "Nie udało się wczytać tego logu. Zapis nadal jest w bazie: możesz pobrać go jako zwykły tekst."
+                : "Nie udało się wczytać tego logu.";
         }
+        if (!view.session) return "Wczytywanie logu...";
         if (allChannelsOff(state.channels)) return "Wszystkie kanały są ukryte.";
         if (state.onlyMatches && activeQuery) return `Żadna linia w tym logu nie pasuje do „${activeQuery}”.`;
         if (anyChannelOff(state.channels)) return "Nic do pokazania przy obecnych filtrach.";
         return "Ta sesja nie ma zapisanych linii.";
-    }, [view.rows.length, view.sessionInfo, view.session, openFailed, loading, state.channels, state.onlyMatches, activeQuery]);
+    }, [view.rows.length, view.sessionInfo, view.session, unreadable, rawState, onDownloadRaw, loading, state.channels, state.onlyMatches, activeQuery]);
 
     /* --- render ---------------------------------------------------------- */
 
@@ -934,7 +959,29 @@ export function LogViewer({
                             view.totalMatches ? view.matches[view.currentMatch].occurrence : -1
                         }
                         emptyMessage={emptyMessage}
-                        emptyAction={info || loading ? undefined : noSessionsAction}
+                        emptyAction={
+                            unreadable && info
+                                ? onDownloadRaw && !(rawState?.id === info.id && rawState.status === "empty")
+                                    ? (
+                                          <Button
+                                              variant="solid"
+                                              icon={<Icon name="export" size={14} />}
+                                              disabled={rawState?.id === info.id && rawState.status === "saving"}
+                                              onClick={() => {
+                                                  setRawState({ id: info.id, status: "saving" });
+                                                  onDownloadRaw(info)
+                                                      .then((saved) => setRawState(saved === false ? { id: info.id, status: "empty" } : null))
+                                                      .catch(() => setRawState({ id: info.id, status: "failed" }));
+                                              }}
+                                          >
+                                              Pobierz jako tekst
+                                          </Button>
+                                      )
+                                    : null
+                                : info || loading
+                                  ? undefined
+                                  : noSessionsAction
+                        }
                         onResetFilters={() =>
                             patch({ channels: allChannelsOn(), onlyMatches: false, matchIndex: 0 })
                         }

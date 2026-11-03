@@ -142,15 +142,23 @@ export function SessionSidebar({
                                                 </Badge>
                                             ) : null}
                                         </span>
-                                        <span className="lv-session__range">
-                                            {formatClock(session.startedAt, true)}
-                                            {"–"}
-                                            {session.live ? "teraz" : formatClock(session.endedAt, true)}
-                                            {" · "}
-                                            {formatDuration(session.endedAt - session.startedAt)}
-                                            {" · "}
-                                            {session.lineCount} ln
-                                        </span>
+                                        {session.unreadable ? (
+                                            // Only the start is known: the rest takes reading it.
+                                            <span className="lv-session__range lv-session__range--unreadable">
+                                                {formatClock(session.startedAt, true)}
+                                                {" · nie udało się wczytać"}
+                                            </span>
+                                        ) : (
+                                            <span className="lv-session__range">
+                                                {formatClock(session.startedAt, true)}
+                                                {"–"}
+                                                {session.live ? "teraz" : formatClock(session.endedAt, true)}
+                                                {" · "}
+                                                {formatDuration(session.endedAt - session.startedAt)}
+                                                {" · "}
+                                                {session.lineCount} ln
+                                            </span>
+                                        )}
                                     </button>
                                 );
                             })}

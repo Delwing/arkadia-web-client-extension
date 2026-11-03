@@ -98,6 +98,34 @@ export function readSession(db: IDBDatabase, sessionId: string): Promise<StoredL
 }
 
 /**
+ * Up to `limit` records of a session after `afterSeq` (from its first when
+ * null), in order: for reading a session too large to take in one `getAll`.
+ */
+export function readSessionBatch(
+    db: IDBDatabase,
+    sessionId: string,
+    afterSeq: number | null,
+    limit: number,
+): Promise<{ seq: number; entry: StoredLogEntry }[]> {
+    return new Promise((resolve, reject) => {
+        const range =
+            afterSeq === null
+                ? sessionRange(sessionId)
+                : IDBKeyRange.bound([sessionId, afterSeq], [sessionId, []], true, false);
+        const store = db.transaction(RECORDS, "readonly").objectStore(RECORDS);
+        const keysRequest = store.getAllKeys(range, limit);
+        const valuesRequest = store.getAll(range, limit);
+        valuesRequest.onsuccess = () => {
+            const keys = keysRequest.result as [string, number][];
+            const values = valuesRequest.result as StoredLogEntry[];
+            resolve(values.map((entry, i) => ({ seq: keys[i][1], entry })));
+        };
+        keysRequest.onerror = () => reject(keysRequest.error);
+        valuesRequest.onerror = () => reject(valuesRequest.error);
+    });
+}
+
+/**
  * Record count of every session, in one transaction. Walks the keys, jumping
  * from each session straight past its last record, so it costs one step per
  * session rather than one per record.

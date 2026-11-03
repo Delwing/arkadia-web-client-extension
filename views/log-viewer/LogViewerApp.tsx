@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { LogViewer, Spinner, type LogSessionInfo, type PersistedPreferences } from "@ui/logViewer";
 import { readPreferences, writePreferences } from "./preferences";
-import { createSessionSource, type ListProgress, type SessionSource } from "./sessionAdapter";
+import { createSessionSource, downloadRawSession, type ListProgress, type SessionSource } from "./sessionAdapter";
 import { useLogsMigration } from "./useLogsMigration";
 
 /**
@@ -82,6 +82,10 @@ export default function LogViewerApp() {
         (id: string) => (source ? source.searchText(id) : Promise.resolve(null)),
         [source],
     );
+    const downloadRaw = useCallback(
+        (session: LogSessionInfo) => (source ? downloadRawSession(source, session) : Promise.resolve(false)),
+        [source],
+    );
 
     const onPreferencesChange = useCallback((next: PersistedPreferences) => writePreferences(next), []);
 
@@ -99,6 +103,7 @@ export default function LogViewerApp() {
             sessions={sessions}
             loadSession={loadSession}
             loadSearchText={loadSearchText}
+            onDownloadRaw={downloadRaw}
             loading={listing}
             preferences={preferences}
             onPreferencesChange={onPreferencesChange}

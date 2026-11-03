@@ -24,8 +24,8 @@ import {
     type SearchText,
     toSearchText,
 } from "@ui/logViewer";
-import { splitLines } from "@web/logBrowserUtils";
-import { countEach, countSession, LogsDatabase, readSession, sessionNames, type StoredLogEntry } from "@web/logsDatabase";
+import { formatDateTime, splitLines } from "@web/logBrowserUtils";
+import { countEach, countSession, LogsDatabase, readSession, readSessionBatch, sessionNames, type StoredLogEntry } from "@web/logsDatabase";
 import { collectCharacters } from "@web/options/exportUtils";
 import { SearchTextStore, type StoredSearchText } from "./searchTextStore";
 
@@ -251,6 +251,26 @@ function indexEntry(session: LogSession, count: number, entries: StoredEntry[]):
     };
 }
 
+/**
+ * A session the list could not read: kept in the list all the same, with what
+ * its name says (when it started) and nothing it would take reading it to know.
+ */
+function unreadableInfo(name: string, options: LoadOptions, now: number): LogSessionInfo {
+    const startedAt = sessionStartFromName(name) ?? 0;
+    return {
+        id: name,
+        characters: [],
+        dayLabel: formatDayLabel(startedAt, now),
+        dateLabel: formatDateLong(startedAt),
+        startedAt,
+        endedAt: startedAt,
+        live: name === options.liveSessionName,
+        file: `${name}.txt`,
+        lineCount: 0,
+        unreadable: true,
+    };
+}
+
 function infoFromEntry(name: string, entry: IndexEntry, options: LoadOptions, now: number): LogSessionInfo {
     return {
         id: name,
@@ -277,6 +297,9 @@ const yieldToBrowser = () => new Promise<void>((resolve) => setTimeout(resolve, 
 
 /** How often the growing list is handed over while the rest are indexed. */
 const UPDATE_EVERY_MS = 250;
+
+/** Records read per transaction by `rawText`. */
+const RAW_BATCH = 5000;
 
 /** Logs counted per transaction: few enough to hand the list over often. */
 const COUNT_CHUNK = 25;
@@ -320,6 +343,12 @@ export interface SessionSource {
      * log is gone or empty.
      */
     searchText(id: string): Promise<SearchText | null>;
+    /**
+     * One log as plain text, a timestamped line per line, read a batch at a
+     * time and never parsed: what is left to offer for a log that could not be
+     * read into lines. Null when it is gone.
+     */
+    rawText(id: string): Promise<Blob | null>;
     /** Drops the cached logs and the database connection. */
     release(): void;
 }
@@ -480,10 +509,11 @@ export function createSessionSource(options: LoadOptions = {}): SessionSource {
                     const session = await readAndParse(name);
                     if (session) listed.set(name, infoFromEntry(name, file.entries[name], options, now));
                 } catch (error) {
-                    // One log that cannot be read is left out of this listing,
-                    // not out of the rest: it is still stored, and its index
-                    // entry stays for the next opening.
+                    // Listed as unreadable rather than left out: a log missing
+                    // from the list reads as a log that is gone, while it is
+                    // still stored and can be had as plain text (`rawText`).
                     console.error(`[Logs] Failed to read ${name}:`, error);
+                    listed.set(name, unreadableInfo(name, options, now));
                 }
                 // Reading a log is the slow part; let the page breathe.
                 await yieldToBrowser();
@@ -539,6 +569,26 @@ export function createSessionSource(options: LoadOptions = {}): SessionSource {
 
         load: loadShared,
 
+        async rawText(id) {
+            const db = await connection();
+            if (!db) return null;
+            const parts: string[] = [];
+            let after: number | null = null;
+            for (;;) {
+                const batch = await readSessionBatch(db, id, after, RAW_BATCH);
+                for (const { entry } of batch) {
+                    const stamp = formatDateTime(entry.timestamp);
+                    // Defensive: whatever made the log unreadable may be a record of an odd shape.
+                    const text = typeof entry.text === "string" ? entry.text : String(entry.text ?? "");
+                    for (const part of splitLines(text)) parts.push(`${stamp} ${htmlToText(part)}\n`);
+                }
+                if (batch.length < RAW_BATCH) break;
+                after = batch[batch.length - 1].seq;
+                await yieldToBrowser();
+            }
+            return parts.length > 0 ? new Blob(parts, { type: "text/plain;charset=utf-8" }) : null;
+        },
+
         searchText,
 
         release() {
@@ -551,4 +601,21 @@ export function createSessionSource(options: LoadOptions = {}): SessionSource {
             textStore.release();
         },
     };
+}
+
+/**
+ * Saves a log as plain text (`SessionSource.rawText`) — for a log that could
+ * not be opened, so it can still be had. False when there was nothing to save.
+ */
+export async function downloadRawSession(source: SessionSource, session: LogSessionInfo): Promise<boolean> {
+    const blob = await source.rawText(session.id);
+    if (!blob) return false;
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = session.file;
+    anchor.click();
+    // After the click has handed the URL over, not before.
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+    return true;
 }

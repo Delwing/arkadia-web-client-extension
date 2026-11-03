@@ -15,7 +15,7 @@ import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { Button, Icon, IconButton, LogViewer, MenuItem, Spinner, resetCrossSearchCache } from "@ui/logViewer";
 import type { LogSessionInfo, PersistedPreferences, ViewerSnapshot } from "@ui/logViewer";
 import { readPreferences, writePreferences } from "../../views/log-viewer/preferences";
-import { createSessionSource, type ListProgress, type SessionSource } from "../../views/log-viewer/sessionAdapter";
+import { createSessionSource, downloadRawSession, type ListProgress, type SessionSource } from "../../views/log-viewer/sessionAdapter";
 import { useLogsMigration } from "../../views/log-viewer/useLogsMigration";
 import { LogManager } from "./LogManager";
 import { currentSessionName } from "./sessionLogger";
@@ -132,6 +132,10 @@ export function LogBrowser({ headerTrailing, initialQuery }: LogBrowserProps) {
         (id: string) => (source ? source.searchText(id) : Promise.resolve(null)),
         [source],
     );
+    const downloadRaw = useCallback(
+        (session: LogSessionInfo) => (source ? downloadRawSession(source, session) : Promise.resolve(false)),
+        [source],
+    );
 
     const onPreferencesChange = useCallback((next: PersistedPreferences) => {
         writePreferences(next);
@@ -186,6 +190,7 @@ export function LogBrowser({ headerTrailing, initialQuery }: LogBrowserProps) {
                     sessions={sessions}
                     loadSession={loadSession}
                     loadSearchText={loadSearchText}
+                    onDownloadRaw={downloadRaw}
                     loading={listing}
                     preferences={initialPreferences}
                     snapshot={snapshot}

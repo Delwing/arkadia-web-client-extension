@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
     createSessionSource,
     htmlToText,
@@ -148,6 +148,40 @@ describe("createSessionSource", () => {
         expect(session?.lines.map((line) => line.text)).toEqual(["troll"]);
         expect(session?.live).toBe(true);
         expect(session?.lineCount).toBe(1);
+    });
+
+    it("lists a log it cannot read as unreadable instead of leaving it out", async () => {
+        // A record whose text is not a string makes parsing throw.
+        await seed({ session_3000: [{ text: 42 as unknown as string, timestamp: 3000 }] });
+        const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+        const source = createSessionSource({ candidates: [] });
+        const sessions = await source.list();
+        source.release();
+        error.mockRestore();
+        expect(sessions.map((session) => session.id)).toEqual(["session_1000", "session_3000", "session_5000"]);
+        expect(sessions[1]).toMatchObject({ unreadable: true, startedAt: 3000, lineCount: 0, characters: [] });
+        expect(sessions[0].unreadable).toBeUndefined();
+    });
+
+    it("gives a log as plain text, a timestamped line per line, past one batch", async () => {
+        const many = Array.from({ length: 5003 }, (_, i) => ({ text: `<span>linia ${i}</span>`, timestamp: 10_000 + i }));
+        await seed({ session_9000: [{ text: "a\nb &amp; c", timestamp: 9000 }, ...many, { text: 7 as unknown as string, timestamp: 20_000 }] });
+        const source = createSessionSource({ candidates: [] });
+        const blob = await source.rawText("session_9000");
+        source.release();
+        const lines = (await blob!.text()).trimEnd().split("\n");
+        expect(lines).toHaveLength(2 + 5003 + 1);
+        expect(lines[0]).toMatch(/^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d\.000 a$/);
+        expect(lines[1]).toMatch(/ b & c$/);
+        expect(lines[2]).toMatch(/ linia 0$/);
+        expect(lines[5004]).toMatch(/ linia 5002$/);
+        expect(lines[5005]).toMatch(/ 7$/);
+    });
+
+    it("gives no plain text for a log that does not exist", async () => {
+        const source = createSessionSource({ candidates: [] });
+        expect(await source.rawText("session_42")).toBeNull();
+        source.release();
     });
 
     it("returns null for a session that does not exist", async () => {

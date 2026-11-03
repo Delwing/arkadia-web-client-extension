@@ -69,6 +69,12 @@ export interface LogSessionInfo {
      */
     background?: string;
     lineCount: number;
+    /**
+     * The host has the session but could not read it into lines (it threw, or
+     * ran out of memory on a very long log). Listed anyway, so a log is never
+     * silently missing; its times are the start only and `lineCount` is 0.
+     */
+    unreadable?: boolean;
 }
 
 export interface LogSession extends LogSessionInfo {
