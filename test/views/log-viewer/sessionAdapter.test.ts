@@ -22,7 +22,9 @@ function deleteDb(name = "ArkadiaLogsDB"): Promise<void> {
         const request = indexedDB.deleteDatabase(name);
         request.onsuccess = () => resolve();
         request.onerror = () => resolve();
-        request.onblocked = () => resolve();
+        // Not on `blocked`: a connection still finishing its writes closes
+        // after them, and the delete has to wait for that, or it lands on the
+        // next step of the test.
     });
 }
 
@@ -250,8 +252,9 @@ describe("createSessionSource", () => {
         await second.list();
         expect((await second.searchText("session_1000"))?.text).toBe("Witaj\nraz\ndwa");
         second.release();
+        // Stored in the background (packed first), so it lands a moment later.
         const store = new SearchTextStore();
-        expect((await store.get("session_1000"))?.count).toBe(2);
+        await expect.poll(async () => (await store.get("session_1000"))?.count).toBe(2);
         store.release();
     });
 
