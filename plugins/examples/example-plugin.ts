@@ -96,14 +96,12 @@ export async function init(api: PluginApi): Promise<PluginInfo> {
     return true; // Zatrzymaj dalsze przetwarzanie
   });
 
-  // Przykład 5a: Użyj konstruktora AnsiAwareBuffer do tworzenia własnych sformatowanych wiadomości
+  // Przykład 5a: Własne kolorowe wiadomości przez api.text
   api.aliases.register(/^\/kolorowy$/, () => {
-    // Stwórz nowy buffer z kolorowym tekstem
-    const buffer = new api.AnsiAwareBuffer("Witaj ", GREEN_COLOR);
-    buffer.append("kolorowy ", BLUE_COLOR);
-    buffer.append("świecie!", RED_COLOR);
-
-    api.output.print(buffer);
+    // Koloruj w trakcie pisania...
+    api.output.print(api.text("Witaj ", GREEN_COLOR).append("kolorowy ", BLUE_COLOR).append("świecie!", RED_COLOR));
+    // ...albo napisz tekst i pokoloruj jego fragment
+    api.output.print(api.text("Witaj kolorowy świecie!").select("kolorowy").fg("gold"));
     return true;
   });
 

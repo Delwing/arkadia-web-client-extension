@@ -1050,10 +1050,10 @@ line.selectAll('zloto', 0, { caseInsensitive: true })  // każde wystąpienie
 - `before`/`after` wstawiają tekst bez formatowania, chyba że podasz styl.
 
 **Krótki zapis stylu** działa wszędzie, gdzie przyjmowany jest stan formatowania
-(`append`, konstruktor, `color`, `replace`...):
+(`api.text`, `append`, `color`, `replace`...):
 
 ```typescript
-const buffer = new api.AnsiAwareBuffer()
+const buffer = api.text()
   .append('[ ', { fg: 'white' })
   .append(setName, { fg: '#ffa500', bold: true, link: () => api.command.send(`kup ${setName}`) })
   .append(' ]', { fg: 'white' });
@@ -1066,8 +1066,8 @@ Stany z `api.colors.fromHex(...)` działają jak dotąd.
 **Metody na zakresach** - gdy już masz pozycje:
 
 ```typescript
-// Stwórz nowy buffer
-const buffer = new api.AnsiAwareBuffer("Hello", colorState);
+// Stwórz linię
+const buffer = api.text("Hello", { fg: "green" });
 
 // Dostępne właściwości
 buffer.text    // Tekst bez formatowania
