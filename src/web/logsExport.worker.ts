@@ -1,9 +1,12 @@
 import JSZip from 'jszip';
 import type {
+    ExportFormat,
     LogEntry,
+    LogExportData,
     LogsExportWorkerRequest,
     LogsExportWorkerResponse,
 } from './logsExport.shared';
+import { htmlToText } from '../../views/log-viewer/htmlToText';
 import { countSessions, openLogsDb, readSession } from './logsDatabase';
 
 function formatDateTime(ts: number): string {
@@ -74,6 +77,29 @@ function generateHtml(logs: LogEntry[], sessionName: string, inlineStyles: strin
     return `<!doctype html><html lang="en"><head>${head}</head><body><div id="logs-preview">${entries.join('\n')}</div></body></html>`;
 }
 
+/** Plain text: a timestamp and the line's text, per line, as "Pobierz jako tekst" gives it. */
+function generateText(logs: LogEntry[]): string {
+    const lines: string[] = [];
+    for (const l of logs) {
+        const time = formatDateTime(l.timestamp);
+        const text = typeof l.text === 'string' ? l.text : String(l.text ?? '');
+        for (const part of splitLines(text)) lines.push(`${time} ${htmlToText(part)}`);
+    }
+    return lines.join('\n') + '\n';
+}
+
+/** One log in the importable shape: one file per log, so no single string has to hold them all. */
+function generateJson(logs: LogEntry[], sessionName: string): string {
+    const data: LogExportData = { version: 1, sessions: { [sessionName]: logs } };
+    return JSON.stringify(data);
+}
+
+/** Where a log's file goes: at the top with one format, in a folder per format with several. */
+function filePath(format: ExportFormat, sessionName: string, formats: ExportFormat[]): string {
+    const file = `${sessionName}.${format}`;
+    return formats.length > 1 ? `${format}/${file}` : file;
+}
+
 /** Sessions holding at least one record, oldest first. */
 async function getSessionsWithContent(db: IDBDatabase): Promise<string[]> {
     const counts = await countSessions(db);
@@ -111,8 +137,10 @@ ctx.addEventListener('message', (event: MessageEvent<LogsExportWorkerRequest>) =
                 return;
             }
 
+            const formats: ExportFormat[] = data.formats && data.formats.length > 0 ? data.formats : ['html'];
             const zip = new JSZip();
             const total = sessions.length;
+            const exported: string[] = [];
 
             for (let i = 0; i < sessions.length; i++) {
                 const sessionName = sessions[i];
@@ -126,8 +154,15 @@ ctx.addEventListener('message', (event: MessageEvent<LogsExportWorkerRequest>) =
                 const logs = await readSession(db, sessionName);
                 if (logs.length === 0) continue;
 
-                const html = generateHtml(logs, sessionName, data.inlineStyles);
-                zip.file(`${sessionName}.html`, html);
+                for (const format of formats) {
+                    const content = format === 'html'
+                        ? generateHtml(logs, sessionName, data.inlineStyles)
+                        : format === 'txt'
+                          ? generateText(logs)
+                          : generateJson(logs, sessionName);
+                    zip.file(filePath(format, sessionName, formats), content);
+                }
+                exported.push(sessionName);
             }
 
             const blob = await zip.generateAsync({
@@ -139,7 +174,8 @@ ctx.addEventListener('message', (event: MessageEvent<LogsExportWorkerRequest>) =
             ctx.postMessage({
                 type: 'success',
                 blob,
-                sessionCount: sessions.length,
+                sessionCount: exported.length,
+                exported,
             });
         } catch (error) {
             ctx.postMessage({

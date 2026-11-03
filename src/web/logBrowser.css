@@ -134,3 +134,96 @@
     width: 3rem;
     color: var(--popup-text-subtle);
 }
+
+/* --- range, filter and summary above the table ----------------------------- */
+
+.logs-manage__toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 8px 12px;
+    margin: 12px 0 6px;
+}
+
+.logs-manage__control {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    font-size: var(--ui-fs-sm, 12px);
+    color: var(--popup-text-subtle);
+}
+
+.logs-manage__control .popup-input,
+.logs-manage__control .popup-select {
+    min-width: 9rem;
+}
+
+.logs-manage__summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 16px;
+    margin: 0 0 8px;
+    font-size: var(--ui-fs-sm, 12px);
+    font-variant-numeric: tabular-nums;
+}
+
+.logs-manage__summary-selected {
+    color: var(--popup-text);
+}
+
+.logs-manage__formats {
+    white-space: nowrap;
+}
+
+/* What a log has been downloaded as: a small tag per format. */
+.logs-manage__badge {
+    display: inline-block;
+    margin-right: 3px;
+    padding: 1px 5px;
+    border: 1px solid var(--popup-accent-border, var(--popup-border));
+    border-radius: 4px;
+    background: var(--popup-accent-subtle-bg);
+    color: var(--popup-text);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    line-height: 1.4;
+}
+
+.logs-manage__live {
+    margin-left: 6px;
+    padding: 0 5px;
+    border-radius: 4px;
+    background: var(--popup-success, #3e9b5f);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 600;
+}
+
+.logs-manage__table tbody tr.logs-manage__none {
+    cursor: default;
+}
+
+.logs-manage__none td {
+    padding: 16px 8px;
+    text-align: center;
+    color: var(--popup-text-subtle);
+    white-space: normal;
+}
+
+/* --- the export creator ------------------------------------------------------ */
+
+.logs-export__text {
+    margin: 0 0 10px;
+}
+
+.logs-export__formats {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 12px;
+}
+
+.logs-export__archive {
+    margin-bottom: 10px;
+}

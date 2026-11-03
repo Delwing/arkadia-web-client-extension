@@ -264,6 +264,7 @@ export function LogBrowser({ headerTrailing, initialQuery, manageRequest = 0 }: 
                 onOpenChange={setManageOpen}
                 startImport={importOnOpen}
                 sessions={sessions ?? []}
+                liveSessionId={currentSessionName}
                 onSessionsChanged={reload}
             />
         </div>
