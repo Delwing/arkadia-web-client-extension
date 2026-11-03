@@ -1,4 +1,5 @@
 import { AnsiAwareBuffer } from "@client/ansi/FormatState";
+import type { StyleInput } from "@client/ansi/FormatState";
 import type { AliasesApi } from "./aliases";
 import type { BindApi, MultibindsApi } from "./binds";
 import type { TeamApi, AttackQueueApi, EnemyBindsApi, CombatApi, AttackControllerApi } from "./combat";
@@ -162,15 +163,23 @@ export interface PluginApi {
   /** Toasts over the game output */
   notifications: NotificationsApi;
   /**
-   * AnsiAwareBuffer class for creating formatted text buffers
+   * Make a line of text to print — the same kind of line a trigger gets, so
+   * everything that works on a trigger line works here: write the text, then
+   * select parts of it and colour them, or colour as you go with `append`.
    *
-   * Use this to create custom formatted output for api.output.print()
+   * @param text - The text (ANSI colour codes are understood)
+   * @param style - Formatting for all of it, e.g. `{ fg: 'tomato' }`
    *
    * @example
-   * // Create a formatted buffer
-   * const buffer = new api.AnsiAwareBuffer("Hello ", api.colors.fromHex('#00ff00'));
-   * buffer.append("world!", api.colors.fromHex('#ff0000'));
-   * api.output.print(buffer);
+   * ```typescript
+   * api.output.print(api.text(`Haslo to: ${password}`).select(password).fg('slate_blue'));
+   * api.output.print(api.text('Moze jednak poczekaj...', { fg: 'tomato' }));
+   * api.output.print(api.text('[ ').append(name, { fg: 'orange', link: () => api.command.send(name) }).append(' ]', {}));
+   * ```
+   */
+  text(text?: string, style?: StyleInput): AnsiAwareBuffer;
+  /**
+   * The line class itself. `api.text(...)` is the simpler way to make one.
    */
   AnsiAwareBuffer: typeof AnsiAwareBuffer;
 }

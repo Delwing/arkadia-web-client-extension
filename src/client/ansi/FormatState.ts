@@ -1,5 +1,9 @@
 import {colorCodes} from "@modules/core/Colors.ts";
 import mudletColorsJson from "@client/colors.json";
+import {matchGroupRange, toFormatColor, toFormatState, toHyperlink} from "./style";
+import type {ColorInput, LinkInput, StyleInput} from "./style";
+
+export type {ColorInput, LinkInput, StyleInput, StyleSpec} from "./style";
 
 const ESC = "\u001b";
 
@@ -69,6 +73,13 @@ export interface FormatStateSnapshot {
 
 /** Text range [start, end) for applying formatting */
 export type TextRange = [start: number, end: number];
+
+/** What `AnsiAwareBuffer.select` can select: trigger matches, text, a regex or a range */
+export type SelectTarget = RegExpMatchArray | string | RegExp | TextRange;
+
+function isTextRange(target: SelectTarget): target is TextRange {
+    return Array.isArray(target) && target.length === 2 && typeof target[0] === "number";
+}
 
 /** Buffer segment with text and optional formatting state */
 export interface BufferSegment {
@@ -159,6 +170,22 @@ function cloneState(state?: FormatStateSnapshot): FormatStateSnapshot | undefine
         hyperlink: state.hyperlink ? {...state.hyperlink} : undefined,
         cssClass: state.cssClass,
     };
+}
+
+/**
+ * `base` with every field `style` sets laid over it. A field left out of
+ * `style`, or set to undefined, keeps the base's value, so colouring text keeps
+ * its link, background and the rest; `false` turns a flag off.
+ */
+function overlayState(base: FormatStateSnapshot | undefined, style: FormatStateSnapshot): FormatStateSnapshot {
+    const result: FormatStateSnapshot = cloneState(base) ?? {};
+    const patch = cloneState(style)!;
+    for (const key of Object.keys(patch) as (keyof FormatStateSnapshot)[]) {
+        if (patch[key] !== undefined) {
+            (result as Record<string, unknown>)[key] = patch[key];
+        }
+    }
+    return result;
 }
 
 function statesEqual(a?: FormatStateSnapshot, b?: FormatStateSnapshot): boolean {
@@ -401,6 +428,12 @@ function parseAnsiSegments(text: string, baseState?: FormatStateSnapshot): Buffe
     return segments;
 }
 
+/** `count` characters of `fill`, repeated and cut to length ('' for none). */
+function makePadding(count: number, fill: string): string {
+    if (count <= 0 || !fill) return "";
+    return fill.repeat(Math.ceil(count / fill.length)).slice(0, count);
+}
+
 /** One recorded mutation: `removed` characters at `start` became `inserted` ones. */
 interface BufferEdit {
     start: number;
@@ -455,6 +488,8 @@ export class AnsiAwareBuffer {
     private _editBase: string | null = null;
     private _edits: BufferEdit[] = [];
     private _editDepth = 0;
+    /** Ranges of live selections, moved by every edit (see `anchor`). */
+    private _anchors = new Set<{ start: number; end: number }>();
 
     /**
      * Create a new AnsiAwareBuffer
@@ -481,7 +516,8 @@ export class AnsiAwareBuffer {
      * ];
      * const buffer = new AnsiAwareBuffer(segments);
      */
-    constructor(initial?: string | BufferSegment[], state?: FormatStateSnapshot) {
+    constructor(initial?: string | BufferSegment[], style?: StyleInput) {
+        const state = toFormatState(style);
         if (typeof initial === "string") {
             this.segments = parseAnsiSegments(initial, state);
             this.normalizeSegments();
@@ -631,7 +667,7 @@ export class AnsiAwareBuffer {
      * insert, but recording it as two would collapse ranges inside it).
      */
     private recordEdit(start: number, removed: number, mutate: () => void): void {
-        if (this._editBase === null || this._editDepth > 0) {
+        if ((this._editBase === null && this._anchors.size === 0) || this._editDepth > 0) {
             mutate();
             return;
         }
@@ -643,9 +679,110 @@ export class AnsiAwareBuffer {
             this._editDepth--;
         }
         const inserted = this.length - (before - removed);
-        if (removed !== 0 || inserted !== 0) {
-            this._edits.push({start, removed, inserted});
+        if (removed === 0 && inserted === 0) return;
+        const edit = {start, removed, inserted};
+        if (this._editBase !== null) this._edits.push(edit);
+        for (const anchor of this._anchors) {
+            anchor.start = mapEditPosition(anchor.start, edit, true);
+            anchor.end = Math.max(anchor.start, mapEditPosition(anchor.end, edit, false));
         }
+    }
+
+    /**
+     * A range that follows this buffer's later edits, like a trigger range does:
+     * text inserted at its edges stays outside, text replaced inside it stays in.
+     * @internal
+     */
+    anchor(range: TextRange): { start: number; end: number } {
+        const anchor = {start: range[0], end: range[1]};
+        this._anchors.add(anchor);
+        return anchor;
+    }
+
+    /**
+     * Select text to change it: the match a trigger fired on (or one of its
+     * capture groups), the first occurrence of a string or regex, a range, or —
+     * with no argument — the whole line. The selection follows later edits, so
+     * calls can be chained without counting positions. When nothing is found
+     * the selection is empty and every change on it does nothing.
+     *
+     * Trigger `matches` are positions in the line as the game sent it; `select`
+     * maps them onto the line as earlier triggers left it. A string or regex is
+     * searched in the line as it is now.
+     *
+     * @param target - `matches` from a trigger, a string, a RegExp, a `[start, end)` range, or nothing
+     * @param group - capture group number or name (for `matches` and RegExp targets)
+     *
+     * @example
+     * ```typescript
+     * api.triggers.register(/^(\w+) flakonik/, (line, matches) => {
+     *   line.select(matches, 1).fg('gold').after(' (leczenie)', { fg: 'gray' });
+     *   return line;
+     * });
+     * line.select().fg('#ff0000');                 // whole line
+     * line.select('miecz').bold().link(() => api.command.send('wez miecz'));
+     * ```
+     */
+    select(target?: SelectTarget, group?: number | string): TextSelection {
+        return new TextSelection(this, this.locate(target, group, false));
+    }
+
+    /**
+     * Select every occurrence of a string or regex in the line as it is now.
+     * @param target - Text or RegExp to find (a RegExp needn't have the `g` flag)
+     * @param group - capture group number or name to select instead of the whole match
+     * @param options - `caseInsensitive` for string targets
+     *
+     * @example
+     * ```typescript
+     * line.selectAll('zloto', 0, { caseInsensitive: true }).fg('gold');
+     * line.selectAll(/(\d+) mithrylow/, 1).bold();
+     * ```
+     */
+    selectAll(
+        target: string | RegExp,
+        group?: number | string,
+        options: { caseInsensitive?: boolean } = {},
+    ): TextSelection {
+        return new TextSelection(this, this.locate(target, group, true, options.caseInsensitive));
+    }
+
+    private locate(
+        target: SelectTarget | undefined,
+        group: number | string | undefined,
+        all: boolean,
+        caseInsensitive = false,
+    ): TextRange[] {
+        if (target === undefined) return [[0, this.length]];
+        if (typeof target === "string") {
+            if (!target) return [];
+            const haystack = caseInsensitive ? this.text.toLowerCase() : this.text;
+            const needle = caseInsensitive ? target.toLowerCase() : target;
+            const ranges: TextRange[] = [];
+            for (let i = haystack.indexOf(needle); i !== -1; i = haystack.indexOf(needle, i + needle.length)) {
+                ranges.push([i, i + needle.length]);
+                if (!all) break;
+            }
+            return ranges;
+        }
+        if (target instanceof RegExp) {
+            const flags = target.flags.replace(/[gy]/g, "");
+            const regex = new RegExp(target.source, flags + "g" + (flags.includes("d") ? "" : "d"));
+            const ranges: TextRange[] = [];
+            for (const match of this.text.matchAll(regex)) {
+                if (match[0].length === 0) continue;
+                const range = matchGroupRange(match, group);
+                if (range) ranges.push(range);
+                if (!all && ranges.length) break;
+            }
+            return ranges;
+        }
+        if (isTextRange(target)) {
+            this.assertRange(target[0], target[1]);
+            return [[target[0], target[1]]];
+        }
+        const range = matchGroupRange(target, group, this.trackedOriginal ?? this.text);
+        return range ? [this.mapOriginalRange(range)] : [];
     }
 
     /**
@@ -654,7 +791,8 @@ export class AnsiAwareBuffer {
      * @param text - New text to insert
      * @param state - Optional formatting to apply
      */
-    replace(range: TextRange, text: string, state?: FormatStateSnapshot): this {
+    replace(range: TextRange, text: string, style?: StyleInput): this {
+        const state = toFormatState(style);
         const [start, end] = range;
         this.assertRange(start, end);
         this.recordEdit(start, end - start, () => {
@@ -688,8 +826,9 @@ export class AnsiAwareBuffer {
      * @param text - Text to insert
      * @param state - Optional formatting to apply
      */
-    insert(index: number, text: string, state?: FormatStateSnapshot): this {
+    insert(index: number, text: string, style?: StyleInput): this {
         if (text.length === 0) return this;
+        const state = toFormatState(style);
         this.assertIndex(index, true);
         this.recordEdit(index, 0, () => {
             const inferredState = state ? undefined : this.inferState(index);
@@ -732,19 +871,21 @@ export class AnsiAwareBuffer {
     }
 
     /**
-     * Add text to the beginning of the line, formatted like the text it is put in
-     * front of unless `state` is given
+     * Add text to the beginning of the line, unformatted unless `state` is
+     * given. Unlike `prepend`, it never picks up the formatting (or link) of the
+     * text it is put in front of.
      */
-    prefix(text: string, state?: FormatStateSnapshot): this {
+    prefix(text: string, state?: StyleInput): this {
         this.insert(0, text, state ?? {});
         return this;
     }
 
     /**
-     * Add text to the end of the line, formatted like the text before it unless
-     * `state` is given
+     * Add text to the end of the line, unformatted unless `state` is given.
+     * Unlike `append`, it never picks up the formatting (or link) of the text
+     * before it.
      */
-    suffix(text: string, state?: FormatStateSnapshot): this {
+    suffix(text: string, state?: StyleInput): this {
         this.insert(this.length, text, state ?? {});
         return this;
     }
@@ -779,7 +920,7 @@ export class AnsiAwareBuffer {
      * @param text - Text to append
      * @param state - Optional formatting to apply
      */
-    append(text: string, state?: FormatStateSnapshot): this {
+    append(text: string, state?: StyleInput): this {
         this.insert(this.length, text, state);
         return this;
     }
@@ -798,7 +939,7 @@ export class AnsiAwareBuffer {
      * @param text - Text to prepend
      * @param state - Optional formatting to apply
      */
-    prepend(text: string, state?: FormatStateSnapshot): this {
+    prepend(text: string, state?: StyleInput): this {
         this.insert(0, text, state);
         return this;
     }
@@ -867,44 +1008,77 @@ export class AnsiAwareBuffer {
     }
 
     /**
-     * Apply color/formatting to a text range
-     * @param range - [start, end] indices
-     * @param color - Color index (0-255) or full FormatStateSnapshot
+     * Colour or format a text range. Only what `color` sets changes: a link on
+     * the text, its background, underline and any other formatting it already
+     * has are kept, character by character. Use `restyle` to replace the
+     * formatting outright.
+     * @param range - [start, end) indices
+     * @param color - xterm palette index (0-255) for the foreground, or a
+     *                format such as `api.colors.fromHex('#ff0000')`
+     *
+     * @example
+     * ```typescript
+     * line.color([0, line.length], api.colors.fromHex('#ffd700'));
+     * line.color([0, 5], { background: { space: 'hex', color: '#330000' }, bold: true });
+     * ```
      */
-    color(range: TextRange, color: number | FormatStateSnapshot): this {
+    color(range: TextRange, color: number | StyleInput): this {
         const style = this.prepareStyle(color);
         const [start, end] = range;
         if (start >= end) return this;
-        const text = this.text.slice(start, end);
-        this.replace([start, end], text, style);
+        this.mapStates(range, state => overlayState(state, style));
         return this;
     }
 
     /**
-     * Applies formatting attributes to a range while preserving existing formatting.
-     * Merges the provided format state with the existing state at each position.
+     * Same as `color` with a format: lays `format` over the formatting each
+     * character in the range already has, keeping everything it doesn't set.
      */
-    applyFormat(range: TextRange, format: FormatStateSnapshot): this {
+    applyFormat(range: TextRange, format: StyleInput): this {
+        return this.color(range, format);
+    }
+
+    /**
+     * Replaces the formatting of a range with exactly `state`, dropping what was
+     * there before — colours, styles and links alike. The text stays as it is.
+     * Prefer `color`, which keeps what it doesn't set; use this to clear a
+     * range's formatting (`restyle(range, {})`) or reset it to a known state.
+     */
+    restyle(range: TextRange, state: StyleInput): this {
         const [start, end] = range;
         if (start >= end) return this;
-
-        // Get segments that overlap with the range
-        const text = this.text.slice(start, end);
-
-        // Get the current state at the start position to merge with
-        const currentState = this.getStateAt(start);
-
-        // Merge the new format with existing formatting
-        const mergedState: FormatStateSnapshot = {
-            ...currentState,
-            ...format,
-            // Merge colors only if provided in format
-            foreground: format.foreground !== undefined ? format.foreground : currentState?.foreground,
-            background: format.background !== undefined ? format.background : currentState?.background,
-        };
-
-        this.replace([start, end], text, mergedState);
+        const style = toFormatState(state);
+        this.mapStates(range, () => cloneState(style));
         return this;
+    }
+
+    /**
+     * Rewrites the state of every character in `range`, piece by piece, leaving
+     * the text untouched. It changes no text, so it records no edit and keeps
+     * every tracked range where it was.
+     */
+    private mapStates(
+        range: TextRange,
+        fn: (state: FormatStateSnapshot | undefined) => FormatStateSnapshot | undefined,
+    ): void {
+        const [start, end] = range;
+        this.assertRange(start, end);
+        if (start === end) return;
+        for (const boundary of [start, end]) {
+            const position = this.resolveIndex(boundary, true);
+            if (position.segmentIndex < this.segments.length) {
+                this.splitSegment(position.segmentIndex, position.offset);
+            }
+        }
+        let pos = 0;
+        for (const segment of this.segments) {
+            const segStart = pos;
+            pos += segment.text.length;
+            if (segStart >= start && pos <= end) {
+                segment.state = fn(cloneState(segment.state));
+            }
+        }
+        this.normalizeSegments();
     }
 
     /**
@@ -924,7 +1098,7 @@ export class AnsiAwareBuffer {
      */
     colorWords(
         words: string | string[],
-        color: number | FormatStateSnapshot,
+        color: number | StyleInput,
         options: { caseInsensitive?: boolean } = {},
     ): this {
         const list = Array.isArray(words) ? words : [words];
@@ -998,6 +1172,104 @@ export class AnsiAwareBuffer {
         }
 
         return lines;
+    }
+
+    /**
+     * A copy of part of the line, formatting and links included. Like
+     * `String.slice`, but positions outside the line are clamped and negative
+     * ones are not counted from the end.
+     */
+    slice(start: number = 0, end: number = this.length): AnsiAwareBuffer {
+        const from = Math.max(0, Math.min(start, this.length));
+        const to = Math.max(from, Math.min(end, this.length));
+        const pieces: BufferSegment[] = [];
+        let pos = 0;
+        for (const segment of this.segments) {
+            const segStart = pos;
+            pos += segment.text.length;
+            if (pos <= from) continue;
+            if (segStart >= to) break;
+            pieces.push({
+                text: segment.text.slice(Math.max(0, from - segStart), Math.min(segment.text.length, to - segStart)),
+                state: segment.state,
+            });
+        }
+        return new AnsiAwareBuffer(pieces);
+    }
+
+    /**
+     * Pads the end of the line to `width` characters. The padding is always
+     * unformatted, so it never picks up a colour, background or link.
+     */
+    padEnd(width: number, fill: string = " "): this {
+        const padding = makePadding(width - this.length, fill);
+        if (padding) this.insert(this.length, padding, {});
+        return this;
+    }
+
+    /** Pads the start of the line to `width` characters, with unformatted padding. */
+    padStart(width: number, fill: string = " "): this {
+        const padding = makePadding(width - this.length, fill);
+        if (padding) this.insert(0, padding, {});
+        return this;
+    }
+
+    /** Centres the line in `width` characters, with unformatted padding (the extra one goes right). */
+    center(width: number, fill: string = " "): this {
+        const total = width - this.length;
+        if (total <= 0) return this;
+        this.padStart(this.length + Math.floor(total / 2), fill);
+        return this.padEnd(width, fill);
+    }
+
+    /**
+     * Cuts the line to at most `width` characters, ending it with `ellipsis`
+     * (coloured like the text before it, but never part of a link).
+     */
+    truncate(width: number, ellipsis: string = "…"): this {
+        if (this.length <= width) return this;
+        const cut = Math.max(0, width - ellipsis.length);
+        const state = cut > 0 ? this.getStateAt(cut - 1) : undefined;
+        if (state) state.hyperlink = undefined;
+        this.remove([cut, this.length]);
+        if (cut < width) this.insert(cut, ellipsis.slice(0, width - cut), state ?? {});
+        return this;
+    }
+
+    /**
+     * Word-wraps the line into lines of at most `width` characters, keeping its
+     * formatting and links. Breaks at spaces, and inside words longer than a
+     * whole line; `\n` always starts a new line. `indent` spaces start every
+     * line after the first. The line itself is left as it is.
+     */
+    wrap(width: number, options: { indent?: number } = {}): AnsiAwareBuffer[] {
+        if (width <= 0) return this.splitLines();
+        const indent = Math.max(0, Math.min(options.indent ?? 0, width - 1));
+        const result: AnsiAwareBuffer[] = [];
+        for (const line of this.splitLines()) {
+            let start = 0;
+            const text = line.text;
+            do {
+                const room = start > 0 ? width - indent : width;
+                let end = text.length;
+                let next = end;
+                if (text.length - start > room) {
+                    const space = text.lastIndexOf(" ", start + room);
+                    if (space > start) {
+                        end = space;
+                        next = space + 1;
+                    } else {
+                        end = start + Math.max(1, room);
+                        next = end;
+                    }
+                }
+                const piece = line.slice(start, end);
+                if (start > 0 && indent > 0) piece.padStart(piece.length + indent);
+                result.push(piece);
+                start = next;
+            } while (start < text.length);
+        }
+        return result;
     }
 
     /**
@@ -1242,7 +1514,7 @@ export class AnsiAwareBuffer {
         return "#000000";
     }
 
-    private prepareStyle(styleOrIndex: number | FormatStateSnapshot): FormatStateSnapshot {
+    private prepareStyle(styleOrIndex: number | StyleInput): FormatStateSnapshot {
         if (typeof styleOrIndex === "number") {
             return {
                 foreground: {
@@ -1252,7 +1524,7 @@ export class AnsiAwareBuffer {
             };
         }
         return {
-            ...styleOrIndex,
+            ...toFormatState(styleOrIndex),
         };
     }
 
@@ -1483,38 +1755,24 @@ export class AnsiAwareBuffer {
             this.remove([tag.index, tag.index + tag.tagLength]);
         }
 
-        // Now apply colors from left to right using adjusted positions
+        // Now apply colors from left to right using adjusted positions. Each tag
+        // colours only up to the next tag, so the text after a <reset> already
+        // has the formatting it came with and needs nothing done to it.
         let offset = 0;
         for (let i = 0; i < tags.length; i++) {
             const tag = tags[i];
             const adjustedIndex = tag.index - offset;
             offset += tag.tagLength;
 
-            // Get the state at this position (this is the "line default")
-            const stateAtPosition = adjustedIndex < this.length
-                ? this.getStateAt(adjustedIndex)
-                : undefined;
-
-            if (tag.tagName === 'reset') {
-                // For reset, apply the state that exists at this position to the range until next tag
-                const nextIndex = i < tags.length - 1 ? tags[i + 1].index - offset : this.length;
-                if (nextIndex > adjustedIndex && adjustedIndex < this.length) {
-                    this.color([adjustedIndex, nextIndex], stateAtPosition || {});
-                }
-            } else {
-                // For color tags, parse and apply the color
-                const parsed = parseMudletTag(tag.tagName);
-                if (parsed && parsed.type !== 'reset' && adjustedIndex < this.length) {
-                    const nextIndex = i < tags.length - 1 ? tags[i + 1].index - offset : this.length;
-                    if (nextIndex > adjustedIndex) {
-                        const newState: FormatStateSnapshot = {
-                            ...(stateAtPosition || {}),
-                            ...(parsed.type === 'fg' ? { foreground: parsed.color } : {}),
-                            ...(parsed.type === 'bg' ? { background: parsed.color } : {})
-                        };
-                        this.color([adjustedIndex, nextIndex], newState);
-                    }
-                }
+            const parsed = parseMudletTag(tag.tagName);
+            if (!parsed || parsed.type === 'reset' || adjustedIndex >= this.length) continue;
+            const nextIndex = i < tags.length - 1 ? tags[i + 1].index - offset : this.length;
+            if (nextIndex > adjustedIndex) {
+                // Only the tag's own colour changes; links and other formatting stay.
+                this.color(
+                    [adjustedIndex, nextIndex],
+                    parsed.type === 'fg' ? {foreground: parsed.color} : {background: parsed.color},
+                );
             }
         }
 
@@ -1554,15 +1812,8 @@ export class AnsiAwareBuffer {
         // Per segment, so each keeps its own formatting. A link already on the
         // text (e.g. loot's click under a book's hover/context menu) is merged:
         // the new link's handlers win, the old one's fill in what it leaves out.
-        const pieces: { range: TextRange; state: FormatStateSnapshot }[] = [];
-        let pos = 0;
-        for (const segment of this.segments) {
-            const segStart = pos;
-            const segEnd = pos + segment.text.length;
-            pos = segEnd;
-            if (segEnd <= start) continue;
-            if (segStart >= end) break;
-            const state = cloneState(segment.state) || {};
+        this.mapStates(range, current => {
+            const state = current || {};
             const existing = state.hyperlink;
             state.hyperlink = {
                 onClick: options.onClick ?? existing?.onClick,
@@ -1571,12 +1822,8 @@ export class AnsiAwareBuffer {
                 onMouseLeave: options.onMouseLeave ?? existing?.onMouseLeave,
                 title: options.title ?? existing?.title,
             };
-            pieces.push({range: [Math.max(start, segStart), Math.min(end, segEnd)], state});
-        }
-
-        for (const {range: [from, to], state} of pieces) {
-            this.replace([from, to], this.text.slice(from, to), state);
-        }
+            return state;
+        });
 
         return this;
     }
@@ -1638,6 +1885,178 @@ export class AnsiAwareBuffer {
         if (index < 0 || index > this.length || (!allowEnd && index >= this.length)) {
             throw new RangeError(`Index ${index} is out of bounds for buffer of length ${this.length}`);
         }
+    }
+}
+
+/**
+ * Part of a line, chosen with `AnsiAwareBuffer.select` or `selectAll`, to
+ * change without counting positions. It follows the line's edits — its own and
+ * anyone else's — so changes chain. Colouring only changes what it sets: links,
+ * backgrounds and other formatting already on the text stay. An empty
+ * selection (nothing found) ignores every change.
+ *
+ * @example
+ * ```typescript
+ * api.triggers.register(/^(\w+) (\w+) flakonik/, (line, matches) => {
+ *   return line.select(matches, 2)
+ *     .fg('gold')
+ *     .link({ onClick: () => api.command.send('wypij flakonik'), title: 'Wypij' })
+ *     .after(' (leczenie)', { fg: 'gray' })
+ *     .line;
+ * });
+ * ```
+ */
+export class TextSelection {
+    private readonly anchors: { start: number; end: number }[];
+
+    /** @internal Use `AnsiAwareBuffer.select` / `selectAll`. */
+    constructor(private readonly buffer: AnsiAwareBuffer, ranges: TextRange[]) {
+        this.anchors = ranges.map(range => buffer.anchor(range));
+    }
+
+    /** The line this selection is in — handy to return from a trigger at the end of a chain */
+    get line(): AnsiAwareBuffer {
+        return this.buffer;
+    }
+
+    /**
+     * Select something else in the same line, to keep a chain going. It searches
+     * the whole line, like `line.select` — not just this selection.
+     *
+     * @example
+     * ```typescript
+     * api.text('Haslo: abc, czas: 5 min')
+     *   .select('abc').fg('gold')
+     *   .select(/(\d+) min/, 1).bold();
+     * ```
+     */
+    select(target?: SelectTarget, group?: number | string): TextSelection {
+        return this.buffer.select(target, group);
+    }
+
+    /** Select every occurrence of something else in the same line (see `line.selectAll`). */
+    selectAll(
+        target: string | RegExp,
+        group?: number | string,
+        options: { caseInsensitive?: boolean } = {},
+    ): TextSelection {
+        return this.buffer.selectAll(target, group, options);
+    }
+
+    /** Whether anything was selected */
+    get found(): boolean {
+        return this.anchors.length > 0;
+    }
+
+    /** How many places are selected */
+    get count(): number {
+        return this.anchors.length;
+    }
+
+    /** Where the selected places are now, as `[start, end)` ranges */
+    get ranges(): TextRange[] {
+        return this.anchors.map(anchor => [anchor.start, anchor.end]);
+    }
+
+    /** The text of the first selected place ('' when nothing is selected) */
+    get text(): string {
+        const first = this.anchors[0];
+        return first ? this.buffer.text.slice(first.start, first.end) : "";
+    }
+
+    /** The text of every selected place */
+    get texts(): string[] {
+        const text = this.buffer.text;
+        return this.anchors.map(anchor => text.slice(anchor.start, anchor.end));
+    }
+
+    /** Set the text colour: `'#ffd700'`, a Mudlet colour name like `'gold'`, or a palette index */
+    fg(color: ColorInput): this {
+        return this.style({foreground: toFormatColor(color)});
+    }
+
+    /** Set the background colour: `'#330000'`, a Mudlet colour name, or a palette index */
+    bg(color: ColorInput): this {
+        return this.style({background: toFormatColor(color)});
+    }
+
+    /** Lay formatting over the selection, keeping whatever it doesn't set */
+    style(style: StyleInput): this {
+        const state = toFormatState(style);
+        return this.forEach(([start, end]) => this.buffer.color([start, end], state));
+    }
+
+    /** Make the text bold (`bold(false)` to undo) */
+    bold(on: boolean = true): this {
+        return this.style({bold: on});
+    }
+
+    /** Make the text italic (`italic(false)` to undo) */
+    italic(on: boolean = true): this {
+        return this.style({italic: on});
+    }
+
+    /** Underline the text (`underline(false)` to undo) */
+    underline(on: boolean = true): this {
+        return this.style({underline: on});
+    }
+
+    /** Strike the text through (`strikethrough(false)` to undo) */
+    strikethrough(on: boolean = true): this {
+        return this.style({strikethrough: on});
+    }
+
+    /**
+     * Make the text clickable: a click handler, or handlers and a tooltip. A
+     * link already on the text is merged — handlers given here win, the old
+     * link's fill in the rest.
+     */
+    link(link: LinkInput): this {
+        const options = toHyperlink(link);
+        return this.forEach(range => this.buffer.createLink(range, options));
+    }
+
+    /** Replace all formatting of the selection, links included; `restyle({})` clears it */
+    restyle(style: StyleInput): this {
+        return this.forEach(range => this.buffer.restyle(range, style));
+    }
+
+    /**
+     * Replace the selected text. The new text takes the formatting of the first
+     * character it replaces, with `style` (if given) laid over it; the selection
+     * then covers the new text.
+     * @param text - New text, or a function from the old text to the new
+     */
+    replace(text: string | ((old: string) => string), style?: StyleInput): this {
+        const state = toFormatState(style);
+        return this.forEach(([start, end]) => {
+            const old = this.buffer.text.slice(start, end);
+            const next = typeof text === "function" ? text(old) : text;
+            const base = start < end ? this.buffer.getStateAt(start) : undefined;
+            this.buffer.replace([start, end], next, base ?? {});
+            if (state && next.length > 0) this.buffer.color([start, start + next.length], state);
+        });
+    }
+
+    /** Remove the selected text */
+    remove(): this {
+        return this.forEach(range => this.buffer.remove(range));
+    }
+
+    /** Insert text in front of the selection — unformatted unless `style` is given */
+    before(text: string, style?: StyleInput): this {
+        return this.forEach(([start]) => this.buffer.insert(start, text, style ?? {}));
+    }
+
+    /** Insert text after the selection — unformatted unless `style` is given */
+    after(text: string, style?: StyleInput): this {
+        return this.forEach(([, end]) => this.buffer.insert(end, text, style ?? {}));
+    }
+
+    /** Runs `fn` on each place in turn, reading its range afresh after the edits before it. */
+    private forEach(fn: (range: TextRange) => void): this {
+        for (const anchor of this.anchors) fn([anchor.start, anchor.end]);
+        return this;
     }
 }
 
