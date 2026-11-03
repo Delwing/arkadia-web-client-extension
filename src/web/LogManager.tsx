@@ -14,7 +14,8 @@
  */
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { formatClock, type LogSessionInfo } from "@ui/logViewer";
-import { Button, Check, Input, Notice, Select } from "@web-ui/primitives/index.ts";
+import { Check, FileCode2, FileJson, FileText, type LucideIcon } from "lucide-react";
+import { Button, Check as CheckBox, Input, Notice, Select } from "@web-ui/primitives/index.ts";
 import SubDialog from "./SubDialog";
 import { EXPORT_FORMATS, type ExportFormat, type LogsExportWorkerResponse } from "./logsExport.shared";
 import LogsExportWorker from "./logsExport.worker?worker";
@@ -68,10 +69,10 @@ function spanLabel(session: LogSessionInfo): string {
     return `${from} - ${to}`;
 }
 
-const FORMAT_LABELS: Record<ExportFormat, { label: string; description: string }> = {
-    html: { label: "HTML", description: "do czytania w przeglądarce, z kolorami" },
-    txt: { label: "TXT", description: "zwykły tekst z czasem każdej linii" },
-    json: { label: "JSON", description: "do ponownego wczytania w Logi (Importuj)" },
+const FORMAT_LABELS: Record<ExportFormat, { label: string; description: string; icon: LucideIcon }> = {
+    html: { label: "HTML", description: "do czytania w przeglądarce, z kolorami", icon: FileCode2 },
+    txt: { label: "TXT", description: "zwykły tekst z czasem każdej linii", icon: FileText },
+    json: { label: "JSON", description: "do ponownego wczytania w Logi", icon: FileJson },
 };
 
 /** Which logs the list shows, by what they have been downloaded as. */
@@ -122,8 +123,12 @@ interface ExportState {
     formats: Set<ExportFormat>;
     archive: boolean;
     progress: { current: number; total: number } | null;
-    /** The ZIP was downloaded: these are the logs to delete, if the player confirms. */
-    downloaded: { names: string[]; fileName: string } | null;
+    /**
+     * The ZIP is out: these are the logs to delete, if the player confirms.
+     * `verified` when the client wrote the file itself (the save picker), so
+     * it is known to be on disk; a download only reached the browser.
+     */
+    downloaded: { names: string[]; fileName: string; verified: boolean; size: string } | null;
     error: string | null;
 }
 
@@ -268,63 +273,129 @@ export function LogManager({
         setExporting({ formats: new Set(["html", "json"]), archive: false, progress: null, downloaded: null, error: null });
     };
 
-    /** Builds the ZIP off the main thread and hands it to the browser. */
-    const runExport = useCallback(() => {
+    /** Builds the ZIP off the main thread; resolves with it, or rejects with a message to show. */
+    const buildArchive = useCallback(
+        (names: string[], formats: ExportFormat[]): Promise<{ blob: Blob; exported: string[] }> =>
+            new Promise((resolve, reject) => {
+                workerRef.current?.terminate();
+                const worker = new LogsExportWorker();
+                workerRef.current = worker;
+                const finish = () => {
+                    worker.terminate();
+                    if (workerRef.current === worker) workerRef.current = null;
+                };
+                worker.onmessage = (event: MessageEvent<LogsExportWorkerResponse>) => {
+                    const { data } = event;
+                    if (data.type === "progress") {
+                        setExporting((state) =>
+                            state ? { ...state, progress: { current: data.current, total: data.total } } : state,
+                        );
+                    } else if (data.type === "success") {
+                        finish();
+                        resolve({ blob: data.blob, exported: data.exported });
+                    } else {
+                        console.error("[LogsExport]", data.message);
+                        finish();
+                        reject(new Error(data.message));
+                    }
+                };
+                worker.onerror = (error) => {
+                    console.error("[LogsExport] Worker error:", error);
+                    finish();
+                    reject(new Error("Nie udało się przygotować archiwum."));
+                };
+                worker.postMessage({
+                    type: "export",
+                    // Seeded from the class list even with no log pane mounted, so
+                    // this works from here — see `collectLogStyles`.
+                    inlineStyles: collectLogStyles(),
+                    sessionNames: names,
+                    formats,
+                });
+            }),
+        [],
+    );
+
+    /**
+     * Exports the selection. Where the browser has a save picker (Chromium), the
+     * player picks the file first (it must open on the click itself) and the
+     * client writes it, so it knows the file is on disk; elsewhere the ZIP is a
+     * download, which no page can confirm was saved.
+     */
+    const runExport = useCallback(async () => {
         if (!exporting || working || selectedNames.length === 0 || exporting.formats.size === 0) return;
         const formats = EXPORT_FORMATS.filter((format) => exporting.formats.has(format));
         const archive = exporting.archive;
-        setBusy("export");
-        setExporting({ ...exporting, progress: { current: 0, total: selectedNames.length }, error: null });
+        const names = selectedNames;
+        const suggested = `${archive ? "logi_archiwum" : "logi"}_${today()}.zip`;
 
-        workerRef.current?.terminate();
-        const worker = new LogsExportWorker();
-        workerRef.current = worker;
-        const finish = () => {
-            setBusy("");
-            worker.terminate();
-            if (workerRef.current === worker) workerRef.current = null;
-        };
-
-        worker.onmessage = (event: MessageEvent<LogsExportWorkerResponse>) => {
-            const { data } = event;
-            if (data.type === "progress") {
-                setExporting((state) => (state ? { ...state, progress: { current: data.current, total: data.total } } : state));
-            } else if (data.type === "success") {
-                const fileName = `${archive ? "logi_archiwum" : "logi"}_${today()}.zip`;
-                download(data.blob, fileName);
-                finish();
-                void markDownloaded(data.exported, formats).then(() => getDownloadedFormats().then(setDownloaded));
-                if (archive) {
-                    // The browser has the file, but only the player knows it was saved.
-                    const names = data.exported.filter((name) => name !== liveSessionId);
-                    setExporting((state) => (state ? { ...state, progress: null, downloaded: { names, fileName } } : state));
-                } else {
-                    setExporting(null);
-                    setStatus({ tone: "neutral", text: `Pobrano ${fileName}: ${data.exported.length} logów.` });
-                }
-            } else {
-                console.error("[LogsExport]", data.message);
-                setExporting((state) => (state ? { ...state, progress: null, error: data.message } : state));
-                finish();
+        let target: FileSystemFileHandle | null = null;
+        if (typeof window.showSaveFilePicker === "function") {
+            try {
+                target = await window.showSaveFilePicker({
+                    id: "arkadia-logs-export",
+                    suggestedName: suggested,
+                    startIn: "downloads",
+                    types: [{ description: "Archiwum ZIP", accept: { "application/zip": [".zip"] } }],
+                });
+            } catch (error) {
+                // Cancelled: nothing is exported. Refused for another reason
+                // (an embedded page, a policy): a plain download instead.
+                if (error instanceof DOMException && error.name === "AbortError") return;
+                target = null;
             }
-        };
-        worker.onerror = (error) => {
-            console.error("[LogsExport] Worker error:", error);
-            setExporting((state) =>
-                state ? { ...state, progress: null, error: "Nie udało się przygotować archiwum." } : state,
-            );
-            finish();
-        };
+        }
 
-        worker.postMessage({
-            type: "export",
-            // Seeded from the class list even with no log pane mounted, so
-            // this works from here — see `collectLogStyles`.
-            inlineStyles: collectLogStyles(),
-            sessionNames: selectedNames,
-            formats,
-        });
-    }, [exporting, working, selectedNames, liveSessionId]);
+        setBusy("export");
+        setExporting({ ...exporting, progress: { current: 0, total: names.length }, error: null });
+        let built: { blob: Blob; exported: string[] };
+        try {
+            built = await buildArchive(names, formats);
+        } catch (error) {
+            setBusy("");
+            setExporting((state) =>
+                state ? { ...state, progress: null, error: error instanceof Error ? error.message : String(error) } : state,
+            );
+            return;
+        }
+
+        let fileName = suggested;
+        let verified = false;
+        if (target) {
+            try {
+                const writable = await target.createWritable();
+                await writable.write(built.blob);
+                await writable.close();
+                fileName = target.name;
+                verified = true;
+            } catch (error) {
+                console.error("[LogManager] Writing the archive failed:", error);
+                setBusy("");
+                setExporting((state) =>
+                    state ? { ...state, progress: null, error: "Nie udało się zapisać pliku. Logi zostają w przeglądarce." } : state,
+                );
+                return;
+            }
+        } else {
+            download(built.blob, fileName);
+        }
+        setBusy("");
+
+        void markDownloaded(built.exported, formats).then(() => getDownloadedFormats().then(setDownloaded));
+        const size = formatBytes(built.blob.size);
+        if (archive) {
+            const toDelete = built.exported.filter((name) => name !== liveSessionId);
+            setExporting((state) =>
+                state ? { ...state, progress: null, downloaded: { names: toDelete, fileName, verified, size } } : state,
+            );
+        } else {
+            setExporting(null);
+            setStatus({
+                tone: "neutral",
+                text: `${verified ? "Zapisano" : "Pobrano"} ${fileName} (${size}): ${built.exported.length} logów.`,
+            });
+        }
+    }, [exporting, working, selectedNames, liveSessionId, buildArchive]);
 
     const removeSessions = useCallback(
         async (names: string[]): Promise<boolean> => {
@@ -651,16 +722,23 @@ export function LogManager({
                                                         {size ? `~${formatBytes(size.bytes)}` : measuring ? "…" : ""}
                                                     </td>
                                                     <td className="logs-manage__formats">
-                                                        {EXPORT_FORMATS.filter((format) => formats?.[format]).map((format) => (
-                                                            <span
-                                                                key={format}
-                                                                className="logs-manage__badge"
-                                                                data-format={format}
-                                                                title={`Pobrano jako ${FORMAT_LABELS[format].label}: ${new Date(formats![format]!).toLocaleString("pl-PL")}`}
-                                                            >
-                                                                {FORMAT_LABELS[format].label}
-                                                            </span>
-                                                        ))}
+                                                        {/* Every format has its slot, shown or not, so the
+                                                            column is as wide as three badges from the start and
+                                                            a download does not resize the window. */}
+                                                        {EXPORT_FORMATS.map((format) => {
+                                                            const at = formats?.[format];
+                                                            return (
+                                                                <span
+                                                                    key={format}
+                                                                    className="logs-manage__badge"
+                                                                    data-format={format}
+                                                                    data-empty={!at}
+                                                                    title={at ? `Pobrano jako ${FORMAT_LABELS[format].label}: ${new Date(at).toLocaleString("pl-PL")}` : undefined}
+                                                                >
+                                                                    {FORMAT_LABELS[format].label}
+                                                                </span>
+                                                            );
+                                                        })}
                                                     </td>
                                                     <td className="logs-manage__flag">
                                                         {savedToDisk.has(session.id) ? "✓" : ""}
@@ -684,7 +762,7 @@ export function LogManager({
                     includesLive={!!liveSessionId && selected.has(liveSessionId)}
                     busy={busy}
                     onChange={(next) => setExporting({ ...exporting, ...next })}
-                    onRun={runExport}
+                    onRun={() => void runExport()}
                     onDelete={() => void finishArchive()}
                     onClose={() => {
                         if (busy === "export") {
@@ -755,10 +833,10 @@ function ExportDialog({
     onClose: () => void;
 }) {
     if (state.downloaded) {
-        const { names, fileName } = state.downloaded;
+        const { names, fileName, verified, size } = state.downloaded;
         return (
             <SubDialog
-                title="Usunąć pobrane logi z przeglądarki?"
+                title={verified ? "Plik zapisany. Usunąć logi z przeglądarki?" : "Usunąć pobrane logi z przeglądarki?"}
                 size="sm"
                 onClose={onClose}
                 footer={
@@ -778,10 +856,18 @@ function ExportDialog({
                     </>
                 }
             >
-                <p className="logs-export__text">
-                    Plik <strong>{fileName}</strong> został przekazany przeglądarce. Sprawdź, że się zapisał, zanim usuniesz
-                    logi: tego nie da się cofnąć.
-                </p>
+                {verified ? (
+                    <p className="logs-export__text">
+                        Zapisano <strong>{fileName}</strong> ({size}). Logi są w tym pliku, więc można je usunąć z
+                        przeglądarki; tego nie da się cofnąć.
+                    </p>
+                ) : (
+                    <p className="logs-export__text">
+                        Plik <strong>{fileName}</strong> ({size}) został przekazany przeglądarce, ale strona nie może
+                        sprawdzić, czy naprawdę się zapisał (zapis mógł zostać anulowany). Sprawdź go w pobranych plikach,
+                        zanim usuniesz logi: tego nie da się cofnąć.
+                    </p>
+                )}
                 {includesLive ? (
                     <p className="popup-muted logs-export__text">Log nagrywany teraz zostaje w przeglądarce.</p>
                 ) : null}
@@ -826,23 +912,28 @@ function ExportDialog({
                 Zaznaczone logi: <strong>{count}</strong> · {size}
             </p>
             <div className="logs-export__formats">
-                {EXPORT_FORMATS.map((format) => (
-                    <Check
-                        key={format}
-                        id={`logs-export-${format}`}
-                        checked={state.formats.has(format)}
-                        disabled={running}
-                        onChange={() => toggleFormat(format)}
-                        label={
-                            <>
-                                <strong>{FORMAT_LABELS[format].label}</strong>{" "}
-                                <span className="popup-muted">{FORMAT_LABELS[format].description}</span>
-                            </>
-                        }
-                    />
-                ))}
+                {EXPORT_FORMATS.map((format) => {
+                    const Icon = FORMAT_LABELS[format].icon;
+                    const on = state.formats.has(format);
+                    return (
+                        <label key={format} className="logs-export__format" data-format={format} data-on={on}>
+                            <input
+                                type="checkbox"
+                                id={`logs-export-${format}`}
+                                className="logs-export__format-input"
+                                checked={on}
+                                disabled={running}
+                                onChange={() => toggleFormat(format)}
+                            />
+                            <span className="logs-export__format-check">{on ? <Check size={12} strokeWidth={3} /> : null}</span>
+                            <Icon className="logs-export__format-icon" size={28} strokeWidth={1.6} />
+                            <span className="logs-export__format-name">{FORMAT_LABELS[format].label}</span>
+                            <span className="logs-export__format-text">{FORMAT_LABELS[format].description}</span>
+                        </label>
+                    );
+                })}
             </div>
-            <Check
+            <CheckBox
                 id="logs-export-archive"
                 className="logs-export__archive"
                 checked={state.archive}

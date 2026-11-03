@@ -10,6 +10,38 @@ import type {Page} from '@playwright/test';
 
 const DAY = 24 * 60 * 60 * 1000;
 
+/**
+ * Without a save picker, as in Firefox and Safari: the archive is a download.
+ * (Chromium's would open a native dialog the test cannot answer.)
+ */
+async function withoutSavePicker(page: Page): Promise<void> {
+    await page.addInitScript(() => {
+        (window as unknown as {showSaveFilePicker?: unknown}).showSaveFilePicker = undefined;
+    });
+}
+
+/** A save picker that hands the page a file which keeps what is written to it. */
+async function withFakeSavePicker(page: Page): Promise<void> {
+    await page.addInitScript(() => {
+        const w = window as unknown as {showSaveFilePicker: unknown; __saved?: {name: string; size: number}};
+        w.showSaveFilePicker = async (options: {suggestedName?: string}) => {
+            const name = options.suggestedName ?? 'logi.zip';
+            let size = 0;
+            return {
+                name,
+                createWritable: async () => ({
+                    write: async (blob: Blob) => {
+                        size += blob.size;
+                    },
+                    close: async () => {
+                        w.__saved = {name, size};
+                    },
+                }),
+            };
+        };
+    });
+}
+
 async function login(page: Page): Promise<void> {
     await page.goto('/');
     await waitForCommandInput(page);
@@ -56,6 +88,7 @@ async function openManager(page: Page): Promise<void> {
 const rows = (page: Page) => page.locator('.logs-manage__table tbody tr[data-session]');
 
 test('old logs are picked by range, archived as a ZIP, deleted on confirmation and imported back', async ({page}) => {
+    await withoutSavePicker(page);
     await login(page);
     const old = await seedOldLogs(page, [40, 100]);
     await openManager(page);
@@ -86,8 +119,9 @@ test('old logs are picked by range, archived as a ZIP, deleted on confirmation a
     const text = await zip.file(`txt/${old[0]}.txt`)!.async('string');
     expect(text).toMatch(/^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d\.\d{3} STARY_LOG 40 dni temu\n.* druga linia\n$/);
 
-    // Nothing is deleted until the player says the file was saved.
+    // A download cannot be confirmed: nothing is deleted until the player says it was saved.
     await expect(page.getByText('Usunąć pobrane logi z przeglądarki?')).toBeVisible();
+    await expect(page.getByText(/nie może\s+sprawdzić/)).toBeVisible();
     await page.locator('#logs-archive-delete').click();
     await expect(page.locator('.logs-manage__status')).toContainText('Zarchiwizowano 2 logów');
     await page.locator('#logs-manage-range').selectOption('all');
@@ -100,6 +134,7 @@ test('old logs are picked by range, archived as a ZIP, deleted on confirmation a
 });
 
 test('each log shows what it was downloaded as, and the list filters by it', async ({page}) => {
+    await withoutSavePicker(page);
     await login(page);
     const [old] = await seedOldLogs(page, [10]);
     await openManager(page);
@@ -107,6 +142,9 @@ test('each log shows what it was downloaded as, and the list filters by it', asy
     await page.locator('#logs-manage-range').selectOption('last30');
     // The live log is not part of a range selection.
     await expect(page.locator('.logs-manage__summary-selected')).toContainText('Zaznaczone: 1');
+    // The column is as wide as three badges before and after: the window keeps its size.
+    const pobrano = page.locator('.logs-manage__table th').nth(5);
+    const width = await pobrano.evaluate((th) => th.getBoundingClientRect().width);
 
     await page.locator('#logs-manage-export').click();
     await page.locator('#logs-export-json').uncheck();
@@ -116,7 +154,8 @@ test('each log shows what it was downloaded as, and the list filters by it', asy
     await expect(page.locator('.logs-manage__status')).toContainText('Pobrano');
 
     const row = page.locator(`tr[data-session="${old}"]`);
-    await expect(row.locator('.logs-manage__badge')).toHaveText(['HTML']);
+    await expect(row.locator('.logs-manage__badge[data-empty="false"]')).toHaveText(['HTML']);
+    expect(await pobrano.evaluate((th) => th.getBoundingClientRect().width)).toBe(width);
 
     await page.locator('#logs-manage-filter').selectOption('json');
     await expect(row).toBeVisible();
@@ -147,4 +186,27 @@ test('without persistent storage Zarządzaj explains how this browser grants it'
     await expect(notice).toContainText('Pamięć nietrwała');
     await notice.getByRole('button', {name: /Jak to włączyć w: Chrome/}).click();
     await expect(notice.locator('.persistence-notice__steps li').first()).toContainText('Zainstaluj');
+});
+
+test('with a save picker the archive is written by the client, so it is known to be saved', async ({page}) => {
+    await withFakeSavePicker(page);
+    await login(page);
+    await seedOldLogs(page, [50]);
+    await openManager(page);
+
+    await page.locator('#logs-manage-range').selectOption('older30');
+    await page.locator('#logs-manage-export').click();
+    // Formats are cards: one click on the card turns one on or off.
+    await page.locator('.logs-export__format[data-format="txt"]').click();
+    await expect(page.locator('.logs-export__format[data-format="txt"]')).toHaveAttribute('data-on', 'true');
+    await page.locator('#logs-export-archive').check();
+    await page.locator('#logs-export-run').click();
+
+    await expect(page.getByText('Plik zapisany. Usunąć logi z przeglądarki?')).toBeVisible();
+    const saved = await page.evaluate(() => (window as unknown as {__saved?: {name: string; size: number}}).__saved);
+    expect(saved?.name).toMatch(/^logi_archiwum_\d{4}-\d{2}-\d{2}\.zip$/);
+    expect(saved?.size).toBeGreaterThan(0);
+
+    await page.locator('#logs-archive-delete').click();
+    await expect(page.locator('.logs-manage__status')).toContainText('Zarchiwizowano 1 logów');
 });

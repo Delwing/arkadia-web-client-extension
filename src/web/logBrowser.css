@@ -217,13 +217,107 @@
     margin: 0 0 10px;
 }
 
+/* Formats as cards with a file icon: one click turns a format on or off. */
 .logs-export__formats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    margin-bottom: 14px;
+}
+
+.logs-export__format {
+    position: relative;
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    margin-bottom: 12px;
+    align-items: center;
+    gap: 4px;
+    padding: 14px 6px 10px;
+    border: 1px solid var(--popup-border-strong, var(--popup-border));
+    border-radius: 8px;
+    background: var(--popup-control-bg);
+    color: var(--popup-text-subtle);
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+}
+
+.logs-export__format:hover {
+    border-color: var(--popup-accent-border, var(--popup-accent));
+}
+
+.logs-export__format[data-on="true"] {
+    border-color: var(--popup-accent);
+    background: var(--popup-accent-subtle-bg);
+    color: var(--popup-text);
+}
+
+.logs-export__format:has(input:focus-visible) {
+    outline: 2px solid var(--popup-accent);
+    outline-offset: 2px;
+}
+
+/* The checkbox stays a real one, for the keyboard and for labels, but unseen. */
+.logs-export__format-input {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.logs-export__format-check {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    border: 1px solid var(--popup-border-strong, var(--popup-border));
+    border-radius: 4px;
+    color: var(--popup-accent-contrast, #fff);
+}
+
+.logs-export__format[data-on="true"] .logs-export__format-check {
+    border-color: var(--popup-accent);
+    background: var(--popup-accent);
+}
+
+.logs-export__format-icon {
+    color: var(--popup-text-subtle);
+}
+
+.logs-export__format[data-format="html"][data-on="true"] .logs-export__format-icon { color: #e8915b; }
+.logs-export__format[data-format="txt"][data-on="true"] .logs-export__format-icon { color: #9db4d3; }
+.logs-export__format[data-format="json"][data-on="true"] .logs-export__format-icon { color: #d8c35f; }
+
+.logs-export__format-name {
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--popup-text-bright);
+}
+
+.logs-export__format-text {
+    font-size: var(--ui-fs-sm, 12px);
+    line-height: 1.3;
+}
+
+@media (max-width: 380px) {
+    .logs-export__formats {
+        grid-template-columns: 1fr;
+    }
+}
+
+.logs-export__format[data-format] .logs-export__format-input:disabled {
+    cursor: default;
 }
 
 .logs-export__archive {
     margin-bottom: 10px;
+}
+
+/* A format not downloaded keeps its slot, unseen: the column never changes width. */
+.logs-manage__badge[data-empty="true"] {
+    visibility: hidden;
 }
