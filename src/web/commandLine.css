@@ -526,23 +526,37 @@
 }
 
 /* Storage use, a slim line above the bottom bar (StorageUsage.tsx). */
-.command-menu__storage {
+/* A button (it opens Pamięć przeglądarki), but drawn as a strip of the menu:
+   the command line's own button look (#input-area button) is taken off. */
+#input-area .command-menu__storage {
   display: flex;
   flex-shrink: 0;
   align-items: center;
+  justify-content: flex-start;
   gap: 8px;
+  width: 100%;
+  height: auto;
   min-height: 30px;
   /* The popover spaces its children by 0.6rem; under the row that space would
      fall inside the strip, above the bar's border, and push the row to the
      top of it. Taken back here, so the row is the whole strip. */
-  margin-bottom: -0.6rem;
+  margin: 0 0 -0.6rem;
   padding: 0 10px;
   line-height: 1;
+  border: 0;
   border-top: 1px solid var(--popup-border);
+  border-radius: 0;
+  background: transparent;
   color: var(--popup-text-dim);
   font-size: 11.5px;
+  text-align: left;
   white-space: nowrap;
-  cursor: default;
+  cursor: pointer;
+}
+#input-area .command-menu__storage:hover {
+  border-color: var(--popup-border);
+  background-color: var(--popup-accent-subtle-bg, var(--popup-control-hover-bg));
+  color: var(--popup-text-subtle);
 }
 .command-menu__storage-track {
   flex: 1;
@@ -580,7 +594,7 @@
 .command-menu__storage-persist[data-persisted="false"] {
   color: var(--footer-vital-warn, #d9bf62);
 }
-.command-menu__panel--sheet .command-menu__storage {
+#input-area .command-menu__panel--sheet .command-menu__storage {
   margin-top: 6px;
   padding: 0;
 }

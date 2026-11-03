@@ -192,17 +192,19 @@ export function StorageReport() {
                             return (
                                 <tr key={part.key} data-part={part.key}>
                                     <td>
-                                        <div className="storage-report__label">
-                                            <span>{part.label}</span>
+                                        <div className="storage-report__cell">
+                                            <div className="storage-report__what">
+                                                <div className="storage-report__label">{part.label}</div>
+                                                <div className="storage-report__name popup-muted">
+                                                    {part.name} · {part.records.toLocaleString("pl-PL")} {plural(part.records, part.recordsUnit)}
+                                                    {part.error ? ` · nie odczytano w całości (${part.error})` : ""}
+                                                </div>
+                                            </div>
                                             {part.key === LOGS_DB_NAME ? (
                                                 <Button size="sm" onClick={openLogManager}>
                                                     Zarządzaj
                                                 </Button>
                                             ) : null}
-                                        </div>
-                                        <div className="storage-report__name popup-muted">
-                                            {part.name} · {part.records.toLocaleString("pl-PL")} {plural(part.records, part.recordsUnit)}
-                                            {part.error ? ` · nie odczytano w całości (${part.error})` : ""}
                                         </div>
                                     </td>
                                     <td className="storage-report__num">{part.bytes > 0 ? `~${formatBytes(part.bytes)}` : "—"}</td>

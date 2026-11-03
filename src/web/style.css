@@ -5102,11 +5102,17 @@ select.popup-input.popup-input--control.is-warning {
 .storage-report__table td {
   vertical-align: middle;
 }
-.storage-report__label {
+/* What the row is on the left; its action (Zarządzaj) on the right, centred on the row. */
+.storage-report__cell {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+}
+.storage-report__what {
+  min-width: 0;
+}
+.storage-report__label {
   color: var(--popup-text-bright);
 }
 .storage-report__name {

@@ -44,6 +44,9 @@ const GROUP_TITLES: Record<Exclude<MainMenuGroup, "sesja">, string> = {
   wtyczki: "Wtyczki",
 };
 
+/** How much of the window's height the open menu may take. */
+const MAX_HEIGHT_SHARE = 0.75;
+
 /** Same breakpoint as the phone footer (footerMobile.css). */
 const PHONE_QUERY = "(max-width: 768px), (max-height: 520px) and (pointer: coarse)";
 
@@ -88,7 +91,10 @@ export default function MainMenu({ onOpenChange }: { onOpenChange?: (open: boole
   const connection = useSyncExternalStore(subscribeConnectionView, getConnectionView);
   const phone = useMediaQuery(PHONE_QUERY);
   const hardwareKeyboard = useHardwareKeyboard();
-  const menu = usePopover({ width: 520, maxHeight: 640, placement: "above", onClose: () => setQuery("") });
+  // Grows with its entries (plugins add them) up to three quarters of the
+  // window; read on each render, and the menu renders as it opens.
+  const maxHeight = Math.round((typeof window === "undefined" ? 850 : window.innerHeight) * MAX_HEIGHT_SHARE);
+  const menu = usePopover({ width: 520, maxHeight, placement: "above", onClose: () => setQuery("") });
   const [query, setQuery] = useState("");
   const filterRef = useRef<HTMLInputElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
