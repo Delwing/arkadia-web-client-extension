@@ -17,6 +17,7 @@ import HelperSettings from "../options/HelperSettings";
 import { isHelperSupported } from "../helperDownload";
 import { openWindow } from "../modals/pageWindows";
 import { LocationShareQr } from "../locationShare/LocationShareQr";
+import { StorageReport } from "../storage/StorageReport";
 
 /**
  * The page-level windows, opened by id through src/web/modals/appModal.ts. Each
@@ -157,6 +158,10 @@ export function AppModals() {
 
             <AppModalShell id="location-share-modal" title="Kod QR lokacji" bodyClassName="app-modal__body--center">
                 <LocationShareQr />
+            </AppModalShell>
+
+            <AppModalShell id="storage-modal" title="Pamięć przeglądarki" dialogClassName="app-modal__dialog--lg">
+                <ErrorBoundary name="StorageReport"><StorageReport /></ErrorBoundary>
             </AppModalShell>
         </>
     );

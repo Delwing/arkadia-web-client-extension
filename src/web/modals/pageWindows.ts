@@ -15,7 +15,8 @@ export type PageWindow =
     | "places"
     | "helper"
     | "locationShare"
-    | "logs";
+    | "logs"
+    | "storage";
 
 const IDS: Record<PageWindow, string> = {
     settings: "settings-modal",
@@ -28,6 +29,7 @@ const IDS: Record<PageWindow, string> = {
     helper: "helper-modal",
     locationShare: "location-share-modal",
     logs: "logs-modal",
+    storage: "storage-modal",
 };
 
 /** The windows a jump elsewhere (a room on the map, a recording to play) closes. */

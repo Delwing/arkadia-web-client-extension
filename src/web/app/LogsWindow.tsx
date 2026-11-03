@@ -2,7 +2,7 @@ import { Suspense, lazy, useEffect, useRef, useState, type ComponentType } from 
 import { Button } from "@web-ui/primitives/index.ts";
 import { registerMainMenuItem, unregisterMainMenuItem } from "@modules/core/mainMenuRegistry";
 import type { LogBrowserProps } from "../LogBrowser";
-import { setLogSearchHandler } from "../logSearchRequest";
+import { setLogManagerHandler, setLogSearchHandler } from "../logSearchRequest";
 import { AppModal, MODAL_EVENT } from "../modals/appModal";
 import { reloadToLatest } from "../versionCheck";
 import { ErrorBoundary } from "./ErrorBoundary";
@@ -115,6 +115,8 @@ export function LogsWindow() {
     const ref = useRef<HTMLDivElement>(null);
     const [open, setOpen] = useState(false);
     const [query, setQuery] = useState<string | undefined>();
+    /** Bumped by each "open on Zarządzaj" request; the browser opens its manager on a change. */
+    const [manageRequest, setManageRequest] = useState(0);
 
     useEffect(() => preloadWhenIdle(), []);
 
@@ -125,7 +127,11 @@ export function LogsWindow() {
             pendingQuery = undefined;
             setOpen(true);
         };
-        const hide = () => setOpen(false);
+        const hide = () => {
+            setOpen(false);
+            // A request is for the opening it came with, not every later one.
+            setManageRequest(0);
+        };
         modalEl.addEventListener(MODAL_EVENT.show, show);
         modalEl.addEventListener(MODAL_EVENT.hidden, hide);
 
@@ -143,12 +149,17 @@ export function LogsWindow() {
             pendingQuery = nextQuery;
             openWindow();
         });
+        setLogManagerHandler(() => {
+            setManageRequest((count) => count + 1);
+            openWindow();
+        });
 
         return () => {
             modalEl.removeEventListener(MODAL_EVENT.show, show);
             modalEl.removeEventListener(MODAL_EVENT.hidden, hide);
             unregisterMainMenuItem("logs-button");
             setLogSearchHandler(null);
+            setLogManagerHandler(null);
         };
     }, []);
 
@@ -161,7 +172,7 @@ export function LogsWindow() {
                     {open && (
                         <ErrorBoundary name="LogBrowser" fallback={(error) => <LogBrowserFailed error={error} />}>
                             <Suspense fallback={null}>
-                                <LogBrowser initialQuery={query} />
+                                <LogBrowser initialQuery={query} manageRequest={manageRequest} />
                             </Suspense>
                         </ErrorBoundary>
                     )}

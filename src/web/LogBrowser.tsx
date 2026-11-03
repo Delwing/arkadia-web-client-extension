@@ -29,6 +29,11 @@ export interface LogBrowserProps {
     headerTrailing?: ReactNode;
     /** Opens with this in the search box ("Szukaj w logach"). */
     initialQuery?: string;
+    /**
+     * Opens Zarządzaj when it changes to a non-zero value (the storage window
+     * asking for it), as soon as the list is in.
+     */
+    manageRequest?: number;
 }
 
 /**
@@ -53,7 +58,7 @@ function openInNewTab(sessionId: string): void {
     window.open(url.toString(), "_blank");
 }
 
-export function LogBrowser({ headerTrailing, initialQuery }: LogBrowserProps) {
+export function LogBrowser({ headerTrailing, initialQuery, manageRequest = 0 }: LogBrowserProps) {
     const [sessions, setSessions] = useState<LogSessionInfo[] | null>(null);
     /** Set while the list is still being built; the manager waits for it. */
     const [listing, setListing] = useState<ListProgress | null>(null);
@@ -165,6 +170,15 @@ export function LogBrowser({ headerTrailing, initialQuery }: LogBrowserProps) {
         setImportOnOpen(startImport);
         setManageOpen(true);
     }, []);
+
+    // Asked for from outside (the storage window): opened once the list is in,
+    // as the button for it waits for that too.
+    const [handledManage, setHandledManage] = useState(0);
+    useEffect(() => {
+        if (manageRequest === 0 || manageRequest === handledManage || listing !== null || sessions === null) return;
+        setHandledManage(manageRequest);
+        openManager(false);
+    }, [manageRequest, handledManage, listing, sessions, openManager]);
 
     // The Logi window has no header of its own, so its close control lives
     // here, in the header and on the loading screen alike; the window closes on

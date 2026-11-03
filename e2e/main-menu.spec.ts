@@ -101,7 +101,7 @@ test.describe('main menu', () => {
         await page.click('#menu-button');
         const storage = page.locator(`${panel} .command-menu__storage`);
         await expect(storage).toBeVisible();
-        await expect(storage.locator('.command-menu__storage-text')).toHaveText(/^[\d,]+ (MB|GB) z [\d,]+ (MB|GB)$/);
+        await expect(storage.locator('.command-menu__storage-text')).toHaveText(/^[\d,]+ (kB|MB|GB) z [\d,]+ (MB|GB)$/);
         await expect(storage.locator('.command-menu__storage-persist')).toHaveText(/^(trwała|nietrwała)$/);
         // The details are in the shared hover card, not a native title.
         await storage.hover();

@@ -17,3 +17,17 @@ export function canSearchLogs(): boolean {
 export function requestLogSearch(query: string): void {
     handler?.(query);
 }
+
+/**
+ * Logi opened straight on Zarządzaj (from the storage window, say). Registered
+ * by the Logi window like the search above.
+ */
+let managerHandler: (() => void) | null = null;
+
+export function setLogManagerHandler(next: (() => void) | null): void {
+    managerHandler = next;
+}
+
+export function requestLogManager(): void {
+    managerHandler?.();
+}

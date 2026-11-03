@@ -5044,3 +5044,103 @@ select.popup-input.popup-input--control.is-warning {
   font-size: 13px;
   line-height: 1.2;
 }
+
+/* Pamięć przeglądarki (storage/StorageReport.tsx): the browser's total, then
+   what the client keeps, part by part. */
+.storage-report {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.storage-report__total {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.storage-report__total-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.storage-report__total-figure {
+  font-size: 1.15em;
+  font-weight: 600;
+  color: var(--popup-text-bright);
+  font-variant-numeric: tabular-nums;
+}
+.storage-report__details,
+.storage-report__note {
+  margin: 0;
+  font-size: 0.9em;
+}
+.storage-report__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.storage-report__bar {
+  display: inline-block;
+  width: 100%;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 3px;
+  background-color: var(--popup-border-strong, var(--popup-border));
+  vertical-align: middle;
+}
+.storage-report__bar > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background-color: var(--popup-accent, var(--popup-success));
+}
+.storage-report__bar--total {
+  height: 8px;
+}
+.storage-report__table td {
+  vertical-align: middle;
+}
+.storage-report__label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--popup-text-bright);
+}
+.storage-report__name {
+  font-size: 0.85em;
+}
+.storage-report__num {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.storage-report__share {
+  width: 30%;
+  white-space: nowrap;
+}
+.storage-report__share .storage-report__bar {
+  width: calc(100% - 3.5em);
+}
+.storage-report__percent {
+  display: inline-block;
+  width: 3em;
+  margin-left: 0.5em;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--popup-text-subtle);
+}
+.storage-report__name {
+  overflow-wrap: anywhere;
+}
+/* A phone keeps the percentage and drops the bar; the table must not scroll sideways. */
+@media (max-width: 600px) {
+  .storage-report__share {
+    width: auto;
+  }
+  .storage-report__share .storage-report__bar {
+    display: none;
+  }
+}

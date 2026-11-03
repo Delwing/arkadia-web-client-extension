@@ -1,7 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { StorageUsage, formatBytes, storageCard } from '@web/commandInput/StorageUsage.tsx';
+import { StorageUsage } from '@web/commandInput/StorageUsage.tsx';
+import { formatBytes } from '@web/storage/formatBytes.ts';
+import { storageCard } from '@web/storage/storageCard.ts';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -66,6 +68,7 @@ describe('formatBytes', () => {
         expect(formatBytes(531.74 * MB)).toBe('531,7 MB');
         expect(formatBytes(2147 * MB)).toBe('2,1 GB');
         expect(formatBytes(0)).toBe('0 MB');
+        expect(formatBytes(51 * 1024)).toBe('51 kB');
     });
 });
 
