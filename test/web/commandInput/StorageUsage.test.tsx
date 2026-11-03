@@ -57,6 +57,13 @@ describe('StorageUsage', () => {
         expect(row?.textContent).toContain('nietrwała');
     });
 
+    it('keeps its place while the figures are on their way, so the menu does not grow', async () => {
+        stubStorage({ estimate: () => new Promise(() => undefined), persisted: async () => true });
+        const row = await render();
+        expect(row?.dataset.level).toBe('loading');
+        expect(row?.querySelector('.command-menu__storage-text')?.textContent).toBe('…');
+    });
+
     it('renders nothing where the browser cannot tell', async () => {
         stubStorage(undefined);
         expect(await render()).toBeNull();

@@ -17,17 +17,23 @@ const DANGER_AT = 0.95;
  */
 export function StorageUsage({ onOpen }: { onOpen?: () => void }) {
     const [usage, setUsage] = useState<Usage | null>(null);
+    // Known at once: a browser without the API never gets the row, so the
+    // menu does not grow when the figures come in (they take a moment).
+    const [supported, setSupported] = useState(() => typeof navigator !== "undefined" && !!navigator.storage?.estimate);
     const ref = useRef<HTMLButtonElement>(null);
 
     useEffect(() => {
+        if (!supported) return;
         let cancelled = false;
         void readStorageEstimate().then((estimate) => {
-            if (!cancelled && estimate) setUsage({ used: estimate.usage, quota: estimate.quota, persisted: estimate.persisted });
+            if (cancelled) return;
+            if (estimate) setUsage({ used: estimate.usage, quota: estimate.quota, persisted: estimate.persisted });
+            else setSupported(false);
         });
         return () => {
             cancelled = true;
         };
-    }, []);
+    }, [supported]);
 
     useEffect(() => {
         if (!usage || !ref.current) return;
@@ -35,7 +41,17 @@ export function StorageUsage({ onOpen }: { onOpen?: () => void }) {
         return () => tooltip.remove();
     }, [usage]);
 
-    if (!usage) return null;
+    if (!supported) return null;
+    if (!usage) {
+        // The row as it will be, with nothing in it yet: same height, same place.
+        return (
+            <button type="button" className="command-menu__storage" data-level="loading" onClick={onOpen}>
+                <span className="command-menu__storage-label">Pamięć</span>
+                <span className="command-menu__storage-track" />
+                <span className="command-menu__storage-text">…</span>
+            </button>
+        );
+    }
 
     const share = Math.min(1, usage.used / usage.quota);
     const level = share >= DANGER_AT ? "danger" : share >= WARN_AT ? "warn" : "ok";
