@@ -91,7 +91,8 @@ export function openHost(pairCode: string, events: HostEvents): HostHandle {
             events.offline(reason);
             current.destroy();
             peer = null;
-            retry = window.setTimeout(() => void start(), RETRY_MS);
+            window.clearTimeout(retry);
+            retry = window.setTimeout(() => void start().catch(error => events.offline(String(error))), RETRY_MS);
         };
         current.on('open', () => events.ready());
         current.on('connection', conn => {
@@ -101,16 +102,23 @@ export function openHost(pairCode: string, events: HostEvents): HostHandle {
             }
             conn.on('open', () => events.connection(wrap(conn)));
         });
-        // Lost the server (not the phone): register again.
-        current.on('disconnected', () => {
-            if (!closed && peer === current && !current.destroyed) {
-                events.offline('disconnected');
-                retry = window.setTimeout(() => current.reconnect(), RETRY_MS);
-            }
-        });
+        const alive = () => !closed && peer === current && !current.destroyed;
+        // Lost the server (not the phone): register again. PeerJS also says
+        // "disconnected" from inside destroy() - before it counts as destroyed -
+        // when the server turns the id down, so look once that has settled.
+        current.on('disconnected', () => queueMicrotask(() => {
+            if (!alive()) return;
+            events.offline('disconnected');
+            window.clearTimeout(retry);
+            retry = window.setTimeout(() => {
+                if (alive() && current.disconnected) current.reconnect();
+            }, RETRY_MS);
+        }));
         current.on('error', error => {
-            // "unavailable-id": the server still holds this id from a page that just reloaded.
+            // A phone this PC never calls: not about the registration.
             if (error.type === 'peer-unavailable') return;
+            // "unavailable-id": the server still holds this id (a page that just
+            // reloaded, or another tab hosting with the same code) - try again later.
             again(error.type);
         });
     };
