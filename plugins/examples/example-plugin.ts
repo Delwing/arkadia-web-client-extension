@@ -36,18 +36,11 @@ export async function init(api: PluginApi): Promise<PluginInfo> {
   const DANGER_COLOR = api.colors.fromHex('#ff0000');
   const COMBAT_COLOR = api.colors.fromHex('#ff6347');
 
-  // Funkcja pomocnicza do kolorowania tekstu w linii
-  const colorStringInLine = (line: any, text: string, color: any) => {
-    const matchIndex = line.text.indexOf(text);
-    if (matchIndex === -1) return line;
-    return line.color([matchIndex, matchIndex + text.length], color);
-  };
-
   // Przykład 1: Podświetl słowo "skarb" na złoto
   api.triggers.register(
     /skarb/i,
     (line, matches) => {
-      return colorStringInLine(line, matches[0], GOLD_COLOR);
+      return line.select(matches).style(GOLD_COLOR).line;
     },
     tag
   );
@@ -60,7 +53,7 @@ export async function init(api: PluginApi): Promise<PluginInfo> {
       api.events.emit("sound:play", { key: "beep" });
 
       // Pokoloruj dopasowane słowo
-      return colorStringInLine(line, matches[0], DANGER_COLOR);
+      return line.select(matches).style(DANGER_COLOR).line;
     },
     tag
   );
@@ -91,7 +84,7 @@ export async function init(api: PluginApi): Promise<PluginInfo> {
     api.triggers.register(
       regex,
       (line, matches) => {
-        return colorStringInLine(line, matches[0], color);
+        return line.select(matches).style(color).line;
       },
       tag
     );
@@ -121,7 +114,7 @@ export async function init(api: PluginApi): Promise<PluginInfo> {
     (line) => {
       treasureCount++;
       api.output.print(`Znalezione skarby: ${treasureCount}`);
-      return colorStringInLine(line, "skarb", GOLD_COLOR);
+      return line.select("skarb").style(GOLD_COLOR).line;
     },
     tag
   );

@@ -107,18 +107,11 @@ export async function init(api: PluginApi): Promise<PluginInfo> {
   // Użyj wbudowanych API do kolorów
   const RED_COLOR = api.colors.fromHex('#ff0000');
 
-  // Funkcja pomocnicza do kolorowania tekstu
-  const colorStringInLine = (line: any, text: string, color: any) => {
-    const matchIndex = line.text.indexOf(text);
-    if (matchIndex === -1) return line;
-    return line.color([matchIndex, matchIndex + text.length], color);
-  };
-
   // Zarejestruj trigger
   api.triggers.register(
     /moj-wzorzec/i,
     (line, matches) => {
-      return colorStringInLine(line, matches[0], RED_COLOR);
+      return line.select(matches).style(RED_COLOR).line;
     },
     tag
   );
@@ -193,16 +186,10 @@ plugins/examples/
 ```typescript
 const RED_COLOR = api.colors.fromHex('#ff0000');
 
-const colorStringInLine = (line: any, text: string, color: any) => {
-  const matchIndex = line.text.indexOf(text);
-  if (matchIndex === -1) return line;
-  return line.color([matchIndex, matchIndex + text.length], color);
-};
-
 api.triggers.register(
   /wazne/i,
   (line, matches) => {
-    return colorStringInLine(line, matches[0], RED_COLOR);
+    return line.select(matches).style(RED_COLOR).line;
   },
   tag
 );
