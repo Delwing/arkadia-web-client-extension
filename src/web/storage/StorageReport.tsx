@@ -1,12 +1,14 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Button, Notice } from "@web-ui/primitives/index.ts";
+import { Fragment, useCallback, useEffect, useRef, useState } from "react";
+import { Button } from "@web-ui/primitives/index.ts";
 import { MODAL_EVENT } from "../modals/appModal";
 import { closeWindow } from "../modals/pageWindows";
 import { requestLogManager } from "../logSearchRequest";
 import { LOGS_DB_NAME } from "../logsDatabase";
 import { formatBytes } from "./formatBytes";
+import { PersistenceNotice } from "./PersistenceNotice";
 import {
     databaseLabel,
+    isClientDatabase,
     measureLocalStorage,
     readStorageEstimate,
     scanStorage,
@@ -23,6 +25,8 @@ interface Part {
     name: string;
     bytes: number;
     records: number;
+    /** Kept by the client, not by another app at the same address (or a plugin). */
+    own: boolean;
     /** The unit of `records`: one, two to four, five and more. */
     recordsUnit: [string, string, string];
     error?: string;
@@ -37,6 +41,7 @@ function partsOf(databases: DatabaseSize[]): Part[] {
             name: `IndexedDB · ${database.name}`,
             bytes: database.bytes,
             records: database.records,
+            own: isClientDatabase(database.name),
             recordsUnit: ["wpis", "wpisy", "wpisów"] as [string, string, string],
             error: database.error,
         })),
@@ -46,6 +51,8 @@ function partsOf(databases: DatabaseSize[]): Part[] {
             name: "localStorage",
             bytes: local.bytes,
             records: local.keys,
+            // Shared with whatever else runs at this address, but mostly the client's.
+            own: true,
             recordsUnit: ["klucz", "klucze", "kluczy"] as [string, string, string],
         },
     ].sort((a, b) => b.bytes - a.bytes);
@@ -130,6 +137,49 @@ export function StorageReport() {
         requestLogManager();
     };
 
+    // The client's own data first; then whatever else shares this address
+    // (other apps hosted under the same domain, plugins' own databases).
+    const groups = [
+        { key: "client", title: "Klient", hint: "", parts: parts?.filter((part) => part.own) ?? [] },
+        {
+            key: "other",
+            title: "Inne dane pod tym adresem",
+            hint: `Inne aplikacje z adresu ${location.host} albo wtyczki: dzielą z klientem to samo miejsce w przeglądarce.`,
+            parts: parts?.filter((part) => !part.own) ?? [],
+        },
+    ].map((group) => ({ ...group, bytes: group.parts.reduce((sum, part) => sum + part.bytes, 0) }));
+
+    const renderPart = (part: Part) => {
+        const partShare = measuredTotal > 0 ? part.bytes / measuredTotal : 0;
+        return (
+            <tr key={part.key} data-part={part.key}>
+                <td>
+                    <div className="storage-report__cell">
+                        <div className="storage-report__what">
+                            <div className="storage-report__label">{part.label}</div>
+                            <div className="storage-report__name popup-muted">
+                                {part.name} · {part.records.toLocaleString("pl-PL")} {plural(part.records, part.recordsUnit)}
+                                {part.error ? ` · nie odczytano w całości (${part.error})` : ""}
+                            </div>
+                        </div>
+                        {part.key === LOGS_DB_NAME ? (
+                            <Button size="sm" onClick={openLogManager}>
+                                Zarządzaj
+                            </Button>
+                        ) : null}
+                    </div>
+                </td>
+                <td className="storage-report__num">{part.bytes > 0 ? `~${formatBytes(part.bytes)}` : "—"}</td>
+                <td className="storage-report__share">
+                    <span className="storage-report__bar">
+                        <span style={{ width: `${Math.max(partShare * 100, 0.5)}%` }} />
+                    </span>
+                    <span className="storage-report__percent">{Math.round(partShare * 100)}%</span>
+                </td>
+            </tr>
+        );
+    };
+
     return (
         <div className="storage-report">
             {estimate ? (
@@ -154,10 +204,7 @@ export function StorageReport() {
                             Pamięć trwała: przeglądarka nie usunie tych danych, gdy zabraknie miejsca na dysku.
                         </p>
                     ) : (
-                        <Notice variant="warning">
-                            Pamięć nietrwała: przy braku miejsca na dysku przeglądarka może usunąć te dane, łącznie z
-                            logami. Pobierz ważne logi w Logi → Zarządzaj.
-                        </Notice>
+                        <PersistenceNotice onChange={() => void readStorageEstimate().then(setEstimate)} />
                     )}
                 </section>
             ) : null}
@@ -187,36 +234,25 @@ export function StorageReport() {
                         </tr>
                     </thead>
                     <tbody>
-                        {parts.map((part) => {
-                            const partShare = measuredTotal > 0 ? part.bytes / measuredTotal : 0;
-                            return (
-                                <tr key={part.key} data-part={part.key}>
-                                    <td>
-                                        <div className="storage-report__cell">
-                                            <div className="storage-report__what">
-                                                <div className="storage-report__label">{part.label}</div>
-                                                <div className="storage-report__name popup-muted">
-                                                    {part.name} · {part.records.toLocaleString("pl-PL")} {plural(part.records, part.recordsUnit)}
-                                                    {part.error ? ` · nie odczytano w całości (${part.error})` : ""}
-                                                </div>
-                                            </div>
-                                            {part.key === LOGS_DB_NAME ? (
-                                                <Button size="sm" onClick={openLogManager}>
-                                                    Zarządzaj
-                                                </Button>
-                                            ) : null}
-                                        </div>
-                                    </td>
-                                    <td className="storage-report__num">{part.bytes > 0 ? `~${formatBytes(part.bytes)}` : "—"}</td>
-                                    <td className="storage-report__share">
-                                        <span className="storage-report__bar">
-                                            <span style={{ width: `${Math.max(partShare * 100, 0.5)}%` }} />
-                                        </span>
-                                        <span className="storage-report__percent">{Math.round(partShare * 100)}%</span>
-                                    </td>
-                                </tr>
-                            );
-                        })}
+                        {groups.map((group) =>
+                            group.parts.length === 0 ? null : (
+                                <Fragment key={group.key}>
+                                    <tr className="storage-report__group" data-group={group.key}>
+                                        <td>
+                                            <div className="storage-report__group-title">{group.title}</div>
+                                            {group.hint ? <div className="storage-report__name popup-muted">{group.hint}</div> : null}
+                                        </td>
+                                        <td className="storage-report__num">~{formatBytes(group.bytes)}</td>
+                                        <td className="storage-report__share">
+                                            <span className="storage-report__percent">
+                                                {measuredTotal > 0 ? Math.round((group.bytes / measuredTotal) * 100) : 0}%
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    {group.parts.map(renderPart)}
+                                </Fragment>
+                            ),
+                        )}
                     </tbody>
                 </table>
             ) : null}

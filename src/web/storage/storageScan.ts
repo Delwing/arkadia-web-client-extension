@@ -133,6 +133,16 @@ export function scanStorage(options: {
     });
 }
 
+/**
+ * Whether a database is one the client keeps. The site's address can host
+ * other apps (every project of a github.io account shares one), and they share
+ * its storage and quota; their databases, and those of plugins, are not on
+ * this list.
+ */
+export function isClientDatabase(name: string): boolean {
+    return Object.prototype.hasOwnProperty.call(DATABASE_LABELS, name);
+}
+
 /** Names a database for a player: what it holds, in their words. */
 export function databaseLabel(name: string): string {
     return DATABASE_LABELS[name] ?? name;

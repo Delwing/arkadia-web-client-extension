@@ -5150,3 +5150,58 @@ select.popup-input.popup-input--control.is-warning {
     display: none;
   }
 }
+
+/* Not yet persistent storage: what it risks, how this browser grants it
+   (storage/PersistenceNotice.tsx). In Zarządzaj and in Pamięć przeglądarki. */
+.persistence-notice {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.persistence-notice .popup-notice__body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.persistence-notice__text {
+  margin: 0;
+}
+.persistence-notice__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+.persistence-notice__toggle {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.persistence-notice__refused {
+  font-weight: 600;
+}
+.persistence-notice__steps {
+  margin: 0;
+  padding-left: 1.4em;
+}
+.persistence-notice__steps li + li {
+  margin-top: 4px;
+}
+
+/* Klient / Inne dane pod tym adresem, heading their rows. */
+.storage-report__table tr.storage-report__group td {
+  padding-top: 14px;
+  border-bottom: 1px solid var(--popup-border-strong, var(--popup-border));
+}
+.storage-report__group-title {
+  font-weight: 600;
+  color: var(--popup-text-bright);
+}
+.storage-report__group .storage-report__share {
+  text-align: right;
+}
