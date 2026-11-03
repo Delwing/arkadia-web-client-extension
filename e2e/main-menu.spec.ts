@@ -93,6 +93,21 @@ test.describe('main menu', () => {
         await page.click('#menu-button');
         await expect(page.locator('#command-menu-filter')).toHaveValue('');
     });
+
+    test('shows how much browser storage is used and whether it is persistent', async ({ page }) => {
+        await page.goto('/');
+        await waitForCommandInput(page);
+
+        await page.click('#menu-button');
+        const storage = page.locator(`${panel} .command-menu__storage`);
+        await expect(storage).toBeVisible();
+        await expect(storage.locator('.command-menu__storage-text')).toHaveText(/^[\d,]+ (MB|GB) z [\d,]+ (MB|GB)$/);
+        await expect(storage.locator('.command-menu__storage-persist')).toHaveText(/^(trwała|nietrwała)$/);
+        // The details are in the shared hover card, not a native title.
+        await storage.hover();
+        await expect(page.locator('#hover-tooltip')).toContainText('Pamięć przeglądarki');
+        await expect(page.locator('#hover-tooltip')).toContainText(/zajęte.*%\)/);
+    });
 });
 
 test.describe('main menu on a phone', () => {

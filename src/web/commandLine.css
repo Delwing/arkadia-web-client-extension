@@ -525,6 +525,71 @@
   cursor: default;
 }
 
+/* Storage use, a slim line above the bottom bar (StorageUsage.tsx). */
+.command-menu__storage {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+  min-height: 30px;
+  /* The popover spaces its children by 0.6rem; under the row that space would
+     fall inside the strip, above the bar's border, and push the row to the
+     top of it. Taken back here, so the row is the whole strip. */
+  margin-bottom: -0.6rem;
+  padding: 0 10px;
+  line-height: 1;
+  border-top: 1px solid var(--popup-border);
+  color: var(--popup-text-dim);
+  font-size: 11.5px;
+  white-space: nowrap;
+  cursor: default;
+}
+.command-menu__storage-track {
+  flex: 1;
+  min-width: 40px;
+  max-width: 140px;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 2px;
+  background-color: var(--popup-border-strong, var(--popup-border));
+}
+.command-menu__storage-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background-color: var(--popup-success);
+}
+.command-menu__storage[data-level="warn"] .command-menu__storage-fill {
+  background-color: var(--footer-vital-warn, #d9bf62);
+}
+.command-menu__storage[data-level="danger"] .command-menu__storage-fill {
+  background-color: var(--popup-danger, #e54d2e);
+}
+.command-menu__storage[data-level="danger"] .command-menu__storage-text {
+  color: var(--popup-danger, #e54d2e);
+}
+.command-menu__storage-text {
+  font-variant-numeric: tabular-nums;
+}
+.command-menu__storage-persist {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: auto;
+}
+.command-menu__storage-persist[data-persisted="false"] {
+  color: var(--footer-vital-warn, #d9bf62);
+}
+.command-menu__panel--sheet .command-menu__storage {
+  margin-top: 6px;
+  padding: 0;
+}
+/* The sheet's bar keeps its own space above its border; under the storage
+   row that space would sit in the row's strip, so it goes. */
+.command-menu__panel--sheet .command-menu__storage + .command-menu__bar {
+  margin-top: 0;
+}
+
 /* Bottom bar: connection on the left, the session actions on the right. */
 .command-menu__bar {
   display: flex;

@@ -3636,7 +3636,9 @@ select.popup-input.popup-input--control.is-warning {
   border: 1px solid rgba(255, 255, 255, 0.35);
   border-radius: 0.4rem;
   padding: 0.35rem 0.55rem;
-  z-index: 1050;
+  /* Above the open main menu (#input-area.menu-open, 10090), whose rows can
+     have a hover card. It never takes a pointer, so it covers nothing. */
+  z-index: 10095;
   max-width: 400px;
   font-size: 0.75rem;
   color: #ddd;

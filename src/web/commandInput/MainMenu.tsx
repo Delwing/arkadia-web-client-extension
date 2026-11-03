@@ -9,6 +9,7 @@ import { usePopover } from "@web/layout/hooks/usePopover.ts";
 import { useHardwareKeyboard, useMediaQuery } from "@web-ui/hooks";
 import { splitOwnIcon } from "@web/pluginLabelIcon.ts";
 import { getConnectionView, subscribeConnectionView, type ConnectionView } from "./connectionView";
+import { StorageUsage } from "./StorageUsage";
 
 const ICONS: Record<string, ComponentType<LucideProps>> = {
   terminal: Terminal,
@@ -227,6 +228,7 @@ export default function MainMenu({ onOpenChange }: { onOpenChange?: (open: boole
               ))}
               {sections.length === 0 && <p className="command-menu__empty">Nic nie pasuje do „{query.trim()}”</p>}
             </div>
+            <StorageUsage />
             <div className="command-menu__bar">
               {!phone && (
                 <span className="command-menu__status" data-status={connection.status}>
