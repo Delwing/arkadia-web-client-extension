@@ -1,4 +1,4 @@
-import { AnsiAwareBuffer } from '../../../src/client/ansi/FormatState';
+import { AnsiAwareBuffer } from '@client/ansi/AnsiAwareBuffer.ts';
 
 describe('AnsiAwareBuffer color handling', () => {
   it('should append text with different color than initial buffer', () => {

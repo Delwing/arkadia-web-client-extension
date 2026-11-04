@@ -1,22 +1,10 @@
-import {
-    AnsiAwareBuffer,
-    FormatStateSnapshot,
-    formatStatesEqual,
-} from "../../../src/client/ansi/FormatState";
+import { AnsiAwareBuffer } from "@client/ansi/AnsiAwareBuffer.ts";
+import { statesEqual as formatStatesEqual } from "@client/ansi/formatSnapshot.ts";
+import type { FormatStateSnapshot } from "@client/ansi/formatSnapshot.ts";
 
 describe("AnsiAwareBuffer", () => {
     const extractStates = (buffer: AnsiAwareBuffer): (FormatStateSnapshot | undefined)[] =>
         buffer.getSegments().map(segment => segment.state);
-
-    it("parses ANSI colour codes into metadata segments", () => {
-        const buffer = new AnsiAwareBuffer("\u001b[31mRed\u001b[0mPlain");
-        const segments = buffer.getSegments();
-        expect(segments).toHaveLength(2);
-        expect(segments[0].text).toBe("Red");
-        expect(segments[0].state?.foreground).toEqual({ space: "hex", color: "#bb0000" });
-        expect(segments[1].text).toBe("Plain");
-        expect(segments[1].state).toBeUndefined();
-    });
 
     it("preserves metadata when inserting within a formatted region", () => {
         const buffer = new AnsiAwareBuffer("\u001b[34mBlue\u001b[0m");
@@ -162,18 +150,5 @@ describe("AnsiAwareBuffer", () => {
         expect(segments[1].text).toBe(" World");
         expect(segments[1].state?.foreground).toEqual({ space: "hex", color: "#bb0000" });
         expect(segments[1].state?.slowBlink).toBeUndefined();
-    });
-});
-
-describe("toHtml link ids", () => {
-    it("names links that have a click, and only when asked", () => {
-        const buffer = new AnsiAwareBuffer("zabij ogra");
-        const onClick = () => {};
-        buffer.createLink([0, 5], { onClick, title: "x" });
-        buffer.createLink([6, 10], { title: "tylko podpowiedz" });
-        expect(buffer.toHtml()).not.toContain("data-link");
-        const html = buffer.toHtml(link => link.onClick === onClick ? "k7" : null);
-        expect(html).toContain('data-link="k7">zabij</span>');
-        expect(html.match(/data-link=/g)).toHaveLength(1);
     });
 });

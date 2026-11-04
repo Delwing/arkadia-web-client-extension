@@ -1,4 +1,5 @@
-import { AnsiAwareBuffer, FormatStateSnapshot } from '../../../src/client/ansi/FormatState';
+import { AnsiAwareBuffer } from '@client/ansi/AnsiAwareBuffer.ts';
+import type { FormatStateSnapshot } from '@client/ansi/formatSnapshot.ts';
 
 const GOLD: FormatStateSnapshot = { foreground: { space: 'hex', color: '#ffd700' } };
 const RED_BG: FormatStateSnapshot = { background: { space: 'hex', color: '#330000' } };
