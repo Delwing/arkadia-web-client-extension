@@ -19,7 +19,7 @@ vi.mock('@modules/firebase/firebaseSyncListener', () => ({
     },
 }));
 
-vi.mock('@web/options/exportUtils', () => ({
+vi.mock('@web/options/export/index.ts', () => ({
     collectCharacters: vi.fn(() => ['Alice']),
     exportCategories: vi.fn(),
     importCategories: vi.fn(() => Promise.resolve({ success: true, errors: {} })),
@@ -31,7 +31,7 @@ import { syncEngine } from '@modules/firebase/syncEngine';
 import { planSync, downloadCategories, recordCategorySyncState, uploadCategories } from '@modules/firebase/firebaseUnifiedSync';
 import { syncListener } from '@modules/firebase/firebaseSyncListener';
 import { SYNC_CATEGORIES } from '@modules/firebase/categoryRegistry';
-import { exportCategories, importCategories, mergePerCharacterEnvelopes } from '@web/options/exportUtils';
+import { exportCategories, importCategories, mergePerCharacterEnvelopes } from '@web/options/export/index.ts';
 import { saveFirebaseSettings, FIREBASE_SETTINGS_KEY } from '@modules/firebase/firebaseTypes';
 import { globalStorage } from '@modules/core/storage';
 import eventBus from '@modules/core/eventBus';

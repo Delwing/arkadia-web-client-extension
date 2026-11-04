@@ -17,12 +17,9 @@ import { calculateChecksum } from '@modules/firebase/firebaseCrypto';
 import { downloadCategories, markSyncV2Started } from '@modules/firebase/firebaseUnifiedSync';
 import { getCategoryDefinition, SYNC_CATEGORIES, type SyncCategory } from '@modules/firebase/categoryRegistry';
 import { loadFirebaseSettings } from '@modules/firebase/firebaseTypes';
-import {
-    collectCharacters,
-    exportCategories,
-    importCategories,
-    mergePerCharacterEnvelopes,
-} from '@web/options/exportUtils';
+import { collectCharacters } from '@web/options/export/characterKeys.ts';
+import { exportCategories, importCategories } from '@web/options/export/categories.ts';
+import { mergePerCharacterEnvelopes } from '@web/options/export/mergeEnvelopes.ts';
 import { savePreSyncBackup } from './preSyncBackup';
 
 /** The v1 category each v2 type's data used to sync in. Types not listed never synced in v1. */

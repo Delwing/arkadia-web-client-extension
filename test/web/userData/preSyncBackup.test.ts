@@ -1,5 +1,5 @@
 const buildBackup = vi.fn();
-vi.mock('@web/options/exportUtils', () => ({ buildBackup: () => buildBackup() }));
+vi.mock('@web/options/export/backup.ts', () => ({ buildBackup: () => buildBackup() }));
 
 import { loadPreSyncBackup, PRE_SYNC_BACKUP_SAVED_EVENT, savePreSyncBackup } from '@web/userData/preSyncBackup';
 

@@ -3,7 +3,7 @@ import { mergeImportedKills, type KillMergeMode } from "@client/scripts/killLife
 import { characterStorage } from "@modules/core/storage";
 import type { KillDbEntry, KillDbResult } from "@modules/data/killDbImport.shared";
 import { Check, Field, Select } from "@web-ui/primitives/index.ts";
-import { collectCharacters } from "@web/options/exportUtils.ts";
+import { collectCharacters } from "@web/options/export/characterKeys.ts";
 import { parseInWorker } from "./parseInWorker";
 import { ImportActions, ImportRow, type ImportResult } from "./ImportRow";
 import { localCharacter } from "./localCharacter";

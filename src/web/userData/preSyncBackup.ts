@@ -5,7 +5,7 @@
  * page. Kept until v1 is removed. See docs/dev/SYNC_V2_PLAN.md, section 11.
  */
 
-import { buildBackup, type BackupPayload } from '@web/options/exportUtils';
+import { buildBackup, type BackupPayload } from '@web/options/export/backup.ts';
 
 const DB_NAME = 'ArkadiaPreSyncV2Backup';
 const STORE = 'backup';

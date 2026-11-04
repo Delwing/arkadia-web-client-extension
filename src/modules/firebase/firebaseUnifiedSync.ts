@@ -1025,7 +1025,7 @@ async function applyGroupDeviceCategories(passphrase?: string): Promise<boolean>
     const { data } = await downloadCategories(deviceCategories, passphrase);
     if (Object.keys(data).length === 0) return false;
 
-    const { importCategories } = await import('@web/options/exportUtils');
+    const { importCategories } = await import('@web/options/export/index.ts');
     await importCategories(data);
     return true;
 }
@@ -1286,7 +1286,7 @@ export async function copySettingsFromCloudDevice(
             return { success: false, error: 'Nie znaleziono ustawień dla tego urządzenia.' };
         }
 
-        const { importCategories } = await import('@web/options/exportUtils');
+        const { importCategories } = await import('@web/options/export/index.ts');
         await importCategories(data);
 
         return { success: true };

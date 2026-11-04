@@ -3,7 +3,7 @@ import { mergeImportedDeposits, type DepositMergeMode } from "@client/scripts/de
 import { characterStorage } from "@modules/core/storage";
 import type { DepositDbEntry, DepositDbResult } from "@modules/data/depositDbImport.shared";
 import { Check, Field, Select } from "@web-ui/primitives/index.ts";
-import { collectCharacters } from "@web/options/exportUtils.ts";
+import { collectCharacters } from "@web/options/export/characterKeys.ts";
 import { parseInWorker } from "./parseInWorker";
 import { ImportActions, ImportRow, type ImportResult } from "./ImportRow";
 import { localCharacter } from "./localCharacter";
