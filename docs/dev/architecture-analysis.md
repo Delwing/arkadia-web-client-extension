@@ -20,6 +20,7 @@
 | Tier 2 #1/#2 — `BaseCounter` + table helpers | **Partly done** — used by `kill`, `improveCounter`, `deliveryStats`, `deposits`, `prettyContainers`; `herbCounter`, `whoCount`, `przybywajaCount` still hand-roll theirs. |
 | `PluginApi.ts` — 5,510 lines | **Done** (2026-10-31). `src/client/PluginApi/`: 30 files, one per domain (types + a `create*Api(ctx)` factory that owns its registrations and cleanup), largest `map.ts` (~620). `PluginApiImpl` is a ~150-line assembler. The plugin types are now generated entirely from source (#1433). |
 | `scripts/knowledge.ts` — 2,835 lines | **Done** (2026-10-31). `src/client/scripts/knowledge/`: one file per feature (`libraries`, `books`, `entries`, `detailsRun` for `/wiedza_buduj`, `levels`, `hints`) sharing a `KnowledgeContext`, over pure `parsing` / `progress` / `reports`; largest `libraries.ts` (~440). The two near-identical details-report builders became one. |
+| `options/exportUtils.ts` — 1,246 lines | **Done** (2026-11-04). `src/web/options/export/`: one handler per hand-written category in `categories/` (`uiSettings`, `characterSettings`, `buttons` + `radial`, `killCounts`, `knowledge`, `visitedRooms`, `recordings`, `locationNotes`, `multibinds`), dispatched from a table in `categories.ts` instead of two parallel switches; `backup` (v2 file), `legacyBackup` (v1 restore), `importValidator`, `characterKeys`, `storageKeys` (generic registry keys), `storageChanges` (tracked writes + listener notification), `mergeEnvelopes`. Largest `legacyBackup.ts` (~140). Factored out: the listener notification and the profession CRDT merge (each written out 2–3 times), the two IndexedDB openers, the `mobileButtonSettings` read-merge. `exportUtils.ts` is a 5-line shim until `FirebaseTab.tsx` imports from `export/` directly. Tests mirror it under `test/web/options/export/`. |
 
 ## The shape of the problem
 
@@ -50,7 +51,7 @@ Line counts as of 2026-10-31; the "was" column is the 2026-07-27 reading.
 | `src/shared/map/MapHelper.ts` | 1,874 (911) | position tracking + trip planner + directions + rendering + GMCP | extract managers — **and move out of `@shared`** (see Tier 4) |
 | `src/client/ansi/FormatState.ts` | 1,483 (1,329) | color types + format state machine + `AnsiAwareBuffer` + ANSI parsing + hyperlinks | `colors`, `FormatState`, `AnsiAwareBuffer`, `AnsiParser` |
 | `src/modules/firebase/firebaseUnifiedSync.ts` | 1,376 (1,328) | document I/O + category sync + device registry + sync groups + conflict resolution | Mostly the v1 single-document sync — most of it goes when v1 is removed (`docs/dev/SYNC_V2_PLAN.md`, stage 5b); the device registry stays |
-| `src/web/options/exportUtils.ts` | 1,246 (1,275) | export builder + recordings + visited-rooms + knowledge + validation | one file per exportable domain + `importValidator` |
+| ~~`src/web/options/exportUtils.ts`~~ | 5 (1,246) | — | **Done** (2026-11-04), see Progress |
 | `src/web/ObjectList.ts` | 1,197 (1,080) | view-mode renderers + event handlers + Picture-in-Picture sync + filters | `ObjectListCardRenderer`, `ObjectListEventHandlers`, `PictureInPictureSync` |
 | `src/web/options/FirebaseTab.tsx` | 1,091 (1,042) | auth + sync + metadata + persistence + UI | `useFirebaseAuth`, `useFirebaseSync`, split UI |
 
