@@ -20,6 +20,7 @@
 | Tier 2 #1/#2 — `BaseCounter` + table helpers | **Partly done** — used by `kill`, `improveCounter`, `deliveryStats`, `deposits`, `prettyContainers`; `herbCounter`, `whoCount`, `przybywajaCount` still hand-roll theirs. |
 | `PluginApi.ts` — 5,510 lines | **Done** (2026-10-31). `src/client/PluginApi/`: 30 files, one per domain (types + a `create*Api(ctx)` factory that owns its registrations and cleanup), largest `map.ts` (~620). `PluginApiImpl` is a ~150-line assembler. The plugin types are now generated entirely from source (#1433). |
 | `scripts/knowledge.ts` — 2,835 lines | **Done** (2026-10-31). `src/client/scripts/knowledge/`: one file per feature (`libraries`, `books`, `entries`, `detailsRun` for `/wiedza_buduj`, `levels`, `hints`) sharing a `KnowledgeContext`, over pure `parsing` / `progress` / `reports`; largest `libraries.ts` (~440). The two near-identical details-report builders became one. |
+| `options/FirebaseTab.tsx` — 1,091 lines | **Done** (2026-11-04). `src/web/options/firebase/`: hooks `useFirebaseInit`, `useFirebaseAuth` (auth state + sign-in form), `useFirebaseSync` (settings, passphrase, toasts, manual actions) and one component per section (`AuthForm`, `AccountBar`, `EncryptionSection`, `AutoSyncSection`, `LocationHandoffSection`, `CloudDeleteSection`, `SyncButtons`…); `FirebaseTab.tsx` is a ~110-line composer, largest file `useFirebaseSync.ts` (~210). Everything sync v1 (engine events, cloud metadata, conflict dialog, v1 actions, the disable-encryption flow) is in `firebase/v1/`, to delete in stage 5b of `SYNC_V2_PLAN.md`. |
 
 ## The shape of the problem
 
@@ -52,7 +53,7 @@ Line counts as of 2026-10-31; the "was" column is the 2026-07-27 reading.
 | `src/modules/firebase/firebaseUnifiedSync.ts` | 1,376 (1,328) | document I/O + category sync + device registry + sync groups + conflict resolution | Mostly the v1 single-document sync — most of it goes when v1 is removed (`docs/dev/SYNC_V2_PLAN.md`, stage 5b); the device registry stays |
 | `src/web/options/exportUtils.ts` | 1,246 (1,275) | export builder + recordings + visited-rooms + knowledge + validation | one file per exportable domain + `importValidator` |
 | `src/web/ObjectList.ts` | 1,197 (1,080) | view-mode renderers + event handlers + Picture-in-Picture sync + filters | `ObjectListCardRenderer`, `ObjectListEventHandlers`, `PictureInPictureSync` |
-| `src/web/options/FirebaseTab.tsx` | 1,091 (1,042) | auth + sync + metadata + persistence + UI | `useFirebaseAuth`, `useFirebaseSync`, split UI |
+| ~~`src/web/options/FirebaseTab.tsx`~~ | 107 (1,091) | **Done** (2026-11-04) — now `src/web/options/firebase/` | see the progress table |
 
 **Highest leverage:** `MapHelper.ts` — the largest file left, and the move out of `@shared` comes with it.
 
