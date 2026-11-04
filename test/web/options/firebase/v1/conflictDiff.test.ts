@@ -2,7 +2,7 @@ import {
     diffLines,
     expandJsonForDisplay,
     summarizeDiff,
-} from '@web/options/conflictDiff';
+} from '@web/options/firebase/v1/conflictDiff.ts';
 
 describe('expandJsonForDisplay', () => {
     it('pretty-prints JSON with sorted keys', () => {

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import LocalExportTab from "./LocalExportTab";
 import GoogleDriveTab from "./GoogleDriveTab";
-import FirebaseTab from "./FirebaseTab";
+import FirebaseTab from "./firebase/FirebaseTab";
 import DeviceManagementTab from "./DeviceManagementTab";
 
 type Tab = 'local' | 'google-drive' | 'firebase' | 'devices';

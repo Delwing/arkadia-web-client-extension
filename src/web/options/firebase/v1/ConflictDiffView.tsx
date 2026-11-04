@@ -3,7 +3,7 @@ import { Button } from "@web-ui/primitives/index.ts";
 import type { CategoryConflictInfo } from "@modules/firebase";
 import { decrypt, isEncryptedData } from "@modules/firebase";
 import { syncEngine } from "@modules/firebase";
-import { collectCharacters, exportCategory } from "./exportUtils";
+import { collectCharacters, exportCategory } from "@web/options/exportUtils.ts";
 import {
     diffLines,
     expandJsonForDisplay,
