@@ -20,6 +20,7 @@
 | Tier 2 #1/#2 — `BaseCounter` + table helpers | **Partly done** — used by `kill`, `improveCounter`, `deliveryStats`, `deposits`, `prettyContainers`; `herbCounter`, `whoCount`, `przybywajaCount` still hand-roll theirs. |
 | `PluginApi.ts` — 5,510 lines | **Done** (2026-10-31). `src/client/PluginApi/`: 30 files, one per domain (types + a `create*Api(ctx)` factory that owns its registrations and cleanup), largest `map.ts` (~620). `PluginApiImpl` is a ~150-line assembler. The plugin types are now generated entirely from source (#1433). |
 | `scripts/knowledge.ts` — 2,835 lines | **Done** (2026-10-31). `src/client/scripts/knowledge/`: one file per feature (`libraries`, `books`, `entries`, `detailsRun` for `/wiedza_buduj`, `levels`, `hints`) sharing a `KnowledgeContext`, over pure `parsing` / `progress` / `reports`; largest `libraries.ts` (~440). The two near-identical details-report builders became one. |
+| `ansi/FormatState.ts` — 2,083 lines | **Done** (2026-11-04). `src/client/ansi/`: `colors` (colour types, `#rrggbb`, the Mudlet palette), `formatSnapshot` (a segment's formatting: clone / compare / overlay; links are just a field of it, not a job of their own), `AnsiParser` (the SGR state machine, escapes → segments), `renderSegments` (segments → HTML / DOM), `TextSelection`, and `AnsiAwareBuffer` (~1,250 — still the largest, but it is one plugin-facing class: its methods are the API). `FormatState.ts` is an 18-line re-export shim for the ~200 importers; the plugin types generate unchanged. |
 
 ## The shape of the problem
 
@@ -48,7 +49,6 @@ Line counts as of 2026-10-31; the "was" column is the 2026-07-27 reading.
 | File | Lines (was) | Distinct jobs crammed in | Split into |
 |---|---|---|---|
 | `src/shared/map/MapHelper.ts` | 1,874 (911) | position tracking + trip planner + directions + rendering + GMCP | extract managers — **and move out of `@shared`** (see Tier 4) |
-| `src/client/ansi/FormatState.ts` | 1,483 (1,329) | color types + format state machine + `AnsiAwareBuffer` + ANSI parsing + hyperlinks | `colors`, `FormatState`, `AnsiAwareBuffer`, `AnsiParser` |
 | `src/modules/firebase/firebaseUnifiedSync.ts` | 1,376 (1,328) | document I/O + category sync + device registry + sync groups + conflict resolution | Mostly the v1 single-document sync — most of it goes when v1 is removed (`docs/dev/SYNC_V2_PLAN.md`, stage 5b); the device registry stays |
 | `src/web/options/exportUtils.ts` | 1,246 (1,275) | export builder + recordings + visited-rooms + knowledge + validation | one file per exportable domain + `importValidator` |
 | `src/web/ObjectList.ts` | 1,197 (1,080) | view-mode renderers + event handlers + Picture-in-Picture sync + filters | `ObjectListCardRenderer`, `ObjectListEventHandlers`, `PictureInPictureSync` |
