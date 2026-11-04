@@ -20,6 +20,7 @@
 | Tier 2 #1/#2 — `BaseCounter` + table helpers | **Partly done** — used by `kill`, `improveCounter`, `deliveryStats`, `deposits`, `prettyContainers`; `herbCounter`, `whoCount`, `przybywajaCount` still hand-roll theirs. |
 | `PluginApi.ts` — 5,510 lines | **Done** (2026-10-31). `src/client/PluginApi/`: 30 files, one per domain (types + a `create*Api(ctx)` factory that owns its registrations and cleanup), largest `map.ts` (~620). `PluginApiImpl` is a ~150-line assembler. The plugin types are now generated entirely from source (#1433). |
 | `scripts/knowledge.ts` — 2,835 lines | **Done** (2026-10-31). `src/client/scripts/knowledge/`: one file per feature (`libraries`, `books`, `entries`, `detailsRun` for `/wiedza_buduj`, `levels`, `hints`) sharing a `KnowledgeContext`, over pure `parsing` / `progress` / `reports`; largest `libraries.ts` (~440). The two near-identical details-report builders became one. |
+| `src/shared/map/MapHelper.ts` — 1,893 lines | **Done** (2026-11-04). Moved to `src/client/map/` and split by responsibility: `MapDataStore` (reader, pathfinder, lookups) + `liveEdits` (`syncAreas`/`applyRoomChanges`), `PositionTracker` (current room, moves, GMCP fixes) with `PositionLoss` and `MoveJournal`, `exitResolution` (pure direction/exit logic), `LeadPlanner` (/prowadz, /prowadzt, trip planner), `MapDrawData` (path/highlight/label events), `RoomBinds`, `mapEvents` (client-event wiring). `MapHelper` stays as the facade `client.Map` (~450 lines, all delegation); largest part `PositionTracker` (~390). The route planners (`transportPathFinder`, `carriagePathFinder`, `roomDistances`) moved with it; the UI-neutral `directions`, `exitCommands` and `dataLoader` stay in `@shared/map`. No DOM was involved: "rendering" was only the draw-data events. Plugin types unchanged. |
 
 ## The shape of the problem
 
@@ -47,14 +48,14 @@ Line counts as of 2026-10-31; the "was" column is the 2026-07-27 reading.
 
 | File | Lines (was) | Distinct jobs crammed in | Split into |
 |---|---|---|---|
-| `src/shared/map/MapHelper.ts` | 1,874 (911) | position tracking + trip planner + directions + rendering + GMCP | extract managers — **and move out of `@shared`** (see Tier 4) |
+| ~~`src/shared/map/MapHelper.ts`~~ | ~~1,874 (911)~~ | position tracking + trip planner + directions + rendering + GMCP | **Done** (2026-11-04) — split into `src/client/map/` behind a thin `MapHelper` facade; see the progress table |
 | `src/client/ansi/FormatState.ts` | 1,483 (1,329) | color types + format state machine + `AnsiAwareBuffer` + ANSI parsing + hyperlinks | `colors`, `FormatState`, `AnsiAwareBuffer`, `AnsiParser` |
 | `src/modules/firebase/firebaseUnifiedSync.ts` | 1,376 (1,328) | document I/O + category sync + device registry + sync groups + conflict resolution | Mostly the v1 single-document sync — most of it goes when v1 is removed (`docs/dev/SYNC_V2_PLAN.md`, stage 5b); the device registry stays |
 | `src/web/options/exportUtils.ts` | 1,246 (1,275) | export builder + recordings + visited-rooms + knowledge + validation | one file per exportable domain + `importValidator` |
 | `src/web/ObjectList.ts` | 1,197 (1,080) | view-mode renderers + event handlers + Picture-in-Picture sync + filters | `ObjectListCardRenderer`, `ObjectListEventHandlers`, `PictureInPictureSync` |
 | `src/web/options/FirebaseTab.tsx` | 1,091 (1,042) | auth + sync + metadata + persistence + UI | `useFirebaseAuth`, `useFirebaseSync`, split UI |
 
-**Highest leverage:** `MapHelper.ts` — the largest file left, and the move out of `@shared` comes with it.
+**Highest leverage:** `MapHelper.ts` — the largest file left, and the move out of `@shared` comes with it. *(Done 2026-11-04.)*
 
 ---
 
@@ -131,9 +132,13 @@ Co-locating related files is what makes the Tier-2 duplication visible and fixab
     `FishingStatePayload`…), creating a **reverse dependency** `@shared → @client`
     (8 files in `src/shared` import `@client`). The client events should live in
     `@client/events`.
-  - `MapHelper.ts` depends on `characterStorage` and `@client` types, and
-    `shared/dom` (`outputText`, `outputMessageHandler`) imports `@client/ansi`. They
-    aren't reusable by a non-web client — they belong in `@client` (or the DOM parts
+  - ~~`MapHelper.ts` depends on `characterStorage` and `@client` types~~ — **done**
+    (2026-11-04): it and the route planners live in `src/client/map/`; `@shared/map`
+    keeps only UI-neutral helpers (`directions`, `exitCommands`, `dataLoader`) and no
+    longer imports `@client`. `shared/events/clientEvents.ts` still type-imports
+    `MapLostReason` and `RouteSegment` from there, as part of the client-events leak above.
+  - `shared/dom` (`outputText`, `outputMessageHandler`) imports `@client/ansi`. It
+    isn't reusable by a non-web client — it belongs in `@client` (or the DOM parts
     in `@web`).
 - **Storage-key naming** — `characterStorageKeys` in `storageSchema.ts` lists the keys,
   but code still uses literal strings (`"herb_counts"` in `herbCounter`, `inventory`,
