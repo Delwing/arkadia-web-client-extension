@@ -1,4 +1,4 @@
-import MapHelper from '@shared/map/MapHelper';
+import MapHelper from '@client/map/MapHelper.ts';
 
 vi.mock('mudlet-map-renderer', () => ({ MapReader: function () {} }));
 
@@ -41,11 +41,11 @@ describe('MapHelper followMove during idz marszem', () => {
   function newMap() {
     const client = makeClient();
     const map = new MapHelper(client);
-    (map as any).mapReader = {
+    map.data.reader = <any>{
       getRoom: (id: number) => rooms[id],
       getArea: () => null,
     };
-    (map as any).hashes = {
+    map.data.hashes = {
       '69:11:0:Stirland': 6777,
       '71:11:0:Stirland': 6776,
       '73:11:0:Stirland': 6775,

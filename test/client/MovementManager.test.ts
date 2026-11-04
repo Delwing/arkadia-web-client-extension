@@ -48,7 +48,7 @@ import { isDirection } from '@shared/map/directions';
 const moveFn = jest.fn((dir: string) => ({ direction: dir, moved: isDirection(dir), suppress: false }));
 const resolveFn = jest.fn((dir: string) => dir);
 
-vi.mock('@shared/map/MapHelper', () => {
+vi.mock('@client/map/MapHelper.ts', () => {
   return {
     __esModule: true,
     default: jest.fn(function () {

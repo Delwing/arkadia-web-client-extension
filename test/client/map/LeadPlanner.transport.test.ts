@@ -1,4 +1,4 @@
-import MapHelper from '@shared/map/MapHelper';
+import MapHelper from '@client/map/MapHelper.ts';
 
 function makeClient() {
   const events: Array<{ type: string; payload: any }> = [];
@@ -41,12 +41,12 @@ function newMap(options: { blocked?: Set<number> | null; walkingPath?: number[] 
     carriageBlocks: () => options.blocked ?? null,
     transportDefs: () => ferry as any,
   });
-  (map as any).mapReader = {
+  map.data.reader = <any>{
     getRoom: (id: number) => rooms[id],
     getRooms: () => Object.values(rooms),
     getArea: () => null,
   };
-  (map as any).pathFinder = { findPath: () => options.walkingPath ?? null };
+  map.data.pathFinder = <any>{ findPath: () => options.walkingPath ?? null };
   map.currentRoom = rooms[1];
   return { map, client };
 }
@@ -198,13 +198,13 @@ describe('MapHelper switching lead mode', () => {
     map.leadTo(3);
 
     client.sendEvent('switchLeadMode', { transport: true, aggressive: true });
-    expect((map as any).leadTarget).toBe(3);
-    expect((map as any).leadOptions).toEqual({ transport: true, aggressive: true });
+    expect(map.lead.leadTarget).toBe(3);
+    expect(map.lead.leadOptions).toEqual({ transport: true, aggressive: true });
     expect(map.destinations).toEqual([3]);
 
     client.sendEvent('switchLeadMode', { transport: false });
-    expect((map as any).leadOptions).toEqual({});
-    expect((map as any)._transportRoute).toBeNull();
+    expect(map.lead.leadOptions).toEqual({});
+    expect(map.lead.transportRoute).toBeNull();
     expect(map.destinations).toEqual([3]);
   });
 

@@ -74,7 +74,7 @@ vi.mock('@client/scripts/functionalBind', () => ({
   LINE_START_EVENT: 'line-start',
 }));
 
-vi.mock('@shared/map/MapHelper', () => {
+vi.mock('@client/map/MapHelper.ts', () => {
   return {
     __esModule: true,
     default: jest.fn(function () {

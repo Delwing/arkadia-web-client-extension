@@ -1,6 +1,6 @@
 import Client from "../Client";
 import {AnsiAwareBuffer} from "@client/ansi/FormatState.ts";
-import MapHelper from "@shared/map/MapHelper";
+import MapHelper from "@client/map/MapHelper.ts";
 import {getBehaviorSettings} from "@modules/core/settings";
 import {createGateEntryTracker, getGateBindString} from "./gateBind";
 

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { MapLostReason } from "@shared/map/MapHelper.ts";
+import type {MapLostReason} from "@client/map/types.ts";
 import eventBus from "@modules/core/eventBus";
 import { useClientEvent } from "../../hooks";
 

@@ -1,4 +1,4 @@
-import MapHelper from '@shared/map/MapHelper';
+import MapHelper from '@client/map/MapHelper.ts';
 
 vi.mock('mudlet-map-renderer', () => ({ MapReader: function () {} }));
 
@@ -36,9 +36,9 @@ describe('MapHelper lost position', () => {
   function newMap() {
     const client = makeClient();
     const map = new MapHelper(client);
-    (map as any).mapReader = { getRoom: (id: number) => rooms[id], getArea: () => null };
-    (map as any).mapReady = true;
-    (map as any).hashes = { '0:0:0:Stirland': 1, '2:0:0:Stirland': 2 };
+    map.data.reader = <any>{ getRoom: (id: number) => rooms[id], getArea: () => null };
+    map.data.ready = true;
+    map.data.hashes = { '0:0:0:Stirland': 1, '2:0:0:Stirland': 2 };
     map.currentRoom = rooms[1];
     // A fresh helper is waiting for its first fix; the tests that care about a
     // follow start from a mapper that believes it knows where it is.

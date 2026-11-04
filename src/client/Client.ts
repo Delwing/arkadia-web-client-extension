@@ -1,5 +1,5 @@
 import Triggers from "./Triggers";
-import MapHelper from "@shared/map/MapHelper";
+import MapHelper from "@client/map/MapHelper.ts";
 import {getBlockedRooms} from "@modules/data/carriageBlocks";
 import {getTransportDefs} from "./scripts/transports/definitions";
 import {Colors, setXtermPalette} from "@modules/core/Colors";

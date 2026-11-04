@@ -1,4 +1,4 @@
-import MapHelper from '@shared/map/MapHelper';
+import MapHelper from '@client/map/MapHelper.ts';
 
 // The suite's renderer mock supplies MapGraph; PathFinder there returns [] from findPath, which
 // stands in for the ordinary pathfinder that knows nothing about blockades.
@@ -33,8 +33,8 @@ const rooms: Record<number, any> = {
 function newMap(blocked: Set<number>) {
   const client = makeClient();
   const map = new MapHelper(client as any, { carriageBlocks: () => blocked });
-  (map as any).mapReader = { getRoom: (id: number) => rooms[id], getRooms: () => Object.values(rooms), getArea: () => null };
-  (map as any).pathFinder = { findPath: () => [1, 2, 3] };
+  map.data.reader = <any>{ getRoom: (id: number) => rooms[id], getRooms: () => Object.values(rooms), getArea: () => null };
+  map.data.pathFinder = <any>{ findPath: () => [1, 2, 3] };
   map.currentRoom = rooms[1];
   return { map, client };
 }
@@ -75,8 +75,8 @@ describe('MapHelper leading by carriage', () => {
     const blocked = new Set([2]);
     let driving = false;
     const map = new MapHelper(client as any, { carriageBlocks: () => (driving ? blocked : null) });
-    (map as any).mapReader = { getRoom: (id: number) => rooms[id], getRooms: () => Object.values(rooms), getArea: () => null };
-    (map as any).pathFinder = { findPath: () => [1, 2, 3] };
+    map.data.reader = <any>{ getRoom: (id: number) => rooms[id], getRooms: () => Object.values(rooms), getArea: () => null };
+    map.data.pathFinder = <any>{ findPath: () => [1, 2, 3] };
     map.currentRoom = rooms[1];
 
     map.leadTo(3);
@@ -95,8 +95,8 @@ describe('MapHelper leading by carriage', () => {
     const client = makeClient();
     const blocked = new Set<number>();
     const map = new MapHelper(client as any, { carriageBlocks: () => blocked });
-    (map as any).mapReader = { getRoom: (id: number) => rooms[id], getRooms: () => Object.values(rooms), getArea: () => null };
-    (map as any).pathFinder = { findPath: () => [1, 2, 3] };
+    map.data.reader = <any>{ getRoom: (id: number) => rooms[id], getRooms: () => Object.values(rooms), getArea: () => null };
+    map.data.pathFinder = <any>{ findPath: () => [1, 2, 3] };
     map.currentRoom = rooms[1];
 
     map.leadTo(3);
@@ -151,8 +151,8 @@ describe('MapHelper leading by carriage', () => {
     const blocked = new Set([3]);
     let driving = true;
     const map = new MapHelper(client as any, { carriageBlocks: () => (driving ? blocked : null) });
-    (map as any).mapReader = { getRoom: (id: number) => rooms[id], getRooms: () => Object.values(rooms), getArea: () => null };
-    (map as any).pathFinder = { findPath: () => [1, 2, 3] };
+    map.data.reader = <any>{ getRoom: (id: number) => rooms[id], getRooms: () => Object.values(rooms), getArea: () => null };
+    map.data.pathFinder = <any>{ findPath: () => [1, 2, 3] };
     map.currentRoom = rooms[1];
 
     map.leadTo(3);
@@ -191,8 +191,8 @@ describe('MapHelper leading by carriage', () => {
   test('leaves ordinary walking alone', () => {
     const client = makeClient();
     const map = new MapHelper(client as any, { carriageBlocks: () => null });
-    (map as any).mapReader = { getRoom: (id: number) => rooms[id], getRooms: () => Object.values(rooms), getArea: () => null };
-    (map as any).pathFinder = { findPath: () => [1, 2, 3] };
+    map.data.reader = <any>{ getRoom: (id: number) => rooms[id], getRooms: () => Object.values(rooms), getArea: () => null };
+    map.data.pathFinder = <any>{ findPath: () => [1, 2, 3] };
     map.currentRoom = rooms[1];
 
     map.leadTo(3);

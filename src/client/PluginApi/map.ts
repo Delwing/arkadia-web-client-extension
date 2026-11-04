@@ -1,5 +1,5 @@
 import type * as MapRenderer from "mudlet-map-renderer";
-import type { ApplyChangesOptions, MapAreaData, RoomChange } from "@shared/map/MapHelper.ts";
+import type {ApplyChangesOptions, MapAreaData, RoomChange} from "@client/map/types.ts";
 import { registerRoomMenuEntry, unregisterRoomMenuEntry, updateRoomMenuEntry } from "@modules/core/pluginUiRegistry";
 import { getMapOverlays, registerMapOverlay, unregisterMapOverlay } from "@modules/core/mapOverlayRegistry";
 import { PluginMapOverlay } from "@client/pluginMapOverlay";

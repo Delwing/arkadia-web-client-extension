@@ -1,6 +1,6 @@
 import { describe, expect, test, vi } from 'vitest';
 import type { Edge } from 'mudlet-map-renderer';
-import { roomDistances } from '@shared/map/roomDistances.ts';
+import { roomDistances } from '@client/map/roomDistances.ts';
 import mapData from '../../../e2e/support/mock-data/map-data.json';
 
 function graph(edges: Array<[number, number, number?]>): Map<number, Edge[]> {
