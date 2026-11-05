@@ -1,5 +1,5 @@
 import Triggers from '@client/Triggers';
-import { AnsiAwareBuffer } from '@client/ansi/FormatState';
+import { AnsiAwareBuffer } from '@client/ansi/AnsiAwareBuffer.ts';
 import { matchGroupRange } from '@client/ansi/style';
 
 const fgOf = (line: AnsiAwareBuffer, text: string) =>
