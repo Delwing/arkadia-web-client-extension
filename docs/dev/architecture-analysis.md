@@ -5,11 +5,11 @@
 > line-by-line), so exact line numbers may drift. Treat as a map, not a spec.
 >
 > **Originally written 2026-05-30, re-verified 2026-07-27 and again against master on
-> 2026-10-31.** Re-measure before citing a number.
+> 2026-10-31; the Tier 1 splits landed 2026-11-05.** Re-measure before citing a number.
 
 ## Progress since the original review
 
-| Original finding | Status on 2026-10-31 |
+| Original finding | Status |
 |---|---|
 | `uiSettings.ts` — 1,914 lines, 6 jobs | **Done.** Split into `uiSettingsCore.ts` + `uiSettings/UiSettings.tsx` + `defaultUiSettings.ts`; the old path is a 6-line re-export shim. |
 | `LogBrowser.tsx` — 1,816 lines | **Done.** 252 lines; the viewer lives in `src/ui/logViewer/` (largest file `LogViewer.tsx`, ~1,000) and `views/log-viewer/`. |
@@ -20,6 +20,11 @@
 | Tier 2 #1/#2 — `BaseCounter` + table helpers | **Partly done** — used by `kill`, `improveCounter`, `deliveryStats`, `deposits`, `prettyContainers`; `herbCounter`, `whoCount`, `przybywajaCount` still hand-roll theirs. |
 | `PluginApi.ts` — 5,510 lines | **Done** (2026-10-31). `src/client/PluginApi/`: 30 files, one per domain (types + a `create*Api(ctx)` factory that owns its registrations and cleanup), largest `map.ts` (~620). `PluginApiImpl` is a ~150-line assembler. The plugin types are now generated entirely from source (#1433). |
 | `scripts/knowledge.ts` — 2,835 lines | **Done** (2026-10-31). `src/client/scripts/knowledge/`: one file per feature (`libraries`, `books`, `entries`, `detailsRun` for `/wiedza_buduj`, `levels`, `hints`) sharing a `KnowledgeContext`, over pure `parsing` / `progress` / `reports`; largest `libraries.ts` (~440). The two near-identical details-report builders became one. |
+| `src/shared/map/MapHelper.ts` — 1,893 lines | **Done** (2026-11-04). Moved to `src/client/map/` and split by responsibility: `MapDataStore` (reader, pathfinder, lookups) + `liveEdits` (`syncAreas`/`applyRoomChanges`), `PositionTracker` (current room, moves, GMCP fixes) with `PositionLoss` and `MoveJournal`, `exitResolution` (pure direction/exit logic), `LeadPlanner` (/prowadz, /prowadzt, trip planner), `MapDrawData` (path/highlight/label events), `RoomBinds`, `mapEvents` (client-event wiring). `MapHelper` stays as the facade `client.Map` (~450 lines, all delegation); largest part `PositionTracker` (~390). The route planners (`transportPathFinder`, `carriagePathFinder`, `roomDistances`) moved with it; the UI-neutral `directions`, `exitCommands` and `dataLoader` stay in `@shared/map`. No DOM was involved: "rendering" was only the draw-data events. Plugin types unchanged. The labyrinth and tide scripts now reach the map's hashes and pathfinder through `client.Map.data` instead of `as any` pokes. |
+| `ansi/FormatState.ts` — 2,083 lines | **Done** (2026-11-04). `src/client/ansi/`: `colors` (colour types, `#rrggbb`, the Mudlet palette), `formatSnapshot` (a segment's formatting: clone / compare / overlay; links are just a field of it, not a job of their own), `AnsiParser` (the SGR state machine, escapes → segments), `renderSegments` (segments → HTML / DOM), `TextSelection`, and `AnsiAwareBuffer` (~1,250 — still the largest, but it is one plugin-facing class: its methods are the API). `FormatState.ts` is an 18-line re-export shim for the ~200 importers; the plugin types generate unchanged. |
+| `options/exportUtils.ts` — 1,246 lines | **Done** (2026-11-04). `src/web/options/export/`: one handler per hand-written category in `categories/` (`uiSettings`, `characterSettings`, `buttons` + `radial`, `killCounts`, `knowledge`, `visitedRooms`, `recordings`, `locationNotes`, `multibinds`), dispatched from a table in `categories.ts` instead of two parallel switches; `backup` (v2 file), `legacyBackup` (v1 restore), `importValidator`, `characterKeys`, `storageKeys` (generic registry keys), `storageChanges` (tracked writes + listener notification), `mergeEnvelopes`. Largest `legacyBackup.ts` (~140). Factored out: the listener notification and the profession CRDT merge (each written out 2–3 times), the two IndexedDB openers, the `mobileButtonSettings` read-merge. The old `exportUtils.ts` path is gone; importers use `export/` (the barrel `export/index.ts` for the lazily loaded sync code). Tests mirror it under `test/web/options/export/`. |
+| `ObjectList.ts` — 1,199 lines | **Done** (2026-11-04). `src/web/objectList/`: `ObjectList.ts` is the shell (~260: subscriptions, view mode, render), `ObjectListEventHandlers.ts` the clicks and context menus (~430), `objectListDrag.ts` the floating window's drag (~140), and `pip/` the Picture-in-Picture window (`PictureInPictureSync` ~240, plus `pipStatus`, `pipHtml`, `pipStyles`). The view-mode renderers and the filters had already moved out (`strategies.ts`, `objectListFilters.ts`). |
+| `options/FirebaseTab.tsx` — 1,091 lines | **Done** (2026-11-04). `src/web/options/firebase/`: hooks `useFirebaseInit`, `useFirebaseAuth` (auth state + sign-in form), `useFirebaseSync` (settings, passphrase, toasts, manual actions) and one component per section (`AuthForm`, `AccountBar`, `EncryptionSection`, `AutoSyncSection`, `LocationHandoffSection`, `CloudDeleteSection`, `SyncButtons`…); `FirebaseTab.tsx` is a ~110-line composer, largest file `useFirebaseSync.ts` (~210). The sync-v1 code (engine events, cloud metadata, conflict dialog, v1 actions, the disable-encryption flow) is in `firebase/v1/`, to delete in stage 5b of `SYNC_V2_PLAN.md`, but not all of it is v1-only: `cloudMetadata` from `v1/useSyncV1` also feeds `EncryptionSection` and `FirebaseTab` in v2 mode, so stage 5b needs edits outside `v1/` too. |
 
 ## The shape of the problem
 
@@ -43,18 +48,24 @@ to follow elsewhere.**
 
 ## Tier 1 — God files (break these up first)
 
-Line counts as of 2026-10-31; the "was" column is the 2026-07-27 reading.
+Line counts as of 2026-11-05. The six files of the 2026-10-31 list are done except
+`firebaseUnifiedSync.ts` (see the progress table); what is left is the next-largest files.
+Only the two carried-over rows have had a jobs-per-file read yet.
 
-| File | Lines (was) | Distinct jobs crammed in | Split into |
+| File | Lines | Distinct jobs crammed in | Split into |
 |---|---|---|---|
-| `src/shared/map/MapHelper.ts` | 1,874 (911) | position tracking + trip planner + directions + rendering + GMCP | extract managers — **and move out of `@shared`** (see Tier 4) |
-| `src/client/ansi/FormatState.ts` | 1,483 (1,329) | color types + format state machine + `AnsiAwareBuffer` + ANSI parsing + hyperlinks | `colors`, `FormatState`, `AnsiAwareBuffer`, `AnsiParser` |
-| `src/modules/firebase/firebaseUnifiedSync.ts` | 1,376 (1,328) | document I/O + category sync + device registry + sync groups + conflict resolution | Mostly the v1 single-document sync — most of it goes when v1 is removed (`docs/dev/SYNC_V2_PLAN.md`, stage 5b); the device registry stays |
-| `src/web/options/exportUtils.ts` | 1,246 (1,275) | export builder + recordings + visited-rooms + knowledge + validation | one file per exportable domain + `importValidator` |
-| `src/web/ObjectList.ts` | 1,197 (1,080) | view-mode renderers + event handlers + Picture-in-Picture sync + filters | `ObjectListCardRenderer`, `ObjectListEventHandlers`, `PictureInPictureSync` |
-| `src/web/options/FirebaseTab.tsx` | 1,091 (1,042) | auth + sync + metadata + persistence + UI | `useFirebaseAuth`, `useFirebaseSync`, split UI |
+| `src/web/keys/Keys.tsx` | 1,665 | to be analysed | to be analysed |
+| `src/modules/core/assistant/proposalValidator.ts` | 1,385 | to be analysed | to be analysed |
+| `src/modules/firebase/firebaseUnifiedSync.ts` | 1,376 | document I/O + category sync + device registry + sync groups + conflict resolution | Mostly the v1 single-document sync — most of it goes when v1 is removed (`docs/dev/SYNC_V2_PLAN.md`, stage 5b); the device registry stays |
+| `src/client/scripts/inventory.ts` | 1,276 | to be analysed | to be analysed |
+| `src/web/herbs/HerbManager.tsx` | 1,209 | to be analysed | to be analysed |
+| `src/client/scripts/raonLabyrinthMapper.ts` | 1,186 | to be analysed | to be analysed |
+| `src/web/objectList/strategies.ts` | 1,004 | all six view-mode renderers in one file (the `ObjectList.ts` split left them as they were) | one file per view mode (`list`, `card`, `compact`, `compact-dots`, `raid`, `nearby`) behind the `STRATEGIES` registry |
 
-**Highest leverage:** `MapHelper.ts` — the largest file left, and the move out of `@shared` comes with it.
+`AnsiAwareBuffer.ts` (1,255) is deliberately not listed: it is one plugin-facing class
+whose methods are the API.
+
+**Highest leverage:** `Keys.tsx` — the largest file left.
 
 ---
 
@@ -131,9 +142,13 @@ Co-locating related files is what makes the Tier-2 duplication visible and fixab
     `FishingStatePayload`…), creating a **reverse dependency** `@shared → @client`
     (8 files in `src/shared` import `@client`). The client events should live in
     `@client/events`.
-  - `MapHelper.ts` depends on `characterStorage` and `@client` types, and
-    `shared/dom` (`outputText`, `outputMessageHandler`) imports `@client/ansi`. They
-    aren't reusable by a non-web client — they belong in `@client` (or the DOM parts
+  - ~~`MapHelper.ts` depends on `characterStorage` and `@client` types~~ — **done**
+    (2026-11-04): it and the route planners live in `src/client/map/`; `@shared/map`
+    keeps only UI-neutral helpers (`directions`, `exitCommands`, `dataLoader`) and no
+    longer imports `@client`. `shared/events/clientEvents.ts` still type-imports
+    `MapLostReason` and `RouteSegment` from there, as part of the client-events leak above.
+  - `shared/dom` (`outputText`, `outputMessageHandler`) imports `@client/ansi`. It
+    isn't reusable by a non-web client — it belongs in `@client` (or the DOM parts
     in `@web`).
 - **Storage-key naming** — `characterStorageKeys` in `storageSchema.ts` lists the keys,
   but code still uses literal strings (`"herb_counts"` in `herbCounter`, `inventory`,
@@ -144,7 +159,7 @@ Co-locating related files is what makes the Tier-2 duplication visible and fixab
 
 ## Suggested sequence
 
-1. ~~Split `PluginApi.ts` by domain~~ and ~~`knowledge.ts`~~ — both done 2026-10-31.
+1. ~~Split `PluginApi.ts` by domain~~ and ~~`knowledge.ts`~~ — both done 2026-10-31; ~~the Tier 1 splits (`MapHelper`, `FormatState`, `exportUtils`, `ObjectList`, `FirebaseTab`)~~ — done 2026-11-05.
 2. **Finish `BaseCounter`** — migrate `herbCounter`, `whoCount` and `przybywajaCount`.
 3. **Remove sync v1** — takes most of `firebaseUnifiedSync.ts` with it.
 4. **Folder reorganization** of `scripts/` and web popups — makes remaining duplication self-evident.
