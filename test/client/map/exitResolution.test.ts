@@ -1,4 +1,4 @@
-import MapHelper from '@shared/map/MapHelper';
+import MapHelper from '@client/map/MapHelper.ts';
 
 vi.mock('mudlet-map-renderer', () => ({ MapReader: function () {} }));
 
@@ -14,7 +14,7 @@ describe('MapHelper resolveDirection', () => {
 
   function mapIn(room: any) {
     const map = new MapHelper({ on: () => {}, sendEvent: () => {} } as any);
-    (map as any).mapReader = { getRoom: (id: number) => rooms[id] };
+    map.data.reader = <any>{ getRoom: (id: number) => rooms[id] };
     map.currentRoom = room;
     return map;
   }

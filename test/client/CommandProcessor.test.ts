@@ -45,7 +45,7 @@ vi.mock('@client/scripts/functionalBind', () => ({
   formatLabel: jest.fn((opts: any) => opts.key || ''),
 }));
 
-vi.mock('@shared/map/MapHelper', () => {
+vi.mock('@client/map/MapHelper.ts', () => {
   return {
     __esModule: true,
     default: jest.fn(function () {

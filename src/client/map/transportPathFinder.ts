@@ -11,8 +11,8 @@
 
 import type { MapReader } from "mudlet-map-renderer";
 import type { TransportDef } from "@client/scripts/transports/definitions";
-import { longToShort } from "./directions";
-import { isDrivableExit } from "./exitCommands";
+import { longToShort } from "@shared/map/directions.ts";
+import { isDrivableExit } from "@shared/map/exitCommands.ts";
 
 // Boarding penalty represents the expected wait at a dock (transports run on
 // schedule, so on average you wait half a cycle). Set high enough that a

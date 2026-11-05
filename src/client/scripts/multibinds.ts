@@ -7,7 +7,7 @@ import {
 } from "@modules/data/multibindStore";
 import { globalStorage } from "@modules/core/storage";
 import { type Bind, bindMatches } from "@modules/core/keymapTypes";
-import MapHelper from "@shared/map/MapHelper";
+import MapHelper from "@client/map/MapHelper.ts";
 import { getGateBindString, isGateRoom } from "./gateBind";
 import { resolveMultibindSlots, temporaryMultibinds } from "./temporaryMultibinds";
 

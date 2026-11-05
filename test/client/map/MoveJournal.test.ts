@@ -1,4 +1,4 @@
-import MapHelper from '@shared/map/MapHelper';
+import MapHelper from '@client/map/MapHelper.ts';
 
 vi.mock('mudlet-map-renderer', () => ({ MapReader: function () {} }));
 
@@ -43,8 +43,8 @@ describe('MapHelper journal', () => {
   function newMap() {
     const client = makeClient();
     const map = new MapHelper(client);
-    (map as any).mapReader = { getRoom: (id: number) => rooms[id], getArea: () => null };
-    (map as any).mapReady = true;
+    map.data.reader = <any>{ getRoom: (id: number) => rooms[id], getArea: () => null };
+    map.data.ready = true;
     map.currentRoom = rooms[10];
     map.locationHistory.push(10);
     map.refreshPosition = false;

@@ -1,4 +1,4 @@
-import MapHelper from '@shared/map/MapHelper';
+import MapHelper from '@client/map/MapHelper.ts';
 
 vi.mock('mudlet-map-renderer', () => ({ MapReader: function () {} }));
 

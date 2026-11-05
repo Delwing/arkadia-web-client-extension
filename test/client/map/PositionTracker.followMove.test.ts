@@ -1,4 +1,4 @@
-import MapHelper from '@shared/map/MapHelper';
+import MapHelper from '@client/map/MapHelper.ts';
 
 vi.mock('mudlet-map-renderer', () => ({ MapReader: function () {} }));
 
@@ -29,7 +29,7 @@ describe('MapHelper followMove without a fullFollow argument', () => {
 
   function newMap() {
     const map = new MapHelper(makeClient());
-    (map as any).mapReader = { getRoom: (id: number) => rooms[id], getArea: () => null };
+    map.data.reader = <any>{ getRoom: (id: number) => rooms[id], getArea: () => null };
     map.currentRoom = rooms[10];
     return map;
   }
@@ -49,13 +49,13 @@ describe('MapHelper followMove without a fullFollow argument', () => {
 
   test('still follows a team_follow_link matched by the token itself', () => {
     const map = newMap();
-    (map as any).renderRoomById = function (id: number) { this.currentRoom = rooms[id]; };
+    (map.position as any).renderRoomById = function (id: number) { this.currentRoom = rooms[id]; };
     expect(map.followMove('traktem w gore')).toBe('gora');
   });
 
   test('still follows a team_follow_link matched only by the full follow text', () => {
     const map = newMap();
-    (map as any).renderRoomById = function (id: number) { this.currentRoom = rooms[id]; };
+    (map.position as any).renderRoomById = function (id: number) { this.currentRoom = rooms[id]; };
     expect(map.followMove('w gore', 'podazasz traktem za woznica')).toBe('gora');
   });
 

@@ -1,4 +1,4 @@
-import { planCarriageRoute, DRIVE_WEIGHT } from '@shared/map/carriagePathFinder';
+import { planCarriageRoute, DRIVE_WEIGHT } from '@client/map/carriagePathFinder.ts';
 
 /** Build a reader over a room list given as id -> array of exit target ids (all two-way). */
 function readerOf(links: Record<number, number[]>) {

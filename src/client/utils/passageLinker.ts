@@ -1,5 +1,5 @@
 import Client from "../Client";
-import type {RoomChange} from "@shared/map/MapHelper";
+import type {RoomChange} from "@client/map/types.ts";
 
 export interface PassageLinkerOptions {
     /** Room the passage leads into. */

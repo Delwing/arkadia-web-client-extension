@@ -1,4 +1,4 @@
-import MapHelper from '@shared/map/MapHelper';
+import MapHelper from '@client/map/MapHelper.ts';
 
 // applyRoomChanges rebuilds the pathfinder, so PathFinder has to be constructible.
 vi.mock('mudlet-map-renderer', () => ({
@@ -50,8 +50,8 @@ function createHelper(rooms: Record<number, any>) {
     const helper: any = new (MapHelper as any)(client);
     const area = createArea();
 
-    helper.mapReader = {rooms, areas: {2: area}};
-    helper.renderRoomById = vi.fn();
+    helper.data.reader = {rooms, areas: {2: area}};
+    helper.position.renderRoomById = vi.fn();
     helper.currentRoom = {id: 1};
 
     return {helper, client, area};
@@ -183,21 +183,21 @@ describe('MapHelper.applyRoomChanges', () => {
 
     it('should rebuild geometry, pathfinder and view, then announce the change', () => {
         const {helper, client, area} = createHelper(sampleRooms());
-        const pathFinderBefore = helper.pathFinder;
+        const pathFinderBefore = helper.data.pathFinder;
 
         helper.applyRoomChanges([{roomId: 1, roomChar: 'K'}]);
 
         expect(area.createPlanes).toHaveBeenCalled();
         expect(area.createExits).toHaveBeenCalled();
         expect(area.markDirty).toHaveBeenCalled();
-        expect(helper.pathFinder).not.toBe(pathFinderBefore);
-        expect(helper.renderRoomById).toHaveBeenCalledWith(1);
+        expect(helper.data.pathFinder).not.toBe(pathFinderBefore);
+        expect(helper.position.renderRoomById).toHaveBeenCalledWith(1);
         expect(client.sendEvent).toHaveBeenCalledWith('mapDataChanged');
     });
 
     it('should honour opt-outs so a cosmetic edit can skip the expensive rebuilds', () => {
         const {helper, area} = createHelper(sampleRooms());
-        const pathFinderBefore = helper.pathFinder;
+        const pathFinderBefore = helper.data.pathFinder;
 
         helper.applyRoomChanges(
             [{roomId: 1, name: 'Kowal'}],
@@ -205,8 +205,8 @@ describe('MapHelper.applyRoomChanges', () => {
         );
 
         expect(area.markDirty).not.toHaveBeenCalled();
-        expect(helper.pathFinder).toBe(pathFinderBefore);
-        expect(helper.renderRoomById).not.toHaveBeenCalled();
+        expect(helper.data.pathFinder).toBe(pathFinderBefore);
+        expect(helper.position.renderRoomById).not.toHaveBeenCalled();
     });
 
     it('should do nothing when there is no reader yet', () => {
@@ -240,11 +240,11 @@ describe('MapHelper.syncAreas', () => {
             createExits: vi.fn(),
             markDirty: vi.fn(),
         };
-        helper.mapReader = {rooms, areas: {2: wrapped}};
-        helper.renderRoomById = vi.fn();
+        helper.data.reader = {rooms, areas: {2: wrapped}};
+        helper.position.renderRoomById = vi.fn();
         helper.currentRoom = rooms[1];
-        helper.hashes = {'h-old': 1};
-        helper.internalIds = {old_1: 1};
+        helper.data.hashes = {'h-old': 1};
+        helper.data.internalIds = {old_1: 1};
 
         return {helper, client, wrapped, rooms};
     }
@@ -317,8 +317,8 @@ describe('MapHelper.syncAreas', () => {
 
         helper.syncAreas([incomingArea()]);
 
-        expect(helper.hashes['h-old']).toBeUndefined();
-        expect(helper.hashes['h-new']).toBe(1);
+        expect(helper.data.hashes['h-old']).toBeUndefined();
+        expect(helper.data.hashes['h-new']).toBe(1);
         expect(helper.getRoomIdByInternalId('old_1')).toBeNull();
         expect(helper.getRoomIdByInternalId('new_1')).toBe(1);
     });
@@ -355,7 +355,7 @@ describe('MapHelper.replaceMap', () => {
         const client = createClient();
         const helper: any = new (MapHelper as any)(client);
         helper.initialize = vi.fn();
-        helper.colors = [{envId: 1, colors: [1, 2, 3]}];
+        helper.data.colors = [{envId: 1, colors: [1, 2, 3]}];
         helper.currentRoom = {id: 42};
         return {helper, client};
     }
@@ -376,7 +376,7 @@ describe('MapHelper.replaceMap', () => {
 
         helper.replaceMap(mapData);
 
-        expect(helper.initialize).toHaveBeenCalledWith(mapData, helper.colors);
+        expect(helper.initialize).toHaveBeenCalledWith(mapData, helper.data.colors);
     });
 
     it('should carry the player position over so initialize can restore it', () => {
@@ -384,7 +384,7 @@ describe('MapHelper.replaceMap', () => {
 
         helper.replaceMap(mapData);
 
-        expect(helper.savedRoomId).toBe(42);
+        expect(helper.position.savedRoomId).toBe(42);
     });
 
     it('should refuse an empty payload rather than blanking the map', () => {
@@ -412,7 +412,7 @@ describe('MapHelper.onAreasChanged', () => {
         const client = createClient();
         const helper: any = new (MapHelper as any)(client);
         // initialize() renders the start room; irrelevant here and needs a real reader.
-        helper.renderRoomById = vi.fn();
+        helper.position.renderRoomById = vi.fn();
         return {helper, client};
     }
 

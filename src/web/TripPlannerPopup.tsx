@@ -3,7 +3,7 @@ import eventBus from '@modules/core/eventBus';
 import { globalStorage } from '@modules/core/storage';
 import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
 import { usePopup } from './hooks/usePopup';
-import { SEGMENT_COLORS } from '@shared/map/MapHelper';
+import { SEGMENT_COLORS } from '@client/map/segmentColors.ts';
 import { getMapDestinations } from '@modules/core/mapDestinationsProvider';
 import { getEmbeddedMap } from './embedRegistry';
 import {
