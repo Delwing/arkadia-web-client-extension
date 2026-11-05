@@ -33,7 +33,7 @@ tabs. Both devices write, often within minutes of each other. Today's design tre
   localStorage write happens to trigger a sync. Conversely, any localStorage write — including
   non-synced ones like `mapperRoomId` on every move — schedules a full sync.
 - **Each data type is handled in many places.** `CATEGORY_REGISTRY`, the export/import `switch` blocks in
-  `@web/options/exportUtils`, a second serializer for files (`buildExport` / `applyImportedData`),
+  `@web/options/export`, a second serializer for files (`buildExport` / `applyImportedData`),
   per-category `syncOptions`, `ExportOptions`, a character picker, conflict UI. A gap between them is how
   the knowledge bug happened.
 - **One Firestore document.** Every category is a field of `users/{uid}/sync/{SYNC_DATA_DOC}`. Firestore

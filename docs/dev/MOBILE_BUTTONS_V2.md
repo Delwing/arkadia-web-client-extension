@@ -252,7 +252,7 @@ Properties the tests must pin:
   `@modules/core` and the model lives in `@web`. Imported v1 values are
   converted by the read path the moment anything loads them, and persisted
   on the next save or startup.
-- **`buttons` category import** (`exportUtils.ts`): it currently shallow-merges
+- **`buttons` category import** (`export/categories/buttons.ts`): it currently shallow-merges
   `{ ...existing, ...incoming }`. With v2 existing + v1 incoming that would
   keep `version: 2`/`modes` from existing and silently ignore the incoming
   layouts. Fix: migrate `incoming` to v2 first, then take `modes`, `styles`,
@@ -341,7 +341,7 @@ breakpoint:
 | `src/ui/web/buttons/MobileCommandRadial.tsx`, `MobileJoysticks.tsx` | type only (radial/joysticks unchanged) |
 | `src/web/options/MobileButtons.tsx`, `ButtonGrid.tsx` | rewritten editor |
 | `src/web/clientBootstrap.ts` | call `migrateMobileButtonsToV2` |
-| `src/web/options/exportUtils.ts` | `buttons` category merge fix |
+| `src/web/options/export/categories/buttons.ts` | `buttons` category merge fix |
 | `src/modules/core/storageSchema.ts` | none: `Settings` is now the v2 type |
 | `src/modules/device/*` | type only |
 
