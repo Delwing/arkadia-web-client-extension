@@ -33,11 +33,10 @@ import {
 } from '@modules/userData/types';
 import {
     collectCharacters,
-    exportCategory,
-    importCategory,
     isExcludedLocalStorageKey,
     parseCharacterStorageKey,
-} from '@web/options/exportUtils';
+} from '@web/options/export/characterKeys.ts';
+import { exportCategory, importCategory } from '@web/options/export/categories.ts';
 
 // ---------------------------------------------------------------------------
 // localStorage helpers

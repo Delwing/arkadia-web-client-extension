@@ -2,7 +2,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { SHOW_SETTINGS_EVENT } from "@web/settings/categories.ts";
 import { Button } from "@web-ui/primitives/index.ts";
 import { confirmDialog } from "@web-ui/primitives/confirmDialog.tsx";
-import { buildBackup, isRestorableBackup, restoreBackup } from "./exportUtils";
+import { buildBackup, restoreBackup } from "./export/backup";
+import { isRestorableBackup } from "./export/importValidator";
 import { confirmRestore, publishRestore } from "./restoreFlow";
 
 const GOOGLE_CLIENT_ID = "717498712073-50tjdorsa6vk4mq0fj774u0rhqr5jkd4.apps.googleusercontent.com";

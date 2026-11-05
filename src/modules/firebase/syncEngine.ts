@@ -341,7 +341,7 @@ class FirebaseSyncEngine {
             // just switched off — always offer the passphrase for decryption.
             const decryptPassphrase = this.passphrase ?? undefined;
             const { collectCharacters, exportCategories, importCategories, mergeCloudProfessionData } =
-                await import('@web/options/exportUtils');
+                await import('@web/options/export/index.ts');
 
             // Pre-merge CRDT data (profession) from cloud before exporting, so we
             // don't overwrite +staz events that were added on another device.
@@ -486,7 +486,7 @@ class FirebaseSyncEngine {
             const {
                 collectCharacters, exportCategories, importCategories,
                 mergeCloudProfessionData, mergePerCharacterEnvelopes,
-            } = await import('@web/options/exportUtils');
+            } = await import('@web/options/export/index.ts');
 
             const append: SyncCategory[] = [];
             const perCharacter: SyncCategory[] = [];

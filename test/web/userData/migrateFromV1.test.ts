@@ -10,10 +10,14 @@ vi.mock('@modules/firebase/firebaseUnifiedSync', () => ({
     downloadCategories: (...args: unknown[]) => downloadCategories(...args),
     markSyncV2Started: () => markSyncV2Started(),
 }));
-vi.mock('@web/options/exportUtils', () => ({
+vi.mock('@web/options/export/characterKeys.ts', () => ({
     collectCharacters: () => ['Alice'],
+}));
+vi.mock('@web/options/export/categories.ts', () => ({
     exportCategories: (...args: unknown[]) => exportCategories(...args),
     importCategories: (...args: unknown[]) => importCategories(...args),
+}));
+vi.mock('@web/options/export/mergeEnvelopes.ts', () => ({
     mergePerCharacterEnvelopes: (preferred: string, other: string) => `merged(${preferred},${other})`,
 }));
 

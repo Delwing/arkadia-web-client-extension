@@ -26,7 +26,7 @@ import {
 } from "@ui/logViewer";
 import { formatDateTime, splitLines } from "@web/logBrowserUtils";
 import { countEach, countSession, LogsDatabase, readSession, readSessionBatch, sessionNames, type StoredLogEntry } from "@web/logsDatabase";
-import { collectCharacters } from "@web/options/exportUtils";
+import { collectCharacters } from "@web/options/export/characterKeys.ts";
 import { SearchTextStore, type StoredSearchText } from "./searchTextStore";
 import { htmlToText } from "./htmlToText";
 

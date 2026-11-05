@@ -367,7 +367,7 @@ class FirebaseSyncListener {
         decryptedData: string,
         payload: CategoryPayload,
     ): Promise<'applied' | 'conflict' | 'skipped'> {
-        const { exportCategories, collectCharacters } = await import('@web/options/exportUtils');
+        const { exportCategories, collectCharacters } = await import('@web/options/export/index.ts');
         const allCharacters = collectCharacters();
         const localData = await exportCategories([category], allCharacters);
         const localCategoryData = localData[category];
@@ -396,13 +396,13 @@ class FirebaseSyncListener {
 
         // Pre-merge CRDT for characterSettings (profession data)
         if (category === 'characterSettings') {
-            const { mergeCloudProfessionData } = await import('@web/options/exportUtils');
+            const { mergeCloudProfessionData } = await import('@web/options/export/index.ts');
             mergeCloudProfessionData(decryptedData);
         }
 
         // Device-scoped categories from per-device storage are already from
         // a relevant source (self or sync group member), so apply all keys.
-        const { importCategory } = await import('@web/options/exportUtils');
+        const { importCategory } = await import('@web/options/export/index.ts');
         const result = await importCategory(category, decryptedData);
 
         if (result.success) {

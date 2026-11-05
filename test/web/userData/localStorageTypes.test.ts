@@ -13,7 +13,8 @@ import {
     objectEntriesType,
     peopleEditsType,
 } from '@web/userData/localStorageTypes';
-import { restoreBackup, type ExportPayload } from '@web/options/exportUtils';
+import { restoreBackup } from '@web/options/export/backup.ts';
+import type { ExportPayload } from '@web/options/export/legacyBackup.ts';
 import { createUserDataTypes } from '@web/userData/registry';
 
 function tracker(deviceId: string, now: () => number = Date.now) {

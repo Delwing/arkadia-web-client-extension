@@ -34,7 +34,7 @@ import {
     type LocalItem,
     type UserDataType,
 } from '@modules/userData/types.ts';
-import { parseCharacterStorageKey } from '@web/options/exportUtils.ts';
+import { parseCharacterStorageKey } from '@web/options/export/characterKeys.ts';
 
 /** Group changes by character, skipping any that aren't character-scoped. */
 function byCharacter<V>(changes: ItemChange<V>[]): Map<string, ItemChange<V>[]> {
