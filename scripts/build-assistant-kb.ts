@@ -829,7 +829,16 @@ const SETTINGS_PANELS: PanelSpec[] = [
         files: ['src/web/uiSettings/sections/OtherSections.tsx', 'src/web/uiSettings/sections/LogsSection.tsx'],
         sections: ['Inne', 'Logi'],
     },
-    { category: 'data-sync', files: ['src/web/options/FirebaseTab.tsx'] },
+    {
+        category: 'data-sync',
+        files: [
+            'src/web/options/firebase/EncryptionSection.tsx',
+            'src/web/options/firebase/AutoSyncSection.tsx',
+            'src/web/options/firebase/LocationHandoffSection.tsx',
+            'src/web/options/firebase/CloudDeleteSection.tsx',
+            'src/web/options/firebase/v1/DisableEncryptionV1.tsx',
+        ],
+    },
     { category: 'data-backup', files: ['src/web/options/LocalExportTab.tsx', 'src/web/options/GoogleDriveTab.tsx'] },
     { category: 'data-devices', files: ['src/web/options/DeviceManagementTab.tsx'] },
     { category: 'data-import', files: ['src/web/imports/ImportPage.tsx'] },
