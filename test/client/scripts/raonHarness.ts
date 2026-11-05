@@ -56,7 +56,7 @@ export async function createRaonHarness(): Promise<RaonHarness> {
     const client: any = {
         Map: {
             currentRoom: undefined as any,
-            hashes: {} as Record<string, number>,
+            data: {hashes: {} as Record<string, number>, rebuildPathFinder: () => {}},
             refreshPosition: false,
             getMapReader: () => reader,
             tryGetMapReader: () => reader,

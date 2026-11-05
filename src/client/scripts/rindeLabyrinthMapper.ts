@@ -8,7 +8,6 @@ import {gmcp} from "../gmcp";
 import {colorString, createColorFormat} from "@modules/core/Colors";
 import {AnsiAwareBuffer} from "../ansi/FormatState";
 import eventBus from "@modules/core/eventBus";
-import {PathFinder} from "mudlet-map-renderer";
 
 const TEMP_ID_OFFSET = 200000;
 const LABYRINTH_AREA_ID = 9999;
@@ -118,7 +117,7 @@ function createSyntheticArea(reader: any) {
 function createTempRoom(client: Client, room: LabyrinthRoom): void {
     const reader = client.Map.getMapReader() as any;
     const readerRooms: Record<number, MapData.Room> = reader.rooms;
-    const hashes: Record<string, number> = (client.Map as any).hashes;
+    const hashes: Record<string, number> = client.Map.data.hashes;
 
     const hash = `${room.gridX}:${room.gridY}:0:Labirynt.`;
 
@@ -220,7 +219,7 @@ function rebuildAndRender(client: Client, renderTempId?: number) {
         area.markDirty();
     }
 
-    (client.Map as any).pathFinder = new PathFinder(client.Map.getMapReader() as any);
+    client.Map.data.rebuildPathFinder();
 
     const roomId = renderTempId ?? (currentFingerprint ? rooms.get(currentFingerprint)?.tempId : undefined);
     if (roomId !== undefined) {
@@ -334,7 +333,7 @@ function activate(client: Client) {
 function deactivate(client: Client) {
     const reader = client.Map.getMapReader() as any;
     const readerRooms: Record<number, MapData.Room> = reader.rooms;
-    const hashes: Record<string, number> = (client.Map as any).hashes;
+    const hashes: Record<string, number> = client.Map.data.hashes;
 
     // Remove all temp rooms
     for (const room of rooms.values()) {
@@ -366,7 +365,7 @@ function deactivate(client: Client) {
         area.createExits();
         area.markDirty();
     }
-    (client.Map as any).pathFinder = new PathFinder(client.Map.getMapReader() as any);
+    client.Map.data.rebuildPathFinder();
 
     // Restore brief setting
     client.sendGMCP('char.options', {brief: savedBriefValue});

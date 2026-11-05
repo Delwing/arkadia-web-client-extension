@@ -3,7 +3,6 @@ import {matchWhen} from "@client/Triggers.ts";
 import {getLongDir, isDirection, isPolishDirection} from "@shared/map/directions";
 import {stripPolishCharacters} from "../stripPolishCharacters";
 import eventBus from "@modules/core/eventBus";
-import {PathFinder} from "mudlet-map-renderer";
 
 const LABYRINTH_ENV = 266;
 const LABYRINTH_AREA = 39;
@@ -174,7 +173,7 @@ function rebuildAreas(reader: any, affectedAreas: Set<number>) {
 }
 
 function rebuildPathFinder(client: Client) {
-    (client.Map as any).pathFinder = new PathFinder(client.Map.getMapReader() as any);
+    client.Map.data.rebuildPathFinder();
 }
 
 export default function initLabyrinth(client: Client, aliases: { pattern: RegExp; callback: Function }[]) {

@@ -8,7 +8,6 @@ import {gmcp} from "../gmcp";
 import {colorString, colorStringInLine, createColorFormat} from "@modules/core/Colors";
 import {AnsiAwareBuffer} from "../ansi/FormatState";
 import eventBus from "@modules/core/eventBus";
-import {PathFinder} from "mudlet-map-renderer";
 
 export const ENTRY_ROOM_ID = 23147;
 const ENTRY_UP_TARGET = 23146;
@@ -200,7 +199,7 @@ function rebuildAndRender(client: Client, renderRoomId?: number) {
         area.markDirty();
     }
 
-    (client.Map as any).pathFinder = new PathFinder(client.Map.getMapReader() as any);
+    client.Map.data.rebuildPathFinder();
 
     const roomId = renderRoomId ?? (currentFingerprint ? rooms.get(currentFingerprint)?.mapRoomId : undefined);
     if (roomId !== undefined) {
@@ -522,7 +521,7 @@ function createChapelPlaceholder(client: Client, sourceRoom: RaonRoom, doorDirec
     }
 
     // Add to map
-    const hashes: Record<string, number> = (client.Map as any).hashes;
+    const hashes: Record<string, number> = client.Map.data.hashes;
     readerRooms[CHAPEL_ROOM_ID] = mapRoom;
     hashes[mapRoom.hash] = CHAPEL_ROOM_ID;
     reader.areas[mapRoom.area].area.rooms.push(mapRoom);
@@ -663,7 +662,7 @@ function finishCapture(client: Client, descriptionLines: string[], exitString: s
         }
 
         // Re-add room to map
-        const hashes: Record<string, number> = (client.Map as any).hashes;
+        const hashes: Record<string, number> = client.Map.data.hashes;
         readerRooms[mapRoomId] = mapRoom;
         hashes[mapRoom.hash] = mapRoomId;
         reader.areas[mapRoom.area].area.rooms.push(mapRoom);
@@ -788,7 +787,7 @@ function finishCapture(client: Client, descriptionLines: string[], exitString: s
 function initRooms(client: Client) {
     const reader = client.Map.getMapReader() as any;
     const readerRooms: Record<number, MapData.Room> = reader.rooms;
-    const hashes: Record<string, number> = (client.Map as any).hashes;
+    const hashes: Record<string, number> = client.Map.data.hashes;
 
     // Snapshot all rooms, then remove pool rooms from map entirely
     savedRoomData.clear();
@@ -860,7 +859,7 @@ function pause(client: Client) {
 function fullReset(client: Client) {
     const reader = client.Map.getMapReader() as any;
     const readerRooms: Record<number, MapData.Room> = reader.rooms;
-    const hashes: Record<string, number> = (client.Map as any).hashes;
+    const hashes: Record<string, number> = client.Map.data.hashes;
     const areas: Record<number, any> = reader.areas;
     const affectedAreas = new Set<number>();
 
@@ -895,7 +894,7 @@ function fullReset(client: Client) {
         area.markDirty();
     }
 
-    (client.Map as any).pathFinder = new PathFinder(client.Map.getMapReader() as any);
+    client.Map.data.rebuildPathFinder();
 
     client.sendGMCP('char.options', {brief: savedBriefValue});
 
