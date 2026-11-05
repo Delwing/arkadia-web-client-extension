@@ -1,7 +1,7 @@
 import type { CategoryConflictInfo, ConflictResolution, SyncCategory } from "@modules/firebase";
 import { Button } from "@web-ui/primitives/index.ts";
 import { SYNC_CATEGORY_NAMES } from "@modules/firebase";
-import SubDialog from "../SubDialog";
+import SubDialog from "@web/SubDialog.tsx";
 import ConflictDiffView from "./ConflictDiffView";
 
 interface ConflictResolutionModalProps {

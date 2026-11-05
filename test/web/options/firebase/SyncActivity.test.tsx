@@ -16,7 +16,7 @@ vi.mock("@web/userData/syncV2", () => ({ getSyncV2Status: () => status }));
 vi.mock("@modules/firebase", () => ({ syncEngine: { getScheduledAutoSyncs: () => scheduled } }));
 vi.mock("@modules/firebase/syncDebounceManager", () => ({ HOT_SYNC_INTERVAL_MS: 30_000, COLD_SYNC_INTERVAL_MS: 600_000 }));
 
-import { SyncActivityLog, SyncTimers } from "@web/options/SyncActivity";
+import { SyncActivityLog, SyncTimers } from "@web/options/firebase/SyncActivity.tsx";
 
 describe("SyncActivity", () => {
     let container: HTMLElement;
