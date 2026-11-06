@@ -17,11 +17,12 @@ const teamBlockerPatterns: RegExp[] = [
 
 function createBlockerHandler(client: Client) {
     return (line: AnsiAwareBuffer) => {
-        if (!client.Map.isBlockable) {
-            return line;
+        if (client.Map.isBlockable) {
+            client.Map.moveBack();
+            client.Map.setBlockable(false);
         }
-        client.Map.moveBack();
-        client.Map.setBlockable(false);
+        // The shadow queue hears every blocker, not only the first since the last room.info.
+        client.Map.stepShadow.reject('blokada');
         return line;
     };
 }

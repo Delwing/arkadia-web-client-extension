@@ -5,6 +5,7 @@ import {colorString, createColorFormat} from "@client/Colors.ts";
 import {AnsiAwareBuffer} from "../ansi/FormatState";
 import eventBus from "@modules/core/eventBus";
 import {globalStorage} from "@modules/core/storage";
+import {LOOK_COMMAND} from "@client/map/StepShadow.ts";
 
 /**
  * Parravon noca - mgla.
@@ -331,7 +332,7 @@ const FOG_START = /^Wsrod wszechobecnych oparow tracisz zupelnie orientacje/;
 const FOG_TITLE = /^[ >]*(?:Wsrod oparow mgly|Posrod nienaturalnych ciemnosci|W pograzonym przez mrok miescie|Na zamglonych ulicach|Posrod mgly)\.$/;
 const NO_EXIT = /^[ >]*Nie widzisz zadnego wyjscia prowadzacego na (.+)\.$/;
 const GRABBED = /^[ >]*Nie mozesz sie tam udac, gdyz ktos lapie cie/;
-const LOOK = /^(?:l|sp|spojrz|zerknij)$/;
+const LOOK = LOOK_COMMAND;
 /** Odpowiedz starsza niz tyle nie nalezy juz do czekajacego kroku. */
 const PENDING_TTL_MS = 10_000;
 const ALIAS = '/mgla';

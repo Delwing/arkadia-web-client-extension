@@ -1,6 +1,7 @@
 import type Client from "./Client";
 import { isDirection, isPolishDirection } from "@shared/map/directions";
 import { isDrivableExit } from "@shared/map/exitCommands";
+import { LOOK_COMMAND } from "./map/StepShadow";
 import type { CommandOptions } from "./scripts/commandPreserveCaseMode";
 
 export default class MovementManager {
@@ -68,12 +69,19 @@ export default class MovementManager {
             return;
         }
 
+        const fromRoomId = this.client.Map.currentRoom?.id;
         const moveRes = this.client.Map.move(direction);
         if (moveRes.suppress) {
             return;
         }
         if (moveRes.moved) {
             this.client.Map.setBlockable(true);
+        }
+        // Only watched for now: the shadow queue changes nothing on the map.
+        if (isOriginalDirection || moveRes.moved) {
+            this.client.Map.stepShadow.step(moveRes.direction, fromRoomId);
+        } else if (!movePrefix && LOOK_COMMAND.test(command.trim().toLowerCase())) {
+            this.client.Map.stepShadow.look();
         }
 
         if (isOriginalDirection || moveRes.moved) {
