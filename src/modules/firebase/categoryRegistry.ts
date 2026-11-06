@@ -13,7 +13,7 @@
  *    `globalKeys` and/or `characterKey` — export/import is then fully generic.
  * 2. Only if the data needs custom handling (IndexedDB, CRDT merge, key
  *    splitting), set `customSync: true` and add export/import cases in
- *    @web/options/exportUtils.
+ *    @web/options/export/ (a handler in categories/, listed in categories.ts).
  */
 
 export interface CategoryDefinition {
@@ -40,7 +40,7 @@ export interface CategoryDefinition {
     /** Character-scoped localStorage base key, exported as { [characterName]: rawValue } */
     characterKey?: string;
     /**
-     * Export/import is implemented by hand in @web/options/exportUtils
+     * Export/import is implemented by hand in @web/options/export/categories/
      * (IndexedDB-backed data, CRDT merges, key splitting). Any globalKeys /
      * characterKey are then only used for change watching, not generic export.
      */

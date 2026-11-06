@@ -1,5 +1,6 @@
 import mudletColorsJson from "@client/colors.json";
-import type {FormatColor, FormatHyperlink, FormatStateSnapshot, TextRange} from "./FormatState";
+import type {FormatColor} from "./colors";
+import type {FormatHyperlink, FormatStateSnapshot, TextRange} from "./formatSnapshot";
 
 /**
  * A colour, written the short way: `'#ffd700'` / `'#fd0'`, a Mudlet colour name

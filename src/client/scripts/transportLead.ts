@@ -1,6 +1,6 @@
 import type Client from "../Client";
 import {AnsiAwareBuffer} from "@client/ansi/FormatState";
-import type {RouteSegment} from "@shared/map/transportPathFinder";
+import type {RouteSegment} from "@client/map/transportPathFinder.ts";
 
 type RoomLike = {
     id: number;

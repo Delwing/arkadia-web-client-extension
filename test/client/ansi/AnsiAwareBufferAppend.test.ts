@@ -1,4 +1,5 @@
-import { AnsiAwareBuffer, formatStatesEqual } from "@client/ansi/FormatState.ts";
+import { AnsiAwareBuffer } from "@client/ansi/AnsiAwareBuffer.ts";
+import { statesEqual as formatStatesEqual } from "@client/ansi/formatSnapshot.ts";
 
 /**
  * Appending at the end normalizes only the seam and the new tail (see

@@ -1,4 +1,4 @@
-import { AnsiAwareBuffer } from '@client/ansi/FormatState';
+import { AnsiAwareBuffer } from '@client/ansi/AnsiAwareBuffer.ts';
 import { renderTable } from '@client/ansi/table';
 import { createOutputApi } from '@client/PluginApi/output';
 import type { PluginApiContext } from '@client/PluginApi/context';

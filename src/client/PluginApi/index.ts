@@ -54,7 +54,7 @@ export type {
   ObjectListObject,
 } from "@modules/core/objectListFilters";
 export type { EnemyBindCandidate, EnemyBindLocationObject, EnemyBindResolver } from "@client/scripts/enemyBindResolvers";
-export type { RoomChange, ApplyChangesOptions, MapAreaData } from "@shared/map/MapHelper.ts";
+export type { RoomChange, ApplyChangesOptions, MapAreaData } from "@client/map/types.ts";
 export type {
   MacroConfigField,
   MacroState,

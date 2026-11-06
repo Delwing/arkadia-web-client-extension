@@ -104,7 +104,7 @@ out.append(" plain text", RESET);          // ✅ explicitly clean
 
 ### HP bars
 
-Match the existing style from `src/web/colors.ts` and `src/web/ObjectList.ts:697`:
+Match the existing style from `src/web/colors.ts` and `src/web/objectList/strategies.ts` (`renderListLines`):
 
 - 7-cell bar `[####---]`
 - `#` filled, `-` empty

@@ -8,7 +8,7 @@
 // compact-dots / raid) so behaviour is unchanged; `nearby` is the "W poblizu"
 // flavor.
 //
-// Click handling stays central in the shell: every flavor tags its clickable
+// Click handling stays central (ObjectListEventHandlers): every flavor tags its clickable
 // parts with the same `data-object-num` / `data-object-id` (+ `data-action`)
 // attributes, so one delegated handler serves them all — the only per-flavor
 // difference is which element carries them.

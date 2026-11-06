@@ -2,7 +2,7 @@ import type { MouseEvent, ReactNode } from "react";
 import { useMemo } from "react";
 import { Check, Segmented } from "@web-ui/primitives/index.ts";
 import { showContextMenu, type ContextMenuEntry } from "@web/contextMenu";
-import { collectCharacters } from "@web/options/exportUtils";
+import { collectCharacters } from "@web/options/export/characterKeys.ts";
 import { KIND_LABEL, itemTitle, type AutomationItem } from "./automationModel";
 
 /** An on/off switch as a real button; its title names what it switches. */

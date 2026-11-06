@@ -1,0 +1,153 @@
+import { useCallback, useState } from "react";
+import { Button } from "@web-ui/primitives/index.ts";
+import type { CategoryConflictInfo } from "@modules/firebase";
+import { decrypt, isEncryptedData } from "@modules/firebase";
+import { syncEngine } from "@modules/firebase";
+import { collectCharacters, exportCategory } from "@web/options/export/index.ts";
+import {
+    diffLines,
+    expandJsonForDisplay,
+    summarizeDiff,
+    type DiffLine,
+} from "./conflictDiff";
+
+// Cap rendered lines so a huge category can't lock up the modal.
+const MAX_RENDERED_LINES = 800;
+
+interface ConflictDiffViewProps {
+    conflict: CategoryConflictInfo;
+}
+
+/** Resolve the cloud-side content of a conflict, decrypting if needed. */
+async function loadCloudContent(conflict: CategoryConflictInfo): Promise<string> {
+    const payload = conflict.cloudData;
+    if (!payload.encrypted) return payload.data;
+
+    const passphrase = syncEngine.getPassphrase();
+    if (!passphrase) {
+        throw new Error('needs-passphrase');
+    }
+    const parsed = JSON.parse(payload.data);
+    if (!isEncryptedData(parsed)) {
+        throw new Error('decryption-failed');
+    }
+    return decrypt(parsed, passphrase);
+}
+
+function ConflictDiffView({ conflict }: ConflictDiffViewProps) {
+    const [expanded, setExpanded] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [lines, setLines] = useState<DiffLine[] | null>(null);
+
+    const loadDiff = useCallback(async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const [localRaw, cloudRaw] = await Promise.all([
+                exportCategory(conflict.category, collectCharacters()),
+                loadCloudContent(conflict),
+            ]);
+            const localText = expandJsonForDisplay(localRaw ?? '');
+            const cloudText = expandJsonForDisplay(cloudRaw);
+            setLines(diffLines(localText, cloudText));
+        } catch (err) {
+            const message = err instanceof Error ? err.message : 'unknown';
+            if (message === 'needs-passphrase') {
+                setError('Dane są zaszyfrowane. Podaj hasło szyfrowania, aby zobaczyć różnice.');
+            } else if (message === 'decryption-failed') {
+                setError('Nie udało się odszyfrować danych z chmury.');
+            } else {
+                setError('Nie udało się przygotować porównania.');
+            }
+        } finally {
+            setLoading(false);
+        }
+    }, [conflict]);
+
+    const handleToggle = useCallback(() => {
+        const next = !expanded;
+        setExpanded(next);
+        if (next && lines === null && !loading) {
+            void loadDiff();
+        }
+    }, [expanded, lines, loading, loadDiff]);
+
+    const summary = lines ? summarizeDiff(lines) : null;
+    const shown = lines ? lines.slice(0, MAX_RENDERED_LINES) : [];
+    const truncated = lines ? lines.length - shown.length : 0;
+
+    return (
+        <div className="conflict-diff">
+            <Button variant="ghost"
+                size="sm"
+                onClick={handleToggle}
+            >
+                {expanded ? '▾ Ukryj różnice' : '▸ Pokaż różnice'}
+                {summary && (
+                    <span className="popup-muted conflict-diff__summary">
+                        (<span className="popup-text-success">+{summary.added}</span>{' '}
+                        <span className="popup-text-danger">-{summary.removed}</span>)
+                    </span>
+                )}
+            </Button>
+
+            {expanded && (
+                <div className="conflict-diff__body">
+                    {loading && (
+                        <div className="popup-inline popup-muted popup-small">
+                            <span className="popup-spinner" />
+                            <span>Przygotowywanie porównania...</span>
+                        </div>
+                    )}
+                    {error && <div className="popup-text-warning popup-small">{error}</div>}
+                    {!loading && !error && lines && lines.length === 0 && (
+                        <div className="popup-muted popup-small">Brak różnic do wyświetlenia.</div>
+                    )}
+                    {!loading && !error && lines && lines.length > 0 && (
+                        <>
+                            <div className="popup-muted popup-small conflict-diff__legend">
+                                <span className="popup-text-danger">−</span> lokalne,{' '}
+                                <span className="popup-text-success">+</span> z chmury
+                            </div>
+                            <pre
+                                className="conflict-diff__lines"
+                                style={{
+                                    maxHeight: '260px',
+                                    overflow: 'auto',
+                                    backgroundColor: 'rgba(0,0,0,0.25)',
+                                    whiteSpace: 'pre-wrap',
+                                    wordBreak: 'break-word',
+                                }}
+                            >
+                                {shown.map((line, idx) => (
+                                    <div
+                                        key={idx}
+                                        style={{
+                                            color: line.type === 'add'
+                                                ? '#5cb85c'
+                                                : line.type === 'remove'
+                                                    ? '#d9534f'
+                                                    : 'inherit',
+                                        }}
+                                    >
+                                        {line.type === 'add' ? '+' : line.type === 'remove' ? '−' : ' '}
+                                        {' '}
+                                        {line.text}
+                                    </div>
+                                ))}
+                                {truncated > 0 && (
+                                    <div className="popup-muted">
+                                        ... ({truncated} wierszy więcej — skrócono)
+                                    </div>
+                                )}
+                            </pre>
+                        </>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+}
+
+export default ConflictDiffView;

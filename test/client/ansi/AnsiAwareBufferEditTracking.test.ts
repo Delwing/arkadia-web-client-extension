@@ -1,4 +1,4 @@
-import { AnsiAwareBuffer } from '@client/ansi/FormatState';
+import { AnsiAwareBuffer } from '@client/ansi/AnsiAwareBuffer.ts';
 
 describe('AnsiAwareBuffer edit tracking', () => {
   const original = 'Ogromny cuchnacy troll atakuje';

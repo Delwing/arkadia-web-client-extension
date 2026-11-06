@@ -1,6 +1,5 @@
 import Client from "../Client";
 import eventBus from "@modules/core/eventBus";
-import {PathFinder} from "mudlet-map-renderer";
 
 const TIDE_ROOM_IDS = [18975, 18990, 18977, 18978, 18979, 18976, 18980, 20809, 20798, 20799, 20800, 20801, 20802, 20803, 20804, 20805, 20807, 20806];
 const SHIFT_ONLY_ROOM_ID = 20808;
@@ -128,7 +127,7 @@ function isNearTideArea(client: Client): boolean {
 function activate(client: Client) {
     const reader = client.Map.getMapReader() as any;
     const readerRooms: Record<number, MapData.Room> = reader.rooms;
-    const hashes: Record<string, number> = (client.Map as any).hashes;
+    const hashes: Record<string, number> = client.Map.data.hashes;
     const affectedAreas = new Set<number>();
 
     // 1. Save original state and shift all affected rooms to z=-1
@@ -242,7 +241,7 @@ function activate(client: Client) {
 function deactivate(client: Client) {
     const reader = client.Map.getMapReader() as any;
     const readerRooms: Record<number, MapData.Room> = reader.rooms;
-    const hashes: Record<string, number> = (client.Map as any).hashes;
+    const hashes: Record<string, number> = client.Map.data.hashes;
     const affectedAreas = new Set<number>();
 
     // If player is on a temp room, resolve to original
@@ -312,7 +311,7 @@ function rebuildAreas(reader: any, affectedAreas: Set<number>) {
 }
 
 function rebuildPathFinder(client: Client) {
-    (client.Map as any).pathFinder = new PathFinder(client.Map.getMapReader() as any);
+    client.Map.data.rebuildPathFinder();
 }
 
 function moveToTempRoom(client: Client) {

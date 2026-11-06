@@ -46,7 +46,7 @@ import {installLongPressContextMenu} from "@shared/dom/longPressContextMenu.ts";
 import {isIOS} from "@shared/dom/mobileOs.ts";
 import {openWindow} from './modals/pageWindows';
 import {shareLocation} from "./locationShare/locationShare";
-import ObjectList from "./ObjectList";
+import ObjectList from "./objectList/ObjectList";
 import FightTitle from "./FightTitle";
 import HpTitle from "./HpTitle";
 import { registerBuiltinWidgets } from "@web-ui/widgets/builtinWidgets";

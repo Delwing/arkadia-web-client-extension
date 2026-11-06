@@ -2,7 +2,8 @@ import { ChangeEvent, useEffect, useRef, useState } from "react";
 import { Button } from "@web-ui/primitives/index.ts";
 import { SHOW_SETTINGS_EVENT } from "@web/settings/categories.ts";
 import { loadPreSyncBackup, PRE_SYNC_BACKUP_SAVED_EVENT } from "@web/userData/preSyncBackup.ts";
-import { buildBackup, isRestorableBackup, restoreBackup, type BackupPayload } from "./exportUtils";
+import { buildBackup, restoreBackup, type BackupPayload } from "./export/backup";
+import { isRestorableBackup } from "./export/importValidator";
 import { confirmRestore, publishRestore } from "./restoreFlow";
 
 function downloadBackup(payload: BackupPayload, name: string): void {

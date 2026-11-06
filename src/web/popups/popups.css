@@ -9059,7 +9059,7 @@ select.popup-input optgroup {
   white-space: pre-wrap;
 }
 
-/* ── Cloud sync page (FirebaseTab.tsx) ───────────────────────────────────── */
+/* ── Cloud sync page (options/firebase/) ───────────────────────────────────── */
 .firebase-sync {
   display: flex;
   flex-direction: column;
