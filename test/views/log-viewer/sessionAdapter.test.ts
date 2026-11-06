@@ -204,8 +204,13 @@ describe("createSessionSource", () => {
         const source = createSessionSource({ candidates: [] });
         await source.list();
         source.release();
+        // Listing stores the text in the background (packed first), so poll for it.
         const store = new SearchTextStore();
-        const stored = await store.get("session_1000");
+        const stored = await vi.waitFor(async () => {
+            const entry = await store.get("session_1000");
+            expect(entry).not.toBeNull();
+            return entry;
+        });
         store.release();
         expect(stored?.count).toBe(2);
         expect(stored?.text).toBe("Witaj\nraz\ndwa");
