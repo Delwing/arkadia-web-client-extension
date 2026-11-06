@@ -10,6 +10,9 @@ Komendy do poruszania się, mapy i automatycznego chodzenia.
 | `/move kierunek` | Przesuń mapę bez wysyłania komendy do serwera |
 | `/ustaw id` | Ustaw bieżącą pozycję na mapie na podany identyfikator |
 | `/zlok` | Wymuś odświeżenie bieżącej pozycji na mapie |
+| `/mapkolejka` | Eksperyment: pokazuj, co o krokach sądzi kolejka potwierdzana przez `room.info` - tylko odmowy i rozjazdy z mapą (ponownie wyłącza). Mapy nie zmienia |
+| `/mapkolejka wszystko` | Jak wyżej, ale każde zdarzenie, także każdy potwierdzony krok |
+| `/mapkolejka stan` | Co kolejka teraz uważa: ostatnie potwierdzone pomieszczenie, czekające kroki i gdzie z nich wychodzi |
 | `/idz kierunek` | Wybierz przeciwne wyjście w pomieszczeniu |
 | `n!` `s!` `e!` `w!` `ne!` `nw!` `se!` `sw!` `u!` `d!` | Wyślij czysty kierunek do serwera z pominięciem ruchu po mapie |
 
