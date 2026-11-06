@@ -171,6 +171,42 @@ describe('StepShadow', () => {
         expect(t.shadow.confirmedRoom).toBe(3);
     });
 
+    test('an entry GMCP answers out of order drops the older ones as skipped', () => {
+        const t = setup();
+        t.shadow.step('n', 1);
+        t.shadow.look();
+        // The n was refused by a line the shadow does not know; the look answers from 1.
+        t.roomInfo(1);
+        expect(t.reports.at(-1)).toMatchObject({type: 'look'});
+        expect(t.reports.at(-1)?.skipped?.map(e => e.kind)).toEqual(['step']);
+        expect(t.shadow.pending).toHaveLength(0);
+        expect(t.shadow.confirmedRoom).toBe(1);
+    });
+
+    test('a step refused silently, then another direction taken from the same room', () => {
+        const t = setup(2);
+        t.shadow.step('n', 2);
+        t.shadow.step('e', 2);
+        // n refused without a known line: e is taken from 2, not from 3.
+        t.roomInfo(20);
+        expect(t.reports.at(-1)).toMatchObject({type: 'confirmed', entry: {direction: 'e'}});
+        expect(t.reports.at(-1)?.skipped?.map(e => e.kind === 'step' && e.direction)).toEqual(['n']);
+        expect(t.shadow.confirmedRoom).toBe(20);
+    });
+
+    test('a resolved room.info does not forget steps still on their way', () => {
+        const t = setup();
+        t.shadow.step('n', 1);
+        t.shadow.step('n', 1);
+        t.shadow.step('n', 1);
+        t.roomInfo(2);
+        // The next rooms are ones GMCP cannot place: the queue still knows what was sent.
+        t.roomInfo(undefined);
+        expect(t.shadow.confirmedRoom).toBe(3);
+        t.roomInfo(undefined);
+        expect(t.shadow.confirmedRoom).toBe(4);
+    });
+
     test('a refusal with nothing waiting is reported as such', () => {
         const t = setup();
         t.shadow.reject('brak wyjscia');

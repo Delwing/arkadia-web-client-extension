@@ -51,6 +51,11 @@ export interface ShadowReport {
      * confirmed room differs from the one GMCP named.
      */
     gmcpDisagrees?: boolean;
+    /**
+     * Only on `confirmed` / `look`: entries older than the one GMCP answered, dropped
+     * because the game evidently refused them without a line the shadow knows.
+     */
+    skipped?: ShadowEntry[];
 }
 
 export interface StepShadowDeps {
@@ -69,6 +74,12 @@ export const SHADOW_STALE_MS = 10_000;
  * A `gmcp.room.info` answers the oldest one; a blocker or a refusal cancels the
  * oldest step. Where we stand is then the last room the game confirmed plus every
  * step still waiting, taken again from there.
+ *
+ * GMCP coordinates the map knows are the game's own word on where we are, so they
+ * always win: that room becomes the confirmed one, and the queue is lined up with
+ * it - the entry answered is the first that leads there, and anything older was
+ * refused by a line the shadow does not know. Only a room.info the map cannot place
+ * falls back on answering the oldest entry blindly.
  *
  * Reports what it makes of each event, and whether it disagrees with the map, so
  * it can be watched in play before anything relies on it.
@@ -130,7 +141,7 @@ export class StepShadow {
     }
 
     /**
-     * Run the map's own handling of a room.info, then answer the oldest entry with it.
+     * Run the map's own handling of a room.info, then answer a waiting entry with it.
      * `gmcpRoom` is the room GMCP named, when the map knows it.
      */
     roomInfo(gmcpRoom: number | undefined, applyToMap: () => void): void {
@@ -141,6 +152,10 @@ export class StepShadow {
             this.inRoomInfo = false;
         }
         this.dropStale();
+        if (gmcpRoom !== undefined) {
+            this.alignWithGmcp(gmcpRoom);
+            return;
+        }
         const entry = this.queue.shift();
         if (!entry) {
             this.confirmed = gmcpRoom ?? this.deps.mapRoomId();
@@ -148,16 +163,47 @@ export class StepShadow {
             return;
         }
         if (entry.kind === 'look') {
-            if (gmcpRoom !== undefined) this.confirmed = gmcpRoom;
-            this.report('look', {entry, gmcpRoom});
+            this.report('look', {entry});
             return;
         }
-        const from = this.confirmed !== undefined ? this.deps.getRoom(this.confirmed) : undefined;
-        const expected = from ? stepTarget(this.deps.resolve, from, entry.direction, false) : undefined;
-        const gmcpDisagrees = gmcpRoom !== undefined && expected !== undefined && gmcpRoom !== expected;
-        // GMCP's word wins when the map knows the room; otherwise the step is taken from the map.
-        this.confirmed = gmcpRoom ?? expected;
-        this.report('confirmed', {entry, gmcpRoom, gmcpDisagrees});
+        // GMCP cannot place the room, so the step is taken from the map.
+        this.confirmed = this.targetOf(entry);
+        this.report('confirmed', {entry});
+    }
+
+    /**
+     * GMCP put us in `gmcpRoom`. The entry it answers is the first one that, taken
+     * from the confirmed room, lands there - the older ones were refused, or the
+     * game would not be answering this one yet. When none does, the oldest is taken
+     * as answered and the map's idea of that step is reported as wrong.
+     */
+    private alignWithGmcp(gmcpRoom: number): void {
+        const index = this.queue.findIndex(entry => this.targetOf(entry) === gmcpRoom);
+        if (index === -1) {
+            const entry = this.queue.shift();
+            this.confirmed = gmcpRoom;
+            if (!entry) this.report('unexpected', {gmcpRoom});
+            else if (entry.kind === 'look') this.report('look', {entry, gmcpRoom, gmcpDisagrees: true});
+            else this.report('confirmed', {entry, gmcpRoom, gmcpDisagrees: true});
+            return;
+        }
+        const skipped = this.queue.splice(0, index);
+        const entry = this.queue.shift()!;
+        this.confirmed = gmcpRoom;
+        const extra = {entry, gmcpRoom, ...(skipped.length > 0 ? {skipped} : {})};
+        this.report(entry.kind === 'look' ? 'look' : 'confirmed', extra);
+    }
+
+    /**
+     * Where `entry` lands taken from the confirmed room: a look stays put. Undefined for
+     * a step the map knows no exit for - the game answers that with a refusal, not a
+     * room.info - and when the confirmed room itself is unknown.
+     */
+    private targetOf(entry: ShadowEntry): number | undefined {
+        if (this.confirmed === undefined) return undefined;
+        if (entry.kind === 'look') return this.confirmed;
+        const from = this.deps.getRoom(this.confirmed);
+        return from ? stepTarget(this.deps.resolve, from, entry.direction, false) : undefined;
     }
 
     /** The game refused a step: the oldest one waiting is the one it refused. */

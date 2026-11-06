@@ -39,9 +39,8 @@ export function isProblem(report: ShadowReport): boolean {
         case 'unmatched-reject':
             return true;
         case 'confirmed':
-            return report.diverged || report.gmcpDisagrees === true;
         case 'look':
-            return report.diverged;
+            return report.diverged || report.gmcpDisagrees === true || (report.skipped?.length ?? 0) > 0;
         case 'reset':
             return report.source === 'stale';
         default:
@@ -61,7 +60,7 @@ export default function initStepShadowReport(client: Client) {
     };
 
     const describe = (report: ShadowReport): AnsiAwareBuffer => {
-        const color = report.type === 'rejected' || report.diverged || report.gmcpDisagrees ? RED
+        const color = report.type === 'rejected' || report.diverged || report.gmcpDisagrees || report.skipped?.length ? RED
             : report.type === 'confirmed' || report.type === 'look' ? GREEN
                 : ORANGE;
         const line = colorString('[kolejka] ', GREY);
@@ -76,6 +75,11 @@ export default function initStepShadowReport(client: Client) {
         line.append(` | czeka: ${report.pending}`);
         if (report.diverged) line.appendBuffer(colorString(' ROZJAZD', RED));
         if (report.gmcpDisagrees) line.appendBuffer(colorString(' GMCP INACZEJ', RED));
+        if (report.skipped?.length) {
+            // Refused by a line the shadow does not know yet - worth finding out which.
+            const what = report.skipped.map(e => e.kind === 'step' ? e.direction : 'spojrz').join(', ');
+            line.appendBuffer(colorString(` POMINIETE: ${what}`, RED));
+        }
         return line;
     };
 
