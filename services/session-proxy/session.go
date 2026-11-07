@@ -439,13 +439,20 @@ func (s *Session) attach(c clientConn, resumed bool, clientOffset int64) {
 	age := time.Since(s.created)
 	upstreamClosed := s.closed
 	closeReason := s.closeReason
-	s.mu.Unlock()
 
-	if previous != nil {
-		// Two live clients on one character would interleave input unpredictably.
-		previous.close("replaced by a newer attach")
-	}
+	/*
+		Everything below is written while the lock is still held, as deliver and
+		flushPendingLocked already write under it.
 
+		Releasing it first let the game's live output overtake the replay: s.client is
+		already this socket, so the pump wrote fresh bytes to it — and the client's first
+		input, the GMCP renegotiation it sends on reading the control frame, flushed
+		whatever had been parked — while this goroutine was still writing the backlog.
+		The stream reached the client out of order. A GMCP subnegotiation cut by a chunk
+		boundary was spliced onto the wrong bytes and lost (vitals, above all, which the
+		game sends only when they change), and the client's byte count, which the next
+		resume replays from, no longer described a position in the stream.
+	*/
 	control, _ := json.Marshal(controlPayload{
 		Type:           "attached",
 		SessionAgeMs:   age.Milliseconds(),
@@ -456,28 +463,41 @@ func (s *Session) attach(c clientConn, resumed bool, clientOffset int64) {
 		UpstreamClosed: upstreamClosed,
 		CloseReason:    closeReason,
 	})
-	_ = c.sendControl(control)
+	sent := c.sendControl(control) == nil
 
 	// A raw client cannot read the control payload, so tell it in the only language it
 	// has. Worth the intrusion: without it there is no way to tell a resumed session
 	// from a fresh one, which is the entire thing being tested.
-	if resumed && !upstreamClosed {
+	if sent && resumed && !upstreamClosed {
 		text := "[proxy] wznowiono sesje"
 		if dropped > 0 {
 			text = fmt.Sprintf("%s (utracono %d bajtow starszych danych)", text, dropped)
 		}
-		_ = c.notice(text)
+		sent = c.notice(text) == nil
 	}
-	if upstreamClosed {
-		_ = c.notice(fmt.Sprintf("[proxy] gra zamknela polaczenie: %s", closeReason))
+	if sent && upstreamClosed {
+		sent = c.notice(fmt.Sprintf("[proxy] gra zamknela polaczenie: %s", closeReason)) == nil
 	}
 
 	// Each chunk keeps the time it actually arrived, which is the whole reason the
 	// stream is framed.
 	for _, ch := range pending {
-		if err := c.sendData(ch.at, ch.bytes); err != nil {
-			return
+		if !sent {
+			break
 		}
+		sent = c.sendData(ch.at, ch.bytes) == nil
+	}
+	if !sent && s.client == c {
+		// Gone before the backlog was read. It stays held as unconfirmed, and the next
+		// attach replays it from that client's own offset; until then, park live output.
+		s.client = nil
+		s.detachedAt = time.Now()
+	}
+	s.mu.Unlock()
+
+	if previous != nil {
+		// Two live clients on one character would interleave input unpredictably.
+		previous.close("replaced by a newer attach")
 	}
 }
 

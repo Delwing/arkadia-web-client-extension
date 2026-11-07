@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -421,4 +422,59 @@ func newTestSessionWithGrace(t *testing.T, maxBuffer int, grace time.Duration) (
 	s := newSession("test-session-id-000000", theirs, maxBuffer, 20*time.Second, grace)
 	t.Cleanup(func() { s.finish("test over"); _ = ours.Close() })
 	return s, ours
+}
+
+// hookedClient runs a callback on its first data write, to stand in for whatever else
+// is going on in the process while a replay is being written.
+type hookedClient struct {
+	fakeClient
+	fired   atomic.Bool
+	onFirst func()
+}
+
+func (h *hookedClient) sendData(at time.Time, payload []byte) error {
+	// Not a sync.Once: that would hold a concurrent write until the hook returned, and
+	// hide exactly the overtaking this is here to provoke.
+	if h.fired.CompareAndSwap(false, true) {
+		h.onFirst()
+	}
+	return h.fakeClient.sendData(at, payload)
+}
+
+// Live output arriving during a replay has to wait for it. When it could overtake the
+// backlog, a GMCP subnegotiation split across chunks was spliced onto the wrong bytes,
+// and the client's resume offset stopped describing a position in the stream.
+func TestLiveOutputCannotOvertakeTheReplay(t *testing.T) {
+	s, _ := newTestSession(t, 4096)
+	first := &fakeClient{}
+	s.attach(first, false, -1)
+	s.detach(first)
+
+	s.deliver(chunk{at: time.Now(), bytes: []byte("\xff\xfa\xc9char.state {\"hp\"")})
+	s.deliver(chunk{at: time.Now(), bytes: []byte(":5}\xff\xf0")})
+
+	second := &hookedClient{}
+	delivered := make(chan struct{})
+	second.onFirst = func() {
+		// The game speaks while the first replayed chunk is being written.
+		go func() {
+			s.deliver(chunk{at: time.Now(), bytes: []byte("live")})
+			close(delivered)
+		}()
+		// Long enough for an unsynchronized deliver to get in first.
+		time.Sleep(50 * time.Millisecond)
+	}
+	s.attach(second, true, 0)
+	<-delivered
+
+	got := second.data(t)
+	want := []string{"\xff\xfa\xc9char.state {\"hp\"", ":5}\xff\xf0", "live"}
+	if len(got) != len(want) {
+		t.Fatalf("sent %q, want %q", got, want)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("sent %q, want %q", got, want)
+		}
+	}
 }
