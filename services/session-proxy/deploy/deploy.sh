@@ -16,8 +16,11 @@ cd "$(dirname "$0")/.."
 echo "==> testing"
 go test ./...
 
-echo "==> building linux/${ARCH}"
-GOOS=linux GOARCH="${ARCH}" go build -trimpath -ldflags "-s -w" -o "/tmp/session-proxy-${ARCH}" .
+# Reported by /health, so a deploy can be checked against a commit.
+VERSION="$(git describe --always --dirty --exclude '*' 2>/dev/null || echo unknown)"
+
+echo "==> building linux/${ARCH} (${VERSION})"
+GOOS=linux GOARCH="${ARCH}" go build -trimpath -ldflags "-s -w -X main.version=${VERSION}" -o "/tmp/session-proxy-${ARCH}" .
 
 echo "==> uploading to ${TARGET}"
 # Staged in the home directory first: the service user cannot write to /opt, and the

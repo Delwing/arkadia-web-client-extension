@@ -20,12 +20,53 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"runtime/debug"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/coder/websocket"
 )
+
+/*
+version names the deployed build, so "is the server running the fix?" is a curl of
+/health rather than a guess. deploy.sh stamps it with -ldflags "-X main.version=...";
+a plain `go build` inside the repository falls back to the commit Go embeds itself.
+*/
+var version = ""
+
+// started is when this process came up, which is also when it was last deployed:
+// a deploy restarts the service.
+var started = time.Now()
+
+func buildVersion() string {
+	if version != "" {
+		return version
+	}
+	info, ok := debug.ReadBuildInfo()
+	if !ok {
+		return "unknown"
+	}
+	revision, modified := "", false
+	for _, setting := range info.Settings {
+		switch setting.Key {
+		case "vcs.revision":
+			revision = setting.Value
+		case "vcs.modified":
+			modified = setting.Value == "true"
+		}
+	}
+	if revision == "" {
+		return "unknown"
+	}
+	if len(revision) > 12 {
+		revision = revision[:12]
+	}
+	if modified {
+		revision += "-dirty"
+	}
+	return revision
+}
 
 var (
 	addr         = flag.String("addr", "127.0.0.1:8080", "listen address (front this with a TLS terminator)")
@@ -151,12 +192,15 @@ func main() {
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{
-			"ok":       true,
-			"sessions": manager.count(),
-			"archived": archive.count(),
+			"ok":        true,
+			"version":   buildVersion(),
+			"startedAt": started.UTC().Format(time.RFC3339),
+			"sessions":  manager.count(),
+			"archived":  archive.count(),
 		})
 	})
 
+	log.Printf("session-proxy %s", buildVersion())
 	log.Printf("listening on %s, bridging to %s:%d (ttl %s)", *addr, *upstreamHost, *upstreamPort, *ttl)
 	server := &http.Server{
 		Addr:              *addr,
