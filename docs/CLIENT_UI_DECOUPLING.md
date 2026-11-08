@@ -40,25 +40,35 @@ The client talks **up** to the UI only through four narrow channels:
 
 | Channel | Direction | What it's for |
 |---|---|---|
-| **Injected ports** (`@client/ports`) | UI → client (impl), client → UI (call) | Transient UI the client requests: tooltips, context menus, plugin popups. |
+| **Injected ports** (`@client/ports`) | UI → client (impl), client → UI (call) | Transient UI the client requests (tooltips, context menus, plugin popups) and the page itself (key presses, unload, clipboard, files, notifications). |
 | **Event bus** (`@modules/core/eventBus`) | client → UI | Everything the UI reacts to: game output, GMCP state, connection status. |
 | **Settings accessors** (`@modules/core/settings`) | both | Concern-scoped read/write of preferences. |
 | **Direct method calls** (`Client` instance) | UI → client | Sending commands, pushing content width, connecting. |
 
-Nothing else crosses the line. In particular, the client never reaches into the
-DOM and never imports `@web`.
+Nothing else crosses the line. In particular, the client never reaches for
+`document`, `window`, `navigator` or `location`, and never imports `@web`.
 
 ## The enforced boundary
 
-`src/client/**` may not import `@web`/`@web-ui` at runtime. This is an ESLint
-rule (`eslint.config.js`), not a convention:
+The layers, bottom to top, are `@shared` ← `@modules` ← `@client` ← `@web` /
+`@web-ui`. A layer imports only those below it at runtime. These are ESLint
+rules (`eslint.config.js`, the `noUpwardImports` helper), not conventions, and
+they cover `import()` as well as static imports:
 
-```
-'@typescript-eslint/no-restricted-imports': ['error', {
-  patterns: [{ group: ['@web', '@web/*', '@web-ui', '@web-ui/*'],
-               allowTypeImports: true }]
-}]
-```
+| Layer | May not import at runtime |
+|---|---|
+| `src/shared` | `@modules`, `@client`, `@web`, `@web-ui` |
+| `src/modules` | `@client`, `@web`, `@web-ui` |
+| `src/client` | `@web`, `@web-ui` — and the globals `document`, `window`, `navigator`, `location` (`no-restricted-globals`) |
+
+The client's one sanctioned DOM use is `src/client/ansi/renderSegments.ts`, the
+renderer behind `AnsiAwareBuffer.toDom()`: it builds nodes only when a UI asks
+it to render a line. DOM nodes a UI hands the client (an `onRender` container, a
+plugin's element) are fine to work on; reaching for the page is not.
+
+Sync v1 (`firebaseUnifiedSync`, `syncEngine`, `firebaseSyncListener`) still
+`import()`s the backup categories from `@web/options/export`; those three files
+are a listed exception until v1 is removed (stage 5b of `docs/dev/SYNC_V2_PLAN.md`).
 
 Type-only imports are still permitted (they erase at build time). A few UI types
 are still referenced this way from `src/client` and are tracked as follow-up
@@ -70,9 +80,9 @@ cleanups — relocating them to `@shared` would make the boundary type-clean too
 ## The ports
 
 Ports invert the dependency: the client declares an interface and calls a
-getter; the UI injects an implementation once at bootstrap. The default is a
-**no-op**, so the client runs headless (an forge UI with no tooltips just doesn't
-set them).
+getter; the UI injects an implementation once at bootstrap (the stock one in
+`src/web/installClientPorts.ts`). The default is a **no-op**, so the client runs
+headless (a UI with no tooltips just doesn't set them).
 
 ### `UiPort` — transient UI (`src/client/ports/uiPort.ts`)
 
@@ -83,7 +93,10 @@ interface UiPort {
   showBookTooltip(categories, x, y): void;
   hideBookTooltip(): void;
   showContextMenu(items, x, y, options?): void;
+  showHerbMenu?(herbId, actions, x, y, commandPrefix): void;  // herb named in the output
+  showRoomMenu?(roomId, x, y): void;                          // room named in the output
   attachTooltip?(element, card): TooltipHandle;  // plugin api.ui.setTooltip; omit = no tooltip
+  shouldSuppressKeys?(): boolean;                // e.g. a modal is open
 }
 setUiPort(port);   // UI installs its implementation
 getUiPort();       // client core reads it (no-op until set)
@@ -92,6 +105,33 @@ getUiPort();       // client core reads it (no-op until set)
 `ContextMenuEntry.label` is deliberately `string | Node` — no React types — so
 the client can build menu entries without depending on the web UI. A UI widens
 this to its own richer entry type when it renders.
+
+### `HostPort` — the page (`src/client/ports/hostPort.ts`)
+
+Everything the client needs from the browser page, so that it never touches
+`window`/`document`/`navigator`/`location` itself:
+
+```ts
+interface HostPort {
+  platform: { isMac; isMobile; isIOS };
+  onKeyDown(listener): unsubscribe;      // global keybinds; events need key/code/modifiers/repeat/preventDefault
+  isTypingInTextField(): boolean;        // focus in a text field other than the command line
+  onUnload(listener): unsubscribe;       // flush unsaved state
+  onUserGesture(listener): unsubscribe;  // unlocks audio
+  onStorageChange(key, listener): unsubscribe;  // another tab wrote localStorage[key]
+  copyText(text); saveFile(name, content, mime); openTextFile(accept);
+  loadScript(url) / removeScript(handle);       // legacy (non-module) plugins
+  getLaunchParam(name) / clearLaunchParam(name);
+  enableNotifications(); notify(message);
+}
+setHostPort(port);   // UI installs it
+getHostPort();       // client reads it (inert until set)
+```
+
+The browser implementation is `src/web/browserHost.ts`. The unit-test setup
+installs it too, so tests drive the client with real jsdom events. The inert
+default delivers no keys and offers no files, which is what a headless client
+wants.
 
 ### `PluginHostPort` — plugin-host capabilities (`src/client/ports/pluginHostPort.ts`)
 
@@ -179,11 +219,14 @@ A UI is an HTML entry + a bootstrap module. The minimal recipe (see the React
 import mudClient from '@web/MudClient';        // transport (WebSocket/telnet-proxy)
 import Client from '@client/Client';
 import { registerScripts } from '@client/main';
-import { setUiPort } from '@client/ports';
+import { setHostPort, setUiPort } from '@client/ports';
+import { createBrowserHost } from '@web/browserHost';
 import { installContentWidthMeasurer } from '@web/contentWidthMeasurer';
 import eventBus from '@modules/core/eventBus';
 
 // 1. Inject the port(s). No-op is fine if you don't render tooltips/menus.
+//    Without a host, no key reaches the client's keybinds.
+setHostPort(createBrowserHost());   // from '@web/browserHost'
 setUiPort({
   showHerbTooltip() {}, hideHerbTooltip() {},
   showBookTooltip() {}, hideBookTooltip() {},
@@ -270,8 +313,8 @@ a UI just subscribes and swaps to its masked field — no new port needed.
 
 ## Key files
 
-- Ports: `src/client/ports/{uiPort,pluginHostPort,index}.ts`
-- Boundary rule: `eslint.config.js`
+- Ports: `src/client/ports/{uiPort,pluginHostPort,hostPort,index}.ts`; stock implementations `src/web/installClientPorts.ts`, `src/web/browserHost.ts`
+- Boundary rules: `eslint.config.js`
 - Settings accessors: `src/modules/core/settings/`
 - Slice types/defaults: `src/shared/uiSettingsTypes.ts`, `src/shared/settingsDefaults.ts`
 - Event definitions: `src/shared/events/`
