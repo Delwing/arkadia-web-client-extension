@@ -6,7 +6,8 @@
  * place where the web UI supplies the concrete behaviour. Call `installClientPorts()`
  * once at bootstrap, before `registerScripts(client)`.
  */
-import { setUiPort, setPluginHostPort } from '@client/ports';
+import { setUiPort, setPluginHostPort, setHostPort } from '@client/ports';
+import { createBrowserHost } from './browserHost';
 import { showHerbTooltip, hideHerbTooltip } from './herbTooltip';
 import { showBookTooltip, hideBookTooltip } from './bookTooltip';
 import { showContextMenu } from './contextMenu';
@@ -29,6 +30,8 @@ import { readPluginSqlite } from './pluginSqlite';
 
 export function installClientPorts(): void {
     publishPluginUiKit();
+
+    setHostPort(createBrowserHost());
 
     setUiPort({
         showHerbTooltip,

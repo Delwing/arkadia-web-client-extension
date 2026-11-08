@@ -12,6 +12,7 @@ import {
     walkModifiersOf,
     type WalkMode,
 } from "@modules/core/walkModeRegistry";
+import { getHostPort, type HostKeyEvent } from "../ports";
 
 /**
  * Direction (numpad movement) keybinds.
@@ -89,7 +90,7 @@ function buildDirectionBindings(
     });
 }
 
-function matchesDirectionBinding(event: KeyboardEvent, binding: DirectionBinding): boolean {
+function matchesDirectionBinding(event: HostKeyEvent, binding: DirectionBinding): boolean {
     return bindCodeOf(event) === binding.code &&
         event.ctrlKey === !!binding.ctrl &&
         event.altKey === !!binding.alt &&
@@ -121,7 +122,7 @@ export function specialExitAt(client: Client, index = 0): string | null {
  * already be free of the modifiers the direction keys hold (see
  * effectiveWalkModifiers), or the two could not be told apart.
  */
-function matchesWalkMode(event: KeyboardEvent, binding: DirectionBinding, mods: WalkModifiers): boolean {
+function matchesWalkMode(event: HostKeyEvent, binding: DirectionBinding, mods: WalkModifiers): boolean {
     if (bindCodeOf(event) !== binding.code) return false;
     return event.ctrlKey === (!!binding.ctrl || !!mods.ctrl) &&
         event.altKey === (!!binding.alt || !!mods.alt) &&
@@ -165,7 +166,7 @@ export default function initDirectionBinds(client: Client): void {
         directionBindings = buildDirectionBindings(isDirectionMap(directions) ? directions : undefined);
     });
 
-    const walkStep = (event: KeyboardEvent): { binding: DirectionBinding; mode: WalkMode } | null => {
+    const walkStep = (event: HostKeyEvent): { binding: DirectionBinding; mode: WalkMode } | null => {
         if (!event.ctrlKey && !event.altKey && !event.shiftKey) return null;
         // No bind uses ⌘/Win: Cmd+Option+arrow belongs to the browser, not to a walk mode.
         if (event.metaKey) return null;
@@ -179,7 +180,7 @@ export default function initDirectionBinds(client: Client): void {
         return null;
     };
 
-    window.addEventListener('keydown', (event) => {
+    getHostPort().onKeyDown((event) => {
         if (shouldIgnoreGlobalKeybind()) return;
         const binding = directionBindings.find(b => matchesDirectionBinding(event, b));
         if (binding) {

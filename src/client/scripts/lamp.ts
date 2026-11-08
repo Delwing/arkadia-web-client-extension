@@ -20,7 +20,7 @@ export default function initLamp(client: Client) {
     const BEEP_TIMES = [10]
 
     let seconds = DEFAULT_TIME
-    let timer: number | null = null
+    let timer: ReturnType<typeof setInterval> | null = null
 
     function secondsToClock(sec: number) {
         const m = Math.floor(sec / 60)
@@ -45,7 +45,7 @@ export default function initLamp(client: Client) {
     function startTimer() {
         stopTimer()
         seconds = DEFAULT_TIME
-        timer = window.setInterval(processCounter, 1000)
+        timer = setInterval(processCounter, 1000)
         processCounter()
     }
 

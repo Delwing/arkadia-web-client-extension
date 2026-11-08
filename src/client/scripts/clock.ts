@@ -362,7 +362,7 @@ export class ArkadiaTime {
      */
     private measuredAt: number | null = null;
 
-    private timers: number[] = [];
+    private timers: ReturnType<typeof setInterval>[] = [];
 
     private triggers: Trigger[] = [];
 
@@ -544,7 +544,7 @@ export class ArkadiaTime {
         if (this.timers.length > 0) {
             return;
         }
-        this.timers.push(window.setInterval(() => this.update(), 500));
+        this.timers.push(setInterval(() => this.update(), 500));
     }
 
     private setup(startTime: number, startHour: number, startMinutes: number, precision: number, startDay: number, measuredAt: number = startTime): void {

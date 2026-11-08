@@ -22,6 +22,7 @@ import {
     type DateGroupedKills,
     type KillRecord,
 } from './killLifetimeStorage';
+import { getHostPort } from "../ports";
 
 export type KillEntry = {
     mySession: number;
@@ -576,9 +577,9 @@ class KillCounter extends BaseCounter {
             void this.syncTotalsFromIDB().then(() => this.emitUpdate());
         });
 
-        window.addEventListener("beforeunload", this.persistTotals);
-        window.addEventListener("beforeunload", this.persistSessions);
-        window.addEventListener("beforeunload", this.persistTeamKills);
+        getHostPort().onUnload(this.persistTotals);
+        getHostPort().onUnload(this.persistSessions);
+        getHostPort().onUnload(this.persistTeamKills);
 
         const myKillRegex = /^[ >]*(Zabil(?<variant>es|as) (?<name>[A-Za-z ()!,]+))\.$/;
         const teamKillRegex = /^[ >]*(?<player>[a-zA-Z (),!]+) zabil(?<variant>a?) (?<name>[a-zA-Z (),!]+)\.$/;

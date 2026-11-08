@@ -11,7 +11,7 @@ import Client from "../Client";
  */
 export default function initCoverTimer(client: Client) {
     const COVER_TIME = 5; // seconds
-    let timer: number | null = null;
+    let timer: ReturnType<typeof setInterval> | null = null;
     let end = 0;
 
     function stopTimer() {
@@ -40,7 +40,7 @@ export default function initCoverTimer(client: Client) {
         }
         client.sendEvent('cover.start');
         update();
-        timer = window.setInterval(update, 100);
+        timer = setInterval(update, 100);
     }
 
     client.on('maneuverAttempted', () => {

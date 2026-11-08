@@ -8,6 +8,7 @@ import { characterStorage } from "@modules/core/storage";
 import { defaultSettings } from "@modules/core/defaultSettings";
 import { wrapItemLine } from "./counterTableUtils";
 import { getRoomInfo } from "@modules/core/roomInfoProvider";
+import { getHostPort } from "../ports";
 
 const BANK_NAME_COLOR = createColorFormat('#ff6347');
 
@@ -418,7 +419,7 @@ export default function initDeposits(client: Client, aliases?: { pattern: RegExp
         }});
     }
 
-    window.addEventListener("beforeunload", persist);
+    getHostPort().onUnload(persist);
 }
 
 export { deposits };

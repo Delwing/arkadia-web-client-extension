@@ -16,6 +16,7 @@ import {
     type ResistanceKind,
     type ResistanceTrait,
 } from "@modules/data/enemyResistanceStore";
+import { getHostPort } from "../ports";
 
 const PARSER_TAG = "enemy-resistances";
 
@@ -89,7 +90,7 @@ function appendParseWarning(line: AnsiAwareBuffer, reason: string): AnsiAwareBuf
     const warn = `[odpornosci] ${reason} - kliknij, aby skopiowac linie i zglosic.`;
     const warnBuffer = colorString(warn, WARNING_COLOR);
     warnBuffer.createLink([0, warn.length], {
-        onClick: () => void navigator.clipboard?.writeText(lineText),
+        onClick: () => void getHostPort().copyText(lineText),
         title: "Kopiuj linię",
     });
     return line.append("\n", {}).appendBuffer(warnBuffer);

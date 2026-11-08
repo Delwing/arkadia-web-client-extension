@@ -5,6 +5,7 @@ import eventBus from '@modules/core/eventBus'
 import {colorString, createColorFormat} from '@modules/core/Colors'
 import type {AnsiAwareBuffer} from '@client/ansi/FormatState.ts'
 import {getPluginScript, isStoredPluginId, updatePluginScript} from '@client/utils/pluginStorage'
+import { getHostPort } from './ports'
 
 const STABLE_ID_PATTERN = /^[A-Za-z0-9._-]{1,64}$/
 
@@ -184,9 +185,9 @@ export class PluginManager {
       }
     }
 
-    // Remove script element if legacy
-    if (plugin.scriptElement && plugin.scriptElement.parentNode) {
-      plugin.scriptElement.parentNode.removeChild(plugin.scriptElement)
+    // Remove the script tag of a legacy script
+    if (plugin.scriptHandle !== undefined) {
+      getHostPort().removeScript(plugin.scriptHandle)
     }
 
     this.plugins.delete(url)
@@ -264,23 +265,14 @@ export class PluginManager {
    */
   private loadAsLegacyScript(url: string, plugin: LoadedPlugin): Promise<void> {
     return new Promise((resolve, reject) => {
-      const script = document.createElement('script')
-      script.src = url
-      script.async = true
-
-      script.onload = () => {
+      getHostPort().loadScript(url).then((handle) => {
         console.log(`[PluginManager] Legacy script loaded successfully: ${url}`)
-        plugin.scriptElement = script
+        plugin.scriptHandle = handle
         resolve()
-      }
-
-      script.onerror = (event) => {
-        console.error(`[PluginManager] Legacy script failed to load: ${url}`)
-        console.error(`[PluginManager] Error event:`, event)
-        reject(new Error('Script failed to load'))
-      }
-
-      document.head.appendChild(script)
+      }, (error) => {
+        console.error(`[PluginManager] Legacy script failed to load: ${url}`, error)
+        reject(error instanceof Error ? error : new Error('Script failed to load'))
+      })
     })
   }
 

@@ -15,6 +15,7 @@ import {
     type ImproveEntry,
     type LifetimeDay,
 } from "@shared/improveProgress.ts";
+import { getHostPort } from "../ports";
 
 export type {ImproveEntry} from "@shared/improveProgress.ts";
 
@@ -226,7 +227,7 @@ export default class ImproveCounter extends BaseCounter {
             eventBus.emit("postepy2.updated");
         });
 
-        window.addEventListener("beforeunload", this.persist);
+        getHostPort().onUnload(this.persist);
 
         this.client.on("gmcp.char.state", (state) => {
             if (typeof state.form === "number") {

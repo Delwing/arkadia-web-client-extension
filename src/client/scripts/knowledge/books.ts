@@ -79,7 +79,7 @@ export function createKnowledgeBooks(ctx: KnowledgeContext): KnowledgeBooks {
         const resolvedCategory = resolveBookCategory(book, category);
         if (resolvedCategory) {
             setBookProgress(bookKey, resolvedCategory, status);
-            window.setTimeout(() => dispatchReport(), 50);
+            setTimeout(() => dispatchReport(), 50);
         }
     }
 
@@ -116,7 +116,7 @@ export function createKnowledgeBooks(ctx: KnowledgeContext): KnowledgeBooks {
             // The category comes from the book's own list, so it is used as is
             const bookProg = ctx.snapshot?.data.bookProgress?.[ctx.characterKey()]?.[action.bookKey] ?? {};
             setBookProgress(action.bookKey, action.category, !findBookProgValue(bookProg, action.category));
-            window.setTimeout(() => dispatchReport(), 50);
+            setTimeout(() => dispatchReport(), 50);
         }
     });
 

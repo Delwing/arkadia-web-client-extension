@@ -6,7 +6,7 @@ import { defaultSettings } from "@modules/core/defaultSettings";
 export default function initFullHpTimer(client: Client) {
     const FULL_HP = 6;
     const SPRING_GREEN = createColorFormat("#00ff7f");
-    let timer: number | null = null;
+    let timer: ReturnType<typeof setTimeout> | null = null;
     let enabled = false;
     let playerNum: number | undefined;
     let previousHp: number | null = null;
@@ -27,7 +27,7 @@ export default function initFullHpTimer(client: Client) {
 
     function startTimer() {
         if (!enabled || inCombat || timer !== null) return;
-        timer = window.setTimeout(() => {
+        timer = setTimeout(() => {
             const plain = "Jestes w pelni zdrowia.";
             const msg = colorString(plain, SPRING_GREEN);
             client.println(msg);

@@ -101,7 +101,7 @@ export interface KnowledgeDetailsRun {
 
 export function createKnowledgeDetailsRun(ctx: KnowledgeContext, entries: KnowledgeEntries): KnowledgeDetailsRun {
     const {client, detailsStore} = ctx;
-    let activeRun: { tag: string; abortTimer: number; inactivityTimer: number | null } | null = null;
+    let activeRun: { tag: string; abortTimer: ReturnType<typeof setTimeout> | undefined; inactivityTimer: ReturnType<typeof setTimeout> | null } | null = null;
 
     function build() {
         if (!ctx.details) {
@@ -128,7 +128,7 @@ export function createKnowledgeDetailsRun(ctx: KnowledgeContext, entries: Knowle
         let currentCategory: KnowledgeCategoryBaseName | null = null;
         let currentSection: KnowledgeDetailsType | null = null;
 
-        const run = {tag: runTag, abortTimer: 0, inactivityTimer: null as number | null};
+        const run = {tag: runTag, abortTimer: undefined as ReturnType<typeof setTimeout> | undefined, inactivityTimer: null as ReturnType<typeof setTimeout> | null};
         const isActive = () => activeRun === run;
 
         function ensureCategoryState(category: KnowledgeCategoryBaseName): CategoryRunState {
@@ -145,9 +145,9 @@ export function createKnowledgeDetailsRun(ctx: KnowledgeContext, entries: Knowle
                 return;
             }
             if (run.inactivityTimer != null) {
-                window.clearTimeout(run.inactivityTimer);
+                clearTimeout(run.inactivityTimer);
             }
-            run.inactivityTimer = window.setTimeout(sendNextCommand, delay);
+            run.inactivityTimer = setTimeout(sendNextCommand, delay);
         }
 
         /** The previous reply has gone quiet: ask for the next category, or wrap up. */
@@ -160,8 +160,8 @@ export function createKnowledgeDetailsRun(ctx: KnowledgeContext, entries: Knowle
                 finishRun(false);
                 return;
             }
-            window.clearTimeout(run.abortTimer);
-            run.abortTimer = window.setTimeout(() => finishRun(true), KNOWLEDGE_REPORT_HARD_TIMEOUT);
+            clearTimeout(run.abortTimer);
+            run.abortTimer = setTimeout(() => finishRun(true), KNOWLEDGE_REPORT_HARD_TIMEOUT);
             scheduleInactivity();
             const asked = KNOWLEDGE_CATEGORY_CONFIG.length - pendingCategories.length;
             client.sendEvent('notify', {
@@ -195,9 +195,9 @@ export function createKnowledgeDetailsRun(ctx: KnowledgeContext, entries: Knowle
                 return;
             }
 
-            window.clearTimeout(run.abortTimer);
+            clearTimeout(run.abortTimer);
             if (run.inactivityTimer != null) {
-                window.clearTimeout(run.inactivityTimer);
+                clearTimeout(run.inactivityTimer);
             }
             activeRun = null;
             entries.setHighlighting(true);

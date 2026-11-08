@@ -1,3 +1,5 @@
+import { getHostPort } from './ports';
+
 /**
  * Local, on-this-machine notifications.
  *
@@ -10,33 +12,10 @@
  */
 export default class NotificationManager {
     enableNotifications() {
-        if (typeof Notification === 'undefined') {
-            return;
-        }
-        if ('serviceWorker' in navigator && navigator.serviceWorker) {
-            navigator.serviceWorker.register('sw.js').catch(() => {});
-        }
-        if (Notification.permission === 'default') {
-            Notification.requestPermission();
-        }
+        getHostPort().enableNotifications();
     }
 
     notify(message: string) {
-        if (typeof Notification === 'undefined') {
-            return;
-        }
-        if (Notification.permission !== 'granted') {
-            return;
-        }
-        if ('serviceWorker' in navigator && navigator.serviceWorker) {
-            navigator.serviceWorker.ready
-                // No tag: every alert is its own notification. A shared tag made
-                // a repeat replace the one still in macOS Notification Center
-                // without a new banner, `renotify` notwithstanding.
-                .then((reg) => reg.showNotification(message))
-                .catch(() => {});
-        } else {
-            new Notification(message);
-        }
+        getHostPort().notify(message);
     }
 }

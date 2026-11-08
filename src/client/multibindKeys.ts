@@ -1,9 +1,8 @@
 import { globalStorage } from '@modules/core/storage';
 import { defaultBinds } from '@modules/core/keymapStorage';
 import { MAX_MULTIBIND_SLOTS, type Bind } from '@modules/core/keymapTypes';
+import { altKeyLabel } from "./keyLabels";
 
-const isMac = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform);
-const ALT_LABEL = isMac ? '⌥' : 'ALT';
 
 /**
  * Keys of the multibind slots in the active keymap: slot n on index n-1. The
@@ -32,7 +31,7 @@ export function formatBindKey(def?: Bind) {
     }
     const parts: string[] = [];
     if (def.ctrl) parts.push('CTRL');
-    if (def.alt) parts.push(ALT_LABEL);
+    if (def.alt) parts.push(altKeyLabel());
     if (def.shift) parts.push('SHIFT');
     parts.push(key);
     return parts.join('+');

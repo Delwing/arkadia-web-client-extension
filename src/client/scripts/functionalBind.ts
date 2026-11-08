@@ -7,9 +7,9 @@ import {CATEGORY_LABELS, FUNCTIONAL_BIND_CATEGORIES} from "./functionalBindCateg
 
 import { getRenderSettings, onRenderSettingsChange } from "@modules/core/settings/index.ts";
 import { functionalBindParts, normalizeFunctionalBindPresentation, type FunctionalBindPresentation } from "@shared/functionalBindPresentation.ts";
+import { getHostPort, type HostKeyEvent } from "../ports";
+import { altKeyLabel } from "../keyLabels";
 
-const isMac = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform);
-const ALT_LABEL = isMac ? '⌥' : 'ALT';
 
 export const LINE_START_EVENT = 'line-start';
 
@@ -40,7 +40,7 @@ export function formatLabel(options: FunctionalBindOptions) {
     }
     const parts = [] as string[];
     if (options.ctrl) parts.push('CTRL');
-    if (options.alt) parts.push(ALT_LABEL);
+    if (options.alt) parts.push(altKeyLabel());
     if (options.shift) parts.push('SHIFT');
     parts.push(key);
     return parts.join('+');
@@ -247,7 +247,7 @@ export class FunctionalBindManager {
         });
 
         // Single keydown listener for all functional binds
-        window.addEventListener('keydown', (ev) => {
+        getHostPort().onKeyDown((ev) => {
             this.handleKeyDown(ev);
         });
 
@@ -300,7 +300,7 @@ export class FunctionalBindManager {
     }
 
     /** Find the highest-priority active bind, optionally filtered by a key event. */
-    private findBestBind(ev?: KeyboardEvent): FunctionalBind | null {
+    private findBestBind(ev?: HostKeyEvent): FunctionalBind | null {
         let bestOrder = -1;
         let bestBind: FunctionalBind | null = null;
 
@@ -327,7 +327,7 @@ export class FunctionalBindManager {
         return bestBind;
     }
 
-    private handleKeyDown(ev: KeyboardEvent) {
+    private handleKeyDown(ev: HostKeyEvent) {
         // Shared, UI-agnostic guard: don't fire while typing in a non-command
         // field or when the UI suppresses keybinds (e.g. an open modal). The
         // command input opts back in via [data-command-input].

@@ -28,6 +28,7 @@ import {
 import {recordCombatStat} from "./combatStats";
 import {foldText} from "@shared/foldText.ts";
 import {createMatchesLuaCode, escapeLuaString} from "../luaInterop";
+import { getHostPort } from "../ports";
 
 const ERROR_COLOR = createColorFormat('#ff0000');
 
@@ -196,7 +197,7 @@ export default function registerLuaGagTriggers(client: Client) {
                     const warn = `Zgłoś błąd w powyższej linii (kliknij w komunikat aby skopiować): ${e.message}`;
                     const warnBuffer = colorString(warn, ERROR_COLOR);
                     warnBuffer.createLink([0, warn.length], {
-                        onClick: () => navigator.clipboard.writeText(line.text),
+                        onClick: () => void getHostPort().copyText(line.text),
                         title: 'Kopiuj linię'
                     });
                     global.line.append("\n").appendBuffer(warnBuffer);

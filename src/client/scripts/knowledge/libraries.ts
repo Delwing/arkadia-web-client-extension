@@ -42,7 +42,7 @@ export function createKnowledgeLibraries(ctx: KnowledgeContext): KnowledgeLibrar
     let reportTimer: ReturnType<typeof setTimeout> | undefined;
     let pendingPromptTrigger: {
         trigger: ReturnType<typeof client.Triggers.registerOneTimeTrigger>;
-        timeoutId: number;
+        timeoutId: ReturnType<typeof setTimeout>;
     } | null = null;
 
     /** Libraries are keyed by the map's internal ids; the window wants rooms. */
@@ -270,7 +270,7 @@ export function createKnowledgeLibraries(ctx: KnowledgeContext): KnowledgeLibrar
         if (!pendingPromptTrigger) {
             return;
         }
-        window.clearTimeout(pendingPromptTrigger.timeoutId);
+        clearTimeout(pendingPromptTrigger.timeoutId);
         if (removeTrigger) {
             client.Triggers.removeTrigger(pendingPromptTrigger.trigger);
         }
@@ -303,7 +303,7 @@ export function createKnowledgeLibraries(ctx: KnowledgeContext): KnowledgeLibrar
             },
             'knowledge-progress',
         );
-        const timeoutId = window.setTimeout(() => {
+        const timeoutId = setTimeout(() => {
             clearPendingPrompt(true);
         }, 5000);
         pendingPromptTrigger = {trigger, timeoutId};
@@ -315,7 +315,7 @@ export function createKnowledgeLibraries(ctx: KnowledgeContext): KnowledgeLibrar
             const category = matches[1];
             if (category) {
                 setProgress(category, 'in_progress');
-                window.setTimeout(() => dispatchReport(), 50);
+                setTimeout(() => dispatchReport(), 50);
             }
             return line;
         },
@@ -328,7 +328,7 @@ export function createKnowledgeLibraries(ctx: KnowledgeContext): KnowledgeLibrar
             const category = matches[1];
             if (category) {
                 setProgress(category, 'completed');
-                window.setTimeout(() => dispatchReport(), 50);
+                setTimeout(() => dispatchReport(), 50);
             }
             return line;
         },

@@ -3,7 +3,7 @@ import Client from "../Client";
 export default function initOrderTimer(client: Client) {
     const tag = 'order-timer';
     const ORDER_TIME = 15; // seconds
-    let timer: number | null = null;
+    let timer: ReturnType<typeof setInterval> | null = null;
     let end = 0;
 
     const orderPatterns = [
@@ -40,7 +40,7 @@ export default function initOrderTimer(client: Client) {
             clearInterval(timer);
         }
         update();
-        timer = window.setInterval(update, 100);
+        timer = setInterval(update, 100);
     }
 
     orderPatterns.forEach(pattern => {

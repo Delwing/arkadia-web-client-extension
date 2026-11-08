@@ -7,13 +7,13 @@ export default function initSmith(client: Client, aliases?: { pattern: RegExp; c
     const getDefaultCommand = () => `wlm;${client.drawWeaponCommand} wszystkich broni;zaloz wszystkie zbroje`;
 
     let working = false;
-    let timer: number | null = null;
+    let timer: ReturnType<typeof setTimeout> | null = null;
 
     const scheduleDefault = () => {
         if (timer !== null) {
             clearTimeout(timer);
         }
-        timer = window.setTimeout(() => {
+        timer = setTimeout(() => {
             if (!working) {
                 client.FunctionalBind.set(getDefaultCommand());
             }

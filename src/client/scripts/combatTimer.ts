@@ -5,7 +5,7 @@ const INITIAL_SECONDS = Math.ceil(DISPLAY_DURATION_MS / 1000);
 
 export default function initCombatTimer(client: Client) {
     let lastCombatState: boolean | null = null;
-    let timer: number | null = null;
+    let timer: ReturnType<typeof setInterval> | null = null;
     let timerStart = 0;
     let lastEmitted: number | null = null;
 
@@ -49,7 +49,7 @@ export default function initCombatTimer(client: Client) {
         timerStart = client.now();
         lastEmitted = INITIAL_SECONDS;
         emit(INITIAL_SECONDS);
-        timer = window.setInterval(updateTimer, 250);
+        timer = setInterval(updateTimer, 250);
     }
 
     function setCombatState(inCombat: boolean) {

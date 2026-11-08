@@ -3,6 +3,7 @@ import {colorString, createColorFormat} from "@modules/core/Colors";
 import {AnsiAwareBuffer, FormatStateSnapshot} from "@client/ansi/FormatState";
 import { characterStorage } from "@modules/core/storage";
 import eventBus from "@modules/core/eventBus";
+import { getHostPort } from "../ports";
 
 const STORAGE_KEY = "containers";
 
@@ -663,7 +664,7 @@ export default function initBagManager(
         });
         Object.assign(containerConfig, newValue);
     });
-    window.addEventListener("beforeunload", () => saveConfig(client));
+    getHostPort().onUnload(() => saveConfig(client));
 
     client.Triggers.registerTrigger(
         "Nie masz wystarczajacej ilosci pieniedzy, zeby zaplacic.",

@@ -3,6 +3,7 @@ import { AnsiAwareBuffer, BufferSegment } from "../ansi/FormatState";
 import { createColorFormat } from "@modules/core/Colors";
 import { characterStorage } from "@modules/core/storage";
 import eventBus from "@modules/core/eventBus";
+import { getHostPort } from "../ports";
 
 const HISTORY_LIMIT = 100;
 const PRINT_LIMIT = 20;
@@ -180,7 +181,7 @@ export default function initChatHistory(client: Client, aliases?: { pattern: Reg
     });
 
     // Persist on page unload
-    window.addEventListener("beforeunload", persistHistory);
+    getHostPort().onUnload(persistHistory);
 
     function handleChatMessage(buffer: AnsiAwareBuffer) {
         if (!(buffer instanceof AnsiAwareBuffer) || !buffer.text.trim()) return;

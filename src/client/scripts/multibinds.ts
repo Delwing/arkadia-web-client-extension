@@ -10,6 +10,7 @@ import { type Bind, bindMatches } from "@modules/core/keymapTypes";
 import MapHelper from "@client/map/MapHelper.ts";
 import { getGateBindString, isGateRoom } from "./gateBind";
 import { resolveMultibindSlots, temporaryMultibinds } from "./temporaryMultibinds";
+import { getHostPort } from "../ports";
 
 /** Bar indexes of the room's own binds, past any multibind slot so they sort last. */
 const ROOM_BIND_INDEX = 1001;
@@ -376,7 +377,7 @@ export default function initMultibinds(client: Client, aliases?: { pattern: RegE
     subscribeMultibinds(applyStored);
     temporaryMultibinds.subscribe(() => sendUpdate(getRoomId()));
 
-    window.addEventListener('keydown', (ev) => {
+    getHostPort().onKeyDown((ev) => {
         if (ev.repeat) {
             return;
         }
@@ -389,7 +390,7 @@ export default function initMultibinds(client: Client, aliases?: { pattern: RegE
     });
 
     // Handle room bind and drinkable binds
-    window.addEventListener('keydown', (ev) => {
+    getHostPort().onKeyDown((ev) => {
         if (ev.repeat) {
             return;
         }

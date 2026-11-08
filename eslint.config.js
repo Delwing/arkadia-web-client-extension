@@ -97,6 +97,20 @@ export default [
           message: 'src/client must not import the web UI at runtime. Use the injected ports in @client/ports (setUiPort/setPluginHostPort) instead. Type-only imports are permitted.',
         }],
       }],
+      // ...nor reach for the page itself: key presses, unload, the clipboard,
+      // files, the URL and notifications come through getHostPort().
+      'no-restricted-globals': ['error', ...['document', 'window', 'navigator', 'location'].map(name => ({
+        name,
+        message: `src/client must not use \`${name}\`: ask the host for it through getHostPort() (@client/ports), which the UI installs.`,
+      }))],
+    },
+  },
+  {
+    // The one sanctioned exception: AnsiAwareBuffer.toDom() builds DOM nodes when
+    // a UI asks it to render a line. It runs only on that call, never on its own.
+    files: ['src/client/ansi/renderSegments.ts'],
+    rules: {
+      'no-restricted-globals': 'off',
     },
   },
   {
