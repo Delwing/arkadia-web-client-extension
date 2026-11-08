@@ -3,7 +3,7 @@
  * and marked known for the character on sight; the details window (`/wiedza`)
  * shows what is known and what is missing.
  */
-import {createColorFormat} from '@modules/core/Colors';
+import {createColorFormat} from '@client/Colors.ts';
 import {
     canonicalizeKnowledgeEntryGender,
     formatKnowledgeEntryForGender,
@@ -14,7 +14,7 @@ import {
     parseKnowledgeGender,
 } from '@modules/data/dataStores/knowledgeDetailsStore';
 import {AnsiAwareBuffer} from '@client/ansi/FormatState.ts';
-import {KNOWLEDGE_CATEGORY_CONFIG, KnowledgeCategoryBaseName} from '../../knowledgeCategories';
+import {KNOWLEDGE_CATEGORY_CONFIG, KnowledgeCategoryBaseName} from '@shared/knowledgeCategories.ts';
 import type {KnowledgeContext} from './context';
 import {recolorToken} from './highlight';
 import type {KnowledgeHints} from './hints';

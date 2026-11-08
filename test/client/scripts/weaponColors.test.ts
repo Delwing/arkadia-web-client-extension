@@ -1,6 +1,6 @@
 import initWeaponColors from '@client/scripts/weaponColors';
 import Triggers from '@client/Triggers';
-import { colorString } from '@modules/core/Colors';
+import { colorString } from '@client/Colors.ts';
 import { MAGICS_COLOR } from '@client/constants/colors';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 

@@ -1,6 +1,6 @@
 import Client from "../Client";
 import {scheduleFromEvent} from "@shared/eventClock";
-import {createColorFormat} from "@modules/core/Colors";
+import {createColorFormat} from "@client/Colors.ts";
 import {AnsiAwareBuffer} from "../ansi/FormatState";
 import {objectListFilters} from "@modules/core/objectListFilters.ts";
 

@@ -5,7 +5,7 @@ vi.mock('@client/main', () => ({
 }));
 
 import Client from '@client/Client';
-import { mudletColorLine } from '@modules/core/Colors';
+import { mudletColorLine } from '@client/Colors.ts';
 import { characterStorage, globalStorage } from '@modules/core/storage';
 import eventBus from '@modules/core/eventBus';
 

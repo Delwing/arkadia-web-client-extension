@@ -9,7 +9,7 @@
  *    string, which meant editing the client's knowledge left stale Worker
  *    answers in KV forever.
  * 2. The prompt teaches the `kind` names and field names that
- *    `src/modules/core/assistant/proposalValidator.ts` actually accepts. The
+ *    `src/web/assistant/proposalValidator.ts` actually accepts. The
  *    Worker cannot import that validator (it pulls in the client's browser-shaped
  *    dependency tree), so it goes through `PROPOSAL_KINDS`;
  *    `test/shared/assistant/proposalSchemaAlignment.test.ts` in the main project

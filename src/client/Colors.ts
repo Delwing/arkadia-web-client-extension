@@ -1,6 +1,6 @@
 import xtermArkadia from "@client/xtermArkadia";
 import xtermProper from "@client/xtermProper";
-import {getRenderSettings} from "./settings";
+import {getRenderSettings} from "@modules/core/settings";
 import {AnsiAwareBuffer, FormatStateSnapshot, FormatColor, HexColor, RgbColor} from "@client/ansi/FormatState.ts";
 import mudletColors from "@client/colors.json";
 

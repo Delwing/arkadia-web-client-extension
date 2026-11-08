@@ -1,5 +1,5 @@
 import {AnsiAwareBuffer, FormatColor} from "@client/ansi/FormatState";
-import {colorCodes} from "@modules/core/Colors";
+import {colorCodes} from "@client/Colors.ts";
 import {copyCanvasToClipboard} from "@shared/dom/copyCanvasToClipboard.ts";
 
 export interface BufferToImageOptions {

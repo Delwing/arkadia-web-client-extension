@@ -1,4 +1,4 @@
-import {colorString} from "@modules/core/Colors";
+import {colorString} from "@client/Colors.ts";
 import {AnsiAwareBuffer, FormatStateSnapshot} from "@client/ansi/FormatState";
 
 export function createPad(width: number, left: number, right: number) {

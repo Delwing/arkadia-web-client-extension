@@ -1,6 +1,6 @@
 import Client from "../Client";
 import {defaultSettings} from "@modules/core/defaultSettings";
-import type {LetterTemplate} from "../types/letter";
+import type {LetterTemplate} from "@shared/types/letter.ts";
 import {characterStorage} from "@modules/core/storage";
 import {resolveLetterTemplate, type ResolvedLetterTemplate} from "@modules/core/letterTemplates";
 import {DEFAULT_LETTER_ALIGNMENT, clampLineWidth, isLetterAlignment, renderLetterLayout} from "@shared/letterRenderer";

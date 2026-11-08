@@ -1,4 +1,4 @@
-import {outputLinesFromEnd} from "@shared/dom/outputMessageHandler.ts";
+import {outputLinesFromEnd} from "@web/output/outputMessageHandler.ts";
 
 const MAX_OUTPUT_LINES = 500;
 const MIN_WORD_LENGTH = 2;

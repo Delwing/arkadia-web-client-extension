@@ -2,7 +2,7 @@
  * Libraries: which categories each one teaches and how far the character got in
  * each, the `zglebiaj wiedze` prompt, and the libraries window.
  */
-import {colorString, createColorFormat} from '@modules/core/Colors';
+import {colorString, createColorFormat} from '@client/Colors.ts';
 import type {KnowledgeReportAction} from '@shared/events';
 import type {
     KnowledgeCategoryStatus,
@@ -10,7 +10,7 @@ import type {
     KnowledgeSnapshot,
 } from '@modules/data/dataStores/knowledgeStore';
 import {AnsiAwareBuffer, FormatStateSnapshot} from '@client/ansi/FormatState.ts';
-import {getBaseCategoryFromName, getDativeCategoryName} from '../../knowledgeCategories';
+import {getBaseCategoryFromName, getDativeCategoryName} from '@shared/knowledgeCategories.ts';
 import type {KnowledgeContext} from './context';
 import {COMPLETE_LIBRARY_PATTERN, KNOWLEDGE_PROMPT_PATTERN, START_LIBRARY_PATTERN} from './parsing';
 import {updateLibraryProgress} from './progress';

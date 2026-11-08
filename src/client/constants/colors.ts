@@ -1,4 +1,4 @@
-import { createColorFormat } from '@modules/core/Colors';
+import { createColorFormat } from '@client/Colors.ts';
 
 /**
  * Central color constants for Arkadia Web Client

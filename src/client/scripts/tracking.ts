@@ -1,5 +1,5 @@
 import Client from "../Client";
-import {colorTokenInLine, createColorFormat} from "@modules/core/Colors";
+import {colorTokenInLine, createColorFormat} from "@client/Colors.ts";
 import {printArrow} from "./printArrow";
 import {AnsiAwareBuffer, type FormatStateSnapshot} from "@client/ansi/FormatState";
 

@@ -1,7 +1,7 @@
 import Client from "../Client";
 import { parseItems, ContainerItem, getItemCssColor, isItemMagicOrKey } from "./prettyContainers";
 import { AnsiAwareBuffer } from "../ansi/FormatState";
-import { createColorFormat } from "@modules/core/Colors";
+import { createColorFormat } from "@client/Colors.ts";
 import eventBus from "@modules/core/eventBus";
 import { getZlomFormatting } from "./zlom";
 

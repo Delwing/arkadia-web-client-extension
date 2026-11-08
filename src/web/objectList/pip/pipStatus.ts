@@ -4,7 +4,7 @@
 
 import type Client from "@client/Client";
 import eventBus from "@modules/core/eventBus";
-import {outputLinesFromEnd} from "@shared/dom/outputMessageHandler.ts";
+import {outputLinesFromEnd} from "@web/output/outputMessageHandler.ts";
 import {splitOutputHtmlIntoLines} from "./pipHtml.ts";
 
 export class PipStatus {

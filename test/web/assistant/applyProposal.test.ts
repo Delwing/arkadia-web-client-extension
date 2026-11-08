@@ -4,13 +4,13 @@
  */
 import { applyProposal } from '@web/assistant/applyProposal';
 import { characterStorage, globalStorage } from '@modules/core/storage';
-import { validateProposal } from '@modules/core/assistant/proposalValidator';
+import { validateProposal } from '@web/assistant/proposalValidator.ts';
 import type {
     AliasProposal,
     BindProposal,
     SettingChangeProposal,
     TriggerProposal,
-} from '@modules/core/assistant/proposalValidator';
+} from '@web/assistant/proposalValidator.ts';
 
 describe('applyProposal', () => {
     beforeEach(() => {

@@ -1,5 +1,5 @@
 import Client from "../Client";
-import {colorString, createColorFormat} from "@modules/core/Colors";
+import {colorString, createColorFormat} from "@client/Colors.ts";
 import { formatLabel } from "./functionalBind";
 
 export default function initLeaderAttackWarning(client: Client) {

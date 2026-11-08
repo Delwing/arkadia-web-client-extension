@@ -1,4 +1,4 @@
-import {colorCodes} from "@modules/core/Colors.ts";
+import {colorCodes} from "@client/Colors.ts";
 import mudletColorsJson from "@client/colors.json";
 
 /** Indexed color (0-255) */

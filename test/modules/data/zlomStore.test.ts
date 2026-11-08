@@ -11,7 +11,7 @@ import {
     upsertByOpis,
     type ArmorEntry,
 } from '@modules/data/zlomStore';
-import { getFromIndexedDB, storeInIndexedDB } from '@client/utils/dataCache';
+import { getFromIndexedDB, storeInIndexedDB } from '@modules/data/dataCache.ts';
 
 // Verbatim from the game
 const KHORNE = 'Od stop do glow zakuty jestes w stalowe plyty krwistoczerwonego pelnego pancerza, na ktorego naramiennikach wygrawerowano symbole twego Pana - Khorna.';

@@ -27,7 +27,7 @@ import type { CechyHistoryEntry } from '@client/scripts/cechyHistory';
 import type { CarriageRecord } from '@client/scripts/carriage';
 import type { StoredInventory } from '@client/scripts/inventory';
 import type { WornArmor } from '@client/scripts/armor';
-import type { CustomLetterTemplate } from '@client/types/letter';
+import type { CustomLetterTemplate } from '@shared/types/letter.ts';
 
 /**
  * Character-scoped storage keys.

@@ -1,6 +1,6 @@
 import Client from "../Client";
 import { AnsiAwareBuffer } from "@client/ansi/FormatState";
-import { colorString, createColorFormat } from "@modules/core/Colors";
+import { colorString, createColorFormat } from "@client/Colors.ts";
 import { wordListMatchScore } from "@client/utils/fuzzyMatch";
 import eventBus from "@modules/core/eventBus";
 import {

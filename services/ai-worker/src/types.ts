@@ -79,7 +79,7 @@ export interface AskRequest {
  * Proposal wire shapes.
  *
  * Every field name here is the one
- * `src/modules/core/assistant/proposalValidator.ts` reads. That module is what
+ * `src/web/assistant/proposalValidator.ts` reads. That module is what
  * gates the write to the user's real storage, so a Worker that emits
  * `kind: "settings"` or `triggerType` is emitting proposals the client silently
  * discards. `PROPOSAL_KINDS` in `src/shared/assistant/knowledgeBundle.ts` is the

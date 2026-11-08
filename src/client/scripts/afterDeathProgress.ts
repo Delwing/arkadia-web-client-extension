@@ -1,5 +1,5 @@
 import Client from "../Client";
-import {colorStringInLine, createColorFormat} from "@modules/core/Colors";
+import {colorStringInLine, createColorFormat} from "@client/Colors.ts";
 import {IMPROVE_STATES} from "./improveCounter";
 
 const SPRING_GREEN = createColorFormat("#00ff7f");

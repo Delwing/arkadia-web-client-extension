@@ -1,7 +1,7 @@
 import { editLifetimeEntry, getLifetimeData, initImproveCounter, mergeLifetimeData } from '@client/scripts/improveCounter';
 import { initKillCounter } from '@client/scripts/kill';
 import Triggers from '@client/Triggers';
-import { colorString, createColorFormat } from '@modules/core/Colors';
+import { colorString, createColorFormat } from '@client/Colors.ts';
 import { EventEmitter } from 'events';
 import { characterStorage } from '@modules/core/storage';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';

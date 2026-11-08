@@ -3,7 +3,7 @@ import {
     getFromIndexedDB,
     clearIndexedDB,
     type IndexedDBConfig,
-} from '@client/utils/dataCache';
+} from '@modules/data/dataCache.ts';
 
 /** The six cases of a noun phrase, as `odmien` prints them, lower case. */
 export interface Odmiana {

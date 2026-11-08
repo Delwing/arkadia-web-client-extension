@@ -1,4 +1,4 @@
-import { storeInIndexedDB, getFromIndexedDB, clearIndexedDB } from '@client/utils/dataCache';
+import { storeInIndexedDB, getFromIndexedDB, clearIndexedDB } from '@modules/data/dataCache.ts';
 
 const CONFIG = { dbName: 'ArkadiaDataCacheTest', storeName: 'items', key: 'snapshot' };
 

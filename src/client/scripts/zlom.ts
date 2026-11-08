@@ -5,7 +5,7 @@ import { defaultSettings } from "@modules/core/defaultSettings";
 import { AnsiAwareBuffer } from "@client/ansi/FormatState";
 import { ARMOR_QUALITY, BALANCE, EFFECTIVENESS } from "./evaluationConstants";
 import eventBus from "@modules/core/eventBus";
-import { createColorFormat } from "@modules/core/Colors";
+import { createColorFormat } from "@client/Colors.ts";
 import { getBehaviorSettings, setBehaviorSettings } from "@modules/core/settings";
 import { ensureOdmianaLoaded } from "@modules/data/odmianaStore";
 import { isDeclined } from "@modules/crowd/crowdView";

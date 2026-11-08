@@ -163,7 +163,7 @@ export function parseProposals(captured: string): Proposal[] {
  *
  * This is a coarse first pass, not the trust boundary — the client re-validates
  * every proposal against the real `UserAlias`/`UserTrigger`/keymap shapes in
- * `src/modules/core/assistant/proposalValidator.ts` before anything can be
+ * `src/web/assistant/proposalValidator.ts` before anything can be
  * applied. What this pass is for is dropping obvious junk before it is cached
  * and streamed, and making sure the field names on the wire are the ones that
  * validator reads: a `kind` or field it does not recognise means the user is

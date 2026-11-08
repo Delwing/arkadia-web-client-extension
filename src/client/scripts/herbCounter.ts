@@ -6,7 +6,7 @@ import {
     parseHerbBagContent,
 } from "./herbBags";
 import loadHerbs, {HerbsData, isHerbSmokable} from "./herbsLoader";
-import {colorString, createColorFormat, mudletColorLine} from "@modules/core/Colors";
+import {colorString, createColorFormat, mudletColorLine} from "@client/Colors.ts";
 import type {HerbManagerApi, HerbMoveOptions, HerbBagsState, HerbBagState, HerbGiveItem, HerbGiveResult, HerbGiveTarget} from "../types/herbs";
 import {clampHerbBagCondition, normalizeHerbBagsState} from "../types/herbs";
 import {registerHerbManagerProvider} from "@modules/core/herbManagerProvider";

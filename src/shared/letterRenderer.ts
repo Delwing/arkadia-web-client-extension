@@ -1,4 +1,4 @@
-import type { LetterTemplate } from "@client/types/letter";
+import type { LetterTemplate } from "@shared/types/letter.ts";
 
 export const MIN_LINE_WIDTH = 20;
 export const MAX_LINE_WIDTH = 120;

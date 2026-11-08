@@ -1,4 +1,4 @@
-import {colorStringInLine, createColorFormat} from "@modules/core/Colors";
+import {colorStringInLine, createColorFormat} from "@client/Colors.ts";
 import Client from "../Client";
 import {AnsiAwareBuffer} from "../ansi/FormatState";
 import {characterStorage} from "@modules/core/storage";

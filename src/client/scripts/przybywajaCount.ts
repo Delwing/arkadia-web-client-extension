@@ -1,5 +1,5 @@
 import Client from "../Client";
-import {createColorFormat} from "@modules/core/Colors";
+import {createColorFormat} from "@client/Colors.ts";
 import {polishWordToNumber} from "./polishNumberConverter";
 
 export default function initPrzybywajaCount(client: Client) {

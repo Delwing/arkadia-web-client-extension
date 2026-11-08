@@ -1,4 +1,4 @@
-import {mudletColorLine} from "@modules/core/Colors";
+import {mudletColorLine} from "@client/Colors.ts";
 import type {HerbUse} from "@client/scripts/herbsLoader";
 import {getBindableUses, isHerbSmokable} from "@modules/data/dataStores/herbsStore";
 import {showContextMenu, type ContextMenuEntry} from "./contextMenu";

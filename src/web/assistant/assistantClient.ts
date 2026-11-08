@@ -19,7 +19,7 @@
 import {
     validateProposal,
     type ValidationResult,
-} from '@modules/core/assistant/proposalValidator.ts';
+} from '@web/assistant/proposalValidator.ts';
 import { getDeviceId } from '@modules/firebase/firebaseTypes.ts';
 import {
     getAssistantApiKey,

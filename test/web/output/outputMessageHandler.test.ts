@@ -9,7 +9,7 @@ import {
     setOutputTimestampVisibility,
     setupOutputMessageHandler,
     type OutputMessageHandler,
-} from '@shared/dom/outputMessageHandler';
+} from '@web/output/outputMessageHandler.ts';
 
 type MessageListener = (message?: string | AnsiAwareBuffer, type?: string, timestamp?: number) => void;
 

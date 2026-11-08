@@ -1,7 +1,7 @@
 import Client from "../Client";
 import { prettyPrintContainer, parseItems, getTransformDefinitions, ContainerItem } from "./prettyContainers";
 import { convertCurrency } from "./priceEvaluation";
-import { createColorFormat } from "@modules/core/Colors";
+import { createColorFormat } from "@client/Colors.ts";
 import { AnsiAwareBuffer } from "../ansi/FormatState";
 import eventBus from "@modules/core/eventBus";
 import { characterStorage } from "@modules/core/storage";

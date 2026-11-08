@@ -1,6 +1,6 @@
 import Client from "../Client";
 import {bindMatches} from "@modules/core/keymapTypes";
-import {stripPolishCharacters} from "../stripPolishCharacters";
+import {stripPolishCharacters} from "@shared/stripPolishCharacters.ts";
 import { getHostPort } from "../ports";
 
 const LABELS = ["zwykły", "prz", "prz dr"];

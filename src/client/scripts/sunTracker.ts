@@ -1,7 +1,7 @@
 import Client from "../Client";
 import {characterStorage} from "@modules/core/storage";
 import {AnsiAwareBuffer} from "@client/ansi/FormatState.ts";
-import {createColorFormat} from "@modules/core/Colors.ts";
+import {createColorFormat} from "@client/Colors.ts";
 import {defaultSettings, type SunAnnouncement} from "@modules/core/defaultSettings";
 
 type Domain = "Empire" | "Ishtar";

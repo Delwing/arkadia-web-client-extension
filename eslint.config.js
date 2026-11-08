@@ -120,8 +120,14 @@ export default [
     // client and the UI. What it needs from them is handed in: ports, events,
     // loaders passed by the bootstrap.
     files: ['src/modules/**/*.{ts,tsx}'],
-    rules: noUpwardImports(['@web', '@web-ui'],
-      'src/modules must not import the web UI at runtime. Have the UI hand it in (an event, a registered callback, a loader passed by the bootstrap). Type-only imports are permitted.'),
+    rules: noUpwardImports(['@client', '@web', '@web-ui'],
+      'src/modules must not import the client or the web UI at runtime. Move what both need down to @modules or @shared, or have the upper layer hand it in (an event, a registered callback, a loader passed by the bootstrap). Type-only imports are permitted.'),
+  },
+  {
+    // @shared is the bottom layer: types, events, pure helpers every layer uses.
+    files: ['src/shared/**/*.{ts,tsx}'],
+    rules: noUpwardImports(['@modules', '@client', '@web', '@web-ui'],
+      'src/shared is the bottom layer and must not import @modules, @client or the web UI at runtime. Type-only imports are permitted.'),
   },
   {
     // Sync v1 still imports the backup categories from the web UI. It is deleted

@@ -15,7 +15,7 @@ import {
     KNOWLEDGE_CATEGORY_CONFIG,
     KNOWLEDGE_CATEGORY_ORDER,
     KnowledgeCategoryBaseName,
-} from '../../knowledgeCategories';
+} from '@shared/knowledgeCategories.ts';
 import type {KnowledgeContext} from './context';
 import type {KnowledgeEntries} from './entries';
 import {

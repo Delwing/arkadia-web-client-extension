@@ -1,4 +1,4 @@
-import type { KnowledgeCategoryBaseName } from '@client/knowledgeCategories';
+import type { KnowledgeCategoryBaseName } from '@shared/knowledgeCategories.ts';
 
 export interface WiedzaDbEvent {
     category: KnowledgeCategoryBaseName;

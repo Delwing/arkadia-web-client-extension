@@ -1,5 +1,5 @@
 import initMagics from '@client/scripts/magics';
-import { colorTokenInLine } from '@modules/core/Colors';
+import { colorTokenInLine } from '@client/Colors.ts';
 import { MAGICS_COLOR } from '@client/constants/colors';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 

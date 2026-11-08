@@ -6,7 +6,7 @@ import {
     KNOWLEDGE_DETAILS_TYPES,
     KnowledgeDetailsType,
 } from '@modules/data/dataStores/knowledgeDetailsStore';
-import {stripPolishCharacters} from '../../stripPolishCharacters';
+import {stripPolishCharacters} from '@shared/stripPolishCharacters.ts';
 import knowledgeData from '../../knowledge.json';
 
 export const START_LIBRARY_PATTERN =

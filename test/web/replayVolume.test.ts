@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import {encodeGmcp} from '@shared/socket';
 import arkadiaClient from '@web/MudClient';
-import {setupOutputMessageHandler} from '@shared/dom/outputMessageHandler';
+import {setupOutputMessageHandler} from '@web/output/outputMessageHandler.ts';
 
 /**
  * How much does a replayed absence actually weigh?

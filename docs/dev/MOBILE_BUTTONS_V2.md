@@ -259,7 +259,7 @@ Properties the tests must pin:
   `styleOrder` (and the transition mirror) from incoming, keeping
   `radial`/`joysticks` from existing as today. The `radial` category merge
   only sets `radial` and stays as is.
-- Device bundles (`deviceSettingsBundle`, `deviceStorage`) go through
+- Device bundles (`deviceStorage`, `@web/deviceSettingsReload`) go through
   `loadSettings` / `saveSettings` and need only the type change.
 
 ## Compatibility with clients still on v1

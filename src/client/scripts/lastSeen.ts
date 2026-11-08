@@ -1,5 +1,5 @@
 import Client from "../Client";
-import { colorString, createColorFormat } from "@modules/core/Colors";
+import { colorString, createColorFormat } from "@client/Colors.ts";
 import { AnsiAwareBuffer, FormatStateSnapshot } from "@client/ansi/FormatState.ts";
 import { subscribeMerged, refresh as refreshPeopleStore } from "@modules/data/peopleLoader";
 import type { PersonListEntry } from "@client/types/people";

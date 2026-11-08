@@ -1,5 +1,5 @@
 import Client from "../Client";
-import {colorTokenInLine} from "@modules/core/Colors";
+import {colorTokenInLine} from "@client/Colors.ts";
 import loadMagicKeys from "./magicKeyLoader";
 import { getMagicKeysColorFormat } from "./prettyContainers";
 

@@ -2,7 +2,7 @@ import Client from "../Client";
 import initShop, { ShopOptions, formatItem } from "./shop";
 import loadHerbs from "./herbsLoader";
 import type { HerbsData } from "./herbsLoader";
-import { createColorFormat } from "@modules/core/Colors";
+import { createColorFormat } from "@client/Colors.ts";
 import { getUiPort } from "@client/ports";
 
 const HERB_SHOP_LINK_COLOR = createColorFormat("#ffff00");

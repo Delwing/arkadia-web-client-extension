@@ -1,6 +1,6 @@
 import type { KnowledgeBookCategoryProgress } from '@modules/data/dataStores/knowledgeStore';
 import type { BookCategoryState, BookCategoryStatus, ContextMenuEntry } from './ports/uiPort';
-import { getDativeCategoryName } from './knowledgeCategories';
+import { getDativeCategoryName } from '@shared/knowledgeCategories.ts';
 
 function findProgress(progress: KnowledgeBookCategoryProgress, category: string): true | 'in_progress' | undefined {
     if (progress[category] != null) return progress[category];

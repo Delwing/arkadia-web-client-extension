@@ -1,5 +1,5 @@
 import {addLocalNpc} from "@modules/data/npcStore";
-import {createColorFormat} from "@modules/core/Colors";
+import {createColorFormat} from "@client/Colors.ts";
 import Client from "./Client";
 import {Trigger} from "./Triggers";
 import toTitleCase from "./utils/toTitleCase";

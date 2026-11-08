@@ -1,6 +1,6 @@
 import Client from "../Client";
 import { AnsiAwareBuffer, BufferSegment } from "../ansi/FormatState";
-import { createColorFormat } from "@modules/core/Colors";
+import { createColorFormat } from "@client/Colors.ts";
 import { characterStorage } from "@modules/core/storage";
 import eventBus from "@modules/core/eventBus";
 import { getHostPort } from "../ports";

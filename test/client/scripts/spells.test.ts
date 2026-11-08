@@ -2,7 +2,7 @@ import initSpells from '@client/scripts/spells';
 import Triggers from '@client/Triggers';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 import { characterStorage } from '@modules/core/storage';
-import { createColorFormat } from '@modules/core/Colors';
+import { createColorFormat } from '@client/Colors.ts';
 
 class FakeClient {
   Triggers = new Triggers(({} as unknown) as any);

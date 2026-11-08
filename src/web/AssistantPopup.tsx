@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
 import { usePopup } from './hooks/usePopup';
 import { useAutoScroll } from './hooks/useAutoScroll';
-import type { ValidationResult } from '@modules/core/assistant/proposalValidator.ts';
+import type { ValidationResult } from '@web/assistant/proposalValidator.ts';
 import { askAssistant, statusMessage, type AssistantEvent } from './assistant/assistantClient';
 import ProposalCard from './assistant/ProposalCard';
 import PanelHintCard from './assistant/PanelHintCard';

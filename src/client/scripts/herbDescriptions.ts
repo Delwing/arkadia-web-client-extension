@@ -1,6 +1,6 @@
 import Client from "../Client";
 import loadHerbs from "./herbsLoader";
-import {createColorFormat} from "@modules/core/Colors";
+import {createColorFormat} from "@client/Colors.ts";
 import { getUiPort } from "@client/ports";
 
 export const HERB_NAME_COLOR = createColorFormat("#ffffff");

@@ -1,6 +1,6 @@
 import Client from "../Client";
 import {scheduleFromEvent} from "@shared/eventClock";
-import { colorString, createColorFormat } from "@modules/core/Colors";
+import { colorString, createColorFormat } from "@client/Colors.ts";
 import { characterStorage } from "@modules/core/storage";
 import eventBus from "@modules/core/eventBus";
 import { getDeviceId } from "@modules/firebase/firebaseTypes.ts";

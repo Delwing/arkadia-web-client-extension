@@ -37,7 +37,7 @@ import {
     areOutputTimestampsVisible,
     setOutputMessageTypeVisibility,
     setOutputTimestampVisibility,
-} from '@shared/dom/outputMessageHandler';
+} from '@web/output/outputMessageHandler.ts';
 import { copyOutputAsImage, saveOutputAsHtml } from './copyOutputAsImage';
 import { hasPopup } from './layout/popupRegistry';
 import { canSearchLogs, requestLogSearch } from './logSearchRequest';

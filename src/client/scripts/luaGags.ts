@@ -1,7 +1,7 @@
 import Triggers, {Trigger} from "../Triggers";
 import type { SoundCategory } from '@shared/events/clientEvents.ts';
 import gagsData from "./gags_lua.json";
-import {colorString, createColorFormat, mudletColorLine} from "@modules/core/Colors";
+import {colorString, createColorFormat, mudletColorLine} from "@client/Colors.ts";
 import {AnsiAwareBuffer, FormatStateSnapshot} from "../ansi/FormatState";
 
 import * as luainjs from 'lua-in-js'

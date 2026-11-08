@@ -1,5 +1,5 @@
 import Client from "../Client";
-import {createColorFormat} from "@modules/core/Colors";
+import {createColorFormat} from "@client/Colors.ts";
 
 export default function initNewMail(client: Client) {
     const TOMATO = createColorFormat("#ff6347");

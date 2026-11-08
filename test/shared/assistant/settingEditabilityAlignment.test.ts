@@ -28,7 +28,7 @@
 import { describe, expect, it } from 'vitest';
 import bundleJson from '../../../public/assistant-kb.json';
 import { settingProposalKey, type KnowledgeBundle } from '@shared/assistant/knowledgeBundle.ts';
-import { lookupSetting, validateProposal } from '@modules/core/assistant/proposalValidator.ts';
+import { lookupSetting, validateProposal } from '@web/assistant/proposalValidator.ts';
 
 const bundle = bundleJson as unknown as KnowledgeBundle;
 

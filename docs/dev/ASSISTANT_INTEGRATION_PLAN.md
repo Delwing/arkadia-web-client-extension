@@ -19,7 +19,7 @@ Invariants:
 
 | Piece | Where |
 |---|---|
-| Proposal shape + validation (the authority for `settingChange \| alias \| trigger \| bind`) | `src/modules/core/assistant/proposalValidator.ts` |
+| Proposal shape + validation (the authority for `settingChange \| alias \| trigger \| bind`) | `src/web/assistant/proposalValidator.ts` |
 | Editable-settings registry (`lookupSetting`, `suggestSettingKeys`, `assistantEditableKeys`) | `src/modules/core/assistant/settingsRegistry.ts` |
 | The panel, `popup:assistant` | `src/web/AssistantPopup.tsx`, registered in `src/web/popups/popupCatalog.tsx` |
 | Open event `assistant.popup.open` (`{ question?, seedTriggerText? }`) | `src/shared/events/clientEvents.ts` |

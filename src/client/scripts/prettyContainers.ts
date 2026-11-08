@@ -1,5 +1,5 @@
 import Client from "../Client";
-import {createColorFormat} from "@modules/core/Colors";
+import {createColorFormat} from "@client/Colors.ts";
 import loadMagicKeys from "./magicKeyLoader";
 import loadMagics from "./magicsLoader";
 import {getMagicsStore, MagicsFile} from "@modules/data/dataStores/magicsStore";

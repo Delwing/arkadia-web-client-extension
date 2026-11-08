@@ -5,7 +5,7 @@
 import {globalStorage} from '@modules/core/storage';
 import {KNOWLEDGE_DETAILS_TYPES} from '@modules/data/dataStores/knowledgeDetailsStore';
 import {removeAllPluginNotes, setPluginLocationNote} from '@modules/core/pluginLocationNotesRegistry';
-import {KNOWLEDGE_CATEGORY_ORDER} from '../../knowledgeCategories';
+import {KNOWLEDGE_CATEGORY_ORDER} from '@shared/knowledgeCategories.ts';
 import type {KnowledgeContext} from './context';
 import {KNOWLEDGE_ENTRY_LOCATIONS, normalizeKnowledgeEntry} from './parsing';
 

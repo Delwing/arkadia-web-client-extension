@@ -1,9 +1,9 @@
 import Client from "../Client";
 import { characterStorage } from "@modules/core/storage";
 import { defaultSettings } from "@modules/core/defaultSettings";
-import { normalizeAttackCommand } from "./attackCommand";
-import { normalizeSupportCommand } from "./supportCommand";
-import { colorString, createColorFormat } from "@modules/core/Colors";
+import { normalizeAttackCommand } from "@modules/core/attackCommand.ts";
+import { normalizeSupportCommand } from "@modules/core/supportCommand.ts";
+import { colorString, createColorFormat } from "@client/Colors.ts";
 
 export type AttackMode = "A" | "AW" | "AWR";
 

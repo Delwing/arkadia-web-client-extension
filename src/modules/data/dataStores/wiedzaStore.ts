@@ -6,8 +6,8 @@ import {
   KnowledgeCategoryBaseName,
   KNOWLEDGE_CATEGORY_CONFIG,
 
-} from '@client/knowledgeCategories';
-import { stripPolishCharacters } from '@client/stripPolishCharacters';
+} from '@shared/knowledgeCategories.ts';
+import { stripPolishCharacters } from '@shared/stripPolishCharacters.ts';
 
 // API endpoint for wiedza data
 export const WIEDZA_URL =

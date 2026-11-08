@@ -1,5 +1,5 @@
 import type { AnsiAwareBuffer } from "@client/ansi/FormatState.ts";
-import type { MessageHandlerClient, OutputMessageHandler } from "@shared/dom/outputMessageHandler.ts";
+import type { MessageHandlerClient, OutputMessageHandler } from "@web/output/outputMessageHandler.ts";
 
 type PendingMessage = [message?: string | AnsiAwareBuffer, type?: string, timestamp?: number];
 

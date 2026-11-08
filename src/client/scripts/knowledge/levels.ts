@@ -3,7 +3,7 @@
  * `wiedza` command's list gets a bar per category with the ticks since its level
  * last changed. The levels it reports are stored for the details window.
  */
-import {createColorFormat} from '@modules/core/Colors';
+import {createColorFormat} from '@client/Colors.ts';
 import {
     addKnowledgeEvent,
     getKnowledgeEventsForCharacter,
@@ -16,7 +16,7 @@ import {
     getDativeCategoryName,
     KNOWLEDGE_CATEGORY_CONFIG,
     KnowledgeCategoryBaseName,
-} from '../../knowledgeCategories';
+} from '@shared/knowledgeCategories.ts';
 import type {KnowledgeContext} from './context';
 import type {KnowledgeEntries} from './entries';
 import {

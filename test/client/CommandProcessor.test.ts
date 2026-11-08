@@ -2,7 +2,7 @@
 vi.mock('@client/main', () => ({ __esModule: true }));
 
 import Client from '@client/Client';
-import { mudletColorLine } from '@modules/core/Colors';
+import { mudletColorLine } from '@client/Colors.ts';
 import { characterStorage } from '@modules/core/storage';
 
 vi.mock('@client/sounds', () => ({

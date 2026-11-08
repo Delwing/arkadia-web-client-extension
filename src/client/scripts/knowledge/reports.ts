@@ -21,7 +21,7 @@ import {
     getBaseCategoryFromName,
     getDativeCategoryName,
     KNOWLEDGE_CATEGORY_CONFIG,
-} from '../../knowledgeCategories';
+} from '@shared/knowledgeCategories.ts';
 import {
     getKnowledgeLevelFromLabel,
     KNOWLEDGE_LEVEL_MAX,

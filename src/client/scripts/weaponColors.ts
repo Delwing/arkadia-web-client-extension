@@ -1,5 +1,5 @@
 import Client from "../Client";
-import {colorStringInLine, createColorFormat} from "@modules/core/Colors";
+import {colorStringInLine, createColorFormat} from "@client/Colors.ts";
 import {AnsiAwareBuffer, HexColor} from "../ansi/FormatState";
 import {MAGICS_COLOR} from "../constants/colors";
 

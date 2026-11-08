@@ -1,6 +1,6 @@
 import Client from "../Client";
 import { characterStorage } from "@modules/core/storage";
-import { mudletColorLine } from "@modules/core/Colors";
+import { mudletColorLine } from "@client/Colors.ts";
 import eventBus from "@modules/core/eventBus";
 
 export const STORAGE_KEY = "profession";

@@ -1,4 +1,4 @@
-import { DEFAULT_DRAW_WEAPON_COMMAND, normalizeDrawWeaponCommand } from '@client/utils/drawWeaponCommand';
+import { DEFAULT_DRAW_WEAPON_COMMAND, normalizeDrawWeaponCommand } from '@modules/core/drawWeaponCommand.ts';
 
 describe('normalizeDrawWeaponCommand', () => {
   test('returns default when value is not a string', () => {

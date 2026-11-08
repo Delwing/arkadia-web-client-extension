@@ -11,7 +11,7 @@ import {
     isLetterTemplate,
     type CustomLetterTemplate,
     type LetterTemplateId,
-} from '@client/types/letter';
+} from '@shared/types/letter.ts';
 import { BUILTIN_LETTER_LAYOUTS, type LetterLayout } from '@shared/letterRenderer';
 
 export const LETTER_TEMPLATES_STORAGE_KEY = 'letter_templates';

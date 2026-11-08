@@ -1,7 +1,7 @@
 import initWyroznienieOptions from '@client/scripts/wyroznienieOptions';
 import Triggers from '@client/Triggers';
 import {AnsiAwareBuffer} from '@client/ansi/FormatState';
-import {createColorFormat} from '@modules/core/Colors';
+import {createColorFormat} from '@client/Colors.ts';
 
 const LABEL = 'Tytul zwiazany z WYROZNIENIEm:';
 const GAME_COLOR = createColorFormat('#c0c000');

@@ -2,7 +2,7 @@ import Client from "../Client";
 import { createAttackController } from "../utils/attackController";
 import { subscribeMerged, refresh as refreshPeopleStore } from '@modules/data/peopleLoader';
 import type { PersonListEntry } from '../types/people';
-import { colorString, createColorFormat } from '@modules/core/Colors';
+import { colorString, createColorFormat } from '@client/Colors.ts';
 import { AnsiAwareBuffer } from '@client/ansi/FormatState';
 import { globalStorage, characterStorage } from '@modules/core/storage';
 import { defaultSettings } from '@modules/core/defaultSettings';

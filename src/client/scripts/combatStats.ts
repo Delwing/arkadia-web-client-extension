@@ -1,7 +1,7 @@
 import Client from "../Client";
 import eventBus from "@modules/core/eventBus";
 import {AnsiAwareBuffer, FormatStateSnapshot} from "../ansi/FormatState";
-import {createColorFormat} from "@modules/core/Colors";
+import {createColorFormat} from "@client/Colors.ts";
 
 const COLOR_BORDER: FormatStateSnapshot = createColorFormat('#C0C0C0');
 const COLOR_DIM: FormatStateSnapshot = createColorFormat('#BEBEBE');

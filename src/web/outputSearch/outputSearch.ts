@@ -1,5 +1,5 @@
 import { foldText } from "@shared/foldText.ts";
-import { outputLines } from "@shared/dom/outputMessageHandler.ts";
+import { outputLines } from "@web/output/outputMessageHandler.ts";
 
 /**
  * One hit in the game output: its range, and the line it sits on (for keeping

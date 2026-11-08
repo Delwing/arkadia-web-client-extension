@@ -9,8 +9,8 @@ The corpus is not a unit test of the model's prose. It answers one question:
 *given this request, does the model produce the right kind of output, pointing
 at the right real thing?* Everything else — whether the proposal is actually
 safe to store — is the job of
-`src/modules/core/assistant/proposalValidator.ts`, which is tested separately in
-`test/modules/core/assistant/proposalValidator.test.ts`.
+`src/web/assistant/proposalValidator.ts`, which is tested separately in
+`test/web/assistant/proposalValidator.test.ts`.
 
 ## Case format
 

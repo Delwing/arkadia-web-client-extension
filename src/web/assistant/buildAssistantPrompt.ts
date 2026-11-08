@@ -38,7 +38,7 @@ ZASADY:
 /**
  * One line per proposal kind, keyed by the kind itself.
  *
- * `PROPOSAL_KINDS` is `ProposalKind` from `@modules/core/assistant/proposalValidator`
+ * `PROPOSAL_KINDS` is `ProposalKind` from `@web/assistant/proposalValidator`
  * — the module that gates the write to storage. Typing this as a total record
  * means adding a kind there fails to compile here until the contract is taught
  * how to emit it, and it keeps this contract identical in shape to the one the

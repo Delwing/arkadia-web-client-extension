@@ -3,7 +3,7 @@ import {
   getFromIndexedDB,
   IndexedDBConfig,
   storeInIndexedDB,
-} from '@client/utils/dataCache';
+} from '@modules/data/dataCache.ts';
 import { RefreshMetadata, StorageStrategy } from '../types';
 
 export interface IndexedDbSingleRecordStrategyOptions {

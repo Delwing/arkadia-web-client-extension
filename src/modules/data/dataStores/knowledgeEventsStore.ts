@@ -1,8 +1,8 @@
 import {
   getBaseCategoryFromName,
   KnowledgeCategoryBaseName,
-} from '@client/knowledgeCategories';
-import { stripPolishCharacters } from '@client/stripPolishCharacters';
+} from '@shared/knowledgeCategories.ts';
+import { stripPolishCharacters } from '@shared/stripPolishCharacters.ts';
 
 export interface KnowledgeEvent {
   category: KnowledgeCategoryBaseName;
