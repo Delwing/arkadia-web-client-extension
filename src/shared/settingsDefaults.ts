@@ -76,6 +76,7 @@ export const defaultMapSettings: MapSettings = {
     mapCurrentRoomColor: '#784800',
     pathFindingAlgorithm: 'dijkstra',
     highlightCurrentRoom: true,
+    mapShadowMarker: false,
     labelRenderMode: 'data',
     transparentLabels: true,
     emojiLabels: false,
@@ -130,7 +131,7 @@ export const mapSettingsKeys = [
     'mapHighlightStrokeAlpha', 'mapHighlightFillAlpha', 'mapHighlightStrokeWidth',
     'mapHighlightSizeFactor', 'mapHighlightDashEnabled', 'mapHighlightShape', 'mapRoomShape',
     'mapBackgroundColor', 'mapLineColor', 'mapCurrentRoomColor', 'pathFindingAlgorithm', 'highlightCurrentRoom',
-    'labelRenderMode', 'transparentLabels', 'emojiLabels',
+    'mapShadowMarker', 'labelRenderMode', 'transparentLabels', 'emojiLabels',
 ] as const satisfies readonly (keyof MapSettings)[];
 
 export const behaviorSettingsKeys = [

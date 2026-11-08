@@ -138,6 +138,8 @@ export interface MapSettings {
     mapCurrentRoomColor: string;
     pathFindingAlgorithm: PathFindingAlgorithm;
     highlightCurrentRoom: boolean;
+    /** Experiment: mark the room the shadow step queue (StepShadow) believes we are in. */
+    mapShadowMarker: boolean;
     labelRenderMode: 'image' | 'data' | 'none';
     transparentLabels: boolean;
     emojiLabels: boolean;

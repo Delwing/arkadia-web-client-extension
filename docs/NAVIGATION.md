@@ -13,6 +13,8 @@ Komendy do poruszania się, mapy i automatycznego chodzenia.
 | `/mapkolejka` | Eksperyment: pokazuj, co o krokach sądzi kolejka potwierdzana przez `room.info` - tylko odmowy i rozjazdy z mapą (ponownie wyłącza). Mapy nie zmienia |
 | `/mapkolejka wszystko` | Jak wyżej, ale każde zdarzenie, także każdy potwierdzony krok |
 | `/mapkolejka stan` | Co kolejka teraz uważa: ostatnie potwierdzone pomieszczenie, czekające kroki i gdzie z nich wychodzi |
+
+> **Znacznik kolejki:** w ustawieniach mapy opcja *Znacznik kolejki kroków* (domyślnie wyłączona) zaznacza na mapie różowym obramowaniem pomieszczenie, w którym według kolejki jesteś. Gdy rozjeżdża się ze znacznikiem postaci, kolejka i mapa nie zgadzają się co do pozycji.
 | `/idz kierunek` | Wybierz przeciwne wyjście w pomieszczeniu |
 | `n!` `s!` `e!` `w!` `ne!` `nw!` `se!` `sw!` `u!` `d!` | Wyślij czysty kierunek do serwera z pominięciem ruchu po mapie |
 
