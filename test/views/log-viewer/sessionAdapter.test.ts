@@ -277,16 +277,19 @@ describe("createSessionSource", () => {
         const first = createSessionSource({ candidates: [] });
         await first.list();
         first.release();
+        const store = new SearchTextStore();
+        // The first listing stores its texts in the background (packed first):
+        // wait for them, or one could land after the prune below and undo it.
+        await expect.poll(async () => (await store.get("session_1000"))?.count).toBe(2);
+        await expect.poll(async () => (await store.get("session_5000"))?.count).toBe(1);
         await deleteDb();
         await seed({ session_5000: [{ text: "troll", timestamp: 5000 }] });
 
         const second = createSessionSource({ candidates: [] });
         await second.list();
         // The prune is fired off at the end of the listing; let it land.
-        await new Promise((resolve) => setTimeout(resolve, 20));
+        await expect.poll(() => store.get("session_1000")).toBeNull();
         second.release();
-        const store = new SearchTextStore();
-        expect(await store.get("session_1000")).toBeNull();
         expect(await store.get("session_5000")).not.toBeNull();
         store.release();
     });
