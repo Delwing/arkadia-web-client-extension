@@ -4,7 +4,7 @@ import eventBus from "@modules/core/eventBus.ts";
 import {getLongDir} from "@shared/map/directions";
 import {isDrivableExit} from "@shared/map/exitCommands";
 import type {FormatStateSnapshot} from "@client/ansi/FormatState.ts";
-import {roomContextMenuHandler} from "@modules/core/contextMenus";
+import {roomContextMenuHandler} from "../roomContextMenu";
 import {
     blockRoom,
     clearBlockedRooms,

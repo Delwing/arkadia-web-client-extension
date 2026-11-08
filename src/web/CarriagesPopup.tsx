@@ -4,7 +4,7 @@ import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
 import { usePopup } from './hooks/usePopup';
 import type { CarriageEntry } from '@client/scripts/carriage';
 import { getEmbeddedMap, subscribeEmbeddedMap } from './embedRegistry';
-import {roomContextMenuHandler} from "@modules/core/contextMenus";
+import {roomContextMenuHandler} from "@web/gameContextMenus.ts";
 import { HeaderButton } from '@web-ui/primitives';
 
 interface CarriagesPopupPayload {

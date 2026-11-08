@@ -1,4 +1,4 @@
-import { buildHerbContextMenuItems, openHerbContextMenu, openMapContextMenu, roomContextMenuHandler } from "@modules/core/contextMenus";
+import { buildHerbContextMenuItems, openHerbContextMenu, openMapContextMenu, roomContextMenuHandler } from "@web/gameContextMenus.ts";
 import { showContextMenu } from "@web/contextMenu";
 import { registerRoomMenuEntry, unregisterRoomMenuEntry } from "@modules/core/pluginUiRegistry";
 import { characterStorage } from "@modules/core/storage";

@@ -48,6 +48,13 @@ export interface UiPort {
     hideBookTooltip(): void;
     showContextMenu(items: ContextMenuEntry[], x: number, y: number, options?: ContextMenuOptions): void;
     /**
+     * Optional: the herb menu (use it, take it out, smoke it) for a herb named in
+     * the output. `commandPrefix` is the alias its uses go through. Omitted → no menu.
+     */
+    showHerbMenu?(herbId: string, actions: HerbUse[] | undefined, x: number, y: number, commandPrefix: string): void;
+    /** Optional: the room menu (walk, lead, mark…) for a room named in the output. Omitted → no menu. */
+    showRoomMenu?(roomId: number, x: number, y: number): void;
+    /**
      * Optional: give an element a hover card in the UI's tooltip (plugin
      * `api.ui.setTooltip`). Omitted → the element simply has no tooltip.
      */

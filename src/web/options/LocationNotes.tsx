@@ -4,7 +4,7 @@ import { Button, DeleteButton, Input } from "@web-ui/primitives/index.ts";
 import eventBus from "@modules/core/eventBus";
 import { getAllNotes, deleteNote, type LocationNote } from "./locationNotesStorage";
 import { foldText } from "@web/settings/settingsSearch.ts";
-import {roomContextMenuHandler} from "@modules/core/contextMenus";
+import {roomContextMenuHandler} from "@web/gameContextMenus.ts";
 import { closeOptionWindows } from "@web/modals/pageWindows.ts";
 
 function LocationNotes() {

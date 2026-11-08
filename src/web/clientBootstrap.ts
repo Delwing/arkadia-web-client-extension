@@ -65,9 +65,9 @@ export function bootstrapGameClient(opts: { installPorts: () => void }): GameCli
     migrateStockButtonColors();
     runAllSettingsMigrations();
     migrateButtonSizeMultiplier();
-    migrateFooterComponentVisibility();
+    migrateFooterComponentVisibility(async () => (await import('./defaultUiSettings')).defaultFooterComponents);
     migrateObjectListBackground();
-    void migrateLayoutManagerState();
+    void migrateLayoutManagerState(async () => (await import('./layout/utils/layoutStorage')).migrateLayoutState);
 
     // Supply the UI's implementations of the client's injectable ports (tooltips,
     // context menu, plugin-host capabilities) before any script runs.

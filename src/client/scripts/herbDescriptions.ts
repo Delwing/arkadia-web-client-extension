@@ -1,7 +1,6 @@
 import Client from "../Client";
 import loadHerbs from "./herbsLoader";
 import {createColorFormat} from "@modules/core/Colors";
-import {openHerbContextMenu} from "@modules/core/contextMenus";
 import { getUiPort } from "@client/ports";
 
 export const HERB_NAME_COLOR = createColorFormat("#ffffff");
@@ -13,13 +12,7 @@ export default async function initHerbDescriptions(client: Client) {
         if (!herbs) return;
 
         const showHerbActions = (herbId: string, ev: MouseEvent) => {
-            openHerbContextMenu({
-                herbId,
-                actions: herbs.herb_id_to_use[herbId],
-                x: ev.pageX,
-                y: ev.pageY,
-                commandPrefix: '/zi',
-            });
+            getUiPort().showHerbMenu?.(herbId, herbs.herb_id_to_use[herbId], ev.pageX, ev.pageY, '/zi');
         };
         Object.entries(herbs.herb_id_to_odmiana).forEach(([id, forms]) => {
             Object.values(forms).forEach(desc => {

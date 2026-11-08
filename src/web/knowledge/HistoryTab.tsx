@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import type { KnowledgeEvent } from '@modules/data/dataStores/knowledgeEventsStore';
 import { levelIndex } from './knowledgeModel';
 import { LevelBar } from './knowledgeUi';
-import {roomContextMenuHandler} from "@modules/core/contextMenus";
+import {roomContextMenuHandler} from "@web/gameContextMenus.ts";
 
 function formatDate(timestamp: number): string {
     const d = new Date(timestamp);

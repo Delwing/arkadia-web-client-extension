@@ -845,7 +845,9 @@ export function migrateMobileButtonMacroField(): void {
  * shape (windows: Record<id, WindowRecord>). Pre-version-8 data uses the
  * old shape; the new components require the flat shape.
  */
-export async function migrateLayoutManagerState(): Promise<void> {
+export async function migrateLayoutManagerState(
+    loadLayoutMigration: () => Promise<(stored: unknown) => unknown>,
+): Promise<void> {
     const currentVersion = getMigrationsVersion();
 
     // This is migration version 8
@@ -864,9 +866,9 @@ export async function migrateLayoutManagerState(): Promise<void> {
             return;
         }
 
-        // Dynamic import keeps this module's load time independent of the
-        // layout module (which pulls in eventBus, react-bootstrap, etc.).
-        const { migrateLayoutState } = await import('@web/layout/utils/layoutStorage');
+        // The layout shape belongs to the UI, which hands the migration in; loaded
+        // lazily so this module's load time stays independent of the layout module.
+        const migrateLayoutState = await loadLayoutMigration();
         const migrated = migrateLayoutState(stored);
         localStorage.setItem('layoutManagerState', JSON.stringify(migrated));
         console.log('[SettingsMigrations] Migrated layoutManagerState to flat-windows shape');
@@ -880,7 +882,9 @@ export async function migrateLayoutManagerState(): Promise<void> {
  * This is migration version 4 that converts the old boolean visibility settings
  * to the new footerComponents array visibility flags.
  */
-export async function migrateFooterComponentVisibility(): Promise<void> {
+export async function migrateFooterComponentVisibility(
+    loadDefaultFooterComponents: () => Promise<FooterComponentConfig[]>,
+): Promise<void> {
     const currentVersion = getMigrationsVersion();
 
     // This is migration version 4
@@ -920,7 +924,7 @@ export async function migrateFooterComponentVisibility(): Promise<void> {
         let footerComponents: FooterComponentConfig[] = (uiSettings as any).footerComponents;
         if (!Array.isArray(footerComponents)) {
             // Use default footer components if not present
-            const { defaultFooterComponents } = await import('@web/defaultUiSettings');
+            const defaultFooterComponents = await loadDefaultFooterComponents();
             footerComponents = defaultFooterComponents.map((c: FooterComponentConfig) => ({ ...c }));
         }
 

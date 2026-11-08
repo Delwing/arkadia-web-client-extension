@@ -24,7 +24,7 @@ import {
     verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import {roomContextMenuHandler} from "@modules/core/contextMenus";
+import {roomContextMenuHandler} from "@web/gameContextMenus.ts";
 
 interface ShortcutEntry {
     key: string;

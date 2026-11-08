@@ -2,12 +2,12 @@ import {
     getDeviceInfo,
     saveImportedDevice,
     getSyncGroup,
-    triggerSettingsReload,
     shouldApplyDeviceSettings,
     type DeviceInfo,
     type ImportedDeviceEntry,
     type SyncGroup,
 } from "@modules/device";
+import { triggerSettingsReload } from "@web/deviceSettingsReload.ts";
 // Import from the registry module directly (not the @modules/firebase index)
 // so this web-side module doesn't pull in the sync engine and its side effects.
 import { BACKUP_CATEGORIES, DEVICE_SCOPED_SYNC_CATEGORIES, type BackupCategory } from '@modules/firebase/categoryRegistry';

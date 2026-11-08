@@ -3,7 +3,7 @@ import { colorString, createColorFormat } from "@modules/core/Colors";
 import {AnsiAwareBuffer} from "@client/ansi/FormatState";
 import eventBus from "@modules/core/eventBus";
 import { globalStorage } from "@modules/core/storage";
-import {roomContextMenuHandler} from "@modules/core/contextMenus";
+import {roomContextMenuHandler} from "../roomContextMenu";
 
 export interface ShortcutEntry {
     key: string;

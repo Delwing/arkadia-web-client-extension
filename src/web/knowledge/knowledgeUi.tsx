@@ -2,7 +2,7 @@ import { memo, type ReactNode } from 'react';
 import { Check, Lightbulb, MapPin, Navigation } from 'lucide-react';
 import eventBus from '@modules/core/eventBus';
 import { MAX_LEVEL, entryHint, isUnavailable, type DetailsEntry, type PlaceStatus } from './knowledgeModel';
-import {roomContextMenuHandler} from "@modules/core/contextMenus";
+import {roomContextMenuHandler} from "@web/gameContextMenus.ts";
 
 /** Ten segments, `value` of them lit. */
 export function LevelBar({ value, max = MAX_LEVEL, size = 'sm' }: { value: number; max?: number; size?: 'sm' | 'lg' }) {

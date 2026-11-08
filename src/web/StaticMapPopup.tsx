@@ -7,7 +7,7 @@ import { DockablePopupWrapper } from './layout/components/DockablePopupWrapper';
 import { HeaderMenu, MenuBack, MenuCheckItem, MenuItem, MenuRow, MenuScroll } from './layout/components/HeaderMenu';
 import { usePopover } from './layout/hooks/usePopover';
 import { getNote, type LocationNote } from '@web/options/locationNotesStorage';
-import { openMapContextMenu } from '@modules/core/contextMenus';
+import { openMapContextMenu } from '@web/gameContextMenus.ts';
 import { getPluginLocationNotes, type PluginLocationNote } from '@modules/core/pluginLocationNotesRegistry';
 import { getMapOverlays, mirrorMapOverlay, onMapOverlaysChange } from '@modules/core/mapOverlayRegistry';
 import { clearClosedPopupState, getPinnedPopupsByPrefix, getPopupLockedState, getPopupPinnedState, getPopupSetting, setPopupSetting, setBuiltInPanelSetting } from './layout/utils/layoutStorage';

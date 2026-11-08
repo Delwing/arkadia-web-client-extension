@@ -11,6 +11,7 @@ import { createBrowserHost } from './browserHost';
 import { showHerbTooltip, hideHerbTooltip } from './herbTooltip';
 import { showBookTooltip, hideBookTooltip } from './bookTooltip';
 import { showContextMenu } from './contextMenu';
+import { openHerbContextMenu, openRoomContextMenu } from './gameContextMenus';
 import { attachTooltip } from '@shared/dom/tooltip.ts';
 import { attachScrollback } from '@shared/dom/scrollback.ts';
 import { isAnyModalOpen } from './modals/appModal';
@@ -39,6 +40,9 @@ export function installClientPorts(): void {
         showBookTooltip,
         hideBookTooltip,
         showContextMenu,
+        showHerbMenu: (herbId, actions, x, y, commandPrefix) =>
+            openHerbContextMenu({ herbId, actions, x, y, commandPrefix }),
+        showRoomMenu: openRoomContextMenu,
         attachTooltip,
         attachScrollback,
         // Suppress global (direction) keybinds while a page-level window is open.

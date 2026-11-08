@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { characterStorage } from "@modules/core/storage";
 import type { HerbBagState, HerbBagsState, HerbGiveTarget, HerbMoveOptions } from "@client/types/herbs";
 import { normalizeHerbBagsState } from "@client/types/herbs";
-import { openHerbContextMenu } from "@modules/core/contextMenus";
+import { openHerbContextMenu } from "@web/gameContextMenus.ts";
 import loadHerbs, { type HerbsData } from "@client/scripts/herbsLoader";
 import eventBus from "@modules/core/eventBus";
 import { hideContextMenu } from "@web/contextMenu";

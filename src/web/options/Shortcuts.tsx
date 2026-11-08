@@ -4,7 +4,7 @@ import { globalStorage } from "@modules/core/storage";
 import eventBus from "@modules/core/eventBus";
 import { getCurrentRoomId } from "@modules/core/currentRoomProvider";
 import type { ClientEvents } from "@modules/core/eventBus";
-import {roomContextMenuHandler} from "@modules/core/contextMenus";
+import {roomContextMenuHandler} from "@web/gameContextMenus.ts";
 import { closeOptionWindows } from "@web/modals/pageWindows.ts";
 
 interface ShortcutEntry {
