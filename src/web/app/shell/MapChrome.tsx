@@ -1,15 +1,19 @@
 import { LocationLabel } from "@web-ui/components/map/LocationLabel";
 import { PauseIcon } from "@web-ui/components/map/PauseIcon";
 import { MapLostBadge } from "@web-ui/components/map/MapLostBadge";
+import { MapExitsBar } from "@web-ui/components/map/MapExitsBar";
+import { useBuiltInPanelSetting } from "@web/hooks/useBuiltInPanelSetting.ts";
 
 /**
  * What sits over the map wherever it is shown: the location label with the
- * pause icon (top left), and the lost-position badge (top right). It stays
+ * pause icon (top left), the lost-position badge (top right) and, when turned
+ * on in the map's settings, the exits strip along the bottom edge. The badge stays
  * visible with the label hidden: it is a warning, not chrome. Rendered by the
  * map's default spot or by the layout panel holding the map; each piece asks
  * for its current state when it mounts.
  */
 export function MapChrome({ labelVisible = true }: { labelVisible?: boolean }) {
+    const [showExitsBar] = useBuiltInPanelSetting("map", "showExitsBar", false);
     return (
         <>
             <div id="location-wrapper" style={labelVisible ? undefined : { display: "none" }}>
@@ -19,6 +23,11 @@ export function MapChrome({ labelVisible = true }: { labelVisible?: boolean }) {
                 <span id="pause-icon"><PauseIcon /></span>
             </div>
             <div id="map-lost-wrapper"><MapLostBadge /></div>
+            {showExitsBar && (
+                <div id="map-exits-wrapper">
+                    <MapExitsBar />
+                </div>
+            )}
         </>
     );
 }
