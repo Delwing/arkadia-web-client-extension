@@ -37,6 +37,7 @@ vi.mock('@client/map/MapHelper.ts', () => ({
     return {
       parseCommand,
       move: jest.fn((dir: string) => ({ direction: dir, moved: false })),
+      stepShadow: { step: jest.fn(), look: jest.fn(), other: jest.fn() },
       followMove: jest.fn(),
     };
   }),
