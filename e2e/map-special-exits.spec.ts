@@ -87,6 +87,12 @@ test.describe('Map special exits', () => {
 
         await expect(bar.locator('.map-exits-bar__exit')).toHaveText(['e', 'w', 'brama', 'wejdz na gore']);
         await expect(bar.locator('.map-exits-bar__exit--custom')).toHaveText(['wejdz na gore']);
+
+        // A strip along the bottom edge of the map, its full width.
+        const map = (await page.locator('.map-panel-container').boundingBox())!;
+        const strip = (await bar.boundingBox())!;
+        expect(Math.abs(strip.y + strip.height - (map.y + map.height))).toBeLessThan(2);
+        expect(Math.abs(strip.width - map.width)).toBeLessThan(2);
         await bar.locator('[data-exit="e"]').click();
         await expect.poll(() => getCommandLog(page)).toContain('e');
     });

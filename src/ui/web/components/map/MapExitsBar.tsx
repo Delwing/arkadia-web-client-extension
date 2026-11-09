@@ -6,7 +6,7 @@ interface Item {
 }
 
 /**
- * A status line over the map listing every exit of the current room: the
+ * A strip along the bottom of the map listing every exit of the current room: the
  * compass directions, the game's special exits and, set apart, the map's special
  * exits the game does not show. One line; what does not fit is cut off with an
  * ellipsis and the whole list is in the tooltip. A click walks the exit.
