@@ -4,6 +4,7 @@ import {loadColors, loadMapData, subscribeToMapData} from "../mapDataLoader";
 import {EmbeddedMap} from "../embed";
 import {getEmbeddedMap, setEmbeddedMap} from "../embedRegistry";
 import type {MovableHost} from "../layout/movableHost";
+import {refreshRoomExits} from "@web-ui/map/roomExits.ts";
 
 /** The map download as the progress bar shows it. */
 export interface MapLoadProgress {
@@ -65,6 +66,10 @@ export function bootstrapMap(client: Pick<Client, "Map">, mapHost: MovableHost):
             // caches per-area geometry, so neither a swapped reader nor an in-place
             // edit shows up on its own.
             client.Map.onAreasChanged((areaIds) => {
+                // The exits views read the current room's special exits, edited in place.
+                const here = client.Map.currentRoom;
+                if (here) refreshRoomExits(client.Map.tryGetMapReader()?.getRoom(here.id) ?? here);
+
                 const currentEmbedded = getEmbeddedMap();
                 const currentReader = client.Map.tryGetMapReader();
                 if (!currentEmbedded || !currentReader) return;

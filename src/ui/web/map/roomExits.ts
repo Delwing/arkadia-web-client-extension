@@ -83,6 +83,17 @@ eventBus.on("enterLocation", ({ room }) => {
     mapRoom = (room as { specialExits?: Record<string, number> } | null) ?? null;
     update();
 });
+// A map edit changes the room in place, without anyone moving.
+eventBus.on("mapDataChanged", () => update());
+
+/**
+ * The map changed under the room you stand in (a live edit, a passage linked,
+ * the map reloaded): read it again. Wired to the mapper by whoever owns the client.
+ */
+export function refreshRoomExits(room: { specialExits?: Record<string, number> } | null | undefined): void {
+    mapRoom = room ?? null;
+    update();
+}
 
 function subscribe(listener: () => void): () => void {
     listeners.add(listener);

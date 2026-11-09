@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { combineExits, mapSpecialExits, splitGameExits } from "@web-ui/map/roomExits.ts";
+import eventBus from "@modules/core/eventBus";
+import { combineExits, getRoomExits, mapSpecialExits, refreshRoomExits, splitGameExits } from "@web-ui/map/roomExits.ts";
 
 describe("roomExits", () => {
     it("splits the game's exits into directions and special exits", () => {
@@ -27,5 +28,21 @@ describe("roomExits", () => {
     it("works without a map room or game info", () => {
         expect(combineExits(undefined, { specialExits: { wyskocz: 1 } }).custom).toEqual(["wyskocz"]);
         expect(combineExits({ exits: ["wschod"] }, null).custom).toEqual([]);
+    });
+
+    it("picks up a map edit to the room you stand in, without a move", () => {
+        refreshRoomExits({ specialExits: {} });
+        expect(getRoomExits().custom).toEqual([]);
+
+        // A passage linked: the mapper edits the room in place and says areas changed.
+        refreshRoomExits({ specialExits: { "wejdz do szczeliny": 9 } });
+        expect(getRoomExits().custom).toEqual(["wejdz do szczeliny"]);
+
+        // A labyrinth script mutates the same room object and emits mapDataChanged.
+        const same: { specialExits: Record<string, number> } = { specialExits: {} };
+        refreshRoomExits(same);
+        same.specialExits.zanurkuj = 3;
+        eventBus.emit("mapDataChanged");
+        expect(getRoomExits().custom).toEqual(["zanurkuj"]);
     });
 });
