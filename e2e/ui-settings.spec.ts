@@ -59,6 +59,11 @@ test.describe('UI settings', () => {
         await ensureUnchecked('#ui-instant-move');
         await ensureUnchecked('#ui-highlight-current-room');
 
+        // Eksperymentalne page
+        await selectPage(modal, 'ui-experimental');
+        await ensureChecked('#ui-map-shadow-marker');
+        await ensureChecked('#ui-map-step-queue-correction');
+
         // Wygląd page
         await selectPage(modal, 'ui-appearance');
         await modal.locator('#ui-content-font').fill('24');
@@ -201,6 +206,8 @@ test.describe('UI settings', () => {
                 explorationMode: true,
                 instantMove: false,
                 highlightCurrentRoom: false,
+                mapShadowMarker: true,
+                mapStepQueueCorrection: true,
                 contentFontSize: 1.5,
                 objectsFontSize: 1.25,
                 outputBackground: '#123456',

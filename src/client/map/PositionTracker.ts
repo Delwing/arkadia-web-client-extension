@@ -4,6 +4,7 @@ import type {MapDataStore} from "./MapDataStore";
 import {followExit, resolveDirection, stepTarget} from "./exitResolution";
 import {MoveJournal} from "./MoveJournal";
 import {PositionLoss} from "./PositionLoss";
+import {StepShadow} from "./StepShadow";
 import type {GmcpPosition, MapHelperClient, MapStorage} from "./types";
 
 /**
@@ -22,6 +23,8 @@ export class PositionTracker {
     savedRoomId: number | null = null;
     readonly loss: PositionLoss;
     readonly journal = new MoveJournal();
+    /** A step queue confirmed by room.info, watched beside the mapper - see {@link StepShadow}. */
+    readonly shadow: StepShadow;
     // True when the most recent gmcp.room.info applied a position change that has
     // not yet been reconciled with a follow-step. Lets followMove() avoid moving
     // a second time on top of a position GMCP already advanced this step.
@@ -38,6 +41,11 @@ export class PositionTracker {
         private readonly onRoomRendered: (id: number) => void,
     ) {
         this.loss = new PositionLoss(client);
+        this.shadow = new StepShadow({
+            getRoom: id => this.data.reader?.getRoom(id),
+            resolve: (direction, room) => this.resolveDirection(direction, room),
+            mapRoomId: () => this.currentRoom?.id,
+        });
         const saved = this.storage.getItem('mapperRoomId');
         if (saved != null) {
             const parsed = parseInt(String(saved));
@@ -53,6 +61,11 @@ export class PositionTracker {
 
     /** `gmcp.room.info`: the game's word on where we stand. */
     handleRoomInfo(eventDetail: any) {
+        const gmcpRoom = this.data.resolveGmcpRoom(eventDetail?.map);
+        this.shadow.roomInfo(gmcpRoom, () => this.applyRoomInfo(eventDetail));
+    }
+
+    private applyRoomInfo(eventDetail: any) {
         this.setBlockable(false);
         this.gmcpPosition = eventDetail?.map;
         // Reset per room.info so a leftover flag from a step without a
@@ -242,6 +255,7 @@ export class PositionTracker {
         // also "match" the current room yet the relative move is still required.
         if (this.gmcpJustMoved) {
             this.gmcpJustMoved = false;
+            this.shadow.follow();
             return undefined;
         }
 
@@ -250,6 +264,7 @@ export class PositionTracker {
         if (exit !== undefined) {
             const res = this.move(exit, true, false);
             if (res.moved) {
+                this.shadow.follow();
                 return res.direction;
             }
         }
@@ -260,6 +275,7 @@ export class PositionTracker {
                 this.isGmcpPositionCurrent() || this.data.resolveGmcpRoom(this.gmcpPosition) !== undefined);
         }
 
+        this.shadow.follow();
         return undefined;
     }
 
@@ -334,6 +350,7 @@ export class PositionTracker {
         this.renderRoomById(this.locationHistory[this.locationHistory.length - 1], true, {relative: true});
         this.client.sendEvent("stepBack");
         this.sendMapMove();
+        this.shadow.mapSteppedBack();
     }
 
     /** Announce a move, unless the client asked for this one to pass silently. */
@@ -370,11 +387,13 @@ export class PositionTracker {
             this.savedRoomId = id;
             return;
         }
-        if (!options?.relative && id !== this.currentRoom?.id) {
+        const placed = !options?.relative && id !== this.currentRoom?.id;
+        if (placed) {
             this.journal.recordPlacement();
             this.loss.clear();
         }
         this.currentRoom = this.data.reader.getRoom(id);
+        if (placed) this.shadow.placed(id);
         this.savedRoomId = id;
         this.storage.setItem('mapperRoomId', id);
         if (sendEvent) {

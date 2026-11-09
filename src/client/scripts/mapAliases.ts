@@ -29,6 +29,7 @@ export default function initMapAliases(client: Client, aliases: { pattern: RegEx
         {
             pattern: /^\/cofnij$/,
             callback: () => {
+                // A correction by hand: the shadow queue starts over from where it puts the map.
                 client.Map.moveBack();
             }
         },
@@ -36,6 +37,8 @@ export default function initMapAliases(client: Client, aliases: { pattern: RegEx
             pattern: /^\/move (.*)$/,
             callback: (matches: RegExpMatchArray) => {
                 client.Map.move(matches[1]);
+                const room = client.Map.currentRoom;
+                if (room) client.Map.stepShadow.placed(room.id);
             }
         },
         {

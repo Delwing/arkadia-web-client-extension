@@ -58,6 +58,7 @@ vi.mock('@client/map/MapHelper.ts', () => {
         resolveDirection: resolveFn,
         followMove: jest.fn(),
         setBlockable: jest.fn(),
+        stepShadow: { step: jest.fn(), look: jest.fn(), other: jest.fn() },
       };
     }),
   };
@@ -96,6 +97,18 @@ describe('MovementManager', () => {
     client.moveMode = 0;
     await client.sendCommand('polnoc');
     expect(clientAdapterMock.send).toHaveBeenCalledWith('polnoc', false, undefined);
+  });
+
+  test('a step and a bare look are handed to the shadow step queue', async () => {
+    const client = new Client(clientAdapterMock);
+    (client.Map as any).currentRoom = { id: 7 };
+    await client.sendCommand('polnoc');
+    expect(client.Map.stepShadow.step).toHaveBeenCalledWith('polnoc', 7);
+    await client.sendCommand('zerknij');
+    expect(client.Map.stepShadow.look).toHaveBeenCalledTimes(1);
+    await client.sendCommand('spojrz na miecz');
+    expect(client.Map.stepShadow.look).toHaveBeenCalledTimes(1);
+    expect(client.Map.stepShadow.other).toHaveBeenCalledTimes(1);
   });
 
   test('moveMode 1 prefixes direction with przemknij', async () => {

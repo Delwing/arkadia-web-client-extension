@@ -13,6 +13,10 @@ Komendy do poruszania się, mapy i automatycznego chodzenia.
 | `/idz kierunek` | Wybierz przeciwne wyjście w pomieszczeniu |
 | `n!` `s!` `e!` `w!` `ne!` `nw!` `se!` `sw!` `u!` `d!` | Wyślij czysty kierunek do serwera z pominięciem ruchu po mapie |
 
+> **Ustawienia → Eksperymentalne** (obie opcje domyślnie wyłączone):
+> - *Znacznik kolejki kroków na mapie* zaznacza różowym obramowaniem pomieszczenie, w którym według kolejki jesteś. Gdy rozjeżdża się ze znacznikiem postaci, kolejka i mapa nie zgadzają się co do pozycji.
+> - *Poprawiaj mapę według kolejki kroków* przenosi mapę tam, gdzie wskazuje kolejka, gdy gra właśnie potwierdziła krok, odpowiedziała na rozejrzenie się albo odmówiła przejścia, a mapa stoi gdzie indziej. Przydaje się przy lagach, gdy wpiszesz kilka kroków naraz, a któryś zablokuje przeszkoda.
+
 > **Wskazówka:** Kiedy mapper na pewno zgubi pozycję - nie udało mu się odtworzyć ruchu za drużyną albo gra podaje lokację spoza mapy - w prawym górnym rogu mapy zapala się czerwona plakietka **ZGUBIONY**. Znacznik zostaje na ostatnim pewnym pomieszczeniu; plakietka gaśnie sama, gdy gra poda znane mapie położenie, albo po ręcznym ustawieniu pozycji (`/ustaw id`, `/zlok`, GPS, menu mapy).
 
 ## Automatyczne chodzenie

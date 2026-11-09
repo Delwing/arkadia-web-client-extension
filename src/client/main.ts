@@ -127,6 +127,7 @@ import initTideWarningHighlight from './scripts/tideWarningHighlight'
 import initLetter from './scripts/letter'
 import initCommandPreserveCaseMode from './scripts/commandPreserveCaseMode'
 import initTeamBlockers from './scripts/teamBlockers'
+import initStepQueue from './scripts/stepQueue'
 import initMove from './scripts/move'
 import initDirectionBypass from './scripts/directionBypass'
 import initZaznaczaj from './scripts/zaznaczaj'
@@ -291,6 +292,7 @@ export function registerScripts(client: Client) {
     }))
 
     initTeamBlockers(client)
+    initStepQueue(client)
     initMove(client)
     initDirectionBypass(client, aliases)
 

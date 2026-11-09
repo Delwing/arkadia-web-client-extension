@@ -829,6 +829,7 @@ const SETTINGS_PANELS: PanelSpec[] = [
         files: ['src/web/uiSettings/sections/OtherSections.tsx', 'src/web/uiSettings/sections/LogsSection.tsx'],
         sections: ['Inne', 'Logi'],
     },
+    { category: 'ui-experimental', files: ['src/web/uiSettings/sections/ExperimentalSection.tsx'] },
     {
         category: 'data-sync',
         files: [

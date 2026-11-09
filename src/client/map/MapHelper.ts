@@ -8,6 +8,7 @@ import {type MapHighlighter, MapDrawData} from "./MapDrawData";
 import {bindMapEvents} from "./mapEvents";
 import {PositionTracker} from "./PositionTracker";
 import {getBindPrintable, parseBind, RoomBinds} from "./RoomBinds";
+import type {StepShadow} from "./StepShadow";
 import type {
     ApplyChangesOptions,
     GmcpPosition,
@@ -108,6 +109,11 @@ export default class MapHelper {
 
     setBlockable(isBlockable: boolean) {
         this.position.setBlockable(isBlockable);
+    }
+
+    /** @internal The room.info-confirmed step queue watched beside the mapper - see {@link StepShadow}. */
+    get stepShadow(): StepShadow {
+        return this.position.shadow;
     }
 
     setPaused(paused: boolean) {
