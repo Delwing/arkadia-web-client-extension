@@ -70,6 +70,16 @@ test.describe('Map step queue correction (Eksperymentalne)', () => {
         await expect(page.locator('#location-text')).toContainText('#6');
     });
 
+    test('a lone step answered with "Nie ma takiej komendy" puts the map back', async ({ page }) => {
+        await startWithCorrection(page, { id: 1, x: 0, y: 0 });
+
+        await submitCommand(page, 'e');
+        await expect(page.locator('#location-text')).toContainText('#2');
+        // Nothing else went out since the step, so the line is its refusal.
+        await pushText(page, "Nie ma takiej komendy. Wpisz '?' aby uzyskac pomoc.");
+        await expect(page.locator('#location-text')).toContainText('#1');
+    });
+
     test('a typo answered with "Nie ma takiej komendy" does not undo a waiting step', async ({ page }) => {
         await startWithCorrection(page, { id: 1, x: 0, y: 0 });
 
